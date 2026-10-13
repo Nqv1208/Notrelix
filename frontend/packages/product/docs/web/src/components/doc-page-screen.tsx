@@ -1,568 +1,102 @@
-import React, { useState, useRef, useEffect } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  createUseCreateComment,
+  createUseCreatePage,
+  createUseDocEditor,
   createUsePage,
   createUsePageBlocks,
   createUsePageBreadcrumb,
-  createUseCreateBlock,
-  createUseUpdateBlock,
-  createUseDeleteBlock,
-  createUseReorderBlocks,
-  createUseUpdatePage,
-  type DocsApiClient,
-  type PageApiEndpoints,
+  createUsePageComments,
+  createUsePageHistory,
   type Block,
   type BlockType,
-  type BreadcrumbItem,
+  type DocsApiClient,
+  type PageApiEndpoints,
 } from "@notrelix/docs-state";
-import { Button, Skeleton } from "@notrelix/ui-web";
+import { fillDocCopy } from "./doc-page.copy";
+import { useDocPageCopy } from "./use-doc-page-copy";
+import type { UseDocPageHost } from "./doc-page-host";
 import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-} from "@dnd-kit/core";
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-import {
-  Trash2,
-  CheckSquare,
-  Square,
-  Heading1,
-  Heading2,
-  Heading3,
-  AlignLeft,
-  List,
-  ListOrdered,
-  Quote,
-  Minus,
-  Code,
-  ChevronRight,
-  BookOpen,
-  GripVertical,
-  MessageSquare,
-  Clock,
-  X,
-  Bold,
-  Italic,
-  Underline,
-  Strikethrough,
-} from "lucide-react";
-import { DocComments } from "./doc-comments";
-import { DocHistory } from "./doc-history";
-import { createDocPageTree } from "./doc-page-tree";
+  blockText,
+  dayMonth,
+  editedAtLabel,
+  positionAfter,
+  referencesOf,
+  toBlockViews,
+  toCommentViews,
+  toMarkdown,
+  toTocEntries,
+  toVersionViews,
+  toolbarCurrent,
+} from "./doc-page-mapping";
+import type {
+  DocChip,
+  DocHeaderView,
+  DocOverlay,
+  DocPageCallbacks,
+  DocPanelTab,
+  DocTaskRef,
+  DocTaskResolution,
+} from "./doc-page-models";
+import { DocPageScreenSurface } from "./doc-page-screen-surface";
+import { taskToken } from "./doc-page-text";
 
 interface CreateDocPageScreenDeps {
   api: DocsApiClient;
   endpoints: PageApiEndpoints;
+  /** Host-composed facts (department, people, tasks, viewer). */
+  useHost: UseDocPageHost;
 }
 
-interface BlockEditorProps {
-  workspaceId: string;
-  pageId: string;
-  block: Block;
-  onDelete: (id: string) => void;
-  useUpdateBlock: ReturnType<typeof createUseUpdateBlock>;
+const NONE: DocOverlay = { kind: "none" };
+
+/** Types whose Enter makes another block of the same kind. */
+const REPEATING: ReadonlySet<BlockType> = new Set([
+  "numbered_list",
+  "bulleted_list",
+  "todo",
+]);
+
+function saveFile(name: string, mime: string, content: string): void {
+  const url = URL.createObjectURL(new Blob([content], { type: mime }));
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = name;
+  anchor.click();
+  URL.revokeObjectURL(url);
 }
 
-const BLOCK_MENU_ITEMS: Array<{
-  type: BlockType;
-  label: string;
-  icon: React.ReactNode;
-  keywords: string[];
-}> = [
-  {
-    type: "paragraph",
-    label: "Text",
-    icon: <AlignLeft className="h-4 w-4" />,
-    keywords: ["text", "paragraph", "plain"],
-  },
-  {
-    type: "heading_1",
-    label: "Heading 1",
-    icon: <Heading1 className="h-4 w-4" />,
-    keywords: ["heading", "h1", "title"],
-  },
-  {
-    type: "heading_2",
-    label: "Heading 2",
-    icon: <Heading2 className="h-4 w-4" />,
-    keywords: ["heading", "h2", "subtitle"],
-  },
-  {
-    type: "heading_3",
-    label: "Heading 3",
-    icon: <Heading3 className="h-4 w-4" />,
-    keywords: ["heading", "h3"],
-  },
-  {
-    type: "bulleted_list",
-    label: "Bullet List",
-    icon: <List className="h-4 w-4" />,
-    keywords: ["bullet", "list", "unordered"],
-  },
-  {
-    type: "numbered_list",
-    label: "Numbered List",
-    icon: <ListOrdered className="h-4 w-4" />,
-    keywords: ["number", "list", "ordered"],
-  },
-  {
-    type: "todo",
-    label: "To-do",
-    icon: <CheckSquare className="h-4 w-4" />,
-    keywords: ["todo", "checkbox", "task"],
-  },
-  {
-    type: "quote",
-    label: "Quote",
-    icon: <Quote className="h-4 w-4" />,
-    keywords: ["quote", "blockquote"],
-  },
-  {
-    type: "divider",
-    label: "Divider",
-    icon: <Minus className="h-4 w-4" />,
-    keywords: ["divider", "hr", "line", "separator"],
-  },
-  {
-    type: "code",
-    label: "Code",
-    icon: <Code className="h-4 w-4" />,
-    keywords: ["code", "pre", "monospace"],
-  },
-  {
-    type: "callout",
-    label: "Callout",
-    icon: <span className="text-sm">💡</span>,
-    keywords: ["callout", "info", "note"],
-  },
-];
-
-function SlashCommandMenu({
-  query,
-  onSelect,
-  onClose,
-}: {
-  query: string;
-  onSelect: (type: BlockType) => void;
-  onClose: () => void;
-}) {
-  const [selectedIndex, setSelectedIndex] = useState(0);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  const filtered = BLOCK_MENU_ITEMS.filter(
-    (item) =>
-      item.label.toLowerCase().includes(query.toLowerCase()) ||
-      item.keywords.some((kw) => kw.includes(query.toLowerCase())),
+/** Puts the caret at the end of a block's editable text. */
+function focusBlock(blockId: string): boolean {
+  const element = document.querySelector<HTMLElement>(
+    `[data-block-id="${CSS.escape(blockId)}"]`,
   );
-
-  useEffect(() => {
-    setSelectedIndex(0);
-  }, [query]);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        setSelectedIndex((i) => (i + 1) % filtered.length);
-      } else if (e.key === "ArrowUp") {
-        e.preventDefault();
-        setSelectedIndex((i) => (i - 1 + filtered.length) % filtered.length);
-      } else if (e.key === "Enter") {
-        e.preventDefault();
-        if (filtered[selectedIndex]) {
-          onSelect(filtered[selectedIndex].type);
-        }
-      } else if (e.key === "Escape") {
-        onClose();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [filtered, selectedIndex, onSelect, onClose]);
-
-  if (filtered.length === 0) return null;
-
-  return (
-    <div
-      ref={menuRef}
-      className="absolute z-dropdown w-64 bg-popover border border-border rounded-lg shadow-lg overflow-hidden"
-    >
-      <div className="p-1.5 max-h-64 overflow-y-auto">
-        {filtered.map((item, index) => (
-          <button
-            key={item.type}
-            onClick={() => onSelect(item.type)}
-            className={`flex items-center gap-2.5 w-full px-2.5 py-2 text-sm rounded-md transition-colors ${
-              index === selectedIndex
-                ? "bg-accent text-accent-foreground"
-                : "text-foreground hover:bg-muted/50"
-            }`}
-          >
-            <span className="text-muted-foreground">{item.icon}</span>
-            <span>{item.label}</span>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function SortableBlockEditor({
-  workspaceId,
-  pageId,
-  block,
-  onDelete,
-  useUpdateBlock,
-}: BlockEditorProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: block.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    zIndex: isDragging ? "var(--z-dropdown)" : undefined,
-    opacity: isDragging ? 0.5 : undefined,
-  };
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className="group flex items-start gap-2.5 relative -ml-6 pl-6"
-    >
-      <div className="absolute left-0 top-1 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-5 w-5 text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing"
-          {...attributes}
-          {...listeners}
-        >
-          <GripVertical className="h-3.5 w-3.5" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-5 w-5 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-          onClick={() => onDelete(block.id)}
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </Button>
-      </div>
-
-      <div className="flex-1 relative">
-        <BlockEditorContent
-          workspaceId={workspaceId}
-          pageId={pageId}
-          block={block}
-          useUpdateBlock={useUpdateBlock}
-        />
-      </div>
-    </div>
-  );
-}
-
-function BlockEditorContent({
-  workspaceId,
-  pageId,
-  block,
-  useUpdateBlock,
-}: Omit<BlockEditorProps, "onDelete">) {
-  const updateBlockMutation = useUpdateBlock(workspaceId, pageId, block.id);
-  const [showSlashMenu, setShowSlashMenu] = useState(false);
-  const [slashQuery, setSlashQuery] = useState("");
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const handleUpdateText = (text: string) => {
-    if (text.startsWith("/")) {
-      setSlashQuery(text.slice(1));
-      setShowSlashMenu(true);
-      return;
-    }
-    if (showSlashMenu) {
-      setShowSlashMenu(false);
-    }
-    if (text !== (block.properties.text || "")) {
-      updateBlockMutation.mutate({
-        properties: { text },
-      });
-    }
-  };
-
-  const handleSlashSelect = (type: BlockType) => {
-    setShowSlashMenu(false);
-    updateBlockMutation.mutate({ type, properties: { text: "" } });
-    setTimeout(() => inputRef.current?.focus(), 50);
-  };
-
-  const handleToggleTodo = () => {
-    updateBlockMutation.mutate({
-      properties: { checked: !block.properties.checked },
-    });
-  };
-
-  const renderBlockContent = () => {
-    switch (block.type) {
-      case "paragraph":
-        return (
-          <input
-            ref={inputRef}
-            type="text"
-            defaultValue={block.properties.text || ""}
-            onBlur={(e) => handleUpdateText(e.target.value)}
-            placeholder="Type '/' for commands..."
-            className="w-full bg-transparent border-none outline-none text-base text-foreground focus:ring-0 p-0"
-          />
-        );
-
-      case "heading_1":
-        return (
-          <input
-            ref={inputRef}
-            type="text"
-            defaultValue={block.properties.text || ""}
-            onBlur={(e) => handleUpdateText(e.target.value)}
-            placeholder="Heading 1"
-            className="w-full bg-transparent border-none outline-none text-2xl font-bold text-foreground focus:ring-0 p-0"
-          />
-        );
-
-      case "heading_2":
-        return (
-          <input
-            ref={inputRef}
-            type="text"
-            defaultValue={block.properties.text || ""}
-            onBlur={(e) => handleUpdateText(e.target.value)}
-            placeholder="Heading 2"
-            className="w-full bg-transparent border-none outline-none text-xl font-semibold text-foreground focus:ring-0 p-0"
-          />
-        );
-
-      case "heading_3":
-        return (
-          <input
-            ref={inputRef}
-            type="text"
-            defaultValue={block.properties.text || ""}
-            onBlur={(e) => handleUpdateText(e.target.value)}
-            placeholder="Heading 3"
-            className="w-full bg-transparent border-none outline-none text-lg font-medium text-foreground focus:ring-0 p-0"
-          />
-        );
-
-      case "todo":
-        return (
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleToggleTodo}
-              className="text-muted-foreground hover:text-link transition-colors shrink-0"
-            >
-              {block.properties.checked ? (
-                <CheckSquare className="h-4.5 w-4.5 text-link" />
-              ) : (
-                <Square className="h-4.5 w-4.5" />
-              )}
-            </button>
-            <input
-              ref={inputRef}
-              type="text"
-              defaultValue={block.properties.text || ""}
-              onBlur={(e) => handleUpdateText(e.target.value)}
-              placeholder="To-do"
-              className={`w-full bg-transparent border-none outline-none text-base focus:ring-0 p-0 ${
-                block.properties.checked
-                  ? "line-through text-muted-foreground"
-                  : "text-foreground"
-              }`}
-            />
-          </div>
-        );
-
-      case "bulleted_list":
-        return (
-          <div className="flex items-start gap-2">
-            <span className="text-muted-foreground mt-1.5 shrink-0">•</span>
-            <input
-              ref={inputRef}
-              type="text"
-              defaultValue={block.properties.text || ""}
-              onBlur={(e) => handleUpdateText(e.target.value)}
-              placeholder="List item"
-              className="w-full bg-transparent border-none outline-none text-base text-foreground focus:ring-0 p-0"
-            />
-          </div>
-        );
-
-      case "numbered_list":
-        return (
-          <div className="flex items-start gap-2">
-            <span className="text-muted-foreground text-sm mt-0.5 shrink-0">
-              1.
-            </span>
-            <input
-              ref={inputRef}
-              type="text"
-              defaultValue={block.properties.text || ""}
-              onBlur={(e) => handleUpdateText(e.target.value)}
-              placeholder="List item"
-              className="w-full bg-transparent border-none outline-none text-base text-foreground focus:ring-0 p-0"
-            />
-          </div>
-        );
-
-      case "quote":
-        return (
-          <div className="border-l-2 border-primary/40 pl-4">
-            <input
-              ref={inputRef}
-              type="text"
-              defaultValue={block.properties.text || ""}
-              onBlur={(e) => handleUpdateText(e.target.value)}
-              placeholder="Quote"
-              className="w-full bg-transparent border-none outline-none text-base text-muted-foreground italic focus:ring-0 p-0"
-            />
-          </div>
-        );
-
-      case "divider":
-        return (
-          <div className="py-2">
-            <hr className="border-border" />
-          </div>
-        );
-
-      case "code":
-        return (
-          <div className="bg-muted rounded-lg p-3">
-            <input
-              ref={inputRef}
-              type="text"
-              defaultValue={block.properties.text || ""}
-              onBlur={(e) => handleUpdateText(e.target.value)}
-              placeholder="Code"
-              className="w-full bg-transparent border-none outline-none text-sm font-mono text-foreground focus:ring-0 p-0"
-            />
-          </div>
-        );
-
-      case "callout":
-        return (
-          <div className="flex items-start gap-3 p-4 rounded-xl border bg-muted/30">
-            <span className="text-xl shrink-0">
-              {block.properties.icon || "💡"}
-            </span>
-            <input
-              ref={inputRef}
-              type="text"
-              defaultValue={block.properties.text || ""}
-              onBlur={(e) => handleUpdateText(e.target.value)}
-              placeholder="Callout"
-              className="w-full bg-transparent border-none outline-none text-sm text-foreground focus:ring-0 p-0"
-            />
-          </div>
-        );
-
-      default:
-        return (
-          <input
-            ref={inputRef}
-            type="text"
-            defaultValue={block.properties.text || ""}
-            onBlur={(e) => handleUpdateText(e.target.value)}
-            placeholder="Type something..."
-            className="w-full bg-transparent border-none outline-none text-base text-foreground focus:ring-0 p-0"
-          />
-        );
-    }
-  };
-
-  return (
-    <>
-      {renderBlockContent()}
-      {showSlashMenu && (
-        <SlashCommandMenu
-          query={slashQuery}
-          onSelect={handleSlashSelect}
-          onClose={() => setShowSlashMenu(false)}
-        />
-      )}
-    </>
-  );
-}
-
-function FormattingToolbar({
-  onFormat,
-}: {
-  onFormat: (format: string) => void;
-}) {
-  const tools = [
-    { icon: <Bold className="h-3.5 w-3.5" />, format: "bold", label: "Bold" },
-    {
-      icon: <Italic className="h-3.5 w-3.5" />,
-      format: "italic",
-      label: "Italic",
-    },
-    {
-      icon: <Underline className="h-3.5 w-3.5" />,
-      format: "underline",
-      label: "Underline",
-    },
-    {
-      icon: <Strikethrough className="h-3.5 w-3.5" />,
-      format: "strikethrough",
-      label: "Strikethrough",
-    },
-  ];
-
-  return (
-    <div className="inline-flex items-center gap-0.5 bg-popover border border-border rounded-lg p-0.5 shadow-sm">
-      {tools.map((tool) => (
-        <Button
-          key={tool.format}
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7 text-muted-foreground hover:text-foreground"
-          onClick={() => onFormat(tool.format)}
-          title={tool.label}
-        >
-          {tool.icon}
-        </Button>
-      ))}
-    </div>
-  );
+  if (!element) return false;
+  element.focus();
+  const selection = window.getSelection();
+  if (selection) {
+    const range = document.createRange();
+    range.selectNodeContents(element);
+    range.collapse(false);
+    selection.removeAllRanges();
+    selection.addRange(range);
+  }
+  return true;
 }
 
 export function createDocPageScreen({
   api,
   endpoints,
+  useHost,
 }: CreateDocPageScreenDeps) {
   const usePage = createUsePage(api, endpoints);
   const usePageBlocks = createUsePageBlocks(api, endpoints);
   const usePageBreadcrumb = createUsePageBreadcrumb(api, endpoints);
-  const useCreateBlock = createUseCreateBlock(api, endpoints);
-  const useUpdateBlock = createUseUpdateBlock(api, endpoints);
-  const useDeleteBlock = createUseDeleteBlock(api, endpoints);
-  const useReorderBlocks = createUseReorderBlocks(api, endpoints);
-  const useUpdatePage = createUseUpdatePage(api, endpoints);
-  const DocPageTree = createDocPageTree({ api, endpoints });
+  const usePageComments = createUsePageComments(api, endpoints);
+  const usePageHistory = createUsePageHistory(api, endpoints);
+  const useDocEditor = createUseDocEditor(api, endpoints);
+  const useCreateComment = createUseCreateComment(api, endpoints);
+  const useCreatePage = createUseCreatePage(api, endpoints);
 
   return function DocPageScreen({
     workspaceId,
@@ -571,320 +105,441 @@ export function createDocPageScreen({
     workspaceId: string;
     pageId: string;
   }) {
-    const { data: page, isLoading: pageLoading } = usePage(workspaceId, pageId);
-    const { data: blocks = [], isLoading: blocksLoading } = usePageBlocks(
+    const copy = useDocPageCopy();
+    const pageQuery = usePage(workspaceId, pageId);
+    const blocksQuery = usePageBlocks(workspaceId, pageId) as {
+      data: Block[] | undefined;
+      isLoading: boolean;
+    };
+    const breadcrumbQuery = usePageBreadcrumb(workspaceId, pageId);
+    const commentsQuery = usePageComments(workspaceId, pageId);
+    const historyQuery = usePageHistory(workspaceId, pageId);
+    const editor = useDocEditor(workspaceId, pageId);
+    const createComment = useCreateComment(workspaceId, pageId);
+    const createPage = useCreatePage(workspaceId);
+
+    const page = pageQuery.data ?? null;
+    const blocks = useMemo(() => blocksQuery.data ?? [], [blocksQuery.data]);
+
+    const [overlay, setOverlay] = useState<DocOverlay>(NONE);
+    const [panelTab, setPanelTab] = useState<DocPanelTab>("links");
+    const [focusedId, setFocusedId] = useState<string | null>(null);
+    const [versions, setVersions] = useState<{
+      selectedId: string | null;
+      namedOnly: boolean;
+    } | null>(null);
+    const [activeTocId, setActiveTocId] = useState<string | null>(null);
+    const pendingFocus = useRef<string | null>(null);
+
+    const { taskIds, boardIds } = useMemo(() => referencesOf(blocks), [blocks]);
+    const host = useHost({
       workspaceId,
       pageId,
-    ) as { data: Block[]; isLoading: boolean };
-    const { data: breadcrumbs = [] } = usePageBreadcrumb(workspaceId, pageId);
+      page,
+      taskIds,
+      boardIds,
+      mentionQuery: overlay.kind === "mention" ? overlay.query : null,
+    });
+    const now = host.now;
 
-    const updatePageMutation = useUpdatePage(workspaceId, pageId);
-    const createBlockMutation = useCreateBlock(workspaceId, pageId);
-    const deleteBlockMutation = useDeleteBlock(workspaceId, pageId);
-    const reorderBlocksMutation = useReorderBlocks(workspaceId, pageId);
+    // A block created or retyped takes the caret once it is on screen.
+    useEffect(() => {
+      const target = pendingFocus.current;
+      if (target && focusBlock(target)) pendingFocus.current = null;
+    }, [blocks]);
 
-    const [sidePanel, setSidePanel] = useState<
-      "comments" | "history" | "tree" | null
-    >(null);
+    // Escape and outside clicks close the File menu.
+    useEffect(() => {
+      if (overlay.kind !== "fileMenu") return;
+      const onKey = (event: KeyboardEvent) => {
+        if (event.key === "Escape") setOverlay(NONE);
+      };
+      const onPointer = (event: MouseEvent) => {
+        const target = event.target as Element | null;
+        if (!target?.closest('[role="menu"],[aria-haspopup="menu"]')) {
+          setOverlay(NONE);
+        }
+      };
+      window.addEventListener("keydown", onKey);
+      window.addEventListener("mousedown", onPointer);
+      return () => {
+        window.removeEventListener("keydown", onKey);
+        window.removeEventListener("mousedown", onPointer);
+      };
+    }, [overlay.kind]);
 
-    const sensors = useSensors(
-      useSensor(PointerSensor, {
-        activationConstraint: { distance: 8 },
-      }),
-      useSensor(KeyboardSensor, {
-        coordinateGetter: sortableKeyboardCoordinates,
-      }),
+    const resolveTask = useCallback(
+      (taskId: string): DocTaskResolution => {
+        const known = host.tasks.get(taskId);
+        if (known) return known;
+        if (host.tasksReady) return { id: taskId, restricted: true };
+        return {
+          id: taskId,
+          key: "…",
+          title: "…",
+          status: "todo",
+          assignee: null,
+          due: null,
+        };
+      },
+      [host.tasks, host.tasksReady],
     );
 
-    const handleTitleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-      const text = e.target.value;
-      if (page && text.trim() && text !== page.title) {
-        updatePageMutation.mutate({ title: text });
-      }
-    };
+    const comments = useMemo(
+      () => toCommentViews(commentsQuery.data ?? [], copy, now, host.personFor),
+      [commentsQuery.data, copy, host.personFor, now],
+    );
 
-    const handleAddBlock = (type: BlockType) => {
-      const position =
-        blocks.length > 0 ? Math.max(...blocks.map((b) => b.position)) + 1 : 0;
-      const defaults: Partial<Record<BlockType, { text: string }>> = {
-        todo: { text: "To-do item" },
-        bulleted_list: { text: "List item" },
-        numbered_list: { text: "List item" },
-        quote: { text: "Quote" },
-        callout: { text: "Callout" },
-        code: { text: "// code" },
-      };
-      createBlockMutation.mutate({
-        type,
-        properties: defaults[type] || { text: "New block" },
-        position,
-      });
-    };
+    const blockViews = useMemo(
+      () =>
+        toBlockViews(blocks, {
+          resolveTask,
+          board: host.board,
+          quotes:
+            panelTab === "comments"
+              ? comments.flatMap((comment) =>
+                  comment.quote ? [comment.quote] : [],
+                )
+              : [],
+        }),
+      [blocks, comments, host.board, panelTab, resolveTask],
+    );
 
-    const handleDeleteBlock = (blockId: string) => {
-      deleteBlockMutation.mutate(blockId as never);
-    };
+    const mentionedTasks = useMemo(
+      () => taskIds.map(resolveTask),
+      [resolveTask, taskIds],
+    );
 
-    const handleDragEnd = (event: DragEndEvent) => {
-      const { active, over } = event;
-      if (!over || active.id === over.id) return;
+    const versionList = useMemo(
+      () => toVersionViews(historyQuery.data ?? [], copy, now, host.personFor),
+      [copy, historyQuery.data, host.personFor, now],
+    );
 
-      const oldIndex = blocks.findIndex((b: Block) => b.id === active.id);
-      const newIndex = blocks.findIndex((b: Block) => b.id === over.id);
-
-      if (oldIndex === -1 || newIndex === -1) return;
-
-      const reordered = arrayMove(blocks, oldIndex, newIndex);
-
-      reorderBlocksMutation.mutate({
-        pageId,
-        orderedBlockIds: reordered.map((b) => b.id as string),
-      });
-    };
-
-    const handleFormat = (format: string) => {
-      const selection = window.getSelection();
-      if (!selection || selection.rangeCount === 0) return;
-
-      const range = selection.getRangeAt(0);
-      const text = range.toString();
-
-      if (!text) return;
-
-      let wrapped: string;
-      switch (format) {
-        case "bold":
-          wrapped = `**${text}**`;
-          break;
-        case "italic":
-          wrapped = `*${text}*`;
-          break;
-        case "underline":
-          wrapped = `<u>${text}</u>`;
-          break;
-        case "strikethrough":
-          wrapped = `~~${text}~~`;
-          break;
-        default:
-          return;
-      }
-
-      range.deleteContents();
-      range.insertNode(document.createTextNode(wrapped));
-      selection.removeAllRanges();
-    };
-
-    if (pageLoading || blocksLoading) {
-      return (
-        <div className="p-8 space-y-6 max-w-3xl mx-auto">
-          <Skeleton className="h-8 w-1/3" />
-          <Skeleton className="h-64 w-full rounded-2xl" />
-          <Skeleton className="h-6 w-3/4" />
-          <Skeleton className="h-6 w-1/2" />
-        </div>
-      );
+    if (pageQuery.isLoading || blocksQuery.isLoading) {
+      return <DocPageScreenSurface status="loading" copy={copy} {...EMPTY} />;
     }
-
     if (!page) {
-      return (
-        <div className="p-8 text-center text-muted-foreground">
-          Page not found or you do not have permission.
-        </div>
-      );
+      return <DocPageScreenSurface status="notFound" copy={copy} {...EMPTY} />;
     }
+
+    const title = page.title;
+    const crumbs = [
+      ...(host.space ? [host.space.name] : []),
+      ...(breadcrumbQuery.data?.map((item) => item.title) ?? [title]),
+    ];
+    const latest = versionList[0];
+    const latestActivity = (historyQuery.data ?? [])
+      .slice()
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+    const header: DocHeaderView = {
+      title,
+      crumbs,
+      status: page.status,
+      editedBy: latestActivity
+        ? host.personFor(latestActivity.actorId).name
+        : null,
+      editedAt: latestActivity
+        ? editedAtLabel(copy, latestActivity.createdAt, now)
+        : latest
+          ? latest.time
+          : null,
+      presence: [],
+    };
+
+    const boardChipSource = host.board;
+    const chips: DocChip[] = [
+      ...(host.space
+        ? [
+            {
+              id: "scope",
+              kind: "scope" as const,
+              label: fillDocCopy(copy.meta.chipScope, {
+                space: host.space.name,
+                visibility:
+                  host.space.visibility === "private"
+                    ? copy.meta.private
+                    : copy.meta.workspaceVisible,
+              }),
+            },
+          ]
+        : []),
+      ...(page.deadline
+        ? [
+            {
+              id: "date",
+              kind: "date" as const,
+              label: fillDocCopy(copy.meta.effective, {
+                date: `${dayMonth(new Date(page.deadline))}/${new Date(page.deadline).getFullYear()}`,
+              }),
+            },
+          ]
+        : []),
+      ...(boardChipSource
+        ? [
+            {
+              id: "board",
+              kind: "board" as const,
+              label: boardChipSource.name,
+              href: boardChipSource.href,
+            },
+          ]
+        : []),
+    ];
+    const why =
+      host.space && host.viewerReason === "workspace-admin"
+        ? fillDocCopy(copy.meta.whyAdmin, { space: host.space.name })
+        : null;
+
+    const focused = blocks.find((block) => block.id === focusedId) ?? null;
+    const mentionTasks: readonly DocTaskRef[] =
+      overlay.kind === "mention" ? host.suggestTasks(overlay.query) : [];
+    const selectedVersionId = versions
+      ? (versions.selectedId ??
+        versionList[1]?.id ??
+        versionList[0]?.id ??
+        null)
+      : null;
+
+    const patchBlock = (
+      block: Block,
+      properties: Partial<Block["properties"]>,
+      type?: BlockType,
+    ) =>
+      editor.updateBlock(block.id, {
+        ...(type ? { type } : {}),
+        properties: { ...block.properties, ...properties },
+      });
+    const blockById = (id: string) => blocks.find((block) => block.id === id);
+
+    const callbacks: DocPageCallbacks = {
+      onTitleCommit: host.canEdit ? editor.updateTitle : undefined,
+      onBlockCommit: host.canEdit
+        ? (blockId, text) => {
+            const block = blockById(blockId);
+            if (block) patchBlock(block, { text });
+          }
+        : undefined,
+      onBlockTrigger: host.canEdit
+        ? (blockId, trigger) => setOverlay({ ...trigger, blockId })
+        : undefined,
+      onBlockTriggerClose: () =>
+        setOverlay((current) =>
+          current.kind === "slash" || current.kind === "mention"
+            ? NONE
+            : current,
+        ),
+      onFocusBlock: (blockId) => setFocusedId(blockId),
+      onTodoToggle: host.canEdit
+        ? (blockId, checked) => {
+            const block = blockById(blockId);
+            if (block) patchBlock(block, { checked });
+          }
+        : undefined,
+      onSlashSelect: (blockId, type) => {
+        const block = blockById(blockId);
+        if (!block) return;
+        setOverlay(NONE);
+        pendingFocus.current = blockId;
+        patchBlock(block, { text: "" }, type);
+      },
+      onMentionSelect: (blockId, taskId) => {
+        const block = blockById(blockId);
+        if (!block || overlay.kind !== "mention") return;
+        const at = overlay.before.lastIndexOf("@");
+        const head = overlay.before.slice(0, Math.max(at, 0));
+        const tail = overlay.text.slice(overlay.before.length);
+        const text = `${head}${taskToken(taskId)} ${tail}`;
+        setOverlay(NONE);
+        pendingFocus.current = blockId;
+        patchBlock(block, { text });
+      },
+      onAddBlock: host.canEdit
+        ? (type) => {
+            const after = focusedId ?? blocks[blocks.length - 1]?.id ?? null;
+            const reference = after ? blockById(after) : undefined;
+            const nextType: BlockType =
+              reference && REPEATING.has(reference.type)
+                ? reference.type
+                : type;
+            void editor
+              .createBlock({
+                type: nextType,
+                properties:
+                  nextType === "todo"
+                    ? { text: "", checked: false }
+                    : { text: "" },
+                position: positionAfter(blocks, after),
+              })
+              .then((created) => {
+                pendingFocus.current = created.id;
+              })
+              .catch(() => undefined);
+          }
+        : undefined,
+      onBlockDeleteEmpty: host.canEdit
+        ? (blockId) => {
+            const sorted = [...blocks].sort((a, b) => a.position - b.position);
+            const index = sorted.findIndex((block) => block.id === blockId);
+            if (sorted.length <= 1) return;
+            pendingFocus.current =
+              sorted[index > 0 ? index - 1 : 1]?.id ?? null;
+            editor.deleteBlock(blockId);
+          }
+        : undefined,
+      onOpenFileMenu: () => setOverlay({ kind: "fileMenu" }),
+      onCloseOverlay: () => setOverlay(NONE),
+      onToggleDownload: () =>
+        setOverlay((current) =>
+          current.kind === "fileMenu"
+            ? { kind: "fileMenu", downloadOpen: !current.downloadOpen }
+            : current,
+        ),
+      onDownload: (format) => {
+        setOverlay(NONE);
+        if (format === "pdf") {
+          window.print();
+          return;
+        }
+        saveFile(
+          `${title}.md`,
+          "text/markdown",
+          toMarkdown(title, blocks, resolveTask),
+        );
+      },
+      onPrint: () => {
+        setOverlay(NONE);
+        window.print();
+      },
+      onNewDoc: host.canEdit
+        ? () => {
+            setOverlay(NONE);
+            createPage.mutate(
+              {
+                title: copy.untitled,
+                workspaceId,
+                parentId: page.parentId,
+                spaceId: page.spaceId ?? null,
+              },
+              { onSuccess: (created) => host.openPage?.(created.id) },
+            );
+          }
+        : undefined,
+      onOpenShare: host.share ? () => setOverlay({ kind: "share" }) : undefined,
+      onPanelTab: setPanelTab,
+      onTocSelect: (id) => {
+        setActiveTocId(id);
+        const target =
+          id === "title"
+            ? document.querySelector("article h1")
+            : document.querySelector(`[data-block="${CSS.escape(id)}"]`);
+        target?.scrollIntoView({ block: "start", behavior: "smooth" });
+      },
+      onSaveRetry: editor.retry,
+      onFormat: (format) => {
+        if (!focused) return;
+        if (format === "left" || format === "center" || format === "right") {
+          patchBlock(focused, { align: format });
+          return;
+        }
+        patchBlock(focused, {
+          [format === "strike" ? "strike" : format]:
+            !focused.properties[format === "strike" ? "strike" : format],
+        });
+      },
+      onParagraphStyle: (type) => {
+        if (!focused) return;
+        patchBlock(focused, {}, type);
+      },
+      onOpenVersions: () => {
+        setOverlay(NONE);
+        setVersions({ selectedId: null, namedOnly: false });
+      },
+      onCloseVersions: () => setVersions(null),
+      onSelectVersion: (id) =>
+        setVersions((current) =>
+          current ? { ...current, selectedId: id } : current,
+        ),
+      onMentionInsert: () => {
+        const target = focusedId ?? blocks[blocks.length - 1]?.id ?? null;
+        if (target) {
+          const current = blockById(target);
+          const base = current ? blockText(current) : "";
+          setOverlay({
+            kind: "mention",
+            blockId: target,
+            query: "",
+            text: `${base}@`,
+            before: `${base}@`,
+          });
+        }
+      },
+      onOpenComments: () => setPanelTab("comments"),
+      onCommentCreate: (body) => createComment.mutate({ pageId, body }),
+    };
 
     return (
-      <div className="flex h-full overflow-hidden bg-background">
-        {/* Main content */}
-        <div className="flex-1 overflow-y-auto flex flex-col h-full">
-          {/* Breadcrumb */}
-          <div className="px-8 py-2 border-b flex items-center gap-1.5 text-xs text-muted-foreground">
-            <BookOpen className="h-3.5 w-3.5" />
-            <ChevronRight className="h-3 w-3" />
-            {breadcrumbs.map((bc: BreadcrumbItem, idx: number) => (
-              <div key={bc.id} className="flex items-center gap-1">
-                <span>{bc.title}</span>
-                {idx < breadcrumbs.length - 1 && (
-                  <ChevronRight className="h-3 w-3" />
-                )}
-              </div>
-            ))}
-          </div>
-
-          {/* Cover */}
-          <div className="h-32 w-full bg-gradient-to-r from-violet-200 to-indigo-100 dark:from-violet-950/20 dark:to-indigo-950/20" />
-
-          {/* Actions bar */}
-          <div className="px-8 py-2 flex items-center justify-between border-b">
-            <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                className={`h-7 gap-1.5 text-xs ${
-                  page.isFavorited
-                    ? "text-yellow-500"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <span className={page.isFavorited ? "fill-yellow-500" : ""}>
-                  ★
-                </span>
-                {page.isFavorited ? "Favorited" : "Favorite"}
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
-              >
-                Share
-              </Button>
-            </div>
-
-            <div className="flex items-center gap-1">
-              <Button
-                variant={sidePanel === "tree" ? "secondary" : "ghost"}
-                size="icon"
-                className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                onClick={() =>
-                  setSidePanel(sidePanel === "tree" ? null : "tree")
-                }
-              >
-                <BookOpen className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={sidePanel === "comments" ? "secondary" : "ghost"}
-                size="icon"
-                className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                onClick={() =>
-                  setSidePanel(sidePanel === "comments" ? null : "comments")
-                }
-              >
-                <MessageSquare className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={sidePanel === "history" ? "secondary" : "ghost"}
-                size="icon"
-                className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                onClick={() =>
-                  setSidePanel(sidePanel === "history" ? null : "history")
-                }
-              >
-                <Clock className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-
-          {/* Editor area */}
-          <div className="flex-1 max-w-3xl w-full mx-auto px-8 sm:px-12 py-10 space-y-6">
-            <input
-              type="text"
-              defaultValue={page.title}
-              onBlur={handleTitleBlur}
-              placeholder="Untitled"
-              className="text-4xl font-bold bg-transparent border-none outline-none w-full text-foreground placeholder:text-muted-foreground/30 focus:ring-0 p-0"
-            />
-
-            <FormattingToolbar onFormat={handleFormat} />
-
-            <div className="space-y-3">
-              {blocks.length === 0 ? (
-                <p className="text-sm text-muted-foreground italic py-4">
-                  Press{" "}
-                  <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs font-mono">
-                    /
-                  </kbd>{" "}
-                  for commands or type to start writing.
-                </p>
-              ) : (
-                <DndContext
-                  sensors={sensors}
-                  collisionDetection={closestCenter}
-                  onDragEnd={handleDragEnd}
-                >
-                  <SortableContext
-                    items={blocks.map((b) => String(b.id))}
-                    strategy={verticalListSortingStrategy}
-                  >
-                    {blocks.map((block) => (
-                      <SortableBlockEditor
-                        key={block.id}
-                        workspaceId={workspaceId}
-                        pageId={pageId}
-                        block={block}
-                        onDelete={handleDeleteBlock}
-                        useUpdateBlock={useUpdateBlock}
-                      />
-                    ))}
-                  </SortableContext>
-                </DndContext>
-              )}
-            </div>
-
-            <div className="border-t pt-4 flex flex-wrap gap-1.5">
-              {BLOCK_MENU_ITEMS.filter((item) =>
-                [
-                  "paragraph",
-                  "heading_1",
-                  "heading_2",
-                  "todo",
-                  "bulleted_list",
-                  "quote",
-                  "divider",
-                ].includes(item.type),
-              ).map((item) => (
-                <Button
-                  key={item.type}
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleAddBlock(item.type)}
-                  className="h-7 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
-                >
-                  {item.icon}
-                  {item.label}
-                </Button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Side panel */}
-        {sidePanel && (
-          <div className="w-80 border-l bg-card overflow-y-auto">
-            <div className="sticky top-0 bg-card border-b px-4 py-3 flex items-center justify-between">
-              <h3 className="font-semibold text-sm capitalize">{sidePanel}</h3>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6"
-                onClick={() => setSidePanel(null)}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-            <div className="p-4">
-              {sidePanel === "comments" && (
-                <DocComments
-                  api={api}
-                  endpoints={endpoints}
-                  workspaceId={workspaceId}
-                  pageId={pageId}
-                />
-              )}
-              {sidePanel === "history" && (
-                <DocHistory
-                  api={api}
-                  endpoints={endpoints}
-                  workspaceId={workspaceId}
-                  pageId={pageId}
-                />
-              )}
-              {sidePanel === "tree" && (
-                <DocPageTree workspaceId={workspaceId} currentPageId={pageId} />
-              )}
-            </div>
-          </div>
-        )}
-      </div>
+      <DocPageScreenSurface
+        copy={copy}
+        header={header}
+        saveState={editor.saveState}
+        chips={chips}
+        why={why}
+        blocks={blockViews}
+        tasks={mentionedTasks}
+        relatedDocs={[]}
+        toc={toTocEntries(title, blocks).map((entry) => ({
+          ...entry,
+          active: activeTocId ? entry.id === activeTocId : undefined,
+        }))}
+        comments={comments}
+        panelTab={panelTab}
+        overlay={overlay}
+        mentionTasks={mentionTasks}
+        toolbar={toolbarCurrent(focused)}
+        versions={
+          versions
+            ? {
+                list: versionList,
+                selectedId: selectedVersionId,
+                namedOnly: versions.namedOnly,
+                onNamedOnlyChange: (namedOnly) =>
+                  setVersions((current) =>
+                    current ? { ...current, namedOnly } : current,
+                  ),
+              }
+            : undefined
+        }
+        share={host.share ?? undefined}
+        readOnly={!host.canEdit}
+        canComment
+        canFormat={host.canEdit}
+        callbacks={callbacks}
+        onCopyLink={() => {
+          void navigator.clipboard?.writeText(window.location.href);
+        }}
+      />
     );
   };
 }
+
+const EMPTY = {
+  header: {
+    title: "",
+    crumbs: [],
+    status: "draft",
+    editedBy: null,
+    editedAt: null,
+    presence: [],
+  },
+  saveState: "saved",
+  chips: [],
+  why: null,
+  blocks: [],
+  tasks: [],
+  relatedDocs: [],
+  toc: [],
+  comments: [],
+  panelTab: "links",
+  overlay: NONE,
+  mentionTasks: [],
+} as const;

@@ -309,6 +309,9 @@ const ARCHITECTURE_MANIFEST_SOURCE = [
       "@notrelix/docs-collaboration",
       "@notrelix/ui-web",
       "@notrelix/platform",
+      // FE-ADR-006: catalogs are owned by the package that renders the copy;
+      // the document page ships its own vi/en catalog (Final-Docs).
+      "@notrelix/i18n",
     ],
     allowedVerificationInternalImports: ["@notrelix/testing"],
   },

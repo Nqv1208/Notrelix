@@ -4,34 +4,14 @@
   "inventory": {
     "excludedSources": [
       {
-        "path": "src/components/doc-page-surfaces.tsx",
-        "category": "nonvisual-composition",
-        "reason": "Retained re-export barrel so stories/tests/fixtures keep one import path; individual page surfaces are registered separately."
-      },
-      {
         "path": "src/components/doc-page-screen.tsx",
         "category": "container",
-        "reason": "Container composing DocPageScreenSurface with document query state."
+        "reason": "Container owning the document queries, the editor writes, the panel and overlay state and the host-composed facts; it composes the registered docs.page.screen surface."
       },
       {
-        "path": "src/components/doc-page-tree.tsx",
-        "category": "container",
-        "reason": "Container composing DocPageTreeSurface with page-tree navigation state."
-      },
-      {
-        "path": "src/components/doc-page-header.tsx",
-        "category": "container",
-        "reason": "Container composing DocPageHeaderSurface with document actions."
-      },
-      {
-        "path": "src/components/doc-comments.tsx",
-        "category": "container",
-        "reason": "Container composing DocPageCommentsSurface with comment state."
-      },
-      {
-        "path": "src/components/doc-history.tsx",
-        "category": "container",
-        "reason": "Container composing DocPageHistorySurface with document history state."
+        "path": "src/components/doc-page-surfaces.tsx",
+        "category": "nonvisual-composition",
+        "reason": "Barrel re-exporting the page surfaces so stories, fixtures and tests keep one import path; each surface is registered separately."
       }
     ]
   },
@@ -41,20 +21,12 @@
       "owner": "@notrelix/docs-web",
       "surfaceKind": "composition",
       "pureEntry": "src/components/doc-page-screen-surface.tsx",
-      "coveredSources": [],
+      "coveredSources": ["src/components/doc-page-ui.tsx"],
       "stories": [
         {
           "id": "docs-page-surfaces--page-screen-default",
           "state": "Default",
           "visualTargets": [
-            {
-              "viewport": "mobile",
-              "theme": "light"
-            },
-            {
-              "viewport": "tablet",
-              "theme": "light"
-            },
             {
               "viewport": "desktop",
               "theme": "light"
@@ -62,6 +34,114 @@
             {
               "viewport": "desktop",
               "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "docs-page-surfaces--page-screen-comments",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "docs-page-surfaces--page-screen-contents",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "docs-page-surfaces--page-screen-file-menu",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "docs-page-surfaces--page-screen-slash-menu",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "docs-page-surfaces--page-screen-mention-menu",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "docs-page-surfaces--page-screen-share",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "docs-page-surfaces--page-screen-version-history",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "docs-page-surfaces--page-screen-loading",
+          "state": "Loading",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
             }
           ]
         },
@@ -76,8 +156,8 @@
           ]
         },
         {
-          "id": "docs-page-surfaces--page-screen-edge-data",
-          "state": "EdgeData",
+          "id": "docs-page-surfaces--page-screen-read-only",
+          "state": "ReadOnly",
           "visualTargets": [
             {
               "viewport": "desktop",
@@ -86,8 +166,18 @@
           ]
         },
         {
-          "id": "docs-page-surfaces--page-screen-loading",
-          "state": "Loading",
+          "id": "docs-page-surfaces--page-screen-save-error",
+          "state": "Error",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "docs-page-surfaces--page-screen-not-found",
+          "state": "Unavailable",
           "visualTargets": [
             {
               "viewport": "desktop",
@@ -97,116 +187,52 @@
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "Empty", "EdgeData", "Loading"],
+        "required": [
+          "Default",
+          "Loading",
+          "Empty",
+          "Error",
+          "ReadOnly",
+          "Unavailable"
+        ],
         "delegated": [],
         "notApplicable": [
           {
-            "state": "Error",
-            "reason": "Document fetch failure is surfaced through the workspace shell error boundary; the screen renders Loading, Empty, and ready presentations.",
+            "state": "EdgeData",
+            "reason": "Long titles and many blocks reflow inside the same page sheet; the article story carries the long-content case.",
             "authority": "frontend-ui-readiness.spec.md §9.3"
           }
         ]
       },
-      "responsive": true,
+      "responsive": false,
       "themeAware": true,
       "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
           "id": "render",
           "testFile": "src/components/__tests__/doc-page-surfaces.interaction.component.test.tsx"
-        }
-      ]
-    },
-    {
-      "surfaceId": "docs.page.tree",
-      "owner": "@notrelix/docs-web",
-      "surfaceKind": "navigation",
-      "pureEntry": "src/components/doc-page-tree-surface.tsx",
-      "coveredSources": [],
-      "stories": [
-        {
-          "id": "docs-page-surfaces--page-tree-default",
-          "state": "Default",
-          "visualTargets": [
-            {
-              "viewport": "mobile",
-              "theme": "light"
-            },
-            {
-              "viewport": "tablet",
-              "theme": "light"
-            },
-            {
-              "viewport": "desktop",
-              "theme": "light"
-            },
-            {
-              "viewport": "desktop",
-              "theme": "dark"
-            }
-          ]
         },
         {
-          "id": "docs-page-surfaces--page-tree-empty",
-          "state": "Empty",
-          "visualTargets": [
-            {
-              "viewport": "desktop",
-              "theme": "light"
-            }
-          ]
+          "id": "states",
+          "testFile": "src/components/__tests__/doc-page-surfaces.interaction.component.test.tsx"
         },
         {
-          "id": "docs-page-surfaces--page-tree-edge-data",
-          "state": "EdgeData",
-          "visualTargets": [
-            {
-              "viewport": "desktop",
-              "theme": "light"
-            }
-          ]
-        }
-      ],
-      "stateCoverage": {
-        "required": ["Default", "Empty", "EdgeData"],
-        "delegated": [],
-        "notApplicable": [
-          {
-            "state": "ReadOnly",
-            "reason": "No product-authoritative read-only contract exists for the page tree at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
-          }
-        ]
-      },
-      "responsive": true,
-      "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
-      "interactionCases": [
-        {
-          "id": "render",
+          "id": "versions",
           "testFile": "src/components/__tests__/doc-page-surfaces.interaction.component.test.tsx"
         }
       ]
     },
     {
-      "surfaceId": "docs.page.header",
+      "surfaceId": "docs.page.bar",
       "owner": "@notrelix/docs-web",
       "surfaceKind": "shell",
-      "pureEntry": "src/components/doc-page-header-surface.tsx",
+      "pureEntry": "src/components/doc-page-bar-surface.tsx",
       "coveredSources": [],
       "stories": [
         {
-          "id": "docs-page-surfaces--header-default",
+          "id": "docs-page-surfaces--bar-default",
           "state": "Default",
           "visualTargets": [
-            {
-              "viewport": "mobile",
-              "theme": "light"
-            },
-            {
-              "viewport": "tablet",
-              "theme": "light"
-            },
             {
               "viewport": "desktop",
               "theme": "light"
@@ -218,8 +244,8 @@
           ]
         },
         {
-          "id": "docs-page-surfaces--header-edge-data",
-          "state": "EdgeData",
+          "id": "docs-page-surfaces--bar-save-error",
+          "state": "Error",
           "visualTargets": [
             {
               "viewport": "desktop",
@@ -229,50 +255,42 @@
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "EdgeData"],
+        "required": ["Default", "Error"],
         "delegated": [],
         "notApplicable": [
           {
             "state": "Loading",
-            "reason": "The header renders resolved page metadata passed by the page screen; loading presentation is owned by docs.page.screen.",
+            "reason": "The bar renders resolved page metadata; loading is owned by docs.page.screen.",
             "authority": "frontend-ui-readiness.spec.md §9.3"
           },
           {
-            "state": "Error",
-            "reason": "The header renders resolved page metadata passed by the page screen; fetch failure presentation is owned by the workspace shell error boundary.",
+            "state": "EdgeData",
+            "reason": "The crumb truncates and the bar wraps; no separate data shape.",
             "authority": "frontend-ui-readiness.spec.md §9.3"
           }
         ]
       },
-      "responsive": true,
+      "responsive": false,
       "themeAware": true,
       "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
-          "id": "render",
+          "id": "actions",
           "testFile": "src/components/__tests__/doc-page-surfaces.interaction.component.test.tsx"
         }
       ]
     },
     {
-      "surfaceId": "docs.comments",
+      "surfaceId": "docs.page.toolbar",
       "owner": "@notrelix/docs-web",
-      "surfaceKind": "data",
-      "pureEntry": "src/components/doc-page-comments-surface.tsx",
-      "coveredSources": [],
+      "surfaceKind": "shell",
+      "pureEntry": "src/components/doc-toolbar-surface.tsx",
+      "coveredSources": ["src/components/doc-file-menu-surface.tsx"],
       "stories": [
         {
-          "id": "docs-page-surfaces--comments-default",
+          "id": "docs-page-surfaces--toolbar-default",
           "state": "Default",
           "visualTargets": [
-            {
-              "viewport": "mobile",
-              "theme": "light"
-            },
-            {
-              "viewport": "tablet",
-              "theme": "light"
-            },
             {
               "viewport": "desktop",
               "theme": "light"
@@ -284,7 +302,116 @@
           ]
         },
         {
-          "id": "docs-page-surfaces--comments-empty",
+          "id": "docs-page-surfaces--toolbar-file-menu",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default"],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "Loading",
+            "reason": "The toolbar has no data of its own.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "Error",
+            "reason": "Unavailable tools are disabled with the stated reason, not an error.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "EdgeData",
+            "reason": "The tool row wraps at narrow widths; no data-dependent content.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          }
+        ]
+      },
+      "responsive": false,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "menus",
+          "testFile": "src/components/__tests__/doc-page-surfaces.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "docs.page.article",
+      "owner": "@notrelix/docs-web",
+      "surfaceKind": "composition",
+      "pureEntry": "src/components/doc-article-surface.tsx",
+      "coveredSources": ["src/components/doc-popups-surface.tsx"],
+      "stories": [
+        {
+          "id": "docs-page-surfaces--article-default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "docs-page-surfaces--article-slash-menu",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "docs-page-surfaces--article-mention-menu",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "docs-page-surfaces--article-version-compare",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "docs-page-surfaces--article-empty",
           "state": "Empty",
           "visualTargets": [
             {
@@ -292,78 +419,54 @@
               "theme": "light"
             }
           ]
-        },
-        {
-          "id": "docs-page-surfaces--comments-edge-data",
-          "state": "EdgeData",
-          "visualTargets": [
-            {
-              "viewport": "desktop",
-              "theme": "light"
-            }
-          ]
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "Empty", "EdgeData"],
+        "required": ["Default", "Empty"],
         "delegated": [],
         "notApplicable": [
           {
             "state": "Loading",
-            "reason": "Comments render resolved thread data passed by the page screen; query loading presentation is owned by the page screen.",
+            "reason": "Loading is owned by docs.page.screen.",
             "authority": "frontend-ui-readiness.spec.md §9.3"
           },
           {
             "state": "Error",
-            "reason": "Comments render resolved thread data passed by the page screen; query error presentation is owned by the page screen.",
+            "reason": "Save failure is shown by docs.page.bar.",
             "authority": "frontend-ui-readiness.spec.md §9.3"
           },
           {
-            "state": "HighDensity",
-            "reason": "Comments render a scrollable thread without a density cap; high-density input is exercised by the EdgeData story.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
-          },
-          {
-            "state": "ReadOnly",
-            "reason": "No product-authoritative read-only contract exists for page comments at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
-          },
-          {
-            "state": "PermissionLimited",
-            "reason": "No product-authoritative permission-limited capability contract exists for page comments at this baseline.",
+            "state": "EdgeData",
+            "reason": "Long text wraps inside the 700 px sheet; the default story carries long task titles.",
             "authority": "frontend-ui-readiness.spec.md §9.3"
           }
         ]
       },
-      "responsive": true,
+      "responsive": false,
       "themeAware": true,
       "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
-          "id": "render",
+          "id": "editing",
+          "testFile": "src/components/__tests__/doc-page-surfaces.interaction.component.test.tsx"
+        },
+        {
+          "id": "mention",
           "testFile": "src/components/__tests__/doc-page-surfaces.interaction.component.test.tsx"
         }
       ]
     },
     {
-      "surfaceId": "docs.history",
+      "surfaceId": "docs.page.side-panel",
       "owner": "@notrelix/docs-web",
-      "surfaceKind": "data",
-      "pureEntry": "src/components/doc-page-history-surface.tsx",
+      "surfaceKind": "composition",
+      "pureEntry": "src/components/doc-side-panel-surface.tsx",
       "coveredSources": [],
       "stories": [
         {
-          "id": "docs-page-surfaces--history-default",
+          "id": "docs-page-surfaces--side-panel-links",
           "state": "Default",
           "visualTargets": [
-            {
-              "viewport": "mobile",
-              "theme": "light"
-            },
-            {
-              "viewport": "tablet",
-              "theme": "light"
-            },
             {
               "viewport": "desktop",
               "theme": "light"
@@ -375,18 +478,36 @@
           ]
         },
         {
-          "id": "docs-page-surfaces--history-empty",
-          "state": "Empty",
+          "id": "docs-page-surfaces--side-panel-contents",
+          "state": "Default",
           "visualTargets": [
             {
               "viewport": "desktop",
               "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
             }
           ]
         },
         {
-          "id": "docs-page-surfaces--history-edge-data",
-          "state": "EdgeData",
+          "id": "docs-page-surfaces--side-panel-comments",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "docs-page-surfaces--side-panel-empty",
+          "state": "Empty",
           "visualTargets": [
             {
               "viewport": "desktop",
@@ -396,42 +517,148 @@
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "Empty", "EdgeData"],
+        "required": ["Default", "Empty"],
         "delegated": [],
         "notApplicable": [
           {
             "state": "Loading",
-            "reason": "History renders resolved revision data passed by the page screen; query loading presentation is owned by the page screen.",
+            "reason": "Loading is owned by docs.page.screen.",
             "authority": "frontend-ui-readiness.spec.md §9.3"
           },
           {
             "state": "Error",
-            "reason": "History renders resolved revision data passed by the page screen; query error presentation is owned by the page screen.",
+            "reason": "Failures surface through the host.",
             "authority": "frontend-ui-readiness.spec.md §9.3"
           },
           {
-            "state": "HighDensity",
-            "reason": "History renders a bounded revision list; high-density input is exercised by the EdgeData story.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
-          },
-          {
-            "state": "ReadOnly",
-            "reason": "No product-authoritative read-only contract exists for page history at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
-          },
-          {
-            "state": "PermissionLimited",
-            "reason": "No product-authoritative permission-limited capability contract exists for page history at this baseline.",
+            "state": "EdgeData",
+            "reason": "Long titles wrap in the 276 px column.",
             "authority": "frontend-ui-readiness.spec.md §9.3"
           }
         ]
       },
-      "responsive": true,
+      "responsive": false,
       "themeAware": true,
       "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
-          "id": "render",
+          "id": "tabs",
+          "testFile": "src/components/__tests__/doc-page-surfaces.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "docs.page.versions",
+      "owner": "@notrelix/docs-web",
+      "surfaceKind": "composition",
+      "pureEntry": "src/components/doc-versions-surface.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "docs-page-surfaces--versions-default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "docs-page-surfaces--versions-empty",
+          "state": "Empty",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default", "Empty"],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "Loading",
+            "reason": "Loading is owned by docs.page.screen.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "Error",
+            "reason": "Failures surface through the host.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "EdgeData",
+            "reason": "The list scrolls; rows wrap.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          }
+        ]
+      },
+      "responsive": false,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "select",
+          "testFile": "src/components/__tests__/doc-page-surfaces.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "docs.page.share",
+      "owner": "@notrelix/docs-web",
+      "surfaceKind": "composition",
+      "pureEntry": "src/components/doc-share-dialog-surface.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "docs-page-surfaces--share-default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default"],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "Loading",
+            "reason": "The dialog opens with resolved page access.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "Error",
+            "reason": "Invite and permission writes are not available until Governance exposes page access.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "EdgeData",
+            "reason": "Long names truncate in the people list.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          }
+        ]
+      },
+      "responsive": false,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "dialog",
           "testFile": "src/components/__tests__/doc-page-surfaces.interaction.component.test.tsx"
         }
       ]

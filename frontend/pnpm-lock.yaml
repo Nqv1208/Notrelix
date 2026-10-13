@@ -1251,6 +1251,9 @@ importers:
       '@notrelix/docs-state':
         specifier: workspace:*
         version: link:../state
+      '@notrelix/i18n':
+        specifier: workspace:*
+        version: link:../../../foundation/i18n
       '@notrelix/platform':
         specifier: workspace:*
         version: link:../../../foundation/platform

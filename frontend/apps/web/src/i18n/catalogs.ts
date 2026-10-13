@@ -17,6 +17,7 @@ import {
   accountSecurityCatalog,
 } from "@notrelix/features-account";
 import { notificationBellCatalog } from "@notrelix/features-notifications";
+import { docPageCatalog } from "@notrelix/docs-web";
 import {
   boardHeaderCatalog,
   calendarCatalog,
@@ -48,6 +49,7 @@ export const webCatalogs: readonly MessageCatalog[] = [
   itemSheetCatalog,
   boardHeaderCatalog,
   notificationBellCatalog,
+  docPageCatalog,
   accountNavCatalog,
   accountProfileCatalog,
   accountAppearanceCatalog,

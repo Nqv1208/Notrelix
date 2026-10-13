@@ -20,6 +20,7 @@
     "@notrelix/docs-collaboration": "workspace:*",
     "@notrelix/docs-core": "workspace:*",
     "@notrelix/docs-state": "workspace:*",
+    "@notrelix/i18n": "workspace:*",
     "@notrelix/platform": "workspace:*",
     "@notrelix/ui-web": "workspace:*",
     "lucide-react": "^0.562.0",
