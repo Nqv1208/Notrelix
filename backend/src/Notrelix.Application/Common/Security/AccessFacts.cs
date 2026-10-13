@@ -43,6 +43,12 @@ public sealed record AccessFacts(
     /// Null for any other resource.
     /// </summary>
     public Guid? ParentBoardId { get; init; }
+
+    /// <summary>
+    /// The resource is of a Board child kind, whether or not its Board could be
+    /// resolved; a Board child without <see cref="ParentBoardId"/> is NotFound.
+    /// </summary>
+    public bool IsBoardChild { get; init; }
 }
 
 public sealed record AccessPermissionRule(int Priority, string Effect);

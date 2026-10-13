@@ -16,7 +16,8 @@ namespace Notrelix.Infrastructure.Data.Authz;
 /// decided on — the Board itself, or the parent Board of a Board child resource
 /// (<c>@board_child</c>) supplied from the Work Management-published relation;
 /// the Board's lifecycle, audience, membership, Space and grants then answer for
-/// the child, and an explicit grant on the child itself still counts. Only
+/// the child (permission rules scoped to the Board included), and an explicit
+/// grant on the child itself still counts. Only
 /// work.boards and work.board_members are read here (WG-DEBT-006 unchanged). ResourceVisibilityQuery encodes the same decision for
 /// collections and is pinned to the engine by the PostgreSQL parity suite.
 /// </remarks>
@@ -91,7 +92,9 @@ public static class AccessFactsQuery
                     OR (pr.subject_type = 'Team' AND pr.subject_id IN (SELECT team_id FROM user_teams)))
                AND (pr.scope_type = 'Workspace'
                     OR ((pr.resource_type IS NULL OR pr.resource_type = @resource_type)
-                        AND (pr.resource_id IS NULL OR pr.resource_id = @resource_id)))
+                        AND (pr.resource_id IS NULL OR pr.resource_id = @resource_id))
+                    OR (@board_child AND pr.resource_type = 'work-management.board'
+                        AND (pr.resource_id IS NULL OR pr.resource_id = @board_id)))
            ), '[]'::jsonb)::text,
           CASE WHEN @feature_code IS NULL THEN true ELSE COALESCE((
             SELECT e.is_unlimited OR COALESCE((

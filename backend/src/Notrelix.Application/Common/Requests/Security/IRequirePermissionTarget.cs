@@ -3,8 +3,10 @@ namespace Notrelix.Application.Common.Requests.Security;
 /// <summary>
 /// Resolves which Governance permission the actor intends to affect. Used by the
 /// canonical AccessFacts query so the actor's authority and the target's existing
-/// level are computed in one facts row. Not a policy input for the authorization
-/// engine itself; network/UI circumstances must not override the engine decision.
+/// level are computed in one facts row. The engine also uses the subject to
+/// recognise a caller acting on their own access (a caller below Manager may
+/// not raise their own level); network/UI circumstances must not override the
+/// engine decision.
 /// </summary>
 public interface IRequirePermissionTarget
 {

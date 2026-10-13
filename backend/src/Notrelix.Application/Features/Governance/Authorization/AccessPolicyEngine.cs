@@ -1,4 +1,5 @@
 using Notrelix.Application.Common.Requests.Execution;
+using Notrelix.Application.Features.Governance.Public.Access;
 
 namespace Notrelix.Application.Features.Governance.Authorization;
 
@@ -48,7 +49,7 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
 
         if (descriptor.Access.RequiresPermission)
         {
-            var permission = EvaluatePermission(descriptor, facts, request);
+            var permission = EvaluatePermission(descriptor, facts, request, context.UserId);
             if (permission.Kind != AccessDecisionKind.Allowed)
             {
                 return permission;
@@ -97,7 +98,8 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
     private static AccessDecision EvaluatePermission(
         RequestDescriptor descriptor,
         AccessFacts facts,
-        object request)
+        object request,
+        Guid? actorId)
     {
         if (request is not IRequirePermission permission)
         {
@@ -121,6 +123,13 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
             return AccessDecision.Deny(AccessDecisionKind.NotFound, "Resource not found.");
         }
 
+        // A Board child whose Board cannot be resolved is NotFound in any scope;
+        // it never falls back to the resource-kind fallthrough (GOV-033).
+        if (facts.IsBoardChild && facts.ParentBoardId is null)
+        {
+            return AccessDecision.Deny(AccessDecisionKind.NotFound, "Resource not found.");
+        }
+
         if (string.Equals(role, "Owner", StringComparison.Ordinal))
         {
             return AccessDecision.Allow();
@@ -138,7 +147,7 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
 
         if (firstPriority.Any(rule => string.Equals(rule.Effect, "Allow", StringComparison.OrdinalIgnoreCase)))
         {
-            return GrantAwareAllow(request, facts, role);
+            return GrantAwareAllow(request, facts, role, actorId);
         }
 
         if (isAccount)
@@ -193,13 +202,21 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
                 return denied;
             }
 
+            // A Board child accepts only the Board-child action vocabulary; an
+            // unrelated action (a workspace-level share, Space management, …)
+            // is refused rather than gated by the Board level.
+            if (facts.ParentBoardId is not null && !IsBoardChildAction(permission.Action))
+            {
+                return AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
+            }
+
             if (permission.Action == PermissionAction.UpdateItem
                 && string.Equals(facts.ResourceMemberRole, "Observer", StringComparison.Ordinal))
             {
                 return AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
             }
 
-            return ManageAwareAllow(permission, request, facts, role, access.EffectiveRank);
+            return ManageAwareAllow(permission, request, facts, role, access.EffectiveRank, actorId);
         }
 
         if (permission.Resource?.Kind.Value == "documents.page")
@@ -229,7 +246,7 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
                 return AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
             }
 
-            return ManageAwareAllow(permission, request, facts, role, access.EffectiveRank);
+            return ManageAwareAllow(permission, request, facts, role, access.EffectiveRank, actorId);
         }
 
         // M8 intended policy: connecting/revoking external provider
@@ -283,7 +300,7 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
                 return AccessDecision.Deny(AccessDecisionKind.NotFound, "Resource not found.");
             }
 
-            return GrantAwareAllow(request, facts, role);
+            return GrantAwareAllow(request, facts, role, actorId);
         }
 
         return permission.Action is PermissionAction.ViewWorkspace or PermissionAction.ViewBoard or PermissionAction.ViewMembers
@@ -351,7 +368,8 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
         object request,
         AccessFacts facts,
         string? role,
-        int effectiveRank)
+        int effectiveRank,
+        Guid? actorId)
     {
         var isManagementAction = permission.Action
             is PermissionAction.ManageBoardPermission or PermissionAction.ManagePagePermission;
@@ -362,17 +380,32 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
             return AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
         }
 
-        return GrantAwareAllow(request, facts, role, effectiveRank);
+        return GrantAwareAllow(request, facts, role, effectiveRank, actorId);
     }
 
-    private static AccessDecision GrantAwareAllow(object request, AccessFacts facts, string? role) =>
-        GrantAwareAllow(request, facts, role, facts.ActiveResourcePermissionRank ?? 0);
+    private static AccessDecision GrantAwareAllow(object request, AccessFacts facts, string? role, Guid? actorId) =>
+        GrantAwareAllow(request, facts, role, facts.ActiveResourcePermissionRank ?? 0, actorId);
 
-    private static AccessDecision GrantAwareAllow(object request, AccessFacts facts, string? role, int effectiveRank)
+    /// <summary>
+    /// Grant ceiling: the caller's authority (their effective level, Owner for a
+    /// workspace Owner) must reach the requested level and any higher level the
+    /// target already holds. A caller below Manager may not raise their own board
+    /// role (assigning a board role is a grant of its level, see
+    /// <see cref="BoardRoleLevels"/>): that would lift limits such as Observer's.
+    /// </summary>
+    private static AccessDecision GrantAwareAllow(object request, AccessFacts facts, string? role, int effectiveRank, Guid? actorId)
     {
         if (request is IRequireGrantPermission grant)
         {
             var authority = EffectiveGrantAuthority(effectiveRank, role);
+            if (authority < ManagerRank
+                && request is IRequirePermissionTarget { TargetSubjectType: "User", TargetSubjectId: { } target }
+                && actorId is { } actor && target == actor
+                && grant.RequestedPermissionRank > BoardRoleLevels.RankOf(facts.ResourceMemberRole))
+            {
+                return AccessDecision.Deny(AccessDecisionKind.Forbidden, "You cannot raise your own access level.");
+            }
+
             var ceiling = grant.RequestedPermissionRank;
             if (facts.TargetPermissionRank is { } existingRank && existingRank > ceiling)
             {
@@ -498,13 +531,15 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
     /// Guest → Viewer (no documented edit semantics; least privilege). An
     /// unknown role reads only.
     /// </summary>
-    private static int BoardRoleRank(string boardRole) => boardRole switch
-    {
-        "Owner" or "Admin" => ManagerRank,
-        "Member" => EditorRank,
-        "Observer" or "Guest" => ViewerRank,
-        _ => ViewerRank,
-    };
+    private static int BoardRoleRank(string boardRole) => BoardRoleLevels.RankOf(boardRole);
+
+    /// <summary>The actions a Board child resource accepts (GOV-033).</summary>
+    private static bool IsBoardChildAction(PermissionAction action) => action
+        is PermissionAction.ViewBoard or PermissionAction.ViewMembers or PermissionAction.CreateComment
+        or PermissionAction.CreateItem or PermissionAction.UpdateItem or PermissionAction.MoveItem or PermissionAction.AssignItem
+        or PermissionAction.CreateField or PermissionAction.UpdateField or PermissionAction.DeleteField
+        or PermissionAction.CreateBoardView or PermissionAction.UpdateBoardView
+        or PermissionAction.ManageBoard or PermissionAction.ManageBoardPermission;
 
     /// <summary>
     /// GOV-028 for a Space resource: invisible (or missing) → NotFound; otherwise

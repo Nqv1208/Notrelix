@@ -1,16 +1,24 @@
 using BoardEntity = global::Notrelix.Domain.WorkManagement.Boards.Board;
 using BoardMemberEntity = global::Notrelix.Domain.WorkManagement.Boards.BoardMember;
 using global::Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.Governance.Public.Access;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.Boards.Commands.UpdateBoardMemberRole;
 
 [IdempotencyOperation("work-management.boards.update-board-member-role.v1")]
 public record UpdateBoardMemberRoleCommand(Guid BoardId, Guid UserId, BoardRole Role)
-    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequireGrantPermission, IRequirePermissionTarget, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);
+
+    // A board role carries a level: changing it is a grant of that level to
+    // the target user, bounded by the caller's own level on the Board.
+    int IRequireGrantPermission.RequestedPermissionRank => BoardRoleLevels.RankOf(Role.ToString());
+    string? IRequirePermissionTarget.TargetSubjectType => "User";
+    Guid? IRequirePermissionTarget.TargetSubjectId => UserId;
+    Guid? IRequirePermissionTarget.TargetPermissionId => null;
 }
 
 public class UpdateBoardMemberRoleCommandHandler : IRequestHandler<UpdateBoardMemberRoleCommand, Result>
