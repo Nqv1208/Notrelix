@@ -171,7 +171,7 @@
   --color-meta-foreground: var(--meta-foreground);
   --color-line: var(--line);
   --color-line-strong: var(--line-strong);
-  --color-key: var(--key);
+  --color-keycap: var(--keycap);
 
   /* State set. */
   --color-state-hover: var(--state-hover);

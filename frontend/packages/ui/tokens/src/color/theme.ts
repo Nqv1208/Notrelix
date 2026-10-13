@@ -140,7 +140,7 @@ export function buildAppearanceColors(
     "meta-foreground": nr.textMeta,
     line: nr.line,
     "line-strong": nr.lineStrong,
-    key: nr.key,
+    keycap: nr.key,
     "text-strong": nr.text,
     "text-muted": nr.textMuted,
     icon: nr.textMuted,
