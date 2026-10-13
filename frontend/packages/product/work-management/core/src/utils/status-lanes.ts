@@ -156,6 +156,14 @@ function orderOptions(options: readonly FieldOption[]): FieldOption[] {
   return orderByKey(options, (option) => option.position);
 }
 
+/** Prefix of the id an option carries between its optimistic add and the refetch. */
+export const OPTIMISTIC_OPTION_ID_PREFIX = "optimistic-option-";
+
+/** Whether an option exists only locally so far (the server has not answered). */
+export function isOptimisticOptionId(optionId: string | null | undefined): boolean {
+  return Boolean(optionId?.startsWith(OPTIMISTIC_OPTION_ID_PREFIX));
+}
+
 export function normalizeName(value: string): string {
   return value
     .normalize("NFD")

@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { KanbanBoard } from "./kanban-board";
 import { kanbanCardCopy } from "./kanban-card.copy";
 import { kanbanLaneCopy } from "./kanban-lane.copy";
+import { statusOptionFormCopy } from "../../status-option/status-option-form.copy";
 import {
   KANBAN_STORY_NOW,
   erpKanbanDenseLanes,
@@ -27,6 +28,9 @@ const meta = {
     onOpenDetails: noOp,
     onDropCard: noOp,
     onCreateItem: noOp,
+    formCopy: statusOptionFormCopy("vi"),
+    onCreateLane: noOp,
+    onUpdateLane: noOp,
   },
 } satisfies Meta<typeof KanbanBoard>;
 export default meta;
@@ -52,10 +56,20 @@ export const HighDensity: Story = {
   tags: ["fui-surface--wm.kanban.board", "fui-state--HighDensity"],
 };
 export const ReadOnly: Story = {
-  args: { canAdd: false, canDrag: false },
+  args: {
+    canAdd: false,
+    canDrag: false,
+    formCopy: undefined,
+    onCreateLane: undefined,
+    onUpdateLane: undefined,
+  },
   tags: ["fui-surface--wm.kanban.board", "fui-state--ReadOnly"],
 };
 export const English: Story = {
-  args: { copy: kanbanLaneCopy("en"), cardCopy: kanbanCardCopy("en") },
+  args: {
+    copy: kanbanLaneCopy("en"),
+    cardCopy: kanbanCardCopy("en"),
+    formCopy: statusOptionFormCopy("en"),
+  },
   tags: ["fui-surface--wm.kanban.board", "fui-state--EdgeData"],
 };

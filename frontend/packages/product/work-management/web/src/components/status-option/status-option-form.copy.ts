@@ -29,6 +29,14 @@ export const en = {
   errorEmpty: "Enter a status name.",
   errorDuplicate: "A status named “{{name}}” already exists.",
   errorTooLong: "Use 200 characters or fewer.",
+  /** The same form for an option of another Select field (no group): "value". */
+  valueTitleCreate: "New value",
+  valueTitleEdit: "Edit value",
+  valueNameLabel: "Value name",
+  valueNamePlaceholder: "Value name…",
+  valueSubmitCreate: "Add value",
+  valueErrorEmpty: "Enter a value name.",
+  valueErrorDuplicate: "A value named “{{name}}” already exists.",
 };
 
 export type StatusOptionFormCopy = typeof en;
@@ -58,6 +66,13 @@ export const vi: StatusOptionFormCopy = {
   errorEmpty: "Nhập tên trạng thái.",
   errorDuplicate: "Đã có trạng thái tên “{{name}}”.",
   errorTooLong: "Tối đa 200 ký tự.",
+  valueTitleCreate: "Giá trị mới",
+  valueTitleEdit: "Sửa giá trị",
+  valueNameLabel: "Tên giá trị",
+  valueNamePlaceholder: "Nhập tên giá trị…",
+  valueSubmitCreate: "Thêm giá trị",
+  valueErrorEmpty: "Nhập tên giá trị.",
+  valueErrorDuplicate: "Đã có giá trị tên “{{name}}”.",
 };
 
 export function statusOptionFormCopy(

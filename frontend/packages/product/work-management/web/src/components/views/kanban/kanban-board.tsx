@@ -1,17 +1,37 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
-  closestCorners,
   DndContext,
-  PointerSensor,
+  DragOverlay,
+  MeasuringStrategy,
+  MouseSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   type DragEndEvent,
+  type DragOverEvent,
+  type DragStartEvent,
+  type DropAnimation,
 } from "@dnd-kit/core";
-import type { KanbanStatusLane } from "@notrelix/work-management-core";
+import type { Card, KanbanStatusLane } from "@notrelix/work-management-core";
+import type { StatusOptionDraft } from "../../status-option/status-option-form";
+import type { StatusOptionFormCopy } from "../../status-option/status-option-form.copy";
+import { KanbanAddLane } from "./kanban-add-lane";
 import { pluralCopy, type KanbanCardCopy } from "./kanban-card.copy";
+import { KanbanCardOverlay } from "./kanban-card";
+import { prefersReducedMotion } from "./kanban-chrome";
+import {
+  KANBAN_CARD_TYPE,
+  KANBAN_LANE_TYPE,
+  kanbanCollisionDetection,
+} from "./kanban-collision";
 import { KanbanColumn } from "./kanban-column";
 import {
-  getKanbanLaneDrop,
+  arrangeKanbanLanes,
+  getKanbanDrop,
+  kanbanLaneKey,
+  laneKeyOfCard,
+  moveCardInArrangement,
+  type KanbanArrangement,
   type KanbanGroupOrder,
   type KanbanLaneDrop,
 } from "./kanban-dnd";
@@ -36,7 +56,7 @@ export interface KanbanBoardProps {
   filterActive: boolean;
   /** "Thêm vào {lane}" is offered. */
   canAdd: boolean;
-  /** Cards can be dragged between and within lanes (pointer only). */
+  /** Cards can be dragged between and within lanes (pointer and touch). */
   canDrag: boolean;
   /**
    * The grouping field's kind: names the lane without a value ("Không có
@@ -46,20 +66,47 @@ export interface KanbanBoardProps {
   /** Changing this number opens the add field of the first open lane. */
   addRequest?: number;
   onOpenDetails: (cardId: string) => void;
-  /** A card was dropped: another lane's value, or a reorder in its group. */
+  /** A card was dropped: another lane's value, a place in a lane, or a reorder. */
   onDropCard: (drop: KanbanLaneDrop) => void;
   onCreateItem: (lane: KanbanStatusLane, title: string) => void;
+  /**
+   * The status form's copy. With it (and the callbacks below) the viewer can
+   * add a lane after the last one and rename or recolour a lane.
+   */
+  formCopy?: StatusOptionFormCopy;
+  /** Add a lane: a new option of the grouping field. */
+  onCreateLane?: (draft: StatusOptionDraft) => void;
+  /** Rename or recolour a lane's option. */
+  onUpdateLane?: (lane: KanbanStatusLane, draft: StatusOptionDraft) => void;
+  /** A lane create is in flight. */
+  lanePending?: boolean;
 }
 
 function laneKey(lane: KanbanStatusLane): string {
-  return lane.optionId ?? "none";
+  return kanbanLaneKey(lane.optionId);
+}
+
+interface DragState {
+  readonly cardId: string;
+  readonly arrangement: KanbanArrangement;
+}
+
+/** The overlay settles into the slot it is dropped in; reduced motion skips it. */
+function dropAnimation(): DropAnimation | null {
+  return prefersReducedMotion()
+    ? null
+    : { duration: 200, easing: "cubic-bezier(0.2, 0, 0, 1)" };
 }
 
 /**
  * The Kanban lanes, side by side. Collapsing and hiding a lane are view
  * conveniences kept on this screen only; "Hiện N cột đã ẩn" brings hidden
- * lanes back. A drag is pointer-only; the keyboard alternative is the item
- * sheet's status pill.
+ * lanes back. A card is dragged by its whole body (mouse: after a few pixels,
+ * touch: after a long press): a copy of it follows the pointer while the card
+ * stays in the lane it would be dropped in as a gap of its own height, the
+ * lane under the pointer is outlined and the other cards make room. Escape
+ * puts everything back. The keyboard alternative is the item sheet's status
+ * pill.
  */
 export function KanbanBoard({
   lanes,
@@ -77,16 +124,125 @@ export function KanbanBoard({
   onOpenDetails,
   onDropCard,
   onCreateItem,
+  formCopy,
+  onCreateLane,
+  onUpdateLane,
+  lanePending = false,
 }: KanbanBoardProps) {
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
   const [hidden, setHidden] = useState<ReadonlySet<string>>(new Set());
-  const pointer = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+  const [drag, setDrag] = useState<DragState | null>(null);
+  const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 220, tolerance: 8 },
+    }),
   );
   const none = useSensors();
 
+  const cardsById = useMemo(() => {
+    const map = new Map<string, Card>();
+    for (const lane of lanes) {
+      for (const card of lane.cards) map.set(card.id, card);
+    }
+    return map;
+  }, [lanes]);
+
+  // While a card is dragged the lanes show the arrangement the drag made, not
+  // the lanes as stored.
+  const shownLanes = useMemo(() => {
+    if (!drag) return lanes;
+    return lanes.map((lane) => {
+      const ids = drag.arrangement.get(laneKey(lane)) ?? [];
+      const cards = ids
+        .map((id) => cardsById.get(id))
+        .filter((card): card is Card => card !== undefined);
+      return { ...lane, cards };
+    });
+  }, [lanes, drag, cardsById]);
+
+  function handleDragStart(event: DragStartEvent) {
+    if (event.active.data.current?.type !== KANBAN_CARD_TYPE) return;
+    setDrag({
+      cardId: String(event.active.id),
+      arrangement: arrangeKanbanLanes(lanes),
+    });
+  }
+
+  /**
+   * The lane key and the index at which the dragged card goes, over `over`
+   * (an index into the lane without the dragged card). Inside its own lane
+   * the card takes the place of the card it is over, like the sortable's own
+   * animation shows; in another lane it goes before or after the card it is
+   * over, by which half of it the dragged card is on. `null`: no change.
+   */
+  function placeOver(
+    arrangement: KanbanArrangement,
+    event: DragOverEvent | DragEndEvent,
+  ): { key: string; index: number } | null {
+    const { active, over } = event;
+    if (!over || over.id === active.id) return null;
+    const activeId = String(active.id);
+    const activeKey = laneKeyOfCard(arrangement, activeId);
+    if (over.data.current?.type === KANBAN_LANE_TYPE) {
+      const key = over.data.current?.laneKey as string;
+      if (key === activeKey) return null;
+      const ids = (arrangement.get(key) ?? []).filter((id) => id !== activeId);
+      return { key, index: ids.length };
+    }
+    const key = laneKeyOfCard(arrangement, String(over.id));
+    if (key === undefined) return null;
+    const overIndex = (arrangement.get(key) ?? []).indexOf(String(over.id));
+    if (key === activeKey) return { key, index: overIndex };
+    const translated = active.rect.current.translated;
+    const below =
+      translated !== null &&
+      translated.top + translated.height / 2 >
+        over.rect.top + over.rect.height / 2;
+    return { key, index: overIndex + (below ? 1 : 0) };
+  }
+
+  function handleDragOver(event: DragOverEvent) {
+    setDrag((current) => {
+      if (!current) return current;
+      const at = placeOver(current.arrangement, event);
+      if (!at) return current;
+      const key = laneKeyOfCard(current.arrangement, current.cardId);
+      // A move inside the lane is the sortable's own animation; the board
+      // only re-arranges when the card changes lane.
+      if (key === at.key) return current;
+      const arrangement = moveCardInArrangement(
+        current.arrangement,
+        current.cardId,
+        at.key,
+        at.index,
+      );
+      return arrangement === current.arrangement
+        ? current
+        : { ...current, arrangement };
+    });
+  }
+
   function handleDragEnd(event: DragEndEvent) {
-    const drop = getKanbanLaneDrop(event, lanes, groupOrder);
+    const current = drag;
+    setDrag(null);
+    if (!current) return;
+    let arrangement = current.arrangement;
+    const at = placeOver(arrangement, event);
+    if (at) {
+      arrangement = moveCardInArrangement(
+        arrangement,
+        current.cardId,
+        at.key,
+        at.index,
+      );
+    }
+    const drop = getKanbanDrop({
+      lanes,
+      arrangement,
+      cardId: current.cardId,
+      groups: groupOrder,
+    });
     if (drop) onDropCard(drop);
   }
 
@@ -100,24 +256,55 @@ export function KanbanBoard({
   const setLaneCollapsed = toggle(setCollapsed);
   const setLaneHidden = toggle(setHidden);
 
+  // A lane that appears while its popover closes (a new status) keeps nothing
+  // of the drag; a drag that outlives its card (a refetch removed it) ends.
+  useEffect(() => {
+    if (drag && !cardsById.has(drag.cardId)) setDrag(null);
+  }, [drag, cardsById]);
+  const overlayCard = drag ? cardsById.get(drag.cardId) : undefined;
+  const currentLaneKey = drag
+    ? laneKeyOfCard(drag.arrangement, drag.cardId)
+    : undefined;
+
   if (lanes.length === 0) {
     return <KanbanEmptyState message={copy.empty} />;
   }
 
   const noValueName = groupKind === "status" ? copy.noStatus : copy.noValue;
-  const shown = lanes.filter((lane) => !hidden.has(laneKey(lane)));
+  const shown = shownLanes.filter((lane) => !hidden.has(laneKey(lane)));
   const hiddenCount = lanes.length - shown.length;
   const addLane = shown.find((lane) => !collapsed.has(laneKey(lane)));
+  const laneNames = lanes
+    .filter((lane) => lane.optionId !== null)
+    .map((lane) => lane.name);
+  const canManageLanes = formCopy !== undefined && onCreateLane !== undefined;
+  const subject = groupKind === "status" ? "status" : "value";
 
   return (
     <DndContext
-      sensors={canDrag ? pointer : none}
-      collisionDetection={closestCorners}
+      sensors={canDrag ? sensors : none}
+      collisionDetection={kanbanCollisionDetection}
+      measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
+      autoScroll={{
+        threshold: { x: 0.12, y: 0.18 },
+        acceleration: 12,
+        interval: 5,
+      }}
+      onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
+      onDragCancel={() => setDrag(null)}
     >
-      <div className="flex min-w-min items-start gap-3">
+      <div
+        data-kanban-lanes=""
+        data-dragging={drag ? "" : undefined}
+        className="flex min-w-min items-start gap-3"
+      >
         {shown.map((lane) => {
           const key = laneKey(lane);
+          const original = lanes.find(
+            (candidate) => laneKey(candidate) === key,
+          );
           return (
             <KanbanColumn
               key={key}
@@ -131,15 +318,39 @@ export function KanbanBoard({
               filterActive={filterActive}
               canAdd={canAdd}
               canDrag={canDrag}
+              dropTarget={drag !== null && currentLaneKey === key}
+              draggedCardId={drag?.cardId}
+              edit={
+                canManageLanes && onUpdateLane && original
+                  ? {
+                      formCopy,
+                      subject,
+                      otherNames: laneNames.filter(
+                        (laneName) => laneName !== lane.name,
+                      ),
+                      onSubmit: (draft) => onUpdateLane(original, draft),
+                    }
+                  : undefined
+              }
               collapsed={collapsed.has(key)}
               openAddRequest={lane === addLane ? addRequest : undefined}
               onCollapsedChange={(on) => setLaneCollapsed(key, on)}
               onHide={() => setLaneHidden(key, true)}
               onOpenDetails={onOpenDetails}
-              onCreateItem={(title) => onCreateItem(lane, title)}
+              onCreateItem={(title) => onCreateItem(original ?? lane, title)}
             />
           );
         })}
+        {canManageLanes ? (
+          <KanbanAddLane
+            copy={copy}
+            formCopy={formCopy}
+            subject={subject}
+            existingNames={laneNames}
+            pending={lanePending}
+            onCreate={onCreateLane}
+          />
+        ) : null}
         {hiddenCount > 0 ? (
           <button
             type="button"
@@ -153,6 +364,16 @@ export function KanbanBoard({
           </button>
         ) : null}
       </div>
+      <DragOverlay dropAnimation={dropAnimation()} zIndex={1500}>
+        {overlayCard ? (
+          <KanbanCardOverlay
+            card={overlayCard}
+            now={now}
+            timeZone={timeZone}
+            copy={cardCopy}
+          />
+        ) : null}
+      </DragOverlay>
     </DndContext>
   );
 }

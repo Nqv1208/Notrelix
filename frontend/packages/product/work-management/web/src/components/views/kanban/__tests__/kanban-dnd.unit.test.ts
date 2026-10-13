@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { Card, KanbanStatusLane } from "@notrelix/work-management-core";
-import { getKanbanLaneDrop, kanbanLaneDropId } from "../kanban-dnd";
+import {
+  arrangeKanbanLanes,
+  getKanbanDrop,
+  kanbanLaneDropId,
+  kanbanLaneKey,
+  laneKeyOfCard,
+  moveCardInArrangement,
+} from "../kanban-dnd";
 
 function card(id: string, listId: string, position: number): Card {
   return {
@@ -36,51 +43,90 @@ function lane(optionId: string | null, cards: Card[]): KanbanStatusLane {
 const a1 = card("a1", "g1", 1);
 const a2 = card("a2", "g1", 2);
 const a3 = card("a3", "g2", 1);
-const b1 = card("b1", "g1", 3);
+const b1 = card("b1", "g1", 5);
+const b2 = card("b2", "g1", 7);
+const n1 = card("n1", "g1", 9);
 const lanes = [
   lane("todo", [a1, a2, a3]),
-  lane("doing", [b1]),
-  lane(null, [card("n1", "g1", 9)]),
+  lane("doing", [b1, b2]),
+  lane("empty", []),
+  lane(null, [n1]),
+];
+// Group g1 in board order: a1 a2 b1 b2 n1; g2: a3.
+const groups = [
+  { id: "g1", cards: [a1, a2, b1, b2, n1] },
+  { id: "g2", cards: [a3] },
 ];
 
-type DragEnd = Parameters<typeof getKanbanLaneDrop>[0];
-
-function overCard(active: Card, over: Card): DragEnd {
-  return {
-    active: {
-      id: active.id,
-      data: { current: { type: "kanban-card", card: active } },
-    },
-    over: {
-      id: over.id,
-      data: { current: { type: "kanban-card", card: over } },
-    },
-  } as unknown as DragEnd;
+function dropOf(cardId: string, moves: [string, number][] = []) {
+  let arrangement = arrangeKanbanLanes(lanes);
+  for (const [key, index] of moves) {
+    arrangement = moveCardInArrangement(arrangement, cardId, key, index);
+  }
+  return getKanbanDrop({ lanes, arrangement, cardId, groups });
 }
 
-function overLane(active: Card, optionId: string | null): DragEnd {
-  const target = lanes.find((candidate) => candidate.optionId === optionId)!;
-  return {
-    active: {
-      id: active.id,
-      data: { current: { type: "kanban-card", card: active } },
-    },
-    over: {
-      id: kanbanLaneDropId(optionId),
-      data: { current: { type: "kanban-lane", lane: target } },
-    },
-  } as unknown as DragEnd;
-}
+describe("lane keys and the drag arrangement", () => {
+  it("names a lane by its option, and the lane without a value `none`", () => {
+    expect(kanbanLaneKey("doing")).toBe("doing");
+    expect(kanbanLaneKey(null)).toBe("none");
+    expect(kanbanLaneDropId(null)).toBe("kanban-lane:none");
+  });
 
-describe("getKanbanLaneDrop", () => {
-  it("a drop on another lane writes that lane's option", () => {
-    expect(getKanbanLaneDrop(overLane(a1, "doing"), lanes)).toEqual({
+  it("starts as the lanes are and finds the lane of a card", () => {
+    const arrangement = arrangeKanbanLanes(lanes);
+    expect(arrangement.get("todo")).toEqual(["a1", "a2", "a3"]);
+    expect(arrangement.get("empty")).toEqual([]);
+    expect(laneKeyOfCard(arrangement, "b2")).toBe("doing");
+    expect(laneKeyOfCard(arrangement, "zz")).toBeUndefined();
+  });
+
+  it("moves a card to another lane at an index and clamps the index", () => {
+    const start = arrangeKanbanLanes(lanes);
+    const moved = moveCardInArrangement(start, "a1", "doing", 1);
+    expect(moved.get("todo")).toEqual(["a2", "a3"]);
+    expect(moved.get("doing")).toEqual(["b1", "a1", "b2"]);
+    expect(
+      moveCardInArrangement(start, "a1", "doing", 99).get("doing"),
+    ).toEqual(["b1", "b2", "a1"]);
+    expect(moveCardInArrangement(start, "a1", "empty", 0).get("empty")).toEqual(
+      ["a1"],
+    );
+    // The original is untouched.
+    expect(start.get("todo")).toEqual(["a1", "a2", "a3"]);
+  });
+
+  it("reorders inside a lane, and returns the same arrangement when nothing changes", () => {
+    const start = arrangeKanbanLanes(lanes);
+    expect(moveCardInArrangement(start, "a1", "todo", 1).get("todo")).toEqual([
+      "a2",
+      "a1",
+      "a3",
+    ]);
+    expect(moveCardInArrangement(start, "a1", "todo", 0)).toBe(start);
+    expect(moveCardInArrangement(start, "a1", "nope", 0)).toBe(start);
+    expect(moveCardInArrangement(start, "zz", "todo", 0)).toBe(start);
+  });
+});
+
+describe("getKanbanDrop", () => {
+  it("a card let go where it was changes nothing", () => {
+    expect(dropOf("a1")).toBeNull();
+    expect(dropOf("a2", [["todo", 1]])).toBeNull();
+  });
+
+  it("a drop in an empty lane writes only that lane's option", () => {
+    expect(dropOf("a1", [["empty", 0]])).toEqual({
       kind: "status",
       cardId: "a1",
-      optionId: "doing",
+      optionId: "empty",
       fromOptionId: "todo",
     });
-    expect(getKanbanLaneDrop(overCard(a2, b1), lanes)).toEqual({
+  });
+
+  it("a drop on another lane where the card would sit anyway writes only the option", () => {
+    // a2 (position 2) between nothing and b1 (position 5): its natural place.
+    expect(dropOf("a2", [["doing", 0]])).toEqual({
       kind: "status",
       cardId: "a2",
       optionId: "doing",
@@ -88,68 +134,77 @@ describe("getKanbanLaneDrop", () => {
     });
   });
 
-  it("a drop in the same lane only reorders within the card's group", () => {
-    const drop = getKanbanLaneDrop(overCard(a2, a1), lanes);
-    expect(drop).toMatchObject({ kind: "reorder", cardId: "a2", listId: "g1" });
-    expect(drop?.kind === "reorder" && drop.position < a1.position).toBe(true);
+  it("a drop between two cards of another lane writes the option and the place, naming the neighbours in the group's whole order", () => {
+    // b1 b2 -> b1 a1 b2: after b1, before b2 (a1 is position 1: not its natural place).
+    expect(dropOf("a1", [["doing", 1]])).toMatchObject({
+      kind: "place",
+      cardId: "a1",
+      optionId: "doing",
+      fromOptionId: "todo",
+      listId: "g1",
+      previousSiblingId: "b1",
+      nextSiblingId: "b2",
+    });
+    const drop = dropOf("a1", [["doing", 1]]);
+    expect(drop?.kind === "place" && drop.position).toBe(6);
+    // After the last card of the lane: before the next card of the group in
+    // another lane (n1).
+    expect(dropOf("a1", [["doing", 2]])).toMatchObject({
+      kind: "place",
+      previousSiblingId: "b2",
+      nextSiblingId: "n1",
+    });
   });
 
-  it("names the new neighbours in the group's whole order, so the server keeps the order", () => {
-    // Group g1 in board order: a1, a2, b1 (b1 sits in another lane).
-    const groups = [
-      { id: "g1", cards: [a1, a2, b1] },
-      { id: "g2", cards: [a3] },
-    ];
-    // a2 dropped on a1 (moving up): before a1, nothing before it.
-    expect(getKanbanLaneDrop(overCard(a2, a1), lanes, groups)).toMatchObject({
+  it("a reorder inside the lane names the new neighbours in the group's whole order", () => {
+    // a1 dropped after a2: after a2, before b1 (b1 sits in another lane).
+    expect(dropOf("a1", [["todo", 1]])).toMatchObject({
+      kind: "reorder",
+      cardId: "a1",
+      listId: "g1",
+      previousSiblingId: "a2",
+      nextSiblingId: "b1",
+    });
+    // a2 dropped before a1: nothing before it, a1 after it.
+    expect(dropOf("a2", [["todo", 0]])).toMatchObject({
       kind: "reorder",
       cardId: "a2",
       previousSiblingId: null,
       nextSiblingId: "a1",
     });
-    // a1 dropped on a2 (moving down): after a2, before b1 of the other lane.
-    expect(getKanbanLaneDrop(overCard(a1, a2), lanes, groups)).toMatchObject({
-      kind: "reorder",
-      cardId: "a1",
-      previousSiblingId: "a2",
-      nextSiblingId: "b1",
+    const drop = dropOf("a2", [["todo", 0]]);
+    expect(drop?.kind === "reorder" && drop.position).toBeLessThan(a1.position);
+  });
+
+  it("only places a card among cards of its own group", () => {
+    // a3 (group g2) moved to the front of its lane: no other g2 card, so no change.
+    expect(dropOf("a3", [["todo", 0]])).toBeNull();
+    // a2 dropped after a3 (another group): its order among g1 cards is unchanged.
+    expect(dropOf("a2", [["todo", 2]])).toBeNull();
+  });
+
+  it("never clears a value by a drop on the lane without one", () => {
+    expect(dropOf("a1", [["none", 1]])).toBeNull();
+  });
+
+  it("returns null for a card that is not on the board", () => {
+    expect(
+      getKanbanDrop({
+        lanes,
+        arrangement: arrangeKanbanLanes(lanes),
+        cardId: "zz",
+        groups,
+      }),
+    ).toBeNull();
+  });
+
+  it("works from the lanes alone when the group order is not known", () => {
+    let arrangement = arrangeKanbanLanes(lanes);
+    arrangement = moveCardInArrangement(arrangement, "a1", "doing", 1);
+    expect(getKanbanDrop({ lanes, arrangement, cardId: "a1" })).toMatchObject({
+      kind: "place",
+      previousSiblingId: "b1",
+      nextSiblingId: "b2",
     });
-  });
-
-  it("does nothing for a same-lane drop on a card of another group, on itself, or on the lane", () => {
-    expect(getKanbanLaneDrop(overCard(a1, a3), lanes)).toBeNull();
-    expect(getKanbanLaneDrop(overCard(a1, a1), lanes)).toBeNull();
-    expect(getKanbanLaneDrop(overLane(a1, "todo"), lanes)).toBeNull();
-  });
-
-  it("never clears a status by a drop on the lane without status", () => {
-    expect(getKanbanLaneDrop(overLane(a1, null), lanes)).toBeNull();
-  });
-
-  it("ignores drops outside any lane and non-card drags", () => {
-    expect(
-      getKanbanLaneDrop(
-        {
-          active: {
-            id: "a1",
-            data: { current: { type: "kanban-card", card: a1 } },
-          },
-          over: null,
-        } as unknown as DragEnd,
-        lanes,
-      ),
-    ).toBeNull();
-    expect(
-      getKanbanLaneDrop(
-        {
-          active: { id: "x", data: { current: { type: "other" } } },
-          over: {
-            id: "b1",
-            data: { current: { type: "kanban-card", card: b1 } },
-          },
-        } as unknown as DragEnd,
-        lanes,
-      ),
-    ).toBeNull();
   });
 });

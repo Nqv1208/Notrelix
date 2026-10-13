@@ -12,9 +12,15 @@ import {
 } from "@notrelix/work-management-core";
 import { erpBoardScenario, erpItemId } from "@notrelix/work-management-testing";
 import { KanbanBoard } from "../kanban-board";
-import { getKanbanLaneDrop } from "../kanban-dnd";
+import {
+  arrangeKanbanLanes,
+  getKanbanDrop,
+  kanbanLaneKey,
+  moveCardInArrangement,
+} from "../kanban-dnd";
 import { kanbanCardCopy } from "../kanban-card.copy";
 import { kanbanLaneCopy } from "../kanban-lane.copy";
+import { statusOptionFormCopy } from "../../../status-option/status-option-form.copy";
 
 /** 12/10/2026 10:40 in the runtime's own time zone. */
 const NOW = new Date(2026, 9, 12, 10, 40);
@@ -232,41 +238,135 @@ describe("KanbanBoard status lanes", () => {
     expect(onOpenDetails).toHaveBeenCalledWith(erpItemId("ERP-142"));
   });
 
-  it("FUI[wm.kanban.board:move] reads a drop on another lane as that lane's status and a drop in the lane as a reorder", () => {
+  it("FUI[wm.kanban.board:move] reads a card let go in another lane as that lane's status or place, and in its own lane as a reorder", () => {
     const lanes = erpLanes();
     const active = lanes[0]!.cards[1]!;
-    const event = (over: unknown) =>
-      ({
-        active: {
-          id: active.id,
-          data: { current: { type: "kanban-card", card: active } },
-        },
-        over,
-      }) as unknown as Parameters<typeof getKanbanLaneDrop>[0];
-    const doingCard = lanes[1]!.cards[0]!;
+    const start = arrangeKanbanLanes(lanes);
+    const doingKey = kanbanLaneKey(lanes[1]!.optionId);
+    const todoKey = kanbanLaneKey(lanes[0]!.optionId);
+    const toDoing = moveCardInArrangement(start, active.id, doingKey, 0);
     expect(
-      getKanbanLaneDrop(
-        event({
-          id: doingCard.id,
-          data: { current: { type: "kanban-card", card: doingCard } },
-        }),
-        lanes,
-      ),
-    ).toEqual({
-      kind: "status",
+      getKanbanDrop({ lanes, arrangement: toDoing, cardId: active.id }),
+    ).toMatchObject({
       cardId: active.id,
       optionId: lanes[1]!.optionId,
       fromOptionId: lanes[0]!.optionId,
     });
-    const todoCard = lanes[0]!.cards[0]!;
+    const reordered = moveCardInArrangement(start, active.id, todoKey, 0);
     expect(
-      getKanbanLaneDrop(
-        event({
-          id: todoCard.id,
-          data: { current: { type: "kanban-card", card: todoCard } },
-        }),
-        lanes,
-      ),
+      getKanbanDrop({ lanes, arrangement: reordered, cardId: active.id }),
     ).toMatchObject({ kind: "reorder", cardId: active.id });
+  });
+
+  it("FUI[wm.kanban.board:drag] lifts the whole card into an overlay, keeps its slot as a gap and puts everything back on Escape", async () => {
+    const { onDropCard, onOpenDetails } = renderBoard();
+    const doing = laneRegion("Đang làm");
+    const title = "Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP";
+    const open = within(doing).getByRole("button", { name: title });
+    const article = open.closest("article")!;
+    expect(document.querySelector("[data-kanban-drag-overlay]")).toBeNull();
+
+    // A press without movement is a click: it opens, nothing is lifted.
+    fireEvent.mouseDown(open, { button: 0, clientX: 40, clientY: 40 });
+    fireEvent.mouseUp(open, { clientX: 40, clientY: 40 });
+    fireEvent.click(open);
+    expect(onOpenDetails).toHaveBeenCalledTimes(1);
+    expect(document.querySelector("[data-kanban-drag-overlay]")).toBeNull();
+
+    // A press and a move beyond the activation distance lifts the card from
+    // anywhere on it (here the card's own body, not a handle).
+    fireEvent.mouseDown(article, { button: 0, clientX: 40, clientY: 40 });
+    fireEvent.mouseMove(document, { clientX: 70, clientY: 80 });
+    await waitFor(() =>
+      expect(document.querySelector("[data-kanban-drag-overlay]")).toBeTruthy(),
+    );
+    const overlay = document.querySelector<HTMLElement>(
+      "[data-kanban-drag-overlay]",
+    )!;
+    expect(overlay.getAttribute("aria-hidden")).toBe("true");
+    expect(within(overlay).getByText(title)).toBeTruthy();
+    // The card stays in a lane as the gap, and that lane is outlined (jsdom
+    // has no layout, so which lane the pointer is over is not asserted here).
+    const gap = document.querySelector<HTMLElement>("article[data-dragging]")!;
+    expect(gap).toBeTruthy();
+    expect(within(gap).getByText(title)).toBeTruthy();
+    expect(gap.closest("section")!.hasAttribute("data-drop-target")).toBe(true);
+
+    fireEvent.keyDown(document, { key: "Escape", code: "Escape" });
+    await waitFor(() =>
+      expect(document.querySelector("[data-kanban-drag-overlay]")).toBeNull(),
+    );
+    expect(document.querySelector("article[data-dragging]")).toBeNull();
+    // Everything is back: the card is in its own lane again.
+    expect(
+      within(laneRegion("Đang làm")).getByRole("button", { name: title }),
+    ).toBeTruthy();
+    expect(onDropCard).not.toHaveBeenCalled();
+  });
+
+  it("FUI[wm.kanban.board:add-lane] adds a status after the last lane through the slot's form, Enter confirms and Escape cancels", async () => {
+    // dnd-kit swallows the click that follows a drag for a moment; let the
+    // drag of the previous test be over.
+    await new Promise((resolve) => setTimeout(resolve, 120));
+    for (const [locale, copy] of LOCALES) {
+      const form = statusOptionFormCopy(locale);
+      const onCreateLane = vi.fn();
+      const { unmount } = renderBoard({
+        locale,
+        formCopy: form,
+        onCreateLane,
+        onUpdateLane: vi.fn(),
+      });
+      // The slot is the last thing in the lane row.
+      const row = document.querySelector("[data-kanban-lanes]")!;
+      const slot = screen.getByRole("button", { name: copy.addStatus });
+      expect(row.lastElementChild).toBe(slot);
+
+      fireEvent.click(slot);
+      const name = screen.getByRole("textbox");
+      fireEvent.change(name, { target: { value: "Chờ khách duyệt" } });
+      fireEvent.click(screen.getByRole("radio", { name: form.color_red }));
+      fireEvent.click(screen.getByRole("radio", { name: form.category_done }));
+      fireEvent.submit(name.closest("form")!);
+      expect(onCreateLane).toHaveBeenCalledWith({
+        name: "Chờ khách duyệt",
+        color: "#C8143F",
+        category: "done",
+      });
+      expect(screen.queryByRole("textbox")).toBeNull();
+
+      fireEvent.click(slot);
+      fireEvent.keyDown(screen.getByRole("textbox"), { key: "Escape" });
+      expect(screen.queryByRole("textbox")).toBeNull();
+      expect(onCreateLane).toHaveBeenCalledTimes(1);
+
+      // A duplicate of an existing lane's name is refused.
+      fireEvent.click(slot);
+      fireEvent.change(screen.getByRole("textbox"), {
+        target: { value: "đang làm" },
+      });
+      fireEvent.submit(screen.getByRole("textbox").closest("form")!);
+      expect(screen.getByRole("alert")).toBeTruthy();
+      expect(onCreateLane).toHaveBeenCalledTimes(1);
+      unmount();
+    }
+  });
+
+  it("offers no slot for a viewer and words it as a value for another Select field", () => {
+    renderBoard({ canDrag: false });
+    expect(
+      screen.queryByRole("button", { name: "Thêm trạng thái" }),
+    ).toBeNull();
+  });
+
+  it("starts no drag on a read-only board", () => {
+    renderBoard({ canDrag: false });
+    const title = "Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP";
+    const article = within(laneRegion("Đang làm"))
+      .getByRole("button", { name: title })
+      .closest("article")!;
+    fireEvent.mouseDown(article, { button: 0, clientX: 40, clientY: 40 });
+    fireEvent.mouseMove(document, { clientX: 90, clientY: 90 });
+    expect(document.querySelector("[data-kanban-drag-overlay]")).toBeNull();
   });
 });

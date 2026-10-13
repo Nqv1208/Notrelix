@@ -77,7 +77,7 @@ export function statusOptionFormPendingScenario(
   };
 }
 
-/** A Select field other than Status has no group: name and colour only. */
+/** A Select field other than Status has values, not statuses: name and colour only. */
 export function statusOptionFormEdgeDataScenario(
   locale: "vi" | "en" = "vi",
 ): StatusOptionFormScenario {
@@ -88,6 +88,6 @@ export function statusOptionFormEdgeDataScenario(
       name: "Chờ phản hồi từ bộ phận pháp chế và đối tác bên ngoài, ưu tiên xử lý trong tuần",
     },
     existingNames: [],
-    showCategory: false,
+    subject: "value",
   };
 }

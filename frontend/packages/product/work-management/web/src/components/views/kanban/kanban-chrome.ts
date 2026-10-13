@@ -12,3 +12,15 @@ export const kanbanOutlineButtonClass =
 
 export const kanbanPrimaryButtonClass =
   "h-8 gap-1.5 rounded-[7px] px-3 text-compact font-semibold";
+
+/**
+ * Whether the user asked for reduced motion. Read when a card renders, so a
+ * drag that starts after the setting changed already follows it.
+ */
+export function prefersReducedMotion(): boolean {
+  return (
+    typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+}

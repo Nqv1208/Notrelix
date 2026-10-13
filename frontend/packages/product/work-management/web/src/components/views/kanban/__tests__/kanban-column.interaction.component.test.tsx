@@ -7,7 +7,8 @@ import {
   within,
 } from "@notrelix/testing";
 import { erpKanbanLanes } from "../../../../verification/kanban-board-fixtures";
-import { KanbanColumn } from "../kanban-column";
+import { statusOptionFormCopy } from "../../../status-option/status-option-form.copy";
+import { KanbanColumn, type KanbanLaneEdit } from "../kanban-column";
 import { kanbanLaneCopy } from "../kanban-lane.copy";
 
 const LOCALES = [
@@ -15,8 +16,27 @@ const LOCALES = [
   ["en", kanbanLaneCopy("en")],
 ] as const;
 
-function renderLane(locale: "vi" | "en", collapsed = false) {
-  const lane = erpKanbanLanes()[1]!;
+function renderLane(
+  locale: "vi" | "en",
+  collapsed = false,
+  options: {
+    edit?: boolean;
+    optimistic?: boolean;
+  } = {},
+) {
+  const base = erpKanbanLanes()[1]!;
+  const lane = options.optimistic
+    ? { ...base, optionId: "optimistic-option-1" }
+    : base;
+  const onEdit = vi.fn();
+  const edit: KanbanLaneEdit | undefined = options.edit
+    ? {
+        formCopy: statusOptionFormCopy(locale),
+        subject: "status",
+        otherNames: ["Cần làm", "Chờ duyệt", "Hoàn thành"],
+        onSubmit: onEdit,
+      }
+    : undefined;
   const onCollapsedChange = vi.fn();
   const onHide = vi.fn();
   const onCreateItem = vi.fn();
@@ -29,13 +49,14 @@ function renderLane(locale: "vi" | "en", collapsed = false) {
       canAdd
       canDrag
       collapsed={collapsed}
+      edit={edit}
       onCollapsedChange={onCollapsedChange}
       onHide={onHide}
       onOpenDetails={vi.fn()}
       onCreateItem={onCreateItem}
     />,
   );
-  return { ...view, onCollapsedChange, onHide, onCreateItem };
+  return { ...view, onCollapsedChange, onHide, onCreateItem, onEdit };
 }
 
 describe("KanbanColumn (status lane)", () => {
@@ -81,6 +102,51 @@ describe("KanbanColumn (status lane)", () => {
           copy.addTo.replace("{{lane}}", "Đang làm"),
         ),
       );
+      unmount();
+    }
+  });
+
+  it("FUI[wm.kanban.column:edit] renames and recolours the lane's status from its menu", async () => {
+    for (const locale of ["vi", "en"] as const) {
+      const copy = kanbanLaneCopy(locale);
+      const form = statusOptionFormCopy(locale);
+      const { unmount, onEdit } = renderLane(locale, false, { edit: true });
+      const options = screen.getByRole("button", {
+        name: copy.laneOptions.replace("{{lane}}", "Đang làm"),
+      });
+      fireEvent.keyDown(options, { key: "Enter" });
+      fireEvent.click(screen.getByRole("menuitem", { name: copy.editStatus }));
+      const name = await screen.findByRole("textbox");
+      expect((name as HTMLInputElement).value).toBe("Đang làm");
+      // A name another lane has is refused; the lane's own name is fine.
+      fireEvent.change(name, { target: { value: "Chờ duyệt" } });
+      expect(screen.getByRole("alert")).toBeTruthy();
+      fireEvent.change(name, { target: { value: "Đang triển khai" } });
+      fireEvent.click(screen.getByRole("radio", { name: form.color_green }));
+      fireEvent.click(screen.getByRole("button", { name: form.submitEdit }));
+      expect(onEdit).toHaveBeenCalledWith({
+        name: "Đang triển khai",
+        color: "#2E8B57",
+        category: "in_progress",
+      });
+      await waitFor(() => expect(screen.queryByRole("textbox")).toBeNull());
+      unmount();
+    }
+  });
+
+  it("offers no edit without the right, and none for a lane that exists only locally", () => {
+    for (const options of [{}, { edit: true, optimistic: true }]) {
+      const { unmount } = renderLane("vi", false, options);
+      const trigger = screen.getByRole("button", {
+        name: "Tuỳ chọn cột Đang làm",
+      });
+      fireEvent.keyDown(trigger, { key: "Enter" });
+      expect(
+        screen.queryByRole("menuitem", { name: "Sửa trạng thái" }),
+      ).toBeNull();
+      expect(
+        screen.getByRole("menuitem", { name: "Thu gọn cột" }),
+      ).toBeTruthy();
       unmount();
     }
   });

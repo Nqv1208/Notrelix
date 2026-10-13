@@ -1,4 +1,4 @@
-import { useId, useState, type PointerEventHandler } from "react";
+import { useId, useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Flag } from "lucide-react";
@@ -10,6 +10,8 @@ import {
   pluralCopy,
   type KanbanCardCopy,
 } from "./kanban-card.copy";
+import { prefersReducedMotion } from "./kanban-chrome";
+import { KANBAN_CARD_TYPE } from "./kanban-collision";
 import {
   ITEM_LABEL_TONE_CLASS,
   identityMarkClass,
@@ -31,48 +33,18 @@ const DUE_CLASS: Readonly<Record<ItemDueState["kind"], string>> = {
   date: "font-medium text-meta-foreground",
 };
 
-/**
- * A Kanban card: label chip and key, title, child-item progress, due wording,
- * priority (urgent and high only) and the first assignee's avatar. The whole
- * card opens the item (pointer, Enter, Space) and is the pointer drag handle;
- * moving with the keyboard happens from the item sheet. Actions such as copy
- * link, duplicate and archive live in the sheet, not on the card.
- */
-export function KanbanCard({
-  card,
-  now,
-  timeZone,
-  copy = defaultCopy,
-  selected = false,
-  dragDisabled = false,
-  onOpenDetails,
-}: {
-  card: Card;
-  /** The reference time for the due wording; read once by the container. */
-  now?: Date;
-  /** IANA time zone for calendar days; the runtime zone when omitted. */
-  timeZone?: string;
-  copy?: KanbanCardCopy;
-  /** The card whose item sheet is open. */
-  selected?: boolean;
-  /** No pointer drag (a read-only board); the card still opens. */
-  dragDisabled?: boolean;
-  onOpenDetails: (cardId: string) => void;
-}) {
-  const { listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({
-      id: card.id,
-      data: { type: "kanban-card", card },
-      disabled: dragDisabled,
-    });
-  // Pointer drag only: Enter and Space belong to opening the card.
-  const onPointerDown = listeners?.onPointerDown as
-    PointerEventHandler<HTMLElement> | undefined;
+const CARD_CLASS =
+  "relative flex flex-col gap-[9px] rounded-[11px] bg-popover p-3 dark:bg-card";
 
-  const [fallbackNow] = useState(() => new Date());
+/** What a card shows, worked out once for its body and its open control. */
+function cardParts(
+  card: Card,
+  copy: KanbanCardCopy,
+  now: Date | undefined,
+  timeZone: string | undefined,
+  fallbackNow: Date,
+) {
   const reference = now ?? fallbackNow;
-  const descriptionId = useId();
-
   const isDone = card.statusCategory === "done" || Boolean(card.completedAt);
   const due = isDone
     ? null
@@ -118,49 +90,60 @@ export function KanbanCard({
       : fillCopy(copy.assignedTo, { name: assignee.name })
     : "";
 
-  const hasTop = Boolean(label && labelTone) || itemKey !== null;
-  const hasMeta = dueText !== null || priority !== null || Boolean(assignee);
-  const describedBy = [
-    hasTop ? `${descriptionId}-top` : null,
-    progress ? `${descriptionId}-progress` : null,
-    hasMeta ? `${descriptionId}-meta` : null,
-  ]
-    .filter(Boolean)
-    .join(" ");
+  return {
+    isDone,
+    due,
+    dueText,
+    label,
+    labelTone,
+    itemKey,
+    progress,
+    progressPercent,
+    priority,
+    assignee,
+    assigneeLabel,
+    hasTop: Boolean(label && labelTone) || itemKey !== null,
+    hasMeta: dueText !== null || priority !== null || Boolean(assignee),
+  };
+}
 
+/**
+ * The inside of a card: label chip and key, title, child-item progress, due
+ * wording, priority (urgent and high only) and the first assignee's avatar.
+ * Shared by the card in its lane and by the copy that follows the pointer
+ * while the card is dragged, so both look the same.
+ */
+function KanbanCardContent({
+  card,
+  copy,
+  parts,
+  idPrefix,
+}: {
+  card: Card;
+  copy: KanbanCardCopy;
+  parts: ReturnType<typeof cardParts>;
+  idPrefix: string;
+}) {
+  const {
+    isDone,
+    due,
+    dueText,
+    label,
+    labelTone,
+    itemKey,
+    progress,
+    progressPercent,
+    priority,
+    assignee,
+    assigneeLabel,
+    hasTop,
+    hasMeta,
+  } = parts;
   return (
-    <article
-      ref={setNodeRef}
-      style={{
-        transform: CSS.Transform.toString(transform),
-        transition,
-      }}
-      onPointerDown={onPointerDown}
-      aria-current={selected ? "true" : undefined}
-      className={cn(
-        "group relative flex cursor-pointer flex-col gap-[9px] rounded-[11px] bg-popover p-3 dark:bg-card shadow-card transition-shadow hover:shadow-card-hover",
-        selected && "shadow-card-hover ring-2 ring-inset ring-primary",
-        isDragging && "z-dropdown opacity-60",
-      )}
-    >
-      <button
-        type="button"
-        className="absolute inset-0 z-10 rounded-[11px] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
-        aria-label={card.title}
-        aria-describedby={describedBy || undefined}
-        data-card-id={card.id}
-        onClick={() => onOpenDetails(card.id)}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" || event.key === " ") {
-            event.preventDefault();
-            onOpenDetails(card.id);
-          }
-        }}
-      />
-
+    <>
       {hasTop ? (
         <div
-          id={`${descriptionId}-top`}
+          id={`${idPrefix}-top`}
           className="flex min-w-0 items-center gap-1.5 text-metadata text-meta-foreground"
         >
           {label && labelTone ? (
@@ -212,7 +195,7 @@ export function KanbanCard({
           <span aria-hidden="true">
             {progress.done}/{progress.total}
           </span>
-          <span id={`${descriptionId}-progress`} className="sr-only">
+          <span id={`${idPrefix}-progress`} className="sr-only">
             {fillCopy(copy.childProgress, {
               done: progress.done,
               total: progress.total,
@@ -223,7 +206,7 @@ export function KanbanCard({
 
       {hasMeta ? (
         <div
-          id={`${descriptionId}-meta`}
+          id={`${idPrefix}-meta`}
           className="flex min-w-0 flex-wrap items-center gap-1.5 text-metadata text-meta-foreground"
         >
           {due && dueText ? (
@@ -274,6 +257,154 @@ export function KanbanCard({
           ) : null}
         </div>
       ) : null}
+    </>
+  );
+}
+
+/**
+ * The copy of a card that follows the pointer while it is dragged: the card
+ * as it looks in its lane (same width, padding and radius), lifted by a
+ * slight tilt and a stronger shadow. It is not interactive and hidden from
+ * assistive technology; the card itself stays in its lane as the placeholder.
+ */
+export function KanbanCardOverlay({
+  card,
+  now,
+  timeZone,
+  copy = defaultCopy,
+}: {
+  card: Card;
+  now?: Date;
+  timeZone?: string;
+  copy?: KanbanCardCopy;
+}) {
+  const [fallbackNow] = useState(() => new Date());
+  const reducedMotion = prefersReducedMotion();
+  const parts = cardParts(card, copy, now, timeZone, fallbackNow);
+  return (
+    <article
+      aria-hidden="true"
+      data-kanban-drag-overlay=""
+      data-card-id={card.id}
+      className={cn(
+        CARD_CLASS,
+        "h-full cursor-grabbing shadow-popover ring-1 ring-primary/30",
+        reducedMotion
+          ? "scale-[1.02]"
+          : "scale-[1.03] rotate-2 transition-transform duration-150 ease-out starting:scale-100 starting:rotate-0",
+      )}
+    >
+      <KanbanCardContent
+        card={card}
+        copy={copy}
+        parts={parts}
+        idPrefix={`${card.id}-overlay`}
+      />
+    </article>
+  );
+}
+
+/**
+ * A Kanban card. The whole card opens the item (pointer, Enter, Space) and is
+ * the drag handle: a mouse drag starts after a few pixels of movement, so a
+ * plain click still opens, and a touch drag starts after a long press. While
+ * it is dragged the card stays in its lane as a gap of its own height at the
+ * place it would be dropped at; moving with the keyboard happens from the item
+ * sheet. Actions such as copy link, duplicate and archive live in the sheet,
+ * not on the card.
+ */
+export function KanbanCard({
+  card,
+  laneKey,
+  now,
+  timeZone,
+  copy = defaultCopy,
+  selected = false,
+  dragDisabled = false,
+  onOpenDetails,
+}: {
+  card: Card;
+  /** The lane this card is shown in (the lane it is dragged over while dragging). */
+  laneKey?: string;
+  /** The reference time for the due wording; read once by the container. */
+  now?: Date;
+  /** IANA time zone for calendar days; the runtime zone when omitted. */
+  timeZone?: string;
+  copy?: KanbanCardCopy;
+  /** The card whose item sheet is open. */
+  selected?: boolean;
+  /** No pointer drag (a read-only board); the card still opens. */
+  dragDisabled?: boolean;
+  onOpenDetails: (cardId: string) => void;
+}) {
+  const { listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({
+      id: card.id,
+      data: { type: KANBAN_CARD_TYPE, card, laneKey },
+      disabled: dragDisabled,
+      // The sortable animation of the cards that make room is the smooth part
+      // of the drag; reduced motion drops it.
+      transition: prefersReducedMotion()
+        ? null
+        : { duration: 180, easing: "cubic-bezier(0.2, 0, 0, 1)" },
+    });
+  // Pointer and touch only: Enter and Space belong to opening the card.
+  const { onKeyDown: _keyboard, ...dragListeners } = (listeners ??
+    {}) as Record<string, unknown>;
+  void _keyboard;
+
+  const [fallbackNow] = useState(() => new Date());
+  const descriptionId = useId();
+  const parts = cardParts(card, copy, now, timeZone, fallbackNow);
+  const describedBy = [
+    parts.hasTop ? `${descriptionId}-top` : null,
+    parts.progress ? `${descriptionId}-progress` : null,
+    parts.hasMeta ? `${descriptionId}-meta` : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  return (
+    <article
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+      }}
+      {...dragListeners}
+      aria-current={selected ? "true" : undefined}
+      data-dragging={isDragging ? "" : undefined}
+      className={cn(
+        CARD_CLASS,
+        "group cursor-pointer shadow-card transition-shadow hover:shadow-card-hover",
+        !dragDisabled && "touch-manipulation",
+        selected && "shadow-card-hover ring-2 ring-inset ring-primary",
+        // The slot the card leaves is the gap it will fill: an empty, tinted
+        // box of the card's own height (its content stays, hidden).
+        isDragging &&
+          "z-dropdown bg-state-selected shadow-none ring-1 ring-inset ring-primary/40 hover:shadow-none dark:bg-state-selected [&>*]:invisible",
+      )}
+    >
+      <button
+        type="button"
+        className="absolute inset-0 z-10 rounded-[11px] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+        aria-label={card.title}
+        aria-describedby={describedBy || undefined}
+        data-card-id={card.id}
+        onClick={() => onOpenDetails(card.id)}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            onOpenDetails(card.id);
+          }
+        }}
+      />
+      <KanbanCardContent
+        card={card}
+        copy={copy}
+        parts={parts}
+        idPrefix={descriptionId}
+      />
     </article>
   );
 }

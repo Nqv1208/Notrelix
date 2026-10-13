@@ -16,12 +16,14 @@ import {
   useCardActivity,
   useCardComments,
   useCardFiles,
+  useAddFieldOption,
   useArchiveCard,
   useCreateCardUpdate,
   useDeleteCardUpdate,
   useDuplicateCard,
   useUpdateCard,
   useUpdateCardUpdate,
+  useUpdateFieldOption,
   type KanbanWriteFailure,
 } from "@notrelix/work-management-state";
 import {
@@ -39,6 +41,8 @@ import type {
   ItemSheetMark,
   TaskDetailCapabilities,
 } from "../../card-detail/task-detail-types";
+import type { StatusOptionDraft } from "../../status-option/status-option-form";
+import { useStatusOptionFormCopy } from "../../status-option/use-status-option-form-copy";
 import { KanbanBoard } from "./kanban-board";
 import { KanbanCardDetailPanel } from "./kanban-card-detail-panel";
 import { fillCopy } from "./kanban-card.copy";
@@ -129,6 +133,7 @@ export function KanbanView({
   const cardCopy = useKanbanCardCopy();
   const toolbarCopy = useKanbanToolbarCopy();
   const laneCopy = useKanbanLaneCopy();
+  const statusFormCopy = useStatusOptionFormCopy();
   const header = useContext(BoardHeaderDataContext);
 
   const [localFilter, setLocalFilter] = useState<string | undefined>();
@@ -198,6 +203,26 @@ export function KanbanView({
         { id: `kanban-write-${cardId}` },
       ),
   });
+  // Adding a lane and renaming or recolouring one write an option of the field
+  // the board is grouped by; a failure puts the lane back and says so.
+  const addOption = useAddFieldOption(boardId, workspaceId, {
+    onError: (_error) =>
+      toast.error(
+        fillCopy(laneCopyRef.current.createOptionFailed, {
+          name: pendingOptionName.current,
+        }),
+        { id: "kanban-option-write" },
+      ),
+  });
+  const updateOption = useUpdateFieldOption(boardId, workspaceId, {
+    onError: () =>
+      toast.error(
+        fillCopy(laneCopyRef.current.updateOptionFailed, {
+          name: pendingOptionName.current,
+        }),
+        { id: "kanban-option-write" },
+      ),
+  });
   // Below the tablet width the sheet covers the board: the board behind is
   // taken out of the tab order and the accessibility tree while it is open.
   const isNarrow = useIsMobile();
@@ -220,6 +245,7 @@ export function KanbanView({
   }, [board, filter, filterValue, setFilterValue]);
 
   const boardRef = useRef<HTMLDivElement>(null);
+  const pendingOptionName = useRef("");
   const [addRequest, setAddRequest] = useState(0);
 
   const handleOpenDetail = useCallback(
@@ -293,6 +319,25 @@ export function KanbanView({
       writeLaneValue(drop.cardId, drop.optionId);
       return;
     }
+    if (drop.kind === "place") {
+      if (!kanban.groupByField) return;
+      noteOrigin(drop.cardId);
+      kanban.dropItemInLane.mutate({
+        cardId: drop.cardId,
+        lane: {
+          fieldDefinitionId: kanban.groupByField.id,
+          optionId: drop.optionId,
+          viaStatusEndpoint: isStatusGrouping,
+        },
+        placement: {
+          listId: drop.listId,
+          position: drop.position,
+          previousSiblingId: drop.previousSiblingId,
+          nextSiblingId: drop.nextSiblingId,
+        },
+      });
+      return;
+    }
     noteOrigin(drop.cardId);
     kanban.moveCard.mutate({
       cardId: drop.cardId,
@@ -300,6 +345,25 @@ export function KanbanView({
       position: drop.position,
       previousSiblingId: drop.previousSiblingId,
       nextSiblingId: drop.nextSiblingId,
+    });
+  };
+
+  const handleCreateLane = (draft: StatusOptionDraft) => {
+    if (!kanban.groupByField) return;
+    pendingOptionName.current = draft.name;
+    addOption.mutate({ fieldId: kanban.groupByField.id, ...draft });
+  };
+
+  const handleUpdateLane = (
+    lane: KanbanStatusLane,
+    draft: StatusOptionDraft,
+  ) => {
+    if (!kanban.groupByField || !lane.optionId) return;
+    pendingOptionName.current = draft.name;
+    updateOption.mutate({
+      fieldId: kanban.groupByField.id,
+      optionId: lane.optionId,
+      ...draft,
     });
   };
 
@@ -444,6 +508,14 @@ export function KanbanView({
           onOpenDetails={handleOpenDetail}
           onDropCard={handleDrop}
           onCreateItem={handleCreateItem}
+          formCopy={
+            capabilities.canEditFields && kanban.groupByField
+              ? statusFormCopy
+              : undefined
+          }
+          onCreateLane={handleCreateLane}
+          onUpdateLane={handleUpdateLane}
+          lanePending={addOption.isPending}
         />
       </div>
 

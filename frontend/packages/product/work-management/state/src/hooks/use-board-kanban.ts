@@ -15,6 +15,7 @@ import {
   useKanbanFilters,
   type KanbanLaneFilter,
 } from "./use-kanban-filters";
+import { useDropItemInLane } from "../mutations/use-drop-item-in-lane";
 import { useMoveCard } from "../mutations/use-move-card";
 import { useUpdateFieldValue } from "../mutations/use-update-field-value";
 import {
@@ -44,7 +45,7 @@ export interface UseBoardKanbanOptions {
 
 /** A failed Kanban write; the card is already back where it was. */
 export interface KanbanWriteFailure {
-  readonly kind: "status" | "field" | "move" | "create";
+  readonly kind: "status" | "field" | "move" | "create" | "place";
   /** The card, or `null` for an item that was being created. */
   readonly cardId: string | null;
   /** The title of the item being created. */
@@ -203,6 +204,10 @@ export function useBoardKanban(
     onError: (error, input) =>
       onWriteError?.({ kind: "move", cardId: input.cardId, error }),
   });
+  const dropItemInLane = useDropItemInLane(boardId, workspaceId, {
+    onError: (error, input) =>
+      onWriteError?.({ kind: "place", cardId: input.cardId, error }),
+  });
   const createItemInLane = useCreateItemInLane(boardId, workspaceId, {
     onError: (error, input) =>
       onWriteError?.({
@@ -234,6 +239,7 @@ export function useBoardKanban(
     updateStatus,
     updateFieldValue,
     moveCard,
+    dropItemInLane,
     createItemInLane,
   };
 }

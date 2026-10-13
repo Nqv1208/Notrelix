@@ -9,6 +9,7 @@ export * from "./use-delete-card-update";
 export * from "./use-delete-column";
 export * from "./use-delete-group";
 export * from "./use-delete-kanban-column";
+export * from "./use-drop-item-in-lane";
 export * from "./use-duplicate-card";
 export * from "./use-field-option";
 export * from "./use-duplicate-group";

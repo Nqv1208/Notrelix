@@ -466,6 +466,7 @@
       "pureEntry": "src/components/views/kanban/kanban-board.tsx",
       "coveredSources": [
         "src/components/views/kanban/kanban-add-card.tsx",
+        "src/components/views/kanban/kanban-add-lane.tsx",
         "src/components/views/kanban/kanban-card-detail-panel.tsx",
         "src/components/views/kanban/kanban-empty-state.tsx"
       ],
@@ -606,6 +607,14 @@
         {
           "id": "move",
           "testFile": "src/components/views/kanban/__tests__/kanban-board.interaction.component.test.tsx"
+        },
+        {
+          "id": "drag",
+          "testFile": "src/components/views/kanban/__tests__/kanban-board.interaction.component.test.tsx"
+        },
+        {
+          "id": "add-lane",
+          "testFile": "src/components/views/kanban/__tests__/kanban-board.interaction.component.test.tsx"
         }
       ]
     },
@@ -695,6 +704,10 @@
         },
         {
           "id": "escape",
+          "testFile": "src/components/views/kanban/__tests__/kanban-column.interaction.component.test.tsx"
+        },
+        {
+          "id": "edit",
           "testFile": "src/components/views/kanban/__tests__/kanban-column.interaction.component.test.tsx"
         }
       ]
@@ -1873,6 +1886,10 @@
           "state": "Default",
           "visualTargets": [
             {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
               "viewport": "mobile",
               "theme": "light"
             },
@@ -1920,7 +1937,18 @@
       "stateCoverage": {
         "required": ["Default", "Error", "Loading", "EdgeData"],
         "delegated": [],
-        "notApplicable": []
+        "notApplicable": [
+          {
+            "state": "Success",
+            "reason": "The form hands the draft to its container and is closed by it; success is the new or renamed lane, evidenced by wm.kanban.board and wm.kanban.column.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "ReadOnly",
+            "reason": "A viewer or commenter is never offered the form: the container passes no form copy and no callbacks, so there is no read-only presentation of it.",
+            "authority": "docs/product/work-management.md"
+          }
+        ]
       },
       "responsive": true,
       "themeAware": true,

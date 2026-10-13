@@ -37,7 +37,12 @@ export interface StatusOptionFormProps {
    * case-insensitively.
    */
   existingNames: readonly string[];
-  /** Whether the status group is asked (Status field yes, other Select no). */
+  /**
+   * What is being named: a status of the Status field (asks for its group) or
+   * a value of another Select field (name and colour only, "value" wording).
+   */
+  subject?: "status" | "value";
+  /** Whether the status group is asked; follows `subject` (status yes, value no). */
   showCategory?: boolean;
   /** A write is in flight: the form keeps its values and cannot be sent again. */
   pending?: boolean;
@@ -63,11 +68,13 @@ export function StatusOptionForm({
   mode = "create",
   initial,
   existingNames,
-  showCategory = true,
+  subject = "status",
+  showCategory: showCategoryProp,
   pending = false,
   onSubmit,
   onCancel,
 }: StatusOptionFormProps) {
+  const showCategory = showCategoryProp ?? subject === "status";
   const initialCategory = initial?.category ?? DEFAULT_STATUS_OPTION_CATEGORY;
   const [name, setName] = useState(initial?.name ?? "");
   const [category, setCategory] =
@@ -93,13 +100,18 @@ export function StatusOptionForm({
     existingNames.some(
       (existing) => normalised(existing) === normalised(trimmed),
     );
+  const forValue = subject === "value";
   const error =
     trimmed.length > MAX_NAME_LENGTH
       ? copy.errorTooLong
       : duplicate
-        ? fillCopy(copy.errorDuplicate, { name: trimmed })
+        ? fillCopy(forValue ? copy.valueErrorDuplicate : copy.errorDuplicate, {
+            name: trimmed,
+          })
         : attempted && trimmed === ""
-          ? copy.errorEmpty
+          ? forValue
+            ? copy.valueErrorEmpty
+            : copy.errorEmpty
           : null;
   const valid =
     trimmed !== "" && !duplicate && trimmed.length <= MAX_NAME_LENGTH;
@@ -140,7 +152,13 @@ export function StatusOptionForm({
       noValidate
     >
       <h3 className="text-nav font-semibold text-foreground">
-        {mode === "edit" ? copy.titleEdit : copy.titleCreate}
+        {mode === "edit"
+          ? forValue
+            ? copy.valueTitleEdit
+            : copy.titleEdit
+          : forValue
+            ? copy.valueTitleCreate
+            : copy.titleCreate}
       </h3>
 
       <div className="flex flex-col gap-1.5">
@@ -148,14 +166,16 @@ export function StatusOptionForm({
           htmlFor={`${ids}-name`}
           className="text-metadata font-medium text-meta-foreground"
         >
-          {copy.nameLabel}
+          {forValue ? copy.valueNameLabel : copy.nameLabel}
         </label>
         <Input
           ref={inputRef}
           id={`${ids}-name`}
           value={name}
           onChange={(event) => setName(event.target.value)}
-          placeholder={copy.namePlaceholder}
+          placeholder={
+            forValue ? copy.valueNamePlaceholder : copy.namePlaceholder
+          }
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? errorId : undefined}
           autoComplete="off"
@@ -241,7 +261,9 @@ export function StatusOptionForm({
             ? copy.saving
             : mode === "edit"
               ? copy.submitEdit
-              : copy.submitCreate}
+              : forValue
+                ? copy.valueSubmitCreate
+                : copy.submitCreate}
         </Button>
       </div>
     </form>

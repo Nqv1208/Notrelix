@@ -11,16 +11,26 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  Popover,
+  PopoverAnchor,
+  PopoverContent,
   cn,
 } from "@notrelix/ui-web";
-import type {
-  KanbanStatusLane,
-  WorkStatusCategory,
+import {
+  isOptimisticOptionId,
+  type KanbanStatusLane,
+  type WorkStatusCategory,
 } from "@notrelix/work-management-core";
+import {
+  StatusOptionForm,
+  type StatusOptionDraft,
+} from "../../status-option/status-option-form";
+import type { StatusOptionFormCopy } from "../../status-option/status-option-form.copy";
 import { KanbanAddCard } from "./kanban-add-card";
 import { KanbanCard } from "./kanban-card";
 import { fillCopy, pluralCopy, type KanbanCardCopy } from "./kanban-card.copy";
-import { kanbanLaneDropId } from "./kanban-dnd";
+import { KANBAN_LANE_TYPE } from "./kanban-collision";
+import { kanbanLaneDropId, kanbanLaneKey } from "./kanban-dnd";
 import { kanbanColumnWidthClass } from "./kanban-layout";
 import type { KanbanLaneCopy } from "./kanban-lane.copy";
 
@@ -43,6 +53,16 @@ const LANE_DOT_CLASS: Readonly<Record<WorkStatusCategory, string>> = {
   done: "bg-work-status-done",
 };
 
+/** What the lane menu needs to rename or recolour the lane's option. */
+export interface KanbanLaneEdit {
+  readonly formCopy: StatusOptionFormCopy;
+  /** Status lanes are statuses (with a group), other Select lanes are values. */
+  readonly subject: "status" | "value";
+  /** The other lanes' names (this lane's own name is not a duplicate). */
+  readonly otherNames: readonly string[];
+  readonly onSubmit: (draft: StatusOptionDraft) => void;
+}
+
 export interface KanbanColumnProps {
   lane: KanbanStatusLane;
   /** The lane's display name (the view names the lane without a value). */
@@ -58,6 +78,12 @@ export interface KanbanColumnProps {
   filterActive: boolean;
   canAdd: boolean;
   canDrag: boolean;
+  /** The dragged card is over this lane: it is where the card would land. */
+  dropTarget?: boolean;
+  /** The dragged card: it is always shown (the lane never hides it). */
+  draggedCardId?: string;
+  /** Rename and recolour from the lane menu; absent when the viewer cannot. */
+  edit?: KanbanLaneEdit;
   collapsed: boolean;
   /** Changing this number opens the lane's add field. */
   openAddRequest?: number;
@@ -85,6 +111,9 @@ export function KanbanColumn({
   filterActive,
   canAdd,
   canDrag,
+  dropTarget = false,
+  draggedCardId,
+  edit,
   collapsed,
   openAddRequest,
   onCollapsedChange,
@@ -94,21 +123,36 @@ export function KanbanColumn({
 }: KanbanColumnProps) {
   const sectionRef = useRef<HTMLElement | null>(null);
   const [expanded, setExpanded] = useState(false);
+  const [editing, setEditing] = useState(false);
+  // "Sửa trạng thái" was chosen: the form opens once the menu has closed (a
+  // form that opens while the menu still holds focus is dismissed by it), and
+  // the menu does not give focus back to its button.
+  const openingForm = useRef(false);
   const focusFirstRevealed = useRef<string | null>(null);
-  const { setNodeRef, isOver } = useDroppable({
+  const laneKey = kanbanLaneKey(lane.optionId);
+  const { setNodeRef } = useDroppable({
     id: kanbanLaneDropId(lane.optionId),
-    data: { type: "kanban-lane", lane },
-    disabled: !canDrag,
+    data: { type: KANBAN_LANE_TYPE, lane, laneKey },
+    // A lane that exists only locally has no option id the server knows yet.
+    disabled: !canDrag || isOptimisticOptionId(lane.optionId),
   });
+  const canEdit =
+    edit !== undefined &&
+    lane.optionId !== null &&
+    !isOptimisticOptionId(lane.optionId);
 
   const count = lane.cards.length;
   const selectedIndex = selectedItemId
     ? lane.cards.findIndex((card) => card.id === selectedItemId)
     : -1;
+  const draggedIndex = draggedCardId
+    ? lane.cards.findIndex((card) => card.id === draggedCardId)
+    : -1;
   const showAll =
     expanded ||
     count <= KANBAN_LANE_VISIBLE_CARDS ||
-    selectedIndex >= KANBAN_LANE_VISIBLE_CARDS;
+    selectedIndex >= KANBAN_LANE_VISIBLE_CARDS ||
+    draggedIndex >= KANBAN_LANE_VISIBLE_CARDS;
   const visibleCards = showAll
     ? lane.cards
     : lane.cards.slice(0, KANBAN_LANE_VISIBLE_CARDS);
@@ -116,9 +160,20 @@ export function KanbanColumn({
   const tint = lane.category
     ? LANE_TINT_CLASS[lane.category]
     : LANE_TINT_CLASS.todo;
-  const dot = lane.category
-    ? LANE_DOT_CLASS[lane.category]
-    : "bg-muted-foreground";
+  // The dot is the colour the status was given; without one it falls back to its group's tone.
+  const dotColor = lane.color;
+  const dotStyle = dotColor
+    ? lane.category === "todo"
+      ? { borderColor: dotColor }
+      : { backgroundColor: dotColor }
+    : undefined;
+  const dot = dotColor
+    ? lane.category === "todo"
+      ? "border-2"
+      : ""
+    : lane.category
+      ? LANE_DOT_CLASS[lane.category]
+      : "bg-muted-foreground";
   const countText = pluralCopy(
     { one: copy.count_one, other: copy.count_other },
     count,
@@ -156,6 +211,7 @@ export function KanbanColumn({
           <span
             aria-hidden="true"
             className={cn("size-2.25 rounded-full", dot)}
+            style={dotStyle}
           />
           <span aria-hidden="true" style={{ writingMode: "vertical-rl" }}>
             {name}
@@ -176,47 +232,100 @@ export function KanbanColumn({
       ref={setRefs}
       aria-label={name}
       data-lane-count={count}
+      data-drop-target={dropTarget ? "" : undefined}
       className={cn(
         "flex shrink-0 flex-col gap-2 rounded-xl p-2 transition-shadow duration-150",
         kanbanColumnWidthClass,
         tint,
-        isOver && "ring-2 ring-inset ring-primary",
+        dropTarget && "ring-2 ring-inset ring-primary",
       )}
     >
-      <div className="flex h-7.5 items-center gap-2 px-1.5">
-        <span
-          aria-hidden="true"
-          className={cn("size-2.25 shrink-0 rounded-full", dot)}
-        />
-        <h2 className="min-w-0 truncate text-nav font-semibold text-foreground">
-          {name}
-        </h2>
-        <span
-          aria-hidden="true"
-          className="grid h-5.5 min-w-5.5 shrink-0 place-items-center rounded-[11px] bg-popover px-1.5 text-caption font-semibold dark:bg-card text-muted-foreground"
-        >
-          {count}
-        </span>
-        <span className="sr-only">{countText}</span>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              className="ml-auto size-7 rounded-[7px] text-meta-foreground hover:bg-state-hover-strong"
-              aria-label={fillCopy(copy.laneOptions, { lane: name })}
+      <Popover open={editing} onOpenChange={setEditing}>
+        <PopoverAnchor asChild>
+          <div className="flex h-7.5 items-center gap-2 px-1.5">
+            <span
+              aria-hidden="true"
+              className={cn("size-2.25 shrink-0 rounded-full", dot)}
+              style={dotStyle}
+            />
+            <h2 className="min-w-0 truncate text-nav font-semibold text-foreground">
+              {name}
+            </h2>
+            <span
+              aria-hidden="true"
+              className="grid h-5.5 min-w-5.5 shrink-0 place-items-center rounded-[11px] bg-popover px-1.5 text-caption font-semibold dark:bg-card text-muted-foreground"
             >
-              <MoreHorizontal aria-hidden="true" className="size-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onSelect={() => onCollapsedChange(true)}>
-              {copy.collapse}
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={onHide}>{copy.hide}</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+              {count}
+            </span>
+            <span className="sr-only">{countText}</span>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="ml-auto size-7 rounded-[7px] text-meta-foreground hover:bg-state-hover-strong"
+                  aria-label={fillCopy(copy.laneOptions, { lane: name })}
+                >
+                  <MoreHorizontal aria-hidden="true" className="size-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                onCloseAutoFocus={(event) => {
+                  if (openingForm.current) {
+                    openingForm.current = false;
+                    event.preventDefault();
+                    setEditing(true);
+                  }
+                }}
+              >
+                {canEdit ? (
+                  <DropdownMenuItem
+                    onSelect={() => {
+                      openingForm.current = true;
+                    }}
+                  >
+                    {edit.subject === "status"
+                      ? copy.editStatus
+                      : copy.editValue}
+                  </DropdownMenuItem>
+                ) : null}
+                <DropdownMenuItem onSelect={() => onCollapsedChange(true)}>
+                  {copy.collapse}
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={onHide}>
+                  {copy.hide}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </PopoverAnchor>
+        {canEdit ? (
+          <PopoverContent align="start" className="w-72 gap-0">
+            <StatusOptionForm
+              copy={edit.formCopy}
+              mode="edit"
+              subject={edit.subject}
+              initial={{
+                name: lane.name,
+                color: lane.color ?? undefined,
+                category:
+                  lane.category === "todo" ||
+                  lane.category === "in_progress" ||
+                  lane.category === "done"
+                    ? lane.category
+                    : undefined,
+              }}
+              existingNames={edit.otherNames}
+              onCancel={() => setEditing(false)}
+              onSubmit={(draft) => {
+                edit.onSubmit(draft);
+                setEditing(false);
+              }}
+            />
+          </PopoverContent>
+        ) : null}
+      </Popover>
 
       <SortableContext
         items={visibleCards.map((card) => card.id)}
@@ -228,6 +337,7 @@ export function KanbanColumn({
               <KanbanCard
                 key={card.id}
                 card={card}
+                laneKey={laneKey}
                 now={now}
                 timeZone={timeZone}
                 copy={cardCopy}

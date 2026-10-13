@@ -103,6 +103,8 @@ vi.mock("@notrelix/work-management-state", async (importOriginal) => {
     useCardComments: list,
     useUpdateCard: mutation,
     useDuplicateCard: mutation,
+    useAddFieldOption: () => ({ mutate: vi.fn(), isPending: false }),
+    useUpdateFieldOption: mutation,
     useArchiveCard: () => ({ mutate: cardQuery.deleteMutate }),
     useCreateCardUpdate: mutation,
     useUpdateCardUpdate: mutation,

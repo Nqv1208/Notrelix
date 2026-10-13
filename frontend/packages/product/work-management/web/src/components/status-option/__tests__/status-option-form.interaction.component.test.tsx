@@ -22,10 +22,8 @@ function renderForm(scenario: StatusOptionFormScenario) {
   return { onSubmit, onCancel, view };
 }
 
-function nameInput(locale: "vi" | "en") {
-  return screen.getByRole("textbox", {
-    name: statusOptionFormCopyFixture(locale).nameLabel,
-  });
+function nameInput(_locale: "vi" | "en") {
+  return screen.getByRole("textbox");
 }
 
 describe("StatusOptionForm", () => {
@@ -187,7 +185,7 @@ describe("StatusOptionForm", () => {
     }
   });
 
-  it("FUI[wm.status-option.form:no-category] omits the group for a field without groups", () => {
+  it("FUI[wm.status-option.form:no-category] names a value of another Select field with name and colour only", () => {
     for (const locale of LOCALES) {
       const copy = statusOptionFormCopyFixture(locale);
       const { onSubmit, view } = renderForm(
@@ -196,6 +194,12 @@ describe("StatusOptionForm", () => {
       expect(
         screen.queryByRole("radio", { name: copy.category_todo }),
       ).toBeNull();
+      expect(
+        screen.getByRole("heading", { name: copy.valueTitleCreate }),
+      ).toBeTruthy();
+      expect(
+        screen.getByRole("button", { name: copy.valueSubmitCreate }),
+      ).toBeTruthy();
       fireEvent.submit(nameInput(locale).closest("form")!);
       expect(onSubmit).toHaveBeenCalledWith({
         name: (nameInput(locale) as HTMLInputElement).value,

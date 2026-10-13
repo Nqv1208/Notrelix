@@ -4,10 +4,11 @@ import {
   type QueryClient,
 } from "@tanstack/react-query";
 import type { ApiRequestOptions } from "@notrelix/contracts";
-import type {
-  FieldOption,
-  FullBoardResponse,
-  WorkStatusCategory,
+import {
+  OPTIMISTIC_OPTION_ID_PREFIX,
+  type FieldOption,
+  type FullBoardResponse,
+  type WorkStatusCategory,
 } from "@notrelix/work-management-core";
 import type { FieldOptionInput } from "../api/field-option.api";
 import {
@@ -111,7 +112,7 @@ export function runAddFieldOption(
   draft: FieldOptionDraft,
 ): Promise<void> {
   const optimistic: FieldOption = {
-    id: `optimistic-option-${crypto.randomUUID()}`,
+    id: `${OPTIMISTIC_OPTION_ID_PREFIX}${crypto.randomUUID()}`,
     label: draft.name,
     color: draft.color,
     ...(draft.category ? { category: draft.category } : {}),
