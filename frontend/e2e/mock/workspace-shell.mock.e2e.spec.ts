@@ -242,7 +242,7 @@ test("At 320 px the sidebar is the off-canvas sheet with the workspaces at its t
   await page.setViewportSize({ width: 320, height: 800 });
   await page.goto(workspace);
   await expect(
-    page.getByRole("heading", { level: 1, name: "Trang chủ" }),
+    page.getByRole("heading", { level: 1, name: /^Chào / }),
   ).toBeVisible();
   await expect(page.getByRole("status")).toHaveCount(0);
   let result = await overflow(page);

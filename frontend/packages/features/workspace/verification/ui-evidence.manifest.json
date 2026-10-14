@@ -63,27 +63,27 @@
           {
             "state": "Loading",
             "reason": "Invitations render resolved data passed by its parent; query loading presentation is owned by the workspace shell.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           },
           {
             "state": "Error",
             "reason": "Invitations render resolved data passed by its parent; query error presentation is owned by the workspace shell.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           },
           {
             "state": "HighDensity",
             "reason": "Invitations render a bounded popover list; high-density input is exercised by the EdgeData story.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           },
           {
             "state": "ReadOnly",
             "reason": "No product-authoritative read-only contract exists for pending invitations at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           },
           {
             "state": "PermissionLimited",
             "reason": "No product-authoritative permission-limited capability contract exists for pending invitations at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           },
           {
             "state": "EdgeData",
@@ -712,7 +712,7 @@
       "owner": "@notrelix/features-workspace",
       "surfaceKind": "composition",
       "pureEntry": "src/web/home/workspace-home-surface.tsx",
-      "coveredSources": [],
+      "coveredSources": ["src/web/home/work-row-parts.tsx"],
       "stories": [
         {
           "id": "workspace-home--home-default",
@@ -783,6 +783,26 @@
               "theme": "dark"
             }
           ]
+        },
+        {
+          "id": "workspace-home--home-all-done",
+          "state": "Empty",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-home--home-produced-only",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         }
       ],
       "stateCoverage": {
@@ -819,7 +839,15 @@
           "testFile": "src/web/home/__tests__/workspace-home.interaction.component.test.tsx"
         },
         {
-          "id": "permission",
+          "id": "all-done",
+          "testFile": "src/web/home/__tests__/workspace-home.interaction.component.test.tsx"
+        },
+        {
+          "id": "produced-only",
+          "testFile": "src/web/home/__tests__/workspace-home.interaction.component.test.tsx"
+        },
+        {
+          "id": "inert",
           "testFile": "src/web/home/__tests__/workspace-home.interaction.component.test.tsx"
         },
         {

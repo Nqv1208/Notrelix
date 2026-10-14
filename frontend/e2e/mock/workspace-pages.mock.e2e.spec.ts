@@ -14,20 +14,20 @@ test.beforeEach(async ({ page }) => {
   });
 });
 
-test("Home resumes work: Continue, My work and activity sections (WX-HOME-001)", async ({
+test("Home resumes work: the greeting, the due windows and completing an item (WX-HOME-001)", async ({
   page,
 }) => {
   await page.goto(workspace);
   await expect(
-    page.getByRole("heading", { level: 1, name: "Home" }),
+    page.getByRole("heading", {
+      level: 1,
+      name: /^Good (morning|afternoon|evening), /,
+    }),
   ).toBeVisible();
-  await expect(page.getByRole("region", { name: "Continue" })).toBeVisible();
-  const myWork = page.getByRole("region", { name: "My work" });
-  await expect(myWork.getByRole("heading", { name: /Overdue/ })).toBeVisible();
-  await expect(
-    page.getByRole("complementary", { name: "Workspace updates" }),
-  ).toBeVisible();
-  await myWork
+  const overdue = page.getByRole("region", { name: /^Overdue/ });
+  await expect(overdue).toBeVisible();
+  await expect(page.getByRole("region", { name: /^Today/ })).toBeVisible();
+  await overdue
     .getByRole("button", { name: /^Mark .* complete$/ })
     .first()
     .click();

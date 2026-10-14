@@ -1,12 +1,14 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
 import {
+  homeAllDoneScenario,
   homeCopyFixture,
   homeDefaultScenario,
   homeEdgeDataScenario,
   homeErrorScenario,
   homeLoadingScenario,
   homeOnboardingScenario,
+  homeProducedOnlyScenario,
   myWorkDefaultScenario,
   myWorkEdgeDataScenario,
   myWorkEmptyScenario,
@@ -31,13 +33,12 @@ const noop = () => undefined;
 
 const homeCallbacks = {
   onComplete: noop,
+  onAddItem: null,
   onCreateBoard: noop,
   onCreateDoc: noop,
   onInvite: noop,
   onRetryContinue: noop,
   onRetryMyWork: noop,
-  onRetryActivity: noop,
-  onRetryInvitations: noop,
 };
 
 const myWorkCallbacks = { onComplete: noop, onRetry: noop, onLoadMore: noop };
@@ -49,6 +50,22 @@ export const HomeDefault: Story = {
     <WorkspaceHomeSurface {...homeDefaultScenario()} {...homeCallbacks} />
   ),
   tags: ["fui-surface--workspace.home", "fui-state--Default"],
+};
+
+/** Final-Home `xong-viec`: nothing due today, one item overdue. */
+export const HomeAllDone: Story = {
+  render: () => (
+    <WorkspaceHomeSurface {...homeAllDoneScenario()} {...homeCallbacks} />
+  ),
+  tags: ["fui-surface--workspace.home", "fui-state--Empty"],
+};
+
+/** What the host fills today: no replies, schedule, key, Status or Priority. */
+export const HomeProducedOnly: Story = {
+  render: () => (
+    <WorkspaceHomeSurface {...homeProducedOnlyScenario()} {...homeCallbacks} />
+  ),
+  tags: ["fui-surface--workspace.home", "fui-state--EdgeData"],
 };
 
 export const HomeLoading: Story = {

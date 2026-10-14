@@ -28,7 +28,6 @@ import {
 } from "../core/model/members";
 import {
   groupMyWorkItems,
-  limitMyWorkGroups,
   myWorkWindow,
   type MyWorkItem,
 } from "../core/model/my-work";
@@ -85,17 +84,6 @@ describe("My work grouping (WX-HOME-001)", () => {
       "no-date",
     ]);
     expect(groups[0]!.items.map((entry) => entry.id)).toEqual(["a", "d"]);
-  });
-
-  it("limits a preview across groups without reordering", () => {
-    const groups = groupMyWorkItems(
-      [item("a", iso(-DAY)), item("b", iso(0)), item("c", iso(0))],
-      NOW,
-    );
-    const limited = limitMyWorkGroups(groups, 2);
-    expect(
-      limited.map((group) => group.items.map((entry) => entry.id)),
-    ).toEqual([["a"], ["b"]]);
   });
 });
 

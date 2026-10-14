@@ -1,110 +1,54 @@
-import { useCallback, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { toast } from "sonner";
 import {
-  groupMyWorkItems,
   isWorkspaceAdmin,
-  limitMyWorkGroups,
-  pendingInvitations,
   resolveNavigationEntries,
   NAVIGATION_RESOURCE_KIND,
-  type MyWorkItem,
 } from "@notrelix/features-workspace/core";
 import {
-  createUseWorkspaceActivity,
-  createUseWorkspaceInvitations,
   createUseWorkspacePins,
   createUseWorkspaceRecents,
-  formatCopy,
   useWorkspaceHomeCopy,
   WorkspaceHomeSurface,
   type ContinueEntry,
   type MyWorkGroupView,
   type SectionState,
 } from "@notrelix/features-workspace/web";
-import { useFormatters } from "@notrelix/i18n";
+import { useCurrentUser } from "@notrelix/features-auth";
+import { useFormatters, useLocale } from "@notrelix/i18n";
 import { useAppRuntime } from "@notrelix/runtime-web";
 import { useWorkspaceContext } from "@/providers/workspace-provider";
-import { toastFailure } from "@/shell/workspace/failure-toast";
 import { sectionState } from "@/shell/workspace/section-state";
+import { useBoardDepartments } from "@/shell/workspace/use-board-departments";
 import { useCreateResource } from "@/shell/workspace/use-create-resource";
 import { useNow } from "@/shell/workspace/use-now";
 import { useWorkspaceResources } from "@/shell/workspace/use-workspace-resources";
 import { useWorkspaceViewer } from "@/shell/workspace/use-workspace-viewer";
 import { useShellNavigation } from "@/shell/workspace/use-shell-navigation";
 import {
+  greetingNameFor,
+  toMyWorkGroups,
+} from "@/shell/workspace/my-work-view";
+import { useMyWorkCompletion } from "@/shell/workspace/use-my-work-completion";
+import {
   flattenMyWork,
-  useAttemptKey,
-  useCompleteItem,
   useMyWorkItems,
 } from "@/shell/workspace/work-management-bridge";
 
-const CONTINUE_LIMIT = 8;
-const MY_WORK_PREVIEW = 6;
-
-/** Assigned Items with Board names from the authorized Board list. */
-export function toMyWorkGroups(
-  items: readonly MyWorkItem[],
-  boardNames: ReadonlyMap<string, string>,
-  now: number,
-): MyWorkGroupView[] {
-  return groupMyWorkItems(items, now).map((group) => ({
-    range: group.range,
-    items: group.items.map((item) => ({
-      ...item,
-      boardName: boardNames.get(item.boardId) ?? null,
-    })),
-  }));
-}
-
-/** Completes My work Items with one idempotency key per attempt. */
-export function useMyWorkCompletion(workspaceId: string) {
-  const copy = useWorkspaceHomeCopy();
-  const complete = useCompleteItem(workspaceId);
-  const nextAttemptKey = useAttemptKey();
-  const [completingIds, setCompletingIds] = useState<ReadonlySet<string>>(
-    () => new Set(),
-  );
-
-  const onComplete = useCallback(
-    (item: MyWorkItem) => {
-      setCompletingIds((ids) => new Set(ids).add(item.id));
-      complete.mutate(
-        { item, attemptKey: nextAttemptKey() },
-        {
-          onSuccess: () =>
-            toast.success(
-              formatCopy(copy.toasts.completed, { name: item.name }),
-            ),
-          onError: (error) =>
-            toastFailure(
-              formatCopy(copy.toasts.completeFailed, { name: item.name }),
-              error,
-              copy.toasts.completeFailedHint,
-            ),
-          onSettled: () =>
-            setCompletingIds((ids) => {
-              const next = new Set(ids);
-              next.delete(item.id);
-              return next;
-            }),
-        },
-      );
-    },
-    [complete, copy, nextAttemptKey],
-  );
-
-  return { completingIds, onComplete };
-}
+const CONTINUE_LIMIT = 4;
 
 /**
- * Workspace Home (WX-HOME-001/002): composes Workspaces navigation state,
- * Work Management and Documents lists into the pure Home surface.
+ * Workspace Home (WX-HOME-001/002, Final-Home): composes Workspaces
+ * navigation state and the Work Management My work read into the pure Home
+ * surface. Approvals, mentions and the schedule have no producer yet, so the
+ * surface is given none of them.
  */
 export function HomePage() {
   const { workspaceId, workspace } = useWorkspaceContext();
   const copy = useWorkspaceHomeCopy();
   const formatters = useFormatters();
+  const { locale } = useLocale();
+  const user = useCurrentUser();
   const navigate = useNavigate();
   const now = useNow();
   const navigation = useShellNavigation();
@@ -115,19 +59,16 @@ export function HomePage() {
     return {
       useRecents: createUseWorkspaceRecents(deps),
       usePins: createUseWorkspacePins(deps),
-      useActivity: createUseWorkspaceActivity(deps),
-      useInvitations: createUseWorkspaceInvitations(deps),
     };
   }, [runtimeClient]);
 
   const viewer = useWorkspaceViewer(workspaceId);
   const isAdmin = isWorkspaceAdmin(viewer.role);
   const resources = useWorkspaceResources(workspaceId);
+  const departments = useBoardDepartments(workspaceId);
   const recents = hooks.useRecents(workspaceId);
   const pins = hooks.usePins(workspaceId);
   const myWorkQuery = useMyWorkItems(workspaceId);
-  const activity = hooks.useActivity(workspaceId);
-  const invitations = hooks.useInvitations(workspaceId, { enabled: isAdmin });
   const { completingIds, onComplete } = useMyWorkCompletion(workspaceId);
   const create = useCreateResource(workspaceId, copy);
 
@@ -166,20 +107,9 @@ export function HomePage() {
     if (state.status !== "ready") return state;
     return {
       status: "ready",
-      data: limitMyWorkGroups(
-        toMyWorkGroups(allMyWork, boardNames, now),
-        MY_WORK_PREVIEW,
-      ) as MyWorkGroupView[],
+      data: toMyWorkGroups(allMyWork, boardNames, now, departments),
     };
-  }, [allMyWork, boardNames, myWorkQuery, now]);
-
-  const pendingState = useMemo(() => {
-    if (!isAdmin) return null;
-    const state = sectionState(invitations, invitations.data);
-    return state.status === "ready"
-      ? { status: "ready" as const, data: pendingInvitations(state.data, now) }
-      : state;
-  }, [invitations, isAdmin, now]);
+  }, [allMyWork, boardNames, departments, myWorkQuery, now]);
 
   const isNewWorkspace =
     resources.ready &&
@@ -194,15 +124,13 @@ export function HomePage() {
         formatters={formatters}
         now={now}
         workspaceName={workspace?.name ?? null}
+        greetingName={greetingNameFor(user?.name, locale)}
         continueState={continueState}
         myWork={myWorkState}
-        myWorkHasMore={
-          allMyWork.length > MY_WORK_PREVIEW || Boolean(myWorkQuery.hasNextPage)
-        }
+        myWorkHasMore={Boolean(myWorkQuery.hasNextPage)}
         completingIds={completingIds}
         onComplete={onComplete}
-        activity={sectionState(activity, activity.data?.entries)}
-        invitations={pendingState}
+        onAddItem={null}
         onboarding={
           isNewWorkspace
             ? {
@@ -225,8 +153,6 @@ export function HomePage() {
           resources.retry();
         }}
         onRetryMyWork={() => void myWorkQuery.refetch()}
-        onRetryActivity={() => void activity.refetch()}
-        onRetryInvitations={() => void invitations.refetch()}
       />
       {create.dialog}
     </>

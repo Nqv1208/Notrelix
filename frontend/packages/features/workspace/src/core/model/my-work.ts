@@ -85,22 +85,64 @@ export function groupMyWorkItems(
   });
 }
 
-/** The first `limit` Items across groups, keeping group order (Home preview). */
-export function limitMyWorkGroups(
-  groups: readonly MyWorkGroup[],
-  limit: number,
-): MyWorkGroup[] {
-  const out: MyWorkGroup[] = [];
-  let remaining = limit;
-  for (const group of groups) {
-    if (remaining <= 0) break;
-    const items = group.items.slice(0, remaining);
-    remaining -= items.length;
-    out.push({ range: group.range, items });
-  }
-  return out;
-}
-
 export function countMyWorkItems(groups: readonly MyWorkGroup[]): number {
   return groups.reduce((total, group) => total + group.items.length, 0);
+}
+
+/**
+ * A due moment read in the member's local calendar, for the rows of Home and
+ * My work. Numbers only: the surfaces turn them into words with their copy.
+ */
+export interface MyWorkDue {
+  readonly kind: "none" | "overdue" | "today" | "upcoming";
+  /** Whole local days past the due day (`overdue` only; otherwise 0). */
+  readonly daysOverdue: number;
+  /** `HH:mm` when the due moment has a time of day, else `null`. */
+  readonly time: string | null;
+  /** Local weekday, 0 = Sunday. */
+  readonly weekday: number;
+  /** Local `dd/MM`. */
+  readonly shortDate: string;
+}
+
+const TWO_DIGITS = (value: number): string => String(value).padStart(2, "0");
+
+/**
+ * Describes `dueAt` against `now` by local calendar day. A due moment at
+ * 00:00 local has no time of day (a date-only due); anything else keeps one.
+ */
+export function describeMyWorkDue(
+  dueAt: string | null,
+  now: number,
+): MyWorkDue {
+  const none: MyWorkDue = {
+    kind: "none",
+    daysOverdue: 0,
+    time: null,
+    weekday: 0,
+    shortDate: "",
+  };
+  if (!dueAt) return none;
+  const due = Date.parse(dueAt);
+  if (Number.isNaN(due)) return none;
+  const date = new Date(due);
+  const time =
+    date.getHours() === 0 && date.getMinutes() === 0
+      ? null
+      : `${TWO_DIGITS(date.getHours())}:${TWO_DIGITS(date.getMinutes())}`;
+  const today = startOfLocalDay(now);
+  const dueDay = startOfLocalDay(due);
+  const kind =
+    dueDay < today ? "overdue" : dueDay === today ? "today" : "upcoming";
+  const daysOverdue =
+    kind === "overdue"
+      ? Math.round((today - dueDay) / (24 * 60 * 60 * 1000))
+      : 0;
+  return {
+    kind,
+    daysOverdue,
+    time,
+    weekday: date.getDay(),
+    shortDate: `${TWO_DIGITS(date.getDate())}/${TWO_DIGITS(date.getMonth() + 1)}`,
+  };
 }

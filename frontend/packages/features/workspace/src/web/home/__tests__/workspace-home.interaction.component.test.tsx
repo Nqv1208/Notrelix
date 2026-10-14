@@ -2,12 +2,14 @@ import { describe, expect, it, vi } from "vitest";
 import { fireEvent, renderPureUi, screen, within } from "@notrelix/testing";
 
 import {
+  homeAllDoneScenario,
   homeCopyFixture,
   homeDefaultScenario,
   homeEdgeDataScenario,
   homeErrorScenario,
   homeLoadingScenario,
   homeOnboardingScenario,
+  homeProducedOnlyScenario,
   myWorkDefaultScenario,
   myWorkEmptyScenario,
   myWorkErrorScenario,
@@ -25,32 +27,24 @@ import {
 import { WorkspaceOnboardingSurface } from "../workspace-onboarding-surface";
 
 const copy = homeCopyFixture();
+const viCopy = homeCopyFixture("vi");
+
+type HomeScenario = ReturnType<typeof homeDefaultScenario>;
 
 function renderHome(
-  scenario: Omit<
-    WorkspaceHomeSurfaceProps,
-    | "onComplete"
-    | "onCreateBoard"
-    | "onCreateDoc"
-    | "onInvite"
-    | "onRetryContinue"
-    | "onRetryMyWork"
-    | "onRetryActivity"
-    | "onRetryInvitations"
-  > = homeDefaultScenario(),
+  scenario: HomeScenario = homeDefaultScenario(),
   overrides: Partial<WorkspaceHomeSurfaceProps> = {},
 ) {
   const props: WorkspaceHomeSurfaceProps = {
     ...scenario,
     navigation: shellNavigationFixture(vi.fn()),
     onComplete: vi.fn(),
+    onAddItem: null,
     onCreateBoard: vi.fn(),
     onCreateDoc: vi.fn(),
     onInvite: vi.fn(),
     onRetryContinue: vi.fn(),
     onRetryMyWork: vi.fn(),
-    onRetryActivity: vi.fn(),
-    onRetryInvitations: vi.fn(),
     ...overrides,
   };
   renderPureUi(<WorkspaceHomeSurface {...props} />);
@@ -58,130 +52,190 @@ function renderHome(
 }
 
 describe("WorkspaceHomeSurface", () => {
-  it("FUI[workspace.home:render] renders resume-work sections with real destinations and no metric cards", () => {
+  it("FUI[workspace.home:render] renders the greeting, the quick filters, the due windows and the side cards", () => {
     renderHome();
 
     expect(
-      screen.getByRole("heading", { level: 1, name: copy.page.title }),
+      screen.getByRole("heading", { level: 1, name: "Chào buổi sáng, Hà" }),
     ).toBeTruthy();
-    const continueSection = screen.getByRole("region", {
-      name: copy.continue.title,
-    });
-    const roadmap = within(continueSection).getByRole("link", {
-      name: /Product Roadmap/,
-    });
-    expect(roadmap.getAttribute("href")).toBe(
-      "/workspaces/ws-product/boards/board-roadmap",
-    );
-    expect(roadmap.textContent).toContain("25 minutes ago");
     expect(
-      within(continueSection).getByRole("link", { name: /Sprint 42 retro/ })
-        .textContent,
-    ).toContain("Team rituals");
-
-    const myWork = screen.getByRole("region", { name: copy.myWork.title });
-    expect(
-      within(myWork).getByRole("heading", { name: /Overdue/ }),
-    ).toBeTruthy();
-    expect(within(myWork).getByRole("heading", { name: /Today/ })).toBeTruthy();
-    expect(
-      within(myWork).getByRole("link", { name: "Open Review vendor contract" }),
+      screen.getByText("Thứ Hai, 12 tháng 10 · 7 việc đang mở"),
     ).toBeTruthy();
 
-    const side = screen.getByRole("complementary", {
-      name: copy.page.sideLabel,
-    });
-    expect(within(side).getByText(/Ada Lovelace edited/)).toBeTruthy();
-    expect(within(side).getByText("linh.nguyen@example.com")).toBeTruthy();
+    const chips = screen.getByRole("group", { name: viCopy.home.chipsLabel });
+    expect(within(chips).getByText("quá hạn").textContent).toBeTruthy();
+    expect(chips.textContent).toContain("1 quá hạn");
+    expect(chips.textContent).toContain("2 đến hạn hôm nay");
+    expect(chips.textContent).toContain("1 chờ bạn duyệt");
+    expect(chips.textContent).toContain("1 nhắc tên bạn");
+
+    const overdue = screen.getByRole("region", { name: /Quá hạn/ });
     expect(
-      within(side)
-        .getByRole("link", { name: /Manage invitations/ })
+      within(overdue).getByRole("link", {
+        name: "Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP",
+      }),
+    ).toBeTruthy();
+    expect(overdue.textContent).toContain("Quá hạn 2 ngày");
+    expect(overdue.textContent).toContain("ERP-142");
+    expect(overdue.textContent).toContain("bạn đang theo dõi");
+
+    const today = screen.getByRole("region", { name: /Hôm nay/ });
+    expect(today.textContent).toContain("17:00");
+    const week = screen.getByRole("region", { name: /Tuần này/ });
+    expect(week.textContent).toContain("Thứ Tư 14/10");
+    expect(week.textContent).toContain("Thứ Sáu 16/10");
+    expect(week.textContent).toContain("Sau đó · 2 việc đến hạn từ tuần sau");
+
+    expect(
+      screen.getByRole("region", { name: /Cần bạn phản hồi/ }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("region", { name: /Lịch hôm nay/ }).textContent,
+    ).toContain("10:40 bây giờ");
+    const cont = screen.getByRole("region", {
+      name: viCopy.home.continue.title,
+    });
+    expect(
+      within(cont)
+        .getByRole("link", { name: /Triển khai ERP Q4/ })
         .getAttribute("href"),
-    ).toBe("/workspaces/ws-product/members");
+    ).toBe("/workspaces/ws-product/boards/board-erp");
   });
 
   it("FUI[workspace.home:complete] completes an item inline and blocks a second request while one is in flight", () => {
-    const props = renderHome();
+    const props = renderHome(homeDefaultScenario(), {
+      completingIds: new Set(["item-erp-144"]),
+    });
 
     fireEvent.click(
       screen.getByRole("button", {
-        name: "Mark Review vendor contract complete",
+        name: "Đánh dấu hoàn thành Đối chiếu sao kê ngân hàng tháng 9",
       }),
     );
     expect(props.onComplete).toHaveBeenCalledWith(
-      expect.objectContaining({ id: "item-contract" }),
+      expect.objectContaining({ id: "item-kt-88" }),
     );
 
     const inFlight = screen.getByRole("button", {
-      name: "Completing Sign off QA checklist…",
-    }) as HTMLButtonElement;
-    expect(inFlight.disabled).toBe(true);
+      name: "Đánh dấu hoàn thành Kiểm thử phân hệ công nợ với số liệu tháng 9",
+    });
+    expect(inFlight.getAttribute("aria-disabled")).toBe("true");
+    fireEvent.click(inFlight);
+    expect(props.onComplete).toHaveBeenCalledTimes(1);
   });
 
-  it("FUI[workspace.home:navigate] hands item and section links to the host router", () => {
+  it("FUI[workspace.home:navigate] hands item, section and quick-filter links to the host router", () => {
     const props = renderHome();
     fireEvent.click(
-      screen.getByRole("link", { name: "Open Final pass on launch copy" }),
+      screen.getByRole("link", {
+        name: "Góp ý nội dung trang giới thiệu sản phẩm mới",
+      }),
       { button: 0 },
     );
     expect(props.navigation.onNavigate).toHaveBeenCalledWith({
       section: "board",
-      boardId: "board-launch",
-      item: "item-copy",
+      boardId: "board-mk",
+      item: "item-mk-21",
     });
     fireEvent.click(
-      screen.getAllByRole("link", { name: /View all my work/ })[0]!,
+      screen.getByRole("link", { name: viCopy.home.sections.viewAll }),
       { button: 0 },
     );
     expect(props.navigation.onNavigate).toHaveBeenCalledWith({
       section: "my-work",
     });
+    fireEvent.click(screen.getByRole("link", { name: /1 quá hạn/ }), {
+      button: 0,
+    });
+    expect(props.navigation.onNavigate).toHaveBeenLastCalledWith({
+      section: "my-work",
+    });
+    fireEvent.click(screen.getByRole("link", { name: /chờ bạn duyệt/ }), {
+      button: 0,
+    });
+    expect(props.navigation.onNavigate).toHaveBeenLastCalledWith({
+      section: "inbox",
+    });
   });
 
-  it("FUI[workspace.home:loading] shows stable skeletons per section while loading", () => {
+  it("FUI[workspace.home:loading] shows stable skeletons for the sections while loading", () => {
     renderHome(homeLoadingScenario());
-    expect(screen.getAllByRole("status").length).toBeGreaterThanOrEqual(3);
-    expect(screen.queryByRole("link", { name: /Product Roadmap/ })).toBeNull();
-    expect(screen.getByText(copy.page.greetingLoading)).toBeTruthy();
+    expect(screen.getAllByRole("region", { busy: true }).length).toBe(5);
+    expect(
+      screen.queryByRole("link", { name: /Triển khai ERP Q4/ }),
+    ).toBeNull();
+    expect(
+      screen.getByText("Thứ Hai, 12 tháng 10 · đang tải việc của bạn…"),
+    ).toBeTruthy();
   });
 
   it("FUI[workspace.home:states] offers a retry per failed section", () => {
     const props = renderHome(homeErrorScenario());
-    const retries = screen.getAllByRole("button", {
-      name: copy.sections.retry,
-    });
-    expect(retries).toHaveLength(4);
+    const retries = screen.getAllByRole("button", { name: viCopy.home.retry });
+    expect(retries).toHaveLength(2);
     retries.forEach((button) => fireEvent.click(button));
-    expect(props.onRetryContinue).toHaveBeenCalledTimes(1);
     expect(props.onRetryMyWork).toHaveBeenCalledTimes(1);
-    expect(props.onRetryActivity).toHaveBeenCalledTimes(1);
-    expect(props.onRetryInvitations).toHaveBeenCalledTimes(1);
+    expect(props.onRetryContinue).toHaveBeenCalledTimes(1);
   });
 
-  it("FUI[workspace.home:partial] keeps loaded sections usable when another section fails", () => {
+  it("FUI[workspace.home:partial] keeps loaded sections usable and names no Board the member cannot open", () => {
     renderHome(homeEdgeDataScenario());
+    expect(
+      screen.getByRole("link", { name: /Chuẩn bị tài liệu bàn giao/ }),
+    ).toBeTruthy();
     expect(
       screen.getByRole("link", { name: /Lộ trình tích hợp hệ thống/ }),
     ).toBeTruthy();
-    expect(screen.getAllByRole("alert")).toHaveLength(1);
-    // The Board of this item is not in the authorized list: no Board name.
-    expect(screen.queryByText(/^trong /)).toBeNull();
-  });
-
-  it("FUI[workspace.home:permission] hides pending invitations from members who are not admins", () => {
-    renderHome({ ...homeDefaultScenario(), invitations: null });
+    expect(screen.queryByText(/board-unknown/)).toBeNull();
+    // The cards without a producer are not drawn.
     expect(
-      screen.queryByRole("region", { name: copy.invitations.title }),
+      screen.queryByRole("region", { name: /Cần bạn phản hồi/ }),
     ).toBeNull();
+    expect(screen.queryByRole("region", { name: /Lịch hôm nay/ })).toBeNull();
   });
 
-  it("FUI[workspace.home:onboarding] replaces Continue with the onboarding steps in a new workspace", () => {
+  it("FUI[workspace.home:all-done] says nothing else is due today and when the next item is", () => {
+    renderHome(homeAllDoneScenario());
+    const today = screen.getByRole("region", { name: /Hôm nay/ });
+    expect(today.textContent).toContain(
+      "Xong hết việc đến hạn hôm nay · còn 1 việc quá hạn",
+    );
+    expect(today.textContent).toContain("Việc tiếp theo đến hạn Thứ Tư 14/10.");
+    expect(screen.queryByText(/đến hạn hôm nay$/)).toBeNull();
+  });
+
+  it("FUI[workspace.home:produced-only] draws only what the host fills in: no key, Status, Priority or reply cards", () => {
+    renderHome(homeProducedOnlyScenario());
+    expect(screen.queryByText("ERP-142")).toBeNull();
+    expect(screen.queryByText("Đang làm")).toBeNull();
+    expect(screen.queryByRole("img", { name: /Ưu tiên/ })).toBeNull();
+    expect(
+      screen.queryByRole("region", { name: /Cần bạn phản hồi/ }),
+    ).toBeNull();
+    expect(
+      screen.getByRole("link", {
+        name: "Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP",
+      }),
+    ).toBeTruthy();
+  });
+
+  it("FUI[workspace.home:inert] draws Add item and My calendar inert with the reason when no host action exists", () => {
+    renderHome(homeDefaultScenario(), { calendarHref: null });
+    const add = screen.getByRole("button", { name: viCopy.home.addItem });
+    expect(add.getAttribute("aria-disabled")).toBe("true");
+    expect(add.getAttribute("title")).toBe(viCopy.home.addItemUnavailable);
+    const calendar = screen.getByRole("button", { name: viCopy.home.calendar });
+    expect(calendar.getAttribute("aria-disabled")).toBe("true");
+    expect(calendar.getAttribute("title")).toBe(
+      viCopy.home.calendarUnavailable,
+    );
+  });
+
+  it("FUI[workspace.home:onboarding] replaces the work sections with the onboarding steps in a new workspace", () => {
     const props = renderHome(homeOnboardingScenario());
-    expect(
-      screen.queryByRole("region", { name: copy.continue.title }),
-    ).toBeNull();
+    expect(screen.queryByRole("region", { name: /Hôm nay/ })).toBeNull();
     fireEvent.click(
-      screen.getByRole("button", { name: copy.onboarding.boardAction }),
+      screen.getByRole("button", { name: viCopy.onboarding.boardAction }),
     );
     expect(props.onCreateBoard).toHaveBeenCalledTimes(1);
   });

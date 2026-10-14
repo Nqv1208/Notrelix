@@ -14,7 +14,8 @@ import {
   flattenMyWork,
   useMyWorkItems,
 } from "@/shell/workspace/work-management-bridge";
-import { toMyWorkGroups, useMyWorkCompletion } from "./home";
+import { toMyWorkGroups } from "@/shell/workspace/my-work-view";
+import { useMyWorkCompletion } from "@/shell/workspace/use-my-work-completion";
 
 /**
  * My work (WX-HOME-001): every open Item assigned to the member in this
