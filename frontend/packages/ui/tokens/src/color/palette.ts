@@ -82,6 +82,10 @@ export interface NeutralRoles {
   readonly onInverse: Oklch;
   /** Danger text on the inverse surface. */
   readonly inverseDanger: Oklch;
+  /** Success text on the inverse surface (the bulk bar's "Xong"). */
+  readonly inverseSuccess: Oklch;
+  /** Disabled text on the inverse surface (a bulk action with no write). */
+  readonly inverseMuted: Oklch;
 }
 
 const n = (l: number, c: number) => tone(l, c, NEUTRAL_HUE);
@@ -119,6 +123,8 @@ export const neutrals: Record<ThemeAppearance, NeutralRoles> = {
     inverse: oklch(0.217, 0.015, 261.6), // #161A21
     onInverse: n(0.967, 0.005), // #F2F4F7
     inverseDanger: oklch(0.794, 0.121, 10), // #FF9AAA
+    inverseSuccess: oklch(0.848, 0.11, 156.76), // #8EE3B0
+    inverseMuted: oklch(0.741, 0.02, 255.6), // #A3ACB8
   },
   dark: {
     canvas: n(0.177, 0.011), // #0E1116
@@ -144,6 +150,8 @@ export const neutrals: Record<ThemeAppearance, NeutralRoles> = {
     inverse: n(0.314, 0.023), // #2A323D
     onInverse: n(0.967, 0.005), // #F2F4F7
     inverseDanger: oklch(0.794, 0.121, 10), // #FF9AAA
+    inverseSuccess: oklch(0.848, 0.11, 156.76), // #8EE3B0
+    inverseMuted: oklch(0.741, 0.02, 255.6), // #A3ACB8
   },
   "high-contrast": {
     canvas: n(1, 0),
@@ -169,6 +177,8 @@ export const neutrals: Record<ThemeAppearance, NeutralRoles> = {
     inverse: n(0.13, 0.01),
     onInverse: n(1, 0),
     inverseDanger: oklch(0.794, 0.121, 10),
+    inverseSuccess: oklch(0.848, 0.11, 156.76),
+    inverseMuted: oklch(0.741, 0.02, 255.6),
   },
 };
 

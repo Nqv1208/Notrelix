@@ -40,6 +40,8 @@ const TEXT_PAIRS: readonly Pair[] = [
   ["foreground", "table-selected"],
   ["inverse-foreground", "inverse-surface"],
   ["inverse-danger", "inverse-surface"],
+  ["inverse-success", "inverse-surface"],
+  ["inverse-muted", "inverse-surface"],
   ["foreground", "status-chip-todo"],
   ["foreground", "status-chip-doing"],
   ["foreground", "status-chip-review"],

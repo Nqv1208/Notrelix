@@ -70,6 +70,8 @@ const ROLE_CLASS: Record<keyof typeof textRoles, string> = {
   "dialog-title": "text-dialog-title",
   "avatar-lg": "text-avatar-lg",
   greeting: "text-greeting",
+  "list-title": "text-list-title",
+  "empty-title": "text-empty-title",
   "item-title": "text-item-title",
   "item-heading": "text-item-heading",
   "item-prose": "text-item-prose",

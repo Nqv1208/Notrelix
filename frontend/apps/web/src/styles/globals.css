@@ -162,6 +162,14 @@
   --text-dialog-title--line-height: var(--type-dialog-title-line-height);
   --text-dialog-title--font-weight: var(--type-dialog-title-weight);
   --text-dialog-title--letter-spacing: var(--type-dialog-title-tracking);
+  --text-empty-title: var(--type-empty-title-size);
+  --text-empty-title--line-height: var(--type-empty-title-line-height);
+  --text-empty-title--font-weight: var(--type-empty-title-weight);
+  --text-empty-title--letter-spacing: var(--type-empty-title-tracking);
+  --text-list-title: var(--type-list-title-size);
+  --text-list-title--line-height: var(--type-list-title-line-height);
+  --text-list-title--font-weight: var(--type-list-title-weight);
+  --text-list-title--letter-spacing: var(--type-list-title-tracking);
   --text-greeting: var(--type-greeting-size);
   --text-greeting--line-height: var(--type-greeting-line-height);
   --text-greeting--font-weight: var(--type-greeting-weight);
@@ -288,6 +296,8 @@
   --color-inverse-surface: var(--inverse-surface);
   --color-inverse-foreground: var(--inverse-foreground);
   --color-inverse-danger: var(--inverse-danger);
+  --color-inverse-success: var(--inverse-success);
+  --color-inverse-muted: var(--inverse-muted);
   /* Selected table row: the accent soft tone, one step lighter (Final-Table --sel-row). */
   --color-row-selected: color-mix(in oklab, var(--state-selected) 70%, var(--surface-panel));
 

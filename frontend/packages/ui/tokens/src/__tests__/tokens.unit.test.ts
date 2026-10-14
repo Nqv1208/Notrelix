@@ -762,12 +762,42 @@ describe("Home, My work and Inbox type roles", () => {
     expect(role.letterSpacing).toBe("-0.015em");
   });
 
+  it("sizes the My work title as Final-MyWork's h1 (24px / 650, line 1.25)", () => {
+    const role = textRoles["list-title"];
+    expect(fontSizeScale[role.size as keyof typeof fontSizeScale]).toBe(1.5);
+    expect(role.lineHeight * 16).toBeCloseTo(30, 5);
+    expect(role.weight).toBe(650);
+    expect(role.letterSpacing).toBe("-0.015em");
+  });
+
+  it("sizes the empty-page title as Final-MyWork's `.emp` h2 (19px / 650, line 1.45)", () => {
+    const role = textRoles["empty-title"];
+    expect(fontSizeDense[role.size as keyof typeof fontSizeDense]).toBe(1.1875);
+    expect(role.lineHeight * 16).toBeCloseTo(27.55, 5);
+    expect(role.weight).toBe(650);
+  });
+
+  it("emits the inverse success and muted colours of the bulk bar (#8EE3B0, #A3ACB8)", () => {
+    for (const appearance of ["light", "dark", "high-contrast"] as const) {
+      expect(emittedHex(appearance, "inverse-success")).toBe("#8ee3b0");
+      expect(emittedHex(appearance, "inverse-muted")).toBe("#a3acb8");
+    }
+    const globals = readFileSync(
+      resolve(here, "../../../../../apps/web/src/styles/globals.css"),
+      "utf8",
+    );
+    expect(globals).toContain(
+      "--color-inverse-success: var(--inverse-success);",
+    );
+    expect(globals).toContain("--color-inverse-muted: var(--inverse-muted);");
+  });
+
   it("maps every Home role to the web globals", () => {
     const globals = readFileSync(
       resolve(here, "../../../../../apps/web/src/styles/globals.css"),
       "utf8",
     );
-    for (const role of ["greeting"]) {
+    for (const role of ["greeting", "list-title", "empty-title"]) {
       expect(globals, role).toContain(
         `--text-${role}: var(--type-${role}-size);`,
       );

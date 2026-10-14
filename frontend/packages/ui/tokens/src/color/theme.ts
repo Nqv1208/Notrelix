@@ -145,6 +145,8 @@ export function buildAppearanceColors(
     "inverse-surface": nr.inverse,
     "inverse-foreground": nr.onInverse,
     "inverse-danger": nr.inverseDanger,
+    "inverse-success": nr.inverseSuccess,
+    "inverse-muted": nr.inverseMuted,
 
     // Text and icon
     "meta-foreground": nr.textMeta,

@@ -58,6 +58,7 @@ export const fontSizeDense = {
   "14p5": 0.90625,
   "15": 0.9375,
   "15p5": 0.96875,
+  "19": 1.1875,
   "20": 1.25,
   "26": 1.625,
 } as const;
@@ -433,6 +434,22 @@ export const textRoles = {
   greeting: {
     size: "26",
     lineHeight: 2.03125,
+    weight: 650,
+    letterSpacing: "-0.015em",
+    family: "sans",
+  },
+  /** Title of an empty page (Final-MyWork `.emp` h2, 19px / 650, line 1.45). */
+  "empty-title": {
+    size: "19",
+    lineHeight: 1.721875,
+    weight: 650,
+    letterSpacing: "0em",
+    family: "sans",
+  },
+  /** Title of the My work page (Final-MyWork h1, 24px / 650, line 1.25). */
+  "list-title": {
+    size: "2xl",
+    lineHeight: 1.875,
     weight: 650,
     letterSpacing: "-0.015em",
     family: "sans",

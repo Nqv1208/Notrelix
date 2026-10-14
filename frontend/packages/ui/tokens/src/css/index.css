@@ -25,6 +25,7 @@
   --type-scale-13: 0.8125rem;
   --type-scale-15: 0.9375rem;
   --type-scale-17: 1.0625rem;
+  --type-scale-19: 1.1875rem;
   --type-scale-20: 1.25rem;
   --type-scale-26: 1.625rem;
   --type-scale-10p5: 0.65625rem;
@@ -266,6 +267,16 @@
   --type-greeting-weight: 650;
   --type-greeting-tracking: -0.015em;
   --type-greeting-family: var(--font-family-sans);
+  --type-empty-title-size: var(--type-scale-19);
+  --type-empty-title-line-height: 1.721875rem;
+  --type-empty-title-weight: 650;
+  --type-empty-title-tracking: 0em;
+  --type-empty-title-family: var(--font-family-sans);
+  --type-list-title-size: var(--type-scale-2xl);
+  --type-list-title-line-height: 1.875rem;
+  --type-list-title-weight: 650;
+  --type-list-title-tracking: -0.015em;
+  --type-list-title-family: var(--font-family-sans);
   --type-avatar-lg-size: var(--type-scale-10p5);
   --type-avatar-lg-line-height: 1rem;
   --type-avatar-lg-weight: 700;
@@ -541,6 +552,8 @@
   --input: oklch(0.87 0.008 255);
   --inverse-danger: oklch(0.794 0.121 10);
   --inverse-foreground: oklch(0.967 0.005 255);
+  --inverse-muted: oklch(0.741 0.02 255.6);
+  --inverse-success: oklch(0.848 0.11 156.8);
   --inverse-surface: oklch(0.217 0.015 261.6);
   --item-added: oklch(0.951 0.019 157.9);
   --item-added-foreground: oklch(0.471 0.098 156.2);
@@ -766,6 +779,8 @@
   --input: oklch(0.36 0.01 255);
   --inverse-danger: oklch(0.794 0.121 10);
   --inverse-foreground: oklch(0.967 0.005 255);
+  --inverse-muted: oklch(0.741 0.02 255.6);
+  --inverse-success: oklch(0.848 0.11 156.8);
   --inverse-surface: oklch(0.314 0.023 255);
   --item-added: oklch(0.753 0.14 156.6 / 0.14);
   --item-added-foreground: oklch(0.815 0.114 157.8);
@@ -991,6 +1006,8 @@
   --input: oklch(0.4 0.01 255);
   --inverse-danger: oklch(0.794 0.121 10);
   --inverse-foreground: oklch(1 0 255);
+  --inverse-muted: oklch(0.741 0.02 255.6);
+  --inverse-success: oklch(0.848 0.11 156.8);
   --inverse-surface: oklch(0.13 0.01 255);
   --item-added: oklch(0.951 0.019 157.9);
   --item-added-foreground: oklch(0.471 0.098 156.2);

@@ -42,6 +42,8 @@ export const TEXT_ROLES = [
   "avatar-md",
   "avatar-lg",
   "greeting",
+  "list-title",
+  "empty-title",
   "dialog-title",
   "doc-title",
   "doc-heading",
