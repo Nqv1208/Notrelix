@@ -420,6 +420,7 @@ export function WorkspaceCommandPaletteSurface({
       : firstEnabledId(view.groups);
   const parsed = parsePaletteQuery(query);
   const term = parsed.term;
+  const showHint = !running && !parsed.prefix && query === "";
 
   React.useEffect(() => {
     if (!activeId) return;
@@ -523,7 +524,7 @@ export function WorkspaceCommandPaletteSurface({
           />
           <div
             data-f="q"
-            className="flex min-w-0 flex-1 items-center text-palette-query text-foreground"
+            className="relative flex min-w-0 flex-1 items-center text-palette-query text-foreground"
           >
             {parsed.prefix || running ? (
               <span
@@ -555,7 +556,6 @@ export function WorkspaceCommandPaletteSurface({
                     ? query.trimStart().slice(1)
                     : query
               }
-              placeholder={copy.placeholder}
               onChange={(event) => {
                 const typed = event.target.value;
                 // A prefix typed over a chip starts that mode instead.
@@ -578,8 +578,21 @@ export function WorkspaceCommandPaletteSurface({
                 }
                 onInputKeyDown(event);
               }}
-              className="m-0 min-w-0 flex-1 border-0 bg-transparent p-0 text-ellipsis text-palette-query text-foreground caret-primary outline-none placeholder:text-meta-foreground"
+              className={cn(
+                "m-0 min-w-0 border-0 bg-transparent p-0 text-ellipsis text-palette-query text-foreground caret-primary outline-none",
+                // The hint wraps onto lines of its own, so the field lies over it.
+                showHint ? "absolute inset-0 size-full" : "flex-1",
+              )}
             />
+            {showHint ? (
+              <span
+                data-f="ph"
+                aria-hidden="true"
+                className="pointer-events-none min-w-0 flex-1 text-meta-foreground"
+              >
+                {copy.placeholder}
+              </span>
+            ) : null}
           </div>
           <button
             type="button"
