@@ -396,7 +396,11 @@ function TaskTrack({
           <span
             data-tl="lab"
             className="absolute top-[9px] z-[4] max-w-[280px] truncate text-xs leading-[1.45] font-bold whitespace-nowrap text-foreground"
-            style={{ left: milestone.labelLeft }}
+            style={
+              milestone.labelRight !== undefined
+                ? { right: milestone.labelRight }
+                : { left: milestone.labelLeft }
+            }
           >
             {row.title}
           </span>

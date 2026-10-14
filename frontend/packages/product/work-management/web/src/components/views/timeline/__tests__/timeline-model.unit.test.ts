@@ -283,14 +283,85 @@ describe("layoutTimeline (ngay)", () => {
     );
     // 08/10 is the fourth day: centre 91, the dot 10 px wide, the note 11 px on.
     expect(row.fin).toMatchObject({ x: 86 });
-    expect(row.label).toMatchObject({ text: "Hoàn thành 08/10", left: 102 });
+    // The full note would cross the today line (12/10, x 195), and there is no
+    // room for it left of the dot: only the date stays, beside the dot.
+    expect(row.label).toMatchObject({ text: "08/10", left: 102 });
     expect(row.bar).toBeNull();
+  });
+
+  it("puts a done note after its dot when it clears the today line", () => {
+    const row = task(
+      layoutOf("day", {
+        groups: single([
+          item({
+            id: "early",
+            tone: "done",
+            startDay: null,
+            dueDay: "2026-10-06",
+          }),
+        ]),
+        links: [],
+      }),
+      "early",
+    );
+    expect(row.label).toMatchObject({ text: "Hoàn thành 06/10", left: 50 });
+  });
+
+  it("puts a done note before its dot when the right side crosses the today line", () => {
+    const row = task(
+      layoutOf("week", {
+        groups: single([
+          item({
+            id: "early",
+            tone: "done",
+            startDay: null,
+            dueDay: "2026-10-09",
+          }),
+        ]),
+        links: [],
+      }),
+      "early",
+    );
+    expect(row.label?.left).toBeUndefined();
+    expect(row.label?.right).toBeGreaterThan(0);
+  });
+
+  it("moves the label of a bar near the right edge to the bar's left", () => {
+    const groups = single([
+      item({
+        id: "late-bar",
+        startDay: "2026-10-23",
+        dueDay: "2026-10-25",
+        title: "Viết tài liệu quy trình nhập hoá đơn đầu vào",
+      }),
+    ]);
+    const wide = task(layoutOf("day", { groups, links: [] }), "late-bar");
+    // 3 days of 26 px end at x 546; the label has room on the right.
+    expect(wide.label?.left).toBeDefined();
+    const narrow = layoutTimeline({
+      scale: "day",
+      spec: scaleSpec("day", TODAY),
+      groups,
+      links: [],
+      today: TODAY,
+      copy: vi,
+      criticalPath: false,
+      // Only the first 640 px of the chart are in view.
+      visible: { from: 0, to: 640 },
+    });
+    const flipped = task(narrow, "late-bar").label;
+    expect(flipped?.left).toBeUndefined();
+    expect(flipped?.right).toBeGreaterThan(0);
+    // The label ends before the bar starts (x 469).
+    expect(754 - (flipped?.right ?? 0)).toBeLessThanOrEqual(469);
   });
 
   it("draws the milestone as a diamond with its title, not a bar", () => {
     const row = task(layout, "milestone-golive");
     expect(row.bar).toBeNull();
-    expect(row.milestone).toMatchObject({ x: 708, labelLeft: 728 });
+    // The diamond is on the last day of the window, so the title flips to its left.
+    expect(row.milestone).toMatchObject({ x: 708, labelLeft: undefined });
+    expect(row.milestone?.labelRight).toBe(754 - 702);
     expect(row.tag).toBe("Mốc");
     expect(row.hasKey).toBe(false);
     expect(row.aria).toBe("Mốc Go-live ERP, 01/11");

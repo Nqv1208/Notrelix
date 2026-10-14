@@ -65,6 +65,8 @@ export const en = {
   },
   finished: {
     note: "Done {{date}}",
+    /** The note when only its date fits beside the dot. */
+    short: "{{date}}",
     before: "◂ Done {{date}}",
     label: "{{name}}, done {{date}}",
     beforeLabel: "{{name}}, done {{date}}, before the range shown",
@@ -168,6 +170,7 @@ export const vi: TimelineCopy = {
   },
   finished: {
     note: "Hoàn thành {{date}}",
+    short: "{{date}}",
     before: "◂ Hoàn thành {{date}}",
     label: "{{name}}, hoàn thành {{date}}",
     beforeLabel: "{{name}}, hoàn thành {{date}}, trước khoảng đang xem",

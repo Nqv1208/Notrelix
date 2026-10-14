@@ -125,12 +125,19 @@ export function BoardTimelineSurface({
     () => buildHeader({ scale, spec, today, copy, locale }),
     [scale, spec, today, copy, locale],
   );
+  // The part of the chart in view (chart pixels), so a label that would be cut
+  // by the edge of the frame moves to the other side of its bar.
+  const [visible, setVisible] = useState<{
+    from: number;
+    to: number;
+  } | null>(null);
   const hasLinks = links.length > 0;
   const hasCritical =
     hasLinks && groups.some((g) => g.items.some((i) => i.critical));
   const layout = useMemo(
     () =>
       layoutTimeline({
+        visible,
         scale,
         spec,
         groups,
@@ -151,6 +158,7 @@ export function BoardTimelineSurface({
       criticalShown,
       hasCritical,
       drag,
+      visible,
     ],
   );
   const rowsById = useMemo(() => {
@@ -181,6 +189,47 @@ export function BoardTimelineSurface({
       return;
     element.scrollLeft = Math.max(0, edge + header.todayX - region / 2);
   }, [header.todayX, scale, todayToken]);
+
+  useEffect(() => {
+    const element = scroller.current;
+    if (!element) return undefined;
+    let frame = 0;
+    const measure = () => {
+      frame = 0;
+      if (element.clientWidth === 0) return;
+      const left = element.querySelector<HTMLElement>('[data-tl="left"]');
+      const listWidth = left?.offsetWidth ?? 0;
+      const docked = left ? getComputedStyle(left).position === "sticky" : true;
+      const edge = docked ? 0 : listWidth;
+      const from = Math.round(element.scrollLeft - edge);
+      const to = Math.round(
+        element.scrollLeft -
+          edge +
+          element.clientWidth -
+          (docked ? listWidth : 0),
+      );
+      setVisible((existing) =>
+        existing && existing.from === from && existing.to === to
+          ? existing
+          : { from, to },
+      );
+    };
+    const schedule = () => {
+      if (frame === 0) frame = requestAnimationFrame(measure);
+    };
+    measure();
+    element.addEventListener("scroll", schedule, { passive: true });
+    const observer =
+      typeof ResizeObserver === "undefined"
+        ? null
+        : new ResizeObserver(schedule);
+    observer?.observe(element);
+    return () => {
+      element.removeEventListener("scroll", schedule);
+      observer?.disconnect();
+      if (frame !== 0) cancelAnimationFrame(frame);
+    };
+  }, [scale, header.chartWidth, todayToken]);
 
   // Escape puts a bar back while it is dragged.
   useEffect(() => {

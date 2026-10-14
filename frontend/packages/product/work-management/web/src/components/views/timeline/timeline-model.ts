@@ -74,6 +74,8 @@ export interface TimelineDrag {
 
 export const GROUP_ROW_HEIGHT = 32;
 export const TASK_ROW_HEIGHT = 36;
+/** Width of one character of a 12px label, to size a label before it is drawn. */
+const LABEL_CHAR = 6.6;
 
 export function fill(
   message: string,
@@ -380,7 +382,9 @@ export interface TaskLayout {
   } | null;
   readonly milestone: {
     readonly x: number;
-    readonly labelLeft: number;
+    /** Left of the label, or `labelRight` (the gap to the chart's right edge) when it flips to the diamond's left. */
+    readonly labelLeft: number | undefined;
+    readonly labelRight: number | undefined;
     readonly title: string;
     readonly aria: string;
   } | null;
@@ -469,6 +473,11 @@ export interface LayoutInput {
   /** Draw the critical path: critical items and their links in danger, the rest faded. */
   criticalPath: boolean;
   drag?: TimelineDrag | null;
+  /**
+   * The part of the chart in view, in chart pixels; labels stay inside it.
+   * The whole chart when omitted.
+   */
+  visible?: { readonly from: number; readonly to: number } | null;
 }
 
 /** First and last day (day numbers) of an item; `end` is null when it has no date. */
@@ -806,8 +815,13 @@ export function layoutTimeline(input: LayoutInput): TimelineLayout {
   }
 
   // Outside labels start clear of the arrow lines in their own row and stay
-  // inside the chart.
+  // inside what the reader can see (the chart, or the part of it scrolled
+  // into view). With no room on the right of a bar or dot the label moves to
+  // its left, so it is never cut by an edge.
   const todayX = Math.round(X(todayN) + P * 0.45);
+  const seeFrom = Math.max(0, input.visible?.from ?? 0);
+  const seeTo = Math.min(chartWidth, input.visible?.to ?? chartWidth);
+  const wide = (text: string) => text.length * LABEL_CHAR;
   for (const work of works) {
     const label = work.label;
     if (!label || work.off) continue;
@@ -824,29 +838,41 @@ export function layoutTimeline(input: LayoutInput): TimelineLayout {
       }
     }
     lx = Math.round(lx);
-    const room = Math.min(280, chartWidth - lx - 4);
-    if (room < 90 && !work.isFin) {
-      work.label = null;
-      continue;
+    const place = (text: string): LabelLayout | null => {
+      const need = Math.min(280, wide(text));
+      const room = Math.min(280, seeTo - lx - 4);
+      if (work.isFin) {
+        // A done note reads best after its dot; it goes to the left of the dot
+        // when it would not fit or would sit across the today line.
+        const crosses = todayX >= lx - 2 && todayX <= lx + wide(text) + 2;
+        if (room >= need && !crosses) return { text, left: lx, maxWidth: room };
+        const anchor = work.fc - 11;
+        const roomLeft = Math.min(280, anchor - seeFrom - 4);
+        const leftCrosses =
+          todayX >= anchor - wide(text) - 2 && todayX <= anchor + 2;
+        if (roomLeft >= need && !leftCrosses)
+          return { text, right: chartWidth - anchor, maxWidth: roomLeft };
+        return null;
+      }
+      if (room >= need) return { text, left: lx, maxWidth: room };
+      const barLeft = work.x - 6;
+      const roomLeft = Math.min(280, barLeft - seeFrom - 4);
+      const onToday =
+        todayX >= barLeft - wide(text) - 2 && todayX <= barLeft + 2;
+      const left = { text, right: chartWidth - barLeft, maxWidth: roomLeft };
+      // Left of the bar when the whole title fits there without crossing the
+      // today line; otherwise the right side, cut short with an ellipsis.
+      if (roomLeft >= need && !onToday) return left;
+      if (room >= 90) return { text, left: lx, maxWidth: room };
+      if (roomLeft >= 90) return left;
+      return null;
+    };
+    let placed = place(label.text);
+    if (!placed && work.isFin) {
+      // Neither side takes the whole note: keep the date next to the dot.
+      placed = place(fill(copy.finished.short, { date: fmtDay(work.d0) }));
     }
-    work.labelLeft = lx;
-    // A completion note that would sit across the today line goes to the
-    // left of its dot when there is room.
-    const est = label.text.length * 6.6;
-    if (
-      work.isFin &&
-      lx <= todayX + 2 &&
-      lx + est >= todayX - 2 &&
-      work.fc - 11 - est >= 4
-    ) {
-      work.label = {
-        text: label.text,
-        right: chartWidth - (work.fc - 11),
-        maxWidth: Math.min(280, room),
-      };
-    } else {
-      work.label = { text: label.text, left: lx, maxWidth: room };
-    }
+    work.label = placed;
   }
 
   const out: RowLayout[] = [];
@@ -950,7 +976,7 @@ export function layoutTimeline(input: LayoutInput): TimelineLayout {
         w.isMs && !w.off
           ? {
               x: w.msC - 7,
-              labelLeft: w.msC + 13,
+              ...milestoneLabel(w.msC, item.title, chartWidth, seeFrom, seeTo),
               title: fill(copy.milestone.title, {
                 title: item.title,
                 date: fmtDay(w.d0),
@@ -973,6 +999,24 @@ export function layoutTimeline(input: LayoutInput): TimelineLayout {
     bodyHeight,
     undated,
   };
+}
+
+/** The milestone's label sits right of the diamond, or left of it with no room on the right. */
+function milestoneLabel(
+  centre: number,
+  title: string,
+  chartWidth: number,
+  seeFrom: number,
+  seeTo: number,
+): { labelLeft: number | undefined; labelRight: number | undefined } {
+  const need = Math.min(280, title.length * LABEL_CHAR * 1.08);
+  const left = centre + 13;
+  if (seeTo - left - 4 >= need)
+    return { labelLeft: left, labelRight: undefined };
+  const anchor = centre - 13;
+  if (anchor - seeFrom - 4 >= need)
+    return { labelLeft: undefined, labelRight: chartWidth - anchor };
+  return { labelLeft: left, labelRight: undefined };
 }
 
 function cascadeNote(
