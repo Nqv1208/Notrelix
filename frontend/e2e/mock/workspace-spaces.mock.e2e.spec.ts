@@ -42,8 +42,9 @@ test("Space org tree: create a Space, add a member, create a Board and a Doc in 
     tree.getByRole("treeitem", { name: /^IT\b.*Private/ }),
   ).toHaveAttribute("aria-current", "page");
 
-  // Add a workspace member to the Space.
-  await page.getByRole("tab", { name: "Members" }).click();
+  // Add a workspace member to the Space (the tab strip is links, not tabs).
+  const tabs = page.getByRole("navigation", { name: "IT" });
+  await tabs.getByRole("link", { name: /^Members/ }).click();
   const add = page.getByRole("form", { name: "Add people or a team" });
   await add.getByRole("combobox", { name: "Person" }).click();
   await page.getByRole("option", { name: "Jordan Lee (Member)" }).click();
@@ -55,41 +56,53 @@ test("Space org tree: create a Space, add a member, create a Board and a Doc in 
       .getByText("Jordan Lee (Member)"),
   ).toBeVisible();
 
-  // Create a Board in the Space.
-  await page.getByRole("tab", { name: "Overview" }).click();
-  await page.getByRole("button", { name: "New Board" }).click();
+  // Create a Board in the Space from the Create menu.
+  await tabs.getByRole("link", { name: "Overview" }).click();
+  await page.getByRole("button", { name: "Create", exact: true }).click();
+  await page.getByRole("menuitem", { name: /^Board/ }).click();
   const board = page.getByRole("dialog", { name: "New Board" });
   await expect(board.getByText("It will be placed in IT.")).toBeVisible();
   await board.getByLabel("Board name").fill("Service desk");
   await board.getByRole("button", { name: "Create Board" }).click();
   await expect(page).toHaveURL(/\/boards\//);
 
-  // Back in the Space, move the Board to Engineering.
+  // Back in the department, the Board is listed with its sub-line.
   await tree.getByRole("treeitem", { name: /^IT/ }).click();
-  const boards = page.getByRole("region", { name: /^Boards/ });
+  const boards = page.getByRole("region", { name: "Running Boards" });
   await expect(
-    boards.getByRole("link", { name: "Service desk" }),
+    boards.getByRole("link", { name: /Service desk/ }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Move Service desk" }).click();
+
+  // The directory moves it to Engineering (the department page has no move).
+  await nav.getByRole("link", { name: "Docs", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Move Service desk to a Space" })
+    .click();
   const move = page.getByRole("dialog", {
     name: "Move Service desk to a Space",
   });
   await move.getByRole("radio", { name: /^Engineering/ }).click();
   await move.getByRole("button", { name: "Move here" }).click();
   await expect(page.getByText("Service desk was moved.")).toBeVisible();
-  await expect(boards.getByText("No Boards in this Space yet.")).toBeVisible();
 
+  await tree.getByRole("treeitem", { name: /^IT/ }).click();
+  await expect(
+    page
+      .getByRole("region", { name: "Running Boards" })
+      .getByText("No Boards in this department yet."),
+  ).toBeVisible();
   await tree.getByRole("treeitem", { name: /Engineering/ }).click();
   await expect(
-    page.getByRole("region", { name: /^Boards/ }).getByRole("link", {
-      name: "Service desk",
+    page.getByRole("region", { name: "Running Boards" }).getByRole("link", {
+      name: /Service desk/,
     }),
   ).toBeVisible();
 
-  // Create a Doc in IT, then move it to Engineering with its version
-  // (Documents.Pages.MoveToSpace reads PageDto.version as expectedVersion).
+  // Create a Doc in IT from the Create menu, then move it to Engineering with
+  // its version (Documents.Pages.MoveToSpace reads PageDto.version).
   await tree.getByRole("treeitem", { name: /^IT/ }).click();
-  await page.getByRole("button", { name: "New Doc" }).click();
+  await page.getByRole("button", { name: "Create", exact: true }).click();
+  await page.keyboard.press("d");
   const doc = page.getByRole("dialog", { name: "New Doc" });
   await expect(doc.getByText("It will be placed in IT.")).toBeVisible();
   await doc.getByLabel("Doc title").fill("Runbook");
@@ -97,30 +110,25 @@ test("Space org tree: create a Space, add a member, create a Board and a Doc in 
   await expect(page).toHaveURL(/\/docs\//);
 
   await tree.getByRole("treeitem", { name: /^IT/ }).click();
-  const docs = page.getByRole("region", { name: /^Docs/ });
-  await expect(docs.getByRole("link", { name: "Runbook" })).toBeVisible();
-  await page.getByRole("button", { name: "Move Runbook" }).click();
+  const docs = page.getByRole("region", { name: "Recent Docs" });
+  await expect(docs.getByRole("link", { name: /Runbook/ })).toBeVisible();
+  await nav.getByRole("link", { name: "Docs", exact: true }).click();
+  await page.getByRole("button", { name: "Move Runbook to a Space" }).click();
   const moveDoc = page.getByRole("dialog", { name: "Move Runbook to a Space" });
   await moveDoc.getByRole("radio", { name: /^Engineering/ }).click();
   await moveDoc.getByRole("button", { name: "Move here" }).click();
   await expect(page.getByText("Runbook was moved.")).toBeVisible();
-  await expect(docs.getByText("No Docs in this Space yet.")).toBeVisible();
 
+  await tree.getByRole("treeitem", { name: /^IT/ }).click();
+  await expect(
+    page
+      .getByRole("region", { name: "Recent Docs" })
+      .getByText("No Docs in this department yet."),
+  ).toBeVisible();
   await tree.getByRole("treeitem", { name: /Engineering/ }).click();
   await expect(
-    page.getByRole("region", { name: /^Docs/ }).getByRole("link", {
-      name: "Runbook",
+    page.getByRole("region", { name: "Recent Docs" }).getByRole("link", {
+      name: /Runbook/,
     }),
   ).toBeVisible();
-
-  // The directory offers the same move for the root Doc (in-app navigation:
-  // a reload would reset the in-page mock world).
-  // The sidebar's short label for Boards & Docs is "Docs".
-  await nav.getByRole("link", { name: "Docs", exact: true }).click();
-  await expect(
-    page.getByRole("heading", { level: 1, name: "Boards & Docs" }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "Move Runbook to a Space" }),
-  ).toBeAttached();
 });
