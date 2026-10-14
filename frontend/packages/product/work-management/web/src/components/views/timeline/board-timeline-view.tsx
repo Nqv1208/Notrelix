@@ -1,112 +1,255 @@
-import { useCallback, useMemo } from "react";
-import type { BoardGroup, Card } from "@notrelix/work-management-core";
+import { useContext, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
+import { useLocale } from "@notrelix/i18n";
+import {
+  useBoardAccess,
+  useBoardKanban,
+  useUpdateCard,
+} from "@notrelix/work-management-state";
+import type { Card, WorkStatusCategory } from "@notrelix/work-management-core";
+import { BoardHeaderDataContext } from "../../board-layout/board-header-data-context";
+import type {
+  ItemSheetGroup,
+  ItemSheetMark,
+} from "../../card-detail/task-detail-types";
+import { boardCapabilities } from "../../shared/board-capabilities";
+import { HANOI_ZONES, runtimeZone, useNow } from "../../shared/board-clock";
+import { calendarParts, identityMarkClass } from "../../shared/item-display";
+import { useItemSheetActions } from "../../shared/use-item-sheet-actions";
+import { cardDue, dayOf, shiftInstant } from "../calendar/calendar-entries";
+import { toDayKey, type DayKey } from "../calendar/calendar-model";
+import { emptyKanbanFilter } from "../kanban/kanban-filter";
+import { KanbanSelectedItem } from "../kanban/kanban-view";
+import { buildCardLink } from "../kanban/kanban-view-helpers";
+import { BoardTimelineSurface } from "./board-timeline-surface";
+import type {
+  TimelineGroup,
+  TimelineItem,
+  TimelineLink,
+  TimelineScale,
+  TimelineTone,
+} from "./timeline-model";
+import { fill } from "./timeline-model";
+import { useTimelineCopy } from "./use-timeline-copy";
 
-type TimelineCard = Card & { groupTitle: string };
+const NO_LINKS: readonly TimelineLink[] = [];
+const NEVER_OVERDUE = () => false;
 
+export interface BoardTimelineViewProps {
+  boardId: string;
+  workspaceId: string;
+  /** The item the board route's `item` parameter names; its sheet opens. */
+  selectedItemId?: string;
+  /**
+   * Opening passes the id (push). Closing passes `replace` so Back does not
+   * step through every item.
+   */
+  onSelectedItemChange?: (
+    id: string | undefined,
+    options?: { replace?: boolean },
+  ) => void;
+  /** Switches the board to the Calendar, where an item gets its first date. */
+  onOpenCalendar?: () => void;
+  /** The IANA time zone of the days; the runtime zone when omitted. */
+  timeZone?: string;
+  /** Injected clock; the system clock, once a minute, when omitted. */
+  now?: Date;
+}
+
+function toneOf(category: WorkStatusCategory | null): TimelineTone {
+  if (category === "done") return "done";
+  if (category === "review") return "review";
+  if (category === "in_progress") return "doing";
+  return "todo";
+}
+
+function percentOf(card: Card, tone: TimelineTone): number {
+  if (tone === "done") return 100;
+  const progress = card.childProgress;
+  if (!progress || progress.total <= 0) return 0;
+  return Math.round((progress.done / progress.total) * 100);
+}
+
+/**
+ * The Timeline of a board: dated items as bars from start to due on a day,
+ * week or month scale, grouped by the board's groups, with the item side
+ * sheet shared with the other views. Dependencies and the critical path have
+ * no producer in the board read, so the surface shows none. What the viewer
+ * may do comes from the board access read: only an editor drags a bar.
+ */
 export function BoardTimelineView({
-  groups,
-  referenceDate = new Date(),
-}: {
-  groups: BoardGroup[];
-  referenceDate?: Date;
-}) {
-  const { timelineStart, timelineEnd, weeks } = useMemo(() => {
-    const today = new Date(referenceDate);
-    const dayOfWeek = today.getDay();
-    const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-    const timelineStart = new Date(today);
-    timelineStart.setDate(today.getDate() + mondayOffset);
-    timelineStart.setHours(0, 0, 0, 0);
+  boardId,
+  workspaceId,
+  selectedItemId,
+  onSelectedItemChange,
+  onOpenCalendar,
+  timeZone: timeZoneProp,
+  now: nowProp,
+}: BoardTimelineViewProps) {
+  const copy = useTimelineCopy();
+  const header = useContext(BoardHeaderDataContext);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const { locale } = useLocale();
+  const now = useNow(nowProp);
+  const timeZone = timeZoneProp ?? runtimeZone();
 
-    const timelineEnd = new Date(timelineStart);
-    timelineEnd.setDate(timelineStart.getDate() + 42);
+  const [scale, setScale] = useState<TimelineScale>("day");
+  const todayParts = calendarParts(now, timeZone);
+  const today = toDayKey(todayParts.year, todayParts.month, todayParts.day);
+  const [anchorDay, setAnchorDay] = useState<DayKey>(today);
 
-    const weeks = Array.from({ length: 6 }).map(
-      (_, index) => `Week ${index + 1}`,
-    );
-    return { timelineStart, timelineEnd, weeks };
-  }, [referenceDate]);
+  const filter = useMemo(() => emptyKanbanFilter(), []);
+  const kanban = useBoardKanban(boardId, workspaceId, {
+    filter,
+    isOverdue: NEVER_OVERDUE,
+  });
+  const { access } = useBoardAccess(boardId, workspaceId);
+  const capabilities = boardCapabilities(access?.myLevel);
+  const canEdit = capabilities.canMoveCard && capabilities.canCreateCard;
+  const updateCard = useUpdateCard(boardId, workspaceId);
+  const sheet = useItemSheetActions({ boardId, workspaceId, kanban });
 
-  const cards = useMemo<TimelineCard[]>(() => {
-    return groups
-      .flatMap((group) =>
-        group.cards.map((card) => ({ ...card, groupTitle: group.title })),
-      )
-      .slice(0, 10);
-  }, [groups]);
-
-  const getTimelineBarStyles = useCallback(
-    (card: TimelineCard, index: number) => {
-      const fallbackDate = new Date(referenceDate);
-      const start = new Date(card.startDate || fallbackDate);
-      const end = new Date(card.dueDate || fallbackDate);
-
-      if (
-        Number.isNaN(start.getTime()) ||
-        Number.isNaN(end.getTime()) ||
-        start > end
-      ) {
-        const width = 20 + (index % 4) * 15;
-        const margin = (index % 3) * 10;
-        return { width: `${width}%`, marginLeft: `${margin}%` };
+  const { board } = kanban;
+  const { groups, undated, cardsById } = useMemo(() => {
+    const byId = new Map<string, Card>();
+    const byGroup = new Map<string, TimelineItem[]>();
+    let undatedCount = 0;
+    for (const lane of kanban.allLanes) {
+      const tone = toneOf(lane.category);
+      for (const card of lane.cards) {
+        byId.set(card.id, card);
+        const due = dayOf(cardDue(card), timeZone);
+        const start = dayOf(card.startDate, timeZone);
+        if (!due && !start) {
+          undatedCount += 1;
+          continue;
+        }
+        const person = card.members[0];
+        const item: TimelineItem = {
+          id: card.id,
+          kind: "item",
+          itemKey: card.itemKey,
+          title: card.title,
+          tone,
+          startDay: start?.day ?? null,
+          dueDay: due?.day ?? null,
+          percent: percentOf(card, tone),
+          assignee: person
+            ? {
+                initials: person.initials,
+                markClass: identityMarkClass(person.userId),
+                name: person.name,
+              }
+            : null,
+          movable: Boolean(due),
+          href: buildCardLink(window.location, card.id),
+        };
+        const list = byGroup.get(card.listId) ?? [];
+        list.push(item);
+        byGroup.set(card.listId, list);
       }
+    }
+    const built: TimelineGroup[] = [...kanban.groups]
+      .sort((a, b) => a.position - b.position)
+      .map((group) => ({
+        id: group.id,
+        title: group.title,
+        items: (byGroup.get(group.id) ?? []).sort(
+          (a, b) =>
+            (byId.get(a.id)?.position ?? 0) - (byId.get(b.id)?.position ?? 0),
+        ),
+      }));
+    return { groups: built, undated: undatedCount, cardsById: byId };
+  }, [kanban.allLanes, kanban.groups, timeZone]);
 
-      const totalDuration = timelineEnd.getTime() - timelineStart.getTime();
-      const cardStartOffset = start.getTime() - timelineStart.getTime();
-      const cardDuration = end.getTime() - start.getTime();
+  const handleReschedule = (
+    item: TimelineItem,
+    change: { mode: "move" | "resize"; days: number },
+  ) => {
+    const card = cardsById.get(item.id);
+    const due = card ? cardDue(card) : undefined;
+    if (!card || !due || !canEdit || change.days === 0) return;
+    // A move keeps the span's length (start and due shift together); a
+    // resize changes only the due day.
+    updateCard.mutate(
+      {
+        cardId: card.id,
+        patch: {
+          dueDate: shiftInstant(due, change.days),
+          ...(change.mode === "move" && card.startDate
+            ? { startDate: shiftInstant(card.startDate, change.days) }
+            : {}),
+        },
+      },
+      {
+        onError: () =>
+          toast.error(fill(copy.reschedule.failed, { title: card.title }), {
+            id: `timeline-write-${card.id}`,
+          }),
+      },
+    );
+  };
 
-      const marginLeftPct = Math.max(
-        0,
-        Math.min(100, (cardStartOffset / totalDuration) * 100),
-      );
-      const widthPct = Math.max(
-        5,
-        Math.min(100 - marginLeftPct, (cardDuration / totalDuration) * 100),
-      );
+  const restoreFocus = (cardId: string) => {
+    const opener = rootRef.current?.querySelector<HTMLElement>(
+      `[data-row-id="${cardId}"] a`,
+    );
+    (opener ?? rootRef.current)?.focus();
+  };
 
-      return {
-        width: `${widthPct}%`,
-        marginLeft: `${marginLeftPct}%`,
-      };
-    },
-    [referenceDate, timelineEnd, timelineStart],
-  );
+  if (kanban.isLoading) return null;
+
+  const zoneName =
+    timeZone && HANOI_ZONES.includes(timeZone)
+      ? copy.zone.hanoi
+      : copy.zone.local;
+  const departmentMark: ItemSheetMark | undefined = header?.space
+    ? { initials: header.space.initials, tone: header.space.markTone }
+    : undefined;
+  const sheetGroups: ItemSheetGroup[] = [...kanban.groups]
+    .sort((a, b) => a.position - b.position)
+    .map((group) => ({ id: group.id, title: group.title }));
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-      <div className="grid min-w-[900px] grid-cols-[260px_repeat(6,minmax(96px,1fr))] border-b border-border bg-muted px-4 py-3 text-xs font-semibold uppercase tracking-[0.06em] text-muted-foreground">
-        <div>Item</div>
-        {weeks.map((week) => (
-          <div key={week}>{week}</div>
-        ))}
-      </div>
-      <div className="min-w-[900px]">
-        {cards.map((card, index) => {
-          const barStyle = getTimelineBarStyles(card, index);
-          return (
-            <div
-              key={card.id}
-              className="grid min-h-14 grid-cols-[260px_repeat(6,minmax(96px,1fr))] items-center border-b border-border px-4 last:border-b-0"
-            >
-              <div className="min-w-0 pr-4">
-                <p className="truncate text-sm font-medium text-foreground">
-                  {card.title}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {card.groupTitle}
-                </p>
-              </div>
-              <div className="col-span-6 h-3 rounded-full bg-muted">
-                <div
-                  className="h-3 rounded-full bg-primary"
-                  data-testid={`timeline-bar-${card.id}`}
-                  style={barStyle}
-                />
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </section>
+    <div
+      ref={rootRef}
+      tabIndex={-1}
+      className="relative h-full focus:outline-hidden"
+    >
+      <BoardTimelineSurface
+        copy={copy}
+        locale={locale}
+        boardTitle={board?.title ?? ""}
+        scale={scale}
+        onScaleChange={setScale}
+        anchorDay={anchorDay}
+        onAnchorChange={setAnchorDay}
+        today={today}
+        zoneName={zoneName}
+        groups={groups}
+        links={NO_LINKS}
+        undatedCount={undated}
+        onOpenUndated={onOpenCalendar}
+        canEdit={canEdit}
+        onOpenItem={(id) => onSelectedItemChange?.(id)}
+        onReschedule={handleReschedule}
+      />
+      {selectedItemId && board ? (
+        <KanbanSelectedItem
+          board={board}
+          cardId={selectedItemId}
+          capabilities={capabilities}
+          departmentMark={departmentMark}
+          groups={sheetGroups}
+          onClose={() => onSelectedItemChange?.(undefined, { replace: true })}
+          onRestoreFocus={restoreFocus}
+          onCopyLink={sheet.onCopyLink}
+          onMoveToGroup={sheet.onMoveToGroup}
+          onUpdateFieldValue={sheet.onUpdateFieldValue}
+          onDuplicate={sheet.onDuplicate}
+          onArchive={sheet.onArchive}
+        />
+      ) : null}
+    </div>
   );
 }

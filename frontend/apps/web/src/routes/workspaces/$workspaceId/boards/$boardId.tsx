@@ -101,6 +101,7 @@ export function BoardPage() {
             onFilterChange={handleFilterChange}
             groupBy={search.groupBy}
             onGroupByChange={handleGroupByChange}
+            onViewChange={handleViewChange}
             onOpenItemPage={(itemId) =>
               navigate({
                 to: "/workspaces/$workspaceId/boards/$boardId/items/$itemId",

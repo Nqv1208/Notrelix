@@ -78,6 +78,13 @@ export { useMainTableCopy } from "./components/views/table/use-main-table-copy";
 
 // Timeline view
 export * from "./components/views/timeline/board-timeline-view";
+export * from "./components/views/timeline/board-timeline-surface";
+export { timelineCatalog } from "./components/views/timeline/timeline.catalog";
+export {
+  timelineCopy,
+  type TimelineCopy,
+} from "./components/views/timeline/timeline.copy";
+export { useTimelineCopy } from "./components/views/timeline/use-timeline-copy";
 
 // Calendar view
 export * from "./components/views/calendar/board-calendar-view";

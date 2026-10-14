@@ -37,6 +37,11 @@
         "path": "src/components/views/table/main-table-view.tsx",
         "category": "container",
         "reason": "Stateful view adapter owning table main query state and composing registered table surfaces."
+      },
+      {
+        "path": "src/components/views/timeline/board-timeline-view.tsx",
+        "category": "container",
+        "reason": "Stateful view adapter owning the timeline board query state, the window and the writes, composing the registered timeline surface."
       }
     ]
   },
@@ -1673,8 +1678,12 @@
       "surfaceId": "wm.timeline.board",
       "owner": "@notrelix/work-management-web",
       "surfaceKind": "data",
-      "pureEntry": "src/components/views/timeline/board-timeline-view.tsx",
-      "coveredSources": [],
+      "pureEntry": "src/components/views/timeline/board-timeline-surface.tsx",
+      "coveredSources": [
+        "src/components/views/timeline/timeline-chart.tsx",
+        "src/components/views/timeline/timeline-list.tsx",
+        "src/components/views/timeline/timeline-toolbar.tsx"
+      ],
       "stories": [
         {
           "id": "work-management-timeline-board-timeline--default",
@@ -1717,10 +1726,30 @@
               "theme": "light"
             }
           ]
+        },
+        {
+          "id": "work-management-timeline-board-timeline--high-density",
+          "state": "HighDensity",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-timeline-board-timeline--read-only",
+          "state": "ReadOnly",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "Empty", "EdgeData"],
+        "required": ["Default", "Empty", "EdgeData", "HighDensity", "ReadOnly"],
         "delegated": [
           {
             "state": "Loading",
@@ -1735,16 +1764,6 @@
         ],
         "notApplicable": [
           {
-            "state": "HighDensity",
-            "reason": "Timeline intentionally caps visible cards at 10; high-density input is covered by component evidence rather than a distinct visual state.",
-            "authority": "frontend-ui-construction.plan.md FUIC-WU-078"
-          },
-          {
-            "state": "ReadOnly",
-            "reason": "No product-authoritative read-only contract exists for the timeline board view at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
-          },
-          {
             "state": "PermissionLimited",
             "reason": "No product-authoritative permission-limited capability contract exists for the timeline board view at this baseline.",
             "authority": "frontend-ui-readiness.spec.md §9.3"
@@ -1756,12 +1775,84 @@
       "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
-          "id": "timeline",
-          "testFile": "src/components/views/timeline/__tests__/board-timeline-view.component.test.tsx"
+          "id": "scale-switch",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
         },
         {
-          "id": "density",
-          "testFile": "src/components/views/timeline/__tests__/board-timeline-view.component.test.tsx"
+          "id": "scale-keyboard",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "navigation",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "open-item",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "bars",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "inert-controls",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "links",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "critical-path",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "undated",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "keyboard",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "drag-resize",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "drag-move",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "drag-cancel",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "drag-limit",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "dragging",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "read-only",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "empty",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "edge-data",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "high-density",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "legend",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
         }
       ]
     },

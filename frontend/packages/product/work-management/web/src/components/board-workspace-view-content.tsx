@@ -31,6 +31,8 @@ export interface BoardScreenProps {
   onGroupByChange?: (fieldId: string) => void;
   /** Opens an item's own page from the Kanban sheet. */
   onOpenItemPage?: (itemId: string) => void;
+  /** Switches the board to another view by type (the Timeline's undated link). */
+  onViewChange?: (view: string) => void;
 }
 
 type KanbanParams = Pick<
@@ -52,6 +54,7 @@ export function BoardWorkspaceViewContent({
   boardId,
   view,
   onOpenItemPage,
+  onViewChange,
   ...kanbanParams
 }: BoardScreenProps) {
   if (view.type === "table")
@@ -87,6 +90,10 @@ export function BoardWorkspaceViewContent({
         workspaceId={workspaceId}
         boardId={boardId}
         mode="timeline"
+        kanbanParams={kanbanParams}
+        onOpenCalendar={
+          onViewChange ? () => onViewChange("calendar") : undefined
+        }
       />
     );
   return (
@@ -103,17 +110,16 @@ function BoardFullDataView({
   mode,
   kanbanParams,
   onOpenItemPage,
+  onOpenCalendar,
 }: {
   workspaceId: string;
   boardId: string;
   mode: "kanban" | "calendar" | "timeline";
   kanbanParams?: KanbanParams;
   onOpenItemPage?: (itemId: string) => void;
+  onOpenCalendar?: () => void;
 }) {
-  const { board, groups, isLoading, error } = useFullBoard(
-    boardId,
-    workspaceId,
-  );
+  const { board, isLoading, error } = useFullBoard(boardId, workspaceId);
 
   if (isLoading)
     return (
@@ -128,7 +134,7 @@ function BoardFullDataView({
   return (
     <BoardWorkspaceSurface
       status="ready"
-      flush={mode === "kanban" || mode === "calendar"}
+      flush
       viewContent={
         mode === "kanban" ? (
           <KanbanView
@@ -147,7 +153,13 @@ function BoardFullDataView({
             onFilterChange={kanbanParams?.onFilterChange}
           />
         ) : (
-          <BoardTimelineView groups={groups} />
+          <BoardTimelineView
+            boardId={board.id}
+            workspaceId={workspaceId}
+            selectedItemId={kanbanParams?.selectedItemId}
+            onSelectedItemChange={kanbanParams?.onSelectedItemChange}
+            onOpenCalendar={onOpenCalendar}
+          />
         )
       }
     />
