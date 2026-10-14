@@ -129,13 +129,13 @@ export const INVOICE_HISTORY: ReadonlyArray<{
   readonly at: string;
 }> = [
   {
-    userId: mockIds.users.admin,
+    userId: mockIds.users.owner,
     action: "edited_page",
     detail: "Đổi trạng thái Đang soạn → Chờ duyệt",
     at: "2026-10-11T09:40:00.000Z",
   },
   {
-    userId: mockIds.users.admin,
+    userId: mockIds.users.owner,
     action: "edited_page",
     detail: "Sửa bước 3 · thêm 2 dòng danh sách kiểm",
     at: "2026-10-11T08:05:00.000Z",

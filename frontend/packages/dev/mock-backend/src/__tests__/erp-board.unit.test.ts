@@ -26,6 +26,27 @@ function clientFor(persona: MockPersona = "owner") {
 }
 
 describe("ERP board in the mock world", () => {
+  it("serves the item detail with its assignee, priority option and description", async () => {
+    const { client, store } = clientFor();
+    const item = store.getCard("mock-erp-item-142")!;
+    const card = await createCardApi(client).getCard(item.id);
+    expect(card.members.map((member) => member.name)).toEqual([
+      "Trần Minh Quân",
+    ]);
+    expect(card.priorityOptionId).toBe("mock-erp-priority-urgent");
+    // The read carries no priority word, so none is invented.
+    expect(card.priority).toBeUndefined();
+    expect(card.descriptionMd).toContain("48.200 hồ sơ khách hàng");
+    expect(card._count.comments).toBe(2);
+  });
+
+  it("an item without an assignee has no members in its detail", async () => {
+    const { client, store } = clientFor();
+    const item = store.getCard("mock-erp-item-153")!;
+    const card = await createCardApi(client).getCard(item.id);
+    expect(card.members).toEqual([]);
+  });
+
   it("serves /full in the generated contract shape", async () => {
     const { client } = clientFor();
     const dto = await client.api.get<GeneratedFullBoardDto>(

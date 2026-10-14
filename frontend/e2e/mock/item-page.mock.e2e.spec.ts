@@ -129,7 +129,7 @@ test.describe("Item page", () => {
     await page.getByRole("button", { name: "Gửi", exact: true }).click();
     await expect(page.getByText("Đã nhận file đối chiếu")).toBeVisible();
     await expect(
-      tabs.getByRole("link", { name: /^Bình luận 1/ }),
+      tabs.getByRole("link", { name: /^Bình luận 3/ }),
     ).toBeVisible();
   });
 

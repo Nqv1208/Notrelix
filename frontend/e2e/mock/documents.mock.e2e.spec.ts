@@ -24,11 +24,13 @@ test("renders a production Documents route through mock transport", async ({
     "/workspaces/mock-workspace-primary/docs/mock-doc-product-spec",
   );
   await expect(page.getByRole("heading", { level: 1 }).first()).toHaveText(
-    "Product specification",
+    "Đặc tả triển khai ERP",
   );
   await expect(
     page.getByRole("textbox", { name: "Type / to insert a block" }).first(),
-  ).toHaveText("Block 1");
+  ).toHaveText(
+    "Tài liệu này mô tả phạm vi, các phân hệ và mốc triển khai ERP của Minh An Group trong quý 4/2026.",
+  );
   expect(
     errors.filter((message) => message.includes("MockUnhandledOperationError")),
   ).toEqual([]);

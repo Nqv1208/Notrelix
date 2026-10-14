@@ -190,7 +190,14 @@ async function check(page: Page, entries: readonly Entry[]) {
 async function postComment(page: Page) {
   await page.getByLabel("Viết bình luận").fill(COMMENT);
   await page.getByRole("button", { name: "Gửi", exact: true }).click();
-  await expect(page.locator("div.group\\/comment")).toHaveCount(1);
+  // The item has two seeded comments; the one just posted is the third.
+  await expect(page.locator("div.group\\/comment")).toHaveCount(3);
+  // Posting scrolls the taller page down; the boxes are measured from the top.
+  await page.evaluate(() => {
+    document.querySelectorAll("*").forEach((node) => {
+      if (node.scrollTop > 0) node.scrollTop = 0;
+    });
+  });
 }
 
 /**
@@ -261,13 +268,13 @@ const OVERVIEW: Entry[] = [
   { name: "tabOn", at: "#workspace-main #item-page-activity > section nav a[aria-current=page]", from: "#workspace-main #item-page-activity > section", box: [99.6, 0, 83.5, 38], keys: "xyh", style: { fs: "13.5px", fw: "600", c: "rgb(22, 26, 33)" } }, // .subtabs a.on
   { name: "tabOff", at: "#workspace-main #item-page-activity > section nav a@1", from: "#workspace-main #item-page-activity > section", box: [185.2, 0, 95.7, 38], keys: "yh", style: { fs: "13.5px", fw: "500", c: "rgb(79, 88, 102)" } }, // .subtabs a@1
   { name: "pill", at: "#workspace-main #item-page-activity > section > div@0 >> :scope > button", from: "#workspace-main #item-page-activity > section", box: [605.5, 4.5, 102.5, 28], keys: "xywh", style: { fs: "12.5px", fw: "400", c: "rgb(79, 88, 102)", r: "7px" } }, // .act-h .pill
-  { name: "cmAvatar", at: "#workspace-main #item-page-activity > section div.group\\/comment@0 >> :scope > span", from: "#workspace-main #item-page-activity > section div.group\\/comment@0", box: [0, 8, 30, 30], keys: "xywh", style: { fs: "10.5px", fw: "700", r: "999px" } }, // .cm@2 >> .av
-  { name: "cmBody", at: "#workspace-main #item-page-activity > section div.group\\/comment@0 >> :scope > div", from: "#workspace-main #item-page-activity > section div.group\\/comment@0", box: [42, 8, 666, 121.2], keys: "xywh", style: { bg: "rgb(255, 255, 255)", r: "10px" } }, // .cm@2 >> .body
-  { name: "cmName", at: "#workspace-main #item-page-activity > section div.group\\/comment@0 >> b", from: "#workspace-main #item-page-activity > section div.group\\/comment@0", box: [57, 20, 108.5, 18], keys: "xyh", style: { fs: "14px", fw: "600", c: "rgb(22, 26, 33)" } }, // .cm@2 >> b
-  { name: "cmTime", at: "#workspace-main #item-page-activity > section div.group\\/comment@0 >> time", from: "#workspace-main #item-page-activity > section div.group\\/comment@0", box: [171.5, 22, 32.2, 15], keys: "yh", style: { fs: "12px", c: "rgb(95, 104, 117)" } }, // .cm@2 >> time
-  { name: "cmText", at: "#workspace-main #item-page-activity > section div.group\\/comment@0 >> p", from: "#workspace-main #item-page-activity > section div.group\\/comment@0", box: [57, 43.3, 636, 44.8], keys: "xywh", style: { fs: "14px", fw: "400", c: "rgb(22, 26, 33)" } }, // .cm@2 >> p
-  { name: "cmReply", at: "#workspace-main #item-page-activity > section div.group\\/comment@0 >> button@1", from: "#workspace-main #item-page-activity > section div.group\\/comment@0", box: [51, 96.1, 49.8, 22.1], keys: "xywh", style: { fs: "12.5px", c: "rgb(95, 104, 117)", r: "5px" } }, // .cm@2 >> .re button@0
-  { name: "cmReact", at: "#workspace-main #item-page-activity > section div.group\\/comment@0 >> button@2", from: "#workspace-main #item-page-activity > section div.group\\/comment@0", box: [102.8, 96.1, 90.4, 22.1], keys: "xywh", style: { fs: "12.5px", c: "rgb(95, 104, 117)", r: "5px" } }, // .cm@2 >> .re button@1
+  { name: "cmAvatar", at: "#workspace-main #item-page-activity > section div.group\\/comment@2 >> :scope > span", from: "#workspace-main #item-page-activity > section div.group\\/comment@2", box: [0, 8, 30, 30], keys: "xywh", style: { fs: "10.5px", fw: "700", r: "999px" } }, // .cm@2 >> .av
+  { name: "cmBody", at: "#workspace-main #item-page-activity > section div.group\\/comment@2 >> :scope > div", from: "#workspace-main #item-page-activity > section div.group\\/comment@2", box: [42, 8, 666, 121.2], keys: "xywh", style: { bg: "rgb(255, 255, 255)", r: "10px" } }, // .cm@2 >> .body
+  { name: "cmName", at: "#workspace-main #item-page-activity > section div.group\\/comment@2 >> b", from: "#workspace-main #item-page-activity > section div.group\\/comment@2", box: [57, 20, 108.5, 18], keys: "xyh", style: { fs: "14px", fw: "600", c: "rgb(22, 26, 33)" } }, // .cm@2 >> b
+  { name: "cmTime", at: "#workspace-main #item-page-activity > section div.group\\/comment@2 >> time", from: "#workspace-main #item-page-activity > section div.group\\/comment@2", box: [171.5, 22, 32.2, 15], keys: "yh", style: { fs: "12px", c: "rgb(95, 104, 117)" } }, // .cm@2 >> time
+  { name: "cmText", at: "#workspace-main #item-page-activity > section div.group\\/comment@2 >> p", from: "#workspace-main #item-page-activity > section div.group\\/comment@2", box: [57, 43.3, 636, 44.8], keys: "xywh", style: { fs: "14px", fw: "400", c: "rgb(22, 26, 33)" } }, // .cm@2 >> p
+  { name: "cmReply", at: "#workspace-main #item-page-activity > section div.group\\/comment@2 >> button@1", from: "#workspace-main #item-page-activity > section div.group\\/comment@2", box: [51, 96.1, 49.8, 22.1], keys: "xywh", style: { fs: "12.5px", c: "rgb(95, 104, 117)", r: "5px" } }, // .cm@2 >> .re button@0
+  { name: "cmReact", at: "#workspace-main #item-page-activity > section div.group\\/comment@2 >> button@2", from: "#workspace-main #item-page-activity > section div.group\\/comment@2", box: [102.8, 96.1, 90.4, 22.1], keys: "xywh", style: { fs: "12.5px", c: "rgb(95, 104, 117)", r: "5px" } }, // .cm@2 >> .re button@1
   { name: "cpAvatar", at: "#workspace-main #item-page-activity > section div.mt-3 > span", from: "#workspace-main #item-page-activity > section div.mt-3", box: [0, 0, 30, 30], keys: "xywh", style: { fs: "10.5px", fw: "700", r: "999px" } }, // .composer .av
   { name: "cpBox", at: "#workspace-main #item-page-activity > section div.mt-3 > div", from: "#workspace-main #item-page-activity > section div.mt-3", box: [42, 0, 666, 108], keys: "xywh", style: { bg: "rgb(255, 255, 255)", r: "10px" } }, // .composer .in
   { name: "cpText", at: "#workspace-main #item-page-activity > section div.mt-3 textarea", from: "#workspace-main #item-page-activity > section div.mt-3", box: [55, 11, 640, 48], keys: "xywh", style: { fs: "14px" } }, // .composer textarea
@@ -316,8 +323,8 @@ const COMMENTS: Entry[] = [
   { name: "actBar", at: "#workspace-main #item-page-activity > section > div@0", from: "#workspace-main #item-page-activity > section", box: [0, 0, 708, 38], keys: "xywh", style: {  } }, // .act-h
   { name: "tabOn", at: "#workspace-main #item-page-activity > section nav a[aria-current=page]", from: "#workspace-main #item-page-activity > section", box: [184.8, 0, 96.6, 38], keys: "yh", style: { fs: "13.5px", fw: "600", c: "rgb(22, 26, 33)", bd: "rgb(22, 102, 204)" } }, // .subtabs a.on
   { name: "pill", at: "#workspace-main #item-page-activity > section > div@0 >> :scope > button", from: "#workspace-main #item-page-activity > section", box: [605.5, 4.5, 102.5, 28], keys: "xywh", style: { fs: "12.5px", fw: "400", c: "rgb(79, 88, 102)", r: "7px" } }, // .act-h .pill
-  { name: "cmAvatar", at: "#workspace-main #item-page-activity > section div.group\\/comment@0 >> :scope > span", from: "#workspace-main #item-page-activity > section div.group\\/comment@0", box: [0, 8, 30, 30], keys: "xywh", style: { fs: "10.5px", fw: "700", r: "999px" } }, // .cm@3 >> .av
-  { name: "cmBody", at: "#workspace-main #item-page-activity > section div.group\\/comment@0 >> :scope > div", from: "#workspace-main #item-page-activity > section div.group\\/comment@0", box: [42, 8, 666, 121.2], keys: "xywh", style: { bg: "rgb(255, 255, 255)", r: "10px" } }, // .cm@3 >> .body
+  { name: "cmAvatar", at: "#workspace-main #item-page-activity > section div.group\\/comment@2 >> :scope > span", from: "#workspace-main #item-page-activity > section div.group\\/comment@2", box: [0, 8, 30, 30], keys: "xywh", style: { fs: "10.5px", fw: "700", r: "999px" } }, // .cm@3 >> .av
+  { name: "cmBody", at: "#workspace-main #item-page-activity > section div.group\\/comment@2 >> :scope > div", from: "#workspace-main #item-page-activity > section div.group\\/comment@2", box: [42, 8, 666, 121.2], keys: "xywh", style: { bg: "rgb(255, 255, 255)", r: "10px" } }, // .cm@3 >> .body
   { name: "cpBox", at: "#workspace-main #item-page-activity > section div.mt-3 > div", from: "#workspace-main #item-page-activity > section div.mt-3", box: [42, 0, 666, 108], keys: "xywh", style: { bg: "rgb(255, 255, 255)", r: "10px" } }, // .composer .in
 ];
 

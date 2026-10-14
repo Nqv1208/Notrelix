@@ -65,6 +65,8 @@ import {
   erpStatusOptionId,
   hanoiInstant,
 } from "./mock-erp-board";
+import { ERP_COMMENTS, ERP_DESCRIPTIONS } from "./mock-erp-detail";
+import { LIBRARY_DOCS, SECONDARY_BOARD_TITLES } from "./mock-docs-library";
 import {
   INVOICE_BLOCKS,
   INVOICE_COMMENTS,
@@ -426,7 +428,7 @@ export class MockStore {
     for (let b = 0; b < manifest.boardsInPrimaryWorkspace; b++) {
       const isPrimaryBoard = b === 0;
       let bId = this.factories.board(b, primaryWsId).id;
-      let bTitle = `Board ${b}`;
+      let bTitle = SECONDARY_BOARD_TITLES[b - 1] ?? `Board ${b}`;
 
       if (isPrimaryBoard) {
         bId = "mock-board-roadmap";
@@ -615,32 +617,56 @@ export class MockStore {
 
     // ── Pages ──────────────────────────────────────────────────────────────
     for (let p = 0; p < manifest.pagesInPrimaryWorkspace; p++) {
-      let pTitle = p === 0 ? "Product specification" : `Page ${p}`;
+      const curated = LIBRARY_DOCS[p];
+      let pTitle = curated?.title ?? `Page ${p}`;
       if (isUnicode) pTitle = `📑 ${pTitle} (ドキュメント)`;
       if (isLongTitles)
         pTitle = `${pTitle} — Architectural Specification & Engineering Requirements`;
 
       let pId = this.factories.page(p, primaryWsId).id;
-      if (p === 0) pId = "mock-doc-product-spec";
+      if (curated) pId = curated.id;
 
       const page = this.factories.page(p, primaryWsId, {
         id: pId,
         title: pTitle,
+        ...(curated
+          ? {
+              spaceId: curated.spaceId,
+              parentId: curated.parentId,
+              createdAt: curated.createdAt,
+              updatedAt: curated.updatedAt,
+            }
+          : {}),
       });
       this.insertPage(page);
 
       // Representative blocks
-      const blockCount = p === 0 ? manifest.blocksPerRepresentativePage : 2;
+      const blockCount = curated
+        ? curated.blocks.length
+        : p === 0
+          ? manifest.blocksPerRepresentativePage
+          : 2;
       for (let blk = 0; blk < blockCount; blk++) {
+        const source = curated ? curated.blocks[blk]! : `Block ${blk}`;
+        const isSection = source.startsWith("## ");
+        const text = blk === 0 ? page.title : source.replace(/^## /, "");
         this.createBlock(pId, {
-          type: blk === 0 ? "heading_1" : "paragraph",
-          properties: JSON.stringify({
-            text: blk === 0 ? page.title : `Block ${blk}`,
-          }),
+          type: blk === 0 ? "heading_1" : isSection ? "heading_2" : "paragraph",
+          properties: JSON.stringify({ text }),
           position: blk * 1000,
         });
       }
 
+      if (curated) {
+        this.createPageHistory(
+          pId,
+          curated.editorId,
+          "created_page",
+          page.title,
+          curated.createdAt,
+        );
+        continue;
+      }
       this.createPageComment(pId, owner.id, "This is a seeded page comment.");
       this.createPageHistory(pId, owner.id, "created_page", page.title);
     }
@@ -891,6 +917,7 @@ export class MockStore {
         createdAt: "2026-09-21T02:00:00.000Z",
         updatedAt: "2026-10-12T01:40:00.000Z",
         itemKey: item.key,
+        description: ERP_DESCRIPTIONS[item.key],
         parentItemId: null,
         dueAt: item.due ? hanoiInstant(item.due) : null,
         startedAt: item.start ? hanoiInstant(item.start, 9) : null,
@@ -910,6 +937,15 @@ export class MockStore {
       );
       this.addIndex(this.labelIdsByCardId, id, erpLabelId(item.label));
     });
+    for (const comment of ERP_COMMENTS) {
+      this.insertComment({
+        id: this.nextId("cmt"),
+        cardId: erpItemId(comment.itemKey),
+        userId: comment.userId,
+        contentMd: comment.contentMd,
+        createdAt: comment.createdAt,
+      });
+    }
     this.boardMembersByBoardId.set(
       boardId,
       ERP_BOARD_MEMBERS.map((member) => ({ ...member })),
