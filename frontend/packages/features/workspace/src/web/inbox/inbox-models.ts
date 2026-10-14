@@ -92,10 +92,35 @@ export interface InboxDetailView {
   readonly openHref: string | null;
 }
 
+/** One change inside an opened bundle. */
+export interface InboxChildView {
+  readonly id: string;
+  readonly at: string;
+  readonly person: InboxPerson;
+  readonly segments: readonly InboxSegment[];
+}
+
 /** A run of small changes grouped into one row. */
 export interface InboxBundle {
   readonly count: number;
   readonly summary: string;
+  /** The changes shown when the bundle is opened. */
+  readonly children?: readonly InboxChildView[];
+}
+
+/** When "Nhắc lại sau" brings a notification back. */
+export type InboxSnooze = "hour" | "tomorrow" | "next-week";
+
+/** What the member can do with a notification; every write is the host's. */
+export interface InboxActions {
+  /** Notifications with a write in flight (their buttons wait). */
+  readonly pendingIds: ReadonlySet<string>;
+  readonly onApprove: (item: InboxItemView) => void;
+  readonly onRequestChanges: (item: InboxItemView) => void;
+  readonly onReply: (item: InboxItemView, text: string) => void;
+  readonly onHandled: (item: InboxItemView) => void;
+  readonly onSnooze: (item: InboxItemView, until: InboxSnooze) => void;
+  readonly onMute: (item: InboxItemView) => void;
 }
 
 export interface InboxItemView {

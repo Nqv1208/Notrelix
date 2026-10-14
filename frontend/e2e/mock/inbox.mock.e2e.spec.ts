@@ -42,29 +42,24 @@ test.describe("Inbox (owner)", () => {
   );
   test.use({ viewport: { width: 1440, height: 900 } });
 
-  test("lists the notifications newest first with the unread ones marked", async ({
+  test("lists the need tab: three unread of today, newest first", async ({
     page,
   }) => {
     await openInbox(page);
-    const count = await rows(page).count();
-    expect(count).toBeGreaterThan(1);
-    // Newest first: the times never increase down the list.
+    await expect(rows(page)).toHaveCount(3);
+    await expect(page.locator('[data-f="ud"]')).toHaveCount(3);
     const times = await rows(page)
       .locator('[data-f="time"]')
       .evaluateAll((nodes) =>
         nodes.map((node) => Date.parse(node.getAttribute("datetime") ?? "")),
       );
     expect([...times].sort((a, b) => b - a)).toEqual(times);
-    // At least one is unread (a dot and the unread label) and one is read.
-    expect(await page.locator('[data-f="ud"]').count()).toBeGreaterThan(0);
-    expect(await page.locator('[data-f="ud"]').count()).toBeLessThan(count);
   });
 
-  test("the notifications are the mockup's, in Vietnamese, three unread today", async ({
+  test("the notifications are the mockup's, in Vietnamese, with their counts", async ({
     page,
   }) => {
     await openInbox(page);
-    await expect(page.locator('[data-f="ud"]')).toHaveCount(3);
     const first = rows(page).first();
     await expect(first).toContainText(
       "Trần Minh Quân gửi bạn duyệt Thiết lập đăng nhập một lần (SSO) cho toàn công ty",
@@ -72,20 +67,37 @@ test.describe("Inbox (owner)", () => {
     await expect(first.locator('[data-f="time"]')).toContainText("12 phút");
     await expect(rows(page).nth(1)).toContainText("Lý Thu Trang nhắc tên bạn");
     await expect(rows(page).nth(2)).toContainText("đã quá hạn 2 ngày");
-    // Today's three come first, then yesterday's.
+    const tabs = page.getByRole("tablist", { name: "Loại thông báo" });
+    await expect(tabs.getByRole("tab", { name: /^Cần xử lý/ })).toContainText(
+      "3",
+    );
+    await expect(tabs.getByRole("tab", { name: /^Nhắc tên/ })).toContainText(
+      "1",
+    );
+    await expect(tabs.getByRole("tab", { name: /^Được giao/ })).toContainText(
+      "1",
+    );
+    await expect(page.getByText(/Chỉ workspace Minh An Group/)).toBeVisible();
+    await tabs.getByRole("tab", { name: "Tất cả" }).click();
     await expect(page.getByText("Hôm nay", { exact: true })).toBeVisible();
     await expect(page.getByText("Hôm qua", { exact: true })).toBeVisible();
+    await expect(page.getByText("6 thay đổi", { exact: true })).toBeVisible();
   });
 
-  test("the first notification is open in the reading pane", async ({
+  test("the first notification is open in the reading pane with its card", async ({
     page,
   }) => {
     await openInbox(page);
     const first = rows(page).first();
     await expect(first).toHaveAttribute("aria-current", "true");
     const pane = page.getByRole("main", { name: "Chi tiết thông báo" });
-    const title = await first.locator('[data-f="what"] b').first().innerText();
-    await expect(pane).toContainText(title);
+    await expect(pane).toContainText(
+      "Trần Minh Quân gửi bạn duyệt cấu hình đăng nhập một lần.",
+    );
+    await expect(pane).toContainText("bạn là người duyệt duy nhất");
+    await expect(pane).toContainText("Microsoft Entra ID");
+    await expect(pane).toContainText("Đã thử với 5 tài khoản phòng Kế toán");
+    await expect(pane.getByRole("button", { name: "Duyệt" })).toBeVisible();
   });
 
   test("selecting a notification opens it, and J, K and the buttons move", async ({
@@ -104,40 +116,93 @@ test.describe("Inbox (owner)", () => {
     await expect(rows(page).nth(1)).toHaveAttribute("aria-current", "true");
   });
 
-  test("the unread toggle narrows the list to unread and back", async ({
+  test("the unread toggle narrows the All tab to unread and back", async ({
     page,
   }) => {
     await openInbox(page);
+    await page.getByRole("tab", { name: "Tất cả" }).click();
     const all = await rows(page).count();
+    expect(all).toBeGreaterThan(3);
     const toggle = page.getByRole("button", { name: "Chỉ chưa đọc" });
     await toggle.click();
     await expect(toggle).toHaveAttribute("aria-pressed", "true");
-    const unread = await rows(page).count();
-    expect(unread).toBeLessThan(all);
-    expect(unread).toBe(await page.locator('[data-f="ud"]').count());
+    await expect(rows(page)).toHaveCount(3);
     await toggle.click();
     await expect(rows(page)).toHaveCount(all);
   });
 
-  test("Đã xử lý marks the open notification read through the producer", async ({
+  test("Đã xử lý hands the entry over: the list, the counts and the badge drop", async ({
     page,
   }) => {
     await openInbox(page);
-    const toggle = page.getByRole("button", { name: "Chỉ chưa đọc" });
-    await toggle.click();
-    const unread = await rows(page).count();
-    expect(unread).toBeGreaterThan(0);
+    await expect(
+      page.getByRole("navigation").getByText("3", { exact: true }).first(),
+    ).toBeVisible();
     await page.getByRole("button", { name: "Đã xử lý" }).click();
-    // The write lands, the list is read again and one fewer is unread.
-    await expect(rows(page)).toHaveCount(unread - 1);
+    await expect(rows(page)).toHaveCount(2);
+    await expect(page.getByRole("tab", { name: /^Cần xử lý/ })).toContainText(
+      "2",
+    );
+    await expect(page.getByText("Đã đánh dấu đã xử lý.")).toBeVisible();
   });
 
-  test("E marks the open unread notification read", async ({ page }) => {
+  test("E handles the open notification", async ({ page }) => {
     await openInbox(page);
-    await page.getByRole("button", { name: "Chỉ chưa đọc" }).click();
-    const unread = await rows(page).count();
     await page.keyboard.press("e");
-    await expect(rows(page)).toHaveCount(unread - 1);
+    await expect(rows(page)).toHaveCount(2);
+  });
+
+  test("Duyệt approves the item, clears the entry and says so", async ({
+    page,
+  }) => {
+    await openInbox(page);
+    await page.getByRole("button", { name: "Duyệt", exact: true }).click();
+    await expect(page.getByText("Đã duyệt ERP-138.")).toBeVisible();
+    await expect(rows(page)).toHaveCount(2);
+  });
+
+  test("Yêu cầu sửa sends the item back and clears the entry", async ({
+    page,
+  }) => {
+    await openInbox(page);
+    await page.getByRole("button", { name: "Yêu cầu sửa" }).click();
+    await expect(page.getByText("Đã yêu cầu sửa ERP-138.")).toBeVisible();
+    await expect(rows(page)).toHaveCount(2);
+  });
+
+  test("the reply box posts to the thread", async ({ page }) => {
+    await openInbox(page);
+    await rows(page).nth(1).click();
+    await page
+      .getByRole("textbox", { name: "Trả lời" })
+      .fill("Em đồng ý đề xuất 3 ngày.");
+    await page.getByRole("button", { name: "Gửi", exact: true }).click();
+    await expect(
+      page.getByText("Đã gửi trả lời cho Lý Thu Trang."),
+    ).toBeVisible();
+    await expect(rows(page)).toHaveCount(2);
+  });
+
+  test("Nhắc lại sau hides the entry; H opens the same menu", async ({
+    page,
+  }) => {
+    await openInbox(page);
+    await page.keyboard.press("h");
+    const menu = page.getByRole("menu", { name: "Nhắc lại sau" });
+    await expect(menu).toBeVisible();
+    await menu.getByRole("menuitem", { name: /1 giờ nữa/ }).click();
+    await expect(page.getByText(/Sẽ nhắc lại/)).toBeVisible();
+    await expect(rows(page)).toHaveCount(2);
+    await expect(page.getByRole("tab", { name: /^Cần xử lý/ })).toContainText(
+      "2",
+    );
+  });
+
+  test("Tắt thông báo việc này mutes it", async ({ page }) => {
+    await openInbox(page);
+    await page.getByRole("button", { name: "Tắt thông báo việc này" }).click();
+    await expect(page.getByText("Đã tắt thông báo việc này.")).toBeVisible();
+    await expect(rows(page)).toHaveCount(2);
   });
 
   test("Đánh dấu tất cả đã đọc empties the unread list and says so", async ({
@@ -149,64 +214,44 @@ test.describe("Inbox (owner)", () => {
       page.getByText("Đã đánh dấu đã đọc mọi thông báo."),
     ).toBeVisible();
     await expect(page.locator('[data-f="ud"]')).toHaveCount(0);
+    await page.getByRole("tab", { name: "Tất cả" }).click();
     await page.getByRole("button", { name: "Chỉ chưa đọc" }).click();
     await expect(page.getByText("Không có thông báo chưa đọc")).toBeVisible();
     await page.getByRole("button", { name: "Hiện tất cả" }).click();
     expect(await rows(page).count()).toBeGreaterThan(0);
   });
 
-  test("tabs without a producer are inert with the reason and the scope line is not claimed", async ({
+  test("the Mentions, Assigned and Following tabs filter by type", async ({
     page,
   }) => {
     await openInbox(page);
-    for (const name of ["Cần xử lý", "Đang theo dõi"]) {
-      const tab = page.getByRole("tab", { name });
-      await expect(tab).toHaveAttribute("aria-disabled", "true");
-      await expect(tab).toHaveAttribute("title", /chưa có loại/);
-    }
-    await expect(page.getByRole("tab", { name: "Tất cả" })).toHaveAttribute(
-      "aria-selected",
-      "true",
-    );
-    // The read is not scoped to a workspace: no "Chỉ workspace …" claim.
-    await expect(page.getByText(/Chỉ workspace/)).toHaveCount(0);
-  });
-
-  test("the Mentions and Assigned tabs filter by the notification type", async ({
-    page,
-  }) => {
-    await openInbox(page);
-    const all = await rows(page).count();
     await page.getByRole("tab", { name: /^Nhắc tên/ }).click();
-    const mentions = await rows(page).count();
-    expect(mentions).toBeGreaterThan(0);
-    expect(mentions).toBeLessThan(all);
+    await page.getByRole("button", { name: "Chỉ chưa đọc" }).click();
     for (const text of await rows(page).allInnerTexts()) {
       expect(text).toContain("nhắc tên bạn");
     }
     await page.getByRole("tab", { name: /^Được giao/ }).click();
-    for (const text of await rows(page).allInnerTexts()) {
-      expect(text).toMatch(/gửi bạn duyệt|giao cho bạn/);
-    }
-    await page.getByRole("tab", { name: "Tất cả" }).click();
-    await expect(rows(page)).toHaveCount(all);
+    // The one assignment is already read: show the read ones too.
+    await page.getByRole("button", { name: "Chỉ chưa đọc" }).click();
+    await expect(rows(page)).toHaveCount(1);
+    await expect(rows(page).first()).toContainText("giao cho bạn");
+    await page.getByRole("tab", { name: /^Đang theo dõi/ }).click();
+    await expect(rows(page).first()).toContainText("đã quá hạn");
   });
 
-  test("snooze and mute have no producer and say why; open-item links to the item", async ({
-    page,
-  }) => {
+  test("a bundle opens its changes", async ({ page }) => {
     await openInbox(page);
-    for (const name of [/^Nhắc lại sau/, /^Tắt thông báo việc này/]) {
-      const button = page.getByRole("button", { name });
-      await expect(button).toHaveAttribute("aria-disabled", "true");
-      await expect(button).toHaveAttribute("title", /.+/);
-      await button.click({ force: true });
-    }
-    await expect(page).toHaveURL(new RegExp(`${INBOX}$`));
+    await page.getByRole("tab", { name: "Tất cả" }).click();
+    await page.getByRole("button", { name: /Mở 6 thay đổi/ }).click();
+    await expect(page.locator('[data-f="children"] li')).toHaveCount(6);
+    await page.getByRole("button", { name: /Ẩn 6 thay đổi/ }).click();
+    await expect(page.locator('[data-f="children"]')).toHaveCount(0);
+  });
+
+  test("open-item links to the item", async ({ page }) => {
+    await openInbox(page);
     await page.getByRole("link", { name: "Mở công việc" }).click();
-    await expect(page).toHaveURL(
-      /\/boards\/mock-board-erp\/items\/mock-erp-item-138/,
-    );
+    await expect(page).toHaveURL(/\/boards\/mock-board-erp\?.*item=/);
   });
 
   test("the settings icon opens the notification settings page", async ({

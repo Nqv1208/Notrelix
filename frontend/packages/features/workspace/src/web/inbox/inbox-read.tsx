@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Check, ChevronDown, ChevronUp, Clock } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
 import { initialsFor } from "../../core/model/navigation";
@@ -12,7 +13,11 @@ import {
   StatusDot,
 } from "../home/work-row-parts";
 import { InboxAvatar, InboxSegments } from "./inbox-list";
-import type { InboxItemView } from "./inbox-models";
+import {
+  type InboxActions,
+  type InboxItemView,
+  type InboxSnooze,
+} from "./inbox-models";
 import type { WorkspaceInboxCopy } from "./workspace-inbox.copy";
 
 /**
@@ -37,6 +42,9 @@ export function InboxRead({
   onPrevious,
   onNext,
   onHandled,
+  actions,
+  snoozeOpen,
+  onSnoozeOpen,
 }: {
   copy: WorkspaceInboxCopy;
   item: InboxItemView;
@@ -47,7 +55,21 @@ export function InboxRead({
   onNext: () => void;
   /** `null` draws "Đã xử lý" inert (no write). */
   onHandled: (() => void) | null;
+  actions?: InboxActions;
+  /** The snooze menu is open (the H key opens it). */
+  snoozeOpen: boolean;
+  onSnoozeOpen: (open: boolean) => void;
 }) {
+  const [reply, setReply] = useState("");
+  useEffect(() => setReply(""), [item.id]);
+  const busy = actions?.pendingIds.has(item.id) ?? false;
+  const submitReply = (event: FormEvent) => {
+    event.preventDefault();
+    const text = reply.trim();
+    if (!text || busy || !actions) return;
+    actions.onReply(item, text);
+    setReply("");
+  };
   const detail = item.detail;
   const keyKept = detail?.crumb?.key ? (
     <span className="font-mono text-foreground">{detail.crumb.key}</span>
@@ -220,8 +242,13 @@ export function InboxRead({
                   >
                     <button
                       type="button"
-                      aria-disabled="true"
-                      title={copy.read.actionUnavailable}
+                      aria-disabled={!actions || busy ? true : undefined}
+                      title={actions ? undefined : copy.read.actionUnavailable}
+                      onClick={
+                        actions && !busy
+                          ? () => actions.onApprove(item)
+                          : undefined
+                      }
                       className={PRIMARY_CLASS}
                     >
                       <Check
@@ -233,8 +260,13 @@ export function InboxRead({
                     </button>
                     <button
                       type="button"
-                      aria-disabled="true"
-                      title={copy.read.actionUnavailable}
+                      aria-disabled={!actions || busy ? true : undefined}
+                      title={actions ? undefined : copy.read.actionUnavailable}
+                      onClick={
+                        actions && !busy
+                          ? () => actions.onRequestChanges(item)
+                          : undefined
+                      }
                       className={OUTLINE_CLASS}
                     >
                       {copy.read.requestChanges}
@@ -276,24 +308,44 @@ export function InboxRead({
             ) : null}
 
             {detail.replyTo ? (
-              <label
+              <form
                 data-f="reply"
+                onSubmit={submitReply}
                 className="box-content flex h-11 items-center gap-2 rounded-[10px] border border-line-strong bg-popover pr-1.5 pl-3 dark:bg-card"
               >
                 <input
                   type="text"
-                  disabled
-                  title={copy.read.actionUnavailable}
+                  value={reply}
+                  disabled={!actions}
+                  title={actions ? undefined : copy.read.actionUnavailable}
                   aria-label={copy.read.replyLabel}
                   placeholder={formatCopy(copy.read.replyPlaceholder, {
                     name: detail.replyTo,
                   })}
+                  onChange={(event) => setReply(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (
+                      (event.metaKey || event.ctrlKey) &&
+                      event.key === "Enter"
+                    )
+                      submitReply(event);
+                  }}
                   className="min-w-0 flex-1 border-0 bg-transparent px-0.5 py-px text-sm leading-[1.45] text-foreground outline-none placeholder:text-meta-foreground"
                 />
-                <span className="rounded-[4px] border border-line-strong bg-keycap px-[5px] font-mono text-key leading-[18px] text-muted-foreground">
-                  ⌘↵
-                </span>
-              </label>
+                {reply.trim() ? (
+                  <button
+                    type="submit"
+                    aria-disabled={busy ? true : undefined}
+                    className="inline-flex h-7 cursor-pointer items-center rounded-[7px] border-0 bg-primary px-2.5 text-crumb font-semibold text-primary-foreground outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                  >
+                    {copy.read.send}
+                  </button>
+                ) : (
+                  <span className="rounded-[4px] border border-line-strong bg-keycap px-[5px] font-mono text-key leading-[18px] text-muted-foreground">
+                    ⌘↵
+                  </span>
+                )}
+              </form>
             ) : null}
           </>
         ) : null}
@@ -314,24 +366,21 @@ export function InboxRead({
           <Check aria-hidden="true" className="size-4" strokeWidth={1.8} />
           {copy.read.handled}
         </button>
+        <SnoozeMenu
+          copy={copy}
+          open={snoozeOpen}
+          enabled={Boolean(actions) && !busy}
+          onOpen={onSnoozeOpen}
+          onPick={(until) => {
+            onSnoozeOpen(false);
+            actions?.onSnooze(item, until);
+          }}
+        />
         <button
           type="button"
-          aria-disabled="true"
-          title={copy.read.actionUnavailable}
-          className={OUTLINE_CLASS}
-        >
-          <Clock aria-hidden="true" className="size-4" strokeWidth={1.8} />
-          {copy.read.snooze}
-          <ChevronDown
-            aria-hidden="true"
-            className="size-[13px]"
-            strokeWidth={1.8}
-          />
-        </button>
-        <button
-          type="button"
-          aria-disabled="true"
-          title={copy.read.actionUnavailable}
+          aria-disabled={!actions || busy ? true : undefined}
+          title={actions ? undefined : copy.read.actionUnavailable}
+          onClick={actions && !busy ? () => actions.onMute(item) : undefined}
           className={QUIET_CLASS}
         >
           {copy.read.mute}
@@ -356,6 +405,78 @@ export function InboxRead({
         </div>
       </div>
     </main>
+  );
+}
+
+function SnoozeMenu({
+  copy,
+  open,
+  enabled,
+  onOpen,
+  onPick,
+}: {
+  copy: WorkspaceInboxCopy;
+  open: boolean;
+  enabled: boolean;
+  onOpen: (open: boolean) => void;
+  onPick: (until: InboxSnooze) => void;
+}) {
+  const ref = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onOpen(false);
+    };
+    const onPointer = (event: PointerEvent) => {
+      if (ref.current && !ref.current.contains(event.target as Node))
+        onOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("pointerdown", onPointer);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("pointerdown", onPointer);
+    };
+  }, [onOpen, open]);
+  return (
+    <span ref={ref} className="relative inline-flex">
+      <button
+        type="button"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-disabled={enabled ? undefined : true}
+        title={enabled ? undefined : copy.read.actionUnavailable}
+        onClick={enabled ? () => onOpen(!open) : undefined}
+        className={OUTLINE_CLASS}
+      >
+        <Clock aria-hidden="true" className="size-4" strokeWidth={1.8} />
+        {copy.read.snooze}
+        <ChevronDown
+          aria-hidden="true"
+          className="size-[13px]"
+          strokeWidth={1.8}
+        />
+      </button>
+      {open ? (
+        <div
+          role="menu"
+          aria-label={copy.read.snoozeMenu}
+          className="absolute bottom-[calc(100%+6px)] left-0 z-dropdown box-content w-[200px] rounded-[10px] border border-line-strong bg-popover p-1.5 shadow-popover dark:bg-card"
+        >
+          {(["hour", "tomorrow", "next-week"] as const).map((id) => (
+            <button
+              key={id}
+              type="button"
+              role="menuitem"
+              onClick={() => onPick(id)}
+              className="flex h-8 w-full cursor-pointer items-center rounded-[7px] border-0 bg-transparent px-2 text-left text-compact leading-[1.45] text-foreground outline-none hover:bg-state-hover-strong focus-visible:ring-2 focus-visible:ring-focus-ring"
+            >
+              {copy.read.snoozeOptions[id]}
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </span>
   );
 }
 

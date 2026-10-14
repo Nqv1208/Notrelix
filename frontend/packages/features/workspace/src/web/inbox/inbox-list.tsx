@@ -144,6 +144,11 @@ function Segments({ segments }: { segments: readonly InboxSegment[] }) {
 
 export { Segments as InboxSegments };
 
+function childTime(at: string): string {
+  const date = new Date(at);
+  return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+}
+
 export function InboxRow({
   item,
   copy,
@@ -212,6 +217,35 @@ export function InboxRow({
           >
             {copy.need[item.need]}
           </span>
+        ) : null}
+        {item.bundle && expanded && item.bundle.children?.length ? (
+          <ul
+            data-f="children"
+            className="m-0 mt-2 flex list-none flex-col gap-1.5 border-l-2 border-border p-0 pl-2.5"
+          >
+            {item.bundle.children.map((child) => (
+              <li key={child.id} className="flex items-start gap-2">
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    "grid size-[22px] shrink-0 place-items-center rounded-full text-avatar-sm font-bold",
+                    IDENTITY_MARK_CLASS[child.person.tone],
+                  )}
+                >
+                  {initialsFor(child.person.name)}
+                </span>
+                <span className="min-w-0 flex-1 text-xs leading-[1.45] text-muted-foreground">
+                  <Segments segments={child.segments} />
+                </span>
+                <time
+                  dateTime={child.at}
+                  className="text-micro leading-[1.45] whitespace-nowrap text-meta-foreground"
+                >
+                  {childTime(child.at)}
+                </time>
+              </li>
+            ))}
+          </ul>
         ) : null}
         {item.bundle ? (
           <button

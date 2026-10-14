@@ -214,16 +214,17 @@ test.describe("Inbox geometry at 1440 px (owner)", () => {
     await openInbox(page);
     const strip = page.getByRole("tablist", { name: "Loại thông báo" });
     const stripBox = await rel(page, strip);
-    // No "Chỉ workspace …" line: the strip follows the 48 px title row.
+    // The "Chỉ workspace …" line (19.4 px) sits between the title row and the strip.
     expectRect(
       stripBox,
-      { x: 0, y: MOCK.header.height, width: 440 },
+      { x: 0, y: MOCK.header.height + 19.4, width: 440 },
       "tab strip",
     );
     expect(await colour(strip, "border-bottom-color")).toBe(COLOUR.line);
     const tabs = strip.getByRole("tab");
     await expect(tabs).toHaveCount(5);
     const all = tabs.nth(4);
+    await all.click();
     expect(await style(all, "font-size")).toBe(TYPE.tab.size);
     expect(await style(all, "font-weight")).toBe(TYPE.tab.on);
     expect(await colour(all, "color")).toBe(COLOUR.ink);
@@ -352,6 +353,8 @@ test.describe("Inbox geometry at 1440 px (owner)", () => {
 
   test("an unread row: the dot and the unread-only look", async ({ page }) => {
     await openInbox(page);
+    // The read rows are in the All tab.
+    await page.getByRole("tab", { name: "Tất cả" }).click();
     const unread = page
       .locator('[data-f="items"] [data-f="it"]')
       .filter({ has: page.locator('[data-f="ud"]') })

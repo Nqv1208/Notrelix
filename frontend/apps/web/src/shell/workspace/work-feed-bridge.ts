@@ -168,6 +168,7 @@ export interface InboxEntryDto {
   readonly detail: {
     readonly approval: {
       readonly soleApprover: boolean;
+      readonly summary: string;
       readonly changes: readonly {
         readonly label: string;
         readonly value: string;

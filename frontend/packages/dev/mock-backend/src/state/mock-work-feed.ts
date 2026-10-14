@@ -168,6 +168,7 @@ export interface InboxEntryDto {
   detail: {
     approval: {
       soleApprover: boolean;
+      summary: string;
       changes: { label: string; value: string; changed?: string }[];
     } | null;
     item: {
@@ -206,6 +207,8 @@ interface ApprovalRecord {
   /** What the requester wrote; Home draws it. */
   note: string;
   soleApprover: boolean;
+  /** What is approved, as a phrase after "gửi bạn duyệt" ("cấu hình đăng nhập một lần"). */
+  summary: string;
   changes: { label: string; value: string; changed?: string }[];
 }
 
@@ -356,6 +359,7 @@ export class MockWorkFeedState {
         requestedAt: todayAt(store, 10, 28),
         note: "Gửi duyệt việc thiết lập đăng nhập một lần (SSO) cho toàn công ty (ERP-138). Kế toán cần đăng nhập thử từ thứ Năm.",
         soleApprover: true,
+        summary: "cấu hình đăng nhập một lần",
         changes: [
           {
             label: "Nhà cung cấp",
@@ -820,7 +824,11 @@ function entryDto(
     detail = {
       approval:
         record.type === "approval_requested" && approval
-          ? { soleApprover: approval.soleApprover, changes: approval.changes }
+          ? {
+              soleApprover: approval.soleApprover,
+              summary: approval.summary,
+              changes: approval.changes,
+            }
           : null,
       item: {
         status: statusOf(store, record.itemId),

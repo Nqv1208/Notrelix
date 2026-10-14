@@ -10,7 +10,12 @@ import {
   InboxTabs,
   InboxToolbar,
 } from "./inbox-list";
-import { INBOX_TABS, type InboxItemView, type InboxTab } from "./inbox-models";
+import {
+  INBOX_TABS,
+  type InboxActions,
+  type InboxItemView,
+  type InboxTab,
+} from "./inbox-models";
 import { InboxRead, InboxReadEmpty } from "./inbox-read";
 import type { WorkspaceInboxCopy } from "./workspace-inbox.copy";
 
@@ -43,6 +48,8 @@ export interface WorkspaceInboxSurfaceProps {
   /** Marks every notification read; `null` draws the button inert. */
   readonly onMarkAllRead: (() => void) | null;
   readonly onRetry: () => void;
+  /** Approve, reply, handle, snooze and mute; omitted draws them inert. */
+  readonly actions?: InboxActions;
   readonly initialView?: InboxInitialView;
 }
 
@@ -195,9 +202,16 @@ export function WorkspaceInboxSurface(props: WorkspaceInboxSurfaceProps) {
     },
     [position, selectable],
   );
+  const [snoozeOpen, setSnoozeOpen] = useState(false);
+  const actions = props.actions;
+  const canHandle = selected && (selected.unread || selected.need !== null);
   const handled =
-    props.onMarkRead && selected && selected.unread
-      ? () => props.onMarkRead?.(selected.id)
+    selected && canHandle
+      ? actions
+        ? () => actions.onHandled(selected)
+        : props.onMarkRead
+          ? () => props.onMarkRead?.(selected.id)
+          : null
       : null;
 
   useEffect(() => {
@@ -220,11 +234,14 @@ export function WorkspaceInboxSurface(props: WorkspaceInboxSurfaceProps) {
       } else if (key === "e" && handled) {
         event.preventDefault();
         handled();
+      } else if (key === "h" && actions && selected) {
+        event.preventDefault();
+        setSnoozeOpen(true);
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [handled, move]);
+  }, [actions, handled, move, selected]);
 
   // Day groups, in the order the rows come.
   const days: { label: string; rows: InboxItemView[] }[] = [];
@@ -386,6 +403,9 @@ export function WorkspaceInboxSurface(props: WorkspaceInboxSurfaceProps) {
           onPrevious={() => move(-1)}
           onNext={() => move(1)}
           onHandled={handled}
+          actions={actions}
+          snoozeOpen={snoozeOpen}
+          onSnoozeOpen={setSnoozeOpen}
         />
       ) : (
         <InboxReadEmpty
