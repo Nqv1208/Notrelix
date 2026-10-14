@@ -109,12 +109,23 @@ export interface MockPageRecord {
   updatedAt: string;
 }
 
+/** A notification as the app's own type reads it (`body`, never `message`). */
 export interface MockNotificationRecord {
   id: string;
+  workspaceId: string;
   userId: string;
+  type:
+    | "mention"
+    | "comment"
+    | "assignment"
+    | "status_change"
+    | "invitation"
+    | "system";
   title: string;
-  message: string;
+  body: string;
+  link?: string;
   isRead: boolean;
+  isArchived: boolean;
   createdAt: string;
 }
 

@@ -20,6 +20,117 @@ import type {
   MockPageRecord,
 } from "./records";
 
+const WORKSPACE_ID = "mock-workspace-primary";
+const ERP_ITEM = `/workspaces/${WORKSPACE_ID}/boards/mock-board-erp/items`;
+const UNREAD_NOTIFICATIONS = 3;
+
+/**
+ * The member's notifications in the 2026-10 mockups' world: the first three
+ * are the Inbox mockup's unread ones (12 min, 1 h and 2 h 40 min before the
+ * mockup clock, Monday 12/10 10:40); the rest are older and read.
+ */
+const NOTIFICATION_TEMPLATES: readonly {
+  type: MockNotificationRecord["type"];
+  title: string;
+  body: string;
+  link: string;
+  minutesAgo: number;
+}[] = [
+  {
+    type: "assignment",
+    title:
+      "Trần Minh Quân gửi bạn duyệt Thiết lập đăng nhập một lần (SSO) cho toàn công ty",
+    body: "ERP-138 · Triển khai ERP Q4 · cần duyệt trước thứ Tư 14/10",
+    link: `${ERP_ITEM}/mock-erp-item-138`,
+    minutesAgo: 12,
+  },
+  {
+    type: "mention",
+    title: "Lý Thu Trang nhắc tên bạn trong Quy trình nhập hoá đơn đầu vào",
+    body: "“chị xem giúp đề xuất 3 ngày đối chiếu cuối tháng trong quy trình nhập hoá đơn.”",
+    link: `/workspaces/${WORKSPACE_ID}/docs/mock-doc-invoice-process`,
+    minutesAgo: 60,
+  },
+  {
+    type: "system",
+    title:
+      "Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP đã quá hạn 2 ngày",
+    body: "Bạn đang theo dõi việc này. ERP-142 · Trần Minh Quân phụ trách.",
+    link: `${ERP_ITEM}/mock-erp-item-142`,
+    minutesAgo: 160,
+  },
+  {
+    type: "comment",
+    title:
+      "Đỗ Khánh Linh bình luận ở Kiểm thử phân hệ công nợ với số liệu tháng 9",
+    body: "Đã đối chiếu xong 6/9 phân hệ, còn công nợ phải trả.",
+    link: `${ERP_ITEM}/mock-erp-item-144`,
+    minutesAgo: 1440 + 20,
+  },
+  {
+    type: "status_change",
+    title:
+      "Lê Hoàng Phúc chuyển Chốt danh sách người dùng đợt 1 sang Hoàn thành",
+    body: "ERP-136 · Triển khai ERP Q4",
+    link: `${ERP_ITEM}/mock-erp-item-136`,
+    minutesAgo: 1440 + 95,
+  },
+  {
+    type: "assignment",
+    title:
+      "Vũ Thanh giao cho bạn Thiết lập cảnh báo khi đồng bộ tồn kho thất bại",
+    body: "ERP-150 · Triển khai ERP Q4 · hạn 28/10",
+    link: `${ERP_ITEM}/mock-erp-item-150`,
+    minutesAgo: 2 * 1440 + 30,
+  },
+  {
+    type: "mention",
+    title:
+      "Phan Ngọc Anh nhắc tên bạn trong Cấu hình quyền truy cập theo phòng ban",
+    body: "“@Hà cho mình xin danh sách phòng ban cần phân quyền.”",
+    link: `${ERP_ITEM}/mock-erp-item-151`,
+    minutesAgo: 3 * 1440 + 15,
+  },
+  {
+    type: "status_change",
+    title:
+      "Vũ Thanh chuyển Sao lưu cơ sở dữ liệu tự động hằng đêm sang Hoàn thành",
+    body: "ERP-131 · Triển khai ERP Q4",
+    link: `${ERP_ITEM}/mock-erp-item-131`,
+    minutesAgo: 6 * 1440 + 45,
+  },
+  {
+    type: "comment",
+    title:
+      "Vũ Thanh bình luận ở Cài đặt máy chủ ứng dụng cho môi trường kiểm thử",
+    body: "Đã cài xong, đang chờ cấp quyền truy cập.",
+    link: `${ERP_ITEM}/mock-erp-item-133`,
+    minutesAgo: 8 * 1440 + 50,
+  },
+  {
+    type: "invitation",
+    title: "Lê Hoàng Phúc mời bạn vào bảng Triển khai ERP Q4",
+    body: "Bạn tham gia với vai trò Quản trị.",
+    link: `/workspaces/${WORKSPACE_ID}/boards/mock-board-erp`,
+    minutesAgo: 9 * 1440 + 10,
+  },
+  {
+    type: "assignment",
+    title: "Lê Hoàng Phúc giao cho bạn Chốt danh sách người dùng đợt 1",
+    body: "ERP-136 · Triển khai ERP Q4 · hạn 09/10",
+    link: `${ERP_ITEM}/mock-erp-item-136`,
+    minutesAgo: 10 * 1440 + 35,
+  },
+  {
+    type: "status_change",
+    title:
+      "Phan Ngọc Anh chuyển Khảo sát quy trình nghiệp vụ hiện tại của phòng Kế toán sang Hoàn thành",
+    body: "ERP-135 · Triển khai ERP Q4",
+    link: `${ERP_ITEM}/mock-erp-item-135`,
+    minutesAgo: 17 * 1440 + 20,
+  },
+];
+
 function padId(prefix: string, index: number): string {
   return `${prefix}-${String(index).padStart(5, "0")}`;
 }
@@ -209,13 +320,22 @@ export function createFactories(
     },
 
     notification(index, userId, overrides = {}) {
+      const template =
+        NOTIFICATION_TEMPLATES[index % NOTIFICATION_TEMPLATES.length]!;
+      const week = Math.floor(index / NOTIFICATION_TEMPLATES.length);
       return {
         id: padId("notif", index),
+        workspaceId: WORKSPACE_ID,
         userId,
-        title: `Notification ${index}`,
-        message: `You were mentioned in a card (notification ${index}).`,
-        isRead: index % 3 === 0,
-        createdAt: clock.offsetSeconds(-(index * 600)),
+        type: template.type,
+        title: template.title,
+        body: template.body,
+        link: template.link,
+        isRead: index >= UNREAD_NOTIFICATIONS || week > 0,
+        isArchived: false,
+        createdAt: clock.offsetMinutes(
+          template.minutesAgo * -1 - week * 21 * 1440,
+        ),
         ...overrides,
       };
     },
