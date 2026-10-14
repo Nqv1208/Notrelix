@@ -1,5 +1,4 @@
 import * as React from "react";
-import { Archive, Check, Info, Lock, Users } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -9,25 +8,9 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  Button,
-  Field,
-  FieldDescription,
-  FieldError,
-  FieldLabel,
-  Input,
-  RadioGroup,
-  RadioGroupItem,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  Textarea,
   cn,
 } from "@notrelix/ui-web";
 import {
-  SPACE_TYPES,
-  SPACE_VISIBILITIES,
   archiveBlocked,
   type SpaceContentCounts,
   type SpaceNode,
@@ -37,6 +20,7 @@ import {
 import { pluralForm } from "../home/home-models";
 import { formatCopy } from "../shell/shell-models";
 import { SPACE_NAME_MAX } from "./create-space-dialog";
+import { BTN_SM, BTN_SM_PRIMARY, FOCUS } from "./space-page-parts";
 import type { WorkspaceSpacesCopy } from "./workspace-spaces.copy";
 
 export const SPACE_DESCRIPTION_MAX = 1024;
@@ -53,6 +37,11 @@ export type SpaceSaveStatus = "idle" | "saving" | "saved";
 export interface SpaceSettingsPanelProps {
   readonly copy: WorkspaceSpacesCopy;
   readonly space: SpaceNode;
+  readonly workspaceName: string;
+  /** The ancestors of the Space, root first (without the Space itself). */
+  readonly ancestors: readonly string[];
+  /** Names of the visible sub-departments, for the move hint. */
+  readonly childNames: readonly string[];
   readonly canManage: boolean;
   readonly saveStatus: SpaceSaveStatus;
   /** What the member can see inside the Space; `null` while it loads. */
@@ -62,353 +51,520 @@ export interface SpaceSettingsPanelProps {
   readonly archiveRefused: boolean;
   /** Only the changed fields are passed. */
   readonly onSave: (changes: Partial<SpaceDetailsValues>) => void;
+  readonly onMove: () => void;
   readonly onArchive: () => void;
+  /** `null`: there is no delete write, the button is drawn inert. */
+  readonly onDelete: (() => void) | null;
+  /** Starts with the delete confirmation open (stories, tests). */
+  readonly initialDeleteOpen?: boolean;
 }
 
-const VISIBILITY_ICON = { Private: Lock, Workspace: Users } as const;
-
-function valuesOf(space: SpaceNode): SpaceDetailsValues {
-  return {
-    name: space.name,
-    description: space.description ?? "",
-    type: space.type,
-    visibility: space.visibility,
-  };
-}
+const SECTION =
+  "flex flex-col gap-3 rounded-[12px] border border-line bg-popover px-[18px] py-4 dark:bg-card";
+const H2 = "m-0 text-item-heading leading-[1.45] text-foreground";
+const HINT = "m-0 text-crumb leading-[1.55] text-meta-foreground";
+const LABEL = "text-crumb leading-[1.45] font-semibold text-muted-foreground";
+const INPUT =
+  "box-border font-normal h-[34px] w-full rounded-[7px] border border-line-strong bg-popover px-2.5 text-nav leading-[1.45] text-foreground aria-disabled:cursor-default disabled:cursor-default disabled:text-muted-foreground dark:bg-card";
 
 function contentPhrase(
   copy: WorkspaceSpacesCopy,
   counts: SpaceContentCounts,
 ): string {
-  const d = copy.settings.danger;
+  const s = copy.settings;
   const parts = [
     counts.childSpaces > 0
       ? pluralForm(
-          { one: d.childSpaces_one, other: d.childSpaces_other },
+          { one: s.childSpaces_one, other: s.childSpaces_other },
           counts.childSpaces,
         )
       : null,
     counts.boards > 0
-      ? pluralForm({ one: d.boards_one, other: d.boards_other }, counts.boards)
+      ? pluralForm({ one: s.boards_one, other: s.boards_other }, counts.boards)
       : null,
     counts.docs > 0
-      ? pluralForm({ one: d.docs_one, other: d.docs_other }, counts.docs)
+      ? pluralForm({ one: s.docs_one, other: s.docs_other }, counts.docs)
       : null,
   ].filter((part): part is string => part !== null);
   if (parts.length <= 1) return parts.join("");
-  return `${parts.slice(0, -1).join(", ")}${d.and}${parts[parts.length - 1]}`;
+  return `${parts.slice(0, -1).join(", ")}${s.and}${parts[parts.length - 1]}`;
 }
 
+const RADIO_OPTIONS = ["Private", "Workspace"] as const;
+
 /**
- * Space settings (WSP-021..023): name, type, description and visibility in
- * one form that saves only what changed, then Archive. Archive never
- * cascades (WSP-022): while the member can see active Spaces, Boards or
- * Docs inside, the action is unavailable and the reason is shown; the
- * producer still decides for content the member cannot see.
+ * The settings of a department (Final-Space `thiet-lap`): name and
+ * description with Save, Private or Open to the workspace, where it sits in
+ * the tree, then Archive and Delete. Visibility saves when chosen. Archive
+ * never cascades (WSP-022): while the member can see active departments,
+ * Boards or Docs inside, the action is unavailable and the reason shown; the
+ * producer still decides for content the member cannot see. Delete has no
+ * write behind it, so it is drawn inert.
  */
 export function SpaceSettingsPanel({
   copy,
   space,
+  workspaceName,
+  ancestors,
+  childNames,
   canManage,
   saveStatus,
   content,
   archiving,
   archiveRefused,
   onSave,
+  onMove,
   onArchive,
+  onDelete,
+  initialDeleteOpen = false,
 }: SpaceSettingsPanelProps) {
-  const [values, setValues] = React.useState(() => valuesOf(space));
+  const s = copy.settings;
+  const [name, setName] = React.useState(space.name);
+  const [description, setDescription] = React.useState(space.description ?? "");
   const [touched, setTouched] = React.useState(false);
-  const [confirmOpen, setConfirmOpen] = React.useState(false);
-  const nameId = React.useId();
-  const nameErrorId = React.useId();
-  const descriptionId = React.useId();
-  const descriptionHelpId = React.useId();
-  const typeId = React.useId();
-  const visibilityLabelId = React.useId();
-  const blockedId = React.useId();
+  const [confirmArchive, setConfirmArchive] = React.useState(false);
+  const [deleteOpen, setDeleteOpen] = React.useState(initialDeleteOpen);
+  const [deleteName, setDeleteName] = React.useState("");
+  const radios = React.useRef<Array<HTMLDivElement | null>>([]);
 
   // A new server version replaces the form (after a save or a reload).
   React.useEffect(() => {
-    setValues(valuesOf(space));
+    setName(space.name);
+    setDescription(space.description ?? "");
     setTouched(false);
-  }, [space]);
+  }, [space.name, space.description, space.version]);
 
-  const original = valuesOf(space);
-  const name = values.name.trim();
-  const description = values.description.trim();
-  const nameMessage =
-    touched && name === "" ? copy.settings.profile.nameRequired : null;
-  const descriptionMessage =
-    description.length > SPACE_DESCRIPTION_MAX
-      ? copy.settings.profile.descriptionTooLong
-      : null;
-  const changes: {
-    -readonly [K in keyof SpaceDetailsValues]?: SpaceDetailsValues[K];
-  } = {};
-  if (name !== original.name) changes.name = name;
-  if (description !== original.description) changes.description = description;
-  if (values.type !== original.type) changes.type = values.type;
-  if (values.visibility !== original.visibility)
-    changes.visibility = values.visibility;
-  const dirty = Object.keys(changes).length > 0;
   const readOnly = !canManage || space.isArchived;
+  const trimmedName = name.trim();
+  const trimmedDescription = description.trim();
+  const changes: { name?: string; description?: string } = {};
+  if (trimmedName !== space.name) changes.name = trimmedName;
+  if (trimmedDescription !== (space.description ?? ""))
+    changes.description = trimmedDescription;
+  const dirty = Object.keys(changes).length > 0;
+  const nameMessage = touched && trimmedName === "" ? s.nameRequired : null;
+  const descriptionMessage =
+    trimmedDescription.length > SPACE_DESCRIPTION_MAX
+      ? s.descriptionTooLong
+      : null;
   const saving = saveStatus === "saving";
+  const canSave =
+    !readOnly &&
+    !saving &&
+    dirty &&
+    trimmedName !== "" &&
+    descriptionMessage === null;
 
   const blocked = content !== null && archiveBlocked(content);
   const canArchive =
     canManage && !space.isArchived && content !== null && !blocked;
+  const archiveNote = blocked
+    ? formatCopy(s.archiveBlocked, { content: contentPhrase(copy, content) })
+    : archiveRefused
+      ? s.archiveBlockedUnknown
+      : s.archiveHint;
+
+  const parent =
+    ancestors.length === 0
+      ? formatCopy(s.placeRoot, { workspace: workspaceName })
+      : [workspaceName, ...ancestors].join(s.placeBreadcrumb);
+  const placeHint =
+    childNames.length > 0
+      ? formatCopy(s.placeHint, {
+          children: childNames.slice(0, 2).join(s.placeOr),
+        })
+      : s.placeHintNoChildren;
+
+  const deleteScope = [
+    ...childNames,
+    ...(content !== null && content.boards > 0
+      ? [
+          pluralForm(
+            { one: s.boards_one, other: s.boards_other },
+            content.boards,
+          ),
+        ]
+      : []),
+  ];
+  const deleteContent =
+    deleteScope.length <= 1
+      ? deleteScope.join("")
+      : `${deleteScope.slice(0, -1).join(", ")}${s.and}${deleteScope[deleteScope.length - 1]}`;
+  const deleteMatches = deleteName.trim() === space.name;
+
+  const selectVisibility = (value: SpaceVisibility) => {
+    if (readOnly || saving || value === space.visibility) return;
+    onSave({ visibility: value });
+  };
+
+  const onRadioKey = (
+    event: React.KeyboardEvent<HTMLDivElement>,
+    index: number,
+  ) => {
+    const next =
+      event.key === "ArrowDown" || event.key === "ArrowRight"
+        ? (index + 1) % RADIO_OPTIONS.length
+        : event.key === "ArrowUp" || event.key === "ArrowLeft"
+          ? (index - 1 + RADIO_OPTIONS.length) % RADIO_OPTIONS.length
+          : null;
+    if (next === null) return;
+    event.preventDefault();
+    radios.current[next]?.focus();
+    selectVisibility(RADIO_OPTIONS[next] ?? space.visibility);
+  };
 
   return (
-    <div className="flex flex-col gap-6">
-      {!canManage ? (
-        <p className="flex items-center gap-2 rounded-md bg-info-subtle px-3 py-2 text-metadata text-info-subtle-foreground">
-          <Info aria-hidden="true" className="size-4 shrink-0" />
-          {copy.settings.readOnly}
-        </p>
-      ) : null}
+    <div
+      data-f="col"
+      className="box-content flex min-w-0 max-w-[760px] flex-1 flex-col gap-[18px] overflow-auto px-7 pt-[22px] pb-8"
+    >
+      <p
+        data-f="note"
+        className="m-0 text-crumb leading-[1.55] text-meta-foreground"
+      >
+        {s.note}
+      </p>
+
       <form
         noValidate
-        aria-label={copy.settings.profile.title}
+        data-f="set"
+        aria-labelledby="space-h-name"
+        className={SECTION}
         onSubmit={(event) => {
           event.preventDefault();
           setTouched(true);
-          if (readOnly || saving || !dirty || name === "" || descriptionMessage)
-            return;
-          onSave(changes);
+          if (canSave) onSave(changes);
         }}
-        className="flex flex-col gap-5 rounded-lg border border-border bg-surface-panel p-4 sm:p-6"
       >
-        <header className="flex flex-col gap-1">
-          <h2 className="text-subheading text-foreground">
-            {copy.settings.profile.title}
-          </h2>
-          <p className="text-metadata text-muted-foreground">
-            {copy.settings.profile.description}
-          </p>
-        </header>
-        <Field data-invalid={nameMessage ? true : undefined}>
-          <FieldLabel htmlFor={nameId}>
-            {copy.settings.profile.nameLabel}
-          </FieldLabel>
-          <Input
-            id={nameId}
-            value={values.name}
+        <h2 id="space-h-name" data-f="seth" className={H2}>
+          {s.nameTitle}
+        </h2>
+        <div data-f="fld" className="flex flex-col gap-[5px]">
+          <label htmlFor="space-name" data-f="lab" className={LABEL}>
+            {s.nameLabel}
+          </label>
+          <input
+            id="space-name"
+            data-f="inp"
+            type="text"
+            value={name}
             maxLength={SPACE_NAME_MAX}
             disabled={readOnly}
             aria-invalid={nameMessage ? true : undefined}
-            aria-describedby={nameMessage ? nameErrorId : undefined}
-            onChange={(event) =>
-              setValues((current) => ({ ...current, name: event.target.value }))
-            }
+            aria-describedby={nameMessage ? "space-name-error" : undefined}
+            onChange={(event) => setName(event.target.value)}
+            className={cn(INPUT, FOCUS)}
           />
           {nameMessage ? (
-            <FieldError id={nameErrorId}>{nameMessage}</FieldError>
+            <span
+              id="space-name-error"
+              role="alert"
+              className="text-crumb leading-[1.45] text-danger-text"
+            >
+              {nameMessage}
+            </span>
           ) : null}
-        </Field>
-        <Field>
-          <FieldLabel htmlFor={typeId}>
-            {copy.settings.profile.typeLabel}
-          </FieldLabel>
-          <Select
-            value={values.type}
+        </div>
+        <div data-f="fld" className="flex flex-col gap-[5px]">
+          <label htmlFor="space-desc" data-f="lab" className={LABEL}>
+            {s.descriptionLabel}
+          </label>
+          <textarea
+            id="space-desc"
+            data-f="ta"
+            value={description}
             disabled={readOnly}
-            onValueChange={(value) =>
-              setValues((current) => ({ ...current, type: value as SpaceType }))
-            }
-          >
-            <SelectTrigger id={typeId} className="w-full sm:w-64">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {SPACE_TYPES.map((option) => (
-                <SelectItem key={option} value={option}>
-                  {copy.types[option]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <FieldDescription>{copy.typeHelp[values.type]}</FieldDescription>
-        </Field>
-        <Field data-invalid={descriptionMessage ? true : undefined}>
-          <FieldLabel htmlFor={descriptionId}>
-            {copy.settings.profile.descriptionLabel}
-          </FieldLabel>
-          <Textarea
-            id={descriptionId}
-            value={values.description}
-            rows={3}
-            disabled={readOnly}
-            aria-describedby={descriptionHelpId}
             aria-invalid={descriptionMessage ? true : undefined}
-            onChange={(event) =>
-              setValues((current) => ({
-                ...current,
-                description: event.target.value,
-              }))
+            aria-describedby={
+              descriptionMessage ? "space-desc-error" : undefined
             }
+            onChange={(event) => setDescription(event.target.value)}
+            className={cn(
+              INPUT,
+              "h-16 resize-none px-2.5 py-2 leading-normal",
+              FOCUS,
+            )}
           />
           {descriptionMessage ? (
-            <FieldError id={descriptionHelpId}>{descriptionMessage}</FieldError>
-          ) : (
-            <FieldDescription id={descriptionHelpId}>
-              {copy.settings.profile.descriptionHelp}
-            </FieldDescription>
-          )}
-        </Field>
-        <fieldset className="flex flex-col gap-2" disabled={readOnly}>
-          <legend
-            id={visibilityLabelId}
-            className="mb-1 text-label text-foreground"
-          >
-            {copy.settings.access.title}
-          </legend>
-          <p className="mb-1 text-metadata text-muted-foreground">
-            {copy.settings.access.description}
-          </p>
-          <RadioGroup
-            value={values.visibility}
-            disabled={readOnly}
-            onValueChange={(value) =>
-              setValues((current) => ({
-                ...current,
-                visibility: value as SpaceVisibility,
-              }))
-            }
-            aria-labelledby={visibilityLabelId}
-            className="gap-2"
-          >
-            {SPACE_VISIBILITIES.map((option) => {
-              const Icon = VISIBILITY_ICON[option];
-              const optionId = `${visibilityLabelId}-${option}`;
-              return (
-                <label
-                  key={option}
-                  htmlFor={optionId}
-                  className={cn(
-                    "flex items-start gap-3 rounded-md border border-border p-3",
-                    readOnly
-                      ? "cursor-default"
-                      : "cursor-pointer hover:bg-state-hover",
-                    values.visibility === option &&
-                      "border-focus-ring bg-state-selected",
-                  )}
-                >
-                  <RadioGroupItem
-                    id={optionId}
-                    value={option}
-                    aria-describedby={`${optionId}-help`}
-                    className="mt-0.5"
-                  />
-                  <span className="flex min-w-0 flex-col gap-0.5">
-                    <span className="flex items-center gap-1.5 text-label text-foreground">
-                      <Icon aria-hidden="true" className="size-4 text-icon" />
-                      {copy.visibility[option]}
-                    </span>
-                    <span
-                      id={`${optionId}-help`}
-                      className="text-metadata text-muted-foreground"
-                    >
-                      {copy.visibilityHelp[option]}
-                    </span>
-                  </span>
-                </label>
-              );
-            })}
-          </RadioGroup>
-        </fieldset>
-        {canManage && !space.isArchived ? (
-          <div className="flex items-center justify-end gap-3">
+            <span
+              id="space-desc-error"
+              role="alert"
+              className="text-crumb leading-[1.45] text-danger-text"
+            >
+              {descriptionMessage}
+            </span>
+          ) : null}
+        </div>
+        {!readOnly ? (
+          <div className="flex items-center gap-3">
+            <button
+              data-f="save"
+              type="submit"
+              aria-disabled={canSave ? undefined : true}
+              className={cn(BTN_SM_PRIMARY, FOCUS)}
+            >
+              {saving ? s.saving : s.save}
+            </button>
             {saveStatus === "saved" && !dirty ? (
               <span
                 role="status"
-                className="flex items-center gap-1 text-metadata text-success-text"
+                className="text-crumb leading-[1.45] text-success-text"
               >
-                <Check aria-hidden="true" className="size-4" />
-                {copy.settings.saved}
+                {s.saved}
               </span>
             ) : null}
-            <Button type="submit" disabled={!dirty || saving}>
-              {saving ? copy.settings.saving : copy.settings.save}
-            </Button>
           </div>
         ) : null}
       </form>
 
-      {canManage && !space.isArchived ? (
-        <section
-          aria-label={copy.settings.danger.title}
-          className="flex flex-col gap-3 rounded-lg border border-danger-subtle bg-surface-panel p-4 sm:p-6"
+      <section data-f="set" aria-labelledby="space-h-vis" className={SECTION}>
+        <h2 id="space-h-vis" data-f="seth" className={H2}>
+          {s.visibilityTitle}
+        </h2>
+        <div
+          role="radiogroup"
+          aria-labelledby="space-h-vis"
+          className="flex flex-col gap-2"
         >
-          <header className="flex flex-col gap-1">
-            <h2 className="text-subheading text-foreground">
-              {copy.settings.danger.title}
-            </h2>
-            <p className="text-metadata text-muted-foreground">
-              {copy.settings.danger.description}
-            </p>
-          </header>
-          {blocked && content ? (
-            <p
-              id={blockedId}
-              className="flex items-start gap-2 rounded-md bg-warning-subtle px-3 py-2 text-metadata text-warning-subtle-foreground"
-            >
-              <Info aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-              {formatCopy(copy.settings.danger.blocked, {
-                content: contentPhrase(copy, content),
-              })}
-            </p>
-          ) : archiveRefused ? (
-            <p
-              id={blockedId}
-              role="alert"
-              className="flex items-start gap-2 rounded-md bg-warning-subtle px-3 py-2 text-metadata text-warning-subtle-foreground"
-            >
-              <Info aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-              {copy.settings.danger.blockedUnknown}
-            </p>
-          ) : null}
-          <div>
-            <Button
-              variant="outline"
-              disabled={!canArchive || archiving}
-              aria-describedby={
-                blocked || archiveRefused ? blockedId : undefined
-              }
-              onClick={() => setConfirmOpen(true)}
-              className="border-danger-subtle text-danger-text hover:bg-danger-subtle hover:text-danger-subtle-foreground"
-            >
-              <Archive aria-hidden="true" />
-              {archiving
-                ? copy.settings.danger.archiving
-                : copy.settings.danger.archive}
-            </Button>
-          </div>
-        </section>
-      ) : null}
+          {RADIO_OPTIONS.map((option, index) => {
+            const on = space.visibility === option;
+            return (
+              <div
+                key={option}
+                ref={(node) => {
+                  radios.current[index] = node;
+                }}
+                data-f="rad"
+                role="radio"
+                aria-checked={on}
+                aria-disabled={readOnly ? true : undefined}
+                tabIndex={on ? 0 : -1}
+                onClick={() => selectVisibility(option)}
+                onKeyDown={(event) => {
+                  if (event.key === " " || event.key === "Enter") {
+                    event.preventDefault();
+                    selectVisibility(option);
+                  } else onRadioKey(event, index);
+                }}
+                className={cn(
+                  "flex items-start gap-2.5 rounded-[10px] border px-3 py-2.5",
+                  readOnly ? "cursor-default" : "cursor-pointer",
+                  on
+                    ? "border-primary bg-state-selected"
+                    : "border-line hover:bg-state-hover",
+                  FOCUS,
+                )}
+              >
+                <span
+                  data-f="radio-o"
+                  className={cn(
+                    "mt-0.5 box-border grid size-4 shrink-0 place-items-center rounded-full border-[1.5px]",
+                    on ? "border-primary" : "border-line-strong",
+                  )}
+                >
+                  {on ? (
+                    <span className="size-2 rounded-full bg-primary" />
+                  ) : null}
+                </span>
+                <span>
+                  <b className="block text-nav leading-[1.45] font-semibold text-foreground">
+                    {option === "Private"
+                      ? s.visibilityPrivate
+                      : s.visibilityOpen}
+                  </b>
+                  <small className="block text-crumb leading-normal text-meta-foreground">
+                    {option === "Private"
+                      ? s.visibilityPrivateHint
+                      : s.visibilityOpenHint}
+                  </small>
+                </span>
+              </div>
+            );
+          })}
+        </div>
+        <p data-f="hint" className={HINT}>
+          {s.visibilityHint}
+        </p>
+      </section>
 
-      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+      <section data-f="set" aria-labelledby="space-h-place" className={SECTION}>
+        <h2 id="space-h-place" data-f="seth" className={H2}>
+          {s.placeTitle}
+        </h2>
+        <div
+          data-f="place"
+          className="flex items-center gap-2.5 rounded-[10px] border border-line px-3 py-2.5 text-nav leading-[1.45] font-normal"
+        >
+          <span data-f="path" className="text-meta-foreground">
+            {s.placeParent}
+          </span>
+          <b className="font-semibold text-foreground">{parent}</b>
+          <button
+            data-f="btn-sm"
+            type="button"
+            aria-disabled={canManage && !space.isArchived ? undefined : true}
+            onClick={canManage && !space.isArchived ? onMove : undefined}
+            className={cn(BTN_SM, "ml-auto", FOCUS)}
+          >
+            {s.placeMove}
+          </button>
+        </div>
+        <p data-f="hint" className={HINT}>
+          {placeHint}
+        </p>
+      </section>
+
+      <section
+        data-f="set"
+        aria-labelledby="space-h-danger"
+        className={cn(SECTION, "border-danger-text")}
+      >
+        <h2
+          id="space-h-danger"
+          data-f="seth"
+          className={cn(H2, "text-danger-text")}
+        >
+          {s.dangerTitle}
+        </h2>
+        <p data-f="hint" className={HINT}>
+          {s.dangerHint}
+        </p>
+        <div data-f="drow" className="flex items-start gap-3.5">
+          <span>
+            <b className="block text-nav leading-[1.45] font-semibold text-foreground">
+              {s.archiveTitle}
+            </b>
+            <small
+              data-f="dsm"
+              className="mt-0.5 block text-crumb leading-normal text-meta-foreground"
+            >
+              {archiveNote}
+            </small>
+          </span>
+          <button
+            data-f="btn-sm"
+            type="button"
+            aria-disabled={canArchive && !archiving ? undefined : true}
+            onClick={
+              canArchive && !archiving
+                ? () => setConfirmArchive(true)
+                : undefined
+            }
+            className={cn(BTN_SM, "ml-auto", FOCUS)}
+          >
+            {archiving ? s.archiving : s.archive}
+          </button>
+        </div>
+        <div
+          data-f="drow"
+          className="flex items-start gap-3.5 border-t border-line pt-3"
+        >
+          <span>
+            <b className="block text-nav leading-[1.45] font-semibold text-foreground">
+              {s.deleteTitle}
+            </b>
+            <small
+              data-f="dsm"
+              className="mt-0.5 block text-crumb leading-normal text-meta-foreground"
+            >
+              {onDelete ? s.deleteHint : s.deleteUnavailable}
+            </small>
+          </span>
+          <button
+            data-f="btn-sm"
+            type="button"
+            aria-expanded={onDelete ? deleteOpen : undefined}
+            aria-controls={onDelete ? "space-delete-confirm" : undefined}
+            aria-disabled={onDelete && canManage ? undefined : true}
+            title={onDelete ? undefined : s.deleteUnavailable}
+            onClick={
+              onDelete && canManage
+                ? () => setDeleteOpen((open) => !open)
+                : undefined
+            }
+            className={cn(
+              BTN_SM,
+              "ml-auto border-danger-text text-danger-text",
+              FOCUS,
+            )}
+          >
+            {s.delete}
+          </button>
+        </div>
+        {onDelete && deleteOpen ? (
+          <div
+            id="space-delete-confirm"
+            data-f="confirm"
+            role="group"
+            aria-labelledby="space-delete-q"
+            className="flex flex-col gap-2 rounded-[10px] border border-danger-text bg-danger-subtle p-3 text-crumb leading-[1.45] text-foreground"
+          >
+            <b id="space-delete-q" className="font-semibold">
+              {formatCopy(s.deleteConfirmTitle, { name: space.name })}
+            </b>
+            <span>
+              {formatCopy(s.deleteConfirmText, { content: deleteContent })}
+            </span>
+            <label htmlFor="space-delete-name" className="font-semibold">
+              {formatCopy(s.deleteConfirmLabel, { name: space.name })}
+            </label>
+            <div data-f="crow" className="flex items-center gap-2">
+              <input
+                id="space-delete-name"
+                data-f="inp"
+                type="text"
+                value={deleteName}
+                placeholder={space.name}
+                onChange={(event) => setDeleteName(event.target.value)}
+                className={cn(INPUT, "flex-1", FOCUS)}
+              />
+              <button
+                data-f="btn-sm"
+                type="button"
+                onClick={() => {
+                  setDeleteOpen(false);
+                  setDeleteName("");
+                }}
+                className={cn(BTN_SM, FOCUS)}
+              >
+                {s.cancel}
+              </button>
+              <button
+                data-f="btn-sm"
+                type="button"
+                aria-disabled={deleteMatches ? undefined : true}
+                onClick={deleteMatches ? onDelete : undefined}
+                className={cn(
+                  "inline-flex h-7 items-center rounded-[7px] border border-danger-text bg-danger-text px-2.5 text-crumb leading-[1.45] font-semibold whitespace-nowrap text-danger-foreground aria-disabled:cursor-default",
+                  FOCUS,
+                )}
+              >
+                {s.delete}
+              </button>
+            </div>
+          </div>
+        ) : null}
+      </section>
+
+      <AlertDialog open={confirmArchive} onOpenChange={setConfirmArchive}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {formatCopy(copy.settings.danger.confirmTitle, {
-                name: space.name,
-              })}
+              {formatCopy(s.archiveConfirmTitle, { name: space.name })}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {copy.settings.danger.confirmDescription}
+              {s.archiveConfirmDescription}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{copy.settings.danger.cancel}</AlertDialogCancel>
+            <AlertDialogCancel>{s.cancel}</AlertDialogCancel>
             <AlertDialogAction
-              variant="destructive"
               onClick={() => {
-                setConfirmOpen(false);
+                setConfirmArchive(false);
                 onArchive();
               }}
             >
-              {copy.settings.danger.confirmAction}
+              {s.archiveConfirmAction}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

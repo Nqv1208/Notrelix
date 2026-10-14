@@ -2,6 +2,8 @@
  * Space org tree copy (OT-5, WX-DEC-008), vi and en.
  * Registered as the `workspace-spaces` catalog.
  */
+import { spacePageEn, spacePageVi } from "./space-page.copy";
+
 export const en = {
   tree: {
     title: "Departments",
@@ -93,45 +95,7 @@ export const en = {
     submitting: "Moving…",
     pickerLabel: "Destination",
   },
-  page: {
-    loading: "Loading Space",
-    notFound: "This Space isn't available",
-    notFoundDescription:
-      "It may have been moved, archived or made private. Ask a Space admin for access.",
-    backHome: "Go to Home",
-    error: "This Space couldn't load.",
-    retry: "Try again",
-    archivedNotice:
-      "This Space is archived. Its Boards and Docs stay where they are; unarchive it to add or change anything.",
-    unarchive: "Unarchive",
-    unarchiving: "Unarchiving…",
-    moreActions: "More actions for {{name}}",
-    move: "Move Space",
-    newChild: "New Space inside",
-    newBoard: "New Board",
-    newDoc: "New Doc",
-    tabs: {
-      label: "Space sections",
-      overview: "Overview",
-      members: "Members",
-      settings: "Settings",
-    },
-    breadcrumb: "Space location",
-  },
-  overview: {
-    spaces: "Spaces",
-    boards: "Boards",
-    docs: "Docs",
-    spacesEmpty: "No Spaces inside yet.",
-    boardsEmpty: "No Boards in this Space yet.",
-    docsEmpty: "No Docs in this Space yet.",
-    loading: "Loading content",
-    error: "The Boards and Docs of this Space couldn't load.",
-    move: "Move {{name}}",
-    open: "Open {{name}}",
-    count_one: "{{count}} item",
-    count_other: "{{count}} items",
-  },
+  ...spacePageEn,
   members: {
     title: "Members",
     description:
@@ -175,51 +139,6 @@ export const en = {
         "They lose the access this Space gives them. Boards and Docs they were granted directly keep that access.",
       removeAction: "Remove",
       cancel: "Cancel",
-    },
-  },
-  settings: {
-    title: "Settings",
-    readOnly:
-      "Only Space admins and workspace owners and admins can change these settings.",
-    profile: {
-      title: "Details",
-      description: "The name, type and description people see.",
-      nameLabel: "Space name",
-      nameRequired: "Enter a name for the Space.",
-      descriptionLabel: "Description",
-      descriptionHelp: "What this Space is for. Up to 1,024 characters.",
-      descriptionTooLong: "Use 1,024 characters or fewer.",
-      typeLabel: "Type",
-    },
-    access: {
-      title: "Visibility",
-      description: "Who can find this Space and what's inside it.",
-    },
-    save: "Save changes",
-    saving: "Saving…",
-    saved: "Saved",
-    danger: {
-      title: "Archive",
-      description:
-        "Archiving hides the Space from daily work. Nothing inside is moved or deleted.",
-      archive: "Archive Space",
-      archiving: "Archiving…",
-      blocked:
-        "This Space still has {{content}}. Move or archive them first — archiving never moves or hides work on its own.",
-      blockedUnknown:
-        "The server refused: this Space still has Spaces, Boards or Docs inside, some of which you may not see. Ask a workspace admin.",
-      confirmTitle: "Archive {{name}}?",
-      confirmDescription:
-        "People can still open it from links, but it leaves the sidebar. You can unarchive it later.",
-      confirmAction: "Archive",
-      cancel: "Cancel",
-      childSpaces_one: "{{count}} Space",
-      childSpaces_other: "{{count}} Spaces",
-      boards_one: "{{count}} Board",
-      boards_other: "{{count}} Boards",
-      docs_one: "{{count}} Doc",
-      docs_other: "{{count}} Docs",
-      and: " and ",
     },
   },
   toasts: {
@@ -342,45 +261,7 @@ export const vi: WorkspaceSpacesCopy = {
     submitting: "Đang chuyển…",
     pickerLabel: "Nơi đến",
   },
-  page: {
-    loading: "Đang tải Không gian",
-    notFound: "Không gian này không khả dụng",
-    notFoundDescription:
-      "Có thể nó đã được di chuyển, lưu trữ hoặc chuyển sang riêng tư. Hãy nhờ quản trị viên Không gian cấp quyền.",
-    backHome: "Về Trang chủ",
-    error: "Chưa tải được Không gian này.",
-    retry: "Thử lại",
-    archivedNotice:
-      "Không gian này đã được lưu trữ. Bảng và Tài liệu vẫn ở nguyên chỗ; hãy bỏ lưu trữ để thêm hoặc thay đổi.",
-    unarchive: "Bỏ lưu trữ",
-    unarchiving: "Đang bỏ lưu trữ…",
-    moreActions: "Thao tác khác cho {{name}}",
-    move: "Di chuyển Không gian",
-    newChild: "Không gian mới bên trong",
-    newBoard: "Bảng mới",
-    newDoc: "Tài liệu mới",
-    tabs: {
-      label: "Các mục của Không gian",
-      overview: "Tổng quan",
-      members: "Thành viên",
-      settings: "Cài đặt",
-    },
-    breadcrumb: "Vị trí Không gian",
-  },
-  overview: {
-    spaces: "Không gian",
-    boards: "Bảng",
-    docs: "Tài liệu",
-    spacesEmpty: "Chưa có Không gian nào bên trong.",
-    boardsEmpty: "Chưa có Bảng nào trong Không gian này.",
-    docsEmpty: "Chưa có Tài liệu nào trong Không gian này.",
-    loading: "Đang tải nội dung",
-    error: "Chưa tải được Bảng và Tài liệu của Không gian này.",
-    move: "Di chuyển {{name}}",
-    open: "Mở {{name}}",
-    count_one: "{{count}} mục",
-    count_other: "{{count}} mục",
-  },
+  ...spacePageVi,
   members: {
     title: "Thành viên",
     description:
@@ -424,51 +305,6 @@ export const vi: WorkspaceSpacesCopy = {
         "Họ mất quyền truy cập mà Không gian này cấp. Những Bảng và Tài liệu được cấp quyền trực tiếp vẫn giữ quyền đó.",
       removeAction: "Xóa",
       cancel: "Hủy",
-    },
-  },
-  settings: {
-    title: "Cài đặt",
-    readOnly:
-      "Chỉ quản trị viên Không gian và chủ sở hữu, quản trị viên workspace mới thay đổi được các cài đặt này.",
-    profile: {
-      title: "Thông tin",
-      description: "Tên, loại và mô tả mọi người nhìn thấy.",
-      nameLabel: "Tên Không gian",
-      nameRequired: "Nhập tên cho Không gian.",
-      descriptionLabel: "Mô tả",
-      descriptionHelp: "Không gian này dùng để làm gì. Tối đa 1.024 ký tự.",
-      descriptionTooLong: "Dùng tối đa 1.024 ký tự.",
-      typeLabel: "Loại",
-    },
-    access: {
-      title: "Phạm vi hiển thị",
-      description: "Ai có thể tìm thấy Không gian này và nội dung bên trong.",
-    },
-    save: "Lưu thay đổi",
-    saving: "Đang lưu…",
-    saved: "Đã lưu",
-    danger: {
-      title: "Lưu trữ",
-      description:
-        "Lưu trữ sẽ ẩn Không gian khỏi công việc hằng ngày. Không có gì bên trong bị di chuyển hay xóa.",
-      archive: "Lưu trữ Không gian",
-      archiving: "Đang lưu trữ…",
-      blocked:
-        "Không gian này vẫn còn {{content}}. Hãy di chuyển hoặc lưu trữ chúng trước — việc lưu trữ không bao giờ tự di chuyển hay ẩn công việc.",
-      blockedUnknown:
-        "Máy chủ từ chối: Không gian này vẫn còn Không gian, Bảng hoặc Tài liệu bên trong, có thể có mục bạn không thấy. Hãy nhờ quản trị viên workspace.",
-      confirmTitle: "Lưu trữ {{name}}?",
-      confirmDescription:
-        "Mọi người vẫn mở được qua liên kết, nhưng nó sẽ rời khỏi thanh bên. Bạn có thể bỏ lưu trữ sau.",
-      confirmAction: "Lưu trữ",
-      cancel: "Hủy",
-      childSpaces_one: "{{count}} Không gian",
-      childSpaces_other: "{{count}} Không gian",
-      boards_one: "{{count}} Bảng",
-      boards_other: "{{count}} Bảng",
-      docs_one: "{{count}} Tài liệu",
-      docs_other: "{{count}} Tài liệu",
-      and: " và ",
     },
   },
   toasts: {

@@ -1,32 +1,16 @@
 import * as React from "react";
 import {
-  ArrowRightLeft,
-  ChevronRight,
-  FolderPlus,
-  Lock,
-  MoreHorizontal,
-  Plus,
-} from "lucide-react";
-import {
-  Badge,
   Button,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
   Empty,
   EmptyContent,
   EmptyDescription,
   EmptyHeader,
   EmptyTitle,
   Skeleton,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
+  cn,
 } from "@notrelix/ui-web";
 import {
-  NAVIGATION_RESOURCE_KIND,
+  markToneFor,
   type SpaceTab,
   type WorkspaceDestination,
 } from "../../core/model/navigation";
@@ -35,13 +19,31 @@ import {
   type SpaceContentCounts,
   type SpaceMemberEntry,
   type SpaceNode,
-  type SpacePathItem,
   type SpaceRole,
   type SpaceTeam,
 } from "../../core/model/spaces";
-import type { SectionState, SurfaceFormatters } from "../home/home-models";
-import { ResourceMark, ShellLink } from "../shell/shell-link";
+import type { SectionState } from "../home/home-models";
 import { formatCopy, type ShellNavigation } from "../shell/shell-models";
+import { ShellLink } from "../shell/shell-link";
+import {
+  AccessBlock,
+  AttentionBlock,
+  BoardsSection,
+  ChildrenSection,
+  DocsSection,
+  SetupSection,
+  WorkloadBlock,
+} from "./space-overview";
+import { FOCUS, Glyph, BTN_SM, SpaceHead, SpaceTabs } from "./space-page-parts";
+import type {
+  SpaceAccessView,
+  SpaceAttentionRowView,
+  SpaceChildView,
+  SpaceContentView,
+  SpaceHeadPeople,
+  SpaceTemplateView,
+  SpaceWorkloadRowView,
+} from "./space-page-models";
 import {
   SpaceMembersPanel,
   type AddSpaceMemberInput,
@@ -52,41 +54,38 @@ import {
   type SpaceDetailsValues,
   type SpaceSaveStatus,
 } from "./space-settings-panel";
-import { SPACE_TYPE_ICON } from "./space-tree-nav";
 import type { WorkspaceSpacesCopy } from "./workspace-spaces.copy";
-
-/** A Board or Doc placed in the Space, from its owning context's list. */
-export interface SpaceResource {
-  readonly id: string;
-  readonly name: string;
-  readonly updatedAt: string | null;
-}
-
-export interface SpaceContent {
-  readonly boards: readonly SpaceResource[];
-  readonly docs: readonly SpaceResource[];
-}
 
 export interface WorkspaceSpaceSurfaceProps {
   readonly copy: WorkspaceSpacesCopy;
   readonly navigation: ShellNavigation;
-  readonly formatters: SurfaceFormatters;
+  /** Reference time for the "updated" labels (epoch ms). */
+  readonly now: number;
   /** `ready` with `null` = the Space is not visible to the member (NotFound). */
   readonly space: SectionState<SpaceNode | null>;
-  /** Visible path, root first, ending with the Space. */
-  readonly path: readonly SpacePathItem[];
-  /** Visible child Spaces, in sibling order. */
-  readonly childSpaces: readonly SpaceNode[];
-  readonly content: SectionState<SpaceContent>;
+  readonly workspaceName: string;
+  /** Names of the visible ancestors, root first, without the Space itself. */
+  readonly ancestors: readonly string[];
+  readonly tab: SpaceTab;
+  readonly people: SpaceHeadPeople | null;
+  readonly peopleTotal: number | null;
+  readonly contentCount: number | null;
+  readonly membersCount: number | null;
+  readonly content: SectionState<SpaceContentView>;
+  readonly childSpaces: readonly SpaceChildView[];
+  readonly access: SpaceAccessView | null;
+  /** The summary blocks the producers cannot fill stay `null`. */
+  readonly attention: readonly SpaceAttentionRowView[] | null;
+  readonly workload: readonly SpaceWorkloadRowView[] | null;
+  readonly templates: readonly SpaceTemplateView[];
+  /** A department with nothing in it yet: the first-steps state. */
+  readonly firstSteps: boolean;
+  /** "Viewing as a member" banner; `null` when not previewing. */
+  readonly viewAs: { readonly onExit: () => void } | null;
+  /** Members tab (the members panel). */
   readonly members: SectionState<readonly SpaceMemberEntry[]>;
   readonly candidateUsers: SectionState<readonly SpaceMemberCandidate[]>;
   readonly candidateTeams: SectionState<readonly SpaceTeam[]>;
-  readonly tab: SpaceTab;
-  readonly onTabChange: (tab: SpaceTab) => void;
-  /** Boards in this Space the member may move (ManageBoard; GOV-028). */
-  readonly canMoveBoards: boolean;
-  /** Docs in this Space the member may move (UpdatePage; GOV-028). */
-  readonly canMoveDocs: boolean;
   readonly pendingMemberKeys: ReadonlySet<string>;
   readonly addingMember: boolean;
   readonly addMemberError: string | null;
@@ -99,11 +98,11 @@ export interface WorkspaceSpaceSurfaceProps {
   readonly onCreateBoard: () => void;
   readonly onCreateDoc: () => void;
   readonly onMoveSpace: () => void;
-  readonly onMoveBoard: (board: SpaceResource) => void;
-  readonly onMoveDoc: (doc: SpaceResource) => void;
   readonly onUnarchive: () => void;
   readonly onSave: (changes: Partial<SpaceDetailsValues>) => void;
   readonly onArchive: () => void;
+  /** `null`: no delete write exists, the button is drawn inert. */
+  readonly onDelete: (() => void) | null;
   readonly onAddMember: (input: AddSpaceMemberInput) => void;
   readonly onChangeMemberRole: (
     entry: SpaceMemberEntry,
@@ -113,208 +112,46 @@ export interface WorkspaceSpaceSurfaceProps {
   readonly onRetry: () => void;
   readonly onRetryContent: () => void;
   readonly onRetryMembers: () => void;
+  /** Starts with the Create menu open (stories, tests). */
+  readonly initialMenuOpen?: boolean;
+  readonly initialDeleteOpen?: boolean;
 }
 
-const DATE_FORMAT: Intl.DateTimeFormatOptions = { dateStyle: "medium" };
+const LIBRARY: WorkspaceDestination = { section: "library" };
 
-function SectionList({
-  title,
-  empty,
-  children,
-  count,
-}: {
-  title: string;
-  empty: string;
-  count: number;
-  children: React.ReactNode;
-}) {
-  const titleId = React.useId();
+function ContentSkeleton({ label }: { label: string }) {
   return (
-    <section aria-labelledby={titleId} className="flex flex-col gap-2">
-      <h2
-        id={titleId}
-        className="flex items-baseline gap-2 text-subheading text-foreground"
-      >
-        {title}
-        <span className="text-metadata tabular-nums text-muted-foreground">
-          {count}
-        </span>
-      </h2>
-      {count === 0 ? (
-        <p className="rounded-lg border border-dashed border-border bg-surface-panel px-4 py-4 text-metadata text-muted-foreground">
-          {empty}
-        </p>
-      ) : (
-        <ul className="overflow-hidden rounded-lg border border-border bg-surface-panel">
-          {children}
-        </ul>
-      )}
-    </section>
-  );
-}
-
-function Overview({
-  node: space,
-  ...props
-}: WorkspaceSpaceSurfaceProps & { node: SpaceNode }) {
-  const { copy, navigation, formatters, content, childSpaces } = props;
-  const caps = spaceCapabilities(space);
-  const moveBoards = props.canMoveBoards && caps.canCreateResources;
-  const moveDocs = props.canMoveDocs && caps.canCreateResources;
-
-  const resourceRow = (resource: SpaceResource, kind: "board" | "doc") => {
-    const destination: WorkspaceDestination =
-      kind === "board"
-        ? { section: "board", boardId: resource.id }
-        : { section: "doc", docId: resource.id };
-    return (
-      <li
-        key={resource.id}
-        className="flex h-11 items-center gap-3 border-t border-border px-3 first:border-t-0 hover:bg-state-hover"
-      >
-        <ResourceMark
-          kind={
-            kind === "board"
-              ? NAVIGATION_RESOURCE_KIND.board
-              : NAVIGATION_RESOURCE_KIND.doc
-          }
-          id={resource.id}
-        />
-        <ShellLink
-          destination={destination}
-          navigation={navigation}
-          className="min-w-0 flex-1 truncate rounded-sm text-label text-foreground outline-none hover:underline focus-visible:ring-2 focus-visible:ring-focus-ring"
-        >
-          {resource.name}
-        </ShellLink>
-        {resource.updatedAt ? (
-          <span className="hidden shrink-0 text-metadata tabular-nums text-muted-foreground sm:inline">
-            {formatters.date(resource.updatedAt, DATE_FORMAT)}
-          </span>
-        ) : null}
-        {(kind === "board" && moveBoards) || (kind === "doc" && moveDocs) ? (
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label={formatCopy(copy.overview.move, { name: resource.name })}
-            title={formatCopy(copy.overview.move, { name: resource.name })}
-            onClick={() =>
-              kind === "board"
-                ? props.onMoveBoard(resource)
-                : props.onMoveDoc(resource)
-            }
-          >
-            <ArrowRightLeft aria-hidden="true" />
-          </Button>
-        ) : null}
-      </li>
-    );
-  };
-
-  return (
-    <div className="flex flex-col gap-6">
-      <SectionList
-        title={copy.overview.spaces}
-        empty={copy.overview.spacesEmpty}
-        count={childSpaces.length}
-      >
-        {childSpaces.map((child) => {
-          const Icon = SPACE_TYPE_ICON[child.type];
-          return (
-            <li
-              key={child.id}
-              className="flex h-11 items-center gap-3 border-t border-border px-3 first:border-t-0 hover:bg-state-hover"
-            >
-              <span
-                aria-hidden="true"
-                className="flex size-7 shrink-0 items-center justify-center rounded-md border border-border bg-surface-raised text-icon"
-              >
-                <Icon className="size-4" />
-              </span>
-              <ShellLink
-                destination={{ section: "space", spaceId: child.id }}
-                navigation={navigation}
-                className="min-w-0 flex-1 truncate rounded-sm text-label text-foreground outline-none hover:underline focus-visible:ring-2 focus-visible:ring-focus-ring"
-              >
-                {child.name}
-              </ShellLink>
-              <span className="hidden shrink-0 text-metadata text-muted-foreground sm:inline">
-                {copy.types[child.type]}
-              </span>
-              {child.visibility === "Private" ? (
-                <Badge variant="outline" className="shrink-0 gap-1 font-normal">
-                  <Lock aria-hidden="true" className="size-3" />
-                  {copy.tree.private}
-                </Badge>
-              ) : null}
-            </li>
-          );
-        })}
-      </SectionList>
-      {content.status === "loading" ? (
-        <div
-          role="status"
-          aria-label={copy.overview.loading}
-          className="flex flex-col gap-2"
-        >
-          <Skeleton className="h-5 w-24" />
-          <Skeleton className="h-11 w-full rounded-lg" />
-          <Skeleton className="h-11 w-full rounded-lg" />
-        </div>
-      ) : content.status === "error" ? (
-        <div
-          role="alert"
-          className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-surface-panel px-4 py-3"
-        >
-          <p className="text-body text-muted-foreground">
-            {copy.overview.error}
-          </p>
-          <Button variant="outline" size="sm" onClick={props.onRetryContent}>
-            {copy.page.retry}
-          </Button>
-        </div>
-      ) : (
-        <>
-          <SectionList
-            title={copy.overview.boards}
-            empty={copy.overview.boardsEmpty}
-            count={content.data.boards.length}
-          >
-            {content.data.boards.map((board) => resourceRow(board, "board"))}
-          </SectionList>
-          <SectionList
-            title={copy.overview.docs}
-            empty={copy.overview.docsEmpty}
-            count={content.data.docs.length}
-          >
-            {content.data.docs.map((doc) => resourceRow(doc, "doc"))}
-          </SectionList>
-        </>
-      )}
+    <div role="status" aria-label={label} className="flex flex-col gap-2">
+      <Skeleton className="h-5 w-24" />
+      <Skeleton className="h-[58px] w-full rounded-[12px]" />
+      <Skeleton className="h-[58px] w-full rounded-[12px]" />
     </div>
   );
 }
 
 /**
- * A Space page (OT-5): where it sits in the org tree, what is inside it
- * (child Spaces, Boards, Docs), its members and its settings. The member's
- * effective access on the Space (GOV-027) decides which actions are offered;
- * the producer authorizes each one.
+ * A department (Space) page (Final-Space): the head with its actions and the
+ * tabs, then the overview, the members or the settings. The member's access
+ * on the Space (GOV-027) decides which actions are offered; the producer
+ * authorizes each one.
  */
 export function WorkspaceSpaceSurface(props: WorkspaceSpaceSurfaceProps) {
-  const { copy, navigation, space, path, tab, onTabChange } = props;
+  const { copy, navigation, space, tab } = props;
+  const [menuOpen, setMenuOpen] = React.useState(
+    props.initialMenuOpen ?? false,
+  );
 
   if (space.status === "loading") {
     return (
       <div
         role="status"
         aria-label={copy.page.loading}
-        className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-6 sm:px-6"
+        className="flex w-full max-w-5xl flex-col gap-4 px-7 py-6"
       >
         <Skeleton className="h-4 w-48" />
         <Skeleton className="h-8 w-64" />
         <Skeleton className="h-9 w-80" />
-        <Skeleton className="h-40 w-full rounded-lg" />
+        <Skeleton className="h-40 w-full rounded-[12px]" />
       </div>
     );
   }
@@ -322,7 +159,7 @@ export function WorkspaceSpaceSurface(props: WorkspaceSpaceSurfaceProps) {
     const notFound = space.status === "ready";
     return (
       <div className="mx-auto flex w-full max-w-3xl flex-col px-4 py-10 sm:px-6">
-        <Empty className="border border-border bg-surface-panel">
+        <Empty className="border border-line bg-popover dark:bg-card">
           <EmptyHeader>
             <EmptyTitle className="text-subheading">
               {notFound ? copy.page.notFound : copy.page.error}
@@ -355,190 +192,255 @@ export function WorkspaceSpaceSurface(props: WorkspaceSpaceSurfaceProps) {
 
   const node = space.data;
   const caps = spaceCapabilities(node);
-  const Icon = SPACE_TYPE_ICON[node.type];
-  const ancestors = path.slice(0, -1);
-  const hasMore = caps.canCreateChild || caps.canMove;
   const counts: SpaceContentCounts | null =
     props.content.status === "ready"
       ? {
-          childSpaces: props.childSpaces.filter((child) => !child.isArchived)
-            .length,
-          boards: props.content.data.boards.length,
-          docs: props.content.data.docs.length,
+          childSpaces: props.childSpaces.length,
+          boards: props.content.data.boardTotal,
+          docs: props.content.data.docTotal,
         }
       : null;
+  const asMember = props.viewAs !== null;
+  const manage = caps.canManage && !asMember;
+  const gotoTab = (target: SpaceTab) =>
+    navigation.onNavigate({
+      section: "space",
+      spaceId: node.id,
+      tab: target === "overview" ? undefined : target,
+    });
+  const banner = (children: React.ReactNode, action: React.ReactNode) => (
+    <div
+      data-f="viewas"
+      role="status"
+      className="flex items-center gap-2.5 border-b border-line bg-warning-subtle px-7 py-2 text-crumb leading-[1.45] text-warning-text"
+    >
+      <Glyph name="eye" />
+      <span>{children}</span>
+      <span className="ml-auto">{action}</span>
+    </div>
+  );
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-5 px-4 py-6 sm:px-6">
-      <header className="flex flex-col gap-3">
-        {ancestors.length > 0 ? (
-          <nav aria-label={copy.page.breadcrumb}>
-            <ol className="flex flex-wrap items-center gap-1 text-metadata text-muted-foreground">
-              {ancestors.map((item) => (
-                <li key={item.id} className="flex min-w-0 items-center gap-1">
-                  <ShellLink
-                    destination={{ section: "space", spaceId: item.id }}
-                    navigation={navigation}
-                    className="truncate rounded-sm text-link outline-none hover:underline focus-visible:ring-2 focus-visible:ring-focus-ring"
-                  >
-                    {item.name}
-                  </ShellLink>
-                  <ChevronRight
-                    aria-hidden="true"
-                    className="size-3.5 shrink-0"
-                  />
-                </li>
-              ))}
-              <li aria-current="page" className="truncate text-foreground">
-                {node.name}
-              </li>
-            </ol>
-          </nav>
-        ) : null}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div className="flex min-w-0 items-start gap-3">
-            <span
-              aria-hidden="true"
-              className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-border bg-surface-raised text-icon"
+    <div data-f="page" className="flex h-full min-h-0 flex-col">
+      {props.viewAs
+        ? banner(
+            <>
+              <b className="font-semibold">{copy.page.viewAs.lead}</b>
+              {copy.page.viewAs.text}
+            </>,
+            <button
+              data-f="btn-sm"
+              type="button"
+              onClick={props.viewAs.onExit}
+              className={cn(BTN_SM, FOCUS)}
             >
-              <Icon className="size-5" />
-            </span>
-            <div className="flex min-w-0 flex-col gap-1">
-              <h1 className="flex flex-wrap items-center gap-2 text-page-title text-foreground">
-                <span className="min-w-0 break-words">{node.name}</span>
-                {node.visibility === "Private" ? (
-                  <Badge variant="outline" className="gap-1 font-normal">
-                    <Lock aria-hidden="true" className="size-3" />
-                    {copy.tree.private}
-                  </Badge>
-                ) : null}
-                {node.isArchived ? (
-                  <Badge variant="secondary" className="font-normal">
-                    {copy.tree.archived}
-                  </Badge>
-                ) : null}
-              </h1>
-              <p className="text-metadata text-muted-foreground">
-                {copy.types[node.type]} · {copy.access[node.access]}
-              </p>
-              {node.description ? (
-                <p className="max-w-prose text-body text-muted-foreground">
-                  {node.description}
-                </p>
-              ) : null}
-            </div>
-          </div>
-          <div className="flex shrink-0 flex-wrap gap-2">
-            {caps.canCreateResources ? (
-              <>
-                <Button size="sm" onClick={props.onCreateBoard}>
-                  <Plus aria-hidden="true" />
-                  {copy.page.newBoard}
-                </Button>
-                <Button size="sm" variant="outline" onClick={props.onCreateDoc}>
-                  <Plus aria-hidden="true" />
-                  {copy.page.newDoc}
-                </Button>
-              </>
-            ) : null}
-            {hasMore ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    size="icon-sm"
-                    variant="outline"
-                    aria-label={formatCopy(copy.page.moreActions, {
-                      name: node.name,
-                    })}
+              {copy.page.viewAs.exit}
+            </button>,
+          )
+        : node.isArchived
+          ? banner(
+              copy.page.archivedNotice,
+              caps.canManage ? (
+                <button
+                  data-f="btn-sm"
+                  type="button"
+                  disabled={props.unarchiving}
+                  onClick={props.onUnarchive}
+                  className={cn(BTN_SM, FOCUS)}
+                >
+                  {props.unarchiving
+                    ? copy.page.unarchiving
+                    : copy.page.unarchive}
+                </button>
+              ) : null,
+            )
+          : null}
+      <SpaceHead
+        copy={copy}
+        navigation={navigation}
+        name={node.name}
+        workspaceName={props.workspaceName}
+        markTone={markToneFor(node.id)}
+        isPrivate={node.visibility === "Private"}
+        archived={node.isArchived}
+        description={node.description}
+        people={props.people}
+        peopleTotal={props.peopleTotal}
+        canManage={manage}
+        canCreate={caps.canCreateResources && !asMember}
+        tab={tab}
+        spaceId={node.id}
+        menuOpen={menuOpen}
+        onMenuOpenChange={setMenuOpen}
+        onToggleSettings={() =>
+          gotoTab(tab === "settings" ? "overview" : "settings")
+        }
+        onCreateBoard={props.onCreateBoard}
+        onCreateDoc={props.onCreateDoc}
+        onCreateChild={caps.canCreateChild ? props.onCreateChild : null}
+        primaryAdd={props.firstSteps && tab === "overview"}
+      />
+      <SpaceTabs
+        copy={copy}
+        navigation={navigation}
+        name={node.name}
+        spaceId={node.id}
+        tab={tab}
+        contentCount={props.contentCount}
+        membersCount={props.membersCount}
+        showSettings={manage || tab === "settings"}
+      />
+      <div data-f="body" className="flex min-h-0 flex-1 overflow-hidden">
+        {tab === "overview" ? (
+          <>
+            <div
+              data-f="col"
+              className={cn(
+                "flex min-w-0 flex-1 flex-col gap-7 overflow-auto px-7 pt-[22px] pb-8",
+                props.firstSteps && "box-content max-w-[820px]",
+              )}
+            >
+              {props.content.status === "loading" ? (
+                <ContentSkeleton label={copy.overview.loading} />
+              ) : props.content.status === "error" ? (
+                <div
+                  role="alert"
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-[12px] border border-line bg-popover px-4 py-3 dark:bg-card"
+                >
+                  <p className="m-0 text-body text-muted-foreground">
+                    {copy.overview.error}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={props.onRetryContent}
+                    className={cn(BTN_SM, FOCUS)}
                   >
-                    <MoreHorizontal aria-hidden="true" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  {caps.canCreateChild ? (
-                    <DropdownMenuItem onSelect={props.onCreateChild}>
-                      <FolderPlus aria-hidden="true" />
-                      {copy.page.newChild}
-                    </DropdownMenuItem>
+                    {copy.page.retry}
+                  </button>
+                </div>
+              ) : props.firstSteps ? (
+                <SetupSection
+                  copy={copy}
+                  name={node.name}
+                  isPrivate={node.visibility === "Private"}
+                  templates={props.templates}
+                  onAddMembers={() => gotoTab("members")}
+                  onCreateBoard={
+                    caps.canCreateResources ? props.onCreateBoard : null
+                  }
+                />
+              ) : (
+                <>
+                  <BoardsSection
+                    copy={copy}
+                    navigation={navigation}
+                    now={props.now}
+                    rows={props.content.data.boards}
+                    total={props.content.data.boardTotal}
+                    libraryHref={LIBRARY}
+                    note={
+                      asMember
+                        ? formatCopy(copy.overview.viewAsNote, {
+                            count: props.content.data.boardTotal,
+                          })
+                        : props.content.data.boards.some((b) => b.isPrivate)
+                          ? copy.overview.boardNote
+                          : null
+                    }
+                  />
+                  {props.childSpaces.length > 0 || caps.canCreateChild ? (
+                    <ChildrenSection
+                      copy={copy}
+                      navigation={navigation}
+                      spaceName={node.name}
+                      children={props.childSpaces}
+                      canCreate={caps.canCreateChild && !asMember}
+                      onCreate={props.onCreateChild}
+                    />
                   ) : null}
-                  {caps.canMove ? (
-                    <DropdownMenuItem onSelect={props.onMoveSpace}>
-                      <ArrowRightLeft aria-hidden="true" />
-                      {copy.page.move}
-                    </DropdownMenuItem>
-                  ) : null}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : null}
-          </div>
-        </div>
-        {node.isArchived ? (
-          <div
-            role="status"
-            className="flex flex-wrap items-center justify-between gap-3 rounded-md bg-warning-subtle px-3 py-2 text-metadata text-warning-subtle-foreground"
-          >
-            <span>{copy.page.archivedNotice}</span>
-            {caps.canManage ? (
-              <Button
-                size="xs"
-                variant="outline"
-                disabled={props.unarchiving}
-                onClick={props.onUnarchive}
+                  <DocsSection
+                    copy={copy}
+                    navigation={navigation}
+                    now={props.now}
+                    rows={props.content.data.docs}
+                    total={props.content.data.docTotal}
+                    libraryHref={LIBRARY}
+                  />
+                </>
+              )}
+            </div>
+            {props.attention || props.workload || props.access ? (
+              <aside
+                data-f="aside"
+                aria-label={copy.aside.label}
+                className="box-border flex w-[340px] shrink-0 flex-col gap-[22px] overflow-auto border-l border-line bg-popover px-5 pt-5 pb-7 dark:bg-card"
               >
-                {props.unarchiving
-                  ? copy.page.unarchiving
-                  : copy.page.unarchive}
-              </Button>
+                {!props.firstSteps && props.attention ? (
+                  <AttentionBlock copy={copy} rows={props.attention} />
+                ) : null}
+                {!props.firstSteps && props.workload ? (
+                  <WorkloadBlock copy={copy} rows={props.workload} />
+                ) : null}
+                {props.access ? (
+                  <AccessBlock
+                    copy={copy}
+                    navigation={navigation}
+                    spaceId={node.id}
+                    access={props.access}
+                    canManage={manage}
+                    hint={
+                      props.firstSteps && node.visibility === "Private"
+                        ? copy.setup.accessHint
+                        : undefined
+                    }
+                    showLink={!props.firstSteps}
+                  />
+                ) : null}
+              </aside>
             ) : null}
+          </>
+        ) : tab === "members" ? (
+          <div
+            data-f="col"
+            className="min-w-0 flex-1 overflow-auto px-7 pt-[22px] pb-8"
+          >
+            <SpaceMembersPanel
+              copy={copy}
+              spaceName={node.name}
+              canManage={manage && !node.isArchived}
+              members={props.members}
+              users={props.candidateUsers}
+              teams={props.candidateTeams}
+              pendingKeys={props.pendingMemberKeys}
+              adding={props.addingMember}
+              addError={props.addMemberError}
+              addResetKey={props.addMemberResetKey}
+              onAdd={props.onAddMember}
+              onChangeRole={props.onChangeMemberRole}
+              onRemove={props.onRemoveMember}
+              onRetry={props.onRetryMembers}
+            />
           </div>
-        ) : null}
-      </header>
-
-      <Tabs
-        value={tab}
-        onValueChange={(value) => onTabChange(value as SpaceTab)}
-        className="gap-4"
-      >
-        <TabsList aria-label={copy.page.tabs.label}>
-          <TabsTrigger value="overview">{copy.page.tabs.overview}</TabsTrigger>
-          <TabsTrigger value="members">{copy.page.tabs.members}</TabsTrigger>
-          <TabsTrigger value="settings">{copy.page.tabs.settings}</TabsTrigger>
-        </TabsList>
-        <TabsContent value="overview">
-          <Overview {...props} node={node} />
-        </TabsContent>
-        <TabsContent value="members">
-          <SpaceMembersPanel
-            copy={copy}
-            spaceName={node.name}
-            canManage={caps.canManage && !node.isArchived}
-            members={props.members}
-            users={props.candidateUsers}
-            teams={props.candidateTeams}
-            pendingKeys={props.pendingMemberKeys}
-            adding={props.addingMember}
-            addError={props.addMemberError}
-            addResetKey={props.addMemberResetKey}
-            onAdd={props.onAddMember}
-            onChangeRole={props.onChangeMemberRole}
-            onRemove={props.onRemoveMember}
-            onRetry={props.onRetryMembers}
-          />
-        </TabsContent>
-        <TabsContent value="settings">
+        ) : (
           <SpaceSettingsPanel
             copy={copy}
             space={node}
-            canManage={caps.canManage}
+            workspaceName={props.workspaceName}
+            ancestors={props.ancestors}
+            childNames={props.childSpaces.map((child) => child.name)}
+            canManage={manage}
             saveStatus={props.saveStatus}
             content={counts}
             archiving={props.archiving}
             archiveRefused={props.archiveRefused}
             onSave={props.onSave}
+            onMove={props.onMoveSpace}
             onArchive={props.onArchive}
+            onDelete={props.onDelete}
+            initialDeleteOpen={props.initialDeleteOpen}
           />
-        </TabsContent>
-      </Tabs>
+        )}
+      </div>
     </div>
   );
 }

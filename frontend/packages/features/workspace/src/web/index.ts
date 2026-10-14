@@ -218,10 +218,9 @@ export {
 } from "./spaces/move-to-space-dialog";
 export {
   WorkspaceSpaceSurface,
-  type SpaceContent,
-  type SpaceResource,
   type WorkspaceSpaceSurfaceProps,
 } from "./spaces/workspace-space-surface";
+export * from "./spaces/space-page-models";
 export type {
   AddSpaceMemberInput,
   SpaceMemberCandidate,

@@ -32,6 +32,10 @@ export interface BoardPlacement {
   readonly spaceId: string | null;
   /** The Board aggregate version (`expectedVersion` of a move); 0 = unknown. */
   readonly version: number;
+  /** The Board is private: only the people added to it can open it (GOV-025). */
+  readonly isPrivate: boolean;
+  /** People added to the Board; `null` when the list does not say. */
+  readonly memberCount: number | null;
 }
 
 export const boardPlacementsQueryKey = (workspaceId: string) =>
@@ -45,6 +49,9 @@ function toPlacements(dto: BoardListDto | null): BoardPlacement[] {
       id: board.id,
       spaceId: board.spaceId ?? null,
       version: typeof board.version === "number" ? board.version : 0,
+      isPrivate: (board.visibility ?? "").toLowerCase() === "private",
+      memberCount:
+        typeof board.memberCount === "number" ? board.memberCount : null,
     });
   }
   return out;

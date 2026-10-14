@@ -57,7 +57,10 @@
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "Empty"],
+        "required": [
+          "Default",
+          "Empty"
+        ],
         "delegated": [],
         "notApplicable": [
           {
@@ -94,7 +97,12 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "render",
@@ -206,7 +214,13 @@
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "Loading", "Empty", "Error", "EdgeData"],
+        "required": [
+          "Default",
+          "Loading",
+          "Empty",
+          "Error",
+          "EdgeData"
+        ],
         "delegated": [],
         "notApplicable": [
           {
@@ -218,7 +232,12 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "render",
@@ -337,7 +356,11 @@
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "Loading", "EdgeData"],
+        "required": [
+          "Default",
+          "Loading",
+          "EdgeData"
+        ],
         "delegated": [],
         "notApplicable": [
           {
@@ -349,7 +372,12 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "breadcrumb",
@@ -495,7 +523,11 @@
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "Empty", "EdgeData"],
+        "required": [
+          "Default",
+          "Empty",
+          "EdgeData"
+        ],
         "delegated": [],
         "notApplicable": [
           {
@@ -507,7 +539,12 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "render",
@@ -602,13 +639,20 @@
         }
       ],
       "stateCoverage": {
-        "required": ["Default"],
+        "required": [
+          "Default"
+        ],
         "delegated": [],
         "notApplicable": []
       },
       "responsive": false,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "render",
@@ -667,13 +711,22 @@
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "Loading", "Error"],
+        "required": [
+          "Default",
+          "Loading",
+          "Error"
+        ],
         "delegated": [],
         "notApplicable": []
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "forbidden",
@@ -758,7 +811,10 @@
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "EdgeData"],
+        "required": [
+          "Default",
+          "EdgeData"
+        ],
         "delegated": [],
         "notApplicable": [
           {
@@ -770,7 +826,12 @@
       },
       "responsive": false,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "hidden",
@@ -839,7 +900,9 @@
       "owner": "@notrelix/features-workspace",
       "surfaceKind": "composition",
       "pureEntry": "src/web/home/workspace-home-surface.tsx",
-      "coveredSources": ["src/web/home/work-row-parts.tsx"],
+      "coveredSources": [
+        "src/web/home/work-row-parts.tsx"
+      ],
       "stories": [
         {
           "id": "workspace-home--home-default",
@@ -933,13 +996,24 @@
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "Loading", "Error", "EdgeData", "Empty"],
+        "required": [
+          "Default",
+          "Loading",
+          "Error",
+          "EdgeData",
+          "Empty"
+        ],
         "delegated": [],
         "notApplicable": []
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "render",
@@ -1024,13 +1098,21 @@
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "PermissionLimited"],
+        "required": [
+          "Default",
+          "PermissionLimited"
+        ],
         "delegated": [],
         "notApplicable": []
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "actions",
@@ -1093,7 +1175,11 @@
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "Loading", "Error"],
+        "required": [
+          "Default",
+          "Loading",
+          "Error"
+        ],
         "delegated": [],
         "notApplicable": [
           {
@@ -1115,7 +1201,12 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "submit",
@@ -1400,7 +1491,12 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "render",
@@ -1644,7 +1740,12 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "render",
@@ -1848,7 +1949,12 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "render",
@@ -2018,7 +2124,12 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "render",
@@ -2179,7 +2290,12 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "render",
@@ -2328,7 +2444,12 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "render",
@@ -2371,11 +2492,14 @@
       "pureEntry": "src/web/spaces/workspace-space-surface.tsx",
       "coveredSources": [
         "src/web/spaces/space-members-panel.tsx",
-        "src/web/spaces/space-settings-panel.tsx"
+        "src/web/spaces/space-settings-panel.tsx",
+        "src/web/spaces/space-overview.tsx",
+        "src/web/spaces/space-page-parts.tsx",
+        "src/web/spaces/space-page-models.ts"
       ],
       "stories": [
         {
-          "id": "workspace-spaces--page-default",
+          "id": "workspace-space-page--space-overview",
           "state": "Default",
           "visualTargets": [
             {
@@ -2397,7 +2521,7 @@
           ]
         },
         {
-          "id": "workspace-spaces--page-members",
+          "id": "workspace-space-page--space-create-menu",
           "state": "Default",
           "visualTargets": [
             {
@@ -2419,59 +2543,7 @@
           ]
         },
         {
-          "id": "workspace-spaces--page-settings",
-          "state": "Default",
-          "visualTargets": [
-            {
-              "viewport": "mobile",
-              "theme": "light"
-            },
-            {
-              "viewport": "tablet",
-              "theme": "light"
-            },
-            {
-              "viewport": "desktop",
-              "theme": "light"
-            },
-            {
-              "viewport": "desktop",
-              "theme": "dark"
-            }
-          ]
-        },
-        {
-          "id": "workspace-spaces--page-permission-limited",
-          "state": "PermissionLimited",
-          "visualTargets": [
-            {
-              "viewport": "desktop",
-              "theme": "light"
-            }
-          ]
-        },
-        {
-          "id": "workspace-spaces--page-loading",
-          "state": "Loading",
-          "visualTargets": [
-            {
-              "viewport": "desktop",
-              "theme": "light"
-            }
-          ]
-        },
-        {
-          "id": "workspace-spaces--page-error",
-          "state": "Error",
-          "visualTargets": [
-            {
-              "viewport": "desktop",
-              "theme": "light"
-            }
-          ]
-        },
-        {
-          "id": "workspace-spaces--page-empty",
+          "id": "workspace-space-page--space-new",
           "state": "Empty",
           "visualTargets": [
             {
@@ -2481,7 +2553,71 @@
           ]
         },
         {
-          "id": "workspace-spaces--page-read-only",
+          "id": "workspace-space-page--space-settings",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-space-page--space-members",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-space-page--space-view-as",
+          "state": "PermissionLimited",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-space-page--space-editor",
+          "state": "PermissionLimited",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-space-page--space-read-only",
           "state": "ReadOnly",
           "visualTargets": [
             {
@@ -2491,7 +2627,17 @@
           ]
         },
         {
-          "id": "workspace-spaces--page-edge-data",
+          "id": "workspace-space-page--space-settings-read-only",
+          "state": "ReadOnly",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-space-page--space-produced-only",
           "state": "EdgeData",
           "visualTargets": [
             {
@@ -2505,7 +2651,57 @@
           ]
         },
         {
-          "id": "workspace-spaces--page-not-found",
+          "id": "workspace-space-page--space-archived",
+          "state": "ReadOnly",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-space-page--space-loading",
+          "state": "Loading",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-space-page--space-content-loading",
+          "state": "Loading",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-space-page--space-error",
+          "state": "Error",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-space-page--space-content-error",
+          "state": "Error",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-space-page--space-not-found",
           "state": "Unavailable",
           "visualTargets": [
             {
@@ -2537,7 +2733,12 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "render",
@@ -2548,7 +2749,31 @@
           "testFile": "src/web/spaces/__tests__/space-page.interaction.component.test.tsx"
         },
         {
+          "id": "template-inert",
+          "testFile": "src/web/spaces/__tests__/space-page.interaction.component.test.tsx"
+        },
+        {
+          "id": "navigation",
+          "testFile": "src/web/spaces/__tests__/space-page.interaction.component.test.tsx"
+        },
+        {
           "id": "permission",
+          "testFile": "src/web/spaces/__tests__/space-page.interaction.component.test.tsx"
+        },
+        {
+          "id": "view-as",
+          "testFile": "src/web/spaces/__tests__/space-page.interaction.component.test.tsx"
+        },
+        {
+          "id": "first-steps",
+          "testFile": "src/web/spaces/__tests__/space-page.interaction.component.test.tsx"
+        },
+        {
+          "id": "produced-only",
+          "testFile": "src/web/spaces/__tests__/space-page.interaction.component.test.tsx"
+        },
+        {
+          "id": "content-error",
           "testFile": "src/web/spaces/__tests__/space-page.interaction.component.test.tsx"
         },
         {
@@ -2576,11 +2801,27 @@
           "testFile": "src/web/spaces/__tests__/space-page.interaction.component.test.tsx"
         },
         {
+          "id": "visibility",
+          "testFile": "src/web/spaces/__tests__/space-page.interaction.component.test.tsx"
+        },
+        {
+          "id": "move",
+          "testFile": "src/web/spaces/__tests__/space-page.interaction.component.test.tsx"
+        },
+        {
           "id": "archive-blocked",
           "testFile": "src/web/spaces/__tests__/space-page.interaction.component.test.tsx"
         },
         {
           "id": "archive",
+          "testFile": "src/web/spaces/__tests__/space-page.interaction.component.test.tsx"
+        },
+        {
+          "id": "delete-inert",
+          "testFile": "src/web/spaces/__tests__/space-page.interaction.component.test.tsx"
+        },
+        {
+          "id": "delete-confirm",
           "testFile": "src/web/spaces/__tests__/space-page.interaction.component.test.tsx"
         },
         {
@@ -2654,7 +2895,12 @@
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "Loading", "Error", "EdgeData"],
+        "required": [
+          "Default",
+          "Loading",
+          "Error",
+          "EdgeData"
+        ],
         "delegated": [],
         "notApplicable": [
           {
@@ -2671,7 +2917,12 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "submit",
@@ -2768,7 +3019,13 @@
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "Loading", "Error", "EdgeData", "HighDensity"],
+        "required": [
+          "Default",
+          "Loading",
+          "Error",
+          "EdgeData",
+          "HighDensity"
+        ],
         "delegated": [],
         "notApplicable": [
           {
@@ -2785,7 +3042,12 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "targets",
@@ -2943,7 +3205,12 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "render",
@@ -3036,7 +3303,12 @@
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "Loading", "Error", "EdgeData"],
+        "required": [
+          "Default",
+          "Loading",
+          "Error",
+          "EdgeData"
+        ],
         "delegated": [],
         "notApplicable": [
           {
@@ -3053,7 +3325,12 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "validate",
@@ -3197,7 +3474,12 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "render",

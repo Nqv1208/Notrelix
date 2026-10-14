@@ -8,12 +8,7 @@ import type {
   SpaceNode,
   SpaceTeam,
 } from "../core/model/spaces";
-import {
-  buildSpaceIndex,
-  childrenOf,
-  moveTargets,
-  spacePath,
-} from "../core/model/spaces";
+import { buildSpaceIndex, moveTargets } from "../core/model/spaces";
 import type { CreateSpaceDialogProps } from "../web/spaces/create-space-dialog";
 import type { MoveToSpaceDialogProps } from "../web/spaces/move-to-space-dialog";
 import type { SpaceMemberCandidate } from "../web/spaces/space-members-panel";
@@ -21,13 +16,11 @@ import type {
   SpaceBoardLink,
   SpaceTreeNavProps,
 } from "../web/spaces/space-tree-nav";
-import type { WorkspaceSpaceSurfaceProps } from "../web/spaces/workspace-space-surface";
 import {
   workspaceSpacesCopy,
   type WorkspaceSpacesCopy,
 } from "../web/spaces/workspace-spaces.copy";
 import { shellNavigationFixture } from "./workspace-shell-fixtures";
-import { homeFormattersFixture } from "./workspace-home-fixtures";
 
 export function spacesCopyFixture(
   locale: "en" | "vi" = "en",
@@ -462,158 +455,6 @@ export function sidebarDepartmentsStateFixture(
     ...sidebarDepartmentsFixture(),
     state: status === "empty" ? { status: "ready", nodes: [] } : { status },
     activeSpaceId: null,
-  };
-}
-
-// ── Space page ────────────────────────────────────────────────────
-
-type PageScenario = Omit<
-  WorkspaceSpaceSurfaceProps,
-  | "onTabChange"
-  | "onCreateChild"
-  | "onCreateBoard"
-  | "onCreateDoc"
-  | "onMoveSpace"
-  | "onMoveBoard"
-  | "onMoveDoc"
-  | "onUnarchive"
-  | "onSave"
-  | "onArchive"
-  | "onAddMember"
-  | "onChangeMemberRole"
-  | "onRemoveMember"
-  | "onRetry"
-  | "onRetryContent"
-  | "onRetryMembers"
->;
-
-function pageFor(
-  nodes: readonly SpaceNode[],
-  spaceId: string,
-  tab: PageScenario["tab"] = "overview",
-): PageScenario {
-  const index = buildSpaceIndex(nodes);
-  return {
-    copy: spacesCopyFixture(),
-    navigation: shellNavigationFixture(),
-    formatters: homeFormattersFixture(),
-    space: { status: "ready", data: index.byId.get(spaceId) ?? null },
-    path: spacePath(index, spaceId),
-    childSpaces: childrenOf(index, spaceId),
-    content: {
-      status: "ready",
-      data: {
-        boards: [
-          {
-            id: "board-it-roadmap",
-            name: "IT roadmap",
-            updatedAt: "2026-10-08T09:00:00.000Z",
-          },
-          { id: "board-it-tickets", name: "Service desk", updatedAt: null },
-        ],
-        docs: [
-          {
-            id: "doc-it-onboarding",
-            name: "Onboarding checklist",
-            updatedAt: "2026-10-05T09:00:00.000Z",
-          },
-        ],
-      },
-    },
-    members: { status: "ready", data: spaceMembersFixture() },
-    candidateUsers: { status: "ready", data: spaceCandidatesFixture() },
-    candidateTeams: { status: "ready", data: spaceTeamsFixture() },
-    tab,
-    canMoveBoards: true,
-    canMoveDocs: true,
-    pendingMemberKeys: new Set(),
-    addingMember: false,
-    addMemberError: null,
-    addMemberResetKey: 0,
-    saveStatus: "idle",
-    archiving: false,
-    archiveRefused: false,
-    unarchiving: false,
-  };
-}
-
-export function spacePageDefaultScenario(): PageScenario {
-  return pageFor(spaceTreeFixture(), "sp-it");
-}
-
-export function spacePageMembersScenario(): PageScenario {
-  return pageFor(spaceTreeFixture(), "sp-it", "members");
-}
-
-export function spacePageSettingsScenario(): PageScenario {
-  return pageFor(spaceTreeFixture(), "sp-it", "settings");
-}
-
-/** An empty leaf Space: archive is offered. */
-export function spacePageEmptyScenario(): PageScenario {
-  return {
-    ...pageFor(spaceTreeFixture(), "sp-it-security"),
-    content: { status: "ready", data: { boards: [], docs: [] } },
-  };
-}
-
-export function spacePageLoadingScenario(): PageScenario {
-  return { ...spacePageDefaultScenario(), space: { status: "loading" } };
-}
-
-export function spacePageErrorScenario(): PageScenario {
-  return { ...spacePageDefaultScenario(), space: { status: "error" } };
-}
-
-export function spacePageNotFoundScenario(): PageScenario {
-  return {
-    ...spacePageDefaultScenario(),
-    space: { status: "ready", data: null },
-    path: [],
-    childSpaces: [],
-  };
-}
-
-/** Viewer access: no create, move, member or settings actions. */
-export function spacePageReadOnlyScenario(): PageScenario {
-  return {
-    ...pageFor(spaceTreeFixture(), "sp-marketing"),
-    canMoveBoards: false,
-    canMoveDocs: false,
-  };
-}
-
-/** Editor access: may add Boards and Docs, may not manage the Space. */
-export function spacePagePermissionLimitedScenario(): PageScenario {
-  return pageFor(spaceTreeFixture(), "sp-accounting");
-}
-
-export function spacePageArchivedScenario(): PageScenario {
-  return {
-    ...pageFor(spaceTreeFixture(), "sp-archive"),
-    content: { status: "ready", data: { boards: [], docs: [] } },
-  };
-}
-
-export function spacePageEdgeDataScenario(): PageScenario {
-  const nodes = spaceTreeEdgeFixture();
-  return {
-    ...pageFor(nodes, "sp-edge-6"),
-    copy: spacesCopyFixture("vi"),
-    formatters: homeFormattersFixture("vi"),
-    content: {
-      status: "ready",
-      data: {
-        boards: [
-          {
-            id: "board-edge",
-            name: "Bảng theo dõi đối soát công nợ phải thu và phải trả của toàn bộ chi nhánh",
-            updatedAt: "2026-10-08T09:00:00.000Z",
-          },
-        ],
-        docs: [],
-      },
-    },
   };
 }
 

@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
+import { useParams, useSearch } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { createUsePageList } from "@notrelix/docs-state";
 import {
   buildSpaceIndex,
   childrenOf,
   describeWorkspaceFailure,
+  identityToneFor,
+  markToneFor,
   spaceMemberKey,
   spacePath,
   type SpaceMemberEntry,
@@ -13,19 +15,22 @@ import {
   type SpaceTab,
 } from "@notrelix/features-workspace/core";
 import {
+  buildAccessView,
+  buildHeadPeople,
   formatCopy,
   useWorkspaceHomeCopy,
   useWorkspaceSpacesCopy,
   WorkspaceSpaceSurface,
   type AddSpaceMemberInput,
   type SectionState,
-  type SpaceContent,
+  type SpaceBoardRowView,
+  type SpaceChildView,
+  type SpaceContentView,
   type SpaceDetailsValues,
+  type SpaceDocRowView,
   type SpaceMemberCandidate,
-  type SpaceResource,
   type SpaceSaveStatus,
 } from "@notrelix/features-workspace/web";
-import { useFormatters } from "@notrelix/i18n";
 import { useFeatureRuntimeDependencies } from "@notrelix/runtime-web";
 import { useWorkspaceContext } from "@/providers/workspace-provider";
 import { useBoardPlacements } from "@/shell/workspace/board-placement-bridge";
@@ -34,6 +39,7 @@ import { sectionState } from "@/shell/workspace/section-state";
 import { useCreateResource } from "@/shell/workspace/use-create-resource";
 import { useCreateSpace } from "@/shell/workspace/use-create-space";
 import { useMoveToSpace } from "@/shell/workspace/use-move-to-space";
+import { useNow } from "@/shell/workspace/use-now";
 import { useShellNavigation } from "@/shell/workspace/use-shell-navigation";
 import { useWorkspaceResources } from "@/shell/workspace/use-workspace-resources";
 import { useWorkspaceViewer } from "@/shell/workspace/use-workspace-viewer";
@@ -58,10 +64,9 @@ export function SpacePage() {
   const tab: SpaceTab = TABS.includes(search.tab as SpaceTab)
     ? (search.tab as SpaceTab)
     : "overview";
-  const navigate = useNavigate();
   const copy = useWorkspaceSpacesCopy();
   const homeCopy = useWorkspaceHomeCopy();
-  const formatters = useFormatters();
+  const now = useNow();
   const hint = useMemo(() => spaceRecoveryHint(copy), [copy]);
   const navigation = useShellNavigation();
   const hooks = useSpaceHooks();
@@ -112,31 +117,50 @@ export function SpacePage() {
       ? { status: "loading" }
       : { status: "ready", data: node };
 
-  const content = useMemo<SectionState<SpaceContent>>(() => {
+  const content = useMemo<SectionState<SpaceContentView>>(() => {
     if (resources.failed || placements.isError || pages.isError)
       return { status: "error" };
     if (!resources.ready || !placements.data || !pages.data)
       return { status: "loading" };
-    const inSpace = new Set(
-      placements.data
-        .filter((placement) => placement.spaceId === spaceId)
-        .map((placement) => placement.id),
+    const placementOf = new Map(
+      placements.data.map((placement) => [placement.id, placement]),
     );
-    const boards: SpaceResource[] = resources.boards
-      .filter((board) => inSpace.has(board.id))
-      .map((board) => ({
-        id: board.id,
-        name: board.name,
-        updatedAt: board.updatedAt,
-      }));
-    const docs: SpaceResource[] = pages.data
+    const boards: SpaceBoardRowView[] = resources.boards
+      .filter((board) => placementOf.get(board.id)?.spaceId === spaceId)
+      .map((board) => {
+        const placement = placementOf.get(board.id);
+        return {
+          id: board.id,
+          name: board.name,
+          icon: "kanban",
+          meta: null,
+          isPrivate: placement?.isPrivate ?? false,
+          addedCount: placement?.memberCount ?? null,
+          progress: null,
+          attention: null,
+          people: null,
+          updatedAt: board.updatedAt,
+        };
+      });
+    const docs: SpaceDocRowView[] = pages.data
       .filter((page) => page.spaceId === spaceId && !page.parentId)
       .map((page) => ({
         id: page.id,
         name: page.title,
+        meta: null,
+        editor: null,
         updatedAt: page.updatedAt ?? null,
-      }));
-    return { status: "ready", data: { boards, docs } };
+      }))
+      .sort((a, b) => (b.updatedAt ?? "").localeCompare(a.updatedAt ?? ""));
+    return {
+      status: "ready",
+      data: {
+        boards,
+        boardTotal: boards.length,
+        docs: docs.slice(0, 5),
+        docTotal: docs.length,
+      },
+    };
   }, [
     pages.data,
     pages.isError,
@@ -145,6 +169,61 @@ export function SpacePage() {
     resources,
     spaceId,
   ]);
+
+  const childSpaces = useMemo<SpaceChildView[]>(() => {
+    const visibleBoards = new Set(resources.boards.map((board) => board.id));
+    return (node ? childrenOf(index, spaceId) : [])
+      .filter((child) => !child.isArchived)
+      .map((child) => ({
+        id: child.id,
+        name: child.name,
+        markTone: markToneFor(child.id),
+        isPrivate: child.visibility === "Private",
+        boards: placements.data
+          ? placements.data.filter(
+              (placement) =>
+                placement.spaceId === child.id &&
+                visibleBoards.has(placement.id),
+            ).length
+          : null,
+        people: null,
+      }));
+  }, [index, node, placements.data, resources.boards, spaceId]);
+
+  const memberEntries = members.data ?? null;
+  const people = useMemo(
+    () =>
+      memberEntries
+        ? buildHeadPeople(copy, memberEntries, identityToneFor)
+        : null,
+    [copy, memberEntries],
+  );
+  const access = useMemo(
+    () =>
+      node
+        ? buildAccessView(copy, node, memberEntries, teams.data ?? null, {
+            meId: viewer.userId,
+          })
+        : null,
+    [copy, memberEntries, node, teams.data, viewer.userId],
+  );
+  const firstSteps =
+    canManage &&
+    content.status === "ready" &&
+    content.data.boardTotal === 0 &&
+    content.data.docTotal === 0 &&
+    childSpaces.length === 0 &&
+    memberEntries !== null &&
+    memberEntries.length <= 1;
+  const ancestors = useMemo(
+    () =>
+      node
+        ? spacePath(index, spaceId)
+            .slice(0, -1)
+            .map((item) => item.name)
+        : [],
+    [index, node, spaceId],
+  );
 
   const candidateUsers = useMemo<
     SectionState<readonly SpaceMemberCandidate[]>
@@ -171,17 +250,6 @@ export function SpacePage() {
       return next;
     });
   }, []);
-
-  const onTabChange = useCallback(
-    (next: SpaceTab) =>
-      void navigate({
-        to: "/workspaces/$workspaceId/spaces/$spaceId",
-        params: { workspaceId, spaceId },
-        search: next === "overview" ? {} : { tab: next },
-        replace: true,
-      } as never),
-    [navigate, spaceId, workspaceId],
-  );
 
   const memberWrite = useCallback(
     (
@@ -358,18 +426,30 @@ export function SpacePage() {
       <WorkspaceSpaceSurface
         copy={copy}
         navigation={navigation}
-        formatters={formatters}
+        now={now}
         space={space}
-        path={node ? spacePath(index, spaceId) : []}
-        childSpaces={node ? childrenOf(index, spaceId) : []}
+        workspaceName={workspace?.name ?? ""}
+        ancestors={ancestors}
+        tab={tab}
+        people={people}
+        peopleTotal={null}
+        contentCount={
+          content.status === "ready"
+            ? content.data.boardTotal + content.data.docTotal
+            : null
+        }
+        membersCount={memberEntries ? memberEntries.length : null}
         content={content}
+        childSpaces={childSpaces}
+        access={access}
+        attention={null}
+        workload={null}
+        templates={[]}
+        firstSteps={firstSteps}
+        viewAs={null}
         members={sectionState(members, members.data)}
         candidateUsers={candidateUsers}
         candidateTeams={sectionState(teams, teams.data)}
-        tab={tab}
-        onTabChange={onTabChange}
-        canMoveBoards={viewer.role !== null && viewer.role !== "guest"}
-        canMoveDocs={viewer.role !== null && viewer.role !== "guest"}
         pendingMemberKeys={pendingMemberKeys}
         addingMember={mutations.addMember.isPending}
         addMemberError={addError}
@@ -384,11 +464,10 @@ export function SpacePage() {
         onCreateBoard={() => createResource.open("board")}
         onCreateDoc={() => createResource.open("doc")}
         onMoveSpace={() => node && mover.openForSpace(node)}
-        onMoveBoard={(board) => mover.openForBoard(board)}
-        onMoveDoc={(doc) => mover.openForPage(doc)}
         onUnarchive={onUnarchive}
         onSave={onSave}
         onArchive={onArchive}
+        onDelete={null}
         onAddMember={onAddMember}
         onChangeMemberRole={onChangeMemberRole}
         onRemoveMember={onRemoveMember}

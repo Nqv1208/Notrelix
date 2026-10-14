@@ -18,16 +18,6 @@ import {
   moveErrorScenario,
   movePendingScenario,
   moveSpaceScenario,
-  spacePageDefaultScenario,
-  spacePageEdgeDataScenario,
-  spacePageEmptyScenario,
-  spacePageErrorScenario,
-  spacePageLoadingScenario,
-  spacePageMembersScenario,
-  spacePageNotFoundScenario,
-  spacePagePermissionLimitedScenario,
-  spacePageReadOnlyScenario,
-  spacePageSettingsScenario,
   spaceTreeDefaultScenario,
   spaceTreeEdgeDataScenario,
   spaceTreeEmptyScenario,
@@ -40,7 +30,6 @@ import {
 import { CreateSpaceDialog } from "./create-space-dialog";
 import { MoveToSpaceDialog } from "./move-to-space-dialog";
 import { SpaceTreeNav } from "./space-tree-nav";
-import { WorkspaceSpaceSurface } from "./workspace-space-surface";
 
 const meta: Meta = {
   title: "Workspace/Spaces",
@@ -136,145 +125,6 @@ export const TreeHighDensity: Story = {
     </TreeFrame>
   ),
   tags: ["fui-surface--workspace.space-tree", "fui-state--HighDensity"],
-};
-
-// ── Space page ────────────────────────────────────────────────────
-
-const pageCallbacks = {
-  onTabChange: noop,
-  onCreateChild: noop,
-  onCreateBoard: noop,
-  onCreateDoc: noop,
-  onMoveSpace: noop,
-  onMoveBoard: noop,
-  onMoveDoc: noop,
-  onUnarchive: noop,
-  onSave: noop,
-  onArchive: noop,
-  onAddMember: noop,
-  onChangeMemberRole: noop,
-  onRemoveMember: noop,
-  onRetry: noop,
-  onRetryContent: noop,
-  onRetryMembers: noop,
-};
-
-function PageFrame({ children }: { children: ReactNode }) {
-  return <div className="min-h-svh bg-surface-canvas">{children}</div>;
-}
-
-export const PageDefault: Story = {
-  render: () => (
-    <PageFrame>
-      <WorkspaceSpaceSurface
-        {...spacePageDefaultScenario()}
-        {...pageCallbacks}
-      />
-    </PageFrame>
-  ),
-  tags: ["fui-surface--workspace.space-page", "fui-state--Default"],
-};
-
-export const PageMembers: Story = {
-  render: () => (
-    <PageFrame>
-      <WorkspaceSpaceSurface
-        {...spacePageMembersScenario()}
-        {...pageCallbacks}
-      />
-    </PageFrame>
-  ),
-  tags: ["fui-surface--workspace.space-page", "fui-state--Default"],
-};
-
-export const PageSettings: Story = {
-  render: () => (
-    <PageFrame>
-      <WorkspaceSpaceSurface
-        {...spacePageSettingsScenario()}
-        {...pageCallbacks}
-      />
-    </PageFrame>
-  ),
-  tags: ["fui-surface--workspace.space-page", "fui-state--Default"],
-};
-
-export const PagePermissionLimited: Story = {
-  render: () => (
-    <PageFrame>
-      <WorkspaceSpaceSurface
-        {...spacePagePermissionLimitedScenario()}
-        {...pageCallbacks}
-      />
-    </PageFrame>
-  ),
-  tags: ["fui-surface--workspace.space-page", "fui-state--PermissionLimited"],
-};
-
-export const PageLoading: Story = {
-  render: () => (
-    <PageFrame>
-      <WorkspaceSpaceSurface
-        {...spacePageLoadingScenario()}
-        {...pageCallbacks}
-      />
-    </PageFrame>
-  ),
-  tags: ["fui-surface--workspace.space-page", "fui-state--Loading"],
-};
-
-export const PageError: Story = {
-  render: () => (
-    <PageFrame>
-      <WorkspaceSpaceSurface {...spacePageErrorScenario()} {...pageCallbacks} />
-    </PageFrame>
-  ),
-  tags: ["fui-surface--workspace.space-page", "fui-state--Error"],
-};
-
-export const PageEmpty: Story = {
-  render: () => (
-    <PageFrame>
-      <WorkspaceSpaceSurface {...spacePageEmptyScenario()} {...pageCallbacks} />
-    </PageFrame>
-  ),
-  tags: ["fui-surface--workspace.space-page", "fui-state--Empty"],
-};
-
-export const PageReadOnly: Story = {
-  render: () => (
-    <PageFrame>
-      <WorkspaceSpaceSurface
-        {...spacePageReadOnlyScenario()}
-        {...pageCallbacks}
-      />
-    </PageFrame>
-  ),
-  tags: ["fui-surface--workspace.space-page", "fui-state--ReadOnly"],
-};
-
-export const PageEdgeData: Story = {
-  render: () => (
-    <PageFrame>
-      <WorkspaceSpaceSurface
-        {...spacePageEdgeDataScenario()}
-        {...pageCallbacks}
-      />
-    </PageFrame>
-  ),
-  tags: ["fui-surface--workspace.space-page", "fui-state--EdgeData"],
-};
-
-export const PageNotFound: Story = {
-  render: () => (
-    <PageFrame>
-      <WorkspaceSpaceSurface
-        {...spacePageNotFoundScenario()}
-        {...pageCallbacks}
-      />
-    </PageFrame>
-  ),
-  tags: ["fui-surface--workspace.space-page", "fui-state--Unavailable"],
 };
 
 // ── Create a Space ────────────────────────────────────────────────
