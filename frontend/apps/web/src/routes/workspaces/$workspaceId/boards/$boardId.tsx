@@ -101,6 +101,12 @@ export function BoardPage() {
             onFilterChange={handleFilterChange}
             groupBy={search.groupBy}
             onGroupByChange={handleGroupByChange}
+            onOpenItemPage={(itemId) =>
+              navigate({
+                to: "/workspaces/$workspaceId/boards/$boardId/items/$itemId",
+                params: { workspaceId, boardId, itemId },
+              })
+            }
           />
         </BoardLayoutShell>
         {viewType === "kanban" ? (

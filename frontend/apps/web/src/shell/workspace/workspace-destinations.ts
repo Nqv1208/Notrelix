@@ -143,6 +143,14 @@ export function resolveShellLocation(
         view: typeof view === "string" ? view : undefined,
       };
     }
+    // The item page sits under its board: the shell keeps showing the board.
+    if (
+      match.routeId ===
+        "/workspaces/$workspaceId/boards/$boardId/items/$itemId" &&
+      match.params.boardId
+    ) {
+      return { section: "board", boardId: match.params.boardId };
+    }
     if (
       match.routeId === "/workspaces/$workspaceId/docs/$docId" &&
       match.params.docId

@@ -21,6 +21,7 @@ import { docPageCatalog } from "@notrelix/docs-web";
 import {
   boardHeaderCatalog,
   calendarCatalog,
+  itemPageCatalog,
   itemSheetCatalog,
   kanbanCardCatalog,
   kanbanLaneCatalog,
@@ -49,6 +50,7 @@ export const webCatalogs: readonly MessageCatalog[] = [
   mainTableCatalog,
   calendarCatalog,
   itemSheetCatalog,
+  itemPageCatalog,
   boardHeaderCatalog,
   notificationBellCatalog,
   docPageCatalog,

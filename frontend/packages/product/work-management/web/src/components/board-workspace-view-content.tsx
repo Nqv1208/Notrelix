@@ -29,6 +29,8 @@ export interface BoardScreenProps {
   /** The route `groupBy` parameter: a field id (Kanban). */
   groupBy?: string;
   onGroupByChange?: (fieldId: string) => void;
+  /** Opens an item's own page from the Kanban sheet. */
+  onOpenItemPage?: (itemId: string) => void;
 }
 
 type KanbanParams = Pick<
@@ -49,6 +51,7 @@ export function BoardWorkspaceViewContent({
   workspaceId,
   boardId,
   view,
+  onOpenItemPage,
   ...kanbanParams
 }: BoardScreenProps) {
   if (view.type === "table")
@@ -66,6 +69,7 @@ export function BoardWorkspaceViewContent({
         boardId={boardId}
         mode="kanban"
         kanbanParams={kanbanParams}
+        onOpenItemPage={onOpenItemPage}
       />
     );
   if (view.type === "calendar")
@@ -98,11 +102,13 @@ function BoardFullDataView({
   boardId,
   mode,
   kanbanParams,
+  onOpenItemPage,
 }: {
   workspaceId: string;
   boardId: string;
   mode: "kanban" | "calendar" | "timeline";
   kanbanParams?: KanbanParams;
+  onOpenItemPage?: (itemId: string) => void;
 }) {
   const { board, groups, isLoading, error } = useFullBoard(
     boardId,
@@ -129,6 +135,7 @@ function BoardFullDataView({
             boardId={board.id}
             workspaceId={workspaceId}
             {...kanbanParams}
+            onOpenItemPage={onOpenItemPage}
           />
         ) : mode === "calendar" ? (
           <BoardCalendarView

@@ -14,6 +14,11 @@
         "reason": "Container composing TaskDetailPanelSurface with card-detail state and actions."
       },
       {
+        "path": "src/components/item-page/item-page-container.tsx",
+        "category": "container",
+        "reason": "Container composing ItemPageSurface with the item, board and access reads, the item commands and the refused-write state."
+      },
+      {
         "path": "src/components/views/calendar/board-calendar-view.tsx",
         "category": "container",
         "reason": "Stateful view adapter owning the calendar board query state, route filter and writes, composing the registered calendar surface."
@@ -2024,6 +2029,188 @@
         {
           "id": "no-category",
           "testFile": "src/components/status-option/__tests__/status-option-form.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "wm.item-page.surface",
+      "owner": "@notrelix/work-management-web",
+      "surfaceKind": "composition",
+      "pureEntry": "src/components/item-page/item-page-surface.tsx",
+      "coveredSources": [
+        "src/components/item-page/item-page-activity.tsx",
+        "src/components/item-page/item-page-header.tsx",
+        "src/components/item-page/item-page-parts.tsx",
+        "src/components/item-page/item-page-rail.tsx",
+        "src/components/item-page/item-page-sections.tsx",
+        "src/components/item-page/item-page-topbar.tsx"
+      ],
+      "stories": [
+        {
+          "id": "work-management-item-page-surface--default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-item-page-surface--history",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-item-page-surface--comments",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-item-page-surface--loading",
+          "state": "Loading",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-item-page-surface--unavailable",
+          "state": "Unavailable",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-item-page-surface--edge-data",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-item-page-surface--conflict",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-item-page-surface--read-only",
+          "state": "ReadOnly",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": [
+          "Default",
+          "Loading",
+          "Unavailable",
+          "EdgeData",
+          "ReadOnly"
+        ],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "Error",
+            "reason": "Fetch failures render the dedicated Unavailable presentation evidenced by the Unavailable story.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          }
+        ]
+      },
+      "responsive": false,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "loading",
+          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "unavailable",
+          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "ready",
+          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "back",
+          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "kj",
+          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "tabs",
+          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "history",
+          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "properties",
+          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "conflict",
+          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "readonly",
+          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "composer",
+          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "unavailable-controls",
+          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "edge",
+          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
         }
       ]
     }

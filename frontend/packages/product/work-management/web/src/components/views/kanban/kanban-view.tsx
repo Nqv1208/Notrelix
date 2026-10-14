@@ -96,6 +96,11 @@ export interface KanbanViewProps {
   /** The route `groupBy` parameter: a field id (Status by default). */
   groupBy?: string;
   onGroupByChange?: (fieldId: string) => void;
+  /**
+   * Opens the selected item's own page (the sheet's "Mở toàn trang"). Without
+   * it the sheet shows that button disabled with the reason.
+   */
+  onOpenItemPage?: (itemId: string) => void;
 }
 
 function laneName(
@@ -132,6 +137,7 @@ export function KanbanView({
   onFilterChange,
   groupBy: groupByParam,
   onGroupByChange,
+  onOpenItemPage,
 }: KanbanViewProps) {
   // Read once so every card judges "overdue" against the same instant.
   const [now] = useState(() => new Date());
@@ -551,6 +557,7 @@ export function KanbanView({
           onPrevious={step(previousId)}
           onNext={step(nextId)}
           onCopyLink={handleCopyLink}
+          onOpenFullPage={onOpenItemPage}
           onMoveToGroup={handleMoveToGroup}
           onUpdateFieldValue={handleSheetFieldValue}
           onDuplicate={(cardId) => duplicateCard.mutate(cardId)}
@@ -575,6 +582,7 @@ export interface SelectedItemProps {
   onPrevious?: () => void;
   onNext?: () => void;
   onCopyLink: (cardId: string) => void;
+  onOpenFullPage?: (cardId: string) => void;
   onMoveToGroup: (cardId: string, groupId: string) => void;
   onUpdateFieldValue: (payload: UpdateFieldValueInput) => void;
   onDuplicate: (cardId: string) => void;
@@ -639,6 +647,7 @@ function KanbanSelectedItemReady({
   onPrevious,
   onNext,
   onCopyLink,
+  onOpenFullPage,
   onMoveToGroup,
   onUpdateFieldValue,
   onDuplicate,
@@ -697,6 +706,7 @@ function KanbanSelectedItemReady({
         onPrevious,
         onNext,
         onCopyLink,
+        onOpenFullPage,
         onMoveToGroup,
       }}
     />

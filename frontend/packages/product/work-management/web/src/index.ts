@@ -103,3 +103,14 @@ export {
   type ItemSheetCopy,
 } from "./components/card-detail/item-sheet.copy";
 export { useItemSheetCopy } from "./components/card-detail/use-item-sheet-copy";
+
+// Item page (full-width view of one item)
+export * from "./components/item-page/item-page-container";
+export * from "./components/item-page/item-page-surface";
+export * from "./components/item-page/item-page-types";
+export { itemPageCatalog } from "./components/item-page/item-page.catalog";
+export {
+  itemPageCopy,
+  type ItemPageCopy,
+} from "./components/item-page/item-page.copy";
+export { useItemPageCopy } from "./components/item-page/use-item-page-copy";

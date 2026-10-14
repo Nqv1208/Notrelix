@@ -21,7 +21,7 @@ import {
   libraryRoute,
   spaceRoute,
 } from "./routes/workspace.routes";
-import { boardRoute } from "./routes/work-management.routes";
+import { boardRoute, boardItemRoute } from "./routes/work-management.routes";
 import { docRoute } from "./routes/documents.routes";
 import { billingRoute } from "./routes/billing.routes";
 import { searchRoute } from "./routes/search.routes";
@@ -44,6 +44,7 @@ export const routeTree = rootRoute.addChildren([
   workspaceRoute.addChildren([
     workspaceIndexRoute,
     boardRoute,
+    boardItemRoute,
     docRoute,
     dashboardRoute,
     settingsRoute,

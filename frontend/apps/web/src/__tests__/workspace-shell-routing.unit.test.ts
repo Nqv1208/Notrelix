@@ -97,6 +97,19 @@ describe("workspace shell routing (WX-SHELL-001/002)", () => {
       ]),
     ).toEqual({ section: "board", boardId: "b1", view: "timeline" });
 
+    // An item's own page sits under its board: the shell keeps the board.
+    expect(
+      resolveShellLocation([
+        root,
+        workspace,
+        {
+          routeId: "/workspaces/$workspaceId/boards/$boardId/items/$itemId",
+          params: { workspaceId: "ws-1", boardId: "b1", itemId: "i1" },
+          search: { tab: "history" },
+        },
+      ]),
+    ).toEqual({ section: "board", boardId: "b1" });
+
     expect(
       resolveShellLocation([
         root,
