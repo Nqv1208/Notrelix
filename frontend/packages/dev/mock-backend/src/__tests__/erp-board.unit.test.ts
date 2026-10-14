@@ -39,9 +39,16 @@ describe("ERP board in the mock world", () => {
       spaceId: mockIds.spaces.engineering,
     });
     expect(typeof dto.version).toBe("number");
-    const list = dto.lists![0]!;
-    expect(list).not.toHaveProperty("cards");
-    const item = list.boardItems!.find((i) => i.itemKey === "ERP-142")!;
+    expect(dto.lists!.map((l) => l.title)).toEqual([
+      "Chuẩn bị",
+      "Dữ liệu",
+      "Kiểm thử",
+      "Đào tạo và vận hành",
+    ]);
+    for (const l of dto.lists!) expect(l).not.toHaveProperty("cards");
+    const item = dto
+      .lists!.flatMap((l) => l.boardItems ?? [])
+      .find((i) => i.itemKey === "ERP-142")!;
     expect(item).toMatchObject({
       name: "Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP",
       parentItemId: null,

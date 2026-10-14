@@ -64,7 +64,31 @@ export const ERP_COMMENTER = {
 
 type Assignee = keyof typeof ERP_PEOPLE | "KL";
 
-export const ERP_LIST_ID = "mock-erp-list-plan";
+/**
+ * The board groups, in order: the Timeline mockup's four row groups. A Kanban
+ * lane lists the cards of the first group, then the second, and so on, so an
+ * item sits in the group that keeps every lane in the order the Kanban
+ * mockup fixes (a lane's groups never go backwards): the mockup's own
+ * grouping holds for ERP-129, 151, 142, 146, 138 and 147, and ERP-144 and
+ * ERP-150 follow the lane they are in.
+ */
+export const ERP_GROUPS = [
+  { key: "prep", id: "mock-erp-list-prep", title: "Chuẩn bị" },
+  { key: "data", id: "mock-erp-list-data", title: "Dữ liệu" },
+  { key: "test", id: "mock-erp-list-test", title: "Kiểm thử" },
+  {
+    key: "training",
+    id: "mock-erp-list-training",
+    title: "Đào tạo và vận hành",
+  },
+] as const;
+
+export type ErpGroupKey = (typeof ERP_GROUPS)[number]["key"];
+
+export function erpGroupId(key: ErpGroupKey): string {
+  return ERP_GROUPS.find((group) => group.key === key)?.id ?? ERP_GROUPS[0].id;
+}
+
 export const ERP_STATUS_COLUMN_ID = "mock-erp-col-status";
 export const ERP_PRIORITY_COLUMN_ID = "mock-erp-col-priority";
 export const ERP_OWNER_COLUMN_ID = "mock-erp-col-owner";
@@ -163,6 +187,8 @@ export interface ErpMockItem {
   readonly status: StatusKey;
   readonly priority: PriorityKey;
   readonly label: LabelKey;
+  /** The board group (a Timeline row group) the item sits in. */
+  readonly group: ErpGroupKey;
   readonly assignee: Assignee | null;
   /** Due day "dd/MM" at 17:00 in Hanoi; null = no date. */
   readonly due: string | null;
@@ -175,16 +201,19 @@ export interface ErpMockItem {
 export const ERP_ITEMS: readonly ErpMockItem[] = [
   {
     key: "ERP-151",
+    group: "prep",
     title: "Cấu hình quyền truy cập theo phòng ban cho phân hệ Kế toán",
     status: "todo",
     priority: "high",
     label: "security",
     assignee: "NA",
     due: "18/10",
+    start: "13/10",
     children: { done: 0, total: 4 },
   },
   {
     key: "ERP-149",
+    group: "training",
     title: "Viết tài liệu quy trình nhập hoá đơn đầu vào",
     status: "todo",
     priority: "medium",
@@ -194,24 +223,29 @@ export const ERP_ITEMS: readonly ErpMockItem[] = [
   },
   {
     key: "ERP-147",
+    group: "training",
     title: "Chuẩn bị dữ liệu mẫu cho buổi đào tạo người dùng",
     status: "todo",
     priority: "medium",
     label: "training",
     assignee: "TT",
     due: "21/10",
+    start: "16/10",
   },
   {
     key: "ERP-150",
+    group: "training",
     title: "Thiết lập cảnh báo khi đồng bộ tồn kho thất bại",
     status: "todo",
     priority: "medium",
     label: "infra",
     assignee: "VT",
     due: "28/10",
+    start: "22/10",
   },
   {
     key: "ERP-152",
+    group: "training",
     title: "Kế hoạch hỗ trợ người dùng tuần đầu vận hành",
     status: "todo",
     priority: "low",
@@ -221,6 +255,7 @@ export const ERP_ITEMS: readonly ErpMockItem[] = [
   },
   {
     key: "ERP-153",
+    group: "training",
     title: "Rà soát hợp đồng bản quyền phần mềm với nhà cung cấp",
     status: "todo",
     priority: "low",
@@ -230,6 +265,7 @@ export const ERP_ITEMS: readonly ErpMockItem[] = [
   },
   {
     key: "ERP-142",
+    group: "data",
     title: "Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP",
     status: "doing",
     priority: "urgent",
@@ -241,16 +277,19 @@ export const ERP_ITEMS: readonly ErpMockItem[] = [
   },
   {
     key: "ERP-144",
+    group: "data",
     title: "Kiểm thử phân hệ công nợ với số liệu tháng 9",
     status: "doing",
     priority: "high",
     label: "test",
     assignee: "HP",
     due: "12/10",
+    start: "08/10",
     children: { done: 6, total: 9 },
   },
   {
     key: "ERP-146",
+    group: "data",
     title: "Đồng bộ tồn kho giữa kho Bình Dương và kho Long An",
     status: "doing",
     priority: "medium",
@@ -262,15 +301,18 @@ export const ERP_ITEMS: readonly ErpMockItem[] = [
   },
   {
     key: "ERP-138",
+    group: "test",
     title: "Thiết lập đăng nhập một lần (SSO) cho toàn công ty",
     status: "review",
     priority: "high",
     label: "security",
     assignee: "MQ",
     due: "14/10",
+    start: "09/10",
   },
   {
     key: "ERP-140",
+    group: "test",
     title: "Mẫu báo cáo doanh thu theo chi nhánh",
     status: "review",
     priority: "medium",
@@ -280,6 +322,7 @@ export const ERP_ITEMS: readonly ErpMockItem[] = [
   },
   {
     key: "ERP-131",
+    group: "prep",
     title: "Sao lưu cơ sở dữ liệu tự động hằng đêm",
     status: "done",
     priority: "medium",
@@ -290,6 +333,7 @@ export const ERP_ITEMS: readonly ErpMockItem[] = [
   },
   {
     key: "ERP-129",
+    group: "prep",
     title: "Chốt danh mục tài khoản kế toán dùng chung",
     status: "done",
     priority: "medium",
@@ -300,6 +344,7 @@ export const ERP_ITEMS: readonly ErpMockItem[] = [
   },
   {
     key: "ERP-136",
+    group: "prep",
     title: "Chốt danh sách người dùng đợt 1",
     status: "done",
     priority: "high",
@@ -310,6 +355,7 @@ export const ERP_ITEMS: readonly ErpMockItem[] = [
   },
   {
     key: "ERP-133",
+    group: "prep",
     title: "Cài đặt máy chủ ứng dụng cho môi trường kiểm thử",
     status: "done",
     priority: "high",
@@ -320,6 +366,7 @@ export const ERP_ITEMS: readonly ErpMockItem[] = [
   },
   {
     key: "ERP-135",
+    group: "prep",
     title: "Khảo sát quy trình nghiệp vụ hiện tại của phòng Kế toán",
     status: "done",
     priority: "low",

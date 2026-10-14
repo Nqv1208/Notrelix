@@ -50,7 +50,8 @@ import {
   ERP_COMMENTER,
   ERP_ITEMS,
   ERP_LABELS,
-  ERP_LIST_ID,
+  ERP_GROUPS,
+  erpGroupId,
   ERP_OWNER_COLUMN_ID,
   ERP_PEOPLE,
   ERP_PRIORITY_COLUMN_ID,
@@ -858,20 +859,22 @@ export class MockStore {
       position: 3,
     });
     for (const label of ERP_LABELS) this.insertLabel({ ...label });
-    this.insertList({
-      id: ERP_LIST_ID,
-      boardId,
-      title: "Kế hoạch triển khai",
-      color: "#1E6FD0",
-      position: 1,
-      isCollapsed: false,
+    ERP_GROUPS.forEach((group, index) => {
+      this.insertList({
+        id: group.id,
+        boardId,
+        title: group.title,
+        color: "#1E6FD0",
+        position: index + 1,
+        isCollapsed: false,
+      });
     });
     ERP_ITEMS.forEach((item, index) => {
       const id = erpItemId(item.key);
       this.insertCard({
         id,
         boardId,
-        listId: ERP_LIST_ID,
+        listId: erpGroupId(item.group),
         title: item.title,
         position: index + 1,
         createdAt: "2026-09-21T02:00:00.000Z",
