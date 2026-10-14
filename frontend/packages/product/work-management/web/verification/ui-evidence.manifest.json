@@ -2310,6 +2310,185 @@
           "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
         }
       ]
+    },
+    {
+      "surfaceId": "wm.board-share",
+      "owner": "@notrelix/work-management-web",
+      "surfaceKind": "navigation",
+      "pureEntry": "src/components/board-share/board-share-dialog-surface.tsx",
+      "coveredSources": ["src/components/board-share/board-share-models.ts"],
+      "stories": [
+        {
+          "id": "work-management-board-share--share-default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-board-share--share-level-menu",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-board-share--share-private",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-board-share--share-log",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-board-share--share-produced-only",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-board-share--share-workspace-board",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-board-share--share-empty",
+          "state": "Empty",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default", "Empty", "EdgeData"],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "ReadOnly",
+            "reason": "The Share button of the board header is offered to Board managers only; a member who cannot manage never sees this dialog.",
+            "authority": "docs/product/governance.md"
+          }
+        ]
+      },
+      "responsive": true,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "render",
+          "testFile": "src/components/board-share/__tests__/board-share-dialog.interaction.component.test.tsx"
+        },
+        {
+          "id": "inert",
+          "testFile": "src/components/board-share/__tests__/board-share-dialog.interaction.component.test.tsx"
+        },
+        {
+          "id": "copy-close",
+          "testFile": "src/components/board-share/__tests__/board-share-dialog.interaction.component.test.tsx"
+        },
+        {
+          "id": "level-menu",
+          "testFile": "src/components/board-share/__tests__/board-share-dialog.interaction.component.test.tsx"
+        },
+        {
+          "id": "level-remove",
+          "testFile": "src/components/board-share/__tests__/board-share-dialog.interaction.component.test.tsx"
+        },
+        {
+          "id": "private",
+          "testFile": "src/components/board-share/__tests__/board-share-dialog.interaction.component.test.tsx"
+        },
+        {
+          "id": "log",
+          "testFile": "src/components/board-share/__tests__/board-share-dialog.interaction.component.test.tsx"
+        },
+        {
+          "id": "more",
+          "testFile": "src/components/board-share/__tests__/board-share-dialog.interaction.component.test.tsx"
+        },
+        {
+          "id": "variants",
+          "testFile": "src/components/board-share/__tests__/board-share-dialog.interaction.component.test.tsx"
+        }
+      ]
     }
   ]
 }

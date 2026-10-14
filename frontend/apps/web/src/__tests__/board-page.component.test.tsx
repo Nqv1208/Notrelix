@@ -18,6 +18,10 @@ vi.mock("@notrelix/work-management-state", () => ({
   useFullBoard: () => ({ board: loadedBoard.current }),
 }));
 
+vi.mock("../shell/workspace/board-share-dialog", () => ({
+  BoardShareDialog: () => null,
+}));
+
 vi.mock("../shell/workspace/use-board-header-data", () => ({
   useBoardHeaderData: () => ({}),
 }));

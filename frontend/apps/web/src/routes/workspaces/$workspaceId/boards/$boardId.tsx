@@ -13,6 +13,7 @@ import {
   boardSearchSchema,
   type BoardSearch,
 } from "../../../../router/schemas/board-search-schema";
+import { BoardShareDialog } from "../../../../shell/workspace/board-share-dialog";
 import { useBoardHeaderData } from "../../../../shell/workspace/use-board-header-data";
 
 export function BoardPage() {
@@ -33,7 +34,10 @@ export function BoardPage() {
   const headerCopy = useBoardHeaderCopy();
   // The Kanban view's settings open from the header's "Thiết lập".
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const headerData = useBoardHeaderData(workspaceId, boardId, board);
+  const [shareOpen, setShareOpen] = useState(false);
+  const headerData = useBoardHeaderData(workspaceId, boardId, board, () =>
+    setShareOpen(true),
+  );
 
   const handleViewChange = (newView: string) => {
     const nextView = boardSearchSchema.shape.view.safeParse(newView);
@@ -118,6 +122,13 @@ export function BoardPage() {
             onOpenChange={setSettingsOpen}
           />
         ) : null}
+        <BoardShareDialog
+          workspaceId={workspaceId}
+          boardId={boardId}
+          board={board}
+          open={shareOpen}
+          onClose={() => setShareOpen(false)}
+        />
       </BoardHeaderDataContext.Provider>
     </BoardHeaderCopyContext.Provider>
   );

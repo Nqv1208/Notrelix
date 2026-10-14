@@ -20,13 +20,15 @@ import { useSpaceHooks } from "./use-workspace-spaces";
  * The board header data for the board route: the board's Space (from the
  * board placements and the Space tree — the Board model has no `spaceId`),
  * who can see it, the caller's access summary and the members' faces.
- * Settings and Share stay without handlers until their pages exist, so the
- * header shows them disabled with the reason.
+ * Settings stays without a handler until its page exists, so the header shows
+ * it disabled with the reason; Share opens the share dialog the route hosts.
  */
 export function useBoardHeaderData(
   workspaceId: string,
   boardId: string,
   board: Board | undefined,
+  /** Opens the Share dialog; absent: Share stays disabled with the reason. */
+  onOpenShare?: () => void,
 ): BoardHeaderData {
   const navigate = useNavigate();
   const laneCopy = useKanbanLaneCopy();
@@ -69,6 +71,7 @@ export function useBoardHeaderData(
         initials: member.initials || initialsFor(member.name),
         tone: identityToneFor(member.userId),
       })),
+      onOpenShare,
       onOpenSpace: spaceNode
         ? () =>
             void navigate({
@@ -86,5 +89,5 @@ export function useBoardHeaderData(
           );
       },
     };
-  }, [access, board, laneCopy, navigate, spaceNode, workspaceId]);
+  }, [access, board, laneCopy, navigate, onOpenShare, spaceNode, workspaceId]);
 }

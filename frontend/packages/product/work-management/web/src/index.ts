@@ -21,6 +21,18 @@ export {
 } from "./components/board-layout/board-header.copy";
 export { BoardHeaderCopyContext } from "./components/board-layout/board-header-copy-context";
 export { useBoardHeaderCopy } from "./components/board-layout/use-board-header-copy";
+export { boardShareCatalog } from "./components/board-share/board-share.catalog";
+export {
+  boardShareCopy,
+  fillBoardShareCopy,
+  type BoardShareCopy,
+} from "./components/board-share/board-share.copy";
+export { useBoardShareCopy } from "./components/board-share/use-board-share-copy";
+export * from "./components/board-share/board-share-models";
+export {
+  BoardShareDialogSurface,
+  type BoardShareDialogSurfaceProps,
+} from "./components/board-share/board-share-dialog-surface";
 
 // Kanban view
 export * from "./components/views/kanban/kanban-view";
