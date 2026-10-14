@@ -156,6 +156,7 @@ export function TaskDetailPanelSurface({
             onPrevious={callbacks.onPrevious}
             onNext={callbacks.onNext}
             onCopyLink={callbacks.onCopyLink}
+            onOpenFullPage={callbacks.onOpenFullPage}
             onDuplicate={callbacks.onDuplicate}
             onArchive={callbacks.onArchive}
             onMoveToGroup={callbacks.onMoveToGroup}

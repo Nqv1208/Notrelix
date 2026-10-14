@@ -21,28 +21,26 @@ import type { ItemSheetCopy } from "./item-sheet.copy";
 import type { TaskDetailCallbacks } from "./task-detail-types";
 
 /**
- * Sheet footer composer: "Viết bình luận, gõ @ để nhắc ai đó…", ⌘↵ (or
- * Ctrl+↵) submits. Typing "@" opens the people picker; a pick inserts the
- * name and records the mention. It stays for a commenter.
+ * The comment draft both composers share: the text, the people it mentions
+ * and the send state. ⌘↵ (or Ctrl+↵) submits; a failed post keeps the text
+ * for a retry; typing "@" opens the people picker and a pick inserts the name
+ * and records the mention.
  */
-export function UpdateComposer({
+export function useCommentDraft({
   cardId,
   members,
   disabled = false,
-  copy,
   onCreateUpdate,
 }: {
   cardId: string;
   members: readonly CardMember[];
   disabled?: boolean;
-  copy: ItemSheetCopy;
   onCreateUpdate: TaskDetailCallbacks["onCreateUpdate"];
 }) {
   const [body, setBody] = useState("");
   const [mentionUserIds, setMentionUserIds] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [mentionOpen, setMentionOpen] = useState(false);
-  const t = copy.composer;
   const canSubmit = body.trim().length > 0 && !disabled && !isSubmitting;
 
   function submit() {
@@ -69,6 +67,11 @@ export function UpdateComposer({
     }
   }
 
+  function changeBody(next: string) {
+    setBody(next);
+    if (next.endsWith("@") && members.length > 0) setMentionOpen(true);
+  }
+
   function mention(member: CardMember) {
     setMentionUserIds((current) =>
       current.includes(member.userId) ? current : [...current, member.userId],
@@ -82,6 +85,48 @@ export function UpdateComposer({
     setMentionOpen(false);
   }
 
+  return {
+    body,
+    canSubmit,
+    mentionOpen,
+    setMentionOpen,
+    changeBody,
+    handleKeyDown,
+    mention,
+    submit,
+  };
+}
+
+/**
+ * Sheet footer composer: "Viết bình luận, gõ @ để nhắc ai đó…", ⌘↵ (or
+ * Ctrl+↵) submits. Typing "@" opens the people picker; a pick inserts the
+ * name and records the mention. It stays for a commenter.
+ */
+export function UpdateComposer({
+  cardId,
+  members,
+  disabled = false,
+  copy,
+  onCreateUpdate,
+}: {
+  cardId: string;
+  members: readonly CardMember[];
+  disabled?: boolean;
+  copy: ItemSheetCopy;
+  onCreateUpdate: TaskDetailCallbacks["onCreateUpdate"];
+}) {
+  const {
+    body,
+    canSubmit,
+    mentionOpen,
+    setMentionOpen,
+    changeBody,
+    handleKeyDown,
+    mention,
+    submit,
+  } = useCommentDraft({ cardId, members, disabled, onCreateUpdate });
+  const t = copy.composer;
+
   return (
     <div className="flex shrink-0 items-end gap-2 border-t border-line bg-popover px-4.5 py-3">
       <Popover open={mentionOpen} onOpenChange={setMentionOpen}>
@@ -93,13 +138,7 @@ export function UpdateComposer({
               disabled={disabled}
               aria-label={t.label}
               placeholder={t.placeholder}
-              onChange={(event) => {
-                const next = event.target.value;
-                setBody(next);
-                if (next.endsWith("@") && members.length > 0) {
-                  setMentionOpen(true);
-                }
-              }}
+              onChange={(event) => changeBody(event.target.value)}
               onKeyDown={handleKeyDown}
               className="max-h-32 min-h-0 flex-1 resize-none border-0 bg-transparent px-0 py-2 text-body shadow-none focus-visible:ring-0"
             />

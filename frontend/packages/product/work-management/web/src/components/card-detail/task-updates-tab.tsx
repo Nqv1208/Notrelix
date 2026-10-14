@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { MoreHorizontal } from "lucide-react";
 import {
   Avatar,
@@ -16,6 +15,7 @@ import type { CardDetail, CardUpdate } from "@notrelix/work-management-core";
 import { identityMarkClass } from "../shared/item-display";
 import { describeSheetTime } from "./item-sheet-format";
 import type { ItemSheetCopy } from "./item-sheet.copy";
+import { useCommentEdit } from "./use-comment-edit";
 import type {
   TaskDetailCallbacks,
   TaskDetailCapabilities,
@@ -94,8 +94,7 @@ function CommentItem({
   onSave: (body: string) => void;
   onDelete: () => void;
 }) {
-  const [editing, setEditing] = useState(false);
-  const [body, setBody] = useState(update.body);
+  const edit = useCommentEdit(update.body, onSave);
   const t = copy.comment;
 
   return (
@@ -136,7 +135,7 @@ function CommentItem({
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 {canEdit ? (
-                  <DropdownMenuItem onSelect={() => setEditing(true)}>
+                  <DropdownMenuItem onSelect={edit.start}>
                     {t.edit}
                   </DropdownMenuItem>
                 ) : null}
@@ -149,12 +148,12 @@ function CommentItem({
             </DropdownMenu>
           ) : null}
         </div>
-        {editing ? (
+        {edit.editing ? (
           <div className="mt-2 flex flex-col gap-2">
             <Textarea
-              value={body}
+              value={edit.body}
               aria-label={t.editLabel}
-              onChange={(event) => setBody(event.target.value)}
+              onChange={(event) => edit.setBody(event.target.value)}
               className="min-h-16 resize-none text-sm"
             />
             <div className="flex justify-end gap-1.5">
@@ -162,22 +161,11 @@ function CommentItem({
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={() => {
-                  setBody(update.body);
-                  setEditing(false);
-                }}
+                onClick={edit.cancel}
               >
                 {t.cancel}
               </Button>
-              <Button
-                type="button"
-                size="sm"
-                onClick={() => {
-                  const next = body.trim();
-                  if (next) onSave(next);
-                  setEditing(false);
-                }}
-              >
+              <Button type="button" size="sm" onClick={edit.save}>
                 {t.save}
               </Button>
             </div>

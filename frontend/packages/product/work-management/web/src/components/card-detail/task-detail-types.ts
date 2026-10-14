@@ -32,6 +32,17 @@ export interface ItemSheetChildItem {
   readonly id: string;
   readonly title: string;
   readonly done: boolean;
+  /** Item key such as "ERP-142.1"; the item page shows it when known. */
+  readonly itemKey?: string | null;
+  /** Due date and time (ISO 8601); the item page shows it when known. */
+  readonly dueAt?: string | null;
+  /** Assignee; the item page shows their mark when known. */
+  readonly assignee?: {
+    readonly id: string;
+    readonly userId: string;
+    readonly name: string;
+    readonly initials: string;
+  } | null;
 }
 
 /** Board group offered by "Chuyển nhóm"; the item's own group is excluded. */
@@ -64,6 +75,11 @@ export interface TaskDetailData {
 export interface TaskDetailCallbacks {
   readonly onClose: () => void;
   readonly onRenameTitle: (cardId: string, patch: UpdateCardInput) => void;
+  /**
+   * Patches the item itself (title, start and due date). The item page's
+   * "Ngày bắt đầu" uses it; the control stays disabled without it.
+   */
+  readonly onUpdateItem?: (cardId: string, patch: UpdateCardInput) => void;
   readonly onToggleWatch: (watched: boolean) => void;
   readonly onDuplicate: (cardId: string) => void;
   readonly onArchive: (cardId: string) => void;
@@ -90,6 +106,8 @@ export interface TaskDetailCallbacks {
   readonly onNext?: () => void;
   /** Copies the item link; the button is disabled without it. */
   readonly onCopyLink?: (cardId: string) => void;
+  /** Opens the item's own page ("Mở toàn trang"); the button is disabled without it. */
+  readonly onOpenFullPage?: (cardId: string) => void;
   /** Moves the item to another board group ("Chuyển nhóm"). */
   readonly onMoveToGroup?: (cardId: string, groupId: string) => void;
 }

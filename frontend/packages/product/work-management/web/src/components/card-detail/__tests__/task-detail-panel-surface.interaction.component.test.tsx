@@ -317,6 +317,23 @@ describe.each([
     expect(callbacks.onArchive).toHaveBeenCalledWith("item-erp-142");
   });
 
+  it(`opens the item page from the head when the host has one (${locale})`, () => {
+    const onOpenFullPage = vi.fn();
+    const sheetProps = props(copy);
+    renderPureUi(
+      <TaskDetailPanelSurface
+        {...sheetProps}
+        callbacks={{ ...sheetProps.callbacks, onOpenFullPage }}
+      />,
+    );
+    const fullPage = screen.getByRole("button", {
+      name: copy.head.openFullPage,
+    });
+    expect(fullPage.getAttribute("aria-disabled")).toBeNull();
+    fireEvent.click(fullPage);
+    expect(onOpenFullPage).toHaveBeenCalledWith("item-erp-142");
+  });
+
   it(`${fui("wm.task-detail.panel:edit", locale)}routes title and status edits through callbacks (${locale})`, () => {
     const { callbacks } = renderSheet(copy);
     const title = screen.getByRole("textbox", { name: copy.title.edit });

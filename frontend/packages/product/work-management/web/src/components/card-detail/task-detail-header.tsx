@@ -22,7 +22,6 @@ import {
   Avatar,
   AvatarFallback,
   Button,
-  Calendar,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -30,22 +29,17 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
   Tooltip,
   TooltipContent,
   TooltipTrigger,
   cn,
 } from "@notrelix/ui-web";
-import {
-  findPriorityField,
-  findStatusField,
-  type Board,
-  type CardDetail,
-  type FieldDefinition,
-  type UpdateCardInput,
-  type UpdateFieldValueInput,
+import type {
+  Board,
+  CardDetail,
+  FieldDefinition,
+  UpdateCardInput,
+  UpdateFieldValueInput,
 } from "@notrelix/work-management-core";
 import {
   ITEM_LABEL_TONE_CLASS,
@@ -54,6 +48,17 @@ import {
 } from "../shared/item-display";
 import { describeSheetDue, type SheetDueTone } from "./item-sheet-format";
 import { fillSheetCopy, type ItemSheetCopy } from "./item-sheet.copy";
+import {
+  ItemAssigneePopover,
+  ItemDuePopover,
+  ItemOptionMenu,
+  PRIORITY_CLASS,
+  STATUS_DOT_CLASS,
+  STATUS_LANE_CLASS,
+  describeItemStatus,
+  findItemFields,
+  isItemDone,
+} from "./item-field-editors";
 import type {
   ItemSheetGroup,
   ItemSheetMark,
@@ -71,23 +76,6 @@ const MARK_TONE_CLASS: Readonly<Record<ItemSheetMarkTone, string>> = {
   violet: "bg-mark-violet text-mark-violet-foreground",
 };
 
-type StatusCategory = NonNullable<CardDetail["statusCategory"]>;
-
-/** Status pill tint = the lane tint of the status category. */
-const STATUS_LANE_CLASS: Readonly<Record<StatusCategory, string>> = {
-  todo: "bg-work-status-todo-lane",
-  in_progress: "bg-work-status-doing-lane",
-  review: "bg-work-status-review-lane",
-  done: "bg-work-status-done-lane",
-};
-
-const STATUS_DOT_CLASS: Readonly<Record<StatusCategory, string>> = {
-  todo: "bg-work-status-todo",
-  in_progress: "bg-work-status-doing",
-  review: "bg-work-status-review",
-  done: "bg-work-status-done",
-};
-
 const DUE_TONE_CLASS: Readonly<Record<SheetDueTone, string>> = {
   overdue: "border-transparent bg-danger-subtle font-semibold text-danger-text",
   today: "border-transparent bg-warning-subtle text-warning-text",
@@ -95,42 +83,8 @@ const DUE_TONE_CLASS: Readonly<Record<SheetDueTone, string>> = {
   done: "text-muted-foreground",
 };
 
-type Priority = NonNullable<CardDetail["priority"]>;
-
-const PRIORITY_CLASS: Readonly<Record<Priority, string>> = {
-  urgent: "text-danger-text",
-  high: "text-priority-high-text",
-  medium: "text-muted-foreground",
-  low: "text-muted-foreground",
-};
-
 const PILL_CLASS =
   "inline-flex h-7.5 max-w-full items-center gap-[7px] rounded-md border border-line-strong bg-popover px-2.5 text-compact font-medium text-foreground transition-colors hover:bg-state-hover-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring aria-disabled:cursor-default aria-disabled:hover:bg-popover";
-
-/**
- * Board fields the sheet edits. Status and priority are resolved by their
- * role on the board read (`findStatusField`, `findPriorityField`), which
- * also accept the older fixture ids.
- */
-function findFields(board: Board) {
-  const fields = board.fieldDefinitions;
-  const byId = (suffix: string) =>
-    fields.find((field) => field.id.endsWith(suffix));
-  return {
-    status: findStatusField(fields),
-    priority: findPriorityField(fields) ?? byId("field-priority"),
-    person:
-      fields.find((field) => field.fieldType === "person") ??
-      byId("field-person"),
-    due:
-      fields.find((field) => field.fieldType === "date") ??
-      byId("field-due-date"),
-  };
-}
-
-function isDone(card: CardDetail): boolean {
-  return card.statusCategory === "done" || Boolean(card.completedAt);
-}
 
 // ─── Head bar ───────────────────────────────────────────────────────────────
 
@@ -145,6 +99,7 @@ export function TaskDetailHeader({
   onPrevious,
   onNext,
   onCopyLink,
+  onOpenFullPage,
   onDuplicate,
   onArchive,
   onMoveToGroup,
@@ -159,6 +114,7 @@ export function TaskDetailHeader({
   onPrevious?: () => void;
   onNext?: () => void;
   onCopyLink?: (cardId: string) => void;
+  onOpenFullPage?: (cardId: string) => void;
   onDuplicate: (cardId: string) => void;
   onArchive: (cardId: string) => void;
   onMoveToGroup?: (cardId: string, groupId: string) => void;
@@ -219,26 +175,37 @@ export function TaskDetailHeader({
       >
         <Link2 />
       </HeadIconButton>
-      {/* No full-page item route exists yet: focusable, explained, inert. */}
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            aria-label={copy.head.openFullPage}
-            aria-disabled="true"
-            aria-describedby={fullPageReasonId}
-            className="rounded-[7px] text-meta-foreground aria-disabled:opacity-50"
-          >
-            <Maximize2 aria-hidden="true" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>{copy.head.openFullPageUnavailable}</TooltipContent>
-      </Tooltip>
-      <span id={fullPageReasonId} className="sr-only">
-        {copy.head.openFullPageUnavailable}
-      </span>
+      {onOpenFullPage ? (
+        <HeadIconButton
+          label={copy.head.openFullPage}
+          onClick={() => onOpenFullPage(card.id)}
+        >
+          <Maximize2 />
+        </HeadIconButton>
+      ) : (
+        <>
+          {/* A host without an item page: focusable, explained, inert. */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                aria-label={copy.head.openFullPage}
+                aria-disabled="true"
+                aria-describedby={fullPageReasonId}
+                className="rounded-[7px] text-meta-foreground aria-disabled:opacity-50"
+              >
+                <Maximize2 aria-hidden="true" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{copy.head.openFullPageUnavailable}</TooltipContent>
+          </Tooltip>
+          <span id={fullPageReasonId} className="sr-only">
+            {copy.head.openFullPageUnavailable}
+          </span>
+        </>
+      )}
 
       {hasMenu ? (
         <DropdownMenu>
@@ -327,12 +294,18 @@ export function TaskDetailTitle({
   editable,
   copy,
   onRenameTitle,
+  as: Heading = "h2",
+  className = "text-sheet-title",
 }: {
   card: CardDetail;
   titleId: string;
   editable: boolean;
   copy: ItemSheetCopy;
   onRenameTitle: (cardId: string, patch: UpdateCardInput) => void;
+  /** The heading element: the sheet uses h2, the item page h1. */
+  as?: "h1" | "h2";
+  /** The text role of the heading. */
+  className?: string;
 }) {
   const editorRef = useRef<HTMLSpanElement>(null);
 
@@ -368,9 +341,9 @@ export function TaskDetailTitle({
   }
 
   return (
-    <h2
+    <Heading
       id={titleId}
-      className="m-0 text-sheet-title text-balance text-foreground"
+      className={cn("m-0 text-balance text-foreground", className)}
     >
       {editable ? (
         <span
@@ -389,7 +362,7 @@ export function TaskDetailTitle({
       ) : (
         card.title
       )}
-    </h2>
+    </Heading>
   );
 }
 
@@ -452,7 +425,7 @@ export function TaskDetailProperties({
 }) {
   const readOnly = !capabilities.canEditFields;
   const addPropertyReasonId = useId();
-  const fields = findFields(board);
+  const fields = findItemFields(board);
   const t = copy.properties;
 
   function update(field: FieldDefinition | undefined, value: unknown) {
@@ -461,11 +434,10 @@ export function TaskDetailProperties({
   }
 
   // Status
-  const statusId = card.statusOptionId ?? card.status;
-  const statusOption = fields.status?.options.find(
-    (option) => option.id === statusId,
+  const { option: statusOption, category } = describeItemStatus(
+    card,
+    fields.status,
   );
-  const category = card.statusCategory ?? statusOption?.category ?? null;
   const statusPill = (props: Partial<PillProps> = {}) => (
     <PropertyPill
       {...props}
@@ -492,7 +464,6 @@ export function TaskDetailProperties({
 
   // Assignee
   const [firstMember, ...otherMembers] = card.members;
-  const selectedUserIds = new Set(card.members.map((member) => member.userId));
   const assigneePill = (props: Partial<PillProps> = {}) => (
     <PropertyPill
       {...props}
@@ -529,7 +500,7 @@ export function TaskDetailProperties({
 
   // Due
   const dueAt = card.dueAt ?? card.dueDate ?? null;
-  const due = describeSheetDue(dueAt, now, isDone(card), copy, timeZone);
+  const due = describeSheetDue(dueAt, now, isItemDone(card), copy, timeZone);
   const duePill = (props: Partial<PillProps> = {}) => (
     <PropertyPill
       {...props}
@@ -560,110 +531,40 @@ export function TaskDetailProperties({
 
   return (
     <div role="group" aria-label={t.group} className="flex flex-wrap gap-1.5">
-      {readOnly || !fields.status ? (
-        statusPill()
-      ) : (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>{statusPill()}</DropdownMenuTrigger>
-          <DropdownMenuContent align="start">
-            {fields.status.options.map((option) => (
-              <DropdownMenuItem
-                key={option.id}
-                onSelect={() => update(fields.status, option.id)}
-              >
-                {option.label}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )}
+      <ItemOptionMenu
+        field={fields.status}
+        readOnly={readOnly}
+        onSelect={(optionId) => update(fields.status, optionId)}
+      >
+        {statusPill()}
+      </ItemOptionMenu>
 
-      {readOnly || !fields.person ? (
-        assigneePill()
-      ) : (
-        <Popover>
-          <PopoverTrigger asChild>{assigneePill()}</PopoverTrigger>
-          <PopoverContent align="start" className="w-64 p-1">
-            <ul aria-label={t.assignee} className="flex flex-col gap-0.5">
-              {board.members.map((member) => {
-                const selected = selectedUserIds.has(member.userId);
-                return (
-                  <li key={member.id}>
-                    <button
-                      type="button"
-                      aria-pressed={selected}
-                      className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-state-hover"
-                      onClick={() => {
-                        const next = new Set(selectedUserIds);
-                        if (selected) next.delete(member.userId);
-                        else next.add(member.userId);
-                        update(fields.person, Array.from(next));
-                      }}
-                    >
-                      <Avatar className="size-6">
-                        <AvatarFallback className="bg-foreground text-caption font-bold text-background">
-                          {member.initials}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="min-w-0 flex-1 truncate">
-                        {member.name}
-                      </span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          </PopoverContent>
-        </Popover>
-      )}
+      <ItemAssigneePopover
+        board={board}
+        card={card}
+        label={t.assignee}
+        readOnly={readOnly || !fields.person}
+        onChange={(userIds) => update(fields.person, userIds)}
+      >
+        {assigneePill()}
+      </ItemAssigneePopover>
 
-      {readOnly || !fields.due ? (
-        duePill()
-      ) : (
-        <Popover>
-          <PopoverTrigger asChild>{duePill()}</PopoverTrigger>
-          <PopoverContent align="start" className="w-auto p-0">
-            <Calendar
-              mode="single"
-              selected={dueAt ? new Date(dueAt) : undefined}
-              onSelect={(date: Date | undefined) =>
-                update(fields.due, date ? date.toISOString() : null)
-              }
-            />
-            {dueAt ? (
-              <div className="flex justify-end border-t border-border p-2">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="text-danger-text"
-                  onClick={() => update(fields.due, null)}
-                >
-                  {t.clearDue}
-                </Button>
-              </div>
-            ) : null}
-          </PopoverContent>
-        </Popover>
-      )}
+      <ItemDuePopover
+        dueAt={dueAt}
+        clearLabel={t.clearDue}
+        readOnly={readOnly || !fields.due}
+        onChange={(value) => update(fields.due, value)}
+      >
+        {duePill()}
+      </ItemDuePopover>
 
-      {readOnly || !fields.priority ? (
-        priorityPill()
-      ) : (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>{priorityPill()}</DropdownMenuTrigger>
-          <DropdownMenuContent align="start">
-            {fields.priority.options.map((option) => (
-              <DropdownMenuItem
-                key={option.id}
-                onSelect={() => update(fields.priority, option.id)}
-              >
-                {option.label}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )}
+      <ItemOptionMenu
+        field={fields.priority}
+        readOnly={readOnly}
+        onSelect={(optionId) => update(fields.priority, optionId)}
+      >
+        {priorityPill()}
+      </ItemOptionMenu>
 
       {label ? (
         <span className={cn(PILL_CLASS, "hover:bg-popover")}>
