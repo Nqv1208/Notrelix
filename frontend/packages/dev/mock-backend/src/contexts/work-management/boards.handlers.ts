@@ -614,7 +614,7 @@ export const boardsOperations = [
       const board = store.getBoard(params.boardId);
       const access = board ? projectBoardAccess(board, store) : null;
       if (!board || !access) return notFound("Board not found");
-      return ok({ items: store.getPlanItems(board.id) });
+      return ok(store.getPlan(board.id));
     },
   }),
 

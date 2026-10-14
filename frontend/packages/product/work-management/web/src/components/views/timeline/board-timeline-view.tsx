@@ -4,6 +4,7 @@ import { useLocale } from "@notrelix/i18n";
 import {
   useBoardAccess,
   useBoardKanban,
+  useBoardPlanItems,
   useUpdateCard,
 } from "@notrelix/work-management-state";
 import type { Card, WorkStatusCategory } from "@notrelix/work-management-core";
@@ -25,14 +26,12 @@ import { BoardTimelineSurface } from "./board-timeline-surface";
 import type {
   TimelineGroup,
   TimelineItem,
-  TimelineLink,
   TimelineScale,
   TimelineTone,
 } from "./timeline-model";
-import { fill } from "./timeline-model";
+import { criticalIds, fill } from "./timeline-model";
 import { useTimelineCopy } from "./use-timeline-copy";
 
-const NO_LINKS: readonly TimelineLink[] = [];
 const NEVER_OVERDUE = () => false;
 
 export interface BoardTimelineViewProps {
@@ -63,8 +62,13 @@ function toneOf(category: WorkStatusCategory | null): TimelineTone {
   return "todo";
 }
 
-function percentOf(card: Card, tone: TimelineTone): number {
+function percentOf(
+  card: Card,
+  tone: TimelineTone,
+  planned: number | undefined,
+): number {
   if (tone === "done") return 100;
+  if (planned !== undefined) return planned;
   const progress = card.childProgress;
   if (!progress || progress.total <= 0) return 0;
   return Math.round((progress.done / progress.total) * 100);
@@ -73,8 +77,9 @@ function percentOf(card: Card, tone: TimelineTone): number {
 /**
  * The Timeline of a board: dated items as bars from start to due on a day,
  * week or month scale, grouped by the board's groups, with the item side
- * sheet shared with the other views. Dependencies and the critical path have
- * no producer in the board read, so the surface shows none. What the viewer
+ * sheet shared with the other views, the board's phases and milestones, and
+ * the finish-to-start links with the critical path derived from them (the
+ * plan read, gap `CTR-GAP-WM-PLAN-ITEMS`). What the viewer
  * may do comes from the board access read: only an editor drags a bar.
  */
 export function BoardTimelineView({
@@ -109,8 +114,15 @@ export function BoardTimelineView({
   const updateCard = useUpdateCard(boardId, workspaceId);
   const sheet = useItemSheetActions({ boardId, workspaceId, kanban });
 
+  const planQuery = useBoardPlanItems(boardId, workspaceId);
+  const plan = planQuery.data;
   const { board } = kanban;
-  const { groups, undated, cardsById } = useMemo(() => {
+  const { groups, undated, cardsById, links } = useMemo(() => {
+    // An item with no start day is listed only when a dependency names it;
+    // one with a due day alone belongs to the Calendar.
+    const linked = new Set(
+      (plan?.links ?? []).flatMap((link) => [link.from, link.to]),
+    );
     const byId = new Map<string, Card>();
     const byGroup = new Map<string, TimelineItem[]>();
     let undatedCount = 0;
@@ -124,6 +136,7 @@ export function BoardTimelineView({
           undatedCount += 1;
           continue;
         }
+        if (!start && !linked.has(card.id)) continue;
         const person = card.members[0];
         const item: TimelineItem = {
           id: card.id,
@@ -133,7 +146,7 @@ export function BoardTimelineView({
           tone,
           startDay: start?.day ?? null,
           dueDay: due?.day ?? null,
-          percent: percentOf(card, tone),
+          percent: percentOf(card, tone, plan?.percents[card.id]),
           assignee: person
             ? {
                 initials: person.initials,
@@ -144,23 +157,66 @@ export function BoardTimelineView({
           movable: Boolean(due),
           href: buildCardLink(window.location, card.id),
         };
-        const list = byGroup.get(card.listId) ?? [];
+        const groupId = plan?.groups[card.id] ?? card.listId;
+        const list = byGroup.get(groupId) ?? [];
         list.push(item);
-        byGroup.set(card.listId, list);
+        byGroup.set(groupId, list);
       }
+    }
+    const dayKeyOf = (item: TimelineItem) => item.startDay ?? item.dueDay ?? "";
+    const markers = new Map<string, { index: number; item: TimelineItem }[]>();
+    for (const marker of plan?.items ?? []) {
+      const list = markers.get(marker.groupId) ?? [];
+      list.push({
+        index: marker.index,
+        item: {
+          id: marker.id,
+          kind: marker.kind,
+          title: marker.title,
+          tone: marker.category,
+          startDay: marker.startDay,
+          dueDay: marker.endDay,
+          percent: marker.percent,
+          assignee: null,
+          movable: false,
+        },
+      });
+      markers.set(marker.groupId, list);
     }
     const built: TimelineGroup[] = [...kanban.groups]
       .sort((a, b) => a.position - b.position)
-      .map((group) => ({
-        id: group.id,
-        title: group.title,
-        items: (byGroup.get(group.id) ?? []).sort(
-          (a, b) =>
-            (byId.get(a.id)?.position ?? 0) - (byId.get(b.id)?.position ?? 0),
-        ),
-      }));
-    return { groups: built, undated: undatedCount, cardsById: byId };
-  }, [kanban.allLanes, kanban.groups, timeZone]);
+      .map((group) => {
+        const rows = (byGroup.get(group.id) ?? []).sort((a, b) =>
+          dayKeyOf(a).localeCompare(dayKeyOf(b)),
+        );
+        for (const { index, item } of (markers.get(group.id) ?? []).sort(
+          (a, b) => a.index - b.index,
+        )) {
+          rows.splice(Math.min(index, rows.length), 0, item);
+        }
+        return { id: group.id, title: group.title, items: rows };
+      });
+    const shown = new Set(built.flatMap((g) => g.items.map((i) => i.id)));
+    const shownLinks = (plan?.links ?? []).filter(
+      (link) => shown.has(link.from) && shown.has(link.to),
+    );
+    const dueOf = new Map(
+      built.flatMap((g) => g.items.map((i) => [i.id, i.dueDay ?? ""] as const)),
+    );
+    const critical = criticalIds(shownLinks, dueOf);
+    const flagged = built.map((group) => ({
+      ...group,
+      items: group.items.map((item) =>
+        critical.has(item.id) ? { ...item, critical: true } : item,
+      ),
+    }));
+    return {
+      groups: flagged,
+      undated: undatedCount,
+      cardsById: byId,
+      links: shownLinks,
+    };
+  }, [kanban.allLanes, kanban.groups, timeZone, plan]);
 
   const handleReschedule = (
     item: TimelineItem,
@@ -197,7 +253,8 @@ export function BoardTimelineView({
     (opener ?? rootRef.current)?.focus();
   };
 
-  if (kanban.isLoading) return null;
+  // The plan comes with the items, so the rows do not move when it arrives.
+  if (kanban.isLoading || planQuery.isLoading) return null;
 
   const zoneName =
     timeZone && HANOI_ZONES.includes(timeZone)
@@ -227,7 +284,7 @@ export function BoardTimelineView({
         today={today}
         zoneName={zoneName}
         groups={groups}
-        links={NO_LINKS}
+        links={links}
         undatedCount={undated}
         onOpenUndated={onOpenCalendar}
         canEdit={canEdit}

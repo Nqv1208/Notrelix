@@ -472,5 +472,23 @@ describe("ERP board in the mock world", () => {
         createItemExtrasApi(owner.client).moveToBoard(item.id, boardId),
       ).rejects.toBeTruthy();
     });
+
+    it("the plan read serves the phases, the milestone, the links and the completions", async () => {
+      const { client } = clientFor();
+      const plan = await createItemExtrasApi(client).getPlan(boardId);
+      expect(plan.items.map((item) => [item.kind, item.title])).toEqual([
+        ["phase", "UAT phân hệ bán hàng với phòng Kinh doanh"],
+        ["phase", "Đào tạo phòng Kế toán"],
+        ["phase", "Chạy song song hệ thống cũ và ERP"],
+        ["milestone", "Go-live ERP"],
+      ]);
+      expect(plan.links).toHaveLength(7);
+      expect(plan.links[0]).toEqual({
+        from: "mock-erp-item-129",
+        to: "mock-erp-item-142",
+      });
+      expect(plan.percents["mock-erp-item-138"]).toBe(90);
+      expect(plan.groups["mock-erp-item-150"]).toBe("mock-erp-list-data");
+    });
   });
 });

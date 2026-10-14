@@ -144,31 +144,30 @@ test.describe("Board Timeline (owner)", () => {
     );
   });
 
-  test("controls without data are inert and say why", async ({ page }) => {
+  test("controls without data are inert and say why; the dependencies and the critical path work", async ({
+    page,
+  }) => {
     await openTimeline(page);
     const links = page.getByRole("button", { name: /^Phụ thuộc/ });
     const critical = page.getByRole("button", { name: /^Đường găng/ });
     const groupBy = page.getByRole("button", { name: /^Nhóm theo/ });
     const barSpan = page.getByRole("button", { name: /^Thanh dài từ/ });
     const add = page.getByRole("button", { name: /^Thêm công việc/ });
-    for (const control of [links, critical, groupBy, barSpan, add]) {
+    for (const control of [groupBy, barSpan, add]) {
       await expect(control).toHaveAttribute("aria-disabled", "true");
       await expect(control).toHaveAttribute("title", /.+/);
     }
-    await expect(links).toHaveAttribute("title", /phụ thuộc/);
-    await expect(critical).toHaveAttribute("title", /phụ thuộc/);
-    // Dependencies look as the design draws them (on); nothing is faked.
-    await expect(links).toHaveAttribute("aria-pressed", "true");
-    await expect(critical).toHaveAttribute("aria-pressed", "false");
-    await critical.click({ force: true });
-    await expect(critical).toHaveAttribute("aria-pressed", "false");
-    await links.click({ force: true });
-    await expect(links).toHaveAttribute("aria-pressed", "true");
     await add.click({ force: true });
     await expect(page.getByRole("dialog")).toHaveCount(0);
-    // No arrow and no critical-path ring is drawn.
-    await expect(page.locator('[data-tl="dl"]')).toHaveCount(0);
+    // The seven finish-to-start arrows of the board are drawn.
+    await expect(links).toHaveAttribute("aria-pressed", "true");
+    await expect(critical).toHaveAttribute("aria-pressed", "false");
+    await expect(page.locator('[data-tl="ah"]')).toHaveCount(7);
+    await links.click();
     await expect(page.locator('[data-tl="ah"]')).toHaveCount(0);
+    await links.click();
+    await critical.click();
+    await expect(critical).toHaveAttribute("aria-pressed", "true");
   });
 
   test("the undated link goes to the Calendar", async ({ page }) => {
@@ -291,19 +290,21 @@ test.describe("Board Timeline (owner)", () => {
     expect(await widthOf("ERP-144")).toBeCloseTo(5 * 26 - 2, 0); // 08/10-12/10
     expect(await widthOf("ERP-138")).toBeCloseTo(6 * 26 - 2, 0); // 09/10-14/10
     expect(await widthOf("ERP-150")).toBeCloseTo(7 * 26 - 2, 0); // 22/10-28/10
-    // Seven bars run over several days; only the three items that have a due
-    // day and no start day (ERP-140, 149 and 152) are one-day chips.
+    // Ten bars: the items with a start day and the phases (an item with only
+    // a due day, ERP-140, 149 and 152, belongs to the Calendar and is not
+    // listed; a finished item with no start is listed only when a dependency
+    // names it, ERP-129).
     const widths = await page
       .locator('[data-tl="gb"]')
       .evaluateAll((bars) =>
         bars.map((bar) => bar.getBoundingClientRect().width),
       );
-    expect(widths.filter((width) => width > 3 * 26 - 4)).toHaveLength(7);
-    expect(widths.filter((width) => width < 30)).toHaveLength(3);
+    expect(widths.filter((width) => width > 2 * 26 - 4)).toHaveLength(10);
+    expect(widths.filter((width) => width < 30)).toHaveLength(0);
     // The overdue item, the done items and the item before the window.
     const late = (await trackOf(page, "ERP-142")).locator('[data-tl="latel"]');
     await expect(late).toHaveText("Quá hạn 2 ngày");
-    await expect(page.locator('[data-tl="fin"]')).toHaveCount(3);
+    await expect(page.locator('[data-tl="fin"]')).toHaveCount(0);
     await expect(
       (await trackOf(page, "ERP-129")).locator('[data-tl="lab"]'),
     ).toHaveText("◂ Hoàn thành 30/09");

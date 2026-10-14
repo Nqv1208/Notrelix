@@ -7,6 +7,7 @@ import {
 } from "../../../../verification/timeline-fixtures";
 import {
   buildHeader,
+  criticalIds,
   fmtDay,
   itemSpan,
   layoutTimeline,
@@ -693,5 +694,29 @@ describe("layoutTimeline (text kept inside the view)", () => {
     expect(task(seen(300, 754), "erp-142").late?.textMax).toBe(0);
     // Less room than a few letters on the right edge.
     expect(task(seen(0, 240), "erp-142").late?.textMax).toBe(0);
+  });
+});
+
+describe("criticalIds", () => {
+  const links = [
+    { from: "a", to: "b" },
+    { from: "b", to: "c" },
+    { from: "b", to: "d" },
+    { from: "c", to: "end" },
+  ];
+  const due = new Map([
+    ["a", "2026-10-01"],
+    ["b", "2026-10-10"],
+    ["c", "2026-10-20"],
+    ["d", "2026-10-28"],
+    ["end", "2026-11-01"],
+  ]);
+
+  it("follows the chain that ends last, taking the later predecessor", () => {
+    expect([...criticalIds(links, due)].sort()).toEqual(["a", "b", "c", "end"]);
+  });
+
+  it("is empty without links", () => {
+    expect(criticalIds([], due).size).toBe(0);
   });
 });

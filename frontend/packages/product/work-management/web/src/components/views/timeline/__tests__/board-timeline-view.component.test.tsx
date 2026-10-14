@@ -86,6 +86,14 @@ function fakeServices(
     access: { getBoardAccess: vi.fn(async () => access) },
     cards,
     comments: { getCardUpdates: vi.fn(async () => []) },
+    itemExtras: {
+      getPlan: vi.fn(async () => ({
+        items: [],
+        links: [],
+        percents: {},
+        groups: {},
+      })),
+    },
   } as unknown as WorkManagementServices;
   return { services, cards };
 }
@@ -177,8 +185,8 @@ describe("BoardTimelineView on the ERP board", () => {
   it("draws the board's dated items on one group row and counts the undated one", async () => {
     const { container } = renderTimeline();
     await ready();
-    // 15 of the 16 items have a date; ERP-153 has none.
-    expect(container.querySelectorAll('[data-tl="lrow"]')).toHaveLength(15);
+    // Only items with a start day are listed (no plan here); ERP-153 has no date.
+    expect(container.querySelectorAll('[data-tl="lrow"]')).toHaveLength(2);
     expect(container.querySelectorAll('[data-tl="lgrp"]')).toHaveLength(1);
     expect(
       screen.getByRole("link", { name: "1 việc chưa có ngày" }),
@@ -209,14 +217,14 @@ describe("BoardTimelineView on the ERP board", () => {
     const { container } = renderTimeline(erpOwnerAccess(), {}, { onItem });
     await ready();
     fireEvent.click(
-      within(listRow(container, "ERP-144")).getByRole("link", {
-        name: /ERP-144/,
+      within(listRow(container, "ERP-142")).getByRole("link", {
+        name: /ERP-142/,
       }),
     );
-    expect(onItem).toHaveBeenCalledWith(erpItemId("ERP-144"));
+    expect(onItem).toHaveBeenCalledWith(erpItemId("ERP-142"));
     expect(
       await screen.findByRole("heading", {
-        name: "Kiểm thử phân hệ công nợ với số liệu tháng 9",
+        name: "Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP",
       }),
     ).toBeTruthy();
   });

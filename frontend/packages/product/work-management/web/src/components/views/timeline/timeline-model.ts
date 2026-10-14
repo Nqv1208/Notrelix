@@ -1202,3 +1202,31 @@ function cascadeNote(
     date: fmtDay(first.es ?? first.ee),
   });
 }
+
+/**
+ * The items on the longest chain of links: from the last-finishing end of the
+ * chain back, taking at each step the predecessor that finishes last.
+ */
+export function criticalIds(
+  links: readonly TimelineLink[],
+  dueOf: ReadonlyMap<string, string>,
+): Set<string> {
+  const ends = new Set(links.map((link) => link.to));
+  const starts = new Set(links.map((link) => link.from));
+  const terminals = [...ends].filter((id) => !starts.has(id));
+  const finish = (id: string) => dueOf.get(id) ?? "";
+  const last = [...terminals].sort((a, b) =>
+    finish(b).localeCompare(finish(a)),
+  )[0];
+  const critical = new Set<string>();
+  let current = last;
+  while (current && !critical.has(current)) {
+    critical.add(current);
+    const before = links
+      .filter((link) => link.to === current)
+      .map((link) => link.from)
+      .sort((a, b) => finish(b).localeCompare(finish(a)));
+    current = before[0] as string;
+  }
+  return critical;
+}

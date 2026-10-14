@@ -166,6 +166,12 @@ export interface ErpPlanItem {
   readonly startDay: string;
   readonly endDay: string;
   readonly category: "todo" | "doing" | "review" | "done";
+  /** The board group the Timeline lists it in (a group key of the board). */
+  readonly groupKey: "prep" | "data" | "test" | "training";
+  /** Completion, 0 to 100. */
+  readonly percent: number;
+  /** Row of the item among its group's rows (0 = first). */
+  readonly index: number;
 }
 
 export const ERP_PLAN_ITEMS: readonly ErpPlanItem[] = [
@@ -176,6 +182,9 @@ export const ERP_PLAN_ITEMS: readonly ErpPlanItem[] = [
     startDay: "2026-10-12",
     endDay: "2026-10-16",
     category: "doing",
+    groupKey: "test",
+    percent: 10,
+    index: 1,
   },
   {
     id: "mock-erp-plan-training",
@@ -184,6 +193,9 @@ export const ERP_PLAN_ITEMS: readonly ErpPlanItem[] = [
     startDay: "2026-10-22",
     endDay: "2026-10-23",
     category: "todo",
+    groupKey: "training",
+    percent: 0,
+    index: 1,
   },
   {
     id: "mock-erp-plan-parallel",
@@ -192,6 +204,9 @@ export const ERP_PLAN_ITEMS: readonly ErpPlanItem[] = [
     startDay: "2026-10-26",
     endDay: "2026-10-31",
     category: "review",
+    groupKey: "training",
+    percent: 0,
+    index: 2,
   },
   {
     id: "mock-erp-plan-golive",
@@ -200,5 +215,39 @@ export const ERP_PLAN_ITEMS: readonly ErpPlanItem[] = [
     startDay: "2026-11-01",
     endDay: "2026-11-01",
     category: "todo",
+    groupKey: "training",
+    percent: 0,
+    index: 3,
   },
 ];
+
+/**
+ * Finish-to-start dependencies of the ERP board: an item key (ERP-142) or a
+ * plan item id; `to` waits for `from` (Final-Timeline).
+ */
+export const ERP_PLAN_LINKS: readonly { from: string; to: string }[] = [
+  { from: "ERP-129", to: "ERP-142" },
+  { from: "ERP-142", to: "ERP-146" },
+  { from: "ERP-146", to: "ERP-150" },
+  { from: "ERP-142", to: "ERP-147" },
+  { from: "ERP-147", to: "mock-erp-plan-training" },
+  { from: "mock-erp-plan-training", to: "mock-erp-plan-parallel" },
+  { from: "mock-erp-plan-parallel", to: "mock-erp-plan-golive" },
+];
+
+/** Completion of items whose progress is not the share of their child items. */
+export const ERP_ITEM_PERCENT: Readonly<Record<string, number>> = {
+  "ERP-138": 90,
+};
+
+/**
+ * Where the Timeline lists an item whose group differs from the one the
+ * Kanban lane order follows (Final-Timeline puts ERP-150 in Dữ liệu and
+ * ERP-144 in Kiểm thử).
+ */
+export const ERP_PLAN_GROUPS: Readonly<
+  Record<string, "prep" | "data" | "test" | "training">
+> = {
+  "ERP-150": "data",
+  "ERP-144": "test",
+};

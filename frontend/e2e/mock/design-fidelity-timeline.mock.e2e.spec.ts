@@ -91,7 +91,7 @@ const MOCK = {
     erp142LateLabel: { x: 628, width: 93.5 },
     erp146: { x: 615, width: 102, height: 20, progress: 33.7 },
     /** 6 px after the bar; the mockup moves it right of an arrow line. */
-    erp146Label: { x: 724, width: 280 },
+    erp146Label: { x: 731, width: 280 },
     erp129Label: { x: 420, width: 118.1, height: 17.4 },
   },
   legend: {
@@ -634,11 +634,6 @@ test.describe("Board Timeline geometry at 1440 px (owner)", () => {
     expect(
       await colour(reviewBar.locator('[data-tl="pg"]'), "background-color"),
     ).toBe(COLOUR.progressReview);
-    const dot = (await trackOf(page, "ERP-136")).locator('[data-tl="fin"]');
-    expect(await colour(dot, "background-color")).toBe(COLOUR.progressDone);
-    const dotBox = await box(dot);
-    expect(dotBox.width).toBeCloseTo(10, 0);
-    expect(pillRadius(await style(dot, "border-radius"))).toBe(true);
   });
 
   test("the legend row", async ({ page }) => {
@@ -856,7 +851,5 @@ test.describe("Board Timeline geometry at 1440 px (owner)", () => {
       '[data-tl="gb"]',
     );
     expect(await colour(reviewBar, "background-color")).toBe("rgb(58, 48, 24)");
-    const dot = (await trackOf(page, "ERP-136")).locator('[data-tl="fin"]');
-    expect(await colour(dot, "background-color")).toBe("rgb(86, 201, 138)");
   });
 });

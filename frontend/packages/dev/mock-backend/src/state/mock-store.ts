@@ -68,8 +68,10 @@ import {
 } from "./mock-erp-board";
 import {
   ERP_ACTIVITY,
+  ERP_ITEM_PERCENT,
+  ERP_PLAN_GROUPS,
   ERP_PLAN_ITEMS,
-  type ErpPlanItem,
+  ERP_PLAN_LINKS,
   ERP_CHILD_ITEMS,
   ERP_COMMENTS,
   ERP_DESCRIPTIONS,
@@ -135,6 +137,25 @@ export type MockVersionedWrite = "ok" | "not-found" | "stale";
 
 // ─── MockStore ────────────────────────────────────────────────────────────────
 
+/** A board's plan read (gap `CTR-GAP-WM-PLAN-ITEMS`). */
+export interface MockBoardPlan {
+  readonly items: readonly {
+    readonly id: string;
+    readonly kind: "phase" | "milestone";
+    readonly title: string;
+    readonly startDay: string;
+    readonly endDay: string;
+    readonly category: "todo" | "doing" | "review" | "done";
+    readonly groupId: string;
+    readonly percent: number;
+    readonly index: number;
+  }[];
+  readonly links: readonly { readonly from: string; readonly to: string }[];
+  readonly percents: Readonly<Record<string, number>>;
+  /** Group id by item id, where the plan lists an item elsewhere. */
+  readonly groups: Readonly<Record<string, string>>;
+}
+
 export class MockStore {
   // Primary Maps
   private usersById = new Map<string, MockUserRecord>();
@@ -193,7 +214,7 @@ export class MockStore {
     { id: string; actorId: string; action: string; createdAt: string }[]
   >();
   /** Phases and milestones of a board (gap `CTR-GAP-WM-PLAN-ITEMS`), by board. */
-  private planItemsByBoardId = new Map<string, readonly ErpPlanItem[]>();
+  private planByBoardId = new Map<string, MockBoardPlan>();
   /** Board members (`/full` members), keyed by board. */
   private boardMembersByBoardId = new Map<string, MockBoardMemberRecord[]>();
   /** Explicit board access entries, keyed by board. */
@@ -1011,7 +1032,30 @@ export class MockStore {
         erpStatusOptionId(child.done ? "done" : "todo"),
       );
     });
-    this.planItemsByBoardId.set(boardId, ERP_PLAN_ITEMS);
+    const planId = (ref: string) =>
+      ref.startsWith("ERP-") ? erpItemId(ref) : ref;
+    this.planByBoardId.set(boardId, {
+      items: ERP_PLAN_ITEMS.map(({ groupKey, ...item }) => ({
+        ...item,
+        groupId: erpGroupId(groupKey),
+      })),
+      links: ERP_PLAN_LINKS.map((link) => ({
+        from: planId(link.from),
+        to: planId(link.to),
+      })),
+      groups: Object.fromEntries(
+        Object.entries(ERP_PLAN_GROUPS).map(([key, group]) => [
+          erpItemId(key),
+          erpGroupId(group),
+        ]),
+      ),
+      percents: Object.fromEntries(
+        Object.entries(ERP_ITEM_PERCENT).map(([key, value]) => [
+          erpItemId(key),
+          value,
+        ]),
+      ),
+    });
     for (const entry of ERP_ACTIVITY) {
       this.recordActivity(
         erpItemId(entry.itemKey),
@@ -1303,7 +1347,7 @@ export class MockStore {
     this.feed.clear();
     this.completedCardIds.clear();
     this.activityByCardId.clear();
-    this.planItemsByBoardId.clear();
+    this.planByBoardId.clear();
 
     this.membershipIdsByWorkspaceId.clear();
     this.viewIdsByWorkspaceId.clear();
@@ -2002,9 +2046,16 @@ export class MockStore {
     return this.createCard(list.boardId, listId, input);
   }
 
-  /** The phases and milestones of a board, in date order. */
-  getPlanItems(boardId: string): readonly ErpPlanItem[] {
-    return this.planItemsByBoardId.get(boardId) ?? [];
+  /** The phases, milestones, dependencies and completions of a board's plan. */
+  getPlan(boardId: string): MockBoardPlan {
+    return (
+      this.planByBoardId.get(boardId) ?? {
+        items: [],
+        links: [],
+        percents: {},
+        groups: {},
+      }
+    );
   }
 
   /** Records one line of an item's history ("đổi hạn từ 08/10 sang 10/10"). */

@@ -30,6 +30,23 @@ export interface BoardPlanItemDto {
   readonly startDay: string;
   readonly endDay: string;
   readonly category: "todo" | "doing" | "review" | "done";
+  /** The board group the Timeline lists it in. */
+  readonly groupId: string;
+  /** Completion, 0 to 100. */
+  readonly percent: number;
+  /** Row of the item among its group's rows (0 = first). */
+  readonly index: number;
+}
+
+/** The plan of a board: markers, finish-to-start links and completions. */
+export interface BoardPlanDto {
+  readonly items: readonly BoardPlanItemDto[];
+  /** `to` waits for `from`; ids of items or plan items. */
+  readonly links: readonly { readonly from: string; readonly to: string }[];
+  /** Completion of items whose progress is not their child items' share. */
+  readonly percents: Readonly<Record<string, number>>;
+  /** Group id by item id, where the plan lists an item outside its own group. */
+  readonly groups: Readonly<Record<string, string>>;
 }
 
 export function createItemExtrasApi(client: NotrelixClient) {
@@ -37,11 +54,16 @@ export function createItemExtrasApi(client: NotrelixClient) {
   const quiet = { skipGlobalErrorToast: true } as const;
   const key = () => crypto.randomUUID();
   return {
-    async getPlanItems(boardId: string): Promise<BoardPlanItemDto[]> {
-      const dto = await api.get<{ items?: BoardPlanItemDto[] } | null>(
+    async getPlan(boardId: string): Promise<BoardPlanDto> {
+      const dto = await api.get<Partial<BoardPlanDto> | null>(
         `/boards/${boardId}/plan-items`,
       );
-      return dto?.items ?? [];
+      return {
+        items: dto?.items ?? [],
+        links: dto?.links ?? [],
+        percents: dto?.percents ?? {},
+        groups: dto?.groups ?? {},
+      };
     },
     async getChildItems(itemId: string): Promise<ItemChildItemDto[]> {
       const dto = await api.get<{ items?: ItemChildItemDto[] } | null>(

@@ -164,7 +164,7 @@ export function BoardCalendarView({
 
   // Phases and milestones belong to nobody: any filter hides them with the
   // items it filters out, as Final-Calendar's empty state shows.
-  const planItems = useBoardPlanItems(boardId, workspaceId).data;
+  const planItems = useBoardPlanItems(boardId, workspaceId).data?.items;
   const shownPlanItems = serializeKanbanFilter(filter) ? undefined : planItems;
   const built = useMemo(
     () =>
