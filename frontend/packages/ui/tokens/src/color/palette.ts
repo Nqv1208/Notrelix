@@ -1036,6 +1036,65 @@ export const itemPageTones: Record<ThemeAppearance, ItemPageTones> = {
   "high-contrast": itemPageLight,
 };
 
+// ─── Timeline ────────────────────────────────────────────────────────────
+
+export interface TimelineTones {
+  /** Bar fills by work status; the Cần làm fill also carries a border. */
+  readonly barTodo: Oklch;
+  readonly barTodoBorder: Oklch;
+  readonly barDoing: Oklch;
+  readonly barReview: Oklch;
+  readonly barDone: Oklch;
+  /** Progress strip along the foot of a bar. */
+  readonly progressDoing: Oklch;
+  readonly progressReview: Oklch;
+  readonly progressDone: Oklch;
+  /** Dependency lines and arrow heads. */
+  readonly link: Oklch;
+  /** Milestone diamond. */
+  readonly milestone: Oklch;
+  /** Second line of the drag tooltip. */
+  readonly tipNote: Oklch;
+}
+
+const timelineLight: TimelineTones = {
+  barTodo: oklch(0.949, 0.006, 264.5), // #ECEEF2
+  barTodoBorder: oklch(0.85, 0.012, 259.8), // #C9CED6
+  barDoing: oklch(0.917, 0.032, 255.6), // #D6E5F9
+  barReview: oklch(0.928, 0.06, 89.4), // #F7E6BA
+  barDone: oklch(0.918, 0.032, 158.3), // #D3EBDC
+  progressDoing: oklch(0.586, 0.175, 254.7), // #1E7BE0
+  progressReview: oklch(0.728, 0.151, 79.4), // #D99A00
+  progressDone: oklch(0.569, 0.119, 154.9), // #2E8B57
+  link: oklch(0.66, 0.022, 257.5), // #8A93A0
+  milestone: oklch(0.534, 0.205, 17.2), // #C8143F
+  tipNote: oklch(0.85, 0.012, 259.8), // #C9CED6
+};
+
+/*
+ * Final-Timeline `--bar-*`, `--bar-todo-b`, `--st-*`, `--dep`, the milestone
+ * diamond and the tooltip's second line, on the CSS emit grid so they render
+ * the mockup hex. The group band, weekend tint, danger and drop tooltip are
+ * the table and calendar roles. High contrast reuses the light values.
+ */
+export const timelineTones: Record<ThemeAppearance, TimelineTones> = {
+  light: timelineLight,
+  dark: {
+    barTodo: oklch(0.294, 0.023, 256.4), // #252D38
+    barTodoBorder: oklch(0.383, 0.027, 256.8), // #3A4452
+    barDoing: oklch(0.327, 0.082, 257.9), // #17345E
+    barReview: oklch(0.314, 0.041, 87.4), // #3A3018
+    barDone: oklch(0.317, 0.05, 161.7), // #173A2A
+    progressDoing: oklch(0.722, 0.148, 252.3), // #5AA9FF
+    progressReview: oklch(0.834, 0.141, 85.4), // #F2C14E
+    progressDone: oklch(0.753, 0.139, 156.7), // #56C98A
+    link: oklch(0.572, 0.023, 255), // #6F7986
+    milestone: oklch(0.534, 0.205, 17.2), // #C8143F
+    tipNote: oklch(0.85, 0.012, 259.8), // #C9CED6
+  },
+  "high-contrast": timelineLight,
+};
+
 /** Chart series order (identity colors, never status). */
 export const CHART_SERIES: readonly IdentityId[] = [
   "blue",

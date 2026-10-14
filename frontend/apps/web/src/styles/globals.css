@@ -404,6 +404,19 @@
   --color-calendar-tip: var(--calendar-tip);
   --color-calendar-tip-foreground: var(--calendar-tip-foreground);
 
+  /* Timeline view: bar fills, progress strips, dependency lines, milestone and tooltip note (Final-Timeline). */
+  --color-timeline-bar-todo: var(--timeline-bar-todo);
+  --color-timeline-bar-todo-border: var(--timeline-bar-todo-border);
+  --color-timeline-bar-doing: var(--timeline-bar-doing);
+  --color-timeline-bar-review: var(--timeline-bar-review);
+  --color-timeline-bar-done: var(--timeline-bar-done);
+  --color-timeline-progress-doing: var(--timeline-progress-doing);
+  --color-timeline-progress-review: var(--timeline-progress-review);
+  --color-timeline-progress-done: var(--timeline-progress-done);
+  --color-timeline-link: var(--timeline-link);
+  --color-timeline-milestone: var(--timeline-milestone);
+  --color-timeline-tip-note: var(--timeline-tip-note);
+
   /* Document page (Final-Docs): page sheet, body ink, comment highlight, notice and status chip tints. */
   --color-doc-page: var(--doc-page);
   --color-doc-panel: var(--doc-panel);

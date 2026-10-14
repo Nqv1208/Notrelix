@@ -36,6 +36,7 @@ import {
   priorityHigh,
   statusChipTones,
   railTones,
+  timelineTones,
   statuses,
   workStatusLanes,
   workStatuses,
@@ -249,6 +250,19 @@ export function buildAppearanceColors(
   roles["calendar-faint"] = calendar.faint;
   roles["calendar-tip"] = calendar.tip;
   roles["calendar-tip-foreground"] = calendar.onTip;
+
+  const timeline = timelineTones[appearance];
+  roles["timeline-bar-todo"] = timeline.barTodo;
+  roles["timeline-bar-todo-border"] = timeline.barTodoBorder;
+  roles["timeline-bar-doing"] = timeline.barDoing;
+  roles["timeline-bar-review"] = timeline.barReview;
+  roles["timeline-bar-done"] = timeline.barDone;
+  roles["timeline-progress-doing"] = timeline.progressDoing;
+  roles["timeline-progress-review"] = timeline.progressReview;
+  roles["timeline-progress-done"] = timeline.progressDone;
+  roles["timeline-link"] = timeline.link;
+  roles["timeline-milestone"] = timeline.milestone;
+  roles["timeline-tip-note"] = timeline.tipNote;
 
   const doc = docTones[appearance];
   roles["doc-page"] = doc.page;

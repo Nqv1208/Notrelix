@@ -615,6 +615,68 @@ describe("calendar colours", () => {
 });
 
 /**
+ * Timeline (Final-Timeline): the bar fills (`--bar-*`), the Cần làm bar
+ * border, the progress strips (`--st-*`), the dependency line (`--dep`), the
+ * milestone diamond and the drag tooltip's second line, light and dark as the
+ * mockup. High contrast reuses the light values.
+ */
+const TIMELINE_VALUES: Record<"light" | "dark", Record<string, string>> = {
+  light: {
+    "timeline-bar-todo": "#eceef2",
+    "timeline-bar-todo-border": "#c9ced6",
+    "timeline-bar-doing": "#d6e5f9",
+    "timeline-bar-review": "#f7e6ba",
+    "timeline-bar-done": "#d3ebdc",
+    "timeline-progress-doing": "#1e7be0",
+    "timeline-progress-review": "#d99a00",
+    "timeline-progress-done": "#2e8b57",
+    "timeline-link": "#8a93a0",
+    "timeline-milestone": "#c8143f",
+    "timeline-tip-note": "#c9ced6",
+  },
+  dark: {
+    "timeline-bar-todo": "#252d38",
+    "timeline-bar-todo-border": "#3a4452",
+    "timeline-bar-doing": "#17345e",
+    "timeline-bar-review": "#3a3018",
+    "timeline-bar-done": "#173a2a",
+    "timeline-progress-doing": "#5aa9ff",
+    "timeline-progress-review": "#f2c14e",
+    "timeline-progress-done": "#56c98a",
+    "timeline-link": "#6f7986",
+    "timeline-milestone": "#c8143f",
+    "timeline-tip-note": "#c9ced6",
+  },
+};
+
+describe("timeline colours", () => {
+  for (const appearance of ["light", "dark"] as const) {
+    it.each(Object.entries(TIMELINE_VALUES[appearance]))(
+      `${appearance} --%s renders %s`,
+      (role, hex) => {
+        expect(emittedHex(appearance, role)).toBe(hex);
+      },
+    );
+  }
+
+  it("high contrast reuses the light timeline colours", () => {
+    for (const role of Object.keys(TIMELINE_VALUES.light)) {
+      expect(emittedHex("high-contrast", role)).toBe(emittedHex("light", role));
+    }
+  });
+
+  it("maps every timeline role to the web globals", () => {
+    const globals = readFileSync(
+      resolve(here, "../../../../../apps/web/src/styles/globals.css"),
+      "utf8",
+    );
+    for (const role of Object.keys(TIMELINE_VALUES.light)) {
+      expect(globals, role).toContain(`--color-${role}: var(--${role});`);
+    }
+  });
+});
+
+/**
  * Item page (Final-Detail): the conflict notice border, the "added" mark and
  * the file type chips, light and dark as the mockup. High contrast reuses the
  * light values.
