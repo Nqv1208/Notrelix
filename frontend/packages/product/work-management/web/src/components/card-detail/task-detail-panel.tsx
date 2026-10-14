@@ -20,6 +20,7 @@ import { useIsMobile } from "@notrelix/ui-web";
 import { TaskDetailPanelSurface } from "./task-detail-panel-surface";
 import type { TaskDetailCapabilities } from "./task-detail-types";
 import { boardCapabilities } from "../shared/board-capabilities";
+import { withBoardPriority } from "../shared/item-priority";
 import { useItemSheetCopy } from "./use-item-sheet-copy";
 import type { ItemSheetCopy } from "./item-sheet.copy";
 
@@ -156,7 +157,7 @@ function TaskDetailPanelContent({
   return (
     <TaskDetailReadyContainer
       board={board}
-      card={card as CardDetail}
+      card={withBoardPriority(card as CardDetail, board)}
       capabilities={capabilities}
       copy={copy}
       now={now}

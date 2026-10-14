@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { Board, CardDetail } from "@notrelix/work-management-core";
 import { TaskDetailPanelSurface } from "../../card-detail/task-detail-panel-surface";
 import type { ItemSheetCopy } from "../../card-detail/item-sheet.copy";
+import { withBoardPriority } from "../../shared/item-priority";
 import { useItemSheetCopy } from "../../card-detail/use-item-sheet-copy";
 import type {
   ItemSheetGroup,
@@ -63,7 +64,7 @@ export function KanbanCardDetailPanel({
       <TaskDetailPanelSurface
         status="ready"
         board={board}
-        card={card}
+        card={withBoardPriority(card, board)}
         capabilities={capabilities}
         detailData={detailData}
         callbacks={callbacks}

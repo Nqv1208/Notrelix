@@ -190,7 +190,7 @@ export function projectItemReadValues(card: MockCardRecord, store: MockStore) {
   };
 }
 
-function projectItemMembers(card: MockCardRecord, store: MockStore) {
+export function projectItemMembers(card: MockCardRecord, store: MockStore) {
   return (card.assigneeUserIds ?? []).flatMap((userId) => {
     const user = store.getUser(userId);
     return user

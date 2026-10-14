@@ -44,6 +44,8 @@ export interface Card {
   parentItemId?: string | null;
   /** Selected option of the board's Status field. */
   statusOptionId?: string | null;
+  /** Selected option of the board's priority field, when the read carries it. */
+  priorityOptionId?: string | null;
   /** Work status category of the selected Status option. */
   statusCategory?: "todo" | "in_progress" | "review" | "done" | null;
   /** Due date and time as an ISO 8601 string. */

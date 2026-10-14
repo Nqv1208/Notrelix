@@ -2,6 +2,7 @@ import { Check, Download, Plus, Upload } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
 import type { CardDetail, CardFile } from "@notrelix/work-management-core";
 import { formatItemDate, itemDueState } from "../shared/item-display";
+import { ItemDescriptionBody } from "../shared/item-description";
 import { fillSheetCopy } from "../card-detail/item-sheet.copy";
 import type {
   ItemSheetChildItem,
@@ -21,22 +22,6 @@ import {
   SectionHeading,
 } from "./item-page-parts";
 
-/** Blocks of a description: paragraphs, and "- " lines as a bulleted list. */
-function descriptionBlocks(text: string) {
-  return text
-    .trim()
-    .split(/\n{2,}/)
-    .map((block) => {
-      const lines = block.split("\n").map((line) => line.trimEnd());
-      const items = lines.every((line) => /^\s*[-*]\s+/.test(line))
-        ? lines.map((line) => line.replace(/^\s*[-*]\s+/, ""))
-        : null;
-      return items
-        ? { kind: "list" as const, items }
-        : { kind: "text" as const, text: block };
-    });
-}
-
 export function ItemPageDescription({
   card,
   copy,
@@ -51,23 +36,7 @@ export function ItemPageDescription({
         {copy.description.heading}
       </SectionHeading>
       {text ? (
-        <div className="max-w-[68ch] text-item-prose text-foreground">
-          {descriptionBlocks(text).map((block, index) =>
-            block.kind === "list" ? (
-              <ul key={index} className="m-0 mb-1 pl-5">
-                {block.items.map((item) => (
-                  <li key={item} className="my-[3px]">
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p key={index} className="m-0 mb-2.5 whitespace-pre-line">
-                {block.text}
-              </p>
-            ),
-          )}
-        </div>
+        <ItemDescriptionBody text={text} className="text-item-prose" />
       ) : (
         <p className="m-0 text-item-text text-muted-foreground">
           {copy.description.empty}

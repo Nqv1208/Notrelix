@@ -47,7 +47,11 @@ import {
 import { preconditionFailed } from "../workspace/space-target";
 import type { MockStore } from "../../state/mock-store";
 import type { MockCardRecord } from "../../state/records";
-import { canWriteBoardItems, projectItemReadValues } from "./boards.handlers";
+import {
+  canWriteBoardItems,
+  projectItemMembers,
+  projectItemReadValues,
+} from "./boards.handlers";
 
 /** 400 with field errors, as the real API answers a validation failure. */
 function badRequest(errors: Record<string, string[]>) {
@@ -108,7 +112,7 @@ function projectCardDto(c: MockCardRecord, store: MockStore): CardDtoApi {
     completedAt,
     cover: null,
     position: c.position,
-    members: [],
+    members: projectItemMembers(c, store),
     labels,
     checklists,
     commentCount: comments.length,

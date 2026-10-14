@@ -194,7 +194,10 @@ export function mapCardDto(dto: BoardItemReadDto): CardDetail {
     descriptionMd: legacy ? (legacy.descriptionMd ?? "") : "",
     linkedPageId: legacy ? (legacy.linkedPageId ?? undefined) : undefined,
     position: typeof dto.position === "number" ? dto.position : 0,
-    priority: legacy ? normalizePriority(legacy.priority) : undefined,
+    // The hand-written read says "medium" for an item without a priority; the
+    // detail keeps that as no priority and resolves the option id on the board.
+    priority: legacy?.priority ? normalizePriority(legacy.priority) : undefined,
+    priorityOptionId: values.priorityOptionId,
     status,
     dueDate: dueDate ?? undefined,
     startDate: legacy

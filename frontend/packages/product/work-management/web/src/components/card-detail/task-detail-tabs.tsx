@@ -2,6 +2,7 @@ import { useId, useState, type KeyboardEvent } from "react";
 import { Check } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
 import type { CardDetail, CardDetailTab } from "@notrelix/work-management-core";
+import { ItemDescriptionBody } from "../shared/item-description";
 import { TaskActivityTab } from "./task-activity-tab";
 import { TaskUpdatesTab } from "./task-updates-tab";
 import { fillSheetCopy, type ItemSheetCopy } from "./item-sheet.copy";
@@ -43,9 +44,10 @@ export function TaskDetailTabs({
       <section>
         <SectionHeading>{t.description}</SectionHeading>
         {card.descriptionMd?.trim() ? (
-          <p className="m-0 max-w-[68ch] text-body leading-[1.65] whitespace-pre-wrap text-foreground">
-            {card.descriptionMd}
-          </p>
+          <ItemDescriptionBody
+            text={card.descriptionMd}
+            className="text-body leading-[1.65]"
+          />
         ) : (
           <p className="m-0 text-sm text-muted-foreground">
             {t.descriptionUnavailable}
@@ -138,7 +140,9 @@ function ChildItemsSection({
               >
                 {item.title}
               </span>
-              {item.done ? <span className="sr-only">{t.childDone}</span> : null}
+              {item.done ? (
+                <span className="sr-only">{t.childDone}</span>
+              ) : null}
             </li>
           ))}
         </ul>

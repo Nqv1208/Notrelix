@@ -26,6 +26,7 @@ import { formatItemDate } from "../shared/item-display";
 import { useItemSheetCopy } from "../card-detail/use-item-sheet-copy";
 import type { ItemSheetCopy } from "../card-detail/item-sheet.copy";
 import { findItemFields } from "../card-detail/item-field-editors";
+import { withBoardPriority } from "../shared/item-priority";
 import type { TaskDetailCallbacks } from "../card-detail/task-detail-types";
 import { useItemPageCopy } from "./use-item-page-copy";
 import { ItemPageSurface } from "./item-page-surface";
@@ -146,7 +147,7 @@ export function ItemPage(props: ItemPageProps) {
       {...props}
       board={board}
       groups={groups}
-      card={card}
+      card={withBoardPriority(card, board)}
       capabilities={capabilities}
       access={access}
       copy={copy}
