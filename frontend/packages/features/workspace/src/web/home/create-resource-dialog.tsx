@@ -13,6 +13,7 @@ import {
   Input,
 } from "@notrelix/ui-web";
 import { formatCopy } from "../shell/shell-models";
+import type { MyWorkCreateBoard } from "./my-work-types";
 import type { WorkspaceHomeCopy } from "./workspace-home.copy";
 
 export type CreatableResource = "board" | "doc";
@@ -115,6 +116,106 @@ export function CreateResourceDialog({
                 : isBoard
                   ? copy.create.submitBoard
                   : copy.create.submitDoc}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+export interface AddItemDialogProps {
+  readonly copy: WorkspaceHomeCopy;
+  readonly open: boolean;
+  /** Boards the member can add an item to. */
+  readonly boards: readonly MyWorkCreateBoard[];
+  readonly pending: boolean;
+  readonly error: string | null;
+  readonly onOpenChange: (open: boolean) => void;
+  readonly onSubmit: (input: { boardId: string; name: string }) => void;
+}
+
+/** "Thêm công việc" on Home: names an item assigned to the member on a Board. */
+export function AddItemDialog({
+  copy,
+  open,
+  boards,
+  pending,
+  error,
+  onOpenChange,
+  onSubmit,
+}: AddItemDialogProps) {
+  const [name, setName] = useState("");
+  const [boardId, setBoardId] = useState<string | null>(null);
+  const [touched, setTouched] = useState(false);
+  const nameId = useId();
+  const boardIdField = useId();
+  const chosen = boards.find((board) => board.id === boardId) ?? boards[0];
+
+  useEffect(() => {
+    if (!open) {
+      setName("");
+      setTouched(false);
+    }
+  }, [open]);
+
+  const trimmed = name.trim();
+  const message = touched && trimmed === "" ? copy.create.required : error;
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    setTouched(true);
+    if (!chosen || trimmed === "" || pending) return;
+    onSubmit({ boardId: chosen.id, name: trimmed });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <form onSubmit={submit} noValidate className="flex flex-col gap-4">
+          <DialogHeader>
+            <DialogTitle>{copy.list.addTitle}</DialogTitle>
+            <DialogDescription>{copy.list.addNote}</DialogDescription>
+          </DialogHeader>
+          <Field data-invalid={message ? true : undefined}>
+            <FieldLabel htmlFor={nameId}>{copy.list.addName}</FieldLabel>
+            <Input
+              id={nameId}
+              value={name}
+              autoFocus
+              maxLength={300}
+              placeholder={copy.list.addNamePlaceholder}
+              aria-invalid={message ? true : undefined}
+              onChange={(event) => setName(event.target.value)}
+            />
+            {message ? <FieldError>{message}</FieldError> : null}
+          </Field>
+          <Field>
+            <FieldLabel htmlFor={boardIdField}>{copy.list.addBoard}</FieldLabel>
+            <select
+              id={boardIdField}
+              value={chosen?.id ?? ""}
+              onChange={(event) => setBoardId(event.target.value)}
+              className="h-9 rounded-[8px] border border-line-strong bg-popover px-2.5 text-compact text-foreground dark:bg-card"
+            >
+              {boards.map((board) => (
+                <option key={board.id} value={board.id}>
+                  {board.departmentName
+                    ? `${board.name} · ${board.departmentName}`
+                    : board.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
+              {copy.list.addCancel}
+            </Button>
+            <Button type="submit" disabled={pending || !chosen}>
+              {copy.list.addSubmit}
             </Button>
           </DialogFooter>
         </form>

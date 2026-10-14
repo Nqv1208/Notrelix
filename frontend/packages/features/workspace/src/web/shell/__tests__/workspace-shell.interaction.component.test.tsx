@@ -228,8 +228,8 @@ describe("WorkspaceSidebarSurface", () => {
       "Hạ tầng & bảo mật",
       "Hỗ trợ nội bộ",
       "Ngân sách CNTT 2027, Riêng tư",
-      "NTNhóm Hạ tầng",
-      "NDNhóm Ứng dụng, Riêng tư",
+      "HTNhóm Hạ tầng",
+      "UDNhóm Ứng dụng, Riêng tư",
     ]);
     const budget = within(tree).getByRole("treeitem", {
       name: /Ngân sách CNTT 2027/,

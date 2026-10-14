@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   MARK_TONE_IDS,
   identityToneFor,
+  markInitialsFor,
   markToneFor,
 } from "../core/model/navigation";
 import { MARK_TONE_CLASS } from "../web/shell/shell-models";
@@ -54,5 +55,17 @@ describe("MARK_TONE_CLASS", () => {
         `bg-mark-${id} text-mark-${id}-foreground`,
       );
     }
+  });
+});
+
+describe("markInitialsFor", () => {
+  it("draws the design's initials for workspace and department marks", () => {
+    expect(markInitialsFor("Minh An Group")).toBe("MA");
+    expect(markInitialsFor("Công nghệ")).toBe("CN");
+    expect(markInitialsFor("Nhóm Hạ tầng")).toBe("HT");
+    expect(markInitialsFor("Nhóm Ứng dụng")).toBe("UD");
+    expect(markInitialsFor("Ban giám đốc")).toBe("GĐ");
+    expect(markInitialsFor("Đà Nẵng")).toBe("ĐN");
+    expect(markInitialsFor("Marketing")).toBe("M");
   });
 });

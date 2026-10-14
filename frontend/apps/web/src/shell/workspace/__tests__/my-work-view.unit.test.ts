@@ -92,16 +92,15 @@ describe("toMyWorkItems", () => {
 });
 
 describe("greetingNameFor", () => {
-  it("greets a Vietnamese name by its last word and an English one by its first", () => {
-    expect(greetingNameFor("Nguyễn Thu Hà", "vi")).toBe("Hà");
-    expect(greetingNameFor("Ada Lovelace", "en")).toBe("Ada");
+  it("greets by the last word, in every locale", () => {
+    expect(greetingNameFor("Nguyễn Thu Hà")).toBe("Hà");
+    expect(greetingNameFor("Ada Lovelace")).toBe("Lovelace");
   });
 
   it("drops a trailing role in parentheses and greets nobody without a name", () => {
-    expect(greetingNameFor("UI Developer (Owner)", "en")).toBe("UI");
-    expect(greetingNameFor("UI Developer (Owner)", "vi")).toBe("Developer");
-    expect(greetingNameFor("   ", "vi")).toBeNull();
-    expect(greetingNameFor(null, "vi")).toBeNull();
-    expect(greetingNameFor(undefined, "en")).toBeNull();
+    expect(greetingNameFor("UI Developer (Owner)")).toBe("Developer");
+    expect(greetingNameFor("   ")).toBeNull();
+    expect(greetingNameFor(null)).toBeNull();
+    expect(greetingNameFor(undefined)).toBeNull();
   });
 });

@@ -25,9 +25,7 @@ test("Space org tree: create a Space, add a member, create a Board and a Doc in 
   const nav = page.getByRole("navigation", { name: "Workspace navigation" });
   // The sidebar names the Space tree "Departments" (Final-Space).
   const tree = nav.getByRole("tree", { name: "Departments" });
-  await expect(
-    tree.getByRole("treeitem", { name: /Công nghệ/ }),
-  ).toBeVisible();
+  await expect(tree.getByRole("treeitem", { name: /Công nghệ/ })).toBeVisible();
 
   // Create a top-level department Space (Private by default).
   await nav.getByRole("button", { name: "Create department" }).click();

@@ -45,9 +45,9 @@ const MOCK = {
   add: { y: 50.8, width: 150.19, height: 34 },
   /** Right edge of the content: 32 + 1044. */
   contentRight: 1076,
-  chips: { x: 32, y: 106.8, chipHeight: 36 },
+  chips: { x: 32, y: 106.8, chipHeight: 36, rowHeight: 38 },
   /** The mockup's chip row is 38 tall (two link chips); the mock world draws 36. */
-  colsTop: 164.8,
+  colsTop: 166.8,
   h2: { height: 20.3 },
   rows: { x: 32, radius: "12px" },
   row: { x: 33, height: 70, rowStep: 71 },
@@ -204,7 +204,7 @@ test.describe("Home geometry at 1440 px (owner)", () => {
     const chips = page.getByRole("group", { name: "Lọc nhanh việc cần chú ý" });
     expectRect(
       await rel(page, chips),
-      { x: MOCK.chips.x, y: MOCK.chips.y, height: MOCK.chips.chipHeight },
+      { x: MOCK.chips.x, y: MOCK.chips.y, height: MOCK.chips.rowHeight },
       "chips row",
     );
     const overdue = chips.locator('[data-f="chip"]').nth(0);
@@ -394,6 +394,10 @@ test.describe("Home geometry at 1440 px (owner)", () => {
       .click();
     const heading = page.locator('[data-f="conth2"]');
     await expect(heading).toBeVisible();
+    // The feed's chips are in place before the column is measured.
+    await expect(
+      page.getByRole("link", { name: "1 nhắc tên bạn" }),
+    ).toBeVisible();
     // The right column: 300.2 px at x 775.8, 22 px right of the 715.8 px main column.
     const column = page.locator('[data-f="colr"]');
     expectRect(

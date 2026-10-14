@@ -1,6 +1,6 @@
 import { Check, Flag } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
-import { initialsFor, type MarkToneId } from "../../core/model/navigation";
+import { markInitialsFor, type MarkToneId } from "../../core/model/navigation";
 import type { MyWorkDue } from "../../core/model/my-work";
 import { MARK_TONE_CLASS } from "../shell/shell-models";
 import {
@@ -40,7 +40,7 @@ export function DepartmentMark({
         className,
       )}
     >
-      {initialsFor(name)}
+      {markInitialsFor(name)}
     </span>
   );
 }

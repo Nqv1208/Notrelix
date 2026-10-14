@@ -18,6 +18,7 @@ import {
 import {
   buildHomeFeed,
   buildInbox,
+  buildInboxSummary,
   buildMyWorkExtended,
   bulkWrite,
   createAssignedItem,
@@ -230,6 +231,15 @@ export const workFeedOperations = [
   }),
 
   // ── Inbox ────────────────────────────────────────────────────────────────
+  defineMockOperation({
+    id: "wsFeed.inbox.summary",
+    contract: { kind: "gap", gapId: INBOX },
+    method: "GET",
+    route: "/inbox/summary",
+    async handle({ store }) {
+      return ok(buildInboxSummary(store));
+    },
+  }),
   defineMockOperation<{ workspaceId: string }>({
     id: "wsFeed.inbox.list",
     contract: { kind: "gap", gapId: INBOX },

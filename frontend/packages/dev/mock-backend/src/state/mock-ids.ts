@@ -27,6 +27,8 @@ export const mockIds = {
     accounting: "mock-space-accounting",
     marketing: "mock-space-marketing",
     hr: "mock-space-hr",
+    itInfra: "mock-space-it-infra",
+    itApps: "mock-space-it-apps",
     executive: "mock-space-executive",
   },
   teams: {

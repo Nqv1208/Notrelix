@@ -15,6 +15,7 @@ import {
   type SpaceType,
   type SpaceVisibility,
 } from "../model/spaces";
+import { rememberMarkTone } from "../model/navigation";
 
 type SpaceTreeNodeDto =
   OperationResponse<
@@ -79,6 +80,7 @@ export function parseSpaceTree(items: unknown): SpaceNode[] {
     const type = parseSpaceType(raw?.spaceType);
     const visibility = parseSpaceVisibility(raw?.visibility);
     if (!raw?.id || !type || !visibility) continue;
+    rememberMarkTone(raw.id, (raw as { color?: unknown }).color);
     nodes.push({
       id: raw.id,
       parentId: raw.parentSpaceId ?? null,

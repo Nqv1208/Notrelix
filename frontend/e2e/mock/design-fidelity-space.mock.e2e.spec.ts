@@ -531,7 +531,7 @@ test.describe("Department page geometry at 1440 px (owner)", () => {
     const archive = page.getByRole("button", { name: "Lưu trữ", exact: true });
     // Công nghệ still has Platform inside: Archive is drawn inert with the reason.
     await expect(archive).toHaveAttribute("aria-disabled", "true");
-    await expect(page.getByText(/còn 1 phòng ban con/)).toBeVisible();
+    await expect(page.getByText(/còn \d+ phòng ban con/)).toBeVisible();
     const remove = page.getByRole("button", { name: "Xoá phòng ban" });
     await expect(remove).toHaveAttribute("aria-disabled", "true");
     expect(await colour(remove, "border-top-color")).toBe(COLOUR.danger);

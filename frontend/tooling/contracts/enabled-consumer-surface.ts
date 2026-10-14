@@ -713,6 +713,17 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
   },
   {
     context: "Workspace",
+    classification: "COMPATIBILITY_GAP_MOCKED",
+    consumerSymbol: "useInboxSummary",
+    consumerFile: "frontend/apps/web/src/shell/workspace/work-feed-bridge.ts",
+    capability: "Unread inbox entries per workspace and in total",
+    gapId: "CTR-GAP-WS-INBOX",
+    method: "GET",
+    pathTemplate: "/inbox/summary",
+    mutation: false,
+  },
+  {
+    context: "Workspace",
     classification: "CANONICAL_MOCKED",
     consumerSymbol: "useCompleteItem",
     consumerFile:

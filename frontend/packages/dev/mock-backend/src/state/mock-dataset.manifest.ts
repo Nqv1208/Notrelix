@@ -38,7 +38,8 @@ export const MOCK_DATASET_CARDINALITIES: Record<
   normal: {
     users: 4,
     primaryWorkspaceMemberships: 4,
-    workspacesVisibleToOwner: 2,
+    // Minh An Group, Đà Nẵng and Tân Lộc: the rail of the mockups.
+    workspacesVisibleToOwner: 3,
     boardsInPrimaryWorkspace: 2,
     listsPerPrimaryBoard: 4,
     cardsPerList: 6,

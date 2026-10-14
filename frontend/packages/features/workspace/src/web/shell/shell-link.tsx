@@ -4,6 +4,7 @@ import { cn } from "@notrelix/ui-web";
 import {
   identityToneFor,
   initialsFor,
+  markInitialsFor,
   NAVIGATION_RESOURCE_KIND,
   type IdentityTone,
   type MarkToneId,
@@ -97,7 +98,7 @@ export function IdentityMark({
         markTone ? MARK_TONE_CLASS[markTone] : IDENTITY_MARK_CLASS[tone],
       )}
     >
-      {initialsFor(name)}
+      {markTone ? markInitialsFor(name) : initialsFor(name)}
     </span>
   );
 }

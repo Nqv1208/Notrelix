@@ -26,7 +26,7 @@ test("Home resumes work: the greeting, the due windows and completing an item (W
   ).toBeVisible();
   const overdue = page.getByRole("region", { name: /^Overdue/ });
   await expect(overdue).toBeVisible();
-  await expect(page.getByRole("region", { name: /^Today/ })).toBeVisible();
+  await expect(page.getByRole("region", { name: /^Today \d/ })).toBeVisible();
   await overdue
     .getByRole("button", { name: /^Mark .* complete$/ })
     .first()

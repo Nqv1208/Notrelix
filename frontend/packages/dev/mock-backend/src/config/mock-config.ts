@@ -29,7 +29,9 @@ export type MockBusinessState =
   | "new-user"
   | "empty-workspace"
   | "permission-limited"
-  | "expired-session";
+  | "expired-session"
+  /** Final-Home `xong-viec`: today's two items were completed at 10:05. */
+  | "done-today";
 
 export type MockDensity = "tiny" | "normal" | "large" | "stress";
 
@@ -161,6 +163,7 @@ const VALID_STATES = new Set<string>([
   "empty-workspace",
   "permission-limited",
   "expired-session",
+  "done-today",
 ]);
 const VALID_DENSITIES = new Set<string>(["tiny", "normal", "large", "stress"]);
 const VALID_LATENCIES = new Set<string>(["instant", "fast", "normal", "slow"]);

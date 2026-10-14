@@ -75,7 +75,11 @@ import {
   INVOICE_FOLDER_ID,
   INVOICE_HISTORY,
 } from "./mock-docs-invoice";
-import { DEPARTMENT_BOARDS, departmentItemId } from "./mock-department-boards";
+import {
+  DEPARTMENT_BOARDS,
+  TECH_SIDE_BOARDS,
+  departmentItemId,
+} from "./mock-department-boards";
 
 export class MockSeedInvariantError extends Error {
   constructor(message: string) {
@@ -356,6 +360,8 @@ export class MockStore {
       } else if (isSecondary) {
         wName = "Đà Nẵng";
         id = mockIds.workspaces.secondary;
+      } else if (w === 2) {
+        wName = "Tân Lộc";
       }
 
       const ws = this.factories.workspace(w, {
@@ -709,6 +715,7 @@ export class MockStore {
         ...extra,
       });
     space(mockIds.spaces.engineering, "Công nghệ", "a0000", {
+      color: "blue",
       description: "Phát triển sản phẩm, hạ tầng và chất lượng.",
     });
     space(mockIds.spaces.platform, "Hạ tầng & bảo mật", "a0000", {
@@ -716,15 +723,28 @@ export class MockStore {
       type: "Folder",
       visibility: "Workspace",
     });
-    space(mockIds.spaces.accounting, "Kế toán", "a0001");
+    space(mockIds.spaces.itInfra, "Nhóm Hạ tầng", "a0001", {
+      parentId: mockIds.spaces.engineering,
+      type: "Folder",
+      visibility: "Workspace",
+    });
+    space(mockIds.spaces.itApps, "Nhóm Ứng dụng", "a0002", {
+      parentId: mockIds.spaces.engineering,
+      type: "Folder",
+    });
+    space(mockIds.spaces.accounting, "Kế toán", "a0001", { color: "gold" });
     space(mockIds.spaces.marketing, "Marketing", "a0002", {
+      color: "coral",
       visibility: "Workspace",
     });
     // The one department with nothing in it, as the Space mockup shows.
     space(mockIds.spaces.hr, "Nhân sự", "a0003", {
+      color: "sage",
       visibility: "Workspace",
     });
-    space(mockIds.spaces.executive, "Ban giám đốc", "a0004");
+    space(mockIds.spaces.executive, "Ban giám đốc", "a0004", {
+      color: "crimson",
+    });
     for (const id of Object.values(mockIds.spaces)) {
       this.spaces.insertMember({
         spaceId: id,
@@ -812,7 +832,7 @@ export class MockStore {
     this.insertPage({
       id: INVOICE_DOC_ID,
       workspaceId,
-      title: "Nhập hoá đơn đầu vào",
+      title: "Quy trình nhập hoá đơn đầu vào",
       icon: "FileText",
       parentId: INVOICE_FOLDER_ID,
       spaceId: mockIds.spaces.accounting,
@@ -982,14 +1002,14 @@ export class MockStore {
   }
 
   private seedDepartmentBoards(workspaceId: string): void {
-    for (const dept of DEPARTMENT_BOARDS) {
+    for (const dept of [...DEPARTMENT_BOARDS, ...TECH_SIDE_BOARDS]) {
       this.insertBoard({
         id: dept.id,
         workspaceId,
         title: dept.title,
         description: dept.description,
         background: { type: "color", value: dept.color },
-        visibility: "workspace",
+        visibility: dept.visibility ?? "workspace",
         isArchived: false,
         createdAt: "2026-09-15T02:00:00.000Z",
         updatedAt: "2026-10-12T01:00:00.000Z",
@@ -2472,6 +2492,18 @@ export class MockStore {
   private nextNavigationTimestamp(): string {
     this.navigationTick += 1;
     return this.clock.offsetSeconds(this.navigationTick);
+  }
+
+  /**
+   * The workspace's member total as `WorkspaceDto.memberCount` reports it. The
+   * primary workspace is the mockups' Minh An Group (86 people) while its
+   * member list stays small; every other workspace reports its list.
+   */
+  getWorkspaceMemberCount(workspaceId: string): number {
+    const listed = this.getWorkspaceMembers(workspaceId).length;
+    return workspaceId === mockIds.workspaces.primary
+      ? Math.max(listed, 86)
+      : listed;
   }
 
   /** True when the current member belongs to the workspace. */

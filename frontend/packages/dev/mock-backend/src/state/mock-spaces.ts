@@ -28,6 +28,8 @@ export interface MockSpaceRecord {
   position: string;
   version: number;
   createdAt: string;
+  /** Mark colour (gap field `color`, CTR-GAP-WS-COLOR): a mark tone id. */
+  color?: string | null;
 }
 
 export interface MockSpaceMemberRecord {
@@ -265,6 +267,7 @@ export class MockSpaceState {
         version: space.version,
         createdAt: space.createdAt,
         accessLevel: access,
+        color: space.color ?? null,
       }));
   }
 

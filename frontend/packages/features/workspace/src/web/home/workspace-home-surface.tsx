@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type FormEvent, type ReactNode } from "react";
 import {
   Calendar,
   CircleCheck,
@@ -55,6 +55,17 @@ export interface HomeReplyView {
   readonly text: string;
   /** Where "Xem" / "Mở tài liệu" lead. */
   readonly target?: WorkspaceDestination;
+  /** The item key the approval is about ("ERP-138"), for accessible names. */
+  readonly key?: string | null;
+}
+
+/** What the member can do with a reply request; every write is the host's. */
+export interface HomeReplyActions {
+  /** Requests in flight (their buttons wait). */
+  readonly pendingIds: ReadonlySet<string>;
+  readonly onApprove: (reply: HomeReplyView) => void;
+  readonly onRequestChanges: (reply: HomeReplyView) => void;
+  readonly onReply: (reply: HomeReplyView, text: string) => void;
 }
 
 /** One line of today's schedule (no producer yet). */
@@ -97,6 +108,12 @@ export interface WorkspaceHomeSurfaceProps {
    * filters show. `undefined` = no producer: the card and the chips stay out.
    */
   readonly replies?: SectionState<readonly HomeReplyView[]>;
+  readonly replyActions?: HomeReplyActions;
+  /** What the member already completed today (the empty "Hôm nay" line). */
+  readonly completedToday?: {
+    readonly count: number;
+    readonly time: string;
+  } | null;
   readonly approvalCount?: number;
   readonly mentionCount?: number;
   /** Today's schedule; `undefined` = no producer. */
@@ -328,6 +345,10 @@ function SectionError({
   );
 }
 
+function lowerFirst(text: string): string {
+  return text.charAt(0).toLowerCase() + text.slice(1);
+}
+
 function windowItems(
   groups: readonly MyWorkGroup[] | readonly MyWorkGroupView[],
   range: MyWorkGroup["range"],
@@ -432,15 +453,76 @@ function ContinueCard({
   );
 }
 
+function ReplyBox({
+  copy,
+  reply,
+  busy,
+  onSend,
+  onCancel,
+}: {
+  copy: WorkspaceHomeCopy;
+  reply: HomeReplyView;
+  busy: boolean;
+  onSend: (text: string) => void;
+  onCancel: () => void;
+}) {
+  const [text, setText] = useState("");
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    if (text.trim() && !busy) onSend(text.trim());
+  };
+  return (
+    <form
+      onSubmit={submit}
+      data-f="replybox"
+      className="mb-2 flex flex-col gap-1.5"
+    >
+      <textarea
+        autoFocus
+        value={text}
+        rows={2}
+        aria-label={formatCopy(copy.home.replies.replyLabel, {
+          name: reply.actorName,
+        })}
+        placeholder={formatCopy(copy.home.replies.replyPlaceholder, {
+          name: reply.actorName,
+        })}
+        onChange={(event) => setText(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === "Escape") onCancel();
+          if ((event.metaKey || event.ctrlKey) && event.key === "Enter")
+            submit(event);
+        }}
+        className="box-border w-full resize-none rounded-[8px] border border-line-strong bg-popover px-2.5 py-1.5 text-compact leading-[1.45] text-foreground outline-none focus:border-primary dark:bg-card"
+      />
+      <div className="flex gap-1.5">
+        <button
+          type="submit"
+          aria-disabled={!text.trim() || busy ? true : undefined}
+          className={SMALL_PRIMARY_CLASS}
+        >
+          {copy.home.replies.replySend}
+        </button>
+        <button type="button" onClick={onCancel} className={SMALL_BUTTON_CLASS}>
+          {copy.home.replies.replyCancel}
+        </button>
+      </div>
+    </form>
+  );
+}
+
 function ReplyCard({
   copy,
   navigation,
   replies,
+  actions,
 }: {
   copy: WorkspaceHomeCopy;
   navigation: ShellNavigation;
   replies: readonly HomeReplyView[];
+  actions?: HomeReplyActions;
 }) {
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
   return (
     <section
       aria-labelledby="home-replies"
@@ -494,21 +576,57 @@ function ReplyCard({
             <p className="mt-0.5 mb-2 text-nav leading-[1.5] font-normal">
               {reply.text}
             </p>
+            {replyingTo === reply.id && actions ? (
+              <ReplyBox
+                copy={copy}
+                reply={reply}
+                busy={actions.pendingIds.has(reply.id)}
+                onCancel={() => setReplyingTo(null)}
+                onSend={(text) => {
+                  actions.onReply(reply, text);
+                  setReplyingTo(null);
+                }}
+              />
+            ) : null}
             <div data-f="acts" className="flex flex-wrap gap-1.5">
               {reply.kind === "approve" ? (
                 <>
                   <button
                     type="button"
-                    aria-disabled="true"
-                    title={copy.home.addItemUnavailable}
+                    aria-disabled={
+                      !actions || actions.pendingIds.has(reply.id)
+                        ? true
+                        : undefined
+                    }
+                    title={actions ? undefined : copy.home.addItemUnavailable}
+                    aria-label={formatCopy(copy.home.replies.approveLabel, {
+                      key: reply.key ?? reply.actorName,
+                    })}
+                    onClick={
+                      actions && !actions.pendingIds.has(reply.id)
+                        ? () => actions.onApprove(reply)
+                        : undefined
+                    }
                     className={SMALL_PRIMARY_CLASS}
                   >
                     {copy.home.replies.approveAction}
                   </button>
                   <button
                     type="button"
-                    aria-disabled="true"
-                    title={copy.home.addItemUnavailable}
+                    aria-disabled={
+                      !actions || actions.pendingIds.has(reply.id)
+                        ? true
+                        : undefined
+                    }
+                    title={actions ? undefined : copy.home.addItemUnavailable}
+                    aria-label={formatCopy(copy.home.replies.changesLabel, {
+                      key: reply.key ?? reply.actorName,
+                    })}
+                    onClick={
+                      actions && !actions.pendingIds.has(reply.id)
+                        ? () => actions.onRequestChanges(reply)
+                        : undefined
+                    }
                     className={SMALL_BUTTON_CLASS}
                   >
                     {copy.home.replies.changesAction}
@@ -517,8 +635,9 @@ function ReplyCard({
               ) : (
                 <button
                   type="button"
-                  aria-disabled="true"
-                  title={copy.home.addItemUnavailable}
+                  aria-disabled={actions ? undefined : true}
+                  title={actions ? undefined : copy.home.addItemUnavailable}
+                  onClick={actions ? () => setReplyingTo(reply.id) : undefined}
                   className={SMALL_BUTTON_CLASS}
                 >
                   {copy.home.replies.replyAction}
@@ -723,10 +842,14 @@ export function WorkspaceHomeSurface(props: WorkspaceHomeSurfaceProps) {
   });
   const summary = loading
     ? formatCopy(copy.home.summaryLoading, { date: dateText })
-    : formatCopy(copy.home.summary, {
-        date: dateText,
-        open: `${openCount}${props.myWorkHasMore ? "+" : ""}`,
-      });
+    : formatCopy(
+        props.meetingCount ? copy.home.summaryMeetings : copy.home.summary,
+        {
+          date: dateText,
+          meetings: props.meetingCount ?? 0,
+          open: `${openCount}${props.myWorkHasMore ? "+" : ""}`,
+        },
+      );
   const greeting = props.greetingName
     ? formatCopy(copy.home.greeting[greetingPeriod(now)], {
         name: props.greetingName,
@@ -960,13 +1083,28 @@ export function WorkspaceHomeSurface(props: WorkspaceHomeSurfaceProps) {
                                 })
                               : copy.home.todayEmpty}
                           </b>
+                          {props.completedToday
+                            ? `${formatCopy(copy.home.todayEmptyDone, {
+                                count:
+                                  (
+                                    copy.home.numberWords as Record<
+                                      string,
+                                      string
+                                    >
+                                  )[String(props.completedToday.count)] ??
+                                  props.completedToday.count,
+                                time: props.completedToday.time,
+                              })} `
+                            : null}
                           {nextDue?.dueAt
                             ? formatCopy(copy.home.todayEmptyNext, {
-                                when: dueWords(
-                                  copy,
-                                  describeMyWorkDue(nextDue.dueAt, now),
-                                  { timeOnToday: false },
-                                ).text,
+                                when: lowerFirst(
+                                  dueWords(
+                                    copy,
+                                    describeMyWorkDue(nextDue.dueAt, now),
+                                    { timeOnToday: false },
+                                  ).text,
+                                ),
                               })
                             : null}
                         </div>
@@ -1046,6 +1184,30 @@ export function WorkspaceHomeSurface(props: WorkspaceHomeSurfaceProps) {
                       </div>
                     </Section>
                   ) : null}
+                  {noDate.length > 0 ? (
+                    <Section
+                      id="home-nodate"
+                      label={copy.home.sections.noDate}
+                      count={noDate.length}
+                    >
+                      <div
+                        data-f="rows"
+                        className={cn(PANEL_CLASS, "overflow-hidden")}
+                      >
+                        {noDate.map((item) => (
+                          <TaskRow
+                            key={item.id}
+                            item={item}
+                            copy={copy}
+                            navigation={navigation}
+                            now={now}
+                            completing={props.completingIds.has(item.id)}
+                            onComplete={props.onComplete}
+                          />
+                        ))}
+                      </div>
+                    </Section>
+                  ) : null}
                 </>
               )}
             </div>
@@ -1064,6 +1226,7 @@ export function WorkspaceHomeSurface(props: WorkspaceHomeSurfaceProps) {
                     copy={copy}
                     navigation={navigation}
                     replies={replies.data}
+                    actions={props.replyActions}
                   />
                 ) : null}
                 {agenda?.status === "loading" ? (

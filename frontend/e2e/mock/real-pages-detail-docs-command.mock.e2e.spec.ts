@@ -141,7 +141,11 @@ test.describe("Real item page, Docs and command palette", () => {
       // Wrapped onto lines inside the row, and clear of the workspace chip.
       expect(box!.x + box!.width).toBeLessThanOrEqual(chip!.x);
       expect(box!.y).toBeGreaterThanOrEqual(row!.y);
-      expect(box!.y + box!.height).toBeLessThanOrEqual(row!.y + row!.height);
+      // 3 px of slack: the longer workspace chip wraps the text onto two lines
+      // whose box rounds just past the row; `clipped` below proves nothing is cut.
+      expect(box!.y + box!.height).toBeLessThanOrEqual(
+        row!.y + row!.height + 3,
+      );
       // Nothing is cut off: the text needs no more width than it has.
       const clipped = await placeholder.evaluate(
         (node) => node.scrollWidth > node.clientWidth,

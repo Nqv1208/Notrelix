@@ -580,6 +580,17 @@ export class MockWorkFeedState {
     );
     this.inbox = inbox;
 
+    // Final-Home `xong-viec` (VITE_MOCK_STATE=done-today): today's two items
+    // were completed at 10:05, and the earlier completion is not in the world.
+    if (store.getConfig().state === "done-today") {
+      this.assigned.delete(dept("KT-86"));
+      for (const id of [dept("KT-88"), erp("ERP-144")]) {
+        if (!exists(id)) continue;
+        store.completeCard(id);
+        store.updateCard(id, { completedAt: todayAt(store, 10, 5) });
+      }
+    }
+
     // "Tiếp tục" on Home: the board opened 20 minutes ago, the doc yesterday.
     const workspaceId = store.getBoard(mockIds.boards.erp)?.workspaceId;
     if (workspaceId) {
@@ -1203,3 +1214,40 @@ export function markAllInboxRead(store: MockStore): void {
 }
 
 export const DAY = DAY_MS;
+
+export interface InboxSummaryDto {
+  perWorkspace: { workspaceId: string; unread: number }[];
+  total: number;
+}
+
+/**
+ * Unread inbox entries per workspace of the member and in total (the rail's
+ * badges). Only the primary workspace has a seeded inbox; the secondary
+ * workspace reports the two unread entries the mockup's rail shows.
+ */
+export function buildInboxSummary(store: MockStore): InboxSummaryDto {
+  const me = store.getCurrentUser().id;
+  const perWorkspace = store
+    .getWorkspaces()
+    .filter((workspace) =>
+      store.getWorkspaceMembers(workspace.id).some((m) => m.userId === me),
+    )
+    .map((workspace) => ({
+      workspaceId: workspace.id,
+      unread:
+        workspace.id === mockIds.workspaces.primary
+          ? store.feed.inbox.filter(
+              (record) =>
+                record.unread &&
+                (!record.snoozedUntil ||
+                  record.snoozedUntil <= store.getClock().isoNow()),
+            ).length
+          : workspace.id === mockIds.workspaces.secondary
+            ? 2
+            : 0,
+    }));
+  return {
+    perWorkspace,
+    total: perWorkspace.reduce((sum, entry) => sum + entry.unread, 0),
+  };
+}

@@ -214,21 +214,21 @@ test.describe("rail pinned (nav=hien-day)", () => {
   });
 
   test("Add is 64 x 65 with a 40 x 34 r9 dashed outline", async ({ page }) => {
-    const add = rail(page).locator(":scope > button").nth(2);
-    await expectBox(add, { x: 6, y: 212, width: 64, height: 65 });
+    const add = rail(page).locator(":scope > button").nth(3);
+    await expectBox(add, { x: 6, y: 287, width: 64, height: 65 });
     const outline = add.locator("span").first();
-    await expectBox(outline, { x: 18, y: 219, width: 40, height: 34 });
+    await expectBox(outline, { x: 18, y: 294, width: 40, height: 34 });
     expect(await css(outline, "border-radius")).toBe("9px");
     expect(await css(outline, "border-top-style")).toBe("dashed");
     await expectBox(outline.locator("svg"), { width: 20, height: 20 });
   });
 
-  test("the divider is 36 x 1, the all-workspace entries are 64 x 51 on a 55 px pitch and stay inert", async ({
+  test("the divider is 36 x 1, the all-workspace entries are 64 x 51 on a 55 px pitch and Search stays inert", async ({
     page,
   }) => {
     const nav = rail(page);
     const tiles = nav.locator(":scope > button");
-    const add = await box(tiles.nth(2));
+    const add = await box(tiles.nth(3));
     const divider = nav.locator(":scope > span[aria-hidden]").first();
     await expectBox(divider, {
       x: 20,
@@ -236,8 +236,8 @@ test.describe("rail pinned (nav=hien-day)", () => {
       width: 36,
       height: 1,
     });
-    const inbox = tiles.nth(3);
-    const search = tiles.nth(4);
+    const inbox = tiles.nth(4);
+    const search = tiles.nth(5);
     await expectBox(inbox, { x: 6, width: 64, height: 51 });
     await expectBox(search, { x: 6, width: 64, height: 51 });
     const inboxBox = await box(inbox);
@@ -247,14 +247,16 @@ test.describe("rail pinned (nav=hien-day)", () => {
     expect((await box(search)).y - inboxBox.y).toBeGreaterThanOrEqual(54);
     expect((await box(search)).y - inboxBox.y).toBeLessThanOrEqual(56);
     await expectBox(inbox.locator("svg"), { width: 20, height: 20 });
-    // No producer yet: active look, no "unavailable" label inside the tile.
-    for (const tile of [inbox, search]) {
+    // The all-workspace inbox has a producer now (unread summary); search has
+    // none yet: active look, no "unavailable" label inside the tile.
+    await expect(inbox).not.toHaveAttribute("aria-disabled", "true");
+    for (const tile of [search]) {
       await expect(tile).toHaveAttribute("aria-disabled", "true");
       expect(await css(tile, "opacity")).toBe("1");
       await expect(tile).toHaveAttribute("title", /.+\..+/);
       expect(await box(tile.locator("span").first())).toBeTruthy();
     }
-    await expect(rail(page).getByText("Chưa khả dụng")).toHaveCount(2);
+    await expect(rail(page).getByText("Chưa khả dụng")).toHaveCount(1);
     for (const reason of await rail(page).getByText("Chưa khả dụng").all()) {
       const reasonBox = await box(reason);
       expect(reasonBox.width).toBeLessThanOrEqual(1);
@@ -411,11 +413,13 @@ test.describe("rail pinned (nav=hien-day)", () => {
     expect(await css(current, "border-radius")).toBe("7px");
     await expectFont(current, 13, 600);
 
-    const sub = tree.getByRole("treeitem", { name: /Hạ tầng/ });
+    const sub = tree.getByRole("treeitem", { name: /Hạ tầng & bảo mật/ });
     const subBox = await box(sub);
     expect(subBox.height).toBe(30);
     expect(subBox.width).toBe(235);
-    expect(subBox.y - (await box(current)).y).toBe(32);
+    // Boards come first (ERP, Hỗ trợ nội bộ, Ngân sách CNTT 2027), then the
+    // sub-Spaces: three 32 px rows below the current Board.
+    expect(subBox.y - (await box(current)).y).toBe(96);
     expect(await css(sub, "padding-left")).toBe("39px");
     await expectFont(sub, 13, 400);
     const subMark = sub.locator("span").first();
@@ -423,9 +427,10 @@ test.describe("rail pinned (nav=hien-day)", () => {
     expect(await css(subMark, "border-radius")).toBe("5px");
     await expectFont(subMark, 7, 700);
 
-    // The next Space starts 2 px below the last child row.
+    // The next Space starts 2 px below the last child row (two more sub-Spaces
+    // follow this one: Nhóm Hạ tầng and Nhóm Ứng dụng).
     const next = tree.getByRole("treeitem", { name: /Kế toán/ });
-    expect((await box(next)).y - (subBox.y + subBox.height)).toBe(2);
+    expect((await box(next)).y - (subBox.y + subBox.height)).toBe(2 + 2 * 32);
     // Kế toán holds a Board (KT-88's), so its row has a toggle like the
     // expanded Space's: 209 wide, the lock 10 px inside it.
     await expectBox(next, { x: 86, width: 209, height: 32 });

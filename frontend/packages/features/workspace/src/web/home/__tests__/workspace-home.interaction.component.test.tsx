@@ -52,7 +52,9 @@ describe("WorkspaceHomeSurface", () => {
       screen.getByRole("heading", { level: 1, name: "Chào buổi sáng, Hà" }),
     ).toBeTruthy();
     expect(
-      screen.getByText("Thứ Hai, 12 tháng 10 · 7 việc đang mở"),
+      screen.getByText(
+        "Thứ Hai, 12 tháng 10 · 3 cuộc họp hôm nay, 7 việc đang mở",
+      ),
     ).toBeTruthy();
 
     const chips = screen.getByRole("group", { name: viCopy.home.chipsLabel });
@@ -193,7 +195,7 @@ describe("WorkspaceHomeSurface", () => {
     expect(today.textContent).toContain(
       "Xong hết việc đến hạn hôm nay · còn 1 việc quá hạn",
     );
-    expect(today.textContent).toContain("Việc tiếp theo đến hạn Thứ Tư 14/10.");
+    expect(today.textContent).toContain("Việc tiếp theo đến hạn thứ Tư 14/10.");
     expect(screen.queryByText(/đến hạn hôm nay$/)).toBeNull();
   });
 

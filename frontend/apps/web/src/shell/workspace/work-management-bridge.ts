@@ -132,6 +132,17 @@ export function useCompleteItem(workspaceId: string) {
     },
     onSettled: (_result, _error, { item }) => {
       void queryClient.invalidateQueries({ queryKey: key });
+      // The work feed's reads (CTR-GAP-WS-*) show the same item.
+      void queryClient.invalidateQueries({
+        queryKey: workspaceQueryKey(
+          workspaceId,
+          "work-management",
+          "my-work-extended",
+        ),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: workspaceQueryKey(workspaceId, "workspace-feed"),
+      });
       void queryClient.invalidateQueries({
         queryKey: wmQueryKeys.fullBoard(workspaceId, item.boardId),
       });

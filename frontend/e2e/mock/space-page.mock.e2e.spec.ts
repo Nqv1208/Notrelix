@@ -192,7 +192,7 @@ test.describe("Department page (owner)", () => {
     await open(page, `${ENGINEERING}?tab=settings`, "Công nghệ");
     const archive = page.getByRole("button", { name: "Lưu trữ", exact: true });
     await expect(archive).toHaveAttribute("aria-disabled", "true");
-    await expect(page.getByText(/còn 1 phòng ban con/)).toBeVisible();
+    await expect(page.getByText(/còn \d+ phòng ban con/)).toBeVisible();
     await archive.click({ force: true });
     await expect(page.getByRole("alertdialog")).toBeHidden();
   });

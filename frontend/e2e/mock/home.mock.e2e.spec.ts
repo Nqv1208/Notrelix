@@ -42,7 +42,9 @@ test.describe("Home (owner)", () => {
       }),
     ).toBeVisible();
     await expect(
-      page.getByText("Thứ Hai, 12 tháng 10 · 7 việc đang mở"),
+      page.getByText(
+        "Thứ Hai, 12 tháng 10 · 3 cuộc họp hôm nay, 7 việc đang mở",
+      ),
     ).toBeVisible();
   });
 
@@ -76,11 +78,11 @@ test.describe("Home (owner)", () => {
   }) => {
     await openHome(page);
     const today = page.getByRole("region", { name: /^Hôm nay/ });
-    // ERP-144 is due 12/10 17:00 on the Board table: today, never "Quá hạn".
+    // ERP-144 is due 12/10 (a date, no time) on the Board table: today, never "Quá hạn".
     const row = today.locator('[data-f="row"]', {
       hasText: "Kiểm thử phân hệ công nợ",
     });
-    await expect(row.locator('[data-f="due"]')).toHaveText("17:00");
+    await expect(row.locator('[data-f="due"]')).toHaveText("Hôm nay");
     const overdue = page.getByRole("region", { name: /^Quá hạn/ });
     await expect(overdue.locator('[data-f="due"]')).toHaveText(
       "Quá hạn 2 ngày",
@@ -129,23 +131,154 @@ test.describe("Home (owner)", () => {
     await expect(sameTitle).toHaveCount(before - 1);
   });
 
-  test("the cards without a producer say why, never fake a result", async ({
+  test("a row carries its Status, Priority, key and relationship", async ({
     page,
   }) => {
+    await openHome(page);
+    const row = page
+      .getByRole("region", { name: /^Quá hạn/ })
+      .locator('[data-f="row"]')
+      .first();
+    await expect(row.locator('[data-f="pill"]')).toHaveText("Đang làm");
+    await expect(row.getByText("ERP-142")).toBeVisible();
+    await expect(row.getByText("bạn đang theo dõi")).toBeVisible();
+    await expect(row.getByLabel(/Ưu tiên/)).toBeVisible();
+  });
+
+  test("all four chips and the meetings line show the member's day", async ({
+    page,
+  }) => {
+    await openHome(page);
+    const chips = page.getByRole("group", { name: "Lọc nhanh việc cần chú ý" });
+    await expect(
+      chips.getByRole("link", { name: "1 chờ bạn duyệt" }),
+    ).toBeVisible();
+    await expect(
+      chips.getByRole("link", { name: "1 nhắc tên bạn" }),
+    ).toBeVisible();
+    await expect(
+      page.getByText(
+        "Thứ Hai, 12 tháng 10 · 3 cuộc họp hôm nay, 7 việc đang mở",
+      ),
+    ).toBeVisible();
+  });
+
+  test("the schedule shows today's events with the now marker", async ({
+    page,
+  }) => {
+    await openHome(page);
+    const agenda = page.getByRole("region", { name: /Lịch hôm nay/ });
+    await expect(agenda).toContainText("Họp đứng nhóm ERP");
+    await expect(agenda).toContainText("15 phút · Phòng họp 3");
+    await expect(agenda).toContainText("1 giờ · trực tuyến · 6 người");
+    await expect(agenda.locator('[data-f="now"]')).toHaveText("10:40 bây giờ");
+  });
+
+  test("Duyệt approves the item and the card, chip and row follow", async ({
+    page,
+  }) => {
+    await openHome(page);
+    await page.getByRole("button", { name: "Duyệt ERP-138" }).click();
+    await expect(page.getByText("Đã duyệt ERP-138.")).toBeVisible();
+    await expect(
+      page
+        .getByRole("group", { name: "Lọc nhanh việc cần chú ý" })
+        .getByText("chờ bạn duyệt"),
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole("link", {
+        name: "Thiết lập đăng nhập một lần (SSO) cho toàn công ty",
+        exact: true,
+      }),
+    ).toHaveCount(0);
+  });
+
+  test("Yêu cầu sửa returns the item to its owner and clears the card", async ({
+    page,
+  }) => {
+    await openHome(page);
+    await page.getByRole("button", { name: "Yêu cầu sửa ERP-138" }).click();
+    await expect(page.getByText("Đã yêu cầu sửa ERP-138.")).toBeVisible();
+    await expect(page.getByText("gửi duyệt").first()).toHaveCount(0);
+    await expect(
+      page.getByRole("button", { name: "Duyệt ERP-138" }),
+    ).toHaveCount(0);
+  });
+
+  test("Trả lời posts a reply to the mention and clears it", async ({
+    page,
+  }) => {
+    await openHome(page);
+    await page.getByRole("button", { name: "Trả lời", exact: true }).click();
+    await page
+      .getByRole("textbox", { name: /Trả lời Lý Thu Trang/ })
+      .fill("Em đồng ý đề xuất 3 ngày.");
+    await page.getByRole("button", { name: "Gửi" }).click();
+    await expect(
+      page.getByText("Đã gửi trả lời cho Lý Thu Trang."),
+    ).toBeVisible();
+    await expect(page.getByText("@Hà chị xem giúp")).toHaveCount(0);
+  });
+
+  test("Thêm công việc creates an item assigned to the member", async ({
+    page,
+  }) => {
+    await openHome(page);
+    await page.getByRole("button", { name: "Thêm công việc" }).click();
+    await page.getByLabel("Tên việc").fill("Gửi biên bản họp UAT");
+    await page.getByRole("button", { name: "Tạo việc" }).click();
+    await expect(
+      page.getByText("Đã tạo Gửi biên bản họp UAT và giao cho bạn."),
+    ).toBeVisible();
+    await expect(page.getByText(/8 việc đang mở/)).toBeVisible();
+  });
+
+  test("Tiếp tục lists the recents with their department", async ({ page }) => {
+    await openHome(page);
+    const recents = page.locator('[data-f="contbox"]');
+    await expect(recents).toContainText("Triển khai ERP Q4");
+    await expect(recents).toContainText("Board · Công nghệ · 20 phút trước");
+    await expect(recents).toContainText("Tài liệu · Kế toán");
+  });
+
+  test("Lịch của tôi has no producer and says why", async ({ page }) => {
     await openHome(page);
     const calendar = page.getByRole("button", { name: "Lịch của tôi" });
     await expect(calendar).toHaveAttribute("aria-disabled", "true");
     await expect(calendar).toHaveAttribute("title", /chưa có/);
-    const add = page.getByRole("button", { name: "Thêm công việc" });
-    await expect(add).toHaveAttribute("aria-disabled", "true");
-    await add.click({ force: true });
-    await expect(page).toHaveURL(new RegExp(`${HOME}$`));
-    // No approvals, mentions or schedule exist: no card, no count.
+  });
+
+  test("a plain browser (no forced clock or locale) shows the demo day in Vietnamese", async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({
+      locale: "en-US",
+      timezoneId: "Asia/Ho_Chi_Minh",
+      viewport: { width: 1440, height: 900 },
+    });
+    const page = await context.newPage();
+    await page.goto(HOME);
     await expect(
-      page.getByRole("region", { name: /Cần bạn phản hồi/ }),
-    ).toHaveCount(0);
+      page.getByRole("heading", { level: 1, name: "Chào buổi sáng, Hà" }),
+    ).toBeVisible();
     await expect(
-      page.getByRole("region", { name: /Lịch hôm nay/ }),
-    ).toHaveCount(0);
+      page.getByText(
+        "Thứ Hai, 12 tháng 10 · 3 cuộc họp hôm nay, 7 việc đang mở",
+      ),
+    ).toBeVisible();
+    await expect(page.getByText("Quá hạn 2 ngày")).toBeVisible();
+    await expect(page.locator('[data-f="now"]')).toContainText("10:4");
+    await context.close();
+  });
+
+  test("an item added without a due date is listed under Chưa có hạn", async ({
+    page,
+  }) => {
+    await openHome(page);
+    await page.getByRole("button", { name: "Thêm công việc" }).click();
+    await page.getByLabel("Tên việc").fill("Gửi biên bản họp UAT");
+    await page.getByRole("button", { name: "Tạo việc" }).click();
+    const region = page.getByRole("region", { name: /^Chưa có hạn/ });
+    await expect(region).toContainText("Gửi biên bản họp UAT");
   });
 });

@@ -121,6 +121,17 @@ function versionedWriteResult(
   }
 }
 
+/** Gap field `color` (CTR-GAP-WS-COLOR): the mockups' workspace mark colours. */
+function workspaceColor(id: string): string | null {
+  return id === "mock-workspace-primary"
+    ? "blue"
+    : id === "mock-workspace-secondary"
+      ? "sage"
+      : id === "ws-0002" || id.endsWith("0002")
+        ? "gold"
+        : null;
+}
+
 /** `WorkspaceDto` as the producer serializes it (version included). */
 function workspaceDto(store: MockStore, workspaceId: string) {
   const w = store.getWorkspace(workspaceId)!;
@@ -131,7 +142,8 @@ function workspaceDto(store: MockStore, workspaceId: string) {
     description: store.getWorkspaceDescription(w.id),
     plan: w.plan,
     icon: w.icon,
-    memberCount: store.getWorkspaceMembers(w.id).length,
+    memberCount: store.getWorkspaceMemberCount(w.id),
+    color: workspaceColor(w.id),
     isPersonal: w.isPersonal,
     isArchived: false,
     version: store.getWorkspaceVersion(w.id),

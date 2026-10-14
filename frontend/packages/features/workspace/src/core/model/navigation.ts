@@ -215,7 +215,24 @@ export type MarkToneId = (typeof MARK_TONE_IDS)[number];
  * (gap register), the tone is derived from the id.
  */
 export function markToneFor(id: string): MarkToneId {
-  return MARK_TONE_IDS[toneHash(id) % MARK_TONE_IDS.length] ?? "blue";
+  return (
+    chosenMarkTones.get(id) ??
+    MARK_TONE_IDS[toneHash(id) % MARK_TONE_IDS.length] ??
+    "blue"
+  );
+}
+
+/**
+ * Colours the producer sent for a workspace or Space (gap field `color`,
+ * CTR-GAP-WS-COLOR). TRANSITION: the generated contract has no colour, so the
+ * API parsers remember what the mock (later the producer) sends here and
+ * {@link markToneFor} prefers it to the id hash.
+ */
+const chosenMarkTones = new Map<string, MarkToneId>();
+
+export function rememberMarkTone(id: string, value: unknown): void {
+  if ((MARK_TONE_IDS as readonly unknown[]).includes(value))
+    chosenMarkTones.set(id, value as MarkToneId);
 }
 
 /** One or two uppercase initials for an identity mark (letters/digits only). */
@@ -232,6 +249,46 @@ export function initialsFor(name: string): string {
   const first = parts[0] ?? "";
   const second = parts.length > 1 ? (parts[parts.length - 1] ?? "") : "";
   return `${first}${second}`.toUpperCase();
+}
+
+/** Words that only describe the kind of mark ("Nhóm Hạ tầng", "Minh An Group"). */
+const GENERIC_MARK_WORDS = new Set([
+  "nhom",
+  "ban",
+  "phong",
+  "team",
+  "group",
+  "department",
+]);
+
+/**
+ * Initials of a workspace or department mark, as the design draws them: the
+ * first letters of the first two words that name it, without a leading or
+ * trailing kind word, and without tone marks on the vowels ("Minh An Group" is
+ * "MA", "Nhóm Hạ tầng" is "HT", "Nhóm Ứng dụng" is "UD", "Ban giám đốc" is
+ * "GĐ", "Đà Nẵng" is "ĐN").
+ */
+export function markInitialsFor(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  const plain = (word: string) => normalizeSearchText(word);
+  const named =
+    words.length <= 2
+      ? words
+      : words.filter((word, index) => {
+          const generic = GENERIC_MARK_WORDS.has(plain(word));
+          return !(generic && (index === 0 || index === words.length - 1));
+        });
+  const use = (named.length >= 2 ? named : words).slice(0, 2);
+  const letters = use
+    .map(
+      (word) =>
+        Array.from(word.normalize("NFD").replace(/[\u0300-\u036f]/g, ""))[0],
+    )
+    .filter(
+      (char): char is string =>
+        char !== undefined && /[\p{L}\p{N}]/u.test(char),
+    );
+  return letters.length === 0 ? "?" : letters.join("").toUpperCase();
 }
 
 /** Case- and diacritic-insensitive text for matching ("Đội" ~ "doi"). */

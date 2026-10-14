@@ -5,6 +5,15 @@ const scenario = process.env.VITE_MOCK_STATE ?? "default";
 test("renders a production Documents route through mock transport", async ({
   page,
 }) => {
+  // The editor chrome under test is English; the mock opens in Vietnamese
+  // unless a locale is stored.
+  await page.addInitScript(() => {
+    try {
+      window.localStorage.setItem("notrelix-locale", "en");
+    } catch {
+      // Private mode: the default applies.
+    }
+  });
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
 
@@ -39,6 +48,13 @@ test("renders a production Documents route through mock transport", async ({
 test("edits and checks off a document of the Kế toán department", async ({
   page,
 }) => {
+  await page.addInitScript(() => {
+    try {
+      window.localStorage.setItem("notrelix-locale", "en");
+    } catch {
+      // Private mode: the default applies.
+    }
+  });
   test.skip(scenario !== "default", "Needs the default world data.");
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
@@ -47,12 +63,12 @@ test("edits and checks off a document of the Kế toán department", async ({
     "/workspaces/mock-workspace-primary/docs/mock-doc-invoice-process",
   );
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "Nhập hoá đơn đầu vào",
+    "Quy trình nhập hoá đơn đầu vào",
   );
 
   // The department tree under Docs shows the open page as the current one.
   await expect(
-    page.getByRole("link", { name: "Nhập hoá đơn đầu vào" }).first(),
+    page.getByRole("link", { name: "Quy trình nhập hoá đơn đầu vào" }).first(),
   ).toHaveAttribute("aria-current", "page");
 
   // A heading edit is saved: the producer answers and the page shows its text.

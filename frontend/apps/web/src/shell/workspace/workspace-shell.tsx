@@ -15,7 +15,7 @@ import {
   buildWorkspaceBreadcrumb,
   canCreateRootSpace,
   identityToneFor,
-  initialsFor,
+  markInitialsFor,
   markToneFor,
   spaceAncestors,
   spacePath,
@@ -63,6 +63,7 @@ import { useBoardPlacements } from "./board-placement-bridge";
 import { buildSidebarDocs } from "./docs-sidebar-tree";
 import { CreateWorkspaceDialog } from "./create-workspace-dialog";
 import { useSystemRailPreference } from "./use-system-rail-preference";
+import { useInboxSummary } from "./work-feed-bridge";
 import { flattenMyWork, useMyWorkItems } from "./work-management-bridge";
 import { useCommandPaletteData } from "./use-command-palette-data";
 import { useCreateResource } from "./use-create-resource";
@@ -348,7 +349,9 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
                 !node.isArchived,
             ).length
           : null,
-        memberCount: members.data ? members.data.length : null,
+        // `WorkspaceDto.memberCount` is the total; the member list may be shorter.
+        memberCount:
+          workspace.memberCount ?? (members.data ? members.data.length : null),
       }
     : null;
   const shellUser = user
@@ -366,21 +369,28 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
   const rail = useSystemRailPreference(storage);
   const isMobile = useIsMobile();
   const railOpener = useRef<HTMLElement | null>(null);
+  const inboxSummary = useInboxSummary();
   const railWorkspaces = useMemo<SystemRailWorkspace[]>(() => {
     const list = workspaces.data ?? (workspace ? [workspace] : []);
     return list.map((item) => ({
       id: item.id,
       name: item.name,
-      shortName: item.name,
-      initials: initialsFor(item.name),
+      // The label under the mark: the first two words ("Minh An").
+      shortName: item.name.trim().split(/\s+/).slice(0, 2).join(" "),
+      initials: markInitialsFor(item.name),
       tone: markToneFor(item.id),
       // The workspace list carries no role; only the current role is known.
       isGuest: item.id === workspaceId && role === "guest",
-      // No per-workspace unread producer yet (gap register).
-      unread: null,
+      // The current workspace's count is the sidebar's; the rail shows the others.
+      unread:
+        item.id === workspaceId
+          ? null
+          : (inboxSummary.data?.perWorkspace.find(
+              (entry) => entry.workspaceId === item.id,
+            )?.unread ?? null),
       current: item.id === workspaceId,
     }));
-  }, [role, workspace, workspaceId, workspaces.data]);
+  }, [inboxSummary.data, role, workspace, workspaceId, workspaces.data]);
 
   const openSystemRail = useCallback(() => {
     if (isMobile || rail.presentation === "pinned") {
@@ -545,9 +555,8 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
       presentation={presentation}
       workspaces={railWorkspaces}
       user={shellUser}
-      // No all-workspace inbox producer yet: the entry shows why.
-      allInboxAvailable={false}
-      allInboxUnread={null}
+      allInboxAvailable
+      allInboxUnread={inboxSummary.data?.total ?? null}
       onSwitchWorkspace={switchWorkspace}
       onCreateWorkspace={() => {
         if (rail.presentation === "overlay") rail.close();
@@ -584,8 +593,13 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
         navigation={navigation}
         workspace={currentWorkspace}
         location={location}
-        // No inbox producer yet (gap register): no badge.
-        counts={{ myWork: myWorkCount, inbox: null }}
+        counts={{
+          myWork: myWorkCount,
+          inbox:
+            inboxSummary.data?.perWorkspace.find(
+              (entry) => entry.workspaceId === workspaceId,
+            )?.unread ?? null,
+        }}
         pinned={pinnedState}
         onTogglePin={(entry, pinned) =>
           togglePin.mutate({

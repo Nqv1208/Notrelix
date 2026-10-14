@@ -47,10 +47,9 @@ export function toMyWorkGroups(
   }));
 }
 
-/** The name a greeting uses: the given name (Vietnamese: last word; English: first). */
+/** The name a greeting uses: the given name, the last word, in every locale. */
 export function greetingNameFor(
   fullName: string | null | undefined,
-  locale: string,
 ): string | null {
   const words = (fullName ?? "")
     .replace(/\s*\([^)]*\)\s*$/, "")
@@ -58,5 +57,5 @@ export function greetingNameFor(
     .split(/\s+/)
     .filter(Boolean);
   if (words.length === 0) return null;
-  return (locale === "vi" ? words[words.length - 1] : words[0]) ?? null;
+  return words[words.length - 1] ?? null;
 }

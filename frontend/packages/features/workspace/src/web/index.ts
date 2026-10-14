@@ -123,8 +123,16 @@ export { useWorkspaceHomeCopy } from "./home/use-workspace-home-copy";
 export * from "./home/home-models";
 export {
   WorkspaceHomeSurface,
+  type HomeAgenda,
+  type HomeAgendaEntry,
+  type HomeReplyActions,
+  type HomeReplyView,
   type WorkspaceHomeSurfaceProps,
 } from "./home/workspace-home-surface";
+export {
+  AddItemDialog,
+  type AddItemDialogProps,
+} from "./home/create-resource-dialog";
 export {
   WorkspaceMyWorkSurface,
   type WorkspaceMyWorkSurfaceProps,
@@ -266,3 +274,7 @@ export {
   type AddTeamMemberInput,
   type WorkspaceTeamSurfaceProps,
 } from "./teams/workspace-team-surface";
+export type {
+  MyWorkCreateBoard,
+  MyWorkWaitingView,
+} from "./home/my-work-types";

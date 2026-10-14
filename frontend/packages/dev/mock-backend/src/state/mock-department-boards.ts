@@ -32,6 +32,8 @@ export interface DepartmentBoard {
   readonly statusColumnId: string;
   readonly statusPrefix: string;
   readonly priorityColumnId: string;
+  /** Defaults to the whole workspace. */
+  readonly visibility?: "private" | "workspace";
   readonly listId: string;
   readonly listTitle: string;
   readonly items: readonly DepartmentItem[];
@@ -99,6 +101,39 @@ export const DEPARTMENT_BOARDS: readonly DepartmentBoard[] = [
         due: "16/10",
       },
     ],
+  },
+];
+
+/** The other Boards of the Công nghệ department the mockups' sidebar lists. */
+export const TECH_SIDE_BOARDS: readonly DepartmentBoard[] = [
+  {
+    id: "mock-board-it-support",
+    title: "Hỗ trợ nội bộ",
+    description: "Yêu cầu hỗ trợ CNTT từ các phòng ban.",
+    prefix: "HT",
+    color: "#1E6FD0",
+    spaceId: mockIds.spaces.engineering,
+    statusColumnId: "mock-it-col-status",
+    statusPrefix: "mock-it-status",
+    priorityColumnId: "mock-it-col-priority",
+    listId: "mock-it-list-requests",
+    listTitle: "Yêu cầu",
+    items: [],
+  },
+  {
+    id: "mock-board-it-budget",
+    title: "Ngân sách CNTT 2027",
+    description: "Dự toán ngân sách CNTT năm 2027.",
+    prefix: "NS",
+    color: "#1E6FD0",
+    spaceId: mockIds.spaces.engineering,
+    statusColumnId: "mock-itb-col-status",
+    statusPrefix: "mock-itb-status",
+    priorityColumnId: "mock-itb-col-priority",
+    listId: "mock-itb-list-plan",
+    listTitle: "Dự toán",
+    visibility: "private",
+    items: [],
   },
 ];
 

@@ -1,7 +1,7 @@
 import * as React from "react";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
-import { initialsFor } from "../../core/model/navigation";
+import { markInitialsFor } from "../../core/model/navigation";
 import { ShellLink } from "./shell-link";
 import {
   MARK_TONE_CLASS,
@@ -151,7 +151,7 @@ export function SidebarDocsTreeNav(props: SidebarDocsTreeNavProps) {
                     MARK_TONE_CLASS[department.markTone],
                   )}
                 >
-                  {initialsFor(department.name)}
+                  {markInitialsFor(department.name)}
                 </span>
                 <span className="truncate">{department.name}</span>
               </ShellLink>

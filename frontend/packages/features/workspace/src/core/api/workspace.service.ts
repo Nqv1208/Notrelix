@@ -3,6 +3,7 @@ import type {
   OperationResponse,
 } from "@notrelix/contracts";
 import { parseWorkspaceRole } from "../model/members";
+import { rememberMarkTone } from "../model/navigation";
 import type {
   CreateWorkspaceInput,
   UpdateWorkspaceProfileInput,
@@ -60,6 +61,7 @@ export function parseWorkspaceSummary(payload: unknown): WorkspaceSummary {
   const summary = payload as Omit<WorkspaceSummary, "version"> &
     Pick<WorkspaceDto, "version">;
   const { version, ...rest } = summary;
+  rememberMarkTone(rest.id, (payload as { color?: unknown }).color);
   return typeof version === "number" && version > 0
     ? { ...rest, version }
     : rest;
