@@ -46,9 +46,7 @@ const header: BoardHeaderData = {
       { kind: "space", id: "space-cn", name: "Phòng Công nghệ", count: 4 },
     ],
   },
-  people: [
-    { id: "user-ha", name: "Nguyễn Thu Hà", initials: "HA", tone: "sage" },
-  ],
+  people: [{ id: "user-ha", name: "Nguyễn Thu Hà", initials: "HA" }],
   onCopyLink: () => undefined,
 };
 

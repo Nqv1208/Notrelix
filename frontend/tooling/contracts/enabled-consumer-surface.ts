@@ -747,6 +747,18 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     mutation: false,
   },
   {
+    context: "WorkManagement",
+    classification: "COMPATIBILITY_GAP_MOCKED",
+    consumerSymbol: "useMoveItemToBoard",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/item-extras.api.ts",
+    capability: "Move an item to another board (the table's bulk bar)",
+    gapId: "CTR-GAP-WM-TABLE-BULK",
+    method: "POST",
+    pathTemplate: "/board-items/{id}/move-to-board",
+    mutation: true,
+  },
+  {
     context: "Workspace",
     classification: "CANONICAL_MOCKED",
     consumerSymbol: "useCompleteItem",

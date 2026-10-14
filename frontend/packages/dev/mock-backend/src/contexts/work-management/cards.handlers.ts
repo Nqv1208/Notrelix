@@ -10,6 +10,7 @@
  *   cards.archive           — POST /board-items/:id/archive
  *   cards.duplicate         — POST /board-items/:id/duplicate (returns string cardId)
  *   cards.move              — POST /board-items/:id/move
+ *   cards.moveToBoard       — POST /board-items/:id/move-to-board (gap)
  *   cards.fieldValues       — PATCH /board-items/:id/field-values
  *   cards.status            — PATCH /board-items/:id/status
  *   cards.attachments       — GET /board-items/:id/attachments
@@ -355,6 +356,36 @@ export const cardsOperations = [
             version: moved.version,
           });
       }
+    },
+  }),
+
+  // ─── POST /board-items/:id/move-to-board ────────────────────────────────────────
+  // Gap CTR-GAP-WM-TABLE-BULK: the table's "Chuyển board".
+
+  defineMockOperation<{ id: string }, { boardId?: string }, void>({
+    id: "wm.boardItems.moveToBoard",
+    contract: { kind: "gap", gapId: "CTR-GAP-WM-TABLE-BULK" },
+    method: "POST",
+    route: "/board-items/:id/move-to-board",
+    async handle({ params, body, store, request }) {
+      const missingKey = missingIdempotencyKey(request);
+      if (missingKey) return missingKey;
+      const targetBoardId = (body ?? {}).boardId;
+      if (!targetBoardId)
+        return badRequest({ boardId: ["The target board is required."] });
+      const item = store.getCard(params.id);
+      if (!item) return notFound("Card not found");
+      // Editors and managers of both boards.
+      if (
+        !canWriteBoardItems(item.boardId, store) ||
+        !canWriteBoardItems(targetBoardId, store)
+      )
+        return forbidden();
+      const moved = store.moveItemToBoard(params.id, targetBoardId);
+      if (moved.result === "not-found") return notFound("Card not found");
+      if (moved.result === "invalid")
+        return badRequest({ boardId: ["Not another board with groups."] });
+      return noContent();
     },
   }),
 

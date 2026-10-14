@@ -7,7 +7,6 @@ import {
 } from "@notrelix/features-workspace/web";
 import {
   buildSpaceIndex,
-  identityToneFor,
   initialsFor,
   MARK_TONE_IDS,
   markInitialsFor,
@@ -101,7 +100,6 @@ export function useBoardHeaderData(
         id: member.userId,
         name: member.name,
         initials: member.initials || initialsFor(member.name),
-        tone: identityToneFor(member.userId),
       })),
       onOpenShare,
       onOpenSpace: spaceNode

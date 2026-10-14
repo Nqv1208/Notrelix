@@ -569,3 +569,145 @@ describe("MainTableSurface", () => {
     expect(copy.footer.showDone).toBe("Hiện việc đã xong");
   });
 });
+
+describe("MainTableSurface in-place edits and bulk people and boards", () => {
+  const members = [
+    { userId: "u-ha", name: "Nguyễn Thu Hà", initials: "HA" },
+    { userId: "u-quan", name: "Trần Minh Quân", initials: "MQ" },
+  ];
+  const editors = () => ({
+    members,
+    priorities: [
+      { id: "p-urgent", label: "Khẩn" },
+      { id: "p-high", label: "Cao" },
+    ],
+    onAssignee: vi.fn(),
+    onDue: vi.fn(),
+    onPriority: vi.fn(),
+  });
+
+  it("the assignee cell lists the people and a pick sends the person", () => {
+    const ed = editors();
+    renderTable({ ...erpTableProps(), editors: ed });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Đổi người phụ trách của ERP-153" }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: /Trần Minh Quân/ }));
+    expect(ed.onAssignee).toHaveBeenCalledWith(
+      ERP_TABLE_ITEM("ERP-153"),
+      "u-quan",
+    );
+  });
+
+  it("the assignee list can clear the assignee", () => {
+    const ed = editors();
+    renderTable({ ...erpTableProps(), editors: ed });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Đổi người phụ trách của ERP-151" }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: /Chưa giao/ }));
+    expect(ed.onAssignee).toHaveBeenCalledWith(ERP_TABLE_ITEM("ERP-151"), null);
+  });
+
+  it("the priority cell offers the board's options", () => {
+    const ed = editors();
+    renderTable({ ...erpTableProps(), editors: ed });
+    fireEvent.keyDown(
+      screen.getByRole("button", { name: "Đổi ưu tiên của ERP-153" }),
+      { key: "Enter" },
+    );
+    fireEvent.click(screen.getByRole("menuitem", { name: "Khẩn" }));
+    expect(ed.onPriority).toHaveBeenCalledWith(
+      ERP_TABLE_ITEM("ERP-153"),
+      "p-urgent",
+    );
+  });
+
+  it("the due cell clears the date", () => {
+    const ed = editors();
+    renderTable({ ...erpTableProps(), editors: ed });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Đổi hạn của ERP-151" }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Bỏ hạn" }));
+    expect(ed.onDue).toHaveBeenCalledWith(ERP_TABLE_ITEM("ERP-151"), null);
+  });
+
+  it("a read-only viewer gets no editor buttons", () => {
+    renderTable({ ...erpTableReadOnlyProps(), editors: editors() });
+    expect(
+      screen.queryByRole("button", { name: /Đổi người phụ trách của/ }),
+    ).toBeNull();
+    expect(screen.queryByRole("button", { name: /Đổi hạn của/ })).toBeNull();
+  });
+
+  it("the bulk bar assigns the selection and moves it to a board", () => {
+    const onAssign = vi.fn();
+    const onMove = vi.fn();
+    renderTable({
+      ...erpTableSelectedProps(),
+      bulkAssign: { members, onAssign },
+      bulkMove: {
+        boards: [{ id: "board-support", title: "Hỗ trợ nội bộ" }],
+        onMove,
+      },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /^Giao cho/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Nguyễn Thu Hà" }));
+    expect(onAssign).toHaveBeenCalledWith("u-ha");
+    fireEvent.click(screen.getByRole("button", { name: /^Chuyển board/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Hỗ trợ nội bộ" }));
+    expect(onMove).toHaveBeenCalledWith("board-support");
+  });
+
+  it("without a write behind them Giao cho and Chuyển board stay disabled with the reason", () => {
+    renderTable(erpTableSelectedProps());
+    for (const name of [/^Giao cho/, /^Chuyển board/]) {
+      const button = screen.getByRole("button", { name });
+      expect(button.getAttribute("aria-disabled")).toBe("true");
+    }
+  });
+
+  it("the row menu opens the item, duplicates, copies the link and archives", () => {
+    const rowActions = {
+      onDuplicate: vi.fn(),
+      onCopyLink: vi.fn(),
+      onArchive: vi.fn(),
+    };
+    const { props } = renderTable({ ...erpTableProps(), rowActions });
+    fireEvent.contextMenu(row("ERP-144"));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Nhân bản" }));
+    expect(rowActions.onDuplicate).toHaveBeenCalledWith(
+      ERP_TABLE_ITEM("ERP-144"),
+    );
+    fireEvent.contextMenu(row("ERP-144"));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Lưu trữ" }));
+    expect(rowActions.onArchive).toHaveBeenCalledWith(
+      ERP_TABLE_ITEM("ERP-144"),
+    );
+    fireEvent.contextMenu(row("ERP-144"));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Mở chi tiết" }));
+    expect(props.onOpenItem).toHaveBeenCalledWith(ERP_TABLE_ITEM("ERP-144"));
+  });
+
+  it("the footer counts the items just archived", () => {
+    renderTable(erpTableArchivedProps());
+    expect(
+      screen.getByText(
+        "9 công việc đang hiện · 5 ẩn bởi bộ lọc · 2 vừa lưu trữ",
+      ),
+    ).toBeTruthy();
+  });
+
+  it("the empty note names the one person the filter narrows to", () => {
+    renderTable({
+      ...erpTableNoResultsProps(),
+      noResultsAssignee: "Đặng Minh Tuấn",
+    });
+    expect(
+      screen.getByText(
+        "Đặng Minh Tuấn chưa phụ trách việc nào chưa xong trên board này.",
+      ),
+    ).toBeTruthy();
+  });
+});

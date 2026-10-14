@@ -24,6 +24,11 @@ export interface Board {
   members: BoardMember[];
   createdAt: string;
   updatedAt?: string;
+  /**
+   * Whether the caller may add items to this board (workspace board list only;
+   * gap `CTR-GAP-WM-TABLE-BULK`). Absent = not known.
+   */
+  canAddItems?: boolean;
 }
 
 export type ViewMode = "table" | "kanban" | "calendar" | "timeline";
@@ -83,6 +88,8 @@ export interface BoardDtoApi {
   memberCount: number;
   listCount: number;
   createdAt: string;
+  /** Gap field (`CTR-GAP-WM-TABLE-BULK`): the caller may add items. */
+  canAddItems?: boolean;
 }
 
 export interface FullBoardDtoApi {

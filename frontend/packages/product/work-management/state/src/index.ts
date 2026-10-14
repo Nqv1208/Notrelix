@@ -15,6 +15,7 @@ export * from "./api/field-option.api";
 export * from "./api/group.api";
 export * from "./api/item.api";
 export * from "./api/item-comments.api";
+export * from "./api/item-extras.api";
 export * from "./api/label.api";
 export * from "./api/list.api";
 export * from "./services";

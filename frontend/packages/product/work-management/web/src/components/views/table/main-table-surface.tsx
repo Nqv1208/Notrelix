@@ -21,6 +21,7 @@ import {
 import { TableAddRow, TableGroupHeader } from "./table-group-section";
 import { TableHeaderRow } from "./table-header-row";
 import type { TableGroupModel, TableStatusOption } from "./table-model";
+import type { TableEditors } from "./table-cell-editors";
 import { TableRow } from "./table-row";
 import { TableEmpty, TableFooter, TableNoResults } from "./table-states";
 import { MainTableToolbar, type MainTableToolbarProps } from "./table-toolbar";
@@ -44,6 +45,8 @@ export interface MainTableSurfaceProps {
   openItemId?: string | null;
   /** The viewer may change status and due date of items. */
   canEdit: boolean;
+  /** In-place editors of assignee, due date and priority; absent = read-only. */
+  editors?: TableEditors;
   /** The viewer may add items. */
   canCreate: boolean;
   /** The viewer may archive items. */
@@ -66,6 +69,8 @@ export interface MainTableSurfaceProps {
   canShowDone: boolean;
   /** Search or filter leave nothing to show. */
   noResults: boolean;
+  /** The one person the filter narrows to, for the empty note. */
+  noResultsAssignee?: string;
   /** The notice after archiving; "Hoàn tác" shows when `onUndo` is given. */
   archivedNotice?: {
     count: number;
@@ -84,6 +89,16 @@ export interface MainTableSurfaceProps {
   onBulkStatus: TableBulkBarProps["onStatus"];
   onBulkDue: TableBulkBarProps["onDue"];
   onBulkArchive: TableBulkBarProps["onArchive"];
+  /** The row menu: duplicate, copy link, archive; absent = no menu. */
+  rowActions?: {
+    readonly onDuplicate?: (id: string) => void;
+    readonly onCopyLink: (id: string) => void;
+    readonly onArchive?: (id: string) => void;
+  };
+  /** "Giao cho" of the bulk bar; absent = disabled with the reason. */
+  bulkAssign?: TableBulkBarProps["assign"];
+  /** "Chuyển board" of the bulk bar; absent = disabled with the reason. */
+  bulkMove?: TableBulkBarProps["move"];
   /** Opens the status list of a row when the table first renders (stories, tests). */
   initialEditing?: { rowId: string; highlightStatusId?: string | null };
 }
@@ -106,6 +121,7 @@ export function MainTableSurface({
   collapsedGroupIds,
   openItemId,
   canEdit,
+  editors,
   canCreate,
   canArchive,
   addGroup,
@@ -116,6 +132,7 @@ export function MainTableSurface({
   hidden,
   canShowDone,
   noResults,
+  noResultsAssignee,
   archivedNotice,
   onRowSelectedChange,
   onSelectAllChange,
@@ -129,6 +146,9 @@ export function MainTableSurface({
   onBulkStatus,
   onBulkDue,
   onBulkArchive,
+  bulkAssign,
+  bulkMove,
+  rowActions,
   initialEditing,
 }: MainTableSurfaceProps) {
   const { copy } = toolbar;
@@ -301,6 +321,20 @@ export function MainTableSurface({
                         active={openItemId === row.id}
                         tabStop={tabStop === row.id}
                         canEdit={canEdit}
+                        editors={editors}
+                        actions={
+                          rowActions
+                            ? {
+                                onDuplicate: rowActions.onDuplicate
+                                  ? () => rowActions.onDuplicate?.(row.id)
+                                  : undefined,
+                                onCopyLink: () => rowActions.onCopyLink(row.id),
+                                onArchive: rowActions.onArchive
+                                  ? () => rowActions.onArchive?.(row.id)
+                                  : undefined,
+                              }
+                            : undefined
+                        }
                         editing={editingId === row.id}
                         highlightStatusId={
                           initialEditing?.rowId === row.id
@@ -336,9 +370,16 @@ export function MainTableSurface({
               </div>
             );
           })}
-          {addGroup ? <TableAddGroup copy={copy} {...addGroup} /> : null}
+          {addGroup && !noResults ? (
+            <TableAddGroup copy={copy} {...addGroup} />
+          ) : null}
           {noResults ? (
-            <TableNoResults copy={copy} onClear={onClearFilter} />
+            <TableNoResults
+              copy={copy}
+              assigneeName={noResultsAssignee}
+              hidesDone={toolbar.hideDone}
+              onClear={onClearFilter}
+            />
           ) : groups.length === 0 ? (
             <TableEmpty copy={copy} />
           ) : null}
@@ -350,6 +391,7 @@ export function MainTableSurface({
           copy={copy}
           shown={shown}
           hidden={hidden}
+          archived={archivedNotice?.count ?? 0}
           canShowDone={canShowDone}
           onShowDone={onShowDone}
         />
@@ -366,6 +408,8 @@ export function MainTableSurface({
           onDue={onBulkDue}
           onArchive={onBulkArchive}
           onClear={onClearSelection}
+          assign={bulkAssign}
+          move={bulkMove}
         />
       ) : archivedNotice ? (
         <TableArchivedNotice

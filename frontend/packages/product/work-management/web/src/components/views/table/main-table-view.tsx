@@ -15,7 +15,9 @@ import {
   useAddFieldOption,
   useBoardTable,
   useDuplicateCard,
+  useMoveItemToBoard,
   useUpdateCard,
+  useWorkspaceBoards,
   type KanbanWriteFailure,
 } from "@notrelix/work-management-state";
 import {
@@ -31,6 +33,7 @@ import type {
   ItemSheetGroup,
   ItemSheetMark,
 } from "../../card-detail/task-detail-types";
+import { findItemFields } from "../../card-detail/item-field-editors";
 import { boardCapabilities } from "../../shared/board-capabilities";
 import {
   isKanbanCardOverdue,
@@ -45,6 +48,7 @@ import { MainTableError } from "./main-table-error";
 import { fillTableCopy } from "./main-table.copy";
 import { MainTableSkeleton } from "./main-table-skeleton";
 import { MainTableSurface } from "./main-table-surface";
+import type { TableEditors } from "./table-cell-editors";
 import {
   buildTableGroup,
   tableStatusOptions,
@@ -185,6 +189,16 @@ export function MainTableView({
         { id: `table-write-${cardId}` },
       ),
   });
+  const moveItem = useMoveItemToBoard(boardId, workspaceId, {
+    onError: (_error, { cardId }) =>
+      toast.error(
+        fillTableCopy(copy.failed.move, {
+          title: titles.current.get(cardId) ?? "",
+        }),
+        { id: `table-write-${cardId}` },
+      ),
+  });
+  const workspaceBoards = useWorkspaceBoards(workspaceId);
   const isNarrow = useIsMobile();
   const boardCovered = Boolean(selectedItemId) && isNarrow;
 
@@ -354,6 +368,57 @@ export function MainTableView({
     setSelection(new Set());
   };
 
+  const itemFields = findItemFields(board);
+  const members = board.members.map((member) => ({
+    userId: member.userId,
+    name: member.name,
+    initials: member.initials,
+  }));
+  const writeAssignee = (cardId: string, userId: string | null) => {
+    if (!itemFields.person) return;
+    noteTitle(cardId);
+    table.updateFieldValue.mutate({
+      cardId,
+      fieldDefinitionId: itemFields.person.id,
+      value: userId ? [userId] : [],
+    });
+  };
+  const writeDue = (cardId: string, day: string | null) => {
+    noteTitle(cardId);
+    updateCard.mutate({
+      cardId,
+      patch: { dueDate: day ? dueInstant(day) : null },
+    });
+  };
+  const editors: TableEditors | undefined = itemFields.person
+    ? {
+        members,
+        priorities: (itemFields.priority?.options ?? []).map((option) => ({
+          id: option.id,
+          label: option.label,
+        })),
+        onAssignee: writeAssignee,
+        onDue: writeDue,
+        onPriority: (cardId, optionId) => {
+          if (!itemFields.priority) return;
+          noteTitle(cardId);
+          table.updateFieldValue.mutate({
+            cardId,
+            fieldDefinitionId: itemFields.priority.id,
+            value: optionId,
+          });
+        },
+      }
+    : undefined;
+  const moveTargets = (workspaceBoards.data ?? [])
+    .filter(
+      (candidate) =>
+        candidate.id !== boardId &&
+        !candidate.isArchived &&
+        candidate.canAddItems !== false,
+    )
+    .map((candidate) => ({ id: candidate.id, title: candidate.title }));
+
   const handleCreate = (groupId: string, title: string) => {
     if (!capabilities.canCreateCard) return;
     const lane = table.lanes.find(
@@ -506,12 +571,20 @@ export function MainTableView({
           collapsedGroupIds={collapsed}
           openItemId={selectedItemId}
           canEdit={capabilities.canEditFields}
+          editors={editors}
           canCreate={capabilities.canCreateCard}
           canArchive={capabilities.canDelete}
           shown={projection.visibleCount}
           hidden={projection.hiddenCount}
           canShowDone={!showDone && projection.doneHiddenCount > 0}
           noResults={groups.length === 0 && projection.totalCount > 0}
+          noResultsAssignee={
+            filter.assigneeIds.length === 1
+              ? filterChoices.assignees.find(
+                  (choice) => choice.id === filter.assigneeIds[0],
+                )?.name
+              : undefined
+          }
           archivedNotice={
             pendingArchive.length > 0
               ? {
@@ -559,14 +632,40 @@ export function MainTableView({
           onBulkStatus={(optionId) =>
             writeToSelected((id) => writeStatus(id, optionId))
           }
-          onBulkDue={(day) =>
-            writeToSelected((id) => {
-              noteTitle(id);
-              updateCard.mutate({
-                cardId: id,
-                patch: { dueDate: day ? dueInstant(day) : null },
-              });
-            })
+          onBulkDue={(day) => writeToSelected((id) => writeDue(id, day))}
+          rowActions={{
+            onDuplicate: capabilities.canCreateCard
+              ? (id) => duplicateCard.mutate(id)
+              : undefined,
+            onCopyLink: handleCopyLink,
+            onArchive: capabilities.canDelete
+              ? (id) => {
+                  noteTitle(id);
+                  startArchive([id]);
+                  setSelection(new Set());
+                }
+              : undefined,
+          }}
+          bulkAssign={
+            editors
+              ? {
+                  members,
+                  onAssign: (userId) =>
+                    writeToSelected((id) => writeAssignee(id, userId)),
+                }
+              : undefined
+          }
+          bulkMove={
+            capabilities.canEditFields
+              ? {
+                  boards: moveTargets,
+                  onMove: (targetBoardId) =>
+                    writeToSelected((id) => {
+                      noteTitle(id);
+                      moveItem.mutate({ cardId: id, targetBoardId });
+                    }),
+                }
+              : undefined
           }
           onBulkArchive={() => {
             for (const id of selectedList) noteTitle(id);

@@ -59,10 +59,10 @@ const erpHeader: BoardHeaderData = {
   visibility: "space",
   access: managerAccess,
   people: [
-    { id: "user-ha", name: "Nguyễn Thu Hà", initials: "HA", tone: "sage" },
-    { id: "user-quan", name: "Trần Minh Quân", initials: "MQ", tone: "blue" },
-    { id: "user-phuc", name: "Lê Hoàng Phúc", initials: "HP", tone: "ember" },
-    { id: "user-anh", name: "Phan Ngọc Anh", initials: "NA", tone: "coral" },
+    { id: "user-ha", name: "Nguyễn Thu Hà", initials: "HA" },
+    { id: "user-quan", name: "Trần Minh Quân", initials: "MQ" },
+    { id: "user-phuc", name: "Lê Hoàng Phúc", initials: "HP" },
+    { id: "user-anh", name: "Phan Ngọc Anh", initials: "NA" },
   ],
 };
 

@@ -31,9 +31,9 @@ const erpAccess: BoardHeaderAccess = {
 };
 
 const erpPeople: readonly BoardHeaderPerson[] = [
-  { id: "user-ha", name: "Nguyễn Thu Hà", initials: "HA", tone: "sage" },
-  { id: "user-quan", name: "Trần Minh Quân", initials: "MQ", tone: "blue" },
-  { id: "user-phuc", name: "Lê Hoàng Phúc", initials: "HP", tone: "ember" },
+  { id: "user-ha", name: "Nguyễn Thu Hà", initials: "HA" },
+  { id: "user-quan", name: "Trần Minh Quân", initials: "MQ" },
+  { id: "user-phuc", name: "Lê Hoàng Phúc", initials: "HP" },
 ];
 
 const erpSpace = {

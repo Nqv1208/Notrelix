@@ -534,6 +534,9 @@ export const boardsOperations = [
           version: b.version ?? 1,
           spaceId: visibleSpaceId(store, params.workspaceId, b.spaceId),
           ...departmentOfBoard(store, b),
+          // Gap field `canAddItems` (CTR-GAP-WM-TABLE-BULK): whether the
+          // caller may add items, for the table's "Chuyển board" targets.
+          canAddItems: canWriteBoardItems(b.id, store),
         })),
       );
     },

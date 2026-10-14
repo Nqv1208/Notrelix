@@ -15,6 +15,7 @@ import {
   pluralTableCopy,
   type MainTableCopy,
 } from "./main-table.copy";
+import { PickRow, type TableEditorMember } from "./table-cell-editors";
 import type { TableStatusOption } from "./table-model";
 import { StatusDot } from "./table-parts";
 
@@ -37,13 +38,24 @@ export interface TableBulkBarProps {
   onDue: (day: string | null) => void;
   onArchive: () => void;
   onClear: () => void;
+  /** Absent: "Giao cho" stays disabled and says so. */
+  assign?: {
+    readonly members: readonly TableEditorMember[];
+    /** `null` = nobody. */
+    readonly onAssign: (userId: string | null) => void;
+  };
+  /** Absent: "Chuyển board" stays disabled and says so. */
+  move?: {
+    readonly boards: readonly { readonly id: string; readonly title: string }[];
+    readonly onMove: (boardId: string) => void;
+  };
 }
 
 /**
  * The bar over the bottom edge of the table while rows are selected: the
  * count, then Trạng thái, Giao cho, Đặt hạn, Chuyển board, Lưu trữ and close.
- * "Giao cho" and "Chuyển board" have no write behind them yet, so they stay
- * disabled and say so.
+ * "Giao cho" and "Chuyển board" are disabled, with the reason, when the host
+ * gives no write for them.
  */
 export function TableBulkBar({
   copy,
@@ -55,10 +67,14 @@ export function TableBulkBar({
   onDue,
   onArchive,
   onClear,
+  assign,
+  move,
 }: TableBulkBarProps) {
   const b = copy.bulk;
   const [dueOpen, setDueOpen] = useState(false);
   const [day, setDay] = useState("");
+  const [assignOpen, setAssignOpen] = useState(false);
+  const [moveOpen, setMoveOpen] = useState(false);
 
   return (
     <div
@@ -95,16 +111,60 @@ export function TableBulkBar({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <button
-        type="button"
-        aria-disabled="true"
-        title={b.unavailable}
-        aria-label={`${b.assign}: ${b.unavailable}`}
-        className={BAR_BUTTON_CLASS}
-      >
-        <User className="size-4" aria-hidden="true" />
-        {b.assign}
-      </button>
+      {assign && canEdit ? (
+        <Popover open={assignOpen} onOpenChange={setAssignOpen}>
+          <PopoverTrigger asChild>
+            <button type="button" className={BAR_BUTTON_CLASS}>
+              <User className="size-4" aria-hidden="true" />
+              {b.assign}
+            </button>
+          </PopoverTrigger>
+          <PopoverContent
+            align="start"
+            side="top"
+            aria-label={b.assignLabel}
+            className="w-64 gap-0 rounded-[10px] border border-line-strong bg-popover p-1.5 shadow-pop ring-0 dark:bg-card"
+          >
+            <ul className="flex max-h-72 flex-col gap-0.5 overflow-y-auto">
+              <li>
+                <PickRow
+                  pressed={false}
+                  onClick={() => {
+                    setAssignOpen(false);
+                    assign.onAssign(null);
+                  }}
+                >
+                  {b.assignNobody}
+                </PickRow>
+              </li>
+              {assign.members.map((member) => (
+                <li key={member.userId}>
+                  <PickRow
+                    pressed={false}
+                    onClick={() => {
+                      setAssignOpen(false);
+                      assign.onAssign(member.userId);
+                    }}
+                  >
+                    {member.name}
+                  </PickRow>
+                </li>
+              ))}
+            </ul>
+          </PopoverContent>
+        </Popover>
+      ) : (
+        <button
+          type="button"
+          aria-disabled="true"
+          title={b.unavailable}
+          aria-label={`${b.assign}: ${b.unavailable}`}
+          className={BAR_BUTTON_CLASS}
+        >
+          <User className="size-4" aria-hidden="true" />
+          {b.assign}
+        </button>
+      )}
 
       <Popover open={dueOpen} onOpenChange={setDueOpen}>
         <PopoverTrigger asChild>
@@ -160,16 +220,55 @@ export function TableBulkBar({
         </PopoverContent>
       </Popover>
 
-      <button
-        type="button"
-        aria-disabled="true"
-        title={b.unavailable}
-        aria-label={`${b.move}: ${b.unavailable}`}
-        className={BAR_BUTTON_CLASS}
-      >
-        <ArrowRight className="size-4" aria-hidden="true" />
-        {b.move}
-      </button>
+      {move && canEdit ? (
+        <Popover open={moveOpen} onOpenChange={setMoveOpen}>
+          <PopoverTrigger asChild>
+            <button type="button" className={BAR_BUTTON_CLASS}>
+              <ArrowRight className="size-4" aria-hidden="true" />
+              {b.move}
+            </button>
+          </PopoverTrigger>
+          <PopoverContent
+            align="start"
+            side="top"
+            aria-label={b.moveLabel}
+            className="w-64 gap-0 rounded-[10px] border border-line-strong bg-popover p-1.5 shadow-pop ring-0 dark:bg-card"
+          >
+            {move.boards.length === 0 ? (
+              <p className="px-2 py-1.5 text-compact text-meta-foreground">
+                {b.moveNone}
+              </p>
+            ) : (
+              <ul className="flex max-h-72 flex-col gap-0.5 overflow-y-auto">
+                {move.boards.map((board) => (
+                  <li key={board.id}>
+                    <PickRow
+                      pressed={false}
+                      onClick={() => {
+                        setMoveOpen(false);
+                        move.onMove(board.id);
+                      }}
+                    >
+                      {board.title}
+                    </PickRow>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </PopoverContent>
+        </Popover>
+      ) : (
+        <button
+          type="button"
+          aria-disabled="true"
+          title={b.unavailable}
+          aria-label={`${b.move}: ${b.unavailable}`}
+          className={BAR_BUTTON_CLASS}
+        >
+          <ArrowRight className="size-4" aria-hidden="true" />
+          {b.move}
+        </button>
+      )}
 
       <span aria-hidden="true" className="mx-1 h-4.5 w-px bg-white/18" />
 

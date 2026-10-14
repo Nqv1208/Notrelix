@@ -112,7 +112,18 @@ export const en = {
       low: "Low",
     },
     childProgress: "{{done}} of {{total}} child items done",
+    menu: {
+      open: "Open details",
+      duplicate: "Duplicate",
+      copyLink: "Copy link",
+      archive: "Archive",
+    },
     changeStatus: "Change status of {{key}}",
+    changeAssignee: "Change assignee of {{key}}",
+    changeDue: "Change due date of {{key}}",
+    changePriority: "Change priority of {{key}}",
+    assigneeList: "Assignee",
+    clearDue: "Clear due date",
     updated: {
       justNow: "Just now",
       minutes_one: "{{count}} minute ago",
@@ -133,6 +144,7 @@ export const en = {
   },
   footer: {
     summary: "{{shown}} items shown · {{hidden}} hidden by filters",
+    archived: "{{count}} just archived",
     showDone: "Show finished items",
     move: "move",
     open: "open details",
@@ -152,6 +164,10 @@ export const en = {
     dueApply: "Apply",
     dueClear: "No due date",
     statusLabel: "Set status",
+    assignLabel: "Assign to",
+    assignNobody: "Unassigned",
+    moveLabel: "Move to board",
+    moveNone: "No other board where you may add items",
   },
   archived: {
     done_one: "Archived {{count}} item",
@@ -162,6 +178,8 @@ export const en = {
   noResults: {
     title: "No items match the filter",
     description: "No item matches the current filters on this board.",
+    assignee: "{{name}} has no items on this board.",
+    assigneeOpen: "{{name}} has no unfinished items on this board.",
     clear: "Clear filter",
   },
   empty: {
@@ -176,6 +194,7 @@ export const en = {
   failed: {
     status: "Couldn't change the status of “{{title}}”.",
     archive: "Couldn't archive “{{title}}”.",
+    move: "Couldn't move “{{title}}” to the other board.",
     create: "Couldn't add “{{title}}”.",
     save: "Couldn't save the change to “{{title}}”.",
     addGroup: "Couldn't add “{{name}}”.",
@@ -282,7 +301,18 @@ export const vi: MainTableCopy = {
       low: "Thấp",
     },
     childProgress: "Đã xong {{done}} trên {{total}} việc con",
+    menu: {
+      open: "Mở chi tiết",
+      duplicate: "Nhân bản",
+      copyLink: "Sao chép liên kết",
+      archive: "Lưu trữ",
+    },
     changeStatus: "Đổi trạng thái của {{key}}",
+    changeAssignee: "Đổi người phụ trách của {{key}}",
+    changeDue: "Đổi hạn của {{key}}",
+    changePriority: "Đổi ưu tiên của {{key}}",
+    assigneeList: "Người phụ trách",
+    clearDue: "Bỏ hạn",
     updated: {
       justNow: "Vừa xong",
       minutes_one: "{{count}} phút trước",
@@ -303,6 +333,7 @@ export const vi: MainTableCopy = {
   },
   footer: {
     summary: "{{shown}} công việc đang hiện · {{hidden}} ẩn bởi bộ lọc",
+    archived: "{{count}} vừa lưu trữ",
     showDone: "Hiện việc đã xong",
     move: "di chuyển",
     open: "mở chi tiết",
@@ -322,6 +353,10 @@ export const vi: MainTableCopy = {
     dueApply: "Áp dụng",
     dueClear: "Bỏ hạn",
     statusLabel: "Đặt trạng thái",
+    assignLabel: "Giao cho",
+    assignNobody: "Chưa giao",
+    moveLabel: "Chuyển sang board",
+    moveNone: "Không có board khác bạn được thêm việc",
   },
   archived: {
     done_one: "Đã lưu trữ {{count}} việc",
@@ -332,6 +367,8 @@ export const vi: MainTableCopy = {
   noResults: {
     title: "Không có việc khớp bộ lọc",
     description: "Không có việc nào khớp bộ lọc hiện tại trên board này.",
+    assignee: "{{name}} chưa phụ trách việc nào trên board này.",
+    assigneeOpen: "{{name}} chưa phụ trách việc nào chưa xong trên board này.",
     clear: "Bỏ lọc",
   },
   empty: {
@@ -346,6 +383,7 @@ export const vi: MainTableCopy = {
   failed: {
     status: "Không đổi được trạng thái của “{{title}}”.",
     archive: "Không lưu trữ được “{{title}}”.",
+    move: "Không chuyển được “{{title}}” sang board khác.",
     create: "Không thêm được “{{title}}”.",
     save: "Không lưu được thay đổi của “{{title}}”.",
     addGroup: "Không thêm được “{{name}}”.",

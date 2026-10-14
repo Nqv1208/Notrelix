@@ -130,6 +130,9 @@ export function mapBoardDto(dto: BoardDtoApi): Board {
     fieldDefinitions: [],
     members: [],
     createdAt: dto.createdAt,
+    ...(typeof dto.canAddItems === "boolean"
+      ? { canAddItems: dto.canAddItems }
+      : {}),
   };
 }
 

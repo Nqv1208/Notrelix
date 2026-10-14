@@ -25,3 +25,4 @@ export * from "./use-update-kanban-column";
 export * from "./use-upload-card-file";
 export * from "./use-update-item-status";
 export * from "./use-archive-card";
+export * from "./use-move-item-to-board";

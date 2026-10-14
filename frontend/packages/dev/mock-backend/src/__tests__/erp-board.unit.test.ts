@@ -5,6 +5,7 @@ import {
   createBoardAccessApi,
   createBoardApi,
   createCardApi,
+  createItemExtrasApi,
   type GeneratedBoardAccessDto,
   type GeneratedFullBoardDto,
 } from "../../../../product/work-management/state/src/index";
@@ -405,6 +406,70 @@ describe("ERP board in the mock world", () => {
       const theirs = erpCard(commenter.store, "ERP-151");
       await expect(
         createCardApi(commenter.client).archiveCard(theirs.id),
+      ).rejects.toBeTruthy();
+    });
+
+    it("a person field value sets the assignees, and the duplicate keeps them", async () => {
+      const { client, store } = clientFor();
+      const item = erpCard(store, "ERP-153");
+      const person = store
+        .getColumns(boardId)
+        .find((column) => column.fieldType === "user")!;
+      await createCardApi(client).updateFieldValue({
+        cardId: item.id,
+        fieldDefinitionId: person.id,
+        value: [mockIds.users.owner],
+      });
+      expect(store.getCard(item.id)!.assigneeUserIds).toEqual([
+        mockIds.users.owner,
+      ]);
+      const copy = store.duplicateCard(item.id)!;
+      expect(store.getCard(copy.id)!.assigneeUserIds).toEqual([
+        mockIds.users.owner,
+      ]);
+    });
+
+    it("move to board: the item and its children leave this board, take a new key and land in the group of the same name", async () => {
+      const { client, store } = clientFor();
+      const item = erpCard(store, "ERP-142");
+      const target = store
+        .getBoards(workspaceId)
+        .find(
+          (candidate) =>
+            candidate.id !== boardId && store.getLists(candidate.id).length > 0,
+        )!;
+      await createItemExtrasApi(client).moveToBoard(item.id, target.id);
+      const moved = store.getCard(item.id)!;
+      expect(moved.boardId).toBe(target.id);
+      expect(moved.itemKey).not.toBe("ERP-142");
+      expect(
+        store
+          .getChildCards(item.id)
+          .every((child) => child.boardId === target.id),
+      ).toBe(true);
+      const full = await createBoardApi(client).getFullBoard(boardId, {
+        workspaceId,
+      });
+      expect(
+        full.groups
+          .flatMap((group) => group.cards)
+          .some((c) => c.id === item.id),
+      ).toBe(false);
+    });
+
+    it("move to board: a commenter cannot, and the same board is refused", async () => {
+      const commenter = clientFor("commenter");
+      const theirs = erpCard(commenter.store, "ERP-151");
+      const other = commenter.store
+        .getBoards(workspaceId)
+        .find((candidate) => candidate.id !== boardId)!;
+      await expect(
+        createItemExtrasApi(commenter.client).moveToBoard(theirs.id, other.id),
+      ).rejects.toBeTruthy();
+      const owner = clientFor();
+      const item = erpCard(owner.store, "ERP-151");
+      await expect(
+        createItemExtrasApi(owner.client).moveToBoard(item.id, boardId),
       ).rejects.toBeTruthy();
     });
   });

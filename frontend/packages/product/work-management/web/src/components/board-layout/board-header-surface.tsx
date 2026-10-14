@@ -5,7 +5,6 @@ import {
   Link2,
   Lock,
   MoreHorizontal,
-  Settings,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -19,6 +18,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@notrelix/ui-web";
+import { identityMarkClass } from "../shared/item-display";
 import { fillBoardHeaderCopy, type BoardHeaderCopy } from "./board-header.copy";
 
 /**
@@ -27,10 +27,6 @@ import { fillBoardHeaderCopy, type BoardHeaderCopy } from "./board-header.copy";
  */
 export type BoardHeaderMarkTone =
   "blue" | "gold" | "coral" | "sage" | "crimson" | "violet";
-
-/** Identity tones for people's avatars (mirrors `@notrelix/ui-tokens`). */
-export type BoardHeaderPersonTone =
-  "blue" | "coral" | "gold" | "sage" | "ember";
 
 export type BoardAccessLevel = "viewer" | "commenter" | "editor" | "manager";
 
@@ -88,7 +84,6 @@ export interface BoardHeaderPerson {
   readonly id: string;
   readonly name: string;
   readonly initials: string;
-  readonly tone: BoardHeaderPersonTone;
 }
 
 /**
@@ -130,15 +125,25 @@ const MARK_TONE_CLASS: Readonly<Record<BoardHeaderMarkTone, string>> = {
   violet: "bg-mark-violet text-mark-violet-foreground",
 };
 
-const PERSON_TONE_CLASS: Readonly<Record<BoardHeaderPersonTone, string>> = {
-  blue: "bg-identity-blue text-identity-blue-foreground",
-  coral: "bg-identity-coral text-identity-coral-foreground",
-  gold: "bg-identity-gold text-identity-gold-foreground",
-  sage: "bg-identity-sage text-identity-sage-foreground",
-  ember: "bg-identity-ember text-identity-ember-foreground",
-};
-
 const VISIBLE_FACES = 3;
+
+/** The mockup's Settings glyph: a hub with eight rays. */
+function SettingsGlyph() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="12" cy="12" r="3" />
+      <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1" />
+    </svg>
+  );
+}
 
 /** Settings and Share: 34 px outline buttons of the mockup header. */
 const HEADER_BUTTON_CLASS =
@@ -427,8 +432,8 @@ export function BoardHeaderSurface({
                   key={person.id}
                   aria-hidden="true"
                   className={cn(
-                    "-ml-1.5 grid size-6.5 place-items-center rounded-full text-mark-sm ring-2 ring-background",
-                    PERSON_TONE_CLASS[person.tone],
+                    "-ml-1.5 grid size-6.5 place-items-center rounded-full text-avatar-md ring-2 ring-background",
+                    identityMarkClass(person.id),
                   )}
                 >
                   {person.initials}
@@ -437,7 +442,7 @@ export function BoardHeaderSurface({
               {overflow > 0 ? (
                 <span
                   aria-hidden="true"
-                  className="-ml-1.5 grid h-7.5 min-w-10.5 place-items-center rounded-md bg-state-hover-strong px-2 text-crumb font-medium text-muted-foreground ring-2 ring-background"
+                  className="-ml-1.5 grid size-6.5 place-items-center rounded-full bg-state-hover-strong text-avatar-md text-muted-foreground ring-2 ring-background"
                 >
                   {fillBoardHeaderCopy(h.moreAvatars, { count: overflow })}
                 </span>
@@ -460,7 +465,7 @@ export function BoardHeaderSurface({
                   "aria-disabled:cursor-default aria-disabled:text-muted-foreground",
                 )}
               >
-                <Settings aria-hidden="true" />
+                <SettingsGlyph />
                 {h.settings}
               </Button>
             </ReasonHint>

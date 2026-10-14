@@ -47,6 +47,18 @@ export function createItemExtrasApi(client: NotrelixClient) {
         );
       else await api.delete<void>(`/board-items/${itemId}/following`, quiet);
     },
+    /**
+     * Moves an item to another board (gap `CTR-GAP-WM-TABLE-BULK`, see
+     * "BE requirement from FE: Table"): it lands in the target group of the
+     * same name, else the first, with a new item key.
+     */
+    async moveToBoard(itemId: string, boardId: string): Promise<void> {
+      await api.post<void>(
+        `/board-items/${itemId}/move-to-board`,
+        { boardId },
+        { idempotencyKey: key(), ...quiet },
+      );
+    },
     /** Ticks (`done`) or unticks a child item. */
     async setChildDone(childId: string, done: boolean): Promise<void> {
       if (done)

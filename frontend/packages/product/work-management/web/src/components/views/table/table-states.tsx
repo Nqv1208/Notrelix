@@ -8,12 +8,15 @@ export function TableFooter({
   copy,
   shown,
   hidden,
+  archived = 0,
   canShowDone,
   onShowDone,
 }: {
   copy: MainTableCopy;
   shown: number;
   hidden: number;
+  /** Items archived a moment ago and still waiting for "Hoàn tác". */
+  archived?: number;
   /** Finished items are hidden: offer to show them. */
   canShowDone: boolean;
   onShowDone: () => void;
@@ -21,7 +24,12 @@ export function TableFooter({
   const f = copy.footer;
   return (
     <div className="flex flex-wrap items-center gap-4 pt-2.5 pb-3.5 text-crumb text-meta-foreground">
-      <span>{fillTableCopy(f.summary, { shown, hidden })}</span>
+      <span>
+        {fillTableCopy(f.summary, { shown, hidden })}
+        {archived > 0
+          ? ` · ${fillTableCopy(f.archived, { count: archived })}`
+          : ""}
+      </span>
       {canShowDone ? (
         <button
           type="button"
@@ -61,18 +69,29 @@ function TableNote({ children }: { children: React.ReactNode }) {
 /** Nothing matches the filter: a centred note and "Bỏ lọc". */
 export function TableNoResults({
   copy,
+  assigneeName,
+  hidesDone,
   onClear,
 }: {
   copy: MainTableCopy;
+  /** The one person the filter narrows to; the note names them. */
+  assigneeName?: string;
+  /** Finished items are hidden too, so the note says "unfinished". */
+  hidesDone?: boolean;
   onClear: () => void;
 }) {
   const n = copy.noResults;
+  const description = assigneeName
+    ? fillTableCopy(hidesDone ? n.assigneeOpen : n.assignee, {
+        name: assigneeName,
+      })
+    : n.description;
   return (
     <TableNote>
       <b className="text-[0.9375rem] font-semibold text-foreground">
         {n.title}
       </b>
-      <span>{n.description}</span>
+      <span>{description}</span>
       <Button
         variant="outline"
         size="sm"

@@ -1,5 +1,14 @@
 import type { CSSProperties, KeyboardEvent } from "react";
-import { cn, Popover, PopoverContent, PopoverTrigger } from "@notrelix/ui-web";
+import {
+  cn,
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@notrelix/ui-web";
 import {
   ITEM_LABEL_TONE_CLASS,
   identityMarkClass,
@@ -8,8 +17,23 @@ import { fillTableCopy, type MainTableCopy } from "./main-table.copy";
 import { STATUS_TINT_CLASS, tablePanelClass } from "./table-chrome";
 import type { TableColumnSpec } from "./table-columns";
 import type { TableRowModel, TableStatusOption } from "./table-model";
+import {
+  AssigneeEditor,
+  DueEditor,
+  PriorityEditor,
+  type TableEditors,
+} from "./table-cell-editors";
 import { StatusDot, TableCheckbox } from "./table-parts";
 import { TableStatusPicker } from "./table-status-picker";
+
+/** The row's own menu (right click, or the context-menu key). */
+export interface TableRowActions {
+  /** Absent: the viewer may not add items, so no "Nhân bản". */
+  readonly onDuplicate?: () => void;
+  readonly onCopyLink: () => void;
+  /** Absent: the viewer may not archive, so no "Lưu trữ". */
+  readonly onArchive?: () => void;
+}
 
 export interface TableRowProps {
   row: TableRowModel;
@@ -25,6 +49,10 @@ export interface TableRowProps {
   tabStop: boolean;
   /** The viewer may change the status of items. */
   canEdit: boolean;
+  /** In-place editors of assignee, due date and priority; absent = read-only. */
+  editors?: TableEditors;
+  /** The row's menu; absent = no menu. */
+  actions?: TableRowActions;
   /** The status list is open on this row. */
   editing: boolean;
   /** Option highlighted when the status list opens (stories and tests). */
@@ -91,6 +119,8 @@ export function TableRow({
   active,
   tabStop,
   canEdit,
+  editors,
+  actions,
   editing,
   highlightStatusId,
   onSelectedChange,
@@ -176,75 +206,124 @@ export function TableRow({
           </Cell>
         );
       }
-      case "assignee":
+      case "assignee": {
+        const person = row.assignee ? (
+          <>
+            <span
+              aria-hidden="true"
+              className={cn(
+                "flex size-6 shrink-0 items-center justify-center rounded-full text-avatar-md select-none",
+                identityMarkClass(row.assignee.userId),
+              )}
+            >
+              {row.assignee.initials}
+            </span>
+            <span className="min-w-0 truncate text-nav font-normal">
+              {row.assignee.name}
+            </span>
+          </>
+        ) : (
+          <>
+            <span
+              aria-hidden="true"
+              className="flex size-6 shrink-0 items-center justify-center rounded-full text-avatar-md font-bold text-meta-foreground shadow-[inset_0_0_0_1.5px_var(--line-strong)]"
+            >
+              +
+            </span>
+            <span className="min-w-0 truncate text-nav font-normal">
+              {copy.row.unassigned}
+            </span>
+          </>
+        );
         return (
           <Cell
             key="assignee"
             selected={selected}
             className="text-muted-foreground"
           >
-            {row.assignee ? (
-              <>
-                <span
-                  aria-hidden="true"
-                  className={cn(
-                    "flex size-6 shrink-0 items-center justify-center rounded-full text-avatar-md select-none",
-                    identityMarkClass(row.assignee.userId),
-                  )}
-                >
-                  {row.assignee.initials}
-                </span>
-                <span className="min-w-0 truncate text-nav font-normal">
-                  {row.assignee.name}
-                </span>
-              </>
+            {canEdit && editors ? (
+              <AssigneeEditor
+                copy={copy}
+                members={editors.members}
+                currentId={row.assignee?.userId ?? null}
+                label={fillTableCopy(copy.row.changeAssignee, {
+                  key: keyLabel,
+                })}
+                onPick={(userId) => editors.onAssignee(row.id, userId)}
+              >
+                {person}
+              </AssigneeEditor>
             ) : (
-              <>
-                <span
-                  aria-hidden="true"
-                  className="flex size-6 shrink-0 items-center justify-center rounded-full text-avatar-md font-bold text-meta-foreground shadow-[inset_0_0_0_1.5px_var(--line-strong)]"
-                >
-                  +
-                </span>
-                <span className="min-w-0 truncate text-nav font-normal">
-                  {copy.row.unassigned}
-                </span>
-              </>
+              person
             )}
           </Cell>
         );
-      case "due":
+      }
+      case "due": {
+        const due = (
+          <span
+            data-due={row.due.kind}
+            className={cn(
+              "text-nav font-normal tabular-nums",
+              DUE_CLASS[row.due.kind],
+            )}
+          >
+            {row.due.text}
+          </span>
+        );
         return (
           <Cell key="due" selected={selected}>
-            <span
-              data-due={row.due.kind}
-              className={cn(
-                "text-nav font-normal tabular-nums",
-                DUE_CLASS[row.due.kind],
-              )}
-            >
-              {row.due.text}
-            </span>
+            {canEdit && editors ? (
+              <DueEditor
+                copy={copy}
+                dueAt={row.dueAt}
+                label={fillTableCopy(copy.row.changeDue, { key: keyLabel })}
+                onPick={(day) => editors.onDue(row.id, day)}
+              >
+                {due}
+              </DueEditor>
+            ) : (
+              due
+            )}
           </Cell>
         );
+      }
       case "priority": {
         const priority =
           row.priority === "urgent" || row.priority === "high"
             ? row.priority
             : null;
+        const shown = (
+          <span
+            data-priority={priority ?? undefined}
+            className={cn(
+              "text-crumb",
+              priority
+                ? PRIORITY_CLASS[priority]
+                : "font-normal text-meta-foreground",
+            )}
+          >
+            {priority ? copy.row.priority[priority] : copy.row.noPriority}
+          </span>
+        );
         return (
           <Cell key="priority" selected={selected}>
-            <span
-              data-priority={priority ?? undefined}
-              className={cn(
-                "text-crumb",
-                priority
-                  ? PRIORITY_CLASS[priority]
-                  : "font-normal text-meta-foreground",
-              )}
-            >
-              {priority ? copy.row.priority[priority] : copy.row.noPriority}
-            </span>
+            {canEdit && editors && editors.priorities.length > 0 ? (
+              <PriorityEditor
+                options={editors.priorities}
+                currentLabel={
+                  row.priority ? copy.row.priority[row.priority] : null
+                }
+                label={fillTableCopy(copy.row.changePriority, {
+                  key: keyLabel,
+                })}
+                onPick={(optionId) => editors.onPriority(row.id, optionId)}
+              >
+                {shown}
+              </PriorityEditor>
+            ) : (
+              shown
+            )}
           </Cell>
         );
       }
@@ -322,7 +401,7 @@ export function TableRow({
     }
   };
 
-  return (
+  const rowElement = (
     <div
       role="row"
       tabIndex={tabStop ? 0 : -1}
@@ -373,5 +452,29 @@ export function TableRow({
       </Cell>
       {columns.map(render)}
     </div>
+  );
+  if (!actions) return rowElement;
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger asChild>{rowElement}</ContextMenuTrigger>
+      <ContextMenuContent className="w-52">
+        <ContextMenuItem onSelect={onOpen}>
+          {copy.row.menu.open}
+        </ContextMenuItem>
+        {actions.onDuplicate ? (
+          <ContextMenuItem onSelect={actions.onDuplicate}>
+            {copy.row.menu.duplicate}
+          </ContextMenuItem>
+        ) : null}
+        <ContextMenuItem onSelect={actions.onCopyLink}>
+          {copy.row.menu.copyLink}
+        </ContextMenuItem>
+        {actions.onArchive ? (
+          <ContextMenuItem onSelect={actions.onArchive}>
+            {copy.row.menu.archive}
+          </ContextMenuItem>
+        ) : null}
+      </ContextMenuContent>
+    </ContextMenu>
   );
 }

@@ -2086,6 +2086,19 @@ export class MockStore {
       position: card.position + 1,
     });
 
+    // The copy keeps the item's values: status, priority, due date, people.
+    const values = this.fieldValuesByCardId.get(cardId);
+    if (values) this.fieldValuesByCardId.set(newCard.id, new Map(values));
+    const current = this.cardsById.get(newCard.id);
+    if (current) {
+      this.cardsById.set(newCard.id, {
+        ...current,
+        dueAt: card.dueAt ?? null,
+        startedAt: card.startedAt ?? null,
+        assigneeUserIds: [...(card.assigneeUserIds ?? [])],
+      });
+    }
+
     // Duplicate labels
     const labels = this.labelIdsByCardId.get(cardId);
     if (labels) {
@@ -2233,6 +2246,22 @@ export class MockStore {
       this.fieldValuesByCardId.set(cardId, fieldMap);
     }
     fieldMap.set(fieldDefinitionId, value);
+    // A person field's value is the item's assignee set (the item's members).
+    const field = this.getColumns(card.boardId).find(
+      (column) => column.id === fieldDefinitionId,
+    );
+    if (
+      (field?.fieldType === "user" || field?.fieldType === "person") &&
+      Array.isArray(value)
+    ) {
+      this.cardsById.set(cardId, {
+        ...card,
+        assigneeUserIds: value.filter(
+          (id): id is string => typeof id === "string",
+        ),
+        updatedAt: this.clock.isoNow(),
+      });
+    }
     return true;
   }
 
@@ -2273,6 +2302,60 @@ export class MockStore {
     // Add to new list index
     this.addIndex(this.cardIdsByListId, targetListId, card.id);
     return true;
+  }
+
+  /**
+   * Moves an item (and its child items) to another board: it lands at the end
+   * of the target group with the same name as its current group, else of the
+   * target's first group, and takes the next item key of the target board.
+   * Gap operation `CTR-GAP-WM-TABLE-BULK`.
+   */
+  moveItemToBoard(
+    cardId: string,
+    targetBoardId: string,
+  ):
+    | { readonly result: "ok"; readonly card: MockCardRecord }
+    | { readonly result: "not-found" | "invalid" } {
+    const card = this.cardsById.get(cardId);
+    const target = this.boardsById.get(targetBoardId);
+    if (!card || !target) return { result: "not-found" };
+    if (card.boardId === targetBoardId || card.parentItemId)
+      return { result: "invalid" };
+    const targetLists = this.getLists(targetBoardId);
+    if (targetLists.length === 0) return { result: "invalid" };
+    const sourceName = this.listsById.get(card.listId)?.title;
+    const list =
+      targetLists.find((candidate) => candidate.title === sourceName) ??
+      targetLists[0]!;
+    const now = this.clock.isoNow();
+    const position = this.getCards(list.id).length;
+    const itemKey = this.nextItemKey(targetBoardId);
+    const relocate = (record: MockCardRecord, key: string | null) => {
+      this.removeIndex(this.cardIdsByListId, record.listId, record.id);
+      this.cardsById.set(record.id, {
+        ...record,
+        boardId: targetBoardId,
+        listId: list.id,
+        position,
+        itemKey: key,
+        version: (record.version ?? 1) + 1,
+        updatedAt: now,
+      });
+      this.addIndex(this.cardIdsByListId, list.id, record.id);
+    };
+    const children = [...this.cardsById.values()].filter(
+      (candidate) => candidate.parentItemId === cardId,
+    );
+    relocate(card, itemKey);
+    this.recordActivity(
+      cardId,
+      this.getCurrentUser().id,
+      `chuyển việc sang board ${target.title}`,
+    );
+    children.forEach((child, index) =>
+      relocate(child, itemKey ? `${itemKey}.${index + 1}` : null),
+    );
+    return { result: "ok", card: this.cardsById.get(cardId)! };
   }
 
   // ── Checklists ──

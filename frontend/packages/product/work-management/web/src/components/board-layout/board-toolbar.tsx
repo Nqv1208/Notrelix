@@ -48,12 +48,16 @@ export function BoardToolbar({
   const contextHeader = useContext(BoardHeaderDataContext);
   const copy = copyProp ?? contextCopy;
   const header = headerProp ?? contextHeader;
+  // Only Final-Board's header carries the "More options" button; the
+  // Table, Calendar and Timeline headers end at Settings and Share.
+  const headerForView =
+    activeView === "kanban" ? header : { ...header, onCopyLink: undefined };
   return (
     <div className="flex flex-col">
       <BoardHeaderSurface
         title={boardTitle}
         copy={copy}
-        {...header}
+        {...headerForView}
         {...(onOpenSettings ? { onOpenSettings } : {})}
       />
       <div
