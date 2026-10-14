@@ -69,9 +69,11 @@ test("loads auth and workspace routes without backend network", async ({
   await page
     .getByRole("button", { name: /Search or run a command|Tìm hoặc chạy lệnh/ })
     .click();
+  // ">" lists every command; the Search page is one of them.
+  await page.getByRole("combobox").fill(">");
   await page
     .getByRole("dialog")
-    .getByRole("option", { name: /^(Search|Tìm kiếm)$/ })
+    .getByRole("option", { name: /^(Go to Search|Chuyển tới Tìm kiếm)$/ })
     .click();
   await expect(page).toHaveURL(/\/workspaces\/mock-workspace-primary\/search$/);
   await expect(page.getByText("Quick access", { exact: true })).toHaveCount(0);
