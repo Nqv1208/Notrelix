@@ -335,7 +335,9 @@ test.describe("Department page geometry at 1440 px (owner)", () => {
     expect(await style(why, "font-size")).toBe(TYPE.sub.size);
     expect(await colour(why, "color")).toBe(COLOUR.muted);
     const add = f(page, "subadd");
-    expectRect(await rel(page, add), { x: 390, width: 350 }, "add card");
+    // Two sub-departments (Nhóm Hạ tầng, Nhóm Ứng dụng) and the add card: the
+    // add card starts the second row.
+    expectRect(await rel(page, add), { x: 28, width: 350 }, "add card");
     expect(await style(add, "border-top-style")).toBe("dashed");
     expect(await style(add, "border-radius")).toBe("12px");
     expect(await style(add, "font-size")).toBe(TYPE.tab.size);

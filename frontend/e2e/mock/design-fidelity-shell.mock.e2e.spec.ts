@@ -413,13 +413,13 @@ test.describe("rail pinned (nav=hien-day)", () => {
     expect(await css(current, "border-radius")).toBe("7px");
     await expectFont(current, 13, 600);
 
-    const sub = tree.getByRole("treeitem", { name: /Hạ tầng & bảo mật/ });
+    const sub = tree.getByRole("treeitem", { name: /Nhóm Hạ tầng/ });
     const subBox = await box(sub);
     expect(subBox.height).toBe(30);
     expect(subBox.width).toBe(235);
-    // Boards come first (ERP, Hỗ trợ nội bộ, Ngân sách CNTT 2027), then the
-    // sub-Spaces: three 32 px rows below the current Board.
-    expect(subBox.y - (await box(current)).y).toBe(96);
+    // Boards come first (ERP, Hạ tầng & bảo mật, Hỗ trợ nội bộ, Ngân sách
+    // CNTT 2027), then the sub-Spaces: four 32 px rows below the current Board.
+    expect(subBox.y - (await box(current)).y).toBe(128);
     expect(await css(sub, "padding-left")).toBe("39px");
     await expectFont(sub, 13, 400);
     const subMark = sub.locator("span").first();
@@ -427,10 +427,10 @@ test.describe("rail pinned (nav=hien-day)", () => {
     expect(await css(subMark, "border-radius")).toBe("5px");
     await expectFont(subMark, 7, 700);
 
-    // The next Space starts 2 px below the last child row (two more sub-Spaces
-    // follow this one: Nhóm Hạ tầng and Nhóm Ứng dụng).
+    // The next Space starts 2 px below the last child row (one more
+    // sub-Space follows this one: Nhóm Ứng dụng).
     const next = tree.getByRole("treeitem", { name: /Kế toán/ });
-    expect((await box(next)).y - (subBox.y + subBox.height)).toBe(2 + 2 * 32);
+    expect((await box(next)).y - (subBox.y + subBox.height)).toBe(2 + 32);
     // Kế toán holds a Board (KT-88's), so its row has a toggle like the
     // expanded Space's: 209 wide, the lock 10 px inside it.
     await expectBox(next, { x: 86, width: 209, height: 32 });

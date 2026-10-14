@@ -467,7 +467,7 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
     const workspaceId = mockIds.workspaces.primary;
 
     const tree = await spaces.getTree(workspaceId);
-    expect(tree.find((s) => s.id === mockIds.spaces.platform)?.parentId).toBe(
+    expect(tree.find((s) => s.id === mockIds.spaces.itInfra)?.parentId).toBe(
       mockIds.spaces.engineering,
     );
     expect(tree.every((s) => s.access === "Manager")).toBe(true);
@@ -572,7 +572,7 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
     await expect(
       spaces.move(workspaceId, {
         spaceId: mockIds.spaces.engineering,
-        parentId: mockIds.spaces.platform,
+        parentId: mockIds.spaces.itInfra,
         previousSiblingId: null,
         nextSiblingId: null,
         expectedVersion: 2,
@@ -581,7 +581,7 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
     await spaces.move(workspaceId, {
       spaceId: id!,
       parentId: mockIds.spaces.engineering,
-      previousSiblingId: mockIds.spaces.platform,
+      previousSiblingId: mockIds.spaces.itInfra,
       nextSiblingId: null,
       expectedVersion: latest.version,
     });

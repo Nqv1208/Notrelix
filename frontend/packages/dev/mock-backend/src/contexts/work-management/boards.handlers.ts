@@ -6,6 +6,7 @@
  *   boards.detail          — GET /boards/:id
  *   boards.full            — GET /boards/:id/full
  *   boards.access          — GET /boards/:boardId/access
+ *   boards.planItems       — GET /boards/:boardId/plan-items (gap)
  *   boards.create          — POST /workspaces/:workspaceId/boards
  *   boards.view.get        — GET /boards/:id/view
  *   boards.view.save       — PUT /boards/:id/view
@@ -597,6 +598,23 @@ export const boardsOperations = [
       const access = board ? projectBoardAccess(board, store) : null;
       if (!board || !access) return notFound("Board not found");
       return ok<GeneratedBoardAccessDto>(access);
+    },
+  }),
+
+  // ─── GET /boards/:boardId/plan-items ──────────────────────────────────────
+  // Gap CTR-GAP-WM-PLAN-ITEMS: the phases and milestones the Calendar and the
+  // Timeline draw beside the items.
+
+  defineMockOperation<{ boardId: string }, never, unknown>({
+    id: "boards.planItems",
+    contract: { kind: "gap", gapId: "CTR-GAP-WM-PLAN-ITEMS" },
+    method: "GET",
+    route: "/boards/:boardId/plan-items",
+    async handle({ params, store }) {
+      const board = store.getBoard(params.boardId);
+      const access = board ? projectBoardAccess(board, store) : null;
+      if (!board || !access) return notFound("Board not found");
+      return ok({ items: store.getPlanItems(board.id) });
     },
   }),
 

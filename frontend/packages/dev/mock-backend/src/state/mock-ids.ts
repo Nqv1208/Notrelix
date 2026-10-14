@@ -23,7 +23,6 @@ export const mockIds = {
   },
   spaces: {
     engineering: "mock-space-engineering",
-    platform: "mock-space-platform",
     accounting: "mock-space-accounting",
     marketing: "mock-space-marketing",
     hr: "mock-space-hr",

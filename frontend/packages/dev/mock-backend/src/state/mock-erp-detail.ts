@@ -153,3 +153,52 @@ export const ERP_ACTIVITY = [
     createdAt: "2026-10-07T03:40:00.000Z",
   },
 ] as const;
+
+/**
+ * Plan items of the ERP board that are not work items: three phases and the
+ * go-live milestone the Calendar and the Timeline draw (Final-Calendar,
+ * Final-Timeline). Days are Hanoi days "yyyy-MM-dd".
+ */
+export interface ErpPlanItem {
+  readonly id: string;
+  readonly kind: "phase" | "milestone";
+  readonly title: string;
+  readonly startDay: string;
+  readonly endDay: string;
+  readonly category: "todo" | "doing" | "review" | "done";
+}
+
+export const ERP_PLAN_ITEMS: readonly ErpPlanItem[] = [
+  {
+    id: "mock-erp-plan-uat",
+    kind: "phase",
+    title: "UAT phân hệ bán hàng với phòng Kinh doanh",
+    startDay: "2026-10-12",
+    endDay: "2026-10-16",
+    category: "doing",
+  },
+  {
+    id: "mock-erp-plan-training",
+    kind: "phase",
+    title: "Đào tạo phòng Kế toán",
+    startDay: "2026-10-22",
+    endDay: "2026-10-23",
+    category: "todo",
+  },
+  {
+    id: "mock-erp-plan-parallel",
+    kind: "phase",
+    title: "Chạy song song hệ thống cũ và ERP",
+    startDay: "2026-10-26",
+    endDay: "2026-10-31",
+    category: "review",
+  },
+  {
+    id: "mock-erp-plan-golive",
+    kind: "milestone",
+    title: "Go-live ERP",
+    startDay: "2026-11-01",
+    endDay: "2026-11-01",
+    category: "todo",
+  },
+];

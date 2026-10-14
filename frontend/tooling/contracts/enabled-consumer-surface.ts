@@ -759,6 +759,18 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     mutation: true,
   },
   {
+    context: "WorkManagement",
+    classification: "COMPATIBILITY_GAP_MOCKED",
+    consumerSymbol: "useBoardPlanItems",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/item-extras.api.ts",
+    capability: "Phases and milestones of a board (Calendar, Timeline)",
+    gapId: "CTR-GAP-WM-PLAN-ITEMS",
+    method: "GET",
+    pathTemplate: "/boards/{boardId}/plan-items",
+    mutation: false,
+  },
+  {
     context: "Workspace",
     classification: "CANONICAL_MOCKED",
     consumerSymbol: "useCompleteItem",

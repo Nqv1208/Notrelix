@@ -107,6 +107,20 @@ export const DEPARTMENT_BOARDS: readonly DepartmentBoard[] = [
 /** The other Boards of the Công nghệ department the mockups' sidebar lists. */
 export const TECH_SIDE_BOARDS: readonly DepartmentBoard[] = [
   {
+    id: "mock-board-it-infra",
+    title: "Hạ tầng & bảo mật",
+    description: "Hạ tầng, an toàn thông tin và vận hành hệ thống.",
+    prefix: "HB",
+    color: "#1E6FD0",
+    spaceId: mockIds.spaces.engineering,
+    statusColumnId: "mock-iti-col-status",
+    statusPrefix: "mock-iti-status",
+    priorityColumnId: "mock-iti-col-priority",
+    listId: "mock-iti-list-ops",
+    listTitle: "Vận hành",
+    items: [],
+  },
+  {
     id: "mock-board-it-support",
     title: "Hỗ trợ nội bộ",
     description: "Yêu cầu hỗ trợ CNTT từ các phòng ban.",

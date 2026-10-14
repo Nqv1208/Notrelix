@@ -59,6 +59,26 @@ function toneOf(
   return "todo";
 }
 
+/**
+ * An item is drawn as a bar over its start-to-due span only when the span is
+ * longer than a week; a shorter one sits on its due day as a chip, as
+ * Final-Calendar draws (only the long data migration is a bar).
+ */
+export const CALENDAR_MIN_SPAN_DAYS = 8;
+
+/** 17:00, the time of a due that has a day only. */
+const DEFAULT_DUE_MINUTES = 17 * 60;
+
+/** A phase or milestone of the board (the plan items read). */
+export interface CalendarPlanItem {
+  readonly id: string;
+  readonly kind: "phase" | "milestone";
+  readonly title: string;
+  readonly startDay: DayKey;
+  readonly endDay: DayKey;
+  readonly category: "todo" | "doing" | "review" | "done";
+}
+
 export interface BuiltCalendar {
   readonly entries: CalendarEntry[];
   readonly undated: CalendarUndated[];
@@ -76,11 +96,13 @@ export function buildCalendarEntries({
   today,
   copy,
   timeZone,
+  planItems = [],
 }: {
   lanes: readonly KanbanStatusLane[];
   today: DayKey;
   copy: CalendarCopy;
   timeZone?: string;
+  planItems?: readonly CalendarPlanItem[];
 }): BuiltCalendar {
   const entries: CalendarEntry[] = [];
   const undated: CalendarUndated[] = [];
@@ -98,8 +120,17 @@ export function buildCalendarEntries({
         });
         continue;
       }
-      const endDay = due?.day ?? (start?.day as DayKey);
-      const startDay = start && start.day < endDay ? start.day : endDay;
+      // A finished item sits on the day it was finished.
+      const completed =
+        lane.category === "done" ? dayOf(card.completedAt, timeZone) : null;
+      const endDay = completed?.day ?? due?.day ?? (start?.day as DayKey);
+      const startDay =
+        !completed &&
+        start &&
+        start.day < endDay &&
+        diffDays(start.day, endDay) + 1 >= CALENDAR_MIN_SPAN_DAYS
+          ? start.day
+          : endDay;
       const tone = toneOf(lane.category, endDay, today);
       entries.push({
         id: card.id,
@@ -109,7 +140,13 @@ export function buildCalendarEntries({
         tone,
         startDay,
         endDay,
-        dueMinutes: due?.minutes ?? null,
+        // A due at midnight is a date without a time: the day view puts it
+        // at the hour a day alone gets elsewhere (17:00).
+        dueMinutes: due
+          ? due.minutes === 0
+            ? DEFAULT_DUE_MINUTES
+            : due.minutes
+          : null,
         assignee: person
           ? {
               initials: person.initials,
@@ -130,6 +167,18 @@ export function buildCalendarEntries({
         movable: due !== null,
       });
     }
+  }
+  for (const plan of planItems) {
+    entries.push({
+      id: plan.id,
+      kind: plan.kind,
+      title: plan.title,
+      tone: plan.category,
+      startDay: plan.startDay,
+      endDay: plan.endDay,
+      note: "",
+      movable: false,
+    });
   }
   return { entries, undated };
 }

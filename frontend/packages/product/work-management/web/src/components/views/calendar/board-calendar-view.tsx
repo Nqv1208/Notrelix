@@ -12,6 +12,7 @@ import {
   dropUnknownFilterIds,
   useBoardAccess,
   useBoardKanban,
+  useBoardPlanItems,
   useCreateDatedItem,
   useUpdateCard,
 } from "@notrelix/work-management-state";
@@ -161,9 +162,20 @@ export function BoardCalendarView({
     }
   }, [board, filter, filterValue, setFilterValue]);
 
+  // Phases and milestones belong to nobody: any filter hides them with the
+  // items it filters out, as Final-Calendar's empty state shows.
+  const planItems = useBoardPlanItems(boardId, workspaceId).data;
+  const shownPlanItems = serializeKanbanFilter(filter) ? undefined : planItems;
   const built = useMemo(
-    () => buildCalendarEntries({ lanes: kanban.lanes, today, copy, timeZone }),
-    [kanban.lanes, today, copy, timeZone],
+    () =>
+      buildCalendarEntries({
+        lanes: kanban.lanes,
+        today,
+        copy,
+        timeZone,
+        planItems: shownPlanItems,
+      }),
+    [kanban.lanes, today, copy, timeZone, shownPlanItems],
   );
   const undatedTotal = useMemo(
     () =>

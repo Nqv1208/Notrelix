@@ -4,6 +4,7 @@ import { erpBoardScenario, erpItemId } from "@notrelix/work-management-testing";
 import { vi as copy } from "../calendar.copy";
 import {
   buildCalendarEntries,
+  CALENDAR_MIN_SPAN_DAYS,
   dayOf,
   shiftInstant,
   zonedInstant,
@@ -60,13 +61,14 @@ describe("buildCalendarEntries on the ERP board", () => {
     ).toBe("2026-10-13");
   });
 
-  it("spans an item from its start day to its due day", () => {
+  it("spans a long item from its start day and keeps a short one on its due day", () => {
     expect(entryOf("ERP-142")).toMatchObject({
       startDay: "2026-10-01",
       endDay: "2026-10-10",
     });
+    // ERP-146 starts 13/10, 4 days: one chip on its due day.
     expect(entryOf("ERP-146")).toMatchObject({
-      startDay: "2026-10-13",
+      startDay: "2026-10-16",
       endDay: "2026-10-16",
     });
   });
@@ -137,5 +139,85 @@ describe("calendar instants", () => {
     expect(shiftInstant("2026-10-16T10:00:00.000Z", -2)).toBe(
       "2026-10-14T10:00:00.000Z",
     );
+  });
+});
+
+describe("buildCalendarEntries: spans, finished items and plan items", () => {
+  const { board, groups } = erpBoardScenario();
+  const lanes = groupCardsByStatus({
+    fieldDefinitions: board.fieldDefinitions,
+    groups,
+  });
+  const withStart = (key: string, startDate: string) =>
+    lanes.map((lane) => ({
+      ...lane,
+      cards: lane.cards.map((card) =>
+        card.id === erpItemId(key) ? { ...card, startDate } : card,
+      ),
+    }));
+  const entryIn = (
+    source: typeof lanes,
+    key: string,
+    plan: Parameters<typeof buildCalendarEntries>[0]["planItems"] = [],
+  ) =>
+    buildCalendarEntries({
+      lanes: source,
+      today: "2026-10-12",
+      copy,
+      timeZone: ZONE,
+      planItems: plan,
+    }).entries.find((entry) => entry.id === erpItemId(key))!;
+
+  it("draws a bar only for a span of at least a week and a day", () => {
+    // ERP-144 is due 12/10: 8 days from 05/10 is a bar, 7 days from 06/10 a chip.
+    expect(CALENDAR_MIN_SPAN_DAYS).toBe(8);
+    expect(
+      entryIn(withStart("ERP-144", "2026-10-05T10:00:00.000Z"), "ERP-144")
+        .startDay,
+    ).toBe("2026-10-05");
+    expect(
+      entryIn(withStart("ERP-144", "2026-10-06T10:00:00.000Z"), "ERP-144")
+        .startDay,
+    ).toBe("2026-10-12");
+  });
+
+  it("puts a finished item on the day it was finished, as one chip", () => {
+    const entry = entryIn(lanes, "ERP-131");
+    expect(entry.tone).toBe("done");
+    expect(entry.startDay).toBe(entry.endDay);
+    expect(entry.endDay).toBe("2026-10-05");
+  });
+
+  it("adds the phases and milestones as markers nobody can move", () => {
+    const { entries } = buildCalendarEntries({
+      lanes,
+      today: "2026-10-12",
+      copy,
+      timeZone: ZONE,
+      planItems: [
+        {
+          id: "phase-uat",
+          kind: "phase",
+          title: "UAT",
+          startDay: "2026-10-12",
+          endDay: "2026-10-16",
+          category: "doing",
+        },
+        {
+          id: "go-live",
+          kind: "milestone",
+          title: "Go-live ERP",
+          startDay: "2026-11-01",
+          endDay: "2026-11-01",
+          category: "todo",
+        },
+      ],
+    });
+    const markers = entries.filter((entry) => entry.kind !== "item");
+    expect(markers.map((entry) => [entry.kind, entry.tone])).toEqual([
+      ["phase", "doing"],
+      ["milestone", "todo"],
+    ]);
+    expect(markers.every((entry) => !entry.movable)).toBe(true);
   });
 });

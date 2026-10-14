@@ -70,3 +70,19 @@ export function useItemFollowing(itemId: string, workspaceId: string) {
   });
   return { following: query.data ?? null, setFollowing: set.mutate };
 }
+
+/** The phases and milestones of a board (gap `CTR-GAP-WM-PLAN-ITEMS`). */
+export function useBoardPlanItems(boardId: string, workspaceId: string) {
+  const { itemExtras } = useWorkManagementServices();
+  return useQuery({
+    queryKey: workspaceQueryKey(
+      workspaceId,
+      "work-management",
+      "plan-items",
+      boardId,
+    ),
+    queryFn: () => itemExtras.getPlanItems(boardId),
+    enabled: Boolean(boardId),
+    staleTime: 30_000,
+  });
+}

@@ -68,6 +68,8 @@ import {
 } from "./mock-erp-board";
 import {
   ERP_ACTIVITY,
+  ERP_PLAN_ITEMS,
+  type ErpPlanItem,
   ERP_CHILD_ITEMS,
   ERP_COMMENTS,
   ERP_DESCRIPTIONS,
@@ -190,6 +192,8 @@ export class MockStore {
     string,
     { id: string; actorId: string; action: string; createdAt: string }[]
   >();
+  /** Phases and milestones of a board (gap `CTR-GAP-WM-PLAN-ITEMS`), by board. */
+  private planItemsByBoardId = new Map<string, readonly ErpPlanItem[]>();
   /** Board members (`/full` members), keyed by board. */
   private boardMembersByBoardId = new Map<string, MockBoardMemberRecord[]>();
   /** Explicit board access entries, keyed by board. */
@@ -728,11 +732,6 @@ export class MockStore {
       color: "blue",
       description: "Phát triển sản phẩm, hạ tầng và chất lượng.",
     });
-    space(mockIds.spaces.platform, "Hạ tầng & bảo mật", "a0000", {
-      parentId: mockIds.spaces.engineering,
-      type: "Folder",
-      visibility: "Workspace",
-    });
     space(mockIds.spaces.itInfra, "Nhóm Hạ tầng", "a0001", {
       parentId: mockIds.spaces.engineering,
       type: "Folder",
@@ -1012,6 +1011,7 @@ export class MockStore {
         erpStatusOptionId(child.done ? "done" : "todo"),
       );
     });
+    this.planItemsByBoardId.set(boardId, ERP_PLAN_ITEMS);
     for (const entry of ERP_ACTIVITY) {
       this.recordActivity(
         erpItemId(entry.itemKey),
@@ -1303,6 +1303,7 @@ export class MockStore {
     this.feed.clear();
     this.completedCardIds.clear();
     this.activityByCardId.clear();
+    this.planItemsByBoardId.clear();
 
     this.membershipIdsByWorkspaceId.clear();
     this.viewIdsByWorkspaceId.clear();
@@ -1999,6 +2000,11 @@ export class MockStore {
       );
     }
     return this.createCard(list.boardId, listId, input);
+  }
+
+  /** The phases and milestones of a board, in date order. */
+  getPlanItems(boardId: string): readonly ErpPlanItem[] {
+    return this.planItemsByBoardId.get(boardId) ?? [];
   }
 
   /** Records one line of an item's history ("đổi hạn từ 08/10 sang 10/10"). */

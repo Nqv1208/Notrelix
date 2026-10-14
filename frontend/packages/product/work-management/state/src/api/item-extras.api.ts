@@ -21,11 +21,28 @@ export interface ItemChildItemDto {
   } | null;
 }
 
+/** A phase or a milestone of a board (gap `CTR-GAP-WM-PLAN-ITEMS`). */
+export interface BoardPlanItemDto {
+  readonly id: string;
+  readonly kind: "phase" | "milestone";
+  readonly title: string;
+  /** First and last Hanoi day "yyyy-MM-dd"; equal for a milestone. */
+  readonly startDay: string;
+  readonly endDay: string;
+  readonly category: "todo" | "doing" | "review" | "done";
+}
+
 export function createItemExtrasApi(client: NotrelixClient) {
   const { api } = client;
   const quiet = { skipGlobalErrorToast: true } as const;
   const key = () => crypto.randomUUID();
   return {
+    async getPlanItems(boardId: string): Promise<BoardPlanItemDto[]> {
+      const dto = await api.get<{ items?: BoardPlanItemDto[] } | null>(
+        `/boards/${boardId}/plan-items`,
+      );
+      return dto?.items ?? [];
+    },
     async getChildItems(itemId: string): Promise<ItemChildItemDto[]> {
       const dto = await api.get<{ items?: ItemChildItemDto[] } | null>(
         `/board-items/${itemId}/child-items`,
