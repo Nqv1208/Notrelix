@@ -21,7 +21,7 @@ const persona = process.env.VITE_MOCK_PERSONA ?? "owner";
 const scenario = process.env.VITE_MOCK_STATE ?? "default";
 const faults = process.env.VITE_MOCK_FAULTS ?? "";
 const HOME = "/workspaces/mock-workspace-primary/home";
-const NOW = new Date("2025-01-15T10:40:00+07:00");
+const NOW = new Date("2026-10-12T10:40:00+07:00");
 
 interface Rect {
   readonly x: number;

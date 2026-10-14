@@ -23,14 +23,14 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
  * the day header, a row's dot, avatar, text and time, the reading pane's bar,
  * event and foot.
  *
- * The page clock is fixed to 15/01/2025 10:40, the mock world's own "today",
+ * The page clock is fixed to 12/10/2026 10:40, the mockups' own "today",
  * in Asia/Ho_Chi_Minh.
  */
 const persona = process.env.VITE_MOCK_PERSONA ?? "owner";
 const scenario = process.env.VITE_MOCK_STATE ?? "default";
 const faults = process.env.VITE_MOCK_FAULTS ?? "";
 const INBOX = "/workspaces/mock-workspace-primary/inbox";
-const NOW = new Date("2025-01-15T10:40:00+07:00");
+const NOW = new Date("2026-10-12T10:40:00+07:00");
 
 interface Rect {
   readonly x: number;
@@ -411,7 +411,8 @@ test.describe("Inbox geometry at 1440 px (owner)", () => {
     expect(await colour(bar, "background-color")).toBe(COLOUR.panel);
     const previous = page.getByRole("button", { name: "Thông báo trước (K)" });
     const next = page.getByRole("button", { name: "Thông báo sau (J)" });
-    const open = page.getByRole("button", { name: "Mở công việc" });
+    // The notification carries its link, so "Mở công việc" is a link.
+    const open = page.getByRole("link", { name: "Mở công việc" });
     const previousBox = await rel(page, previous);
     const nextBox = await rel(page, next);
     const openBox = await rel(page, open);
@@ -458,15 +459,19 @@ test.describe("Inbox geometry at 1440 px (owner)", () => {
       "event avatar",
     );
     const text = event.locator("p");
+    // The mockup's event is one line; the mock world's is longer, so the
+    // text may take several lines of the same line height.
+    const textBox = await rel(page, text);
     expectRect(
-      await rel(page, text),
-      {
-        x: MOCK.eventText.x,
-        y: MOCK.eventText.y,
-        height: MOCK.eventText.height,
-      },
+      textBox,
+      { x: MOCK.eventText.x, y: MOCK.eventText.y },
       "event text",
     );
+    const lines = Math.round(textBox.height / MOCK.eventText.height);
+    expect(lines).toBeGreaterThanOrEqual(1);
+    expect(
+      Math.abs(textBox.height - lines * MOCK.eventText.height),
+    ).toBeLessThanOrEqual(1);
     expect(await style(text, "font-size")).toBe(TYPE.event.size);
     expect(await style(text, "font-weight")).toBe(TYPE.event.weight);
     const when = event.locator("small");

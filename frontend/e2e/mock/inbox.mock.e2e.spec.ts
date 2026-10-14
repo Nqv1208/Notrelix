@@ -5,14 +5,15 @@ import { expect, test, type Page } from "@playwright/test";
  * notifications by day, the selection and the reading pane, the unread
  * toggle, "Đã xử lý" and "Đánh dấu tất cả đã đọc" (the real mark-read
  * writes), the keyboard, and the controls without a producer. The mock world
- * has two notifications for the signed-in member (one read, one unread) and
- * the page clock is fixed so their times are stable.
+ * has the mockup's notifications for the signed-in member (three unread of
+ * today, the rest read and older) and the page clock is the mockup's, so
+ * their times are stable.
  */
 const persona = process.env.VITE_MOCK_PERSONA ?? "owner";
 const scenario = process.env.VITE_MOCK_STATE ?? "default";
 const faults = process.env.VITE_MOCK_FAULTS ?? "";
 const INBOX = "/workspaces/mock-workspace-primary/inbox";
-const NOW = new Date("2025-01-15T10:40:00+07:00");
+const NOW = new Date("2026-10-12T10:40:00+07:00");
 
 async function openInbox(page: Page) {
   await page.clock.setFixedTime(NOW);
@@ -57,6 +58,23 @@ test.describe("Inbox (owner)", () => {
     // At least one is unread (a dot and the unread label) and one is read.
     expect(await page.locator('[data-f="ud"]').count()).toBeGreaterThan(0);
     expect(await page.locator('[data-f="ud"]').count()).toBeLessThan(count);
+  });
+
+  test("the notifications are the mockup's, in Vietnamese, three unread today", async ({
+    page,
+  }) => {
+    await openInbox(page);
+    await expect(page.locator('[data-f="ud"]')).toHaveCount(3);
+    const first = rows(page).first();
+    await expect(first).toContainText(
+      "Trần Minh Quân gửi bạn duyệt Thiết lập đăng nhập một lần (SSO) cho toàn công ty",
+    );
+    await expect(first.locator('[data-f="time"]')).toContainText("12 phút");
+    await expect(rows(page).nth(1)).toContainText("Lý Thu Trang nhắc tên bạn");
+    await expect(rows(page).nth(2)).toContainText("đã quá hạn 2 ngày");
+    // Today's three come first, then yesterday's.
+    await expect(page.getByText("Hôm nay", { exact: true })).toBeVisible();
+    await expect(page.getByText("Hôm qua", { exact: true })).toBeVisible();
   });
 
   test("the first notification is open in the reading pane", async ({
@@ -141,12 +159,7 @@ test.describe("Inbox (owner)", () => {
     page,
   }) => {
     await openInbox(page);
-    for (const name of [
-      "Cần xử lý",
-      "Nhắc tên",
-      "Được giao",
-      "Đang theo dõi",
-    ]) {
+    for (const name of ["Cần xử lý", "Đang theo dõi"]) {
       const tab = page.getByRole("tab", { name });
       await expect(tab).toHaveAttribute("aria-disabled", "true");
       await expect(tab).toHaveAttribute("title", /chưa có loại/);
@@ -159,21 +172,41 @@ test.describe("Inbox (owner)", () => {
     await expect(page.getByText(/Chỉ workspace/)).toHaveCount(0);
   });
 
-  test("snooze, mute and open-item have no producer and say why", async ({
+  test("the Mentions and Assigned tabs filter by the notification type", async ({
     page,
   }) => {
     await openInbox(page);
-    for (const name of [
-      /^Nhắc lại sau/,
-      /^Tắt thông báo việc này/,
-      /^Mở công việc/,
-    ]) {
+    const all = await rows(page).count();
+    await page.getByRole("tab", { name: /^Nhắc tên/ }).click();
+    const mentions = await rows(page).count();
+    expect(mentions).toBeGreaterThan(0);
+    expect(mentions).toBeLessThan(all);
+    for (const text of await rows(page).allInnerTexts()) {
+      expect(text).toContain("nhắc tên bạn");
+    }
+    await page.getByRole("tab", { name: /^Được giao/ }).click();
+    for (const text of await rows(page).allInnerTexts()) {
+      expect(text).toMatch(/gửi bạn duyệt|giao cho bạn/);
+    }
+    await page.getByRole("tab", { name: "Tất cả" }).click();
+    await expect(rows(page)).toHaveCount(all);
+  });
+
+  test("snooze and mute have no producer and say why; open-item links to the item", async ({
+    page,
+  }) => {
+    await openInbox(page);
+    for (const name of [/^Nhắc lại sau/, /^Tắt thông báo việc này/]) {
       const button = page.getByRole("button", { name });
       await expect(button).toHaveAttribute("aria-disabled", "true");
       await expect(button).toHaveAttribute("title", /.+/);
       await button.click({ force: true });
     }
     await expect(page).toHaveURL(new RegExp(`${INBOX}$`));
+    await page.getByRole("link", { name: "Mở công việc" }).click();
+    await expect(page).toHaveURL(
+      /\/boards\/mock-board-erp\/items\/mock-erp-item-138/,
+    );
   });
 
   test("the settings icon opens the notification settings page", async ({

@@ -9,7 +9,7 @@ const persona = process.env.VITE_MOCK_PERSONA ?? "owner";
 const scenario = process.env.VITE_MOCK_STATE ?? "default";
 const faults = process.env.VITE_MOCK_FAULTS ?? "";
 const HOME = "/workspaces/mock-workspace-primary";
-const NOW = new Date("2025-01-15T10:40:00+07:00");
+const NOW = new Date("2026-10-12T10:40:00+07:00");
 
 async function openHome(page: Page) {
   await page.clock.setFixedTime(NOW);
@@ -38,11 +38,11 @@ test.describe("Home (owner)", () => {
     await expect(
       page.getByRole("heading", {
         level: 1,
-        name: "Chào buổi sáng, Developer",
+        name: "Chào buổi sáng, Hà",
       }),
     ).toBeVisible();
     await expect(
-      page.getByText(/^Thứ Tư, 15 tháng 1 · \d+\+? việc đang mở$/),
+      page.getByText("Thứ Hai, 12 tháng 10 · 7 việc đang mở"),
     ).toBeVisible();
   });
 
@@ -50,14 +50,52 @@ test.describe("Home (owner)", () => {
     page,
   }) => {
     await openHome(page);
-    for (const name of [/^Quá hạn/, /^Hôm nay/, /^Tuần này/]) {
-      await expect(page.getByRole("region", { name })).toBeVisible();
+    // The mockup's windows and counts: 1 overdue, 2 today, 2 this week, and
+    // the two items due from next week behind the "Sau đó" line.
+    for (const [name, count] of [
+      [/^Quá hạn/, 1],
+      [/^Hôm nay/, 2],
+      [/^Tuần này/, 2],
+    ] as const) {
+      const region = page.getByRole("region", { name });
+      await expect(region).toBeVisible();
+      await expect(region.locator('[data-f="row"]')).toHaveCount(count);
     }
-    const chips = page.getByRole("group", { name: "Lọc nhanh việc cần chú ý" });
-    await expect(chips.getByRole("link", { name: /quá hạn$/ })).toBeVisible();
     await expect(
-      chips.getByRole("link", { name: /đến hạn hôm nay$/ }),
+      page.getByText("Sau đó · 2 việc đến hạn từ tuần sau"),
     ).toBeVisible();
+    const chips = page.getByRole("group", { name: "Lọc nhanh việc cần chú ý" });
+    await expect(chips.getByRole("link", { name: "1 quá hạn" })).toBeVisible();
+    await expect(
+      chips.getByRole("link", { name: "2 đến hạn hôm nay" }),
+    ).toBeVisible();
+  });
+
+  test("the same item has the same date here and on its Board", async ({
+    page,
+  }) => {
+    await openHome(page);
+    const today = page.getByRole("region", { name: /^Hôm nay/ });
+    // ERP-144 is due 12/10 17:00 on the Board table: today, never "Quá hạn".
+    const row = today.locator('[data-f="row"]', {
+      hasText: "Kiểm thử phân hệ công nợ",
+    });
+    await expect(row.locator('[data-f="due"]')).toHaveText("17:00");
+    const overdue = page.getByRole("region", { name: /^Quá hạn/ });
+    await expect(overdue.locator('[data-f="due"]')).toHaveText(
+      "Quá hạn 2 ngày",
+    );
+  });
+
+  test("no due label wraps onto a second line", async ({ page }) => {
+    await openHome(page);
+    for (const due of await page.locator('[data-f="due"]').all()) {
+      const box = await due.boundingBox();
+      const lineHeight = await due.evaluate(
+        (node) => parseFloat(getComputedStyle(node).lineHeight) || 18,
+      );
+      expect(box!.height).toBeLessThan(lineHeight * 1.5);
+    }
   });
 
   test("a quick filter and the section link open My work", async ({ page }) => {

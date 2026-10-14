@@ -22,14 +22,14 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
  * the row's select box, tick, title and Board line, the due column, the week
  * card and the foot.
  *
- * The page clock is fixed to 15/01/2025 10:40, the mock world's own "today"
+ * The page clock is fixed to 12/10/2026 10:40, the mockups' own "today"
  * (its items are dated from that day), in Asia/Ho_Chi_Minh.
  */
 const persona = process.env.VITE_MOCK_PERSONA ?? "owner";
 const scenario = process.env.VITE_MOCK_STATE ?? "default";
 const faults = process.env.VITE_MOCK_FAULTS ?? "";
 const PAGE = "/workspaces/mock-workspace-primary/my-work";
-const NOW = new Date("2025-01-15T10:40:00+07:00");
+const NOW = new Date("2026-10-12T10:40:00+07:00");
 
 interface Rect {
   readonly x: number;
@@ -356,8 +356,10 @@ test.describe("My work geometry at 1440 px (owner)", () => {
     page,
   }) => {
     await openMyWork(page);
-    const row = page.locator('[data-f="row"]').first();
-    const second = page.locator('[data-f="row"]').nth(1);
+    // Rows 1 and 2 are the two of the "Hôm nay" group (row 0 is the only
+    // overdue one): the first group with a rule between rows.
+    const row = page.locator('[data-f="row"]').nth(1);
+    const second = page.locator('[data-f="row"]').nth(2);
     const rowBox = await rel(page, row);
     expectRect(rowBox, { x: MOCK.row.x, width: MOCK.row.width }, "row");
     expect(rowBox.height).toBeGreaterThanOrEqual(MOCK.row.minHeight - 1);
@@ -419,9 +421,16 @@ test.describe("My work geometry at 1440 px (owner)", () => {
     const line = due.locator('[data-f="du"]');
     expect(await style(line, "font-size")).toBe(TYPE.due.size);
     expect(await style(line, "font-weight")).toBe(TYPE.due.weight);
-    expect(await colour(line, "color")).toBe(COLOUR.danger);
+    // Today: the warning colour (the first row's own window is overdue).
+    expect(await colour(line, "color")).toBe("rgb(138, 90, 0)");
+    const overdue = page
+      .locator('[data-f="row"]')
+      .first()
+      .locator('[data-f="du"]');
+    expect(await colour(overdue, "color")).toBe(COLOUR.danger);
+    await expect(overdue).toContainText("Quá hạn 2 ngày");
     // The overdue day's own date sits under it, small and quiet.
-    const sub = line.locator("small");
+    const sub = overdue.locator("small");
     expect(await style(sub, "font-size")).toBe(TYPE.duePrefix.size);
     expect(await style(sub, "font-weight")).toBe("400");
     expect(await colour(sub, "color")).toBe(COLOUR.meta);

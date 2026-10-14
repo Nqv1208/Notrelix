@@ -20,14 +20,14 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
  * the summary, the two buttons, the chips row, the section headings, the
  * rows (height, tick, title, due day) and the department mark.
  *
- * The page clock is fixed to 15/01/2025 10:40, the mock world's own "today"
+ * The page clock is fixed to 12/10/2026 10:40, the mockups' own "today"
  * (its items are dated from that day), in Asia/Ho_Chi_Minh.
  */
 const persona = process.env.VITE_MOCK_PERSONA ?? "owner";
 const scenario = process.env.VITE_MOCK_STATE ?? "default";
 const faults = process.env.VITE_MOCK_FAULTS ?? "";
 const HOME = "/workspaces/mock-workspace-primary";
-const NOW = new Date("2025-01-15T10:40:00+07:00");
+const NOW = new Date("2026-10-12T10:40:00+07:00");
 
 interface Rect {
   readonly x: number;
@@ -270,7 +270,8 @@ test.describe("Home geometry at 1440 px (owner)", () => {
     page,
   }) => {
     await openHome(page);
-    const rows = page.locator('[data-f="rows"]').first();
+    // The second window ("Hôm nay") is the first with two rows.
+    const rows = page.locator('[data-f="rows"]').nth(1);
     const rowsBox = await rel(page, rows);
     const row = rows.locator('[data-f="row"]').first();
     const second = rows.locator('[data-f="row"]').nth(1);
@@ -341,8 +342,15 @@ test.describe("Home geometry at 1440 px (owner)", () => {
     expect(await style(due, "font-size")).toBe(TYPE.due.size);
     expect(await style(due, "font-weight")).toBe(TYPE.due.weight);
     expect(await style(due, "text-align")).toBe("right");
-    // The first window is overdue: the danger colour.
-    expect(await colour(due, "color")).toBe(COLOUR.danger);
+    // The second window is today: the warning colour.
+    expect(await colour(due, "color")).toBe(COLOUR.warnText);
+    // The first window is overdue: the danger colour, on one line.
+    const overdue = page
+      .locator('[data-f="rows"]')
+      .first()
+      .locator('[data-f="due"]');
+    expect(await colour(overdue, "color")).toBe(COLOUR.danger);
+    await expect(overdue).toHaveText("Quá hạn 2 ngày");
   });
 
   test("the department mark in the Board line", async ({ page }) => {

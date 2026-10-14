@@ -426,8 +426,10 @@ test.describe("rail pinned (nav=hien-day)", () => {
     // The next Space starts 2 px below the last child row.
     const next = tree.getByRole("treeitem", { name: /Accounting/ });
     expect((await box(next)).y - (subBox.y + subBox.height)).toBe(2);
-    await expectBox(next, { x: 86, width: 235, height: 32 });
-    await expectBox(next.locator("svg"), { x: 298, width: 13, height: 13 });
+    // Accounting holds a Board (KT-88's), so its row has a toggle like the
+    // expanded Space's: 209 wide, the lock 10 px inside it.
+    await expectBox(next, { x: 86, width: 209, height: 32 });
+    await expectBox(next.locator("svg"), { x: 272, width: 13, height: 13 });
   });
 
   test("the footer has Workspace setup 235 x 34 at y=796 and the user card 235 x 52 at y=836 with a 26 x 26 round avatar", async ({

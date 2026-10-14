@@ -12,7 +12,7 @@ const persona = process.env.VITE_MOCK_PERSONA ?? "owner";
 const scenario = process.env.VITE_MOCK_STATE ?? "default";
 const faults = process.env.VITE_MOCK_FAULTS ?? "";
 const BASE = "/workspaces/mock-workspace-primary";
-const NOW = new Date("2025-01-15T10:40:00+07:00");
+const NOW = new Date("2026-10-12T10:40:00+07:00");
 
 async function open(page: Page) {
   await page.clock.setFixedTime(NOW);
@@ -146,8 +146,8 @@ test.describe("Command palette (owner)", () => {
       /erp/i,
     );
     // Diacritics are ignored.
-    await input(page).fill("khao sat quy trinh");
-    await expect(options(page).first()).toContainText("Khảo sát quy trình");
+    await input(page).fill("doi chieu sao ke");
+    await expect(options(page).first()).toContainText("Đối chiếu sao kê");
   });
 
   test("arrows move the selection (aria-activedescendant follows) and Enter opens an item on its Board", async ({
@@ -155,7 +155,7 @@ test.describe("Command palette (owner)", () => {
   }) => {
     await open(page);
     await page.keyboard.press("Meta+k");
-    await input(page).fill("khao sat quy trinh");
+    await input(page).fill("doi chieu sao ke");
     const first = options(page).first();
     await expect(first).toHaveAttribute("aria-selected", "true");
     const id = await first.getAttribute("id");

@@ -10,7 +10,7 @@ const persona = process.env.VITE_MOCK_PERSONA ?? "owner";
 const scenario = process.env.VITE_MOCK_STATE ?? "default";
 const faults = process.env.VITE_MOCK_FAULTS ?? "";
 const PAGE = "/workspaces/mock-workspace-primary/my-work";
-const NOW = new Date("2025-01-15T10:40:00+07:00");
+const NOW = new Date("2026-10-12T10:40:00+07:00");
 
 async function openMyWork(page: Page, query = "") {
   await page.clock.setFixedTime(NOW);
@@ -43,6 +43,14 @@ test.describe("My work (owner)", () => {
     await openMyWork(page);
     await expect(groupHeadings(page).first()).toContainText("Quá hạn");
     await expect(groupHeadings(page).nth(1)).toContainText("Hôm nay");
+    // The Home mockup's windows: 1 overdue, 2 today, 2 this week, 2 later.
+    const windows = await groupHeadings(page).allInnerTexts();
+    expect(windows.map((text) => text.replace(/\s+/g, " ").trim())).toEqual([
+      expect.stringMatching(/^Quá hạn 1\b/),
+      expect.stringMatching(/^Hôm nay 2\b/),
+      expect.stringMatching(/^Tuần này 2\b/),
+      expect.stringMatching(/^Sau đó 2\b/),
+    ]);
     const total = Number(
       (
         await page
@@ -55,11 +63,66 @@ test.describe("My work (owner)", () => {
       .locator('[data-f="gn"]')
       .allInnerTexts();
     expect(counts.map(Number).reduce((sum, n) => sum + n, 0)).toBe(total);
+    expect(total).toBe(7);
     // The department card adds up to the same total.
     const rail = page.getByRole("complementary", {
       name: "Tóm tắt việc của tôi",
     });
     await expect(rail).toContainText(`${total} việc`);
+  });
+
+  test("the week card and the department card count the real items", async ({
+    page,
+  }) => {
+    await openMyWork(page);
+    const rail = page.getByRole("complementary", {
+      name: "Tóm tắt việc của tôi",
+    });
+    // Mon 12: 2, Wed 14: 1, Fri 16: 1, and the item overdue since Sat 10/10.
+    const days = rail.locator('[data-f="day"]');
+    await expect(days).toHaveCount(7);
+    const counts = (await days.allInnerTexts()).map((text) =>
+      text.replace(/\s+/g, " ").trim(),
+    );
+    expect(counts.map((text) => text.split(" ").pop())).toEqual([
+      "2",
+      "0",
+      "1",
+      "0",
+      "1",
+      "0",
+      "0",
+    ]);
+    await expect(rail).toContainText("1 việc quá hạn");
+    // Departments: Engineering 4, Accounting 2, Marketing 1.
+    await expect(rail).toContainText(/Engineering\s*4 việc/);
+    await expect(rail).toContainText(/Accounting\s*2 việc/);
+    await expect(rail).toContainText(/Marketing\s*1 việc/);
+  });
+
+  test("a due label never wraps and the dates agree with the Board", async ({
+    page,
+  }) => {
+    await openMyWork(page);
+    for (const due of await page.locator('[data-f="du"]').all()) {
+      const box = await due.boundingBox();
+      const lineHeight = await due.evaluate(
+        (node) => parseFloat(getComputedStyle(node).lineHeight) || 18,
+      );
+      const lines = await due.evaluate(
+        (node) =>
+          Array.from(node.children).filter(
+            (child) => !child.classList.contains("sr-only"),
+          ).length,
+      );
+      // One line for the label plus at most one small line under it.
+      expect(box!.height).toBeLessThan(lineHeight * (1 + lines) + 2);
+    }
+    const ticket = page.locator('[data-f="row"]', {
+      hasText: "Kiểm thử phân hệ công nợ",
+    });
+    await expect(ticket.locator('[data-f="du"]')).toContainText("Hôm nay");
+    await expect(ticket.locator('[data-f="du"]')).not.toContainText("Quá hạn");
   });
 
   test("the tabs with no producer say why and do not switch", async ({
@@ -93,7 +156,9 @@ test.describe("My work (owner)", () => {
     await expect(page.getByRole("button", { name: /^Nhóm/ })).toContainText(
       "Theo board",
     );
-    await expect(groupHeadings(page).first()).toContainText("Product Roadmap");
+    await expect(groupHeadings(page).first()).toContainText(
+      "Triển khai ERP Q4",
+    );
     // A row leaves out its Board when the list is grouped by it.
     await expect(
       page.locator('[data-f="rc"]').first().locator('[data-f="why"]'),
@@ -110,12 +175,12 @@ test.describe("My work (owner)", () => {
     const search = page.getByRole("searchbox", {
       name: "Tìm trong việc của tôi",
     });
-    await search.fill("Task 4");
+    await search.fill("công nợ");
     const found = await rows.count();
     expect(found).toBeGreaterThan(0);
     expect(found).toBeLessThan(all);
     for (const title of await page.locator('[data-f="rt"]').allInnerTexts()) {
-      expect(title).toContain("Task 4");
+      expect(title).toContain("công nợ");
     }
     await search.fill("không có việc nào tên thế này");
     await expect(page.getByText("Không có việc nào khớp.")).toBeVisible();
@@ -125,13 +190,13 @@ test.describe("My work (owner)", () => {
     await page.getByRole("button", { name: /^Board/ }).click();
     await page
       .getByRole("listbox", { name: "Board" })
-      .getByRole("option", { name: "Board 1" })
+      .getByRole("option", { name: "Đóng sổ tháng 10" })
       .click();
     await expect(page.getByRole("button", { name: /^Board/ })).toContainText(
       "1",
     );
     for (const board of await page.locator('[data-f="rc"]').allInnerTexts()) {
-      expect(board).toContain("Board 1");
+      expect(board).toContain("Đóng sổ tháng 10");
     }
     await page.keyboard.press("Escape");
   });

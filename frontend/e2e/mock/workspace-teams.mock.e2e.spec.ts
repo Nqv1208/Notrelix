@@ -56,7 +56,7 @@ test("Teams: create a Team, add a member, promote and demote Leads, remove, arch
   const members = page.getByRole("list", { name: "Members" });
   await expect(members.getByRole("listitem")).toHaveCount(1);
   // The only Lead is shown as plain text: it cannot be demoted or removed.
-  await expect(members.getByText("UI Developer (Owner)")).toBeVisible();
+  await expect(members.getByText("Nguyễn Thu Hà")).toBeVisible();
   await expect(members.getByText("The only Lead.")).toBeVisible();
 
   // Add a workspace member as a Member.
@@ -81,27 +81,27 @@ test("Teams: create a Team, add a member, promote and demote Leads, remove, arch
   ).toBeVisible();
   await expect(jordanRole).toHaveText("Lead");
   const ownerRole = page.getByRole("combobox", {
-    name: "Team role for UI Developer (Owner)",
+    name: "Team role for Nguyễn Thu Hà",
   });
   await ownerRole.click();
   await page.getByRole("option", { name: "Member" }).click();
   await expect(
-    page.getByText("UI Developer (Owner) is now Member."),
+    page.getByText("Nguyễn Thu Hà is now Member."),
   ).toBeVisible();
   await expect(ownerRole).toHaveText("Member");
 
   // Remove the demoted person after confirming.
   await page
     .getByRole("button", {
-      name: "Remove UI Developer (Owner) from the Team",
+      name: "Remove Nguyễn Thu Hà from the Team",
     })
     .click();
   await page
-    .getByRole("alertdialog", { name: /^Remove UI Developer \(Owner\) from/ })
+    .getByRole("alertdialog", { name: /^Remove Nguyễn Thu Hà from/ })
     .getByRole("button", { name: "Remove from Team" })
     .click();
   await expect(
-    page.getByText("UI Developer (Owner) was removed from the Team."),
+    page.getByText("Nguyễn Thu Hà was removed from the Team."),
   ).toBeVisible();
   await expect(members.getByRole("listitem")).toHaveCount(1);
 
