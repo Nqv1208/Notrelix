@@ -45,14 +45,17 @@ test("Space org tree: create a Space, add a member, create a Board and a Doc in 
   // Add a workspace member to the Space (the tab strip is links, not tabs).
   const tabs = page.getByRole("navigation", { name: "IT" });
   await tabs.getByRole("link", { name: /^Members/ }).click();
-  const add = page.getByRole("form", { name: "Add people or a team" });
-  await add.getByRole("combobox", { name: "Person" }).click();
-  await page.getByRole("option", { name: "Jordan Lee (Member)" }).click();
-  await add.getByRole("button", { name: "Add" }).click();
+  await page.getByRole("button", { name: "Add members" }).click();
+  const add = page.getByRole("dialog", { name: "Add to IT" });
+  await add
+    .getByRole("combobox", { name: "Add people or teams" })
+    .fill("jordan");
+  await page.keyboard.press("Enter");
+  await add.getByRole("button", { name: "Add 1 person" }).click();
   await expect(page.getByText("Jordan Lee (Member) was added.")).toBeVisible();
   await expect(
     page
-      .getByRole("list", { name: "Members" })
+      .getByRole("table", { name: "Members of IT" })
       .getByText("Jordan Lee (Member)"),
   ).toBeVisible();
 

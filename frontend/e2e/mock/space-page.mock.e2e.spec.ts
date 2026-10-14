@@ -118,7 +118,7 @@ test.describe("Department page (owner)", () => {
     await tabs.getByRole("link", { name: /^Thành viên/ }).click();
     await expect(page).toHaveURL(/tab=members/);
     await expect(
-      page.getByRole("form", { name: "Thêm người hoặc nhóm" }),
+      page.getByRole("table", { name: "Thành viên Engineering" }),
     ).toBeVisible();
     // Add members from the head goes to the same tab.
     await tabs.getByRole("link", { name: /^Tổng quan/ }).click();
