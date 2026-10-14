@@ -430,6 +430,14 @@ export const textRoles = {
     letterSpacing: "0em",
     family: "sans",
   },
+  /** Command palette query (Final-Command `.q`, 17px, line 1.45). */
+  "palette-query": {
+    size: "17",
+    lineHeight: 1.540625,
+    weight: weights.regular,
+    letterSpacing: "0em",
+    family: "sans",
+  },
   /** Greeting on Home (Final-Home h1, 26px / 650, line 1.25). */
   greeting: {
     size: "26",

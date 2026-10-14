@@ -262,6 +262,11 @@
   --type-dialog-title-weight: 650;
   --type-dialog-title-tracking: 0em;
   --type-dialog-title-family: var(--font-family-sans);
+  --type-palette-query-size: var(--type-scale-17);
+  --type-palette-query-line-height: 1.540625rem;
+  --type-palette-query-weight: 400;
+  --type-palette-query-tracking: 0em;
+  --type-palette-query-family: var(--font-family-sans);
   --type-greeting-size: var(--type-scale-26);
   --type-greeting-line-height: 2.03125rem;
   --type-greeting-weight: 650;
@@ -694,6 +699,7 @@
   --elevation-sheet: -18px 0 40px 0 oklch(0.208 0.04 265.8 / 0.14);
   --elevation-popover: 0 12px 32px 0 oklch(0.208 0.04 265.8 / 0.16);
   --elevation-dialog: 0 24px 60px 0 oklch(0 0 0 / 0.28);
+  --elevation-palette: 0 24px 64px 0 oklch(0.208 0.04 265.8 / 0.28);
   --elevation-segment: 0 1px 2px 0 oklch(0.208 0.04 265.8 / 0.12);
   --elevation-bar: 0 12px 32px 0 oklch(0.208 0.04 265.8 / 0.3);
 }
@@ -921,6 +927,7 @@
   --elevation-sheet: -18px 0 40px 0 oklch(0 0 0 / 0.5);
   --elevation-popover: 0 12px 32px 0 oklch(0 0 0 / 0.5);
   --elevation-dialog: 0 24px 60px 0 oklch(0 0 0 / 0.28);
+  --elevation-palette: 0 24px 64px 0 oklch(0 0 0 / 0.6);
   --elevation-segment: 0 1px 2px 0 oklch(0.208 0.04 265.8 / 0.12);
   --elevation-bar: 0 12px 32px 0 oklch(0 0 0 / 0.5);
 }
@@ -1148,6 +1155,7 @@
   --elevation-sheet: -18px 0 40px 0 oklch(0.208 0.04 265.8 / 0.14);
   --elevation-popover: 0 12px 32px 0 oklch(0.208 0.04 265.8 / 0.16);
   --elevation-dialog: 0 24px 60px 0 oklch(0 0 0 / 0.28);
+  --elevation-palette: 0 24px 64px 0 oklch(0.208 0.04 265.8 / 0.28);
   --elevation-segment: 0 1px 2px 0 oklch(0.208 0.04 265.8 / 0.12);
   --elevation-bar: 0 12px 32px 0 oklch(0.208 0.04 265.8 / 0.3);
 }

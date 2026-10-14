@@ -19,6 +19,7 @@ export const ELEVATION_ROLES = [
   "sheet",
   "popover",
   "dialog",
+  "palette",
   "segment",
   "bar",
 ] as const;
@@ -40,6 +41,7 @@ const lightElevation: Record<ElevationRole, string> = {
   sheet: `-18px 0 40px 0 ${lightSheet(0.14)}`,
   popover: `0 12px 32px 0 ${lightSheet(0.16)}`,
   dialog: `0 24px 60px 0 ${darkShadow(0.28)}`,
+  palette: `0 24px 64px 0 ${lightSheet(0.28)}`,
   segment: `0 1px 2px 0 ${lightSheet(0.12)}`,
   bar: `0 12px 32px 0 ${lightSheet(0.3)}`,
 };
@@ -58,6 +60,7 @@ export const elevation: Record<
     sheet: `-18px 0 40px 0 ${darkShadow(0.5)}`,
     popover: `0 12px 32px 0 ${darkShadow(0.5)}`,
     dialog: `0 24px 60px 0 ${darkShadow(0.28)}`,
+    palette: `0 24px 64px 0 ${darkShadow(0.6)}`,
     segment: `0 1px 2px 0 ${lightSheet(0.12)}`,
     bar: `0 12px 32px 0 ${darkShadow(0.5)}`,
   },
