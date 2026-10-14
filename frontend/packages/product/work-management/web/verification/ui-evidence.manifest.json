@@ -42,6 +42,11 @@
         "path": "src/components/views/timeline/board-timeline-view.tsx",
         "category": "container",
         "reason": "Stateful view adapter owning the timeline board query state, the window and the writes, composing the registered timeline surface."
+      },
+      {
+        "path": "src/components/shared/board-item-sheet-host.tsx",
+        "category": "container",
+        "reason": "Container hosting the shared item side sheet for a page that is not a Board view: it reads the item's Board and access and wires the sheet's actions, composing the registered item sheet surface."
       }
     ]
   },

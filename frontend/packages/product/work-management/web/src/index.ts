@@ -97,6 +97,10 @@ export {
 export { useCalendarCopy } from "./components/views/calendar/use-calendar-copy";
 
 // Card detail
+export {
+  BoardItemSheetHost,
+  type BoardItemSheetHostProps,
+} from "./components/shared/board-item-sheet-host";
 export * from "./components/card-detail/task-detail-panel";
 export * from "./components/card-detail/task-detail-header";
 export * from "./components/card-detail/task-detail-tabs";
