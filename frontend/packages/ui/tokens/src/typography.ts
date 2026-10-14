@@ -59,6 +59,7 @@ export const fontSizeDense = {
   "15": 0.9375,
   "15p5": 0.96875,
   "20": 1.25,
+  "26": 1.625,
 } as const;
 
 export type FontSizeStep = keyof typeof fontSizeScale;
@@ -426,6 +427,14 @@ export const textRoles = {
     lineHeight: 1.51875,
     weight: 650,
     letterSpacing: "0em",
+    family: "sans",
+  },
+  /** Greeting on Home (Final-Home h1, 26px / 650, line 1.25). */
+  greeting: {
+    size: "26",
+    lineHeight: 2.03125,
+    weight: 650,
+    letterSpacing: "-0.015em",
     family: "sans",
   },
   /** Initials in a 30px person avatar (share dialog people). */

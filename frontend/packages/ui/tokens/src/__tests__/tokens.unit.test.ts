@@ -748,3 +748,29 @@ describe("item page colours", () => {
     }
   });
 });
+
+/**
+ * Home, My work and Inbox (Final-Home, Final-MyWork, Final-Inbox): the page
+ * title roles the mockups draw above the shared roles.
+ */
+describe("Home, My work and Inbox type roles", () => {
+  it("sizes the greeting as Final-Home's h1 (26px / 650, line 1.25)", () => {
+    const role = textRoles.greeting;
+    expect(fontSizeDense[role.size as keyof typeof fontSizeDense]).toBe(1.625);
+    expect(role.lineHeight * 16).toBeCloseTo(32.5, 5);
+    expect(role.weight).toBe(650);
+    expect(role.letterSpacing).toBe("-0.015em");
+  });
+
+  it("maps every Home role to the web globals", () => {
+    const globals = readFileSync(
+      resolve(here, "../../../../../apps/web/src/styles/globals.css"),
+      "utf8",
+    );
+    for (const role of ["greeting"]) {
+      expect(globals, role).toContain(
+        `--text-${role}: var(--type-${role}-size);`,
+      );
+    }
+  });
+});

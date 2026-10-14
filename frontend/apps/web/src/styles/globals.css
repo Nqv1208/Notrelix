@@ -162,6 +162,10 @@
   --text-dialog-title--line-height: var(--type-dialog-title-line-height);
   --text-dialog-title--font-weight: var(--type-dialog-title-weight);
   --text-dialog-title--letter-spacing: var(--type-dialog-title-tracking);
+  --text-greeting: var(--type-greeting-size);
+  --text-greeting--line-height: var(--type-greeting-line-height);
+  --text-greeting--font-weight: var(--type-greeting-weight);
+  --text-greeting--letter-spacing: var(--type-greeting-tracking);
   --text-avatar-lg: var(--type-avatar-lg-size);
   --text-avatar-lg--line-height: var(--type-avatar-lg-line-height);
   --text-avatar-lg--font-weight: var(--type-avatar-lg-weight);

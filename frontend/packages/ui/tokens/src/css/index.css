@@ -26,6 +26,7 @@
   --type-scale-15: 0.9375rem;
   --type-scale-17: 1.0625rem;
   --type-scale-20: 1.25rem;
+  --type-scale-26: 1.625rem;
   --type-scale-10p5: 0.65625rem;
   --type-scale-13p5: 0.84375rem;
   --type-scale-8p5: 0.53125rem;
@@ -260,6 +261,11 @@
   --type-dialog-title-weight: 650;
   --type-dialog-title-tracking: 0em;
   --type-dialog-title-family: var(--font-family-sans);
+  --type-greeting-size: var(--type-scale-26);
+  --type-greeting-line-height: 2.03125rem;
+  --type-greeting-weight: 650;
+  --type-greeting-tracking: -0.015em;
+  --type-greeting-family: var(--font-family-sans);
   --type-avatar-lg-size: var(--type-scale-10p5);
   --type-avatar-lg-line-height: 1rem;
   --type-avatar-lg-weight: 700;
