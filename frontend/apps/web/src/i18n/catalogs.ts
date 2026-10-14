@@ -22,6 +22,7 @@ import { notificationBellCatalog } from "@notrelix/features-notifications";
 import { docPageCatalog } from "@notrelix/docs-web";
 import {
   boardHeaderCatalog,
+  boardShareCatalog,
   calendarCatalog,
   itemPageCatalog,
   itemSheetCatalog,
@@ -32,6 +33,7 @@ import {
   statusOptionFormCatalog,
   timelineCatalog,
 } from "@notrelix/work-management-web";
+import { routerStatesCatalog } from "../router/router-states.catalog";
 
 /**
  * Catalogs composed into the web host's I18nProvider. Packages export their
@@ -58,6 +60,7 @@ export const webCatalogs: readonly MessageCatalog[] = [
   itemSheetCatalog,
   itemPageCatalog,
   boardHeaderCatalog,
+  boardShareCatalog,
   notificationBellCatalog,
   docPageCatalog,
   accountNavCatalog,
@@ -65,4 +68,5 @@ export const webCatalogs: readonly MessageCatalog[] = [
   accountAppearanceCatalog,
   accountSecurityCatalog,
   accountNotificationsCatalog,
+  routerStatesCatalog,
 ];
