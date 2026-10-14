@@ -104,25 +104,6 @@ export const en = {
     themeToLight: "Switch to light theme",
     themeToDark: "Switch to dark theme",
   },
-  palette: {
-    title: "Command palette",
-    description: "Search Boards, Docs, people and actions in this workspace.",
-    placeholder: "Search or type a command…",
-    empty: "Nothing matches “{{query}}”.",
-    groups: {
-      navigation: "Go to",
-      boards: "Boards",
-      docs: "Docs",
-      members: "People",
-      actions: "Actions",
-    },
-    searchAll: "Search the workspace for “{{query}}”",
-    openSearch: "Open workspace search",
-    toggleThemeLight: "Switch to light theme",
-    toggleThemeDark: "Switch to dark theme",
-    shortcuts: "Show keyboard shortcuts",
-    createWorkspace: "Create workspace",
-  },
   shortcuts: {
     title: "Keyboard shortcuts",
     description:
@@ -275,26 +256,6 @@ export const vi: WorkspaceShellCopy = {
     commandLabel: "Mở bảng lệnh",
     themeToLight: "Chuyển sang giao diện sáng",
     themeToDark: "Chuyển sang giao diện tối",
-  },
-  palette: {
-    title: "Bảng lệnh",
-    description:
-      "Tìm Bảng, Tài liệu, mọi người và thao tác trong không gian làm việc này.",
-    placeholder: "Tìm kiếm hoặc nhập lệnh…",
-    empty: "Không có kết quả cho “{{query}}”.",
-    groups: {
-      navigation: "Chuyển tới",
-      boards: "Bảng",
-      docs: "Tài liệu",
-      members: "Mọi người",
-      actions: "Thao tác",
-    },
-    searchAll: "Tìm “{{query}}” trong không gian làm việc",
-    openSearch: "Mở tìm kiếm trong không gian làm việc",
-    toggleThemeLight: "Chuyển sang giao diện sáng",
-    toggleThemeDark: "Chuyển sang giao diện tối",
-    shortcuts: "Xem phím tắt",
-    createWorkspace: "Tạo không gian làm việc",
   },
   shortcuts: {
     title: "Phím tắt",

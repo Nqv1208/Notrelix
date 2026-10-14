@@ -4,10 +4,7 @@ import { SidebarInset, SidebarProvider } from "@notrelix/ui-web";
 
 import {
   breadcrumbFixture,
-  shellBoardsFixture,
   shellCopyFixture,
-  shellDocsFixture,
-  shellMembersFixture,
   shellNavigationFixture,
   sidebarEdgeDataScenario,
   sidebarEmptyScenario,
@@ -21,7 +18,6 @@ import {
   sidebarDepartmentsFixture,
   sidebarDepartmentsStateFixture,
 } from "../../verification/workspace-spaces-fixtures";
-import { WorkspaceCommandPaletteSurface } from "./workspace-command-palette-surface";
 import { WorkspaceScopeStateSurface } from "./workspace-scope-state-surface";
 import { WorkspaceShortcutSheetSurface } from "./workspace-shortcut-sheet-surface";
 import { WorkspaceSidebarSurface } from "./workspace-sidebar-surface";
@@ -223,56 +219,6 @@ export const TopbarEdgeData: Story = {
     );
   },
   tags: ["fui-surface--workspace.topbar", "fui-state--EdgeData"],
-};
-
-// ── Command palette (WX-SHELL-003) ────────────────────────────────
-
-const paletteBase = {
-  copy: shellCopyFixture(),
-  open: true,
-  onOpenChange: noop,
-  boards: shellBoardsFixture,
-  docs: shellDocsFixture,
-  members: shellMembersFixture(),
-  appearance: "light" as const,
-  canCreateWorkspace: true,
-  onSelect: noop,
-};
-
-export const CommandPaletteDefault: Story = {
-  render: () => <WorkspaceCommandPaletteSurface {...paletteBase} />,
-  tags: ["fui-surface--workspace.command-palette", "fui-state--Default"],
-};
-
-export const CommandPaletteEmpty: Story = {
-  render: () => (
-    <WorkspaceCommandPaletteSurface
-      {...paletteBase}
-      boards={[]}
-      docs={[]}
-      members={[]}
-      defaultQuery="quarterly budget"
-    />
-  ),
-  tags: ["fui-surface--workspace.command-palette", "fui-state--Empty"],
-};
-
-export const CommandPaletteEdgeData: Story = {
-  render: () => (
-    <WorkspaceCommandPaletteSurface
-      {...paletteBase}
-      copy={shellCopyFixture("vi")}
-      boards={[
-        ...shellBoardsFixture,
-        {
-          id: "board-long",
-          name: "Kế hoạch ra mắt sản phẩm toàn cầu — giai đoạn hai (bản nháp cuối cùng)",
-        },
-      ]}
-      defaultQuery="Kế hoạch"
-    />
-  ),
-  tags: ["fui-surface--workspace.command-palette", "fui-state--EdgeData"],
 };
 
 // ── Shortcut sheet (WX-SHELL-005) ─────────────────────────────────

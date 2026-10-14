@@ -96,3 +96,4 @@ export * from "./model/my-work";
 export * from "./model/library";
 export * from "./model/spaces";
 export * from "./model/teams";
+export * from "./model/command-palette";

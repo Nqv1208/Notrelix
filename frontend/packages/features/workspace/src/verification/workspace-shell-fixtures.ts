@@ -17,8 +17,6 @@ import {
   type NavigationListState,
   type ShellCurrentWorkspace,
   type ShellNavigation,
-  type ShellPaletteMember,
-  type ShellPaletteResource,
   type ShellUser,
   type ShellWorkspace,
 } from "../web/shell/shell-models";
@@ -265,41 +263,16 @@ export function sidebarEdgeDataScenario(): SidebarScenario {
   };
 }
 
-export const shellBoardsFixture: readonly ShellPaletteResource[] = [
+const shellBoardsFixture: readonly { id: string; name: string }[] = [
   { id: "board-roadmap", name: "Product Roadmap" },
   { id: "board-launch", name: "Launch checklist" },
   { id: "board-bugs", name: "Bug triage" },
 ];
 
-export const shellDocsFixture: readonly ShellPaletteResource[] = [
+const shellDocsFixture: readonly { id: string; name: string }[] = [
   { id: "doc-spec", name: "Q4 product specification" },
   { id: "doc-retro", name: "Sprint 42 retro" },
 ];
-
-export function shellMembersFixture(
-  copy = shellCopyFixture(),
-): ShellPaletteMember[] {
-  return [
-    {
-      id: "user-linh",
-      name: "Linh Tran",
-      identity: "gold",
-      roleLabel: copy.switcher.roles.owner,
-    },
-    {
-      id: "user-minh",
-      name: "Minh Pham",
-      identity: "blue",
-      roleLabel: copy.switcher.roles.admin,
-    },
-    {
-      id: "user-an",
-      name: "An Le",
-      identity: "sage",
-      roleLabel: copy.switcher.roles.member,
-    },
-  ];
-}
 
 export function breadcrumbFixture(
   location: WorkspaceDestination | null,

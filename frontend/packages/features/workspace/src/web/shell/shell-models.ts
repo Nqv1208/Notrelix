@@ -70,25 +70,16 @@ export interface ShellUser {
   readonly identity: IdentityTone;
 }
 
-export interface ShellPaletteResource {
-  readonly id: string;
-  readonly name: string;
-}
-
-export interface ShellPaletteMember {
-  readonly id: string;
-  readonly name: string;
-  readonly identity: IdentityTone;
-  readonly roleLabel: string;
-}
-
 export type ShellPaletteAction =
-  "toggle-theme" | "show-shortcuts" | "create-workspace";
+  | "toggle-theme"
+  | "show-shortcuts"
+  | "create-workspace"
+  | "create-doc"
+  | "switch-workspace";
 
 /** One selected palette result. */
 export type ShellPaletteSelection =
   | { readonly type: "navigate"; readonly destination: WorkspaceDestination }
-  | { readonly type: "search"; readonly query: string }
   | { readonly type: "action"; readonly action: ShellPaletteAction };
 
 export type ShellAppearance = "light" | "dark";

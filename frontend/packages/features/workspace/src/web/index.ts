@@ -58,10 +58,21 @@ export {
   WorkspaceTopbarSurface,
   type WorkspaceTopbarSurfaceProps,
 } from "./shell/workspace-topbar-surface";
+export { workspaceCommandCatalog } from "./command/workspace-command.catalog";
+export {
+  workspaceCommandCopy,
+  type WorkspaceCommandCopy,
+} from "./command/workspace-command.copy";
+export { useWorkspaceCommandCopy } from "./command/use-workspace-command-copy";
+export * from "./command/command-models";
+export {
+  PALETTE_COMMAND_IDS,
+  type PaletteCommandId,
+} from "./command/command-build";
 export {
   WorkspaceCommandPaletteSurface,
   type WorkspaceCommandPaletteSurfaceProps,
-} from "./shell/workspace-command-palette-surface";
+} from "./command/command-palette-surface";
 export {
   WorkspaceShortcutSheetSurface,
   type WorkspaceShortcutSheetSurfaceProps,

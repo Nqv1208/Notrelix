@@ -5,10 +5,7 @@ import { SidebarProvider } from "@notrelix/ui-web";
 
 import {
   breadcrumbFixture,
-  shellBoardsFixture,
   shellCopyFixture,
-  shellDocsFixture,
-  shellMembersFixture,
   shellNavigationFixture,
   sidebarDefaultScenario,
   sidebarDocsTreeFixture,
@@ -19,7 +16,6 @@ import {
   sidebarDepartmentsFixture,
   sidebarSpacesFixture,
 } from "../../../verification/workspace-spaces-fixtures";
-import { WorkspaceCommandPaletteSurface } from "../workspace-command-palette-surface";
 import { WorkspaceScopeStateSurface } from "../workspace-scope-state-surface";
 import { WorkspaceShortcutSheetSurface } from "../workspace-shortcut-sheet-surface";
 import {
@@ -596,92 +592,6 @@ describe("WorkspaceTopbarSurface", () => {
     expect(props.navigation.onNavigate).toHaveBeenCalledWith({
       section: "home",
     });
-  });
-});
-
-describe("WorkspaceCommandPaletteSurface", () => {
-  function renderPalette(
-    overrides: { defaultQuery?: string; empty?: boolean } = {},
-  ) {
-    const props = {
-      copy,
-      open: true,
-      onOpenChange: vi.fn(),
-      boards: overrides.empty ? [] : shellBoardsFixture,
-      docs: overrides.empty ? [] : shellDocsFixture,
-      members: overrides.empty ? [] : shellMembersFixture(),
-      appearance: "light" as const,
-      canCreateWorkspace: true,
-      onSelect: vi.fn(),
-      defaultQuery: overrides.defaultQuery,
-    };
-    renderPureUi(<WorkspaceCommandPaletteSurface {...props} />);
-    return props;
-  }
-
-  it("FUI[workspace.command-palette:a11y] is a labelled dialog with a labelled input that holds focus", () => {
-    renderPalette();
-    const dialog = screen.getByRole("dialog", { name: copy.palette.title });
-    const input = within(dialog).getByRole("combobox", {
-      name: copy.palette.title,
-    });
-    expect(document.activeElement).toBe(input);
-    expect(within(dialog).getByRole("listbox")).toBeTruthy();
-    expect(within(dialog).getByText(copy.palette.groups.boards)).toBeTruthy();
-    expect(within(dialog).getByText(copy.palette.groups.docs)).toBeTruthy();
-    expect(within(dialog).getByText(copy.palette.groups.members)).toBeTruthy();
-    expect(
-      within(dialog).getByText(copy.palette.groups.navigation),
-    ).toBeTruthy();
-  });
-
-  it("FUI[workspace.command-palette:navigate] filters and opens a Board", () => {
-    const props = renderPalette();
-    const input = screen.getByRole("combobox", { name: copy.palette.title });
-    fireEvent.change(input, { target: { value: "roadmap" } });
-
-    fireEvent.click(screen.getByRole("option", { name: /Product Roadmap/ }));
-
-    expect(props.onOpenChange).toHaveBeenCalledWith(false);
-    expect(props.onSelect).toHaveBeenCalledWith({
-      type: "navigate",
-      destination: { section: "board", boardId: "board-roadmap" },
-    });
-
-    // Reports is a "Go to" destination like the sidebar's primary items.
-    fireEvent.change(input, { target: { value: "" } });
-    fireEvent.click(screen.getByRole("option", { name: copy.nav.reports }));
-    expect(props.onSelect).toHaveBeenLastCalledWith({
-      type: "navigate",
-      destination: { section: "reports" },
-    });
-  });
-
-  it("FUI[workspace.command-palette:search] hands the query to workspace search", () => {
-    const props = renderPalette({ defaultQuery: "launch" });
-    fireEvent.click(
-      screen.getByRole("option", { name: /Search the workspace for “launch”/ }),
-    );
-    expect(props.onSelect).toHaveBeenCalledWith({
-      type: "search",
-      query: "launch",
-    });
-  });
-
-  it("FUI[workspace.command-palette:actions] runs shell actions", () => {
-    const props = renderPalette();
-    fireEvent.click(
-      screen.getByRole("option", { name: new RegExp(copy.palette.shortcuts) }),
-    );
-    expect(props.onSelect).toHaveBeenCalledWith({
-      type: "action",
-      action: "show-shortcuts",
-    });
-  });
-
-  it("FUI[workspace.command-palette:empty] explains when nothing matches", () => {
-    renderPalette({ defaultQuery: "zzqq-nothing", empty: true });
-    expect(screen.getByText("Nothing matches “zzqq-nothing”.")).toBeTruthy();
   });
 });
 

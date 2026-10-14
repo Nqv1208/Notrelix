@@ -32,6 +32,8 @@ import {
   createUseWorkspacePins,
   useShellShortcuts,
   useSpaceTreeExpansion,
+  useWorkspaceCommandCopy,
+  useWorkspaceHomeCopy,
   useWorkspaceShellCopy,
   useWorkspaceSpacesCopy,
   NotrelixSystemRailSurface,
@@ -62,7 +64,10 @@ import { buildSidebarDocs } from "./docs-sidebar-tree";
 import { CreateWorkspaceDialog } from "./create-workspace-dialog";
 import { useSystemRailPreference } from "./use-system-rail-preference";
 import { flattenMyWork, useMyWorkItems } from "./work-management-bridge";
+import { useCommandPaletteData } from "./use-command-palette-data";
+import { useCreateResource } from "./use-create-resource";
 import { useCreateSpace } from "./use-create-space";
+import { useWorkspaceResources } from "./use-workspace-resources";
 import { useSpaceHooks } from "./use-workspace-spaces";
 import {
   destinationHref,
@@ -431,6 +436,9 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
     () => theme.setMode(appearance === "dark" ? "light" : "dark"),
     [appearance, theme],
   );
+  const homeCopy = useWorkspaceHomeCopy();
+  const createResource = useCreateResource(workspaceId, homeCopy);
+  const openCreateResource = createResource.open;
   const commandShortcut = commandShortcutLabel(
     typeof navigator === "undefined" ? undefined : navigator.platform,
   );
@@ -457,19 +465,21 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
   const onPaletteSelect = useCallback(
     (selection: ShellPaletteSelection) => {
       if (selection.type === "navigate") return goTo(selection.destination);
-      if (selection.type === "search") {
-        void navigate({
-          to: "/workspaces/$workspaceId/search",
-          params: { workspaceId },
-          search: { q: selection.query },
-        } as never);
-        return;
+      switch (selection.action) {
+        case "toggle-theme":
+          return toggleTheme();
+        case "show-shortcuts":
+          return setShortcutsOpen(true);
+        case "create-doc":
+          return openCreateResource("doc");
+        case "switch-workspace":
+          // After the palette has closed, so its focus trap lets go first.
+          return void requestAnimationFrame(() => openSystemRail());
+        case "create-workspace":
+          return setCreateOpen(true);
       }
-      if (selection.action === "toggle-theme") return toggleTheme();
-      if (selection.action === "show-shortcuts") return setShortcutsOpen(true);
-      setCreateOpen(true);
     },
-    [goTo, navigate, toggleTheme, workspaceId],
+    [goTo, openCreateResource, openSystemRail, toggleTheme],
   );
 
   const breadcrumb = useMemo(
@@ -508,6 +518,24 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
       })),
     [copy, members.data],
   );
+
+  const commandCopy = useWorkspaceCommandCopy();
+  const resources = useWorkspaceResources(workspaceId);
+  const myWorkItems = useMemo(() => flattenMyWork(myWork.data), [myWork.data]);
+  const otherWorkspaceNames = useMemo(
+    () =>
+      railWorkspaces.filter((item) => !item.current).map((item) => item.name),
+    [railWorkspaces],
+  );
+  const paletteData = useCommandPaletteData({
+    workspaceId,
+    workspaceName: workspace?.name ?? "",
+    otherWorkspaceNames,
+    boards: resources.boards,
+    docs: resources.docs,
+    myWork: myWorkItems,
+    spaceIndex,
+  });
 
   const NotificationBell = hooks.NotificationBell;
 
@@ -614,16 +642,22 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
       </div>
 
       <WorkspaceCommandPaletteSurface
-        copy={copy}
+        copy={commandCopy}
         open={paletteOpen}
         onOpenChange={setPaletteOpen}
-        boards={catalog.boards}
-        docs={catalog.docs}
-        members={paletteMembers}
+        workspace={paletteData.workspace}
+        work={paletteData.work}
+        docs={paletteData.docs}
+        boards={paletteData.boards}
+        people={paletteMembers}
+        recents={paletteData.recents}
         appearance={appearance}
         canCreateWorkspace
+        canCreateDoc
+        canSwitchWorkspace={!isMobile}
         onSelect={onPaletteSelect}
       />
+      {createResource.dialog}
       <WorkspaceShortcutSheetSurface
         copy={copy}
         open={shortcutsOpen}

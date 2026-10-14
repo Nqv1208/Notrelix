@@ -369,11 +369,14 @@
       "surfaceId": "workspace.command-palette",
       "owner": "@notrelix/features-workspace",
       "surfaceKind": "navigation",
-      "pureEntry": "src/web/shell/workspace-command-palette-surface.tsx",
-      "coveredSources": [],
+      "pureEntry": "src/web/command/command-palette-surface.tsx",
+      "coveredSources": [
+        "src/web/command/command-build.ts",
+        "src/web/command/command-models.ts"
+      ],
       "stories": [
         {
-          "id": "workspace-shell--command-palette-default",
+          "id": "workspace-command-palette--palette-search",
           "state": "Default",
           "visualTargets": [
             {
@@ -395,7 +398,51 @@
           ]
         },
         {
-          "id": "workspace-shell--command-palette-empty",
+          "id": "workspace-command-palette--palette-recent",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-command-palette--palette-commands",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-command-palette--palette-empty",
           "state": "Empty",
           "visualTargets": [
             {
@@ -405,7 +452,39 @@
           ]
         },
         {
-          "id": "workspace-shell--command-palette-edge-data",
+          "id": "workspace-command-palette--palette-running",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-command-palette--palette-produced-only",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-command-palette--palette-edge-data",
           "state": "EdgeData",
           "visualTargets": [
             {
@@ -421,7 +500,7 @@
         "notApplicable": [
           {
             "state": "ReadOnly",
-            "reason": "The palette lists only resources the host already loaded through authorized lists and actions the member can run; it has no read-only variant.",
+            "reason": "The palette lists only resources the host already loaded through authorized lists and actions the member can run; a command without a producer is drawn inert with its reason (the inert case), so it has no read-only variant.",
             "authority": "docs/workstreams/executions/workspace-experience/workspace-experience.plan.md"
           }
         ]
@@ -431,24 +510,72 @@
       "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
-          "id": "a11y",
-          "testFile": "src/web/shell/__tests__/workspace-shell.interaction.component.test.tsx"
+          "id": "render",
+          "testFile": "src/web/command/__tests__/workspace-command.interaction.component.test.tsx"
         },
         {
-          "id": "navigate",
-          "testFile": "src/web/shell/__tests__/workspace-shell.interaction.component.test.tsx"
+          "id": "recent",
+          "testFile": "src/web/command/__tests__/workspace-command.interaction.component.test.tsx"
         },
         {
           "id": "search",
-          "testFile": "src/web/shell/__tests__/workspace-shell.interaction.component.test.tsx"
+          "testFile": "src/web/command/__tests__/workspace-command.interaction.component.test.tsx"
+        },
+        {
+          "id": "filters",
+          "testFile": "src/web/command/__tests__/workspace-command.interaction.component.test.tsx"
+        },
+        {
+          "id": "keyboard",
+          "testFile": "src/web/command/__tests__/workspace-command.interaction.component.test.tsx"
+        },
+        {
+          "id": "select",
+          "testFile": "src/web/command/__tests__/workspace-command.interaction.component.test.tsx"
+        },
+        {
+          "id": "commands",
+          "testFile": "src/web/command/__tests__/workspace-command.interaction.component.test.tsx"
+        },
+        {
+          "id": "inert",
+          "testFile": "src/web/command/__tests__/workspace-command.interaction.component.test.tsx"
+        },
+        {
+          "id": "people",
+          "testFile": "src/web/command/__tests__/workspace-command.interaction.component.test.tsx"
         },
         {
           "id": "actions",
-          "testFile": "src/web/shell/__tests__/workspace-shell.interaction.component.test.tsx"
+          "testFile": "src/web/command/__tests__/workspace-command.interaction.component.test.tsx"
         },
         {
           "id": "empty",
-          "testFile": "src/web/shell/__tests__/workspace-shell.interaction.component.test.tsx"
+          "testFile": "src/web/command/__tests__/workspace-command.interaction.component.test.tsx"
+        },
+        {
+          "id": "running",
+          "testFile": "src/web/command/__tests__/workspace-command.interaction.component.test.tsx"
+        },
+        {
+          "id": "running-inert",
+          "testFile": "src/web/command/__tests__/workspace-command.interaction.component.test.tsx"
+        },
+        {
+          "id": "dismiss",
+          "testFile": "src/web/command/__tests__/workspace-command.interaction.component.test.tsx"
+        },
+        {
+          "id": "produced-only",
+          "testFile": "src/web/command/__tests__/workspace-command.interaction.component.test.tsx"
+        },
+        {
+          "id": "edge",
+          "testFile": "src/web/command/__tests__/workspace-command.interaction.component.test.tsx"
+        },
+        {
+          "id": "i18n",
+          "testFile": "src/web/command/__tests__/workspace-command.interaction.component.test.tsx"
         }
       ]
     },
