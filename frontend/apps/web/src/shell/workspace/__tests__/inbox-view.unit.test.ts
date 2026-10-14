@@ -127,7 +127,7 @@ describe("toInboxItems", () => {
       copy,
       NOW,
     );
-    expect(withLink!.detail.openHref).toBe("/workspaces/w/boards/b/items/i");
-    expect(without!.detail.openHref).toBeNull();
+    expect(withLink!.detail!.openHref).toBe("/workspaces/w/boards/b/items/i");
+    expect(without!.detail!.openHref).toBeNull();
   });
 });
