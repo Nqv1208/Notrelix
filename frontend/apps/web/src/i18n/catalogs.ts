@@ -2,6 +2,7 @@ import type { MessageCatalog } from "@notrelix/i18n";
 import {
   notrelixSystemRailCatalog,
   workspaceHomeCatalog,
+  workspaceInboxCatalog,
   workspaceLibraryCatalog,
   workspaceMembersCatalog,
   workspaceSettingsCatalog,
@@ -39,6 +40,7 @@ export const webCatalogs: readonly MessageCatalog[] = [
   workspaceShellCatalog,
   notrelixSystemRailCatalog,
   workspaceHomeCatalog,
+  workspaceInboxCatalog,
   workspaceLibraryCatalog,
   workspaceMembersCatalog,
   workspaceSettingsCatalog,

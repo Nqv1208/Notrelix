@@ -72,6 +72,22 @@ export {
   type WorkspaceScopeStateSurfaceProps,
 } from "./shell/workspace-scope-state-surface";
 
+// ── Inbox (Final-Inbox) ───────────────────────────────────────────
+export { workspaceInboxCatalog } from "./inbox/workspace-inbox.catalog";
+export {
+  workspaceInboxCopy,
+  type WorkspaceInboxCopy,
+} from "./inbox/workspace-inbox.copy";
+export { useWorkspaceInboxCopy } from "./inbox/use-workspace-inbox-copy";
+export * from "./inbox/inbox-models";
+export {
+  WorkspaceInboxSurface,
+  inboxDayLabel,
+  inboxTimeLabel,
+  type WorkspaceInboxSurfaceProps,
+  type InboxInitialView,
+} from "./inbox/workspace-inbox-surface";
+
 // ── Notrelix system rail (Final-Space nav=hien-de / hien-day) ─────
 export { notrelixSystemRailCatalog } from "./shell/notrelix-system-rail.catalog";
 export {

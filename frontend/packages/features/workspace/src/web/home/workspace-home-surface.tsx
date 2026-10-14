@@ -948,7 +948,7 @@ export function WorkspaceHomeSurface(props: WorkspaceHomeSurfaceProps) {
                       >
                         <span
                           aria-hidden="true"
-                          className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-success-subtle text-success-text"
+                          className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-status-chip-done text-work-status-done"
                         >
                           <CircleCheck className="size-5" strokeWidth={1.8} />
                         </span>

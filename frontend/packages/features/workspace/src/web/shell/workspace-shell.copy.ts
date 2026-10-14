@@ -150,11 +150,6 @@ export const en = {
     exit: "Go to my workspaces",
   },
   pages: {
-    inboxTitle: "Inbox",
-    inboxDescription: "Mentions, requests and replies that need you.",
-    inboxEmptyTitle: "Inbox isn't available yet",
-    inboxEmptyDescription:
-      "Mentions and requests will collect here. Until then, updates arrive in the notifications bell at the top of the page.",
     reportsTitle: "Reports",
     reportsDescription: "Workspace figures across departments and Boards.",
     reportsEmptyTitle: "Reports are not available yet",
@@ -328,11 +323,6 @@ export const vi: WorkspaceShellCopy = {
     exit: "Tới các không gian làm việc của tôi",
   },
   pages: {
-    inboxTitle: "Hộp thư",
-    inboxDescription: "Lượt nhắc, yêu cầu và phản hồi cần bạn xử lý.",
-    inboxEmptyTitle: "Hộp thư chưa khả dụng",
-    inboxEmptyDescription:
-      "Lượt nhắc và yêu cầu sẽ được gom ở đây. Trong lúc chờ, thông báo vẫn đến ở chuông thông báo phía trên trang.",
     reportsTitle: "Báo cáo",
     reportsDescription: "Số liệu của workspace theo phòng ban và Bảng.",
     reportsEmptyTitle: "Báo cáo chưa khả dụng",

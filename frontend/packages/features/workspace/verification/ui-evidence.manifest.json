@@ -1378,6 +1378,226 @@
       ]
     },
     {
+      "surfaceId": "workspace.inbox",
+      "owner": "@notrelix/features-workspace",
+      "surfaceKind": "data",
+      "pureEntry": "src/web/inbox/workspace-inbox-surface.tsx",
+      "coveredSources": [
+        "src/web/inbox/inbox-list.tsx",
+        "src/web/inbox/inbox-read.tsx"
+      ],
+      "stories": [
+        {
+          "id": "workspace-inbox--inbox-default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-inbox--inbox-all",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-inbox--inbox-loading",
+          "state": "Loading",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-inbox--inbox-empty",
+          "state": "Empty",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-inbox--inbox-error",
+          "state": "Error",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-inbox--inbox-edge-data",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-inbox--inbox-produced-only",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-inbox--inbox-high-density",
+          "state": "HighDensity",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": [
+          "Default",
+          "Loading",
+          "Empty",
+          "Error",
+          "EdgeData",
+          "HighDensity"
+        ],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "ReadOnly",
+            "reason": "Reading is the only mode: every write (Đã xử lý, mark all read) is a host callback and is drawn inert without one, covered by the handled-inert and mark-all interaction cases rather than a separate visual state.",
+            "authority": "docs/product/collaboration.md"
+          },
+          {
+            "state": "PermissionLimited",
+            "reason": "The Inbox lists the member's own notifications, authorized by the producer; there is no partial-permission rendering.",
+            "authority": "docs/product/collaboration.md"
+          }
+        ]
+      },
+      "responsive": true,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "render",
+          "testFile": "src/web/inbox/__tests__/workspace-inbox.interaction.component.test.tsx"
+        },
+        {
+          "id": "days",
+          "testFile": "src/web/inbox/__tests__/workspace-inbox.interaction.component.test.tsx"
+        },
+        {
+          "id": "tabs",
+          "testFile": "src/web/inbox/__tests__/workspace-inbox.interaction.component.test.tsx"
+        },
+        {
+          "id": "unread",
+          "testFile": "src/web/inbox/__tests__/workspace-inbox.interaction.component.test.tsx"
+        },
+        {
+          "id": "select",
+          "testFile": "src/web/inbox/__tests__/workspace-inbox.interaction.component.test.tsx"
+        },
+        {
+          "id": "move",
+          "testFile": "src/web/inbox/__tests__/workspace-inbox.interaction.component.test.tsx"
+        },
+        {
+          "id": "handled",
+          "testFile": "src/web/inbox/__tests__/workspace-inbox.interaction.component.test.tsx"
+        },
+        {
+          "id": "handled-inert",
+          "testFile": "src/web/inbox/__tests__/workspace-inbox.interaction.component.test.tsx"
+        },
+        {
+          "id": "mark-all",
+          "testFile": "src/web/inbox/__tests__/workspace-inbox.interaction.component.test.tsx"
+        },
+        {
+          "id": "bundle",
+          "testFile": "src/web/inbox/__tests__/workspace-inbox.interaction.component.test.tsx"
+        },
+        {
+          "id": "settings",
+          "testFile": "src/web/inbox/__tests__/workspace-inbox.interaction.component.test.tsx"
+        },
+        {
+          "id": "empty",
+          "testFile": "src/web/inbox/__tests__/workspace-inbox.interaction.component.test.tsx"
+        },
+        {
+          "id": "filtered-empty",
+          "testFile": "src/web/inbox/__tests__/workspace-inbox.interaction.component.test.tsx"
+        },
+        {
+          "id": "no-notifications",
+          "testFile": "src/web/inbox/__tests__/workspace-inbox.interaction.component.test.tsx"
+        },
+        {
+          "id": "loading",
+          "testFile": "src/web/inbox/__tests__/workspace-inbox.interaction.component.test.tsx"
+        },
+        {
+          "id": "states",
+          "testFile": "src/web/inbox/__tests__/workspace-inbox.interaction.component.test.tsx"
+        },
+        {
+          "id": "produced-only",
+          "testFile": "src/web/inbox/__tests__/workspace-inbox.interaction.component.test.tsx"
+        },
+        {
+          "id": "edge",
+          "testFile": "src/web/inbox/__tests__/workspace-inbox.interaction.component.test.tsx"
+        },
+        {
+          "id": "high-density",
+          "testFile": "src/web/inbox/__tests__/workspace-inbox.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
       "surfaceId": "workspace.library",
       "owner": "@notrelix/features-workspace",
       "surfaceKind": "data",
