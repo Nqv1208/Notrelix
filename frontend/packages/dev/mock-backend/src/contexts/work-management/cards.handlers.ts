@@ -10,6 +10,10 @@
  *   cards.archive           — POST /board-items/:id/archive
  *   cards.duplicate         — POST /board-items/:id/duplicate (returns string cardId)
  *   cards.move              — POST /board-items/:id/move
+
+ *   cards.links             — GET/POST /board-items/:id/links, DELETE .../links/:linkId (gap)
+ *   cards.childItems.add    — POST /board-items/:id/child-items (gap)
+ *   cards.attachments.add   — POST /board-items/:id/attachments (gap)
  *   cards.moveToBoard       — POST /board-items/:id/move-to-board (gap)
  *   cards.fieldValues       — PATCH /board-items/:id/field-values
  *   cards.status            — PATCH /board-items/:id/status
@@ -123,6 +127,20 @@ function projectCardDto(c: MockCardRecord, store: MockStore): CardDtoApi {
     updatedAt: c.updatedAt ?? null,
     ...{ name: c.title, groupId: c.listId },
     ...readValues,
+  };
+}
+
+/** The status name and category of an item, for a link's chip. */
+function describeItemStatus(store: MockStore, card: MockCardRecord) {
+  const column = store
+    .getColumns(card.boardId)
+    .find((candidate) => candidate.fieldType === "status");
+  const option = column?.options?.find(
+    (candidate) => candidate.id === store.getFieldValues(card.id)[column.id],
+  );
+  return {
+    name: option?.name ?? null,
+    category: option?.category ?? null,
   };
 }
 
@@ -456,7 +474,149 @@ export const cardsOperations = [
     async handle({ params, store }) {
       const c = store.getCard(params.id);
       if (!c) return notFound("Card not found");
-      return ok([]);
+      return ok(
+        store.getAttachments(params.id).map((file) => ({
+          id: file.id,
+          resourceId: file.cardId,
+          filename: file.filename,
+          // A stand-in the browser can save: the mock keeps no file bytes.
+          url: `data:text/plain;charset=utf-8,${encodeURIComponent(
+            `Tệp mẫu của mock: ${file.filename}`,
+          )}`,
+          sizeBytes: file.sizeBytes,
+          contentType: file.contentType,
+          source: "upload",
+          uploadedBy: file.uploadedBy,
+          uploadedByName: store.getUser(file.uploadedBy)?.name ?? null,
+          createdAt: file.createdAt,
+        })),
+      );
+    },
+  }),
+
+  // ─── POST /board-items/:id/attachments ──────────────────────────────────────────
+  // Gap CTR-GAP-WM-ITEM-DETAIL: registers a file's metadata (no bytes in the mock).
+
+  defineMockOperation<
+    { id: string },
+    { filename?: string; sizeBytes?: number; contentType?: string },
+    void
+  >({
+    id: "cards.attachments.add",
+    contract: { kind: "gap", gapId: "CTR-GAP-WM-ITEM-DETAIL" },
+    method: "POST",
+    route: "/board-items/:id/attachments",
+    async handle({ params, body, store, request }) {
+      const missingKey = missingIdempotencyKey(request);
+      if (missingKey) return missingKey;
+      const item = store.getCard(params.id);
+      if (!item) return notFound("Card not found");
+      if (!canWriteBoardItems(item.boardId, store)) return forbidden();
+      const filename = body?.filename?.trim();
+      if (!filename)
+        return badRequest({ filename: ["The file name is required."] });
+      store.addAttachment(params.id, {
+        filename,
+        sizeBytes: Math.max(0, Math.round(body?.sizeBytes ?? 0)),
+        contentType: body?.contentType || "application/octet-stream",
+      });
+      return noContent();
+    },
+  }),
+
+  // ─── Links between items ────────────────────────────────────────────────────────
+  // Gap CTR-GAP-WM-ITEM-DETAIL.
+
+  defineMockOperation<{ id: string }, never, unknown>({
+    id: "cards.links.list",
+    contract: { kind: "gap", gapId: "CTR-GAP-WM-ITEM-DETAIL" },
+    method: "GET",
+    route: "/board-items/:id/links",
+    async handle({ params, store }) {
+      const item = store.getCard(params.id);
+      if (!item) return notFound("Card not found");
+      return ok({
+        links: store.getItemLinks(params.id).map((link) => {
+          const status = describeItemStatus(store, link.card);
+          return {
+            id: link.id,
+            relation: link.relation,
+            item: {
+              id: link.card.id,
+              key: link.card.itemKey ?? null,
+              title: link.card.title,
+              statusName: status.name,
+              statusCategory: status.category,
+            },
+          };
+        }),
+      });
+    },
+  }),
+  defineMockOperation<
+    { id: string },
+    { itemId?: string; relation?: string },
+    void
+  >({
+    id: "cards.links.add",
+    contract: { kind: "gap", gapId: "CTR-GAP-WM-ITEM-DETAIL" },
+    method: "POST",
+    route: "/board-items/:id/links",
+    async handle({ params, body, store, request }) {
+      const missingKey = missingIdempotencyKey(request);
+      if (missingKey) return missingKey;
+      const item = store.getCard(params.id);
+      if (!item) return notFound("Card not found");
+      if (!canWriteBoardItems(item.boardId, store)) return forbidden();
+      const relation = body?.relation;
+      if (
+        !body?.itemId ||
+        (relation !== "blocked-by" &&
+          relation !== "blocks" &&
+          relation !== "related")
+      )
+        return badRequest({ itemId: ["Pick an item and a relation."] });
+      const result = store.addItemLink(params.id, body.itemId, relation);
+      if (result === "not-found") return notFound("Card not found");
+      if (result === "invalid")
+        return badRequest({ itemId: ["Not another item of this board."] });
+      return noContent();
+    },
+  }),
+  defineMockOperation<{ id: string; linkId: string }, never, void>({
+    id: "cards.links.remove",
+    contract: { kind: "gap", gapId: "CTR-GAP-WM-ITEM-DETAIL" },
+    method: "DELETE",
+    route: "/board-items/:id/links/:linkId",
+    async handle({ params, store }) {
+      const item = store.getCard(params.id);
+      if (!item) return notFound("Card not found");
+      if (!canWriteBoardItems(item.boardId, store)) return forbidden();
+      return store.removeItemLink(params.linkId)
+        ? noContent()
+        : notFound("Link not found");
+    },
+  }),
+
+  // ─── POST /board-items/:id/child-items ──────────────────────────────────────────
+  // Gap CTR-GAP-WM-ITEM-DETAIL: adds a child item (sub-item) under an item.
+
+  defineMockOperation<{ id: string }, { title?: string }, void>({
+    id: "cards.childItems.add",
+    contract: { kind: "gap", gapId: "CTR-GAP-WM-ITEM-DETAIL" },
+    method: "POST",
+    route: "/board-items/:id/child-items",
+    async handle({ params, body, store, request }) {
+      const missingKey = missingIdempotencyKey(request);
+      if (missingKey) return missingKey;
+      const item = store.getCard(params.id);
+      if (!item) return notFound("Card not found");
+      if (!canWriteBoardItems(item.boardId, store)) return forbidden();
+      const title = body?.title?.trim();
+      if (!title) return badRequest({ title: ["The title is required."] });
+      return store.createChildItem(params.id, title)
+        ? noContent()
+        : badRequest({ title: ["A child item cannot have child items."] });
     },
   }),
 
@@ -476,10 +636,20 @@ export const cardsOperations = [
       if (!c) return notFound("Card not found");
       const data = store.getActivity(params.id).map((entry) => ({
         id: entry.id,
-        actorName: store.getUser(entry.actorId)?.name ?? null,
+        actorName: entry.actorId
+          ? (store.getUser(entry.actorId)?.name ?? null)
+          : null,
         action: entry.action,
         resourceTitle: null,
         createdAt: entry.createdAt,
+        // Gap fields (CTR-GAP-WM-ITEM-DETAIL): the history as structured lines.
+        kind: entry.kind ?? null,
+        automationName: entry.automationName ?? null,
+        verb: entry.verb ?? null,
+        target: entry.target ?? null,
+        notified: entry.notified ?? null,
+        detail: entry.detail ?? null,
+        compact: entry.compact ?? null,
       }));
       return ok({ data, total: data.length, page: 1, pageSize: data.length });
     },
@@ -720,6 +890,7 @@ export const cardsOperations = [
             createdAt: cmt.createdAt,
             updatedAt: cmt.updatedAt ?? null,
             isEdited: Boolean(cmt.updatedAt),
+            attachmentIds: cmt.attachmentIds ?? [],
           };
         }),
       );

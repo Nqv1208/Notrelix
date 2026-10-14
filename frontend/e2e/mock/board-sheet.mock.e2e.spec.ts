@@ -92,9 +92,11 @@ test.describe("Board header, lanes and item sheet (owner)", () => {
   }) => {
     await open(page, "?item=mock-erp-item-142");
     const sheet = page.getByRole("dialog");
-    await expect(sheet.locator('[data-f="event"]')).toContainText(
-      "Trần Minh Quân đổi hạn từ 08/10 sang 10/10",
-    );
+    await expect(
+      sheet
+        .locator('[data-f="event"]')
+        .filter({ hasText: "đổi Hạn chót từ 08/10 sang 10/10" }),
+    ).toContainText("Trần Minh Quân đổi Hạn chót từ 08/10 sang 10/10");
     await sheet
       .getByRole("textbox", { name: /Viết bình luận/ })
       .fill("Em đã đối chiếu xong, gửi chị Linh xem lại.");

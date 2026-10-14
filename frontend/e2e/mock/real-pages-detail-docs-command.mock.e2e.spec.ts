@@ -73,8 +73,11 @@ test.describe("Real item page, Docs and command palette", () => {
     await expect(sheet.getByText("Trần Minh Quân").first()).toBeVisible();
     await expect(sheet.getByText("Khẩn").first()).toBeVisible();
     await expect(sheet.getByText("Chuyển 48.200 hồ sơ")).toBeVisible();
-    const text = await sheet.innerText();
-    expect(text).not.toMatch(/Chưa giao|Trung bình|Chưa có ưu tiên/);
+    // The properties, not the history: it records "Trung bình" before "Cao".
+    const properties = await sheet
+      .getByRole("group", { name: "Thuộc tính" })
+      .innerText();
+    expect(properties).not.toMatch(/Chưa giao|Trung bình|Chưa có ưu tiên/);
   });
 
   test("an item with no assignee says so, and shows its own priority", async ({

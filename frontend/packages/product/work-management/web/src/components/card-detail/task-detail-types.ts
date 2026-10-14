@@ -45,6 +45,34 @@ export interface ItemSheetChildItem {
   } | null;
 }
 
+/** A link between this item and another, as the item page lists it. */
+export interface ItemSheetLink {
+  readonly id: string;
+  /** "blocked-by": this item waits for it; "blocks": it waits for this one. */
+  readonly relation: "blocked-by" | "blocks" | "related";
+  readonly item: {
+    readonly id: string;
+    readonly key: string | null;
+    readonly title: string;
+    readonly statusName: string | null;
+    readonly statusCategory: "todo" | "in_progress" | "review" | "done" | null;
+  };
+}
+
+/** An item the page can link to (the other items of the board). */
+export interface ItemSheetLinkCandidate {
+  readonly id: string;
+  readonly key: string | null;
+  readonly title: string;
+}
+
+/** A person who follows the item. */
+export interface ItemSheetFollower {
+  readonly userId: string;
+  readonly name: string;
+  readonly initials: string;
+}
+
 /** Board group offered by "Chuyển nhóm"; the item's own group is excluded. */
 export interface ItemSheetGroup {
   readonly id: string;
@@ -72,6 +100,12 @@ export interface TaskDetailData {
   readonly childItems?: readonly ItemSheetChildItem[];
   /** Whether the member follows the item; `null`/absent hides the follow chip. */
   readonly following?: boolean | null;
+  /** Everyone who follows the item (the page's stack of faces). */
+  readonly followers?: readonly ItemSheetFollower[];
+  /** Links to other items; absent: the page says links are not available. */
+  readonly links?: readonly ItemSheetLink[];
+  /** Items a new link can point at. */
+  readonly linkCandidates?: readonly ItemSheetLinkCandidate[];
 }
 
 export interface TaskDetailCallbacks {
@@ -85,6 +119,16 @@ export interface TaskDetailCallbacks {
   readonly onToggleWatch: (watched: boolean) => void;
   /** Ticks or unticks a child item; the checkboxes stay inert without it. */
   readonly onToggleChildItem?: (childId: string, done: boolean) => void;
+  /** Adds a child item with this title; the input stays inert without it. */
+  readonly onAddChildItem?: (title: string) => void;
+  /** Links this item to another; "Thêm" in "Liên kết" stays inert without it. */
+  readonly onAddLink?: (
+    itemId: string,
+    relation: ItemSheetLink["relation"],
+  ) => void;
+  readonly onRemoveLink?: (linkId: string) => void;
+  /** Registers a file chosen or dropped on the page; the drop zone stays inert without it. */
+  readonly onAddFile?: (file: File) => void;
   readonly onDuplicate: (cardId: string) => void;
   readonly onArchive: (cardId: string) => void;
   readonly onUpdateFieldValue: (payload: UpdateFieldValueInput) => void;

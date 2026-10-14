@@ -38,7 +38,7 @@ describe("ERP board in the mock world", () => {
     // The read carries no priority word, so none is invented.
     expect(card.priority).toBeUndefined();
     expect(card.descriptionMd).toContain("48.200 hồ sơ khách hàng");
-    expect(card._count.comments).toBe(2);
+    expect(card._count.comments).toBe(4);
   });
 
   it("an item without an assignee has no members in its detail", async () => {
@@ -489,6 +489,79 @@ describe("ERP board in the mock world", () => {
       });
       expect(plan.percents["mock-erp-item-138"]).toBe(90);
       expect(plan.groups["mock-erp-item-150"]).toBe("mock-erp-list-data");
+    });
+
+    it("the item detail: links, files, history, followers, custom values and the created line", async () => {
+      const { client, store } = clientFor();
+      const id = "mock-erp-item-142";
+      const extras = createItemExtrasApi(client);
+      const links = await extras.getLinks(id);
+      expect(
+        links.map((link) => [link.relation, link.item.key]).sort(),
+      ).toEqual([
+        ["blocked-by", "ERP-129"],
+        ["blocks", "ERP-146"],
+        ["blocks", "ERP-147"],
+        ["related", "ERP-151"],
+      ]);
+      expect(
+        links.find((link) => link.item.key === "ERP-129")?.item,
+      ).toMatchObject({ statusName: "Hoàn thành", statusCategory: "done" });
+      expect(store.getAttachments(id).map((file) => file.filename)).toEqual([
+        "khach-hang-da-gop.xlsx",
+        "cong-no-dau-ky-T9.xlsx",
+        "quy-tac-gop-trung-v2.pdf",
+      ]);
+      const history = store.getActivity(id);
+      expect(history).toHaveLength(13);
+      expect(history[0]).toMatchObject({ kind: "created", verb: "tạo việc" });
+      expect(store.getCardComments(id)).toHaveLength(4);
+      const following = await extras.getFollowing(id);
+      expect(following.followers.map((person) => person.name)).toEqual([
+        "Nguyễn Thu Hà",
+        "Trần Minh Quân",
+        "Đỗ Khánh Linh",
+        "Bùi Thanh Tâm",
+      ]);
+      expect(store.getFieldValues(id)["mock-erp-col-estimate"]).toBe(40);
+      expect(store.getCard(id)?.createdAt).toBe("2026-09-23T08:10:00.000Z");
+    });
+
+    it("links, sub-items and files can be added and the history follows", async () => {
+      const { client, store } = clientFor();
+      const id = "mock-erp-item-142";
+      const extras = createItemExtrasApi(client);
+      await extras.addLink(id, {
+        itemId: "mock-erp-item-150",
+        relation: "blocked-by",
+      });
+      expect(store.getPlan("mock-board-erp").links).toContainEqual({
+        from: "mock-erp-item-150",
+        to: id,
+      });
+      await expect(
+        extras.addLink(id, { itemId: id, relation: "related" }),
+      ).rejects.toBeTruthy();
+      await extras.addChildItem(id, "Kiểm tra lại");
+      const children = await extras.getChildItems(id);
+      expect(children).toHaveLength(6);
+      expect(children[5]).toMatchObject({ key: "ERP-142.6", done: false });
+      await extras.setChildDone(children[3]!.id, true);
+      const last = store.getActivity(id).at(-1)!;
+      expect(last).toMatchObject({
+        verb: "đánh dấu xong việc con",
+        target: "ERP-142.4",
+      });
+      await extras.addFile(id, {
+        filename: "ghi-chu.pdf",
+        sizeBytes: 12,
+        contentType: "application/pdf",
+      });
+      expect(store.getAttachments(id)).toHaveLength(4);
+      const commenter = clientFor("commenter");
+      await expect(
+        createItemExtrasApi(commenter.client).addChildItem(id, "x"),
+      ).rejects.toBeTruthy();
     });
   });
 });

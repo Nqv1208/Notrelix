@@ -45,6 +45,7 @@ export function TaskDetailTabs({
         <SectionHeading>{t.description}</SectionHeading>
         {card.descriptionMd?.trim() ? (
           <ItemDescriptionBody
+            workspaceId={card.workspaceId}
             text={card.descriptionMd}
             className="text-body leading-[1.65]"
           />

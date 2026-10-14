@@ -27,7 +27,9 @@ import type {
   MockLabelRecord,
   MockChecklistRecord,
   MockChecklistItemRecord,
+  MockAttachmentRecord,
   MockCommentRecord,
+  MockItemLinkRecord,
   MockUserPreferencesRecord,
   MockBlockRecord,
   MockPageCommentRecord,
@@ -67,7 +69,6 @@ import {
   hanoiInstant,
 } from "./mock-erp-board";
 import {
-  ERP_ACTIVITY,
   ERP_ITEM_PERCENT,
   ERP_PLAN_GROUPS,
   ERP_PLAN_ITEMS,
@@ -76,6 +77,22 @@ import {
   ERP_COMMENTS,
   ERP_DESCRIPTIONS,
 } from "./mock-erp-detail";
+import {
+  ERP_CUSTOM_VALUES,
+  ERP_ESTIMATE_COLUMN_ID,
+  ERP_FILES,
+  ERP_FOLLOWERS,
+  ERP_EXTRA_COMMENTS,
+  ERP_HISTORY,
+  ERP_ITEM_CREATED,
+  ERP_MODULE_COLUMN_ID,
+  ERP_MODULE_OPTIONS,
+  ERP_RELATED_LINKS,
+  ERP_REQUESTER_COLUMN_ID,
+  ERP_REQUESTER_OPTIONS,
+  type ErpHistoryCompact,
+  type ErpHistoryDetail,
+} from "./mock-item-detail";
 import { LIBRARY_DOCS, SECONDARY_BOARD_TITLES } from "./mock-docs-library";
 import {
   INVOICE_BLOCKS,
@@ -136,6 +153,22 @@ export type MockMemberChange =
 export type MockVersionedWrite = "ok" | "not-found" | "stale";
 
 // ─── MockStore ────────────────────────────────────────────────────────────────
+
+/** One line of an item's history (gap `CTR-GAP-TODO`, with structured fields). */
+export interface MockActivityRecord {
+  id: string;
+  /** `null` = an automation. */
+  actorId: string | null;
+  action: string;
+  createdAt: string;
+  kind?: "created";
+  automationName?: string;
+  verb?: string;
+  target?: string;
+  notified?: string;
+  detail?: ErpHistoryDetail;
+  compact?: ErpHistoryCompact;
+}
 
 /** A board's plan read (gap `CTR-GAP-WM-PLAN-ITEMS`). */
 export interface MockBoardPlan {
@@ -209,10 +242,13 @@ export class MockStore {
   /** Items completed through `WorkManagement.BoardItems.Complete`. */
   private completedCardIds = new Set<string>();
   /** The item history ("Lịch sử"): one line per recorded change, by card. */
-  private activityByCardId = new Map<
-    string,
-    { id: string; actorId: string; action: string; createdAt: string }[]
-  >();
+  private activityByCardId = new Map<string, MockActivityRecord[]>();
+  /** Files attached to an item, by card. */
+  private attachmentsByCardId = new Map<string, MockAttachmentRecord[]>();
+  /** Links between the items of a board (dependencies and relations). */
+  private itemLinks: MockItemLinkRecord[] = [];
+  /** People who follow an item besides the member, by card. */
+  private followersByCardId = new Map<string, string[]>();
   /** Phases and milestones of a board (gap `CTR-GAP-WM-PLAN-ITEMS`), by board. */
   private planByBoardId = new Map<string, MockBoardPlan>();
   /** Board members (`/full` members), keyed by board. */
@@ -962,6 +998,46 @@ export class MockStore {
       fieldType: "user",
       position: 3,
     });
+    // The custom fields the Detail mockup shows in the right column.
+    this.insertColumn({
+      id: ERP_MODULE_COLUMN_ID,
+      boardId,
+      name: "Phân hệ ERP",
+      fieldType: "select",
+      position: 4,
+      options: ERP_MODULE_OPTIONS.map(
+        (option, index): MockFieldOptionRecord => ({
+          id: option.id,
+          name: option.name,
+          color: "#64748B",
+          position: `a${String(index).padStart(4, "0")}`,
+        }),
+      ),
+    });
+    this.insertColumn({
+      id: ERP_ESTIMATE_COLUMN_ID,
+      boardId,
+      name: "Ước lượng",
+      fieldType: "number",
+      settings: JSON.stringify({ unit: "giờ" }),
+      position: 5,
+    });
+    this.insertColumn({
+      id: ERP_REQUESTER_COLUMN_ID,
+      boardId,
+      name: "Phòng ban yêu cầu",
+      fieldType: "select",
+      settings: JSON.stringify({ display: "mark" }),
+      position: 6,
+      options: ERP_REQUESTER_OPTIONS.map(
+        (option, index): MockFieldOptionRecord => ({
+          id: option.id,
+          name: option.name,
+          color: option.color,
+          position: `a${String(index).padStart(4, "0")}`,
+        }),
+      ),
+    });
     for (const label of ERP_LABELS) this.insertLabel({ ...label });
     ERP_GROUPS.forEach((group, index) => {
       this.insertList({
@@ -981,7 +1057,7 @@ export class MockStore {
         listId: erpGroupId(item.group),
         title: item.title,
         position: index + 1,
-        createdAt: "2026-09-21T02:00:00.000Z",
+        createdAt: ERP_ITEM_CREATED[item.key]?.at ?? "2026-09-21T02:00:00.000Z",
         updatedAt: "2026-10-12T01:40:00.000Z",
         itemKey: item.key,
         description: ERP_DESCRIPTIONS[item.key],
@@ -1039,10 +1115,7 @@ export class MockStore {
         ...item,
         groupId: erpGroupId(groupKey),
       })),
-      links: ERP_PLAN_LINKS.map((link) => ({
-        from: planId(link.from),
-        to: planId(link.to),
-      })),
+      links: [],
       groups: Object.fromEntries(
         Object.entries(ERP_PLAN_GROUPS).map(([key, group]) => [
           erpItemId(key),
@@ -1056,13 +1129,57 @@ export class MockStore {
         ]),
       ),
     });
-    for (const entry of ERP_ACTIVITY) {
+    this.itemLinks = [
+      ...ERP_PLAN_LINKS.map((link, index) => ({
+        id: `link-dep-${index + 1}`,
+        boardId,
+        from: planId(link.from),
+        to: planId(link.to),
+        kind: "dependency" as const,
+      })),
+      ...ERP_RELATED_LINKS.map((link, index) => ({
+        id: `link-rel-${index + 1}`,
+        boardId,
+        from: planId(link.from),
+        to: planId(link.to),
+        kind: "related" as const,
+      })),
+    ];
+    for (const entry of ERP_HISTORY) {
       this.recordActivity(
         erpItemId(entry.itemKey),
         entry.userId,
         entry.action,
         entry.createdAt,
+        {
+          kind: entry.kind,
+          automationName: entry.automationName,
+          verb: entry.verb,
+          target: entry.target,
+          notified: entry.notified,
+          detail: entry.detail,
+          compact: entry.compact,
+        },
       );
+    }
+    for (const [key, values] of Object.entries(ERP_CUSTOM_VALUES)) {
+      for (const [columnId, value] of Object.entries(values))
+        this.updateFieldValue(erpItemId(key), columnId, value);
+    }
+    for (const [key, userIds] of Object.entries(ERP_FOLLOWERS))
+      this.followersByCardId.set(erpItemId(key), [...userIds]);
+    for (const file of ERP_FILES) {
+      const list = this.attachmentsByCardId.get(erpItemId(file.itemKey)) ?? [];
+      list.push({
+        id: file.id,
+        cardId: erpItemId(file.itemKey),
+        filename: file.filename,
+        sizeBytes: file.sizeBytes,
+        contentType: file.contentType,
+        uploadedBy: file.userId,
+        createdAt: file.createdAt,
+      });
+      this.attachmentsByCardId.set(erpItemId(file.itemKey), list);
     }
     for (const comment of ERP_COMMENTS) {
       this.insertComment({
@@ -1071,6 +1188,18 @@ export class MockStore {
         userId: comment.userId,
         contentMd: comment.contentMd,
         createdAt: comment.createdAt,
+      });
+    }
+    for (const comment of ERP_EXTRA_COMMENTS) {
+      this.insertComment({
+        id: this.nextId("cmt"),
+        cardId: erpItemId(comment.itemKey),
+        userId: comment.userId,
+        contentMd: comment.contentMd,
+        createdAt: comment.createdAt,
+        ...("attachmentFileId" in comment
+          ? { attachmentIds: [comment.attachmentFileId] }
+          : {}),
       });
     }
     this.boardMembersByBoardId.set(
@@ -1347,6 +1476,9 @@ export class MockStore {
     this.feed.clear();
     this.completedCardIds.clear();
     this.activityByCardId.clear();
+    this.attachmentsByCardId.clear();
+    this.itemLinks = [];
+    this.followersByCardId.clear();
     this.planByBoardId.clear();
 
     this.membershipIdsByWorkspaceId.clear();
@@ -2048,22 +2180,32 @@ export class MockStore {
 
   /** The phases, milestones, dependencies and completions of a board's plan. */
   getPlan(boardId: string): MockBoardPlan {
-    return (
-      this.planByBoardId.get(boardId) ?? {
-        items: [],
-        links: [],
-        percents: {},
-        groups: {},
-      }
-    );
+    const plan = this.planByBoardId.get(boardId) ?? {
+      items: [],
+      links: [],
+      percents: {},
+      groups: {},
+    };
+    return {
+      ...plan,
+      links: this.itemLinks
+        .filter(
+          (link) => link.boardId === boardId && link.kind === "dependency",
+        )
+        .map((link) => ({ from: link.from, to: link.to })),
+    };
   }
 
   /** Records one line of an item's history ("đổi hạn từ 08/10 sang 10/10"). */
   recordActivity(
     cardId: string,
-    actorId: string,
+    actorId: string | null,
     action: string,
     createdAt?: string,
+    extra: Omit<
+      MockActivityRecord,
+      "id" | "actorId" | "action" | "createdAt"
+    > = {},
   ): void {
     const list = this.activityByCardId.get(cardId) ?? [];
     list.push({
@@ -2071,6 +2213,7 @@ export class MockStore {
       actorId,
       action,
       createdAt: createdAt ?? this.clock.isoNow(),
+      ...extra,
     });
     this.activityByCardId.set(cardId, list);
   }
@@ -2093,6 +2236,15 @@ export class MockStore {
         cardId,
         this.getCurrentUser().id,
         `đổi hạn từ ${this.shortDay(card.dueAt)} sang ${this.shortDay(patch.dueAt)}`,
+        undefined,
+        {
+          verb: "đổi Hạn chót",
+          detail: {
+            kind: "diff",
+            from: card.dueAt ? hanoiShortDay(card.dueAt) : "—",
+            to: patch.dueAt ? hanoiShortDay(patch.dueAt) : "—",
+          },
+        },
       );
     }
     const updated: MockCardRecord = {
@@ -2277,6 +2429,11 @@ export class MockStore {
         cardId,
         this.getCurrentUser().id,
         `đổi trạng thái từ ${previous.name} sang ${option.name}`,
+        undefined,
+        {
+          verb: "đổi Trạng thái",
+          detail: { kind: "diff", from: previous.name, to: option.name },
+        },
       );
     }
     this.updateFieldValue(cardId, statusColumn.id, optionId);
@@ -3082,18 +3239,263 @@ export class MockStore {
     const done = statusColumn?.options?.find(
       (option) => option.category === "done",
     );
+    const before = this.childProgressOf(card.parentItemId);
     if (done) this.updateItemStatus(cardId, done.id);
     else this.updateCard(cardId, { completedAt: this.clock.isoNow() });
+    this.recordChildTick(cardId, before, "đánh dấu xong việc con");
     return true;
+  }
+
+  /** Done and total child items of a parent, as a percent of done. */
+  private childProgressOf(parentId: string | null | undefined): number | null {
+    if (!parentId) return null;
+    const children = this.getChildCards(parentId);
+    if (children.length === 0) return null;
+    const done = children.filter((child) => this.isCardDone(child)).length;
+    return Math.round((done / children.length) * 100);
+  }
+
+  private isCardDone(card: MockCardRecord): boolean {
+    const statusColumn = this.getColumns(card.boardId).find(
+      (column) => column.fieldType === "status",
+    );
+    const value = this.getFieldValues(card.id)[statusColumn?.id ?? ""];
+    const option = statusColumn?.options?.find(
+      (candidate) => candidate.id === value,
+    );
+    return option?.category === "done" || Boolean(card.completedAt);
+  }
+
+  /** Records on the parent that a child item was ticked or reopened. */
+  private recordChildTick(
+    childId: string,
+    before: number | null,
+    verb: string,
+  ): void {
+    const child = this.cardsById.get(childId);
+    if (!child?.parentItemId || before === null) return;
+    const after = this.childProgressOf(child.parentItemId);
+    if (after === null || after === before) return;
+    this.recordActivity(
+      child.parentItemId,
+      this.getCurrentUser().id,
+      `${verb} ${child.itemKey ?? child.title}`,
+      undefined,
+      {
+        verb,
+        target: child.itemKey ?? child.title,
+        detail: {
+          kind: "diff",
+          label: "Tiến độ",
+          from: `${before}%`,
+          to: `${after}%`,
+          note: "tự tính",
+        },
+        compact: {
+          verb: verb === "mở lại việc con" ? "mở lại" : "đánh dấu xong",
+          target: child.title,
+          hideDetail: true,
+        },
+      },
+    );
+  }
+
+  /** Adds a child item (a sub-item) under an item; it starts open and unassigned. */
+  createChildItem(parentId: string, title: string): MockCardRecord | undefined {
+    const parent = this.cardsById.get(parentId);
+    if (!parent || parent.parentItemId) return undefined;
+    const siblings = this.getChildCards(parentId);
+    const before = this.childProgressOf(parentId);
+    const key = parent.itemKey
+      ? `${parent.itemKey}.${siblings.length + 1}`
+      : null;
+    const statusColumn = this.getColumns(parent.boardId).find(
+      (column) => column.fieldType === "status",
+    );
+    const todo = statusColumn?.options?.find(
+      (option) => option.category === "todo",
+    );
+    const card: MockCardRecord = {
+      id: this.nextId("card"),
+      boardId: parent.boardId,
+      listId: parent.listId,
+      title,
+      position: siblings.length + 1,
+      createdAt: this.clock.isoNow(),
+      updatedAt: this.clock.isoNow(),
+      itemKey: key,
+      parentItemId: parentId,
+      dueAt: null,
+      startedAt: null,
+      completedAt: null,
+      assigneeUserIds: [],
+      childProgress: null,
+    };
+    this.insertCard(card);
+    if (statusColumn && todo)
+      this.updateFieldValue(card.id, statusColumn.id, todo.id);
+    this.recordActivity(
+      parentId,
+      this.getCurrentUser().id,
+      `thêm việc con ${key ?? title}`,
+      undefined,
+      {
+        verb: "thêm việc con",
+        target: key ?? title,
+        ...(before === null
+          ? {}
+          : {
+              detail: {
+                kind: "diff" as const,
+                label: "Tiến độ",
+                from: `${before}%`,
+                to: `${this.childProgressOf(parentId) ?? 0}%`,
+                note: "tự tính",
+              },
+            }),
+      },
+    );
+    return card;
   }
 
   /** Reopens a completed item: it is open again, as it was before. */
   reopenCard(cardId: string): boolean {
     const card = this.cardsById.get(cardId);
     if (!card) return false;
+    const before = this.childProgressOf(card.parentItemId);
     this.completedCardIds.delete(cardId);
     this.updateCard(cardId, { completedAt: null });
+    this.recordChildTick(cardId, before, "mở lại việc con");
     return true;
+  }
+
+  // ── Links, files and followers of an item ──
+
+  /** The links of an item as the Detail page groups them. */
+  getItemLinks(cardId: string): {
+    id: string;
+    relation: "blocked-by" | "blocks" | "related";
+    card: MockCardRecord;
+  }[] {
+    const out: {
+      id: string;
+      relation: "blocked-by" | "blocks" | "related";
+      card: MockCardRecord;
+    }[] = [];
+    for (const link of this.itemLinks) {
+      if (link.from !== cardId && link.to !== cardId) continue;
+      const otherId = link.from === cardId ? link.to : link.from;
+      const other = this.cardsById.get(otherId);
+      if (!other || other.isArchived) continue;
+      out.push({
+        id: link.id,
+        relation:
+          link.kind === "related"
+            ? "related"
+            : link.to === cardId
+              ? "blocked-by"
+              : "blocks",
+        card: other,
+      });
+    }
+    return out;
+  }
+
+  /** Links two items of one board; `from` is what `to` waits for. */
+  addItemLink(
+    cardId: string,
+    otherId: string,
+    relation: "blocked-by" | "blocks" | "related",
+  ): "ok" | "not-found" | "invalid" {
+    const card = this.cardsById.get(cardId);
+    const other = this.cardsById.get(otherId);
+    if (!card || !other) return "not-found";
+    if (card.id === other.id || card.boardId !== other.boardId)
+      return "invalid";
+    const from = relation === "blocked-by" ? other.id : card.id;
+    const to = relation === "blocked-by" ? card.id : other.id;
+    const kind = relation === "related" ? "related" : "dependency";
+    const exists = this.itemLinks.some(
+      (link) =>
+        link.kind === kind &&
+        ((link.from === from && link.to === to) ||
+          (kind === "related" && link.from === to && link.to === from)),
+    );
+    if (exists) return "invalid";
+    this.itemLinks.push({
+      id: this.nextId("link"),
+      boardId: card.boardId,
+      from,
+      to,
+      kind,
+    });
+    const word =
+      relation === "blocked-by"
+        ? "Đang chờ"
+        : relation === "blocks"
+          ? "Đang chặn"
+          : "Liên quan";
+    this.recordActivity(
+      cardId,
+      this.getCurrentUser().id,
+      `thêm liên kết ${word} ${other.itemKey ?? other.title}`,
+      undefined,
+      {
+        verb: "thêm liên kết",
+        detail: {
+          kind: "link",
+          relation: word,
+          key: other.itemKey ?? "",
+          title: other.title,
+        },
+      },
+    );
+    return "ok";
+  }
+
+  removeItemLink(linkId: string): boolean {
+    const before = this.itemLinks.length;
+    this.itemLinks = this.itemLinks.filter((link) => link.id !== linkId);
+    return this.itemLinks.length < before;
+  }
+
+  getAttachments(cardId: string): MockAttachmentRecord[] {
+    return [...(this.attachmentsByCardId.get(cardId) ?? [])];
+  }
+
+  addAttachment(
+    cardId: string,
+    file: { filename: string; sizeBytes: number; contentType: string },
+  ): MockAttachmentRecord | undefined {
+    if (!this.cardsById.has(cardId)) return undefined;
+    const record: MockAttachmentRecord = {
+      id: this.nextId("file"),
+      cardId,
+      filename: file.filename,
+      sizeBytes: file.sizeBytes,
+      contentType: file.contentType,
+      uploadedBy: this.getCurrentUser().id,
+      createdAt: this.clock.isoNow(),
+    };
+    const list = this.attachmentsByCardId.get(cardId) ?? [];
+    list.push(record);
+    this.attachmentsByCardId.set(cardId, list);
+    this.recordActivity(
+      cardId,
+      this.getCurrentUser().id,
+      `thêm tệp ${file.filename}`,
+      undefined,
+      {
+        verb: "thêm tệp",
+        detail: { kind: "file", name: file.filename },
+      },
+    );
+    return record;
+  }
+
+  /** People who follow an item besides the member. */
+  getFollowerIds(cardId: string): readonly string[] {
+    return this.followersByCardId.get(cardId) ?? [];
   }
 
   getWorkspaceViews(workspaceId: string): MockWorkspaceViewRecord[] {

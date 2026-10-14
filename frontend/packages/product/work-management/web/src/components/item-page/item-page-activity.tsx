@@ -22,13 +22,18 @@ import {
   cn,
 } from "@notrelix/ui-web";
 import type {
+  ActivityDetail,
   CardActivity,
   CardDetail,
+  CardFile,
   CardMember,
   CardUpdate,
 } from "@notrelix/work-management-core";
 import { personInitials } from "@notrelix/work-management-core";
-import { identityMarkClass } from "../shared/item-display";
+import {
+  calendarDaysFromToday,
+  identityMarkClass,
+} from "../shared/item-display";
 import { useCommentEdit } from "../card-detail/use-comment-edit";
 import { useCommentDraft } from "../card-detail/update-composer";
 import type {
@@ -38,10 +43,15 @@ import type {
 } from "../card-detail/task-detail-types";
 import { canWriteComment } from "../card-detail/task-detail-types";
 import type { ItemPageCopy } from "./item-page.copy";
+import { fillSheetCopy } from "../card-detail/item-sheet.copy";
 import {
   buildActivityDays,
   countActivity,
+  describeFile,
   formatClock,
+  formatEntryDay,
+  formatFileSize,
+  type ActivityEntry,
 } from "./item-page-format";
 import {
   BUTTON_SM_VARIANT_CLASS,
@@ -55,6 +65,12 @@ const KEY_CLASS =
   "rounded-[4px] border border-line-strong bg-keycap px-1.25 font-mono text-key text-muted-foreground";
 
 const TAB_ORDER: readonly ItemPageTab[] = ["all", "comments", "history"];
+
+/** How many of the newest entries a tab lists before the rest folds (the mockup's). */
+const VISIBLE_LIMIT: Readonly<Partial<Record<ItemPageTab, number>>> = {
+  all: 5,
+  history: 8,
+};
 
 const initialsOf = personInitials;
 
@@ -93,19 +109,36 @@ export function ItemPageActivity({
   const t = copy.activity;
   const baseId = useId();
   const [newestFirst, setNewestFirst] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const counts = countActivity(data.updates, data.activity);
   const loading =
     (tab !== "history" && data.updatesLoading) ||
     (tab !== "comments" && data.activityLoading);
-  const days = buildActivityDays({
+  // The history is listed newest first, as the mockup does; the other tabs
+  // follow the sort. Older entries fold behind "Hiện N … cũ hơn".
+  const listNewestFirst = tab === "history" ? true : newestFirst;
+  const { days, hidden } = buildActivityDays({
     updates: data.updates,
     activity: data.activity,
     tab,
-    newestFirst,
+    newestFirst: listNewestFirst,
     now,
     copy,
     timeZone,
+    limit: expanded ? undefined : (VISIBLE_LIMIT[tab] ?? undefined),
   });
+  const olderRowShown = !listNewestFirst && hidden.length > 0;
+  const olderRow =
+    hidden.length > 0 ? (
+      <OlderRow
+        hidden={hidden}
+        tab={tab}
+        copy={copy}
+        now={now}
+        timeZone={timeZone}
+        onShow={() => setExpanded(true)}
+      />
+    ) : null;
   const labels: Readonly<Record<ItemPageTab, string>> = {
     all: t.all,
     comments: t.comments,
@@ -155,6 +188,7 @@ export function ItemPageActivity({
                 tabIndex={selected ? 0 : -1}
                 onClick={(event) => {
                   event.preventDefault();
+                  setExpanded(false);
                   onSelectTab(value);
                 }}
                 className={cn(
@@ -215,31 +249,44 @@ export function ItemPageActivity({
       ) : days.length === 0 ? (
         <p className="m-0 text-item-text text-muted-foreground">{empty}</p>
       ) : (
-        days.map((day) => (
-          <div key={day.key}>
-            <div className="mt-4 mb-1.5 text-item-note font-semibold text-meta-foreground first:mt-0">
-              {day.heading}
+        <>
+          {!listNewestFirst ? olderRow : null}
+          {days.map((day, dayIndex) => (
+            <div key={day.key}>
+              <div
+                className={cn(
+                  "mb-1.5 text-item-note font-semibold text-meta-foreground",
+                  (dayIndex > 0 || olderRowShown) && "mt-4",
+                )}
+              >
+                {day.heading}
+              </div>
+              {day.entries.map((entry) =>
+                entry.kind === "comment" ? (
+                  <CommentEntry
+                    key={`c-${entry.update.id}`}
+                    update={entry.update}
+                    files={data.files}
+                    now={now}
+                    capabilities={capabilities}
+                    callbacks={callbacks}
+                    copy={copy}
+                    timeZone={timeZone}
+                  />
+                ) : (
+                  <EventEntry
+                    key={`e-${entry.event.id}`}
+                    event={entry.event}
+                    tab={tab}
+                    copy={copy}
+                    timeZone={timeZone}
+                  />
+                ),
+              )}
             </div>
-            {day.entries.map((entry) =>
-              entry.kind === "comment" ? (
-                <CommentEntry
-                  key={`c-${entry.update.id}`}
-                  update={entry.update}
-                  capabilities={capabilities}
-                  callbacks={callbacks}
-                  copy={copy}
-                  timeZone={timeZone}
-                />
-              ) : (
-                <EventEntry
-                  key={`e-${entry.event.id}`}
-                  event={entry.event}
-                  timeZone={timeZone}
-                />
-              ),
-            )}
-          </div>
-        ))
+          ))}
+          {listNewestFirst ? olderRow : null}
+        </>
       )}
       {tab === "history" && days.length > 0 ? (
         <p className="m-0 mt-1 py-1 pl-10.5 text-crumb text-meta-foreground">
@@ -275,18 +322,126 @@ function EntryTime({ value, timeZone }: { value: string; timeZone?: string }) {
   );
 }
 
+/** The "Hiện N … cũ hơn" row: what is folded and from when to when. */
+function OlderRow({
+  hidden,
+  tab,
+  copy,
+  now,
+  timeZone,
+  onShow,
+}: {
+  hidden: readonly ActivityEntry[];
+  tab: ItemPageTab;
+  copy: ItemPageCopy;
+  now: Date;
+  timeZone?: string;
+  onShow: () => void;
+}) {
+  const t = copy.activity;
+  const comments = hidden.filter((entry) => entry.kind === "comment").length;
+  const changes = hidden.length - comments;
+  const from = formatEntryDay(hidden[0]!.at, now, timeZone);
+  const to = formatEntryDay(hidden[hidden.length - 1]!.at, now, timeZone);
+  const created = hidden.some(
+    (entry) => entry.kind === "event" && entry.event.type === "created",
+  );
+  const summary =
+    tab === "history"
+      ? fillSheetCopy(t.olderHistory, { from, to }) +
+        (created ? t.olderHistoryCreated : "")
+      : fillSheetCopy(t.olderAll, { changes, comments, from, to });
+  return (
+    <div className="flex items-center gap-2 py-1 pl-10.5">
+      <button
+        type="button"
+        onClick={onShow}
+        className="-ml-1.5 cursor-pointer rounded-[6px] border-0 bg-transparent px-1.5 py-[3px] text-item-small font-medium text-brand-subtle-foreground hover:bg-state-selected"
+      >
+        {fillSheetCopy(tab === "history" ? t.showOlderHistory : t.showOlder, {
+          count: hidden.length,
+        })}
+      </button>
+      <span className="text-item-note text-meta-foreground">{summary}</span>
+    </div>
+  );
+}
+
+const INSERT_CLASS =
+  "rounded-[5px] bg-item-file-sheet px-1.5 font-medium text-item-file-sheet-foreground";
+
+/** What a history line changed: a before and after, a link, a file or an edited description. */
+function DetailRow({
+  detail,
+  copy,
+}: {
+  detail: ActivityDetail;
+  copy: ItemPageCopy;
+}) {
+  return (
+    <div className="mt-1 inline-flex flex-wrap items-center gap-1.5">
+      {detail.kind === "diff" ? (
+        <>
+          {detail.label ? <span>{detail.label}</span> : null}
+          <span className="text-meta-foreground line-through decoration-line-strong">
+            {detail.from}
+          </span>
+          <span aria-hidden="true">→</span>
+          <span className="font-medium text-foreground">{detail.to}</span>
+          {detail.note ? (
+            <span className="text-item-note text-meta-foreground">
+              {detail.note}
+            </span>
+          ) : null}
+        </>
+      ) : detail.kind === "link" ? (
+        <>
+          <span>{detail.relation}</span>
+          <span className={INSERT_CLASS}>
+            {detail.key} {detail.title}
+          </span>
+        </>
+      ) : detail.kind === "file" ? (
+        <span className={INSERT_CLASS}>{detail.name}</span>
+      ) : (
+        <>
+          <span>{detail.label}</span>
+          <span className={INSERT_CLASS}>{detail.added}</span>
+          <DisabledControl reason={copy.activity.compareUnavailable}>
+            <button
+              type="button"
+              aria-disabled="true"
+              className={cn(BUTTON_SM_VARIANT_CLASS.ghost, "h-6 px-1.5")}
+            >
+              {copy.activity.compare}
+            </button>
+          </DisabledControl>
+        </>
+      )}
+    </div>
+  );
+}
+
 function EventEntry({
   event,
+  tab,
+  copy,
   timeZone,
 }: {
   event: CardActivity;
+  tab: ItemPageTab;
+  copy: ItemPageCopy;
   timeZone?: string;
 }) {
-  const automated = event.type === "automation" || event.type === "system";
+  // The short verb and its accent target when the producer gives them.
+  const compact = tab === "all" ? event.compact : undefined;
+  const sentence = compact?.verb ?? event.verb ?? event.action;
+  const target = compact ? compact.target : event.target;
+  const detail = compact?.hideDetail ? undefined : event.detail;
   return (
     <div className="flex items-start gap-3 py-[5px] text-item-ui text-muted-foreground">
       <span className="grid w-7.5 flex-none place-items-center pt-0.5">
-        {automated ? (
+        {event.automationName ? (
           <span
             aria-hidden="true"
             className="grid size-5 place-items-center rounded-[6px] bg-state-hover-strong text-muted-foreground"
@@ -307,21 +462,54 @@ function EventEntry({
       </span>
       <div>
         <b className="font-semibold text-foreground">{event.actor}</b>{" "}
-        {event.action}
+        {sentence}
+        {target ? (
+          <>
+            {" "}
+            <span className="font-medium text-foreground">{target}</span>
+          </>
+        ) : null}
+        {tab === "all" && event.notified ? ` ${event.notified}` : null}
         <EntryTime value={event.createdAt} timeZone={timeZone} />
+        {detail ? <DetailRow detail={detail} copy={copy} /> : null}
       </div>
     </div>
   );
 }
 
+/** The comment text with its @mentions of people drawn in the accent. */
+function CommentBody({ body }: { body: string }) {
+  const parts = body.split(/(@[\p{L}][\p{L}\p{M}' -]*[\p{L}\p{M}])/u);
+  return (
+    <>
+      {parts.map((part, index) =>
+        part.startsWith("@") ? (
+          <span
+            key={index}
+            className="font-medium text-brand-subtle-foreground"
+          >
+            {part}
+          </span>
+        ) : (
+          part
+        ),
+      )}
+    </>
+  );
+}
+
 function CommentEntry({
   update,
+  files,
+  now,
   capabilities,
   callbacks,
   copy,
   timeZone,
 }: {
   update: CardUpdate;
+  files: readonly CardFile[];
+  now: Date;
   capabilities: TaskDetailCapabilities;
   callbacks: TaskDetailCallbacks;
   copy: ItemPageCopy;
@@ -333,13 +521,29 @@ function CommentEntry({
   );
   const canEdit = capabilities.canEditFields;
   const canDelete = capabilities.canDelete;
+  const attached = update.attachmentIds.flatMap((id) => {
+    const file = files.find((candidate) => candidate.id === id);
+    return file ? [file] : [];
+  });
+  const days = calendarDaysFromToday(update.createdAt, now, timeZone);
+  // A comment older than yesterday names its day: "05/10 14:22".
+  const stamp =
+    days !== null && days < -1
+      ? `${formatEntryDay(update.createdAt, now, timeZone)} ${formatClock(update.createdAt, timeZone)}`
+      : formatClock(update.createdAt, timeZone);
 
   return (
     <div className="group/comment flex gap-3 py-2">
       <PersonMark person={update.author} className="size-7.5 text-avatar-lg" />
       <div className="relative min-w-0 flex-1 rounded-[10px] border border-line bg-popover px-3.5 py-2.5">
         <b className="font-semibold">{update.author.name}</b>
-        <EntryTime value={update.createdAt} timeZone={timeZone} />
+        {attached.length > 0 ? ` ${t.commentWithFile}` : null}
+        <time
+          dateTime={update.createdAt}
+          className="ml-1.5 text-item-note whitespace-nowrap text-meta-foreground"
+        >
+          {stamp}
+        </time>
         {canEdit || canDelete ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -397,9 +601,45 @@ function CommentEntry({
           </div>
         ) : (
           <p className="m-0 mt-1 text-item-comment whitespace-pre-wrap text-foreground">
-            {update.body}
+            <CommentBody body={update.body} />
           </p>
         )}
+        {attached.map((file) => {
+          const kind = describeFile(file);
+          const size = formatFileSize(file.size, "vi");
+          return (
+            <a
+              key={file.id}
+              href={file.url || undefined}
+              download={file.name}
+              aria-label={fillSheetCopy(t.downloadFile, {
+                name: file.name,
+                size,
+              })}
+              className="mt-2 inline-flex items-center gap-2 rounded-[8px] border border-line py-1.5 pr-2.5 pl-1.5 text-item-small font-medium text-foreground no-underline"
+            >
+              <span
+                aria-hidden="true"
+                className={cn(
+                  "grid size-7 place-items-center rounded-[7px] text-[8.5px] font-bold tracking-[0.02em]",
+                  kind.kind === "sheet"
+                    ? "bg-item-file-sheet text-item-file-sheet-foreground"
+                    : kind.kind === "pdf"
+                      ? "bg-item-file-pdf text-item-file-pdf-foreground"
+                      : "bg-state-hover-strong text-muted-foreground",
+                )}
+              >
+                {kind.label}
+              </span>
+              <span>
+                {file.name}{" "}
+                <small className="font-normal text-meta-foreground">
+                  {size}
+                </small>
+              </span>
+            </a>
+          );
+        })}
         <div className="mt-2 flex gap-2 text-crumb text-meta-foreground">
           <ReplyAction reason={t.replyUnavailable}>{t.reply}</ReplyAction>
           <ReplyAction reason={t.reactUnavailable}>{t.react}</ReplyAction>

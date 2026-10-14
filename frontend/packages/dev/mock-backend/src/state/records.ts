@@ -230,6 +230,32 @@ export interface MockCommentRecord {
   contentMd: string;
   createdAt: string;
   updatedAt?: string;
+  /** Files that came with the comment (ids of the card's attachments). */
+  attachmentIds?: string[];
+}
+
+/** A file attached to an item (`GET /board-items/{id}/attachments`). */
+export interface MockAttachmentRecord {
+  id: string;
+  cardId: string;
+  filename: string;
+  sizeBytes: number;
+  contentType: string;
+  uploadedBy: string;
+  createdAt: string;
+}
+
+/**
+ * A link between two items of a board: a finish-to-start dependency (`to`
+ * waits for `from`) or a plain relation (gap `CTR-GAP-WM-ITEM-LINKS`). Ends
+ * are item ids or plan item ids.
+ */
+export interface MockItemLinkRecord {
+  id: string;
+  boardId: string;
+  from: string;
+  to: string;
+  kind: "dependency" | "related";
 }
 
 export interface MockCardFieldValueRecord {

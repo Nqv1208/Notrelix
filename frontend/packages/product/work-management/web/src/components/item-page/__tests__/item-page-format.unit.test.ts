@@ -83,9 +83,9 @@ describe("dates", () => {
 
 describe("files", () => {
   it("writes sizes with the locale's decimal mark", () => {
-    expect(formatFileSize(18_400_000, "vi")).toBe("18,4 MB");
-    expect(formatFileSize(18_400_000, "en")).toBe("18.4 MB");
-    expect(formatFileSize(340_000, "vi")).toBe("340 KB");
+    expect(formatFileSize(19_293_798, "vi")).toBe("18,4 MB");
+    expect(formatFileSize(19_293_798, "en")).toBe("18.4 MB");
+    expect(formatFileSize(348_160, "vi")).toBe("340 KB");
     expect(formatFileSize(12, "vi")).toBe("12 B");
   });
 
@@ -128,7 +128,11 @@ describe("activity", () => {
   });
 
   it("merges comments and history by day, oldest first", () => {
-    const days = buildActivityDays({ ...base, tab: "all", newestFirst: false });
+    const { days } = buildActivityDays({
+      ...base,
+      tab: "all",
+      newestFirst: false,
+    });
     expect(days.map((day) => day.heading)).toEqual(["Hôm qua", "Hôm nay"]);
     expect(days.flatMap((day) => day.entries).map((entry) => entry.at)).toEqual(
       [
@@ -141,7 +145,7 @@ describe("activity", () => {
   });
 
   it("filters by tab and can run newest first", () => {
-    const comments = buildActivityDays({
+    const { days: comments } = buildActivityDays({
       ...base,
       tab: "comments",
       newestFirst: true,
@@ -150,7 +154,7 @@ describe("activity", () => {
       comments.flatMap((day) => day.entries).map((entry) => entry.kind),
     ).toEqual(["comment", "comment"]);
     expect(comments[0]?.heading).toBe("Hôm nay");
-    const history = buildActivityDays({
+    const { days: history } = buildActivityDays({
       ...base,
       tab: "history",
       newestFirst: false,
@@ -169,6 +173,21 @@ describe("activity", () => {
         tab: "all",
         newestFirst: false,
       }),
-    ).toEqual([]);
+    ).toEqual({ days: [], hidden: [] });
+  });
+
+  it("folds the older entries behind a limit and hands them back", () => {
+    const { days, hidden } = buildActivityDays({
+      ...base,
+      tab: "all",
+      newestFirst: false,
+      limit: 3,
+    });
+    expect(hidden.map((entry) => entry.at)).toEqual([
+      "2026-10-11T08:00:00+07:00",
+    ]);
+    expect(
+      days.flatMap((day) => day.entries).map((entry) => entry.at),
+    ).toHaveLength(3);
   });
 });

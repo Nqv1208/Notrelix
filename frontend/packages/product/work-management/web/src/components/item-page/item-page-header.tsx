@@ -9,7 +9,7 @@ import {
 import { fillSheetCopy } from "../card-detail/item-sheet.copy";
 import { TaskDetailTitle } from "../card-detail/task-detail-header";
 import type { ItemPageCopy } from "./item-page.copy";
-import { formatEditedAt } from "./item-page-format";
+import { formatEditedAt, formatFullDate } from "./item-page-format";
 import { BUTTON_SM_VARIANT_CLASS, DisabledControl } from "./item-page-parts";
 import type { ItemPageAccess, ItemPageConflict } from "./item-page-types";
 import type { ItemSheetCopy } from "../card-detail/item-sheet.copy";
@@ -19,6 +19,7 @@ import type { TaskDetailCallbacks } from "../card-detail/task-detail-types";
 export function ItemPageTitleBlock({
   card,
   creatorName,
+  editedAt,
   editable,
   titleId,
   copy,
@@ -29,6 +30,8 @@ export function ItemPageTitleBlock({
 }: {
   card: CardDetail;
   creatorName?: string | null;
+  /** The last change, history included; the item's own update time without it. */
+  editedAt?: string | null;
   editable: boolean;
   titleId: string;
   copy: ItemPageCopy;
@@ -39,7 +42,12 @@ export function ItemPageTitleBlock({
 }) {
   const label = card.labels[0];
   const created = formatItemDate(card.createdAt, now, timeZone);
-  const edited = formatEditedAt(card.updatedAt, now, copy, timeZone);
+  const edited = formatEditedAt(
+    editedAt ?? card.updatedAt,
+    now,
+    copy,
+    timeZone,
+  );
   const createdText = created
     ? creatorName
       ? fillSheetCopy(copy.meta.createdBy, { name: creatorName, date: created })
@@ -158,15 +166,19 @@ export function ItemPageConflictNotice({
 export function ItemPageReadOnlyNotice({
   access,
   copy,
+  timeZone,
 }: {
   access?: ItemPageAccess | null;
   copy: ItemPageCopy;
+  timeZone?: string;
 }) {
   const t = copy.readOnly;
   const level = access ? t.levels[access.level] : t.levels.viewer;
-  const source = access?.grantedBy
-    ? fillSheetCopy(t.source, { name: access.grantedBy })
-    : "";
+  const expires = formatFullDate(access?.expiresAt, timeZone);
+  const source =
+    (access?.grantedBy
+      ? fillSheetCopy(t.source, { name: access.grantedBy })
+      : "") + (expires ? fillSheetCopy(t.expires, { date: expires }) : "");
   return (
     <div
       role="status"

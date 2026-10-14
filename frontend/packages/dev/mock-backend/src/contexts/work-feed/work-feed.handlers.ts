@@ -36,6 +36,7 @@ import {
   type FeedWriteResult,
   type WorkBucket,
 } from "../../state/mock-work-feed";
+import type { MockStore } from "../../state/mock-store";
 
 const MY_WORK_EXT = "CTR-GAP-WS-MYWORK-EXT" as const;
 const HOME_FEED = "CTR-GAP-WS-HOME-FEED" as const;
@@ -59,6 +60,23 @@ function outcome(result: FeedWriteResult) {
 
 function isBucket(value: unknown): value is WorkBucket {
   return BUCKETS.includes(value as WorkBucket);
+}
+
+/**
+ * The people who follow an item (gap `CTR-GAP-WS-ITEM-SHEET`): the member when
+ * they follow it, the assignees, then the others who chose to.
+ */
+function followersOf(store: MockStore, cardId: string, memberFollows: boolean) {
+  const card = store.getCard(cardId);
+  const ids = [
+    ...(memberFollows ? [store.getCurrentUser().id] : []),
+    ...(card?.assigneeUserIds ?? []),
+    ...store.getFollowerIds(cardId),
+  ];
+  return [...new Set(ids)].flatMap((userId) => {
+    const user = store.getUser(userId);
+    return user ? [{ userId, name: user.name }] : [];
+  });
 }
 
 export const workFeedOperations = [
@@ -226,7 +244,11 @@ export const workFeedOperations = [
     route: "/board-items/:id/following",
     async handle({ params, store }) {
       const following = isFollowing(store, params.id);
-      return following === "not-found" ? notFound() : ok({ following });
+      if (following === "not-found") return notFound();
+      return ok({
+        following,
+        followers: followersOf(store, params.id, following),
+      });
     },
   }),
 

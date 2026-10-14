@@ -41,6 +41,10 @@ export interface FieldDefinition {
   position: number;
   isHidden: boolean;
   isSystemField: boolean;
+  /** Unit shown after a number ("giờ"), from the field settings. */
+  unit?: string;
+  /** "mark": a select value drawn with a coloured initials mark (departments). */
+  display?: "mark";
   semanticRole?: FieldSemanticRole;
   /**
    * The field's aggregate version from the board read: an option write sends

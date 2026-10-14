@@ -126,6 +126,8 @@ export function ItemPageSurface({
   }
 
   const ready = status === "ready" && card && detailData;
+  // The last change of the item counts its history: a child ticked is an edit.
+  const editedAt = card ? latestChange(card, detailData) : null;
 
   return (
     <section
@@ -158,6 +160,7 @@ export function ItemPageSurface({
                 <ItemPageTitleBlock
                   card={card}
                   creatorName={creatorName}
+                  editedAt={editedAt}
                   editable={capabilities.canEditFields}
                   titleId={titleId}
                   copy={copy}
@@ -175,22 +178,35 @@ export function ItemPageSurface({
                   />
                 ) : null}
                 {!capabilities.canEditFields ? (
-                  <ItemPageReadOnlyNotice access={access} copy={copy} />
+                  <ItemPageReadOnlyNotice
+                    access={access}
+                    copy={copy}
+                    timeZone={timeZone}
+                  />
                 ) : null}
                 <ItemPageDescription card={card} copy={copy} />
                 <ItemPageChildItems
                   card={card}
                   items={detailData.childItems}
                   capabilities={capabilities}
+                  callbacks={callbacks}
                   copy={copy}
                   now={now}
                   timeZone={timeZone}
                 />
                 <div className="grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-6">
-                  <ItemPageLinks copy={copy} />
+                  <ItemPageLinks
+                    links={detailData.links}
+                    candidates={detailData.linkCandidates}
+                    capabilities={capabilities}
+                    callbacks={callbacks}
+                    copy={copy}
+                  />
                   <ItemPageFiles
                     files={detailData.files}
+                    updates={detailData.updates}
                     capabilities={capabilities}
+                    callbacks={callbacks}
                     copy={copy}
                     locale={sheetCopy.locale}
                     now={now}
@@ -229,12 +245,28 @@ export function ItemPageSurface({
               timeZone={timeZone}
               creatorName={creatorName}
               conflict={conflict}
+              data={detailData}
+              editedAt={editedAt}
             />
           </div>
         </>
       ) : null}
     </section>
   );
+}
+
+/** The later of the item's own update time and its newest history line. */
+function latestChange(
+  card: NonNullable<ItemPageSurfaceProps["card"]>,
+  data: ItemPageSurfaceProps["detailData"],
+): string {
+  const own = card.updatedAt ?? card.createdAt;
+  const newest = (data?.activity ?? []).reduce<string | null>(
+    (latest, entry) =>
+      latest === null || entry.createdAt > latest ? entry.createdAt : latest,
+    null,
+  );
+  return newest !== null && newest > own ? newest : own;
 }
 
 export function ItemPageSkeleton({

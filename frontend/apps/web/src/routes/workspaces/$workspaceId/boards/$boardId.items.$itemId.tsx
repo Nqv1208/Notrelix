@@ -81,7 +81,7 @@ export function BoardItemPage() {
         space={
           headerData.space
             ? {
-                name: headerData.space.name,
+                name: headerData.space.label ?? headerData.space.name,
                 mark: {
                   initials: headerData.space.initials,
                   tone: headerData.space.markTone,

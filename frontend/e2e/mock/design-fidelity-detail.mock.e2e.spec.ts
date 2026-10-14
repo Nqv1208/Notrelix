@@ -36,9 +36,6 @@ const ITEM =
   "/workspaces/mock-workspace-primary/boards/mock-board-erp/items/mock-erp-item-142";
 const NOW = new Date("2026-10-12T10:40:00+07:00");
 const RAIL_KEY = "notrelix-system-rail";
-/** The mockup's comment of 10:05, posted again so the wrapping is the same. */
-const COMMENT =
-  "Đã gộp xong bản ghi trùng. Nhận được file của chị Linh rồi, em đối chiếu xong trong hôm nay, dự kiến nhập chính thức thứ Tư.";
 /** Height of one property row: dt 34 + row gap 2. */
 const ROW = 36;
 
@@ -186,20 +183,6 @@ async function check(page: Page, entries: readonly Entry[]) {
   expect(seen, "boxes that differ from the mockup").toEqual([]);
 }
 
-/** Posts the mockup's comment through the composer and waits for it. */
-async function postComment(page: Page) {
-  await page.getByLabel("Viết bình luận").fill(COMMENT);
-  await page.getByRole("button", { name: "Gửi", exact: true }).click();
-  // The item has two seeded comments; the one just posted is the third.
-  await expect(page.locator("div.group\\/comment")).toHaveCount(3);
-  // Posting scrolls the taller page down; the boxes are measured from the top.
-  await page.evaluate(() => {
-    document.querySelectorAll("*").forEach((node) => {
-      if (node.scrollTop > 0) node.scrollTop = 0;
-    });
-  });
-}
-
 /**
  * Final-Detail state=tong-quan, nav=hien-day, mode=sang. Chrome shared by every
  * state: the page bar, the title block and the right column.
@@ -231,19 +214,19 @@ const COMMON: Entry[] = [
   { name: "pvStart", at: "#workspace-main aside dl@0 >> button[aria-label=\"Ngày bắt đầu\"]", box: [917, 213.4, 181, 32], keys: "xywh", style: { fs: "13.5px", fw: "500", c: "rgb(22, 26, 33)", r: "7px" } }, // .props dd@2 >> .pv
   { name: "pvPriority", at: "#workspace-main aside dl@0 >> button[aria-label=\"Mức ưu tiên\"]", box: [917, 285.4, 181, 32], keys: "xywh", style: { r: "7px" } }, // .props dd@4 >> .pv
   { name: "prio", at: "#workspace-main aside dl@0 >> button[aria-label=\"Mức ưu tiên\"] > span@0", box: [925, 292, 50.2, 18.8], keys: "yh", style: { fs: "13px", fw: "600" } }, // .props dd@4 >> .prio
-  { name: "pvLabel", at: "#workspace-main aside dl@0 >> button[aria-label=\"Nhãn\"]", dy: -36, box: [917, 357.4, 181, 32], keys: "xwh", style: { r: "7px" } }, // .props dd@6 >> .pv
-  { name: "pvProgress", at: "#workspace-main aside dl@0 >> [data-testid=\"item-page-progress\"]", dy: -72, box: [917, 429.4, 181, 32], keys: "xwh", style: { fs: "13.5px", fw: "500", r: "7px" } }, // .props dd@8 >> .pv
-  { name: "mini", at: "#workspace-main aside dl@0 >> [data-testid=\"item-page-progress\"] > span@0", dy: -72, box: [925, 442.9, 60, 5], keys: "xwh", style: { bg: "rgb(230, 233, 238)", r: "3px" } }, // .props dd@8 >> .mini
+  { name: "pvLabel", at: "#workspace-main aside dl@0 >> button[aria-label=\"Nhãn\"]", box: [917, 357.4, 181, 32], keys: "xwh", style: { r: "7px" } }, // .props dd@6 >> .pv
+  { name: "pvProgress", at: "#workspace-main aside dl@0 >> [data-testid=\"item-page-progress\"]", box: [917, 429.4, 181, 32], keys: "xwh", style: { fs: "13.5px", fw: "500", r: "7px" } }, // .props dd@8 >> .pv
+  { name: "mini", at: "#workspace-main aside dl@0 >> [data-testid=\"item-page-progress\"] > span@0", box: [925, 442.9, 60, 5], keys: "xwh", style: { bg: "rgb(230, 233, 238)", r: "3px" } }, // .props dd@8 >> .mini
   { name: "calc", at: "#workspace-main aside dl@0 >> [data-testid=\"item-page-progress\"] > span@1", box: [1029.1, 429.5, 60.9, 31.9], keys: "wh", style: { fs: "11px", c: "rgb(95, 104, 117)" } }, // .props dd@8 >> .calc
-  { name: "rsep1", at: "#workspace-main aside > div.h-px@0", dy: -144, box: [807, 554.4, 283, 1], keys: "xywh", style: { bg: "rgb(225, 229, 234)" } }, // .rside > .rsep@0
-  { name: "viewsHead", at: "#workspace-main aside > div@3 >> :scope > div@0", dy: -144, box: [807, 575.4, 283, 17.4], keys: "xywh", style: { fs: "12px", fw: "600", c: "rgb(95, 104, 117)" } }, // .views .rh
-  { name: "viewKanban", at: "#workspace-main aside a[href*=\"view=kanban\"]", dy: -144, box: [799, 596.8, 299, 34], keys: "xywh", style: { fs: "13px", fw: "400", c: "rgb(79, 88, 102)", r: "7px" } }, // .views a@0
-  { name: "viewTimeline", at: "#workspace-main aside a[href*=\"view=timeline\"]", dy: -144, box: [799, 698.8, 299, 34], keys: "xywh", style: { fs: "13px", c: "rgb(79, 88, 102)", r: "7px" } }, // .views a@3
-  { name: "viewHint", at: "#workspace-main aside small", dy: -144, box: [807, 738.8, 283, 36], keys: "xywh", style: { fs: "12px", c: "rgb(95, 104, 117)" } }, // .views small
-  { name: "rsep2", at: "#workspace-main aside > div.h-px@1", dy: -144, box: [807, 794.8, 283, 1], keys: "xywh", style: { bg: "rgb(225, 229, 234)" } }, // .rside > .rsep@1
-  { name: "sysHead", at: "#workspace-main aside > div@5 >> :scope > div@0", dy: -144, box: [807, 815.8, 283, 17.4], keys: "xywh", style: { fs: "12px", fw: "600", c: "rgb(95, 104, 117)" } }, // .rside > div@5 >> .rh
-  { name: "sysKeyDt", at: "#workspace-main aside dl@1 >> dt@0", dy: -144, box: [807, 837.2, 118, 18.1], keys: "xywh", style: { fs: "12.5px", c: "rgb(95, 104, 117)" } }, // .sysp dt@0
-  { name: "sysKeyDd", at: "#workspace-main aside dl@1 >> dd@0", dy: -144, box: [925, 837.2, 165, 18.1], keys: "xywh", style: { fs: "12.5px", c: "rgb(79, 88, 102)" } }, // .sysp dd@0
+  { name: "rsep1", at: "#workspace-main aside > div.h-px@0", box: [807, 554.4, 283, 1], keys: "xywh", style: { bg: "rgb(225, 229, 234)" } }, // .rside > .rsep@0
+  { name: "viewsHead", at: "#workspace-main aside > div@3 >> :scope > div@0", box: [807, 575.4, 283, 17.4], keys: "xywh", style: { fs: "12px", fw: "600", c: "rgb(95, 104, 117)" } }, // .views .rh
+  { name: "viewKanban", at: "#workspace-main aside a[href*=\"view=kanban\"]", box: [799, 596.8, 299, 34], keys: "xywh", style: { fs: "13px", fw: "400", c: "rgb(79, 88, 102)", r: "7px" } }, // .views a@0
+  { name: "viewTimeline", at: "#workspace-main aside a[href*=\"view=timeline\"]", box: [799, 698.8, 299, 34], keys: "xywh", style: { fs: "13px", c: "rgb(79, 88, 102)", r: "7px" } }, // .views a@3
+  { name: "viewHint", at: "#workspace-main aside small", box: [807, 738.8, 283, 36], keys: "xywh", style: { fs: "12px", c: "rgb(95, 104, 117)" } }, // .views small
+  { name: "rsep2", at: "#workspace-main aside > div.h-px@1", box: [807, 794.8, 283, 1], keys: "xywh", style: { bg: "rgb(225, 229, 234)" } }, // .rside > .rsep@1
+  { name: "sysHead", at: "#workspace-main aside > div@5 >> :scope > div@0", box: [807, 815.8, 283, 17.4], keys: "xywh", style: { fs: "12px", fw: "600", c: "rgb(95, 104, 117)" } }, // .rside > div@5 >> .rh
+  { name: "sysKeyDt", at: "#workspace-main aside dl@1 >> dt@0", box: [807, 837.2, 118, 18.1], keys: "xywh", style: { fs: "12.5px", c: "rgb(95, 104, 117)" } }, // .sysp dt@0
+  { name: "sysKeyDd", at: "#workspace-main aside dl@1 >> dd@0", box: [925, 837.2, 165, 18.1], keys: "xywh", style: { fs: "12.5px", c: "rgb(79, 88, 102)" } }, // .sysp dd@0
 ];
 
 /** Final-Detail state=tong-quan: the body sections and the activity with one comment. */
@@ -323,8 +306,8 @@ const COMMENTS: Entry[] = [
   { name: "actBar", at: "#workspace-main #item-page-activity > section > div@0", from: "#workspace-main #item-page-activity > section", box: [0, 0, 708, 38], keys: "xywh", style: {  } }, // .act-h
   { name: "tabOn", at: "#workspace-main #item-page-activity > section nav a[aria-current=page]", from: "#workspace-main #item-page-activity > section", box: [184.8, 0, 96.6, 38], keys: "yh", style: { fs: "13.5px", fw: "600", c: "rgb(22, 26, 33)", bd: "rgb(22, 102, 204)" } }, // .subtabs a.on
   { name: "pill", at: "#workspace-main #item-page-activity > section > div@0 >> :scope > button", from: "#workspace-main #item-page-activity > section", box: [605.5, 4.5, 102.5, 28], keys: "xywh", style: { fs: "12.5px", fw: "400", c: "rgb(79, 88, 102)", r: "7px" } }, // .act-h .pill
-  { name: "cmAvatar", at: "#workspace-main #item-page-activity > section div.group\\/comment@2 >> :scope > span", from: "#workspace-main #item-page-activity > section div.group\\/comment@2", box: [0, 8, 30, 30], keys: "xywh", style: { fs: "10.5px", fw: "700", r: "999px" } }, // .cm@3 >> .av
-  { name: "cmBody", at: "#workspace-main #item-page-activity > section div.group\\/comment@2 >> :scope > div", from: "#workspace-main #item-page-activity > section div.group\\/comment@2", box: [42, 8, 666, 121.2], keys: "xywh", style: { bg: "rgb(255, 255, 255)", r: "10px" } }, // .cm@3 >> .body
+  { name: "cmAvatar", at: "#workspace-main #item-page-activity > section div.group\\/comment@3 >> :scope > span", from: "#workspace-main #item-page-activity > section div.group\\/comment@3", box: [0, 8, 30, 30], keys: "xywh", style: { fs: "10.5px", fw: "700", r: "999px" } }, // .cm@3 >> .av
+  { name: "cmBody", at: "#workspace-main #item-page-activity > section div.group\\/comment@3 >> :scope > div", from: "#workspace-main #item-page-activity > section div.group\\/comment@3", box: [42, 8, 666, 121.2], keys: "xywh", style: { bg: "rgb(255, 255, 255)", r: "10px" } }, // .cm@3 >> .body
   { name: "cpBox", at: "#workspace-main #item-page-activity > section div.mt-3 > div", from: "#workspace-main #item-page-activity > section div.mt-3", box: [42, 0, 666, 108], keys: "xywh", style: { bg: "rgb(255, 255, 255)", r: "10px" } }, // .composer .in
 ];
 
@@ -339,7 +322,6 @@ test.describe("Item page geometry (Final-Detail, 1440x900)", () => {
     page,
   }) => {
     await openItem(page);
-    await postComment(page);
     await check(page, [...COMMON, ...OVERVIEW]);
   });
 
@@ -352,7 +334,6 @@ test.describe("Item page geometry (Final-Detail, 1440x900)", () => {
 
   test("binh-luan: comments tab", async ({ page }) => {
     await openItem(page, "?tab=comments");
-    await postComment(page);
     await check(page, [...COMMON, ...COMMENTS]);
   });
 

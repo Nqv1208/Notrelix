@@ -46,8 +46,9 @@ export const en = {
   readOnly: {
     body: "You have {{level}} access on this board{{source}}.",
     source: ", added by {{name}}",
+    expires: ", expires {{date}}",
     detail:
-      " You can read and comment. Only people with edit access change the properties, sub-items and files of the item.",
+      " You can read, comment and send a file with a comment. Only people with edit access change the properties, sub-items and files of the item.",
     levels: {
       viewer: "view-only",
       commenter: "comment",
@@ -69,12 +70,32 @@ export const en = {
     addUnavailable: "Sub-items are not available yet",
     empty: "Sub-items are not available yet.",
     done: "Done",
+    toggleUnavailable: "Only people who can edit tick sub-items",
   },
   links: {
     heading: "Links",
     add: "Add",
     addUnavailable: "Links between items are not available yet",
     empty: "Links between items are not available yet.",
+    none: "No links yet.",
+    groups: {
+      "blocked-by": "Waiting for",
+      blocks: "Blocking",
+      related: "Related",
+    },
+    picker: {
+      label: "Add a link",
+      relation: "Relation",
+      relations: {
+        "blocked-by": "Waits for",
+        blocks: "Blocks",
+        related: "Related to",
+      },
+      find: "Find an item…",
+      empty: "No item to link to.",
+    },
+    remove: "Remove the link with {{key}}",
+    statusNone: "No status",
   },
   files: {
     heading: "Files",
@@ -85,6 +106,8 @@ export const en = {
     choose: "choose files",
     dropUnavailable: "Uploading files is not available yet",
     meta: "{{size}} · {{author}} · {{date}}",
+    metaWithComment: "{{size}} · {{author}} · {{date}}, with a comment",
+    today: "today",
   },
   activity: {
     heading: "Activity",
@@ -115,6 +138,17 @@ export const en = {
     save: "Save",
     editLabel: "Edit comment",
     loading: "Loading activity",
+    showOlder: "Show {{count}} older activities",
+    olderAll:
+      "{{changes}} changes and {{comments}} comments, from {{from}} to {{to}}",
+    showOlderHistory: "Show {{count}} older changes",
+    olderHistory: "from {{from}} to {{to}}",
+    olderHistoryCreated: ", including when the item was created",
+    commentWithFile: "commented with a file",
+    downloadFile: "Download {{name}}, {{size}}",
+    compare: "Compare",
+    compareUnavailable:
+      "Comparing versions of the description is not available yet",
   },
   composer: {
     placeholder: "Write a comment, type @ to mention someone…",
@@ -148,6 +182,12 @@ export const en = {
     progress: "Progress",
     computed: "Computed",
     progressRollup: "{{done}}/{{total}} sub-items",
+    dependency: "Depends on",
+    waitingFor: "waiting for",
+    noDependency: "Nothing",
+    followersLabel: "{{count}} followers",
+    editNumber: "Change {{name}}",
+    noValue: "Not set",
   },
   views: {
     heading: "Shown in",
@@ -213,8 +253,9 @@ export const vi: ItemPageCopy = {
   readOnly: {
     body: "Bạn có quyền {{level}} trên board này{{source}}.",
     source: ", được {{name}} thêm riêng",
+    expires: ", hết hạn {{date}}",
     detail:
-      " Bạn xem và bình luận được. Thuộc tính, việc con và danh sách tệp của việc chỉ người có quyền sửa thay đổi được.",
+      " Bạn xem, bình luận và gửi tệp kèm bình luận được. Thuộc tính, việc con và danh sách tệp của việc chỉ người có quyền sửa thay đổi được.",
     levels: {
       viewer: "Chỉ xem",
       commenter: "Có thể bình luận",
@@ -236,12 +277,32 @@ export const vi: ItemPageCopy = {
     addUnavailable: "Việc con chưa khả dụng",
     empty: "Danh sách việc con chưa khả dụng.",
     done: "Đã xong",
+    toggleUnavailable: "Chỉ người có quyền sửa mới đánh dấu việc con",
   },
   links: {
     heading: "Liên kết",
     add: "Thêm",
     addUnavailable: "Liên kết giữa các việc chưa khả dụng",
     empty: "Liên kết giữa các việc chưa khả dụng.",
+    none: "Chưa có liên kết nào.",
+    groups: {
+      "blocked-by": "Đang chờ",
+      blocks: "Đang chặn",
+      related: "Liên quan",
+    },
+    picker: {
+      label: "Thêm liên kết",
+      relation: "Quan hệ",
+      relations: {
+        "blocked-by": "Chờ việc",
+        blocks: "Chặn việc",
+        related: "Liên quan tới",
+      },
+      find: "Tìm việc…",
+      empty: "Không có việc nào để liên kết.",
+    },
+    remove: "Gỡ liên kết với {{key}}",
+    statusNone: "Chưa có trạng thái",
   },
   files: {
     heading: "Tệp",
@@ -252,6 +313,8 @@ export const vi: ItemPageCopy = {
     choose: "chọn tệp",
     dropUnavailable: "Tải tệp lên chưa khả dụng",
     meta: "{{size}} · {{author}} · {{date}}",
+    metaWithComment: "{{size}} · {{author}} · {{date}}, kèm bình luận",
+    today: "hôm nay",
   },
   activity: {
     heading: "Hoạt động",
@@ -282,6 +345,16 @@ export const vi: ItemPageCopy = {
     save: "Lưu",
     editLabel: "Sửa bình luận",
     loading: "Đang tải hoạt động",
+    showOlder: "Hiện {{count}} hoạt động cũ hơn",
+    olderAll:
+      "{{changes}} thay đổi và {{comments}} bình luận, từ {{from}} đến {{to}}",
+    showOlderHistory: "Hiện {{count}} thay đổi cũ hơn",
+    olderHistory: "từ {{from}} đến {{to}}",
+    olderHistoryCreated: ", gồm lúc tạo việc",
+    commentWithFile: "bình luận kèm tệp",
+    downloadFile: "Tải {{name}}, {{size}}",
+    compare: "So sánh",
+    compareUnavailable: "So sánh các phiên bản của mô tả chưa khả dụng",
   },
   composer: {
     placeholder: "Viết bình luận, gõ @ để nhắc ai đó…",
@@ -315,6 +388,12 @@ export const vi: ItemPageCopy = {
     progress: "Tiến độ",
     computed: "Tự tính",
     progressRollup: "{{done}}/{{total}} việc con",
+    dependency: "Phụ thuộc",
+    waitingFor: "chờ",
+    noDependency: "Không có",
+    followersLabel: "{{count}} người theo dõi",
+    editNumber: "Đổi {{name}}",
+    noValue: "Chưa đặt",
   },
   views: {
     heading: "Đang hiện trong",

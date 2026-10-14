@@ -49,6 +49,26 @@ export interface BoardPlanDto {
   readonly groups: Readonly<Record<string, string>>;
 }
 
+/** A link between two items as the Detail page groups them (gap `CTR-GAP-WM-ITEM-DETAIL`). */
+export interface ItemLinkDto {
+  readonly id: string;
+  /** "blocked-by": this item waits for it; "blocks": it waits for this item. */
+  readonly relation: "blocked-by" | "blocks" | "related";
+  readonly item: {
+    readonly id: string;
+    readonly key: string | null;
+    readonly title: string;
+    readonly statusName: string | null;
+    readonly statusCategory: "todo" | "in_progress" | "review" | "done" | null;
+  };
+}
+
+/** Who follows an item (gap `CTR-GAP-WS-ITEM-SHEET`). */
+export interface ItemFollowingDto {
+  readonly following: boolean;
+  readonly followers: readonly { userId: string; name: string }[];
+}
+
 export function createItemExtrasApi(client: NotrelixClient) {
   const { api } = client;
   const quiet = { skipGlobalErrorToast: true } as const;
@@ -71,11 +91,50 @@ export function createItemExtrasApi(client: NotrelixClient) {
       );
       return dto?.items ?? [];
     },
-    async getFollowing(itemId: string): Promise<boolean> {
-      const dto = await api.get<{ following?: boolean } | null>(
+    async getFollowing(itemId: string): Promise<ItemFollowingDto> {
+      const dto = await api.get<Partial<ItemFollowingDto> | null>(
         `/board-items/${itemId}/following`,
       );
-      return dto?.following === true;
+      return {
+        following: dto?.following === true,
+        followers: dto?.followers ?? [],
+      };
+    },
+    async getLinks(itemId: string): Promise<ItemLinkDto[]> {
+      const dto = await api.get<{ links?: ItemLinkDto[] } | null>(
+        `/board-items/${itemId}/links`,
+      );
+      return dto?.links ?? [];
+    },
+    async addLink(
+      itemId: string,
+      link: { itemId: string; relation: ItemLinkDto["relation"] },
+    ): Promise<void> {
+      await api.post<void>(`/board-items/${itemId}/links`, link, {
+        idempotencyKey: key(),
+        ...quiet,
+      });
+    },
+    async removeLink(itemId: string, linkId: string): Promise<void> {
+      await api.delete<void>(`/board-items/${itemId}/links/${linkId}`, quiet);
+    },
+    /** Adds a child item (sub-item) under an item. */
+    async addChildItem(itemId: string, title: string): Promise<void> {
+      await api.post<void>(
+        `/board-items/${itemId}/child-items`,
+        { title },
+        { idempotencyKey: key(), ...quiet },
+      );
+    },
+    /** Registers a file on an item (metadata only: the mock keeps no bytes). */
+    async addFile(
+      itemId: string,
+      file: { filename: string; sizeBytes: number; contentType: string },
+    ): Promise<void> {
+      await api.post<void>(`/board-items/${itemId}/attachments`, file, {
+        idempotencyKey: key(),
+        ...quiet,
+      });
     },
     async setFollowing(itemId: string, following: boolean): Promise<void> {
       if (following)

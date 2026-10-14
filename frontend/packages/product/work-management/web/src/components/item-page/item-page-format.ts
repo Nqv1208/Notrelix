@@ -92,8 +92,8 @@ export function formatFileSize(bytes: number, locale: string): string {
   const units = ["B", "KB", "MB", "GB"] as const;
   let value = Math.max(0, bytes);
   let unit = 0;
-  while (value >= 1000 && unit < units.length - 1) {
-    value /= 1000;
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024;
     unit += 1;
   }
   const text = new Intl.NumberFormat(locale, {
@@ -162,6 +162,8 @@ export function countActivity(
 /**
  * The activity list for one tab, grouped by calendar day. Oldest first by
  * default; ties keep the comments before the history lines of the same time.
+ * With `limit`, only the newest `limit` entries are listed and the older ones
+ * come back in `hidden` (oldest first), for "Hiện N hoạt động cũ hơn".
  */
 export function buildActivityDays({
   updates,
@@ -171,6 +173,7 @@ export function buildActivityDays({
   now,
   copy,
   timeZone,
+  limit,
 }: {
   updates: readonly CardUpdate[];
   activity: readonly CardActivity[];
@@ -179,7 +182,8 @@ export function buildActivityDays({
   now: Date;
   copy: ItemPageCopy;
   timeZone?: string;
-}): ActivityDay[] {
+  limit?: number;
+}): { days: ActivityDay[]; hidden: ActivityEntry[] } {
   const entries: ActivityEntry[] = [];
   if (tab !== "history") {
     for (const update of updates)
@@ -191,6 +195,10 @@ export function buildActivityDays({
   }
   const time = (entry: ActivityEntry) => toValidDate(entry.at)?.getTime() ?? 0;
   entries.sort((a, b) => time(a) - time(b));
+  const hidden =
+    limit !== undefined && entries.length > limit
+      ? entries.splice(0, entries.length - limit)
+      : [];
   if (newestFirst) entries.reverse();
 
   const days: { key: string; heading: string; entries: ActivityEntry[] }[] = [];
@@ -205,5 +213,14 @@ export function buildActivityDays({
         entries: [entry],
       });
   }
-  return days;
+  return { days, hidden };
+}
+
+/** "dd/MM" of an entry's day, for the range of the hidden entries. */
+export function formatEntryDay(
+  value: string,
+  now: Date,
+  timeZone?: string,
+): string {
+  return formatItemDate(value, now, timeZone) ?? "";
 }

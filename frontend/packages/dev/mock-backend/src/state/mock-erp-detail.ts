@@ -9,8 +9,8 @@ import { ERP_COMMENTER, ERP_PEOPLE } from "./mock-erp-board";
 /** Item description (markdown) by item key; items without one stay empty. */
 export const ERP_DESCRIPTIONS: Readonly<Record<string, string>> = {
   "ERP-142": [
-    "Chuyển 48.200 hồ sơ khách hàng từ phần mềm bán hàng cũ. Giữ nguyên mã khách hàng, gộp bản ghi trùng theo mã số thuế, đối chiếu công nợ đầu kỳ với phòng Kế toán trước khi chốt. Quy tắc gộp chi tiết ở Kế hoạch chuyển đổi dữ liệu.",
-    "Xong khi:",
+    "Chuyển 48.200 hồ sơ khách hàng từ phần mềm bán hàng cũ. Giữ nguyên mã khách hàng, gộp bản ghi trùng theo mã số thuế, đối chiếu công nợ đầu kỳ với phòng Kế toán trước khi chốt. Quy tắc gộp chi tiết ở [Kế hoạch chuyển đổi dữ liệu](doc:mock-doc-data-migration-plan).",
+    "**Xong khi:**",
     [
       "- Số khách hàng trên ERP khớp danh sách đã gộp, lệch không quá 0,1%.",
       "- Công nợ đầu kỳ của 200 khách lớn nhất khớp sổ Kế toán.",

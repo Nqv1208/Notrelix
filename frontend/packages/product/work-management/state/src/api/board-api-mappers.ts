@@ -321,7 +321,7 @@ export function mapCommentDtoToCardUpdate(
     },
     body: dto.contentMd,
     mentionUserIds: [],
-    attachmentIds: [],
+    attachmentIds: dto.attachmentIds ?? [],
     createdAt: dto.createdAt,
     updatedAt: dto.isEdited ? dto.createdAt : undefined,
   };
@@ -358,13 +358,23 @@ export function mapActivityResponse(
   return dto.data.map((item) => ({
     id: item.id,
     cardId,
-    actor: item.actorName ?? "Unknown",
+    actor: item.actorName ?? (item.automationName ? "Tự động hoá" : "Unknown"),
     action: item.action,
-    type: normalizeActivityType(item.action),
+    type: item.automationName
+      ? "automation"
+      : item.kind === "created"
+        ? "created"
+        : normalizeActivityType(item.action),
     metadata: item.resourceTitle
       ? { resourceTitle: item.resourceTitle }
       : undefined,
     createdAt: item.createdAt,
+    ...(item.automationName ? { automationName: item.automationName } : {}),
+    ...(item.verb ? { verb: item.verb } : {}),
+    ...(item.target ? { target: item.target } : {}),
+    ...(item.notified ? { notified: item.notified } : {}),
+    ...(item.detail ? { detail: item.detail } : {}),
+    ...(item.compact ? { compact: item.compact } : {}),
   }));
 }
 
@@ -571,6 +581,8 @@ function mapBoardColumnDto(
     isHidden: "isHidden" in dto ? dto.isHidden : false,
     isSystemField:
       "isSystemField" in dto ? dto.isSystemField : (dto.isSystem ?? false),
+    ...(typeof settings.unit === "string" ? { unit: settings.unit } : {}),
+    ...(settings.display === "mark" ? { display: "mark" as const } : {}),
     ...(normalizeName(rawType) === "status"
       ? { semanticRole: "status" as const }
       : {}),

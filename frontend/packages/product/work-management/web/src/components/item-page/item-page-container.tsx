@@ -9,7 +9,11 @@ import {
   useCreateCardUpdate,
   useDeleteCardUpdate,
   useDuplicateCard,
+  useAddItemFile,
   useFullBoard,
+  useItemChildItems,
+  useItemFollowing,
+  useItemLinks,
   useUpdateCard,
   useUpdateCardUpdate,
   useUpdateFieldValue,
@@ -17,6 +21,7 @@ import {
 } from "@notrelix/work-management-state";
 import {
   groupCardsByStatus,
+  personInitials,
   type Board,
   type CardDetail,
   type UpdateCardInput,
@@ -195,6 +200,10 @@ function ItemPageReady({
   const createUpdate = useCreateCardUpdate(card.id, card.workspaceId);
   const updateUpdate = useUpdateCardUpdate(card.id, card.workspaceId);
   const deleteUpdate = useDeleteCardUpdate(card.id, card.workspaceId);
+  const children = useItemChildItems(card.id, card.workspaceId, card.boardId);
+  const follow = useItemFollowing(card.id, card.workspaceId);
+  const links = useItemLinks(card.id, card.workspaceId, card.boardId);
+  const addFile = useAddItemFile(card.id, card.workspaceId);
 
   // The write the server refused, kept so the viewer can send it again.
   const [refused, setRefused] = useState<RefusedWrite | null>(null);
@@ -297,7 +306,17 @@ function ItemPageReady({
     onClose: onBack,
     onRenameTitle: (cardId, patch) => updateCard.mutate({ cardId, patch }),
     onUpdateItem: patchItem,
-    onToggleWatch: () => undefined,
+    onToggleWatch: (watched) => follow.setFollowing(watched),
+    onToggleChildItem: (childId, done) => children.toggle({ childId, done }),
+    onAddChildItem: (title) => children.addChild(title),
+    onAddLink: (itemId, relation) => links.addLink({ itemId, relation }),
+    onRemoveLink: (linkId) => links.removeLink(linkId),
+    onAddFile: (file) =>
+      addFile.mutate({
+        filename: file.name,
+        sizeBytes: file.size,
+        contentType: file.type || "application/octet-stream",
+      }),
     onDuplicate: (cardId) => duplicateCard.mutate(cardId),
     // "Lưu trữ" archives the item (it can be restored); it is not a delete.
     onArchive: (cardId) => {
@@ -334,6 +353,14 @@ function ItemPageReady({
   };
 
   const created = activity.data?.find((entry) => entry.type === "created");
+  const linkCandidates = boardGroups
+    .flatMap((group) => group.cards)
+    .filter((entry) => entry.id !== card.id && !entry.parentItemId)
+    .map((entry) => ({
+      id: entry.id,
+      key: entry.itemKey ?? null,
+      title: entry.title,
+    }));
 
   return (
     <ItemPageSurface
@@ -354,6 +381,7 @@ function ItemPageReady({
           ? {
               level: access.myLevel,
               grantedBy: access.mySource.grantedBy?.name,
+              expiresAt: access.mySource.expiresAt,
             }
           : null
       }
@@ -373,6 +401,18 @@ function ItemPageReady({
         activityFetching: activity.isFetching,
         updates: updates.data ?? card.updates,
         updatesLoading: updates.isLoading,
+        childItems: children.data?.map((child) => ({
+          ...child,
+          itemKey: child.key,
+        })),
+        following: follow.following,
+        followers: follow.followers.map((person) => ({
+          userId: person.userId,
+          name: person.name,
+          initials: personInitials(person.name),
+        })),
+        links: links.data,
+        linkCandidates,
       }}
     />
   );

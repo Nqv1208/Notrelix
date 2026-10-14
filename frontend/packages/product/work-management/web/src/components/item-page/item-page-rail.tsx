@@ -9,12 +9,15 @@ import {
   Table2,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import { cn } from "@notrelix/ui-web";
+import { Popover, PopoverContent, PopoverTrigger, cn } from "@notrelix/ui-web";
+import { useState } from "react";
 import type {
   Board,
   CardDetail,
+  FieldDefinition,
   UpdateFieldValueInput,
 } from "@notrelix/work-management-core";
+import { personInitials } from "@notrelix/work-management-core";
 import {
   ITEM_LABEL_TONE_CLASS,
   formatItemDate,
@@ -42,6 +45,7 @@ import {
 import type {
   TaskDetailCallbacks,
   TaskDetailCapabilities,
+  TaskDetailData,
 } from "../card-detail/task-detail-types";
 import type { ItemPageCopy } from "./item-page.copy";
 import {
@@ -126,29 +130,59 @@ function RailHeading({
   );
 }
 
-/** Follow button and the faces of the people who follow (no producer yet: disabled). */
-function FollowRow({ card, copy }: { card: CardDetail; copy: ItemPageCopy }) {
+/** Follow button and the faces of the people who follow. */
+function FollowRow({
+  card,
+  data,
+  onToggle,
+  copy,
+}: {
+  card: CardDetail;
+  data: TaskDetailData | undefined;
+  onToggle?: (watched: boolean) => void;
+  copy: ItemPageCopy;
+}) {
   const t = copy.rail;
-  const watchers = card.watchers;
-  const faces = watchers.slice(0, 3);
-  const more = watchers.length - faces.length;
+  const known = data?.following !== undefined && data.following !== null;
+  const following = known ? data?.following === true : card.isWatched;
+  const people: readonly {
+    id: string;
+    userId: string;
+    initials: string;
+    name: string;
+  }[] = data?.followers
+    ? data.followers.map((person) => ({
+        id: person.userId,
+        userId: person.userId,
+        initials: person.initials,
+        name: person.name,
+      }))
+    : card.watchers;
+  const faces = people.slice(0, 3);
+  const more = people.length - faces.length;
+  const button = (
+    <button
+      type="button"
+      aria-pressed={following}
+      aria-disabled={known && onToggle ? undefined : "true"}
+      onClick={known && onToggle ? () => onToggle(!following) : undefined}
+      className={BUTTON_SM_VARIANT_CLASS.outline}
+    >
+      <Bell aria-hidden="true" className="size-3.5" />
+      {following ? t.following : t.follow}
+    </button>
+  );
   return (
     <div className="flex items-center gap-2">
-      <DisabledControl reason={t.followUnavailable}>
-        <button
-          type="button"
-          aria-disabled="true"
-          aria-pressed={card.isWatched}
-          className={BUTTON_SM_VARIANT_CLASS.outline}
-        >
-          <Bell aria-hidden="true" className="size-3.5" />
-          {card.isWatched ? t.following : t.follow}
-        </button>
-      </DisabledControl>
-      {watchers.length > 0 ? (
+      {known && onToggle ? (
+        button
+      ) : (
+        <DisabledControl reason={t.followUnavailable}>{button}</DisabledControl>
+      )}
+      {people.length > 0 ? (
         <div
           role="group"
-          aria-label={fillSheetCopy(t.watchers, { count: watchers.length })}
+          aria-label={fillSheetCopy(t.watchers, { count: people.length })}
           className="ml-auto flex"
         >
           {faces.map((person) => (
@@ -173,6 +207,154 @@ function FollowRow({ card, copy }: { card: CardDetail; copy: ItemPageCopy }) {
   );
 }
 
+/** The fields of the board beyond the item's own properties: selects and numbers. */
+function customFieldsOf(board: Board): FieldDefinition[] {
+  const own = findItemFields(board);
+  const ids = new Set(
+    [own.status, own.priority, own.person, own.due].flatMap((field) =>
+      field ? [field.id] : [],
+    ),
+  );
+  return board.fieldDefinitions
+    .filter(
+      (field) =>
+        !ids.has(field.id) &&
+        !field.isHidden &&
+        (field.fieldType === "select" || field.fieldType === "number"),
+    )
+    .sort((a, b) => a.position - b.position);
+}
+
+/** One custom field: a select as a menu of its options, a number as a small editor. */
+function CustomFieldRow({
+  field,
+  card,
+  editable,
+  copy,
+  onChange,
+}: {
+  field: FieldDefinition;
+  card: CardDetail;
+  editable: boolean;
+  copy: ItemPageCopy;
+  onChange: (value: UpdateFieldValueInput["value"]) => void;
+}) {
+  const t = copy.rail;
+  const raw = card.fieldValues[field.id];
+  if (field.fieldType === "number") {
+    const value = typeof raw === "number" ? raw : null;
+    return (
+      <PropertyRow label={field.name}>
+        <NumberEditor
+          value={value}
+          unit={field.unit}
+          editable={editable}
+          label={fillSheetCopy(t.editNumber, { name: field.name })}
+          noValue={t.noValue}
+          onChange={onChange}
+        />
+      </PropertyRow>
+    );
+  }
+  const option = field.options.find((entry) => entry.id === raw);
+  return (
+    <PropertyRow label={field.name}>
+      <ItemOptionMenu field={field} readOnly={!editable} onSelect={onChange}>
+        <PropertyValue
+          editable={editable}
+          aria-label={field.name}
+          className={option ? undefined : "font-normal text-meta-foreground"}
+        >
+          {option ? (
+            <>
+              {field.display === "mark" ? (
+                <span
+                  aria-hidden="true"
+                  className="grid size-5 shrink-0 place-items-center rounded-[6px] text-[8.5px] font-bold text-white"
+                  style={{ backgroundColor: option.color }}
+                >
+                  {personInitials(option.label)}
+                </span>
+              ) : null}
+              {option.label}
+            </>
+          ) : (
+            t.noValue
+          )}
+        </PropertyValue>
+      </ItemOptionMenu>
+    </PropertyRow>
+  );
+}
+
+function NumberEditor({
+  value,
+  unit,
+  editable,
+  label,
+  noValue,
+  onChange,
+}: {
+  value: number | null;
+  unit?: string;
+  editable: boolean;
+  label: string;
+  noValue: string;
+  onChange: (value: number) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState("");
+  const shown =
+    value === null ? (
+      <span className="font-normal text-meta-foreground">{noValue}</span>
+    ) : (
+      `${value}${unit ? ` ${unit}` : ""}`
+    );
+  if (!editable)
+    return (
+      <PropertyValue editable={false} aria-label={label}>
+        {shown}
+      </PropertyValue>
+    );
+  const commit = () => {
+    const next = Number(draft.replace(",", "."));
+    if (draft.trim() !== "" && Number.isFinite(next) && next !== value)
+      onChange(next);
+    setOpen(false);
+  };
+  return (
+    <Popover
+      open={open}
+      onOpenChange={(next) => {
+        if (next) setDraft(value === null ? "" : String(value));
+        setOpen(next);
+      }}
+    >
+      <PopoverTrigger asChild>
+        <PropertyValue editable aria-label={label}>
+          {shown}
+        </PropertyValue>
+      </PopoverTrigger>
+      <PopoverContent align="start" aria-label={label} className="w-44 p-2">
+        <input
+          type="number"
+          autoFocus
+          value={draft}
+          aria-label={label}
+          onChange={(event) => setDraft(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key !== "Enter") return;
+            event.preventDefault();
+            commit();
+          }}
+          onBlur={commit}
+          className="h-8 w-full rounded-[7px] border border-line-strong bg-background px-2 text-item-ui text-foreground"
+        />
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 export function ItemPageRail({
   board,
   card,
@@ -185,6 +367,8 @@ export function ItemPageRail({
   timeZone,
   creatorName,
   conflict,
+  data,
+  editedAt,
 }: {
   board: Board;
   card: CardDetail;
@@ -197,6 +381,9 @@ export function ItemPageRail({
   timeZone?: string;
   creatorName?: string | null;
   conflict?: ItemPageConflict | null;
+  data?: TaskDetailData;
+  /** When the item was last changed, history included. */
+  editedAt?: string | null;
 }) {
   const t = copy.rail;
   const p = sheetCopy.properties;
@@ -242,6 +429,19 @@ export function ItemPageRail({
       ? Math.round((progress.done / progress.total) * 100)
       : null;
   const startDate = card.startDate ?? null;
+  const customFields = customFieldsOf(board);
+  const customRow = (field: FieldDefinition | undefined) =>
+    field ? (
+      <CustomFieldRow
+        key={field.id}
+        field={field}
+        card={card}
+        editable={editable}
+        copy={copy}
+        onChange={(value) => update(field, value)}
+      />
+    ) : null;
+  const blockedBy = data?.links?.find((link) => link.relation === "blocked-by");
   const conflictText = (entry: ItemPageConflict | null) =>
     entry
       ? fillSheetCopy(copy.conflict.changed, {
@@ -255,7 +455,12 @@ export function ItemPageRail({
       aria-label={t.label}
       className="flex w-full shrink-0 flex-col gap-5 border-t border-line bg-popover px-4.5 pt-4.5 pb-7 lg:w-80 lg:overflow-y-auto lg:border-t-0 lg:border-l"
     >
-      <FollowRow card={card} copy={copy} />
+      <FollowRow
+        card={card}
+        data={data}
+        onToggle={callbacks.onToggleWatch}
+        copy={copy}
+      />
 
       <div>
         <RailHeading
@@ -458,6 +663,8 @@ export function ItemPageRail({
             </ItemOptionMenu>
           </PropertyRow>
 
+          {customRow(customFields[0])}
+
           {label ? (
             <PropertyRow label={t.labels}>
               <PropertyValue editable={false} aria-label={t.labels}>
@@ -472,6 +679,8 @@ export function ItemPageRail({
               </PropertyValue>
             </PropertyRow>
           ) : null}
+
+          {customRow(customFields[1])}
 
           {progress && percent !== null ? (
             <PropertyRow
@@ -503,10 +712,33 @@ export function ItemPageRail({
               </span>
             </PropertyRow>
           ) : null}
+
+          {blockedBy ? (
+            <PropertyRow label={t.dependency}>
+              <span
+                className={cn(
+                  VALUE_CLASS,
+                  "cursor-default gap-1.5 whitespace-nowrap",
+                )}
+              >
+                <span className="text-crumb font-normal text-meta-foreground">
+                  {t.waitingFor}
+                </span>
+                <span className="font-mono text-item-small">
+                  {blockedBy.item.key}
+                </span>
+                <span className="text-crumb font-normal text-meta-foreground">
+                  {blockedBy.item.statusName}
+                </span>
+              </span>
+            </PropertyRow>
+          ) : null}
+
+          {customFields.slice(2).map(customRow)}
         </dl>
       </div>
 
-      <div className="h-px bg-line" />
+      <div className="h-px shrink-0 bg-line" />
 
       <ViewsList
         card={card}
@@ -517,7 +749,7 @@ export function ItemPageRail({
         timeZone={timeZone}
       />
 
-      <div className="h-px bg-line" />
+      <div className="h-px shrink-0 bg-line" />
 
       <div>
         <RailHeading>{copy.system.heading}</RailHeading>
@@ -534,7 +766,12 @@ export function ItemPageRail({
             {formatDateTime(card.createdAt, timeZone) ?? ""}
           </SystemRow>
           <SystemRow label={copy.system.editedAt}>
-            {systemEditedText(card, now, copy, timeZone)}
+            {systemEditedText(
+              editedAt ?? card.updatedAt ?? card.createdAt,
+              now,
+              copy,
+              timeZone,
+            )}
           </SystemRow>
         </dl>
       </div>
@@ -543,12 +780,11 @@ export function ItemPageRail({
 }
 
 function systemEditedText(
-  card: CardDetail,
+  value: string,
   now: Date,
   copy: ItemPageCopy,
   timeZone?: string,
 ): string {
-  const value = card.updatedAt ?? card.createdAt;
   const when = formatEditedAt(value, now, copy, timeZone);
   if (!when) return "";
   // "10:06 hôm nay" for the meta line, "Hôm nay, 10:06" in the system list.

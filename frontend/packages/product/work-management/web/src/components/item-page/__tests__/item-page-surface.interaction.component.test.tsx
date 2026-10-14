@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 import {
   fireEvent,
   renderPureUi,
@@ -415,5 +415,115 @@ describe.each([
     expect(
       screen.queryByRole("group", { name: /followers|theo dõi/ }),
     ).toBeNull();
+  });
+});
+
+describe("item page sections with data (vi)", () => {
+  beforeAll(() => {
+    // The link picker (cmdk) scrolls its highlighted row into view.
+    Element.prototype.scrollIntoView = () => undefined;
+  });
+
+  const detail = (overrides: Record<string, unknown> = {}) => ({
+    ...erpPageDetailData(erpPageItem()),
+    ...overrides,
+  });
+
+  it("adds a sub-item with Enter and ticks one", () => {
+    const callbacks = {
+      ...callbacksMock(),
+      onAddChildItem: vi.fn(),
+      onToggleChildItem: vi.fn(),
+    };
+    renderPage(viCopy, {
+      callbacks,
+      detailData: detail({
+        childItems: [
+          {
+            id: "c1",
+            title: "Xuất dữ liệu",
+            done: false,
+            itemKey: "ERP-142.1",
+          },
+        ],
+      }),
+    });
+    fireEvent.click(screen.getByRole("checkbox", { name: "Xuất dữ liệu" }));
+    expect(callbacks.onToggleChildItem).toHaveBeenCalledWith("c1", true);
+    const input = screen.getByRole("textbox", { name: "Việc con" });
+    fireEvent.change(input, { target: { value: "Kiểm tra lại" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(callbacks.onAddChildItem).toHaveBeenCalledWith("Kiểm tra lại");
+  });
+
+  it("groups the links, adds one through the picker and removes one", () => {
+    const callbacks = {
+      ...callbacksMock(),
+      onAddLink: vi.fn(),
+      onRemoveLink: vi.fn(),
+    };
+    renderPage(viCopy, {
+      callbacks,
+      detailData: detail({
+        links: [
+          {
+            id: "l1",
+            relation: "blocked-by",
+            item: {
+              id: "i129",
+              key: "ERP-129",
+              title: "Chốt danh mục",
+              statusName: "Hoàn thành",
+              statusCategory: "done",
+            },
+          },
+          {
+            id: "l2",
+            relation: "related",
+            item: {
+              id: "i151",
+              key: "ERP-151",
+              title: "Cấu hình quyền",
+              statusName: "Cần làm",
+              statusCategory: "todo",
+            },
+          },
+        ],
+        linkCandidates: [{ id: "i150", key: "ERP-150", title: "Cảnh báo" }],
+      }),
+    });
+    expect(screen.getByText("Đang chờ")).toBeTruthy();
+    expect(screen.getByText("Liên quan")).toBeTruthy();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Gỡ liên kết với ERP-129" }),
+    );
+    expect(callbacks.onRemoveLink).toHaveBeenCalledWith("l1");
+    fireEvent.click(screen.getByRole("button", { name: "Thêm" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Chặn việc" }));
+    fireEvent.click(screen.getByText("Cảnh báo"));
+    expect(callbacks.onAddLink).toHaveBeenCalledWith("i150", "blocks");
+  });
+
+  it("registers a chosen file and tells which file came with a comment", () => {
+    const callbacks = { ...callbacksMock(), onAddFile: vi.fn() };
+    const { container } = renderPage(viCopy, { callbacks });
+    const input =
+      container.querySelector<HTMLInputElement>('input[type="file"]')!;
+    const file = new File(["x"], "ghi-chu.pdf", { type: "application/pdf" });
+    fireEvent.change(input, { target: { files: [file] } });
+    expect(callbacks.onAddFile).toHaveBeenCalledWith(file);
+  });
+
+  it("follows and unfollows from the rail", () => {
+    const callbacks = callbacksMock();
+    renderPage(viCopy, {
+      callbacks,
+      detailData: detail({
+        following: true,
+        followers: [{ userId: "u1", name: "Nguyễn Thu Hà", initials: "HA" }],
+      }),
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Đang theo dõi" }));
+    expect(callbacks.onToggleWatch).toHaveBeenCalledWith(false);
   });
 });

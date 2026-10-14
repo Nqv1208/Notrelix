@@ -73,7 +73,7 @@ const files: CardFile[] = [
     id: "file-merged",
     cardId: "item-erp-142",
     name: "khach-hang-da-gop.xlsx",
-    size: 18_400_000,
+    size: 19_293_798,
     contentType:
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     url: "https://files.example.test/khach-hang-da-gop.xlsx",
@@ -85,7 +85,7 @@ const files: CardFile[] = [
     id: "file-balance",
     cardId: "item-erp-142",
     name: "cong-no-dau-ky-T9.xlsx",
-    size: 2_100_000,
+    size: 2_202_009,
     contentType:
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     url: "https://files.example.test/cong-no-dau-ky-T9.xlsx",
@@ -97,7 +97,7 @@ const files: CardFile[] = [
     id: "file-rules",
     cardId: "item-erp-142",
     name: "quy-tac-gop-trung-v2.pdf",
-    size: 340_000,
+    size: 348_160,
     contentType: "application/pdf",
     url: "https://files.example.test/quy-tac-gop-trung-v2.pdf",
     source: "upload",
