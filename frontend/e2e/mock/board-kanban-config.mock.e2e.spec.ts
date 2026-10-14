@@ -34,16 +34,25 @@ function cardButtons(page: Page, laneName: string) {
   return lane(page, laneName).locator("button[data-card-id]");
 }
 
+/** The board's "Thiết lập" opens the settings page; the Kanban view's own settings sit in its panel. */
 async function openSettings(page: Page) {
   await page.getByRole("button", { name: "Thiết lập", exact: true }).click();
-  const dialog = page.getByRole("dialog", { name: "Thiết lập Kanban" });
-  await expect(dialog).toBeVisible();
-  return dialog;
+  await expect(
+    page.getByRole("heading", { name: "Thiết lập board" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: /^Chế độ xem/ }).click();
+  await page.getByRole("button", { name: "Sửa chế độ xem Kanban" }).click();
+  const panel = page.getByRole("complementary", {
+    name: "Sửa chế độ xem Kanban",
+  });
+  await expect(panel).toBeVisible();
+  return panel;
 }
 
+/** "Về board" returns to the Kanban the page was opened from. */
 async function closeSettings(page: Page) {
-  await page.keyboard.press("Escape");
-  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await page.getByRole("link", { name: "Về board" }).click();
+  await expect(lane(page, "Cần làm")).toBeVisible();
 }
 
 test.describe("Kanban view settings", () => {
@@ -54,8 +63,8 @@ test.describe("Kanban view settings", () => {
     // Three cards before "Xem thêm" (Final-Board).
     await expect(cardButtons(page, "Cần làm")).toHaveCount(3);
 
-    const dialog = await openSettings(page);
-    await dialog
+    const panel = await openSettings(page);
+    await panel
       .getByRole("spinbutton", { name: "Số việc hiện trong mỗi cột" })
       .fill("2");
     await closeSettings(page);
@@ -85,11 +94,11 @@ test.describe("Kanban view settings", () => {
       page.getByRole("button", { name: "Thêm trạng thái" }),
     ).toBeVisible();
 
-    const dialog = await openSettings(page);
-    const manager = dialog.getByRole("checkbox", { name: "Quản lý (luôn có)" });
+    const panel = await openSettings(page);
+    const manager = panel.getByRole("checkbox", { name: "Quản lý (luôn có)" });
     await expect(manager).toBeChecked();
     await expect(manager).toBeDisabled();
-    const editor = dialog.getByRole("checkbox", { name: "Người chỉnh sửa" });
+    const editor = panel.getByRole("checkbox", { name: "Người chỉnh sửa" });
     await expect(editor).toBeChecked();
     await editor.click();
     await expect(editor).not.toBeChecked();
@@ -152,8 +161,8 @@ test.describe("Kanban view settings", () => {
     page,
   }) => {
     await openBoard(page);
-    const dialog = await openSettings(page);
-    const keys = dialog.getByRole("switch", {
+    const panel = await openSettings(page);
+    const keys = panel.getByRole("switch", {
       name: "Chuyển thẻ bằng bàn phím",
     });
     await expect(keys).toBeChecked();

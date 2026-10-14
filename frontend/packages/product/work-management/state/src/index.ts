@@ -9,6 +9,7 @@
 export * from "./api/board.api";
 export * from "./api/board-api-mappers";
 export * from "./api/board-access.api";
+export * from "./api/board-settings.api";
 export * from "./api/checklist.api";
 export * from "./api/field.api";
 export * from "./api/field-option.api";

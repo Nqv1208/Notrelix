@@ -1,11 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useSearch, useNavigate } from "@tanstack/react-router";
 import {
   BoardHeaderCopyContext,
   BoardHeaderDataContext,
   BoardLayoutShell,
   BoardWorkspaceViewContent,
-  KanbanSettingsDialog,
   useBoardHeaderCopy,
 } from "@notrelix/work-management-web";
 import { useFullBoard } from "@notrelix/work-management-state";
@@ -32,9 +31,17 @@ export function BoardPage() {
 
   const { board } = useFullBoard(boardId, workspaceId);
   const headerCopy = useBoardHeaderCopy();
-  // The Kanban view's settings open from the header's "Thiết lập".
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [shareOpen, setShareOpen] = useState(false);
+  // `share` in the address opens the share dialog (the settings page's
+  // "Quyền truy cập" lands here); the dialog also opens from the header.
+  const [shareOpen, setShareOpen] = useState(search.share === true);
+  useEffect(() => {
+    if (search.share !== true) return;
+    setShareOpen(true);
+    void navigate({
+      search: (prev: BoardSearch) => ({ ...prev, share: undefined }),
+      replace: true,
+    });
+  }, [navigate, search.share]);
   const headerData = useBoardHeaderData(workspaceId, boardId, board, () =>
     setShareOpen(true),
   );
@@ -91,8 +98,12 @@ export function BoardPage() {
           boardTitle={board?.title ?? headerCopy.untitledBoard}
           activeView={viewType}
           onViewChange={handleViewChange}
-          onOpenSettings={
-            viewType === "kanban" ? () => setSettingsOpen(true) : undefined
+          onOpenSettings={() =>
+            navigate({
+              to: "/workspaces/$workspaceId/boards/$boardId/settings",
+              params: { workspaceId, boardId },
+              search: { from: viewType },
+            })
           }
         >
           <BoardWorkspaceViewContent
@@ -114,14 +125,6 @@ export function BoardPage() {
             }
           />
         </BoardLayoutShell>
-        {viewType === "kanban" ? (
-          <KanbanSettingsDialog
-            boardId={boardId}
-            workspaceId={workspaceId}
-            open={settingsOpen}
-            onOpenChange={setSettingsOpen}
-          />
-        ) : null}
         <BoardShareDialog
           workspaceId={workspaceId}
           boardId={boardId}

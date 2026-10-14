@@ -48,9 +48,6 @@ export const en = {
   keyboardReordered:
     "Moved “{{title}}” to position {{position}} of {{total}} in {{lane}}",
   /** Settings of the Kanban view (board header "Settings"). */
-  settingsTitle: "Kanban settings",
-  settingsDescription: "These apply to everyone who opens this Kanban view.",
-  settingsClose: "Close",
   laneLimitLabel: "Items shown per column",
   laneLimitHint: "From 1 to 20. The rest sit behind “Show more”.",
   laneLimitDecrease: "Show fewer items per column",
@@ -103,9 +100,6 @@ export const vi: KanbanLaneCopy = {
   keyboardMoved: "Đã chuyển “{{title}}” sang {{lane}}",
   keyboardReordered:
     "Đã chuyển “{{title}}” đến vị trí {{position}}/{{total}} trong {{lane}}",
-  settingsTitle: "Thiết lập Kanban",
-  settingsDescription: "Áp dụng cho mọi người mở chế độ xem Kanban này.",
-  settingsClose: "Đóng",
   laneLimitLabel: "Số việc hiện trong mỗi cột",
   laneLimitHint: "Từ 1 đến 20. Phần còn lại nằm sau “Xem thêm”.",
   laneLimitDecrease: "Hiện ít việc hơn trong mỗi cột",

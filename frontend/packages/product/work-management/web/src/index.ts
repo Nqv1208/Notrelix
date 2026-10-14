@@ -57,7 +57,6 @@ export * from "./components/views/kanban/kanban-card-detail-panel";
 export * from "./components/views/kanban/kanban-empty-state";
 export * from "./components/views/kanban/kanban-filter";
 export * from "./components/views/kanban/kanban-filter-menu";
-export * from "./components/views/kanban/kanban-settings-dialog";
 export * from "./components/views/kanban/kanban-skeleton";
 export * from "./components/views/kanban/kanban-toolbar";
 export { kanbanToolbarCatalog } from "./components/views/kanban/kanban-toolbar.catalog";
@@ -137,3 +136,13 @@ export {
   type ItemPageCopy,
 } from "./components/item-page/item-page.copy";
 export { useItemPageCopy } from "./components/item-page/use-item-page-copy";
+
+export * from "./components/board-settings/board-settings-container";
+export * from "./components/board-settings/board-settings-surface";
+export * from "./components/board-settings/board-settings-types";
+export { boardSettingsCatalog } from "./components/board-settings/board-settings.catalog";
+export {
+  boardSettingsCopy,
+  type BoardSettingsCopy,
+} from "./components/board-settings/board-settings.copy";
+export { useBoardSettingsCopy } from "./components/board-settings/use-board-settings-copy";

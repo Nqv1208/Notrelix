@@ -24,11 +24,6 @@
         "reason": "Stateful view adapter owning the calendar board query state, route filter and writes, composing the registered calendar surface."
       },
       {
-        "path": "src/components/views/kanban/kanban-settings-dialog.tsx",
-        "category": "container",
-        "reason": "Dialog hosting the Kanban settings panel and storing the changed keys on the view config through useBoardView."
-      },
-      {
         "path": "src/components/views/kanban/kanban-view.tsx",
         "category": "container",
         "reason": "Stateful view adapter owning kanban board query state and composing registered board surfaces."
@@ -47,6 +42,11 @@
         "path": "src/components/shared/board-item-sheet-host.tsx",
         "category": "container",
         "reason": "Container hosting the shared item side sheet for a page that is not a Board view: it reads the item's Board and access and wires the sheet's actions, composing the registered item sheet surface."
+      },
+      {
+        "path": "src/components/board-settings/board-settings-container.tsx",
+        "category": "container",
+        "reason": "Container composing BoardSettingsSurface with the settings, board and access reads, every settings write and the Kanban view's own settings through useBoardView."
       }
     ]
   },
@@ -2488,6 +2488,280 @@
         {
           "id": "variants",
           "testFile": "src/components/board-share/__tests__/board-share-dialog.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "wm.board-settings",
+      "owner": "@notrelix/work-management-web",
+      "surfaceKind": "composition",
+      "pureEntry": "src/components/board-settings/board-settings-surface.tsx",
+      "coveredSources": [
+        "src/components/board-settings/board-settings-automations.tsx",
+        "src/components/board-settings/board-settings-context.tsx",
+        "src/components/board-settings/board-settings-field-archive.tsx",
+        "src/components/board-settings/board-settings-field-panel.tsx",
+        "src/components/board-settings/board-settings-field-picker.tsx",
+        "src/components/board-settings/board-settings-fields.tsx",
+        "src/components/board-settings/board-settings-general.tsx",
+        "src/components/board-settings/board-settings-groups.tsx",
+        "src/components/board-settings/board-settings-parts.tsx",
+        "src/components/board-settings/board-settings-sortable.tsx",
+        "src/components/board-settings/board-settings-view-panel.tsx",
+        "src/components/board-settings/board-settings-views.tsx"
+      ],
+      "stories": [
+        {
+          "id": "work-management-board-settings-surface--default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-board-settings-surface--field-type-picker",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-board-settings-surface--archive-field",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-board-settings-surface--views",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-board-settings-surface--view-needs-fix",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-board-settings-surface--general",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-board-settings-surface--groups",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-board-settings-surface--automations",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-board-settings-surface--loading",
+          "state": "Loading",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-board-settings-surface--load-error",
+          "state": "Error",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-board-settings-surface--edge-data",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-board-settings-surface--conflict",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-board-settings-surface--no-access",
+          "state": "ReadOnly",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default", "Loading", "Error", "EdgeData", "ReadOnly"],
+        "delegated": [],
+        "notApplicable": []
+      },
+      "responsive": false,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "loading",
+          "testFile": "src/components/board-settings/__tests__/board-settings-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "error",
+          "testFile": "src/components/board-settings/__tests__/board-settings-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "no-access",
+          "testFile": "src/components/board-settings/__tests__/board-settings-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "ready",
+          "testFile": "src/components/board-settings/__tests__/board-settings-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "menu",
+          "testFile": "src/components/board-settings/__tests__/board-settings-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "field-panel",
+          "testFile": "src/components/board-settings/__tests__/board-settings-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "options",
+          "testFile": "src/components/board-settings/__tests__/board-settings-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "select-field",
+          "testFile": "src/components/board-settings/__tests__/board-settings-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "add-field",
+          "testFile": "src/components/board-settings/__tests__/board-settings-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "archive-field",
+          "testFile": "src/components/board-settings/__tests__/board-settings-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "restore-field",
+          "testFile": "src/components/board-settings/__tests__/board-settings-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "status-field",
+          "testFile": "src/components/board-settings/__tests__/board-settings-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "views",
+          "testFile": "src/components/board-settings/__tests__/board-settings-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "view-needs-fix",
+          "testFile": "src/components/board-settings/__tests__/board-settings-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "general",
+          "testFile": "src/components/board-settings/__tests__/board-settings-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "groups",
+          "testFile": "src/components/board-settings/__tests__/board-settings-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "automations",
+          "testFile": "src/components/board-settings/__tests__/board-settings-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "conflict",
+          "testFile": "src/components/board-settings/__tests__/board-settings-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "failed",
+          "testFile": "src/components/board-settings/__tests__/board-settings-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "empty",
+          "testFile": "src/components/board-settings/__tests__/board-settings-surface.interaction.component.test.tsx"
         }
       ]
     }

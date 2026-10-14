@@ -145,7 +145,7 @@ export const ERP_PRIORITY_OPTIONS: MockFieldOptionRecord[] = [
   {
     id: "mock-erp-priority-urgent",
     name: "Khẩn",
-    color: "#C8143F",
+    color: "#C42340",
     position: "a0",
   },
   {
@@ -157,7 +157,7 @@ export const ERP_PRIORITY_OPTIONS: MockFieldOptionRecord[] = [
   {
     id: "mock-erp-priority-medium",
     name: "Trung bình",
-    color: "#7A8391",
+    color: "#1E7BE0",
     position: "a2",
   },
   {

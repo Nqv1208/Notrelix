@@ -44,6 +44,10 @@ import { defaultConfig } from "../config/mock-config";
 import { createMockClock, hanoiShortDay, type MockClock } from "./clock";
 import { createFactories, type MockFactories } from "./factories";
 import { MOCK_DATASET_CARDINALITIES } from "./mock-dataset.manifest";
+import {
+  MockBoardSettingsState,
+  erpSettingsRegistry,
+} from "./mock-board-settings";
 import { MockSpaceState, type MockSpaceViewer } from "./mock-spaces";
 import { MockWorkFeedState } from "./mock-work-feed";
 import {
@@ -196,6 +200,8 @@ export class MockStore {
   private membershipsById = new Map<string, MockMembershipRecord>();
   private viewsById = new Map<string, MockWorkspaceViewRecord>();
   private boardsById = new Map<string, MockBoardRecord>();
+  /** Settings registry of the boards (the gap `CTR-GAP-WM-BOARD-SETTINGS`). */
+  readonly settings = new MockBoardSettingsState(this);
   private listsById = new Map<string, MockListRecord>();
   private cardsById = new Map<string, MockCardRecord>();
   private notificationsById = new Map<string, MockNotificationRecord>();
@@ -960,7 +966,8 @@ export class MockStore {
       id: boardId,
       workspaceId,
       title: "Triển khai ERP Q4",
-      description: "Đưa ERP vào vận hành trước ngày 01/11/2026.",
+      description:
+        "Đưa phân hệ Kế toán, Kho và Mua hàng lên ERP mới, go-live 01/11/2026.",
       background: { type: "color", value: "#1E6FD0" },
       visibility: "workspace",
       isArchived: false,
@@ -1038,13 +1045,24 @@ export class MockStore {
         }),
       ),
     });
+    this.settings.set(
+      boardId,
+      erpSettingsRegistry({
+        status: ERP_STATUS_COLUMN_ID,
+        priority: ERP_PRIORITY_COLUMN_ID,
+        owner: ERP_OWNER_COLUMN_ID,
+        module: ERP_MODULE_COLUMN_ID,
+        estimate: ERP_ESTIMATE_COLUMN_ID,
+        requester: ERP_REQUESTER_COLUMN_ID,
+      }),
+    );
     for (const label of ERP_LABELS) this.insertLabel({ ...label });
     ERP_GROUPS.forEach((group, index) => {
       this.insertList({
         id: group.id,
         boardId,
         title: group.title,
-        color: "#1E6FD0",
+        color: ["#1E6FD0", "#0E7490", "#5532A8", "#9A6A12"][index] ?? "#1E6FD0",
         position: index + 1,
         isCollapsed: false,
       });
@@ -1448,6 +1466,7 @@ export class MockStore {
     this.membershipsById.clear();
     this.viewsById.clear();
     this.boardsById.clear();
+    this.settings.clear();
     this.listsById.clear();
     this.cardsById.clear();
     this.notificationsById.clear();
@@ -3519,6 +3538,53 @@ export class MockStore {
     return this.boardsById.get(id);
   }
 
+  /** Settings write: changes the general facts of a board and bumps its version. */
+  patchBoard(
+    boardId: string,
+    patch: Partial<
+      Pick<
+        MockBoardRecord,
+        "title" | "description" | "background" | "itemKeyPrefix" | "isArchived"
+      >
+    >,
+  ): boolean {
+    const board = this.boardsById.get(boardId);
+    if (!board) return false;
+    this.boardsById.set(boardId, {
+      ...board,
+      ...patch,
+      updatedAt: this.clock.isoNow(),
+      version: (board.version ?? 1) + 1,
+    });
+    return true;
+  }
+
+  /** Settings write: removes a board with its lists, items and fields. */
+  deleteBoard(boardId: string): boolean {
+    const board = this.boardsById.get(boardId);
+    if (!board) return false;
+    for (const list of this.getLists(boardId)) this.deleteList(list.id);
+    for (const column of this.getColumns(boardId)) this.deleteColumn(column.id);
+    this.removeIndex(this.boardIdsByWorkspaceId, board.workspaceId, boardId);
+    this.boardsById.delete(boardId);
+    return true;
+  }
+
+  /** Settings write: replaces the options of a select field (keeps order given). */
+  setColumnOptions(
+    columnId: string,
+    options: MockFieldOptionRecord[],
+  ): boolean {
+    const col = this.columnsById.get(columnId);
+    if (!col) return false;
+    this.columnsById.set(columnId, {
+      ...col,
+      options,
+      version: (col.version ?? 1) + 1,
+    });
+    return true;
+  }
+
   getLists(boardId: string): MockListRecord[] {
     const ids = this.listIdsByBoardId.get(boardId);
     if (!ids) return [];
@@ -3526,6 +3592,14 @@ export class MockStore {
       .map((id) => this.listsById.get(id))
       .filter((l): l is MockListRecord => l !== undefined)
       .sort((a, b) => a.position - b.position);
+  }
+
+  /** Settings write: places a group among its siblings. */
+  setListPosition(listId: string, position: number): boolean {
+    const list = this.listsById.get(listId);
+    if (!list) return false;
+    this.listsById.set(listId, { ...list, position });
+    return true;
   }
 
   getList(id: string): MockListRecord | undefined {

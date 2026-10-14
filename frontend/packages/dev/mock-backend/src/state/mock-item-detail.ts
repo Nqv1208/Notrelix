@@ -306,12 +306,16 @@ export const ERP_MODULE_OPTIONS = [
   { id: "mock-erp-module-sales", name: "Bán hàng" },
   { id: "mock-erp-module-inventory", name: "Kho" },
   { id: "mock-erp-module-hr", name: "Nhân sự" },
+  { id: "mock-erp-module-purchasing", name: "Mua hàng" },
+  { id: "mock-erp-module-production", name: "Sản xuất" },
 ] as const;
 
 export const ERP_REQUESTER_OPTIONS = [
   { id: "mock-erp-requester-accounting", name: "Kế toán", color: "#9A6A12" },
   { id: "mock-erp-requester-sales", name: "Kinh doanh", color: "#1E6FD0" },
   { id: "mock-erp-requester-warehouse", name: "Kho vận", color: "#0E7490" },
+  { id: "mock-erp-requester-hr", name: "Nhân sự", color: "#5532A8" },
+  { id: "mock-erp-requester-marketing", name: "Marketing", color: "#C2410C" },
 ] as const;
 
 export const ERP_CUSTOM_VALUES: Readonly<
