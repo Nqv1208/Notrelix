@@ -2,6 +2,8 @@ import type { CSSProperties, PointerEvent } from "react";
 import { cn } from "@notrelix/ui-web";
 import { BAR_TONE_CLASS, PROGRESS_TONE_CLASS } from "./timeline-chrome";
 import {
+  cellInView,
+  fitHeaderText,
   GROUP_ROW_HEIGHT,
   TASK_ROW_HEIGHT,
   type BarLayout,
@@ -11,6 +13,10 @@ import {
   type TimelineLayout,
   type TimelineScale,
 } from "./timeline-model";
+
+/** Width of one character of the 12 px semibold month label and of the 11 px week label. */
+const MONTH_CHAR = 7;
+const WEEK_CHAR = 6.4;
 
 /** The hatch of an overdue stretch: the overdue fill in 4 px diagonal stripes. */
 const LATE_HATCH =
@@ -22,6 +28,11 @@ export interface TimelineChartProps {
   barTop: number;
   header: TimelineHeader;
   layout: TimelineLayout;
+  /**
+   * The part of the chart in view, in chart pixels. Header text that a frame
+   * edge would cut is moved inside it or left out.
+   */
+  visible: { readonly from: number; readonly to: number } | null;
   /** The row the pointer is over: its bar shows the resize handle. */
   hoverId: string | null;
   onHoverChange: (id: string | null) => void;
@@ -50,6 +61,7 @@ export function TimelineChart({
   barTop,
   header,
   layout,
+  visible,
   hoverId,
   onHoverChange,
   dragId,
@@ -78,19 +90,41 @@ export function TimelineChart({
           data-tl="months"
           className="flex h-6 text-xs leading-[1.45] font-semibold text-muted-foreground"
         >
-          {header.months.map((month, index) => (
-            <span
-              key={index}
-              data-tl="month"
-              className={cn(
-                "box-border px-2 py-1",
-                month.separator && "border-l border-border",
-              )}
-              style={{ width: month.width }}
-            >
-              {month.label}
-            </span>
-          ))}
+          {header.months.map((month, index) => {
+            const x = header.months
+              .slice(0, index)
+              .reduce((sum, previous) => sum + previous.width, 0);
+            const fit = fitHeaderText(
+              x,
+              month.width,
+              month.label,
+              MONTH_CHAR,
+              8,
+              visible,
+            );
+            return (
+              <span
+                key={index}
+                data-tl="month"
+                className={cn(
+                  "box-border px-2 py-1",
+                  month.separator && "border-l border-border",
+                )}
+                style={{ width: month.width }}
+              >
+                {fit === null ? null : fit.whole ? (
+                  month.label
+                ) : (
+                  <span
+                    className="block truncate"
+                    style={{ marginLeft: fit.shift, maxWidth: fit.max }}
+                  >
+                    {month.label}
+                  </span>
+                )}
+              </span>
+            );
+          })}
         </div>
         {scale === "day" ? (
           <div data-tl="days" className="flex h-8">
@@ -98,7 +132,10 @@ export function TimelineChart({
               <span
                 key={index}
                 data-tl="day"
-                className="flex w-[26px] flex-none flex-col items-center justify-center text-rail-label leading-[1.15] font-normal text-meta-foreground tabular-nums"
+                className={cn(
+                  "flex w-[26px] flex-none flex-col items-center justify-center text-rail-label leading-[1.15] font-normal text-meta-foreground tabular-nums",
+                  !cellInView(index * 26, 26, visible) && "invisible",
+                )}
               >
                 <b
                   data-tl="dayb"
@@ -118,30 +155,52 @@ export function TimelineChart({
         ) : null}
         {scale === "week" ? (
           <div data-tl="weeks" className="relative flex h-8">
-            {header.weeks.map((week, index) => (
-              <span
-                key={index}
-                data-tl="wk"
-                title={week.full}
-                className={cn(
-                  "box-border block h-8 flex-none overflow-hidden px-1 text-rail-label leading-[27px] font-medium text-ellipsis whitespace-nowrap text-meta-foreground tabular-nums",
-                  week.separator && "border-l border-border",
-                  week.current &&
-                    "font-semibold text-state-selected-foreground",
-                )}
-                style={{
-                  width: week.width,
-                  backgroundImage:
-                    "linear-gradient(to right, var(--line-strong) 1px, transparent 1px)",
-                  backgroundRepeat: "repeat-x",
-                  backgroundPosition: "left bottom",
-                  backgroundOrigin: "border-box",
-                  backgroundSize: `${ppd}px 5px`,
-                }}
-              >
-                {week.label}
-              </span>
-            ))}
+            {header.weeks.map((week, index) => {
+              const x = header.weeks
+                .slice(0, index)
+                .reduce((sum, previous) => sum + previous.width, 0);
+              const fit = fitHeaderText(
+                x,
+                week.width,
+                week.label,
+                WEEK_CHAR,
+                4,
+                visible,
+              );
+              return (
+                <span
+                  key={index}
+                  data-tl="wk"
+                  title={week.full}
+                  className={cn(
+                    "box-border block h-8 flex-none overflow-hidden px-1 text-rail-label leading-[27px] font-medium text-ellipsis whitespace-nowrap text-meta-foreground tabular-nums",
+                    week.separator && "border-l border-border",
+                    week.current &&
+                      "font-semibold text-state-selected-foreground",
+                  )}
+                  style={{
+                    width: week.width,
+                    backgroundImage:
+                      "linear-gradient(to right, var(--line-strong) 1px, transparent 1px)",
+                    backgroundRepeat: "repeat-x",
+                    backgroundPosition: "left bottom",
+                    backgroundOrigin: "border-box",
+                    backgroundSize: `${ppd}px 5px`,
+                  }}
+                >
+                  {fit === null ? null : fit.whole ? (
+                    week.label
+                  ) : (
+                    <span
+                      className="block truncate"
+                      style={{ marginLeft: fit.shift, maxWidth: fit.max }}
+                    >
+                      {week.label}
+                    </span>
+                  )}
+                </span>
+              );
+            })}
           </div>
         ) : null}
         {scale === "month" ? (
@@ -151,7 +210,10 @@ export function TimelineChart({
                 key={index}
                 data-tl="mt"
                 title={tick.full}
-                className="absolute inset-y-0 flex items-center border-l border-border pl-1 text-rail-label leading-[1.45] font-normal text-meta-foreground tabular-nums"
+                className={cn(
+                  "absolute inset-y-0 flex items-center border-l border-border pl-1 text-rail-label leading-[1.45] font-normal text-meta-foreground tabular-nums",
+                  !cellInView(tick.x, 24, visible) && "invisible",
+                )}
                 style={{ left: tick.x }}
               >
                 <b
@@ -373,14 +435,16 @@ function TaskTrack({
               backgroundImage: LATE_HATCH,
             }}
           />
-          <span
-            data-tl="latel"
-            aria-hidden="true"
-            className="absolute top-[9px] z-[4] text-xs leading-[1.45] font-bold whitespace-nowrap text-danger-text"
-            style={{ left: late.textLeft }}
-          >
-            {late.text}
-          </span>
+          {late.textMax > 0 ? (
+            <span
+              data-tl="latel"
+              aria-hidden="true"
+              className="absolute top-[9px] z-[4] truncate text-xs leading-[1.45] font-bold whitespace-nowrap text-danger-text"
+              style={{ left: late.textLeft, maxWidth: late.textMax }}
+            >
+              {late.text}
+            </span>
+          ) : null}
         </>
       ) : null}
       {milestone ? (
@@ -393,17 +457,20 @@ function TaskTrack({
             className="absolute top-[11px] z-[4] size-3.5 rotate-45 rounded-[2px] bg-timeline-milestone"
             style={{ left: milestone.x }}
           />
-          <span
-            data-tl="lab"
-            className="absolute top-[9px] z-[4] max-w-[280px] truncate text-xs leading-[1.45] font-bold whitespace-nowrap text-foreground"
-            style={
-              milestone.labelRight !== undefined
-                ? { right: milestone.labelRight }
-                : { left: milestone.labelLeft }
-            }
-          >
-            {row.title}
-          </span>
+          {milestone.labelMax > 0 ? (
+            <span
+              data-tl="lab"
+              className="absolute top-[9px] z-[4] truncate text-xs leading-[1.45] font-bold whitespace-nowrap text-foreground"
+              style={{
+                ...(milestone.labelRight !== undefined
+                  ? { right: milestone.labelRight }
+                  : { left: milestone.labelLeft }),
+                maxWidth: milestone.labelMax,
+              }}
+            >
+              {row.title}
+            </span>
+          ) : null}
         </>
       ) : null}
       {ghost ? (
@@ -512,6 +579,7 @@ function Bar({
         data-tl="gt"
         aria-hidden="true"
         className={cn("min-w-0 truncate", bar.mono && "font-mono font-medium")}
+        style={{ marginLeft: bar.labelShift, maxWidth: bar.labelMax }}
       >
         {bar.label}
       </span>

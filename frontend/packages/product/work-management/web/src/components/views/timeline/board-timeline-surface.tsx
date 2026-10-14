@@ -379,6 +379,7 @@ export function BoardTimelineSurface({
             barTop={spec.barTop}
             header={header}
             layout={layout}
+            visible={visible}
             hoverId={hoverId}
             onHoverChange={setHoverId}
             dragId={drag?.id ?? null}

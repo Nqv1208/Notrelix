@@ -76,6 +76,11 @@ export const GROUP_ROW_HEIGHT = 32;
 export const TASK_ROW_HEIGHT = 36;
 /** Width of one character of a 12px label, to size a label before it is drawn. */
 const LABEL_CHAR = 6.6;
+/** Gap kept between chart text and the edge of what is in view (the list divider on the left). */
+const VIEW_PAD_LEFT = 12;
+const VIEW_PAD_RIGHT = 4;
+/** Narrowest room worth a truncated label: about "Abcd…". */
+const MIN_TEXT_ROOM = 56;
 
 export function fill(
   message: string,
@@ -346,6 +351,10 @@ export interface BarLayout {
   /** Title (or key) inside the bar. */
   readonly label: string;
   readonly mono: boolean;
+  /** Pixels the label moves right to stay in view when the bar starts left of it. */
+  readonly labelShift: number;
+  /** Room for the label inside the bar's visible part (the label truncates to it). */
+  readonly labelMax: number;
 }
 
 export interface LabelLayout {
@@ -379,12 +388,16 @@ export interface TaskLayout {
     readonly width: number;
     readonly textLeft: number;
     readonly text: string;
+    /** Room for the note inside the view; 0 when there is none and it is left out. */
+    readonly textMax: number;
   } | null;
   readonly milestone: {
     readonly x: number;
     /** Left of the label, or `labelRight` (the gap to the chart's right edge) when it flips to the diamond's left. */
     readonly labelLeft: number | undefined;
     readonly labelRight: number | undefined;
+    /** Room for the title inside the view; 0 when there is none and it is left out. */
+    readonly labelMax: number;
     readonly title: string;
     readonly aria: string;
   } | null;
@@ -824,7 +837,11 @@ export function layoutTimeline(input: LayoutInput): TimelineLayout {
   const wide = (text: string) => text.length * LABEL_CHAR;
   for (const work of works) {
     const label = work.label;
-    if (!label || work.off) continue;
+    if (!label) continue;
+    if (work.off) {
+      work.label = fitLabel(label, chartWidth, seeFrom, seeTo, true);
+      continue;
+    }
     let lx = work.labelLeft;
     let again = true;
     while (again) {
@@ -872,7 +889,7 @@ export function layoutTimeline(input: LayoutInput): TimelineLayout {
       // Neither side takes the whole note: keep the date next to the dot.
       placed = place(fill(copy.finished.short, { date: fmtDay(work.d0) }));
     }
-    work.label = placed;
+    work.label = placed ? fitLabel(placed, chartWidth, seeFrom, seeTo) : null;
   }
 
   const out: RowLayout[] = [];
@@ -906,8 +923,15 @@ export function layoutTimeline(input: LayoutInput): TimelineLayout {
             fade: crit && !w.critical,
             critical: crit && w.critical,
             percent: item.percent,
-            label: w.inLabel,
-            mono: w.mono,
+            ...innerLabel(
+              w.inLabel,
+              w.mono,
+              w.x,
+              w.w,
+              scale === "month",
+              seeFrom,
+              seeTo,
+            ),
           }
         : null;
 
@@ -963,14 +987,19 @@ export function layoutTimeline(input: LayoutInput): TimelineLayout {
       label: w.label,
       late:
         w.late && !w.off
-          ? {
-              x: X(w.d0 + 1) - 1,
-              width: X(todayN + 1) - X(w.d0 + 1),
-              textLeft: X(todayN + 1) + 14,
-              text: fill(plural(copy.late_one, copy.late_other, w.lateDays), {
-                days: w.lateDays,
-              }),
-            }
+          ? lateNote(
+              {
+                x: X(w.d0 + 1) - 1,
+                width: X(todayN + 1) - X(w.d0 + 1),
+                textLeft: X(todayN + 1) + 14,
+                text: fill(plural(copy.late_one, copy.late_other, w.lateDays), {
+                  days: w.lateDays,
+                }),
+              },
+              chartWidth,
+              seeFrom,
+              seeTo,
+            )
           : null,
       milestone:
         w.isMs && !w.off
@@ -1001,6 +1030,114 @@ export function layoutTimeline(input: LayoutInput): TimelineLayout {
   };
 }
 
+/**
+ * Where a header label (a month, a week) is drawn when only part of its cell
+ * is in view: it follows the view's left edge while the cell has room for
+ * all of it, and is left out (`null`) once the visible part is too short, so
+ * the header never shows a half-cut word. `whole` is a cell fully in view,
+ * which draws as it always does.
+ */
+export function fitHeaderText(
+  x: number,
+  width: number,
+  text: string,
+  charWidth: number,
+  pad: number,
+  visible: { readonly from: number; readonly to: number } | null | undefined,
+): { whole: boolean; shift: number; max: number } | null {
+  const natural = Math.max(0, width - 2 * pad);
+  if (!visible || (x >= visible.from && x + width <= visible.to))
+    return { whole: true, shift: 0, max: natural };
+  const need = Math.min(text.length * charWidth, natural);
+  const left = Math.max(x + pad, visible.from + pad);
+  const right = Math.min(x + width - pad, visible.to - pad);
+  const room = right - left;
+  if (room < need) return null;
+  return {
+    whole: false,
+    shift: left - (x + pad),
+    max: Math.min(natural, room),
+  };
+}
+
+/** Whether a header cell of `width` at `x` is wholly in view (else its text is left out). */
+export function cellInView(
+  x: number,
+  width: number,
+  visible: { readonly from: number; readonly to: number } | null | undefined,
+): boolean {
+  return !visible || (x >= visible.from && x + width <= visible.to);
+}
+
+/**
+ * The title inside a bar, kept inside the part of the bar the reader sees:
+ * it follows the view's left edge when the bar starts behind it and stops
+ * short of the right edge. It is shown whole, or truncated with an ellipsis
+ * on the day and week scales; with less room than "Abcd…" (or, on the month
+ * scale, less than the whole text) it is left out.
+ */
+function innerLabel(
+  text: string,
+  mono: boolean,
+  x: number,
+  width: number,
+  compact: boolean,
+  seeFrom: number,
+  seeTo: number,
+): Pick<BarLayout, "label" | "mono" | "labelShift" | "labelMax"> {
+  const pad = compact ? 3 : 8;
+  const natural = Math.max(0, width - 2 * pad);
+  const left = Math.max(x + pad, seeFrom + pad);
+  const right = Math.min(x + width - pad, seeTo - pad);
+  const room = Math.max(0, right - left);
+  const need = text.length * (mono ? 6.3 : LABEL_CHAR);
+  const fits = compact ? room >= need : room >= Math.min(need, MIN_TEXT_ROOM);
+  if (text === "" || !fits)
+    return { label: "", mono, labelShift: 0, labelMax: natural };
+  return {
+    label: text,
+    mono,
+    labelShift: left - (x + pad),
+    labelMax: Math.min(natural, room),
+  };
+}
+
+/**
+ * Keeps a label inside what the reader sees: a gap off the list divider and
+ * off the right edge. A label that runs past either edge is shortened (the
+ * view cuts it with an ellipsis) and one with less room than "Abcd…" is
+ * dropped, so no glyph is ever cut by a frame edge. A label belongs to the
+ * bar, dot or milestone it stands by: once that has scrolled past an edge the
+ * label goes with it, except an edge note (`hug`), which is about what lies
+ * outside the window and so keeps to the edge it names.
+ */
+function fitLabel(
+  label: LabelLayout,
+  chartWidth: number,
+  seeFrom: number,
+  seeTo: number,
+  hug = false,
+): LabelLayout | null {
+  const need = Math.min(label.maxWidth, label.text.length * LABEL_CHAR);
+  const floor = seeFrom + VIEW_PAD_LEFT;
+  const ceil = seeTo - VIEW_PAD_RIGHT;
+  if (label.left !== undefined) {
+    if (!hug && label.left < seeFrom) return null;
+    const left = Math.max(label.left, floor);
+    const room = Math.min(label.maxWidth, ceil - left);
+    return room >= Math.min(need, MIN_TEXT_ROOM)
+      ? { text: label.text, left, maxWidth: room }
+      : null;
+  }
+  const anchor = chartWidth - (label.right ?? 0);
+  if (!hug && anchor > seeTo) return null;
+  const edge = Math.min(anchor, ceil);
+  const room = Math.min(label.maxWidth, edge - floor);
+  return room >= Math.min(need, MIN_TEXT_ROOM)
+    ? { text: label.text, right: chartWidth - edge, maxWidth: room }
+    : null;
+}
+
 /** The milestone's label sits right of the diamond, or left of it with no room on the right. */
 function milestoneLabel(
   centre: number,
@@ -1008,15 +1145,45 @@ function milestoneLabel(
   chartWidth: number,
   seeFrom: number,
   seeTo: number,
-): { labelLeft: number | undefined; labelRight: number | undefined } {
+): {
+  labelLeft: number | undefined;
+  labelRight: number | undefined;
+  labelMax: number;
+} {
   const need = Math.min(280, title.length * LABEL_CHAR * 1.08);
   const left = centre + 13;
-  if (seeTo - left - 4 >= need)
-    return { labelLeft: left, labelRight: undefined };
   const anchor = centre - 13;
-  if (anchor - seeFrom - 4 >= need)
-    return { labelLeft: undefined, labelRight: chartWidth - anchor };
-  return { labelLeft: left, labelRight: undefined };
+  const onRight = seeTo - left - 4 >= need;
+  const onLeft = !onRight && anchor - seeFrom - 4 >= need;
+  const label: LabelLayout = onLeft
+    ? { text: title, right: chartWidth - anchor, maxWidth: 280 }
+    : { text: title, left, maxWidth: 280 };
+  const fit = fitLabel(label, chartWidth, seeFrom, seeTo);
+  return {
+    labelLeft: fit ? fit.left : undefined,
+    labelRight: fit ? fit.right : undefined,
+    labelMax: fit?.maxWidth ?? 0,
+  };
+}
+
+/** The overdue note stays in view; with less room than "Abcd…" it is left out. */
+function lateNote<T extends { textLeft: number; text: string }>(
+  late: T,
+  chartWidth: number,
+  seeFrom: number,
+  seeTo: number,
+): T & { textMax: number } {
+  const fit = fitLabel(
+    { text: late.text, left: late.textLeft, maxWidth: 200 },
+    chartWidth,
+    seeFrom,
+    seeTo,
+  );
+  return {
+    ...late,
+    textLeft: fit?.left ?? late.textLeft,
+    textMax: fit?.maxWidth ?? 0,
+  };
 }
 
 function cascadeNote(

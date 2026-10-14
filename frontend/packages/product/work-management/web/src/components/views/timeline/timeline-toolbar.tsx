@@ -45,7 +45,8 @@ export interface TimelineToolbarProps {
  * The Timeline bar: today, back and forward, the day/week/month switch, the
  * grouping and bar-span pills, the dependency and critical-path toggles, the
  * count of items without a date and "Thêm công việc". It wraps onto a second
- * line when the width runs out, as the design's does at 1184 px.
+ * line when the width runs out, as the design's does at 1184 px. The two
+ * toggles wrap together, so a line never ends up holding one of them alone.
  */
 export function TimelineToolbar({
   copy,
@@ -172,44 +173,46 @@ export function TimelineToolbar({
         <b className="font-semibold text-foreground">{copy.barSpan.value}</b>
       </Button>
 
-      <button
-        type="button"
-        aria-pressed={links.available ? links.shown : true}
-        aria-disabled={links.available ? undefined : "true"}
-        title={links.available ? undefined : copy.unavailable.links}
-        aria-label={
-          links.available
-            ? undefined
-            : `${copy.links}: ${copy.unavailable.links}`
-        }
-        className={cn(
-          TOGGLE_CLASS,
-          (links.available ? links.shown : true) && TOGGLE_ON_CLASS,
-        )}
-        onClick={links.available ? links.onToggle : undefined}
-      >
-        {copy.links}
-      </button>
-      <button
-        type="button"
-        aria-pressed={criticalPath.available ? criticalPath.shown : false}
-        aria-disabled={criticalPath.available ? undefined : "true"}
-        title={
-          criticalPath.available ? undefined : copy.unavailable.criticalPath
-        }
-        aria-label={
-          criticalPath.available
-            ? undefined
-            : `${copy.criticalPath}: ${copy.unavailable.criticalPath}`
-        }
-        className={cn(
-          TOGGLE_CLASS,
-          criticalPath.available && criticalPath.shown && TOGGLE_ON_CLASS,
-        )}
-        onClick={criticalPath.available ? criticalPath.onToggle : undefined}
-      >
-        {copy.criticalPath}
-      </button>
+      <div data-tl="toggles" className="flex flex-none items-center gap-2">
+        <button
+          type="button"
+          aria-pressed={links.available ? links.shown : true}
+          aria-disabled={links.available ? undefined : "true"}
+          title={links.available ? undefined : copy.unavailable.links}
+          aria-label={
+            links.available
+              ? undefined
+              : `${copy.links}: ${copy.unavailable.links}`
+          }
+          className={cn(
+            TOGGLE_CLASS,
+            (links.available ? links.shown : true) && TOGGLE_ON_CLASS,
+          )}
+          onClick={links.available ? links.onToggle : undefined}
+        >
+          {copy.links}
+        </button>
+        <button
+          type="button"
+          aria-pressed={criticalPath.available ? criticalPath.shown : false}
+          aria-disabled={criticalPath.available ? undefined : "true"}
+          title={
+            criticalPath.available ? undefined : copy.unavailable.criticalPath
+          }
+          aria-label={
+            criticalPath.available
+              ? undefined
+              : `${copy.criticalPath}: ${copy.unavailable.criticalPath}`
+          }
+          className={cn(
+            TOGGLE_CLASS,
+            criticalPath.available && criticalPath.shown && TOGGLE_ON_CLASS,
+          )}
+          onClick={criticalPath.available ? criticalPath.onToggle : undefined}
+        >
+          {copy.criticalPath}
+        </button>
+      </div>
 
       <span className="flex-1" />
 

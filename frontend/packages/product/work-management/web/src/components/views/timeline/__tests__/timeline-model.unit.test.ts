@@ -640,3 +640,58 @@ describe("itemSpan", () => {
     expect(fmtDay(span.end)).toBe("20/10");
   });
 });
+
+describe("layoutTimeline (text kept inside the view)", () => {
+  const seen = (from: number, to: number) =>
+    layoutTimeline({
+      scale: "day",
+      spec: scaleSpec("day", TODAY),
+      groups: timelineMockupGroups(),
+      links: timelineMockupLinks(),
+      today: TODAY,
+      copy: vi,
+      criticalPath: false,
+      visible: { from, to },
+    });
+
+  it("shortens a bar's title where the right edge of the view cuts the bar", () => {
+    // ERP-151 spans x 209 to 363; only the part up to 300 is in view.
+    const bar = task(seen(0, 300), "erp-151").bar;
+    expect(bar?.label).toMatch(/^Cấu hình quyền/);
+    expect(bar?.labelShift).toBe(0);
+    expect(bar?.labelMax).toBe(300 - 8 - (209 + 8));
+  });
+
+  it("leaves the title out where less than a few letters of the bar are in view", () => {
+    expect(task(seen(0, 250), "erp-151").bar?.label).toBe("");
+    expect(task(seen(330, 754), "erp-151").bar?.label).toBe("");
+  });
+
+  it("moves a bar's title to the left edge of the view when the bar starts behind it", () => {
+    const bar = task(seen(250, 700), "erp-151").bar;
+    expect(bar?.label).toMatch(/^Cấu hình quyền/);
+    // The title starts 8 px inside the visible part of the bar.
+    expect(209 + 8 + (bar?.labelShift ?? 0)).toBe(250 + 8);
+    expect(bar?.labelMax).toBe(363 - 8 - (250 + 8));
+  });
+
+  it("keeps a gap between a label and the list divider", () => {
+    // The title of ERP-146 sits beside its short bar; beside the divider it keeps 12 px.
+    const row = task(seen(0, 754), "erp-129");
+    expect(row.label?.left).toBeGreaterThanOrEqual(12);
+    const edge = task(seen(300, 754), "erp-129").label;
+    expect(edge?.left).toBe(300 + 12);
+  });
+
+  it("drops a label whose bar has scrolled behind the list", () => {
+    expect(task(seen(0, 754), "erp-146").label).not.toBeNull();
+    expect(task(seen(400, 754), "erp-146").label).toBeNull();
+  });
+
+  it("drops the overdue note when its place has scrolled out of the view", () => {
+    expect(task(seen(0, 754), "erp-142").late?.textMax).toBeGreaterThan(0);
+    expect(task(seen(300, 754), "erp-142").late?.textMax).toBe(0);
+    // Less room than a few letters on the right edge.
+    expect(task(seen(0, 240), "erp-142").late?.textMax).toBe(0);
+  });
+});
