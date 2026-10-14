@@ -27,7 +27,7 @@ const scenario = process.env.VITE_MOCK_STATE ?? "default";
 const faults = process.env.VITE_MOCK_FAULTS ?? "";
 const WORKSPACE = "/workspaces/mock-workspace-primary";
 const ENGINEERING = `${WORKSPACE}/spaces/mock-space-engineering`;
-const MARKETING = `${WORKSPACE}/spaces/mock-space-marketing`;
+const EMPTY_DEPARTMENT = `${WORKSPACE}/spaces/mock-space-hr`;
 const NOW = new Date("2026-10-12T10:40:00+07:00");
 
 interface Rect {
@@ -541,7 +541,7 @@ test.describe("Department page geometry at 1440 px (owner)", () => {
   test("the first steps of a department with nothing in it", async ({
     page,
   }) => {
-    await openSpace(page, MARKETING, "Marketing");
+    await openSpace(page, EMPTY_DEPARTMENT, "Nhân sự");
     const setup = f(page, "setup");
     const setupBox = await rel(page, setup);
     expectRect(setupBox, { x: 28, width: 712 }, "setup card");

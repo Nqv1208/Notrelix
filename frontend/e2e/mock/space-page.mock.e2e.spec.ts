@@ -6,14 +6,14 @@ import { expect, test, type Page } from "@playwright/test";
  * steps of an empty department and what a member who does not manage the
  * department sees. The mock world resets on every page load, so each test
  * starts from the seeded departments (Engineering is Private with the Platform
- * folder inside, Accounting is Private, Marketing is open and empty).
+ * folder inside, Accounting is Private, Marketing is open, Nhân sự is open and empty).
  */
 const persona = process.env.VITE_MOCK_PERSONA ?? "owner";
 const scenario = process.env.VITE_MOCK_STATE ?? "default";
 const faults = process.env.VITE_MOCK_FAULTS ?? "";
 const WORKSPACE = "/workspaces/mock-workspace-primary";
 const ENGINEERING = `${WORKSPACE}/spaces/mock-space-engineering`;
-const MARKETING = `${WORKSPACE}/spaces/mock-space-marketing`;
+const EMPTY_DEPARTMENT = `${WORKSPACE}/spaces/mock-space-hr`;
 
 async function open(page: Page, path: string, heading: string) {
   await page.addInitScript(() => {
@@ -200,12 +200,12 @@ test.describe("Department page (owner)", () => {
   test("Archive of an empty department asks first and Delete stays inert", async ({
     page,
   }) => {
-    await open(page, `${MARKETING}?tab=settings`, "Marketing");
+    await open(page, `${EMPTY_DEPARTMENT}?tab=settings`, "Nhân sự");
     const archive = page.getByRole("button", { name: "Lưu trữ", exact: true });
     await expect(archive).not.toHaveAttribute("aria-disabled", "true");
     await archive.click();
     const confirm = page.getByRole("alertdialog", {
-      name: "Lưu trữ Marketing?",
+      name: "Lưu trữ Nhân sự?",
     });
     await expect(confirm).toBeVisible();
     await page.keyboard.press("Escape");
@@ -220,8 +220,8 @@ test.describe("Department page (owner)", () => {
   test("an empty department shows the first steps and they lead somewhere", async ({
     page,
   }) => {
-    await open(page, MARKETING, "Marketing");
-    await expect(page.getByText("Bắt đầu với Marketing")).toBeVisible();
+    await open(page, EMPTY_DEPARTMENT, "Nhân sự");
+    await expect(page.getByText("Bắt đầu với Nhân sự")).toBeVisible();
     // Open to the workspace: the card does not claim it is private.
     await expect(
       page.getByText("Mở cho cả workspace, bạn là quản trị"),

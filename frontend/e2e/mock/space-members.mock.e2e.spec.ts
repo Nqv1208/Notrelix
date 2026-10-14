@@ -155,7 +155,7 @@ test.describe("Department members (owner)", () => {
     page,
   }) => {
     await open(page, ACCOUNTING, "Accounting");
-    await row(page, "UI Developer")
+    await row(page, "Nguyễn Thu Hà")
       .getByRole("button", { name: /Quản trị/ })
       .click();
     const menu = page.getByRole("menu");

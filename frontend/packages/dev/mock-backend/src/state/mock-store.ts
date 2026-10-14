@@ -74,9 +74,9 @@ import {
   INVOICE_FOLDER_ID,
   INVOICE_HISTORY,
 } from "./mock-docs-invoice";
+import { DEPARTMENT_BOARDS, departmentItemId } from "./mock-department-boards";
 
 export class MockSeedInvariantError extends Error {
-import { DEPARTMENT_BOARDS, departmentItemId } from "./mock-department-boards";
   constructor(message: string) {
     super(`[MockSeedInvariantError] ${message}`);
     this.name = "MockSeedInvariantError";
@@ -572,9 +572,9 @@ export class MockStore {
 
     this.seedRoadmapStatuses();
     this.seedErpBoard(primaryWsId);
+    this.seedDepartmentBoards(primaryWsId);
     this.seedInvoiceDoc(primaryWsId);
 
-    this.seedDepartmentBoards(primaryWsId);
     // Extras for card-main-0001
     if (this.cardsById.has("card-main-0001")) {
       this.addIndex(this.labelIdsByCardId, "card-main-0001", "lbl-0002");
@@ -713,6 +713,10 @@ export class MockStore {
     });
     space(mockIds.spaces.accounting, "Accounting", "a0001");
     space(mockIds.spaces.marketing, "Marketing", "a0002", {
+      visibility: "Workspace",
+    });
+    // The one department with nothing in it, as the Space mockup shows.
+    space(mockIds.spaces.hr, "Nhân sự", "a0003", {
       visibility: "Workspace",
     });
     for (const id of Object.values(mockIds.spaces)) {
@@ -971,42 +975,6 @@ export class MockStore {
     });
   }
 
-  /** Members of a board, in seeded order. */
-  getBoardMembers(boardId: string): MockBoardMemberRecord[] {
-    return [...(this.boardMembersByBoardId.get(boardId) ?? [])];
-  }
-
-  /** The explicit access entry of a user on a board, when there is one. */
-  getBoardGrant(
-    boardId: string,
-    userId: string,
-  ): MockBoardGrantRecord | undefined {
-    return this.boardGrantsByBoardId
-      .get(boardId)
-      ?.find((grant) => grant.userId === userId);
-  }
-
-  /** The seeded audience of a board, when the world defines one. */
-  getBoardAudience(boardId: string): MockBoardAudienceRecord | undefined {
-    return this.boardAudienceByBoardId.get(boardId);
-  }
-
-  /** The current member as a Space access subject. */
-  spaceViewer(workspaceId: string): MockSpaceViewer {
-    return {
-      userId: this.getCurrentUser().id,
-      workspaceRole: this.getCurrentMemberRole(workspaceId),
-    };
-  }
-
-  /** Non-deleted Boards and Pages placed in a Space (WSP-022 archive check). */
-  countPlacedInSpace(spaceId: string): { boards: number; pages: number } {
-    let boards = 0;
-    let pages = 0;
-    for (const board of this.boardsById.values()) {
-      if (board.spaceId === spaceId && !board.isArchived) boards += 1;
-    }
-    for (const page of this.pagesById.values()) {
   private seedDepartmentBoards(workspaceId: string): void {
     for (const dept of DEPARTMENT_BOARDS) {
       this.insertBoard({
@@ -1071,6 +1039,42 @@ export class MockStore {
     }
   }
 
+  /** Members of a board, in seeded order. */
+  getBoardMembers(boardId: string): MockBoardMemberRecord[] {
+    return [...(this.boardMembersByBoardId.get(boardId) ?? [])];
+  }
+
+  /** The explicit access entry of a user on a board, when there is one. */
+  getBoardGrant(
+    boardId: string,
+    userId: string,
+  ): MockBoardGrantRecord | undefined {
+    return this.boardGrantsByBoardId
+      .get(boardId)
+      ?.find((grant) => grant.userId === userId);
+  }
+
+  /** The seeded audience of a board, when the world defines one. */
+  getBoardAudience(boardId: string): MockBoardAudienceRecord | undefined {
+    return this.boardAudienceByBoardId.get(boardId);
+  }
+
+  /** The current member as a Space access subject. */
+  spaceViewer(workspaceId: string): MockSpaceViewer {
+    return {
+      userId: this.getCurrentUser().id,
+      workspaceRole: this.getCurrentMemberRole(workspaceId),
+    };
+  }
+
+  /** Non-deleted Boards and Pages placed in a Space (WSP-022 archive check). */
+  countPlacedInSpace(spaceId: string): { boards: number; pages: number } {
+    let boards = 0;
+    let pages = 0;
+    for (const board of this.boardsById.values()) {
+      if (board.spaceId === spaceId && !board.isArchived) boards += 1;
+    }
+    for (const page of this.pagesById.values()) {
       if (page.spaceId === spaceId) pages += 1;
     }
     return { boards, pages };
@@ -2709,6 +2713,12 @@ export class MockStore {
    * producer: due date ascending, undated last, then id.
    */
   getMyWorkItems(workspaceId: string) {
+    const wanted = new Set(this.myWorkItemIds());
+    const boardIds = new Set(
+      this.getBoards(workspaceId)
+        .filter((board) => !board.isArchived)
+        .map((board) => board.id),
+    );
     const items: {
       id: string;
       boardId: string;
@@ -2738,14 +2748,23 @@ export class MockStore {
       if (a.dueAt === b.dueAt) return a.id.localeCompare(b.id);
       if (a.dueAt === null) return 1;
       if (b.dueAt === null) return -1;
-    const wanted = new Set(this.myWorkItemIds());
-    const boardIds = new Set(
-      this.getBoards(workspaceId)
-        .filter((board) => !board.isArchived)
-        .map((board) => board.id),
-    );
       return a.dueAt.localeCompare(b.dueAt) || a.id.localeCompare(b.id);
     });
+  }
+
+  /** The Items the 2026-10 mockups list as the member's work. */
+  private myWorkItemIds(): string[] {
+    return [
+      "ERP-142",
+      "ERP-144",
+      "ERP-138",
+      "ERP-147",
+      "KT-88",
+      "KT-91",
+      "MK-21",
+    ].map((key) =>
+      key.startsWith("ERP-") ? erpItemId(key) : departmentItemId(key),
+    );
   }
 
   completeCard(cardId: string): boolean {
@@ -2782,21 +2801,6 @@ export class MockStore {
       .map((id) => this.listsById.get(id))
       .filter((l): l is MockListRecord => l !== undefined)
       .sort((a, b) => a.position - b.position);
-  }
-
-  /** The Items the 2026-10 mockups list as the member's work. */
-  private myWorkItemIds(): string[] {
-    return [
-      "ERP-142",
-      "ERP-144",
-      "ERP-138",
-      "ERP-147",
-      "KT-88",
-      "KT-91",
-      "MK-21",
-    ].map((key) =>
-      key.startsWith("ERP-") ? erpItemId(key) : departmentItemId(key),
-    );
   }
 
   getList(id: string): MockListRecord | undefined {
