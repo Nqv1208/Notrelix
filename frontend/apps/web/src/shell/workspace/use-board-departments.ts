@@ -30,6 +30,7 @@ export function useBoardDepartments(
       out.set(placement.id, {
         name: root.name,
         markTone: markToneFor(root.id),
+        destination: { section: "space", spaceId: root.id },
       });
     }
     return out;

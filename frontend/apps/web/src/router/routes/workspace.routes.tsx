@@ -8,6 +8,7 @@ import { MembersPage } from "../../routes/workspaces/$workspaceId/members";
 import { TeamsPage } from "../../routes/workspaces/$workspaceId/teams";
 import { TeamPage } from "../../routes/workspaces/$workspaceId/teams.$teamId";
 import { MyWorkPage } from "../../routes/workspaces/$workspaceId/my-work";
+import { myWorkSearchSchema } from "../schemas/my-work-search-schema";
 import { InboxPage } from "../../routes/workspaces/$workspaceId/inbox";
 import { ReportsPage } from "../../routes/workspaces/$workspaceId/reports";
 import { SpacePage } from "../../routes/workspaces/$workspaceId/spaces/$spaceId";
@@ -71,6 +72,7 @@ export const teamRoute = createRoute({
 export const myWorkRoute = createRoute({
   getParentRoute: () => workspaceRoute,
   path: "/my-work",
+  validateSearch: (search) => myWorkSearchSchema.parse(search),
   component: MyWorkPage,
 });
 

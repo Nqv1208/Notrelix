@@ -35,7 +35,7 @@ export function DepartmentMark({
         "grid shrink-0 place-items-center font-bold",
         small
           ? "size-4 rounded-[4px] text-avatar-xs"
-          : "size-5 rounded-md text-mark-xs",
+          : "size-5 rounded-[6px] text-mark-xs",
         MARK_TONE_CLASS[markTone],
         className,
       )}

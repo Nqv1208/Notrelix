@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { Meta, StoryObj } from "@storybook/react";
 
 import {
@@ -9,12 +10,20 @@ import {
   homeLoadingScenario,
   homeOnboardingScenario,
   homeProducedOnlyScenario,
+  myWorkByBoardScenario,
+  myWorkCreateScenario,
   myWorkDefaultScenario,
+  myWorkDetailScenario,
+  myWorkDoneScenario,
   myWorkEdgeDataScenario,
   myWorkEmptyScenario,
   myWorkErrorScenario,
+  myWorkGroupMenuScenario,
   myWorkHighDensityScenario,
   myWorkLoadingScenario,
+  myWorkProducedOnlyScenario,
+  myWorkSelectingScenario,
+  myWorkStatusPopScenario,
 } from "../../verification/workspace-home-fixtures";
 import { CreateResourceDialog } from "./create-resource-dialog";
 import { WorkspaceHomeSurface } from "./workspace-home-surface";
@@ -41,7 +50,14 @@ const homeCallbacks = {
   onRetryMyWork: noop,
 };
 
-const myWorkCallbacks = { onComplete: noop, onRetry: noop, onLoadMore: noop };
+const myWorkCallbacks = {
+  onComplete: noop,
+  onCreate: null,
+  onOpenItem: noop,
+  onLoadMore: noop,
+  onRetry: noop,
+  onChangeStatus: noop,
+};
 
 // ── Home (WX-HOME-001) ────────────────────────────────────────────
 
@@ -176,52 +192,111 @@ export const CreateResourceError: Story = {
   tags: ["fui-surface--workspace.create-resource", "fui-state--Error"],
 };
 
-// ── My work (WX-HOME-001) ─────────────────────────────────────────
+// ── My work (Final-MyWork) ────────────────────────────────────────
+
+/** The page is as tall as the window; the story gives it the mockup's 900 px. */
+function Stage({ children }: { children: ReactNode }) {
+  return <div className="h-[900px] w-full">{children}</div>;
+}
+
+/** A stand-in for the item sheet the host places over the right edge. */
+const SheetStandIn = (
+  <aside
+    aria-label="Item sheet"
+    className="absolute inset-y-0 right-0 z-sticky w-[560px] border-l border-line bg-popover shadow-sheet"
+  />
+);
+
+function renderMyWork(scenario: ReturnType<typeof myWorkDefaultScenario>) {
+  return (
+    <Stage>
+      <WorkspaceMyWorkSurface {...scenario} {...myWorkCallbacks} />
+    </Stage>
+  );
+}
 
 export const MyWorkDefault: Story = {
-  render: () => (
-    <WorkspaceMyWorkSurface {...myWorkDefaultScenario()} {...myWorkCallbacks} />
-  ),
+  render: () => renderMyWork(myWorkDefaultScenario()),
   tags: ["fui-surface--workspace.my-work", "fui-state--Default"],
 };
 
 export const MyWorkLoading: Story = {
-  render: () => (
-    <WorkspaceMyWorkSurface {...myWorkLoadingScenario()} {...myWorkCallbacks} />
-  ),
+  render: () => renderMyWork(myWorkLoadingScenario()),
   tags: ["fui-surface--workspace.my-work", "fui-state--Loading"],
 };
 
 export const MyWorkEmpty: Story = {
-  render: () => (
-    <WorkspaceMyWorkSurface {...myWorkEmptyScenario()} {...myWorkCallbacks} />
-  ),
+  render: () => renderMyWork(myWorkEmptyScenario()),
   tags: ["fui-surface--workspace.my-work", "fui-state--Empty"],
 };
 
 export const MyWorkError: Story = {
-  render: () => (
-    <WorkspaceMyWorkSurface {...myWorkErrorScenario()} {...myWorkCallbacks} />
-  ),
+  render: () => renderMyWork(myWorkErrorScenario()),
   tags: ["fui-surface--workspace.my-work", "fui-state--Error"],
 };
 
 export const MyWorkEdgeData: Story = {
-  render: () => (
-    <WorkspaceMyWorkSurface
-      {...myWorkEdgeDataScenario()}
-      {...myWorkCallbacks}
-    />
-  ),
+  render: () => renderMyWork(myWorkEdgeDataScenario()),
   tags: ["fui-surface--workspace.my-work", "fui-state--EdgeData"],
 };
 
 export const MyWorkHighDensity: Story = {
-  render: () => (
-    <WorkspaceMyWorkSurface
-      {...myWorkHighDensityScenario()}
-      {...myWorkCallbacks}
-    />
-  ),
+  render: () => renderMyWork(myWorkHighDensityScenario()),
   tags: ["fui-surface--workspace.my-work", "fui-state--HighDensity"],
+};
+
+/** Final-MyWork `theo-board`. */
+export const MyWorkByBoard: Story = {
+  render: () => renderMyWork(myWorkByBoardScenario()),
+  tags: ["fui-surface--workspace.my-work", "fui-state--Default"],
+};
+
+/** Final-MyWork `chon-nhieu`: two rows selected, the bulk bar over the list. */
+export const MyWorkSelecting: Story = {
+  render: () => renderMyWork(myWorkSelectingScenario()),
+  tags: ["fui-surface--workspace.my-work", "fui-state--Default"],
+};
+
+/** Final-MyWork `da-xong`. */
+export const MyWorkDone: Story = {
+  render: () => renderMyWork(myWorkDoneScenario()),
+  tags: ["fui-surface--workspace.my-work", "fui-state--Default"],
+};
+
+/** Final-MyWork `chi-tiet`: the list narrows to make room for the sheet. */
+export const MyWorkDetail: Story = {
+  render: () => (
+    <Stage>
+      <WorkspaceMyWorkSurface
+        {...myWorkDetailScenario()}
+        {...myWorkCallbacks}
+        sheet={SheetStandIn}
+      />
+    </Stage>
+  ),
+  tags: ["fui-surface--workspace.my-work", "fui-state--Default"],
+};
+
+/** Final-MyWork `chon-nhom`. */
+export const MyWorkGroupMenu: Story = {
+  render: () => renderMyWork(myWorkGroupMenuScenario()),
+  tags: ["fui-surface--workspace.my-work", "fui-state--Default"],
+};
+
+/** Final-MyWork `doi-trang-thai`. */
+export const MyWorkStatusPop: Story = {
+  render: () => renderMyWork(myWorkStatusPopScenario()),
+  tags: ["fui-surface--workspace.my-work", "fui-state--Default"],
+};
+
+/** Final-MyWork `them-viec`. */
+export const MyWorkCreate: Story = {
+  render: () => renderMyWork(myWorkCreateScenario()),
+  tags: ["fui-surface--workspace.my-work", "fui-state--Default"],
+};
+
+/** What the host fills today: no key, Status, Priority or person; inert tabs. */
+export const MyWorkProducedOnly: Story = {
+  render: () => renderMyWork(myWorkProducedOnlyScenario()),
+  tags: ["fui-surface--workspace.my-work", "fui-state--EdgeData"],
 };

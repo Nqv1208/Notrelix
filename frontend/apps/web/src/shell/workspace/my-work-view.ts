@@ -5,7 +5,26 @@ import {
 import type {
   MyWorkDepartment,
   MyWorkGroupView,
+  MyWorkItemView,
 } from "@notrelix/features-workspace/web";
+
+/**
+ * The member's open Items as the My work page draws them: the Board name and
+ * department the member can see, and the relationship the read itself states
+ * (it lists the Items assigned to the member). Nothing else is known.
+ */
+export function toMyWorkItems(
+  items: readonly MyWorkItem[],
+  boardNames: ReadonlyMap<string, string>,
+  departments: ReadonlyMap<string, MyWorkDepartment> = new Map(),
+): MyWorkItemView[] {
+  return items.map((item) => ({
+    ...item,
+    boardName: boardNames.get(item.boardId) ?? null,
+    department: departments.get(item.boardId) ?? null,
+    reason: "mine",
+  }));
+}
 
 /**
  * Assigned Items with the Board name and department the member can see. The

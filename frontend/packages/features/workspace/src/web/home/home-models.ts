@@ -1,5 +1,10 @@
 import type { MyWorkGroup, MyWorkItem } from "../../core/model/my-work";
-import type { MarkToneId, NavigationEntry } from "../../core/model/navigation";
+import type {
+  IdentityTone,
+  MarkToneId,
+  NavigationEntry,
+  WorkspaceDestination,
+} from "../../core/model/navigation";
 import type {
   WorkspaceActivityItem,
   WorkspaceInvitation,
@@ -45,6 +50,8 @@ export type MyWorkReason = "mine" | "follow" | "approve";
 export interface MyWorkDepartment {
   readonly name: string;
   readonly markTone: MarkToneId;
+  /** Where the department's page is, when the host can open it. */
+  readonly destination?: WorkspaceDestination;
 }
 
 /**
@@ -64,6 +71,20 @@ export interface MyWorkItemView extends MyWorkItem {
     readonly label: string;
   } | null;
   readonly reason?: MyWorkReason | null;
+  /** The person in charge, drawn as an avatar on the row. */
+  readonly assignee?: {
+    readonly name: string;
+    readonly tone: IdentityTone;
+  } | null;
+  /** An approval request on the item ("needs my approval" rows). */
+  readonly approval?: {
+    readonly actorName: string;
+    readonly actorTone: IdentityTone;
+    /** `HH:mm`. */
+    readonly time: string;
+  } | null;
+  /** When the item was completed (rows of the Done tab). */
+  readonly completedAt?: string | null;
 }
 
 export interface MyWorkGroupView extends Omit<MyWorkGroup, "items"> {

@@ -1005,7 +1005,11 @@
       "owner": "@notrelix/features-workspace",
       "surfaceKind": "data",
       "pureEntry": "src/web/home/workspace-my-work-surface.tsx",
-      "coveredSources": ["src/web/home/my-work-list.tsx"],
+      "coveredSources": [
+        "src/web/home/my-work-row.tsx",
+        "src/web/home/my-work-chrome.tsx",
+        "src/web/home/my-work-side.tsx"
+      ],
       "stories": [
         {
           "id": "workspace-home--my-work-default",
@@ -1078,6 +1082,170 @@
               "theme": "light"
             }
           ]
+        },
+        {
+          "id": "workspace-home--my-work-by-board",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-home--my-work-selecting",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-home--my-work-done",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-home--my-work-detail",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-home--my-work-group-menu",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-home--my-work-status-pop",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-home--my-work-create",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-home--my-work-produced-only",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         }
       ],
       "stateCoverage": {
@@ -1109,23 +1277,103 @@
       "interactionCases": [
         {
           "id": "render",
-          "testFile": "src/web/home/__tests__/workspace-home.interaction.component.test.tsx"
+          "testFile": "src/web/home/__tests__/workspace-my-work.interaction.component.test.tsx"
+        },
+        {
+          "id": "tabs",
+          "testFile": "src/web/home/__tests__/workspace-my-work.interaction.component.test.tsx"
+        },
+        {
+          "id": "group",
+          "testFile": "src/web/home/__tests__/workspace-my-work.interaction.component.test.tsx"
+        },
+        {
+          "id": "group-menu",
+          "testFile": "src/web/home/__tests__/workspace-my-work.interaction.component.test.tsx"
+        },
+        {
+          "id": "search-filter",
+          "testFile": "src/web/home/__tests__/workspace-my-work.interaction.component.test.tsx"
+        },
+        {
+          "id": "select",
+          "testFile": "src/web/home/__tests__/workspace-my-work.interaction.component.test.tsx"
+        },
+        {
+          "id": "keys",
+          "testFile": "src/web/home/__tests__/workspace-my-work.interaction.component.test.tsx"
+        },
+        {
+          "id": "complete",
+          "testFile": "src/web/home/__tests__/workspace-my-work.interaction.component.test.tsx"
+        },
+        {
+          "id": "open",
+          "testFile": "src/web/home/__tests__/workspace-my-work.interaction.component.test.tsx"
+        },
+        {
+          "id": "detail",
+          "testFile": "src/web/home/__tests__/workspace-my-work.interaction.component.test.tsx"
+        },
+        {
+          "id": "status",
+          "testFile": "src/web/home/__tests__/workspace-my-work.interaction.component.test.tsx"
+        },
+        {
+          "id": "no-status",
+          "testFile": "src/web/home/__tests__/workspace-my-work.interaction.component.test.tsx"
+        },
+        {
+          "id": "create",
+          "testFile": "src/web/home/__tests__/workspace-my-work.interaction.component.test.tsx"
+        },
+        {
+          "id": "create-write",
+          "testFile": "src/web/home/__tests__/workspace-my-work.interaction.component.test.tsx"
+        },
+        {
+          "id": "rail",
+          "testFile": "src/web/home/__tests__/workspace-my-work.interaction.component.test.tsx"
+        },
+        {
+          "id": "done",
+          "testFile": "src/web/home/__tests__/workspace-my-work.interaction.component.test.tsx"
+        },
+        {
+          "id": "collapse",
+          "testFile": "src/web/home/__tests__/workspace-my-work.interaction.component.test.tsx"
         },
         {
           "id": "load-more",
-          "testFile": "src/web/home/__tests__/workspace-home.interaction.component.test.tsx"
+          "testFile": "src/web/home/__tests__/workspace-my-work.interaction.component.test.tsx"
         },
         {
           "id": "empty",
-          "testFile": "src/web/home/__tests__/workspace-home.interaction.component.test.tsx"
+          "testFile": "src/web/home/__tests__/workspace-my-work.interaction.component.test.tsx"
+        },
+        {
+          "id": "loading",
+          "testFile": "src/web/home/__tests__/workspace-my-work.interaction.component.test.tsx"
         },
         {
           "id": "states",
-          "testFile": "src/web/home/__tests__/workspace-home.interaction.component.test.tsx"
+          "testFile": "src/web/home/__tests__/workspace-my-work.interaction.component.test.tsx"
         },
         {
           "id": "read-only",
-          "testFile": "src/web/home/__tests__/workspace-home.interaction.component.test.tsx"
+          "testFile": "src/web/home/__tests__/workspace-my-work.interaction.component.test.tsx"
+        },
+        {
+          "id": "produced-only",
+          "testFile": "src/web/home/__tests__/workspace-my-work.interaction.component.test.tsx"
+        },
+        {
+          "id": "edge",
+          "testFile": "src/web/home/__tests__/workspace-my-work.interaction.component.test.tsx"
+        },
+        {
+          "id": "high-density",
+          "testFile": "src/web/home/__tests__/workspace-my-work.interaction.component.test.tsx"
         }
       ]
     },

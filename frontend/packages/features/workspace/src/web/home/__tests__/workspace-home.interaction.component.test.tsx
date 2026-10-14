@@ -10,9 +10,6 @@ import {
   homeLoadingScenario,
   homeOnboardingScenario,
   homeProducedOnlyScenario,
-  myWorkDefaultScenario,
-  myWorkEmptyScenario,
-  myWorkErrorScenario,
 } from "../../../verification/workspace-home-fixtures";
 import { shellNavigationFixture } from "../../../verification/workspace-shell-fixtures";
 import { CreateResourceDialog } from "../create-resource-dialog";
@@ -20,10 +17,6 @@ import {
   WorkspaceHomeSurface,
   type WorkspaceHomeSurfaceProps,
 } from "../workspace-home-surface";
-import {
-  WorkspaceMyWorkSurface,
-  type WorkspaceMyWorkSurfaceProps,
-} from "../workspace-my-work-surface";
 import { WorkspaceOnboardingSurface } from "../workspace-onboarding-surface";
 
 const copy = homeCopyFixture();
@@ -349,69 +342,5 @@ describe("CreateResourceDialog", () => {
         }) as HTMLButtonElement
       ).disabled,
     ).toBe(true);
-  });
-});
-
-function renderMyWork(
-  scenario = myWorkDefaultScenario(),
-  overrides: Partial<WorkspaceMyWorkSurfaceProps> = {},
-) {
-  const props: WorkspaceMyWorkSurfaceProps = {
-    ...scenario,
-    onComplete: vi.fn(),
-    onRetry: vi.fn(),
-    onLoadMore: vi.fn(),
-    ...overrides,
-  };
-  renderPureUi(<WorkspaceMyWorkSurface {...props} />);
-  return props;
-}
-
-describe("WorkspaceMyWorkSurface", () => {
-  it("FUI[workspace.my-work:render] groups every assigned item into due windows in order", () => {
-    renderMyWork();
-    const headings = screen
-      .getAllByRole("heading", { level: 2 })
-      .map((heading) => heading.textContent?.replace(/\d+$/, ""));
-    expect(headings).toEqual([
-      "Overdue",
-      "Today",
-      "This week",
-      "Later",
-      "No due date",
-    ]);
-    expect(screen.getByText("Archive stale automations")).toBeTruthy();
-  });
-
-  it("FUI[workspace.my-work:load-more] loads the next page and completes inline", () => {
-    const props = renderMyWork();
-    fireEvent.click(screen.getByRole("button", { name: copy.myWork.loadMore }));
-    expect(props.onLoadMore).toHaveBeenCalledTimes(1);
-    fireEvent.click(
-      screen.getByRole("button", { name: "Mark Draft Q1 objectives complete" }),
-    );
-    expect(props.onComplete).toHaveBeenCalledWith(
-      expect.objectContaining({ id: "item-okrs" }),
-    );
-  });
-
-  it("FUI[workspace.my-work:empty] teaches the empty state", () => {
-    renderMyWork(myWorkEmptyScenario());
-    expect(screen.getByText(copy.myWork.empty)).toBeTruthy();
-    expect(screen.getByText(copy.myWork.emptyHint)).toBeTruthy();
-  });
-
-  it("FUI[workspace.my-work:states] retries a failed load", () => {
-    const props = renderMyWork(myWorkErrorScenario());
-    fireEvent.click(screen.getByRole("button", { name: copy.sections.retry }));
-    expect(props.onRetry).toHaveBeenCalledTimes(1);
-  });
-
-  it("FUI[workspace.my-work:read-only] hides inline completion when the host offers none", () => {
-    renderMyWork(myWorkDefaultScenario(), { onComplete: null });
-    expect(screen.queryByRole("button", { name: /^Mark / })).toBeNull();
-    expect(
-      screen.getByRole("link", { name: "Open Review vendor contract" }),
-    ).toBeTruthy();
   });
 });

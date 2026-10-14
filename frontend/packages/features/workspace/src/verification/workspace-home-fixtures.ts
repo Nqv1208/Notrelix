@@ -5,10 +5,7 @@
  * no network.
  */
 import { createFormatters } from "@notrelix/i18n";
-import {
-  groupMyWorkItems,
-  type MyWorkItem,
-} from "../core/model/my-work";
+import { groupMyWorkItems, type MyWorkItem } from "../core/model/my-work";
 import { NAVIGATION_RESOURCE_KIND } from "../core/model/navigation";
 import type {
   ContinueEntry,
@@ -229,6 +226,7 @@ export function homeMockupItems(): MyWorkItemView[] {
       boardName: MOCKUP_ERP,
       department: MOCKUP_DEPARTMENTS.cn,
       key: "ERP-142",
+      assignee: { name: "Trần Minh Quân", tone: "blue" },
       reason: "follow",
       priority: "urgent",
       status: { bucket: "doing", label: "Đang làm" },
@@ -240,6 +238,7 @@ export function homeMockupItems(): MyWorkItemView[] {
       boardName: MOCKUP_ERP,
       department: MOCKUP_DEPARTMENTS.cn,
       key: "ERP-144",
+      assignee: { name: "Lê Hoàng Phúc", tone: "ember" },
       reason: "follow",
       priority: "high",
       status: { bucket: "doing", label: "Đang làm" },
@@ -263,6 +262,11 @@ export function homeMockupItems(): MyWorkItemView[] {
       boardName: MOCKUP_ERP,
       department: MOCKUP_DEPARTMENTS.cn,
       key: "ERP-138",
+      approval: {
+        actorName: "Trần Minh Quân",
+        actorTone: "blue",
+        time: "10:28",
+      },
       reason: "approve",
       priority: "high",
       status: { bucket: "review", label: "Chờ duyệt" },
@@ -523,36 +527,209 @@ export function homeOnboardingScenario(
   };
 }
 
+// ── My work (Final-MyWork) ────────────────────────────────────────
+
 type MyWorkScenario = Omit<
   WorkspaceMyWorkSurfaceProps,
-  "onComplete" | "onRetry" | "onLoadMore"
+  | "onComplete"
+  | "onCreate"
+  | "onOpenItem"
+  | "onLoadMore"
+  | "onRetry"
+  | "onChangeStatus"
 >;
 
-export function myWorkDefaultScenario(): MyWorkScenario {
+const MY_WORK_DEPARTMENTS = {
+  cn: {
+    ...MOCKUP_DEPARTMENTS.cn,
+    destination: { section: "space", spaceId: "space-cn" },
+  },
+  kt: {
+    ...MOCKUP_DEPARTMENTS.kt,
+    destination: { section: "space", spaceId: "space-kt" },
+  },
+  mk: {
+    ...MOCKUP_DEPARTMENTS.mk,
+    destination: { section: "space", spaceId: "space-mk" },
+  },
+} as const;
+
+/** The seven open items with a department the host can open. */
+function myWorkMockupItems(): MyWorkItemView[] {
+  return homeMockupItems().map((item) => ({
+    ...item,
+    department:
+      item.department?.name === "Công nghệ"
+        ? MY_WORK_DEPARTMENTS.cn
+        : item.department?.name === "Kế toán"
+          ? MY_WORK_DEPARTMENTS.kt
+          : MY_WORK_DEPARTMENTS.mk,
+  }));
+}
+
+/** The two completed items of Final-MyWork `da-xong`. */
+export function myWorkDoneItems(): MyWorkItemView[] {
+  return [
+    mockupItem({
+      id: "item-kt-86",
+      name: "Khoá sổ phụ ngân hàng tháng 9",
+      boardId: MOCKUP_BOARD_IDS.kt,
+      boardName: "Đóng sổ tháng 10",
+      department: MY_WORK_DEPARTMENTS.kt,
+      key: "KT-86",
+      reason: "mine",
+      status: { bucket: "done", label: "Hoàn thành" },
+      dueAt: mockupAt(12, 17, 0),
+      completedAt: mockupAt(12, 10, 5),
+    }),
+    mockupItem({
+      id: "item-erp-136",
+      name: "Chốt danh sách người dùng đợt 1",
+      boardName: MOCKUP_ERP,
+      department: MY_WORK_DEPARTMENTS.cn,
+      key: "ERP-136",
+      reason: "mine",
+      status: { bucket: "done", label: "Hoàn thành" },
+      dueAt: mockupAt(9),
+      completedAt: mockupAt(9),
+    }),
+  ];
+}
+
+const MY_WORK_STATUS_OPTIONS = [
+  { bucket: "todo", label: "Cần làm" },
+  { bucket: "doing", label: "Đang làm" },
+  { bucket: "review", label: "Chờ duyệt" },
+  { bucket: "done", label: "Hoàn thành" },
+] as const;
+
+/** Final-MyWork `tat-ca`: every column, card and tab as the mockup draws them. */
+export function myWorkDefaultScenario(
+  locale: "en" | "vi" = "vi",
+): MyWorkScenario {
   return {
-    copy: homeCopyFixture(),
+    copy: homeCopyFixture(locale),
     navigation: shellNavigationFixture(),
-    formatters: homeFormattersFixture(),
-    state: { status: "ready", data: myWorkGroupsFixture() },
-    completingIds: new Set(),
-    hasMore: true,
+    formatters: homeFormattersFixture(locale),
+    now: HOME_MOCKUP_NOW,
+    state: { status: "ready", data: myWorkMockupItems() },
+    updatedAt: HOME_MOCKUP_NOW,
+    hasMore: false,
     loadingMore: false,
+    completingIds: new Set(),
+    done: { status: "ready", data: myWorkDoneItems() },
+    tabsAvailable: { approve: true, follow: true },
+    waiting: [
+      {
+        id: "wait-erp-144",
+        title: "Kiểm thử phân hệ công nợ với số liệu tháng 9",
+        key: "ERP-144",
+        destination: {
+          section: "board",
+          boardId: "board-erp",
+          item: "item-erp-144",
+        },
+        ownerName: "Lê Hoàng Phúc",
+        ownerTone: "ember",
+        note: "Chờ Phúc gửi kết quả",
+        dueNote: "hạn hôm nay",
+      },
+    ],
+    calendarHref: "#calendar",
+    createBoards: [
+      {
+        id: MOCKUP_BOARD_IDS.erp,
+        name: MOCKUP_ERP,
+        departmentName: "Công nghệ",
+        detail: "Phòng Công nghệ · dùng gần nhất",
+      },
+      {
+        id: MOCKUP_BOARD_IDS.kt,
+        name: "Đóng sổ tháng 10",
+        departmentName: "Kế toán",
+        detail: "Phòng Kế toán",
+      },
+      {
+        id: MOCKUP_BOARD_IDS.mk,
+        name: "Ra mắt sản phẩm Q4",
+        departmentName: "Marketing",
+        detail: "Phòng Marketing",
+      },
+      {
+        id: "board-budget",
+        name: "Ngân sách CNTT 2027",
+        departmentName: "Công nghệ",
+        detail: "Phòng Công nghệ",
+      },
+    ],
+    openItemId: null,
+    firstDepartment: MY_WORK_DEPARTMENTS.cn,
+    statusOptions: MY_WORK_STATUS_OPTIONS,
   };
+}
+
+/** `theo-board`. */
+export function myWorkByBoardScenario(): MyWorkScenario {
+  return {
+    ...myWorkDefaultScenario(),
+    initialView: { groupBy: "board" },
+  };
+}
+
+/** `chon-nhieu`: ERP-144 and KT-88 selected. */
+export function myWorkSelectingScenario(): MyWorkScenario {
+  return {
+    ...myWorkDefaultScenario(),
+    initialView: {
+      selectedIds: ["item-erp-144", "item-kt-88"],
+      unfollowTip: true,
+    },
+  };
+}
+
+/** `da-xong`. */
+export function myWorkDoneScenario(): MyWorkScenario {
+  return { ...myWorkDefaultScenario(), initialView: { tab: "done" } };
+}
+
+/** `trong`. */
+export function myWorkEmptyScenario(): MyWorkScenario {
+  return {
+    ...myWorkDefaultScenario(),
+    state: { status: "ready", data: [] },
+    waiting: undefined,
+  };
+}
+
+/** `chi-tiet`: ERP-142 open in the sheet (a placeholder sheet on the story). */
+export function myWorkDetailScenario(): MyWorkScenario {
+  return { ...myWorkDefaultScenario(), openItemId: "item-erp-142" };
+}
+
+/** `chon-nhom`. */
+export function myWorkGroupMenuScenario(): MyWorkScenario {
+  return { ...myWorkDefaultScenario(), initialView: { menu: "group" } };
+}
+
+/** `doi-trang-thai`: the Status popover of KT-88. */
+export function myWorkStatusPopScenario(): MyWorkScenario {
+  return {
+    ...myWorkDefaultScenario(),
+    initialView: { statusPopFor: "item-kt-88" },
+  };
+}
+
+/** `them-viec`. */
+export function myWorkCreateScenario(): MyWorkScenario {
+  return { ...myWorkDefaultScenario(), initialView: { menu: "create" } };
 }
 
 export function myWorkLoadingScenario(): MyWorkScenario {
   return {
     ...myWorkDefaultScenario(),
     state: { status: "loading" },
-    hasMore: false,
-  };
-}
-
-export function myWorkEmptyScenario(): MyWorkScenario {
-  return {
-    ...myWorkDefaultScenario(),
-    state: { status: "ready", data: [] },
-    hasMore: false,
+    updatedAt: null,
+    waiting: undefined,
   };
 }
 
@@ -560,41 +737,81 @@ export function myWorkErrorScenario(): MyWorkScenario {
   return {
     ...myWorkDefaultScenario(),
     state: { status: "error" },
-    hasMore: false,
+    updatedAt: null,
+    waiting: undefined,
+  };
+}
+
+/** What the real host fills today: no key, Status, Priority, person or reply cards. */
+export function myWorkProducedOnlyScenario(): MyWorkScenario {
+  const items = myWorkMockupItems().map((item): MyWorkItemView => ({
+    ...item,
+    key: null,
+    reason: "mine",
+    priority: null,
+    status: null,
+    assignee: null,
+    approval: null,
+  }));
+  return {
+    ...myWorkDefaultScenario(),
+    state: { status: "ready", data: items },
+    done: undefined,
+    tabsAvailable: {},
+    waiting: undefined,
+    calendarHref: null,
+    statusOptions: undefined,
   };
 }
 
 /** 120 items across windows, one completing, a page still loading. */
 export function myWorkHighDensityScenario(): MyWorkScenario {
-  const items: MyWorkItem[] = Array.from({ length: 120 }, (_, index) =>
-    myWorkItem({
+  const items = Array.from({ length: 120 }, (_, index) =>
+    mockupItem({
       id: `item-dense-${index}`,
-      name: `Item ${String(index + 1).padStart(3, "0")} — follow up`,
-      boardId: ["board-roadmap", "board-launch", "board-triage"][index % 3]!,
-      dueAt:
-        index % 9 === 0
-          ? null
-          : new Date(HOME_FIXTURE_NOW + (index - 20) * 6 * HOUR).toISOString(),
+      name: `Việc ${String(index + 1).padStart(3, "0")} — theo dõi tiếp`,
+      boardId: ["board-erp", "board-kt", "board-mk"][index % 3]!,
+      boardName: [MOCKUP_ERP, "Đóng sổ tháng 10", "Ra mắt sản phẩm Q4"][
+        index % 3
+      ]!,
+      department: [
+        MY_WORK_DEPARTMENTS.cn,
+        MY_WORK_DEPARTMENTS.kt,
+        MY_WORK_DEPARTMENTS.mk,
+      ][index % 3]!,
+      reason: "mine",
+      dueAt: index % 9 === 0 ? null : mockupAt(12 + ((index % 40) - 6)),
     }),
   );
   return {
     ...myWorkDefaultScenario(),
-    state: {
-      status: "ready",
-      data: withBoardNames(groupMyWorkItems(items, HOME_FIXTURE_NOW)),
-    },
+    state: { status: "ready", data: items },
     completingIds: new Set(["item-dense-3"]),
+    hasMore: true,
     loadingMore: true,
+    done: undefined,
+    tabsAvailable: {},
+    waiting: undefined,
   };
 }
 
+/** Long titles and names, a Board the member cannot open, no department. */
 export function myWorkEdgeDataScenario(): MyWorkScenario {
-  const home = homeEdgeDataScenario();
+  const long = mockupItem({
+    id: "item-long",
+    name: "Chuẩn bị tài liệu bàn giao cho đội vận hành khu vực, bao gồm sổ tay xử lý sự cố và danh sách liên hệ khẩn cấp",
+    boardId: "board-unknown",
+    boardName: null,
+    key: "VH-1204",
+    reason: "mine",
+    priority: "urgent",
+    status: { bucket: "doing", label: "Đang làm" },
+    assignee: { name: "Nguyễn Thị Phương Thảo Nguyên", tone: "coral" },
+    dueAt: mockupAt(9),
+  });
   return {
     ...myWorkDefaultScenario(),
-    copy: homeCopyFixture("vi"),
-    formatters: homeFormattersFixture("vi"),
-    state: home.myWork,
-    hasMore: false,
+    state: { status: "ready", data: [long] },
+    waiting: undefined,
   };
 }
