@@ -274,7 +274,7 @@ function TaskRow({
       <span
         data-f="due"
         className={cn(
-          "w-[100px] shrink-0 text-right text-crumb leading-[1.45] tabular-nums",
+          "min-w-[100px] shrink-0 text-right text-crumb leading-[1.45] whitespace-nowrap tabular-nums",
           due.tone === "over" && "font-semibold text-danger-text",
           due.tone === "today" && "font-semibold text-warning-text",
           due.tone === "normal" && "text-meta-foreground",

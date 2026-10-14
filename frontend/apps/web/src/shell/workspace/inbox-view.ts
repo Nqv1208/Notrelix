@@ -7,8 +7,9 @@ import {
 
 /**
  * A notification as the producer returns it. The generated contract has none
- * (gap register), the mock and the app's own type disagree on the text field
- * (`message` and `body`), so both are read; `type` and `link` are optional.
+ * (gap register); the app's own `Notification` type names the text `body`,
+ * and the mock now agrees. `message` is still read for a producer that sends
+ * it; `type` and `link` are optional.
  */
 export interface InboxNotification {
   readonly id: string;
@@ -18,6 +19,7 @@ export interface InboxNotification {
   readonly isRead: boolean;
   readonly createdAt: string;
   readonly type?: string | null;
+  readonly link?: string | null;
 }
 
 const KIND_BY_TYPE: Readonly<Record<string, InboxKind>> = {
@@ -74,7 +76,7 @@ export function toInboxItems(
           card: null,
           comment: null,
           replyTo: null,
-          openHref: null,
+          openHref: notification.link ?? null,
         },
       };
     });

@@ -111,4 +111,23 @@ describe("toInboxItems", () => {
       "system",
     ]);
   });
+
+  it("opens the item through the notification's own link, and offers none without one", () => {
+    const [withLink, without] = toInboxItems(
+      [
+        {
+          id: "a",
+          title: "Có liên kết",
+          isRead: false,
+          createdAt: at(12, 10, 28),
+          link: "/workspaces/w/boards/b/items/i",
+        },
+        { id: "b", title: "Không có", isRead: false, createdAt: at(12, 9, 0) },
+      ],
+      copy,
+      NOW,
+    );
+    expect(withLink!.detail.openHref).toBe("/workspaces/w/boards/b/items/i");
+    expect(without!.detail.openHref).toBeNull();
+  });
 });

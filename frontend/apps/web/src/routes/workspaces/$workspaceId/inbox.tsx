@@ -24,7 +24,8 @@ import { useNow } from "@/shell/workspace/use-now";
  * the selected one in the reading pane. The read is the notification list
  * (title, text, read flag, time): it is not scoped to a workspace and has no
  * type, person or item, so the page says nothing about scope and draws only
- * the All tab; "Đã xử lý" and "Đánh dấu tất cả đã đọc" are the real mark-read
+ * the All tab and the Mentions and Assigned tabs, which the notification
+ * `type` filters; "Đã xử lý" and "Đánh dấu tất cả đã đọc" are the real mark-read
  * writes. Snooze, mute, approvals and replies have no producer and are drawn
  * inert with the reason.
  */
@@ -73,6 +74,7 @@ export function InboxPage() {
       now={now}
       state={state}
       scope={null}
+      tabsAvailable={{ mention: true, assigned: true }}
       settingsHref={settingsHref}
       onOpenSettings={openSettings}
       onMarkRead={(id) =>

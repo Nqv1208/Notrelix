@@ -63,7 +63,7 @@ function CellDue({
     return (
       <span
         data-f="du"
-        className="block text-crumb leading-[1.35] text-muted-foreground tabular-nums"
+        className="block text-crumb leading-[1.35] whitespace-nowrap text-muted-foreground tabular-nums"
       >
         <span className="sr-only">{copy.list.doneLabel}</span>
         {completedAt.time ??
@@ -89,7 +89,7 @@ function CellDue({
     <span
       data-f="du"
       className={cn(
-        "block text-crumb leading-[1.35] tabular-nums",
+        "block text-crumb leading-[1.35] whitespace-nowrap tabular-nums",
         words.tone === "over" && "font-semibold text-danger-text",
         words.tone === "today" && "font-semibold text-warning-text",
         words.tone === "normal" && "text-muted-foreground",
