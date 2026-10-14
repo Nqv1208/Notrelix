@@ -65,6 +65,10 @@ export const ReadOnly: Story = {
   },
   tags: ["fui-surface--wm.kanban.board", "fui-state--ReadOnly"],
 };
+export const LaneLimit: Story = {
+  args: { lanes: erpKanbanDenseLanes(), laneCardLimit: 2 },
+  tags: ["fui-surface--wm.kanban.board", "fui-state--EdgeData"],
+};
 export const English: Story = {
   args: {
     copy: kanbanLaneCopy("en"),

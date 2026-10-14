@@ -16,6 +16,7 @@ import type {
 import {
   WorkManagementTestScope,
   applyItemStatus,
+  defaultTableViewConfig,
   type WorkManagementServices,
 } from "@notrelix/work-management-state";
 import {
@@ -70,6 +71,8 @@ function fakeServices(
       cardId: string,
       optionId: string,
     ) => Promise<void> | undefined;
+    /** The view's saved config (absent: the view has never been saved). */
+    viewConfig?: Record<string, unknown>;
   } = {},
 ) {
   // The fake server keeps written statuses, so refetches see them.
@@ -101,7 +104,13 @@ function fakeServices(
     duplicateCard: vi.fn(async () => undefined),
   };
   const services = {
-    boards: { getFullBoard: vi.fn(async () => board) },
+    boards: {
+      getFullBoard: vi.fn(async () => board),
+      getBoardView: vi.fn(async () => ({
+        viewMode: "kanban",
+        viewConfig: { ...defaultTableViewConfig, ...overrides.viewConfig },
+      })),
+    },
     access: { getBoardAccess: vi.fn(async () => access) },
     cards,
     comments: { getCardUpdates: vi.fn(async () => []) },
@@ -534,5 +543,84 @@ describe("KanbanView on the ERP board", () => {
       name: "Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP",
     });
     expect(document.querySelector("[data-kanban-board] [inert]")).toBeNull();
+  });
+});
+
+describe("KanbanView settings of the view", () => {
+  const editor = (): BoardAccess => ({
+    ...erpOwnerAccess(),
+    myLevel: "editor",
+  });
+
+  it("shows the add-status slot to an editor while the view allows editors", async () => {
+    renderKanban(editor());
+    await ready();
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Thêm trạng thái" }),
+      ).toBeTruthy(),
+    );
+  });
+
+  it("hides the add and edit status controls from an editor when only managers may manage statuses", async () => {
+    const { cards, services } = renderKanban(
+      editor(),
+      {},
+      {
+        viewConfig: { statusManageRoles: ["manager"] },
+      },
+    );
+    await ready();
+    // The saved view has been read before judging what is hidden.
+    await waitFor(() =>
+      expect(services.boards.getBoardView).toHaveBeenCalled(),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    // The editor still adds items: only the status controls are shaped.
+    await waitFor(() =>
+      expect(
+        within(lane("Đang làm")).getByRole("button", {
+          name: "Thêm vào Đang làm",
+        }),
+      ).toBeTruthy(),
+    );
+    expect(
+      screen.queryByRole("button", { name: "Thêm trạng thái" }),
+    ).toBeNull();
+    fireEvent.click(
+      within(lane("Đang làm")).getByRole("button", {
+        name: "Tuỳ chọn cột Đang làm",
+      }),
+    );
+    expect(
+      screen.queryByRole("menuitem", { name: "Sửa trạng thái" }),
+    ).toBeNull();
+    expect(cards.createCard).not.toHaveBeenCalled();
+  });
+
+  it("never locks a manager out, even when the saved roles are empty", async () => {
+    renderKanban(
+      erpOwnerAccess(),
+      {},
+      { viewConfig: { statusManageRoles: [] } },
+    );
+    await ready();
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Thêm trạng thái" }),
+      ).toBeTruthy(),
+    );
+  });
+
+  it("shows as many cards per lane as the saved lane limit", async () => {
+    renderKanban(erpOwnerAccess(), {}, { viewConfig: { laneCardLimit: 2 } });
+    await ready();
+    await waitFor(() =>
+      expect(
+        within(lane("Cần làm")).getByRole("button", {
+          name: "Xem thêm 4 việc",
+        }),
+      ).toBeTruthy(),
+    );
   });
 });

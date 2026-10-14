@@ -43,6 +43,26 @@ export const en = {
   archiveFailed: "Couldn't archive “{{title}}”.",
   linkCopied: "Item link copied",
   linkCopyFailed: "Couldn't copy the item link",
+  /** Live announcement after Alt+Arrow moves the focused card. */
+  keyboardMoved: "Moved “{{title}}” to {{lane}}",
+  keyboardReordered:
+    "Moved “{{title}}” to position {{position}} of {{total}} in {{lane}}",
+  /** Settings of the Kanban view (board header "Settings"). */
+  settingsTitle: "Kanban settings",
+  settingsDescription: "These apply to everyone who opens this Kanban view.",
+  settingsClose: "Close",
+  laneLimitLabel: "Items shown per column",
+  laneLimitHint: "From 1 to 20. The rest sit behind “Show more”.",
+  laneLimitDecrease: "Show fewer items per column",
+  laneLimitIncrease: "Show more items per column",
+  statusRolesLabel: "Who can add and edit statuses",
+  statusRolesHint:
+    "This only shows or hides the controls; the server still decides every change.",
+  roleManager: "Managers (always)",
+  roleEditor: "Editors",
+  keyboardMoveLabel: "Move cards with the keyboard",
+  keyboardMoveHint:
+    "Alt + arrow keys move the focused card between columns and within a column.",
 };
 
 export type KanbanLaneCopy = typeof en;
@@ -80,6 +100,24 @@ export const vi: KanbanLaneCopy = {
   archiveFailed: "Không lưu trữ được “{{title}}”.",
   linkCopied: "Đã sao chép liên kết",
   linkCopyFailed: "Không sao chép được liên kết",
+  keyboardMoved: "Đã chuyển “{{title}}” sang {{lane}}",
+  keyboardReordered:
+    "Đã chuyển “{{title}}” đến vị trí {{position}}/{{total}} trong {{lane}}",
+  settingsTitle: "Thiết lập Kanban",
+  settingsDescription: "Áp dụng cho mọi người mở chế độ xem Kanban này.",
+  settingsClose: "Đóng",
+  laneLimitLabel: "Số việc hiện trong mỗi cột",
+  laneLimitHint: "Từ 1 đến 20. Phần còn lại nằm sau “Xem thêm”.",
+  laneLimitDecrease: "Hiện ít việc hơn trong mỗi cột",
+  laneLimitIncrease: "Hiện nhiều việc hơn trong mỗi cột",
+  statusRolesLabel: "Ai được thêm và sửa trạng thái",
+  statusRolesHint:
+    "Chỉ ẩn hoặc hiện nút thao tác; máy chủ vẫn quyết định mọi thay đổi.",
+  roleManager: "Quản lý (luôn có)",
+  roleEditor: "Người chỉnh sửa",
+  keyboardMoveLabel: "Chuyển thẻ bằng bàn phím",
+  keyboardMoveHint:
+    "Alt + phím mũi tên chuyển thẻ đang chọn giữa các cột và trong cột.",
 };
 
 export function kanbanLaneCopy(locale: "vi" | "en"): KanbanLaneCopy {

@@ -11,6 +11,70 @@ export const sortConfigSchema = z.object({
   direction: z.enum(["asc", "desc"]),
 });
 
+/** Cards a Kanban lane shows before "Xem thêm N việc" (the former constant). */
+export const DEFAULT_KANBAN_LANE_CARD_LIMIT = 4;
+export const MIN_KANBAN_LANE_CARD_LIMIT = 1;
+export const MAX_KANBAN_LANE_CARD_LIMIT = 20;
+
+/** Board access levels that may be given the Kanban status controls. */
+export const kanbanStatusManageRoleSchema = z.enum(["manager", "editor"]);
+export type KanbanStatusManageRole = z.infer<
+  typeof kanbanStatusManageRoleSchema
+>;
+export const DEFAULT_KANBAN_STATUS_MANAGE_ROLES: readonly KanbanStatusManageRole[] =
+  ["manager", "editor"];
+
+/**
+ * Manager is always in: a manager can never be locked out of the status
+ * controls. Order is canonical (manager first), duplicates dropped.
+ */
+export function normalizeStatusManageRoles(
+  roles: readonly KanbanStatusManageRole[] | undefined,
+): KanbanStatusManageRole[] {
+  const editor = (roles ?? DEFAULT_KANBAN_STATUS_MANAGE_ROLES).includes(
+    "editor",
+  );
+  return editor ? ["manager", "editor"] : ["manager"];
+}
+
+/** The Kanban settings of a view, every one resolved to a usable value. */
+export interface KanbanViewSettings {
+  readonly laneCardLimit: number;
+  readonly statusManageRoles: readonly KanbanStatusManageRole[];
+  readonly keyboardMove: boolean;
+}
+
+/**
+ * The Kanban settings of a saved view config. A config saved before these
+ * keys existed, or one carrying a bad value, gives today's behaviour: four
+ * cards per lane, managers and editors manage statuses, keyboard move on.
+ * A limit outside 1..20 is clamped.
+ */
+export function resolveKanbanSettings(config: {
+  readonly laneCardLimit?: unknown;
+  readonly statusManageRoles?: unknown;
+  readonly keyboardMove?: unknown;
+}): KanbanViewSettings {
+  const limit = config.laneCardLimit;
+  const roles = z
+    .array(kanbanStatusManageRoleSchema)
+    .safeParse(config.statusManageRoles);
+  return {
+    laneCardLimit:
+      typeof limit === "number" && Number.isFinite(limit)
+        ? Math.min(
+            MAX_KANBAN_LANE_CARD_LIMIT,
+            Math.max(MIN_KANBAN_LANE_CARD_LIMIT, Math.round(limit)),
+          )
+        : DEFAULT_KANBAN_LANE_CARD_LIMIT,
+    statusManageRoles: normalizeStatusManageRoles(
+      roles.success ? roles.data : undefined,
+    ),
+    keyboardMove:
+      typeof config.keyboardMove === "boolean" ? config.keyboardMove : true,
+  };
+}
+
 export const viewConfigSchema = z.object({
   groupBy: z.string(),
   hiddenFields: z.array(z.string()),
@@ -21,6 +85,17 @@ export const viewConfigSchema = z.object({
   sortBy: z.array(sortConfigSchema),
   density: z.enum(["compact", "comfortable"]).default("comfortable"),
   searchQuery: z.string().optional(),
+  laneCardLimit: z
+    .number()
+    .int()
+    .min(MIN_KANBAN_LANE_CARD_LIMIT)
+    .max(MAX_KANBAN_LANE_CARD_LIMIT)
+    .default(DEFAULT_KANBAN_LANE_CARD_LIMIT),
+  statusManageRoles: z
+    .array(kanbanStatusManageRoleSchema)
+    .default([...DEFAULT_KANBAN_STATUS_MANAGE_ROLES])
+    .transform(normalizeStatusManageRoles),
+  keyboardMove: z.boolean().default(true),
 });
 
 export type ViewConfigInput = z.infer<typeof viewConfigSchema>;

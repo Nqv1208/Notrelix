@@ -1,4 +1,7 @@
-import type { BoardAccessLevel } from "@notrelix/work-management-core";
+import type {
+  BoardAccessLevel,
+  KanbanStatusManageRole,
+} from "@notrelix/work-management-core";
 import type { TaskDetailCapabilities } from "../card-detail/task-detail-types";
 
 const FULL: TaskDetailCapabilities = {
@@ -32,4 +35,21 @@ export function boardCapabilities(
   if (level === "editor" || level === "manager") return FULL;
   if (level === "commenter") return { ...READ_ONLY, canComment: true };
   return READ_ONLY;
+}
+
+/**
+ * Whether the Kanban shows the add / edit status controls: the viewer can edit
+ * the board AND their level is one of the view's `statusManageRoles`. This only
+ * shapes the controls; the server still decides every write, so a hidden
+ * control is not a permission and a shown one is not a grant.
+ */
+export function canManageStatuses(
+  level: BoardAccessLevel | null | undefined,
+  roles: readonly KanbanStatusManageRole[],
+): boolean {
+  if (!boardCapabilities(level).canEditFields) return false;
+  return (
+    (level === "manager" && roles.includes("manager")) ||
+    (level === "editor" && roles.includes("editor"))
+  );
 }

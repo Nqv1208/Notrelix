@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -12,11 +12,15 @@ import {
   type DragStartEvent,
   type DropAnimation,
 } from "@dnd-kit/core";
-import type { Card, KanbanStatusLane } from "@notrelix/work-management-core";
+import {
+  DEFAULT_KANBAN_LANE_CARD_LIMIT,
+  type Card,
+  type KanbanStatusLane,
+} from "@notrelix/work-management-core";
 import type { StatusOptionDraft } from "../../status-option/status-option-form";
 import type { StatusOptionFormCopy } from "../../status-option/status-option-form.copy";
 import { KanbanAddLane } from "./kanban-add-lane";
-import { pluralCopy, type KanbanCardCopy } from "./kanban-card.copy";
+import { fillCopy, pluralCopy, type KanbanCardCopy } from "./kanban-card.copy";
 import { KanbanCardOverlay } from "./kanban-card";
 import { prefersReducedMotion } from "./kanban-chrome";
 import {
@@ -30,8 +34,10 @@ import {
   getKanbanDrop,
   kanbanLaneKey,
   laneKeyOfCard,
+  moveCardByKey,
   moveCardInArrangement,
   type KanbanArrangement,
+  type KanbanMoveDirection,
   type KanbanGroupOrder,
   type KanbanLaneDrop,
 } from "./kanban-dnd";
@@ -80,6 +86,13 @@ export interface KanbanBoardProps {
   onUpdateLane?: (lane: KanbanStatusLane, draft: StatusOptionDraft) => void;
   /** A lane create is in flight. */
   lanePending?: boolean;
+  /** Cards a lane shows before "Xem thêm N việc" (the view's `laneCardLimit`). */
+  laneCardLimit?: number;
+  /**
+   * Alt+Arrow moves the focused card (the view's `keyboardMove`); it also
+   * needs `canDrag`. Off: those keys do nothing.
+   */
+  keyboardMove?: boolean;
 }
 
 function laneKey(lane: KanbanStatusLane): string {
@@ -105,8 +118,10 @@ function dropAnimation(): DropAnimation | null {
  * touch: after a long press): a copy of it follows the pointer while the card
  * stays in the lane it would be dropped in as a gap of its own height, the
  * lane under the pointer is outlined and the other cards make room. Escape
- * puts everything back. The keyboard alternative is the item sheet's status
- * pill.
+ * puts everything back. The keyboard alternatives are the item sheet's status
+ * pill and, when the view allows it, Alt+Arrow on a focused card: it goes
+ * through the same drop as the pointer, is announced in a live region and
+ * keeps focus on the card.
  */
 export function KanbanBoard({
   lanes,
@@ -128,6 +143,8 @@ export function KanbanBoard({
   onCreateLane,
   onUpdateLane,
   lanePending = false,
+  laneCardLimit = DEFAULT_KANBAN_LANE_CARD_LIMIT,
+  keyboardMove = true,
 }: KanbanBoardProps) {
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
   const [hidden, setHidden] = useState<ReadonlySet<string>>(new Set());
@@ -143,6 +160,12 @@ export function KanbanBoard({
     }),
   );
   const none = useSensors();
+  const lanesRef = useRef<HTMLDivElement | null>(null);
+  // The card Alt+Arrow just moved: shown even past the lane limit and given
+  // focus again once it is in its new lane (it is a new element there).
+  const [movedId, setMovedId] = useState<string | null>(null);
+  const refocusId = useRef<string | null>(null);
+  const [announcement, setAnnouncement] = useState("");
 
   const cardsById = useMemo(() => {
     const map = new Map<string, Card>();
@@ -254,6 +277,44 @@ export function KanbanBoard({
     }
   }
 
+  function handleMoveByKey(cardId: string, direction: KanbanMoveDirection) {
+    if (!canDrag || !keyboardMove || drag) return;
+    const keys = shownLanes
+      .filter(
+        (lane) => !hidden.has(laneKey(lane)) && !collapsed.has(laneKey(lane)),
+      )
+      .map(laneKey);
+    const base = settling?.arrangement ?? arrangeKanbanLanes(lanes);
+    const moved = moveCardByKey(base, keys, cardId, direction);
+    if (!moved) return;
+    // The same read of a finished move as a pointer drop.
+    const drop = getKanbanDrop({
+      lanes,
+      arrangement: moved.arrangement,
+      cardId,
+      groups: groupOrder,
+    });
+    if (!drop) return;
+    const target = lanes.find((lane) => laneKey(lane) === moved.laneKey);
+    const laneLabel =
+      target?.name || (groupKind === "status" ? copy.noStatus : copy.noValue);
+    const title = cardsById.get(cardId)?.title ?? "";
+    setAnnouncement(
+      direction === "left" || direction === "right"
+        ? fillCopy(copy.keyboardMoved, { title, lane: laneLabel })
+        : fillCopy(copy.keyboardReordered, {
+            title,
+            lane: laneLabel,
+            position: moved.index + 1,
+            total: moved.arrangement.get(moved.laneKey)?.length ?? 0,
+          }),
+    );
+    refocusId.current = cardId;
+    setMovedId(cardId);
+    setSettling({ cardId, arrangement: moved.arrangement });
+    onDropCard(drop);
+  }
+
   const toggle = (setter: typeof setCollapsed) => (key: string, on: boolean) =>
     setter((current) => {
       const next = new Set(current);
@@ -292,6 +353,16 @@ export function KanbanBoard({
     const timer = window.setTimeout(() => setSettling(null), 1500);
     return () => window.clearTimeout(timer);
   }, [settling, lanes]);
+  useEffect(() => {
+    const cardId = refocusId.current;
+    if (!cardId) return;
+    const target = Array.from(
+      lanesRef.current?.querySelectorAll<HTMLElement>("[data-card-id]") ?? [],
+    ).find((element) => element.dataset.cardId === cardId);
+    if (!target) return;
+    refocusId.current = null;
+    if (document.activeElement !== target) target.focus();
+  });
   const overlayCard = drag ? cardsById.get(drag.cardId) : undefined;
   const currentLaneKey = drag
     ? laneKeyOfCard(drag.arrangement, drag.cardId)
@@ -327,6 +398,12 @@ export function KanbanBoard({
       onDragCancel={() => setDrag(null)}
     >
       <div
+        ref={lanesRef}
+        onFocus={(event) => {
+          // Focus left the moved card: it no longer needs to stay shown.
+          if (movedId && event.target.getAttribute("data-card-id") !== movedId)
+            setMovedId(null);
+        }}
         data-kanban-lanes=""
         data-dragging={drag ? "" : undefined}
         className="flex min-w-min items-start gap-3"
@@ -350,7 +427,11 @@ export function KanbanBoard({
               canAdd={canAdd}
               canDrag={canDrag}
               dropTarget={drag !== null && currentLaneKey === key}
-              draggedCardId={drag?.cardId}
+              laneCardLimit={laneCardLimit}
+              draggedCardId={drag?.cardId ?? movedId ?? undefined}
+              onMoveCardByKey={
+                canDrag && keyboardMove ? handleMoveByKey : undefined
+              }
               edit={
                 canManageLanes && onUpdateLane && original
                   ? {
@@ -394,6 +475,14 @@ export function KanbanBoard({
             )}
           </button>
         ) : null}
+      </div>
+      <div
+        role="status"
+        aria-live="polite"
+        data-kanban-announcer=""
+        className="sr-only"
+      >
+        {announcement}
       </div>
       <DragOverlay dropAnimation={dropAnimation()} zIndex={1500}>
         {overlayCard ? (

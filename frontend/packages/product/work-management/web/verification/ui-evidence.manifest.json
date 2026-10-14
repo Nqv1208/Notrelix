@@ -19,6 +19,11 @@
         "reason": "Stateful view adapter owning the calendar board query state, route filter and writes, composing the registered calendar surface."
       },
       {
+        "path": "src/components/views/kanban/kanban-settings-dialog.tsx",
+        "category": "container",
+        "reason": "Dialog hosting the Kanban settings panel and storing the changed keys on the view config through useBoardView."
+      },
+      {
         "path": "src/components/views/kanban/kanban-view.tsx",
         "category": "container",
         "reason": "Stateful view adapter owning kanban board query state and composing registered board surfaces."
@@ -468,7 +473,8 @@
         "src/components/views/kanban/kanban-add-card.tsx",
         "src/components/views/kanban/kanban-add-lane.tsx",
         "src/components/views/kanban/kanban-card-detail-panel.tsx",
-        "src/components/views/kanban/kanban-empty-state.tsx"
+        "src/components/views/kanban/kanban-empty-state.tsx",
+        "src/components/views/kanban/kanban-settings-panel.tsx"
       ],
       "stories": [
         {
@@ -536,6 +542,26 @@
         {
           "id": "work-management-kanban-board--read-only",
           "state": "ReadOnly",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-kanban-board--lane-limit",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-kanban-settings-panel--default",
+          "state": "EdgeData",
           "visualTargets": [
             {
               "viewport": "desktop",
@@ -615,6 +641,18 @@
         {
           "id": "add-lane",
           "testFile": "src/components/views/kanban/__tests__/kanban-board.interaction.component.test.tsx"
+        },
+        {
+          "id": "lane-limit",
+          "testFile": "src/components/views/kanban/__tests__/kanban-board.interaction.component.test.tsx"
+        },
+        {
+          "id": "keyboard-move",
+          "testFile": "src/components/views/kanban/__tests__/kanban-board.interaction.component.test.tsx"
+        },
+        {
+          "id": "settings",
+          "testFile": "src/components/views/kanban/__tests__/kanban-settings-panel.interaction.component.test.tsx"
         }
       ]
     },

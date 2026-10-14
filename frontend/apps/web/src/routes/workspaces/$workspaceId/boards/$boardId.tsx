@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { useParams, useSearch, useNavigate } from "@tanstack/react-router";
 import {
   BoardHeaderCopyContext,
   BoardHeaderDataContext,
   BoardLayoutShell,
   BoardWorkspaceViewContent,
+  KanbanSettingsDialog,
   useBoardHeaderCopy,
 } from "@notrelix/work-management-web";
 import { useFullBoard } from "@notrelix/work-management-state";
@@ -29,6 +31,8 @@ export function BoardPage() {
 
   const { board } = useFullBoard(boardId, workspaceId);
   const headerCopy = useBoardHeaderCopy();
+  // The Kanban view's settings open from the header's "Thiết lập".
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const headerData = useBoardHeaderData(workspaceId, boardId, board);
 
   const handleViewChange = (newView: string) => {
@@ -83,6 +87,9 @@ export function BoardPage() {
           boardTitle={board?.title ?? headerCopy.untitledBoard}
           activeView={viewType}
           onViewChange={handleViewChange}
+          onOpenSettings={
+            viewType === "kanban" ? () => setSettingsOpen(true) : undefined
+          }
         >
           <BoardWorkspaceViewContent
             workspaceId={workspaceId}
@@ -96,6 +103,14 @@ export function BoardPage() {
             onGroupByChange={handleGroupByChange}
           />
         </BoardLayoutShell>
+        {viewType === "kanban" ? (
+          <KanbanSettingsDialog
+            boardId={boardId}
+            workspaceId={workspaceId}
+            open={settingsOpen}
+            onOpenChange={setSettingsOpen}
+          />
+        ) : null}
       </BoardHeaderDataContext.Provider>
     </BoardHeaderCopyContext.Provider>
   );

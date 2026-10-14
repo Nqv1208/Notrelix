@@ -23,6 +23,11 @@ interface BoardToolbarProps {
    * `BoardHeaderCopyContext` by the board route.
    */
   copy?: BoardHeaderCopy;
+  /**
+   * Opens the settings of the active view. Given: the header's Settings
+   * button is enabled and calls it (it wins over the header data's own).
+   */
+  onOpenSettings?: () => void;
 }
 
 /**
@@ -37,6 +42,7 @@ export function BoardToolbar({
   onViewChange,
   header: headerProp,
   copy: copyProp,
+  onOpenSettings,
 }: BoardToolbarProps) {
   const contextCopy = useContext(BoardHeaderCopyContext);
   const contextHeader = useContext(BoardHeaderDataContext);
@@ -44,7 +50,12 @@ export function BoardToolbar({
   const header = headerProp ?? contextHeader;
   return (
     <div className="flex flex-col">
-      <BoardHeaderSurface title={boardTitle} copy={copy} {...header} />
+      <BoardHeaderSurface
+        title={boardTitle}
+        copy={copy}
+        {...header}
+        {...(onOpenSettings ? { onOpenSettings } : {})}
+      />
       <div
         className={cn(
           // One height for every view, so switching views moves nothing: the

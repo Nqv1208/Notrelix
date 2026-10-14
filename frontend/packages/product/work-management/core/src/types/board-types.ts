@@ -41,6 +41,12 @@ export interface ViewConfig {
   sortBy: SortConfig[];
   density: TableDensity;
   searchQuery?: string;
+  /** Kanban: cards a lane shows before "Xem thêm N việc" (1..20, default 4). */
+  laneCardLimit?: number;
+  /** Kanban: board levels that see the status controls (manager is always in). */
+  statusManageRoles?: Array<"manager" | "editor">;
+  /** Kanban: Alt+Arrow moves the focused card (default on). */
+  keyboardMove?: boolean;
 }
 
 export interface FilterConfig {

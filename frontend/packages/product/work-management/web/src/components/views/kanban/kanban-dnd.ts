@@ -229,3 +229,48 @@ export function getKanbanDrop(input: {
     ...neighbours,
   };
 }
+
+/** Alt+Arrow directions: lanes (left, right) and places in a lane (up, down). */
+export type KanbanMoveDirection = "left" | "right" | "up" | "down";
+
+/**
+ * Where Alt+Arrow puts a card, as the arrangement a pointer drop would have
+ * made (so `getKanbanDrop` reads it the same way). `laneKeys` are the lanes in
+ * the order shown. Left and right go to the next lane that has a value (the
+ * lane without one is never a target) at the card's own place, clamped; up
+ * and down move one place inside the lane. `null`: nowhere to go.
+ */
+export function moveCardByKey(
+  arrangement: KanbanArrangement,
+  laneKeys: readonly string[],
+  cardId: string,
+  direction: KanbanMoveDirection,
+): { arrangement: KanbanArrangement; laneKey: string; index: number } | null {
+  const from = laneKeyOfCard(arrangement, cardId);
+  if (from === undefined) return null;
+  const ids = arrangement.get(from) ?? [];
+  const index = ids.indexOf(cardId);
+  let laneKey = from;
+  let at = index;
+  if (direction === "up" || direction === "down") {
+    at = index + (direction === "up" ? -1 : 1);
+    if (at < 0 || at >= ids.length) return null;
+  } else {
+    const step = direction === "left" ? -1 : 1;
+    let cursor = laneKeys.indexOf(from) + step;
+    while (cursor >= 0 && cursor < laneKeys.length) {
+      const key = laneKeys[cursor]!;
+      if (key !== "none" && arrangement.has(key)) {
+        laneKey = key;
+        break;
+      }
+      cursor += step;
+    }
+    if (laneKey === from) return null;
+    at = Math.min(index, (arrangement.get(laneKey) ?? []).length);
+  }
+  const next = moveCardInArrangement(arrangement, cardId, laneKey, at);
+  return next === arrangement
+    ? null
+    : { arrangement: next, laneKey, index: at };
+}

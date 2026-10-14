@@ -6,6 +6,8 @@ interface BoardLayoutShellProps {
   boardTitle: string;
   activeView: string;
   onViewChange: (viewType: string) => void;
+  /** Opens the active view's settings; absent: Settings stays disabled. */
+  onOpenSettings?: () => void;
   children: React.ReactNode;
 }
 
@@ -15,6 +17,7 @@ export function BoardLayoutShell({
   boardTitle,
   activeView,
   onViewChange,
+  onOpenSettings,
   children,
 }: BoardLayoutShellProps) {
   return (
@@ -23,6 +26,7 @@ export function BoardLayoutShell({
         boardTitle={boardTitle}
         activeView={activeView}
         onViewChange={onViewChange}
+        onOpenSettings={onOpenSettings}
       />
       <div className="flex-1 min-h-0 overflow-hidden">{children}</div>
     </div>

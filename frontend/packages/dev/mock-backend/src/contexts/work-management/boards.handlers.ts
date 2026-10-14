@@ -456,6 +456,31 @@ function projectBoardAccess(
   };
 }
 
+/**
+ * The mock world is rebuilt on every page load. A view's saved config (column
+ * widths, Kanban settings) is kept in the browser's session storage so a
+ * reload shows what was saved, like the real backend's stored view would.
+ * Outside a browser (node tests) there is no storage and nothing is kept.
+ */
+const VIEW_CONFIG_KEY = (boardId: string) =>
+  `notrelix-mock-board-view-config:${boardId}`;
+
+function readKeptViewConfig(boardId: string): string | null {
+  try {
+    return globalThis.sessionStorage?.getItem(VIEW_CONFIG_KEY(boardId)) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function keepViewConfig(boardId: string, config: string): void {
+  try {
+    globalThis.sessionStorage?.setItem(VIEW_CONFIG_KEY(boardId), config);
+  } catch {
+    // Storage blocked: the view lasts until the page reloads.
+  }
+}
+
 export const boardsOperations = [
   // ─── GET /workspaces/:workspaceId/boards ──────────────────────────────────
 
@@ -632,7 +657,7 @@ export const boardsOperations = [
       const v = store.getBoardView(params.id);
       return ok<BoardViewDtoApi>({
         viewMode: v?.viewMode ?? "table",
-        config: v?.viewConfig ?? "{}",
+        config: readKeptViewConfig(params.id) ?? v?.viewConfig ?? "{}",
         filters: v?.filters ?? "{}",
       });
     },
@@ -666,6 +691,7 @@ export const boardsOperations = [
         data.config ?? "{}",
         data.filters,
       );
+      keepViewConfig(params.id, data.config ?? "{}");
       return ok<void>(undefined);
     },
   }),

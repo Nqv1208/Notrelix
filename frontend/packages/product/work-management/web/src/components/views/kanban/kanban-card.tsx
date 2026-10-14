@@ -12,6 +12,7 @@ import {
 } from "./kanban-card.copy";
 import { prefersReducedMotion } from "./kanban-chrome";
 import { KANBAN_CARD_TYPE } from "./kanban-collision";
+import type { KanbanMoveDirection } from "./kanban-dnd";
 import {
   ITEM_LABEL_TONE_CLASS,
   identityMarkClass,
@@ -31,6 +32,13 @@ const DUE_CLASS: Readonly<Record<ItemDueState["kind"], string>> = {
   overdue: "bg-danger-subtle font-semibold text-danger-subtle-foreground",
   today: "bg-warning-subtle font-semibold text-warning-subtle-foreground",
   date: "font-medium text-meta-foreground",
+};
+
+const ALT_ARROW: Readonly<Record<string, KanbanMoveDirection | undefined>> = {
+  ArrowLeft: "left",
+  ArrowRight: "right",
+  ArrowUp: "up",
+  ArrowDown: "down",
 };
 
 const CARD_CLASS =
@@ -321,6 +329,7 @@ export function KanbanCard({
   copy = defaultCopy,
   selected = false,
   dragDisabled = false,
+  onMoveKey,
   onOpenDetails,
 }: {
   card: Card;
@@ -335,6 +344,11 @@ export function KanbanCard({
   selected?: boolean;
   /** No pointer drag (a read-only board); the card still opens. */
   dragDisabled?: boolean;
+  /**
+   * Alt+ArrowLeft/Right/Up/Down asks to move the card (to the adjacent lane,
+   * or within its lane). Absent: those keys do nothing.
+   */
+  onMoveKey?: (cardId: string, direction: KanbanMoveDirection) => void;
   onOpenDetails: (cardId: string) => void;
 }) {
   const { listeners, setNodeRef, transform, transition, isDragging } =
@@ -391,8 +405,19 @@ export function KanbanCard({
         aria-label={card.title}
         aria-describedby={describedBy || undefined}
         data-card-id={card.id}
+        aria-keyshortcuts={
+          onMoveKey
+            ? "Alt+ArrowLeft Alt+ArrowRight Alt+ArrowUp Alt+ArrowDown"
+            : undefined
+        }
         onClick={() => onOpenDetails(card.id)}
         onKeyDown={(event) => {
+          const direction = onMoveKey ? ALT_ARROW[event.key] : undefined;
+          if (direction && event.altKey && !event.ctrlKey && !event.metaKey) {
+            event.preventDefault();
+            onMoveKey?.(card.id, direction);
+            return;
+          }
           if (event.key === "Enter" || event.key === " ") {
             event.preventDefault();
             onOpenDetails(card.id);

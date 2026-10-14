@@ -370,3 +370,84 @@ describe("KanbanBoard status lanes", () => {
     expect(document.querySelector("[data-kanban-drag-overlay]")).toBeNull();
   });
 });
+
+describe("KanbanBoard lane limit", () => {
+  it("FUI[wm.kanban.board:lane-limit] shows as many cards as the lane limit and counts the rest in Xem thêm", () => {
+    const { unmount } = renderBoard({ laneCardLimit: 2 });
+    const todo = laneRegion("Cần làm");
+    expect(cardButtons(todo)).toHaveLength(2);
+    expect(
+      within(todo).getByRole("button", { name: "Xem thêm 4 việc" }),
+    ).toBeTruthy();
+    unmount();
+    renderBoard({ laneCardLimit: 20 });
+    expect(cardButtons(laneRegion("Cần làm"))).toHaveLength(6);
+    expect(screen.queryByRole("button", { name: /Xem thêm/ })).toBeNull();
+  });
+});
+
+function announcer(): string {
+  return document.querySelector("[data-kanban-announcer]")?.textContent ?? "";
+}
+
+describe("KanbanBoard keyboard move", () => {
+  function altKey(button: HTMLElement, key: string, init = {}) {
+    fireEvent.keyDown(button, { key, altKey: true, ...init });
+  }
+
+  it("FUI[wm.kanban.board:keyboard-move] Alt+ArrowRight sends the focused card through the drop to the next lane, announces it and keeps focus", async () => {
+    const { onDropCard } = renderBoard();
+    const first = cardButtons(laneRegion("Cần làm"))[0]!;
+    const id = first.dataset.cardId!;
+    const title = first.getAttribute("aria-label")!;
+    first.focus();
+    altKey(first, "ArrowRight");
+    expect(onDropCard).toHaveBeenCalledTimes(1);
+    const drop = onDropCard.mock.calls[0]![0];
+    expect(drop.cardId).toBe(id);
+    expect(["status", "place"]).toContain(drop.kind);
+    expect(drop.fromOptionId).not.toBe(drop.optionId);
+    expect(announcer()).toBe(`Đã chuyển “${title}” sang Đang làm`);
+    // The card is now in the next lane and keeps focus.
+    const moved = within(laneRegion("Đang làm"))
+      .getAllByRole("button")
+      .find((button) => button.dataset.cardId === id);
+    expect(moved).toBeTruthy();
+    await waitFor(() => expect(document.activeElement).toBe(moved));
+  });
+
+  it("does nothing at the first lane going left, without Alt, or with the setting off", () => {
+    const { onDropCard, unmount } = renderBoard();
+    const first = cardButtons(laneRegion("Cần làm"))[0]!;
+    altKey(first, "ArrowLeft");
+    fireEvent.keyDown(first, { key: "ArrowRight" });
+    expect(onDropCard).not.toHaveBeenCalled();
+    unmount();
+    const off = renderBoard({ keyboardMove: false });
+    const card = cardButtons(laneRegion("Cần làm"))[0]!;
+    altKey(card, "ArrowRight");
+    expect(card.hasAttribute("aria-keyshortcuts")).toBe(false);
+    expect(off.onDropCard).not.toHaveBeenCalled();
+  });
+
+  it("does nothing when the viewer cannot move cards", () => {
+    const { onDropCard } = renderBoard({ canDrag: false });
+    altKey(cardButtons(laneRegion("Cần làm"))[0]!, "ArrowRight");
+    expect(onDropCard).not.toHaveBeenCalled();
+  });
+
+  it("Alt+ArrowDown reorders inside the lane through the same drop, announcing the place", () => {
+    const { onDropCard } = renderBoard();
+    const lane = laneRegion("Cần làm");
+    const buttons = cardButtons(lane);
+    for (const button of buttons.slice(0, -1)) {
+      altKey(button, "ArrowDown");
+      if (onDropCard.mock.calls.length > 0) break;
+    }
+    expect(onDropCard).toHaveBeenCalled();
+    expect(onDropCard.mock.calls[0]![0].kind).toBe("reorder");
+    expect(announcer()).toMatch(
+      /^Đã chuyển “.+” đến vị trí \d+\/6 trong Cần làm$/,
+    );
+  });
+});

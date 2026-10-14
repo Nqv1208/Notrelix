@@ -17,6 +17,7 @@ import {
   cn,
 } from "@notrelix/ui-web";
 import {
+  DEFAULT_KANBAN_LANE_CARD_LIMIT,
   isOptimisticOptionId,
   type KanbanStatusLane,
   type WorkStatusCategory,
@@ -30,12 +31,13 @@ import { KanbanAddCard } from "./kanban-add-card";
 import { KanbanCard } from "./kanban-card";
 import { fillCopy, pluralCopy, type KanbanCardCopy } from "./kanban-card.copy";
 import { KANBAN_LANE_TYPE } from "./kanban-collision";
-import { kanbanLaneDropId, kanbanLaneKey } from "./kanban-dnd";
+import {
+  kanbanLaneDropId,
+  kanbanLaneKey,
+  type KanbanMoveDirection,
+} from "./kanban-dnd";
 import { kanbanColumnWidthClass } from "./kanban-layout";
 import type { KanbanLaneCopy } from "./kanban-lane.copy";
-
-/** Cards a lane shows before "Xem thêm N việc". */
-export const KANBAN_LANE_VISIBLE_CARDS = 4;
 
 /** Lane tint by status category; lanes without a category use the neutral tint. */
 const LANE_TINT_CLASS: Readonly<Record<WorkStatusCategory, string>> = {
@@ -80,8 +82,15 @@ export interface KanbanColumnProps {
   canDrag: boolean;
   /** The dragged card is over this lane: it is where the card would land. */
   dropTarget?: boolean;
-  /** The dragged card: it is always shown (the lane never hides it). */
+  /**
+   * Cards the lane shows before "Xem thêm N việc" (the view's
+   * `laneCardLimit`); the lane's own default is the stored default.
+   */
+  laneCardLimit?: number;
+  /** The dragged (or just moved) card: it is always shown (the lane never hides it). */
   draggedCardId?: string;
+  /** Alt+Arrow moves a card; absent when the view has it off or the viewer cannot move. */
+  onMoveCardByKey?: (cardId: string, direction: KanbanMoveDirection) => void;
   /** Rename and recolour from the lane menu; absent when the viewer cannot. */
   edit?: KanbanLaneEdit;
   collapsed: boolean;
@@ -97,7 +106,7 @@ export interface KanbanColumnProps {
  * One Kanban lane: the cards whose grouping value is the lane's option.
  * Header: dot, name, count (the lane's cards under the current filter) and
  * "Tuỳ chọn cột {lane}" (collapse or hide the lane on this view only). The
- * lane shows four cards, then "Xem thêm N việc"; the selected card is always
+ * lane shows `laneCardLimit` cards (four by default), then "Xem thêm N việc"; the selected card is always
  * shown. The lane is the drop target for a card dragged from another lane.
  */
 export function KanbanColumn({
@@ -112,7 +121,9 @@ export function KanbanColumn({
   canAdd,
   canDrag,
   dropTarget = false,
+  laneCardLimit = DEFAULT_KANBAN_LANE_CARD_LIMIT,
   draggedCardId,
+  onMoveCardByKey,
   edit,
   collapsed,
   openAddRequest,
@@ -150,12 +161,12 @@ export function KanbanColumn({
     : -1;
   const showAll =
     expanded ||
-    count <= KANBAN_LANE_VISIBLE_CARDS ||
-    selectedIndex >= KANBAN_LANE_VISIBLE_CARDS ||
-    draggedIndex >= KANBAN_LANE_VISIBLE_CARDS;
+    count <= laneCardLimit ||
+    selectedIndex >= laneCardLimit ||
+    draggedIndex >= laneCardLimit;
   const visibleCards = showAll
     ? lane.cards
-    : lane.cards.slice(0, KANBAN_LANE_VISIBLE_CARDS);
+    : lane.cards.slice(0, laneCardLimit);
   const hiddenCount = count - visibleCards.length;
   const tint = lane.category
     ? LANE_TINT_CLASS[lane.category]
@@ -343,6 +354,7 @@ export function KanbanColumn({
                 copy={cardCopy}
                 selected={card.id === selectedItemId}
                 dragDisabled={!canDrag}
+                onMoveKey={onMoveCardByKey}
                 onOpenDetails={onOpenDetails}
               />
             ))}
@@ -360,8 +372,7 @@ export function KanbanColumn({
         <button
           type="button"
           onClick={() => {
-            focusFirstRevealed.current =
-              lane.cards[KANBAN_LANE_VISIBLE_CARDS]?.id ?? null;
+            focusFirstRevealed.current = lane.cards[laneCardLimit]?.id ?? null;
             setExpanded(true);
           }}
           className="h-7.5 rounded-md bg-popover px-2 text-left dark:bg-card text-crumb font-medium text-muted-foreground hover:text-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focus-ring"

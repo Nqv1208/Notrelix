@@ -69,6 +69,9 @@ vi.mock("@notrelix/work-management-state", async (importOriginal) => {
     }));
   return {
     ...actual,
+    useBoardView: () => ({
+      viewConfig: actual.defaultTableViewConfig,
+    }),
     useBoardKanban: () => ({
       board: scenario.board,
       groups: columns.current,

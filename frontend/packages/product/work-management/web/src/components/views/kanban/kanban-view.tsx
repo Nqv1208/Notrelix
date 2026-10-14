@@ -12,6 +12,7 @@ import {
   dropUnknownFilterIds,
   useBoardAccess,
   useBoardKanban,
+  useBoardView,
   useCard,
   useCardActivity,
   useCardComments,
@@ -28,6 +29,7 @@ import {
 } from "@notrelix/work-management-state";
 import {
   generatePosition,
+  resolveKanbanSettings,
   type Board,
   type BoardGroup,
   type Card,
@@ -58,7 +60,10 @@ import { KanbanSkeleton } from "./kanban-skeleton";
 import { KanbanToolbar } from "./kanban-toolbar";
 import { KanbanUnavailableState } from "./kanban-unavailable-state";
 import { buildCardLink } from "./kanban-view-helpers";
-import { boardCapabilities } from "../../shared/board-capabilities";
+import {
+  boardCapabilities,
+  canManageStatuses,
+} from "../../shared/board-capabilities";
 import { useKanbanCardCopy } from "./use-kanban-card-copy";
 import { useKanbanLaneCopy } from "./use-kanban-lane-copy";
 import { useKanbanToolbarCopy } from "./use-kanban-toolbar-copy";
@@ -193,6 +198,19 @@ export function KanbanView({
   });
   const { access } = useBoardAccess(boardId, workspaceId);
   const capabilities = boardCapabilities(access?.myLevel);
+  // The view's Kanban settings (lane limit, who sees the status controls,
+  // keyboard move). A view saved without them gives today's behaviour. The
+  // role setting only shapes the controls: the server still decides every
+  // write, so a viewer the setting hides them from is not made safer by it.
+  const { viewConfig } = useBoardView(boardId, workspaceId);
+  const kanbanSettings = useMemo(
+    () => resolveKanbanSettings(viewConfig),
+    [viewConfig],
+  );
+  const showStatusControls = canManageStatuses(
+    access?.myLevel,
+    kanbanSettings.statusManageRoles,
+  );
   const duplicateCard = useDuplicateCard(boardId, workspaceId);
   const archiveCard = useArchiveCard(boardId, workspaceId, {
     onError: (_error, cardId) =>
@@ -509,13 +527,15 @@ export function KanbanView({
           onDropCard={handleDrop}
           onCreateItem={handleCreateItem}
           formCopy={
-            capabilities.canEditFields && kanban.groupByField
+            showStatusControls && kanban.groupByField
               ? statusFormCopy
               : undefined
           }
           onCreateLane={handleCreateLane}
           onUpdateLane={handleUpdateLane}
           lanePending={addOption.isPending}
+          laneCardLimit={kanbanSettings.laneCardLimit}
+          keyboardMove={kanbanSettings.keyboardMove}
         />
       </div>
 
