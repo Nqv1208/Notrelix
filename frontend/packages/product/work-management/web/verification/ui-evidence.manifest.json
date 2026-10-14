@@ -1873,7 +1873,8 @@
         "src/components/card-detail/task-detail-header.tsx",
         "src/components/card-detail/task-detail-tabs.tsx",
         "src/components/card-detail/task-updates-tab.tsx",
-        "src/components/card-detail/update-composer.tsx"
+        "src/components/card-detail/update-composer.tsx",
+        "src/components/shared/item-description.tsx"
       ],
       "stories": [
         {
