@@ -5,8 +5,8 @@ import { expect, test, type Page } from "@playwright/test";
  * keyboard, the settings (name, visibility, move, archive, delete), the first
  * steps of an empty department and what a member who does not manage the
  * department sees. The mock world resets on every page load, so each test
- * starts from the seeded departments (Engineering is Private with the Platform
- * folder inside, Accounting is Private, Marketing is open, Nhân sự is open and empty).
+ * starts from the seeded departments (Công nghệ is Private with the Platform
+ * folder inside, Kế toán is Private, Marketing is open, Nhân sự is open and empty).
  */
 const persona = process.env.VITE_MOCK_PERSONA ?? "owner";
 const scenario = process.env.VITE_MOCK_STATE ?? "default";
@@ -43,12 +43,12 @@ test.describe("Department page (owner)", () => {
   test("the Create menu works with a keyboard and gives focus back", async ({
     page,
   }) => {
-    await open(page, ENGINEERING, "Engineering");
+    await open(page, ENGINEERING, "Công nghệ");
     const trigger = create(page);
     await expect(trigger).toHaveAttribute("aria-expanded", "false");
     await trigger.focus();
     await page.keyboard.press("Enter");
-    const menu = page.getByRole("menu", { name: "Tạo mới trong Engineering" });
+    const menu = page.getByRole("menu", { name: "Tạo mới trong Công nghệ" });
     await expect(menu).toBeVisible();
     await expect(trigger).toHaveAttribute("aria-expanded", "true");
     const items = menu.getByRole("menuitem");
@@ -79,12 +79,12 @@ test.describe("Department page (owner)", () => {
   test("B and D create a Board and a Doc in the department", async ({
     page,
   }) => {
-    await open(page, ENGINEERING, "Engineering");
+    await open(page, ENGINEERING, "Công nghệ");
     await create(page).click();
     await page.keyboard.press("b");
     const board = page.getByRole("dialog", { name: "Bảng mới" });
     await expect(board).toBeVisible();
-    await expect(board.getByText(/Engineering/)).toBeVisible();
+    await expect(board.getByText(/Công nghệ/)).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(board).toBeHidden();
     await expect(create(page)).toBeFocused();
@@ -98,8 +98,8 @@ test.describe("Department page (owner)", () => {
   test("the settings icon and the tabs move between the sections", async ({
     page,
   }) => {
-    await open(page, ENGINEERING, "Engineering");
-    const tabs = page.getByRole("navigation", { name: "Engineering" });
+    await open(page, ENGINEERING, "Công nghệ");
+    const tabs = page.getByRole("navigation", { name: "Công nghệ" });
     await expect(
       tabs.getByRole("link", { name: /^Tổng quan/ }),
     ).toHaveAttribute("aria-current", "page");
@@ -118,7 +118,7 @@ test.describe("Department page (owner)", () => {
     await tabs.getByRole("link", { name: /^Thành viên/ }).click();
     await expect(page).toHaveURL(/tab=members/);
     await expect(
-      page.getByRole("table", { name: "Thành viên Engineering" }),
+      page.getByRole("table", { name: "Thành viên Công nghệ" }),
     ).toBeVisible();
     // Add members from the head goes to the same tab.
     await tabs.getByRole("link", { name: /^Tổng quan/ }).click();
@@ -129,9 +129,9 @@ test.describe("Department page (owner)", () => {
   test("Boards and Docs has no page of its own: the tab is inert with the reason", async ({
     page,
   }) => {
-    await open(page, ENGINEERING, "Engineering");
+    await open(page, ENGINEERING, "Công nghệ");
     const tab = page
-      .getByRole("navigation", { name: "Engineering" })
+      .getByRole("navigation", { name: "Công nghệ" })
       .getByText(/^Board và tài liệu/);
     await expect(tab).toHaveAttribute("aria-disabled", "true");
     await expect(tab).toHaveAttribute("title", /chưa có trang riêng/);
@@ -143,7 +143,7 @@ test.describe("Department page (owner)", () => {
   test("renaming saves, shows the new name and the sidebar follows", async ({
     page,
   }) => {
-    await open(page, `${ENGINEERING}?tab=settings`, "Engineering");
+    await open(page, `${ENGINEERING}?tab=settings`, "Công nghệ");
     const save = page.getByRole("button", { name: "Lưu", exact: true });
     await expect(save).toHaveAttribute("aria-disabled", "true");
     await page.getByRole("textbox", { name: "Tên phòng ban" }).fill("Kỹ thuật");
@@ -159,7 +159,7 @@ test.describe("Department page (owner)", () => {
   test("visibility is chosen with a click or the arrow keys and saved at once", async ({
     page,
   }) => {
-    await open(page, `${ENGINEERING}?tab=settings`, "Engineering");
+    await open(page, `${ENGINEERING}?tab=settings`, "Công nghệ");
     const radios = page.getByRole("radio");
     await expect(radios.nth(0)).toHaveAttribute("aria-checked", "true");
     await radios.nth(1).click();
@@ -176,7 +176,7 @@ test.describe("Department page (owner)", () => {
   test("Move opens the picker and Escape returns focus to the button", async ({
     page,
   }) => {
-    await open(page, `${ENGINEERING}?tab=settings`, "Engineering");
+    await open(page, `${ENGINEERING}?tab=settings`, "Công nghệ");
     const move = page.getByRole("button", { name: "Chuyển", exact: true });
     await move.click();
     const dialog = page.getByRole("dialog");
@@ -189,7 +189,7 @@ test.describe("Department page (owner)", () => {
   test("Archive is blocked while the department has content, with the reason", async ({
     page,
   }) => {
-    await open(page, `${ENGINEERING}?tab=settings`, "Engineering");
+    await open(page, `${ENGINEERING}?tab=settings`, "Công nghệ");
     const archive = page.getByRole("button", { name: "Lưu trữ", exact: true });
     await expect(archive).toHaveAttribute("aria-disabled", "true");
     await expect(page.getByText(/còn 1 phòng ban con/)).toBeVisible();
@@ -243,7 +243,7 @@ test.describe("Department page (owner)", () => {
   test("the keyboard order runs through the head and the tabs", async ({
     page,
   }) => {
-    await open(page, ENGINEERING, "Engineering");
+    await open(page, ENGINEERING, "Công nghệ");
     await page.getByRole("link", { name: "Thêm thành viên" }).focus();
     await page.keyboard.press("Tab");
     await expect(create(page)).toBeFocused();
@@ -254,7 +254,7 @@ test.describe("Department page (owner)", () => {
     await page.keyboard.press("Tab");
     await expect(
       page
-        .getByRole("navigation", { name: "Engineering" })
+        .getByRole("navigation", { name: "Công nghệ" })
         .getByRole("link", { name: /^Tổng quan/ }),
     ).toBeFocused();
   });
@@ -263,14 +263,14 @@ test.describe("Department page (owner)", () => {
 test.describe("Department page for a member who does not manage it", () => {
   test.skip(
     persona !== "member" || scenario !== "default" || faults !== "",
-    "Needs the Member persona (Jordan Lee, a Member of Engineering)",
+    "Needs the Member persona (Jordan Lee, a Member of Công nghệ)",
   );
   test.use({ viewport: { width: 1440, height: 900 } });
 
   test("offers Create but not Add members, Settings or sub-departments", async ({
     page,
   }) => {
-    await open(page, ENGINEERING, "Engineering");
+    await open(page, ENGINEERING, "Công nghệ");
     await expect(
       page.getByRole("link", { name: "Thêm thành viên" }),
     ).toHaveCount(0);
@@ -279,7 +279,7 @@ test.describe("Department page for a member who does not manage it", () => {
     ).toHaveCount(0);
     await expect(
       page
-        .getByRole("navigation", { name: "Engineering" })
+        .getByRole("navigation", { name: "Công nghệ" })
         .getByRole("link", { name: "Thiết lập" }),
     ).toHaveCount(0);
     await create(page).click();

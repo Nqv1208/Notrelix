@@ -120,7 +120,7 @@ test.describe("Real item page, Docs and command palette", () => {
     await expect(
       dialog.getByRole("option", { name: /Hướng dẫn đối chiếu ngân hàng/ }),
     ).toBeVisible();
-    await expect(dialog).toContainText("Accounting / Quy trình");
+    await expect(dialog).toContainText("Kế toán / Quy trình");
   });
 
   for (const width of [1440, 1280]) {

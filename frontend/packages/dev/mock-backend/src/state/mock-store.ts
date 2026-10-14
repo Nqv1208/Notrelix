@@ -43,6 +43,7 @@ import { createMockClock, type MockClock } from "./clock";
 import { createFactories, type MockFactories } from "./factories";
 import { MOCK_DATASET_CARDINALITIES } from "./mock-dataset.manifest";
 import { MockSpaceState, type MockSpaceViewer } from "./mock-spaces";
+import { MockWorkFeedState } from "./mock-work-feed";
 import {
   defaultStatusOptions,
   ERP_AUDIENCE,
@@ -200,6 +201,9 @@ export class MockStore {
   /** Space org tree, Space members and Teams (OT-5). */
   readonly spaces = new MockSpaceState();
 
+  /** The member's work feed: relationships, approvals, mentions, inbox. */
+  readonly feed = new MockWorkFeedState();
+
   private config: MockBackendConfig;
   private clock: MockClock;
   private factories: MockFactories;
@@ -334,11 +338,11 @@ export class MockStore {
     }
 
     // ── Workspaces ──────────────────────────────────────────────────────────
-    let primaryWsName = "Notrelix Product Lab";
-    if (isUnicode) primaryWsName = "🪐 Notrelix Product Lab (プロダクト)";
+    let primaryWsName = "Minh An Group";
+    if (isUnicode) primaryWsName = "🪐 Minh An Group (プロダクト)";
     if (isLongTitles)
       primaryWsName =
-        "Notrelix Product Lab — Enterprise Digital Workspace & Engineering Innovation Hub";
+        "Minh An Group — Enterprise Digital Workspace & Engineering Innovation Hub";
 
     for (let w = 0; w < manifest.workspacesVisibleToOwner; w++) {
       const isPrimary = w === 0;
@@ -350,7 +354,7 @@ export class MockStore {
         wName = primaryWsName;
         id = mockIds.workspaces.primary;
       } else if (isSecondary) {
-        wName = "Secondary Workspace";
+        wName = "Đà Nẵng";
         id = mockIds.workspaces.secondary;
       }
 
@@ -574,6 +578,7 @@ export class MockStore {
     this.seedErpBoard(primaryWsId);
     this.seedDepartmentBoards(primaryWsId);
     this.seedInvoiceDoc(primaryWsId);
+    this.feed.seed(this);
 
     // Extras for card-main-0001
     if (this.cardsById.has("card-main-0001")) {
@@ -703,15 +708,15 @@ export class MockStore {
         createdAt: at,
         ...extra,
       });
-    space(mockIds.spaces.engineering, "Engineering", "a0000", {
-      description: "Product engineering, platform and quality.",
+    space(mockIds.spaces.engineering, "Công nghệ", "a0000", {
+      description: "Phát triển sản phẩm, hạ tầng và chất lượng.",
     });
-    space(mockIds.spaces.platform, "Platform", "a0000", {
+    space(mockIds.spaces.platform, "Hạ tầng & bảo mật", "a0000", {
       parentId: mockIds.spaces.engineering,
       type: "Folder",
       visibility: "Workspace",
     });
-    space(mockIds.spaces.accounting, "Accounting", "a0001");
+    space(mockIds.spaces.accounting, "Kế toán", "a0001");
     space(mockIds.spaces.marketing, "Marketing", "a0002", {
       visibility: "Workspace",
     });
@@ -719,6 +724,7 @@ export class MockStore {
     space(mockIds.spaces.hr, "Nhân sự", "a0003", {
       visibility: "Workspace",
     });
+    space(mockIds.spaces.executive, "Ban giám đốc", "a0004");
     for (const id of Object.values(mockIds.spaces)) {
       this.spaces.insertMember({
         spaceId: id,
@@ -923,7 +929,7 @@ export class MockStore {
         itemKey: item.key,
         description: ERP_DESCRIPTIONS[item.key],
         parentItemId: null,
-        dueAt: item.due ? hanoiInstant(item.due) : null,
+        dueAt: item.due ? hanoiInstant(item.due, item.dueHour) : null,
         startedAt: item.start ? hanoiInstant(item.start, 9) : null,
         completedAt: item.completed ? hanoiInstant(item.completed, 16) : null,
         assigneeUserIds: item.assignee ? [erpAssigneeId(item.assignee)] : [],
@@ -1004,6 +1010,20 @@ export class MockStore {
         position: 1,
         options: defaultStatusOptions(dept.statusPrefix),
       });
+      this.insertColumn({
+        id: dept.priorityColumnId,
+        boardId: dept.id,
+        name: "Ưu tiên",
+        fieldType: "select",
+        position: 2,
+        options: ERP_PRIORITY_OPTIONS.map((option) => ({
+          ...option,
+          id: option.id.replace(
+            "mock-erp-priority",
+            `${dept.statusPrefix}-priority`,
+          ),
+        })),
+      });
       this.insertList({
         id: dept.listId,
         boardId: dept.id,
@@ -1026,7 +1046,9 @@ export class MockStore {
           parentItemId: null,
           dueAt: item.due ? hanoiInstant(item.due, item.dueHour) : null,
           startedAt: null,
-          completedAt: null,
+          completedAt: item.completed
+            ? hanoiInstant(item.completed, item.completedHour)
+            : null,
           assigneeUserIds: [],
           childProgress: null,
         });
@@ -1034,6 +1056,11 @@ export class MockStore {
           id,
           dept.statusColumnId,
           `${dept.statusPrefix}-${item.status}`,
+        );
+        this.updateFieldValue(
+          id,
+          dept.priorityColumnId,
+          `${dept.statusPrefix}-priority-${item.priority}`,
         );
       });
     }
@@ -1199,6 +1226,8 @@ export class MockStore {
     this.boardGrantsByBoardId.clear();
     this.boardAudienceByBoardId.clear();
     this.spaces.clear();
+    this.feed.clear();
+    this.completedCardIds.clear();
 
     this.membershipIdsByWorkspaceId.clear();
     this.viewIdsByWorkspaceId.clear();
@@ -2472,6 +2501,19 @@ export class MockStore {
     ].slice(0, 30);
   }
 
+  /** Seeds one recent at a stated time (the world's history), newest first. */
+  seedRecentResource(
+    workspaceId: string,
+    kind: string,
+    resourceId: string,
+    at: string,
+  ): void {
+    const state = this.memberNavigation(workspaceId);
+    state.recents = [...state.recents, { kind, resourceId, at }].sort((a, b) =>
+      b.at.localeCompare(a.at),
+    );
+  }
+
   getPinnedResources(workspaceId: string) {
     return [...this.memberNavigation(workspaceId).pins];
   }
@@ -2732,7 +2774,8 @@ export class MockStore {
     for (const id of wanted) {
       const card = this.cardsById.get(id);
       if (!card || !boardIds.has(card.boardId)) continue;
-      if (this.completedCardIds.has(id) || card.isArchived) continue;
+      if (this.completedCardIds.has(id) || card.completedAt || card.isArchived)
+        continue;
       items.push({
         id: card.id,
         boardId: card.boardId,
@@ -2754,22 +2797,30 @@ export class MockStore {
 
   /** The Items the 2026-10 mockups list as the member's work. */
   private myWorkItemIds(): string[] {
-    return [
-      "ERP-142",
-      "ERP-144",
-      "ERP-138",
-      "ERP-147",
-      "KT-88",
-      "KT-91",
-      "MK-21",
-    ].map((key) =>
-      key.startsWith("ERP-") ? erpItemId(key) : departmentItemId(key),
-    );
+    return this.feed.relatedIds();
   }
 
   completeCard(cardId: string): boolean {
-    if (!this.cardsById.has(cardId)) return false;
+    const card = this.cardsById.get(cardId);
+    if (!card) return false;
     this.completedCardIds.add(cardId);
+    const statusColumn = this.getColumns(card.boardId).find(
+      (column) => column.fieldType === "status",
+    );
+    const done = statusColumn?.options?.find(
+      (option) => option.category === "done",
+    );
+    if (done) this.updateItemStatus(cardId, done.id);
+    else this.updateCard(cardId, { completedAt: this.clock.isoNow() });
+    return true;
+  }
+
+  /** Reopens a completed item: it is open again, as it was before. */
+  reopenCard(cardId: string): boolean {
+    const card = this.cardsById.get(cardId);
+    if (!card) return false;
+    this.completedCardIds.delete(cardId);
+    this.updateCard(cardId, { completedAt: null });
     return true;
   }
 

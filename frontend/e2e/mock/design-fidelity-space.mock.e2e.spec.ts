@@ -11,8 +11,8 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
  * Tolerance is 1 px for boxes and exact for font sizes, weights, radii and
  * colours.
  *
- * The mock world differs from the mockup's: its departments are Engineering,
- * Accounting and Marketing, a Board has no progress, attention or people
+ * The mock world differs from the mockup's: its departments are Công nghệ,
+ * Kế toán and Marketing, a Board has no progress, attention or people
  * read, Docs have no editor, and the access card knows people and teams, not
  * the head count. So the columns of the Boards list, the attention and
  * workload blocks and the "Khách ở board" row are not drawn here (the grid
@@ -150,7 +150,7 @@ test.describe("Department page geometry at 1440 px (owner)", () => {
   test("the head: mark, crumb, title, chip, actions and lede", async ({
     page,
   }) => {
-    await openSpace(page, ENGINEERING, "Engineering");
+    await openSpace(page, ENGINEERING, "Công nghệ");
     expectRect(
       await rel(page, f(page, "dm")),
       { x: 28, y: 24.06, width: 40, height: 40 },
@@ -222,7 +222,7 @@ test.describe("Department page geometry at 1440 px (owner)", () => {
   });
 
   test("the tab strip", async ({ page }) => {
-    await openSpace(page, ENGINEERING, "Engineering");
+    await openSpace(page, ENGINEERING, "Công nghệ");
     const strip = f(page, "tabs");
     expectRect(
       await rel(page, strip),
@@ -266,7 +266,7 @@ test.describe("Department page geometry at 1440 px (owner)", () => {
   test("the sections: heads, Board row, sub-department cards", async ({
     page,
   }) => {
-    await openSpace(page, ENGINEERING, "Engineering");
+    await openSpace(page, ENGINEERING, "Công nghệ");
     const head = f(page, "sh").first();
     expectRect(
       await rel(page, head),
@@ -350,7 +350,7 @@ test.describe("Department page geometry at 1440 px (owner)", () => {
   });
 
   test("the access card", async ({ page }) => {
-    await openSpace(page, ENGINEERING, "Engineering");
+    await openSpace(page, ENGINEERING, "Công nghệ");
     const heading = f(page, "abh").last();
     const headingBox = await rel(page, heading);
     expectRect(
@@ -391,7 +391,7 @@ test.describe("Department page geometry at 1440 px (owner)", () => {
   });
 
   test("the Create menu", async ({ page }) => {
-    await openSpace(page, ENGINEERING, "Engineering");
+    await openSpace(page, ENGINEERING, "Công nghệ");
     await f(page, "btn-new").click();
     const menu = f(page, "menu");
     await expect(menu).toBeVisible();
@@ -441,7 +441,7 @@ test.describe("Department page geometry at 1440 px (owner)", () => {
   });
 
   test("the settings tab", async ({ page }) => {
-    await openSpace(page, `${ENGINEERING}?tab=settings`, "Engineering");
+    await openSpace(page, `${ENGINEERING}?tab=settings`, "Công nghệ");
     const tab = f(page, "tab").nth(3);
     await expect(tab).toHaveAttribute("aria-current", "page");
     const col = f(page, "col");
@@ -529,7 +529,7 @@ test.describe("Department page geometry at 1440 px (owner)", () => {
     expect(await colour(danger, "border-top-color")).toBe(COLOUR.danger);
     expect(await colour(f(page, "seth").nth(3), "color")).toBe(COLOUR.danger);
     const archive = page.getByRole("button", { name: "Lưu trữ", exact: true });
-    // Engineering still has Platform inside: Archive is drawn inert with the reason.
+    // Công nghệ still has Platform inside: Archive is drawn inert with the reason.
     await expect(archive).toHaveAttribute("aria-disabled", "true");
     await expect(page.getByText(/còn 1 phòng ban con/)).toBeVisible();
     const remove = page.getByRole("button", { name: "Xoá phòng ban" });
@@ -608,7 +608,7 @@ test.describe("Department page at smaller windows (owner)", () => {
       page,
     }) => {
       await page.setViewportSize(size);
-      await openSpace(page, ENGINEERING, "Engineering");
+      await openSpace(page, ENGINEERING, "Công nghệ");
       const overflow = await page.evaluate(() => ({
         x: document.documentElement.scrollWidth - window.innerWidth,
         y: document.documentElement.scrollHeight - window.innerHeight,
@@ -646,7 +646,7 @@ test.describe("Department page in the dark theme (owner)", () => {
         // Private mode: the light theme applies.
       }
     });
-    await openSpace(page, ENGINEERING, "Engineering");
+    await openSpace(page, ENGINEERING, "Công nghệ");
     expectRect(
       await rel(page, f(page, "tabs")),
       { y: 96.42, height: 54 },

@@ -94,9 +94,9 @@ test.describe("My work (owner)", () => {
       "0",
     ]);
     await expect(rail).toContainText("1 việc quá hạn");
-    // Departments: Engineering 4, Accounting 2, Marketing 1.
-    await expect(rail).toContainText(/Engineering\s*4 việc/);
-    await expect(rail).toContainText(/Accounting\s*2 việc/);
+    // Departments: Công nghệ 4, Kế toán 2, Marketing 1.
+    await expect(rail).toContainText(/Công nghệ\s*4 việc/);
+    await expect(rail).toContainText(/Kế toán\s*2 việc/);
     await expect(rail).toContainText(/Marketing\s*1 việc/);
   });
 

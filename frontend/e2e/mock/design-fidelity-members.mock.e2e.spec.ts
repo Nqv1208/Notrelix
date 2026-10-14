@@ -11,8 +11,8 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
  * window). Tolerance is 1 px for boxes and exact for font sizes, weights,
  * radii and colours.
  *
- * The mock world differs from the mockup's: Accounting has the Helpdesk Team
- * (Viewer) and the owner (Admin); Engineering has the owner (Admin), Jordan
+ * The mock world differs from the mockup's: Kế toán has the Helpdesk Team
+ * (Viewer) and the owner (Admin); Công nghệ has the owner (Admin), Jordan
  * (Member) and the admin (Viewer); a workspace member has no email or job
  * title, so a row's second line is the workspace role; there is no waiting
  * invitation, "via a team" chip, activity time or "Guests per Board" block.
@@ -132,8 +132,8 @@ test.describe("Department members geometry at 1440 px (owner)", () => {
   test("the head has no lede, Add members is primary and the tab is current", async ({
     page,
   }) => {
-    await openMembers(page, ENGINEERING, "Engineering");
-    // Engineering has a description, the members tab leaves the lede out.
+    await openMembers(page, ENGINEERING, "Công nghệ");
+    // Công nghệ has a description, the members tab leaves the lede out.
     await expect(f(page, "lede")).toHaveCount(0);
     expectRect(
       await rel(page, f(page, "head")),
@@ -160,7 +160,7 @@ test.describe("Department members geometry at 1440 px (owner)", () => {
   });
 
   test("the toolbar", async ({ page }) => {
-    await openMembers(page, ENGINEERING, "Engineering");
+    await openMembers(page, ENGINEERING, "Công nghệ");
     const field = f(page, "field");
     expectRect(
       await rel(page, field),
@@ -197,7 +197,7 @@ test.describe("Department members geometry at 1440 px (owner)", () => {
   });
 
   test("the list, its head and a person's row", async ({ page }) => {
-    await openMembers(page, ENGINEERING, "Engineering");
+    await openMembers(page, ENGINEERING, "Công nghệ");
     const list = f(page, "list");
     expectRect(await rel(page, list), { x: 28, width: 722 }, "list");
     expect(await style(list, "border-radius")).toBe("12px");
@@ -290,7 +290,7 @@ test.describe("Department members geometry at 1440 px (owner)", () => {
   });
 
   test("a team row expands to its people", async ({ page }) => {
-    await openMembers(page, ACCOUNTING, "Accounting");
+    await openMembers(page, ACCOUNTING, "Kế toán");
     const row = f(page, "mr").first();
     const toggle = row.locator('[data-f="tw"]');
     expectRect(
@@ -344,7 +344,7 @@ test.describe("Department members geometry at 1440 px (owner)", () => {
   });
 
   test("the aside explains the roles", async ({ page }) => {
-    await openMembers(page, ENGINEERING, "Engineering");
+    await openMembers(page, ENGINEERING, "Công nghệ");
     const aside = f(page, "aside");
     expectRect(
       await rel(page, aside),
@@ -387,7 +387,7 @@ test.describe("Department members geometry at 1440 px (owner)", () => {
   });
 
   test("the role menu", async ({ page }) => {
-    await openMembers(page, ENGINEERING, "Engineering");
+    await openMembers(page, ENGINEERING, "Công nghệ");
     const row = f(page, "mr").nth(1);
     await row.locator('[data-f="rsel"]').click();
     const menu = f(page, "rmenu");
@@ -434,7 +434,7 @@ test.describe("Department members geometry at 1440 px (owner)", () => {
   test("the add dialog and the remove dialog sit 96 px under the top, 600 and 460 wide", async ({
     page,
   }) => {
-    await openMembers(page, ENGINEERING, "Engineering");
+    await openMembers(page, ENGINEERING, "Công nghệ");
     await f(page, "btn-add").click();
     const dialog = f(page, "dlg");
     await expect(dialog).toBeVisible();
@@ -478,7 +478,7 @@ test.describe("Department members at smaller windows (owner)", () => {
   ]) {
     test(`the tab fits ${size.width}x${size.height}`, async ({ page }) => {
       await page.setViewportSize(size);
-      await openMembers(page, ENGINEERING, "Engineering");
+      await openMembers(page, ENGINEERING, "Công nghệ");
       const overflow = await page.evaluate(() => ({
         x: document.documentElement.scrollWidth - window.innerWidth,
         y: document.documentElement.scrollHeight - window.innerHeight,

@@ -14,6 +14,7 @@ import type {
   MockFieldOptionRecord,
   MockLabelRecord,
 } from "./records";
+import { utcInstant } from "./clock";
 import { mockIds } from "./mock-ids";
 
 /** People of the ERP board who are not one of the base personas. */
@@ -48,6 +49,16 @@ export const ERP_PEOPLE = {
     id: "mock-user-erp-thanh-tam",
     name: "Bùi Thanh Tâm",
     email: "tam.bui@minhan.vn",
+  },
+  LT: {
+    id: "mock-user-erp-trang",
+    name: "Lý Thu Trang",
+    email: "trang.ly@minhan.vn",
+  },
+  PH: {
+    id: "mock-user-erp-hang",
+    name: "Phạm Thu Hằng",
+    email: "hang.pham@minhan.vn",
   },
   DT: {
     id: "mock-user-erp-tuan",
@@ -193,6 +204,8 @@ export interface ErpMockItem {
   readonly assignee: Assignee | null;
   /** Due day "dd/MM" at 17:00 in Hanoi; null = no date. */
   readonly due: string | null;
+  /** The due moment's Hanoi hour; 0 = a date-only due (no time of day). */
+  readonly dueHour?: number;
   readonly start?: string;
   readonly completed?: string;
   readonly children?: { readonly done: number; readonly total: number };
@@ -285,6 +298,7 @@ export const ERP_ITEMS: readonly ErpMockItem[] = [
     label: "test",
     assignee: "HP",
     due: "12/10",
+    dueHour: 0,
     start: "08/10",
     children: { done: 6, total: 9 },
   },
@@ -401,7 +415,7 @@ export function erpAssigneeId(assignee: Assignee): string {
 /** "dd/MM" in 2026 at `hour` in Hanoi (UTC+7), as a UTC instant. */
 export function hanoiInstant(dayMonth: string, hour = 17): string {
   const [day, month] = dayMonth.split("/");
-  return `2026-${month}-${day}T${String(hour - 7).padStart(2, "0")}:00:00.000Z`;
+  return utcInstant(2026, Number(month) - 1, Number(day), hour - 7);
 }
 
 export const ERP_BOARD_MEMBERS: MockBoardMemberRecord[] = [

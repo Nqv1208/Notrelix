@@ -26,7 +26,7 @@ test("Space org tree: create a Space, add a member, create a Board and a Doc in 
   // The sidebar names the Space tree "Departments" (Final-Space).
   const tree = nav.getByRole("tree", { name: "Departments" });
   await expect(
-    tree.getByRole("treeitem", { name: /Engineering/ }),
+    tree.getByRole("treeitem", { name: /Công nghệ/ }),
   ).toBeVisible();
 
   // Create a top-level department Space (Private by default).
@@ -76,7 +76,7 @@ test("Space org tree: create a Space, add a member, create a Board and a Doc in 
     boards.getByRole("link", { name: /Service desk/ }),
   ).toBeVisible();
 
-  // The directory moves it to Engineering (the department page has no move).
+  // The directory moves it to Công nghệ (the department page has no move).
   await nav.getByRole("link", { name: "Docs", exact: true }).click();
   await page
     .getByRole("button", { name: "Move Service desk to a Space" })
@@ -84,7 +84,7 @@ test("Space org tree: create a Space, add a member, create a Board and a Doc in 
   const move = page.getByRole("dialog", {
     name: "Move Service desk to a Space",
   });
-  await move.getByRole("radio", { name: /^Engineering/ }).click();
+  await move.getByRole("radio", { name: /^Công nghệ/ }).click();
   await move.getByRole("button", { name: "Move here" }).click();
   await expect(page.getByText("Service desk was moved.")).toBeVisible();
 
@@ -94,14 +94,14 @@ test("Space org tree: create a Space, add a member, create a Board and a Doc in 
       .getByRole("region", { name: "Running Boards" })
       .getByText("No Boards in this department yet."),
   ).toBeVisible();
-  await tree.getByRole("treeitem", { name: /Engineering/ }).click();
+  await tree.getByRole("treeitem", { name: /Công nghệ/ }).click();
   await expect(
     page.getByRole("region", { name: "Running Boards" }).getByRole("link", {
       name: /Service desk/,
     }),
   ).toBeVisible();
 
-  // Create a Doc in IT from the Create menu, then move it to Engineering with
+  // Create a Doc in IT from the Create menu, then move it to Công nghệ with
   // its version (Documents.Pages.MoveToSpace reads PageDto.version).
   await tree.getByRole("treeitem", { name: /^IT/ }).click();
   await page.getByRole("button", { name: "Create", exact: true }).click();
@@ -118,7 +118,7 @@ test("Space org tree: create a Space, add a member, create a Board and a Doc in 
   await nav.getByRole("link", { name: "Docs", exact: true }).click();
   await page.getByRole("button", { name: "Move Runbook to a Space" }).click();
   const moveDoc = page.getByRole("dialog", { name: "Move Runbook to a Space" });
-  await moveDoc.getByRole("radio", { name: /^Engineering/ }).click();
+  await moveDoc.getByRole("radio", { name: /^Công nghệ/ }).click();
   await moveDoc.getByRole("button", { name: "Move here" }).click();
   await expect(page.getByText("Runbook was moved.")).toBeVisible();
 
@@ -128,7 +128,7 @@ test("Space org tree: create a Space, add a member, create a Board and a Doc in 
       .getByRole("region", { name: "Recent Docs" })
       .getByText("No Docs in this department yet."),
   ).toBeVisible();
-  await tree.getByRole("treeitem", { name: /Engineering/ }).click();
+  await tree.getByRole("treeitem", { name: /Công nghệ/ }).click();
   await expect(
     page.getByRole("region", { name: "Recent Docs" }).getByRole("link", {
       name: /Runbook/,

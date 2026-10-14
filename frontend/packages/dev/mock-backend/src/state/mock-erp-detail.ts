@@ -39,6 +39,34 @@ export interface ErpMockComment {
 /** Comments in time order; the Detail mockup shows the three of ERP-142. */
 export const ERP_COMMENTS: readonly ErpMockComment[] = [
   {
+    itemKey: "ERP-138",
+    userId: ERP_PEOPLE.MQ.id,
+    contentMd:
+      "Em chọn Microsoft Entra ID vì công ty đang dùng Microsoft 365, không phải mua thêm hệ thống đăng nhập.",
+    createdAt: "2026-10-09T03:20:00.000Z",
+  },
+  {
+    itemKey: "ERP-138",
+    userId: ERP_PEOPLE.VT.id,
+    contentMd:
+      "Bên hạ tầng đã mở cổng đồng bộ danh bạ, em thử với phòng Kế toán trước.",
+    createdAt: "2026-10-10T08:05:00.000Z",
+  },
+  {
+    itemKey: "ERP-138",
+    userId: ERP_PEOPLE.HA.id,
+    contentMd:
+      "Giữ lại tài khoản quản trị cục bộ để dự phòng, đừng tắt hẳn mật khẩu trong tuần đầu.",
+    createdAt: "2026-10-11T02:30:00.000Z",
+  },
+  {
+    itemKey: "ERP-138",
+    userId: ERP_PEOPLE.MQ.id,
+    contentMd:
+      "Đã thử với 5 tài khoản phòng Kế toán, đăng nhập ổn. Chị duyệt giúp trước thứ Tư để kịp thông báo toàn công ty nhé.",
+    createdAt: "2026-10-12T03:28:00.000Z",
+  },
+  {
     itemKey: "ERP-142",
     userId: ERP_COMMENTER.id,
     contentMd:

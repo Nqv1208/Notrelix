@@ -10,7 +10,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
  * the top). Tolerance is 1 px for boxes and exact for font sizes, weights,
  * radii and colours.
  *
- * The mock world differs from the mockup's: the ERP Board is in Engineering
+ * The mock world differs from the mockup's: the ERP Board is in Công nghệ
  * with ten members, a team and a guest, and the access read gives no
  * permission level, expiry or history per entry. So the levels, the "outside
  * the company" badge with its address, the permission menu, the switch to

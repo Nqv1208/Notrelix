@@ -36,7 +36,7 @@ test("renders a production Documents route through mock transport", async ({
   ).toEqual([]);
 });
 
-test("edits and checks off a document of the Accounting department", async ({
+test("edits and checks off a document of the Kế toán department", async ({
   page,
 }) => {
   test.skip(scenario !== "default", "Needs the default world data.");

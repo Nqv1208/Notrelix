@@ -47,3 +47,36 @@ export function createMockClock(seed: number = DEFAULT_SEED): MockClock {
 }
 
 export const defaultClock: MockClock = createMockClock(DEFAULT_SEED);
+
+/** A UTC instant from calendar parts (the month is 0-based). */
+export function utcInstant(
+  year: number,
+  monthIndex: number,
+  day: number,
+  hour: number,
+  minute = 0,
+): string {
+  return new Date(
+    Date.UTC(year, monthIndex, day, hour, minute, 0),
+  ).toISOString();
+}
+
+/**
+ * The mock clock's Hanoi day (UTC+7) at `hour:minute` Hanoi time, shifted by
+ * `dayOffset` days, as a UTC instant.
+ */
+export function hanoiDayAt(
+  clock: MockClock,
+  hour: number,
+  minute = 0,
+  dayOffset = 0,
+): string {
+  const hanoi = new Date(clock.now().getTime() + 7 * 60 * 60 * 1000);
+  return utcInstant(
+    hanoi.getUTCFullYear(),
+    hanoi.getUTCMonth(),
+    hanoi.getUTCDate() + dayOffset,
+    hour - 7,
+    minute,
+  );
+}

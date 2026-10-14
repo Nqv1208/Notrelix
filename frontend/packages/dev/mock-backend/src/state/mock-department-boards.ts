@@ -13,9 +13,13 @@ export interface DepartmentItem {
   readonly key: string;
   readonly title: string;
   readonly status: "todo" | "doing" | "review" | "done";
+  readonly priority: "urgent" | "high" | "medium" | "low";
   /** Due day "dd/MM" at `dueHour` in Hanoi; null = no date. */
   readonly due: string | null;
   readonly dueHour?: number;
+  /** Completion "dd/MM" at `completedHour` in Hanoi (done items). */
+  readonly completed?: string;
+  readonly completedHour?: number;
 }
 
 export interface DepartmentBoard {
@@ -27,6 +31,7 @@ export interface DepartmentBoard {
   readonly spaceId: string;
   readonly statusColumnId: string;
   readonly statusPrefix: string;
+  readonly priorityColumnId: string;
   readonly listId: string;
   readonly listTitle: string;
   readonly items: readonly DepartmentItem[];
@@ -42,13 +47,25 @@ export const DEPARTMENT_BOARDS: readonly DepartmentBoard[] = [
     spaceId: mockIds.spaces.accounting,
     statusColumnId: "mock-kt-col-status",
     statusPrefix: "mock-kt-status",
+    priorityColumnId: "mock-kt-col-priority",
     listId: "mock-kt-list-close",
     listTitle: "Đối chiếu",
     items: [
       {
+        key: "KT-86",
+        title: "Khoá sổ phụ ngân hàng tháng 9",
+        status: "done",
+        priority: "medium",
+        due: "12/10",
+        dueHour: 12,
+        completed: "12/10",
+        completedHour: 10,
+      },
+      {
         key: "KT-88",
         title: "Đối chiếu sao kê ngân hàng tháng 9",
         status: "todo",
+        priority: "medium",
         due: "12/10",
         dueHour: 17,
       },
@@ -56,6 +73,7 @@ export const DEPARTMENT_BOARDS: readonly DepartmentBoard[] = [
         key: "KT-91",
         title: "Lập bảng cân đối thử tháng 10",
         status: "todo",
+        priority: "medium",
         due: "26/10",
       },
     ],
@@ -69,6 +87,7 @@ export const DEPARTMENT_BOARDS: readonly DepartmentBoard[] = [
     spaceId: mockIds.spaces.marketing,
     statusColumnId: "mock-mk-col-status",
     statusPrefix: "mock-mk-status",
+    priorityColumnId: "mock-mk-col-priority",
     listId: "mock-mk-list-launch",
     listTitle: "Nội dung",
     items: [
@@ -76,6 +95,7 @@ export const DEPARTMENT_BOARDS: readonly DepartmentBoard[] = [
         key: "MK-21",
         title: "Góp ý nội dung trang giới thiệu sản phẩm mới",
         status: "todo",
+        priority: "medium",
         due: "16/10",
       },
     ],

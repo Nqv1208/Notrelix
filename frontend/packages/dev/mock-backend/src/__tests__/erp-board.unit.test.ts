@@ -153,7 +153,7 @@ describe("ERP board in the mock world", () => {
     });
     expect(access.sources.find((s) => s.kind === "space")).toMatchObject({
       id: mockIds.spaces.engineering,
-      name: "Engineering",
+      name: "Công nghệ",
     });
   });
 

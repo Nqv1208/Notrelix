@@ -10,7 +10,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
  *
  * `nav=hien-day` is the pinned rail, `nav=hien-de` the overlay, `nav=an` no
  * rail. The mock world has two workspaces where the mockup has three and a
- * Private "Engineering" Space holding the ERP board where the mockup has
+ * Private "Công nghệ" Space holding the ERP board where the mockup has
  * "Cong nghe"; the structure and geometry are asserted, not the text.
  */
 
@@ -411,7 +411,7 @@ test.describe("rail pinned (nav=hien-day)", () => {
     expect(await css(current, "border-radius")).toBe("7px");
     await expectFont(current, 13, 600);
 
-    const sub = tree.getByRole("treeitem", { name: /Platform/ });
+    const sub = tree.getByRole("treeitem", { name: /Hạ tầng/ });
     const subBox = await box(sub);
     expect(subBox.height).toBe(30);
     expect(subBox.width).toBe(235);
@@ -424,9 +424,9 @@ test.describe("rail pinned (nav=hien-day)", () => {
     await expectFont(subMark, 7, 700);
 
     // The next Space starts 2 px below the last child row.
-    const next = tree.getByRole("treeitem", { name: /Accounting/ });
+    const next = tree.getByRole("treeitem", { name: /Kế toán/ });
     expect((await box(next)).y - (subBox.y + subBox.height)).toBe(2);
-    // Accounting holds a Board (KT-88's), so its row has a toggle like the
+    // Kế toán holds a Board (KT-88's), so its row has a toggle like the
     // expanded Space's: 209 wide, the lock 10 px inside it.
     await expectBox(next, { x: 86, width: 209, height: 32 });
     await expectBox(next.locator("svg"), { x: 272, width: 13, height: 13 });
