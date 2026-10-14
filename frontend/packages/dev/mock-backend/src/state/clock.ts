@@ -15,10 +15,15 @@ export interface MockClock {
   offsetDays(days: number): string;
 }
 
-/** Fixed base epoch — 2025-01-15T09:00:00.000Z */
-const BASE_EPOCH_MS = 1736934000000;
+/**
+ * Fixed base epoch: Monday 2026-10-12 10:40 in Hanoi (03:40Z), the "today"
+ * of the 2026-10 design mockups and of the e2e/fidelity page clock, less the
+ * default seed's offset below so the default world's "now" is exactly 10:40.
+ */
+const DEFAULT_SEED = 1001;
+const BASE_EPOCH_MS = Date.UTC(2026, 9, 12, 3, 40, 0) - DEFAULT_SEED * 1000;
 
-export function createMockClock(seed: number = 1001): MockClock {
+export function createMockClock(seed: number = DEFAULT_SEED): MockClock {
   // Deterministic offset derived from seed — no wall-clock reference
   const baseMs = BASE_EPOCH_MS + (seed % 10000) * 1000;
 
@@ -41,4 +46,4 @@ export function createMockClock(seed: number = 1001): MockClock {
   };
 }
 
-export const defaultClock: MockClock = createMockClock(1001);
+export const defaultClock: MockClock = createMockClock(DEFAULT_SEED);

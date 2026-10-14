@@ -74,6 +74,7 @@ import {
 } from "./mock-docs-invoice";
 
 export class MockSeedInvariantError extends Error {
+import { DEPARTMENT_BOARDS, departmentItemId } from "./mock-department-boards";
   constructor(message: string) {
     super(`[MockSeedInvariantError] ${message}`);
     this.name = "MockSeedInvariantError";
@@ -258,7 +259,7 @@ export class MockStore {
     const owner = this.factories.user(0, {
       id: mockIds.users.owner,
       email: "ui-dev@notrelix.local",
-      name: isUnicode ? "UI Developer (Owner) 🚀" : "UI Developer (Owner)",
+      name: isUnicode ? "Nguyễn Thu Hà 🚀" : "Nguyễn Thu Hà",
       avatarUrl: isMissingAvatars
         ? null
         : "https://api.dicebear.com/7.x/avataaars/svg?seed=owner",
@@ -571,6 +572,7 @@ export class MockStore {
     this.seedErpBoard(primaryWsId);
     this.seedInvoiceDoc(primaryWsId);
 
+    this.seedDepartmentBoards(primaryWsId);
     // Extras for card-main-0001
     if (this.cardsById.has("card-main-0001")) {
       this.addIndex(this.labelIdsByCardId, "card-main-0001", "lbl-0002");
@@ -969,6 +971,70 @@ export class MockStore {
       if (board.spaceId === spaceId && !board.isArchived) boards += 1;
     }
     for (const page of this.pagesById.values()) {
+  private seedDepartmentBoards(workspaceId: string): void {
+    for (const dept of DEPARTMENT_BOARDS) {
+      this.insertBoard({
+        id: dept.id,
+        workspaceId,
+        title: dept.title,
+        description: dept.description,
+        background: { type: "color", value: dept.color },
+        visibility: "workspace",
+        isArchived: false,
+        createdAt: "2026-09-15T02:00:00.000Z",
+        updatedAt: "2026-10-12T01:00:00.000Z",
+        spaceId: dept.spaceId,
+        version: 1,
+        itemKeyPrefix: dept.prefix,
+      });
+      this.boardViewsByBoardId.set(dept.id, {
+        boardId: dept.id,
+        viewMode: "table",
+        viewConfig: "{}",
+      });
+      this.insertColumn({
+        id: dept.statusColumnId,
+        boardId: dept.id,
+        name: "Trạng thái",
+        fieldType: "status",
+        position: 1,
+        options: defaultStatusOptions(dept.statusPrefix),
+      });
+      this.insertList({
+        id: dept.listId,
+        boardId: dept.id,
+        title: dept.listTitle,
+        color: dept.color,
+        position: 1,
+        isCollapsed: false,
+      });
+      dept.items.forEach((item, index) => {
+        const id = departmentItemId(item.key);
+        this.insertCard({
+          id,
+          boardId: dept.id,
+          listId: dept.listId,
+          title: item.title,
+          position: index + 1,
+          createdAt: "2026-09-28T02:00:00.000Z",
+          updatedAt: "2026-10-12T01:00:00.000Z",
+          itemKey: item.key,
+          parentItemId: null,
+          dueAt: item.due ? hanoiInstant(item.due, item.dueHour) : null,
+          startedAt: null,
+          completedAt: null,
+          assigneeUserIds: [],
+          childProgress: null,
+        });
+        this.updateFieldValue(
+          id,
+          dept.statusColumnId,
+          `${dept.statusPrefix}-${item.status}`,
+        );
+      });
+    }
+  }
+
       if (page.spaceId === spaceId) pages += 1;
     }
     return { boards, pages };
@@ -2599,10 +2665,12 @@ export class MockStore {
   // ─── My work (WX-BE-005) ─────────────────────────────────────────────────
 
   /**
-   * Open Items "assigned" to the current member. The mock dataset has no
-   * assignees, so every second Item (by position) on the workspace's Boards
-   * stands in for an assignment; due dates are derived from the mock clock.
-   * Ordered like the producer: due date ascending, undated last, then id.
+   * Open Items "assigned" to the current member. The mock dataset's
+   * assignees are the board people, so the member's work is a curated set of
+   * the real Items of the 2026-10 mockups (the ERP Board's and the
+   * Accounting and Marketing Boards'): each name, Group and dates come from
+   * the Item itself, so My work and the Board agree. Ordered like the
+   * producer: due date ascending, undated last, then id.
    */
   getMyWorkItems(workspaceId: string) {
     const items: {
@@ -2615,32 +2683,31 @@ export class MockStore {
       updatedAt: string;
       version: number;
     }[] = [];
-    for (const board of this.getBoards(workspaceId)) {
-      if (board.isArchived) continue;
-      for (const list of this.getLists(board.id)) {
-        for (const card of this.getCards(list.id)) {
-          if (card.position % 2 !== 0 || this.completedCardIds.has(card.id)) {
-            continue;
-          }
-          const offset = (items.length % 9) - 3;
-          items.push({
-            id: card.id,
-            boardId: board.id,
-            groupId: list.id,
-            name: card.title,
-            dueAt:
-              items.length % 5 === 4 ? null : this.clock.offsetDays(offset),
-            startedAt: null,
-            updatedAt: card.updatedAt,
-            version: 1,
-          });
-        }
-      }
+    for (const id of wanted) {
+      const card = this.cardsById.get(id);
+      if (!card || !boardIds.has(card.boardId)) continue;
+      if (this.completedCardIds.has(id) || card.isArchived) continue;
+      items.push({
+        id: card.id,
+        boardId: card.boardId,
+        groupId: card.listId,
+        name: card.title,
+        dueAt: card.dueAt ?? null,
+        startedAt: card.startedAt ?? null,
+        updatedAt: card.updatedAt,
+        version: card.version ?? 1,
+      });
     }
     return items.sort((a, b) => {
       if (a.dueAt === b.dueAt) return a.id.localeCompare(b.id);
       if (a.dueAt === null) return 1;
       if (b.dueAt === null) return -1;
+    const wanted = new Set(this.myWorkItemIds());
+    const boardIds = new Set(
+      this.getBoards(workspaceId)
+        .filter((board) => !board.isArchived)
+        .map((board) => board.id),
+    );
       return a.dueAt.localeCompare(b.dueAt) || a.id.localeCompare(b.id);
     });
   }
@@ -2679,6 +2746,21 @@ export class MockStore {
       .map((id) => this.listsById.get(id))
       .filter((l): l is MockListRecord => l !== undefined)
       .sort((a, b) => a.position - b.position);
+  }
+
+  /** The Items the 2026-10 mockups list as the member's work. */
+  private myWorkItemIds(): string[] {
+    return [
+      "ERP-142",
+      "ERP-144",
+      "ERP-138",
+      "ERP-147",
+      "KT-88",
+      "KT-91",
+      "MK-21",
+    ].map((key) =>
+      key.startsWith("ERP-") ? erpItemId(key) : departmentItemId(key),
+    );
   }
 
   getList(id: string): MockListRecord | undefined {

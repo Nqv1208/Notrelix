@@ -18,6 +18,8 @@ export const mockIds = {
   boards: {
     roadmap: "mock-board-roadmap",
     erp: "mock-board-erp",
+    accounting: "mock-board-accounting",
+    marketing: "mock-board-marketing",
   },
   spaces: {
     engineering: "mock-space-engineering",

@@ -18,10 +18,11 @@ import { mockIds } from "./mock-ids";
 
 /** People of the ERP board who are not one of the base personas. */
 export const ERP_PEOPLE = {
+  /** Nguyễn Thu Hà is the `owner` persona: the member the mockups greet. */
   HA: {
-    id: "mock-user-erp-ha",
+    id: mockIds.users.owner,
     name: "Nguyễn Thu Hà",
-    email: "ha.nguyen@minhan.vn",
+    email: "ui-dev@notrelix.local",
   },
   MQ: {
     id: "mock-user-erp-quan",
