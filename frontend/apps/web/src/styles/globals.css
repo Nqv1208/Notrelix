@@ -166,6 +166,38 @@
   --text-avatar-lg--line-height: var(--type-avatar-lg-line-height);
   --text-avatar-lg--font-weight: var(--type-avatar-lg-weight);
   --text-avatar-lg--letter-spacing: var(--type-avatar-lg-tracking);
+  --text-item-title: var(--type-item-title-size);
+  --text-item-title--line-height: var(--type-item-title-line-height);
+  --text-item-title--font-weight: var(--type-item-title-weight);
+  --text-item-title--letter-spacing: var(--type-item-title-tracking);
+  --text-item-heading: var(--type-item-heading-size);
+  --text-item-heading--line-height: var(--type-item-heading-line-height);
+  --text-item-heading--font-weight: var(--type-item-heading-weight);
+  --text-item-heading--letter-spacing: var(--type-item-heading-tracking);
+  --text-item-prose: var(--type-item-prose-size);
+  --text-item-prose--line-height: var(--type-item-prose-line-height);
+  --text-item-prose--font-weight: var(--type-item-prose-weight);
+  --text-item-prose--letter-spacing: var(--type-item-prose-tracking);
+  --text-item-text: var(--type-item-text-size);
+  --text-item-text--line-height: var(--type-item-text-line-height);
+  --text-item-text--font-weight: var(--type-item-text-weight);
+  --text-item-text--letter-spacing: var(--type-item-text-tracking);
+  --text-item-comment: var(--type-item-comment-size);
+  --text-item-comment--line-height: var(--type-item-comment-line-height);
+  --text-item-comment--font-weight: var(--type-item-comment-weight);
+  --text-item-comment--letter-spacing: var(--type-item-comment-tracking);
+  --text-item-ui: var(--type-item-ui-size);
+  --text-item-ui--line-height: var(--type-item-ui-line-height);
+  --text-item-ui--font-weight: var(--type-item-ui-weight);
+  --text-item-ui--letter-spacing: var(--type-item-ui-tracking);
+  --text-item-small: var(--type-item-small-size);
+  --text-item-small--line-height: var(--type-item-small-line-height);
+  --text-item-small--font-weight: var(--type-item-small-weight);
+  --text-item-small--letter-spacing: var(--type-item-small-tracking);
+  --text-item-note: var(--type-item-note-size);
+  --text-item-note--line-height: var(--type-item-note-line-height);
+  --text-item-note--font-weight: var(--type-item-note-weight);
+  --text-item-note--letter-spacing: var(--type-item-note-tracking);
   --text-doc-title: var(--type-doc-title-size);
   --text-doc-title--line-height: var(--type-doc-title-line-height);
   --text-doc-title--font-weight: var(--type-doc-title-weight);
@@ -387,6 +419,15 @@
   --color-doc-chip-done: var(--doc-chip-done);
   --color-doc-dot-review: var(--doc-dot-review);
   --color-modal-scrim: var(--modal-scrim);
+
+  /* Item page (Final-Detail): conflict notice border, added mark and file type chips. */
+  --color-item-conflict-line: var(--item-conflict-line);
+  --color-item-added: var(--item-added);
+  --color-item-added-foreground: var(--item-added-foreground);
+  --color-item-file-sheet: var(--item-file-sheet);
+  --color-item-file-sheet-foreground: var(--item-file-sheet-foreground);
+  --color-item-file-pdf: var(--item-file-pdf);
+  --color-item-file-pdf-foreground: var(--item-file-pdf-foreground);
 
   /* Transitional aliases (current consumers only; new code uses surface/state roles). */
   --color-app-header: var(--app-header);

@@ -308,6 +308,70 @@ export const textRoles = {
     letterSpacing: "-0.003em",
     family: "sans",
   },
+  /** Item page title (Final-Detail h1, 28px / 650, line 1.28). */
+  "item-title": {
+    size: "3xl",
+    lineHeight: 2.24,
+    weight: 650,
+    letterSpacing: "-0.015em",
+    family: "sans",
+  },
+  /** Item page section heading (Final-Detail h2, 15px / 650). */
+  "item-heading": {
+    size: "15",
+    lineHeight: 1.359375,
+    weight: 650,
+    letterSpacing: "0em",
+    family: "sans",
+  },
+  /** Item page description (Final-Detail `.desc`, 14.5px / 1.7). */
+  "item-prose": {
+    size: "14p5",
+    lineHeight: 1.540625,
+    weight: weights.regular,
+    letterSpacing: "0em",
+    family: "sans",
+  },
+  /** Item page rows and fields (Final-Detail body, 14px / 1.45). */
+  "item-text": {
+    size: "sm",
+    lineHeight: 1.26875,
+    weight: weights.regular,
+    letterSpacing: "0em",
+    family: "sans",
+  },
+  /** Item page comment text (Final-Detail `.cm p`, 14px / 1.6). */
+  "item-comment": {
+    size: "sm",
+    lineHeight: 1.4,
+    weight: weights.regular,
+    letterSpacing: "0em",
+    family: "sans",
+  },
+  /** Item page property values, tabs and links (Final-Detail, 13.5px / 1.45). */
+  "item-ui": {
+    size: "13p5",
+    lineHeight: 1.2234375,
+    weight: weights.regular,
+    letterSpacing: "0em",
+    family: "sans",
+  },
+  /** Item page small controls and links (Final-Detail, 13px / 1.45). */
+  "item-small": {
+    size: "13",
+    lineHeight: 1.178125,
+    weight: weights.regular,
+    letterSpacing: "0em",
+    family: "sans",
+  },
+  /** Item page notes, times and group labels (Final-Detail, 12px / 1.45). */
+  "item-note": {
+    size: "xs",
+    lineHeight: 1.0875,
+    weight: weights.regular,
+    letterSpacing: "0em",
+    family: "sans",
+  },
   /** Document title (Final-Docs h1, 32px). */
   "doc-title": {
     size: "4xl",

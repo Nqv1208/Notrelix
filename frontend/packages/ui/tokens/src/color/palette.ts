@@ -110,7 +110,7 @@ export const neutrals: Record<ThemeAppearance, NeutralRoles> = {
     textMeta: oklch(0.514, 0.023, 255), // #5F6875
     line: oklch(0.919, 0.008, 255), // #E1E5EA
     lineStrong: oklch(0.877, 0.011, 255), // #D2D7DE
-    key: oklch(0.954, 0.005, 255), // #EEF0F3
+    key: oklch(0.954, 0.005, 258), // #EEF0F3
     disabled: n(0.94, 0.004),
     textDisabled: n(0.66, 0.006),
     onFill: n(0.99, 0.002),
@@ -993,6 +993,47 @@ export const docTones: Record<ThemeAppearance, DocTones> = {
     modalScrim: oklch(0, 0, 0, 0.6), // rgba(0,0,0,.6)
   },
   "high-contrast": docLight,
+};
+
+/**
+ * Item page (Final-Detail): the conflict notice border, the "added" mark on a
+ * history change and the file type chips of the file list and comment
+ * attachments. One fill per appearance, authored on the CSS emit grid so they
+ * render the mockup hex (`--warn-line`, `--ins`, `--ins-text`, `.ft.x`,
+ * `.ft.p`).
+ */
+export interface ItemPageTones {
+  readonly conflictLine: Oklch;
+  readonly added: Oklch;
+  readonly onAdded: Oklch;
+  readonly fileSheet: Oklch;
+  readonly onFileSheet: Oklch;
+  readonly filePdf: Oklch;
+  readonly onFilePdf: Oklch;
+}
+
+const itemPageLight: ItemPageTones = {
+  conflictLine: oklch(0.852, 0.107, 88.5), // #EBCB7A
+  added: oklch(0.951, 0.019, 157.9), // #E5F3EA
+  onAdded: oklch(0.471, 0.098, 156.2), // #1F6B43
+  fileSheet: oklch(0.942, 0.018, 170.1), // #E1F0EA
+  onFileSheet: oklch(0.471, 0.098, 156.2), // #1F6B43
+  filePdf: oklch(0.943, 0.027, 3.4), // #FDE5EA
+  onFilePdf: oklch(0.455, 0.167, 15.6), // #9E1736
+};
+
+export const itemPageTones: Record<ThemeAppearance, ItemPageTones> = {
+  light: itemPageLight,
+  dark: {
+    conflictLine: oklch(0.834, 0.141, 85.4, 0.4), // rgba(242,193,78,.4)
+    added: oklch(0.753, 0.14, 156.6, 0.14), // rgba(86,201,138,.14)
+    onAdded: oklch(0.815, 0.114, 157.8), // #7FD9A6
+    fileSheet: oklch(0.319, 0.045, 172.2), // #173A30
+    onFileSheet: oklch(0.832, 0.064, 170.7), // #9ED6C2
+    filePdf: oklch(0.295, 0.074, 7.3), // #4A1A26
+    onFilePdf: oklch(0.821, 0.104, 7.6), // #FFA8B8
+  },
+  "high-contrast": itemPageLight,
 };
 
 /** Chart series order (identity colors, never status). */

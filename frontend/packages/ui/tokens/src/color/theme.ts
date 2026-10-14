@@ -28,6 +28,7 @@ import {
   accents,
   calendarTones,
   docTones,
+  itemPageTones,
   identity,
   labelTones,
   markTones,
@@ -264,6 +265,15 @@ export function buildAppearanceColors(
   roles["doc-chip-done"] = doc.chipDone;
   roles["doc-dot-review"] = doc.dotReview;
   roles["modal-scrim"] = doc.modalScrim;
+
+  const itemPage = itemPageTones[appearance];
+  roles["item-conflict-line"] = itemPage.conflictLine;
+  roles["item-added"] = itemPage.added;
+  roles["item-added-foreground"] = itemPage.onAdded;
+  roles["item-file-sheet"] = itemPage.fileSheet;
+  roles["item-file-sheet-foreground"] = itemPage.onFileSheet;
+  roles["item-file-pdf"] = itemPage.filePdf;
+  roles["item-file-pdf-foreground"] = itemPage.onFilePdf;
 
   CHART_SERIES.forEach((id, index) => {
     roles[`chart-${index + 1}`] = identity[id].fill;

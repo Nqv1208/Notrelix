@@ -613,3 +613,76 @@ describe("calendar colours", () => {
     }
   });
 });
+
+/**
+ * Item page (Final-Detail): the conflict notice border, the "added" mark and
+ * the file type chips, light and dark as the mockup. High contrast reuses the
+ * light values.
+ */
+const ITEM_PAGE_VALUES: Record<"light" | "dark", Record<string, string>> = {
+  light: {
+    "item-conflict-line": "#ebcb7a",
+    "item-added": "#e5f3ea",
+    "item-added-foreground": "#1f6b43",
+    "item-file-sheet": "#e1f0ea",
+    "item-file-sheet-foreground": "#1f6b43",
+    "item-file-pdf": "#fde5ea",
+    "item-file-pdf-foreground": "#9e1736",
+  },
+  dark: {
+    "item-added-foreground": "#7fd9a6",
+    "item-file-sheet": "#173a30",
+    "item-file-sheet-foreground": "#9ed6c2",
+    "item-file-pdf": "#4a1a26",
+    "item-file-pdf-foreground": "#ffa8b8",
+  },
+};
+
+describe("item page colours", () => {
+  for (const appearance of ["light", "dark"] as const) {
+    it.each(Object.entries(ITEM_PAGE_VALUES[appearance]))(
+      `${appearance} --%s renders %s`,
+      (role, hex) => {
+        expect(emittedHex(appearance, role)).toBe(hex);
+      },
+    );
+  }
+
+  it("renders the dark notice border and added mark as the mockup's rgba values", () => {
+    const variables = resolveThemeVariables("dark", "blue");
+    expect(variables["--item-conflict-line"]).toMatch(
+      /^oklch\(0\.834 0\.141 85\.4 \/ 0\.4\)$/,
+    );
+    expect(variables["--item-added"]).toMatch(/\/ 0\.14\)$/);
+  });
+
+  it("high contrast reuses the light item page colours", () => {
+    for (const role of Object.keys(ITEM_PAGE_VALUES.light)) {
+      expect(emittedHex("high-contrast", role)).toBe(emittedHex("light", role));
+    }
+  });
+
+  it("maps every item page role and text role to the web globals", () => {
+    const globals = readFileSync(
+      resolve(here, "../../../../../apps/web/src/styles/globals.css"),
+      "utf8",
+    );
+    for (const role of Object.keys(ITEM_PAGE_VALUES.light)) {
+      expect(globals, role).toContain(`--color-${role}: var(--${role});`);
+    }
+    for (const role of [
+      "item-title",
+      "item-heading",
+      "item-prose",
+      "item-text",
+      "item-comment",
+      "item-ui",
+      "item-small",
+      "item-note",
+    ]) {
+      expect(globals, role).toContain(
+        `--text-${role}: var(--type-${role}-size);`,
+      );
+    }
+  });
+});
