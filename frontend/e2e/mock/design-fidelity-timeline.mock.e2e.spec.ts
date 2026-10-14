@@ -15,8 +15,10 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
  *
  * Data differs between the mock world and the mockup world: the mockup draws
  * three phases, a milestone and seven dependency lines the board read has no
- * kind or contract for, groups its items in four groups where the mock board
- * has one, and gives most items a start day the mock board lacks. Only boxes
+ * kind or contract for, and lists its rows in its own order (the mock board
+ * keeps each group's board order, with the done items last in a group where
+ * the mockup puts them first). The mock board has the same four groups and
+ * the start days of the mockup's items. Only boxes
  * that do not depend on those differences are compared (the bar, the frame,
  * the headers of the three scales, the bands, the today line, the first row,
  * the ERP-142, ERP-146 and ERP-129 rows and the legend). The phase,

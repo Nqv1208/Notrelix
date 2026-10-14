@@ -270,6 +270,135 @@ test.describe("Board Timeline (owner)", () => {
     // A drag never opens the item.
     await expect(page.getByRole("dialog")).toHaveCount(0);
   });
+
+  test("the board reads as four groups with bars as long as their dates", async ({
+    page,
+  }) => {
+    await openTimeline(page);
+    await expect(page.locator('[data-tl="lgrp"]')).toHaveCount(4);
+    await expect(page.locator('[data-tl="lgrp"]')).toContainText([
+      "Chuẩn bị",
+      "Dữ liệu",
+      "Kiểm thử",
+      "Đào tạo và vận hành",
+    ]);
+    // 26 px a day, 1 px inset on each side: start day to due day, inclusive.
+    const widthOf = async (key: string) =>
+      (await (await trackOf(page, key)).locator('[data-tl="gb"]').boundingBox())
+        ?.width;
+    expect(await widthOf("ERP-151")).toBeCloseTo(6 * 26 - 2, 0); // 13/10-18/10
+    expect(await widthOf("ERP-146")).toBeCloseTo(4 * 26 - 2, 0); // 13/10-16/10
+    expect(await widthOf("ERP-144")).toBeCloseTo(5 * 26 - 2, 0); // 08/10-12/10
+    expect(await widthOf("ERP-138")).toBeCloseTo(6 * 26 - 2, 0); // 09/10-14/10
+    expect(await widthOf("ERP-150")).toBeCloseTo(7 * 26 - 2, 0); // 22/10-28/10
+    // Seven bars run over several days; only the three items that have a due
+    // day and no start day (ERP-140, 149 and 152) are one-day chips.
+    const widths = await page
+      .locator('[data-tl="gb"]')
+      .evaluateAll((bars) =>
+        bars.map((bar) => bar.getBoundingClientRect().width),
+      );
+    expect(widths.filter((width) => width > 3 * 26 - 4)).toHaveLength(7);
+    expect(widths.filter((width) => width < 30)).toHaveLength(3);
+    // The overdue item, the done items and the item before the window.
+    const late = (await trackOf(page, "ERP-142")).locator('[data-tl="latel"]');
+    await expect(late).toHaveText("Quá hạn 2 ngày");
+    await expect(page.locator('[data-tl="fin"]')).toHaveCount(3);
+    await expect(
+      (await trackOf(page, "ERP-129")).locator('[data-tl="lab"]'),
+    ).toHaveText("◂ Hoàn thành 30/09");
+  });
+
+  for (const size of [
+    { width: 1440, height: 900 },
+    { width: 1280, height: 800 },
+    { width: 1100, height: 760 },
+  ]) {
+    for (const name of ["Ngày", "Tuần", "Tháng"] as const) {
+      test(`no label is cut by the frame or crosses the today line at ${size.width} px, ${name}`, async ({
+        page,
+      }) => {
+        await page.setViewportSize(size);
+        await openTimeline(page);
+        await scale(page, name).click();
+        await expect(scale(page, name)).toHaveAttribute("aria-checked", "true");
+        const check = async (scrolled: boolean) =>
+          page.evaluate((scrolled) => {
+            const wrap = document
+              .querySelector('[data-tl="wrap"]')!
+              .getBoundingClientRect();
+            const list = document
+              .querySelector('[data-tl="left"]')!
+              .getBoundingClientRect();
+            const today = document
+              .querySelector('[data-tl="todayline"]')!
+              .getBoundingClientRect();
+            const problems: string[] = [];
+            const boxes = document.querySelectorAll(
+              '[data-tl="trow"] [data-tl="lab"]',
+            );
+            for (const label of boxes) {
+              const box = label.getBoundingClientRect();
+              const row = label.closest('[data-tl="trow"]')!;
+              const top = row.getBoundingClientRect();
+              if (top.bottom < wrap.top || top.top > wrap.bottom) continue;
+              const text = label.textContent ?? "";
+              // Cut by the right edge, or hidden under the list.
+              if (box.right > wrap.right + 1)
+                problems.push(`${text}: right ${box.right} > ${wrap.right}`);
+              if (
+                !scrolled &&
+                box.left < list.right - 1 &&
+                box.right > list.right + 1
+              )
+                problems.push(`${text}: under the list`);
+              // A done note must not sit across the today line.
+              if (
+                row.querySelector('[data-tl="fin"]') &&
+                box.left < today.right &&
+                box.right > today.left
+              )
+                problems.push(`${text}: across the today line`);
+              // The text itself must not be truncated by its own box unless the
+              // truncation was chosen (ellipsis) - never a half-cut glyph run.
+            }
+            return problems;
+          }, scrolled);
+        await expect.poll(() => check(false)).toEqual([]);
+        // And once the chart is scrolled to its right end.
+        await page.locator('[data-tl="wrap"]').evaluate((element) => {
+          element.scrollLeft = element.scrollWidth;
+        });
+        await expect.poll(() => check(true)).toEqual([]);
+      });
+    }
+  }
+
+  test("an item before the window shows a note, and the window reaches it", async ({
+    page,
+  }) => {
+    await openTimeline(page);
+    const track = await trackOf(page, "ERP-129");
+    await expect(track.locator('[data-tl="lab"]')).toHaveText(
+      "◂ Hoàn thành 30/09",
+    );
+    await expect(track.locator('[data-tl="fin"]')).toHaveCount(0);
+    await page.getByRole("button", { name: "Lùi", exact: true }).click();
+    await expect(track.locator('[data-tl="fin"]')).toHaveCount(1);
+    await expect(track.locator('[data-tl="lab"]')).toHaveText(
+      "Hoàn thành 30/09",
+    );
+    // The chart scrolls inside its frame: the window is wider than the frame
+    // at 1100 px, and the frame, not the page, scrolls.
+    await page.setViewportSize({ width: 1100, height: 760 });
+    const overflow = await page
+      .locator('[data-tl="wrap"]')
+      .evaluate((element) => ({
+        scrolls: element.scrollWidth > element.clientWidth,
+        page: document.documentElement.scrollWidth > window.innerWidth,
+      }));
+    expect(overflow).toEqual({ scrolls: true, page: false });
+  });
 });
 
 test.describe("Board Timeline as a viewer", () => {

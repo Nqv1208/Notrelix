@@ -173,8 +173,11 @@ for (const viewport of VIEWPORTS) {
           .evaluateAll((buttons) =>
             buttons.map((button) => button.getAttribute("aria-label")),
           );
+      // The lane runs through the board's groups (Chuẩn bị, then Đào tạo và
+      // vận hành, ...); an order change is made between cards of one group:
+      // the second to fourth card of the lane belong to the same group.
       const third = "Chuẩn bị dữ liệu mẫu cho buổi đào tạo người dùng";
-      const first = (await titles())[0]!;
+      const first = (await titles())[1]!;
       const from = (await todo
         .getByRole("button", { name: third, exact: true })
         .boundingBox())!;
@@ -192,12 +195,12 @@ for (const viewport of VIEWPORTS) {
       );
       await page.mouse.move(to.x + to.width / 2, to.y + 4, { steps: 20 });
       await page.mouse.up();
-      await expect.poll(async () => (await titles())[0]).toBe(third);
+      await expect.poll(async () => (await titles())[1]).toBe(third);
 
       await page.getByRole("tab", { name: "Bảng" }).click();
       await expect(lane(page, "Cần làm")).toHaveCount(0);
       await page.getByRole("tab", { name: "Kanban" }).click();
-      await expect.poll(async () => (await titles())[0]).toBe(third);
+      await expect.poll(async () => (await titles())[1]).toBe(third);
       await expect.poll(() => laneCounts(page)).toEqual(["6", "3", "2", "5"]);
     });
 

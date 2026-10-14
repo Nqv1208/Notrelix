@@ -222,6 +222,20 @@ async function colour(locator: Locator, property: string): Promise<string> {
   }, property);
 }
 
+/**
+ * An entry that the mock board draws from its start day (the mockup draws it on
+ * its due day only): the right edge, which is the due day's cell, and the
+ * height are the mockup's; the left edge and the row depend on the spans of
+ * the week.
+ */
+function expectEndsLike(actual: Rect, expected: Rect, label: string) {
+  expect(
+    Math.abs(actual.x + actual.width - (expected.x + expected.width)),
+    `${label}.right: ${(actual.x + actual.width).toFixed(1)} vs ${expected.x + expected.width}`,
+  ).toBeLessThanOrEqual(1);
+  expect(Math.abs(actual.height - expected.height)).toBeLessThanOrEqual(1);
+}
+
 function expectRect(actual: Rect, expected: Partial<Rect>, label: string) {
   for (const key of ["x", "y", "width", "height"] as const) {
     const want = expected[key];
@@ -479,17 +493,22 @@ test.describe("Board Calendar geometry at 1440 px (owner)", () => {
     );
 
     const todo = eventOf(page, "ERP-151", "2026-10-12");
-    expectRect(await rel(page, todo), e.todoFirst, "to-do entry");
+    expectEndsLike(await rel(page, todo), e.todoFirst, "to-do entry");
     expect(await colour(todo, "border-top-color")).toBe(COLOUR.lineStrong);
     expect(await colour(todo, "background-color")).toBe("rgb(255, 255, 255)");
-    expectRect(
+    expectEndsLike(
       await rel(page, eventOf(page, "ERP-147", "2026-10-19")),
       e.todoWeek4,
       "ERP-147",
     );
+    // One row lower than in the mockup: ERP-147 spans from its start day above it.
     expectRect(
       await rel(page, eventOf(page, "ERP-149", "2026-10-19")),
-      e.todoWeek4Last,
+      {
+        x: e.todoWeek4Last.x,
+        width: e.todoWeek4Last.width,
+        height: e.todoWeek4Last.height,
+      },
       "ERP-149",
     );
 
@@ -597,7 +616,14 @@ test.describe("Board Calendar geometry at 1440 px (owner)", () => {
     expect(await style(cell, "box-shadow")).toContain("2px");
 
     const ghost = page.locator("[data-calendar-ghost]");
-    expectRect(await rel(page, ghost), d.ghost, "ghost");
+    // The ghost's row depends on the spans above it in the week (the mock board
+    // draws ERP-147 and others from their start day), so only its column and
+    // size are the mockup's.
+    expectRect(
+      await rel(page, ghost),
+      { x: d.ghost.x, width: d.ghost.width, height: d.ghost.height },
+      "ghost",
+    );
     expect(await style(ghost, "border-top-style")).toBe("dashed");
     // 1.5px is laid out as 1px at a device pixel ratio of 1, in the mockup too.
     expect(await style(ghost, "border-top-width")).toBe("1px");
