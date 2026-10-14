@@ -66,10 +66,9 @@ function CellDue({
         className="block text-crumb leading-[1.35] whitespace-nowrap text-muted-foreground tabular-nums"
       >
         <span className="sr-only">{copy.list.doneLabel}</span>
-        {completedAt.time ??
-          (completedAt.kind === "upcoming" || completedAt.kind === "overdue"
-            ? `${copy.work.weekdays[WEEKDAY_KEYS[completedAt.weekday] ?? "sun"]} ${completedAt.shortDate}`
-            : copy.work.due.today)}
+        {completedAt.kind === "today"
+          ? (completedAt.time ?? copy.work.due.today)
+          : `${copy.work.weekdays[WEEKDAY_KEYS[completedAt.weekday] ?? "sun"]} ${completedAt.shortDate}`}
         {completedAt.kind === "today" && completedAt.time ? (
           <small className="block text-micro leading-[1.35] font-normal text-meta-foreground">
             {copy.list.sinceToday}
@@ -131,6 +130,13 @@ export interface MyWorkRowProps {
   readonly onStatusClick: (() => void) | null;
   readonly statusPop?: React.ReactNode;
   readonly href: string;
+  /** Approval, reopen and the write in flight; `undefined` draws them inert. */
+  readonly actions?: {
+    readonly busy: boolean;
+    readonly onApprove: () => void;
+    readonly onRequestChanges: () => void;
+    readonly onReopen: () => void;
+  };
 }
 
 export function MyWorkRow(props: MyWorkRowProps) {
@@ -142,6 +148,8 @@ export function MyWorkRow(props: MyWorkRowProps) {
   const name = item.key ?? item.name;
   const reason = item.reason ?? null;
   const priority = item.priority ?? null;
+  // An item waiting for the member's approval is decided, not ticked.
+  const canTick = props.canComplete && reason !== "approve";
   const grid = done
     ? "grid-cols-[18px_22px_minmax(0,1fr)_112px_112px_132px]"
     : gridFor(columns, narrow);
@@ -191,18 +199,12 @@ export function MyWorkRow(props: MyWorkRowProps) {
           type="button"
           aria-label={formatCopy(copy.list.complete, { name })}
           title={formatCopy(copy.list.complete, { name })}
-          aria-disabled={
-            !props.canComplete || props.completing ? true : undefined
-          }
+          aria-disabled={!canTick || props.completing ? true : undefined}
           aria-busy={props.completing ? true : undefined}
-          onClick={
-            props.canComplete && !props.completing
-              ? props.onComplete
-              : undefined
-          }
+          onClick={canTick && !props.completing ? props.onComplete : undefined}
           className={cn(
             "grid size-5 place-items-center rounded-full border-[1.5px] border-work-status-todo bg-transparent p-0 text-transparent outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
-            props.canComplete
+            canTick
               ? "cursor-pointer hover:border-work-status-done hover:text-work-status-done"
               : "cursor-not-allowed border-dashed",
             props.completing && "opacity-60",
@@ -360,9 +362,16 @@ export function MyWorkRow(props: MyWorkRowProps) {
         <div data-f="cre" className="flex justify-end">
           <button
             type="button"
-            aria-disabled="true"
-            title={copy.list.bulk.unavailable}
+            aria-disabled={
+              !props.actions || props.actions.busy ? true : undefined
+            }
+            title={props.actions ? undefined : copy.list.bulk.unavailable}
             aria-label={formatCopy(copy.list.reopen, { name })}
+            onClick={
+              props.actions && !props.actions.busy
+                ? props.actions.onReopen
+                : undefined
+            }
             className={SMALL_BUTTON_CLASS}
           >
             <RotateCcw
@@ -396,18 +405,32 @@ export function MyWorkRow(props: MyWorkRowProps) {
           </span>
           <button
             type="button"
-            aria-disabled="true"
-            title={copy.list.bulk.unavailable}
+            aria-disabled={
+              !props.actions || props.actions.busy ? true : undefined
+            }
+            title={props.actions ? undefined : copy.list.bulk.unavailable}
             aria-label={`${copy.list.approve} ${name}`}
+            onClick={
+              props.actions && !props.actions.busy
+                ? props.actions.onApprove
+                : undefined
+            }
             className={SMALL_PRIMARY_CLASS}
           >
             {copy.list.approve}
           </button>
           <button
             type="button"
-            aria-disabled="true"
-            title={copy.list.bulk.unavailable}
+            aria-disabled={
+              !props.actions || props.actions.busy ? true : undefined
+            }
+            title={props.actions ? undefined : copy.list.bulk.unavailable}
             aria-label={`${copy.list.requestChanges} ${name}`}
+            onClick={
+              props.actions && !props.actions.busy
+                ? props.actions.onRequestChanges
+                : undefined
+            }
             className={SMALL_BUTTON_CLASS}
           >
             {copy.list.requestChanges}

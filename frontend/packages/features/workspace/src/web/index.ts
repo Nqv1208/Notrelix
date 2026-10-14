@@ -275,6 +275,7 @@ export {
   type WorkspaceTeamSurfaceProps,
 } from "./teams/workspace-team-surface";
 export type {
+  MyWorkActions,
   MyWorkCreateBoard,
   MyWorkWaitingView,
 } from "./home/my-work-types";

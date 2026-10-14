@@ -434,10 +434,11 @@ test.describe("My work geometry at 1440 px (owner)", () => {
     expect(await style(sub, "font-size")).toBe(TYPE.duePrefix.size);
     expect(await style(sub, "font-weight")).toBe("400");
     expect(await colour(sub, "color")).toBe(COLOUR.meta);
-    // With nothing else to draw the due column ends the row: 14 px padding.
+    // The person in charge's column ends the row: 14 px padding.
     const rowRight = rowBox.x + rowBox.width;
+    const avatarBox = await rel(page, row.locator('[data-f="cav"]'));
     expect(
-      Math.abs(rowRight - (dueBox.x + dueBox.width) - 14),
+      Math.abs(rowRight - (avatarBox.x + avatarBox.width) - 14),
     ).toBeLessThanOrEqual(1);
   });
 
@@ -466,7 +467,8 @@ test.describe("My work geometry at 1440 px (owner)", () => {
     });
     expectRect(await rel(page, rail), MOCK.rail, "rail");
     const cards = rail.locator('[data-f="rcard"]');
-    await expect(cards).toHaveCount(2);
+    // The week, the departments and who the member waits on.
+    await expect(cards).toHaveCount(3);
     const week = cards.nth(0);
     expectRect(await rel(page, week), MOCK.weekCard, "week card");
     expect(await style(week, "border-radius")).toBe("12px");

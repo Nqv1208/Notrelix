@@ -18,6 +18,7 @@ import type {
   MyWorkItemView,
   SectionState,
   SurfaceFormatters,
+  WorkPriority,
   WorkStatusBucket,
 } from "./home-models";
 import {
@@ -34,6 +35,7 @@ import {
   groupByBoard,
   groupByDone,
   groupByDue,
+  groupByStatus,
   NO_MY_WORK_FILTERS,
   overdueSummary,
   tabCounts,
@@ -52,7 +54,11 @@ import {
   MyWorkNote,
   MyWorkRail,
 } from "./my-work-side";
-import type { MyWorkCreateBoard, MyWorkWaitingView } from "./my-work-types";
+import type {
+  MyWorkActions,
+  MyWorkCreateBoard,
+  MyWorkWaitingView,
+} from "./my-work-types";
 import { DepartmentMark, StatusDot } from "./work-row-parts";
 import type { WorkspaceHomeCopy } from "./workspace-home.copy";
 
@@ -114,6 +120,8 @@ export interface WorkspaceMyWorkSurfaceProps {
   }[];
   readonly onChangeStatus?:
     ((item: MyWorkItemView, bucket: WorkStatusBucket) => void) | null;
+  /** Approval, reopen, remind and the bulk writes; omitted draws them inert. */
+  readonly actions?: MyWorkActions;
   readonly initialView?: MyWorkInitialView;
 }
 
@@ -395,35 +403,45 @@ export function WorkspaceMyWorkSurface(props: WorkspaceMyWorkSurfaceProps) {
         board: null,
         items: group.items,
       }))
-    : groupBy === "board"
-      ? groupByBoard(visible).map((group) => ({
-          id: group.id,
-          name: group.name ?? "",
+    : groupBy === "status"
+      ? groupByStatus(visible).map((group) => ({
+          id: `s-${group.id}`,
+          name: group.label,
           count: group.items.length,
-          sub: group.department
-            ? formatCopy(copy.list.departmentOf, {
-                name: group.department.name,
-              })
-            : null,
-          tone: "plain",
-          board: group.name
-            ? {
-                name: group.name,
-                department: group.department,
-                boardId: group.boardId,
-              }
-            : null,
-          items: group.items,
-        }))
-      : groupByDue(visible, now).map((group) => ({
-          id: group.id,
-          name: copy.list.windows[group.id],
-          count: group.items.length,
-          sub: subFor(group.id),
-          tone: group.id === "overdue" ? "over" : "plain",
+          sub: null,
+          tone: "plain" as const,
           board: null,
           items: group.items,
-        }));
+        }))
+      : groupBy === "board"
+        ? groupByBoard(visible).map((group) => ({
+            id: group.id,
+            name: group.name ?? "",
+            count: group.items.length,
+            sub: group.department
+              ? formatCopy(copy.list.departmentOf, {
+                  name: group.department.name,
+                })
+              : null,
+            tone: "plain",
+            board: group.name
+              ? {
+                  name: group.name,
+                  department: group.department,
+                  boardId: group.boardId,
+                }
+              : null,
+            items: group.items,
+          }))
+        : groupByDue(visible, now).map((group) => ({
+            id: group.id,
+            name: copy.list.windows[group.id],
+            count: group.items.length,
+            sub: subFor(group.id),
+            tone: group.id === "overdue" ? "over" : "plain",
+            board: null,
+            items: group.items,
+          }));
 
   const statusPopItem = statusPopFor
     ? (visible.find((item) => item.id === statusPopFor) ?? null)
@@ -432,6 +450,7 @@ export function WorkspaceMyWorkSurface(props: WorkspaceMyWorkSurfaceProps) {
   const filtersActive =
     filters.departments.length > 0 ||
     filters.boards.length > 0 ||
+    filters.priorities.length > 0 ||
     filters.query.trim() !== "" ||
     filters.dueOn !== null;
 
@@ -460,6 +479,28 @@ export function WorkspaceMyWorkSurface(props: WorkspaceMyWorkSurfaceProps) {
           mine: mine.map(label).join(", "),
           follow: follow.map(label).join(", "),
         })}
+      </>
+    );
+  })();
+
+  // The real reason, from the selection: only items the member follows (and
+  // does not own) can be unfollowed.
+  const unfollowWhy = (() => {
+    const mine = selectedItems.filter((item) => item.reason !== "follow");
+    if (mine.length === 0) return null;
+    const follow = selectedItems.filter((item) => item.reason === "follow");
+    const label = (item: MyWorkItemView) => item.key ?? item.name;
+    return (
+      <>
+        <b className="font-semibold">{copy.list.bulk.unfollowWhy}</b>{" "}
+        {follow.length > 0
+          ? formatCopy(copy.list.bulk.unfollowDetail, {
+              mine: mine.map(label).join(", "),
+              follow: follow.map(label).join(", "),
+            })
+          : formatCopy(copy.list.bulk.unfollowNone, {
+              mine: mine.map(label).join(", "),
+            })}
       </>
     );
   })();
@@ -511,6 +552,16 @@ export function WorkspaceMyWorkSurface(props: WorkspaceMyWorkSurfaceProps) {
             ...previous,
             boards: toggled(previous.boards, id),
           }))
+        }
+        selectedPriorities={filters.priorities}
+        onTogglePriority={
+          allItems.some((item) => item.priority)
+            ? (priority: WorkPriority) =>
+                setFilters((previous) => ({
+                  ...previous,
+                  priorities: toggled(previous.priorities, priority),
+                }))
+            : undefined
         }
         query={filters.query}
         onQuery={(query) => setFilters((previous) => ({ ...previous, query }))}
@@ -690,6 +741,21 @@ export function WorkspaceMyWorkSurface(props: WorkspaceMyWorkSurfaceProps) {
                                 boardId: item.boardId,
                                 item: item.id,
                               })}
+                              actions={
+                                props.actions
+                                  ? {
+                                      busy: props.actions.pendingIds.has(
+                                        item.id,
+                                      ),
+                                      onApprove: () =>
+                                        props.actions?.onApprove(item),
+                                      onRequestChanges: () =>
+                                        props.actions?.onRequestChanges(item),
+                                      onReopen: () =>
+                                        props.actions?.onReopen(item),
+                                    }
+                                  : undefined
+                              }
                               onToggleSelect={() => toggleSelect(item.id)}
                               onComplete={() => completeItem?.(item)}
                               onOpen={() => props.onOpenItem(item)}
@@ -755,6 +821,33 @@ export function WorkspaceMyWorkSurface(props: WorkspaceMyWorkSurfaceProps) {
                   onComplete={completeSelected}
                   onClear={clearSelection}
                   unfollowTip={unfollowTip}
+                  unfollowWhy={unfollowWhy}
+                  onUnfollow={
+                    props.actions && !unfollowWhy && !doneTab
+                      ? () => {
+                          props.actions?.onUnfollow(selectedItems);
+                          clearSelection();
+                        }
+                      : null
+                  }
+                  onSetDue={
+                    props.actions && !doneTab
+                      ? (dueAt) => {
+                          props.actions?.onSetDue(selectedItems, dueAt);
+                          clearSelection();
+                        }
+                      : null
+                  }
+                  onSetStatus={
+                    props.actions && !doneTab
+                      ? (bucket) => {
+                          props.actions?.onSetStatus(selectedItems, bucket);
+                          clearSelection();
+                        }
+                      : null
+                  }
+                  statusOptions={props.statusOptions}
+                  today={now}
                 />
               ) : null}
             </>
@@ -772,6 +865,8 @@ export function WorkspaceMyWorkSurface(props: WorkspaceMyWorkSurfaceProps) {
             total={allItems.length}
             waiting={props.waiting ?? []}
             dueOn={filters.dueOn}
+            onRemind={props.actions?.onRemind}
+            remindingIds={props.actions?.pendingIds}
             onDay={(shortDate) =>
               setFilters((previous) => ({
                 ...previous,
@@ -788,7 +883,7 @@ export function WorkspaceMyWorkSurface(props: WorkspaceMyWorkSurfaceProps) {
   );
 }
 
-function toggled(list: readonly string[], value: string): string[] {
+function toggled<T extends string>(list: readonly T[], value: T): T[] {
   return list.includes(value)
     ? list.filter((entry) => entry !== value)
     : [...list, value];

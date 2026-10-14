@@ -11,7 +11,7 @@ import {
   SquareKanban,
 } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
-import type { MyWorkDepartment } from "./home-models";
+import type { MyWorkDepartment, WorkPriority } from "./home-models";
 import {
   MY_WORK_TABS,
   type MyWorkGroupBy,
@@ -205,7 +205,8 @@ export function MyWorkTabs({
   );
 }
 
-export type MyWorkMenu = "group" | "department" | "board" | "create" | null;
+export type MyWorkMenu =
+  "group" | "department" | "board" | "priority" | "create" | null;
 
 export interface MyWorkBoardOption {
   readonly id: string;
@@ -226,6 +227,8 @@ export function MyWorkBar({
   boards,
   selectedBoards,
   onToggleBoard,
+  selectedPriorities,
+  onTogglePriority,
   query,
   onQuery,
   createBoards,
@@ -249,6 +252,9 @@ export function MyWorkBar({
   boards: readonly { id: string; name: string }[];
   selectedBoards: readonly string[];
   onToggleBoard: (id: string) => void;
+  selectedPriorities: readonly WorkPriority[];
+  /** `undefined` draws the Priority filter inert. */
+  onTogglePriority?: (priority: WorkPriority) => void;
   query: string;
   onQuery: (value: string) => void;
   createBoards: readonly MyWorkBoardOption[];
@@ -402,22 +408,26 @@ export function MyWorkBar({
               />
             ))}
           </FilterPill>
-          <button
-            data-f="pill"
-            type="button"
-            aria-haspopup="listbox"
-            aria-expanded="false"
-            aria-disabled="true"
-            title={copy.list.filters.priorityUnavailable}
-            className={PILL_CLASS}
+          <FilterPill
+            copy={copy}
+            label={copy.list.filters.priority}
+            open={menu === "priority"}
+            onOpen={() => onMenu(menu === "priority" ? null : "priority")}
+            onClose={close}
+            disabledReason={
+              onTogglePriority ? null : copy.list.filters.priorityUnavailable
+            }
+            active={selectedPriorities.length}
           >
-            {copy.list.filters.priority}
-            <ChevronDown
-              aria-hidden="true"
-              className="size-[13px]"
-              strokeWidth={1.8}
-            />
-          </button>
+            {(["urgent", "high", "medium", "low"] as const).map((priority) => (
+              <FilterOption
+                key={priority}
+                label={copy.work.priority[priority]}
+                selected={selectedPriorities.includes(priority)}
+                onToggle={() => onTogglePriority?.(priority)}
+              />
+            ))}
+          </FilterPill>
         </>
       ) : null}
       <span className="flex-1" />

@@ -125,33 +125,30 @@ test.describe("My work (owner)", () => {
     await expect(ticket.locator('[data-f="du"]')).not.toContainText("Quá hạn");
   });
 
-  test("the tabs with no producer say why and do not switch", async ({
+  test("every tab has a producer and switches with its real count", async ({
     page,
   }) => {
     await openMyWork(page);
-    for (const name of ["Cần tôi duyệt", "Đang theo dõi", "Đã xong"]) {
-      const tab = page.getByRole("tab", { name });
-      await expect(tab).toHaveAttribute("aria-disabled", "true");
-      await expect(tab).toHaveAttribute("title", /chưa có dữ liệu/);
-      await tab.click({ force: true });
-      await expect(page.getByRole("tab", { name: /^Tất cả/ })).toHaveAttribute(
-        "aria-selected",
-        "true",
-      );
+    const expected: [string, number][] = [
+      ["Giao cho tôi", 4],
+      ["Cần tôi duyệt", 1],
+      ["Đang theo dõi", 2],
+      ["Đã xong", 2],
+    ];
+    for (const [name, count] of expected) {
+      const tab = page.getByRole("tab", { name: new RegExp(`^${name}`) });
+      await expect(tab).not.toHaveAttribute("aria-disabled", "true");
+      await tab.click();
+      await expect(tab).toHaveAttribute("aria-selected", "true");
+      await expect(page.locator('[data-f="row"]')).toHaveCount(count);
     }
-    await page.getByRole("tab", { name: /^Giao cho tôi/ }).click();
-    await expect(
-      page.getByRole("tab", { name: /^Giao cho tôi/ }),
-    ).toHaveAttribute("aria-selected", "true");
+    await page.getByRole("tab", { name: /^Tất cả/ }).click();
+    await expect(page.locator('[data-f="row"]')).toHaveCount(7);
   });
 
-  test("groups by Board and not by Status (no Status in the read)", async ({
-    page,
-  }) => {
+  test("groups by due window, Board and Status", async ({ page }) => {
     await openMyWork(page);
     await page.getByRole("button", { name: /^Nhóm/ }).click();
-    const status = page.getByRole("menuitemradio", { name: "Theo trạng thái" });
-    await expect(status).toHaveAttribute("aria-disabled", "true");
     await page.getByRole("menuitemradio", { name: "Theo board" }).click();
     await expect(page.getByRole("button", { name: /^Nhóm/ })).toContainText(
       "Theo board",
@@ -164,8 +161,80 @@ test.describe("My work (owner)", () => {
       page.locator('[data-f="rc"]').first().locator('[data-f="why"]'),
     ).toBeVisible();
     await page.getByRole("button", { name: /^Nhóm/ }).click();
+    await page.getByRole("menuitemradio", { name: "Theo trạng thái" }).click();
+    await expect(groupHeadings(page).first()).toContainText("Cần làm");
+    await expect(groupHeadings(page).nth(1)).toContainText("Đang làm");
+    await page.getByRole("button", { name: /^Nhóm/ }).click();
     await page.getByRole("menuitemradio", { name: "Theo hạn" }).click();
     await expect(groupHeadings(page).first()).toContainText("Quá hạn");
+  });
+
+  test("rows carry the Status pill, Priority, key and person in charge", async ({
+    page,
+  }) => {
+    await openMyWork(page);
+    const row = page.locator('[data-f="row"]').first();
+    await expect(row.locator('[data-f="stp"]')).toContainText("Đang làm");
+    await expect(row.locator('[data-f="pr"]')).toContainText("Khẩn");
+    await expect(row.locator('[data-f="key"]')).toHaveText("ERP-142");
+    await expect(row.locator('[data-f="av"]')).toBeVisible();
+  });
+
+  test("the Status popover changes the Status of the item", async ({
+    page,
+  }) => {
+    await openMyWork(page);
+    await page
+      .getByRole("button", { name: /Cần làm, đổi trạng thái KT-88/ })
+      .click();
+    await page.keyboard.press("2");
+    await expect(
+      page.getByText("KT-88 đã chuyển sang Đang làm."),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: /Đang làm, đổi trạng thái KT-88/ }),
+    ).toBeVisible();
+  });
+
+  test("Duyệt approves from the row and the counts follow", async ({
+    page,
+  }) => {
+    await openMyWork(page);
+    await page.getByRole("button", { name: /^Duyệt ERP-138/ }).click();
+    await expect(page.getByText("Đã duyệt ERP-138.")).toBeVisible();
+    await expect(
+      page.getByRole("tab", { name: /^Cần tôi duyệt/ }),
+    ).toContainText("0");
+    await expect(page.getByRole("tab", { name: /^Tất cả/ })).toContainText("6");
+  });
+
+  test("Yêu cầu sửa sends the item back", async ({ page }) => {
+    await openMyWork(page);
+    await page.getByRole("button", { name: /^Yêu cầu sửa ERP-138/ }).click();
+    await expect(page.getByText("Đã yêu cầu sửa ERP-138.")).toBeVisible();
+    await expect(page.getByRole("tab", { name: /^Tất cả/ })).toContainText("6");
+  });
+
+  test("Nhắc reminds the person the member waits on", async ({ page }) => {
+    await openMyWork(page);
+    await page.getByRole("button", { name: /^Nhắc Lê Hoàng Phúc/ }).click();
+    await expect(page.getByText("Đã nhắc Lê Hoàng Phúc.")).toBeVisible();
+  });
+
+  test("Mở lại brings a done item back to the open list", async ({ page }) => {
+    await openMyWork(page);
+    await page.getByRole("tab", { name: /^Đã xong/ }).click();
+    await page.getByRole("button", { name: /^Mở lại KT-86/ }).click();
+    await expect(page.getByText("Đã mở lại KT-86.")).toBeVisible();
+    await page.getByRole("tab", { name: /^Tất cả/ }).click();
+    await expect(page.getByRole("tab", { name: /^Tất cả/ })).toContainText("8");
+  });
+
+  test("the Priority filter narrows the list", async ({ page }) => {
+    await openMyWork(page);
+    await page.getByRole("button", { name: /^Mức ưu tiên/ }).click();
+    await page.getByRole("option", { name: "Khẩn" }).click();
+    await expect(page.locator('[data-f="row"]')).toHaveCount(1);
   });
 
   test("searches and filters by department and Board", async ({ page }) => {
@@ -240,11 +309,10 @@ test.describe("My work (owner)", () => {
       name: "Thao tác với 2 việc đã chọn",
     });
     await expect(bar).toContainText("2 đã chọn");
-    for (const name of ["Đổi hạn", "Đổi trạng thái", "Bỏ theo dõi"]) {
-      await expect(bar.getByRole("button", { name })).toHaveAttribute(
-        "aria-disabled",
-        "true",
-      );
+    for (const name of ["Đổi hạn", "Đổi trạng thái"]) {
+      await expect(
+        bar.getByRole("button", { name, exact: true }),
+      ).not.toHaveAttribute("aria-disabled", "true");
     }
     const titles = await page.locator('[data-f="rt"]').allInnerTexts();
     await bar.getByRole("button", { name: "Xong" }).click();
@@ -334,7 +402,7 @@ test.describe("My work (owner)", () => {
     ).toHaveAttribute("aria-current", "true");
   });
 
-  test("the create popover lists Boards and creates nothing without a write", async ({
+  test("the composer creates an item assigned to the member", async ({
     page,
   }) => {
     await openMyWork(page);
@@ -344,14 +412,51 @@ test.describe("My work (owner)", () => {
       "aria-checked",
       "true",
     );
+    await expect(dialog).toContainText("dùng gần nhất");
     await dialog.getByLabel("Tên việc").fill("Gửi biên bản họp UAT");
-    const submit = dialog.getByRole("button", { name: /^Tạo việc/ });
-    await expect(submit).toHaveAttribute("aria-disabled", "true");
-    await expect(submit).toHaveAttribute("title", /không|chưa/);
-    await submit.click({ force: true });
-    await expect(dialog).toBeVisible();
-    await page.keyboard.press("Escape");
-    await expect(dialog).toHaveCount(0);
+    await dialog.getByRole("button", { name: /^Tạo việc/ }).click();
+    await expect(
+      page.getByText("Đã tạo Gửi biên bản họp UAT và giao cho bạn."),
+    ).toBeVisible();
+    await expect(page.getByRole("tab", { name: /^Tất cả/ })).toContainText("8");
+    await expect(
+      page.getByRole("tab", { name: /^Giao cho tôi/ }),
+    ).toContainText("5");
+  });
+
+  test("bulk Đổi hạn, Đổi trạng thái and Bỏ theo dõi change the items", async ({
+    page,
+  }) => {
+    await openMyWork(page);
+    const select = (key: string) =>
+      page
+        .getByRole("checkbox", { name: new RegExp(key) })
+        .click({ force: true });
+    await select("KT-88");
+    await page.getByRole("button", { name: "Đổi hạn", exact: true }).click();
+    await page.getByRole("menuitem", { name: "Ngày mai" }).click();
+    await expect(page.getByText("Đã đổi hạn 1 việc.")).toBeVisible();
+    await select("KT-88");
+    await page
+      .getByRole("button", { name: "Đổi trạng thái", exact: true })
+      .click();
+    await page.getByRole("menuitem", { name: "Đang làm" }).click();
+    await expect(
+      page.getByText("Đã đổi trạng thái 1 việc sang Đang làm."),
+    ).toBeVisible();
+    // Only followed items can be unfollowed: the reason shows for a mixed pick.
+    await select("ERP-144");
+    await select("MK-21");
+    const unfollow = page.getByRole("button", {
+      name: "Bỏ theo dõi",
+      exact: true,
+    });
+    await expect(unfollow).toHaveAttribute("aria-disabled", "true");
+    await unfollow.hover();
+    await expect(page.getByRole("tooltip")).toContainText("MK-21");
+    await select("MK-21");
+    await unfollow.click();
+    await expect(page.getByText("Đã bỏ theo dõi 1 việc.")).toBeVisible();
   });
 
   test("My calendar is inert and says why", async ({ page }) => {

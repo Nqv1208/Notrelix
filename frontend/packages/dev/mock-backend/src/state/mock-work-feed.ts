@@ -584,6 +584,10 @@ export class MockWorkFeedState {
     );
     this.inbox = inbox;
 
+    // KT-86 was completed at 10:05 today (the Done tab of the mockup).
+    if (exists(dept("KT-86")))
+      store.updateCard(dept("KT-86"), { completedAt: todayAt(store, 10, 5) });
+
     // Final-Home `xong-viec` (VITE_MOCK_STATE=done-today): today's two items
     // were completed at 10:05, and the earlier completion is not in the world.
     if (store.getConfig().state === "done-today") {
@@ -682,7 +686,7 @@ function itemDto(
   if (approval) relations.push("approver");
   const owners = (card.assigneeUserIds ?? []).filter((id) => id !== me);
   const assignee =
-    feed.assigned.has(cardId) || owners.length === 0
+    feed.assigned.has(cardId) || approval || owners.length === 0
       ? null
       : person(store, owners[0]);
   const requester = approval ? person(store, approval.requestedById) : null;

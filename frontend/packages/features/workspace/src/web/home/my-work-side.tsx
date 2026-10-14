@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import {
   Bell,
   Check,
@@ -18,7 +18,7 @@ import {
   IDENTITY_MARK_CLASS,
   type ShellNavigation,
 } from "../shell/shell-models";
-import type { MyWorkDepartment } from "./home-models";
+import type { MyWorkDepartment, WorkStatusBucket } from "./home-models";
 import type { MyWorkWaitingView } from "./my-work-types";
 import type {
   MyWorkDepartmentCount,
@@ -26,7 +26,7 @@ import type {
   MyWorkWeekDay,
 } from "./my-work-model";
 import { SMALL_OUTLINE_CLASS } from "./my-work-chrome";
-import { DepartmentMark } from "./work-row-parts";
+import { DepartmentMark, StatusDot } from "./work-row-parts";
 import type { WorkspaceHomeCopy } from "./workspace-home.copy";
 
 const WEEKDAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
@@ -72,6 +72,8 @@ export function MyWorkRail({
   waiting,
   dueOn,
   onDay,
+  onRemind,
+  remindingIds,
 }: {
   copy: WorkspaceHomeCopy;
   navigation: ShellNavigation;
@@ -83,6 +85,9 @@ export function MyWorkRail({
   waiting: readonly MyWorkWaitingView[];
   dueOn: string | null;
   onDay: (shortDate: string) => void;
+  /** `undefined` draws "Nhắc" inert. */
+  onRemind?: (entry: MyWorkWaitingView) => void;
+  remindingIds?: ReadonlySet<string>;
 }) {
   const max = Math.max(1, ...days.map((day) => day.count));
   const deptMax = Math.max(1, ...departments.map((entry) => entry.count));
@@ -271,8 +276,15 @@ export function MyWorkRail({
                 </div>
                 <button
                   type="button"
-                  aria-disabled="true"
-                  title={copy.list.bulk.unavailable}
+                  aria-disabled={
+                    !onRemind || remindingIds?.has(entry.id) ? true : undefined
+                  }
+                  title={onRemind ? undefined : copy.list.bulk.unavailable}
+                  onClick={
+                    onRemind && !remindingIds?.has(entry.id)
+                      ? () => onRemind(entry)
+                      : undefined
+                  }
                   className={SMALL_OUTLINE_CLASS}
                 >
                   <Bell
@@ -365,17 +377,47 @@ export function MyWorkBulkBar({
   onComplete,
   onClear,
   unfollowTip,
+  unfollowWhy = null,
+  onUnfollow = null,
+  onSetDue = null,
+  onSetStatus = null,
+  statusOptions = [],
+  today = Date.now(),
 }: {
   copy: WorkspaceHomeCopy;
   count: number;
   canComplete: boolean;
   onComplete: () => void;
   onClear: () => void;
-  /** The reason "Bỏ theo dõi" is unavailable, shown above it. */
+  /** The reason "Bỏ theo dõi" is unavailable, shown above it (stories). */
   unfollowTip: ReactNode | null;
+  /** The same reason computed from the selection; shown on hover or focus. */
+  unfollowWhy?: ReactNode | null;
+  /** `null` draws "Bỏ theo dõi" inert. */
+  onUnfollow?: (() => void) | null;
+  /** `null` draws "Đổi hạn" inert; `null` as the argument clears the date. */
+  onSetDue?: ((dueAt: string | null) => void) | null;
+  onSetStatus?: ((bucket: WorkStatusBucket) => void) | null;
+  statusOptions?: readonly { bucket: WorkStatusBucket; label: string }[];
+  /** Reference time for "Hôm nay", "Ngày mai", "Sau 1 tuần". */
+  today?: number;
 }) {
+  const [menu, setMenu] = useState<"due" | "status" | null>(null);
+  const [hint, setHint] = useState(false);
   const buttonClass =
     "inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-[8px] border-0 bg-transparent px-2.5 text-compact leading-[1.45] font-medium text-inverse-foreground outline-none hover:bg-inverse-foreground/10 focus-visible:ring-2 focus-visible:ring-focus-ring aria-disabled:cursor-not-allowed aria-disabled:text-inverse-muted aria-disabled:hover:bg-transparent";
+  const popClass =
+    "absolute bottom-[calc(100%+12px)] left-0 z-dropdown box-content w-[200px] rounded-[10px] border border-line-strong bg-popover p-1.5 whitespace-normal text-foreground shadow-popover dark:bg-card";
+  const itemClass =
+    "flex h-8 w-full cursor-pointer items-center gap-2 rounded-[7px] border-0 bg-transparent px-2 text-left text-compact leading-[1.45] text-foreground outline-none hover:bg-state-hover-strong focus-visible:ring-2 focus-visible:ring-focus-ring";
+  const dayAt = (offset: number): string => {
+    const date = new Date(today);
+    date.setDate(date.getDate() + offset);
+    date.setHours(0, 0, 0, 0);
+    return date.toISOString();
+  };
+  const blocked = unfollowWhy !== null || onUnfollow === null;
+  const tip = unfollowTip ?? (hint ? unfollowWhy : null);
   return (
     <div
       data-f="bulk"
@@ -386,46 +428,148 @@ export function MyWorkBulkBar({
       <b className="mr-2 font-semibold">
         {formatCopy(copy.list.bulk.selected, { count })}
       </b>
-      <button
-        type="button"
-        aria-disabled="true"
-        title={copy.list.bulk.unavailable}
-        className={buttonClass}
-      >
-        <CalendarDays aria-hidden="true" className="size-4" strokeWidth={1.8} />
-        {copy.list.bulk.due}
-      </button>
-      <button
-        type="button"
-        aria-disabled="true"
-        title={copy.list.bulk.unavailable}
-        className={buttonClass}
-      >
-        <span
-          aria-hidden="true"
-          className="inline-block size-2 rounded-full bg-work-status-doing"
-        />
-        {copy.list.bulk.status}
-      </button>
       <span className="relative inline-flex">
         <button
           type="button"
-          aria-disabled="true"
-          aria-describedby={unfollowTip ? "my-work-unfollow-why" : undefined}
-          title={unfollowTip ? undefined : copy.list.bulk.unavailable}
+          aria-haspopup="menu"
+          aria-expanded={menu === "due"}
+          aria-disabled={onSetDue ? undefined : true}
+          title={onSetDue ? undefined : copy.list.bulk.unavailable}
+          onClick={
+            onSetDue ? () => setMenu(menu === "due" ? null : "due") : undefined
+          }
+          className={buttonClass}
+        >
+          <CalendarDays
+            aria-hidden="true"
+            className="size-4"
+            strokeWidth={1.8}
+          />
+          {copy.list.bulk.due}
+        </button>
+        {menu === "due" && onSetDue ? (
+          <div
+            role="menu"
+            aria-label={copy.list.bulk.dueMenu}
+            className={popClass}
+          >
+            {(
+              [
+                [copy.list.bulk.dueToday, dayAt(0)],
+                [copy.list.bulk.dueTomorrow, dayAt(1)],
+                [copy.list.bulk.dueNextWeek, dayAt(7)],
+                [copy.list.bulk.dueClear, null],
+              ] as const
+            ).map(([label, value]) => (
+              <button
+                key={label}
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setMenu(null);
+                  onSetDue(value);
+                }}
+                className={itemClass}
+              >
+                {label}
+              </button>
+            ))}
+            <label className="mt-1 flex flex-col gap-1 px-2 text-crumb leading-[1.45] text-meta-foreground">
+              {copy.list.bulk.duePick}
+              <input
+                type="date"
+                aria-label={copy.list.bulk.duePick}
+                onChange={(event) => {
+                  const picked = event.target.value;
+                  if (!picked) return;
+                  const [y, m, d] = picked.split("-").map(Number);
+                  setMenu(null);
+                  onSetDue(
+                    new Date(y ?? 0, (m ?? 1) - 1, d ?? 1).toISOString(),
+                  );
+                }}
+                className="h-8 rounded-[7px] border border-line-strong bg-background px-2 text-compact text-foreground"
+              />
+            </label>
+          </div>
+        ) : null}
+      </span>
+      <span className="relative inline-flex">
+        <button
+          type="button"
+          aria-haspopup="menu"
+          aria-expanded={menu === "status"}
+          aria-disabled={
+            onSetStatus && statusOptions.length > 0 ? undefined : true
+          }
+          title={
+            onSetStatus && statusOptions.length > 0
+              ? undefined
+              : copy.list.bulk.unavailable
+          }
+          onClick={
+            onSetStatus && statusOptions.length > 0
+              ? () => setMenu(menu === "status" ? null : "status")
+              : undefined
+          }
+          className={buttonClass}
+        >
+          <span
+            aria-hidden="true"
+            className="inline-block size-2 rounded-full bg-work-status-doing"
+          />
+          {copy.list.bulk.status}
+        </button>
+        {menu === "status" && onSetStatus ? (
+          <div
+            role="menu"
+            aria-label={copy.list.bulk.statusMenu}
+            className={popClass}
+          >
+            {statusOptions.map((option) => (
+              <button
+                key={option.bucket}
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setMenu(null);
+                  onSetStatus(option.bucket);
+                }}
+                className={itemClass}
+              >
+                <StatusDot bucket={option.bucket} />
+                {option.label}
+              </button>
+            ))}
+          </div>
+        ) : null}
+      </span>
+      <span
+        className="relative inline-flex"
+        onMouseEnter={() => setHint(true)}
+        onMouseLeave={() => setHint(false)}
+        onFocus={() => setHint(true)}
+        onBlur={() => setHint(false)}
+      >
+        <button
+          type="button"
+          aria-disabled={blocked ? true : undefined}
+          aria-describedby={tip ? "my-work-unfollow-why" : undefined}
+          title={tip || unfollowWhy ? undefined : copy.list.bulk.unavailable}
+          onClick={onUnfollow && unfollowWhy === null ? onUnfollow : undefined}
           className={buttonClass}
         >
           <EyeOff aria-hidden="true" className="size-4" strokeWidth={1.8} />
           {copy.list.bulk.unfollow}
         </button>
-        {unfollowTip ? (
+        {tip ? (
           <span
             id="my-work-unfollow-why"
             role="tooltip"
             data-f="tip"
             className="absolute bottom-[calc(100%+12px)] left-1/2 box-content w-[272px] -translate-x-1/2 rounded-[9px] border border-line-strong bg-popover px-[11px] py-[9px] text-crumb leading-[1.5] whitespace-normal text-foreground shadow-popover dark:bg-card"
           >
-            {unfollowTip}
+            {tip}
           </span>
         ) : null}
       </span>

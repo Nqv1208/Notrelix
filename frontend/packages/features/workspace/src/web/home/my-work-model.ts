@@ -5,7 +5,12 @@ import {
   type MyWorkWindow,
 } from "../../core/model/my-work";
 import { normalizeSearchText } from "../../core/model/navigation";
-import type { MyWorkDepartment, MyWorkItemView } from "./home-models";
+import type {
+  MyWorkDepartment,
+  MyWorkItemView,
+  WorkPriority,
+  WorkStatusBucket,
+} from "./home-models";
 
 /**
  * The pure model of the My work page: the tabs and their counts, the filters
@@ -30,6 +35,8 @@ export interface MyWorkFilters {
   readonly departments: readonly string[];
   /** Board ids to keep; empty keeps every Board. */
   readonly boards: readonly string[];
+  /** Priorities to keep; empty keeps every Priority (and items without one). */
+  readonly priorities: readonly WorkPriority[];
   readonly query: string;
   /** Local `dd/MM` of a day in the week chart; `null` keeps every day. */
   readonly dueOn: string | null;
@@ -38,6 +45,7 @@ export interface MyWorkFilters {
 export const NO_MY_WORK_FILTERS: MyWorkFilters = {
   departments: [],
   boards: [],
+  priorities: [],
   query: "",
   dueOn: null,
 };
@@ -87,6 +95,10 @@ export function applyFilters(
           item.department !== undefined &&
           filters.departments.includes(item.department.name))) &&
       (filters.boards.length === 0 || filters.boards.includes(item.boardId)) &&
+      (filters.priorities.length === 0 ||
+        (item.priority !== null &&
+          item.priority !== undefined &&
+          filters.priorities.includes(item.priority))) &&
       matchesQuery(item, filters.query),
   );
 }
@@ -105,6 +117,42 @@ export function groupByDue(
     id: group.range,
     items: group.items as readonly MyWorkItemView[],
   }));
+}
+
+export interface MyWorkStatusGroup {
+  readonly id: WorkStatusBucket;
+  readonly label: string;
+  readonly items: readonly MyWorkItemView[];
+}
+
+const STATUS_ORDER: readonly WorkStatusBucket[] = [
+  "todo",
+  "doing",
+  "review",
+  "done",
+];
+
+/**
+ * The items by Status bucket in the design's order (to do, doing, in review,
+ * done), labelled with the Status the items carry. Items without a Status are
+ * left out; the grouping is offered only when some item has one.
+ */
+export function groupByStatus(
+  items: readonly MyWorkItemView[],
+): MyWorkStatusGroup[] {
+  const buckets = new Map<WorkStatusBucket, MyWorkItemView[]>();
+  for (const item of items) {
+    if (!item.status) continue;
+    const list = buckets.get(item.status.bucket);
+    if (list) list.push(item);
+    else buckets.set(item.status.bucket, [item]);
+  }
+  return STATUS_ORDER.flatMap((id) => {
+    const list = buckets.get(id);
+    return list && list[0]?.status
+      ? [{ id, label: list[0].status.label, items: list }]
+      : [];
+  });
 }
 
 export interface MyWorkBoardGroup {
