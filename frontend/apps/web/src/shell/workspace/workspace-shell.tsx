@@ -15,6 +15,7 @@ import {
   buildWorkspaceBreadcrumb,
   canCreateRootSpace,
   identityToneFor,
+  MARK_TONE_IDS,
   markInitialsFor,
   markToneFor,
   spaceAncestors,
@@ -22,6 +23,7 @@ import {
   NAVIGATION_RESOURCE_KIND,
   resolveNavigationEntries,
   type WorkspaceDestination,
+  type MarkToneId,
 } from "@notrelix/features-workspace/core";
 import {
   commandShortcutLabel,
@@ -51,6 +53,7 @@ import {
   type SpaceBoardLink,
   type SpaceTreeState,
   type SystemRailWorkspace,
+  formatCopy,
 } from "@notrelix/features-workspace/web";
 import {
   useAppRuntime,
@@ -325,6 +328,30 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
     return bySpace;
   }, [boards.data, placements.data]);
 
+  // Boards the member opens without seeing their department: "Được chia sẻ
+  // với bạn" (the placement read names the department either way).
+  const sharedBoards = useMemo(() => {
+    if (!boards.data || !placements.data) return [];
+    const byId = new Map(placements.data.map((entry) => [entry.id, entry]));
+    return boards.data.flatMap((board) => {
+      const placement = byId.get(board.id);
+      if (!placement || placement.spaceId || !placement.departmentName)
+        return [];
+      return [
+        {
+          id: board.id,
+          name: board.title,
+          departmentName: placement.departmentName,
+          markTone: (MARK_TONE_IDS as readonly string[]).includes(
+            placement.departmentColor ?? "",
+          )
+            ? (placement.departmentColor as MarkToneId)
+            : markToneFor(board.id),
+        },
+      ];
+    });
+  }, [boards.data, placements.data]);
+
   // My work count: the open Items assigned to the member. Unknown (no badge)
   // while loading, on error, or when more pages exist than are loaded.
   const myWorkCount =
@@ -341,15 +368,35 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
         name: workspace.name,
         mark: markToneFor(workspace.id),
         role,
-        departmentCount: spaceTree.data
-          ? spaceTree.data.filter(
-              (node) =>
-                node.type === "Department" &&
-                node.parentId === null &&
-                !node.isArchived,
-            ).length
-          : null,
+        // The workspace's own count when the producer sends one (a member
+        // does not see every department in the tree).
+        departmentCount:
+          (workspace as { departmentCount?: number }).departmentCount ??
+          (spaceTree.data
+            ? spaceTree.data.filter(
+                (node) =>
+                  node.type === "Department" &&
+                  node.parentId === null &&
+                  !node.isArchived,
+              ).length
+            : null),
         // `WorkspaceDto.memberCount` is the total; the member list may be shorter.
+        roleLabel:
+          role === "member"
+            ? (() => {
+                const admin = spaceTree.data?.find(
+                  (node) =>
+                    node.type === "Department" &&
+                    node.parentId === null &&
+                    node.access === "Manager",
+                );
+                return admin
+                  ? formatCopy(copy.sidebar.departmentAdmin, {
+                      name: admin.name,
+                    })
+                  : null;
+              })()
+            : null,
         memberCount:
           workspace.memberCount ?? (members.data ? members.data.length : null),
       }
@@ -600,6 +647,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
               (entry) => entry.workspaceId === workspaceId,
             )?.unread ?? null,
         }}
+        sharedBoards={sharedBoards}
         pinned={pinnedState}
         onTogglePin={(entry, pinned) =>
           togglePin.mutate({

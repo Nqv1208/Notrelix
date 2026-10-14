@@ -1,0 +1,116 @@
+import { expect, test, type Page } from "@playwright/test";
+
+/**
+ * The ERP board's Kanban header, lanes and item side sheet as Final-Board draws
+ * them, on the mock world: three cards before "Xem thêm" (two in the Done
+ * lane), the department crumb, and the sheet's child items, follow chip,
+ * comments with the recorded changes among them, and the composer.
+ */
+const persona = process.env.VITE_MOCK_PERSONA ?? "owner";
+const scenario = process.env.VITE_MOCK_STATE ?? "default";
+const faults = process.env.VITE_MOCK_FAULTS ?? "";
+const BOARD = "/workspaces/mock-workspace-primary/boards/mock-board-erp";
+const NOW = new Date("2026-10-12T10:40:00+07:00");
+
+async function open(page: Page, query = "") {
+  await page.clock.setFixedTime(NOW);
+  await page.addInitScript(() => {
+    try {
+      window.localStorage.setItem("notrelix-locale", "vi");
+    } catch {
+      // Private mode: the default applies.
+    }
+  });
+  await page.goto(`${BOARD}${query}`);
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Triển khai ERP Q4" }),
+  ).toBeVisible();
+}
+
+test.describe("Board header, lanes and item sheet (owner)", () => {
+  test.skip(
+    persona !== "owner" || scenario !== "default" || faults !== "",
+    "Needs the default owner world without faults",
+  );
+  test.use({ viewport: { width: 1440, height: 900 } });
+
+  test("three cards before Xem thêm, two in the Done lane", async ({
+    page,
+  }) => {
+    await open(page);
+    const todo = page.getByRole("region", { name: "Cần làm", exact: true });
+    await expect(
+      todo.getByRole("button", { name: /^Xem thêm 3 việc$/ }),
+    ).toBeVisible();
+    const done = page.getByRole("region", { name: "Hoàn thành", exact: true });
+    await expect(
+      done.getByRole("button", { name: /^Xem thêm 3 việc$/ }),
+    ).toBeVisible();
+  });
+
+  test("the header names the department", async ({ page }) => {
+    await open(page);
+    await expect(page.getByText("Phòng Công nghệ · có 1 khách")).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: "Phòng Công nghệ" }).first(),
+    ).toBeVisible();
+  });
+
+  test("the sheet lists the child items and ticking one moves the progress", async ({
+    page,
+  }) => {
+    await open(page, "?item=mock-erp-item-142");
+    const sheet = page.getByRole("dialog");
+    await expect(sheet.getByText("3/5")).toBeVisible();
+    await expect(
+      sheet.getByRole("checkbox", { name: /^Xuất dữ liệu từ hệ thống cũ/ }),
+    ).toBeChecked();
+    await sheet
+      .getByRole("checkbox", { name: /^Đối chiếu công nợ đầu kỳ với Kế toán/ })
+      .click();
+    await expect(sheet.getByText("4/5")).toBeVisible();
+    await sheet
+      .getByRole("checkbox", { name: /^Đối chiếu công nợ đầu kỳ với Kế toán/ })
+      .click();
+    await expect(sheet.getByText("3/5")).toBeVisible();
+  });
+
+  test("the follow chip follows and unfollows", async ({ page }) => {
+    await open(page, "?item=mock-erp-item-142");
+    const sheet = page.getByRole("dialog");
+    const chip = sheet.locator('[data-f="follow"]');
+    await expect(chip).toContainText("Đang theo dõi");
+    await chip.click();
+    await expect(chip).toContainText("Theo dõi");
+    await expect(chip).not.toContainText("Đang theo dõi");
+    await chip.click();
+    await expect(chip).toContainText("Đang theo dõi");
+  });
+
+  test("comments show the recorded change among them and the composer posts", async ({
+    page,
+  }) => {
+    await open(page, "?item=mock-erp-item-142");
+    const sheet = page.getByRole("dialog");
+    await expect(sheet.locator('[data-f="event"]')).toContainText(
+      "Trần Minh Quân đổi hạn từ 08/10 sang 10/10",
+    );
+    await sheet
+      .getByRole("textbox", { name: /Viết bình luận/ })
+      .fill("Em đã đối chiếu xong, gửi chị Linh xem lại.");
+    await page.keyboard.press("Control+Enter");
+    await expect(
+      sheet.getByText("Em đã đối chiếu xong, gửi chị Linh xem lại."),
+    ).toBeVisible();
+  });
+
+  test("a Status change is recorded in the history", async ({ page }) => {
+    await open(page, "?item=mock-erp-item-142");
+    const sheet = page.getByRole("dialog");
+    await sheet.getByRole("button", { name: /^Trạng thái: Đang làm/ }).click();
+    await page.getByRole("menuitem", { name: "Chờ duyệt" }).click();
+    await expect(sheet.locator('[data-f="event"]').last()).toContainText(
+      "đổi trạng thái từ Đang làm sang Chờ duyệt",
+    );
+  });
+});

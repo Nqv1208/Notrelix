@@ -144,6 +144,14 @@ function workspaceDto(store: MockStore, workspaceId: string) {
     icon: w.icon,
     memberCount: store.getWorkspaceMemberCount(w.id),
     color: workspaceColor(w.id),
+    // Gap field `departmentCount` (CTR-GAP-WS-COLOR family): the workspace's
+    // departments, whether or not the caller can see each of them.
+    departmentCount: store.spaces
+      .spacesOf(w.id)
+      .filter(
+        (space) =>
+          space.type === "Department" && !space.parentId && !space.archived,
+      ).length,
     isPersonal: w.isPersonal,
     isArchived: false,
     version: store.getWorkspaceVersion(w.id),

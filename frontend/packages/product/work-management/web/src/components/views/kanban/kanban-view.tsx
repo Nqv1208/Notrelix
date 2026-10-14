@@ -17,6 +17,8 @@ import {
   useCardActivity,
   useCardComments,
   useCardFiles,
+  useItemChildItems,
+  useItemFollowing,
   useAddFieldOption,
   useArchiveCard,
   useCreateCardUpdate,
@@ -663,6 +665,8 @@ function KanbanSelectedItemReady({
   const createUpdate = useCreateCardUpdate(card.id, card.workspaceId);
   const updateUpdate = useUpdateCardUpdate(card.id, card.workspaceId);
   const deleteUpdate = useDeleteCardUpdate(card.id, card.workspaceId);
+  const children = useItemChildItems(card.id, card.workspaceId, card.boardId);
+  const follow = useItemFollowing(card.id, card.workspaceId);
 
   return (
     <KanbanCardDetailPanel
@@ -680,11 +684,15 @@ function KanbanSelectedItemReady({
         activityFetching: activity.isFetching,
         updates: updates.data ?? card.updates,
         updatesLoading: updates.isLoading,
+        childItems: children.data,
+        following: follow.following,
       }}
       callbacks={{
         onClose,
         onRenameTitle: (cardId, patch) => updateCard.mutate({ cardId, patch }),
-        onToggleWatch: () => undefined,
+        onToggleWatch: (watched) => follow.setFollowing(watched),
+        onToggleChildItem: (childId, done) =>
+          children.toggle({ childId, done }),
         onDuplicate,
         onArchive: (cardId) => {
           onArchive(cardId);

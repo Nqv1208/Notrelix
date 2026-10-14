@@ -34,6 +34,8 @@ export interface ShellWorkspace {
 export interface ShellCurrentWorkspace extends ShellWorkspace {
   /** The member's role in this workspace, when known. */
   readonly role: WorkspaceMember["role"] | null;
+  /** What the user card says instead of the role ("Quản trị Phòng Kế toán"). */
+  readonly roleLabel?: string | null;
   /** Department Spaces the member can see; `null`/absent = not known. */
   readonly departmentCount?: number | null;
   /** Workspace members; `null`/absent = not known. */

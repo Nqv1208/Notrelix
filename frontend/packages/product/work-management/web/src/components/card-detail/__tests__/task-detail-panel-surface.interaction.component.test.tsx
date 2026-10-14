@@ -449,7 +449,10 @@ describe.each([
     });
     renderSheet(copy, {
       card: item,
-      detailData: erpSheetDetailData(item, { childItems: undefined }),
+      detailData: erpSheetDetailData(item, {
+        childItems: undefined,
+        activity: [],
+      }),
       departmentMark: undefined,
     });
     const crumb = screen.getByRole("navigation", { name: copy.head.crumb });

@@ -39,7 +39,7 @@ import type {
 import { mockIds } from "./mock-ids";
 import type { MockBackendConfig, MockPersona } from "../config/mock-config";
 import { defaultConfig } from "../config/mock-config";
-import { createMockClock, type MockClock } from "./clock";
+import { createMockClock, hanoiShortDay, type MockClock } from "./clock";
 import { createFactories, type MockFactories } from "./factories";
 import { MOCK_DATASET_CARDINALITIES } from "./mock-dataset.manifest";
 import { MockSpaceState, type MockSpaceViewer } from "./mock-spaces";
@@ -66,7 +66,12 @@ import {
   erpStatusOptionId,
   hanoiInstant,
 } from "./mock-erp-board";
-import { ERP_COMMENTS, ERP_DESCRIPTIONS } from "./mock-erp-detail";
+import {
+  ERP_ACTIVITY,
+  ERP_CHILD_ITEMS,
+  ERP_COMMENTS,
+  ERP_DESCRIPTIONS,
+} from "./mock-erp-detail";
 import { LIBRARY_DOCS, SECONDARY_BOARD_TITLES } from "./mock-docs-library";
 import {
   INVOICE_BLOCKS,
@@ -180,6 +185,11 @@ export class MockStore {
   private archivedWorkspaceIds = new Set<string>();
   /** Items completed through `WorkManagement.BoardItems.Complete`. */
   private completedCardIds = new Set<string>();
+  /** The item history ("Lịch sử"): one line per recorded change, by card. */
+  private activityByCardId = new Map<
+    string,
+    { id: string; actorId: string; action: string; createdAt: string }[]
+  >();
   /** Board members (`/full` members), keyed by board. */
   private boardMembersByBoardId = new Map<string, MockBoardMemberRecord[]>();
   /** Explicit board access entries, keyed by board. */
@@ -740,7 +750,6 @@ export class MockStore {
     // The one department with nothing in it, as the Space mockup shows.
     space(mockIds.spaces.hr, "Nhân sự", "a0003", {
       color: "sage",
-      visibility: "Workspace",
     });
     space(mockIds.spaces.executive, "Ban giám đốc", "a0004", {
       color: "crimson",
@@ -754,6 +763,14 @@ export class MockStore {
         addedAt: at,
       });
     }
+    // Đỗ Khánh Linh (persona `commenter`) administers the Accounting department.
+    this.spaces.insertMember({
+      spaceId: mockIds.spaces.accounting,
+      subjectType: "User",
+      subjectId: mockIds.users.commenter,
+      role: "Admin",
+      addedAt: at,
+    });
     this.spaces.insertMember({
       spaceId: mockIds.spaces.engineering,
       subjectType: "User",
@@ -967,6 +984,42 @@ export class MockStore {
       );
       this.addIndex(this.labelIdsByCardId, id, erpLabelId(item.label));
     });
+    // Child items ("Việc con"): real cards under their parent, so the sheet
+    // lists them, ticks them and the parent's progress follows.
+    ERP_CHILD_ITEMS.forEach((child, index) => {
+      const parent = ERP_ITEMS.find((item) => item.key === child.parentKey);
+      if (!parent) return;
+      const id = `${erpItemId(child.parentKey)}-child-${index + 1}`;
+      this.insertCard({
+        id,
+        boardId,
+        listId: erpGroupId(parent.group),
+        title: child.title,
+        position: index + 1,
+        createdAt: "2026-09-21T02:00:00.000Z",
+        updatedAt: "2026-10-12T01:40:00.000Z",
+        itemKey: child.key,
+        parentItemId: erpItemId(child.parentKey),
+        dueAt: hanoiInstant(child.due),
+        startedAt: null,
+        completedAt: child.done ? hanoiInstant(child.due, 16) : null,
+        assigneeUserIds: [erpAssigneeId(child.assignee)],
+        childProgress: null,
+      });
+      this.updateFieldValue(
+        id,
+        ERP_STATUS_COLUMN_ID,
+        erpStatusOptionId(child.done ? "done" : "todo"),
+      );
+    });
+    for (const entry of ERP_ACTIVITY) {
+      this.recordActivity(
+        erpItemId(entry.itemKey),
+        entry.userId,
+        entry.action,
+        entry.createdAt,
+      );
+    }
     for (const comment of ERP_COMMENTS) {
       this.insertComment({
         id: this.nextId("cmt"),
@@ -986,6 +1039,7 @@ export class MockStore {
         userId: ERP_COMMENTER.id,
         level: "commenter",
         grantedByUserId: ERP_PEOPLE.HP.id,
+        expiresAt: "2026-12-31T16:59:59.000Z",
       },
       // The viewer persona (a workspace guest) can only view this board.
       {
@@ -1248,6 +1302,7 @@ export class MockStore {
     this.spaces.clear();
     this.feed.clear();
     this.completedCardIds.clear();
+    this.activityByCardId.clear();
 
     this.membershipIdsByWorkspaceId.clear();
     this.viewIdsByWorkspaceId.clear();
@@ -1946,9 +2001,43 @@ export class MockStore {
     return this.createCard(list.boardId, listId, input);
   }
 
+  /** Records one line of an item's history ("đổi hạn từ 08/10 sang 10/10"). */
+  recordActivity(
+    cardId: string,
+    actorId: string,
+    action: string,
+    createdAt?: string,
+  ): void {
+    const list = this.activityByCardId.get(cardId) ?? [];
+    list.push({
+      id: `act-${cardId}-${list.length + 1}`,
+      actorId,
+      action,
+      createdAt: createdAt ?? this.clock.isoNow(),
+    });
+    this.activityByCardId.set(cardId, list);
+  }
+
+  getActivity(cardId: string) {
+    return [...(this.activityByCardId.get(cardId) ?? [])].sort((a, b) =>
+      a.createdAt.localeCompare(b.createdAt),
+    );
+  }
+
+  private shortDay(iso: string | null | undefined): string {
+    return iso ? hanoiShortDay(iso) : "không có hạn";
+  }
+
   updateCard(cardId: string, patch: Partial<MockCardRecord>): boolean {
     const card = this.cardsById.get(cardId);
     if (!card) return false;
+    if ("dueAt" in patch && (patch.dueAt ?? null) !== (card.dueAt ?? null)) {
+      this.recordActivity(
+        cardId,
+        this.getCurrentUser().id,
+        `đổi hạn từ ${this.shortDay(card.dueAt)} sang ${this.shortDay(patch.dueAt)}`,
+      );
+    }
     const updated: MockCardRecord = {
       ...card,
       ...patch,
@@ -2109,6 +2198,17 @@ export class MockStore {
       (candidate) => candidate.id === optionId,
     );
     if (!statusColumn || !option) return "invalid";
+    const previousId = this.getFieldValues(cardId)[statusColumn.id];
+    const previous = statusColumn.options?.find(
+      (candidate) => candidate.id === previousId,
+    );
+    if (previous && previous.id !== option.id) {
+      this.recordActivity(
+        cardId,
+        this.getCurrentUser().id,
+        `đổi trạng thái từ ${previous.name} sang ${option.name}`,
+      );
+    }
     this.updateFieldValue(cardId, statusColumn.id, optionId);
     const done = option.category === "done";
     this.cardsById.set(cardId, {

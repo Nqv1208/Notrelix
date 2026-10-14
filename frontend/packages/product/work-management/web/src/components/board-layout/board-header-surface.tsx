@@ -56,6 +56,8 @@ export interface BoardHeaderAccess {
       readonly userId: string;
       readonly name: string;
     } | null;
+    /** When the access ends (ISO); absent or `null` = never. */
+    readonly expiresAt?: string | null;
   };
   readonly peopleCount: number;
   /**
@@ -74,6 +76,8 @@ export interface BoardHeaderAccess {
 
 export interface BoardHeaderSpace {
   readonly name: string;
+  /** What the crumb and the access chip say ("Phòng Công nghệ"); defaults to `name`. */
+  readonly label?: string;
   readonly initials: string;
   readonly markTone: BoardHeaderMarkTone;
   /** Link to the Space page; plain clicks go to `onOpenSpace` when given. */
@@ -230,7 +234,7 @@ function accessChipLabel(
   const h = copy.header;
   const scope =
     visibility === "space" && space
-      ? fillBoardHeaderCopy(h.scope.space, { space: space.name })
+      ? fillBoardHeaderCopy(h.scope.space, { space: space.label ?? space.name })
       : visibility === "private"
         ? h.scope.private
         : h.scope.workspace;
@@ -255,6 +259,16 @@ function bannerText(
   if (!level) return null;
   const grantedBy = access.mySource.grantedBy;
   if (access.mySource.kind === "explicit" && grantedBy) {
+    const expires = access.mySource.expiresAt;
+    if (expires) {
+      const date = new Date(expires);
+      const pad = (value: number) => String(value).padStart(2, "0");
+      return fillBoardHeaderCopy(banner.grantedByUntil, {
+        level,
+        name: grantedBy.name,
+        date: `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()}`,
+      });
+    }
     return fillBoardHeaderCopy(banner.grantedBy, {
       level,
       name: grantedBy.name,
@@ -311,20 +325,20 @@ function SpaceCrumb({
           onOpenSpace();
         }}
       >
-        {space.name}
+        {space.label ?? space.name}
       </a>
     );
   }
   if (onOpenSpace) {
     return (
       <button type="button" className={className} onClick={onOpenSpace}>
-        {space.name}
+        {space.label ?? space.name}
       </button>
     );
   }
   return (
     <span className="truncate text-crumb text-meta-foreground">
-      {space.name}
+      {space.label ?? space.name}
     </span>
   );
 }

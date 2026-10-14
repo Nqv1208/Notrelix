@@ -62,6 +62,8 @@ export const en = {
       commenter: "You can comment on this board",
       viewer: "You can view this board",
       grantedBy: "{{level}} · added directly by {{name}}",
+      grantedByUntil:
+        "{{level}} · added directly by {{name}}, expires {{date}}",
     },
   },
 };
@@ -119,6 +121,7 @@ export const vi: BoardHeaderCopy = {
       commenter: "Bạn có quyền bình luận trên board này",
       viewer: "Bạn có quyền xem board này",
       grantedBy: "{{level}} · được {{name}} thêm riêng",
+      grantedByUntil: "{{level}} · được {{name}} thêm riêng, hết hạn {{date}}",
     },
   },
 };

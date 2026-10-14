@@ -164,6 +164,8 @@ export function TaskDetailPanelSurface({
             onDuplicate={callbacks.onDuplicate}
             onArchive={callbacks.onArchive}
             onMoveToGroup={callbacks.onMoveToGroup}
+            following={detailData.following}
+            onToggleFollow={callbacks.onToggleWatch}
           />
           <div className="flex min-h-0 flex-1 flex-col gap-5.5 overflow-y-auto px-5.5 pt-4.5 pb-5.5">
             <div className="flex flex-col gap-5.5">

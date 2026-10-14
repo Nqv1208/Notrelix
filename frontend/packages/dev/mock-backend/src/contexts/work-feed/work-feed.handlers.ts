@@ -19,6 +19,8 @@ import {
   buildHomeFeed,
   buildInbox,
   buildInboxSummary,
+  isFollowing,
+  listChildItems,
   buildMyWorkExtended,
   bulkWrite,
   createAssignedItem,
@@ -38,6 +40,7 @@ import {
 const MY_WORK_EXT = "CTR-GAP-WS-MYWORK-EXT" as const;
 const HOME_FEED = "CTR-GAP-WS-HOME-FEED" as const;
 const INBOX = "CTR-GAP-WS-INBOX" as const;
+const ITEM_SHEET = "CTR-GAP-WS-ITEM-SHEET" as const;
 
 const BUCKETS: readonly WorkBucket[] = ["todo", "doing", "review", "done"];
 
@@ -202,6 +205,28 @@ export const workFeedOperations = [
       }
       const made = createAssignedItem(store, body.boardId, name);
       return made === "not-found" ? notFound("Board not found") : created(made);
+    },
+  }),
+
+  // ── Item sheet: child items and following ────────────────────────────────
+  defineMockOperation<{ id: string }>({
+    id: "wsFeed.items.childItems",
+    contract: { kind: "gap", gapId: ITEM_SHEET },
+    method: "GET",
+    route: "/board-items/:id/child-items",
+    async handle({ params, store }) {
+      const items = listChildItems(store, params.id);
+      return items === "not-found" ? notFound() : ok({ items });
+    },
+  }),
+  defineMockOperation<{ id: string }>({
+    id: "wsFeed.items.followingState",
+    contract: { kind: "gap", gapId: ITEM_SHEET },
+    method: "GET",
+    route: "/board-items/:id/following",
+    async handle({ params, store }) {
+      const following = isFollowing(store, params.id);
+      return following === "not-found" ? notFound() : ok({ following });
     },
   }),
 

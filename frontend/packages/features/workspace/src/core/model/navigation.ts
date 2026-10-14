@@ -235,20 +235,41 @@ export function rememberMarkTone(id: string, value: unknown): void {
     chosenMarkTones.set(id, value as MarkToneId);
 }
 
-/** One or two uppercase initials for an identity mark (letters/digits only). */
+/**
+ * One or two uppercase initials of a person (or any identity mark), as the
+ * design draws Vietnamese names: the initials of the given name, the last two
+ * words ("Trần Minh Quân" is "MQ", "Đỗ Khánh Linh" is "KL"); a "Thu" before the
+ * last word belongs to the family-given pair, so the first and last word are
+ * used ("Lý Thu Trang" is "LT"). Two words are both used, one word gives one.
+ */
 export function initialsFor(name: string): string {
-  const parts = name
+  const words = name
+    .replace(/\s*\([^)]*\)\s*$/, "")
     .trim()
     .split(/\s+/)
-    .map((part) => Array.from(part)[0])
+    .filter(Boolean);
+  const plainLast = (words[words.length - 1] ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+  // A given name of two letters or fewer ("Hà") is drawn with both letters.
+  if (words.length >= 2 && Array.from(plainLast).length <= 2)
+    return plainLast.toUpperCase();
+  const picked =
+    words.length >= 3
+      ? words[words.length - 2]
+          ?.normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .toLowerCase() === "thu"
+        ? [words[0], words[words.length - 1]]
+        : words.slice(-2)
+      : words;
+  const letters = picked
+    .map((part) => (part ? Array.from(part)[0] : undefined))
     .filter(
       (char): char is string =>
         char !== undefined && /[\p{L}\p{N}]/u.test(char),
     );
-  if (parts.length === 0) return "?";
-  const first = parts[0] ?? "";
-  const second = parts.length > 1 ? (parts[parts.length - 1] ?? "") : "";
-  return `${first}${second}`.toUpperCase();
+  return letters.length === 0 ? "?" : letters.join("").toUpperCase();
 }
 
 /** Words that only describe the kind of mark ("Nhóm Hạ tầng", "Minh An Group"). */

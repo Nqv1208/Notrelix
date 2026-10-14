@@ -174,6 +174,8 @@ export interface MockBoardGrantRecord {
   userId: string;
   level: "viewer" | "commenter" | "editor" | "manager";
   grantedByUserId: string;
+  /** When the access ends (gap field `mySource.expiresAt`); absent = never. */
+  expiresAt?: string;
 }
 
 /**

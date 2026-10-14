@@ -326,6 +326,26 @@ function projectFullBoard(
   };
 }
 
+/**
+ * Gap fields `departmentName` / `departmentColor` (CTR-GAP-WS-BOARD-DEPARTMENT):
+ * the department the Board sits in, named even when the caller cannot see the
+ * Space (a Board shared with them), as the Board header and the sidebar's
+ * "Được chia sẻ với bạn" draw it.
+ */
+function departmentOfBoard(store: MockStore, board: MockBoardRecord) {
+  let current = board.spaceId
+    ? store.spaces.getSpace(board.spaceId)
+    : undefined;
+  const seen = new Set<string>();
+  while (current?.parentId && !seen.has(current.id)) {
+    seen.add(current.id);
+    current = store.spaces.getSpace(current.parentId);
+  }
+  return current
+    ? { departmentName: current.name, departmentColor: current.color ?? null }
+    : { departmentName: null, departmentColor: null };
+}
+
 type AccessLevel = "viewer" | "commenter" | "editor" | "manager";
 const LEVEL_RANK: Record<AccessLevel, number> = {
   viewer: 0,
@@ -372,6 +392,7 @@ function projectBoardAccess(
         level: grant.level as AccessLevel,
         kind: role === "guest" ? "guest" : "explicit",
         grantedBy: grantor ? { userId: grantor.id, name: grantor.name } : null,
+        expiresAt: grant.expiresAt ?? null,
       }
     : null;
 
@@ -448,6 +469,9 @@ function projectBoardAccess(
       ...("grantedBy" in chosen && chosen.grantedBy
         ? { grantedBy: chosen.grantedBy }
         : {}),
+      ...("expiresAt" in chosen && chosen.expiresAt
+        ? { expiresAt: chosen.expiresAt }
+        : {}),
     },
     peopleCount: sources.reduce((sum, source) => sum + source.count, 0),
     guestCount: audience?.guestCount ?? 0,
@@ -490,7 +514,11 @@ export const boardsOperations = [
     method: "GET",
     route: "/workspaces/:workspaceId/boards",
     async handle({ params, store }) {
-      const boards = store.getBoards(params.workspaceId);
+      // Only the Boards the caller can open (a private department's Boards,
+      // reached through the Space, are not listed to people outside it).
+      const boards = store
+        .getBoards(params.workspaceId)
+        .filter((board) => projectBoardAccess(board, store) !== null);
       return ok<BoardDtoApi[]>(
         boards.map((b) => ({
           id: b.id,
@@ -505,6 +533,7 @@ export const boardsOperations = [
           createdAt: b.createdAt,
           version: b.version ?? 1,
           spaceId: visibleSpaceId(store, params.workspaceId, b.spaceId),
+          ...departmentOfBoard(store, b),
         })),
       );
     },

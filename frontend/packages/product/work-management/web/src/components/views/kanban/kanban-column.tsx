@@ -106,7 +106,7 @@ export interface KanbanColumnProps {
  * One Kanban lane: the cards whose grouping value is the lane's option.
  * Header: dot, name, count (the lane's cards under the current filter) and
  * "Tuỳ chọn cột {lane}" (collapse or hide the lane on this view only). The
- * lane shows `laneCardLimit` cards (four by default), then "Xem thêm N việc"; the selected card is always
+ * lane shows `laneCardLimit` cards (three by default; the Done lane one fewer), then "Xem thêm N việc"; the selected card is always
  * shown. The lane is the drop target for a card dragged from another lane.
  */
 export function KanbanColumn({
@@ -152,6 +152,10 @@ export function KanbanColumn({
     lane.optionId !== null &&
     !isOptimisticOptionId(lane.optionId);
 
+  // The Done lane is the quietest: it shows one card fewer (Final-Board shows
+  // three To do cards and two Done cards before "Xem thêm").
+  const limit =
+    lane.category === "done" ? Math.max(1, laneCardLimit - 1) : laneCardLimit;
   const count = lane.cards.length;
   const selectedIndex = selectedItemId
     ? lane.cards.findIndex((card) => card.id === selectedItemId)
@@ -161,12 +165,8 @@ export function KanbanColumn({
     : -1;
   const showAll =
     expanded ||
-    count <= laneCardLimit ||
-    selectedIndex >= laneCardLimit ||
-    draggedIndex >= laneCardLimit;
-  const visibleCards = showAll
-    ? lane.cards
-    : lane.cards.slice(0, laneCardLimit);
+    count <= limit || selectedIndex >= limit || draggedIndex >= limit;
+  const visibleCards = showAll ? lane.cards : lane.cards.slice(0, limit);
   const hiddenCount = count - visibleCards.length;
   const tint = lane.category
     ? LANE_TINT_CLASS[lane.category]
@@ -372,7 +372,7 @@ export function KanbanColumn({
         <button
           type="button"
           onClick={() => {
-            focusFirstRevealed.current = lane.cards[laneCardLimit]?.id ?? null;
+            focusFirstRevealed.current = lane.cards[limit]?.id ?? null;
             setExpanded(true);
           }}
           className="h-7.5 rounded-md bg-popover px-2 text-left dark:bg-card text-crumb font-medium text-muted-foreground hover:text-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focus-ring"

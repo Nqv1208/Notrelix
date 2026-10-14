@@ -105,21 +105,21 @@ describe("KanbanBoard status lanes", () => {
     }
   });
 
-  it("FUI[wm.kanban.board:show-more] caps a lane at four cards and reveals the rest, focusing the first revealed card", async () => {
+  it("FUI[wm.kanban.board:show-more] caps a lane at three cards and reveals the rest, focusing the first revealed card", async () => {
     for (const [locale, copy] of LOCALES) {
       const { unmount } = renderBoard({ locale });
       const todo = laneRegion("Cần làm");
-      expect(cardButtons(todo)).toHaveLength(4);
+      expect(cardButtons(todo)).toHaveLength(3);
       const more = within(todo).getByRole("button", {
-        name: copy.showMore_other.replace("{{count}}", "2"),
+        name: copy.showMore_other.replace("{{count}}", "3"),
       });
       fireEvent.click(more);
       const cards = cardButtons(laneRegion("Cần làm"));
       expect(cards).toHaveLength(6);
-      await waitFor(() => expect(document.activeElement).toBe(cards[4]));
+      await waitFor(() => expect(document.activeElement).toBe(cards[3]));
       expect(
         within(laneRegion("Cần làm")).queryByRole("button", {
-          name: copy.showMore_other.replace("{{count}}", "2"),
+          name: copy.showMore_other.replace("{{count}}", "3"),
         }),
       ).toBeNull();
       unmount();
@@ -148,7 +148,7 @@ describe("KanbanBoard status lanes", () => {
           name: copy.expand.replace("{{lane}}", "Cần làm"),
         }),
       );
-      expect(cardButtons(laneRegion("Cần làm"))).toHaveLength(4);
+      expect(cardButtons(laneRegion("Cần làm"))).toHaveLength(3);
 
       fireEvent.keyDown(
         within(laneRegion("Chờ duyệt")).getByRole("button", {

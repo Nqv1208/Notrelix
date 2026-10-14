@@ -46,6 +46,7 @@ import {
   destinationForEntry,
   isDestinationActive,
   NAVIGATION_RESOURCE_KIND,
+  type MarkToneId,
   type NavigationEntry,
   type WorkspaceDestination,
 } from "../../core/model/navigation";
@@ -87,6 +88,16 @@ export interface WorkspaceSidebarSurfaceProps {
    * omitted elsewhere.
    */
   readonly docsTree?: SidebarDocsTree | null;
+  /**
+   * Boards the member opens without seeing their department (shared with them),
+   * listed under "Được chia sẻ với bạn"; empty or omitted draws no section.
+   */
+  readonly sharedBoards?: readonly {
+    readonly id: string;
+    readonly name: string;
+    readonly departmentName: string | null;
+    readonly markTone: MarkToneId;
+  }[];
   /** The department (Space) tree (OT-5); omitted by hosts without Spaces. */
   readonly spaces?: Omit<SpaceTreeNavProps, "navigation" | "onNavigated">;
   readonly user: ShellUser | null;
@@ -449,7 +460,9 @@ function UserCard({
 >) {
   const closeDrawer = useCloseMobileDrawer();
   const name = user?.name ?? copy.user.unknown;
-  const roleLine = workspace?.role ? copy.sidebar.roles[workspace.role] : null;
+  const roleLine =
+    workspace?.roleLabel ??
+    (workspace?.role ? copy.sidebar.roles[workspace.role] : null);
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -625,6 +638,71 @@ function PinnedList({
   );
 }
 
+function SharedBoards({
+  copy,
+  boards,
+  location,
+  navigation,
+}: {
+  copy: WorkspaceShellCopy;
+  boards: NonNullable<WorkspaceSidebarSurfaceProps["sharedBoards"]>;
+  location: WorkspaceDestination | null;
+  navigation: ShellNavigation;
+}) {
+  const closeDrawer = useCloseMobileDrawer();
+  return (
+    <SidebarGroup className="p-0">
+      <div className={SIDEBAR_SECTION_LABEL_CLASS}>
+        <span>{copy.sidebar.sharedTitle}</span>
+      </div>
+      <SidebarGroupContent>
+        <SidebarMenu aria-label={copy.sidebar.sharedTitle} className="gap-0.5">
+          {boards.map((board) => {
+            const destination = {
+              section: "board",
+              boardId: board.id,
+            } as const;
+            const active = isDestinationActive(destination, location);
+            return (
+              <SidebarMenuItem key={board.id}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={active}
+                  className={cn(NAV_ROW, ACTIVE_ITEM)}
+                >
+                  <ShellLink
+                    destination={destination}
+                    navigation={navigation}
+                    onNavigated={closeDrawer}
+                    aria-current={active ? "page" : undefined}
+                  >
+                    {board.departmentName ? (
+                      <IdentityMark
+                        size="sm"
+                        name={board.departmentName}
+                        markTone={board.markTone}
+                      />
+                    ) : (
+                      <ResourceMark
+                        kind="work-management.board"
+                        id={board.id}
+                        size="sm"
+                      />
+                    )}
+                    <span className="truncate" title={board.name}>
+                      {board.name}
+                    </span>
+                  </ShellLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            );
+          })}
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
+  );
+}
+
 function SidebarSpaces({
   spaces,
   location,
@@ -733,6 +811,14 @@ export function WorkspaceSidebarSurface(props: WorkspaceSidebarSurfaceProps) {
           {props.spaces ? (
             <SidebarSpaces
               spaces={props.spaces}
+              location={location}
+              navigation={navigation}
+            />
+          ) : null}
+          {props.sharedBoards && props.sharedBoards.length > 0 ? (
+            <SharedBoards
+              copy={copy}
+              boards={props.sharedBoards}
               location={location}
               navigation={navigation}
             />

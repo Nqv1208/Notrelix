@@ -227,18 +227,18 @@ test.describe("Kanban drag", () => {
     const todo = lane(page, "Cần làm");
     const before = await titlesIn(todo);
     // The lane runs through the board's groups; an order change is made
-    // between cards of one group (the second to fourth card share one).
+    // between cards of one group (the second and third card share one).
     const moved = before[1]!;
     await pickUp(page, moved);
-    const fourth = await box(card(page, before[3]!));
-    await page.mouse.move(fourth.x + 100, fourth.y + fourth.height - 6, {
+    const third = await box(card(page, before[2]!));
+    await page.mouse.move(third.x + 100, third.y + third.height - 6, {
       steps: 12,
     });
     await page.mouse.up();
     // The card left its place and the others kept their order.
     await expect
       .poll(async () => (await titlesIn(todo)).indexOf(moved))
-      .toBeGreaterThan(2);
+      .toBeGreaterThan(1);
     expect((await titlesIn(todo)).filter((title) => title !== moved)).toEqual(
       before.filter((title) => title !== moved),
     );

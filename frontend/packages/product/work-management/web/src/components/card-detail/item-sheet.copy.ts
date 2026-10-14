@@ -17,6 +17,8 @@ export const en = {
   },
   head: {
     crumb: "Location",
+    following: "Following",
+    follow: "Follow",
     previous: "Previous item (K)",
     next: "Next item (J)",
     copyLink: "Copy link",
@@ -123,6 +125,8 @@ export const vi: ItemSheetCopy = {
   },
   head: {
     crumb: "Vị trí",
+    following: "Đang theo dõi",
+    follow: "Theo dõi",
     previous: "Công việc trước (K)",
     next: "Công việc sau (J)",
     copyLink: "Sao chép liên kết",

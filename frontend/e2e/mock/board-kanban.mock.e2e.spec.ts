@@ -98,7 +98,7 @@ for (const viewport of VIEWPORTS) {
       await expect.poll(() => laneCounts(page)).toEqual(["6", "3", "2", "5"]);
       await expect(
         lane(page, "Cần làm").getByRole("button", {
-          name: /^Xem thêm 2 việc$/,
+          name: /^Xem thêm 3 việc$/,
         }),
       ).toBeVisible();
       expect(errors).toEqual([]);
@@ -123,6 +123,12 @@ for (const viewport of VIEWPORTS) {
         await sheet.getByRole("button", { name: "Đóng (Esc)" }).click();
       }
       await expect.poll(() => laneCounts(page)).toEqual(["5", "4", "2", "5"]);
+      // Three cards show before "Xem thêm": a card that arrived by the sheet
+      // is the fourth.
+      const more = lane(page, "Đang làm").getByRole("button", {
+        name: /^Xem thêm/,
+      });
+      if (await more.count()) await more.click();
       await expect(
         lane(page, "Đang làm").getByRole("button", {
           name: ERP_149,

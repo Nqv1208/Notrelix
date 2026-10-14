@@ -87,6 +87,8 @@ export const en = {
       member: "Member",
       guest: "Guest",
     },
+    sharedTitle: "Shared with you",
+    departmentAdmin: "{{name}} department admin",
   },
   user: {
     menu: "Account menu for {{name}}",
@@ -240,6 +242,8 @@ export const vi: WorkspaceShellCopy = {
       member: "Thành viên",
       guest: "Khách",
     },
+    sharedTitle: "Được chia sẻ với bạn",
+    departmentAdmin: "Quản trị Phòng {{name}}",
   },
   user: {
     menu: "Menu tài khoản của {{name}}",

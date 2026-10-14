@@ -11,6 +11,8 @@ import {
   ChevronDown,
   ChevronUp,
   Clock,
+  Eye,
+  EyeOff,
   Flag,
   Link2,
   Maximize2,
@@ -103,6 +105,8 @@ export function TaskDetailHeader({
   onDuplicate,
   onArchive,
   onMoveToGroup,
+  following,
+  onToggleFollow,
 }: {
   board: Board;
   card: CardDetail;
@@ -118,6 +122,9 @@ export function TaskDetailHeader({
   onDuplicate: (cardId: string) => void;
   onArchive: (cardId: string) => void;
   onMoveToGroup?: (cardId: string, groupId: string) => void;
+  /** Whether the member follows the item; `null`/absent draws no follow chip. */
+  following?: boolean | null;
+  onToggleFollow?: (following: boolean) => void;
 }) {
   const fullPageReasonId = useId();
   const otherGroups = groups.filter((group) => group.id !== card.listId);
@@ -152,6 +159,29 @@ export function TaskDetailHeader({
           </>
         ) : null}
       </nav>
+      {following === null || following === undefined ? null : (
+        <button
+          type="button"
+          data-f="follow"
+          aria-pressed={following}
+          aria-label={following ? copy.head.following : copy.head.follow}
+          disabled={!onToggleFollow}
+          onClick={() => onToggleFollow?.(!following)}
+          className={cn(
+            "inline-flex h-6.5 shrink-0 items-center gap-1.5 rounded-full border-0 px-2.5 text-crumb font-medium outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
+            following
+              ? "bg-state-selected text-state-selected-foreground"
+              : "bg-transparent text-muted-foreground hover:bg-state-hover-strong",
+          )}
+        >
+          {following ? (
+            <Eye aria-hidden="true" className="size-3.5" />
+          ) : (
+            <EyeOff aria-hidden="true" className="size-3.5" />
+          )}
+          {following ? copy.head.following : copy.head.follow}
+        </button>
+      )}
       <span className="flex-1" aria-hidden="true" />
 
       <HeadIconButton

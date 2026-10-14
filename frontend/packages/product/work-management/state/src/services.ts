@@ -15,6 +15,7 @@ import { createFieldOptionApi } from "./api/field-option.api";
 import { createLabelApi } from "./api/label.api";
 import { createChecklistApi } from "./api/checklist.api";
 import { createCommentApi } from "./api/item-comments.api";
+import { createItemExtrasApi } from "./api/item-extras.api";
 
 export interface WorkManagementServices {
   readonly boards: ReturnType<typeof createBoardApi>;
@@ -27,6 +28,7 @@ export interface WorkManagementServices {
   readonly labels: ReturnType<typeof createLabelApi>;
   readonly checklists: ReturnType<typeof createChecklistApi>;
   readonly comments: ReturnType<typeof createCommentApi>;
+  readonly itemExtras: ReturnType<typeof createItemExtrasApi>;
 }
 
 export function createWorkManagementServices(
@@ -43,6 +45,7 @@ export function createWorkManagementServices(
     labels: createLabelApi(client),
     checklists: createChecklistApi(client),
     comments: createCommentApi(client),
+    itemExtras: createItemExtrasApi(client),
   };
 }
 

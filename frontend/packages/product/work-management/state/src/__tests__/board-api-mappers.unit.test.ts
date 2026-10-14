@@ -527,6 +527,7 @@ describe("mapBoardAccessDto", () => {
       mySource: {
         kind: "explicit",
         grantedBy: { userId: "user-phuc", name: "Lê Hoàng Phúc" },
+        expiresAt: null,
       },
       peopleCount: 32,
       guestCount: 1,
@@ -548,7 +549,11 @@ describe("mapBoardAccessDto", () => {
       sources: [{ kind: "unknown-kind", count: 3 }],
     });
     expect(mapped.myLevel).toBe("viewer");
-    expect(mapped.mySource).toEqual({ kind: "workspace", grantedBy: null });
+    expect(mapped.mySource).toEqual({
+      kind: "workspace",
+      grantedBy: null,
+      expiresAt: null,
+    });
     expect(mapped.peopleCount).toBe(0);
     expect(mapped.peopleCountComplete).toBe(false);
     expect(mapped.sources).toEqual([]);

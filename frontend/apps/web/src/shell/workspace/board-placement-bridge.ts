@@ -36,6 +36,13 @@ export interface BoardPlacement {
   readonly isPrivate: boolean;
   /** People added to the Board; `null` when the list does not say. */
   readonly memberCount: number | null;
+  /**
+   * The department the Board sits in, named even when the Space is not visible
+   * to the member (gap field, CTR-GAP-WS-BOARD-DEPARTMENT); `null` when unknown.
+   */
+  readonly departmentName: string | null;
+  /** The department's mark colour (a mark tone id); `null` = derive from the id. */
+  readonly departmentColor: string | null;
 }
 
 export const boardPlacementsQueryKey = (workspaceId: string) =>
@@ -52,6 +59,10 @@ function toPlacements(dto: BoardListDto | null): BoardPlacement[] {
       isPrivate: (board.visibility ?? "").toLowerCase() === "private",
       memberCount:
         typeof board.memberCount === "number" ? board.memberCount : null,
+      departmentName:
+        (board as { departmentName?: string | null }).departmentName ?? null,
+      departmentColor:
+        (board as { departmentColor?: string | null }).departmentColor ?? null,
     });
   }
   return out;

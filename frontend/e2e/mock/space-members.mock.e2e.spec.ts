@@ -4,7 +4,7 @@ import { expect, test, type Page } from "@playwright/test";
  * The department members tab as a person uses it: add people and teams, change
  * a role, remove a person or a team, filter, and the keyboard and focus of the
  * role menu and the two dialogs. The mock world resets on every page load.
- * Kế toán holds the owner (Admin) and the Helpdesk Team (Viewer: the owner,
+ * Kế toán holds the owner and Mai Quốc (Admin) and the Helpdesk Team (Viewer: the owner,
  * Jordan and Taylor); Công nghệ holds the owner (Admin), Jordan (Member) and
  * the admin (Viewer).
  */
@@ -75,7 +75,7 @@ test.describe("Department members (owner)", () => {
       jordan.getByRole("button", { name: /Người xem/ }),
     ).toBeVisible();
     await expect(
-      page.getByText(/1 quản trị · 0 thành viên · 2 người xem/),
+      page.getByText(/2 quản trị · 0 thành viên · 2 người xem/),
     ).toBeVisible();
     // Focus returned to the button that opened the dialog.
     await expect(
@@ -154,7 +154,7 @@ test.describe("Department members (owner)", () => {
   test("the only admin cannot be lowered or removed, and the menu says why", async ({
     page,
   }) => {
-    await open(page, ACCOUNTING, "Kế toán");
+    await open(page, ENGINEERING, "Công nghệ");
     await row(page, "Nguyễn Thu Hà")
       .getByRole("button", { name: /Quản trị/ })
       .click();

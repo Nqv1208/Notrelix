@@ -11,7 +11,11 @@ import {
   Textarea,
   cn,
 } from "@notrelix/ui-web";
-import type { CardDetail, CardUpdate } from "@notrelix/work-management-core";
+import type {
+  CardActivity,
+  CardDetail,
+  CardUpdate,
+} from "@notrelix/work-management-core";
 import { identityMarkClass } from "../shared/item-display";
 import { describeSheetTime } from "./item-sheet-format";
 import type { ItemSheetCopy } from "./item-sheet.copy";
@@ -24,6 +28,7 @@ import type {
 /** "Bình luận" subtab: the item's comments, oldest first. */
 export function TaskUpdatesTab({
   updates,
+  events = [],
   isLoading,
   capabilities,
   copy,
@@ -34,6 +39,8 @@ export function TaskUpdatesTab({
 }: {
   card: CardDetail;
   updates: readonly CardUpdate[];
+  /** Recorded changes (due date, Status…) shown among the comments by time. */
+  events?: readonly CardActivity[];
   isLoading: boolean;
   capabilities: TaskDetailCapabilities;
   copy: ItemSheetCopy;
@@ -51,7 +58,7 @@ export function TaskUpdatesTab({
       </div>
     );
   }
-  if (updates.length === 0) {
+  if (updates.length === 0 && events.length === 0) {
     return (
       <p className="m-0 text-sm text-muted-foreground">
         {copy.sections.noComments}
@@ -60,19 +67,63 @@ export function TaskUpdatesTab({
   }
   return (
     <ul className="m-0 flex list-none flex-col p-0">
-      {updates.map((update) => (
-        <li key={update.id}>
-          <CommentItem
-            update={update}
-            canEdit={capabilities.canEditFields}
-            canDelete={capabilities.canDelete}
-            copy={copy}
-            time={describeSheetTime(update.createdAt, now, copy, timeZone)}
-            onSave={(body) => onUpdateUpdate(update.id, body)}
-            onDelete={() => onDeleteUpdate(update.id)}
-          />
-        </li>
-      ))}
+      {[
+        ...updates.map((update) => ({ kind: "comment" as const, update })),
+        ...events.map((event) => ({ kind: "event" as const, event })),
+      ]
+        .sort((a, b) =>
+          (a.kind === "comment"
+            ? a.update.createdAt
+            : a.event.createdAt
+          ).localeCompare(
+            b.kind === "comment" ? b.update.createdAt : b.event.createdAt,
+          ),
+        )
+        .map((entry) =>
+          entry.kind === "comment" ? (
+            <li key={entry.update.id}>
+              <CommentItem
+                update={entry.update}
+                canEdit={capabilities.canEditFields}
+                canDelete={capabilities.canDelete}
+                copy={copy}
+                time={describeSheetTime(
+                  entry.update.createdAt,
+                  now,
+                  copy,
+                  timeZone,
+                )}
+                onSave={(body) => onUpdateUpdate(entry.update.id, body)}
+                onDelete={() => onDeleteUpdate(entry.update.id)}
+              />
+            </li>
+          ) : (
+            <li
+              key={entry.event.id}
+              data-f="event"
+              className="flex items-center gap-2 py-1.5 pl-1 text-crumb text-meta-foreground"
+            >
+              <span
+                aria-hidden="true"
+                className="size-1.5 shrink-0 rounded-full bg-primary"
+              />
+              <span>
+                <span className="font-medium text-muted-foreground">
+                  {entry.event.actor}
+                </span>{" "}
+                {entry.event.action} ·{" "}
+                <time dateTime={entry.event.createdAt}>
+                  {describeSheetTime(
+                    entry.event.createdAt,
+                    now,
+                    copy,
+                    timeZone,
+                  )}
+                </time>
+              </span>
+            </li>
+          ),
+        )}
     </ul>
   );
 }

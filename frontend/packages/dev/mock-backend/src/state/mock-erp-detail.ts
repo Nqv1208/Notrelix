@@ -88,3 +88,68 @@ export const ERP_COMMENTS: readonly ErpMockComment[] = [
     createdAt: "2026-10-12T02:15:00.000Z",
   },
 ];
+
+export interface ErpMockChildItem {
+  readonly parentKey: string;
+  /** "ERP-142.1". */
+  readonly key: string;
+  readonly title: string;
+  readonly done: boolean;
+  /** "dd/MM" at 17:00 in Hanoi. */
+  readonly due: string;
+  readonly assignee: "VT" | "MQ" | "KL";
+}
+
+/** The child items of ERP-142 the Detail and Board mockups list under "Việc con" (3/5 done). */
+export const ERP_CHILD_ITEMS: readonly ErpMockChildItem[] = [
+  {
+    parentKey: "ERP-142",
+    key: "ERP-142.1",
+    title: "Xuất dữ liệu từ hệ thống cũ",
+    done: true,
+    due: "25/09",
+    assignee: "VT",
+  },
+  {
+    parentKey: "ERP-142",
+    key: "ERP-142.2",
+    title: "Gộp 1.316 bản ghi trùng theo mã số thuế",
+    done: true,
+    due: "03/10",
+    assignee: "MQ",
+  },
+  {
+    parentKey: "ERP-142",
+    key: "ERP-142.3",
+    title: "Chuẩn hoá địa chỉ và số điện thoại",
+    done: true,
+    due: "07/10",
+    assignee: "MQ",
+  },
+  {
+    parentKey: "ERP-142",
+    key: "ERP-142.4",
+    title: "Đối chiếu công nợ đầu kỳ với Kế toán",
+    done: false,
+    due: "10/10",
+    assignee: "KL",
+  },
+  {
+    parentKey: "ERP-142",
+    key: "ERP-142.5",
+    title: "Nhập chính thức và kiểm tra mẫu 200 khách",
+    done: false,
+    due: "14/10",
+    assignee: "MQ",
+  },
+];
+
+/** History lines of ERP-142 the Board mockup shows under the comments. */
+export const ERP_ACTIVITY = [
+  {
+    itemKey: "ERP-142",
+    userId: "mock-user-erp-quan",
+    action: "đổi hạn từ 08/10 sang 10/10",
+    createdAt: "2026-10-07T03:40:00.000Z",
+  },
+] as const;

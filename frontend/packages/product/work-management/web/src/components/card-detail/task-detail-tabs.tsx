@@ -59,6 +59,9 @@ export function TaskDetailTabs({
         progress={card.childProgress ?? null}
         items={data.childItems}
         copy={copy}
+        onToggle={
+          capabilities.canEditFields ? callbacks.onToggleChildItem : undefined
+        }
       />
 
       <ActivitySection
@@ -87,10 +90,13 @@ function ChildItemsSection({
   progress,
   items,
   copy,
+  onToggle,
 }: {
   progress: { readonly done: number; readonly total: number } | null;
   items: readonly ItemSheetChildItem[] | undefined;
   copy: ItemSheetCopy;
+  /** Ticks or unticks a child item; the checkboxes are inert without it. */
+  onToggle?: (childId: string, done: boolean) => void;
 }) {
   const t = copy.sections;
   const counted =
@@ -120,19 +126,39 @@ function ChildItemsSection({
               key={item.id}
               className="-mx-1.5 flex min-h-8.5 items-center gap-2.5 rounded-[7px] px-1.5 text-body hover:bg-state-hover-strong"
             >
-              <span
-                aria-hidden="true"
-                className={cn(
-                  "grid size-4 shrink-0 place-items-center rounded-[4px] border-[1.5px]",
-                  item.done
-                    ? "border-work-status-done bg-work-status-done text-background"
-                    : "border-line-strong",
-                )}
-              >
-                {item.done ? (
-                  <Check className="size-2.75" strokeWidth={3} />
-                ) : null}
-              </span>
+              {onToggle ? (
+                <button
+                  type="button"
+                  role="checkbox"
+                  aria-checked={item.done}
+                  aria-label={item.title}
+                  onClick={() => onToggle(item.id, !item.done)}
+                  className={cn(
+                    "grid size-4 shrink-0 cursor-pointer place-items-center rounded-[4px] border-[1.5px] p-0 outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
+                    item.done
+                      ? "border-work-status-done bg-work-status-done text-background"
+                      : "border-line-strong",
+                  )}
+                >
+                  {item.done ? (
+                    <Check className="size-2.75" strokeWidth={3} />
+                  ) : null}
+                </button>
+              ) : (
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    "grid size-4 shrink-0 place-items-center rounded-[4px] border-[1.5px]",
+                    item.done
+                      ? "border-work-status-done bg-work-status-done text-background"
+                      : "border-line-strong",
+                  )}
+                >
+                  {item.done ? (
+                    <Check className="size-2.75" strokeWidth={3} />
+                  ) : null}
+                </span>
+              )}
               <span
                 className={
                   item.done ? "text-meta-foreground line-through" : undefined
@@ -234,6 +260,12 @@ function ActivitySection({
           <TaskUpdatesTab
             card={card}
             updates={data.updates}
+            events={data.activity.filter(
+              (entry) =>
+                entry.type === "updated" ||
+                entry.type === "system" ||
+                entry.type === "automation",
+            )}
             isLoading={data.updatesLoading}
             capabilities={capabilities}
             copy={copy}

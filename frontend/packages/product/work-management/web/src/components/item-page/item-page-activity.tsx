@@ -27,6 +27,7 @@ import type {
   CardMember,
   CardUpdate,
 } from "@notrelix/work-management-core";
+import { personInitials } from "@notrelix/work-management-core";
 import { identityMarkClass } from "../shared/item-display";
 import { useCommentEdit } from "../card-detail/use-comment-edit";
 import { useCommentDraft } from "../card-detail/update-composer";
@@ -55,15 +56,7 @@ const KEY_CLASS =
 
 const TAB_ORDER: readonly ItemPageTab[] = ["all", "comments", "history"];
 
-function initialsOf(name: string): string {
-  const words = name.trim().split(/\s+/).filter(Boolean);
-  if (words.length === 0) return "?";
-  const first = words[0] ?? "";
-  const last = words[words.length - 1] ?? "";
-  return (
-    words.length === 1 ? first.slice(0, 2) : first[0]! + last[0]!
-  ).toUpperCase();
-}
+const initialsOf = personInitials;
 
 /**
  * "Hoạt động": the filter tabs (all, comments, history), the day-grouped

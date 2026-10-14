@@ -51,7 +51,8 @@ test.describe("Kanban view settings", () => {
     page,
   }) => {
     await openBoard(page);
-    await expect(cardButtons(page, "Cần làm")).toHaveCount(4);
+    // Three cards before "Xem thêm" (Final-Board).
+    await expect(cardButtons(page, "Cần làm")).toHaveCount(3);
 
     const dialog = await openSettings(page);
     await dialog

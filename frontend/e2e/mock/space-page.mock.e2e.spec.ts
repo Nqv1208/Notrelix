@@ -222,10 +222,8 @@ test.describe("Department page (owner)", () => {
   }) => {
     await open(page, EMPTY_DEPARTMENT, "Nhân sự");
     await expect(page.getByText("Bắt đầu với Nhân sự")).toBeVisible();
-    // Open to the workspace: the card does not claim it is private.
-    await expect(
-      page.getByText("Mở cho cả workspace, bạn là quản trị"),
-    ).toBeVisible();
+    // Nhân sự is private in the Minh An world.
+    await expect(page.getByText("Riêng tư, bạn là quản trị")).toBeVisible();
     await page.getByRole("button", { name: "Board trống" }).click();
     const board = page.getByRole("dialog", { name: "Bảng mới" });
     await expect(board).toBeVisible();

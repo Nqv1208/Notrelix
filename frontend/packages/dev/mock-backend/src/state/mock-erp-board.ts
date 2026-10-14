@@ -419,9 +419,9 @@ export function hanoiInstant(dayMonth: string, hour = 17): string {
 }
 
 export const ERP_BOARD_MEMBERS: MockBoardMemberRecord[] = [
-  { userId: ERP_PEOPLE.HP.id, role: "Owner" },
   { userId: ERP_PEOPLE.HA.id, role: "Admin" },
   { userId: ERP_PEOPLE.MQ.id, role: "Member" },
+  { userId: ERP_PEOPLE.HP.id, role: "Owner" },
   { userId: ERP_PEOPLE.NA.id, role: "Member" },
   { userId: ERP_PEOPLE.VT.id, role: "Member" },
   { userId: ERP_PEOPLE.TT.id, role: "Member" },

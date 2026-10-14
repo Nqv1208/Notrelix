@@ -80,3 +80,11 @@ export function hanoiDayAt(
     minute,
   );
 }
+
+/** "dd/MM" of an instant in Hanoi (UTC+7). */
+export function hanoiShortDay(iso: string): string {
+  const hanoi = new Date(Date.parse(iso) + 7 * 60 * 60 * 1000);
+  return `${String(hanoi.getUTCDate()).padStart(2, "0")}/${String(
+    hanoi.getUTCMonth() + 1,
+  ).padStart(2, "0")}`;
+}

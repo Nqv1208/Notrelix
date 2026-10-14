@@ -1263,3 +1263,57 @@ export function buildInboxSummary(store: MockStore): InboxSummaryDto {
     total: perWorkspace.reduce((sum, entry) => sum + entry.unread, 0),
   };
 }
+
+export interface ChildItemDto {
+  id: string;
+  key: string | null;
+  title: string;
+  done: boolean;
+  dueAt: string | null;
+  assignee: {
+    id: string;
+    userId: string;
+    name: string;
+    initials: string;
+  } | null;
+}
+
+/** The child items of an item ("Việc con"), in position order. */
+export function listChildItems(
+  store: MockStore,
+  itemId: string,
+): ChildItemDto[] | "not-found" {
+  if (!store.getCard(itemId)) return "not-found";
+  return store.getChildCards(itemId).map((child) => {
+    const owner = person(store, child.assigneeUserIds?.[0]);
+    return {
+      id: child.id,
+      key: child.itemKey ?? null,
+      title: child.title,
+      done: statusOf(store, child.id)?.bucket === "done" || !!child.completedAt,
+      dueAt: child.dueAt ?? null,
+      assignee: owner
+        ? {
+            id: owner.id,
+            userId: owner.id,
+            name: owner.name,
+            initials: owner.name
+              .split(/\s+/)
+              .slice(-2)
+              .map((word) => Array.from(word)[0] ?? "")
+              .join("")
+              .toUpperCase(),
+          }
+        : null,
+    };
+  });
+}
+
+/** Whether the member follows an item (the sheet's "Đang theo dõi" chip). */
+export function isFollowing(
+  store: MockStore,
+  itemId: string,
+): boolean | "not-found" {
+  if (!store.getCard(itemId)) return "not-found";
+  return store.feed.following.has(itemId) || store.feed.assigned.has(itemId);
+}

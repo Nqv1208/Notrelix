@@ -723,6 +723,30 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     mutation: false,
   },
   {
+    context: "WorkManagement",
+    classification: "COMPATIBILITY_GAP_MOCKED",
+    consumerSymbol: "useItemChildItems",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/item-extras.api.ts",
+    capability: "Child items of an item with their done state",
+    gapId: "CTR-GAP-WS-ITEM-SHEET",
+    method: "GET",
+    pathTemplate: "/board-items/{id}/child-items",
+    mutation: false,
+  },
+  {
+    context: "WorkManagement",
+    classification: "COMPATIBILITY_GAP_MOCKED",
+    consumerSymbol: "useItemFollowing",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/item-extras.api.ts",
+    capability: "Whether the member follows an item",
+    gapId: "CTR-GAP-WS-ITEM-SHEET",
+    method: "GET",
+    pathTemplate: "/board-items/{id}/following",
+    mutation: false,
+  },
+  {
     context: "Workspace",
     classification: "CANONICAL_MOCKED",
     consumerSymbol: "useCompleteItem",

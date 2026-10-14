@@ -2,10 +2,17 @@ import { useMemo } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import {
+  formatCopy,
+  useWorkspaceHomeCopy,
+} from "@notrelix/features-workspace/web";
+import {
   buildSpaceIndex,
   identityToneFor,
   initialsFor,
+  MARK_TONE_IDS,
+  markInitialsFor,
   markToneFor,
+  type MarkToneId,
 } from "@notrelix/features-workspace/core";
 import type { Board } from "@notrelix/work-management-core";
 import { useBoardAccess } from "@notrelix/work-management-state";
@@ -15,6 +22,12 @@ import {
 } from "@notrelix/work-management-web";
 import { useBoardPlacements } from "./board-placement-bridge";
 import { useSpaceHooks } from "./use-workspace-spaces";
+
+function toMarkTone(color: string | null, fallbackId: string): MarkToneId {
+  return (MARK_TONE_IDS as readonly string[]).includes(color ?? "")
+    ? (color as MarkToneId)
+    : markToneFor(fallbackId);
+}
 
 /**
  * The board header data for the board route: the board's Space (from the
@@ -32,6 +45,7 @@ export function useBoardHeaderData(
 ): BoardHeaderData {
   const navigate = useNavigate();
   const laneCopy = useKanbanLaneCopy();
+  const homeCopy = useWorkspaceHomeCopy();
   const placements = useBoardPlacements(workspaceId);
   const spaceHooks = useSpaceHooks();
   const tree = spaceHooks.useSpaceTree(workspaceId);
@@ -45,6 +59,7 @@ export function useBoardHeaderData(
     return buildSpaceIndex(tree.data ?? []).byId.get(spaceId) ?? null;
   }, [spaceId, tree.data]);
 
+  const placement = placements.data?.find((entry) => entry.id === boardId);
   return useMemo<BoardHeaderData>(() => {
     const spaceHref = spaceNode
       ? `/workspaces/${workspaceId}/spaces/${spaceNode.id}`
@@ -53,15 +68,32 @@ export function useBoardHeaderData(
       space: spaceNode
         ? {
             name: spaceNode.name,
+            label:
+              spaceNode.type === "Department"
+                ? formatCopy(homeCopy.list.departmentOf, {
+                    name: spaceNode.name,
+                  })
+                : spaceNode.name,
             initials: initialsFor(spaceNode.name),
             markTone: markToneFor(spaceNode.id),
             href: spaceHref,
           }
-        : null,
+        : placement?.departmentName
+          ? {
+              // A Board shared with a member who cannot see its Space: the
+              // department is named, there is no page to open.
+              name: placement.departmentName,
+              label: formatCopy(homeCopy.list.departmentOf, {
+                name: placement.departmentName,
+              }),
+              initials: markInitialsFor(placement.departmentName),
+              markTone: toMarkTone(placement.departmentColor, boardId),
+            }
+          : null,
       visibility:
         board?.visibility === "private"
           ? "private"
-          : spaceNode
+          : spaceNode || placement?.departmentName
             ? "space"
             : "workspace",
       access,
@@ -89,5 +121,16 @@ export function useBoardHeaderData(
           );
       },
     };
-  }, [access, board, laneCopy, navigate, onOpenShare, spaceNode, workspaceId]);
+  }, [
+    access,
+    board,
+    homeCopy,
+    laneCopy,
+    navigate,
+    onOpenShare,
+    placement,
+    boardId,
+    spaceNode,
+    workspaceId,
+  ]);
 }

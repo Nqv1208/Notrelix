@@ -70,6 +70,8 @@ export interface TaskDetailData {
   readonly activityFetching: boolean;
   /** Child items when the item detail carries them; the count falls back to `childProgress`. */
   readonly childItems?: readonly ItemSheetChildItem[];
+  /** Whether the member follows the item; `null`/absent hides the follow chip. */
+  readonly following?: boolean | null;
 }
 
 export interface TaskDetailCallbacks {
@@ -81,6 +83,8 @@ export interface TaskDetailCallbacks {
    */
   readonly onUpdateItem?: (cardId: string, patch: UpdateCardInput) => void;
   readonly onToggleWatch: (watched: boolean) => void;
+  /** Ticks or unticks a child item; the checkboxes stay inert without it. */
+  readonly onToggleChildItem?: (childId: string, done: boolean) => void;
   readonly onDuplicate: (cardId: string) => void;
   readonly onArchive: (cardId: string) => void;
   readonly onUpdateFieldValue: (payload: UpdateFieldValueInput) => void;

@@ -31,6 +31,7 @@ import type {
   ListDtoApi,
   WorkStatusCategory,
 } from "@notrelix/work-management-core";
+import { personInitials } from "@notrelix/work-management-core";
 import {
   findPriorityField,
   findStatusField,
@@ -276,6 +277,9 @@ export function mapBoardAccessDto(dto: GeneratedBoardAccessDto): BoardAccess {
         grantedBy?.userId && grantedBy.name
           ? { userId: grantedBy.userId, name: grantedBy.name }
           : null,
+      expiresAt:
+        (dto.mySource as { expiresAt?: string | null } | undefined)
+          ?.expiresAt ?? null,
     },
     peopleCount: dto.peopleCount ?? 0,
     guestCount: dto.guestCount ?? 0,
@@ -962,8 +966,5 @@ function normalizeMemberRole(value: string): BoardMember["role"] {
 }
 
 function getInitials(name: string) {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "?";
-  if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase();
-  return `${parts[0]![0]}${parts[parts.length - 1]![0]}`.toUpperCase();
+  return personInitials(name);
 }

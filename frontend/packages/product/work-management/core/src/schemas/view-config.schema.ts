@@ -12,7 +12,7 @@ export const sortConfigSchema = z.object({
 });
 
 /** Cards a Kanban lane shows before "Xem thêm N việc" (the former constant). */
-export const DEFAULT_KANBAN_LANE_CARD_LIMIT = 4;
+export const DEFAULT_KANBAN_LANE_CARD_LIMIT = 3;
 export const MIN_KANBAN_LANE_CARD_LIMIT = 1;
 export const MAX_KANBAN_LANE_CARD_LIMIT = 20;
 

@@ -9,3 +9,4 @@ export * from "./use-card-files";
 export * from "./use-full-board";
 export * from "./use-resolved-workspace-board";
 export * from "./use-workspace-boards";
+export * from "./use-item-extras";

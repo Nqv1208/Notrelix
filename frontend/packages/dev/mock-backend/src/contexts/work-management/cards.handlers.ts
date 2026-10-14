@@ -434,7 +434,7 @@ export const cardsOperations = [
   defineMockOperation<
     { id: string },
     never,
-    { activities: unknown[]; total: number }
+    { data: unknown[]; total: number; page: number; pageSize: number }
   >({
     id: "cards.activity",
     contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
@@ -443,7 +443,14 @@ export const cardsOperations = [
     async handle({ params, store }) {
       const c = store.getCard(params.id);
       if (!c) return notFound("Card not found");
-      return ok({ activities: [], total: 0 });
+      const data = store.getActivity(params.id).map((entry) => ({
+        id: entry.id,
+        actorName: store.getUser(entry.actorId)?.name ?? null,
+        action: entry.action,
+        resourceTitle: null,
+        createdAt: entry.createdAt,
+      }));
+      return ok({ data, total: data.length, page: 1, pageSize: data.length });
     },
   }),
 
