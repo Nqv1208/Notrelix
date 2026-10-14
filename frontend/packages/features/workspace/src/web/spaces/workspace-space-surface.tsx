@@ -16,6 +16,7 @@ import {
 } from "../../core/model/navigation";
 import {
   spaceCapabilities,
+  spaceMemberKey,
   type SpaceContentCounts,
   type SpaceMemberEntry,
   type SpaceNode,
@@ -45,10 +46,19 @@ import type {
   SpaceWorkloadRowView,
 } from "./space-page-models";
 import {
-  SpaceMembersPanel,
-  type AddSpaceMemberInput,
-  type SpaceMemberCandidate,
-} from "./space-members-panel";
+  AddMembersDialog,
+  RemoveMemberDialog,
+  type SpaceAddPreviewBase,
+} from "./space-members-dialogs";
+import type {
+  AddSpaceMemberInput,
+  SpaceDirectoryPerson,
+  SpaceMemberCandidate,
+  SpacePendingInviteView,
+  TeamPersonView,
+  TypedToken,
+} from "./space-members-models";
+import { SpaceMembersView, type MemberMenuState } from "./space-members-view";
 import {
   SpaceSettingsPanel,
   type SpaceDetailsValues,
@@ -86,10 +96,25 @@ export interface WorkspaceSpaceSurfaceProps {
   readonly members: SectionState<readonly SpaceMemberEntry[]>;
   readonly candidateUsers: SectionState<readonly SpaceMemberCandidate[]>;
   readonly candidateTeams: SectionState<readonly SpaceTeam[]>;
+  /** Workspace members by user id: email and role for the second line. */
+  readonly directory: ReadonlyMap<string, SpaceDirectoryPerson>;
+  readonly meId: string | null;
+  /** People of the teams that were expanded, by team id. */
+  readonly teamPeople: ReadonlyMap<
+    string,
+    SectionState<readonly TeamPersonView[]>
+  >;
+  readonly formatDay: (iso: string) => string;
+  readonly previewBase: SpaceAddPreviewBase | null;
+  readonly addProgress: {
+    readonly done: number;
+    readonly total: number;
+  } | null;
+  readonly removingMember: boolean;
+  readonly onExpandTeam: (teamId: string) => void;
   readonly pendingMemberKeys: ReadonlySet<string>;
   readonly addingMember: boolean;
   readonly addMemberError: string | null;
-  readonly addMemberResetKey: number;
   readonly saveStatus: SpaceSaveStatus;
   readonly archiving: boolean;
   readonly archiveRefused: boolean;
@@ -103,7 +128,9 @@ export interface WorkspaceSpaceSurfaceProps {
   readonly onArchive: () => void;
   /** `null`: no delete write exists, the button is drawn inert. */
   readonly onDelete: (() => void) | null;
-  readonly onAddMember: (input: AddSpaceMemberInput) => void;
+  readonly onAddMembers: (inputs: readonly AddSpaceMemberInput[]) => void;
+  /** Closes the add dialog after the host finished adding. */
+  readonly addDialogKey: number;
   readonly onChangeMemberRole: (
     entry: SpaceMemberEntry,
     role: SpaceRole,
@@ -115,6 +142,16 @@ export interface WorkspaceSpaceSurfaceProps {
   /** Starts with the Create menu open (stories, tests). */
   readonly initialMenuOpen?: boolean;
   readonly initialDeleteOpen?: boolean;
+  readonly initialInviteOpen?: boolean;
+  readonly initialInviteTokens?: readonly TypedToken[];
+  readonly initialExpanded?: readonly string[];
+  readonly initialMenu?: MemberMenuState | null;
+  readonly initialRemoveKey?: string | null;
+  /** Waiting workspace invitations shown in the list (none today). */
+  readonly invites?: readonly SpacePendingInviteView[];
+  readonly membersPageSize?: number;
+  /** Roles the person also has through a team (story data). */
+  readonly also?: ReadonlyMap<string, { team: string; role: SpaceRole }>;
 }
 
 const LIBRARY: WorkspaceDestination = { section: "library" };
@@ -140,6 +177,20 @@ export function WorkspaceSpaceSurface(props: WorkspaceSpaceSurfaceProps) {
   const [menuOpen, setMenuOpen] = React.useState(
     props.initialMenuOpen ?? false,
   );
+  const [inviteOpen, setInviteOpen] = React.useState(
+    props.initialInviteOpen ?? false,
+  );
+  const [removeKey, setRemoveKey] = React.useState<string | null>(
+    props.initialRemoveKey ?? null,
+  );
+  // The host bumps `addDialogKey` once the adds are done.
+  const seenAddKey = React.useRef(props.addDialogKey);
+  React.useEffect(() => {
+    if (seenAddKey.current !== props.addDialogKey) {
+      seenAddKey.current = props.addDialogKey;
+      setInviteOpen(false);
+    }
+  }, [props.addDialogKey]);
 
   if (space.status === "loading") {
     return (
@@ -278,7 +329,10 @@ export function WorkspaceSpaceSurface(props: WorkspaceSpaceSurfaceProps) {
         onCreateBoard={props.onCreateBoard}
         onCreateDoc={props.onCreateDoc}
         onCreateChild={caps.canCreateChild ? props.onCreateChild : null}
-        primaryAdd={props.firstSteps && tab === "overview"}
+        primaryAdd={
+          (props.firstSteps && tab === "overview") || tab === "members"
+        }
+        onAdd={tab === "members" ? () => setInviteOpen(true) : null}
       />
       <SpaceTabs
         copy={copy}
@@ -400,27 +454,33 @@ export function WorkspaceSpaceSurface(props: WorkspaceSpaceSurfaceProps) {
             ) : null}
           </>
         ) : tab === "members" ? (
-          <div
-            data-f="col"
-            className="min-w-0 flex-1 overflow-auto px-7 pt-[22px] pb-8"
-          >
-            <SpaceMembersPanel
-              copy={copy}
-              spaceName={node.name}
-              canManage={manage && !node.isArchived}
-              members={props.members}
-              users={props.candidateUsers}
-              teams={props.candidateTeams}
-              pendingKeys={props.pendingMemberKeys}
-              adding={props.addingMember}
-              addError={props.addMemberError}
-              addResetKey={props.addMemberResetKey}
-              onAdd={props.onAddMember}
-              onChangeRole={props.onChangeMemberRole}
-              onRemove={props.onRemoveMember}
-              onRetry={props.onRetryMembers}
-            />
-          </div>
+          <SpaceMembersView
+            copy={copy}
+            navigation={navigation}
+            spaceName={node.name}
+            members={props.members}
+            directory={props.directory}
+            teams={
+              props.candidateTeams.status === "ready"
+                ? props.candidateTeams.data
+                : null
+            }
+            meId={props.meId}
+            canManage={manage && !node.isArchived}
+            pendingKeys={props.pendingMemberKeys}
+            teamPeople={props.teamPeople}
+            childSpaces={props.childSpaces}
+            also={props.also}
+            formatDay={props.formatDay}
+            onExpandTeam={props.onExpandTeam}
+            onChangeRole={props.onChangeMemberRole}
+            onAskRemove={(entry) => setRemoveKey(spaceMemberKey(entry))}
+            onRetry={props.onRetryMembers}
+            initialExpanded={props.initialExpanded}
+            initialMenu={props.initialMenu}
+            invites={props.invites}
+            pageSize={props.membersPageSize}
+          />
         ) : (
           <SpaceSettingsPanel
             copy={copy}
@@ -441,6 +501,52 @@ export function WorkspaceSpaceSurface(props: WorkspaceSpaceSurfaceProps) {
           />
         )}
       </div>
+      <AddMembersDialog
+        copy={copy}
+        navigation={navigation}
+        open={inviteOpen}
+        spaceName={node.name}
+        workspaceName={props.workspaceName}
+        users={props.candidateUsers}
+        teams={props.candidateTeams}
+        taken={
+          new Set(
+            props.members.status === "ready"
+              ? props.members.data.map((entry) => spaceMemberKey(entry))
+              : [],
+          )
+        }
+        previewBase={props.previewBase}
+        adding={props.addingMember}
+        progress={props.addProgress}
+        error={props.addMemberError}
+        onClose={() => setInviteOpen(false)}
+        onSubmit={props.onAddMembers}
+        initialTokens={props.initialInviteTokens}
+      />
+      <RemoveMemberDialog
+        copy={copy}
+        spaceName={node.name}
+        entries={props.members.status === "ready" ? props.members.data : []}
+        entry={
+          props.members.status === "ready"
+            ? (props.members.data.find(
+                (entry) => spaceMemberKey(entry) === removeKey,
+              ) ?? null)
+            : null
+        }
+        teamPeople={
+          removeKey?.startsWith("Team:")
+            ? (props.teamPeople.get(removeKey.slice(5)) ?? null)
+            : null
+        }
+        removing={props.removingMember}
+        onClose={() => setRemoveKey(null)}
+        onConfirm={(entry) => {
+          setRemoveKey(null);
+          props.onRemoveMember(entry);
+        }}
+      />
     </div>
   );
 }

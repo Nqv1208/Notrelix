@@ -3,6 +3,7 @@ import {
   createUseSpaceMembers,
   createUseSpaceMutations,
   createUseSpaceTree,
+  createUseTeamsMembers,
   createUseWorkspaceTeams,
   type WorkspaceSpacesCopy,
 } from "@notrelix/features-workspace/web";
@@ -18,6 +19,7 @@ export function useSpaceHooks() {
       useSpaceTree: createUseSpaceTree(deps),
       useSpaceMembers: createUseSpaceMembers(deps),
       useWorkspaceTeams: createUseWorkspaceTeams(deps),
+      useTeamsMembers: createUseTeamsMembers(deps),
       useSpaceMutations: createUseSpaceMutations(deps),
     };
   }, [runtimeClient]);

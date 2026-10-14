@@ -9,6 +9,14 @@ import {
   spacePageEditorScenario,
   spacePageErrorScenario,
   spacePageLoadingScenario,
+  spacePageMembersEmptyScenario,
+  spacePageMembersErrorScenario,
+  spacePageMembersInviteScenario,
+  spacePageMembersLastAdminScenario,
+  spacePageMembersLoadingScenario,
+  spacePageMembersReadOnlyScenario,
+  spacePageMembersRemoveScenario,
+  spacePageMembersRoleScenario,
   spacePageMembersScenario,
   spacePageNewScenario,
   spacePageNotFoundScenario,
@@ -41,7 +49,8 @@ const callbacks = {
   onSave: noop,
   onArchive: noop,
   onDelete: noop,
-  onAddMember: noop,
+  onAddMembers: noop,
+  onExpandTeam: noop,
   onChangeMemberRole: noop,
   onRemoveMember: noop,
   onRetry: noop,
@@ -143,8 +152,52 @@ export const SpaceNotFound: Story = {
   tags: ["fui-surface--workspace.space-page", "fui-state--Unavailable"],
 };
 
-/** The Members tab under the new head (the members panel). */
+/** Final-Members `danh-sach`: teams open, people, a waiting invitation, "show more". */
 export const SpaceMembers: Story = {
   render: () => render(spacePageMembersScenario()),
   tags: ["fui-surface--workspace.space-page", "fui-state--Default"],
+};
+
+/** Final-Members `doi-vai-tro`: the role menu of a person who is also in a team. */
+export const SpaceMembersRoleMenu: Story = {
+  render: () => render(spacePageMembersRoleScenario()),
+  tags: ["fui-surface--workspace.space-page", "fui-state--Default"],
+};
+
+/** Final-Members `quan-tri-cuoi`: the only admin cannot be lowered or removed. */
+export const SpaceMembersLastAdmin: Story = {
+  render: () => render(spacePageMembersLastAdminScenario()),
+  tags: ["fui-surface--workspace.space-page", "fui-state--PermissionLimited"],
+};
+
+/** Final-Members `them-nguoi`: the add dialog. */
+export const SpaceMembersAdd: Story = {
+  render: () => render(spacePageMembersInviteScenario()),
+  tags: ["fui-surface--workspace.space-page", "fui-state--Default"],
+};
+
+/** Final-Members `go-nhom`: removing a team lists who loses access. */
+export const SpaceMembersRemoveTeam: Story = {
+  render: () => render(spacePageMembersRemoveScenario()),
+  tags: ["fui-surface--workspace.space-page", "fui-state--Default"],
+};
+
+export const SpaceMembersLoading: Story = {
+  render: () => render(spacePageMembersLoadingScenario()),
+  tags: ["fui-surface--workspace.space-page", "fui-state--Loading"],
+};
+
+export const SpaceMembersError: Story = {
+  render: () => render(spacePageMembersErrorScenario()),
+  tags: ["fui-surface--workspace.space-page", "fui-state--Error"],
+};
+
+export const SpaceMembersEmpty: Story = {
+  render: () => render(spacePageMembersEmptyScenario()),
+  tags: ["fui-surface--workspace.space-page", "fui-state--Empty"],
+};
+
+export const SpaceMembersReadOnly: Story = {
+  render: () => render(spacePageMembersReadOnlyScenario()),
+  tags: ["fui-surface--workspace.space-page", "fui-state--ReadOnly"],
 };

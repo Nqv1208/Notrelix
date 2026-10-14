@@ -11,7 +11,7 @@ import type {
 import { buildSpaceIndex, moveTargets } from "../core/model/spaces";
 import type { CreateSpaceDialogProps } from "../web/spaces/create-space-dialog";
 import type { MoveToSpaceDialogProps } from "../web/spaces/move-to-space-dialog";
-import type { SpaceMemberCandidate } from "../web/spaces/space-members-panel";
+import type { SpaceMemberCandidate } from "../web/spaces/space-members-models";
 import type {
   SpaceBoardLink,
   SpaceTreeNavProps,

@@ -24,11 +24,14 @@ import {
   type AddSpaceMemberInput,
   type SectionState,
   type SpaceBoardRowView,
+  type SpaceAddPreviewBase,
   type SpaceChildView,
   type SpaceContentView,
   type SpaceDetailsValues,
   type SpaceDocRowView,
+  type SpaceDirectoryPerson,
   type SpaceMemberCandidate,
+  type TeamPersonView,
   type SpaceSaveStatus,
 } from "@notrelix/features-workspace/web";
 import { useFeatureRuntimeDependencies } from "@notrelix/runtime-web";
@@ -83,6 +86,8 @@ export function SpacePage() {
   const canManage = node?.access === "Manager";
   const members = hooks.useSpaceMembers(workspaceId, node ? spaceId : null);
   const teams = hooks.useWorkspaceTeams(workspaceId, canManage);
+  const [expandedTeams, setExpandedTeams] = useState<readonly string[]>([]);
+  const teamMembers = hooks.useTeamsMembers(workspaceId, expandedTeams);
   const resources = useWorkspaceResources(workspaceId);
   const placements = useBoardPlacements(workspaceId);
   const pages = usePageList(workspaceId);
@@ -100,7 +105,11 @@ export function SpacePage() {
     ReadonlySet<string>
   >(() => new Set());
   const [addError, setAddError] = useState<string | null>(null);
-  const [addResetKey, setAddResetKey] = useState(0);
+  const [addDialogKey, setAddDialogKey] = useState(0);
+  const [addProgress, setAddProgress] = useState<{
+    done: number;
+    total: number;
+  } | null>(null);
   const [saveStatus, setSaveStatus] = useState<SpaceSaveStatus>("idle");
   const [archiveRefused, setArchiveRefused] = useState(false);
 
@@ -109,6 +118,7 @@ export function SpacePage() {
     setSaveStatus("idle");
     setArchiveRefused(false);
     setAddError(null);
+    setExpandedTeams([]);
   }, [spaceId]);
 
   const space: SectionState<typeof node> = tree.isError
@@ -225,6 +235,66 @@ export function SpacePage() {
     [index, node, spaceId],
   );
 
+  const directory = useMemo(() => {
+    const map = new Map<string, SpaceDirectoryPerson>();
+    for (const member of viewer.members.data ?? []) {
+      map.set(member.userId, {
+        email: null,
+        workspaceRole: member.role,
+      });
+    }
+    return map;
+  }, [viewer.members.data]);
+
+  const teamPeople = useMemo(() => {
+    const map = new Map<string, SectionState<readonly TeamPersonView[]>>();
+    expandedTeams.forEach((teamId, index) => {
+      const query = teamMembers[index];
+      if (!query) return;
+      map.set(
+        teamId,
+        query.isError
+          ? { status: "error" }
+          : !query.data
+            ? { status: "loading" }
+            : {
+                status: "ready",
+                data: query.data.map((member) => ({
+                  id: member.userId,
+                  name: member.displayName,
+                  tone: identityToneFor(member.userId),
+                  note: null,
+                })),
+              },
+      );
+    });
+    return map;
+  }, [expandedTeams, teamMembers]);
+
+  const previewBase = useMemo<SpaceAddPreviewBase | null>(() => {
+    if (content.status !== "ready") return null;
+    const boards = content.data.boards;
+    return {
+      openBoards: boards.filter((board) => !board.isPrivate).length,
+      docs: content.data.docTotal,
+      openChildren: childSpaces
+        .filter((child) => !child.isPrivate)
+        .map((child) => child.name),
+      hidden: [
+        ...childSpaces
+          .filter((child) => child.isPrivate)
+          .map((child) => child.name),
+        ...boards.filter((board) => board.isPrivate).map((board) => board.name),
+      ],
+    };
+  }, [childSpaces, content]);
+
+  const formatDay = useCallback((iso: string) => {
+    const date = new Date(iso);
+    const pad = (value: number) => String(value).padStart(2, "0");
+    return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}`;
+  }, []);
+
   const candidateUsers = useMemo<
     SectionState<readonly SpaceMemberCandidate[]>
   >(() => {
@@ -238,6 +308,7 @@ export function SpacePage() {
           id: member.userId,
           name: member.name,
           avatarUrl: member.avatarUrl ?? null,
+          email: null,
         })),
     };
   }, [viewer.members]);
@@ -320,43 +391,73 @@ export function SpacePage() {
     [copy, memberWrite, mutations.removeMember, spaceId],
   );
 
-  const onAddMember = useCallback(
-    (input: AddSpaceMemberInput) => {
-      if (!node) return;
+  const onAddMembers = useCallback(
+    async (inputs: readonly AddSpaceMemberInput[]) => {
+      if (!node || inputs.length === 0) return;
       setAddError(null);
-      const name =
-        input.subjectType === "Team"
-          ? (teams.data?.find((team) => team.id === input.subjectId)?.name ??
-            "")
-          : ((candidateUsers.status === "ready"
-              ? candidateUsers.data.find((user) => user.id === input.subjectId)
-                  ?.name
-              : undefined) ?? "");
-      mutations.addMember.mutate(
-        { spaceId, ...input, expectedVersion: node.version },
-        {
-          onSuccess: () => {
-            setAddResetKey((key) => key + 1);
-            toast.success(formatCopy(copy.toasts.memberAdded, { name }));
-          },
-          onError: (error) => {
-            const failure = describeWorkspaceFailure(error);
-            if (failure.kind === "rule" || failure.kind === "validation") {
-              setAddError(
-                failure.detail ??
-                  Object.values(failure.fieldErrors).flat()[0] ??
-                  copy.toasts.unknown,
-              );
-              return;
-            }
+      setAddProgress({ done: 0, total: inputs.length });
+      let version = node.version;
+      let done = 0;
+      for (const input of inputs) {
+        const name =
+          input.subjectType === "Team"
+            ? (teams.data?.find((team) => team.id === input.subjectId)?.name ??
+              "")
+            : ((candidateUsers.status === "ready"
+                ? candidateUsers.data.find(
+                    (user) => user.id === input.subjectId,
+                  )?.name
+                : undefined) ?? "");
+        try {
+          await mutations.addMember.mutateAsync({
+            spaceId,
+            ...input,
+            expectedVersion: version,
+          });
+          done += 1;
+          setAddProgress({ done, total: inputs.length });
+          // Every write moves the Space version: read it before the next one.
+          const fresh = await tree.refetch();
+          version =
+            fresh.data?.find((candidate) => candidate.id === spaceId)
+              ?.version ?? version + 1;
+        } catch (error) {
+          const failure = describeWorkspaceFailure(error);
+          if (failure.kind === "rule" || failure.kind === "validation") {
+            setAddError(
+              failure.detail ??
+                Object.values(failure.fieldErrors).flat()[0] ??
+                copy.toasts.unknown,
+            );
+          } else {
             toastFailure(
               formatCopy(copy.toasts.memberAddFailed, { name }),
               error,
               hint,
             );
-          },
-        },
-      );
+          }
+          break;
+        }
+      }
+      setAddProgress(null);
+      if (done === inputs.length) {
+        toast.success(
+          inputs.length === 1
+            ? formatCopy(copy.toasts.memberAdded, {
+                name:
+                  inputs[0]?.subjectType === "Team"
+                    ? (teams.data?.find((t) => t.id === inputs[0]?.subjectId)
+                        ?.name ?? "")
+                    : ((candidateUsers.status === "ready"
+                        ? candidateUsers.data.find(
+                            (user) => user.id === inputs[0]?.subjectId,
+                          )?.name
+                        : undefined) ?? ""),
+              })
+            : formatCopy(copy.toasts.membersAdded, { count: done }),
+        );
+        setAddDialogKey((key) => key + 1);
+      }
     },
     [
       candidateUsers,
@@ -366,8 +467,15 @@ export function SpacePage() {
       node,
       spaceId,
       teams.data,
+      tree,
     ],
   );
+
+  const onExpandTeam = useCallback((teamId: string) => {
+    setExpandedTeams((current) =>
+      current.includes(teamId) ? current : [...current, teamId],
+    );
+  }, []);
 
   const onSave = useCallback(
     (changes: Partial<SpaceDetailsValues>) => {
@@ -453,7 +561,15 @@ export function SpacePage() {
         pendingMemberKeys={pendingMemberKeys}
         addingMember={mutations.addMember.isPending}
         addMemberError={addError}
-        addMemberResetKey={addResetKey}
+        addProgress={addProgress}
+        addDialogKey={addDialogKey}
+        removingMember={mutations.removeMember.isPending}
+        directory={directory}
+        meId={viewer.userId}
+        teamPeople={teamPeople}
+        previewBase={previewBase}
+        formatDay={formatDay}
+        onExpandTeam={onExpandTeam}
         saveStatus={saveStatus}
         archiving={mutations.archive.isPending}
         archiveRefused={archiveRefused}
@@ -468,7 +584,7 @@ export function SpacePage() {
         onSave={onSave}
         onArchive={onArchive}
         onDelete={null}
-        onAddMember={onAddMember}
+        onAddMembers={onAddMembers}
         onChangeMemberRole={onChangeMemberRole}
         onRemoveMember={onRemoveMember}
         onRetry={() => void tree.refetch()}

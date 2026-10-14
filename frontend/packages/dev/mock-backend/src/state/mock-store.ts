@@ -703,6 +703,15 @@ export class MockStore {
       role: "Member",
       addedAt: at,
     });
+    // The admin watches Engineering as a Viewer, so its member list shows all
+    // three roles (Accounting shows a Team entry).
+    this.spaces.insertMember({
+      spaceId: mockIds.spaces.engineering,
+      subjectType: "User",
+      subjectId: mockIds.users.admin,
+      role: "Viewer",
+      addedAt: at,
+    });
     this.spaces.insertTeam({
       id: mockIds.teams.helpdesk,
       workspaceId,

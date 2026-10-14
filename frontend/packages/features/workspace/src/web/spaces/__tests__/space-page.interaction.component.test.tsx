@@ -6,6 +6,13 @@ import {
   spacePageArchivedScenario,
   spacePageContentErrorScenario,
   spacePageEditorScenario,
+  spacePageMembersEmptyScenario,
+  spacePageMembersErrorScenario,
+  spacePageMembersInviteScenario,
+  spacePageMembersLastAdminScenario,
+  spacePageMembersLoadingScenario,
+  spacePageMembersReadOnlyScenario,
+  spacePageMembersRemoveScenario,
   spacePageMembersScenario,
   spacePageNewScenario,
   spacePageNotFoundScenario,
@@ -33,7 +40,6 @@ beforeAll(() => {
 });
 
 const copy = spacesCopyFixture("vi");
-const en = spacesCopyFixture("en");
 
 function renderPage(
   scenario: SpacePageScenario = spacePageOverviewScenario(),
@@ -53,7 +59,8 @@ function renderPage(
     onSave: vi.fn(),
     onArchive: vi.fn(),
     onDelete: null,
-    onAddMember: vi.fn(),
+    onAddMembers: vi.fn(),
+    onExpandTeam: vi.fn(),
     onChangeMemberRole: vi.fn(),
     onRemoveMember: vi.fn(),
     onRetry: vi.fn(),
@@ -65,13 +72,8 @@ function renderPage(
   return { props, view, navigated };
 }
 
-/** Member tests use the English copy of the members panel, as before. */
 function renderMembers(overrides: Partial<WorkspaceSpaceSurfaceProps> = {}) {
-  return renderPage(spacePageMembersScenario(), { copy: en, ...overrides });
-}
-
-function memberRow(name: string): HTMLElement {
-  return screen.getByText(name).closest("li") as HTMLElement;
+  return renderPage(spacePageMembersScenario(), overrides);
 }
 
 function openCreateMenu() {
@@ -297,79 +299,242 @@ describe("WorkspaceSpaceSurface", () => {
     ).toBe("/workspaces/ws-product");
   });
 
-  it("FUI[workspace.space-page:members-role] changes a member's Space role inline", () => {
-    const { props } = renderMembers();
-    const trigger = within(memberRow("Helpdesk")).getByRole("combobox", {
-      name: "Role for Helpdesk",
+  it("FUI[workspace.space-page:members-render] lists teams with their people, then people with role, source and activity", () => {
+    renderMembers();
+    const list = screen.getByRole("table", {
+      name: "Thành viên Phòng Công nghệ",
     });
-    fireEvent.keyDown(trigger, { key: "Enter" });
-    fireEvent.click(screen.getByRole("option", { name: en.roles.Viewer }));
+    const rows = within(list).getAllByRole("row");
+    expect(rows[1]?.textContent).toContain("Nhóm Kỹ sư ERP");
+    expect(rows[1]?.textContent).toContain("Nhóm workspace · 4 người");
+    expect(rows[1]?.textContent).toContain("Thêm trực tiếp cả nhóm");
+    expect(rows[1]?.textContent).toContain("từ 01/09");
+    // Both teams are open: their people show, the note shows once.
+    expect(screen.getByText("Phan Ngọc Anh")).toBeTruthy();
+    expect(screen.getAllByText(/Tổng giám đốc/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Đổi người trong nhóm ở/)).toHaveLength(1);
+    const ha = screen.getByText("Nguyễn Thu Hà").closest('[role="row"]')!;
+    expect(ha.textContent).toContain("Bạn");
+    expect(ha.textContent).toContain("Quản trị workspace");
+    expect(ha.textContent).toContain("Trực tiếp · người tạo phòng");
+    // The summary counts entries by role and the waiting invitation.
+    expect(
+      screen.getByText(
+        /2 quản trị · 15 thành viên · 3 người xem · 1 lời mời chờ/,
+      ),
+    ).toBeTruthy();
+    // The invitation row has no producer behind its buttons.
+    expect(
+      screen
+        .getByRole("button", { name: copy.members.inviteResend })
+        .getAttribute("aria-disabled"),
+    ).toBe("true");
+    // Seven rows, then "Show 13 more".
+    fireEvent.click(screen.getByRole("button", { name: "Hiện 13 người khác" }));
+    expect(screen.getByText("Uông Minh Châu")).toBeTruthy();
+  });
+
+  it("FUI[workspace.space-page:members-role] changes a role from the menu, with the keyboard, and gives focus back", () => {
+    const { props } = renderMembers();
+    const row = screen
+      .getByText("Trần Minh Quân", { selector: "b" })
+      .closest('[role="row"]') as HTMLElement;
+    const trigger = within(row).getByRole("button", { name: /Thành viên/ });
+    fireEvent.click(trigger);
+    const menu = screen.getByRole("menu", {
+      name: "Đổi vai trò của Trần Minh Quân",
+    });
+    const roles = within(menu).getAllByRole("menuitemradio");
+    expect(roles.map((role) => role.getAttribute("aria-checked"))).toEqual([
+      "false",
+      "true",
+      "false",
+    ]);
+    expect(document.activeElement).toBe(roles[1]);
+    fireEvent.keyDown(menu, { key: "ArrowDown" });
+    expect(document.activeElement).toBe(roles[2]);
+    fireEvent.keyDown(roles[2]!, { key: "Enter" });
     expect(props.onChangeMemberRole).toHaveBeenCalledWith(
-      expect.objectContaining({
-        subjectType: "Team",
-        subjectId: "team-helpdesk",
-      }),
+      expect.objectContaining({ subjectType: "User", subjectId: "u-quan" }),
       "Viewer",
     );
+    expect(screen.queryByRole("menu")).toBeNull();
+    expect(document.activeElement).toBe(trigger);
+    // Choosing the role the person has does nothing; Escape closes.
+    fireEvent.click(trigger);
+    fireEvent.keyDown(screen.getByRole("menu"), { key: "Escape" });
+    expect(screen.queryByRole("menu")).toBeNull();
+    expect(props.onChangeMemberRole).toHaveBeenCalledTimes(1);
   });
 
-  it("FUI[workspace.space-page:members-last-admin] protects the last Space admin with the reason", () => {
-    renderMembers();
-    const linh = memberRow("Linh Tran");
-    expect(within(linh).queryByRole("combobox")).toBeNull();
-    expect(within(linh).queryByRole("button")).toBeNull();
-    expect(within(linh).getByText(en.members.lastAdmin)).toBeTruthy();
+  it("FUI[workspace.space-page:members-last-admin] protects the only admin with the reason", () => {
+    const { props } = renderPage(spacePageMembersLastAdminScenario());
+    const menu = screen.getByRole("menu", {
+      name: /Đổi vai trò của Lê Hoàng Phúc/,
+    });
+    const roles = within(menu).getAllByRole("menuitemradio");
+    expect(roles[1]?.getAttribute("aria-disabled")).toBe("true");
+    expect(
+      within(menu).getAllByText(
+        "Không hạ được: Phúc là quản trị duy nhất",
+      ),
+    ).toHaveLength(2);
+    const remove = within(menu).getByRole("menuitem", {
+      name: /Gỡ khỏi phòng/,
+    });
+    expect(remove.getAttribute("aria-disabled")).toBe("true");
+    fireEvent.click(roles[1]!);
+    fireEvent.click(remove);
+    expect(props.onChangeMemberRole).not.toHaveBeenCalled();
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(
+      within(menu).getByText(/Phòng ban phải còn ít nhất 1 quản trị/),
+    ).toBeTruthy();
   });
 
-  it("FUI[workspace.space-page:members-remove] confirms removal in an AlertDialog", () => {
-    const { props } = renderMembers();
-    fireEvent.keyDown(
-      within(memberRow("Minh Pham")).getByRole("button", {
-        name: "Actions for Minh Pham",
-      }),
-      { key: "Enter" },
+  it("FUI[workspace.space-page:members-remove] shows who loses access when a team goes, and confirms", () => {
+    const { props } = renderPage(spacePageMembersRemoveScenario());
+    const dialog = screen.getByRole("dialog", {
+      name: "Gỡ Nhóm Kỹ sư ERP khỏi phòng?",
+    });
+    // Quân is also added directly, so he stays; the other three lose access.
+    expect(
+      within(dialog).getByText(
+        /3 người sẽ mất quyền vào phòng; Trần Minh Quân vẫn còn/,
+      ),
+    ).toBeTruthy();
+    expect(within(dialog).getAllByText("· mất quyền vào phòng")).toHaveLength(
+      3,
     );
-    fireEvent.click(screen.getByRole("menuitem", { name: en.members.remove }));
-    const dialog = screen.getByRole("alertdialog", {
-      name: "Remove Minh Pham from Phòng Công nghệ?",
+    expect(
+      within(dialog).getByText("· vẫn là Thành viên, thêm trực tiếp"),
+    ).toBeTruthy();
+    expect(props.onRemoveMember).not.toHaveBeenCalled();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Gỡ nhóm" }));
+    expect(props.onRemoveMember).toHaveBeenCalledWith(
+      expect.objectContaining({ subjectType: "Team", subjectId: "t-erp" }),
+    );
+  });
+
+  it("FUI[workspace.space-page:members-remove-person] asks before removing a person from the menu", () => {
+    const { props } = renderMembers();
+    const row = screen
+      .getByText("Vũ Thanh", { selector: "b" })
+      .closest('[role="row"]') as HTMLElement;
+    fireEvent.click(
+      within(row).getByRole("button", { name: "Thao tác với Vũ Thanh" }),
+    );
+    fireEvent.click(screen.getByRole("menuitem", { name: /Gỡ khỏi phòng/ }));
+    const dialog = screen.getByRole("dialog", {
+      name: "Gỡ Vũ Thanh khỏi Phòng Công nghệ?",
     });
     expect(props.onRemoveMember).not.toHaveBeenCalled();
-    fireEvent.click(
-      within(dialog).getByRole("button", {
-        name: en.members.confirm.removeAction,
-      }),
-    );
+    fireEvent.click(within(dialog).getByRole("button", { name: "Gỡ" }));
     expect(props.onRemoveMember).toHaveBeenCalledWith(
-      expect.objectContaining({ subjectId: "user-minh" }),
+      expect.objectContaining({ subjectId: "u-thanh" }),
     );
   });
 
-  it("FUI[workspace.space-page:members-add] adds a team with a role, excluding existing entries", () => {
+  it("FUI[workspace.space-page:members-add] adds people and teams with a role, skipping an email that is not a member", () => {
     const { props } = renderMembers();
-    const form = screen.getByRole("form", { name: en.members.add.title });
-    fireEvent.click(
-      within(form).getByRole("button", { name: en.members.add.submit }),
-    );
-    expect(within(form).getByText(en.members.add.required)).toBeTruthy();
-    expect(props.onAddMember).not.toHaveBeenCalled();
-
-    fireEvent.click(
-      within(form).getByRole("radio", { name: en.members.add.teamTab }),
-    );
-    fireEvent.keyDown(
-      within(form).getByRole("combobox", { name: en.members.add.teamLabel }),
-      { key: "Enter" },
-    );
-    expect(screen.queryByRole("option", { name: /Helpdesk/ })).toBeNull();
-    fireEvent.click(screen.getByRole("option", { name: /SRE/ }));
-    fireEvent.click(
-      within(form).getByRole("button", { name: en.members.add.submit }),
-    );
-    expect(props.onAddMember).toHaveBeenCalledWith({
-      subjectType: "Team",
-      subjectId: "team-sre",
-      role: "Member",
+    fireEvent.click(screen.getByRole("button", { name: copy.page.addMember }));
+    const dialog = screen.getByRole("dialog", {
+      name: "Thêm vào Phòng Công nghệ",
     });
+    const submit = () => within(dialog).getByRole("button", { name: /^Thêm/ });
+    expect(submit().getAttribute("aria-disabled")).toBe("true");
+    const input = within(dialog).getByRole("combobox", {
+      name: copy.members.add.inputLabel,
+    });
+    fireEvent.change(input, { target: { value: "hung" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    fireEvent.change(input, { target: { value: "QA" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    // A team that is already in the department is not offered.
+    fireEvent.change(input, { target: { value: "ERP" } });
+    expect(within(dialog).queryByRole("option")).toBeNull();
+    fireEvent.change(input, { target: { value: "tuan@doitac-erp.vn" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(within(dialog).getByRole("alert").textContent).toContain(
+      "chưa là thành viên workspace",
+    );
+    expect(submit().textContent).toBe("Thêm 2 người · bỏ qua 1 email");
+    expect(
+      within(dialog).getByText(/9 người sẽ thấy ngay|6 người sẽ thấy ngay/),
+    ).toBeTruthy();
+    fireEvent.click(submit());
+    expect(props.onAddMembers).toHaveBeenCalledWith([
+      { subjectType: "User", subjectId: "u-hung", role: "Member" },
+      { subjectType: "Team", subjectId: "t-qa", role: "Member" },
+    ]);
+  });
+
+  it("FUI[workspace.space-page:members-add-role] picks the role for everyone added", () => {
+    const { props } = renderPage(spacePageMembersInviteScenario());
+    const dialog = screen.getByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: /Thành viên/ }));
+    fireEvent.click(screen.getByRole("option", { name: /Người xem/ }));
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: /^Thêm 2 người/ }),
+    );
+    expect(props.onAddMembers).toHaveBeenCalledWith([
+      { subjectType: "User", subjectId: "u-hung", role: "Viewer" },
+      { subjectType: "Team", subjectId: "t-qa", role: "Viewer" },
+    ]);
+  });
+
+  it("FUI[workspace.space-page:members-filter] narrows by text, role and how they joined", () => {
+    renderMembers();
+    const search = screen.getByRole("searchbox");
+    fireEvent.change(search, { target: { value: "tran minh" } });
+    expect(screen.getByText("Trần Minh Quân", { selector: "b" })).toBeTruthy();
+    expect(screen.queryByText("Vũ Thanh", { selector: "b" })).toBeNull();
+    fireEvent.change(search, { target: { value: "zzz" } });
+    expect(screen.getByText(copy.members.noMatches)).toBeTruthy();
+    fireEvent.change(search, { target: { value: "" } });
+    fireEvent.click(screen.getByRole("button", { name: /Vai trò/ }));
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "Quản trị" }));
+    expect(screen.getByText("Lê Hoàng Phúc", { selector: "b" })).toBeTruthy();
+    expect(screen.queryByText("Vũ Thanh", { selector: "b" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /Vào qua/ }));
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "Cả nhóm" }));
+    expect(screen.getByText(copy.members.noMatches)).toBeTruthy();
+  });
+
+  it("FUI[workspace.space-page:members-read-only] shows roles without a way to change them", () => {
+    renderPage(spacePageMembersReadOnlyScenario());
+    const row = screen
+      .getByText("Lê Hoàng Phúc", { selector: "b" })
+      .closest('[role="row"]') as HTMLElement;
+    const role = within(row).getByRole("button", { name: /Quản trị/ });
+    expect(role.getAttribute("aria-disabled")).toBe("true");
+    expect(role.getAttribute("title")).toBe(copy.members.readOnly);
+    fireEvent.click(role);
+    expect(screen.queryByRole("menu")).toBeNull();
+    expect(
+      within(row).queryByRole("button", { name: /Thao tác với/ }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: copy.page.addMember }),
+    ).toBeNull();
+  });
+
+  it("FUI[workspace.space-page:members-states] shows loading, an empty department and an error with a retry", () => {
+    const empty = renderPage(spacePageMembersEmptyScenario());
+    expect(screen.getByText(copy.members.empty)).toBeTruthy();
+    empty.view.unmount();
+    const loading = renderPage(spacePageMembersLoadingScenario());
+    expect(
+      screen.getByRole("status", { name: copy.members.loading }),
+    ).toBeTruthy();
+    loading.view.unmount();
+    const { props } = renderPage(spacePageMembersErrorScenario());
+    fireEvent.click(
+      within(screen.getByRole("alert")).getByRole("button", {
+        name: copy.members.retry,
+      }),
+    );
+    expect(props.onRetryMembers).toHaveBeenCalledTimes(1);
   });
 
   it("FUI[workspace.space-page:settings-save] saves the name and description only when they changed", () => {

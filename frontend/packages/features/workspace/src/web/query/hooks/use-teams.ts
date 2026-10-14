@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import {
   createTeamsService,
   type TeamsEndpoints,
@@ -79,6 +79,28 @@ export function createUseTeamMembers({ api, endpoints }: UseTeamsDeps) {
       queryFn: () => service.members(workspaceId, teamId!),
       enabled: !!workspaceId && !!teamId,
       staleTime: 30_000,
+    });
+  };
+}
+
+/**
+ * The members of several Teams at once (the expanded rows of a Space's member
+ * list), one query per Team under the same key as {@link createUseTeamMembers}.
+ */
+export function createUseTeamsMembers({ api, endpoints }: UseTeamsDeps) {
+  const service = createTeamsService(api, endpoints);
+
+  return function useTeamsMembers(
+    workspaceId: string,
+    teamIds: readonly string[],
+  ) {
+    return useQueries({
+      queries: teamIds.map((teamId) => ({
+        queryKey: workspaceQueryKeys.teamMembers(workspaceId, teamId),
+        queryFn: () => service.members(workspaceId, teamId),
+        enabled: !!workspaceId,
+        staleTime: 30_000,
+      })),
     });
   };
 }

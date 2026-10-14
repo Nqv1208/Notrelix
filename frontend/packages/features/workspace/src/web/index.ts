@@ -221,10 +221,9 @@ export {
   type WorkspaceSpaceSurfaceProps,
 } from "./spaces/workspace-space-surface";
 export * from "./spaces/space-page-models";
-export type {
-  AddSpaceMemberInput,
-  SpaceMemberCandidate,
-} from "./spaces/space-members-panel";
+export * from "./spaces/space-members-models";
+export type { SpaceAddPreviewBase } from "./spaces/space-members-dialogs";
+export type { MemberMenuState } from "./spaces/space-members-view";
 export type {
   SpaceDetailsValues,
   SpaceSaveStatus,
@@ -234,6 +233,7 @@ export type {
 export {
   createUseTeam,
   createUseTeamMembers,
+  createUseTeamsMembers,
   createUseTeams,
   createUseWorkspaceTeams,
 } from "./query/hooks/use-teams";

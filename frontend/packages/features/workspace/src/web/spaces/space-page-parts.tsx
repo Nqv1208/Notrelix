@@ -93,6 +93,19 @@ const GLYPH = {
   x: ["M18 6 6 18M6 6l12 12"],
   more: ["circle:5,12,1", "circle:12,12,1", "circle:19,12,1"],
   info: ["circle:12,12,10", "M12 16v-4M12 8h.01"],
+  infoCircle: ["circle:12,12,9", "M12 11v5M12 8h.01"],
+  team: [
+    "circle:9,8,3.5",
+    "circle:17,9,2.5",
+    "M2.5 20a6.5 6.5 0 0 1 13 0M15 20a5 5 0 0 1 6.5-4.7",
+  ],
+  person: ["circle:9,8,3.5", "M2.5 20a6.5 6.5 0 0 1 13 0"],
+  alert: [
+    "M12 9v4M12 17h.01",
+    "M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z",
+  ],
+  xmark: ["M6 6l12 12M18 6 6 18"],
+  mail: ["rect:2,4,20,16,2", "m22 7-10 6L2 7"],
 } as const;
 
 export type GlyphName = keyof typeof GLYPH;
@@ -483,8 +496,10 @@ export interface SpaceHeadProps {
   readonly onCreateBoard: () => void;
   readonly onCreateDoc: () => void;
   readonly onCreateChild: (() => void) | null;
-  /** Highlight the Add members button (a new, empty department). */
+  /** Highlight the Add members button (a new, empty department, or the members tab). */
   readonly primaryAdd: boolean;
+  /** On the members tab Add members opens the add dialog instead of the tab. */
+  readonly onAdd: (() => void) | null;
 }
 
 /** Final-Space `.head`: mark, crumb and title, the chip, the actions, the lede. */
@@ -510,6 +525,7 @@ export function SpaceHead({
   onCreateDoc,
   onCreateChild,
   primaryAdd,
+  onAdd,
 }: SpaceHeadProps) {
   const settingsActive = tab === "settings";
   const membersDestination: WorkspaceDestination = {
@@ -564,7 +580,17 @@ export function SpaceHead({
               ringClass="ring-2 ring-background"
             />
           ) : null}
-          {canManage ? (
+          {canManage && onAdd ? (
+            <button
+              data-f="btn-add"
+              type="button"
+              onClick={onAdd}
+              className={cn(primaryAdd ? BTN_PRIMARY : BTN, FOCUS)}
+            >
+              <Glyph name="userPlus" />
+              {copy.page.addMember}
+            </button>
+          ) : canManage ? (
             <ShellLink
               data-f="btn-add"
               destination={membersDestination}
@@ -606,7 +632,7 @@ export function SpaceHead({
           ) : null}
         </div>
       </div>
-      {description ? (
+      {description && tab !== "members" ? (
         <p
           data-f="lede"
           className="mt-2 mr-0 mb-0 ml-[54px] max-w-[72ch] text-body leading-[1.45] text-muted-foreground"

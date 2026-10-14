@@ -2,6 +2,7 @@
  * Space org tree copy (OT-5, WX-DEC-008), vi and en.
  * Registered as the `workspace-spaces` catalog.
  */
+import { spaceMembersEn, spaceMembersVi } from "./space-members.copy";
 import { spacePageEn, spacePageVi } from "./space-page.copy";
 
 export const en = {
@@ -96,51 +97,7 @@ export const en = {
     pickerLabel: "Destination",
   },
   ...spacePageEn,
-  members: {
-    title: "Members",
-    description:
-      "People and teams in this Space. Members of a parent Space also count here unless this Space is private.",
-    loading: "Loading members",
-    error: "Members couldn't load.",
-    retry: "Try again",
-    empty: "No one has been added to this Space yet.",
-    user: "Person",
-    team: "Team",
-    roleSelect: "Role for {{name}}",
-    roleUpdating: "Updating {{name}}…",
-    rowMenu: "Actions for {{name}}",
-    remove: "Remove from Space",
-    lastAdmin:
-      "The last admin of a Space can't be removed or changed. Make someone else an admin first.",
-    readOnly:
-      "Only Space admins and workspace owners and admins can change members. You can see them here.",
-    add: {
-      title: "Add people or a team",
-      subjectLabel: "Add",
-      userTab: "Person",
-      teamTab: "Team",
-      userLabel: "Person",
-      userPlaceholder: "Pick a workspace member",
-      teamLabel: "Team",
-      teamPlaceholder: "Pick a team",
-      noUsers: "Everyone in the workspace is already here.",
-      noTeams: "No teams to add. Workspace admins create teams.",
-      teamsError: "Teams couldn't load.",
-      roleLabel: "Role",
-      required: "Pick who to add.",
-      submit: "Add",
-      submitting: "Adding…",
-      teamMembers_one: "{{count}} member",
-      teamMembers_other: "{{count}} members",
-    },
-    confirm: {
-      removeTitle: "Remove {{name}} from {{space}}?",
-      removeDescription:
-        "They lose the access this Space gives them. Boards and Docs they were granted directly keep that access.",
-      removeAction: "Remove",
-      cancel: "Cancel",
-    },
-  },
+  ...spaceMembersEn,
   toasts: {
     created: "{{name}} was created.",
     createFailed: "The Space wasn't created.",
@@ -153,6 +110,7 @@ export const en = {
     unarchived: "{{name}} is active again.",
     unarchiveFailed: "{{name}} wasn't unarchived.",
     memberAdded: "{{name}} was added.",
+    membersAdded: "{{count}} people were added.",
     memberAddFailed: "{{name}} wasn't added.",
     roleChanged: "{{name}} is now {{role}}.",
     roleFailed: "The role of {{name}} wasn't changed.",
@@ -262,51 +220,7 @@ export const vi: WorkspaceSpacesCopy = {
     pickerLabel: "Nơi đến",
   },
   ...spacePageVi,
-  members: {
-    title: "Thành viên",
-    description:
-      "Những người và nhóm trong Không gian này. Thành viên của Không gian cha cũng được tính ở đây, trừ khi Không gian này riêng tư.",
-    loading: "Đang tải thành viên",
-    error: "Chưa tải được thành viên.",
-    retry: "Thử lại",
-    empty: "Chưa có ai được thêm vào Không gian này.",
-    user: "Người",
-    team: "Nhóm",
-    roleSelect: "Vai trò của {{name}}",
-    roleUpdating: "Đang cập nhật {{name}}…",
-    rowMenu: "Thao tác cho {{name}}",
-    remove: "Xóa khỏi Không gian",
-    lastAdmin:
-      "Không thể xóa hoặc đổi vai trò của quản trị viên cuối cùng. Hãy chỉ định người khác làm quản trị trước.",
-    readOnly:
-      "Chỉ quản trị viên Không gian và chủ sở hữu, quản trị viên workspace mới thay đổi được thành viên. Bạn có thể xem ở đây.",
-    add: {
-      title: "Thêm người hoặc nhóm",
-      subjectLabel: "Thêm",
-      userTab: "Người",
-      teamTab: "Nhóm",
-      userLabel: "Người",
-      userPlaceholder: "Chọn một thành viên workspace",
-      teamLabel: "Nhóm",
-      teamPlaceholder: "Chọn một nhóm",
-      noUsers: "Mọi người trong workspace đều đã ở đây.",
-      noTeams: "Không có nhóm nào để thêm. Quản trị viên workspace tạo nhóm.",
-      teamsError: "Chưa tải được danh sách nhóm.",
-      roleLabel: "Vai trò",
-      required: "Chọn người hoặc nhóm để thêm.",
-      submit: "Thêm",
-      submitting: "Đang thêm…",
-      teamMembers_one: "{{count}} thành viên",
-      teamMembers_other: "{{count}} thành viên",
-    },
-    confirm: {
-      removeTitle: "Xóa {{name}} khỏi {{space}}?",
-      removeDescription:
-        "Họ mất quyền truy cập mà Không gian này cấp. Những Bảng và Tài liệu được cấp quyền trực tiếp vẫn giữ quyền đó.",
-      removeAction: "Xóa",
-      cancel: "Hủy",
-    },
-  },
+  ...spaceMembersVi,
   toasts: {
     created: "Đã tạo {{name}}.",
     createFailed: "Chưa tạo được Không gian.",
@@ -319,6 +233,7 @@ export const vi: WorkspaceSpacesCopy = {
     unarchived: "{{name}} đã hoạt động trở lại.",
     unarchiveFailed: "Chưa bỏ lưu trữ được {{name}}.",
     memberAdded: "Đã thêm {{name}}.",
+    membersAdded: "Đã thêm {{count}} người.",
     memberAddFailed: "Chưa thêm được {{name}}.",
     roleChanged: "{{name}} giờ là {{role}}.",
     roleFailed: "Chưa đổi được vai trò của {{name}}.",

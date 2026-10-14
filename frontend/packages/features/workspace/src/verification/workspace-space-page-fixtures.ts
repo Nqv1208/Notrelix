@@ -16,12 +16,19 @@ import type {
   SpaceWorkloadRowView,
 } from "../web/spaces/space-page-models";
 import type { WorkspaceSpaceSurfaceProps } from "../web/spaces/workspace-space-surface";
+import { spacesCopyFixture } from "./workspace-spaces-fixtures";
 import {
-  spaceCandidatesFixture,
-  spaceMembersFixture,
-  spaceTeamsFixture,
-  spacesCopyFixture,
-} from "./workspace-spaces-fixtures";
+  MEMBERS_ALSO,
+  MEMBERS_CANDIDATES,
+  MEMBERS_DIRECTORY,
+  MEMBERS_INVITES,
+  MEMBERS_INVITE_TOKENS,
+  MEMBERS_PREVIEW,
+  MEMBERS_TEAMS,
+  MEMBERS_TEAM_PEOPLE,
+  membersFixture,
+  membersLastAdminFixture,
+} from "./workspace-space-members-fixtures";
 import { shellNavigationFixture } from "./workspace-shell-fixtures";
 
 /** The mockup's clock: 12 Oct 2026, 10:40 (UTC+7). */
@@ -37,7 +44,8 @@ export type SpacePageScenario = Omit<
   | "onSave"
   | "onArchive"
   | "onDelete"
-  | "onAddMember"
+  | "onAddMembers"
+  | "onExpandTeam"
   | "onChangeMemberRole"
   | "onRemoveMember"
   | "onRetry"
@@ -342,13 +350,20 @@ function base(): SpacePageScenario {
     templates: [],
     firstSteps: false,
     viewAs: null,
-    members: { status: "ready", data: spaceMembersFixture() },
-    candidateUsers: { status: "ready", data: spaceCandidatesFixture() },
-    candidateTeams: { status: "ready", data: spaceTeamsFixture() },
+    members: { status: "ready", data: membersFixture() },
+    candidateUsers: { status: "ready", data: MEMBERS_CANDIDATES },
+    candidateTeams: { status: "ready", data: MEMBERS_TEAMS },
+    directory: MEMBERS_DIRECTORY,
+    meId: "u-ha",
+    teamPeople: MEMBERS_TEAM_PEOPLE,
+    formatDay: (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`,
+    previewBase: MEMBERS_PREVIEW,
+    addProgress: null,
+    removingMember: false,
+    addDialogKey: 0,
     pendingMemberKeys: new Set(),
     addingMember: false,
     addMemberError: null,
-    addMemberResetKey: 0,
     saveStatus: "idle",
     archiving: false,
     archiveRefused: false,
@@ -539,9 +554,82 @@ export function spacePageSettingsReadOnlyScenario(): SpacePageScenario {
   };
 }
 
-/** The Members tab (the members panel, until its own design lands). */
+const MEMBERS_HEAD: SpaceHeadPeople = {
+  avatars: [HP, HA, MQ],
+  more: 21,
+  label: "24 người có quyền vào phòng",
+};
+
+/** Final-Members `danh-sach`: the teams open, 7 rows and "Show 13 more". */
 export function spacePageMembersScenario(): SpacePageScenario {
-  return { ...base(), tab: "members" };
+  return {
+    ...base(),
+    tab: "members",
+    people: MEMBERS_HEAD,
+    membersCount: 24,
+    initialExpanded: ["Team:t-erp", "Team:t-bgd"],
+    invites: MEMBERS_INVITES,
+    membersPageSize: 7,
+  };
+}
+
+/** Final-Members `doi-vai-tro`: the role menu of a Member who is also in a team. */
+export function spacePageMembersRoleScenario(): SpacePageScenario {
+  return {
+    ...spacePageMembersScenario(),
+    initialMenu: { key: "User:u-quan", placement: "below" },
+    also: MEMBERS_ALSO,
+  };
+}
+
+/** Final-Members `quan-tri-cuoi`: the only admin cannot be lowered or removed. */
+export function spacePageMembersLastAdminScenario(): SpacePageScenario {
+  return {
+    ...spacePageMembersScenario(),
+    members: { status: "ready", data: membersLastAdminFixture() },
+    initialMenu: { key: "User:u-phuc", placement: "above" },
+  };
+}
+
+/** Final-Members `them-nguoi`: the add dialog with a person, a team and an email. */
+export function spacePageMembersInviteScenario(): SpacePageScenario {
+  return {
+    ...spacePageMembersScenario(),
+    initialInviteOpen: true,
+    initialInviteTokens: MEMBERS_INVITE_TOKENS,
+  };
+}
+
+/** Final-Members `go-nhom`: removing a team lists who loses access. */
+export function spacePageMembersRemoveScenario(): SpacePageScenario {
+  return { ...spacePageMembersScenario(), initialRemoveKey: "Team:t-erp" };
+}
+
+export function spacePageMembersLoadingScenario(): SpacePageScenario {
+  return { ...spacePageMembersScenario(), members: { status: "loading" } };
+}
+
+export function spacePageMembersErrorScenario(): SpacePageScenario {
+  return { ...spacePageMembersScenario(), members: { status: "error" } };
+}
+
+export function spacePageMembersEmptyScenario(): SpacePageScenario {
+  return {
+    ...spacePageMembersScenario(),
+    members: { status: "ready", data: [] },
+    invites: [],
+  };
+}
+
+/** A viewer reads the list: roles are shown, nothing can be changed. */
+export function spacePageMembersReadOnlyScenario(): SpacePageScenario {
+  return {
+    ...spacePageReadOnlyScenario(),
+    tab: "members",
+    membersCount: 24,
+    initialExpanded: ["Team:t-erp"],
+    membersPageSize: 7,
+  };
 }
 
 /** Settings of a department that still has content: Archive is blocked. */
