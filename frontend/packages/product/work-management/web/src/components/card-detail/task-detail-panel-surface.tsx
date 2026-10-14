@@ -119,7 +119,11 @@ export function TaskDetailPanelSurface({
     if (isTypingTarget(event.target)) return;
     const key = event.key.toLowerCase();
     const step =
-      key === "k" ? callbacks.onPrevious : key === "j" ? callbacks.onNext : null;
+      key === "k"
+        ? callbacks.onPrevious
+        : key === "j"
+          ? callbacks.onNext
+          : null;
     if (step) {
       event.preventDefault();
       step();
@@ -232,7 +236,10 @@ export function TaskDetailPanelError({
 }) {
   return (
     <div className="flex h-full w-full flex-col items-center justify-center bg-popover p-6 text-center">
-      <AlertCircle aria-hidden="true" className="mb-3 size-8 text-danger-text" />
+      <AlertCircle
+        aria-hidden="true"
+        className="mb-3 size-8 text-danger-text"
+      />
       <h2 className="text-sm font-semibold text-foreground">
         {copy.unavailable.title}
       </h2>

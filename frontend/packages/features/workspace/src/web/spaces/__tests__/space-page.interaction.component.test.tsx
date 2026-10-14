@@ -375,9 +375,7 @@ describe("WorkspaceSpaceSurface", () => {
     const roles = within(menu).getAllByRole("menuitemradio");
     expect(roles[1]?.getAttribute("aria-disabled")).toBe("true");
     expect(
-      within(menu).getAllByText(
-        "Không hạ được: Phúc là quản trị duy nhất",
-      ),
+      within(menu).getAllByText("Không hạ được: Phúc là quản trị duy nhất"),
     ).toHaveLength(2);
     const remove = within(menu).getByRole("menuitem", {
       name: /Gỡ khỏi phòng/,

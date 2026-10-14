@@ -85,9 +85,7 @@ test("Teams: create a Team, add a member, promote and demote Leads, remove, arch
   });
   await ownerRole.click();
   await page.getByRole("option", { name: "Member" }).click();
-  await expect(
-    page.getByText("Nguyễn Thu Hà is now Member."),
-  ).toBeVisible();
+  await expect(page.getByText("Nguyễn Thu Hà is now Member.")).toBeVisible();
   await expect(ownerRole).toHaveText("Member");
 
   // Remove the demoted person after confirming.

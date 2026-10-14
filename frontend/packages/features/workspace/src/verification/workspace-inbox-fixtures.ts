@@ -12,12 +12,15 @@ import {
 } from "../web/inbox/workspace-inbox.copy";
 import { HOME_MOCKUP_NOW } from "./workspace-home-fixtures";
 
-export function inboxCopyFixture(locale: "en" | "vi" = "vi"): WorkspaceInboxCopy {
+export function inboxCopyFixture(
+  locale: "en" | "vi" = "vi",
+): WorkspaceInboxCopy {
   return workspaceInboxCopy(locale);
 }
 
 const MIN = 60 * 1000;
-const at = (offsetMs: number) => new Date(HOME_MOCKUP_NOW + offsetMs).toISOString();
+const at = (offsetMs: number) =>
+  new Date(HOME_MOCKUP_NOW + offsetMs).toISOString();
 const clock = (day: number, hour: number, minute: number) =>
   new Date(2026, 9, day, hour, minute).toISOString();
 
@@ -37,7 +40,10 @@ export function inboxNeedItems(): InboxItemView[] {
       segments: [
         { text: "Trần Minh Quân", strong: true },
         { text: " gửi bạn duyệt " },
-        { text: "Thiết lập đăng nhập một lần (SSO) cho toàn công ty", strong: true },
+        {
+          text: "Thiết lập đăng nhập một lần (SSO) cho toàn công ty",
+          strong: true,
+        },
       ],
       context: { department: CN, label: "Triển khai ERP Q4 · ERP-138" },
       need: "approve",
@@ -107,7 +113,11 @@ export function inboxNeedItems(): InboxItemView[] {
       bundle: null,
       href: "#n-invoice",
       detail: {
-        crumb: { department: KT, board: "Quy trình nhập hoá đơn đầu vào", key: null },
+        crumb: {
+          department: KT,
+          board: "Quy trình nhập hoá đơn đầu vào",
+          key: null,
+        },
         event: {
           person: { name: "Lý Thu Trang", tone: "coral" },
           segments: [
@@ -252,7 +262,10 @@ export function inboxDefaultScenario(
   return {
     copy: inboxCopyFixture(locale),
     now: HOME_MOCKUP_NOW,
-    state: { status: "ready", data: [...inboxNeedItems(), ...inboxReadItems()] },
+    state: {
+      status: "ready",
+      data: [...inboxNeedItems(), ...inboxReadItems()],
+    },
     scope: { workspaceName: "Minh An Group", allHref: "#all-workspaces" },
     tabsAvailable: ALL_TABS,
     settingsHref: "#settings",
@@ -320,8 +333,20 @@ export function inboxProducedOnlyScenario(): InboxScenario {
   const data: SectionState<readonly InboxItemView[]> = {
     status: "ready",
     data: [
-      plain("p-1", true, -10 * MIN, "Notification 1", "You were mentioned in a card (notification 1)."),
-      plain("p-2", false, -25 * 60 * MIN, "Notification 0", "You were mentioned in a card (notification 0)."),
+      plain(
+        "p-1",
+        true,
+        -10 * MIN,
+        "Notification 1",
+        "You were mentioned in a card (notification 1).",
+      ),
+      plain(
+        "p-2",
+        false,
+        -25 * 60 * MIN,
+        "Notification 0",
+        "You were mentioned in a card (notification 0).",
+      ),
     ],
   };
   return {
@@ -352,7 +377,10 @@ export function inboxEdgeDataScenario(): InboxScenario {
         "Triển khai ERP Q4 · ERP-138 · Trần Minh Quân phụ trách · Phòng Công nghệ · board riêng tư",
     },
   };
-  return { ...inboxDefaultScenario(), state: { status: "ready", data: [long] } };
+  return {
+    ...inboxDefaultScenario(),
+    state: { status: "ready", data: [long] },
+  };
 }
 
 /** 150 notifications across two days. */
@@ -367,7 +395,10 @@ export function inboxHighDensityScenario(): InboxScenario {
       { text: "Lê Hoàng Phúc", strong: true },
       { text: ` cập nhật việc số ${index + 1}` },
     ],
-    context: { department: CN, label: `Triển khai ERP Q4 · ERP-${200 + index}` },
+    context: {
+      department: CN,
+      label: `Triển khai ERP Q4 · ERP-${200 + index}`,
+    },
     need: null,
     following: false,
     bundle: null,
