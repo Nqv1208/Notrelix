@@ -10,25 +10,26 @@ import { toast } from "sonner";
 import { useLocale } from "@notrelix/i18n";
 import {
   dropUnknownFilterIds,
-  useArchiveCard,
   useBoardAccess,
   useBoardKanban,
   useCreateDatedItem,
-  useDuplicateCard,
   useUpdateCard,
 } from "@notrelix/work-management-state";
-import {
-  generatePosition,
-  type Card,
-  type UpdateFieldValueInput,
-} from "@notrelix/work-management-core";
+import { type Card } from "@notrelix/work-management-core";
 import { BoardHeaderDataContext } from "../../board-layout/board-header-data-context";
 import type {
   ItemSheetGroup,
   ItemSheetMark,
 } from "../../card-detail/task-detail-types";
 import { boardCapabilities } from "../../shared/board-capabilities";
+import {
+  HANOI_ZONES,
+  runtimeZone,
+  useNow,
+  zoneOffset,
+} from "../../shared/board-clock";
 import { calendarParts } from "../../shared/item-display";
+import { useItemSheetActions } from "../../shared/use-item-sheet-actions";
 import {
   isKanbanCardOverdue,
   parseKanbanFilter,
@@ -36,8 +37,6 @@ import {
   type KanbanFilterState,
 } from "../kanban/kanban-filter";
 import { KanbanSelectedItem } from "../kanban/kanban-view";
-import { buildCardLink } from "../kanban/kanban-view-helpers";
-import { useKanbanLaneCopy } from "../kanban/use-kanban-lane-copy";
 import { BoardCalendarSurface } from "./board-calendar-surface";
 import {
   buildCalendarEntries,
@@ -89,45 +88,6 @@ export interface BoardCalendarViewProps {
   now?: Date;
 }
 
-function runtimeZone(): string | undefined {
-  try {
-    return Intl.DateTimeFormat().resolvedOptions().timeZone;
-  } catch {
-    return undefined;
-  }
-}
-
-/** "GMT+7" of the zone at `now`. */
-function zoneOffset(now: Date, timeZone?: string): string {
-  try {
-    const part = new Intl.DateTimeFormat("en", {
-      timeZone,
-      timeZoneName: "shortOffset",
-    })
-      .formatToParts(now)
-      .find((candidate) => candidate.type === "timeZoneName");
-    return part?.value ?? "GMT";
-  } catch {
-    return "GMT";
-  }
-}
-
-const HANOI_ZONES = ["Asia/Ho_Chi_Minh", "Asia/Saigon"];
-
-/**
- * A clock that ticks once a minute, so the "now" line follows the day. An
- * injected clock (stories, tests) is used as it is and never ticks.
- */
-function useNow(injected?: Date): Date {
-  const [now, setNow] = useState(() => injected ?? new Date());
-  useEffect(() => {
-    if (injected) return undefined;
-    const timer = window.setInterval(() => setNow(new Date()), 60_000);
-    return () => window.clearInterval(timer);
-  }, [injected]);
-  return injected ?? now;
-}
-
 /**
  * The Calendar of a board: dated items on their due day (over their span
  * when they have a start), a month, week and day range, the route filter
@@ -146,7 +106,6 @@ export function BoardCalendarView({
   now: nowProp,
 }: BoardCalendarViewProps) {
   const copy = useCalendarCopy();
-  const laneCopy = useKanbanLaneCopy();
   const header = useContext(BoardHeaderDataContext);
   const rootRef = useRef<HTMLDivElement>(null);
   const { locale } = useLocale();
@@ -279,47 +238,7 @@ export function BoardCalendarView({
     });
   };
 
-  const duplicateCard = useDuplicateCard(boardId, workspaceId);
-  const archiveCard = useArchiveCard(boardId, workspaceId);
-
-  const handleSheetFieldValue = (payload: UpdateFieldValueInput) => {
-    // The Status pill writes through the status endpoint, like the Kanban.
-    if (
-      payload.fieldDefinitionId === kanban.statusField?.id &&
-      typeof payload.value === "string"
-    ) {
-      kanban.updateStatus.mutate({
-        cardId: payload.cardId,
-        statusOptionId: payload.value,
-      });
-      return;
-    }
-    kanban.updateFieldValue.mutate(payload);
-  };
-  const handleMoveToGroup = (cardId: string, groupId: string) => {
-    const target = kanban.groups.find((group) => group.id === groupId);
-    if (!target) return;
-    const last = [...target.cards]
-      .filter((card) => card.id !== cardId)
-      .sort((a, b) => a.position - b.position)
-      .at(-1);
-    kanban.moveCard.mutate({
-      cardId,
-      listId: groupId,
-      position: generatePosition(last?.position, undefined),
-      previousSiblingId: last?.id ?? null,
-      nextSiblingId: null,
-    });
-  };
-  const handleCopyLink = (cardId: string) => {
-    const link = buildCardLink(window.location, cardId);
-    void Promise.resolve()
-      .then(() => navigator.clipboard.writeText(link))
-      .then(
-        () => toast.success(laneCopy.linkCopied),
-        () => toast.error(laneCopy.linkCopyFailed),
-      );
-  };
+  const sheet = useItemSheetActions({ boardId, workspaceId, kanban });
   const restoreFocus = (cardId: string) => {
     const opener = rootRef.current?.querySelector<HTMLElement>(
       `[data-calendar-event="${cardId}"]`,
@@ -393,11 +312,11 @@ export function BoardCalendarView({
           groups={sheetGroups}
           onClose={() => onSelectedItemChange?.(undefined, { replace: true })}
           onRestoreFocus={restoreFocus}
-          onCopyLink={handleCopyLink}
-          onMoveToGroup={handleMoveToGroup}
-          onUpdateFieldValue={handleSheetFieldValue}
-          onDuplicate={(cardId) => duplicateCard.mutate(cardId)}
-          onArchive={(cardId) => archiveCard.mutate(cardId)}
+          onCopyLink={sheet.onCopyLink}
+          onMoveToGroup={sheet.onMoveToGroup}
+          onUpdateFieldValue={sheet.onUpdateFieldValue}
+          onDuplicate={sheet.onDuplicate}
+          onArchive={sheet.onArchive}
         />
       ) : null}
     </div>
