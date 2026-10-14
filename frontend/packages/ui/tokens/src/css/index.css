@@ -28,6 +28,7 @@
   --type-scale-19: 1.1875rem;
   --type-scale-20: 1.25rem;
   --type-scale-26: 1.625rem;
+  --type-scale-10p4: 0.6510417rem;
   --type-scale-10p5: 0.65625rem;
   --type-scale-13p5: 0.84375rem;
   --type-scale-8p5: 0.53125rem;
@@ -267,6 +268,11 @@
   --type-palette-query-weight: 400;
   --type-palette-query-tracking: 0em;
   --type-palette-query-family: var(--font-family-sans);
+  --type-note-small-size: var(--type-scale-10p4);
+  --type-note-small-line-height: 0.94375rem;
+  --type-note-small-weight: 400;
+  --type-note-small-tracking: 0em;
+  --type-note-small-family: var(--font-family-sans);
   --type-greeting-size: var(--type-scale-26);
   --type-greeting-line-height: 2.03125rem;
   --type-greeting-weight: 650;

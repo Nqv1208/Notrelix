@@ -234,6 +234,10 @@
   --text-palette-query--line-height: var(--type-palette-query-line-height);
   --text-palette-query--font-weight: var(--type-palette-query-weight);
   --text-palette-query--letter-spacing: var(--type-palette-query-tracking);
+  --text-note-small: var(--type-note-small-size);
+  --text-note-small--line-height: var(--type-note-small-line-height);
+  --text-note-small--font-weight: var(--type-note-small-weight);
+  --text-note-small--letter-spacing: var(--type-note-small-tracking);
   --text-doc-callout: var(--type-doc-callout-size);
   --text-doc-callout--line-height: var(--type-doc-callout-line-height);
   --text-doc-callout--font-weight: var(--type-doc-callout-weight);

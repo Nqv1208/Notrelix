@@ -44,6 +44,7 @@ export const fontSizeDense = {
   "7": 0.4375,
   "9": 0.5625,
   "10": 0.625,
+  "10p4": 0.6510417,
   "10p5": 0.65625,
   "11": 0.6875,
   "13": 0.8125,
@@ -434,6 +435,14 @@ export const textRoles = {
   "palette-query": {
     size: "17",
     lineHeight: 1.540625,
+    weight: weights.regular,
+    letterSpacing: "0em",
+    family: "sans",
+  },
+  /** The `small` under a value of the department access card (Final-Space `.acc dd small`, 12.5px reduced one step to 10.4px, line 1.45). */
+  "note-small": {
+    size: "10p4",
+    lineHeight: 0.94375,
     weight: weights.regular,
     letterSpacing: "0em",
     family: "sans",
