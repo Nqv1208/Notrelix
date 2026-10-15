@@ -4,6 +4,7 @@ import {
   shareDefaultScenario,
   shareEmptyScenario,
   shareLevelScenario,
+  sharePrivateScenario,
   shareProducedOnlyScenario,
   shareWorkspaceScenario,
   type BoardShareScenario,
@@ -144,6 +145,24 @@ describe("BoardShareDialogSurface", () => {
         .getByRole("button", { name: copy.privateConfirm.switchOnly })
         .getAttribute("aria-disabled"),
     ).toBe("true");
+  });
+
+  it("FUI[wm.board-share:private-confirm] adds the chosen people, then switches", () => {
+    const onConfirmPrivate = vi.fn();
+    const { props } = renderShare(shareDefaultScenario(), {
+      onChangeGeneral: vi.fn(),
+      onConfirmPrivate,
+      impact: sharePrivateScenario().impact,
+    });
+    fireEvent.click(screen.getByRole("button", { name: copy.general.change }));
+    const boxes = screen.getAllByRole("checkbox");
+    expect(boxes).toHaveLength(3);
+    fireEvent.click(boxes[2]!);
+    fireEvent.click(
+      screen.getByRole("button", { name: "Thêm 2 người rồi chuyển" }),
+    );
+    expect(onConfirmPrivate).toHaveBeenCalledWith(["u-quan", "u-anh"]);
+    expect(props.onClose).toHaveBeenCalled();
   });
 
   it("FUI[wm.board-share:log] reads the history and goes back", () => {

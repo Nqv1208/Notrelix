@@ -267,7 +267,8 @@ test.describe("Board share geometry at 1440 px (owner)", () => {
       { x: 543.69, y: 181.23, width: 63.31, height: 30 },
       "change",
     );
-    await expect(change).toHaveAttribute("aria-disabled", "true");
+    // Who can open the Board can be changed (to Private).
+    await expect(change).not.toHaveAttribute("aria-disabled", "true");
   });
 
   test("the permission rows", async ({ page }) => {
@@ -304,18 +305,17 @@ test.describe("Board share geometry at 1440 px (owner)", () => {
     expect(await colour(fixed, "color")).toBe(COLOUR.meta);
     const fixedBox = await rel(page, fixed);
     expect(Math.abs(fixedBox.x + fixedBox.width - 620)).toBeLessThanOrEqual(1);
-    // A member who is not the owner has a level button, inert while there is no write.
+    // A member who is not the owner has a live level button.
     const level = rows.nth(2).locator('[data-f="lvl-plain"]');
     expectRect(await rel(page, level), { height: 30 }, "level");
     expect(await style(level, "border-radius")).toBe("9px");
     expect(await style(level, "font-weight")).toBe("500");
-    await expect(level).toHaveAttribute("aria-disabled", "true");
+    await expect(level).not.toHaveAttribute("aria-disabled", "true");
     const second = await rel(page, rows.nth(1));
     expect(Math.abs(second.y - (303.67 + 50))).toBeLessThanOrEqual(1);
-    // Ten entries: five show, the rest sit behind "Show more".
+    // Only the permissions given on the Board are listed: the five of the mockup.
     await expect(rows).toHaveCount(5);
-    await f(page, "plmore").click();
-    expect(await rows.count()).toBeGreaterThan(5);
+    await expect(f(page, "plmore")).toHaveCount(0);
   });
 
   test("the Board link, the footer and the buttons", async ({ page }) => {
@@ -358,7 +358,7 @@ test.describe("Board share geometry at 1440 px (owner)", () => {
     expect(await style(log, "font-size")).toBe("12.5px");
     expect(await style(log, "font-weight")).toBe("500");
     expect(await colour(log, "color")).toBe(COLOUR.accentText);
-    await expect(log).toHaveAttribute("aria-disabled", "true");
+    await expect(log).not.toHaveAttribute("aria-disabled", "true");
     const copy = f(page, "df").locator('[data-f="btn"]');
     expectRect(
       await rel(page, copy),

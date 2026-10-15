@@ -75,6 +75,8 @@ import {
 import {
   ENGINEERING_MEMBERS,
   ERP_ENGINEERS_TEAM,
+  ACCOUNTING_PEOPLE,
+  ACCOUNTING_TEAM,
   ERP_TEAM_ONLY,
   EXECUTIVES,
   EXECUTIVE_TEAM,
@@ -106,6 +108,7 @@ import {
   type ErpHistoryCompact,
   type ErpHistoryDetail,
 } from "./mock-item-detail";
+import { MockBoardSharing, seedErpSharing } from "./mock-board-sharing";
 import { LIBRARY_DOCS, SECONDARY_BOARD_TITLES } from "./mock-docs-library";
 import {
   INVOICE_BLOCKS,
@@ -270,6 +273,8 @@ export class MockStore {
   private boardMembersByBoardId = new Map<string, MockBoardMemberRecord[]>();
   /** Explicit board access entries, keyed by board. */
   private boardGrantsByBoardId = new Map<string, MockBoardGrantRecord[]>();
+  /** The Board permissions the share dialog draws (gap `CTR-GAP-WM-BOARD-SHARING`). */
+  readonly sharing = new MockBoardSharing();
   /** Seeded board audiences for the access read, keyed by board. */
   private boardAudienceByBoardId = new Map<string, MockBoardAudienceRecord>();
 
@@ -894,6 +899,7 @@ export class MockStore {
       ...ERP_TEAM_ONLY,
       ...EXECUTIVES,
       ...QA_PEOPLE,
+      ...ACCOUNTING_PEOPLE,
     ]) {
       if (!this.usersById.has(person.id)) {
         this.insertUser({
@@ -904,7 +910,12 @@ export class MockStore {
         });
       }
     }
-    for (const team of [ERP_ENGINEERS_TEAM, EXECUTIVE_TEAM, QA_TEAM]) {
+    for (const team of [
+      ERP_ENGINEERS_TEAM,
+      EXECUTIVE_TEAM,
+      QA_TEAM,
+      ACCOUNTING_TEAM,
+    ]) {
       this.spaces.insertTeam({
         id: team.id,
         workspaceId,
@@ -1319,6 +1330,7 @@ export class MockStore {
         grantedByUserId: ERP_PEOPLE.HP.id,
       },
     ]);
+    seedErpSharing(this.sharing);
     this.boardAudienceByBoardId.set(boardId, {
       ...ERP_AUDIENCE,
       sources: ERP_AUDIENCE.sources.map((source) => ({ ...source })),
@@ -1441,6 +1453,39 @@ export class MockStore {
     return this.boardGrantsByBoardId
       .get(boardId)
       ?.find((grant) => grant.userId === userId);
+  }
+
+  /** Sets (or adds) a user's explicit level on a board. */
+  setBoardGrant(
+    boardId: string,
+    userId: string,
+    level: MockBoardGrantRecord["level"],
+    grantedByUserId: string,
+  ): void {
+    const list = this.boardGrantsByBoardId.get(boardId) ?? [];
+    const existing = list.find((grant) => grant.userId === userId);
+    if (existing) existing.level = level;
+    else list.push({ boardId, userId, level, grantedByUserId });
+    this.boardGrantsByBoardId.set(boardId, list);
+  }
+
+  /** Removes a user's explicit entry on a board. */
+  removeBoardGrant(boardId: string, userId: string): void {
+    const list = this.boardGrantsByBoardId.get(boardId);
+    if (!list) return;
+    this.boardGrantsByBoardId.set(
+      boardId,
+      list.filter((grant) => grant.userId !== userId),
+    );
+  }
+
+  /** Switches who can open a board (the share dialog's "Private"). */
+  setBoardVisibility(
+    boardId: string,
+    visibility: "private" | "workspace",
+  ): void {
+    const board = this.boardsById.get(boardId);
+    if (board) board.visibility = visibility;
   }
 
   /** The seeded audience of a board, when the world defines one. */
@@ -1587,6 +1632,7 @@ export class MockStore {
     this.archivedWorkspaceIds.clear();
     this.boardMembersByBoardId.clear();
     this.boardGrantsByBoardId.clear();
+    this.sharing.clear();
     this.boardAudienceByBoardId.clear();
     this.spaces.clear();
     this.feed.clear();

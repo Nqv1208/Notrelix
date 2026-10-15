@@ -112,6 +112,8 @@ export interface BoardShareDialogSurfaceProps {
   readonly onRemove?: (rowId: string) => void;
   /** Switch who can open the Board; absent: "Đổi" is inert. */
   readonly onChangeGeneral?: (target: "private") => void;
+  /** Confirms the switch to Private, adding the chosen people first; absent: inert. */
+  readonly onConfirmPrivate?: (addIds: readonly string[]) => void;
   /** The history; absent: its link is inert. */
   readonly log?: readonly ShareLogEntry[] | null;
   /** People the switch to Private would cut off (stories). */
@@ -305,7 +307,7 @@ function ShareBody({
             type="button"
             aria-disabled="true"
             title={copy.add.unavailable}
-            className={cn(BTN_PRIMARY, "h-[38px]")}
+            className={cn(BTN_PRIMARY, "h-[38px] aria-disabled:opacity-100")}
           >
             {copy.add.invite}
           </button>
@@ -866,8 +868,24 @@ function LevelMenu({
   );
 }
 
-function PrivateBody({ copy, view, impact, onClose, setScreen }: BodyProps) {
+function PrivateBody({
+  copy,
+  view,
+  impact,
+  onClose,
+  onConfirmPrivate,
+  setScreen,
+}: BodyProps) {
   const c = copy.privateConfirm;
+  // Everyone with work on the Board starts chosen to be added.
+  const [chosen, setChosen] = useState<ReadonlySet<string>>(
+    () => new Set((impact?.people ?? []).map((person) => person.id)),
+  );
+  const confirm = (ids: readonly string[]) => {
+    onConfirmPrivate?.(ids);
+    setScreen("share");
+    onClose();
+  };
   const general = view.general;
   const spaceName =
     general.kind === "space" ? general.name : view.workspaceName;
@@ -988,7 +1006,15 @@ function PrivateBody({ copy, view, impact, onClose, setScreen }: BodyProps) {
                     <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-2.5">
                       <input
                         type="checkbox"
-                        defaultChecked
+                        checked={chosen.has(person.id)}
+                        onChange={(event) =>
+                          setChosen((current) => {
+                            const next = new Set(current);
+                            if (event.target.checked) next.add(person.id);
+                            else next.delete(person.id);
+                            return next;
+                          })
+                        }
                         className="m-0 size-4 shrink-0 accent-primary"
                       />
                       <Avatar
@@ -1035,20 +1061,22 @@ function PrivateBody({ copy, view, impact, onClose, setScreen }: BodyProps) {
         <button
           data-f="btn"
           type="button"
-          aria-disabled="true"
-          title={copy.general.changeUnavailable}
-          className={BTN}
+          aria-disabled={onConfirmPrivate ? undefined : true}
+          title={onConfirmPrivate ? undefined : copy.general.changeUnavailable}
+          onClick={onConfirmPrivate ? () => confirm([]) : undefined}
+          className={cn(BTN, FOCUS)}
         >
           {c.switchOnly}
         </button>
         <button
           data-f="btn-pri"
           type="button"
-          aria-disabled="true"
-          title={copy.general.changeUnavailable}
-          className={BTN_PRIMARY}
+          aria-disabled={onConfirmPrivate ? undefined : true}
+          title={onConfirmPrivate ? undefined : copy.general.changeUnavailable}
+          onClick={onConfirmPrivate ? () => confirm([...chosen]) : undefined}
+          className={cn(BTN_PRIMARY, FOCUS)}
         >
-          {fill(c.switchAdd, { count: impact?.people.length ?? 0 })}
+          {fill(c.switchAdd, { count: chosen.size })}
         </button>
       </div>
     </>

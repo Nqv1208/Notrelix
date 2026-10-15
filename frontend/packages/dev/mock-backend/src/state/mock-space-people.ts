@@ -60,6 +60,25 @@ export const QA_PEOPLE: readonly SpacePerson[] = [
   person("qa-dat", "Võ Thành Đạt"),
 ];
 
+/** The team Nhóm Kế toán tổng hợp (6): given the ERP Board by name, outside Công nghệ. */
+export const ACCOUNTING_PEOPLE: readonly SpacePerson[] = [
+  person("kt-kim", "Nguyễn Thị Kim"),
+  person("kt-long", "Phạm Văn Long"),
+  person("kt-ngan", "Trần Thị Ngân"),
+  person("kt-phuong", "Lê Thu Phương"),
+  person("kt-sinh", "Vũ Quang Sinh"),
+  person("kt-yen", "Hoàng Hải Yến"),
+];
+
+export const ACCOUNTING_TEAM = {
+  id: "mock-team-erp-accounting",
+  name: "Nhóm Kế toán tổng hợp",
+  members: ACCOUNTING_PEOPLE.map((entry, index) => ({
+    userId: entry.id,
+    role: index === 0 ? ("Lead" as const) : ("Member" as const),
+  })),
+};
+
 export const ERP_ENGINEERS_TEAM = {
   id: "mock-team-erp-engineers",
   name: "Nhóm Kỹ sư ERP",

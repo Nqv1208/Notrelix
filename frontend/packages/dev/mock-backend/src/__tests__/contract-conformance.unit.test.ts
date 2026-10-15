@@ -616,6 +616,7 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
         mockIds.teams.erpEngineers,
         mockIds.teams.executive,
         mockIds.teams.qa,
+        mockIds.teams.accounting,
       ].sort(),
     );
     store.assertInvariants();

@@ -72,34 +72,128 @@ test.describe("Board share dialog (owner)", () => {
     await expect(page.getByRole("dialog", { name: /^Chia sẻ/ })).toBeHidden();
   });
 
-  test("Show more expands the list", async ({ page }) => {
-    await open(page);
-    await share(page).click();
-    const rows = page.locator('[data-f="pr"]');
-    await expect(rows).toHaveCount(5);
-    await page.locator('[data-f="plmore"]').click();
-    expect(await rows.count()).toBeGreaterThan(5);
-  });
-
-  test("what has no write is drawn aria-disabled with a reason", async ({
+  test("lists only the permissions given on the Board, five rows, no show more", async ({
     page,
   }) => {
     await open(page);
     await share(page).click();
-    for (const selector of [
-      '[data-f="invite"]',
-      '[data-f="ga"] [data-f="lvl-plain"]',
-      '[data-f="logl"]',
-    ]) {
-      const control = page.locator(selector).first();
-      await expect(control).toHaveAttribute("aria-disabled", "true");
-      await expect(
-        control.locator("xpath=ancestor-or-self::*[@title][1]"),
-      ).toHaveAttribute("title", /.+/);
-    }
-    // Activating the invite button changes nothing.
-    await page.locator('[data-f="invite"]').click({ force: true });
+    const dialog = page.getByRole("dialog", { name: /^Chia sẻ/ });
+    await expect(dialog.getByText("Board trong Phòng Công nghệ")).toBeVisible();
+    await expect(dialog.getByText("Theo Phòng Công nghệ")).toBeVisible();
+    await expect(
+      dialog.getByText("Quyền riêng trên board này · 5"),
+    ).toBeVisible();
+    const rows = page.locator('[data-f="pr"]');
+    await expect(rows).toHaveCount(5);
+    await expect(page.locator('[data-f="plmore"]')).toHaveCount(0);
+    await expect(rows.nth(0)).toContainText("Lê Hoàng Phúc");
+    await expect(rows.nth(0)).toContainText(
+      "Chủ board · Quản trị Phòng Công nghệ",
+    );
+    await expect(rows.nth(1)).toContainText(
+      "Nhóm workspace · 6 người · ngoài phòng Công nghệ",
+    );
+    await expect(rows.nth(2)).toContainText(
+      "Phòng Kế toán · ngoài phòng Công nghệ · hết quyền 31/12/2026",
+    );
+    await expect(rows.nth(3)).toContainText("Ngoài công ty");
+    await expect(rows.nth(3)).toContainText(
+      "tuan@doitac-erp.vn · khách, chỉ thấy board này · hết quyền 31/01/2027",
+    );
+    await expect(rows.nth(4)).toContainText("(bạn)");
+    // Department members are not listed one by one.
+    await expect(dialog.getByText("Trần Minh Quân")).toHaveCount(0);
+  });
+
+  test("inviting has no write: the button looks live, says why and changes nothing", async ({
+    page,
+  }) => {
+    await open(page);
+    await share(page).click();
+    const invite = page.locator('[data-f="invite"]');
+    await expect(invite).toHaveAttribute("aria-disabled", "true");
+    await expect(invite).toHaveAttribute("title", /.+/);
+    await invite.click({ force: true });
     await expect(page.getByRole("dialog", { name: /^Chia sẻ/ })).toBeVisible();
+  });
+
+  test("changes a permission, and removes one", async ({ page }) => {
+    await open(page);
+    await share(page).click();
+    const dialog = page.getByRole("dialog", { name: /^Chia sẻ/ });
+    const rows = page.locator('[data-f="pr"]');
+    await rows
+      .nth(1)
+      .getByRole("button", { name: /Có thể xem/ })
+      .click();
+    await page.getByRole("menuitemradio", { name: /Có thể sửa/ }).click();
+    await expect(rows.nth(1)).toContainText("Có thể sửa");
+    // A guest cannot be a manager.
+    await rows
+      .nth(3)
+      .getByRole("button", { name: /Có thể sửa/ })
+      .click();
+    await expect(
+      page.getByRole("menuitemradio", { name: /Quản lý/ }),
+    ).toHaveAttribute("aria-disabled", "true");
+    await page.getByRole("menuitem", { name: /Gỡ quyền/ }).click();
+    await expect(dialog.getByText("Đặng Minh Tuấn")).toHaveCount(0);
+    await expect(
+      dialog.getByText("Quyền riêng trên board này · 4"),
+    ).toBeVisible();
+    // The history records both.
+    await dialog.getByText("Nhật ký thay đổi quyền").click();
+    await expect(
+      dialog
+        .getByText(/đổi Nhóm Kế toán tổng hợp: Có thể xem → Có thể sửa/)
+        .first(),
+    ).toBeVisible();
+    await expect(dialog.getByText(/gỡ quyền của Đặng Minh Tuấn/)).toBeVisible();
+  });
+
+  test("shows the permission history", async ({ page }) => {
+    await open(page);
+    await share(page).click();
+    const dialog = page.getByRole("dialog", { name: /^Chia sẻ/ });
+    await dialog.getByText("Nhật ký thay đổi quyền").click();
+    await expect(
+      dialog.getByText(
+        "Nguyễn Thu Hà thêm Đặng Minh Tuấn (khách, Có thể sửa, hết quyền 31/01/2027)",
+      ),
+    ).toBeVisible();
+    await expect(dialog.getByText("08/10 · 14:12")).toBeVisible();
+    await expect(dialog.getByText(/gia hạn phải thêm lại quyền/)).toBeVisible();
+    await dialog.getByRole("button", { name: "Quay lại", exact: true }).click();
+    await expect(
+      dialog.getByText("Quyền riêng trên board này · 5"),
+    ).toBeVisible();
+  });
+
+  test("switching to Private lists who loses the Board and adds the chosen people", async ({
+    page,
+  }) => {
+    await open(page);
+    await share(page).click();
+    const dialog = page.getByRole("dialog");
+    await dialog.getByRole("button", { name: /Đổi/ }).click();
+    await expect(
+      dialog.getByText(
+        "22 người trong Phòng Công nghệ sẽ không còn thấy board.",
+      ),
+    ).toBeVisible();
+    await expect(dialog.getByText("Trần Minh Quân")).toBeVisible();
+    await dialog.getByRole("checkbox").nth(2).uncheck();
+    await dialog
+      .getByRole("button", { name: "Thêm 2 người rồi chuyển" })
+      .click();
+    await expect(dialog).toBeHidden();
+    // Reopen: the two chosen people now have a permission of their own.
+    await share(page).click();
+    const again = page.getByRole("dialog", { name: /^Chia sẻ/ });
+    await expect(again.getByText("Riêng tư")).toBeVisible();
+    await expect(
+      again.getByText("Quyền riêng trên board này · 7"),
+    ).toBeVisible();
   });
 });
 

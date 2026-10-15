@@ -204,3 +204,273 @@ export function buildShareRows(
   }
   return rows;
 }
+
+/** The producer's own-permissions read (gap `CTR-GAP-WM-BOARD-SHARING`). */
+export type SharingLevel = "viewer" | "commenter" | "editor" | "manager";
+
+export interface BoardSharingData {
+  readonly spaceName: string | null;
+  readonly spacePeople: number | null;
+  readonly canManage: boolean;
+  readonly entries: readonly {
+    readonly id: string;
+    readonly kind: "person" | "team" | "guest";
+    readonly userId: string | null;
+    readonly name: string;
+    readonly email: string | null;
+    readonly you: boolean;
+    readonly owner: boolean;
+    readonly spaceRole: "Admin" | "Member" | "Viewer" | null;
+    readonly department: string | null;
+    readonly teamPeople: number | null;
+    readonly outsideSpace: boolean;
+    readonly outsideCompany: boolean;
+    readonly level: SharingLevel;
+    readonly expiresAt: string | null;
+  }[];
+  readonly log: readonly {
+    readonly id: string;
+    readonly kind:
+      | "added"
+      | "changed"
+      | "removed"
+      | "expired"
+      | "public-off"
+      | "created"
+      | "private";
+    readonly actor: { readonly id: string; readonly name: string } | null;
+    readonly target: string | null;
+    readonly from: SharingLevel | null;
+    readonly to: SharingLevel | null;
+    readonly guest: boolean;
+    readonly expiresAt: string | null;
+    readonly at: string;
+  }[];
+  readonly privateImpact: {
+    readonly lose: number;
+    readonly people: readonly {
+      readonly userId: string;
+      readonly name: string;
+      readonly items: number;
+      readonly overdue: number;
+    }[];
+    readonly keep: readonly string[];
+  };
+}
+
+const LEVEL_OF_SHARING: Record<SharingLevel, ShareLevel> = {
+  manager: "manage",
+  editor: "edit",
+  commenter: "comment",
+  viewer: "view",
+};
+
+export function shareLevelOf(level: SharingLevel): ShareLevel {
+  return LEVEL_OF_SHARING[level];
+}
+
+export const SHARING_LEVEL_OF: Record<ShareLevel, SharingLevel> = {
+  manage: "manager",
+  edit: "editor",
+  comment: "commenter",
+  view: "viewer",
+};
+
+export interface SharingWords {
+  readonly owner: string;
+  readonly team: (count: number) => string;
+  readonly guestOnly: string;
+  readonly inSpace: (role: "Admin" | "Member" | "Viewer") => string;
+  readonly department: (name: string) => string;
+  readonly outsideSpace: string | null;
+  readonly formatDay: (iso: string) => string;
+}
+
+/** "31/01/2027" of an end-of-day instant in the member's calendar. */
+export function shareEndDate(iso: string): string {
+  const date = new Date(iso);
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()}`;
+}
+
+/**
+ * The rows of "Permissions on this Board" from the producer's own entries only
+ * (what the department gives by role is not listed): the person's place in the
+ * department or outside it, the level and when it ends.
+ */
+export function buildSharingRows(
+  data: BoardSharingData,
+  words: SharingWords,
+  initialsOf: (name: string) => string,
+): ShareRowView[] {
+  return data.entries.map((entry) => {
+    const outside = entry.outsideSpace ? words.outsideSpace : null;
+    const person: SharePersonView | null =
+      entry.kind === "team"
+        ? null
+        : {
+            id: entry.userId ?? entry.id,
+            name: entry.name,
+            initials: initialsOf(entry.name),
+            tone: shareToneFor(entry.userId ?? entry.id),
+          };
+    const detail =
+      entry.kind === "team"
+        ? [words.team(entry.teamPeople ?? 0), outside]
+        : entry.kind === "guest"
+          ? [entry.email, words.guestOnly]
+          : [
+              entry.owner ? words.owner : null,
+              entry.spaceRole ? words.inSpace(entry.spaceRole) : null,
+              entry.department ? words.department(entry.department) : null,
+              entry.department ? outside : null,
+            ];
+    return {
+      id: entry.id,
+      kind: entry.kind,
+      name: entry.name,
+      shortName: entry.name.split(/\s+/).pop(),
+      person,
+      isYou: entry.you,
+      detail: detail.filter(Boolean).join(" · ") || null,
+      level: shareLevelOf(entry.level),
+      fixed: entry.owner || entry.you,
+      badge: entry.outsideCompany ? "outside" : null,
+      expires: entry.expiresAt ? shareEndDate(entry.expiresAt) : null,
+    } satisfies ShareRowView;
+  });
+}
+
+export interface SharingLogWords {
+  readonly levels: Record<ShareLevel, string>;
+  readonly text: {
+    readonly added: string;
+    readonly addedGuest: string;
+    readonly addedGuestForever: string;
+    readonly addedPerson: string;
+    readonly changed: string;
+    readonly removed: string;
+    readonly expired: string;
+    readonly publicOff: string;
+    readonly created: string;
+    readonly madePrivate: string;
+  };
+  readonly expiredNote: string;
+  readonly fill: (
+    message: string,
+    values: Record<string, string | number>,
+  ) => string;
+  /** "08/10 · 14:12" within a week, "02/10" after. */
+  readonly when: (iso: string) => string;
+}
+
+export function buildSharingLog(
+  data: BoardSharingData,
+  words: SharingLogWords,
+  initialsOf: (name: string) => string,
+): ShareLogEntry[] {
+  const f = words.fill;
+  return data.log.map((entry) => {
+    const actor = entry.actor?.name ?? "";
+    const target = entry.target ?? "";
+    const level = (value: SharingLevel | null) =>
+      value ? words.levels[shareLevelOf(value)] : "";
+    let text: string;
+    switch (entry.kind) {
+      case "added":
+        text = f(words.text.added, {
+          actor,
+          target,
+          extra: entry.guest
+            ? entry.expiresAt
+              ? f(words.text.addedGuest, {
+                  level: level(entry.to),
+                  date: shareEndDate(entry.expiresAt),
+                })
+              : f(words.text.addedGuestForever, { level: level(entry.to) })
+            : f(words.text.addedPerson, { level: level(entry.to) }),
+        });
+        break;
+      case "changed":
+        text = f(words.text.changed, {
+          actor,
+          target,
+          from: level(entry.from),
+          to: level(entry.to),
+        });
+        break;
+      case "removed":
+        text = f(words.text.removed, { actor, target });
+        break;
+      case "expired":
+        text = f(words.text.expired, { target });
+        break;
+      case "public-off":
+        text = words.text.publicOff;
+        break;
+      case "private":
+        text = f(words.text.madePrivate, { actor });
+        break;
+      default:
+        text = f(words.text.created, { actor });
+    }
+    return {
+      id: entry.id,
+      actor: entry.actor
+        ? {
+            id: entry.actor.id,
+            name: entry.actor.name,
+            initials: initialsOf(entry.actor.name),
+            tone: shareToneFor(entry.actor.id),
+          }
+        : null,
+      text,
+      when: words.when(entry.at),
+      note: entry.kind === "expired" ? words.expiredNote : null,
+    };
+  });
+}
+
+/** Who loses the Board when it goes Private, and the entries that stay. */
+export function buildSharingImpact(
+  data: BoardSharingData,
+  words: {
+    readonly keepInSpace: (names: string) => string;
+    readonly keepGuest: (name: string) => string;
+    readonly and: string;
+  },
+  initialsOf: (name: string) => string,
+): {
+  readonly lose: number;
+  readonly people: readonly ShareImpactPerson[];
+  readonly keepText: string;
+} {
+  const inSpace = data.entries.filter((entry) => entry.spaceRole !== null);
+  const others = data.entries.filter((entry) => entry.spaceRole === null);
+  const parts: string[] = [];
+  if (inSpace.length > 0)
+    parts.push(
+      words.keepInSpace(inSpace.map((entry) => entry.name).join(", ")),
+    );
+  for (const entry of others.filter((item) => item.kind !== "guest"))
+    parts.push(`**${entry.name}**`);
+  const guests = others.filter((entry) => entry.kind === "guest");
+  const guestParts = guests.map((entry) => words.keepGuest(entry.name));
+  const all = [...parts, ...guestParts];
+  const keepText =
+    all.length > 1
+      ? `${all.slice(0, -1).join(", ")}${words.and}${all[all.length - 1]}.`
+      : `${all[0] ?? ""}.`;
+  return {
+    lose: data.privateImpact.lose,
+    people: data.privateImpact.people.map((person) => ({
+      id: person.userId,
+      name: person.name,
+      initials: initialsOf(person.name),
+      tone: shareToneFor(person.userId),
+      items: person.items,
+      overdue: person.overdue,
+    })),
+    keepText,
+  };
+}
