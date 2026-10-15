@@ -242,7 +242,7 @@ describe("WorkspaceCommandPaletteSurface", () => {
     });
   });
 
-  it("FUI[workspace.command-palette:empty] explains when nothing matches and offers only inert suggestions", () => {
+  it("FUI[workspace.command-palette:empty] explains when nothing matches and offers to create the Item and an inert search of every workspace", () => {
     const props = renderPalette(commandNoneScenario());
     expect(
       screen.getByText(
@@ -254,13 +254,14 @@ describe("WorkspaceCommandPaletteSurface", () => {
       expect.stringContaining("Tạo việc “hợp đồng bảo trì thang máy”"),
       expect.stringContaining("Tìm ở mọi workspace"),
     ]);
-    expect(
-      options().every(
-        (option) => option.getAttribute("aria-disabled") === "true",
-      ),
-    ).toBe(true);
+    expect(options()[0]!.getAttribute("aria-disabled")).not.toBe("true");
+    expect(options()[1]!.getAttribute("aria-disabled")).toBe("true");
     fireEvent.keyDown(input(), { key: "Enter" });
-    expect(props.onSelect).not.toHaveBeenCalled();
+    expect(props.onSelect).toHaveBeenCalledTimes(1);
+    expect(props.onSelect.mock.calls[0]![0]).toMatchObject({
+      type: "create-item",
+      name: "hợp đồng bảo trì thang máy",
+    });
   });
 
   it("FUI[workspace.command-palette:running] shows the running command with an undo and no results", () => {

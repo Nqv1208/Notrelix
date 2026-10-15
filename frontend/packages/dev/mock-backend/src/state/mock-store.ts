@@ -1308,6 +1308,7 @@ export class MockStore {
           boardId: dept.id,
           listId: dept.listId,
           title: item.title,
+          description: item.description,
           position: index + 1,
           createdAt: "2026-09-28T02:00:00.000Z",
           updatedAt: "2026-10-12T01:00:00.000Z",
@@ -1318,7 +1319,7 @@ export class MockStore {
           completedAt: item.completed
             ? hanoiInstant(item.completed, item.completedHour)
             : null,
-          assigneeUserIds: [],
+          assigneeUserIds: item.assigneeId ? [item.assigneeId] : [],
           childProgress: null,
         });
         this.updateFieldValue(

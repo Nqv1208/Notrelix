@@ -379,6 +379,12 @@ export function canWriteBoardItems(boardId: string, store: MockStore): boolean {
   return access?.myLevel === "editor" || access?.myLevel === "manager";
 }
 
+/** Whether the caller can read a board (any level of access). */
+export function canReadBoard(boardId: string, store: MockStore): boolean {
+  const board = store.getBoard(boardId);
+  return board ? projectBoardAccess(board, store) !== null : false;
+}
+
 /** Whether the caller manages a board: only a manager opens its settings. */
 export function canManageBoard(boardId: string, store: MockStore): boolean {
   const board = store.getBoard(boardId);

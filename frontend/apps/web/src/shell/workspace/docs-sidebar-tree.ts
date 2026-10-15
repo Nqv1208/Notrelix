@@ -85,7 +85,7 @@ export function buildSidebarDocs({
       .filter((page) => !seen.has(page.id))
       .map((page) => ({
         id: page.id,
-        title: page.title,
+        title: page.navTitle ?? page.title,
         children: toNodes(page.id, new Set(seen).add(page.id)),
       }));
 

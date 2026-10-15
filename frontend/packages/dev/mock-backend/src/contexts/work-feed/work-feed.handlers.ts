@@ -37,6 +37,8 @@ import {
   type WorkBucket,
 } from "../../state/mock-work-feed";
 import type { MockStore } from "../../state/mock-store";
+import { commandSearch } from "../../state/mock-command-search";
+import { canReadBoard } from "../work-management/boards.handlers";
 
 const MY_WORK_EXT = "CTR-GAP-WS-MYWORK-EXT" as const;
 const HOME_FEED = "CTR-GAP-WS-HOME-FEED" as const;
@@ -80,6 +82,23 @@ function followersOf(store: MockStore, cardId: string, memberFollows: boolean) {
 }
 
 export const workFeedOperations = [
+  // ── Command palette search (CTR-GAP-WS-COMMAND-SEARCH) ───────────────────
+  defineMockOperation<{ workspaceId: string }>({
+    id: "wsFeed.commandSearch",
+    contract: { kind: "gap", gapId: "CTR-GAP-WS-COMMAND-SEARCH" },
+    method: "GET",
+    route: "/workspaces/:workspaceId/command-search",
+    async handle({ params, query, store }) {
+      if (!store.isCurrentMemberOf(params.workspaceId)) return notFound();
+      return ok(
+        commandSearch(store, params.workspaceId, query["q"] ?? "", (id) =>
+          canReadBoard(id, store),
+        ),
+      );
+    },
+  }),
+
+
   // ── My work: extended read ───────────────────────────────────────────────
   defineMockOperation<{ workspaceId: string }>({
     id: "wsFeed.myWork.extended",

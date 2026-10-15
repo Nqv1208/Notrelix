@@ -68,7 +68,7 @@ export const LIBRARY_DOCS: readonly LibraryDoc[] = [
     parentId: INVOICE_FOLDER_ID,
     createdAt: "2026-09-02T04:00:00.000Z",
     updatedAt: "2026-10-09T08:15:00.000Z",
-    editorId: mockIds.users.owner,
+    editorId: mockIds.users.commenter,
     blocks: [
       "Hướng dẫn đối chiếu ngân hàng",
       "Các bước đối chiếu sao kê ngân hàng với sổ quỹ vào cuối mỗi tháng.",

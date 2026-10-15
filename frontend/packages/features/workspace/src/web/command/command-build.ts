@@ -676,20 +676,37 @@ export function buildPalette(input: BuildPaletteInput): PaletteView {
     )
     .map((entry) => docRow(entry, copy, term));
 
-  // The typed text offers an Item of that name; the host has no create-Item
-  // producer for it, so the row is drawn inert.
-  const createNamed: PaletteRow = {
-    id: "command:create-item-named",
-    kind: "command",
-    icon: "plus",
-    accent: true,
-    title: formatCopy(copy.commands.createItemNamed, { name: term }),
-    ctx: [{ type: "text", text: copy.ctx.createHint }],
-    keys: [],
-    unavailable: copy.commands.unavailableCreateItem,
-    selection: null,
-    openHint: false,
-  };
+  // The typed text offers an Item of that name in the Board opened last,
+  // assigned to the member; without a recent Board the row is drawn inert.
+  const lastBoard = sources.recents.find((entry) => entry.kind === "board");
+  const createNamed: PaletteRow = lastBoard
+    ? {
+        id: "command:create-item-named",
+        kind: "command",
+        icon: "plus",
+        accent: true,
+        title: formatCopy(copy.commands.createItemIn, {
+          name: term,
+          board: lastBoard.name,
+        }),
+        ctx: [{ type: "text", text: copy.ctx.createHint }],
+        keys: ["⌘N"],
+        unavailable: null,
+        selection: { type: "create-item", name: term, boardId: lastBoard.id },
+        openHint: false,
+      }
+    : {
+        id: "command:create-item-named",
+        kind: "command",
+        icon: "plus",
+        accent: true,
+        title: formatCopy(copy.commands.createItemNamed, { name: term }),
+        ctx: [{ type: "text", text: copy.ctx.createHint }],
+        keys: [],
+        unavailable: copy.commands.unavailableCreateItem,
+        selection: null,
+        openHint: false,
+      };
   const commands = [...commandRows, createNamed];
 
   const byKind: Record<PaletteKind, readonly PaletteRow[]> = {
@@ -712,10 +729,10 @@ export function buildPalette(input: BuildPaletteInput): PaletteView {
     commandRows.length;
   if (matched === 0) {
     const others = capabilities.otherWorkspaces;
-    const lastBoard = sources.recents.find((entry) => entry.kind === "board");
     const suggestions: PaletteRow[] = [
       {
         ...createNamed,
+        title: formatCopy(copy.commands.createItemNamed, { name: term }),
         ctx: lastBoard
           ? [
               {

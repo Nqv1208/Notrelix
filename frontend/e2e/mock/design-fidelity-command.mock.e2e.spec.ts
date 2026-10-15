@@ -59,7 +59,14 @@ async function openPalette(page: Page, query?: string) {
   await page.keyboard.press("Meta+k");
   const input = page.getByRole("combobox");
   await expect(input).toBeFocused();
-  if (query !== undefined) await input.fill(query);
+  if (query !== undefined) {
+    await input.fill(query);
+    // The server's answer (what matched inside Items, Docs, Boards) replaces
+    // the local rows after the typing pause; measure after it landed.
+    if (query.trim().length >= 2 && !/^[>@#]/.test(query)) {
+      await page.waitForTimeout(600);
+    }
+  }
   await expect(page.locator('[data-f="r"]').first()).toBeVisible();
   // Measure at rest: the dialog fades and scales in for 100 ms.
   await page.evaluate(() =>

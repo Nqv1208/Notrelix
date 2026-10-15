@@ -90,6 +90,8 @@ export interface WorkspaceCommandPaletteSurfaceProps {
   /** Initial text and filter tab (stories, tests). */
   readonly defaultQuery?: string;
   readonly defaultFilter?: PaletteFilter;
+  /** The text typed so far (empty when closed), for a host that searches beyond its lists. */
+  readonly onQueryChange?: (query: string) => void;
   /** A command that is running: the result list gives way to its progress. */
   readonly running?: PaletteRunning | null;
 }
@@ -348,6 +350,7 @@ export function WorkspaceCommandPaletteSurface({
   onSelect,
   defaultQuery = "",
   defaultFilter = "all",
+  onQueryChange,
   running = null,
 }: WorkspaceCommandPaletteSurfaceProps) {
   const [query, setQuery] = React.useState(defaultQuery);
@@ -361,6 +364,10 @@ export function WorkspaceCommandPaletteSurface({
   const chosenRef = React.useRef(false);
   const baseId = React.useId();
   const listId = `${baseId}-results`;
+
+  React.useEffect(() => {
+    onQueryChange?.(open ? query : "");
+  }, [onQueryChange, open, query]);
 
   React.useEffect(() => {
     if (!open) {
@@ -457,6 +464,18 @@ export function WorkspaceCommandPaletteSurface({
         event.key === "ArrowDown" ? 1 : -1,
       );
       setSelectedId(rows[next]?.id ?? null);
+      return;
+    }
+    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "n") {
+      // The create row's own key (a browser keeps Ctrl/Cmd+N for itself, so
+      // this works where the page may take it).
+      const row = rows.find(
+        (candidate) =>
+          candidate.id === "command:create-item-named" && !candidate.unavailable,
+      );
+      if (!row) return;
+      event.preventDefault();
+      choose(row);
       return;
     }
     if (event.key === "Enter") {

@@ -7,6 +7,7 @@ export function mapPage(dto: PageDtoApi): Page {
     workspaceId: dto.workspaceId,
     workspaceSlug: dto.workspaceId,
     title: dto.title,
+    ...(dto.navTitle ? { navTitle: dto.navTitle } : {}),
     icon: dto.iconValue ?? null,
     coverUrl: dto.coverUrl ?? null,
     coverColor: "var(--muted)",

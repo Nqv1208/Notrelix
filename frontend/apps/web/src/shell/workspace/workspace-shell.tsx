@@ -69,6 +69,8 @@ import { useSystemRailPreference } from "./use-system-rail-preference";
 import { useInboxSummary } from "./work-feed-bridge";
 import { flattenMyWork, useMyWorkItems } from "./work-management-bridge";
 import { useCommandPaletteData } from "./use-command-palette-data";
+import { useCommandSearch } from "./use-command-search";
+import { useWorkFeedWrites } from "./work-feed-bridge";
 import { useCreateResource } from "./use-create-resource";
 import { useCreateSpace } from "./use-create-space";
 import { useWorkspaceResources } from "./use-workspace-resources";
@@ -519,9 +521,23 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
   );
   useShellShortcuts(onShortcut, { enabled: !createOpen });
 
+  const workFeedWrites = useWorkFeedWrites(workspaceId);
   const onPaletteSelect = useCallback(
     (selection: ShellPaletteSelection) => {
       if (selection.type === "navigate") return goTo(selection.destination);
+      if (selection.type === "create-item") {
+        void workFeedWrites
+          .createItem({ boardId: selection.boardId, name: selection.name })
+          .then((created) =>
+            goTo({
+              section: "board",
+              boardId: selection.boardId,
+              item: created.id,
+            }),
+          )
+          .catch(() => undefined);
+        return;
+      }
       switch (selection.action) {
         case "toggle-theme":
           return toggleTheme();
@@ -536,7 +552,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
           return setCreateOpen(true);
       }
     },
-    [goTo, openCreateResource, openSystemRail, toggleTheme],
+    [goTo, openCreateResource, openSystemRail, toggleTheme, workFeedWrites],
   );
 
   const breadcrumb = useMemo(
@@ -584,7 +600,10 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
       railWorkspaces.filter((item) => !item.current).map((item) => item.name),
     [railWorkspaces],
   );
+  const [paletteQuery, setPaletteQuery] = useState("");
+  const paletteSearch = useCommandSearch(workspaceId, paletteQuery, paletteOpen);
   const paletteData = useCommandPaletteData({
+    search: paletteSearch,
     workspaceId,
     workspaceName: workspace?.name ?? "",
     otherWorkspaceNames,
@@ -707,6 +726,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
         copy={commandCopy}
         open={paletteOpen}
         onOpenChange={setPaletteOpen}
+        onQueryChange={setPaletteQuery}
         workspace={paletteData.workspace}
         work={paletteData.work}
         docs={paletteData.docs}

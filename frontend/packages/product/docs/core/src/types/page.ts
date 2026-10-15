@@ -19,6 +19,8 @@ export interface Page {
   workspaceId: ID;
   workspaceSlug: string;
   title: string;
+  /** Short name the tree and breadcrumb show when it differs from the title. */
+  navTitle?: string;
   icon: string | null;
   coverUrl: string | null;
   coverColor: string;

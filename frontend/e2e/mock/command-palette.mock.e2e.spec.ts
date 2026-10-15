@@ -341,3 +341,66 @@ test.describe("Command palette (owner)", () => {
     await expect(page.locator('[data-f="foot"]')).toBeVisible();
   });
 });
+
+test.describe("Command palette search (owner)", () => {
+  test.skip(
+    persona !== "owner" || scenario !== "default" || faults !== "",
+    "Needs the default owner world without faults",
+  );
+  test.use({ viewport: { width: 1440, height: 900 } });
+
+  async function type(page: Page, text: string) {
+    await open(page);
+    await page.keyboard.press("Meta+k");
+    await input(page).fill(text);
+  }
+
+  test("a reconciliation finds Items, Docs, a Board and the create command", async ({
+    page,
+  }) => {
+    await type(page, "đối chiếu");
+    const tabs = dialog(page).locator('[data-f="fl"]');
+    await expect(tabs).toHaveCount(6);
+    await expect(tabs.first()).toContainText("7");
+    await expect(options(page).filter({ hasText: "KT-88" })).toHaveCount(1);
+    await expect(options(page).filter({ hasText: "KT-91" })).toHaveCount(1);
+    // ERP-142 matches in its sub-item, not by its own name.
+    await expect(options(page).filter({ hasText: "ERP-142" })).toContainText(
+      "Đối chiếu công nợ đầu kỳ",
+    );
+    await expect(
+      options(page).filter({ hasText: "Quy trình nhập hoá đơn đầu vào" }),
+    ).toContainText("khớp trong nội dung");
+    await expect(
+      page.locator('[data-row-id="board:mock-board-accounting"]'),
+    ).toContainText("4");
+    await expect(options(page).filter({ hasText: "Tạo việc" })).toContainText(
+      "⌘N",
+    );
+  });
+
+  test("the same words without diacritics find the same Docs", async ({
+    page,
+  }) => {
+    await type(page, "hoa don");
+    await expect(
+      options(page).filter({ hasText: "Quy trình nhập hoá đơn đầu vào" }),
+    ).toHaveCount(1);
+  });
+
+  test("the create row makes an Item on the board opened last and opens it", async ({
+    page,
+  }) => {
+    await open(page);
+    await page.goto(`${BASE}/boards/mock-board-erp`);
+    await expect(
+      page.getByRole("heading", { name: /Triển khai ERP Q4/ }),
+    ).toBeVisible({
+      timeout: 20_000,
+    });
+    await page.keyboard.press("Meta+k");
+    await input(page).fill("hợp đồng bảo trì thang máy");
+    await options(page).filter({ hasText: "Tạo việc" }).click();
+    await expect(page).toHaveURL(/\/boards\/mock-board-erp\?.*item=/);
+  });
+});

@@ -38,6 +38,8 @@ interface PageDtoApi {
   workspaceId: string;
   parentId?: string | null;
   title: string;
+  /** Gap `CTR-GAP-DOCS-PAGE-EXT`: the short name the tree and the breadcrumb use. */
+  navTitle?: string;
   iconType?: string | null;
   iconValue?: string | null;
   coverUrl?: string | null;
@@ -67,11 +69,7 @@ interface BreadcrumbDtoApi {
   iconValue?: string | null;
 }
 
-function mapPageDto(
-  p: MockPageRecord,
-  store?: MockStore,
-  nav = false,
-): PageDtoApi {
+function mapPageDto(p: MockPageRecord, store?: MockStore): PageDtoApi {
   const spaceId =
     p.spaceId &&
     store &&
@@ -83,7 +81,8 @@ function mapPageDto(
     id: p.id,
     workspaceId: p.workspaceId,
     parentId: p.parentId ?? null,
-    title: nav ? (p.navTitle ?? p.title) : p.title,
+    title: p.title,
+    ...(p.navTitle ? { navTitle: p.navTitle } : {}),
     iconType: null,
     iconValue: p.icon ?? null,
     coverUrl: null,
@@ -129,7 +128,7 @@ export const pagesOperations = [
     async handle({ params, store }) {
       const pages = store.getPages(params.workspaceId);
       return ok<PageDtoApi[]>(
-        pages.map((page) => mapPageDto(page, store, true)),
+        pages.map((page) => mapPageDto(page, store)),
       );
     },
   }),
@@ -144,7 +143,7 @@ export const pagesOperations = [
     async handle({ params, store }) {
       const pages = store.getPages(params.workspaceId);
       return ok<PageDtoApi[]>(
-        pages.map((page) => mapPageDto(page, store, true)),
+        pages.map((page) => mapPageDto(page, store)),
       );
     },
   }),

@@ -5,6 +5,8 @@ export type PageDtoApi = {
   workspaceId: string;
   parentId?: string | null;
   title: string;
+  /** Gap `CTR-GAP-DOCS-PAGE-EXT`: the short name the tree and the breadcrumb use. */
+  navTitle?: string;
   iconType?: string | null;
   iconValue?: string | null;
   coverUrl?: string | null;

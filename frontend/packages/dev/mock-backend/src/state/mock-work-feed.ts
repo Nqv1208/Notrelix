@@ -336,7 +336,7 @@ export class MockWorkFeedState {
 
     for (const id of [
       ...ifExists(dept("KT-88")),
-      ...ifExists(dept("KT-91")),
+      ...ifExists(dept("KT-95")),
       ...ifExists(dept("KT-86")),
       ...ifExists(dept("MK-21")),
       ...ifExists(erp("ERP-147")),

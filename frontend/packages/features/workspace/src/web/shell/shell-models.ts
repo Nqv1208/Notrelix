@@ -82,7 +82,13 @@ export type ShellPaletteAction =
 /** One selected palette result. */
 export type ShellPaletteSelection =
   | { readonly type: "navigate"; readonly destination: WorkspaceDestination }
-  | { readonly type: "action"; readonly action: ShellPaletteAction };
+  | { readonly type: "action"; readonly action: ShellPaletteAction }
+  /** Create an Item with the typed name in a Board, assigned to the member. */
+  | {
+      readonly type: "create-item";
+      readonly name: string;
+      readonly boardId: string;
+    };
 
 export type ShellAppearance = "light" | "dark";
 

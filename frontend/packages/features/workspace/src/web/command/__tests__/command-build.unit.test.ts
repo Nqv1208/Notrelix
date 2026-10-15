@@ -93,10 +93,14 @@ describe("buildPalette", () => {
         item: "item-kt-88",
       },
     });
-    // A command row for the typed text exists but cannot run.
+    // The command row for the typed text creates an Item in the Board opened last.
     const create = view.groups[3]!.rows[0]!;
-    expect(create.unavailable).not.toBeNull();
-    expect(create.selection).toBeNull();
+    expect(create.unavailable).toBeNull();
+    expect(create.keys).toEqual(["⌘N"]);
+    expect(create.selection).toMatchObject({
+      type: "create-item",
+      name: "doi chieu",
+    });
   });
 
   it("narrows to one kind when a filter tab is chosen", () => {
@@ -138,7 +142,25 @@ describe("buildPalette", () => {
       "Tạo việc “hợp đồng bảo trì thang máy”",
       "Tìm ở mọi workspace",
     ]);
-    expect(rows.every((row) => row.unavailable && !row.selection)).toBe(true);
+    // Creating runs on the Board opened last; searching every workspace has no producer.
+    expect(rows[0]!.unavailable).toBeNull();
+    expect(rows[0]!.selection).toMatchObject({ type: "create-item" });
+    expect(rows[1]!.unavailable).not.toBeNull();
+    expect(rows[1]!.selection).toBeNull();
+  });
+
+  it("draws the create row inert when no Board was opened yet", () => {
+    const view = buildPalette({
+      copy,
+      query: "hợp đồng bảo trì thang máy",
+      filter: "all",
+      sources: { ...sources, recents: [] },
+      capabilities,
+      workspaceName: "Minh An Group",
+    });
+    const rows = flattenRows(view.groups);
+    expect(rows[0]!.unavailable).not.toBeNull();
+    expect(rows[0]!.selection).toBeNull();
   });
 
   it("starts the selection on the first row that can run", () => {

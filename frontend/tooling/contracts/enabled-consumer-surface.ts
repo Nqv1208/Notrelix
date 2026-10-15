@@ -648,6 +648,17 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
   {
     context: "Workspace",
     classification: "COMPATIBILITY_GAP_MOCKED",
+    consumerSymbol: "useCommandSearch",
+    consumerFile: "frontend/apps/web/src/shell/workspace/use-command-search.ts",
+    capability: "Command palette search over readable Items, Docs and Boards",
+    gapId: "CTR-GAP-WS-COMMAND-SEARCH",
+    method: "GET",
+    pathTemplate: "/workspaces/{workspaceId}/command-search",
+    mutation: false,
+  },
+  {
+    context: "Workspace",
+    classification: "COMPATIBILITY_GAP_MOCKED",
     consumerSymbol: "useWorkspaceInbox",
     consumerFile: "frontend/apps/web/src/shell/workspace/work-feed-bridge.ts",
     capability: "Workspace inbox with actor, target, need and detail",

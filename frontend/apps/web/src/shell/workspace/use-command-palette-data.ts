@@ -23,7 +23,11 @@ import {
   toPaletteDocs,
   toPaletteRecents,
   toPaletteWork,
+  toSearchBoards,
+  toSearchDocs,
+  toSearchWork,
 } from "./command-palette-view";
+import type { CommandSearchDto } from "./use-command-search";
 import { useBoardDepartments } from "./use-board-departments";
 import { useNow } from "./use-now";
 import type { WorkspaceResource } from "./use-workspace-resources";
@@ -50,6 +54,11 @@ export function useCommandPaletteData(input: {
   readonly docs: readonly WorkspaceResource[];
   readonly myWork: readonly MyWorkItem[];
   readonly spaceIndex: SpaceIndex;
+  /** What the typed text found beyond the lists above, with the text. */
+  readonly search?: {
+    readonly term: string;
+    readonly data: CommandSearchDto | null;
+  };
 }): CommandPaletteData {
   const { api: runtimeClient } = useAppRuntime();
   const copy = useWorkspaceCommandCopy();
@@ -83,27 +92,52 @@ export function useCommandPaletteData(input: {
     const relativeTime = (value: string, at: number) =>
       formatters.relativeTime(value, at);
     const boardNames = new Map(boards.map((board) => [board.id, board.name]));
-    const docSpace = new Map(docs.map((doc) => [doc.id, doc.spaceId]));
     const recentEntries = resolveNavigationEntries(recents.data ?? [], {
       boards,
       docs,
     });
+    const found = input.search?.data ?? null;
+    const term = input.search?.term ?? "";
+    // What the search found replaces the same entries of the shell's lists
+    // (it knows where the text matched), and adds the ones the lists lack.
+    const merge = <T extends { readonly id: string }>(
+      searched: readonly T[],
+      local: readonly T[],
+    ): T[] => {
+      const ids = new Set(searched.map((entry) => entry.id));
+      return [...searched, ...local.filter((entry) => !ids.has(entry.id))];
+    };
+    const localWork = toPaletteWork(myWork, boardNames, departments, now, copy);
+    const localDocs = toPaletteDocs(docs, departmentOfSpace, relativeTime, now);
+    const localBoards = toPaletteBoards(boards, departments);
     return {
       workspace: {
         name: input.workspaceName,
         markTone: markToneFor(input.workspaceId),
         others: input.otherWorkspaceNames,
       },
-      work: toPaletteWork(myWork, boardNames, departments, now, copy),
-      docs: toPaletteDocs(docs, departmentOfSpace, relativeTime, now),
-      boards: toPaletteBoards(boards, departments),
-      recents: toPaletteRecents(
-        recentEntries,
-        departments,
-        (docId) => departmentOfSpace(docSpace.get(docId) ?? null),
-        relativeTime,
-        now,
-      ),
+      work: found
+        ? merge(toSearchWork(found.work, departments, now, copy), localWork)
+        : localWork,
+      docs: found
+        ? merge(
+            toSearchDocs(
+              found.docs,
+              departmentOfSpace,
+              relativeTime,
+              now,
+              copy,
+            ),
+            localDocs,
+          )
+        : localDocs,
+      boards: found
+        ? merge(
+            toSearchBoards(found.boards, departments, term, copy),
+            localBoards,
+          )
+        : localBoards,
+      recents: toPaletteRecents(recentEntries, departments, relativeTime, now),
     };
   }, [
     boards,
@@ -114,6 +148,7 @@ export function useCommandPaletteData(input: {
     formatters,
     input.otherWorkspaceNames,
     input.workspaceId,
+    input.search,
     input.workspaceName,
     myWork,
     now,

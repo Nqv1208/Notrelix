@@ -7,6 +7,9 @@ import {
   toPaletteDocs,
   toPaletteRecents,
   toPaletteWork,
+  toSearchBoards,
+  toSearchDocs,
+  toSearchWork,
 } from "../command-palette-view";
 
 const copy = workspaceCommandCopy("vi");
@@ -166,7 +169,6 @@ describe("toPaletteDocs, toPaletteBoards and toPaletteRecents", () => {
     const recents = toPaletteRecents(
       entries,
       new Map([["r0", dept]]),
-      (docId) => (docId === "r1" ? dept : null),
       relative,
       NOW,
     );
@@ -176,8 +178,100 @@ describe("toPaletteDocs, toPaletteBoards and toPaletteRecents", () => {
       ["board", "r2"],
     ]);
     expect(recents[0]!.department).toEqual(dept);
-    expect(recents[1]!.department).toEqual(dept);
+    // The design marks a recent Board with its department, not a Doc.
+    expect(recents[1]!.department).toBeNull();
     expect(recents[2]!.department).toBeNull();
     expect(recents[0]!.whenLabel).toBe("rel(14)");
+  });
+});
+
+describe("search result mappers", () => {
+  const dept = { name: "Kế toán", markTone: "amber" } as never;
+  const departments = new Map([["b1", dept]]);
+
+  it("tells a sub-item match by its note and hides the board and assignee", () => {
+    const [entry] = toSearchWork(
+      [
+        {
+          id: "w1",
+          key: "ERP-142",
+          title: "Chuyển dữ liệu",
+          boardId: "b1",
+          boardName: "Triển khai ERP Q4",
+          assigneeName: "Lý Thu Trang",
+          mine: false,
+          statusName: "Đang làm",
+          statusCategory: "in_progress",
+          dueAt: at(14, 17),
+          match: { kind: "child", snippet: "Đối chiếu công nợ đầu kỳ" },
+        },
+      ],
+      departments,
+      NOW,
+      copy,
+    );
+    expect(entry!.boardName).toBeNull();
+    expect(entry!.assignee).toBeNull();
+    expect(entry!.matchNote).toContain("Đối chiếu công nợ đầu kỳ");
+    expect(entry!.status).toEqual({ bucket: "doing", label: "Đang làm" });
+    expect(entry!.due).toEqual({ tone: "overdue", label: "Quá hạn" });
+  });
+
+  it("keeps the board and assignee for a title match", () => {
+    const [entry] = toSearchWork(
+      [
+        {
+          id: "w2",
+          key: "KT-91",
+          title: "Đối chiếu công nợ",
+          boardId: "b1",
+          boardName: "Công nợ nhà cung cấp",
+          assigneeName: "Lý Thu Trang",
+          mine: false,
+          statusName: null,
+          statusCategory: null,
+          dueAt: null,
+          match: { kind: "title" },
+        },
+      ],
+      departments,
+      NOW,
+      copy,
+    );
+    expect(entry!.boardName).toBe("Công nợ nhà cung cấp");
+    expect(entry!.assignee).toBe("Lý Thu Trang");
+    expect(entry!.status).toBeNull();
+  });
+
+  it("hides the edit of a Doc whose text matched and counts Board matches", () => {
+    const [doc] = toSearchDocs(
+      [
+        {
+          id: "d1",
+          title: "Quy trình nhập hoá đơn đầu vào",
+          spaceId: null,
+          location: null,
+          editedAt: at(14),
+          editedByName: "Đỗ Khánh Linh",
+          match: { kind: "content", snippet: "… đối chiếu với …" },
+        },
+      ],
+      () => null,
+      (value) => value,
+      NOW,
+      copy,
+    );
+    expect(doc!.editedLabel).toBeNull();
+    expect(doc!.editedBy).toBeNull();
+    expect(doc!.matchNote).toContain("đối chiếu với");
+
+    const [board] = toSearchBoards(
+      [{ id: "b1", name: "Đóng sổ tháng 10", spaceId: null, matchedItems: 4 }],
+      departments,
+      "đối chiếu",
+      copy,
+    );
+    expect(board!.matchNote).toContain("4");
+    expect(board!.department).toEqual(dept);
   });
 });

@@ -47,6 +47,12 @@ export const en = {
     recent: "Suggestions",
     commands: "Commands",
   },
+  notes: {
+    child: "matches in a sub-item: “{{text}}”",
+    content: "matches in the text: “{{text}}”",
+    boardItems_other: "{{count}} items match “{{term}}”",
+    boardItems_one: "{{count}} item matches “{{term}}”",
+  },
   ctx: {
     mine: "assigned to you",
     board: "Board",
@@ -65,7 +71,7 @@ export const en = {
   open: "↵ Open",
   empty: {
     title: "Nothing found for “{{query}}” in {{workspace}}",
-    text: "Try a shorter keyword. Results only include what you may see.",
+    text: "Try a shorter keyword, or search every workspace. Results only include what you may see.",
   },
   recentsEmpty: "Boards and Docs you open will be listed here.",
   loading: "Loading…",
@@ -96,6 +102,7 @@ export const en = {
     moveToBoardCtx: "Only Boards where you may add items",
     createItem: "Create an item",
     createItemNamed: "Create item “{{name}}”",
+    createItemIn: "Create item “{{name}}…” in {{board}}",
     searchAllWorkspaces: "Search every workspace",
     unavailable: "This command is not available yet.",
     unavailableItem:
@@ -163,6 +170,12 @@ export const vi: WorkspaceCommandCopy = {
     recent: "Gợi ý",
     commands: "Lệnh",
   },
+  notes: {
+    child: "khớp trong việc con: “{{text}}”",
+    content: "khớp trong nội dung: “{{text}}”",
+    boardItems_other: "có {{count}} việc khớp “{{term}}”",
+    boardItems_one: "có {{count}} việc khớp “{{term}}”",
+  },
   ctx: {
     mine: "giao cho bạn",
     board: "Board",
@@ -181,7 +194,7 @@ export const vi: WorkspaceCommandCopy = {
   open: "↵ Mở",
   empty: {
     title: "Không tìm thấy “{{query}}” trong {{workspace}}",
-    text: "Thử từ khoá ngắn hơn. Kết quả chỉ gồm những gì bạn có quyền xem.",
+    text: "Thử từ khoá ngắn hơn, hoặc tìm ở mọi workspace. Kết quả chỉ gồm những gì bạn có quyền xem.",
   },
   recentsEmpty: "Board và tài liệu bạn mở sẽ hiện ở đây.",
   loading: "Đang tải…",
@@ -212,6 +225,7 @@ export const vi: WorkspaceCommandCopy = {
     moveToBoardCtx: "Chỉ hiện board bạn có quyền thêm việc",
     createItem: "Tạo công việc",
     createItemNamed: "Tạo việc “{{name}}”",
+    createItemIn: "Tạo việc “{{name}}…” trong {{board}}",
     searchAllWorkspaces: "Tìm ở mọi workspace",
     unavailable: "Lệnh này chưa khả dụng.",
     unavailableItem:

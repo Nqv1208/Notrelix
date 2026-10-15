@@ -2,7 +2,7 @@
  * The other departments' Boards of the 2026-10 mockups: "Đóng sổ tháng 10"
  * (Kế toán, key KT) and "Ra mắt sản phẩm Q4" (Marketing, key MK). They hold
  * the items the Home, My work and Inbox mockups show beside the ERP Board's
- * (KT-88, KT-91, MK-21). Dates are Hanoi days of 2026 (the mockup clock is
+ * (KT-88, KT-95, MK-21) and the Command mockup's search results (KT-88, KT-91). Dates are Hanoi days of 2026 (the mockup clock is
  * Monday 12/10/2026 10:40).
  *
  * Pure data: `MockStore.seedDepartmentBoards` inserts it.
@@ -20,6 +20,10 @@ export interface DepartmentItem {
   /** Completion "dd/MM" at `completedHour` in Hanoi (done items). */
   readonly completed?: string;
   readonly completedHour?: number;
+  /** Free text of the item; a search can match inside it. */
+  readonly description?: string;
+  /** Who is in charge, when it is somebody else than nobody. */
+  readonly assigneeId?: string;
 }
 
 export interface DepartmentBoard {
@@ -54,6 +58,31 @@ export const DEPARTMENT_BOARDS: readonly DepartmentBoard[] = [
     listTitle: "Đối chiếu",
     items: [
       {
+        key: "KT-84",
+        title: "Rà soát phiếu chi còn tồn",
+        status: "doing",
+        priority: "medium",
+        due: "13/10",
+        description:
+          "Rà soát phiếu chi tồn đọng và đối chiếu với sổ quỹ trước khi đóng sổ.",
+      },
+      {
+        key: "KT-85",
+        title: "Lập bảng cân đối thử tháng 10",
+        status: "todo",
+        priority: "high",
+        due: "27/10",
+        description: "Số dư đầu kỳ phải đối chiếu với sổ cái tháng 9.",
+      },
+      {
+        key: "KT-87",
+        title: "Chốt chi phí trả trước tháng 10",
+        status: "todo",
+        priority: "medium",
+        due: "28/10",
+        description: "Đối chiếu bảng phân bổ với hợp đồng đã ký.",
+      },
+      {
         key: "KT-86",
         title: "Khoá sổ phụ ngân hàng tháng 9",
         status: "done",
@@ -72,11 +101,41 @@ export const DEPARTMENT_BOARDS: readonly DepartmentBoard[] = [
         dueHour: 17,
       },
       {
-        key: "KT-91",
-        title: "Lập bảng cân đối thử tháng 10",
+        key: "KT-95",
+        title: "Xác nhận số dư tài khoản ngân hàng trên ERP tháng 10",
         status: "todo",
         priority: "medium",
         due: "26/10",
+      },
+    ],
+  },
+  {
+    id: mockIds.boards.payables,
+    title: "Công nợ nhà cung cấp",
+    description: "Theo dõi công nợ phải trả và đối soát với nhà cung cấp.",
+    prefix: "KT",
+    color: "#9A6A12",
+    spaceId: mockIds.spaces.accounting,
+    statusColumnId: "mock-ap-col-status",
+    statusPrefix: "mock-ap-status",
+    priorityColumnId: "mock-ap-col-priority",
+    listId: "mock-ap-list-payables",
+    listTitle: "Phải trả",
+    items: [
+      {
+        key: "KT-91",
+        title: "Đối chiếu công nợ 42 nhà cung cấp",
+        status: "doing",
+        priority: "medium",
+        due: "20/10",
+        assigneeId: "mock-user-erp-trang",
+      },
+      {
+        key: "KT-92",
+        title: "Gửi thư xác nhận số dư cho nhà cung cấp",
+        status: "todo",
+        priority: "low",
+        due: "23/10",
       },
     ],
   },

@@ -11,6 +11,7 @@ import type {
   PaletteWorkEntry,
   WorkspaceCommandCopy,
 } from "@notrelix/features-workspace/web";
+import type { CommandSearchDto } from "./use-command-search";
 import type { WorkspaceResource } from "./use-workspace-resources";
 
 /**
@@ -120,7 +121,6 @@ export function toPaletteBoards(
 export function toPaletteRecents(
   entries: readonly NavigationEntry[],
   departments: ReadonlyMap<string, PaletteDepartment>,
-  departmentOfDoc: (docId: string) => PaletteDepartment | null,
   relativeTime: (value: string, now: number) => string,
   now: number,
   limit = 3,
@@ -131,10 +131,104 @@ export function toPaletteRecents(
       kind: isBoard ? "board" : "doc",
       id: entry.resourceId,
       name: entry.name,
-      department: isBoard
-        ? (departments.get(entry.resourceId) ?? null)
-        : departmentOfDoc(entry.resourceId),
+      // The design marks a recent Board with its department, not a Doc.
+      department: isBoard ? (departments.get(entry.resourceId) ?? null) : null,
       whenLabel: entry.at ? relativeTime(entry.at, now) : null,
     };
   });
+}
+
+function fill(
+  message: string,
+  values: Readonly<Record<string, string | number>>,
+): string {
+  return message.replace(/\{\{(\w+)\}\}/g, (match, key: string) =>
+    key in values ? String(values[key]) : match,
+  );
+}
+
+const BUCKET: Readonly<Record<string, "todo" | "doing" | "review" | "done">> = {
+  todo: "todo",
+  in_progress: "doing",
+  review: "review",
+  done: "done",
+};
+
+/** Items the search found: by name or by a sub-item, assigned to the member or not. */
+export function toSearchWork(
+  items: CommandSearchDto["work"],
+  departments: ReadonlyMap<string, PaletteDepartment>,
+  now: number,
+  copy: WorkspaceCommandCopy,
+): PaletteWorkEntry[] {
+  return items.map((item) => ({
+    id: item.id,
+    title: item.title,
+    key: item.key,
+    // Where it matched replaces the Board name, as in the design.
+    boardName: item.match.kind === "title" ? item.boardName : null,
+    department: departments.get(item.boardId) ?? null,
+    mine: item.mine,
+    assignee: item.match.kind === "title" ? item.assigneeName : null,
+    matchNote:
+      item.match.kind === "child"
+        ? fill(copy.notes.child, { text: item.match.snippet })
+        : null,
+    status: item.statusName
+      ? {
+          bucket: BUCKET[item.statusCategory ?? "todo"] ?? "todo",
+          label: item.statusName,
+        }
+      : null,
+    due: paletteDue(item.dueAt, now, copy),
+    destination: {
+      section: "board" as const,
+      boardId: item.boardId,
+      item: item.id,
+    },
+  }));
+}
+
+export function toSearchDocs(
+  docs: CommandSearchDto["docs"],
+  departmentOfSpace: (spaceId: string | null) => PaletteDepartment | null,
+  relativeTime: (value: string, now: number) => string,
+  now: number,
+  copy: WorkspaceCommandCopy,
+): PaletteDocEntry[] {
+  return docs.map((doc) => ({
+    id: doc.id,
+    title: doc.title,
+    department: departmentOfSpace(doc.spaceId),
+    location: doc.location,
+    // A match inside the text is told by its note; the edit stays out of the row.
+    editedLabel:
+      doc.editedAt && doc.match.kind === "title"
+        ? relativeTime(doc.editedAt, now)
+        : null,
+    editedBy: doc.match.kind === "title" ? doc.editedByName : null,
+    matchNote:
+      doc.match.kind === "content"
+        ? fill(copy.notes.content, { text: doc.match.snippet })
+        : null,
+  }));
+}
+
+export function toSearchBoards(
+  boards: CommandSearchDto["boards"],
+  departments: ReadonlyMap<string, PaletteDepartment>,
+  term: string,
+  copy: WorkspaceCommandCopy,
+): PaletteBoardEntry[] {
+  return boards.map((board) => ({
+    id: board.id,
+    name: board.name,
+    department: departments.get(board.id) ?? null,
+    matchNote: fill(
+      board.matchedItems === 1
+        ? copy.notes.boardItems_one
+        : copy.notes.boardItems_other,
+      { count: board.matchedItems, term },
+    ),
+  }));
 }

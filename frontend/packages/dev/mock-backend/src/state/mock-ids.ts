@@ -19,6 +19,8 @@ export const mockIds = {
     roadmap: "mock-board-roadmap",
     erp: "mock-board-erp",
     accounting: "mock-board-accounting",
+    /** Kế toán: accounts payable (the Command mockup's KT-91). */
+    payables: "mock-board-payables",
     marketing: "mock-board-marketing",
   },
   spaces: {
