@@ -54,6 +54,7 @@ import type {
   AddSpaceMemberInput,
   SpaceDirectoryPerson,
   SpaceMemberCandidate,
+  SpaceGuestView,
   SpacePendingInviteView,
   TeamPersonView,
   TypedToken,
@@ -149,6 +150,21 @@ export interface WorkspaceSpaceSurfaceProps {
   readonly initialRemoveKey?: string | null;
   /** Waiting workspace invitations shown in the list (none today). */
   readonly invites?: readonly SpacePendingInviteView[];
+  /** Head counts by role with teams expanded (the members tab's summary). */
+  readonly membersSummary?: {
+    readonly admins: number;
+    readonly members: number;
+    readonly viewers: number;
+  } | null;
+  /** Guests of single Boards shown beside the members. */
+  readonly guests?: readonly SpaceGuestView[];
+  /** Opens every team of the members tab on the first load. */
+  readonly expandTeams?: boolean;
+  /** Board guests by email, named in the add dialog's warning. */
+  readonly guestsByEmail?: ReadonlyMap<
+    string,
+    { readonly name: string; readonly board: string }
+  >;
   readonly membersPageSize?: number;
   /** Roles the person also has through a team (story data). */
   readonly also?: ReadonlyMap<string, { team: string; role: SpaceRole }>;
@@ -487,6 +503,9 @@ export function WorkspaceSpaceSurface(props: WorkspaceSpaceSurfaceProps) {
             initialMenu={props.initialMenu}
             invites={props.invites}
             pageSize={props.membersPageSize}
+            summary={props.membersSummary}
+            guests={props.guests}
+            expandTeams={props.expandTeams}
           />
         ) : (
           <SpaceSettingsPanel
@@ -530,6 +549,7 @@ export function WorkspaceSpaceSurface(props: WorkspaceSpaceSurfaceProps) {
         onClose={() => setInviteOpen(false)}
         onSubmit={props.onAddMembers}
         initialTokens={props.initialInviteTokens}
+        guestsByEmail={props.guestsByEmail}
       />
       <RemoveMemberDialog
         copy={copy}

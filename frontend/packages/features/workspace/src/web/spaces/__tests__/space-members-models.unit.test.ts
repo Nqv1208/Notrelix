@@ -205,3 +205,45 @@ describe("suggestTokens", () => {
     expect(suggestTokens("  ", users, teams, new Set())).toEqual([]);
   });
 });
+
+describe("what the producer adds to a member row", () => {
+  it("shows a person's last activity and a short chip for the team they are also in", () => {
+    const rows = buildMemberRows(copy, entries, {
+      ...options(),
+      directory: new Map<string, SpaceDirectoryPerson>([
+        [
+          "u3",
+          {
+            email: "quan@x.vn",
+            workspaceRole: null,
+            title: "Kỹ sư dữ liệu",
+            activity: "2 giờ trước",
+          },
+        ],
+      ]),
+      also: new Map([
+        ["u3", { team: "Nhóm Kỹ sư ERP", role: "Member" as const }],
+      ]),
+    });
+    const quan = rows.find((row) => row.key === "User:u3")!;
+    expect(quan.activity).toBe("2 giờ trước");
+    expect(quan.detail).toBe("quan@x.vn · Kỹ sư dữ liệu");
+    expect(quan.sources.map((source) => source.text)).toEqual([
+      "Trực tiếp",
+      "Kỹ sư ERP",
+    ]);
+    // Without the producer's activity the date the person was added shows.
+    expect(rows.find((row) => row.key === "User:u1")!.activity).toBe(
+      "từ 01/09",
+    );
+  });
+
+  it("counts the summary over the producer's head counts when it has them", () => {
+    expect(memberSummary(copy, entries)).toBe(
+      "1 quản trị · 2 thành viên · 1 người xem",
+    );
+    expect(
+      memberSummary(copy, entries, { admins: 2, members: 19, viewers: 3 }),
+    ).toBe("2 quản trị · 19 thành viên · 3 người xem");
+  });
+});

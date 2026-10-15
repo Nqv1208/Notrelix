@@ -366,13 +366,16 @@ export function buildAccessViewFromSummary(
           ? entry.teams
               .map((team) =>
                 formatCopy(a.includesTeam, {
-                  name: team.name,
+                  // "gồm nhóm Kỹ sư ERP", not "gồm nhóm Nhóm Kỹ sư ERP".
+                  name: team.name.replace(/^Nhóm\s+/i, ""),
                   count: team.count,
                 }),
               )
               .join(" · ")
           : formatCopy(a.viewerTeamNote, {
-              names: entry.teams.map((team) => team.name).join(", "),
+              names: entry.teams
+                .map((team) => team.name.replace(/^Nhóm\s+/i, ""))
+                .join(", "),
             });
     rows.push({
       key,

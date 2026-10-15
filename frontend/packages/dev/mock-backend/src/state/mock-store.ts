@@ -75,8 +75,11 @@ import {
 import {
   ENGINEERING_MEMBERS,
   ERP_ENGINEERS_TEAM,
+  ERP_TEAM_ONLY,
+  EXECUTIVES,
   EXECUTIVE_TEAM,
-  EXECUTIVE_VIEWERS,
+  QA_PEOPLE,
+  QA_TEAM,
 } from "./mock-space-people";
 import {
   ERP_ITEM_PERCENT,
@@ -823,6 +826,14 @@ export class MockStore {
     space(mockIds.spaces.executive, "Ban giám đốc", "a0004", {
       color: "crimson",
     });
+    // Lê Hoàng Phúc heads Công nghệ: listed before the owner.
+    this.spaces.insertMember({
+      spaceId: mockIds.spaces.engineering,
+      subjectType: "User",
+      subjectId: ERP_PEOPLE.HP.id,
+      role: "Admin",
+      addedAt: at,
+    });
     for (const id of Object.values(mockIds.spaces)) {
       this.spaces.insertMember({
         spaceId: id,
@@ -846,26 +857,44 @@ export class MockStore {
       subjectType: "User" | "Team",
       subjectId: string,
       role: "Admin" | "Member" | "Viewer",
+      addedAt = at,
     ) =>
       this.spaces.insertMember({
         spaceId: mockIds.spaces.engineering,
         subjectType,
         subjectId,
         role,
-        addedAt: at,
+        addedAt,
       });
-    engineering("User", ERP_PEOPLE.HP.id, "Admin");
     for (const id of [
-      mockIds.users.member,
+      ERP_PEOPLE.MQ.id,
+      ERP_PEOPLE.VT.id,
       ERP_PEOPLE.LT.id,
+      ERP_PEOPLE.TT.id,
       ERP_PEOPLE.PH.id,
+      mockIds.users.member,
       ...ENGINEERING_MEMBERS.map((entry) => entry.id),
     ]) {
       engineering("User", id, "Member");
     }
-    engineering("Team", ERP_ENGINEERS_TEAM.id, "Member");
-    engineering("Team", EXECUTIVE_TEAM.id, "Viewer");
-    for (const person of [...ENGINEERING_MEMBERS, ...EXECUTIVE_VIEWERS]) {
+    engineering(
+      "Team",
+      ERP_ENGINEERS_TEAM.id,
+      "Member",
+      "2026-09-01T02:00:00.000Z",
+    );
+    engineering(
+      "Team",
+      EXECUTIVE_TEAM.id,
+      "Viewer",
+      "2026-08-15T02:00:00.000Z",
+    );
+    for (const person of [
+      ...ENGINEERING_MEMBERS,
+      ...ERP_TEAM_ONLY,
+      ...EXECUTIVES,
+      ...QA_PEOPLE,
+    ]) {
       if (!this.usersById.has(person.id)) {
         this.insertUser({
           id: person.id,
@@ -875,7 +904,7 @@ export class MockStore {
         });
       }
     }
-    for (const team of [ERP_ENGINEERS_TEAM, EXECUTIVE_TEAM]) {
+    for (const team of [ERP_ENGINEERS_TEAM, EXECUTIVE_TEAM, QA_TEAM]) {
       this.spaces.insertTeam({
         id: team.id,
         workspaceId,
@@ -1273,6 +1302,14 @@ export class MockStore {
         level: "commenter",
         grantedByUserId: ERP_PEOPLE.HP.id,
         expiresAt: "2026-12-31T16:59:59.000Z",
+      },
+      // Đặng Minh Tuấn, from a partner company, edits here until 31/01/2027.
+      {
+        boardId,
+        userId: ERP_PEOPLE.DT.id,
+        level: "editor",
+        grantedByUserId: ERP_PEOPLE.HP.id,
+        expiresAt: "2027-01-31T16:59:59.000Z",
       },
       // The viewer persona (a workspace guest) can only view this board.
       {

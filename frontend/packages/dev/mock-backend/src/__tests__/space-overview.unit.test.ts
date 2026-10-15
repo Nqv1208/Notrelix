@@ -27,7 +27,7 @@ describe("department summary in the mock world (CTR-GAP-WS-SPACE-OVERVIEW)", () 
     ]);
     expect(result.access.members.people).toBe(19);
     expect(result.access.members.teams).toEqual([
-      { name: "Kỹ sư ERP", count: 4 },
+      { name: "Nhóm Kỹ sư ERP", count: 4 },
     ]);
     expect(result.access.viewers.people).toBe(3);
     expect(result.access.viewers.teams).toEqual([

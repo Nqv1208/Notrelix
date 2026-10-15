@@ -456,7 +456,7 @@ describe("WorkspaceSpaceSurface", () => {
     expect(within(dialog).getByRole("alert").textContent).toContain(
       "chưa là thành viên workspace",
     );
-    expect(submit().textContent).toBe("Thêm 2 người · bỏ qua 1 email");
+    expect(submit().textContent).toBe("Thêm 6 người · bỏ qua 1 email");
     expect(
       within(dialog).getByText(/9 người sẽ thấy ngay|6 người sẽ thấy ngay/),
     ).toBeTruthy();
@@ -473,7 +473,7 @@ describe("WorkspaceSpaceSurface", () => {
     fireEvent.click(within(dialog).getByRole("button", { name: /Thành viên/ }));
     fireEvent.click(screen.getByRole("option", { name: /Người xem/ }));
     fireEvent.click(
-      within(dialog).getByRole("button", { name: /^Thêm 2 người/ }),
+      within(dialog).getByRole("button", { name: /^Thêm 6 người/ }),
     );
     expect(props.onAddMembers).toHaveBeenCalledWith([
       { subjectType: "User", subjectId: "u-hung", role: "Viewer" },

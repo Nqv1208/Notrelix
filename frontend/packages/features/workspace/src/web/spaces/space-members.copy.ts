@@ -18,6 +18,8 @@ export const spaceMembersEn = {
     viaTeam: "Whole team",
     summary: "{{admins}} · {{members}} · {{viewers}}",
     summaryInvites: "{{count}} invitation waiting",
+    creator: "department creator",
+    activeNow: "active now",
     head: {
       who: "Person or team",
       role: "Role in the department",
@@ -56,6 +58,7 @@ export const spaceMembersEn = {
     pending: "Saving…",
     invitePending:
       "Waiting for the workspace invitation · joins the department on accepting",
+    inviteSent: "invited {{when}}",
     inviteResend: "Resend",
     inviteRevoke: "Revoke",
     inviteUnavailable: "Invitations are not tied to a department yet.",
@@ -82,6 +85,20 @@ export const spaceMembersEn = {
         "Someone who joins in more than one way (directly and through a team) uses the highest role.",
     },
     aside: {
+      guests: "Guests of single Boards ({{count}})",
+      guestsSub: "not department members",
+      guestsNote:
+        "People outside the department added to a Board on their own are shown in that Board's Share.",
+      guestOutside: "Outside the company",
+      guestInside: "In the company",
+      guestLevel: {
+        viewer: "Can view",
+        commenter: "Can comment",
+        editor: "Can edit",
+        manager: "Manages",
+      },
+      guestLine: "{{company}} · {{level}} in {{board}}",
+      guestUntil: " · access ends {{date}}",
       label: "What the roles mean",
       roles: "Roles in the department",
       adminHint:
@@ -118,12 +135,16 @@ export const spaceMembersEn = {
       roleLabel: "Role in the department",
       outsider:
         "{{email}} isn't a workspace member. A department only adds workspace members.",
+      outsiderGuest:
+        "{{name}} is a guest of the Board {{board}} and not a workspace member. A department only adds workspace members.",
       outsiderLink: "Invite to the workspace",
       preview: "{{count}} people will see it at once",
       previewOne: "1 person will see it at once",
       previewOpen: "{{boards}} open Boards and {{docs}} Docs of {{name}}",
       previewChildren: "Sub-departments {{names}}",
       previewHidden: "They won't see {{names}} (private)",
+      hiddenAnd: " and ",
+      hiddenBoard: "the Board {{name}}",
       foot: "They see the department as soon as they are added.",
       cancel: "Cancel",
       submit: "Add {{count}} people",
@@ -169,6 +190,8 @@ export const spaceMembersVi: SpaceMembersCopy = {
     viaTeam: "Cả nhóm",
     summary: "{{admins}} · {{members}} · {{viewers}}",
     summaryInvites: "{{count}} lời mời chờ",
+    creator: "người tạo phòng",
+    activeNow: "đang hoạt động",
     head: {
       who: "Người hoặc nhóm",
       role: "Vai trò trong phòng",
@@ -206,6 +229,7 @@ export const spaceMembersVi: SpaceMembersCopy = {
     retry: "Thử lại",
     pending: "Đang lưu…",
     invitePending: "Chờ nhận lời mời vào workspace · vào phòng khi nhận lời",
+    inviteSent: "mời {{when}}",
     inviteResend: "Gửi lại",
     inviteRevoke: "Thu hồi",
     inviteUnavailable: "Lời mời chưa gắn với phòng ban.",
@@ -232,6 +256,20 @@ export const spaceMembersVi: SpaceMembersCopy = {
         "Một người vào bằng nhiều cách (trực tiếp và qua nhóm) thì dùng vai trò cao nhất.",
     },
     aside: {
+      guests: "Khách ở từng board ({{count}})",
+      guestsSub: "không phải thành viên phòng",
+      guestsNote:
+        "Người ngoài phòng được thêm riêng vào board xem ở Chia sẻ của từng board.",
+      guestOutside: "Ngoài công ty",
+      guestInside: "Trong công ty",
+      guestLevel: {
+        viewer: "Chỉ xem",
+        commenter: "Có thể bình luận",
+        editor: "Có thể sửa",
+        manager: "Quản lý",
+      },
+      guestLine: "{{company}} · {{level}} ở {{board}}",
+      guestUntil: " · hết quyền {{date}}",
       label: "Giải thích vai trò",
       roles: "Vai trò trong phòng ban",
       adminHint:
@@ -268,12 +306,16 @@ export const spaceMembersVi: SpaceMembersCopy = {
       roleLabel: "Vai trò trong phòng",
       outsider:
         "{{email}} chưa là thành viên workspace. Phòng ban chỉ thêm được thành viên workspace.",
+      outsiderGuest:
+        "{{name}} đang là khách của board {{board}}, chưa là thành viên workspace. Phòng ban chỉ thêm được thành viên workspace.",
       outsiderLink: "Mời vào workspace",
       preview: "{{count}} người sẽ thấy ngay",
       previewOne: "1 người sẽ thấy ngay",
       previewOpen: "{{boards}} board mở và {{docs}} tài liệu của {{name}}",
       previewChildren: "Phòng ban con {{names}}",
       previewHidden: "Không thấy {{names}} (riêng tư)",
+      hiddenAnd: " và ",
+      hiddenBoard: "board {{name}}",
       foot: "Họ thấy phòng ban này ngay sau khi được thêm.",
       cancel: "Huỷ",
       submit: "Thêm {{count}} người",

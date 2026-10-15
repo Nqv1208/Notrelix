@@ -280,7 +280,7 @@ test.describe("Department members geometry at 1440 px (owner)", () => {
     const rows = f(page, "mr");
     expect(
       await colour(
-        rows.filter({ hasText: "Jordan Lee" }).locator('[data-f="rtag"]'),
+        rows.filter({ hasText: "Trần Minh Quân" }).locator('[data-f="rtag"]'),
         "background-color",
       ),
     ).toBe(COLOUR.member);
@@ -309,6 +309,9 @@ test.describe("Department members geometry at 1440 px (owner)", () => {
       "expand",
     );
     expect(await style(toggle, "border-radius")).toBe("6px");
+    // Teams open on the first load; collapse it to measure the closed row.
+    await expect(toggle).toHaveAttribute("aria-expanded", "true");
+    await toggle.click();
     await expect(toggle).toHaveAttribute("aria-expanded", "false");
     const mark = row.locator('[data-f="tm"]');
     expectRect(
@@ -398,7 +401,9 @@ test.describe("Department members geometry at 1440 px (owner)", () => {
 
   test("the role menu", async ({ page }) => {
     await openMembers(page, ENGINEERING, "Công nghệ");
-    const row = f(page, "mr").nth(1);
+    // Narrow the long list so the row is near the top and the menu opens below.
+    await page.getByRole("searchbox").fill("quan");
+    const row = f(page, "mr").first();
     await row.locator('[data-f="rsel"]').click();
     const menu = f(page, "rmenu");
     await expect(menu).toBeVisible();

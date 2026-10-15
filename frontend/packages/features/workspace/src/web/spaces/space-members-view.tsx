@@ -25,10 +25,12 @@ import {
   filterMemberRows,
   memberSummary,
   NO_MEMBER_FILTERS,
+  plain,
   type MemberFilters,
   type MemberRoleFilter,
   type MemberViaFilter,
   type SpaceDirectoryPerson,
+  type SpaceGuestView,
   type SpacePendingInviteView,
   type SpaceMemberRowView,
   type TeamPersonView,
@@ -116,6 +118,16 @@ export interface SpaceMembersViewProps {
   readonly invites?: readonly SpacePendingInviteView[];
   /** Rows before "Show n more"; defaults to 10. */
   readonly pageSize?: number;
+  /** Head counts by role with teams expanded; the entries are counted when absent. */
+  readonly summary?: {
+    readonly admins: number;
+    readonly members: number;
+    readonly viewers: number;
+  } | null;
+  /** Guests of single Boards, who are not department members. */
+  readonly guests?: readonly SpaceGuestView[];
+  /** Opens every team on the first load, asking for its people. */
+  readonly expandTeams?: boolean;
 }
 
 function Chevron({ className }: { className?: string }) {
@@ -769,10 +781,12 @@ function Aside({
   copy,
   navigation,
   childSpaces,
+  guests,
 }: {
   copy: WorkspaceSpacesCopy;
   navigation: ShellNavigation;
   childSpaces: readonly { id: string; name: string; isPrivate: boolean }[];
+  guests: readonly SpaceGuestView[];
 }) {
   const a = copy.members.aside;
   const roleRow = (role: SpaceRole, text: string) => (
@@ -873,6 +887,61 @@ function Aside({
           )}
         </div>
       </div>
+      {guests.length > 0 ? (
+        <div data-f="ab">
+          <h3 data-f="abh" className={ASIDE_H3}>
+            {formatCopy(a.guests, { count: guests.length })}{" "}
+            <span className="font-normal text-meta-foreground">
+              {a.guestsSub}
+            </span>
+          </h3>
+          <div data-f="guest" className="flex flex-col gap-0.5">
+            {guests.map((guest) => {
+              const body = (
+                <>
+                  <SpaceAvatar
+                    person={{
+                      id: guest.id,
+                      name: guest.name,
+                      tone: guest.tone,
+                    }}
+                    className="size-7 text-avatar-sm"
+                  />
+                  <span className="min-w-0">
+                    <b className="block text-compact leading-[1.45] font-semibold text-foreground">
+                      {guest.name}
+                    </b>
+                    <small className="block text-xs leading-[1.45] text-meta-foreground">
+                      {guest.detail}
+                    </small>
+                  </span>
+                </>
+              );
+              const cls = cn(
+                "-mx-2 flex items-center gap-2.5 rounded-[8px] px-2 py-1.5 hover:bg-state-hover-strong",
+                FOCUS,
+              );
+              return guest.destination ? (
+                <ShellLink
+                  key={guest.id}
+                  destination={guest.destination}
+                  navigation={navigation}
+                  className={cls}
+                >
+                  {body}
+                </ShellLink>
+              ) : (
+                <div key={guest.id} className={cls}>
+                  {body}
+                </div>
+              );
+            })}
+          </div>
+          <p className="m-0 mt-2 text-xs leading-[1.45] text-meta-foreground">
+            {a.guestsNote}
+          </p>
+        </div>
+      ) : null}
     </aside>
   );
 }
@@ -926,6 +995,17 @@ export function SpaceMembersView(props: SpaceMembersViewProps) {
     [rows, filters],
   );
   const visible = filtered.slice(0, shown);
+  // A waiting invitation is neither a team nor joined directly yet.
+  const visibleInvites = useMemo(() => {
+    const query = filters.query.trim();
+    if (filters.via !== "any") return [];
+    return (props.invites ?? []).filter(
+      (invite) =>
+        (filters.role === "all" || invite.role === filters.role) &&
+        (!query ||
+          plain(`${invite.email} ${invite.name ?? ""}`).includes(plain(query))),
+    );
+  }, [filters, props.invites]);
   const directIds = useMemo(
     () =>
       new Set(
@@ -956,6 +1036,21 @@ export function SpaceMembersView(props: SpaceMembersViewProps) {
       const row = rows.find((candidate) => candidate.key === key);
       if (row) props.onExpandTeam(row.entry.subjectId);
     }
+  }, [props, rows]);
+
+  // Every team opens on the first load when the host asks for it.
+  const opened = useRef(false);
+  useEffect(() => {
+    if (!props.expandTeams || opened.current) return;
+    const teamRows = rows.filter((row) => row.kind === "team");
+    if (teamRows.length === 0) return;
+    opened.current = true;
+    setExpanded((current) => {
+      const next = new Set(current);
+      for (const row of teamRows) next.add(row.key);
+      return next;
+    });
+    for (const row of teamRows) props.onExpandTeam(row.entry.subjectId);
   }, [props, rows]);
 
   // A menu near the bottom of the list opens upwards.
@@ -1035,7 +1130,7 @@ export function SpaceMembersView(props: SpaceMembersViewProps) {
               data-f="sum"
               className="text-crumb leading-[1.45] text-meta-foreground"
             >
-              {memberSummary(copy, entries)}
+              {memberSummary(copy, entries, props.summary)}
               {(props.invites ?? []).length > 0
                 ? ` · ${formatCopy(m.summaryInvites, { count: (props.invites ?? []).length })}`
                 : ""}
@@ -1092,7 +1187,7 @@ export function SpaceMembersView(props: SpaceMembersViewProps) {
               <span role="columnheader">{m.head.activity}</span>
               <span />
             </div>
-            {visible.length === 0 ? (
+            {visible.length === 0 && visibleInvites.length === 0 ? (
               <p
                 data-f="empty"
                 className="m-0 px-4 py-6 text-center text-compact leading-[1.45] text-meta-foreground"
@@ -1129,7 +1224,7 @@ export function SpaceMembersView(props: SpaceMembersViewProps) {
                 />
               ))
             )}
-            {(props.invites ?? []).map((invite) => (
+            {visibleInvites.map((invite) => (
               <InviteRow key={invite.id} copy={copy} invite={invite} />
             ))}
             {filtered.length > shown ? (
@@ -1152,6 +1247,7 @@ export function SpaceMembersView(props: SpaceMembersViewProps) {
         copy={copy}
         navigation={navigation}
         childSpaces={props.childSpaces}
+        guests={props.guests ?? []}
       />
     </>
   );

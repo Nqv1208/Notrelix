@@ -1,4 +1,7 @@
-import type { IdentityTone } from "../../core/model/navigation";
+import type {
+  IdentityTone,
+  WorkspaceDestination,
+} from "../../core/model/navigation";
 import {
   spaceMemberCapabilities,
   spaceMemberKey,
@@ -42,8 +45,21 @@ export interface SpaceDirectoryPerson {
   readonly title?: string | null;
   /** How the sentences of the role menu call the person ("Phúc"); the full name when absent. */
   readonly shortName?: string | null;
-  /** Added to the first source chip ("người tạo phòng"); no producer today. */
+  /** Added to the first source chip ("người tạo phòng"). */
   readonly sourceNote?: string | null;
+  /** "10 phút trước", "đang hoạt động"; the date the person was added when absent. */
+  readonly activity?: string | null;
+}
+
+/** A guest of a single Board, who is not in the department. */
+export interface SpaceGuestView {
+  readonly id: string;
+  readonly name: string;
+  readonly tone: IdentityTone;
+  /** "Ngoài công ty · Có thể sửa ở Triển khai ERP Q4 · hết quyền 31/01/2027". */
+  readonly detail: string;
+  /** Where the guest is shared (the Board); `null` when it cannot be opened. */
+  readonly destination: WorkspaceDestination | null;
 }
 
 export interface TeamPersonView {
@@ -188,13 +204,17 @@ export function buildMemberRows(
         ...(options.also?.get(entry.subjectId)
           ? [
               {
-                text: options.also.get(entry.subjectId)?.team ?? "",
+                // "Nhóm Kỹ sư ERP" reads "Kỹ sư ERP" in the short chip.
+                text: (options.also.get(entry.subjectId)?.team ?? "").replace(
+                  /^Nhóm\s+/i,
+                  "",
+                ),
                 icon: "team" as const,
               },
             ]
           : []),
       ],
-      activity: since,
+      activity: person?.activity || since,
       teamCount: null,
       roles: capabilities.roles,
       canRemove: capabilities.canRemove,
@@ -220,7 +240,7 @@ export const NO_MEMBER_FILTERS: MemberFilters = {
   via: "any",
 };
 
-function plain(value: string): string {
+export function plain(value: string): string {
   return value
     .normalize("NFD")
     .replace(/[̀-ͯ]/g, "")
@@ -242,13 +262,27 @@ export function filterMemberRows(
   });
 }
 
-/** "2 quản trị · 19 thành viên · 3 người xem" over the entries. */
+/**
+ * "2 quản trị · 19 thành viên · 3 người xem" over the entries, or over the
+ * head counts the producer reports (teams expanded) when it has them.
+ */
 export function memberSummary(
   copy: WorkspaceSpacesCopy,
   entries: readonly SpaceMemberEntry[],
+  counts?: {
+    readonly admins: number;
+    readonly members: number;
+    readonly viewers: number;
+  } | null,
 ): string {
   const count = (role: SpaceRole) =>
-    entries.filter((entry) => entry.role === role).length;
+    counts
+      ? role === "Admin"
+        ? counts.admins
+        : role === "Member"
+          ? counts.members
+          : counts.viewers
+      : entries.filter((entry) => entry.role === role).length;
   return formatCopy(copy.members.summary, {
     admins: formatCopy(copy.aside.summaryAdmins, { count: count("Admin") }),
     members: formatCopy(copy.aside.summaryMembers, { count: count("Member") }),

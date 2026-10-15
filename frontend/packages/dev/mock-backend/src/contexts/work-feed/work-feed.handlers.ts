@@ -39,6 +39,7 @@ import {
 import type { MockStore } from "../../state/mock-store";
 import { commandSearch } from "../../state/mock-command-search";
 import { spaceOverview } from "../../state/mock-space-overview";
+import { spaceMembersExtra } from "../../state/mock-space-members";
 import { canReadBoard } from "../work-management/boards.handlers";
 
 const MY_WORK_EXT = "CTR-GAP-WS-MYWORK-EXT" as const;
@@ -117,6 +118,24 @@ export const workFeedOperations = [
         },
       );
       return overview ? ok(overview) : notFound();
+    },
+  }),
+
+  // ── Department members page extras (CTR-GAP-WS-MEMBERS-EXT) ──────────────
+  defineMockOperation<{ workspaceId: string; spaceId: string }>({
+    id: "wsFeed.spaceMembersExtra",
+    contract: { kind: "gap", gapId: "CTR-GAP-WS-MEMBERS-EXT" },
+    method: "GET",
+    route: "/workspaces/:workspaceId/spaces/:spaceId/members-extra",
+    async handle({ params, store }) {
+      if (!store.isCurrentMemberOf(params.workspaceId)) return notFound();
+      const extra = spaceMembersExtra(
+        store,
+        params.workspaceId,
+        params.spaceId,
+        (id) => canReadBoard(id, store),
+      );
+      return extra ? ok(extra) : notFound();
     },
   }),
 

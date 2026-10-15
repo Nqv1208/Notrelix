@@ -89,6 +89,11 @@ export interface AddMembersDialogProps {
   readonly onClose: () => void;
   readonly onSubmit: (inputs: readonly AddSpaceMemberInput[]) => void;
   readonly initialTokens?: readonly TypedToken[];
+  /** Board guests by email, so a typed guest is named and not just "not a member". */
+  readonly guestsByEmail?: ReadonlyMap<
+    string,
+    { readonly name: string; readonly board: string }
+  >;
 }
 
 function tokenKey(token: TypedToken): string {
@@ -183,9 +188,7 @@ export function AddMembersDialog(props: AddMembersDialogProps) {
       ? formatCopy(a.progress, props.progress)
       : a.submitting
     : `${
-        valid.length === 1
-          ? a.submitOne
-          : formatCopy(a.submit, { count: valid.length })
+        people === 1 ? a.submitOne : formatCopy(a.submit, { count: people })
       }${outsiders.length > 0 ? formatCopy(a.submitSkip, { count: outsiders.length }) : ""}`;
 
   const chip = (token: TypedToken) => {
@@ -378,9 +381,23 @@ export function AddMembersDialog(props: AddMembersDialogProps) {
               <Glyph name="alert" className="mt-px size-[15px]" />
               <span>
                 <b className="font-semibold">
-                  {formatCopy(a.outsider, {
-                    email: outsiders.map((item) => item.email).join(", "),
-                  })}
+                  {outsiders.every((item) =>
+                    props.guestsByEmail?.has(item.email.toLowerCase()),
+                  )
+                    ? outsiders
+                        .map((item) => {
+                          const guest = props.guestsByEmail?.get(
+                            item.email.toLowerCase(),
+                          );
+                          return formatCopy(a.outsiderGuest, {
+                            name: guest?.name ?? item.email,
+                            board: guest?.board ?? "",
+                          });
+                        })
+                        .join(" ")
+                    : formatCopy(a.outsider, {
+                        email: outsiders.map((item) => item.email).join(", "),
+                      })}
                 </b>{" "}
                 <ShellLink
                   destination={{ section: "members", tab: "invitations" }}
@@ -486,7 +503,10 @@ export function AddMembersDialog(props: AddMembersDialogProps) {
                 {base.hidden.length > 0 ? (
                   <PreviewLine ok={false}>
                     {formatCopy(a.previewHidden, {
-                      names: base.hidden.join(", "),
+                      names:
+                        base.hidden.length > 1
+                          ? `${base.hidden.slice(0, -1).join(", ")}${a.hiddenAnd}${base.hidden[base.hidden.length - 1]}`
+                          : base.hidden.join(", "),
                     })}
                   </PreviewLine>
                 ) : null}

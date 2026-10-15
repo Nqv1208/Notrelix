@@ -671,6 +671,19 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
   {
     context: "Workspace",
     classification: "COMPATIBILITY_GAP_MOCKED",
+    consumerSymbol: "useSpaceMembersExtra",
+    consumerFile:
+      "frontend/apps/web/src/shell/workspace/use-space-members-extra.ts",
+    capability:
+      "Department members page: head count by role, email, job line and activity, waiting invitations and Board guests",
+    gapId: "CTR-GAP-WS-MEMBERS-EXT",
+    method: "GET",
+    pathTemplate: "/workspaces/{workspaceId}/spaces/{spaceId}/members-extra",
+    mutation: false,
+  },
+  {
+    context: "Workspace",
+    classification: "COMPATIBILITY_GAP_MOCKED",
     consumerSymbol: "useWorkspaceInbox",
     consumerFile: "frontend/apps/web/src/shell/workspace/work-feed-bridge.ts",
     capability: "Workspace inbox with actor, target, need and detail",

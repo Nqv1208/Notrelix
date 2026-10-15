@@ -140,6 +140,8 @@ test.describe("Department members (owner)", () => {
     page,
   }) => {
     await open(page, ENGINEERING, "Công nghệ");
+    // The list is long: narrow it so the row is on the first page.
+    await page.getByRole("searchbox").fill("jordan");
     const trigger = row(page, "Jordan Lee").getByRole("button", {
       name: /Thành viên/,
     });
@@ -187,8 +189,11 @@ test.describe("Department members (owner)", () => {
   }) => {
     await open(page, ACCOUNTING, "Kế toán");
     const team = row(page, "Helpdesk");
-    await team.getByRole("button", { name: "Mở rộng Helpdesk" }).click();
-    await expect(page.locator('[data-f="sub"]')).toBeVisible();
+    // Teams open on the first load.
+    await expect(
+      team.getByRole("button", { name: "Thu gọn Helpdesk" }),
+    ).toBeVisible();
+    await expect(page.locator('[data-f="sub"]').first()).toBeVisible();
     await team.getByRole("button", { name: "Thao tác với Helpdesk" }).click();
     await page.getByRole("menuitem", { name: /Gỡ khỏi phòng/ }).click();
     const dialog = page.getByRole("dialog", {
@@ -214,6 +219,7 @@ test.describe("Department members (owner)", () => {
 
   test("removing a person asks first", async ({ page }) => {
     await open(page, ENGINEERING, "Công nghệ");
+    await page.getByRole("searchbox").fill("jordan");
     const jordan = row(page, "Jordan Lee");
     await jordan
       .getByRole("button", { name: "Thao tác với Jordan Lee (Member)" })
@@ -245,6 +251,85 @@ test.describe("Department members (owner)", () => {
     await page.getByRole("button", { name: /Vào qua/ }).click();
     await page.getByRole("menuitemradio", { name: "Trực tiếp" }).click();
     await expect(page.getByText("Không có ai khớp.")).toBeVisible();
+  });
+
+  test("the list shows both teams open, each person's email and activity, the invitation and the guest", async ({
+    page,
+  }) => {
+    await open(page, ENGINEERING, "Công nghệ");
+    // Summary and head: 24 people, the waiting invitation counted.
+    await expect(
+      page.getByText(
+        "2 quản trị · 19 thành viên · 3 người xem · 1 lời mời chờ",
+      ),
+    ).toBeVisible();
+    await expect(page.getByRole("img", { name: /24/ })).toBeVisible();
+    // Both teams start open with their people.
+    const erp = row(page, "Nhóm Kỹ sư ERP");
+    await expect(erp).toContainText("Nhóm workspace · 4 người");
+    await expect(erp).toContainText("từ 01/09");
+    const people = page.locator('[data-f="sub"]');
+    await expect(people.first()).toContainText("Trần Minh Quân");
+    await expect(people.first()).toContainText("cũng được thêm trực tiếp");
+    await expect(people.first()).toContainText("Lâm Gia Minh");
+    await expect(people.nth(1)).toContainText("Trịnh Quốc Hưng");
+    await expect(people.nth(1)).toContainText("Tổng giám đốc");
+    // People: email and job line, how they joined, last activity.
+    const phuc = row(page, "Lê Hoàng Phúc");
+    await expect(phuc).toContainText("phuc.le@minhan.vn · Trưởng phòng");
+    await expect(phuc).toContainText("10 phút trước");
+    const ha = row(page, "Nguyễn Thu Hà");
+    await expect(ha).toContainText("Trực tiếp · người tạo phòng");
+    await expect(ha).toContainText("đang hoạt động");
+    const quan = row(page, "quan.tran@minhan.vn");
+    await expect(quan).toContainText("Trực tiếp");
+    await expect(quan).toContainText("Kỹ sư ERP");
+    await expect(quan).toContainText("2 giờ trước");
+    // The invitation, with Gửi lại and Thu hồi.
+    const invite = row(page, "khoa.ngo@minhan.vn");
+    await expect(invite).toContainText("Ngô Đăng Khoa · mời 2 ngày trước");
+    await expect(invite.getByText("Gửi lại")).toBeVisible();
+    await expect(invite.getByText("Thu hồi")).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Hiện 13 người khác" }),
+    ).toBeVisible();
+    // The guest of a single Board, beside the roles.
+    const aside = page.getByRole("complementary", {
+      name: "Giải thích vai trò",
+    });
+    await expect(aside.getByText("Khách ở từng board (1)")).toBeVisible();
+    await expect(
+      aside.getByText(
+        "Ngoài công ty · Có thể sửa ở Triển khai ERP Q4 · hết quyền 31/01/2027",
+      ),
+    ).toBeVisible();
+  });
+
+  test("a typed email of a Board guest names the guest in the add dialog", async ({
+    page,
+  }) => {
+    await open(page, ENGINEERING, "Công nghệ");
+    await page.getByRole("button", { name: "Thêm thành viên" }).first().click();
+    const dialog = page.getByRole("dialog", {
+      name: "Thêm vào Phòng Công nghệ",
+    });
+    const field = dialog.getByRole("combobox");
+    await field.fill("Kiểm thử");
+    await page.keyboard.press("Enter");
+    await field.fill("tuan@doitac-erp.vn");
+    await page.keyboard.press("Enter");
+    await expect(dialog.getByRole("alert")).toContainText(
+      "Đặng Minh Tuấn đang là khách của board Triển khai ERP Q4",
+    );
+    await expect(
+      dialog.getByRole("button", { name: "Thêm 5 người · bỏ qua 1 email" }),
+    ).toBeVisible();
+    await expect(dialog.getByText("5 người sẽ thấy ngay")).toBeVisible();
+    await expect(
+      dialog.getByText(
+        "Không thấy Nhóm Ứng dụng và board Ngân sách CNTT 2027 (riêng tư)",
+      ),
+    ).toBeVisible();
   });
 
   test("the Add members button, the tab link and the settings icon agree", async ({

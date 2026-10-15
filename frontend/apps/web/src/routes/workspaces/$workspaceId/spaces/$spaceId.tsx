@@ -33,6 +33,9 @@ import {
   type SpaceDetailsValues,
   type SpaceDocRowView,
   type SpaceDirectoryPerson,
+  type SpaceGuestView,
+  type SpacePendingInviteView,
+  spaceWhenLabel,
   type SpaceTemplateView,
   type SpaceWorkloadRowView,
   type SpaceMemberCandidate,
@@ -48,6 +51,7 @@ import { useCreateResource } from "@/shell/workspace/use-create-resource";
 import { useCreateSpace } from "@/shell/workspace/use-create-space";
 import { useMoveToSpace } from "@/shell/workspace/use-move-to-space";
 import { useNow } from "@/shell/workspace/use-now";
+import { useSpaceMembersExtra } from "@/shell/workspace/use-space-members-extra";
 import { useSpaceOverview } from "@/shell/workspace/use-space-overview";
 import { useShellNavigation } from "@/shell/workspace/use-shell-navigation";
 import { useWorkspaceResources } from "@/shell/workspace/use-workspace-resources";
@@ -116,6 +120,13 @@ export function SpacePage() {
     ].join(":"),
   );
   const mover = useMoveToSpace();
+
+  const extra = useSpaceMembersExtra(
+    workspaceId,
+    spaceId,
+    tab === "members",
+    [node?.version ?? 0, members.data?.length ?? 0].join(":"),
+  );
 
   const createResource = useCreateResource(
     workspaceId,
@@ -269,14 +280,14 @@ export function SpacePage() {
       overview
         ? buildHeadPeopleOfTotal(
             copy,
-            overview.people,
+            overview.people.slice(0, tab === "members" ? 3 : 4),
             overview.peopleTotal,
             identityToneFor,
           )
         : memberEntries
           ? buildHeadPeople(copy, memberEntries, identityToneFor)
           : null,
-    [copy, memberEntries, overview],
+    [copy, memberEntries, overview, tab],
   );
   const access = useMemo(
     () =>
@@ -392,8 +403,96 @@ export function SpacePage() {
         workspaceRole: member.role,
       });
     }
+    // The producer's extras: email, job line, last activity, the creator.
+    for (const person of extra?.people ?? []) {
+      const known = map.get(person.userId);
+      const name =
+        memberEntries?.find((entry) => entry.subjectId === person.userId)
+          ?.displayName ?? "";
+      map.set(person.userId, {
+        email: person.email,
+        workspaceRole: known?.workspaceRole ?? null,
+        title: person.title,
+        shortName: name ? (name.split(/\s+/).pop() ?? null) : null,
+        sourceNote: person.creator ? copy.members.creator : null,
+        activity: person.activeNow
+          ? copy.members.activeNow
+          : person.lastActiveAt
+            ? spaceWhenLabel(copy, person.lastActiveAt, now)
+            : null,
+      });
+    }
     return map;
-  }, [viewer.members.data]);
+  }, [copy, extra, memberEntries, now, viewer.members.data]);
+
+  // Where a person also joins through a team of the department.
+  const also = useMemo(() => {
+    const map = new Map<string, { team: string; role: SpaceRole }>();
+    for (const person of extra?.people ?? []) {
+      const team = person.viaTeams[0];
+      if (!team) continue;
+      const role =
+        memberEntries?.find(
+          (entry) => entry.subjectType === "Team" && entry.displayName === team,
+        )?.role ?? "Member";
+      map.set(person.userId, { team, role });
+    }
+    return map;
+  }, [extra, memberEntries]);
+
+  // Waiting invitations are for the people who manage the department.
+  const invites = useMemo<readonly SpacePendingInviteView[]>(
+    () =>
+      (canManage ? (extra?.invitations ?? []) : []).map((invite) => ({
+        id: invite.id,
+        email: invite.email,
+        name: invite.name,
+        sent: formatCopy(copy.members.inviteSent, {
+          when: spaceWhenLabel(copy, invite.sentAt, now),
+        }),
+        role: invite.role,
+      })),
+    [canManage, copy, extra, now],
+  );
+
+  const guests = useMemo<readonly SpaceGuestView[]>(() => {
+    const pad = (value: number) => String(value).padStart(2, "0");
+    return (extra?.guests ?? []).map((guest) => {
+      const until = guest.expiresAt ? new Date(guest.expiresAt) : null;
+      return {
+        id: guest.userId,
+        name: guest.name,
+        tone: identityToneFor(guest.userId),
+        detail:
+          formatCopy(copy.members.aside.guestLine, {
+            company: guest.outside
+              ? copy.members.aside.guestOutside
+              : copy.members.aside.guestInside,
+            level: copy.members.aside.guestLevel[guest.level],
+            board: guest.boardName,
+          }) +
+          (until
+            ? formatCopy(copy.members.aside.guestUntil, {
+                date: `${pad(until.getDate())}/${pad(until.getMonth() + 1)}/${until.getFullYear()}`,
+              })
+            : ""),
+        destination: { section: "board", boardId: guest.boardId },
+      };
+    });
+  }, [copy, extra]);
+
+  const guestsByEmail = useMemo(
+    () =>
+      new Map(
+        (extra?.guests ?? [])
+          .filter((guest) => guest.email)
+          .map((guest) => [
+            (guest.email ?? "").toLowerCase(),
+            { name: guest.name, board: guest.boardName },
+          ]),
+      ),
+    [extra],
+  );
 
   const teamPeople = useMemo(() => {
     const map = new Map<string, SectionState<readonly TeamPersonView[]>>();
@@ -412,19 +511,22 @@ export function SpacePage() {
                   id: member.userId,
                   name: member.displayName,
                   tone: identityToneFor(member.userId),
-                  note: null,
+                  note: directory.get(member.userId)?.title ?? null,
                 })),
               },
       );
     });
     return map;
-  }, [expandedTeams, teamMembers]);
+  }, [directory, expandedTeams, teamMembers]);
 
   const previewBase = useMemo<SpaceAddPreviewBase | null>(() => {
     if (content.status !== "ready") return null;
     const boards = content.data.boards;
     return {
-      openBoards: boards.filter((board) => !board.isPrivate).length,
+      openBoards: overview
+        ? overview.boardTotal -
+          overview.boards.filter((board) => board.isPrivate).length
+        : boards.filter((board) => !board.isPrivate).length,
       docs: content.data.docTotal,
       openChildren: childSpaces
         .filter((child) => !child.isPrivate)
@@ -433,10 +535,14 @@ export function SpacePage() {
         ...childSpaces
           .filter((child) => child.isPrivate)
           .map((child) => child.name),
-        ...boards.filter((board) => board.isPrivate).map((board) => board.name),
+        ...boards
+          .filter((board) => board.isPrivate)
+          .map((board) =>
+            formatCopy(copy.members.add.hiddenBoard, { name: board.name }),
+          ),
       ],
     };
-  }, [childSpaces, content]);
+  }, [childSpaces, content, copy, overview]);
 
   const formatDay = useCallback((iso: string) => {
     const date = new Date(iso);
@@ -729,6 +835,13 @@ export function SpacePage() {
         addDialogKey={addDialogKey}
         removingMember={mutations.removeMember.isPending}
         directory={directory}
+        also={also}
+        invites={invites}
+        guests={guests}
+        expandTeams
+        guestsByEmail={guestsByEmail}
+        membersPageSize={7}
+        membersSummary={extra?.summary ?? null}
         meId={viewer.userId}
         teamPeople={teamPeople}
         previewBase={previewBase}
