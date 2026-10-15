@@ -1,4 +1,8 @@
-import type { IdentityTone, MarkToneId } from "../../core/model/navigation";
+import type {
+  IdentityTone,
+  MarkToneId,
+  WorkspaceDestination,
+} from "../../core/model/navigation";
 import type {
   SpaceMemberEntry,
   SpaceNode,
@@ -110,6 +114,8 @@ export interface SpaceAccessRowView {
   readonly value: string;
   readonly note: string | null;
   readonly href: string | null;
+  /** Opens where the value lives (a guest's Board); `null`/absent is plain text. */
+  readonly destination?: WorkspaceDestination | null;
   /** Nobody holds this role yet: the value reads muted. */
   readonly empty?: boolean;
 }
@@ -175,6 +181,28 @@ export function buildHeadPeople(
     avatars,
     more: Math.max(0, members.length - avatars.length),
     label: formatCopy(copy.page.peopleLabelEntries, { count: members.length }),
+  };
+}
+
+/**
+ * The head's avatar stack when the producer reports the head count of the
+ * department (teams expanded): the people it names, then "+N" for the rest.
+ */
+export function buildHeadPeopleOfTotal(
+  copy: WorkspaceSpacesCopy,
+  people: readonly { readonly id: string; readonly name: string }[],
+  total: number,
+  toneOf: (id: string) => IdentityTone,
+): SpaceHeadPeople {
+  const avatars = people.map((person) => ({
+    id: person.id,
+    name: person.name,
+    tone: toneOf(person.id),
+  }));
+  return {
+    avatars,
+    more: Math.max(0, total - avatars.length),
+    label: formatCopy(copy.page.peopleLabel, { count: total }),
   };
 }
 
@@ -267,6 +295,119 @@ export function buildAccessView(
   return { visibility: node.visibility, summary, rows };
 }
 
+/** What the producer reports about who can open a department, teams expanded. */
+export interface SpaceAccessSummary {
+  readonly peopleTotal: number;
+  readonly admins: readonly { readonly id: string; readonly name: string }[];
+  readonly members: SpaceAccessSummaryRole;
+  readonly viewers: SpaceAccessSummaryRole;
+  readonly guests: readonly {
+    readonly id: string;
+    readonly name: string;
+    readonly boards: readonly { readonly id: string; readonly name: string }[];
+  }[];
+}
+
+interface SpaceAccessSummaryRole {
+  readonly people: number;
+  readonly teams: readonly { readonly name: string; readonly count: number }[];
+}
+
+/**
+ * The access card from the producer's summary: everybody counted once with
+ * the teams expanded ("24 người: 2 quản trị · 19 thành viên · 3 người xem"),
+ * the teams noted under their role and the Board guests outside the department.
+ */
+export function buildAccessViewFromSummary(
+  copy: WorkspaceSpacesCopy,
+  node: Pick<SpaceNode, "visibility">,
+  summary: SpaceAccessSummary,
+): SpaceAccessView {
+  const a = copy.aside;
+  const summaryText = formatCopy(a.summary, {
+    people: pluralOf(a, "summaryPeople", summary.peopleTotal),
+    admins: formatCopy(a.summaryAdmins, { count: summary.admins.length }),
+    members: formatCopy(a.summaryMembers, { count: summary.members.people }),
+    viewers: formatCopy(a.summaryViewers, { count: summary.viewers.people }),
+  });
+  const rows: SpaceAccessRowView[] = [
+    {
+      key: "admins",
+      label: a.admins,
+      value:
+        summary.admins.length > 0
+          ? summary.admins.map((admin) => admin.name).join(", ")
+          : a.nobody,
+      note: null,
+      href: null,
+      empty: summary.admins.length === 0,
+    },
+  ];
+  const role = (
+    key: "Member" | "Viewer",
+    label: string,
+    entry: SpaceAccessSummaryRole,
+  ) => {
+    if (entry.people === 0) {
+      rows.push({
+        key,
+        label,
+        value: a.nobody,
+        note: null,
+        href: null,
+        empty: true,
+      });
+      return;
+    }
+    const note =
+      entry.teams.length === 0
+        ? null
+        : key === "Member"
+          ? entry.teams
+              .map((team) =>
+                formatCopy(a.includesTeam, {
+                  name: team.name,
+                  count: team.count,
+                }),
+              )
+              .join(" · ")
+          : formatCopy(a.viewerTeamNote, {
+              names: entry.teams.map((team) => team.name).join(", "),
+            });
+    rows.push({
+      key,
+      label,
+      value: pluralOf(a, "people", entry.people),
+      note,
+      href: null,
+    });
+  };
+  role("Member", a.members, summary.members);
+  role("Viewer", a.viewers, summary.viewers);
+  if (summary.guests.length > 0) {
+    const boards = [
+      ...new Map(
+        summary.guests.flatMap((guest) => guest.boards).map((b) => [b.id, b]),
+      ).values(),
+    ];
+    const first = boards[0];
+    rows.push({
+      key: "guests",
+      label: a.guests,
+      value: summary.guests.map((guest) => guest.name).join(", "),
+      note: formatCopy(a.guestNote, {
+        boards: boards.map((board) => board.name).join(", "),
+      }),
+      href: null,
+      destination:
+        summary.guests.length === 1 && boards.length === 1 && first
+          ? { section: "board", boardId: first.id }
+          : null,
+    });
+  }
+  return { visibility: node.visibility, summary: summaryText, rows };
+}
+
 /** "2 giờ trước", "hôm qua", "5 ngày trước", then "03/10". */
 export function spaceWhenLabel(
   copy: WorkspaceSpacesCopy,
@@ -282,13 +423,16 @@ export function spaceWhenLabel(
   const minutes = Math.floor(diff / 60000);
   if (minutes < 1) return w.now;
   if (minutes < 60) return formatCopy(w.minutes, { count: minutes });
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return formatCopy(w.hours, { count: hours });
   const startOfDay = (value: number) => {
     const date = new Date(value);
     date.setHours(0, 0, 0, 0);
     return date.getTime();
   };
+  // "N giờ trước" only within the same day; the day before is "hôm qua".
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24 && startOfDay(now) === startOfDay(time)) {
+    return formatCopy(w.hours, { count: hours });
+  }
   const days = Math.round((startOfDay(now) - startOfDay(time)) / 86_400_000);
   if (days <= 1) return w.yesterday;
   if (days < 7) return formatCopy(w.days, { count: days });

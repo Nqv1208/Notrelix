@@ -46,7 +46,7 @@ test.describe("Department members (owner)", () => {
   }) => {
     await open(page, ACCOUNTING, "Kế toán");
     await page.getByRole("button", { name: "Thêm thành viên" }).click();
-    const dialog = page.getByRole("dialog", { name: "Thêm vào Kế toán" });
+    const dialog = page.getByRole("dialog", { name: "Thêm vào Phòng Kế toán" });
     await expect(dialog).toBeVisible();
     // Focus starts in the field and Tab stays inside the dialog.
     const field = dialog.getByRole("combobox", {
@@ -113,6 +113,8 @@ test.describe("Department members (owner)", () => {
     page,
   }) => {
     await open(page, ENGINEERING, "Công nghệ");
+    // The list is long and sorted by role: narrow it so the row stays in view.
+    await page.getByRole("searchbox").fill("jordan");
     const jordan = row(page, "Jordan Lee");
     const trigger = jordan.getByRole("button", { name: /Thành viên/ });
     await trigger.focus();
@@ -154,7 +156,12 @@ test.describe("Department members (owner)", () => {
   test("the only admin cannot be lowered or removed, and the menu says why", async ({
     page,
   }) => {
-    await open(page, ENGINEERING, "Công nghệ");
+    // Phòng Nhân sự has one admin: the owner.
+    await open(
+      page,
+      `${WORKSPACE}/spaces/mock-space-hr?tab=members`,
+      "Nhân sự",
+    );
     await row(page, "Nguyễn Thu Hà")
       .getByRole("button", { name: /Quản trị/ })
       .click();
@@ -213,7 +220,7 @@ test.describe("Department members (owner)", () => {
       .click();
     await page.getByRole("menuitem", { name: /Gỡ khỏi phòng/ }).click();
     const dialog = page.getByRole("dialog", {
-      name: "Gỡ Jordan Lee (Member) khỏi Công nghệ?",
+      name: "Gỡ Jordan Lee (Member) khỏi Phòng Công nghệ?",
     });
     await expect(dialog).toBeVisible();
     await dialog.getByRole("button", { name: "Gỡ", exact: true }).click();
@@ -233,8 +240,10 @@ test.describe("Department members (owner)", () => {
     await expect(
       page.getByRole("button", { name: /Vai trò Người xem/ }),
     ).toBeVisible();
+    // The viewers come in through the team Ban giám đốc, not one by one.
+    await expect(row(page, "Ban giám đốc")).toBeVisible();
     await page.getByRole("button", { name: /Vào qua/ }).click();
-    await page.getByRole("menuitemradio", { name: "Cả nhóm" }).click();
+    await page.getByRole("menuitemradio", { name: "Trực tiếp" }).click();
     await expect(page.getByText("Không có ai khớp.")).toBeVisible();
   });
 
@@ -244,7 +253,7 @@ test.describe("Department members (owner)", () => {
     await open(page, ENGINEERING, "Công nghệ");
     await expect(
       page
-        .getByRole("navigation", { name: "Công nghệ" })
+        .getByRole("navigation", { name: "Phòng Công nghệ" })
         .getByRole("link", { name: /^Thành viên/ }),
     ).toHaveAttribute("aria-current", "page");
     await page.getByRole("button", { name: "Thiết lập phòng ban" }).click();

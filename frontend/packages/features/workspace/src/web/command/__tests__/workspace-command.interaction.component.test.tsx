@@ -258,7 +258,7 @@ describe("WorkspaceCommandPaletteSurface", () => {
     expect(options()[1]!.getAttribute("aria-disabled")).toBe("true");
     fireEvent.keyDown(input(), { key: "Enter" });
     expect(props.onSelect).toHaveBeenCalledTimes(1);
-    expect(props.onSelect.mock.calls[0]![0]).toMatchObject({
+    expect(vi.mocked(props.onSelect).mock.calls[0]![0]).toMatchObject({
       type: "create-item",
       name: "hợp đồng bảo trì thang máy",
     });

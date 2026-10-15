@@ -34,5 +34,7 @@ export const mockIds = {
   },
   teams: {
     helpdesk: "mock-team-helpdesk",
+    erpEngineers: "mock-team-erp-engineers",
+    executive: "mock-team-executive",
   },
 } as const;

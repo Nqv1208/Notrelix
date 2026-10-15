@@ -7,6 +7,10 @@
  */
 export const spacePageEn = {
   page: {
+    /** The page names a department "Phòng X"; English keeps the name. */
+    departmentName: "{{name}}",
+    newLede: "Just created. Only you and workspace admins see this department.",
+    newLedeOpen: "Just created. Every workspace member sees this department.",
     loading: "Loading department",
     notFound: "This department isn't available",
     notFoundDescription:
@@ -86,6 +90,7 @@ export const spacePageEn = {
     docs: "Recent Docs",
     docsAll: "See all {{count}} Docs",
     docsEmpty: "No Docs in this department yet.",
+    editedBy: "{{name}} edited",
     when: {
       now: "just now",
       minutes: "{{count}} minutes ago",
@@ -136,6 +141,8 @@ export const spacePageEn = {
     teams_other: "{{count}} teams",
     includesTeam: "includes team {{name}} ({{count}} people)",
     guests: "Board guests",
+    viewerTeamNote: "team {{names}}, view only",
+    guestNote: "only the Board {{boards}}, not in the department",
     manage: "Manage members and access",
     seeMembers: "See members",
   },
@@ -235,6 +242,9 @@ export type SpacePageCopy = typeof spacePageEn;
 
 export const spacePageVi: SpacePageCopy = {
   page: {
+    departmentName: "Phòng {{name}}",
+    newLede: "Vừa tạo. Hiện chỉ bạn và quản trị workspace thấy phòng này.",
+    newLedeOpen: "Vừa tạo. Mọi thành viên workspace thấy phòng này.",
     loading: "Đang tải phòng ban",
     notFound: "Không có phòng ban này",
     notFoundDescription:
@@ -314,6 +324,7 @@ export const spacePageVi: SpacePageCopy = {
     docs: "Tài liệu gần đây",
     docsAll: "Xem cả {{count}} tài liệu",
     docsEmpty: "Phòng ban này chưa có tài liệu nào.",
+    editedBy: "{{name}} sửa",
     when: {
       now: "vừa xong",
       minutes: "{{count}} phút trước",
@@ -364,6 +375,8 @@ export const spacePageVi: SpacePageCopy = {
     teams_other: "{{count}} nhóm",
     includesTeam: "gồm nhóm {{name}} ({{count}} người)",
     guests: "Khách ở board",
+    viewerTeamNote: "nhóm {{names}}, chỉ xem",
+    guestNote: "chỉ board {{boards}}, không thuộc phòng",
     manage: "Quản lý thành viên và quyền",
     seeMembers: "Xem thành viên",
   },

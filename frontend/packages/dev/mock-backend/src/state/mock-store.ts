@@ -73,6 +73,12 @@ import {
   hanoiInstant,
 } from "./mock-erp-board";
 import {
+  ENGINEERING_MEMBERS,
+  ERP_ENGINEERS_TEAM,
+  EXECUTIVE_TEAM,
+  EXECUTIVE_VIEWERS,
+} from "./mock-space-people";
+import {
   ERP_ITEM_PERCENT,
   ERP_PLAN_GROUPS,
   ERP_PLAN_ITEMS,
@@ -793,7 +799,8 @@ export class MockStore {
       });
     space(mockIds.spaces.engineering, "Công nghệ", "a0000", {
       color: "blue",
-      description: "Phát triển sản phẩm, hạ tầng và chất lượng.",
+      description:
+        "Vận hành hạ tầng, phần mềm nội bộ và triển khai ERP cho toàn tập đoàn.",
     });
     space(mockIds.spaces.itInfra, "Nhóm Hạ tầng", "a0001", {
       parentId: mockIds.spaces.engineering,
@@ -833,22 +840,53 @@ export class MockStore {
       role: "Admin",
       addedAt: at,
     });
-    this.spaces.insertMember({
-      spaceId: mockIds.spaces.engineering,
-      subjectType: "User",
-      subjectId: mockIds.users.member,
-      role: "Member",
-      addedAt: at,
-    });
-    // The admin watches Engineering as a Viewer, so its member list shows all
-    // three roles (Accounting shows a Team entry).
-    this.spaces.insertMember({
-      spaceId: mockIds.spaces.engineering,
-      subjectType: "User",
-      subjectId: mockIds.users.admin,
-      role: "Viewer",
-      addedAt: at,
-    });
+    // The Công nghệ department of the Space mockup: 24 people (see
+    // `mock-space-people.ts`): 2 admins, 19 members and 3 viewers.
+    const engineering = (
+      subjectType: "User" | "Team",
+      subjectId: string,
+      role: "Admin" | "Member" | "Viewer",
+    ) =>
+      this.spaces.insertMember({
+        spaceId: mockIds.spaces.engineering,
+        subjectType,
+        subjectId,
+        role,
+        addedAt: at,
+      });
+    engineering("User", ERP_PEOPLE.HP.id, "Admin");
+    for (const id of [
+      mockIds.users.member,
+      ERP_PEOPLE.LT.id,
+      ERP_PEOPLE.PH.id,
+      ...ENGINEERING_MEMBERS.map((entry) => entry.id),
+    ]) {
+      engineering("User", id, "Member");
+    }
+    engineering("Team", ERP_ENGINEERS_TEAM.id, "Member");
+    engineering("Team", EXECUTIVE_TEAM.id, "Viewer");
+    for (const person of [...ENGINEERING_MEMBERS, ...EXECUTIVE_VIEWERS]) {
+      if (!this.usersById.has(person.id)) {
+        this.insertUser({
+          id: person.id,
+          email: person.email,
+          name: person.name,
+          avatarUrl: null,
+        });
+      }
+    }
+    for (const team of [ERP_ENGINEERS_TEAM, EXECUTIVE_TEAM]) {
+      this.spaces.insertTeam({
+        id: team.id,
+        workspaceId,
+        name: team.name,
+        description: null,
+        archived: false,
+        version: 1,
+        members: team.members.map((member) => ({ ...member })),
+        createdAt: at,
+      });
+    }
     this.spaces.insertTeam({
       id: mockIds.teams.helpdesk,
       workspaceId,
@@ -1334,6 +1372,23 @@ export class MockStore {
         );
       });
     }
+    // Ngân sách CNTT 2027 is private: four people were added to it.
+    this.boardMembersByBoardId.set(
+      "mock-board-it-budget",
+      (
+        [
+          [ERP_PEOPLE.HP.id, "Owner"],
+          [ERP_PEOPLE.HA.id, "Admin"],
+          [ERP_PEOPLE.MQ.id, "Member"],
+          [ENGINEERING_MEMBERS[0]!.id, "Member"],
+        ] as const
+      ).map(([userId, role]) => ({
+        boardId: "mock-board-it-budget",
+        userId,
+        role,
+        joinedAt: "2026-09-15T02:00:00.000Z",
+      })) as MockBoardMemberRecord[],
+    );
   }
 
   /** Members of a board, in seeded order. */

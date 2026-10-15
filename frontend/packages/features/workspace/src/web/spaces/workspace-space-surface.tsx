@@ -314,7 +314,14 @@ export function WorkspaceSpaceSurface(props: WorkspaceSpaceSurfaceProps) {
         markTone={markToneFor(node.id)}
         isPrivate={node.visibility === "Private"}
         archived={node.isArchived}
-        description={node.description}
+        description={
+          node.description ??
+          (props.firstSteps && tab === "overview"
+            ? node.visibility === "Private"
+              ? copy.page.newLede
+              : copy.page.newLedeOpen
+            : null)
+        }
         people={props.people}
         peopleTotal={props.peopleTotal}
         canManage={manage}

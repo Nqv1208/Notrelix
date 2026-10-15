@@ -738,7 +738,17 @@ export function AccessBlock({
                     row.empty ? "text-meta-foreground" : "text-foreground",
                   )}
                 >
-                  {row.value}
+                  {row.destination ? (
+                    <ShellLink
+                      destination={row.destination}
+                      navigation={navigation}
+                      className={cn("text-foreground hover:underline", FOCUS)}
+                    >
+                      {row.value}
+                    </ShellLink>
+                  ) : (
+                    row.value
+                  )}
                   {row.note ? (
                     <small className="block text-note-small text-meta-foreground">
                       {row.note}

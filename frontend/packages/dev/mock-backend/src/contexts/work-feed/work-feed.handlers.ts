@@ -38,6 +38,7 @@ import {
 } from "../../state/mock-work-feed";
 import type { MockStore } from "../../state/mock-store";
 import { commandSearch } from "../../state/mock-command-search";
+import { spaceOverview } from "../../state/mock-space-overview";
 import { canReadBoard } from "../work-management/boards.handlers";
 
 const MY_WORK_EXT = "CTR-GAP-WS-MYWORK-EXT" as const;
@@ -98,6 +99,26 @@ export const workFeedOperations = [
     },
   }),
 
+  // ── Department page summary (CTR-GAP-WS-SPACE-OVERVIEW) ──────────────────
+  defineMockOperation<{ workspaceId: string; spaceId: string }>({
+    id: "wsFeed.spaceOverview",
+    contract: { kind: "gap", gapId: "CTR-GAP-WS-SPACE-OVERVIEW" },
+    method: "GET",
+    route: "/workspaces/:workspaceId/spaces/:spaceId/overview",
+    async handle({ params, query, store }) {
+      if (!store.isCurrentMemberOf(params.workspaceId)) return notFound();
+      const overview = spaceOverview(
+        store,
+        params.workspaceId,
+        params.spaceId,
+        {
+          canReadBoard: (id) => canReadBoard(id, store),
+          asMember: query["as"] === "member",
+        },
+      );
+      return overview ? ok(overview) : notFound();
+    },
+  }),
 
   // ── My work: extended read ───────────────────────────────────────────────
   defineMockOperation<{ workspaceId: string }>({

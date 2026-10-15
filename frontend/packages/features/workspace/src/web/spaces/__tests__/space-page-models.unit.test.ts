@@ -3,7 +3,9 @@ import { identityToneFor } from "../../../core/model/navigation";
 import type { SpaceMemberEntry } from "../../../core/model/spaces";
 import {
   buildAccessView,
+  buildAccessViewFromSummary,
   buildHeadPeople,
+  buildHeadPeopleOfTotal,
   spaceWhenLabel,
 } from "../space-page-models";
 import { workspaceSpacesCopy } from "../workspace-spaces.copy";
@@ -137,6 +139,8 @@ describe("spaceWhenLabel", () => {
     expect(at("2026-10-12T10:30:00+07:00")).toBe("10 phút trước");
     expect(at("2026-10-12T08:40:00+07:00")).toBe("2 giờ trước");
     expect(at("2026-10-11T08:40:00+07:00")).toBe("hôm qua");
+    // The day before is "hôm qua" even when it is under 24 hours ago.
+    expect(at("2026-10-11T16:00:00+07:00")).toBe("hôm qua");
     expect(at("2026-10-07T09:00:00+07:00")).toBe("5 ngày trước");
     expect(at("2026-10-03T09:00:00+07:00")).toBe("03/10");
   });
@@ -144,5 +148,87 @@ describe("spaceWhenLabel", () => {
   it("says nothing for a missing or future time", () => {
     expect(spaceWhenLabel(copy, null, now)).toBe("");
     expect(at("2026-10-13T09:00:00+07:00")).toBe("");
+  });
+});
+
+describe("buildHeadPeopleOfTotal", () => {
+  it("names the people it is given and counts the rest of the head count", () => {
+    const people = buildHeadPeopleOfTotal(
+      copy,
+      [
+        { id: "a", name: "Lê Hoàng Phúc" },
+        { id: "b", name: "Nguyễn Thu Hà" },
+      ],
+      24,
+      identityToneFor,
+    );
+    expect(people.avatars.map((avatar) => avatar.id)).toEqual(["a", "b"]);
+    expect(people.more).toBe(22);
+    expect(people.label).toBe("24 thành viên");
+  });
+});
+
+describe("buildAccessViewFromSummary", () => {
+  const summary = {
+    peopleTotal: 24,
+    admins: [
+      { id: "a", name: "Lê Hoàng Phúc" },
+      { id: "b", name: "Nguyễn Thu Hà" },
+    ],
+    members: { people: 19, teams: [{ name: "Kỹ sư ERP", count: 4 }] },
+    viewers: { people: 3, teams: [{ name: "Ban giám đốc", count: 3 }] },
+    guests: [
+      {
+        id: "g",
+        name: "Đặng Minh Tuấn",
+        boards: [{ id: "erp", name: "Triển khai ERP Q4" }],
+      },
+    ],
+  };
+
+  it("counts everybody once and notes the teams under their role", () => {
+    const view = buildAccessViewFromSummary(
+      copy,
+      { visibility: "Private" },
+      summary,
+    );
+    expect(view.summary).toBe(
+      "24 người: 2 quản trị · 19 thành viên · 3 người xem",
+    );
+    expect(view.rows.map((row) => [row.label, row.value, row.note])).toEqual([
+      ["Quản trị", "Lê Hoàng Phúc, Nguyễn Thu Hà", null],
+      ["Thành viên", "19 người", "gồm nhóm Kỹ sư ERP (4 người)"],
+      ["Người xem", "3 người", "nhóm Ban giám đốc, chỉ xem"],
+      [
+        "Khách ở board",
+        "Đặng Minh Tuấn",
+        "chỉ board Triển khai ERP Q4, không thuộc phòng",
+      ],
+    ]);
+    // A single guest on a single Board opens that Board.
+    expect(view.rows[3]!.destination).toEqual({
+      section: "board",
+      boardId: "erp",
+    });
+  });
+
+  it("says nobody holds a role that has no one and omits the guest row", () => {
+    const view = buildAccessViewFromSummary(
+      copy,
+      { visibility: "Private" },
+      {
+        peopleTotal: 1,
+        admins: [{ id: "a", name: "Nguyễn Thu Hà" }],
+        members: { people: 0, teams: [] },
+        viewers: { people: 0, teams: [] },
+        guests: [],
+      },
+    );
+    expect(view.rows.map((row) => row.key)).toEqual([
+      "admins",
+      "Member",
+      "Viewer",
+    ]);
+    expect(view.rows[1]).toMatchObject({ value: "Chưa có ai", empty: true });
   });
 });

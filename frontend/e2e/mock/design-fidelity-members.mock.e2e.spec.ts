@@ -213,15 +213,19 @@ test.describe("Department members geometry at 1440 px (owner)", () => {
     expect(await style(head, "font-size")).toBe("11.5px");
     expect(await style(head, "font-weight")).toBe("600");
     expect(await style(head, "border-top-left-radius")).toBe("12px");
-    const row = f(page, "mr").first();
-    const rowBox = await rel(page, row);
-    expectRect(rowBox, { x: 29, width: 720 }, "row");
-    expect(rowBox.height).toBeGreaterThanOrEqual(56);
+    const firstRow = f(page, "mr").first();
+    const firstBox = await rel(page, firstRow);
+    expectRect(firstBox, { x: 29, width: 720 }, "row");
+    expect(firstBox.height).toBeGreaterThanOrEqual(56);
     const headBox = await rel(page, head);
     // The first row touches the head with no border of its own.
     expect(
-      Math.abs(rowBox.y - (headBox.y + headBox.height)),
+      Math.abs(firstBox.y - (headBox.y + headBox.height)),
     ).toBeLessThanOrEqual(1);
+    // The teams lead the list: the person's row is the first with an avatar.
+    const row = f(page, "mr")
+      .filter({ has: page.locator('[data-f="who"] > [data-f="av"]') })
+      .first();
     const avatar = row.locator('[data-f="who"] > [data-f="av"]');
     expectRect(
       await rel(page, avatar),
@@ -275,10 +279,16 @@ test.describe("Department members geometry at 1440 px (owner)", () => {
     // Member and Viewer tags carry their colours.
     const rows = f(page, "mr");
     expect(
-      await colour(rows.nth(1).locator('[data-f="rtag"]'), "background-color"),
+      await colour(
+        rows.filter({ hasText: "Jordan Lee" }).locator('[data-f="rtag"]'),
+        "background-color",
+      ),
     ).toBe(COLOUR.member);
     expect(
-      await colour(rows.nth(2).locator('[data-f="rtag"]'), "background-color"),
+      await colour(
+        rows.filter({ hasText: "Ban giám đốc" }).locator('[data-f="rtag"]'),
+        "background-color",
+      ),
     ).toBe(COLOUR.viewer);
     // "You" marks the signed-in member.
     const you = f(page, "you");

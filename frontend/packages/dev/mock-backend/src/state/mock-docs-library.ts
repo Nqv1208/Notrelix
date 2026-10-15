@@ -1,12 +1,13 @@
 /**
  * The workspace documents of the 2026-10 mockups beside the invoice process
- * page: the ERP specification and conversion plan of the Công nghệ
- * department, and the Kế toán bank reconciliation guide. Times are UTC
+ * page: the ERP specification, conversion plan and on-call handbook of the
+ * Công nghệ department, and the Kế toán bank reconciliation guide. Times are UTC
  * instants of the Hanoi clock the mockups use (Monday 12/10/2026 10:40).
  *
  * Pure data: the world seed inserts it in place of generic pages.
  */
 import { INVOICE_FOLDER_ID } from "./mock-docs-invoice";
+import { ERP_PEOPLE } from "./mock-erp-board";
 import { mockIds } from "./mock-ids";
 
 export interface LibraryDoc {
@@ -28,7 +29,7 @@ export const LIBRARY_DOCS: readonly LibraryDoc[] = [
     title: "Đặc tả triển khai ERP",
     spaceId: mockIds.spaces.engineering,
     createdAt: "2026-09-18T03:00:00.000Z",
-    updatedAt: "2026-10-12T02:10:00.000Z",
+    updatedAt: "2026-09-30T03:10:00.000Z",
     editorId: mockIds.users.owner,
     blocks: [
       "Đặc tả triển khai ERP",
@@ -50,8 +51,8 @@ export const LIBRARY_DOCS: readonly LibraryDoc[] = [
     title: "Kế hoạch chuyển đổi dữ liệu",
     spaceId: mockIds.spaces.engineering,
     createdAt: "2026-09-23T08:10:00.000Z",
-    updatedAt: "2026-10-09T07:30:00.000Z",
-    editorId: mockIds.users.owner,
+    updatedAt: "2026-10-11T08:30:00.000Z",
+    editorId: ERP_PEOPLE.MQ.id,
     blocks: [
       "Kế hoạch chuyển đổi dữ liệu",
       "Quy tắc chuyển 48.200 hồ sơ khách hàng từ phần mềm bán hàng cũ sang ERP.",
@@ -79,17 +80,19 @@ export const LIBRARY_DOCS: readonly LibraryDoc[] = [
     ],
   },
   {
-    id: "mock-doc-kickoff-minutes",
-    title: "Biên bản họp khởi động ERP",
+    id: "mock-doc-oncall-handbook",
+    title: "Sổ tay trực hệ thống",
     spaceId: mockIds.spaces.engineering,
-    createdAt: "2026-09-16T07:00:00.000Z",
-    updatedAt: "2026-09-16T09:20:00.000Z",
-    editorId: mockIds.users.owner,
+    createdAt: "2026-08-20T03:00:00.000Z",
+    updatedAt: "2026-10-03T02:00:00.000Z",
+    editorId: ERP_PEOPLE.VT.id,
     blocks: [
-      "Biên bản họp khởi động ERP",
-      "Cuộc họp ngày 16/09/2026 giữa phòng Công nghệ, Kế toán và Ban giám đốc.",
-      "## Quyết định",
-      "Chạy chính thức ERP từ 01/11/2026. Kế toán là phòng đầu tiên chuyển đổi, các phòng khác theo sau.",
+      "Sổ tay trực hệ thống",
+      "Lịch trực và các bước xử lý sự cố của phòng Công nghệ.",
+      "## Lịch trực",
+      "Mỗi tuần một kỹ sư trực chính và một kỹ sư dự phòng; đổi ca báo trước 24 giờ.",
+      "## Xử lý sự cố",
+      "Ghi nhận sự cố, xác định mức ảnh hưởng, báo các phòng bị ảnh hưởng và cập nhật tiến độ mỗi 30 phút.",
     ],
   },
 ];

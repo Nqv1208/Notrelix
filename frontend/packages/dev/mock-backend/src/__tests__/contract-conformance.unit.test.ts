@@ -607,8 +607,16 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
     expect(
       toSpaceTeams(
         await createTeamsService(client.api, endpoints).list(workspaceId),
-      ).map((t) => t.id),
-    ).toEqual([mockIds.teams.helpdesk]);
+      )
+        .map((t) => t.id)
+        .sort(),
+    ).toEqual(
+      [
+        mockIds.teams.helpdesk,
+        mockIds.teams.erpEngineers,
+        mockIds.teams.executive,
+      ].sort(),
+    );
     store.assertInvariants();
   });
 

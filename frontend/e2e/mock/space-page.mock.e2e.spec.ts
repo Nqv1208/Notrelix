@@ -48,7 +48,9 @@ test.describe("Department page (owner)", () => {
     await expect(trigger).toHaveAttribute("aria-expanded", "false");
     await trigger.focus();
     await page.keyboard.press("Enter");
-    const menu = page.getByRole("menu", { name: "Tạo mới trong Công nghệ" });
+    const menu = page.getByRole("menu", {
+      name: "Tạo mới trong Phòng Công nghệ",
+    });
     await expect(menu).toBeVisible();
     await expect(trigger).toHaveAttribute("aria-expanded", "true");
     const items = menu.getByRole("menuitem");
@@ -99,7 +101,7 @@ test.describe("Department page (owner)", () => {
     page,
   }) => {
     await open(page, ENGINEERING, "Công nghệ");
-    const tabs = page.getByRole("navigation", { name: "Công nghệ" });
+    const tabs = page.getByRole("navigation", { name: "Phòng Công nghệ" });
     await expect(
       tabs.getByRole("link", { name: /^Tổng quan/ }),
     ).toHaveAttribute("aria-current", "page");
@@ -118,7 +120,7 @@ test.describe("Department page (owner)", () => {
     await tabs.getByRole("link", { name: /^Thành viên/ }).click();
     await expect(page).toHaveURL(/tab=members/);
     await expect(
-      page.getByRole("table", { name: "Thành viên Công nghệ" }),
+      page.getByRole("table", { name: "Thành viên Phòng Công nghệ" }),
     ).toBeVisible();
     // Add members from the head goes to the same tab.
     await tabs.getByRole("link", { name: /^Tổng quan/ }).click();
@@ -131,7 +133,7 @@ test.describe("Department page (owner)", () => {
   }) => {
     await open(page, ENGINEERING, "Công nghệ");
     const tab = page
-      .getByRole("navigation", { name: "Công nghệ" })
+      .getByRole("navigation", { name: "Phòng Công nghệ" })
       .getByText(/^Board và tài liệu/);
     await expect(tab).toHaveAttribute("aria-disabled", "true");
     await expect(tab).toHaveAttribute("title", /chưa có trang riêng/);
@@ -205,7 +207,7 @@ test.describe("Department page (owner)", () => {
     await expect(archive).not.toHaveAttribute("aria-disabled", "true");
     await archive.click();
     const confirm = page.getByRole("alertdialog", {
-      name: "Lưu trữ Nhân sự?",
+      name: "Lưu trữ Phòng Nhân sự?",
     });
     await expect(confirm).toBeVisible();
     await page.keyboard.press("Escape");
@@ -221,7 +223,7 @@ test.describe("Department page (owner)", () => {
     page,
   }) => {
     await open(page, EMPTY_DEPARTMENT, "Nhân sự");
-    await expect(page.getByText("Bắt đầu với Nhân sự")).toBeVisible();
+    await expect(page.getByText("Bắt đầu với Phòng Nhân sự")).toBeVisible();
     // Nhân sự is private in the Minh An world.
     await expect(page.getByText("Riêng tư, bạn là quản trị")).toBeVisible();
     await page.getByRole("button", { name: "Board trống" }).click();
@@ -229,13 +231,99 @@ test.describe("Department page (owner)", () => {
     await expect(board).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(board).toBeHidden();
-    // Templates have no producer: the section is not drawn.
-    await expect(page.getByText("Dùng mẫu")).toHaveCount(0);
+    // The summary offers three templates; using one has no producer yet.
+    await expect(page.getByText("Dùng mẫu")).toHaveCount(3);
     await page
       .getByRole("main")
       .getByRole("button", { name: "Thêm thành viên" })
       .click();
     await expect(page).toHaveURL(/tab=members/);
+  });
+
+  test("the overview shows the department's figures, people and access", async ({
+    page,
+  }) => {
+    await open(page, ENGINEERING, "Công nghệ");
+    // Head: description, tabs with their counts.
+    await expect(
+      page.getByText(
+        "Vận hành hạ tầng, phần mềm nội bộ và triển khai ERP cho toàn tập đoàn.",
+      ),
+    ).toBeVisible();
+    const tabs = page.getByRole("navigation", { name: "Phòng Công nghệ" });
+    await expect(
+      tabs.getByRole("link", { name: /Board và tài liệu\s*9/ }),
+    ).toBeVisible();
+    await expect(
+      tabs.getByRole("link", { name: /Thành viên\s*24/ }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("img", { name: "24 thành viên" }),
+    ).toBeVisible();
+    // Running Boards: progress, attention and the people doing the work.
+    const boards = page.getByRole("region", { name: "Board đang chạy" });
+    const erp = boards.getByRole("link", { name: /Triển khai ERP Q4/ });
+    await expect(erp).toContainText("5/16");
+    await expect(erp).toContainText("1 quá hạn");
+    await expect(erp).toContainText("Kanban · Go-live 01/11 · có 1 khách");
+    await expect(
+      boards.getByRole("link", { name: /Hạ tầng & bảo mật/ }),
+    ).toContainText("41/57");
+    await expect(
+      boards.getByRole("link", { name: /Hỗ trợ nội bộ/ }),
+    ).toContainText("23 yêu cầu mở");
+    await expect(
+      boards.getByRole("link", { name: /Ngân sách CNTT 2027/ }),
+    ).toContainText("chỉ 4 người được thêm");
+    await expect(
+      page.getByRole("link", { name: "Xem cả 6 board" }),
+    ).toBeVisible();
+    // Sub-departments and Docs.
+    await expect(page.getByText("6 người · 2 board")).toBeVisible();
+    await expect(page.getByText("9 người · 3 board")).toBeVisible();
+    await expect(page.getByText("Trần Minh Quân sửa")).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: "Xem cả 3 tài liệu" }),
+    ).toBeVisible();
+    // Aside: attention, work by person, who can open the department.
+    const aside = page.getByRole("complementary", {
+      name: "Tóm tắt phòng ban",
+    });
+    await expect(aside.getByText("Yêu cầu hỗ trợ chưa ai nhận")).toBeVisible();
+    await expect(aside.getByText("7 · 2 quá hạn")).toBeVisible();
+    await expect(
+      aside.getByText("24 người: 2 quản trị · 19 thành viên · 3 người xem"),
+    ).toBeVisible();
+    await expect(aside.getByText("gồm nhóm Kỹ sư ERP (4 người)")).toBeVisible();
+    await expect(aside.getByText("nhóm Ban giám đốc, chỉ xem")).toBeVisible();
+    await expect(
+      aside.getByRole("link", { name: "Đặng Minh Tuấn" }),
+    ).toBeVisible();
+  });
+
+  test("a manager previews the department as a member and leaves again", async ({
+    page,
+  }) => {
+    await open(page, `${ENGINEERING}?as=member`, "Công nghệ");
+    await expect(
+      page.getByText("Đang xem như thành viên phòng."),
+    ).toBeVisible();
+    const boards = page.getByRole("region", { name: "Board đang chạy" });
+    await expect(
+      boards.getByRole("link", { name: /Ngân sách CNTT/ }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole("link", { name: "Xem cả 5 board" }),
+    ).toBeVisible();
+    await expect(page.getByText("Nhóm Ứng dụng")).toHaveCount(0);
+    await expect(create(page)).toHaveCount(0);
+    await page.getByRole("button", { name: "Thoát chế độ xem" }).click();
+    await expect(page).not.toHaveURL(/as=member/);
+    await expect(
+      page.getByRole("region", { name: "Board đang chạy" }).getByRole("link", {
+        name: /Ngân sách CNTT/,
+      }),
+    ).toBeVisible();
   });
 
   test("the keyboard order runs through the head and the tabs", async ({
@@ -252,7 +340,7 @@ test.describe("Department page (owner)", () => {
     await page.keyboard.press("Tab");
     await expect(
       page
-        .getByRole("navigation", { name: "Công nghệ" })
+        .getByRole("navigation", { name: "Phòng Công nghệ" })
         .getByRole("link", { name: /^Tổng quan/ }),
     ).toBeFocused();
   });
@@ -277,7 +365,7 @@ test.describe("Department page for a member who does not manage it", () => {
     ).toHaveCount(0);
     await expect(
       page
-        .getByRole("navigation", { name: "Công nghệ" })
+        .getByRole("navigation", { name: "Phòng Công nghệ" })
         .getByRole("link", { name: "Thiết lập" }),
     ).toHaveCount(0);
     await create(page).click();

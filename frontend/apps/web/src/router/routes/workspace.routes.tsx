@@ -91,6 +91,8 @@ export const reportsRoute = createRoute({
 
 const spaceSearchSchema = z.object({
   tab: z.enum(["overview", "members", "settings"]).optional(),
+  /** `member`: a manager previews the page as a department member. */
+  as: z.enum(["member"]).optional(),
 });
 
 /** A Space of the org tree (OT-5). */

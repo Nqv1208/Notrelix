@@ -353,11 +353,13 @@ test.describe("Department page geometry at 1440 px (owner)", () => {
 
   test("the access card", async ({ page }) => {
     await openSpace(page, ENGINEERING, "Công nghệ");
+    // The summary above the access card arrives after the page.
+    await expect(f(page, "attrow").first()).toBeVisible();
     const heading = f(page, "abh").last();
     const headingBox = await rel(page, heading);
     expectRect(
       headingBox,
-      { x: 789, y: 170.42, height: 18.84 },
+      { x: 789, y: 609.5, height: 18.84 },
       "aside heading",
     );
     expect(await style(heading, "font-size")).toBe(TYPE.heading3.size);

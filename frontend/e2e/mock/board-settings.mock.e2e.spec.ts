@@ -187,6 +187,8 @@ test.describe("Board settings (owner)", () => {
     await handle.focus();
     await page.keyboard.press("Space");
     await expect(handle).toHaveAttribute("aria-pressed", "true");
+    // The keyboard sensor listens after the pick-up settles.
+    await page.waitForTimeout(250);
     await page.keyboard.press("ArrowUp");
     await page.waitForTimeout(250);
     await page.keyboard.press("Space");
@@ -323,6 +325,8 @@ test.describe("Board settings (owner)", () => {
     await handle.focus();
     await page.keyboard.press("Space");
     await expect(handle).toHaveAttribute("aria-pressed", "true");
+    // The keyboard sensor listens after the pick-up settles.
+    await page.waitForTimeout(250);
     await page.keyboard.press("ArrowUp");
     await page.waitForTimeout(250);
     await page.keyboard.press("Space");

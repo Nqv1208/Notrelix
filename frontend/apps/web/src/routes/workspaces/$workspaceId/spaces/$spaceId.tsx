@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useParams, useSearch } from "@tanstack/react-router";
+import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { createUsePageList } from "@notrelix/docs-state";
 import {
@@ -16,13 +16,16 @@ import {
 } from "@notrelix/features-workspace/core";
 import {
   buildAccessView,
+  buildAccessViewFromSummary,
   buildHeadPeople,
+  buildHeadPeopleOfTotal,
   formatCopy,
   useWorkspaceHomeCopy,
   useWorkspaceSpacesCopy,
   WorkspaceSpaceSurface,
   type AddSpaceMemberInput,
   type SectionState,
+  type SpaceAttentionRowView,
   type SpaceBoardRowView,
   type SpaceAddPreviewBase,
   type SpaceChildView,
@@ -30,6 +33,8 @@ import {
   type SpaceDetailsValues,
   type SpaceDocRowView,
   type SpaceDirectoryPerson,
+  type SpaceTemplateView,
+  type SpaceWorkloadRowView,
   type SpaceMemberCandidate,
   type TeamPersonView,
   type SpaceSaveStatus,
@@ -43,6 +48,7 @@ import { useCreateResource } from "@/shell/workspace/use-create-resource";
 import { useCreateSpace } from "@/shell/workspace/use-create-space";
 import { useMoveToSpace } from "@/shell/workspace/use-move-to-space";
 import { useNow } from "@/shell/workspace/use-now";
+import { useSpaceOverview } from "@/shell/workspace/use-space-overview";
 import { useShellNavigation } from "@/shell/workspace/use-shell-navigation";
 import { useWorkspaceResources } from "@/shell/workspace/use-workspace-resources";
 import { useWorkspaceViewer } from "@/shell/workspace/use-workspace-viewer";
@@ -63,7 +69,11 @@ const TABS: readonly SpaceTab[] = ["overview", "members", "settings"];
 export function SpacePage() {
   const { workspaceId, workspace } = useWorkspaceContext();
   const { spaceId } = useParams({ strict: false }) as { spaceId: string };
-  const search = useSearch({ strict: false }) as { tab?: SpaceTab };
+  const search = useSearch({ strict: false }) as {
+    tab?: SpaceTab;
+    as?: "member";
+  };
+  const navigate = useNavigate();
   const tab: SpaceTab = TABS.includes(search.tab as SpaceTab)
     ? (search.tab as SpaceTab)
     : "overview";
@@ -84,6 +94,7 @@ export function SpacePage() {
   const index = useMemo(() => buildSpaceIndex(tree.data ?? []), [tree.data]);
   const node = index.byId.get(spaceId) ?? null;
   const canManage = node?.access === "Manager";
+  const asMember = search.as === "member" && canManage;
   const members = hooks.useSpaceMembers(workspaceId, node ? spaceId : null);
   const teams = hooks.useWorkspaceTeams(workspaceId, canManage);
   const [expandedTeams, setExpandedTeams] = useState<readonly string[]>([]);
@@ -92,6 +103,18 @@ export function SpacePage() {
   const placements = useBoardPlacements(workspaceId);
   const pages = usePageList(workspaceId);
   const mutations = hooks.useSpaceMutations(workspaceId);
+  const overview = useSpaceOverview(
+    workspaceId,
+    spaceId,
+    asMember,
+    [
+      placements.data?.filter((placement) => placement.spaceId === spaceId)
+        .length ?? 0,
+      pages.data?.filter((page) => page.spaceId === spaceId).length ?? 0,
+      node?.version ?? 0,
+      members.data?.length ?? 0,
+    ].join(":"),
+  );
   const mover = useMoveToSpace();
 
   const createResource = useCreateResource(
@@ -121,12 +144,6 @@ export function SpacePage() {
     setExpandedTeams([]);
   }, [spaceId]);
 
-  const space: SectionState<typeof node> = tree.isError
-    ? { status: "error" }
-    : !tree.isSuccess
-      ? { status: "loading" }
-      : { status: "ready", data: node };
-
   const content = useMemo<SectionState<SpaceContentView>>(() => {
     if (resources.failed || placements.isError || pages.isError)
       return { status: "error" };
@@ -135,7 +152,7 @@ export function SpacePage() {
     const placementOf = new Map(
       placements.data.map((placement) => [placement.id, placement]),
     );
-    const boards: SpaceBoardRowView[] = resources.boards
+    const fallbackBoards: SpaceBoardRowView[] = resources.boards
       .filter((board) => placementOf.get(board.id)?.spaceId === spaceId)
       .map((board) => {
         const placement = placementOf.get(board.id);
@@ -152,7 +169,28 @@ export function SpacePage() {
           updatedAt: board.updatedAt,
         };
       });
-    const docs: SpaceDocRowView[] = pages.data
+    // The summary (when the producer offers it) knows the figures of each
+    // Board, which Boards run, and counts only what the member may see.
+    const boards: SpaceBoardRowView[] = overview
+      ? overview.boards.map((row) => ({
+          id: row.id,
+          name: row.name,
+          icon: row.kind,
+          meta: row.meta,
+          isPrivate: row.isPrivate,
+          addedCount: row.addedCount,
+          progress: row.progress,
+          attention: row.attention,
+          people: row.people.map((person) => ({
+            id: person.id,
+            name: person.name,
+            tone: identityToneFor(person.id),
+          })),
+          updatedAt: row.updatedAt,
+        }))
+      : fallbackBoards;
+    const titleOf = new Map(pages.data.map((page) => [page.id, page.title]));
+    const rootDocs: SpaceDocRowView[] = pages.data
       .filter((page) => page.spaceId === spaceId && !page.parentId)
       .map((page) => ({
         id: page.id,
@@ -162,16 +200,29 @@ export function SpacePage() {
         updatedAt: page.updatedAt ?? null,
       }))
       .sort((a, b) => (b.updatedAt ?? "").localeCompare(a.updatedAt ?? ""));
+    const docs: SpaceDocRowView[] = overview
+      ? overview.docs.map((row) => ({
+          id: row.id,
+          name: titleOf.get(row.id) ?? "",
+          meta: row.meta,
+          editor: row.editorName
+            ? formatCopy(copy.overview.editedBy, { name: row.editorName })
+            : null,
+          updatedAt: row.updatedAt,
+        }))
+      : rootDocs;
     return {
       status: "ready",
       data: {
         boards,
-        boardTotal: boards.length,
+        boardTotal: overview ? overview.boardTotal : boards.length,
         docs: docs.slice(0, 5),
-        docTotal: docs.length,
+        docTotal: overview ? overview.docTotal : rootDocs.length,
       },
     };
   }, [
+    copy,
+    overview,
     pages.data,
     pages.isError,
     placements.data,
@@ -189,34 +240,114 @@ export function SpacePage() {
         name: child.name,
         markTone: markToneFor(child.id),
         isPrivate: child.visibility === "Private",
-        boards: placements.data
-          ? placements.data.filter(
-              (placement) =>
-                placement.spaceId === child.id &&
-                visibleBoards.has(placement.id),
-            ).length
-          : null,
-        people: null,
-      }));
-  }, [index, node, placements.data, resources.boards, spaceId]);
+        boards:
+          overview?.children.find((c) => c.id === child.id)?.boards ??
+          (placements.data
+            ? placements.data.filter(
+                (placement) =>
+                  placement.spaceId === child.id &&
+                  visibleBoards.has(placement.id),
+              ).length
+            : null),
+        people:
+          overview?.children.find((c) => c.id === child.id)?.people ?? null,
+      }))
+      .filter((child) => !asMember || !child.isPrivate);
+  }, [
+    asMember,
+    index,
+    node,
+    overview,
+    placements.data,
+    resources.boards,
+    spaceId,
+  ]);
 
   const memberEntries = members.data ?? null;
   const people = useMemo(
     () =>
-      memberEntries
-        ? buildHeadPeople(copy, memberEntries, identityToneFor)
-        : null,
-    [copy, memberEntries],
+      overview
+        ? buildHeadPeopleOfTotal(
+            copy,
+            overview.people,
+            overview.peopleTotal,
+            identityToneFor,
+          )
+        : memberEntries
+          ? buildHeadPeople(copy, memberEntries, identityToneFor)
+          : null,
+    [copy, memberEntries, overview],
   );
   const access = useMemo(
     () =>
-      node
-        ? buildAccessView(copy, node, memberEntries, teams.data ?? null, {
-            meId: viewer.userId,
-          })
-        : null,
-    [copy, memberEntries, node, teams.data, viewer.userId],
+      !node
+        ? null
+        : overview
+          ? buildAccessViewFromSummary(copy, node, {
+              peopleTotal: overview.peopleTotal,
+              ...overview.access,
+            })
+          : buildAccessView(copy, node, memberEntries, teams.data ?? null, {
+              meId: viewer.userId,
+            }),
+    [copy, memberEntries, node, overview, teams.data, viewer.userId],
   );
+  const attention = useMemo<readonly SpaceAttentionRowView[] | null>(() => {
+    if (!overview || overview.attention.length === 0) return null;
+    const labels = {
+      overdue: copy.aside.attentionOverdue,
+      unassigned: copy.aside.attentionUnassigned,
+      review: copy.aside.attentionReview,
+      stale: copy.aside.attentionStale,
+    } as const;
+    return overview.attention.map((row) => ({
+      id: row.id,
+      tone:
+        row.id === "overdue" ? "over" : row.id === "stale" ? "mute" : "warn",
+      count: row.count,
+      label: labels[row.id],
+      href: row.boardId
+        ? navigation.getHref({ section: "board", boardId: row.boardId })
+        : null,
+    }));
+  }, [copy, navigation, overview]);
+  const workload = useMemo<readonly SpaceWorkloadRowView[] | null>(() => {
+    if (!overview || overview.workload.length === 0) return null;
+    // One item is 12.5% of the bar; a busier person stretches the scale.
+    const scale = Math.max(8, ...overview.workload.map((row) => row.active));
+    return overview.workload.map((row) => ({
+      id: row.person.id,
+      person: {
+        id: row.person.id,
+        name: row.person.name,
+        tone: identityToneFor(row.person.id),
+      },
+      active: row.active,
+      overdue: row.overdue,
+      activePct: Math.round(((row.active - row.overdue) / scale) * 100),
+      overduePct: Math.round((row.overdue / scale) * 100),
+    }));
+  }, [overview]);
+  const templates = useMemo<readonly SpaceTemplateView[]>(
+    () => overview?.templates ?? [],
+    [overview],
+  );
+  // The page names a department "Phòng X" where the tree keeps the short name.
+  const displayNode = useMemo(
+    () =>
+      node && node.type === "Department"
+        ? {
+            ...node,
+            name: formatCopy(copy.page.departmentName, { name: node.name }),
+          }
+        : node,
+    [copy, node],
+  );
+  const space: SectionState<typeof displayNode> = tree.isError
+    ? { status: "error" }
+    : !tree.isSuccess
+      ? { status: "loading" }
+      : { status: "ready", data: displayNode };
   const firstSteps =
     canManage &&
     content.status === "ready" &&
@@ -225,6 +356,24 @@ export function SpacePage() {
     childSpaces.length === 0 &&
     memberEntries !== null &&
     memberEntries.length <= 1;
+  // A department just made says who made it and leaves the rest for later.
+  const accessView = useMemo(() => {
+    if (!access || !firstSteps) return access;
+    const creator =
+      overview?.access.admins.length === 1 &&
+      overview.access.admins[0]?.id === viewer.userId;
+    return {
+      ...access,
+      summary: null,
+      rows: access.rows
+        .filter((row) => row.key !== "Viewer")
+        .map((row) =>
+          row.key === "admins" && creator
+            ? { ...row, note: copy.aside.youCreator }
+            : row,
+        ),
+    };
+  }, [access, copy, firstSteps, overview, viewer.userId]);
   const ancestors = useMemo(
     () =>
       node
@@ -540,21 +689,36 @@ export function SpacePage() {
         ancestors={ancestors}
         tab={tab}
         people={people}
-        peopleTotal={null}
+        peopleTotal={overview?.peopleTotal ?? null}
         contentCount={
           content.status === "ready"
             ? content.data.boardTotal + content.data.docTotal
             : null
         }
-        membersCount={memberEntries ? memberEntries.length : null}
+        membersCount={
+          overview?.peopleTotal ?? (memberEntries ? memberEntries.length : null)
+        }
         content={content}
         childSpaces={childSpaces}
-        access={access}
-        attention={null}
-        workload={null}
-        templates={[]}
+        access={accessView}
+        attention={attention}
+        workload={workload}
+        templates={templates}
         firstSteps={firstSteps}
-        viewAs={null}
+        viewAs={
+          asMember
+            ? {
+                onExit: () =>
+                  void navigate({
+                    to: ".",
+                    search: (previous: Record<string, unknown>) => ({
+                      ...previous,
+                      as: undefined,
+                    }),
+                  }),
+              }
+            : null
+        }
         members={sectionState(members, members.data)}
         candidateUsers={candidateUsers}
         candidateTeams={sectionState(teams, teams.data)}
