@@ -15,6 +15,9 @@ export const INVOICE_DOC_ID = "mock-doc-invoice-process";
 /** An item of a private board the viewer cannot read (reads as not found). */
 export const INVOICE_PRIVATE_ITEM_ID = "mock-erp-item-private-hr";
 
+const LINH = mockIds.users.commenter;
+const TRANG = "mock-user-erp-trang";
+
 const task = (key: string) => `[[task:${erpItemId(key)}]]`;
 
 export interface InvoiceBlock {
@@ -110,12 +113,12 @@ export const INVOICE_COMMENTS: ReadonlyArray<{
   readonly at: string;
 }> = [
   {
-    userId: mockIds.users.member,
+    userId: TRANG,
     body: "> trong tối đa 2 ngày làm việc\nCuối tháng lượng hoá đơn gấp ba, đề xuất 3 ngày cho tuần cuối tháng.",
     at: "2026-10-11T03:10:00.000Z",
   },
   {
-    userId: mockIds.users.admin,
+    userId: LINH,
     body: "Đồng ý, mình sẽ thêm ngoại lệ. Anh Nam rà lại quy định thuế giúp nhé.",
     at: "2026-10-11T03:42:00.000Z",
   },
@@ -127,47 +130,136 @@ export const INVOICE_HISTORY: ReadonlyArray<{
   readonly action: string;
   readonly detail: string;
   readonly at: string;
+  readonly versionName?: string;
 }> = [
   {
-    userId: mockIds.users.owner,
+    userId: LINH,
     action: "edited_page",
     detail: "Đổi trạng thái Đang soạn → Chờ duyệt",
     at: "2026-10-11T09:40:00.000Z",
   },
   {
-    userId: mockIds.users.owner,
+    userId: LINH,
     action: "edited_page",
     detail: "Sửa bước 3 · thêm 2 dòng danh sách kiểm",
     at: "2026-10-11T08:05:00.000Z",
   },
   {
-    userId: mockIds.users.member,
+    userId: TRANG,
     action: "edited_page",
     detail: "Thêm lưu ý thuế GTGT cho hoá đơn từ 20 triệu đồng",
     at: "2026-10-10T08:42:00.000Z",
   },
   {
-    userId: mockIds.users.admin,
+    userId: LINH,
     action: "edited_page",
     detail: "Thêm mục Việc liên quan",
     at: "2026-10-10T04:20:00.000Z",
+    versionName: "Bản trình Ban giám đốc",
   },
   {
-    userId: mockIds.users.admin,
+    userId: LINH,
     action: "edited_page",
     detail: "Khôi phục từ phiên bản 05/10 14:20",
     at: "2026-10-08T10:05:00.000Z",
   },
   {
-    userId: mockIds.users.member,
+    userId: TRANG,
     action: "edited_page",
     detail: "Viết lại mục 2 · bỏ bước duyệt hai cấp",
     at: "2026-10-08T02:40:00.000Z",
   },
   {
-    userId: mockIds.users.admin,
+    userId: LINH,
     action: "created_page",
     detail: "Tạo trang",
     at: "2026-10-05T07:20:00.000Z",
+  },
+];
+
+/**
+ * What mentions the invoice document (gap `CTR-GAP-DOCS-PAGE-EXT`, the Docs
+ * mockup's "Được nhắc tới ở"): a department document that links it and the
+ * item that has it attached.
+ */
+export const INVOICE_BACKLINKS = {
+  docIds: ["mock-doc-product-spec"],
+  itemKeys: ["ERP-149"],
+} as const;
+
+/**
+ * The blocks as they stood after each history entry (newest entry = index 0):
+ * what the entries after it changed, undone on the current blocks. Indexes are
+ * the positions in `INVOICE_BLOCKS`; `text` overrides a block's old text.
+ * Gap `CTR-GAP-DOCS-PAGE-EXT` (the Docs mockup's version compare).
+ */
+export function invoiceSnapshot(entryIndex: number): {
+  readonly without: ReadonlySet<number>;
+  readonly text: ReadonlyMap<number, string>;
+} {
+  const without = new Set<number>();
+  const text = new Map<number, string>();
+  // Entry 1 (15:05) rewrote step 3 and added two checklist lines.
+  if (entryIndex >= 2) {
+    without.add(9);
+    without.add(10);
+    text.set(5, "Hoá đơn sai lệch quá 1% chuyển cho kế toán trưởng duyệt.");
+  }
+  // Entry 2 (10/10 15:42) added the VAT note.
+  if (entryIndex >= 3) without.add(13);
+  // Entry 3 (10/10 11:20) added "Việc liên quan".
+  if (entryIndex >= 4) {
+    without.add(11);
+    without.add(12);
+  }
+  if (entryIndex >= 5) without.add(6);
+  if (entryIndex >= 6) without.add(4);
+  return { without, text };
+}
+
+/**
+ * Permissions given on the page itself, beyond the department's (gap
+ * `CTR-GAP-DOCS-PAGE-EXT`, the Docs mockup's share dialog). The detail line is
+ * the producer's wording.
+ */
+export const INVOICE_PERMISSIONS: ReadonlyArray<{
+  readonly id: string;
+  readonly kind: "person" | "team";
+  readonly userId?: string;
+  readonly name?: string;
+  readonly detail: string;
+  readonly outside?: boolean;
+  readonly creator?: boolean;
+  readonly level: "manage" | "edit" | "comment" | "view";
+}> = [
+  {
+    id: "perm-linh",
+    kind: "person",
+    userId: LINH,
+    detail: "Quản trị Phòng Kế toán",
+    creator: true,
+    level: "manage",
+  },
+  {
+    id: "perm-ha",
+    kind: "person",
+    userId: mockIds.users.owner,
+    detail: "Quản trị workspace · được thêm riêng",
+    level: "edit",
+  },
+  {
+    id: "perm-erp-team",
+    kind: "team",
+    name: "Nhóm Kỹ sư ERP",
+    detail: "Nhóm workspace · 4 người · ngoài phòng Kế toán",
+    level: "comment",
+  },
+  {
+    id: "perm-guest",
+    kind: "person",
+    name: "Lâm Gia Bảo",
+    detail: "baolg@kiemtoan-an.vn · chỉ thấy trang này · hết quyền 30/11/2026",
+    outside: true,
+    level: "view",
   },
 ];

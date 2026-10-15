@@ -68,7 +68,9 @@ test("edits and checks off a document of the Kế toán department", async ({
 
   // The department tree under Docs shows the open page as the current one.
   await expect(
-    page.getByRole("link", { name: "Quy trình nhập hoá đơn đầu vào" }).first(),
+    page
+      .getByRole("link", { name: "Nhập hoá đơn đầu vào", exact: true })
+      .first(),
   ).toHaveAttribute("aria-current", "page");
 
   // A heading edit is saved: the producer answers and the page shows its text.

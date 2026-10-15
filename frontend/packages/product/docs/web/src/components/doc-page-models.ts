@@ -95,6 +95,8 @@ export type DocBlockView =
       readonly kind: "todo";
       readonly text: string;
       readonly checked: boolean;
+      /** The work item the line was turned into (no more "Chuyển thành việc"). */
+      readonly linkedTaskId?: string;
     })
   | (DocBlockBase & {
       readonly kind: "callout";
@@ -120,6 +122,8 @@ export interface DocSpaceView {
   readonly mark: string;
   readonly tone: DocTone;
   readonly visibility: "private" | "workspace";
+  /** A top-level department (named "Phòng …"), not a group inside one. */
+  readonly department?: boolean;
 }
 
 export interface DocChip {

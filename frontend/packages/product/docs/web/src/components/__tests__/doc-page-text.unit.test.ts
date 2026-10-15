@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  diffSegments,
   markQuotes,
   parseSegments,
   plainText,
@@ -44,5 +45,33 @@ describe("document inline text", () => {
         { kind: "ins", text: "0,5%" },
       ]),
     ).toBe("quá 0,5%");
+  });
+
+  it("compares a version word by word, joining a changed phrase", () => {
+    const segments = diffSegments(
+      "Hoá đơn sai lệch quá 1% chuyển cho kế toán trưởng duyệt.",
+      "Hoá đơn sai lệch quá 0,5% chuyển cho trưởng nhóm duyệt.",
+    );
+    expect(segments).toEqual([
+      { kind: "text", text: "Hoá đơn sai lệch quá " },
+      { kind: "del", text: "1%" },
+      { kind: "text", text: " " },
+      { kind: "ins", text: "0,5%" },
+      { kind: "text", text: " chuyển cho " },
+      { kind: "del", text: "kế toán trưởng" },
+      { kind: "text", text: " " },
+      { kind: "ins", text: "trưởng nhóm" },
+      { kind: "text", text: " duyệt." },
+    ]);
+  });
+
+  it("compares equal texts as plain text and pure additions as ins", () => {
+    expect(diffSegments("giữ nguyên", "giữ nguyên")).toEqual([
+      { kind: "text", text: "giữ nguyên" },
+    ]);
+    expect(diffSegments("một", "một hai")).toEqual([
+      { kind: "text", text: "một" },
+      { kind: "ins", text: " hai" },
+    ]);
   });
 });

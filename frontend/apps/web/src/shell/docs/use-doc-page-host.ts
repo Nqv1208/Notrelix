@@ -11,7 +11,11 @@
 import { useCallback, useMemo } from "react";
 import { useQueries } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { createUsePageHistory, type Page } from "@notrelix/docs-state";
+import {
+  createUsePageHistory,
+  createUsePagePermissions,
+  type Page,
+} from "@notrelix/docs-state";
 import type {
   DocPageHost,
   DocPageHostInput,
@@ -123,10 +127,16 @@ export const useDocPageHost: UseDocPageHost = (
     [featureDeps],
   );
 
+  const usePagePermissions = useMemo(
+    () => createUsePagePermissions(featureDeps.api, featureDeps.endpoints),
+    [featureDeps],
+  );
+
   const members = useMembers(workspaceId);
   const spaceTree = spaceHooks.useSpaceTree(workspaceId);
   const boards = useWorkspaceBoards(workspaceId);
   const history = usePageHistory(workspaceId, pageId);
+  const permissions = usePagePermissions(workspaceId, pageId);
 
   const now = useMemo(() => new Date(), []);
   const role =
@@ -135,15 +145,21 @@ export const useDocPageHost: UseDocPageHost = (
   const personFor = useCallback(
     (userId: string): DocPerson => {
       const member = members.data?.find((entry) => entry.userId === userId);
-      const name = member?.name ?? "—";
+      // A person who is not in the member list (another department's guest or
+      // a colleague of the page) is named by the page's own people read.
+      const name =
+        member?.name ??
+        (page as Page | null)?.people?.find((entry) => entry.id === userId)
+          ?.name ??
+        "—";
       return {
         id: userId,
         name,
-        initials: member ? initialsFor(member.name) : "?",
+        initials: name === "—" ? "?" : initialsFor(name),
         tone: markToneFor(userId),
       };
     },
-    [members.data],
+    [members.data, page],
   );
 
   // Department of the page.
@@ -160,6 +176,7 @@ export const useDocPageHost: UseDocPageHost = (
       mark: initialsFor(node.name),
       tone: markToneFor(root.id),
       visibility: node.visibility === "Private" ? "private" : "workspace",
+      department: spaceAncestors(index, spaceId).length === 0,
     };
   }, [page, spaceTree.data]);
 
@@ -277,6 +294,34 @@ export const useDocPageHost: UseDocPageHost = (
 
   const share = useMemo<DocShareView | null>(() => {
     if (!space) return null;
+    // Permissions given on the page itself; a page without any lists its creator.
+    const given = permissions.data?.members ?? [];
+    if (given.length > 0) {
+      return {
+        space,
+        spaceMemberCount: spaceMembers.data ? spaceMembers.data.length : null,
+        members: given.map((entry) => ({
+          id: entry.id,
+          kind: entry.kind,
+          person:
+            entry.kind === "person"
+              ? {
+                  id: entry.userId ?? entry.id,
+                  name: entry.name,
+                  initials: initialsFor(entry.name),
+                  tone: markToneFor(entry.userId ?? entry.id),
+                }
+              : undefined,
+          name: entry.name,
+          detail: entry.detail,
+          outside: entry.outside,
+          creator: entry.creator,
+          fixed: entry.creator,
+          you: entry.userId !== null && entry.userId === user?.id,
+          level: entry.level,
+        })),
+      };
+    }
     const created = (history.data ?? []).find(
       (entry) => entry.action === "created",
     );
@@ -299,14 +344,14 @@ export const useDocPageHost: UseDocPageHost = (
           ]
         : [],
     };
-  }, [history.data, personFor, space, spaceMembers.data, user?.id]);
-
-  const isSpaceMember = Boolean(
-    spaceMembers.data?.some(
-      (member) =>
-        member.subjectType === "User" && member.subjectId === user?.id,
-    ),
-  );
+  }, [
+    history.data,
+    permissions.data,
+    personFor,
+    space,
+    spaceMembers.data,
+    user?.id,
+  ]);
 
   return {
     space,
@@ -317,12 +362,12 @@ export const useDocPageHost: UseDocPageHost = (
     suggestTasks,
     share,
     viewerReason:
-      space?.visibility === "private" &&
-      (role === "owner" || role === "admin") &&
-      spaceMembers.data !== undefined &&
-      !isSpaceMember
+      space?.visibility === "private" && (role === "owner" || role === "admin")
         ? "workspace-admin"
         : null,
+    viewerId: user?.id,
+    pageHref: (targetId) =>
+      `/workspaces/${workspaceId}/docs/${encodeURIComponent(targetId)}`,
     canEdit: role !== "guest",
     now,
     openPage: (targetId) =>

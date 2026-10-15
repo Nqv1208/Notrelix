@@ -7,12 +7,14 @@ import { pagesOperations } from "./pages.handlers";
 import { blocksOperations } from "./blocks.handlers";
 import { commentsOperations } from "./comments.handlers";
 import { historyOperations } from "./history.handlers";
+import { pageExtrasOperations } from "./page-extras.handlers";
 
 export {
   pagesOperations,
   blocksOperations,
   commentsOperations,
   historyOperations,
+  pageExtrasOperations,
 };
 
 export const documentsOperations = [
@@ -20,4 +22,5 @@ export const documentsOperations = [
   ...blocksOperations,
   ...commentsOperations,
   ...historyOperations,
+  ...pageExtrasOperations,
 ];

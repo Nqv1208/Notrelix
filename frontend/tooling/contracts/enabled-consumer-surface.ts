@@ -2420,4 +2420,40 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     pathTemplate: "/boards/{boardId}/settings/automations/{automationId}",
     mutation: true,
   },
+  {
+    context: "Documents",
+    classification: "COMPATIBILITY_GAP_MOCKED",
+    consumerSymbol: "createUsePageBacklinks",
+    consumerFile:
+      "frontend/packages/product/docs/state/src/api/page-extras.api.ts",
+    capability: "What mentions a document",
+    gapId: "CTR-GAP-DOCS-PAGE-EXT",
+    method: "GET",
+    pathTemplate: "/pages/{pageId}/backlinks",
+    mutation: false,
+  },
+  {
+    context: "Documents",
+    classification: "COMPATIBILITY_GAP_MOCKED",
+    consumerSymbol: "createUseConvertTodo",
+    consumerFile:
+      "frontend/packages/product/docs/state/src/api/page-extras.api.ts",
+    capability: "Turn a checklist line into a work item",
+    gapId: "CTR-GAP-DOCS-PAGE-EXT",
+    method: "POST",
+    pathTemplate: "/pages/{pageId}/blocks/{blockId}/convert-to-task",
+    mutation: true,
+  },
+  {
+    context: "Documents",
+    classification: "COMPATIBILITY_GAP_MOCKED",
+    consumerSymbol: "createUseVersionSnapshot",
+    consumerFile:
+      "frontend/packages/product/docs/state/src/api/page-extras.api.ts",
+    capability: "Blocks of a document version",
+    gapId: "CTR-GAP-DOCS-PAGE-EXT",
+    method: "GET",
+    pathTemplate: "/pages/{pageId}/history/{entryId}/snapshot",
+    mutation: false,
+  },
 ];

@@ -17,7 +17,7 @@ export function mapPage(dto: PageDtoApi): Page {
       ? "archived"
       : dto.publishedAt
         ? "published"
-        : "draft",
+        : (dto.status ?? "draft"),
     isPublished: Boolean(dto.publishedAt),
     isFavorited: false,
     isShared: false,
@@ -31,7 +31,7 @@ export function mapPage(dto: PageDtoApi): Page {
     metadata: {
       version: 1,
       lockOwnerId: null,
-      activeUserIds: [],
+      activeUserIds: dto.activeUserIds ?? [],
       lastSyncedAt: dto.updatedAt ?? dto.createdAt,
       realtimeChannel: `page:${dto.id}`,
       aiSummaryStatus: "idle",
@@ -41,6 +41,7 @@ export function mapPage(dto: PageDtoApi): Page {
     version:
       typeof dto.version === "number" && dto.version > 0 ? dto.version : null,
     spaceId: dto.spaceId ?? null,
+    people: dto.people ?? [],
   };
 }
 
@@ -69,6 +70,7 @@ export function mapHistory(dto: HistoryDtoApi, pageId: string): PageActivity {
     actorId: dto.actorId,
     action: activityOf(dto.action),
     targetLabel: dto.resourceTitle ?? "",
+    ...(dto.versionName ? { versionName: dto.versionName } : {}),
     createdAt: dto.createdAt,
   };
 }

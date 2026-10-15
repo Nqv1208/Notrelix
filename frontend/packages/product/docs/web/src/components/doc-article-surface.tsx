@@ -699,7 +699,7 @@ export function DocArticleSurface({
               )}
               {...common}
             />
-            {block.checked ? null : (
+            {block.checked || block.linkedTaskId ? null : (
               <button
                 type="button"
                 aria-label={fillDocCopy(copy.blocks.convertToTaskNamed, {

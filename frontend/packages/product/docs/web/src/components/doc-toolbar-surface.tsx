@@ -6,7 +6,6 @@ import {
   AlignRight,
   AtSign,
   ChevronDown,
-  Eraser,
   Highlighter,
   IndentDecrease,
   IndentIncrease,
@@ -21,7 +20,6 @@ import {
   Redo2,
   Table2,
   Undo2,
-  WrapText,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
@@ -150,6 +148,22 @@ export function DocToolbarSurface({
     <Icon aria-hidden="true" className={ICON_CLASS} />
   );
 
+  const glyph = (paths: readonly string[]) => (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className={ICON_CLASS}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      {paths.map((d) => (
+        <path key={d} d={d} />
+      ))}
+    </svg>
+  );
   const onFormat = canFormat ? callbacks?.onFormat : undefined;
   const isHeading =
     current.blockType === "heading_1" ||
@@ -357,7 +371,11 @@ export function DocToolbarSurface({
           onClick: onFormat ? () => onFormat("right") : undefined,
         })}
         {tool("justify", t.alignJustify, icon(AlignJustify))}
-        {tool("spacing", t.lineSpacing, icon(WrapText))}
+        {tool(
+          "spacing",
+          t.lineSpacing,
+          glyph(["M11 6h10M11 12h10M11 18h10M5 4v16M2 7l3-3 3 3M2 17l3 3 3-3"]),
+        )}
         <Separator />
         {tool("bulleted", t.bulleted, icon(List), {
           onClick: canFormat
@@ -376,7 +394,11 @@ export function DocToolbarSurface({
         })}
         {tool("outdent", t.outdent, icon(IndentDecrease))}
         {tool("indent", t.indent, icon(IndentIncrease))}
-        {tool("clear", t.clearFormat, icon(Eraser))}
+        {tool(
+          "clear",
+          t.clearFormat,
+          glyph(["M4 7V4h16v3M9 20h6M12 4v16M3 3l18 18"]),
+        )}
         <button
           type="button"
           aria-haspopup="listbox"

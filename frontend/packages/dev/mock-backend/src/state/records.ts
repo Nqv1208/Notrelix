@@ -103,6 +103,12 @@ export interface MockPageRecord {
   version?: number;
   /** Sibling order among pages of one parent; absent = 0. */
   position?: number;
+  /** Label the tree and the breadcrumb show when it differs from the title (gap `CTR-GAP-DOCS-PAGE-EXT`). */
+  navTitle?: string;
+  /** Review state of the document (gap `CTR-GAP-DOCS-PAGE-EXT`); absent = draft. */
+  status?: "draft" | "review" | "published";
+  /** People viewing or editing the page now (gap `CTR-GAP-DOCS-PAGE-EXT`). */
+  activeUserIds?: string[];
   /** Date the document takes effect; absent = none. */
   deadline?: string | null;
   createdAt: string;
@@ -301,5 +307,7 @@ export interface MockPageHistoryRecord {
   actorId: string;
   action: string;
   resourceTitle?: string | null;
+  /** A version the member named (gap `CTR-GAP-DOCS-PAGE-EXT`). */
+  versionName?: string | null;
   createdAt: string;
 }

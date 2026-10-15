@@ -4,6 +4,7 @@ import type { Block, PageActivity, PageComment } from "@notrelix/docs-core";
 import { docPageCopy } from "../doc-page.copy";
 import {
   editedAtLabel,
+  markVersionDiff,
   positionAfter,
   referencesOf,
   splitQuote,
@@ -184,5 +185,66 @@ describe("document page mapping", () => {
     expect(markdown).toContain("## Phạm vi");
     expect(markdown).toContain("1. Bước một");
     expect(markdown).toContain("- [x] Chốt danh mục");
+  });
+});
+
+describe("version compare", () => {
+  const current = [
+    block("b1", "paragraph", 1, { text: "Hoá đơn quá 0,5% duyệt." }),
+    block("b2", "todo", 2, { text: "Đào tạo", checked: false }),
+    block("b3", "todo", 3, { text: "Thông báo", checked: false }),
+  ];
+  const snapshot = [
+    block("b1", "paragraph", 1, { text: "Hoá đơn quá 1% duyệt." }),
+  ];
+  const views = toBlockViews(current, {
+    resolveTask: () => TASK_144,
+    board: null,
+    quotes: [],
+  });
+
+  it("marks the blocks the version did not have and the text that changed", () => {
+    const marked = markVersionDiff(views, current, snapshot);
+    expect(marked[1]).toMatchObject({ kind: "todo", inserted: true });
+    expect(marked[2]).toMatchObject({ kind: "todo", inserted: true });
+    const first = marked[0] as unknown as { segments: { kind: string }[] };
+    expect(first.segments.map((segment) => segment.kind)).toEqual([
+      "text",
+      "del",
+      "text",
+      "ins",
+      "text",
+    ]);
+  });
+
+  it("names a version the member named and links a converted checklist line", () => {
+    const named = toVersionViews(
+      [
+        {
+          id: "h1",
+          pageId: "page-1",
+          actorId: "user-kl",
+          action: "edited",
+          targetLabel: "Thêm mục",
+          versionName: "Bản trình Ban giám đốc",
+          createdAt: "2026-10-10T04:20:00.000Z",
+        },
+      ],
+      copy,
+      NOW,
+      () => KL,
+    );
+    expect(named[0]?.name).toBe("Bản trình Ban giám đốc");
+    const linked = toBlockViews(
+      [
+        block("c1", "todo", 1, {
+          text: "x",
+          checked: false,
+          linkedTaskId: "t-9",
+        }),
+      ],
+      { resolveTask: () => TASK_144, board: null, quotes: [] },
+    );
+    expect(linked[0]).toMatchObject({ kind: "todo", linkedTaskId: "t-9" });
   });
 });

@@ -52,6 +52,8 @@ export interface Page {
    * and when the caller cannot see that Space (GOV-029).
    */
   spaceId?: ID | null;
+  /** People the page names (on it, editors, commenters) with their names (gap `CTR-GAP-DOCS-PAGE-EXT`). */
+  people?: { id: ID; name: string }[];
 }
 
 /** `Documents.Pages.MoveToSpace`: a root page moves with its subtree. */
@@ -82,6 +84,8 @@ export interface PageActivity {
   actorId: ID;
   action: "created" | "edited" | "commented" | "shared" | "moved" | "published";
   targetLabel: string;
+  /** The name a member gave this version, when they did. */
+  versionName?: string;
   createdAt: string;
 }
 

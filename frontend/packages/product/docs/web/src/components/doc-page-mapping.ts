@@ -13,7 +13,12 @@ import type {
   DocTocEntry,
   DocVersionView,
 } from "./doc-page-models";
-import { markQuotes, parseSegments, taskIdsOf } from "./doc-page-text";
+import {
+  diffSegments,
+  markQuotes,
+  parseSegments,
+  taskIdsOf,
+} from "./doc-page-text";
 import type { DocToolbarCurrent } from "./doc-toolbar-surface";
 
 function pad(value: number): string {
@@ -152,6 +157,7 @@ export function toBlockViews(
           kind: "todo",
           text,
           checked: Boolean(props.checked),
+          ...(props.linkedTaskId ? { linkedTaskId: props.linkedTaskId } : {}),
         };
       case "callout":
         return { id: block.id, kind: "callout", text };
@@ -268,6 +274,7 @@ export function toVersionViews(
               : dayMonth(date),
         stamp: `${dayMonth(date)} ${clock(date)}`,
         summary: entry.targetLabel || action,
+        ...(entry.versionName ? { name: entry.versionName } : {}),
         current: index === 0,
       };
     });
@@ -408,4 +415,38 @@ export function fillPlural(
   values: Readonly<Record<string, string | number>> = {},
 ): string {
   return fillDocCopy(count === 1 ? one : other, { count, ...values });
+}
+
+/**
+ * The page against one of its versions: blocks the version did not have are
+ * `inserted`, and the text that changed carries `ins` and `del` segments.
+ */
+export function markVersionDiff(
+  views: readonly DocBlockView[],
+  current: readonly Block[],
+  snapshot: readonly Block[],
+): DocBlockView[] {
+  const before = new Map(snapshot.map((block) => [block.id, block]));
+  const after = new Map(current.map((block) => [block.id, block]));
+  return views.map((view): DocBlockView => {
+    const old = before.get(view.id);
+    if (!old) return { ...view, inserted: true };
+    const now = after.get(view.id);
+    if (
+      now &&
+      (view.kind === "paragraph" ||
+        view.kind === "numbered" ||
+        view.kind === "bulleted" ||
+        view.kind === "quote") &&
+      blockText(old) !== blockText(now) &&
+      !blockText(old).includes("[[task:") &&
+      !blockText(now).includes("[[task:")
+    ) {
+      return {
+        ...view,
+        segments: diffSegments(blockText(old), blockText(now)),
+      };
+    }
+    return view;
+  });
 }

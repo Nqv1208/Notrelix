@@ -3,8 +3,11 @@ import {
   createUseCreateComment,
   createUseCreatePage,
   createUseDocEditor,
+  createUseVersionSnapshot,
   createUsePage,
   createUsePageBlocks,
+  createUseConvertTodo,
+  createUsePageBacklinks,
   createUsePageBreadcrumb,
   createUsePageComments,
   createUsePageHistory,
@@ -27,6 +30,7 @@ import {
   toMarkdown,
   toTocEntries,
   toVersionViews,
+  markVersionDiff,
   toolbarCurrent,
 } from "./doc-page-mapping";
 import type {
@@ -35,9 +39,11 @@ import type {
   DocOverlay,
   DocPageCallbacks,
   DocPanelTab,
+  DocRelatedDoc,
   DocTaskRef,
   DocTaskResolution,
 } from "./doc-page-models";
+import { isRestrictedTask } from "./doc-page-models";
 import { DocPageScreenSurface } from "./doc-page-screen-surface";
 import { taskToken } from "./doc-page-text";
 
@@ -97,6 +103,9 @@ export function createDocPageScreen({
   const useDocEditor = createUseDocEditor(api, endpoints);
   const useCreateComment = createUseCreateComment(api, endpoints);
   const useCreatePage = createUseCreatePage(api, endpoints);
+  const usePageBacklinks = createUsePageBacklinks(api, endpoints);
+  const useConvertTodo = createUseConvertTodo(api, endpoints);
+  const useVersionSnapshot = createUseVersionSnapshot(api, endpoints);
 
   return function DocPageScreen({
     workspaceId,
@@ -117,6 +126,8 @@ export function createDocPageScreen({
     const editor = useDocEditor(workspaceId, pageId);
     const createComment = useCreateComment(workspaceId, pageId);
     const createPage = useCreatePage(workspaceId);
+    const backlinksQuery = usePageBacklinks(workspaceId, pageId);
+    const convertTodo = useConvertTodo(workspaceId, pageId);
 
     const page = pageQuery.data ?? null;
     const blocks = useMemo(() => blocksQuery.data ?? [], [blocksQuery.data]);
@@ -129,6 +140,40 @@ export function createDocPageScreen({
       namedOnly: boolean;
     } | null>(null);
     const [activeTocId, setActiveTocId] = useState<string | null>(null);
+
+    // The contents follow the reading position: the heading nearest the middle
+    // of the visible page is the current one.
+    useEffect(() => {
+      if (panelTab !== "toc") return;
+      const article = document.querySelector("article");
+      let scroller: HTMLElement | null = article?.parentElement ?? null;
+      while (scroller && scroller.scrollHeight <= scroller.clientHeight) {
+        scroller = scroller.parentElement;
+      }
+      const target: HTMLElement | Window = scroller ?? window;
+      const update = () => {
+        const box = scroller?.getBoundingClientRect();
+        const top = box?.top ?? 0;
+        const middle = top + (box?.height ?? window.innerHeight) / 2;
+        let best: { id: string; distance: number } | null = null;
+        for (const block of blocks) {
+          if (!block.type.startsWith("heading")) continue;
+          const element = document.querySelector(
+            `[data-block="${CSS.escape(block.id)}"]`,
+          );
+          if (!element) continue;
+          const distance = Math.abs(
+            element.getBoundingClientRect().top - middle,
+          );
+          if (!best || distance < best.distance)
+            best = { id: block.id, distance };
+        }
+        if (best) setActiveTocId(best.id);
+      };
+      update();
+      target.addEventListener("scroll", update, { passive: true });
+      return () => target.removeEventListener("scroll", update);
+    }, [blocks, panelTab]);
     const pendingFocus = useRef<string | null>(null);
 
     const { taskIds, boardIds } = useMemo(() => referencesOf(blocks), [blocks]);
@@ -190,29 +235,87 @@ export function createDocPageScreen({
       [commentsQuery.data, copy, host.personFor, now],
     );
 
-    const blockViews = useMemo(
-      () =>
-        toBlockViews(blocks, {
-          resolveTask,
-          board: host.board,
-          quotes:
-            panelTab === "comments"
-              ? comments.flatMap((comment) =>
-                  comment.quote ? [comment.quote] : [],
-                )
-              : [],
-        }),
-      [blocks, comments, host.board, panelTab, resolveTask],
-    );
-
-    const mentionedTasks = useMemo(
-      () => taskIds.map(resolveTask),
-      [resolveTask, taskIds],
-    );
-
     const versionList = useMemo(
       () => toVersionViews(historyQuery.data ?? [], copy, now, host.personFor),
       [copy, historyQuery.data, host.personFor, now],
+    );
+    // The version compared with the page: the newest one from an earlier day
+    // unless another is chosen.
+    const selectedVersionId = versions
+      ? (versions.selectedId ??
+        versionList.find((entry) => entry.day !== versionList[0]?.day)?.id ??
+        versionList[1]?.id ??
+        versionList[0]?.id ??
+        null)
+      : null;
+    const snapshotQuery = useVersionSnapshot(
+      workspaceId,
+      pageId,
+      selectedVersionId,
+    );
+
+    const blockViews = useMemo(() => {
+      const views = toBlockViews(blocks, {
+        resolveTask,
+        board: host.board,
+        quotes:
+          panelTab === "comments" && !versions
+            ? comments.flatMap((comment) =>
+                comment.quote ? [comment.quote] : [],
+              )
+            : [],
+      });
+      return versions && snapshotQuery.data
+        ? markVersionDiff(views, blocks, snapshotQuery.data)
+        : views;
+    }, [
+      blocks,
+      comments,
+      host.board,
+      panelTab,
+      resolveTask,
+      snapshotQuery.data,
+      versions,
+    ]);
+
+    // The tasks the page mentions: the ones that have the page attached are
+    // listed under "Được nhắc tới ở"; open work reads before finished work and
+    // a task the viewer cannot read comes last.
+    const backlinkTaskIds = useMemo(
+      () => new Set((backlinksQuery.data?.tasks ?? []).map((task) => task.id)),
+      [backlinksQuery.data],
+    );
+    const mentionedTasks = useMemo(() => {
+      const rank = (task: DocTaskResolution): number =>
+        isRestrictedTask(task)
+          ? 4
+          : ({ doing: 0, review: 1, todo: 2, done: 3 } as const)[task.status];
+      return taskIds
+        .filter((id) => !backlinkTaskIds.has(id))
+        .map(resolveTask)
+        .map((task, index) => ({ task, index }))
+        .sort((a, b) => rank(a.task) - rank(b.task) || a.index - b.index)
+        .map((entry) => entry.task);
+    }, [backlinkTaskIds, resolveTask, taskIds]);
+    const relatedDocs = useMemo<readonly DocRelatedDoc[]>(
+      () => [
+        ...(backlinksQuery.data?.docs ?? []).map((doc) => ({
+          id: doc.id,
+          kind: "doc" as const,
+          title: doc.title,
+          detail: doc.spaceName
+            ? fillDocCopy(copy.panel.relatedDocDetail, { space: doc.spaceName })
+            : copy.panel.relatedDocDetailNoSpace,
+          href: host.pageHref?.(doc.id),
+        })),
+        ...(backlinksQuery.data?.tasks ?? []).map((task) => ({
+          id: task.id,
+          kind: "task" as const,
+          title: `${task.key} ${task.title}`,
+          detail: copy.panel.relatedTaskDetail,
+        })),
+      ],
+      [backlinksQuery.data, copy, host],
     );
 
     if (pageQuery.isLoading || blocksQuery.isLoading) {
@@ -243,7 +346,9 @@ export function createDocPageScreen({
         : latest
           ? latest.time
           : null,
-      presence: [],
+      presence: page.metadata.activeUserIds
+        .filter((id) => id !== host.viewerId)
+        .map(host.personFor),
     };
 
     const boardChipSource = host.board;
@@ -254,7 +359,11 @@ export function createDocPageScreen({
               id: "scope",
               kind: "scope" as const,
               label: fillDocCopy(copy.meta.chipScope, {
-                space: host.space.name,
+                space: host.space.department
+                  ? fillDocCopy(copy.meta.department, {
+                      name: host.space.name,
+                    })
+                  : host.space.name,
                 visibility:
                   host.space.visibility === "private"
                     ? copy.meta.private
@@ -287,18 +396,18 @@ export function createDocPageScreen({
     ];
     const why =
       host.space && host.viewerReason === "workspace-admin"
-        ? fillDocCopy(copy.meta.whyAdmin, { space: host.space.name })
+        ? fillDocCopy(copy.meta.whyAdmin, {
+            space: host.space.department
+              ? fillDocCopy(copy.meta.departmentInline, {
+                  name: host.space.name,
+                })
+              : host.space.name,
+          })
         : null;
 
     const focused = blocks.find((block) => block.id === focusedId) ?? null;
     const mentionTasks: readonly DocTaskRef[] =
       overlay.kind === "mention" ? host.suggestTasks(overlay.query) : [];
-    const selectedVersionId = versions
-      ? (versions.selectedId ??
-        versionList[1]?.id ??
-        versionList[0]?.id ??
-        null)
-      : null;
 
     const patchBlock = (
       block: Block,
@@ -329,6 +438,9 @@ export function createDocPageScreen({
             : current,
         ),
       onFocusBlock: (blockId) => setFocusedId(blockId),
+      onTodoConvert: host.canEdit
+        ? (blockId) => convertTodo.mutate(blockId)
+        : undefined,
       onTodoToggle: host.canEdit
         ? (blockId, checked) => {
             const block = blockById(blockId);
@@ -486,7 +598,7 @@ export function createDocPageScreen({
         why={why}
         blocks={blockViews}
         tasks={mentionedTasks}
-        relatedDocs={[]}
+        relatedDocs={relatedDocs}
         toc={toTocEntries(title, blocks).map((entry) => ({
           ...entry,
           active: activeTocId ? entry.id === activeTocId : undefined,
@@ -495,7 +607,11 @@ export function createDocPageScreen({
         panelTab={panelTab}
         overlay={overlay}
         mentionTasks={mentionTasks}
-        toolbar={toolbarCurrent(focused)}
+        toolbar={toolbarCurrent(
+          focused ??
+            [...blocks].sort((x, y) => x.position - y.position)[0] ??
+            null,
+        )}
         versions={
           versions
             ? {
@@ -509,7 +625,21 @@ export function createDocPageScreen({
               }
             : undefined
         }
-        share={host.share ?? undefined}
+        share={
+          host.share
+            ? {
+                ...host.share,
+                space: {
+                  ...host.share.space,
+                  name: host.share.space.department
+                    ? fillDocCopy(copy.meta.department, {
+                        name: host.share.space.name,
+                      })
+                    : host.share.space.name,
+                },
+              }
+            : undefined
+        }
         readOnly={!host.canEdit}
         canComment
         canFormat={host.canEdit}

@@ -53,6 +53,11 @@ interface PageDtoApi {
   version: number;
   /** Masked when the caller cannot see the Space (GOV-029). */
   spaceId?: string | null;
+  /** Gap `CTR-GAP-DOCS-PAGE-EXT`: the review state and who is on the page now. */
+  status?: "draft" | "review" | "published";
+  activeUserIds?: string[];
+  /** Names of the people on the page: who is on it, edited it or commented. */
+  people?: { id: string; name: string }[];
 }
 
 interface BreadcrumbDtoApi {
@@ -62,7 +67,11 @@ interface BreadcrumbDtoApi {
   iconValue?: string | null;
 }
 
-function mapPageDto(p: MockPageRecord, store?: MockStore): PageDtoApi {
+function mapPageDto(
+  p: MockPageRecord,
+  store?: MockStore,
+  nav = false,
+): PageDtoApi {
   const spaceId =
     p.spaceId &&
     store &&
@@ -74,7 +83,7 @@ function mapPageDto(p: MockPageRecord, store?: MockStore): PageDtoApi {
     id: p.id,
     workspaceId: p.workspaceId,
     parentId: p.parentId ?? null,
-    title: p.title,
+    title: nav ? (p.navTitle ?? p.title) : p.title,
     iconType: null,
     iconValue: p.icon ?? null,
     coverUrl: null,
@@ -87,7 +96,26 @@ function mapPageDto(p: MockPageRecord, store?: MockStore): PageDtoApi {
     createdAt: p.createdAt,
     updatedAt: p.updatedAt,
     version: p.version ?? 1,
+    status: p.status ?? "draft",
+    activeUserIds: p.activeUserIds ?? [],
+    people: store ? peopleOf(p, store) : [],
   };
+}
+
+/** The people a page names (active, editors, commenters) with their names. */
+function peopleOf(
+  page: MockPageRecord,
+  store: MockStore,
+): { id: string; name: string }[] {
+  const ids = new Set<string>([
+    ...(page.activeUserIds ?? []),
+    ...store.getPageHistory(page.id).map((entry) => entry.actorId),
+    ...store.getPageComments(page.id).map((comment) => comment.userId),
+  ]);
+  return [...ids].flatMap((id) => {
+    const user = store.getUser(id);
+    return user ? [{ id, name: user.name }] : [];
+  });
 }
 
 export const pagesOperations = [
@@ -100,7 +128,9 @@ export const pagesOperations = [
     route: "/workspaces/:workspaceId/pages",
     async handle({ params, store }) {
       const pages = store.getPages(params.workspaceId);
-      return ok<PageDtoApi[]>(pages.map((page) => mapPageDto(page, store)));
+      return ok<PageDtoApi[]>(
+        pages.map((page) => mapPageDto(page, store, true)),
+      );
     },
   }),
 
@@ -113,7 +143,9 @@ export const pagesOperations = [
     route: "/workspaces/:workspaceId/pages/tree",
     async handle({ params, store }) {
       const pages = store.getPages(params.workspaceId);
-      return ok<PageDtoApi[]>(pages.map((page) => mapPageDto(page, store)));
+      return ok<PageDtoApi[]>(
+        pages.map((page) => mapPageDto(page, store, true)),
+      );
     },
   }),
 
@@ -272,14 +304,23 @@ export const pagesOperations = [
     async handle({ params, store }) {
       const page = store.getPage(params.id);
       if (!page) return notFound("Page not found");
-      return ok<BreadcrumbDtoApi[]>([
-        {
-          id: page.id,
-          title: page.title,
+      // From the root page down to this one, by their navigation labels.
+      const chain: MockPageRecord[] = [];
+      for (
+        let current: MockPageRecord | undefined = page;
+        current && chain.length < 12;
+        current = current.parentId ? store.getPage(current.parentId) : undefined
+      ) {
+        chain.unshift(current);
+      }
+      return ok<BreadcrumbDtoApi[]>(
+        chain.map((entry) => ({
+          id: entry.id,
+          title: entry.navTitle ?? entry.title,
           iconType: null,
-          iconValue: page.icon ?? null,
-        },
-      ]);
+          iconValue: entry.icon ?? null,
+        })),
+      );
     },
   }),
 ];

@@ -30,6 +30,8 @@ export interface DocPageHost {
   readonly share: DocShareView | null;
   /** Why the viewer sees a private department's page, when they do. */
   readonly viewerReason: "workspace-admin" | null;
+  /** The viewer's own user id (not shown among the people on the page). */
+  readonly viewerId?: string;
   /** Whether the viewer may edit the page. */
   readonly canEdit: boolean;
   /** The workspace's own locale-independent "now" (tests fix the clock). */

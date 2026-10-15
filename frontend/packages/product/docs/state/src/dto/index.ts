@@ -19,6 +19,10 @@ export type PageDtoApi = {
   /** The Page aggregate version (`PageDto.version`). */
   version?: number;
   spaceId?: string | null;
+  /** Gap `CTR-GAP-DOCS-PAGE-EXT`: the review state and who is on the page now. */
+  status?: "draft" | "review" | "published";
+  activeUserIds?: string[];
+  people?: { id: string; name: string }[];
 };
 
 export type BreadcrumbDtoApi = {
@@ -41,6 +45,8 @@ export type HistoryDtoApi = {
   actorId: string;
   action: string;
   resourceTitle?: string | null;
+  /** Gap `CTR-GAP-DOCS-PAGE-EXT`: a version the member named. */
+  versionName?: string | null;
   createdAt: string;
 };
 

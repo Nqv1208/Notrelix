@@ -912,11 +912,14 @@ export class MockStore {
       id: INVOICE_DOC_ID,
       workspaceId,
       title: "Quy trình nhập hoá đơn đầu vào",
+      navTitle: "Nhập hoá đơn đầu vào",
       icon: "FileText",
       parentId: INVOICE_FOLDER_ID,
       spaceId: mockIds.spaces.accounting,
       position: 0,
       deadline: "2026-11-01T00:00:00.000Z",
+      status: "review",
+      activeUserIds: [mockIds.users.commenter, "mock-user-erp-trang"],
       createdAt: created,
       updatedAt: "2026-10-11T09:40:00.000Z",
     });
@@ -942,6 +945,7 @@ export class MockStore {
         entry.action,
         entry.detail,
         entry.at,
+        entry.versionName,
       );
     });
   }
@@ -3774,6 +3778,7 @@ export class MockStore {
     action: string,
     details?: string,
     createdAt?: string,
+    versionName?: string,
   ): MockPageHistoryRecord {
     const id = this.nextId("phist");
     const history: MockPageHistoryRecord = {
@@ -3782,6 +3787,7 @@ export class MockStore {
       actorId: userId,
       action,
       resourceTitle: details,
+      ...(versionName ? { versionName } : {}),
       createdAt: createdAt ?? this.clock.isoNow(),
     };
     this.pageHistoryById.set(id, history);
