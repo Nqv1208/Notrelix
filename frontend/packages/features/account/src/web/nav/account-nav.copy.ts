@@ -4,22 +4,24 @@
  */
 export const en = {
   label: "Account settings",
-  back: "Back to workspace",
+  title: "Your account",
   profile: "Profile",
   appearance: "Appearance",
   security: "Security",
   notifications: "Notifications",
+  workspaces: "Your workspaces",
 };
 
 export type AccountNavCopy = typeof en;
 
 export const vi: AccountNavCopy = {
   label: "Cài đặt tài khoản",
-  back: "Quay lại không gian làm việc",
+  title: "Tài khoản của bạn",
   profile: "Hồ sơ",
   appearance: "Giao diện",
   security: "Bảo mật",
   notifications: "Thông báo",
+  workspaces: "Workspace của bạn",
 };
 
 export function accountNavCopy(locale: "vi" | "en"): AccountNavCopy {

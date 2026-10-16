@@ -50,8 +50,10 @@ export {
 export { useAccountSecurityCopy } from "./security/use-account-security-copy";
 export {
   AccountSecuritySurface,
+  relativeAge,
   type AccountSecurityData,
   type AccountSecuritySurfaceProps,
+  type AccountSessionView,
 } from "./security/account-security-surface";
 
 export { accountNotificationsCatalog } from "./notifications/account-notifications.catalog";
@@ -62,7 +64,34 @@ export {
 export { useAccountNotificationsCopy } from "./notifications/use-account-notifications-copy";
 export {
   AccountNotificationsSurface,
+  NOTIFICATION_CHANNELS,
+  NOTIFICATION_EVENTS,
+  type AccountChannelChoice,
+  type AccountNotificationChannel,
+  type AccountNotificationEvent,
   type AccountNotificationsState,
   type AccountNotificationsSurfaceProps,
   type AccountNotificationValues,
+  type AccountQuietHours,
 } from "./notifications/account-notifications-surface";
+
+export { accountWorkspacesCatalog } from "./workspaces/account-workspaces.catalog";
+export {
+  accountWorkspacesCopy,
+  type AccountWorkspacesCopy,
+} from "./workspaces/account-workspaces.copy";
+export { useAccountWorkspacesCopy } from "./workspaces/use-account-workspaces-copy";
+export {
+  AccountWorkspacesSurface,
+  type AccountWorkspaceRole,
+  type AccountWorkspaceTone,
+  type AccountWorkspaceView,
+  type AccountWorkspacesSurfaceProps,
+} from "./workspaces/account-workspaces-surface";
+
+export {
+  AccountFrame,
+  type AccountFrameLink,
+  type AccountFrameProps,
+  type AccountTab,
+} from "./frame/account-frame";

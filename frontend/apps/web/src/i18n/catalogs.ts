@@ -16,6 +16,7 @@ import {
   accountNavCatalog,
   accountAppearanceCatalog,
   accountNotificationsCatalog,
+  accountWorkspacesCatalog,
   accountProfileCatalog,
   accountSecurityCatalog,
 } from "@notrelix/features-account";
@@ -74,5 +75,6 @@ export const webCatalogs: readonly MessageCatalog[] = [
   accountAppearanceCatalog,
   accountSecurityCatalog,
   accountNotificationsCatalog,
+  accountWorkspacesCatalog,
   routerStatesCatalog,
 ];

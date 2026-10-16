@@ -1,22 +1,19 @@
 import * as React from "react";
-import { Check } from "lucide-react";
+import { Lock } from "lucide-react";
+import { Skeleton, cn } from "@notrelix/ui-web";
 import {
-  Button,
-  Field,
-  FieldDescription,
-  FieldError,
-  FieldLabel,
-  Input,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  Skeleton,
-  cn,
-} from "@notrelix/ui-web";
+  Avatar,
+  BTN,
+  BTN_PRIMARY,
+  FOCUS,
+  INPUT,
+  LoadError,
+  PageHead,
+  Toast,
+} from "../shared/account-parts";
 import {
   fillCopy,
+  pluralCopy,
   type AccountFormatters,
   type AccountSaveStatus,
   type AccountSection,
@@ -26,15 +23,21 @@ import type { AccountProfileCopy } from "./account-profile.copy";
 /** The fields the profile page edits. */
 export interface AccountProfileValues {
   readonly name: string;
+  readonly jobTitle: string;
+  readonly phone: string;
   readonly timezone: string;
-  readonly locale: string;
+  readonly dateFormat: string;
 }
 
-/** A loaded profile: the editable values plus the read-only email and join date. */
+/** A loaded profile: the editable values plus what is read-only. */
 export interface AccountProfileData extends AccountProfileValues {
   readonly email: string;
   /** ISO timestamp; `null` hides the "member since" line. */
-  readonly createdAt: string | null;
+  readonly joinedAt: string | null;
+  readonly avatarUrl: string | null;
+  /** Who manages the email (a single sign-on provider); `null` = nobody. */
+  readonly managedBy: string | null;
+  readonly workspaceName: string;
 }
 
 export interface AccountProfileSurfaceProps {
@@ -43,23 +46,16 @@ export interface AccountProfileSurfaceProps {
   readonly profile: AccountSection<AccountProfileData>;
   /** The outcome of the last save; the container owns the mutation. */
   readonly save: AccountSaveStatus;
+  /** The photo was refused (wrong type or too large). */
+  readonly photoError?: boolean;
   readonly onSave: (values: AccountProfileValues) => void;
   readonly onRetry: () => void;
+  readonly onPhotoChange: (file: File) => void;
 }
 
-const TIMEZONES = [
-  "UTC",
-  "America/New_York",
-  "America/Chicago",
-  "America/Denver",
-  "America/Los_Angeles",
-  "Europe/London",
-  "Europe/Paris",
-  "Asia/Tokyo",
-  "Asia/Ho_Chi_Minh",
-] as const;
-
-const LOCALES = ["en", "vi"] as const;
+const TIMEZONES = ["UTC", "Asia/Ho_Chi_Minh", "Asia/Tokyo", "Europe/Paris"];
+const DATE_FORMATS = ["dd/mm/yyyy", "yyyy-mm-dd"];
+const PHONE = /^[0-9 +().-]{0,20}$/;
 
 function lookup(labels: Readonly<Record<string, string>>, id: string): string {
   return labels[id] ?? id;
@@ -72,238 +68,482 @@ function choicesWith(listed: readonly string[], current: string): string[] {
     : [...listed];
 }
 
-function ProfileForm({
+type FieldKey = keyof AccountProfileValues;
+
+function Field({
+  htmlFor,
+  label,
+  edited,
+  editedText,
+  editedId,
+  hint,
+  hintId,
+  children,
+}: {
+  htmlFor: string;
+  label: string;
+  edited: boolean;
+  editedText: string;
+  editedId: string;
+  hint?: string;
+  hintId?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div data-f="fg" className="flex min-w-0 flex-col gap-1.5">
+      <div className="flex items-center gap-2">
+        <label
+          htmlFor={htmlFor}
+          className="text-crumb leading-[1.45] font-semibold text-muted-foreground"
+        >
+          {label}
+        </label>
+        {edited ? (
+          <span
+            id={editedId}
+            className="text-micro leading-[1.45] font-semibold text-link"
+          >
+            {editedText}
+          </span>
+        ) : null}
+      </div>
+      {children}
+      {hint ? (
+        <span
+          id={hintId}
+          className="text-xs leading-[1.45] text-meta-foreground"
+        >
+          {hint}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+function ProfileBody({
   copy,
   formatters,
   data,
   save,
+  photoError,
   onSave,
+  onPhotoChange,
 }: {
   copy: AccountProfileCopy;
   formatters: AccountFormatters;
   data: AccountProfileData;
   save: AccountSaveStatus;
+  photoError: boolean;
   onSave: (values: AccountProfileValues) => void;
+  onPhotoChange: (file: File) => void;
 }) {
-  const [name, setName] = React.useState(data.name);
-  const [timezone, setTimezone] = React.useState(data.timezone);
-  const [locale, setLocale] = React.useState(data.locale);
-  const nameId = React.useId();
-  const nameErrorId = React.useId();
-  const emailId = React.useId();
-  const emailHelpId = React.useId();
-  const timezoneId = React.useId();
-  const localeId = React.useId();
+  const [values, setValues] = React.useState<AccountProfileValues>({
+    name: data.name,
+    jobTitle: data.jobTitle,
+    phone: data.phone,
+    timezone: data.timezone,
+    dateFormat: data.dateFormat,
+  });
+  const ids = {
+    name: React.useId(),
+    jobTitle: React.useId(),
+    email: React.useId(),
+    emailHelp: React.useId(),
+    phone: React.useId(),
+    timezone: React.useId(),
+    dateFormat: React.useId(),
+    nameError: React.useId(),
+    phoneError: React.useId(),
+  };
+  const fileInput = React.useRef<HTMLInputElement>(null);
 
   // A refetch after a save brings the stored values back into the draft.
   React.useEffect(() => {
-    setName(data.name);
-    setTimezone(data.timezone);
-    setLocale(data.locale);
-  }, [data.name, data.timezone, data.locale]);
+    setValues({
+      name: data.name,
+      jobTitle: data.jobTitle,
+      phone: data.phone,
+      timezone: data.timezone,
+      dateFormat: data.dateFormat,
+    });
+  }, [data.name, data.jobTitle, data.phone, data.timezone, data.dateFormat]);
 
-  const trimmed = name.trim();
-  const nameError = trimmed === "" ? copy.nameRequired : null;
-  const dirty =
-    trimmed !== data.name.trim() ||
-    timezone !== data.timezone ||
-    locale !== data.locale;
+  const set = (key: FieldKey, value: string) =>
+    setValues((current) => ({ ...current, [key]: value }));
+
+  const FIELD_ORDER: readonly FieldKey[] = [
+    "name",
+    "jobTitle",
+    "phone",
+    "timezone",
+    "dateFormat",
+  ];
+  const norm = (key: FieldKey, from: AccountProfileValues) =>
+    key === "timezone" || key === "dateFormat" ? from[key] : from[key].trim();
+  const changed = FIELD_ORDER.filter(
+    (key) => norm(key, values) !== norm(key, data),
+  );
+  const labels: Record<FieldKey, string> = {
+    name: copy.nameLabel,
+    jobTitle: copy.jobTitleLabel,
+    phone: copy.phoneLabel,
+    timezone: copy.timezoneLabel,
+    dateFormat: copy.dateFormatLabel,
+  };
+  const nameError = values.name.trim() === "" ? copy.nameRequired : null;
+  const phoneError = PHONE.test(values.phone) ? null : copy.phoneInvalid;
   const saving = save.state === "saving";
+  const dirty = changed.length > 0;
+  const isEdited = (key: FieldKey) => changed.includes(key);
+  const editedClass = (key: FieldKey) =>
+    isEdited(key) ? "border-primary ring-1 ring-primary" : undefined;
+
+  const submit = () => {
+    if (!dirty || saving || nameError || phoneError) return;
+    onSave({
+      name: values.name.trim(),
+      jobTitle: values.jobTitle.trim(),
+      phone: values.phone.trim(),
+      timezone: values.timezone,
+      dateFormat: values.dateFormat,
+    });
+  };
+  const discard = () =>
+    setValues({
+      name: data.name,
+      jobTitle: data.jobTitle,
+      phone: data.phone,
+      timezone: data.timezone,
+      dateFormat: data.dateFormat,
+    });
 
   return (
-    <form
-      noValidate
-      aria-label={copy.title}
-      onSubmit={(event) => {
-        event.preventDefault();
-        if (nameError || !dirty || saving) return;
-        onSave({ name: trimmed, timezone, locale });
-      }}
-      className="flex min-w-0 flex-col gap-5"
-    >
-      <Field
-        data-invalid={dirty && nameError ? true : undefined}
-        className="gap-2"
+    <>
+      <div
+        data-f="avrow"
+        className="flex items-center gap-4 rounded-[12px] border border-line bg-popover p-4 dark:bg-card"
       >
-        <FieldLabel htmlFor={nameId}>{copy.nameLabel}</FieldLabel>
-        <Input
-          id={nameId}
-          value={name}
-          disabled={saving}
-          placeholder={copy.namePlaceholder}
-          autoComplete="name"
-          aria-invalid={nameError ? true : undefined}
-          aria-describedby={nameError ? nameErrorId : undefined}
-          onChange={(event) => setName(event.target.value)}
+        <Avatar
+          name={data.name}
+          url={data.avatarUrl}
+          className="size-16 text-xl"
         />
-        {nameError ? (
-          <FieldError id={nameErrorId}>{nameError}</FieldError>
-        ) : null}
-      </Field>
-
-      <Field className="gap-2">
-        <FieldLabel htmlFor={emailId}>{copy.emailLabel}</FieldLabel>
-        <Input
-          id={emailId}
-          value={data.email}
-          disabled
-          readOnly
-          aria-describedby={emailHelpId}
-          className="min-w-0 text-muted-foreground"
+        <div className="min-w-0 flex-1">
+          <b className="block truncate text-item-heading font-semibold text-foreground">
+            {data.name}
+          </b>
+          {data.joinedAt ? (
+            <small className="block text-crumb leading-[1.45] text-meta-foreground">
+              {fillCopy(copy.memberSince, {
+                date: formatters.date(data.joinedAt, {
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
+                }),
+              })}
+            </small>
+          ) : null}
+        </div>
+        <input
+          ref={fileInput}
+          type="file"
+          accept="image/png,image/jpeg,image/webp"
+          tabIndex={-1}
+          aria-hidden="true"
+          className="hidden"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            event.target.value = "";
+            if (file) onPhotoChange(file);
+          }}
         />
-        <FieldDescription id={emailHelpId}>{copy.emailHelp}</FieldDescription>
-      </Field>
-
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-        <Field className="min-w-0 gap-2">
-          <FieldLabel htmlFor={timezoneId}>{copy.timezoneLabel}</FieldLabel>
-          <Select
-            value={timezone}
-            disabled={saving}
-            onValueChange={setTimezone}
-          >
-            <SelectTrigger id={timezoneId} className="w-full min-w-0">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {choicesWith(TIMEZONES, timezone).map((zone) => (
-                <SelectItem key={zone} value={zone}>
-                  {lookup(copy.timezones, zone)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </Field>
-        <Field className="min-w-0 gap-2">
-          <FieldLabel htmlFor={localeId}>{copy.localeLabel}</FieldLabel>
-          <Select value={locale} disabled={saving} onValueChange={setLocale}>
-            <SelectTrigger id={localeId} className="w-full min-w-0">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {choicesWith(LOCALES, locale).map((option) => (
-                <SelectItem key={option} value={option}>
-                  {lookup(copy.locales, option)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </Field>
+        <button
+          type="button"
+          aria-label={copy.changePhotoLabel}
+          onClick={() => fileInput.current?.click()}
+          className={cn(BTN, FOCUS)}
+        >
+          {copy.changePhoto}
+        </button>
       </div>
-
-      {data.createdAt ? (
-        <p className="text-metadata text-muted-foreground">
-          {fillCopy(copy.memberSince, {
-            date: formatters.date(data.createdAt),
-          })}
+      {photoError ? (
+        <p role="alert" className="m-0 text-crumb text-danger-text">
+          {copy.photoError}
         </p>
       ) : null}
+
+      <form
+        noValidate
+        aria-label={copy.title}
+        onSubmit={(event) => {
+          event.preventDefault();
+          submit();
+        }}
+        data-f="fcard"
+        className="grid grid-cols-2 gap-x-5 gap-y-4 rounded-[12px] border border-line bg-popover p-[18px] max-md:grid-cols-1 dark:bg-card"
+      >
+        <Field
+          htmlFor={ids.name}
+          label={copy.nameLabel}
+          edited={isEdited("name")}
+          editedText={copy.edited}
+          editedId={`${ids.name}-edited`}
+        >
+          <input
+            id={ids.name}
+            type="text"
+            required
+            aria-required="true"
+            autoComplete="name"
+            value={values.name}
+            disabled={saving}
+            placeholder={copy.namePlaceholder}
+            aria-invalid={nameError ? true : undefined}
+            aria-describedby={
+              cn(
+                nameError && ids.nameError,
+                isEdited("name") && `${ids.name}-edited`,
+              ) || undefined
+            }
+            onChange={(event) => set("name", event.target.value)}
+            className={cn(INPUT, editedClass("name"))}
+          />
+          {nameError ? (
+            <span
+              id={ids.nameError}
+              role="alert"
+              className="text-xs text-danger-text"
+            >
+              {nameError}
+            </span>
+          ) : null}
+        </Field>
+        <Field
+          htmlFor={ids.jobTitle}
+          label={copy.jobTitleLabel}
+          edited={isEdited("jobTitle")}
+          editedText={copy.edited}
+          editedId={`${ids.jobTitle}-edited`}
+        >
+          <input
+            id={ids.jobTitle}
+            type="text"
+            autoComplete="organization-title"
+            value={values.jobTitle}
+            disabled={saving}
+            onChange={(event) => set("jobTitle", event.target.value)}
+            className={cn(INPUT, editedClass("jobTitle"))}
+          />
+        </Field>
+        <Field
+          htmlFor={ids.email}
+          label={copy.emailLabel}
+          edited={false}
+          editedText=""
+          editedId=""
+          hint={
+            data.managedBy
+              ? fillCopy(copy.emailManaged, {
+                  workspace: data.workspaceName,
+                  provider: data.managedBy,
+                })
+              : copy.emailHelp
+          }
+          hintId={ids.emailHelp}
+        >
+          <div className="relative">
+            <input
+              id={ids.email}
+              type="email"
+              readOnly
+              value={data.email}
+              aria-describedby={ids.emailHelp}
+              className={cn(INPUT, "bg-background pr-9 text-muted-foreground")}
+            />
+            <Lock
+              aria-hidden="true"
+              className="absolute top-[10px] right-2.5 size-[15px] text-meta-foreground"
+            />
+          </div>
+        </Field>
+        <Field
+          htmlFor={ids.phone}
+          label={copy.phoneLabel}
+          edited={isEdited("phone")}
+          editedText={copy.edited}
+          editedId={`${ids.phone}-edited`}
+        >
+          <input
+            id={ids.phone}
+            type="tel"
+            autoComplete="tel"
+            value={values.phone}
+            disabled={saving}
+            aria-invalid={phoneError ? true : undefined}
+            aria-describedby={
+              cn(
+                phoneError && ids.phoneError,
+                isEdited("phone") && `${ids.phone}-edited`,
+              ) || undefined
+            }
+            onChange={(event) => set("phone", event.target.value)}
+            className={cn(INPUT, editedClass("phone"))}
+          />
+          {phoneError ? (
+            <span
+              id={ids.phoneError}
+              role="alert"
+              className="text-xs text-danger-text"
+            >
+              {phoneError}
+            </span>
+          ) : null}
+        </Field>
+        <Field
+          htmlFor={ids.timezone}
+          label={copy.timezoneLabel}
+          edited={isEdited("timezone")}
+          editedText={copy.edited}
+          editedId={`${ids.timezone}-edited`}
+          hint={copy.timezoneHelp}
+        >
+          <select
+            id={ids.timezone}
+            value={values.timezone}
+            disabled={saving}
+            onChange={(event) => set("timezone", event.target.value)}
+            className={cn(INPUT, editedClass("timezone"))}
+          >
+            {choicesWith(TIMEZONES, values.timezone).map((zone) => (
+              <option key={zone} value={zone}>
+                {lookup(copy.timezones, zone)}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field
+          htmlFor={ids.dateFormat}
+          label={copy.dateFormatLabel}
+          edited={isEdited("dateFormat")}
+          editedText={copy.edited}
+          editedId={`${ids.dateFormat}-edited`}
+        >
+          <select
+            id={ids.dateFormat}
+            value={values.dateFormat}
+            disabled={saving}
+            onChange={(event) => set("dateFormat", event.target.value)}
+            className={cn(INPUT, editedClass("dateFormat"))}
+          >
+            {choicesWith(DATE_FORMATS, values.dateFormat).map((format) => (
+              <option key={format} value={format}>
+                {lookup(copy.dateFormats, format)}
+              </option>
+            ))}
+          </select>
+        </Field>
+      </form>
 
       {save.state === "error" ? (
         <p
           role="alert"
-          className="rounded-md bg-danger-subtle px-3 py-2 text-metadata text-danger-subtle-foreground"
+          className="m-0 rounded-md bg-danger-subtle px-3 py-2 text-metadata text-danger-subtle-foreground"
         >
           {copy.saveError}
         </p>
       ) : null}
 
-      <div className="flex flex-wrap items-center gap-2">
-        <Button
-          type="submit"
-          size="sm"
-          disabled={saving || !dirty || nameError !== null}
-          className="h-auto min-h-8 max-w-full whitespace-normal"
+      {dirty ? (
+        <div
+          role="region"
+          aria-label={copy.unsavedRegion}
+          data-f="savebar"
+          className="sticky bottom-0 z-10 mt-auto flex items-center gap-2.5 rounded-[12px] border border-line-strong bg-popover py-3 pr-3.5 pl-4 shadow-lg dark:bg-card"
         >
-          {saving ? copy.saving : copy.save}
-        </Button>
-        {dirty && !saving ? (
-          <Button
+          <span className="text-compact leading-[1.45] text-foreground">
+            {pluralCopy(copy.unsaved, changed.length)}
+          </span>
+          <small className="text-xs leading-[1.45] text-meta-foreground">
+            · {changed.map((key) => labels[key]).join(", ")}
+          </small>
+          <span className="grow" />
+          <button
             type="button"
-            size="sm"
-            variant="ghost"
-            className="h-auto min-h-8 max-w-full whitespace-normal"
-            onClick={() => {
-              setName(data.name);
-              setTimezone(data.timezone);
-              setLocale(data.locale);
-            }}
+            disabled={saving}
+            onClick={discard}
+            className={cn(BTN, FOCUS)}
           >
             {copy.discard}
-          </Button>
-        ) : null}
-        {save.state === "saved" && !dirty ? (
-          <span
-            role="status"
-            className={cn(
-              "inline-flex min-w-0 items-center gap-1 text-metadata text-success-text",
-            )}
+          </button>
+          <button
+            type="button"
+            disabled={saving || nameError !== null || phoneError !== null}
+            onClick={submit}
+            className={cn(BTN_PRIMARY, FOCUS)}
           >
-            <Check aria-hidden="true" className="size-3.5 shrink-0" />
-            {copy.saved}
-          </span>
-        ) : null}
-      </div>
-    </form>
+            {saving ? copy.saving : copy.save}
+          </button>
+        </div>
+      ) : null}
+      {save.state === "saved" && !dirty ? <Toast>{copy.saved}</Toast> : null}
+    </>
   );
 }
 
 function ProfileSkeleton({ label }: { label: string }) {
   return (
-    <div role="status" aria-label={label} className="flex flex-col gap-5">
-      {Array.from({ length: 3 }, (_, index) => (
-        <div key={index} className="flex flex-col gap-2">
-          <Skeleton className="h-3.5 w-28" />
-          <Skeleton className="h-9 w-full" />
-        </div>
-      ))}
+    <div role="status" aria-label={label} className="flex flex-col gap-4">
+      <Skeleton className="h-[98px] w-full rounded-[12px]" />
+      <Skeleton className="h-[314px] w-full rounded-[12px]" />
     </div>
   );
 }
 
 /**
- * Account profile: name, read-only email, time zone and language. Saving is
- * disabled until a field changes and the name is present; the container owns
- * the mutation and reports its outcome through `save`.
+ * Account profile (Final-Account `ho-so`): the photo and member-since line,
+ * the editable details (name, job title, phone, time zone, date format), the
+ * read-only email and a save bar that appears once something changed. The
+ * container owns the mutations and reports the save through `save`.
  */
 export function AccountProfileSurface({
   copy,
   formatters,
   profile,
   save,
+  photoError = false,
   onSave,
   onRetry,
+  onPhotoChange,
 }: AccountProfileSurfaceProps) {
   return (
-    <div className="mx-auto flex w-full min-w-0 max-w-2xl flex-col gap-6 px-4 py-6 md:px-8 md:py-8">
-      <header className="flex flex-col gap-1">
-        <h1 className="text-page-title text-foreground">{copy.title}</h1>
-        <p className="text-body text-muted-foreground">{copy.description}</p>
-      </header>
-
+    <section
+      aria-labelledby="account-profile-title"
+      className="flex max-w-[760px] min-w-0 flex-1 flex-col gap-[18px]"
+    >
+      <PageHead
+        id="account-profile-title"
+        title={copy.title}
+        description={copy.description}
+      />
       {profile.status === "loading" ? (
         <ProfileSkeleton label={copy.loading} />
       ) : profile.status === "error" ? (
-        <div
-          role="alert"
-          className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border px-3 py-2"
-        >
-          <p className="min-w-0 text-body text-muted-foreground">
-            {copy.loadError}
-          </p>
-          <Button size="xs" variant="outline" onClick={onRetry}>
-            {copy.retry}
-          </Button>
-        </div>
+        <LoadError
+          message={copy.loadError}
+          retry={copy.retry}
+          onRetry={onRetry}
+        />
       ) : (
-        <ProfileForm
+        <ProfileBody
           copy={copy}
           formatters={formatters}
           data={profile.data}
           save={save}
+          photoError={photoError}
           onSave={onSave}
+          onPhotoChange={onPhotoChange}
         />
       )}
-    </div>
+    </section>
   );
 }

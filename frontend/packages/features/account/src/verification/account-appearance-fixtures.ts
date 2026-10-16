@@ -33,6 +33,8 @@ export function appearanceDefaultScenario(
     locale,
     sidebar: { status: "ready", data: { collapsed: false } },
     sidebarSave: { state: "idle" },
+    workspaceName: "Minh An Group",
+    toast: false,
   };
 }
 
@@ -70,6 +72,7 @@ export function appearanceSavedScenario(
     ...appearanceDefaultScenario(locale),
     sidebar: { status: "ready", data: { collapsed: true } },
     sidebarSave: { state: "saved" },
+    toast: true,
   };
 }
 
@@ -88,6 +91,8 @@ export function appearanceEdgeDataScenario(): AppearanceScenario {
     ...appearanceDefaultScenario("vi"),
     mode: "high-contrast",
     accent: "amber",
+    workspaceName:
+      "Công ty Cổ phần Đầu tư và Phát triển Hạ tầng Công nghệ Minh An Việt Nam",
     sidebar: { status: "ready", data: { collapsed: true } },
     sidebarSave: { state: "error" },
   };

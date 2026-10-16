@@ -2,10 +2,10 @@ import type { Meta, StoryObj } from "@storybook/react";
 
 import {
   profileDefaultScenario,
-  profileEdgeDataScenario,
-  profileErrorScenario,
   profileLoadingScenario,
+  profileErrorScenario,
   profileSavedScenario,
+  profileEdgeDataScenario,
 } from "../../verification/account-profile-fixtures";
 import { AccountProfileSurface } from "./account-profile-surface";
 
@@ -18,7 +18,7 @@ export default meta;
 type Story = StoryObj;
 
 const noop = () => undefined;
-const callbacks = { onSave: noop, onRetry: noop };
+const callbacks = { onSave: noop, onRetry: noop, onPhotoChange: noop };
 
 export const Default: Story = {
   render: () => (

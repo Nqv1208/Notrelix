@@ -2,9 +2,10 @@ import type { Meta, StoryObj } from "@storybook/react";
 
 import {
   securityDefaultScenario,
-  securityEdgeDataScenario,
-  securityErrorScenario,
   securityLoadingScenario,
+  securityErrorScenario,
+  securityNoticeScenario,
+  securityEdgeDataScenario,
 } from "../../verification/account-security-fixtures";
 import { AccountSecuritySurface } from "./account-security-surface";
 
@@ -17,7 +18,13 @@ export default meta;
 type Story = StoryObj;
 
 const noop = () => undefined;
-const callbacks = { onRetry: noop };
+const callbacks = {
+  onSetTwoFactor: noop,
+  onRenewBackupCodes: noop,
+  onSignOut: noop,
+  onSignOutOthers: noop,
+  onRetry: noop,
+};
 
 export const Default: Story = {
   render: () => (
@@ -39,6 +46,13 @@ export const ErrorState: Story = {
     <AccountSecuritySurface {...securityErrorScenario()} {...callbacks} />
   ),
   tags: ["fui-surface--account.security", "fui-state--Error"],
+};
+
+export const Saved: Story = {
+  render: () => (
+    <AccountSecuritySurface {...securityNoticeScenario()} {...callbacks} />
+  ),
+  tags: ["fui-surface--account.security", "fui-state--Success"],
 };
 
 export const EdgeData: Story = {

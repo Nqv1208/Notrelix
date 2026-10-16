@@ -5,6 +5,7 @@ import { AccountProfilePage } from "../../routes/workspaces/$workspaceId/account
 import { AccountSecurityPage } from "../../routes/workspaces/$workspaceId/account/security";
 import { AccountAppearancePage } from "../../routes/workspaces/$workspaceId/account/appearance";
 import { AccountNotificationsPage } from "../../routes/workspaces/$workspaceId/account/notifications";
+import { AccountWorkspacesPage } from "../../routes/workspaces/$workspaceId/account/workspaces";
 
 export const accountRoute = createRoute({
   getParentRoute: () => workspaceRoute,
@@ -34,4 +35,10 @@ export const accountNotificationsRoute = createRoute({
   getParentRoute: () => accountRoute,
   path: "/notifications",
   component: AccountNotificationsPage,
+});
+
+export const accountWorkspacesRoute = createRoute({
+  getParentRoute: () => accountRoute,
+  path: "/workspaces",
+  component: AccountWorkspacesPage,
 });

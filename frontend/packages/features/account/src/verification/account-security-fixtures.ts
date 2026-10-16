@@ -1,8 +1,7 @@
 /**
- * Deterministic fixtures for the account security page: fixed ISO dates and
- * locale-bound formatters, no clocks.
+ * Deterministic fixtures for the account security page. "Now" is a fixed
+ * instant so the relative times of the sessions never move.
  */
-import { createFormatters } from "@notrelix/i18n";
 import {
   accountSecurityCopy,
   type AccountSecurityCopy,
@@ -11,7 +10,8 @@ import type {
   AccountSecurityData,
   AccountSecuritySurfaceProps,
 } from "../web/security/account-security-surface";
-import type { AccountFormatters } from "../web/shared/account-surface-model";
+
+export const SECURITY_NOW = "2026-10-12T03:40:00.000Z";
 
 export function securityCopyFixture(
   locale: "en" | "vi" = "en",
@@ -19,34 +19,62 @@ export function securityCopyFixture(
   return accountSecurityCopy(locale);
 }
 
-export function securityFormattersFixture(
-  locale: "en" | "vi" = "en",
-): AccountFormatters {
-  return createFormatters(locale);
-}
-
-export const SECURITY_PASSWORD_CHANGED_AT = "2026-01-15T09:00:00.000Z";
-
 export function securityFixture(
   overrides: Partial<AccountSecurityData> = {},
 ): AccountSecurityData {
   return {
-    twoFactorEnabled: false,
-    lastPasswordChange: SECURITY_PASSWORD_CHANGED_AT,
-    activeSessions: 3,
+    ssoProvider: "Microsoft Entra",
+    email: "ada@example.com",
+    workspaceName: "Minh An Group",
+    twoFactorEnabled: true,
+    backupCodesLeft: 8,
+    now: SECURITY_NOW,
+    sessions: [
+      {
+        id: "session-macbook",
+        device: "MacBook · Chrome",
+        kind: "desktop",
+        place: "Hà Nội",
+        lastActiveAt: null,
+      },
+      {
+        id: "session-iphone",
+        device: "iPhone 15 · ứng dụng Notrelix",
+        kind: "phone",
+        place: "Hà Nội",
+        lastActiveAt: "2026-10-12T01:40:00.000Z",
+      },
+      {
+        id: "session-ipad",
+        device: "iPad · ứng dụng Notrelix",
+        kind: "tablet",
+        place: "Hà Nội",
+        lastActiveAt: "2026-10-09T03:40:00.000Z",
+      },
+    ],
     ...overrides,
   };
 }
 
-export type SecurityScenario = Omit<AccountSecuritySurfaceProps, "onRetry">;
+export type SecurityScenario = Omit<
+  AccountSecuritySurfaceProps,
+  | "onSetTwoFactor"
+  | "onRenewBackupCodes"
+  | "onSignOut"
+  | "onSignOutOthers"
+  | "onRetry"
+>;
 
 export function securityDefaultScenario(
   locale: "en" | "vi" = "en",
 ): SecurityScenario {
   return {
     copy: securityCopyFixture(locale),
-    formatters: securityFormattersFixture(locale),
     security: { status: "ready", data: securityFixture() },
+    busy: false,
+    actionError: false,
+    notice: null,
+    passwordHref: null,
   };
 }
 
@@ -65,39 +93,58 @@ export function securityErrorScenario(
   return { ...securityDefaultScenario(locale), security: { status: "error" } };
 }
 
-/** Two-factor on, a single session, in Vietnamese. */
-export function securityTwoFactorScenario(
-  locale: "en" | "vi" = "vi",
+/** An account with its own password, no second step and one device. */
+export function securityOwnPasswordScenario(
+  locale: "en" | "vi" = "en",
 ): SecurityScenario {
+  const base = securityFixture();
   return {
     ...securityDefaultScenario(locale),
-    security: {
-      status: "ready",
-      data: securityFixture({ twoFactorEnabled: true, activeSessions: 1 }),
-    },
-  };
-}
-
-/** No password date, no active session and a very large session count. */
-export function securityEdgeDataScenario(): SecurityScenario {
-  return {
-    ...securityDefaultScenario("vi"),
+    passwordHref: "/forgot-password",
     security: {
       status: "ready",
       data: securityFixture({
-        lastPasswordChange: null,
-        activeSessions: 1234,
-        twoFactorEnabled: true,
+        ssoProvider: null,
+        twoFactorEnabled: false,
+        backupCodesLeft: 0,
+        sessions: base.sessions.slice(0, 1),
       }),
     },
   };
 }
 
-export function securityNoSessionScenario(
+export function securityNoticeScenario(
   locale: "en" | "vi" = "en",
 ): SecurityScenario {
   return {
     ...securityDefaultScenario(locale),
-    security: { status: "ready", data: securityFixture({ activeSessions: 0 }) },
+    notice: securityCopyFixture(locale).twoFactor.renewed,
+  };
+}
+
+/** Long device names, a failed action and a single backup code left. */
+export function securityEdgeDataScenario(): SecurityScenario {
+  const base = securityFixture();
+  return {
+    ...securityDefaultScenario("vi"),
+    actionError: true,
+    security: {
+      status: "ready",
+      data: securityFixture({
+        backupCodesLeft: 1,
+        email:
+          "nguyen.thi.phuong.anh.tran.hoang.bao.ngoc@phong-ke-hoach-van-hanh.example.com",
+        sessions: base.sessions.map((session, index) =>
+          index === 1
+            ? {
+                ...session,
+                device:
+                  "Máy tính bảng Samsung Galaxy Tab S9 Ultra · ứng dụng Notrelix cho Android",
+                place: "Thành phố Hồ Chí Minh, Việt Nam",
+              }
+            : session,
+        ),
+      }),
+    },
   };
 }

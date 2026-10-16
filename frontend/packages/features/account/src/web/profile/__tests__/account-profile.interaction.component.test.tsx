@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { fireEvent, renderPureUi, screen, within } from "@notrelix/testing";
 
 import {
@@ -7,7 +7,6 @@ import {
   profileEdgeDataScenario,
   profileErrorScenario,
   profileFixture,
-  profileFormattersFixture,
   profileLoadingScenario,
   profileSaveErrorScenario,
   profileSavedScenario,
@@ -20,13 +19,6 @@ import {
   type AccountProfileSurfaceProps,
 } from "../account-profile-surface";
 
-beforeAll(() => {
-  // Radix Select measures and scrolls items; JSDOM has no layout.
-  Element.prototype.scrollIntoView = () => undefined;
-  Element.prototype.hasPointerCapture = () => false;
-  Element.prototype.releasePointerCapture = () => undefined;
-});
-
 const LOCALES = ["vi", "en"] as const;
 
 function renderProfile(
@@ -37,16 +29,11 @@ function renderProfile(
     ...scenario,
     onSave: vi.fn(),
     onRetry: vi.fn(),
+    onPhotoChange: vi.fn(),
     ...overrides,
   };
   const view = renderPureUi(<AccountProfileSurface {...props} />);
   return { props, view };
-}
-
-function saveButton(copy: ReturnType<typeof profileCopyFixture>) {
-  return screen.getByRole("button", {
-    name: new RegExp(`^(${copy.save}|${copy.saving})$`),
-  }) as HTMLButtonElement;
 }
 
 describe("AccountProfileSurface", () => {
@@ -56,52 +43,70 @@ describe("AccountProfileSurface", () => {
       const { view } = renderProfile(profileDefaultScenario(locale));
 
       expect(
-        screen.getByRole("heading", { level: 1, name: copy.title }),
+        screen.getByRole("heading", { level: 2, name: copy.title }),
       ).toBeTruthy();
       expect(
         (screen.getByLabelText(copy.nameLabel) as HTMLInputElement).value,
       ).toBe("Ada Lovelace");
+      expect(
+        (screen.getByLabelText(copy.jobTitleLabel) as HTMLInputElement).value,
+      ).toBe("Implementation lead");
       const email = screen.getByLabelText(copy.emailLabel) as HTMLInputElement;
       expect(email.value).toBe("ada@example.com");
-      expect(email.disabled).toBe(true);
-      expect(screen.getByText(copy.emailHelp)).toBeTruthy();
+      expect(email.readOnly).toBe(true);
       expect(
-        screen.getByRole("combobox", { name: copy.timezoneLabel }).textContent,
-      ).toContain(copy.timezones["Asia/Ho_Chi_Minh"]);
-      expect(
-        screen.getByRole("combobox", { name: copy.localeLabel }).textContent,
-      ).toContain(copy.locales.en);
-      // The join date goes through the injected locale formatters.
-      const since = copy.memberSince.replace(
-        "{{date}}",
-        profileFormattersFixture(locale).date(
-          profileFixture().createdAt as string,
+        screen.getByText(
+          copy.emailManaged
+            .replace("{{workspace}}", "Minh An Group")
+            .replace("{{provider}}", "Microsoft Entra"),
         ),
+      ).toBeTruthy();
+      expect(
+        (screen.getByLabelText(copy.timezoneLabel) as HTMLSelectElement).value,
+      ).toBe("Asia/Ho_Chi_Minh");
+      expect(
+        (screen.getByLabelText(copy.dateFormatLabel) as HTMLSelectElement)
+          .value,
+      ).toBe("dd/mm/yyyy");
+      // Nothing changed yet: no save bar.
+      expect(screen.queryByRole("region", { name: copy.unsavedRegion })).toBe(
+        null,
       );
-      expect(screen.getByText(since)).toBeTruthy();
       view.unmount();
     }
   });
 
-  it("FUI[account.profile:dirty] keeps Save disabled until a field changes", () => {
+  it("FUI[account.profile:dirty] shows the save bar with what changed, and hides it when changes are undone", () => {
     for (const locale of LOCALES) {
       const copy = profileCopyFixture(locale);
       const { view } = renderProfile(profileDefaultScenario(locale));
-      const save = saveButton(copy);
-      expect(save.disabled).toBe(true);
+      const phone = screen.getByLabelText(copy.phoneLabel);
+      fireEvent.change(phone, { target: { value: "0988 000 111" } });
+      const bar = screen.getByRole("region", { name: copy.unsavedRegion });
+      expect(bar.textContent).toContain(copy.unsaved.one);
+      expect(bar.textContent).toContain(copy.phoneLabel);
+      expect(screen.getByText(copy.edited)).toBeTruthy();
 
-      const name = screen.getByLabelText(copy.nameLabel);
-      fireEvent.change(name, { target: { value: "Ada King" } });
-      expect(save.disabled).toBe(false);
+      fireEvent.change(screen.getByLabelText(copy.jobTitleLabel), {
+        target: { value: "Director" },
+      });
+      expect(
+        screen.getByRole("region", { name: copy.unsavedRegion }).textContent,
+      ).toContain(copy.unsaved.other.replace("{{count}}", "2"));
 
-      // Back to the saved value (trailing space ignored): nothing to save.
-      fireEvent.change(name, { target: { value: "Ada Lovelace " } });
-      expect(save.disabled).toBe(true);
+      // Back to the saved values (trailing space ignored): nothing to save.
+      fireEvent.change(phone, { target: { value: "0912 468 135 " } });
+      fireEvent.change(screen.getByLabelText(copy.jobTitleLabel), {
+        target: { value: "Implementation lead" },
+      });
+      expect(screen.queryByRole("region", { name: copy.unsavedRegion })).toBe(
+        null,
+      );
       view.unmount();
     }
   });
 
-  it("FUI[account.profile:save] sends the trimmed name with the chosen time zone and language", () => {
+  it("FUI[account.profile:save] sends the trimmed values with the chosen time zone and date format", () => {
     for (const locale of LOCALES) {
       const copy = profileCopyFixture(locale);
       const { props, view } = renderProfile(profileDefaultScenario(locale));
@@ -109,25 +114,21 @@ describe("AccountProfileSurface", () => {
       fireEvent.change(screen.getByLabelText(copy.nameLabel), {
         target: { value: "  Ada King  " },
       });
-      fireEvent.keyDown(
-        screen.getByRole("combobox", { name: copy.timezoneLabel }),
-        { key: "Enter" },
-      );
-      fireEvent.click(
-        screen.getByRole("option", { name: copy.timezones["Asia/Tokyo"] }),
-      );
-      fireEvent.keyDown(
-        screen.getByRole("combobox", { name: copy.localeLabel }),
-        { key: "Enter" },
-      );
-      fireEvent.click(screen.getByRole("option", { name: copy.locales.vi }));
-      fireEvent.click(saveButton(copy));
+      fireEvent.change(screen.getByLabelText(copy.timezoneLabel), {
+        target: { value: "Asia/Tokyo" },
+      });
+      fireEvent.change(screen.getByLabelText(copy.dateFormatLabel), {
+        target: { value: "yyyy-mm-dd" },
+      });
+      fireEvent.click(screen.getByRole("button", { name: copy.save }));
 
       expect(props.onSave).toHaveBeenCalledTimes(1);
       expect(props.onSave).toHaveBeenCalledWith({
         name: "Ada King",
+        jobTitle: "Implementation lead",
+        phone: "0912 468 135",
         timezone: "Asia/Tokyo",
-        locale: "vi",
+        dateFormat: "yyyy-mm-dd",
       });
       view.unmount();
     }
@@ -144,13 +145,12 @@ describe("AccountProfileSurface", () => {
       expect(
         (screen.getByLabelText(copy.nameLabel) as HTMLInputElement).value,
       ).toBe("Ada Lovelace");
-      expect(saveButton(copy).disabled).toBe(true);
       expect(screen.queryByRole("button", { name: copy.discard })).toBeNull();
       view.unmount();
     }
   });
 
-  it("FUI[account.profile:validation] blocks an empty name and explains why", () => {
+  it("FUI[account.profile:validation] blocks an empty name and a bad phone and explains why", () => {
     for (const locale of LOCALES) {
       const copy = profileCopyFixture(locale);
       const { props, view } = renderProfile(profileDefaultScenario(locale));
@@ -159,8 +159,17 @@ describe("AccountProfileSurface", () => {
       fireEvent.change(name, { target: { value: "   " } });
       expect(screen.getByText(copy.nameRequired)).toBeTruthy();
       expect(name.getAttribute("aria-invalid")).toBe("true");
-      expect(saveButton(copy).disabled).toBe(true);
+      expect(
+        (screen.getByRole("button", { name: copy.save }) as HTMLButtonElement)
+          .disabled,
+      ).toBe(true);
+      fireEvent.submit(name.closest("form") as HTMLFormElement);
 
+      fireEvent.change(name, { target: { value: "Ada" } });
+      fireEvent.change(screen.getByLabelText(copy.phoneLabel), {
+        target: { value: "call me" },
+      });
+      expect(screen.getByText(copy.phoneInvalid)).toBeTruthy();
       fireEvent.submit(name.closest("form") as HTMLFormElement);
       expect(props.onSave).not.toHaveBeenCalled();
       view.unmount();
@@ -170,11 +179,14 @@ describe("AccountProfileSurface", () => {
   it("FUI[account.profile:saving] disables the form and names the pending save", () => {
     for (const locale of LOCALES) {
       const copy = profileCopyFixture(locale);
-      const { view } = renderProfile(profileSavingScenario(locale));
-      const save = screen.getByRole("button", {
-        name: copy.saving,
-      }) as HTMLButtonElement;
-      expect(save.disabled).toBe(true);
+      const { view } = renderProfile(profileSavingScenario(locale), {
+        profile: {
+          status: "ready",
+          data: profileFixture({ name: "Ada" }),
+        },
+      });
+      // The draft only differs after an edit; the pending state alone keeps
+      // the fields locked.
       expect(
         (screen.getByLabelText(copy.nameLabel) as HTMLInputElement).disabled,
       ).toBe(true);
@@ -217,23 +229,44 @@ describe("AccountProfileSurface", () => {
     }
   });
 
+  it("FUI[account.profile:photo] hands the chosen photo over and reports a refused one", () => {
+    const copy = profileCopyFixture("en");
+    const { props, view } = renderProfile(profileDefaultScenario("en"));
+    const button = screen.getByRole("button", { name: copy.changePhotoLabel });
+    expect(button.textContent).toBe(copy.changePhoto);
+    const input = document.querySelector(
+      "input[type=file]",
+    ) as HTMLInputElement;
+    const file = new File(["x"], "me.png", { type: "image/png" });
+    fireEvent.change(input, { target: { files: [file] } });
+    expect(props.onPhotoChange).toHaveBeenCalledWith(file);
+    view.unmount();
+
+    const refused = renderProfile({
+      ...profileDefaultScenario("en"),
+      photoError: true,
+    });
+    expect(screen.getByRole("alert").textContent).toContain(copy.photoError);
+    refused.view.unmount();
+  });
+
   it("FUI[account.profile:edge] keeps long Vietnamese data and unknown choices readable", () => {
     const copy = profileCopyFixture("vi");
     const { view } = renderProfile(profileEdgeDataScenario());
     const name = screen.getByLabelText(copy.nameLabel) as HTMLInputElement;
     expect(name.value).toContain("Nguyễn Thị Phương Anh");
-    // A long address stays in its read-only field (it scrolls inside it).
     const email = screen.getByLabelText(copy.emailLabel) as HTMLInputElement;
     expect(email.value.length).toBeGreaterThan(60);
     expect(email.readOnly).toBe(true);
-    // A zone/language outside the lists stays selectable by its raw id.
+    // Nobody manages this email: the plain help shows instead.
+    expect(screen.getByText(copy.emailHelp)).toBeTruthy();
+    // A zone outside the list stays selectable by its raw id.
     expect(
-      screen.getByRole("combobox", { name: copy.timezoneLabel }).textContent,
-    ).toContain("Pacific/Auckland");
-    expect(
-      screen.getByRole("combobox", { name: copy.localeLabel }).textContent,
-    ).toContain("fr");
-    expect(screen.getByRole("alert").textContent).toContain(copy.saveError);
+      (screen.getByLabelText(copy.timezoneLabel) as HTMLSelectElement).value,
+    ).toBe("Pacific/Auckland");
+    const alerts = screen.getAllByRole("alert").map((a) => a.textContent);
+    expect(alerts.join(" ")).toContain(copy.saveError);
+    expect(alerts.join(" ")).toContain(copy.photoError);
     view.unmount();
   });
 
@@ -244,9 +277,9 @@ describe("AccountProfileSurface", () => {
       en.title,
       en.description,
       en.nameLabel,
-      en.emailHelp,
+      en.emailManaged.slice(0, 10),
       en.timezoneLabel,
-      en.localeLabel,
+      en.dateFormatLabel,
       en.saveError,
     ]) {
       expect(text).not.toContain(literal);

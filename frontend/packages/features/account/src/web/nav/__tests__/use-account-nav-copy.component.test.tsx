@@ -20,6 +20,7 @@ describe("useAccountNavCopy", () => {
     expect(copyFor("vi")).toBe(vi);
     expect(copyFor("en")).toBe(en);
     expect(copyFor("vi").security).toBe("Bảo mật");
+    expect(copyFor("vi").title).toBe("Tài khoản của bạn");
   });
 
   it("covers the same entries in both locales", () => {

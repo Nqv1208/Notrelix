@@ -127,6 +127,10 @@
           "testFile": "src/web/profile/__tests__/account-profile.interaction.component.test.tsx"
         },
         {
+          "id": "photo",
+          "testFile": "src/web/profile/__tests__/account-profile.interaction.component.test.tsx"
+        },
+        {
           "id": "edge",
           "testFile": "src/web/profile/__tests__/account-profile.interaction.component.test.tsx"
         },
@@ -242,6 +246,10 @@
           "testFile": "src/web/appearance/__tests__/account-appearance.interaction.component.test.tsx"
         },
         {
+          "id": "preview",
+          "testFile": "src/web/appearance/__tests__/account-appearance.interaction.component.test.tsx"
+        },
+        {
           "id": "loading",
           "testFile": "src/web/appearance/__tests__/account-appearance.interaction.component.test.tsx"
         },
@@ -325,10 +333,20 @@
               "theme": "light"
             }
           ]
+        },
+        {
+          "id": "account-security--saved",
+          "state": "Success",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "Loading", "Error", "EdgeData"],
+        "required": ["Default", "Loading", "Error", "Success", "EdgeData"],
         "delegated": [],
         "notApplicable": [
           {
@@ -362,11 +380,23 @@
           "testFile": "src/web/security/__tests__/account-security.interaction.component.test.tsx"
         },
         {
-          "id": "actions",
+          "id": "sso",
           "testFile": "src/web/security/__tests__/account-security.interaction.component.test.tsx"
         },
         {
           "id": "two-factor",
+          "testFile": "src/web/security/__tests__/account-security.interaction.component.test.tsx"
+        },
+        {
+          "id": "backup",
+          "testFile": "src/web/security/__tests__/account-security.interaction.component.test.tsx"
+        },
+        {
+          "id": "sessions",
+          "testFile": "src/web/security/__tests__/account-security.interaction.component.test.tsx"
+        },
+        {
+          "id": "others",
           "testFile": "src/web/security/__tests__/account-security.interaction.component.test.tsx"
         },
         {
@@ -375,6 +405,10 @@
         },
         {
           "id": "error",
+          "testFile": "src/web/security/__tests__/account-security.interaction.component.test.tsx"
+        },
+        {
+          "id": "notice",
           "testFile": "src/web/security/__tests__/account-security.interaction.component.test.tsx"
         },
         {
@@ -477,7 +511,11 @@
           "testFile": "src/web/notifications/__tests__/account-notifications.interaction.component.test.tsx"
         },
         {
-          "id": "dirty",
+          "id": "toggle",
+          "testFile": "src/web/notifications/__tests__/account-notifications.interaction.component.test.tsx"
+        },
+        {
+          "id": "quiet",
           "testFile": "src/web/notifications/__tests__/account-notifications.interaction.component.test.tsx"
         },
         {
@@ -507,6 +545,240 @@
         {
           "id": "copy",
           "testFile": "src/web/notifications/__tests__/account-notifications.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "account.workspaces",
+      "owner": "@notrelix/features-account",
+      "surfaceKind": "data",
+      "pureEntry": "src/web/workspaces/account-workspaces-surface.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "account-workspaces--default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "account-workspaces--loading",
+          "state": "Loading",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "account-workspaces--error-state",
+          "state": "Error",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "account-workspaces--saved",
+          "state": "Success",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "account-workspaces--sole-owner",
+          "state": "PermissionLimited",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "account-workspaces--edge-data",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": [
+          "Default",
+          "Loading",
+          "Error",
+          "Success",
+          "PermissionLimited",
+          "EdgeData"
+        ],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "Empty",
+            "reason": "A signed-in member belongs to at least one workspace; a member with none is sent to onboarding before this page.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "HighDensity",
+            "reason": "The page lists the member's own workspaces, a handful of cards; there is no list that grows with data.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "ReadOnly",
+            "reason": "The page shows a member's own memberships; there is no product-authoritative read-only variant at this baseline.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          }
+        ]
+      },
+      "responsive": true,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "render",
+          "testFile": "src/web/workspaces/__tests__/account-workspaces.interaction.component.test.tsx"
+        },
+        {
+          "id": "default",
+          "testFile": "src/web/workspaces/__tests__/account-workspaces.interaction.component.test.tsx"
+        },
+        {
+          "id": "leave",
+          "testFile": "src/web/workspaces/__tests__/account-workspaces.interaction.component.test.tsx"
+        },
+        {
+          "id": "sole-owner",
+          "testFile": "src/web/workspaces/__tests__/account-workspaces.interaction.component.test.tsx"
+        },
+        {
+          "id": "guest",
+          "testFile": "src/web/workspaces/__tests__/account-workspaces.interaction.component.test.tsx"
+        },
+        {
+          "id": "loading",
+          "testFile": "src/web/workspaces/__tests__/account-workspaces.interaction.component.test.tsx"
+        },
+        {
+          "id": "error",
+          "testFile": "src/web/workspaces/__tests__/account-workspaces.interaction.component.test.tsx"
+        },
+        {
+          "id": "edge",
+          "testFile": "src/web/workspaces/__tests__/account-workspaces.interaction.component.test.tsx"
+        },
+        {
+          "id": "copy",
+          "testFile": "src/web/workspaces/__tests__/account-workspaces.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "account.frame",
+      "owner": "@notrelix/features-account",
+      "surfaceKind": "navigation",
+      "pureEntry": "src/web/frame/account-frame.tsx",
+      "coveredSources": ["src/web/shared/account-parts.tsx"],
+      "stories": [
+        {
+          "id": "account-frame--default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "account-frame--edge-data",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default", "EdgeData"],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "Loading",
+            "reason": "The frame shows the member's name from the shell's already loaded profile; each page draws its own loading state inside the frame.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "Empty",
+            "reason": "The five pages of the account always exist; there is nothing to be empty.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "Error",
+            "reason": "The frame has no data of its own to fail to load; each page draws its own error state.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "ReadOnly",
+            "reason": "The account pages belong to the signed-in member; there is no read-only variant at this baseline.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          }
+        ]
+      },
+      "responsive": true,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "render",
+          "testFile": "src/web/frame/__tests__/account-frame.interaction.component.test.tsx"
+        },
+        {
+          "id": "navigate",
+          "testFile": "src/web/frame/__tests__/account-frame.interaction.component.test.tsx"
+        },
+        {
+          "id": "edge",
+          "testFile": "src/web/frame/__tests__/account-frame.interaction.component.test.tsx"
         }
       ]
     }

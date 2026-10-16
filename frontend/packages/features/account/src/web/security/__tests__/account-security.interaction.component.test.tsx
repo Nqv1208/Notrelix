@@ -2,18 +2,15 @@ import { describe, expect, it, vi } from "vitest";
 import { fireEvent, renderPureUi, screen, within } from "@notrelix/testing";
 
 import {
-  SECURITY_PASSWORD_CHANGED_AT,
   securityCopyFixture,
   securityDefaultScenario,
   securityEdgeDataScenario,
   securityErrorScenario,
-  securityFormattersFixture,
   securityLoadingScenario,
-  securityNoSessionScenario,
-  securityTwoFactorScenario,
+  securityNoticeScenario,
+  securityOwnPasswordScenario,
   type SecurityScenario,
 } from "../../../verification/account-security-fixtures";
-import { fillCopy, pluralCopy } from "../../shared/account-surface-model";
 import { en } from "../account-security.copy";
 import {
   AccountSecuritySurface,
@@ -28,6 +25,10 @@ function renderSecurity(
 ) {
   const props: AccountSecuritySurfaceProps = {
     ...scenario,
+    onSetTwoFactor: vi.fn(),
+    onRenewBackupCodes: vi.fn(),
+    onSignOut: vi.fn(),
+    onSignOutOthers: vi.fn(),
     onRetry: vi.fn(),
     ...overrides,
   };
@@ -35,153 +36,193 @@ function renderSecurity(
   return { props, view };
 }
 
-function card(name: string) {
-  return screen.getByRole("region", { name });
-}
-
 describe("AccountSecuritySurface", () => {
-  it("FUI[account.security:render] groups password, two-factor and sessions with a localized last-changed date", () => {
+  it("FUI[account.security:render] shows the password, second step and devices in vi and en", () => {
     for (const locale of LOCALES) {
       const copy = securityCopyFixture(locale);
       const { view } = renderSecurity(securityDefaultScenario(locale));
-
       expect(
-        screen.getByRole("heading", { level: 1, name: copy.title }),
+        screen.getByRole("heading", { level: 2, name: copy.title }),
       ).toBeTruthy();
-      const password = card(copy.password.title);
-      // The date goes through the injected locale formatters.
-      const changed = copy.password.lastChanged.replace(
-        "{{date}}",
-        securityFormattersFixture(locale).date(SECURITY_PASSWORD_CHANGED_AT),
+      for (const title of [
+        copy.password.title,
+        copy.twoFactor.title,
+        copy.sessions.title,
+      ])
+        expect(
+          screen.getByRole("heading", { level: 3, name: title }),
+        ).toBeTruthy();
+      expect(screen.getByText(copy.sessions.thisDevice)).toBeTruthy();
+      // Times use the producer's clock: 2 hours and 3 days before "now".
+      expect(document.body.textContent).toContain(
+        locale === "vi" ? "2 giờ trước" : "2 hours ago",
       );
-      expect(within(password).getByText(changed)).toBeTruthy();
-      expect(
-        within(card(copy.twoFactor.title)).getByText(copy.twoFactor.disabled),
-      ).toBeTruthy();
-      expect(
-        within(card(copy.sessions.title)).getByText(
-          pluralCopy(
-            { one: copy.sessions.count_one, other: copy.sessions.count_other },
-            3,
-          ),
-        ),
-      ).toBeTruthy();
-      view.unmount();
-    }
-  });
-
-  it("FUI[account.security:actions] explains why the password and two-factor actions are unavailable", () => {
-    for (const locale of LOCALES) {
-      const copy = securityCopyFixture(locale);
-      const { view } = renderSecurity(securityDefaultScenario(locale));
-
-      const change = screen.getByRole("button", {
-        name: copy.password.change,
-      }) as HTMLButtonElement;
-      expect(change.disabled).toBe(true);
-      const hint = change.getAttribute("aria-describedby");
-      expect(hint).toBeTruthy();
-      expect(document.getElementById(hint as string)?.textContent).toBe(
-        copy.password.unavailable,
+      expect(document.body.textContent).toContain(
+        locale === "vi" ? "3 ngày trước" : "3 days ago",
       );
-
-      const enable = screen.getByRole("button", {
-        name: copy.twoFactor.enable,
-      }) as HTMLButtonElement;
-      expect(enable.disabled).toBe(true);
-      expect(
-        document.getElementById(enable.getAttribute("aria-describedby") ?? "")
-          ?.textContent,
-      ).toBe(copy.twoFactor.unavailable);
       view.unmount();
     }
   });
 
-  it("FUI[account.security:two-factor] shows the enabled state and offers to disable it", () => {
+  it("FUI[account.security:sso] names the provider that owns the password, or offers the change", () => {
+    const copy = securityCopyFixture("en");
+    const sso = renderSecurity(securityDefaultScenario("en"));
+    const link = screen.getByRole("link", {
+      name: new RegExp(copy.password.ssoLink),
+    });
+    expect(link.getAttribute("target")).toBe("_blank");
+    expect(link.getAttribute("rel")).toContain("noopener");
+    sso.view.unmount();
+
+    const own = renderSecurity(securityOwnPasswordScenario("en"));
+    expect(
+      screen
+        .getByRole("link", { name: copy.password.change })
+        .getAttribute("href"),
+    ).toBe("/forgot-password");
+    own.view.unmount();
+  });
+
+  it("FUI[account.security:two-factor] turns the second step off and on", () => {
     for (const locale of LOCALES) {
       const copy = securityCopyFixture(locale);
-      const { view } = renderSecurity(securityTwoFactorScenario(locale));
-      const twoFactor = card(copy.twoFactor.title);
-      expect(within(twoFactor).getByText(copy.twoFactor.enabled)).toBeTruthy();
+      const on = renderSecurity(securityDefaultScenario(locale));
+      fireEvent.click(
+        screen.getByRole("button", { name: copy.twoFactor.disable }),
+      );
+      expect(on.props.onSetTwoFactor).toHaveBeenCalledWith(false);
+      on.view.unmount();
+
+      const off = renderSecurity(securityOwnPasswordScenario(locale));
       expect(
-        within(twoFactor).getByRole("button", { name: copy.twoFactor.disable }),
-      ).toBeTruthy();
-      expect(
-        within(card(copy.sessions.title)).getByText(
-          pluralCopy(
-            { one: copy.sessions.count_one, other: copy.sessions.count_other },
-            1,
-          ),
+        screen.queryByRole("button", { name: copy.twoFactor.backupRenew }),
+      ).toBeNull();
+      fireEvent.click(
+        screen.getByRole("button", { name: copy.twoFactor.enable }),
+      );
+      expect(off.props.onSetTwoFactor).toHaveBeenCalledWith(true);
+      off.view.unmount();
+    }
+  });
+
+  it("FUI[account.security:backup] counts the codes and asks for new ones", () => {
+    const copy = securityCopyFixture("en");
+    const { props, view } = renderSecurity(securityDefaultScenario("en"));
+    expect(
+      screen.getByText(
+        copy.twoFactor.backupText_other.replace("{{count}}", "8"),
+      ),
+    ).toBeTruthy();
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.twoFactor.backupRenew }),
+    );
+    expect(props.onRenewBackupCodes).toHaveBeenCalledTimes(1);
+    view.unmount();
+  });
+
+  it("FUI[account.security:sessions] signs out one device by its own name", () => {
+    const copy = securityCopyFixture("en");
+    const { props, view } = renderSecurity(securityDefaultScenario("en"));
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: copy.sessions.signOutLabel.replace(
+          "{{device}}",
+          "iPad · ứng dụng Notrelix",
         ),
-      ).toBeTruthy();
-      view.unmount();
-    }
+      }),
+    );
+    expect(props.onSignOut).toHaveBeenCalledWith("session-ipad");
+    expect(
+      screen.getByRole("button", {
+        name: copy.sessions.signOutThisLabel.replace(
+          "{{device}}",
+          "MacBook · Chrome",
+        ),
+      }),
+    ).toBeTruthy();
+    view.unmount();
   });
 
-  it("FUI[account.security:loading] shows a named loading state without the cards", () => {
-    for (const locale of LOCALES) {
-      const copy = securityCopyFixture(locale);
-      const { view } = renderSecurity(securityLoadingScenario(locale));
-      expect(screen.getByRole("status", { name: copy.loading })).toBeTruthy();
-      expect(screen.queryByRole("region")).toBeNull();
-      view.unmount();
-    }
-  });
+  it("FUI[account.security:others] signs out every other device, and is off when there is none", () => {
+    const copy = securityCopyFixture("en");
+    const many = renderSecurity(securityDefaultScenario("en"));
+    fireEvent.click(screen.getByRole("button", { name: copy.others.action }));
+    expect(many.props.onSignOutOthers).toHaveBeenCalledTimes(1);
+    many.view.unmount();
 
-  it("FUI[account.security:error] offers a retry when the settings cannot load", () => {
-    for (const locale of LOCALES) {
-      const copy = securityCopyFixture(locale);
-      const { props, view } = renderSecurity(securityErrorScenario(locale));
-      const alert = screen.getByRole("alert");
-      expect(alert.textContent).toContain(copy.loadError);
-      fireEvent.click(within(alert).getByRole("button", { name: copy.retry }));
-      expect(props.onRetry).toHaveBeenCalledTimes(1);
-      view.unmount();
-    }
-  });
-
-  it("FUI[account.security:edge] handles a missing date and session counts of 0, 1 and 1234", () => {
-    const copy = securityCopyFixture("vi");
-    const edge = renderSecurity(securityEdgeDataScenario());
+    const none = renderSecurity(securityOwnPasswordScenario("en"));
     expect(
-      within(card(copy.password.title)).getByText(
-        copy.password.lastChangedUnknown,
-      ),
-    ).toBeTruthy();
-    // Large counts use the locale number format (vi groups with a dot).
-    expect(securityFormattersFixture("vi").number(1234)).toBe("1.234");
-    expect(
-      within(card(copy.sessions.title)).getByText(
-        fillCopy(copy.sessions.count_other, { count: "1.234" }),
-      ),
-    ).toBeTruthy();
-    edge.view.unmount();
-
-    const none = renderSecurity(securityNoSessionScenario("en"));
-    expect(
-      within(card(securityCopyFixture("en").sessions.title)).getByText(
-        "0 sessions are currently active",
-      ),
-    ).toBeTruthy();
+      (
+        screen.getByRole("button", {
+          name: copy.others.action,
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(true);
+    expect(screen.getByText(copy.others.nobody)).toBeTruthy();
     none.view.unmount();
   });
 
+  it("FUI[account.security:loading] shows a named loading state", () => {
+    const copy = securityCopyFixture("en");
+    const { view } = renderSecurity(securityLoadingScenario("en"));
+    expect(screen.getByRole("status", { name: copy.loading })).toBeTruthy();
+    view.unmount();
+  });
+
+  it("FUI[account.security:error] offers a retry when the settings cannot load", () => {
+    const copy = securityCopyFixture("en");
+    const { props, view } = renderSecurity(securityErrorScenario("en"));
+    const alert = screen.getByRole("alert");
+    expect(alert.textContent).toContain(copy.loadError);
+    fireEvent.click(within(alert).getByRole("button", { name: copy.retry }));
+    expect(props.onRetry).toHaveBeenCalledTimes(1);
+    view.unmount();
+  });
+
+  it("FUI[account.security:notice] shows the toast and locks the buttons while busy", () => {
+    const copy = securityCopyFixture("en");
+    const notice = renderSecurity(securityNoticeScenario("en"));
+    expect(screen.getByRole("status").textContent).toContain(
+      copy.twoFactor.renewed,
+    );
+    notice.view.unmount();
+    const busy = renderSecurity({
+      ...securityDefaultScenario("en"),
+      busy: true,
+    });
+    expect(
+      (
+        screen.getByRole("button", {
+          name: copy.twoFactor.backupRenew,
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(true);
+    busy.view.unmount();
+  });
+
+  it("FUI[account.security:edge] keeps long device names and a failed action readable", () => {
+    const copy = securityCopyFixture("vi");
+    const { view } = renderSecurity(securityEdgeDataScenario());
+    expect(document.body.textContent).toContain("Samsung Galaxy Tab S9 Ultra");
+    expect(screen.getByRole("alert").textContent).toContain(copy.actionError);
+    expect(
+      screen.getByText(copy.twoFactor.backupText_one.replace("{{count}}", "1")),
+    ).toBeTruthy();
+    view.unmount();
+  });
+
   it("FUI[account.security:copy] leaves no English literal in the Vietnamese page", () => {
-    const { view } = renderSecurity(securityTwoFactorScenario("vi"));
+    const { view } = renderSecurity(securityNoticeScenario("vi"));
     const text = document.body.textContent ?? "";
     for (const literal of [
       en.title,
-      en.description,
       en.password.title,
-      en.password.change,
       en.twoFactor.title,
-      en.twoFactor.enabled,
-      en.twoFactor.disable,
       en.sessions.title,
-      "session",
-    ]) {
+      en.others.action,
+      en.twoFactor.renewed,
+    ])
       expect(text).not.toContain(literal);
-    }
     view.unmount();
   });
 });

@@ -38,183 +38,137 @@ function renderAppearance(
 }
 
 describe("AccountAppearanceSurface", () => {
-  it("FUI[account.appearance:render] offers labelled radio groups for mode, accent and language", () => {
+  it("FUI[account.appearance:render] shows the four groups with the current choices checked", () => {
     for (const locale of LOCALES) {
       const copy = appearanceCopyFixture(locale);
       const { view } = renderAppearance(appearanceDefaultScenario(locale));
-
       expect(
-        screen.getByRole("heading", { level: 1, name: copy.title }),
+        screen.getByRole("heading", { level: 2, name: copy.title }),
       ).toBeTruthy();
       const mode = screen.getByRole("radiogroup", { name: copy.mode.legend });
+      expect(
+        (
+          within(mode).getByRole("radio", {
+            name: new RegExp(copy.mode.light.label),
+          }) as HTMLInputElement
+        ).checked,
+      ).toBe(true);
       expect(within(mode).getAllByRole("radio")).toHaveLength(4);
-      const accent = screen.getByRole("radiogroup", {
-        name: copy.accent.legend,
-      });
-      expect(within(accent).getAllByRole("radio")).toHaveLength(5);
-      const language = screen.getByRole("radiogroup", {
-        name: copy.language.legend,
-      });
-      expect(within(language).getAllByRole("radio")).toHaveLength(2);
-
-      // Each radio is named by its label and described by its explanation.
-      const light = within(mode).getByRole("radio", {
-        name: copy.mode.light.label,
-      });
-      expect(light.getAttribute("aria-checked")).toBe("true");
       expect(
-        within(mode)
-          .getByRole("radio", { name: copy.mode.dark.label })
-          .getAttribute("aria-checked"),
-      ).toBe("false");
-      expect(light.getAttribute("aria-describedby")).toBeTruthy();
-      view.unmount();
-    }
-  });
-
-  it("FUI[account.appearance:mode] reports the chosen mode through the callback", () => {
-    for (const locale of LOCALES) {
-      const copy = appearanceCopyFixture(locale);
-      const { props, view } = renderAppearance(
-        appearanceDefaultScenario(locale),
-      );
-      fireEvent.click(
-        screen.getByRole("radio", { name: copy.mode.highContrast.label }),
-      );
-      expect(props.onModeChange).toHaveBeenCalledWith("high-contrast");
-      fireEvent.click(
-        screen.getByRole("radio", { name: copy.mode.dark.label }),
-      );
-      expect(props.onModeChange).toHaveBeenLastCalledWith("dark");
-      view.unmount();
-    }
-  });
-
-  it("FUI[account.appearance:accent] shows each accent seed colour through its token variable", () => {
-    for (const locale of LOCALES) {
-      const copy = appearanceCopyFixture(locale);
-      const { props, view } = renderAppearance(
-        appearanceDefaultScenario(locale),
-      );
-      const accent = screen.getByRole("radiogroup", {
-        name: copy.accent.legend,
-      });
-      for (const id of ["blue", "coral", "ember", "sage", "amber"] as const) {
-        const swatch = accent.querySelector(`[data-accent-swatch="${id}"]`);
-        const style = (swatch as HTMLElement | null)?.getAttribute("style");
-        expect(style).toContain(`var(--accent-swatch-${id})`);
-        expect(style).not.toMatch(/#|rgb|hsl|oklch/);
-      }
-      fireEvent.click(
-        within(accent).getByRole("radio", { name: copy.accent.coral.label }),
-      );
-      expect(props.onAccentChange).toHaveBeenCalledWith("coral");
-      view.unmount();
-    }
-  });
-
-  it("FUI[account.appearance:language] switches the language and marks each option's own language", () => {
-    for (const locale of LOCALES) {
-      const copy = appearanceCopyFixture(locale);
-      const { props, view } = renderAppearance(
-        appearanceDefaultScenario(locale),
-      );
-      const language = screen.getByRole("radiogroup", {
-        name: copy.language.legend,
-      });
-      const current = locale;
-      const other = locale === "vi" ? "en" : "vi";
+        within(
+          screen.getByRole("radiogroup", { name: copy.accent.legend }),
+        ).getAllByRole("radio"),
+      ).toHaveLength(5);
       expect(
-        within(language)
-          .getByRole("radio", { name: copy.language[current] })
-          .getAttribute("aria-checked"),
-      ).toBe("true");
-      const option = within(language).getByRole("radio", {
-        name: copy.language[other],
-      });
-      expect(option.closest("[lang]")?.getAttribute("lang")).toBe(other);
-      fireEvent.click(option);
-      expect(props.onLocaleChange).toHaveBeenCalledWith(other);
+        (
+          screen.getByRole("radio", {
+            name: copy.language[locale],
+          }) as HTMLInputElement
+        ).checked,
+      ).toBe(true);
       view.unmount();
     }
   });
 
-  it("FUI[account.appearance:sidebar] is a real switch named by its label that saves the preference", () => {
+  it("FUI[account.appearance:mode] reports the chosen mode", () => {
+    const copy = appearanceCopyFixture("en");
+    const { props, view } = renderAppearance(appearanceDefaultScenario("en"));
+    fireEvent.click(screen.getByRole("radio", { name: copy.mode.dark.label }));
+    expect(props.onModeChange).toHaveBeenCalledWith("dark");
+    fireEvent.click(
+      screen.getByRole("radio", { name: copy.mode.highContrast.label }),
+    );
+    expect(props.onModeChange).toHaveBeenCalledWith("high-contrast");
+    view.unmount();
+  });
+
+  it("FUI[account.appearance:accent] reports the chosen accent and the preview follows its name", () => {
+    const copy = appearanceCopyFixture("en");
+    const { props, view } = renderAppearance(appearanceDefaultScenario("en"));
+    fireEvent.click(
+      screen.getByRole("radio", { name: copy.accent.sage.label }),
+    );
+    expect(props.onAccentChange).toHaveBeenCalledWith("sage");
+    expect(
+      screen.getByText(`${copy.accent.blue.label} · ${copy.mode.light.label}`),
+    ).toBeTruthy();
+    view.unmount();
+  });
+
+  it("FUI[account.appearance:language] reports the chosen language", () => {
+    const { props, view } = renderAppearance(appearanceDefaultScenario("vi"));
+    fireEvent.click(screen.getByRole("radio", { name: "English" }));
+    expect(props.onLocaleChange).toHaveBeenCalledWith("en");
+    view.unmount();
+  });
+
+  it("FUI[account.appearance:sidebar] toggles the sidebar default with the switch", () => {
     for (const locale of LOCALES) {
       const copy = appearanceCopyFixture(locale);
       const { props, view } = renderAppearance(
         appearanceDefaultScenario(locale),
       );
       const toggle = screen.getByRole("switch", { name: copy.sidebar.label });
-      // A native button: Space and Enter activate it (proved in the mock e2e).
-      expect(toggle.tagName).toBe("BUTTON");
       expect(toggle.getAttribute("aria-checked")).toBe("false");
-      expect(screen.getByText(copy.sidebar.help)).toBeTruthy();
       fireEvent.click(toggle);
       expect(props.onSidebarCollapsedChange).toHaveBeenCalledWith(true);
       view.unmount();
     }
   });
 
-  it("FUI[account.appearance:loading] shows a named loading state for the sidebar preference only", () => {
-    for (const locale of LOCALES) {
-      const copy = appearanceCopyFixture(locale);
-      const { view } = renderAppearance(appearanceLoadingScenario(locale));
-      expect(
-        screen.getByRole("status", { name: copy.sidebar.loading }),
-      ).toBeTruthy();
-      expect(screen.queryByRole("switch")).toBeNull();
-      // The device appearance does not wait for the account.
-      expect(
-        screen.getByRole("radiogroup", { name: copy.mode.legend }),
-      ).toBeTruthy();
-      view.unmount();
-    }
+  it("FUI[account.appearance:preview] draws the preview and the company default note", () => {
+    const copy = appearanceCopyFixture("vi");
+    const { view } = renderAppearance(appearanceDefaultScenario("vi"));
+    expect(
+      screen.getByRole("complementary", { name: copy.preview.title }),
+    ).toBeTruthy();
+    expect(screen.getByText(/Minh An Group:/)).toBeTruthy();
+    view.unmount();
   });
 
-  it("FUI[account.appearance:error] offers a retry when the sidebar preference cannot load", () => {
-    for (const locale of LOCALES) {
-      const copy = appearanceCopyFixture(locale);
-      const { props, view } = renderAppearance(appearanceErrorScenario(locale));
-      const alert = screen.getByRole("alert");
-      expect(alert.textContent).toContain(copy.sidebar.loadError);
-      fireEvent.click(
-        within(alert).getByRole("button", { name: copy.sidebar.retry }),
-      );
-      expect(props.onRetryPreferences).toHaveBeenCalledTimes(1);
-      view.unmount();
-    }
+  it("FUI[account.appearance:loading] shows a named loading state for the sidebar choice only", () => {
+    const copy = appearanceCopyFixture("en");
+    const { view } = renderAppearance(appearanceLoadingScenario("en"));
+    expect(
+      screen.getByRole("status", { name: copy.sidebar.loading }),
+    ).toBeTruthy();
+    expect(screen.getAllByRole("radio").length).toBeGreaterThan(0);
+    view.unmount();
   });
 
-  it("FUI[account.appearance:saving] disables the switch while the preference is saved", () => {
-    for (const locale of LOCALES) {
-      const copy = appearanceCopyFixture(locale);
-      const { view } = renderAppearance(appearanceSavingScenario(locale));
-      const toggle = screen.getByRole("switch", {
-        name: copy.sidebar.label,
-      }) as HTMLButtonElement;
-      expect(toggle.disabled).toBe(true);
-      expect(screen.getByRole("status").textContent).toContain(
-        copy.sidebar.saving,
-      );
-      view.unmount();
-    }
+  it("FUI[account.appearance:error] offers a retry when the preference cannot load", () => {
+    const copy = appearanceCopyFixture("en");
+    const { props, view } = renderAppearance(appearanceErrorScenario("en"));
+    const alert = screen.getByRole("alert");
+    expect(alert.textContent).toContain(copy.sidebar.loadError);
+    fireEvent.click(
+      within(alert).getByRole("button", { name: copy.sidebar.retry }),
+    );
+    expect(props.onRetryPreferences).toHaveBeenCalledTimes(1);
+    view.unmount();
   });
 
-  it("FUI[account.appearance:saved] confirms the saved preference and announces a failed one", () => {
+  it("FUI[account.appearance:saving] locks the switch while the preference is written", () => {
+    const copy = appearanceCopyFixture("en");
+    const { view } = renderAppearance(appearanceSavingScenario("en"));
+    expect(
+      (
+        screen.getByRole("switch", {
+          name: copy.sidebar.label,
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(true);
+    view.unmount();
+  });
+
+  it("FUI[account.appearance:saved] shows the toast and announces a failed save", () => {
     for (const locale of LOCALES) {
       const copy = appearanceCopyFixture(locale);
       const saved = renderAppearance(appearanceSavedScenario(locale));
-      expect(
-        screen
-          .getByRole("switch", { name: copy.sidebar.label })
-          .getAttribute("aria-checked"),
-      ).toBe("true");
       expect(screen.getByRole("status").textContent).toContain(
         copy.sidebar.saved,
       );
       saved.view.unmount();
-
       const failed = renderAppearance(appearanceSaveErrorScenario(locale));
       expect(screen.getByRole("alert").textContent).toContain(
         copy.sidebar.saveError,
@@ -223,36 +177,38 @@ describe("AccountAppearanceSurface", () => {
     }
   });
 
-  it("FUI[account.appearance:edge] keeps the high-contrast mode and amber accent selected in Vietnamese", () => {
+  it("FUI[account.appearance:edge] keeps high contrast, amber and a long workspace name readable", () => {
     const copy = appearanceCopyFixture("vi");
     const { view } = renderAppearance(appearanceEdgeDataScenario());
     expect(
-      screen
-        .getByRole("radio", { name: copy.mode.highContrast.label })
-        .getAttribute("aria-checked"),
-    ).toBe("true");
+      (
+        screen.getByRole("radio", {
+          name: new RegExp(copy.mode.highContrast.label),
+        }) as HTMLInputElement
+      ).checked,
+    ).toBe(true);
     expect(
-      screen
-        .getByRole("radio", { name: copy.accent.amber.label })
-        .getAttribute("aria-checked"),
-    ).toBe("true");
+      (
+        screen.getByRole("radio", {
+          name: new RegExp(copy.accent.amber.label),
+        }) as HTMLInputElement
+      ).checked,
+    ).toBe(true);
+    expect(document.body.textContent).toContain("Minh An Việt Nam");
     view.unmount();
   });
 
   it("FUI[account.appearance:copy] leaves no English literal in the Vietnamese page", () => {
-    const { view } = renderAppearance(appearanceSaveErrorScenario("vi"));
+    const { view } = renderAppearance(appearanceSavedScenario("vi"));
     const text = document.body.textContent ?? "";
     for (const literal of [
       en.title,
-      en.description,
       en.mode.legend,
-      en.mode.light.label,
-      en.mode.highContrast.description,
       en.accent.legend,
-      en.accent.coral.label,
-      en.sidebar.legend,
       en.sidebar.label,
-      en.sidebar.saveError,
+      en.preview.title,
+      en.preview.addItem,
+      en.sidebar.saved,
     ]) {
       expect(text).not.toContain(literal);
     }

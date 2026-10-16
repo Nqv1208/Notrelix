@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   AccountAppearanceSurface,
   createUsePreferences,
@@ -11,6 +12,11 @@ import {
 import { useLocale } from "@notrelix/i18n";
 import { useAppRuntime } from "@notrelix/runtime-web";
 import { useTheme, type ThemeMode } from "@notrelix/ui-web";
+import {
+  accountPagesKeys,
+  useAccountPagesApi,
+  useToast,
+} from "./use-account-pages";
 
 export function AccountAppearancePage() {
   const { api: runtimeClient } = useAppRuntime();
@@ -36,6 +42,13 @@ export function AccountAppearancePage() {
     [runtimeClient],
   );
 
+  const accountApi = useAccountPagesApi();
+  const details = useQuery({
+    queryKey: accountPagesKeys.details,
+    queryFn: () => accountApi.getDetails(),
+    retry: false,
+  });
+  const [toast, showToast] = useToast();
   const { preferences, isError, refetch } = usePreferences();
   const updateMutation = useUpdatePreferences();
   const [sidebarSave, setSidebarSave] = useState<AccountSaveStatus>({
@@ -75,6 +88,7 @@ export function AccountAppearancePage() {
   const handleModeChange = useCallback(
     async (mode: ThemeMode) => {
       theme.setMode(mode);
+      showToast(copy.sidebar.saved);
       if (mode === "high-contrast") return;
       try {
         await updateMutation.mutateAsync({ theme: mode });
@@ -82,7 +96,7 @@ export function AccountAppearancePage() {
         // The device mode is already applied; the account mirror is best effort.
       }
     },
-    [theme, updateMutation],
+    [theme, updateMutation, showToast, copy.sidebar.saved],
   );
 
   const handleSidebarCollapsedChange = useCallback(
@@ -92,12 +106,13 @@ export function AccountAppearancePage() {
       try {
         await updateMutation.mutateAsync({ sidebarCollapsed: collapsed });
         setSidebarSave({ state: "saved" });
+        showToast(copy.sidebar.saved);
       } catch {
         setPendingCollapsed(null);
         setSidebarSave({ state: "error" });
       }
     },
-    [updateMutation],
+    [updateMutation, showToast, copy.sidebar.saved],
   );
 
   return (
@@ -106,11 +121,19 @@ export function AccountAppearancePage() {
       mode={theme.mode}
       accent={theme.accent}
       locale={locale}
+      workspaceName={details.data?.workspaceName ?? ""}
+      toast={toast !== null}
       sidebar={sidebar}
       sidebarSave={sidebarSave}
       onModeChange={(mode) => void handleModeChange(mode)}
-      onAccentChange={theme.setAccent}
-      onLocaleChange={setLocale}
+      onAccentChange={(accent) => {
+        theme.setAccent(accent);
+        showToast(copy.sidebar.saved);
+      }}
+      onLocaleChange={(next) => {
+        setLocale(next);
+        showToast(copy.sidebar.saved);
+      }}
       onSidebarCollapsedChange={(collapsed) =>
         void handleSidebarCollapsedChange(collapsed)
       }

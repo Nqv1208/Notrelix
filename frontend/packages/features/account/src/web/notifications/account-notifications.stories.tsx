@@ -2,10 +2,10 @@ import type { Meta, StoryObj } from "@storybook/react";
 
 import {
   notificationsDefaultScenario,
-  notificationsEdgeDataScenario,
-  notificationsErrorScenario,
   notificationsLoadingScenario,
+  notificationsErrorScenario,
   notificationsSavedScenario,
+  notificationsEdgeDataScenario,
 } from "../../verification/account-notifications-fixtures";
 import { AccountNotificationsSurface } from "./account-notifications-surface";
 
