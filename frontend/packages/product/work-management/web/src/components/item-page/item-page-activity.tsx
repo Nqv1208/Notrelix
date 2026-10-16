@@ -1,22 +1,12 @@
-import { useId, useState, type ReactNode } from "react";
+import { useId, useRef, useState, type ReactNode } from "react";
 import { ChevronDown, MoreHorizontal, Paperclip, Zap } from "lucide-react";
 import {
   Avatar,
   AvatarFallback,
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  Popover,
-  PopoverAnchor,
-  PopoverContent,
-  PopoverTrigger,
   Skeleton,
   Textarea,
   cn,
@@ -43,6 +33,13 @@ import type {
 } from "../card-detail/task-detail-types";
 import { canWriteComment } from "../card-detail/task-detail-types";
 import type { ItemPageCopy } from "./item-page.copy";
+import {
+  MentionList,
+  mentionCandidates,
+  mentionToken,
+  type MentionCandidate,
+  type MentionToken,
+} from "./item-page-mention";
 import { fillSheetCopy } from "../card-detail/item-sheet.copy";
 import {
   buildActivityDays,
@@ -59,7 +56,11 @@ import {
   ICON_BUTTON_CLASS,
   PersonMark,
 } from "./item-page-parts";
-import type { ItemPagePerson, ItemPageTab } from "./item-page-types";
+import type {
+  ItemPagePeople,
+  ItemPagePerson,
+  ItemPageTab,
+} from "./item-page-types";
 
 const KEY_CLASS =
   "rounded-[4px] border border-line-strong bg-keycap px-1.25 font-mono text-key text-muted-foreground";
@@ -92,6 +93,7 @@ export function ItemPageActivity({
   onSelectTab,
   members,
   viewer,
+  people,
 }: {
   card: CardDetail;
   data: TaskDetailData;
@@ -105,6 +107,7 @@ export function ItemPageActivity({
   members: readonly CardMember[];
   /** The signed-in person, for the composer's mark. */
   viewer?: ItemPagePerson;
+  people?: ItemPagePeople;
 }) {
   const t = copy.activity;
   const baseId = useId();
@@ -302,6 +305,7 @@ export function ItemPageActivity({
           callbacks={callbacks}
           copy={copy}
           viewer={viewer}
+          people={people}
         />
       ) : null}
     </section>
@@ -676,6 +680,7 @@ function PageComposer({
   callbacks,
   copy,
   viewer,
+  people,
 }: {
   cardId: string;
   members: readonly CardMember[];
@@ -683,6 +688,7 @@ function PageComposer({
   callbacks: TaskDetailCallbacks;
   copy: ItemPageCopy;
   viewer?: ItemPagePerson;
+  people?: ItemPagePeople;
 }) {
   const t = copy.composer;
   const disabled = !canWriteComment(capabilities);
@@ -692,6 +698,27 @@ function PageComposer({
     disabled,
     onCreateUpdate: callbacks.onCreateUpdate,
   });
+  const fieldRef = useRef<HTMLTextAreaElement>(null);
+  // The "@name" the caret is in, the people it matches and the one in focus.
+  const [token, setToken] = useState<MentionToken | null>(null);
+  const [active, setActive] = useState(0);
+  const candidates = mentionCandidates(token, people, copy, viewer?.userId);
+  const listOpen = candidates.length > 0;
+  const pickMention = (candidate: MentionCandidate) => {
+    if (!token) return;
+    draft.insertMention(token, candidate.name, candidate.userIds);
+    setToken(null);
+    const caret = token.from + candidate.name.length + 2;
+    requestAnimationFrame(() => {
+      fieldRef.current?.focus();
+      fieldRef.current?.setSelectionRange(caret, caret);
+    });
+  };
+  const readToken = (text: string, caret: number) => {
+    const next = mentionToken(text, caret);
+    setToken(next);
+    setActive(0);
+  };
 
   return (
     <div className="mt-3 flex gap-3">
@@ -702,86 +729,119 @@ function PageComposer({
           <AvatarFallback className="bg-state-hover-strong text-avatar-lg" />
         </Avatar>
       )}
-      <Popover open={draft.mentionOpen} onOpenChange={draft.setMentionOpen}>
-        <PopoverAnchor asChild>
-          <div className="flex min-w-0 flex-1 flex-col gap-2.5 rounded-[10px] border border-line-strong bg-popover px-3 py-2.5 focus-within:ring-2 focus-within:ring-focus-ring">
-            <Textarea
-              value={draft.body}
-              rows={2}
-              disabled={disabled}
-              aria-label={t.label}
-              placeholder={t.placeholder}
-              onChange={(event) => draft.changeBody(event.target.value)}
-              onKeyDown={draft.handleKeyDown}
-              className="h-12 min-h-11 resize-none rounded-none border-0 bg-transparent p-0.5 text-item-text shadow-none focus-visible:ring-0"
-            />
-            <span className="flex items-center gap-1.5 text-item-note text-meta-foreground">
-              <DisabledControl reason={t.attachUnavailable}>
-                <button
-                  type="button"
-                  aria-disabled="true"
-                  aria-label={t.attach}
-                  className={cn(ICON_BUTTON_CLASS, "size-7")}
-                >
-                  <Paperclip aria-hidden="true" />
-                </button>
-              </DisabledControl>
-              <PopoverTrigger asChild>
-                <button
-                  type="button"
-                  aria-label={t.mention}
-                  title={t.mention}
-                  disabled={disabled || members.length === 0}
-                  className={cn(
-                    ICON_BUTTON_CLASS,
-                    "size-7 disabled:opacity-40",
-                  )}
-                >
-                  <span aria-hidden="true" className="text-item-ui font-medium">
-                    @
-                  </span>
-                </button>
-              </PopoverTrigger>
-              <span className="flex-1" />
-              <kbd className={KEY_CLASS}>{t.shortcut}</kbd>
+      <div className="relative flex min-w-0 flex-1 flex-col gap-2.5 rounded-[10px] border border-line-strong bg-popover px-3 py-2.5 focus-within:ring-2 focus-within:ring-focus-ring">
+        {listOpen ? (
+          <MentionList
+            candidates={candidates}
+            query={token?.query ?? ""}
+            activeIndex={Math.min(active, candidates.length - 1)}
+            copy={copy}
+            onPick={pickMention}
+            onHover={setActive}
+          />
+        ) : null}
+        <>
+          <Textarea
+            ref={fieldRef}
+            value={draft.body}
+            rows={2}
+            disabled={disabled}
+            aria-label={t.label}
+            aria-controls={listOpen ? "item-page-mention-list" : undefined}
+            aria-expanded={listOpen}
+            placeholder={t.placeholder}
+            onChange={(event) => {
+              draft.changeBody(event.target.value);
+              readToken(
+                event.target.value,
+                event.target.selectionStart ?? event.target.value.length,
+              );
+            }}
+            onClick={(event) =>
+              readToken(
+                event.currentTarget.value,
+                event.currentTarget.selectionStart,
+              )
+            }
+            onBlur={() => setToken(null)}
+            onKeyDown={(event) => {
+              if (listOpen) {
+                if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+                  event.preventDefault();
+                  const step = event.key === "ArrowDown" ? 1 : -1;
+                  setActive(
+                    (current) =>
+                      (current + step + candidates.length) % candidates.length,
+                  );
+                  return;
+                }
+                if (
+                  (event.key === "Enter" && !event.metaKey && !event.ctrlKey) ||
+                  event.key === "Tab"
+                ) {
+                  event.preventDefault();
+                  const pick =
+                    candidates[Math.min(active, candidates.length - 1)];
+                  if (pick) pickMention(pick);
+                  return;
+                }
+                if (event.key === "Escape") {
+                  event.preventDefault();
+                  setToken(null);
+                  return;
+                }
+              }
+              draft.handleKeyDown(event);
+            }}
+            className="h-12 min-h-11 resize-none rounded-none border-0 bg-transparent p-0.5 text-item-text shadow-none focus-visible:ring-0"
+          />
+          <span className="flex items-center gap-1.5 text-item-note text-meta-foreground">
+            <DisabledControl reason={t.attachUnavailable}>
               <button
                 type="button"
-                disabled={!draft.canSubmit}
-                onClick={draft.submit}
-                className={cn(
-                  BUTTON_SM_VARIANT_CLASS.primary,
-                  "disabled:cursor-default disabled:opacity-50",
-                )}
+                aria-disabled="true"
+                aria-label={t.attach}
+                className={cn(ICON_BUTTON_CLASS, "size-7")}
               >
-                {t.submit}
+                <Paperclip aria-hidden="true" />
               </button>
-            </span>
-          </div>
-        </PopoverAnchor>
-        <PopoverContent align="start" className="w-60 p-0">
-          <Command>
-            <CommandInput placeholder={t.searchPeople} />
-            <CommandList>
-              <CommandEmpty>{t.noPeople}</CommandEmpty>
-              <CommandGroup heading={t.people}>
-                {members.map((member) => (
-                  <CommandItem
-                    key={member.userId}
-                    value={member.name}
-                    onSelect={() => draft.mention(member)}
-                  >
-                    <PersonMark
-                      person={member}
-                      className="size-5 text-avatar-sm"
-                    />
-                    {member.name}
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
+            </DisabledControl>
+            <button
+              type="button"
+              aria-label={t.mention}
+              title={t.mention}
+              disabled={disabled || !people}
+              onClick={() => {
+                const field = fieldRef.current;
+                const text = draft.body;
+                const spaced =
+                  text === "" || /\s$/.test(text) ? text : `${text} `;
+                draft.changeBody(`${spaced}@`);
+                readToken(`${spaced}@`, spaced.length + 1);
+                field?.focus();
+              }}
+              className={cn(ICON_BUTTON_CLASS, "size-7 disabled:opacity-40")}
+            >
+              <span aria-hidden="true" className="text-item-ui font-medium">
+                @
+              </span>
+            </button>
+            <span className="flex-1" />
+            <kbd className={KEY_CLASS}>{t.shortcut}</kbd>
+            <button
+              type="button"
+              disabled={!draft.canSubmit}
+              onClick={draft.submit}
+              className={cn(
+                BUTTON_SM_VARIANT_CLASS.primary,
+                "disabled:cursor-default disabled:opacity-50",
+              )}
+            >
+              {t.submit}
+            </button>
+          </span>
+        </>
+      </div>
     </div>
   );
 }

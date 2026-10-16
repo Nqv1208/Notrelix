@@ -69,6 +69,39 @@ export interface ItemFollowingDto {
   readonly followers: readonly { userId: string; name: string }[];
 }
 
+/** Who completed or archived an item and when (gap `CTR-GAP-WM-ITEM-STATES`). */
+export interface ItemLifecycleDto {
+  readonly archived: { readonly at: string; readonly byName: string } | null;
+  readonly completed: { readonly at: string; readonly byName: string } | null;
+}
+
+/**
+ * The people an item can name (gap `CTR-GAP-WM-ITEM-STATES`): each person's
+ * department, open items on the board and whether they see the board; each
+ * team with how many of its people see it.
+ */
+export interface PeopleDirectoryDto {
+  readonly people: readonly {
+    readonly userId: string;
+    readonly name: string;
+    readonly department: string | null;
+    readonly openCount: number;
+    readonly onBoard: boolean;
+    /** What the person may do on the board; null when they do not see it. */
+    readonly level: "viewer" | "commenter" | "editor" | "manager" | null;
+  }[];
+  readonly teams: readonly {
+    readonly id: string;
+    readonly name: string;
+    readonly memberCount: number;
+    /** Members who see the board, and who they are. */
+    readonly viewableCount: number;
+    readonly viewableUserIds: readonly string[];
+  }[];
+  /** The caller may invite a person who does not see the board. */
+  readonly canInvite: boolean;
+}
+
 export function createItemExtrasApi(client: NotrelixClient) {
   const { api } = client;
   const quiet = { skipGlobalErrorToast: true } as const;
@@ -135,6 +168,46 @@ export function createItemExtrasApi(client: NotrelixClient) {
         idempotencyKey: key(),
         ...quiet,
       });
+    },
+    async getLifecycle(itemId: string): Promise<ItemLifecycleDto> {
+      const dto = await api.get<Partial<ItemLifecycleDto> | null>(
+        `/board-items/${itemId}/lifecycle`,
+      );
+      return {
+        archived: dto?.archived ?? null,
+        completed: dto?.completed ?? null,
+      };
+    },
+    async restoreItem(itemId: string): Promise<void> {
+      await api.post<void>(
+        `/board-items/${itemId}/restore`,
+        {},
+        { idempotencyKey: key(), ...quiet },
+      );
+    },
+    async reopenItem(itemId: string): Promise<void> {
+      await api.post<void>(
+        `/board-items/${itemId}/reopen`,
+        {},
+        { idempotencyKey: key(), ...quiet },
+      );
+    },
+    async getPeopleDirectory(boardId: string): Promise<PeopleDirectoryDto> {
+      const dto = await api.get<Partial<PeopleDirectoryDto> | null>(
+        `/boards/${boardId}/people-directory`,
+      );
+      return {
+        people: dto?.people ?? [],
+        teams: dto?.teams ?? [],
+        canInvite: dto?.canInvite === true,
+      };
+    },
+    async invitePerson(boardId: string, userId: string): Promise<void> {
+      await api.post<void>(
+        `/boards/${boardId}/people-directory/invitations`,
+        { userId },
+        { idempotencyKey: key(), ...quiet },
+      );
     },
     async setFollowing(itemId: string, following: boolean): Promise<void> {
       if (following)

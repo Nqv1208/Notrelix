@@ -72,6 +72,22 @@ export function useCommentDraft({
     if (next.endsWith("@") && members.length > 0) setMentionOpen(true);
   }
 
+  /** Replaces the typed "@…" at `range` with the chosen name and records who is reached. */
+  function insertMention(
+    range: { readonly from: number; readonly to: number },
+    label: string,
+    userIds: readonly string[],
+  ) {
+    setBody(
+      (current) =>
+        `${current.slice(0, range.from)}@${label} ${current.slice(range.to)}`,
+    );
+    setMentionUserIds((current) => [
+      ...current,
+      ...userIds.filter((id) => !current.includes(id)),
+    ]);
+  }
+
   function mention(member: CardMember) {
     setMentionUserIds((current) =>
       current.includes(member.userId) ? current : [...current, member.userId],
@@ -93,6 +109,7 @@ export function useCommentDraft({
     changeBody,
     handleKeyDown,
     mention,
+    insertMention,
     submit,
   };
 }

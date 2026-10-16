@@ -2138,10 +2138,13 @@
       "coveredSources": [
         "src/components/item-page/item-page-activity.tsx",
         "src/components/item-page/item-page-header.tsx",
+        "src/components/item-page/item-page-mention.tsx",
         "src/components/item-page/item-page-parts.tsx",
         "src/components/item-page/item-page-rail.tsx",
         "src/components/item-page/item-page-sections.tsx",
-        "src/components/item-page/item-page-topbar.tsx"
+        "src/components/item-page/item-page-states.tsx",
+        "src/components/item-page/item-page-topbar.tsx",
+        "src/components/item-page/item-pickers.tsx"
       ],
       "stories": [
         {
@@ -2235,6 +2238,86 @@
               "theme": "light"
             }
           ]
+        },
+        {
+          "id": "work-management-item-page-surface--not-found",
+          "state": "Unavailable",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-item-page-surface--loading-slow",
+          "state": "Loading",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-item-page-surface--empty",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-item-page-surface--completed",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-item-page-surface--archived",
+          "state": "ReadOnly",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-item-page-surface--offline",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-item-page-surface--long-content",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-item-page-surface--uploading",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         }
       ],
       "stateCoverage": {
@@ -2308,6 +2391,54 @@
         },
         {
           "id": "edge",
+          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "not-found",
+          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "loading-slow",
+          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "lifecycle",
+          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "offline",
+          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "empty",
+          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "long",
+          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "pickers",
+          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "assignee-picker",
+          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "assignee-ask",
+          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "mention",
+          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "link-picker",
+          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "uploads",
           "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
         }
       ]

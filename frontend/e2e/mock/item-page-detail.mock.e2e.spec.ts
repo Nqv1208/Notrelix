@@ -91,7 +91,8 @@ test.describe("Item page data (owner)", () => {
       await expect(links.getByText(group, { exact: true })).toBeVisible();
     await expect(links.getByText("ERP-129")).toBeVisible();
     await links.getByRole("button", { name: "Thêm" }).click();
-    await page.getByRole("radio", { name: "Chờ việc" }).click();
+    await page.getByRole("radio", { name: "Đang chờ" }).click();
+    await page.getByRole("combobox", { name: /Tìm theo mã/ }).fill("ERP-150");
     await page.getByRole("option", { name: /ERP-150/ }).click();
     await expect(links.getByText("ERP-150")).toBeVisible();
     await links.getByText("ERP-150").hover();

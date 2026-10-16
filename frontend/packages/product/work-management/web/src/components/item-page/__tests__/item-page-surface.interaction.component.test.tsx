@@ -17,6 +17,9 @@ import {
   editorSheetCapabilities,
 } from "../../../verification/item-sheet-fixtures";
 import {
+  erpPageLongChildItems,
+  erpPagePeople,
+  erpPageUploads,
   ERP_PAGE_NOW,
   ERP_PAGE_TIME_ZONE,
   erpPageBoard,
@@ -261,10 +264,8 @@ describe.each([
   it(`${fui("wm.item-page.surface:properties", locale)}edits the status and the start date through the shared editors (${locale})`, () => {
     const { callbacks } = renderPage(copy);
     const rail = within(screen.getByRole("complementary"));
-    fireEvent.keyDown(rail.getByRole("button", { name: copy.rail.status }), {
-      key: "Enter",
-    });
-    fireEvent.click(screen.getByRole("menuitem", { name: "Chờ duyệt" }));
+    fireEvent.click(rail.getByRole("button", { name: copy.rail.status }));
+    fireEvent.click(screen.getByRole("option", { name: /Chờ duyệt/ }));
     expect(callbacks.onUpdateFieldValue).toHaveBeenCalledWith({
       cardId: "item-erp-142",
       fieldDefinitionId: "field-status",
@@ -409,7 +410,7 @@ describe.each([
     await waitFor(() =>
       expect(screen.getByRole("heading", { level: 1 })).toBeTruthy(),
     );
-    expect(screen.getByText(copy.description.empty)).toBeTruthy();
+    expect(screen.getByText(copy.states.empty.description)).toBeTruthy();
     expect(screen.getByText(copy.activity.emptyAll)).toBeTruthy();
     expect(screen.queryByRole("progressbar")).toBeNull();
     expect(
@@ -499,7 +500,7 @@ describe("item page sections with data (vi)", () => {
     );
     expect(callbacks.onRemoveLink).toHaveBeenCalledWith("l1");
     fireEvent.click(screen.getByRole("button", { name: "Thêm" }));
-    fireEvent.click(screen.getByRole("radio", { name: "Chặn việc" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Đang chặn" }));
     fireEvent.click(screen.getByText("Cảnh báo"));
     expect(callbacks.onAddLink).toHaveBeenCalledWith("i150", "blocks");
   });
@@ -525,5 +526,377 @@ describe("item page sections with data (vi)", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Đang theo dõi" }));
     expect(callbacks.onToggleWatch).toHaveBeenCalledWith(false);
+  });
+});
+
+describe.each([
+  ["vi", viCopy],
+  ["en", en],
+] as const)("item page states (%s)", (locale, copy) => {
+  it(`${fui("wm.item-page.surface:not-found", locale)}says the item is not there, with the key, and offers search and home (${locale})`, () => {
+    const onOpenSearch = vi.fn();
+    const onGoHome = vi.fn();
+    renderPage(copy, {
+      status: "notFound",
+      card: null,
+      detailData: undefined,
+      itemKey: "ERP-171",
+      onOpenSearch,
+      onGoHome,
+    });
+    expect(
+      screen.getByRole("heading", {
+        level: 1,
+        name: copy.states.notFound.title.replace("{{key}}", "ERP-171"),
+      }),
+    ).toBeTruthy();
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.states.notFound.search }),
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.states.notFound.home }),
+    );
+    expect(onOpenSearch).toHaveBeenCalledTimes(1);
+    expect(onGoHome).toHaveBeenCalledTimes(1);
+  });
+
+  it(`${fui("wm.item-page.surface:loading-slow", locale)}keeps the frame while loading and says when it is slow (${locale})`, () => {
+    const { rerender } = renderPage(copy, {
+      status: "loading",
+      card: null,
+      detailData: undefined,
+    });
+    expect(screen.queryByText(copy.states.loadingSlow)).toBeNull();
+    rerender(
+      <ItemPageSurface
+        {...props(copy, {
+          status: "loading",
+          card: null,
+          detailData: undefined,
+          slow: true,
+        })}
+      />,
+    );
+    expect(screen.getByText(copy.states.loadingSlow)).toBeTruthy();
+  });
+
+  it(`${fui("wm.item-page.surface:lifecycle", locale)}shows a done item's notice and reopens it; an archived one is read-only and restores (${locale})`, () => {
+    const onReopen = vi.fn();
+    const done = renderPage(copy, {
+      lifecycle: {
+        completed: { at: "2026-10-06T09:00:00.000Z", byName: "Vũ Thanh" },
+        onReopen,
+      },
+    });
+    const banner = document.querySelector("[data-item-banner=completed]");
+    expect(banner?.textContent).toContain("Vũ Thanh");
+    fireEvent.click(
+      within(banner as HTMLElement).getByRole("button", {
+        name: copy.states.completed.reopen,
+      }),
+    );
+    expect(onReopen).toHaveBeenCalledTimes(1);
+    done.unmount();
+
+    const onRestore = vi.fn();
+    renderPage(copy, {
+      lifecycle: {
+        archived: { at: "2026-10-08T03:00:00.000Z", byName: "Nguyễn Thu Hà" },
+        onRestore,
+      },
+    });
+    const archived = document.querySelector("[data-item-banner=archived]");
+    expect(archived?.textContent).toContain("Nguyễn Thu Hà");
+    // Read-only whatever the board grants: the composer is off.
+    expect(
+      screen
+        .getByRole("textbox", { name: copy.composer.label })
+        .hasAttribute("disabled"),
+    ).toBe(true);
+    fireEvent.click(
+      within(archived as HTMLElement).getByRole("button", {
+        name: copy.states.archived.restore,
+      }),
+    );
+    expect(onRestore).toHaveBeenCalledTimes(1);
+  });
+
+  it(`${fui("wm.item-page.surface:offline", locale)}says what waits while offline and marks the values (${locale})`, () => {
+    renderPage(copy, {
+      offline: { pendingCount: 2, properties: ["due"], childItems: true },
+    });
+    const notice = document.querySelector("[data-item-banner=offline]");
+    expect(notice?.textContent).toContain(copy.states.offline.title);
+    expect(screen.getAllByText(copy.states.offline.pending).length).toBe(2);
+  });
+
+  it(`${fui("wm.item-page.surface:empty", locale)}folds the empty fields and invites the first sub-item (${locale})`, () => {
+    const item = erpPageItem({
+      descriptionMd: undefined,
+      dueAt: null,
+      dueDate: undefined,
+      startDate: undefined,
+      labels: [],
+      childProgress: null,
+    });
+    renderPage(copy, {
+      card: item,
+      detailData: { ...erpPageDetailData(item), childItems: [] },
+      callbacks: { ...callbacksMock(), onAddChildItem: vi.fn() },
+    });
+    const rail = within(screen.getByRole("complementary"));
+    expect(rail.queryByRole("button", { name: copy.rail.due })).toBeNull();
+    fireEvent.click(
+      rail.getByRole("button", {
+        name: new RegExp(
+          copy.states.empty.showFields_other.replace("{{count}}", "\\d+"),
+        ),
+      }),
+    );
+    expect(rail.getByRole("button", { name: copy.rail.due })).toBeTruthy();
+    expect(screen.getByText(copy.states.empty.children)).toBeTruthy();
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.states.empty.addChild }),
+    );
+    expect(
+      screen.getByRole("textbox", { name: copy.children.heading }),
+    ).toBeTruthy();
+  });
+
+  it(`${fui("wm.item-page.surface:long", locale)}shows a long list of sub-items in part and expands it (${locale})`, () => {
+    const item = erpPageItem({ childProgress: { done: 12, total: 48 } });
+    renderPage(copy, {
+      card: item,
+      detailData: {
+        ...erpPageDetailData(item),
+        childItems: erpPageLongChildItems,
+      },
+    });
+    const more = screen.getByRole("button", {
+      name: copy.states.long.showChildren.replace("{{count}}", "40"),
+    });
+    expect(screen.queryByText("Đối chiếu mã kho chi nhánh 20")).toBeNull();
+    fireEvent.click(more);
+    expect(screen.getByText("Đối chiếu mã kho chi nhánh 20")).toBeTruthy();
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.states.long.hideChildren }),
+    );
+    expect(screen.queryByText("Đối chiếu mã kho chi nhánh 20")).toBeNull();
+  });
+
+  it(`${fui("wm.item-page.surface:pickers", locale)}picks Status with the keyboard and a number, Priority with none, and a day with a quick chip (${locale})`, () => {
+    const { callbacks } = renderPage(copy, { people: erpPagePeople });
+    const rail = within(screen.getByRole("complementary"));
+
+    // Status: type to filter, Enter chooses the highlighted option.
+    fireEvent.click(rail.getByRole("button", { name: copy.rail.status }));
+    const search = screen.getByRole("combobox", {
+      name: copy.pickers.status.label,
+    });
+    fireEvent.change(search, { target: { value: "duy" } });
+    expect(screen.getAllByRole("option")).toHaveLength(1);
+    fireEvent.keyDown(search, { key: "Enter" });
+    expect(callbacks.onUpdateFieldValue).toHaveBeenLastCalledWith({
+      cardId: "item-erp-142",
+      fieldDefinitionId: "field-status",
+      value: "status-review",
+    });
+
+    // Status again: a digit chooses while the field is empty.
+    fireEvent.click(rail.getByRole("button", { name: copy.rail.status }));
+    fireEvent.keyDown(
+      screen.getByRole("combobox", { name: copy.pickers.status.label }),
+      { key: "4" },
+    );
+    expect(callbacks.onUpdateFieldValue).toHaveBeenLastCalledWith({
+      cardId: "item-erp-142",
+      fieldDefinitionId: "field-status",
+      value: "status-done",
+    });
+
+    // Priority: "none" clears it.
+    fireEvent.click(rail.getByRole("button", { name: copy.rail.priority }));
+    fireEvent.click(
+      screen.getByRole("option", {
+        name: new RegExp(copy.pickers.priority.none),
+      }),
+    );
+    expect(callbacks.onUpdateFieldValue).toHaveBeenLastCalledWith({
+      cardId: "item-erp-142",
+      fieldDefinitionId: "field-priority",
+      value: null,
+    });
+
+    // Due: a quick chip sets the day (and closes the picker).
+    fireEvent.click(rail.getByRole("button", { name: copy.rail.due }));
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.pickers.date.tomorrow }),
+    );
+    const write = vi.mocked(callbacks.onUpdateFieldValue).mock.lastCall?.[0];
+    expect(write?.fieldDefinitionId).toBe("field-due-date");
+    // The day moves, the time of day (17:00 Hanoi) stays.
+    expect(write?.value).toBe("2026-10-13T10:00:00.000Z");
+  });
+
+  it(`${fui("wm.item-page.surface:assignee-picker", locale)}lists who sees the board first, invites or asks for the rest, clears and assigns me (${locale})`, () => {
+    const onInvite = vi.fn();
+    const { callbacks } = renderPage(copy, {
+      people: { ...erpPagePeople, onInvite },
+    });
+    const rail = within(screen.getByRole("complementary"));
+    fireEvent.click(rail.getByRole("button", { name: copy.rail.assignee }));
+    const search = screen.getByRole("combobox", {
+      name: copy.pickers.assignee.label,
+    });
+    fireEvent.change(search, { target: { value: "ph" } });
+    expect(screen.getByText(copy.pickers.assignee.members)).toBeTruthy();
+    expect(screen.getByText(copy.pickers.assignee.outside)).toBeTruthy();
+    // Who is not on the board is invited by a manager.
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.pickers.assignee.invite }),
+    );
+    expect(onInvite).toHaveBeenCalledWith("user-thinh");
+    // Backspace on an empty field clears the assignee.
+    fireEvent.change(search, { target: { value: "" } });
+    fireEvent.keyDown(search, { key: "Backspace" });
+    expect(callbacks.onUpdateFieldValue).toHaveBeenLastCalledWith({
+      cardId: "item-erp-142",
+      fieldDefinitionId: "field-person",
+      value: [],
+    });
+    // I assigns the signed-in person.
+    fireEvent.keyDown(
+      screen.getByRole("combobox", { name: copy.pickers.assignee.label }),
+      { key: "i" },
+    );
+    expect(callbacks.onUpdateFieldValue).toHaveBeenLastCalledWith({
+      cardId: "item-erp-142",
+      fieldDefinitionId: "field-person",
+      value: [erpPageViewer.userId],
+    });
+  });
+
+  it(`${fui("wm.item-page.surface:assignee-ask", locale)}tells a member who is not a manager whom to ask (${locale})`, () => {
+    renderPage(copy, { people: { ...erpPagePeople, canInvite: false } });
+    fireEvent.click(
+      within(screen.getByRole("complementary")).getByRole("button", {
+        name: copy.rail.assignee,
+      }),
+    );
+    expect(
+      screen.queryByRole("button", { name: copy.pickers.assignee.invite }),
+    ).toBeNull();
+    expect(
+      screen.getAllByText(copy.pickers.assignee.askManager).length,
+    ).toBeGreaterThan(0);
+  });
+
+  it(`${fui("wm.item-page.surface:mention", locale)}lists people and teams after @, warns about who cannot see the item and inserts the pick (${locale})`, async () => {
+    const { callbacks } = renderPage(copy, { people: erpPagePeople });
+    const field = screen.getByRole("textbox", { name: copy.composer.label });
+    fireEvent.change(field, {
+      target: { value: "Chị @Kh", selectionStart: 7 },
+    });
+    // Khánh Linh sees the item; Văn Tài does not and is not notified.
+    const list = await screen.findByRole("listbox", {
+      name: copy.composer.mentionList,
+    });
+    expect(within(list).getByText("Văn Tài", { exact: false })).toBeTruthy();
+    expect(list.textContent).toContain(
+      copy.composer.mentionNoAccess.replace("{{name}}", "Tài"),
+    );
+    fireEvent.keyDown(field, { key: "Escape" });
+    expect(
+      screen.queryByRole("listbox", { name: copy.composer.mentionList }),
+    ).toBeNull();
+    fireEvent.click(field);
+    fireEvent.keyDown(field, { key: "Enter" });
+    expect((field as HTMLTextAreaElement).value).toBe("Chị @Đỗ Khánh Linh ");
+    fireEvent.click(screen.getByRole("button", { name: copy.composer.submit }));
+    expect(callbacks.onCreateUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ mentionUserIds: ["user-linh"] }),
+      expect.anything(),
+    );
+  });
+
+  it(`${fui("wm.item-page.surface:link-picker", locale)}picks the relation, lists linked items as taken and explains a loop (${locale})`, () => {
+    const item = erpPageItem();
+    const data = erpPageDetailData(item);
+    renderPage(copy, {
+      card: item,
+      callbacks: { ...callbacksMock(), onAddLink: vi.fn() },
+      detailData: {
+        ...data,
+        links: [
+          {
+            id: "link-129",
+            relation: "blocked-by",
+            item: {
+              id: "item-129",
+              key: "ERP-129",
+              title: "Chốt danh mục tài khoản kế toán dùng chung",
+              statusName: "Hoàn thành",
+              statusCategory: "done",
+            },
+          },
+        ],
+        linkCandidates: [
+          {
+            id: "item-129",
+            key: "ERP-129",
+            title: "Chốt danh mục tài khoản kế toán dùng chung",
+          },
+          { id: "item-144", key: "ERP-144", title: "Kiểm thử phân hệ công nợ" },
+        ],
+      },
+    });
+    fireEvent.click(screen.getByRole("button", { name: copy.links.add }));
+    // Already linked: listed, marked, not choosable.
+    expect(screen.getByText(copy.links.picker.linked)).toBeTruthy();
+    // On "blocking" the item it waits for would make a loop.
+    fireEvent.click(
+      screen.getByRole("radio", { name: copy.links.picker.relations.blocks }),
+    );
+    expect(
+      screen.getByText(
+        copy.links.picker.cycleBlocks
+          .replace("{{key}}", "ERP-142")
+          .replace("{{other}}", "ERP-129"),
+      ),
+    ).toBeTruthy();
+  });
+
+  it(`${fui("wm.item-page.surface:uploads", locale)}lists files being sent and refused, retries, skips and takes a drop anywhere on the item (${locale})`, () => {
+    const onRetry = vi.fn();
+    const onDismiss = vi.fn();
+    const onAddFile = vi.fn();
+    renderPage(copy, {
+      uploads: erpPageUploads,
+      onRetryUpload: onRetry,
+      onDismissUpload: onDismiss,
+      callbacks: { ...callbacksMock(), onAddFile },
+    });
+    expect(
+      screen
+        .getByRole("progressbar", { name: "bien-ban-doi-chieu.pdf" })
+        .getAttribute("aria-valuenow"),
+    ).toBe("64");
+    fireEvent.click(screen.getByRole("button", { name: copy.files.retry }));
+    expect(onRetry).toHaveBeenCalledWith("upload-zip");
+    fireEvent.click(screen.getByRole("button", { name: copy.files.skip }));
+    expect(onDismiss).toHaveBeenCalledWith("upload-zip");
+
+    // Dragging a file over the item shows the drop zone; dropping sends it.
+    const page = screen.getByRole("heading", { level: 1 }).closest("section")!;
+    const file = new File(["x"], "bien-ban.pdf", { type: "application/pdf" });
+    fireEvent.dragEnter(page, {
+      dataTransfer: { types: ["Files"], files: [file] },
+    });
+    expect(
+      document.querySelector("[data-item-drop-zone]")?.textContent,
+    ).toContain(copy.files.dropHere.replace("{{key}}", "ERP-142"));
+    fireEvent.drop(page, { dataTransfer: { types: ["Files"], files: [file] } });
+    expect(onAddFile).toHaveBeenCalledWith(file);
+    expect(document.querySelector("[data-item-drop-zone]")).toBeNull();
   });
 });

@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { initialsFor } from "@notrelix/features-workspace/core";
@@ -10,9 +10,11 @@ import {
   useBoardHeaderCopy,
   useKanbanLaneCopy,
   type ItemPageTab,
+  type ItemPageToast,
   type ItemPageViewKind,
 } from "@notrelix/work-management-web";
 import type { ItemSearch } from "../../../../router/schemas/item-search-schema";
+import { showItemNotice } from "../../../../shell/workspace/item-notice-toast";
 import { useBoardHeaderData } from "../../../../shell/workspace/use-board-header-data";
 
 const ROUTE = "/workspaces/$workspaceId/boards/$boardId/items/$itemId";
@@ -52,6 +54,42 @@ export function BoardItemPage() {
     }),
     [boardPath, itemId],
   );
+
+  // The undo of the last notice that has one: ⌘Z (Ctrl+Z) does the same.
+  const undoRef = useRef<{ id: string | number; run: () => void } | null>(null);
+  const showToast = useCallback((notice: ItemPageToast) => {
+    const id = showItemNotice(notice, (gone) => {
+      if (undoRef.current?.id === gone) undoRef.current = null;
+    });
+    if (notice.action?.hint)
+      undoRef.current = {
+        id,
+        run: () => {
+          toast.dismiss(id);
+          notice.action?.onAction();
+        },
+      };
+  }, []);
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key.toLowerCase() !== "z" || event.shiftKey) return;
+      if (!event.metaKey && !event.ctrlKey) return;
+      const target = event.target;
+      if (
+        target instanceof HTMLElement &&
+        (target.isContentEditable ||
+          ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName))
+      )
+        return;
+      const undo = undoRef.current;
+      if (!undo) return;
+      event.preventDefault();
+      undoRef.current = null;
+      undo.run();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   const viewer = useMemo(
     () =>
@@ -106,6 +144,32 @@ export function BoardItemPage() {
             params: { workspaceId, boardId, itemId: next },
             search: (prev: ItemSearch) => prev,
             replace: true,
+          })
+        }
+        onToast={showToast}
+        onEditStatuses={() =>
+          void navigate({
+            to: "/workspaces/$workspaceId/boards/$boardId/settings",
+            params: { workspaceId, boardId },
+            search: { section: "fields", from: "kanban" },
+          })
+        }
+        onOpenSearch={() => {
+          // The shell owns the palette and opens it on its own shortcut.
+          const mac = /Mac|iPhone|iPad/.test(navigator.platform);
+          window.dispatchEvent(
+            new KeyboardEvent("keydown", {
+              key: "k",
+              metaKey: mac,
+              ctrlKey: !mac,
+              bubbles: true,
+            }),
+          );
+        }}
+        onGoHome={() =>
+          void navigate({
+            to: "/workspaces/$workspaceId",
+            params: { workspaceId },
           })
         }
         onCopyLink={() => {

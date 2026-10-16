@@ -21,8 +21,11 @@ import {
   erpPageConflict,
   erpPageDetailData,
   erpPageItem,
+  erpPageLongChildItems,
   erpPageNavigation,
+  erpPagePeople,
   erpPageSpace,
+  erpPageUploads,
   erpPageViewer,
 } from "../../verification/item-page-fixtures";
 import type { ItemPageSurfaceProps, ItemPageTab } from "./item-page-types";
@@ -53,7 +56,17 @@ function ItemPageStory({
   conflict = false,
   withChildren = true,
   access,
+  extra,
+  children,
 }: {
+  /** Props the state under test adds (lifecycle, offline, people, uploads…). */
+  extra?: Partial<ItemPageSurfaceProps>;
+  /** Sub-items instead of the five of ERP-142. */
+  children?: ItemPageSurfaceProps["detailData"] extends infer D
+    ? D extends { childItems?: infer C }
+      ? C
+      : never
+    : never;
   status?: ItemPageSurfaceProps["status"];
   initialItem?: CardDetail;
   capabilities?: TaskDetailCapabilities;
@@ -98,6 +111,8 @@ function ItemPageStory({
         conflict={hasConflict ? erpPageConflict : null}
         onResolveConflict={() => setHasConflict(false)}
         navigation={erpPageNavigation()}
+        people={erpPagePeople}
+        {...extra}
         activeTab={activeTab}
         onSelectTab={setActiveTab}
         detailData={
@@ -105,7 +120,8 @@ function ItemPageStory({
             ? {
                 ...data,
                 updates,
-                childItems: withChildren ? erpPageChildItems : undefined,
+                childItems:
+                  children ?? (withChildren ? erpPageChildItems : undefined),
               }
             : undefined
         }
@@ -232,4 +248,140 @@ export const ReadOnly: Story = {
     />
   ),
   tags: ["fui-surface--wm.item-page.surface", "fui-state--ReadOnly"],
+};
+
+/** Not found or not visible: the same words for both (Không tìm thấy ERP-171). */
+export const NotFound: Story = {
+  render: () => (
+    <ItemPageStory status="notFound" extra={{ itemKey: "ERP-171" }} />
+  ),
+  tags: ["fui-surface--wm.item-page.surface", "fui-state--Unavailable"],
+};
+
+/** Loading, slower than expected: the hint appears under the frame. */
+export const LoadingSlow: Story = {
+  render: () => (
+    <ItemPageStory
+      status="loading"
+      extra={{ slow: true, itemKey: "ERP-142" }}
+    />
+  ),
+  tags: ["fui-surface--wm.item-page.surface", "fui-state--Loading"],
+};
+
+/** A new item: nothing filled, every block says what to do next. */
+export const Empty: Story = {
+  render: () => (
+    <ItemPageStory
+      withChildren={false}
+      initialItem={erpPageItem({
+        title: "Kiểm tra quyền xem báo cáo thuế",
+        itemKey: "ERP-154",
+        descriptionMd: undefined,
+        dueAt: null,
+        dueDate: undefined,
+        startDate: undefined,
+        labels: [],
+        members: [],
+        watchers: [],
+        isWatched: false,
+        childProgress: null,
+        statusOptionId: "status-todo",
+        statusCategory: "todo",
+        status: "status-todo",
+        updates: [],
+        files: [],
+        activity: [],
+      })}
+    />
+  ),
+  tags: ["fui-surface--wm.item-page.surface", "fui-state--EdgeData"],
+};
+
+/** Done: a green notice with the way to reopen; the due day says how early it finished. */
+export const Completed: Story = {
+  render: () => (
+    <ItemPageStory
+      withChildren={false}
+      initialItem={erpPageItem({
+        title: "Sao lưu cơ sở dữ liệu tự động hằng đêm",
+        itemKey: "ERP-131",
+        statusOptionId: "status-done",
+        statusCategory: "done",
+        status: "status-done",
+        completedAt: "2026-10-06T09:00:00.000Z",
+        dueAt: "2026-10-08T10:00:00.000Z",
+      })}
+      extra={{
+        lifecycle: {
+          completed: { at: "2026-10-06T09:00:00.000Z", byName: "Vũ Thanh" },
+          onReopen: () => undefined,
+        },
+      }}
+    />
+  ),
+  tags: ["fui-surface--wm.item-page.surface", "fui-state--EdgeData"],
+};
+
+/** Archived: read-only for everyone, with the way to restore it. */
+export const Archived: Story = {
+  render: () => (
+    <ItemPageStory
+      withChildren={false}
+      initialItem={erpPageItem({
+        title: "Khảo sát nhà cung cấp phần mềm kho",
+        itemKey: "ERP-118",
+        descriptionMd: "Không còn cần vì đã chọn phân hệ kho của ERP.",
+      })}
+      extra={{
+        lifecycle: {
+          archived: { at: "2026-10-08T03:00:00.000Z", byName: "Nguyễn Thu Hà" },
+          onRestore: () => undefined,
+        },
+      }}
+    />
+  ),
+  tags: ["fui-surface--wm.item-page.surface", "fui-state--ReadOnly"],
+};
+
+/** The network is gone: writes wait, marked "chờ lưu", and save by themselves. */
+export const Offline: Story = {
+  render: () => (
+    <ItemPageStory
+      extra={{
+        offline: {
+          pendingCount: 2,
+          properties: ["due"],
+          childItems: true,
+        },
+      }}
+    />
+  ),
+  tags: ["fui-surface--wm.item-page.surface", "fui-state--EdgeData"],
+};
+
+/** A long description folds after a few lines; sub-items show in part. */
+export const LongContent: Story = {
+  render: () => (
+    <ItemPageStory
+      children={erpPageLongChildItems}
+      initialItem={erpPageItem({
+        title:
+          "Rà soát và chuẩn hoá toàn bộ danh mục vật tư, hàng hoá, mã kho và đơn vị tính của 14 chi nhánh trước khi nhập số dư đầu kỳ vào ERP",
+        itemKey: "ERP-160",
+        descriptionMd: Array.from(
+          { length: 6 },
+          (_, index) =>
+            `Bước ${index + 1}: đối chiếu danh mục của từng chi nhánh với danh mục dùng chung, ghi lại mã trùng, mã thiếu đơn vị tính và mã kho sai quy ước để chi nhánh xác nhận trước khi nạp vào ERP.`,
+        ).join("\n\n"),
+      })}
+    />
+  ),
+  tags: ["fui-surface--wm.item-page.surface", "fui-state--EdgeData"],
+};
+
+/** Files on their way: one sending, one over the limit, one done. */
+export const Uploading: Story = {
+  render: () => <ItemPageStory extra={{ uploads: erpPageUploads }} />,
+  tags: ["fui-surface--wm.item-page.surface", "fui-state--EdgeData"],
 };

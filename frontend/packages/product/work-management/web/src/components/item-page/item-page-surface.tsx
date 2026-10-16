@@ -1,7 +1,20 @@
-import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
-import { AlertCircle } from "lucide-react";
-import { Skeleton } from "@notrelix/ui-web";
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type DragEvent,
+  type KeyboardEvent,
+} from "react";
+import { AlertCircle, Upload } from "lucide-react";
 import { ItemPageActivity } from "./item-page-activity";
+import {
+  ItemPageArchivedBanner,
+  ItemPageCompletedBanner,
+  ItemPageNotFound,
+  ItemPageOfflineBanner,
+  ItemPageSkeleton,
+} from "./item-page-states";
 import {
   ItemPageConflictNotice,
   ItemPageReadOnlyNotice,
@@ -16,7 +29,13 @@ import {
 } from "./item-page-sections";
 import { ItemPageTopbar } from "./item-page-topbar";
 import { BUTTON_SM_VARIANT_CLASS } from "./item-page-parts";
-import type { ItemPageSurfaceProps, ItemPageTab } from "./item-page-types";
+import { formatItemDate } from "../shared/item-display";
+import { fillSheetCopy } from "../card-detail/item-sheet.copy";
+import type {
+  ItemPagePicker,
+  ItemPageSurfaceProps,
+  ItemPageTab,
+} from "./item-page-types";
 
 function isTypingTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
@@ -42,7 +61,7 @@ export function ItemPageSurface({
   status,
   board,
   card,
-  capabilities,
+  capabilities: grantedCapabilities,
   detailData,
   callbacks,
   navigation,
@@ -58,7 +77,30 @@ export function ItemPageSurface({
   onResolveConflict,
   activeTab = "all",
   onSelectTab,
+  lifecycle,
+  offline,
+  people,
+  uploads,
+  onRetryUpload,
+  onDismissUpload,
+  itemKey,
+  slow,
+  onOpenSearch,
+  onGoHome,
 }: ItemPageSurfaceProps) {
+  // An archived item is read-only for everyone, whatever the board grants.
+  const archived = lifecycle?.archived ?? null;
+  const capabilities = archived
+    ? {
+        ...grantedCapabilities,
+        canCreateCard: false,
+        canMoveCard: false,
+        canRenameGroup: false,
+        canDelete: false,
+        canEditFields: false,
+        canComment: false,
+      }
+    : grantedCapabilities;
   const rootRef = useRef<HTMLElement>(null);
   const titleId = useId();
   const [localTab, setLocalTab] = useState<ItemPageTab>(activeTab);
@@ -69,6 +111,13 @@ export function ItemPageSurface({
     onSelectTab?.(next);
   };
 
+  const [picker, setPicker] = useState<ItemPagePicker | null>(null);
+  // Files dragged over the page: the whole item is the drop target.
+  const [dragging, setDragging] = useState(false);
+  const dragDepth = useRef(0);
+  const canDrop = capabilities.canEditFields && Boolean(callbacks.onAddFile);
+  const hasFiles = (event: DragEvent<HTMLElement>) =>
+    Array.from(event.dataTransfer?.types ?? []).includes("Files");
   const stepRef = useRef({
     previous: callbacks.onPrevious,
     next: callbacks.onNext,
@@ -90,6 +139,12 @@ export function ItemPageSurface({
     if (event.metaKey || event.ctrlKey || event.altKey) return;
     if (isTypingTarget(event.target)) return;
     const key = event.key.toLowerCase();
+    // S and P open the Status and Priority pickers of an editable item.
+    if ((key === "s" || key === "p") && capabilities.canEditFields) {
+      event.preventDefault();
+      setPicker(key === "s" ? "status" : "priority");
+      return;
+    }
     const step =
       key === "k"
         ? stepRef.current.previous
@@ -136,9 +191,61 @@ export function ItemPageSurface({
       aria-label={ready ? undefined : copy.loading}
       aria-busy={status === "loading" || undefined}
       onKeyDown={handleKeyDown}
-      className="flex h-full min-h-0 min-w-0 flex-col bg-background text-item-text text-foreground"
+      onDragEnter={(event) => {
+        if (!canDrop || !hasFiles(event)) return;
+        dragDepth.current += 1;
+        setDragging(true);
+      }}
+      onDragOver={(event) => {
+        if (canDrop && hasFiles(event)) event.preventDefault();
+      }}
+      onDragLeave={(event) => {
+        if (!canDrop || !hasFiles(event)) return;
+        dragDepth.current = Math.max(0, dragDepth.current - 1);
+        if (dragDepth.current === 0) setDragging(false);
+      }}
+      onDrop={(event) => {
+        if (!canDrop || !hasFiles(event)) return;
+        event.preventDefault();
+        dragDepth.current = 0;
+        setDragging(false);
+        for (const file of Array.from(event.dataTransfer.files))
+          callbacks.onAddFile?.(file);
+      }}
+      className="relative flex h-full min-h-0 min-w-0 flex-col bg-background text-item-text text-foreground"
     >
-      {status === "loading" ? <ItemPageSkeleton copy={copy} /> : null}
+      {dragging ? (
+        <div
+          data-item-drop-zone
+          className="pointer-events-none absolute top-16 right-80 left-0 z-20 mx-auto flex max-w-195 items-center justify-center gap-2 rounded-[10px] border border-dashed border-primary bg-brand-subtle px-4 py-5 text-item-ui font-semibold text-brand-subtle-foreground"
+        >
+          <Upload aria-hidden="true" className="size-4" />
+          {card?.itemKey
+            ? fillSheetCopy(copy.files.dropHere, { key: card.itemKey })
+            : copy.files.dropHereNoKey}
+        </div>
+      ) : null}
+      {status === "loading" ? (
+        <ItemPageSkeleton
+          board={board}
+          space={space}
+          navigation={navigation}
+          itemKey={itemKey}
+          slow={slow}
+          copy={copy}
+        />
+      ) : null}
+      {status === "notFound" ? (
+        <ItemPageNotFound
+          board={board}
+          space={space}
+          navigation={navigation}
+          itemKey={itemKey}
+          copy={copy}
+          onOpenSearch={onOpenSearch}
+          onGoHome={onGoHome}
+        />
+      ) : null}
       {status === "error" ? (
         <ItemPageError copy={copy} onBack={navigation.onBack} />
       ) : null}
@@ -157,7 +264,35 @@ export function ItemPageSurface({
           <div className="flex min-h-0 flex-1 flex-col overflow-y-auto lg:flex-row lg:overflow-hidden">
             <div className="min-w-0 flex-1 lg:overflow-auto">
               <div className="mx-auto flex max-w-215 flex-col gap-7.5 px-4 pt-7 pb-10 sm:px-10">
+                {offline ? (
+                  <ItemPageOfflineBanner
+                    pendingCount={offline.pendingCount}
+                    copy={copy}
+                  />
+                ) : null}
+                {lifecycle?.completed && !archived ? (
+                  <ItemPageCompletedBanner
+                    completed={lifecycle.completed}
+                    date={
+                      formatItemDate(lifecycle.completed.at, now, timeZone) ??
+                      ""
+                    }
+                    canReopen={capabilities.canEditFields}
+                    copy={copy}
+                    onReopen={lifecycle.onReopen}
+                  />
+                ) : null}
+                {archived ? (
+                  <ItemPageArchivedBanner
+                    archived={archived}
+                    date={formatItemDate(archived.at, now, timeZone) ?? ""}
+                    canRestore={grantedCapabilities.canEditFields}
+                    copy={copy}
+                    onRestore={lifecycle?.onRestore}
+                  />
+                ) : null}
                 <ItemPageTitleBlock
+                  muted={Boolean(archived)}
                   card={card}
                   creatorName={creatorName}
                   editedAt={editedAt}
@@ -177,14 +312,18 @@ export function ItemPageSurface({
                     onViewChanges={viewChanges}
                   />
                 ) : null}
-                {!capabilities.canEditFields ? (
+                {!capabilities.canEditFields && !archived ? (
                   <ItemPageReadOnlyNotice
                     access={access}
                     copy={copy}
                     timeZone={timeZone}
                   />
                 ) : null}
-                <ItemPageDescription card={card} copy={copy} />
+                <ItemPageDescription
+                  card={card}
+                  copy={copy}
+                  editable={capabilities.canEditFields}
+                />
                 <ItemPageChildItems
                   card={card}
                   items={detailData.childItems}
@@ -193,16 +332,24 @@ export function ItemPageSurface({
                   copy={copy}
                   now={now}
                   timeZone={timeZone}
+                  pending={offline?.childItems === true}
                 />
                 <div className="grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-6">
                   <ItemPageLinks
                     links={detailData.links}
                     candidates={detailData.linkCandidates}
+                    itemKey={card.itemKey ?? null}
+                    place={
+                      space ? `${space.mark.initials} · ${board.title}` : null
+                    }
                     capabilities={capabilities}
                     callbacks={callbacks}
                     copy={copy}
                   />
                   <ItemPageFiles
+                    uploads={uploads}
+                    onRetryUpload={onRetryUpload}
+                    onDismissUpload={onDismissUpload}
                     files={detailData.files}
                     updates={detailData.updates}
                     capabilities={capabilities}
@@ -229,6 +376,7 @@ export function ItemPageSurface({
                       card.members.length > 0 ? card.members : card.watchers
                     }
                     viewer={viewer}
+                    people={people}
                   />
                 </div>
               </div>
@@ -247,6 +395,11 @@ export function ItemPageSurface({
               conflict={conflict}
               data={detailData}
               editedAt={editedAt}
+              offline={offline}
+              people={people}
+              viewerUserId={viewer?.userId}
+              openPicker={picker}
+              onOpenPickerChange={setPicker}
             />
           </div>
         </>
@@ -267,25 +420,6 @@ function latestChange(
     null,
   );
   return newest !== null && newest > own ? newest : own;
-}
-
-export function ItemPageSkeleton({
-  copy,
-}: {
-  copy: ItemPageSurfaceProps["copy"];
-}) {
-  return (
-    <div
-      role="status"
-      aria-label={copy.loading}
-      className="flex h-full w-full flex-col gap-4 p-6"
-    >
-      <Skeleton className="h-8 rounded-lg" />
-      <Skeleton className="h-16 rounded-lg" />
-      <Skeleton className="h-8 rounded-lg" />
-      <Skeleton className="h-40 rounded-lg" />
-    </div>
-  );
 }
 
 export function ItemPageError({

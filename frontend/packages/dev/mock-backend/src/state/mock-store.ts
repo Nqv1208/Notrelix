@@ -109,6 +109,7 @@ import {
   type ErpHistoryCompact,
   type ErpHistoryDetail,
 } from "./mock-item-detail";
+import { ERP_STATE_ITEMS, erpLongChildTitles } from "./mock-item-states";
 import { MockBoardSharing, seedErpSharing } from "./mock-board-sharing";
 import { LIBRARY_DOCS, SECONDARY_BOARD_TITLES } from "./mock-docs-library";
 import {
@@ -1197,6 +1198,80 @@ export class MockStore {
         erpStatusOptionId(child.done ? "done" : "todo"),
       );
     });
+    // Items of the States mockup: opened by address, left out of board reads.
+    for (const item of ERP_STATE_ITEMS) {
+      const id = erpItemId(item.key);
+      const archived = item.archived;
+      this.insertCard({
+        id,
+        boardId,
+        listId: erpGroupId(item.group),
+        title: item.title,
+        position: 100 + this.cardsById.size,
+        createdAt: item.createdAt,
+        updatedAt: archived?.at ?? item.createdAt,
+        itemKey: item.key,
+        description: item.description,
+        parentItemId: null,
+        dueAt: null,
+        startedAt: null,
+        completedAt: null,
+        assigneeUserIds: item.assignee ? [erpAssigneeId(item.assignee)] : [],
+        childProgress: item.children
+          ? { done: 12, total: item.children }
+          : null,
+        unlisted: true,
+        ...(archived
+          ? {
+              isArchived: true,
+              archivedAt: archived.at,
+              archivedByUserId: archived.byUserId,
+            }
+          : {}),
+      });
+      this.updateFieldValue(
+        id,
+        ERP_STATUS_COLUMN_ID,
+        erpStatusOptionId(item.status),
+      );
+      this.updateFieldValue(
+        id,
+        ERP_PRIORITY_COLUMN_ID,
+        erpPriorityOptionId(item.priority),
+      );
+      this.recordActivity(id, ERP_PEOPLE.HA.id, "tạo việc", item.createdAt, {
+        kind: "created",
+        verb: "tạo việc",
+      });
+      erpLongChildTitles()
+        .slice(0, item.children ?? 0)
+        .forEach((title, index) => {
+          const done = index === 0 || (index >= 2 && index <= 12);
+          const childId = `${id}-child-${index + 1}`;
+          this.insertCard({
+            id: childId,
+            boardId,
+            listId: erpGroupId(item.group),
+            title,
+            position: index + 1,
+            createdAt: item.createdAt,
+            updatedAt: item.createdAt,
+            itemKey: `${item.key}.${index + 1}`,
+            parentItemId: id,
+            dueAt: null,
+            startedAt: null,
+            completedAt: done ? hanoiInstant("11/10", 16) : null,
+            assigneeUserIds: [],
+            childProgress: null,
+            unlisted: true,
+          });
+          this.updateFieldValue(
+            childId,
+            ERP_STATUS_COLUMN_ID,
+            erpStatusOptionId(done ? "done" : "todo"),
+          );
+        });
+    }
     const planId = (ref: string) =>
       ref.startsWith("ERP-") ? erpItemId(ref) : ref;
     this.planByBoardId.set(boardId, {
@@ -2499,9 +2574,37 @@ export class MockStore {
     this.cardsById.set(cardId, {
       ...card,
       isArchived: true,
+      archivedAt: this.clock.isoNow(),
+      archivedByUserId: this.getCurrentUser().id,
       version: (card.version ?? 1) + 1,
       updatedAt: this.clock.isoNow(),
     });
+    return true;
+  }
+
+  /** Brings an archived item back to its own place on the board. */
+  restoreCard(cardId: string): boolean {
+    const card = this.cardsById.get(cardId);
+    if (!card || !card.isArchived) return false;
+    this.cardsById.set(cardId, {
+      ...card,
+      isArchived: false,
+      archivedAt: null,
+      archivedByUserId: null,
+      version: (card.version ?? 1) + 1,
+      updatedAt: this.clock.isoNow(),
+    });
+    return true;
+  }
+
+  /** Adds a person to a board as a member; false when they already are. */
+  addBoardMember(boardId: string, userId: string): boolean {
+    const members = this.boardMembersByBoardId.get(boardId) ?? [];
+    if (members.some((member) => member.userId === userId)) return false;
+    this.boardMembersByBoardId.set(boardId, [
+      ...members,
+      { boardId, userId, role: "Member", joinedAt: this.clock.isoNow() },
+    ]);
     return true;
   }
 
@@ -3765,7 +3868,7 @@ export class MockStore {
     if (!ids) return [];
     return Array.from(ids)
       .map((id) => this.cardsById.get(id))
-      .filter((c): c is MockCardRecord => c !== undefined)
+      .filter((c): c is MockCardRecord => c !== undefined && !c.unlisted)
       .sort((a, b) => a.position - b.position);
   }
 
@@ -3786,7 +3889,8 @@ export class MockStore {
     if (!prefix) return null;
     let highest = 0;
     for (const card of this.cardsById.values()) {
-      if (card.boardId !== boardId || !card.itemKey) continue;
+      // The States mockup items are numbered apart from the board's own run.
+      if (card.boardId !== boardId || !card.itemKey || card.unlisted) continue;
       const number = Number(
         card.itemKey.slice(card.itemKey.lastIndexOf("-") + 1),
       );

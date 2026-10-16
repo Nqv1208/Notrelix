@@ -27,7 +27,10 @@ export function ItemPageTitleBlock({
   now,
   timeZone,
   onRenameTitle,
+  muted,
 }: {
+  /** An archived item: the title is drawn in the muted ink. */
+  muted?: boolean;
   card: CardDetail;
   creatorName?: string | null;
   /** The last change, history included; the item's own update time without it. */
@@ -88,7 +91,7 @@ export function ItemPageTitleBlock({
       <TaskDetailTitle
         key={card.id}
         as="h1"
-        className="text-item-title"
+        className={cn("text-item-title", muted && "text-muted-foreground")}
         card={card}
         titleId={titleId}
         editable={editable}

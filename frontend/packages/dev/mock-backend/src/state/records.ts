@@ -89,6 +89,11 @@ export interface MockCardRecord {
   version?: number;
   /** Archived items leave the board read; they are not deleted. */
   isArchived?: boolean;
+  /** When and by whom the item was archived (gap `CTR-GAP-WM-ITEM-STATES`). */
+  archivedAt?: string | null;
+  archivedByUserId?: string | null;
+  /** Opens by its address but is left out of every board read (the States mockup items). */
+  unlisted?: boolean;
 }
 
 export interface MockPageRecord {

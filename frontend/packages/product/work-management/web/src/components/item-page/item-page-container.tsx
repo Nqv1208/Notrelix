@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   useArchiveCard,
   useBoardAccess,
@@ -13,6 +13,9 @@ import {
   useFullBoard,
   useItemChildItems,
   useItemFollowing,
+  useItemLifecycle,
+  usePeopleDirectory,
+  useOfflineWrites,
   useItemLinks,
   useUpdateCard,
   useUpdateCardUpdate,
@@ -30,10 +33,12 @@ import { boardCapabilities } from "../shared/board-capabilities";
 import { formatItemDate } from "../shared/item-display";
 import { useItemSheetCopy } from "../card-detail/use-item-sheet-copy";
 import type { ItemSheetCopy } from "../card-detail/item-sheet.copy";
-import { findItemFields } from "../card-detail/item-field-editors";
+import { fillSheetCopy } from "../card-detail/item-sheet.copy";
+import { findItemFields, isItemDone } from "../card-detail/item-field-editors";
 import { withBoardPriority } from "../shared/item-priority";
 import type { TaskDetailCallbacks } from "../card-detail/task-detail-types";
 import { useItemPageCopy } from "./use-item-page-copy";
+import { formatFileSize } from "./item-page-format";
 import { ItemPageSurface } from "./item-page-surface";
 import type {
   ItemPageConflict,
@@ -41,10 +46,28 @@ import type {
   ItemPagePerson,
   ItemPageProperty,
   ItemPagePosition,
+  ItemPageUpload,
   ItemPageSpace,
   ItemPageTab,
   ItemPageViewKind,
 } from "./item-page-types";
+
+/** A notice the page asks the host to show (the page owns the wording and the actions). */
+export interface ItemPageToast {
+  readonly kind: "success" | "error" | "info";
+  readonly title: string;
+  /** The part of the title drawn underlined: an item key. */
+  readonly emphasis?: string;
+  readonly description?: string;
+  /** Label of the button that closes a notice that does not go by itself. */
+  readonly dismissLabel: string;
+  readonly action?: {
+    readonly label: string;
+    /** The key that does the same, shown beside the label. */
+    readonly hint?: string;
+    readonly onAction: () => void;
+  };
+}
 
 /** What the host (the route) knows about where the page sits. */
 export interface ItemPageHost {
@@ -61,6 +84,14 @@ export interface ItemPageHost {
   /** Steps to another item of the lane (K, J); replaces the page's history entry. */
   readonly onOpenItem: (itemId: string) => void;
   readonly onCopyLink?: (itemId: string) => void;
+  /** Shows a notice: an undo after a status change, a write that was not saved. */
+  readonly onToast?: (toast: ItemPageToast) => void;
+  /** Opens the board settings where the status list is edited. */
+  readonly onEditStatuses?: () => void;
+  /** Opens the command palette ("Tìm bằng ⌘K" of the not-found view). */
+  readonly onOpenSearch?: () => void;
+  /** Goes to the workspace home ("Về trang chủ" of the not-found view). */
+  readonly onGoHome?: () => void;
 }
 
 export interface ItemPageProps extends ItemPageHost {
@@ -79,6 +110,30 @@ function isConflictError(error: unknown): boolean {
     (error as { kind?: unknown }).kind === "conflict"
   );
 }
+
+/** A failed read that says the item is not there or not for this viewer. */
+function isUnseenError(error: unknown): boolean {
+  const kind =
+    typeof error === "object" && error !== null
+      ? (error as { kind?: unknown }).kind
+      : undefined;
+  return kind === "not_found" || kind === "forbidden";
+}
+
+/** The item key when the link carries one ("ERP-171"), else none. */
+function keyOfLink(itemId: string): string | null {
+  return /^[A-Za-z][A-Za-z0-9]*-\d+$/.test(itemId)
+    ? itemId.toUpperCase()
+    : null;
+}
+
+/** The most a single file can be: "Vượt giới hạn 100 MB mỗi tệp". */
+const MAX_UPLOAD_BYTES = 100 * 1024 * 1024;
+/** How long a finished upload row stays before the saved file replaces it. */
+const UPLOAD_DONE_MS = 2_500;
+
+/** Waiting on the network: loading has taken longer than expected. */
+const SLOW_LOADING_MS = 8_000;
 
 /**
  * The item as the page shows it: loads the item and its board, and wires the
@@ -100,10 +155,22 @@ export function ItemPage(props: ItemPageProps) {
   const capabilities = boardCapabilities(access?.myLevel);
 
   // An item that belongs to another board, or does not load, is not this page's.
+  const unseen = isUnseenError(error);
   const missing =
     Boolean(error) ||
     (card !== undefined &&
       (card.boardId !== boardId || card.workspaceId !== workspaceId));
+
+  const loading = boardLoading || cardLoading || !board;
+  const [slow, setSlow] = useState(false);
+  useEffect(() => {
+    if (!loading) {
+      setSlow(false);
+      return;
+    }
+    const timer = setTimeout(() => setSlow(true), SLOW_LOADING_MS);
+    return () => clearTimeout(timer);
+  }, [loading]);
 
   const navigation = (
     position: ItemPagePosition | undefined,
@@ -116,6 +183,7 @@ export function ItemPage(props: ItemPageProps) {
     onOpenSpace: props.onOpenSpace,
     onCollapse: props.onCollapse,
     onOpenView: props.onOpenView,
+    onEditStatuses: props.onEditStatuses,
   });
 
   if (boardLoading || cardLoading || !board)
@@ -130,12 +198,19 @@ export function ItemPage(props: ItemPageProps) {
         copy={copy}
         sheetCopy={sheetCopy}
         now={now}
+        space={props.space}
+        itemKey={keyOfLink(itemId)}
+        slow={slow}
       />
     );
   if (missing || !card)
     return (
       <ItemPageSurface
-        status="error"
+        status={unseen || (card && !error) ? "notFound" : "error"}
+        itemKey={keyOfLink(itemId)}
+        space={props.space}
+        onOpenSearch={props.onOpenSearch}
+        onGoHome={props.onGoHome}
         board={board}
         card={null}
         capabilities={capabilities}
@@ -180,6 +255,7 @@ function ItemPageReady({
   onBack,
   onOpenItem,
   onCopyLink,
+  onToast,
 }: ItemPageProps & {
   board: Board;
   groups: ReturnType<typeof useFullBoard>["groups"];
@@ -191,6 +267,9 @@ function ItemPageReady({
   now: Date;
   navigation: (position: ItemPagePosition | undefined) => ItemPageNavigation;
 }) {
+  // Files on their way: one row each, kept until sent, skipped or dismissed.
+  const [uploads, setUploads] = useState<ItemPageUpload[]>([]);
+  const queued = useRef(new Map<string, File>());
   const files = useCardFiles(card.id, card.workspaceId);
   const activity = useCardActivity(card.id, card.workspaceId);
   const updates = useCardComments(card.id, card.workspaceId);
@@ -204,6 +283,59 @@ function ItemPageReady({
   const follow = useItemFollowing(card.id, card.workspaceId);
   const links = useItemLinks(card.id, card.workspaceId, card.boardId);
   const addFile = useAddItemFile(card.id, card.workspaceId);
+  const patchUpload = (id: string, patch: Partial<ItemPageUpload>) =>
+    setUploads((list) =>
+      list.map((entry) => (entry.id === id ? { ...entry, ...patch } : entry)),
+    );
+  const sendFile = (file: File, id: string) => {
+    queued.current.set(id, file);
+    patchUpload(id, { status: "uploading", error: null, progress: null });
+    addFile
+      .mutateAsync({
+        filename: file.name,
+        sizeBytes: file.size,
+        contentType: file.type || "application/octet-stream",
+      })
+      .then(() => {
+        queued.current.delete(id);
+        patchUpload(id, { status: "done" });
+        setTimeout(
+          () => setUploads((list) => list.filter((entry) => entry.id !== id)),
+          UPLOAD_DONE_MS,
+        );
+      })
+      .catch(() => patchUpload(id, { status: "error", error: "failed" }));
+  };
+  const startUpload = (file: File) => {
+    const id = crypto.randomUUID();
+    const row = { id, name: file.name, size: file.size };
+    if (file.size > MAX_UPLOAD_BYTES) {
+      queued.current.set(id, file);
+      setUploads((list) => [
+        ...list,
+        {
+          ...row,
+          status: "error",
+          error: "tooBig",
+          limit: formatFileSize(MAX_UPLOAD_BYTES, sheetCopy.locale),
+        },
+      ]);
+      return;
+    }
+    setUploads((list) => [...list, { ...row, status: "uploading" }]);
+    sendFile(file, id);
+  };
+  const { lifecycle, restore, reopen } = useItemLifecycle(
+    card.id,
+    card.workspaceId,
+    card.boardId,
+  );
+  // Writes the network holds back: what the offline notice counts and marks.
+  const { online, paused } = useOfflineWrites();
+  const { directory, invitePerson } = usePeopleDirectory(
+    card.boardId,
+    card.workspaceId,
+  );
 
   // The write the server refused, kept so the viewer can send it again.
   const [refused, setRefused] = useState<RefusedWrite | null>(null);
@@ -223,7 +355,6 @@ function ItemPageReady({
     write: Omit<RefusedWrite, "fieldName" | "mine">,
     mine: unknown,
   ) => {
-    if (!isConflictError(error)) return;
     const fieldName =
       write.property === "startDate"
         ? copy.rail.startDate
@@ -231,7 +362,27 @@ function ItemPageReady({
           ? copy.rail.due
           : (board.fieldDefinitions.find((field) => field.id === write.fieldId)
               ?.name ?? "");
-    setRefused({ ...write, fieldName, mine });
+    if (isConflictError(error)) {
+      setRefused({ ...write, fieldName, mine });
+      return;
+    }
+    // Not a conflict: the stored value stands, and the notice says which.
+    const stored = describeConflict(
+      board,
+      card,
+      { ...write, fieldName, mine },
+      now,
+    ).theirs;
+    onToast?.({
+      kind: "error",
+      dismissLabel: copy.toasts.dismiss,
+      title: fillSheetCopy(copy.toasts.saveFailed, { field: fieldName }),
+      description:
+        stored && stored !== "—"
+          ? fillSheetCopy(copy.toasts.saveFailedBody, { value: stored })
+          : copy.toasts.saveFailedNoValue,
+      action: { label: copy.toasts.retry, onAction: write.send },
+    });
   };
   const updateFieldValue = useUpdateFieldValue(card.boardId, card.workspaceId, {
     onError: (writeError, variables) => {
@@ -260,6 +411,39 @@ function ItemPageReady({
         variables.statusOptionId,
       ),
   });
+  /** A status change from the page, with the notice that undoes it. */
+  const sendStatus = (cardId: string, statusOptionId: string) => {
+    const before = card.statusOptionId ?? card.status ?? null;
+    const label = fields.status?.options.find(
+      (option) => option.id === statusOptionId,
+    )?.label;
+    updateStatus.mutate(
+      { cardId, statusOptionId },
+      {
+        onSuccess: () => {
+          if (!label || before === statusOptionId) return;
+          const key = card.itemKey ?? card.title;
+          onToast?.({
+            kind: "success",
+            dismissLabel: copy.toasts.dismiss,
+            title: fillSheetCopy(copy.toasts.statusChanged, {
+              key,
+              status: label,
+            }),
+            emphasis: key,
+            action: before
+              ? {
+                  label: copy.toasts.undo,
+                  hint: copy.toasts.undoKey,
+                  onAction: () =>
+                    updateStatus.mutate({ cardId, statusOptionId: before }),
+                }
+              : undefined,
+          });
+        },
+      },
+    );
+  };
   const patchItem = (cardId: string, patch: UpdateCardInput) => {
     const property: ItemPageProperty | null =
       patch.dueDate !== undefined
@@ -302,6 +486,35 @@ function ItemPageReady({
 
   const conflict = refused ? describeConflict(board, card, refused, now) : null;
 
+  const pendingProperties = new Set<ItemPageProperty>();
+  let pendingChildItems = false;
+  for (const variables of paused) {
+    if (typeof variables === "string") {
+      pendingChildItems = true;
+      continue;
+    }
+    if (typeof variables !== "object" || variables === null) continue;
+    const write = variables as Record<string, unknown>;
+    if ("childId" in write) pendingChildItems = true;
+    else if (typeof write.statusOptionId === "string")
+      pendingProperties.add("status");
+    else if (typeof write.fieldDefinitionId === "string") {
+      const property = propertyOf(write.fieldDefinitionId);
+      if (property) pendingProperties.add(property);
+    } else if (typeof write.patch === "object" && write.patch !== null) {
+      const patch = write.patch as UpdateCardInput;
+      if (patch.dueDate !== undefined) pendingProperties.add("due");
+      if (patch.startDate !== undefined) pendingProperties.add("startDate");
+    }
+  }
+  const offline = online
+    ? null
+    : {
+        pendingCount: paused.length,
+        properties: Array.from(pendingProperties),
+        childItems: pendingChildItems,
+      };
+
   const callbacks: TaskDetailCallbacks = {
     onClose: onBack,
     onRenameTitle: (cardId, patch) => updateCard.mutate({ cardId, patch }),
@@ -311,12 +524,7 @@ function ItemPageReady({
     onAddChildItem: (title) => children.addChild(title),
     onAddLink: (itemId, relation) => links.addLink({ itemId, relation }),
     onRemoveLink: (linkId) => links.removeLink(linkId),
-    onAddFile: (file) =>
-      addFile.mutate({
-        filename: file.name,
-        sizeBytes: file.size,
-        contentType: file.type || "application/octet-stream",
-      }),
+    onAddFile: startUpload,
     onDuplicate: (cardId) => duplicateCard.mutate(cardId),
     // "Lưu trữ" archives the item (it can be restored); it is not a delete.
     onArchive: (cardId) => {
@@ -330,10 +538,7 @@ function ItemPageReady({
         payload.fieldDefinitionId === fields.status?.id &&
         typeof payload.value === "string"
       )
-        updateStatus.mutate({
-          cardId: payload.cardId,
-          statusOptionId: payload.value,
-        });
+        sendStatus(payload.cardId, payload.value);
       else updateFieldValue.mutate(payload);
     },
     onRefreshActivity: () => {
@@ -360,6 +565,7 @@ function ItemPageReady({
       id: entry.id,
       key: entry.itemKey ?? null,
       title: entry.title,
+      statusCategory: entry.statusCategory ?? null,
     }));
 
   return (
@@ -386,6 +592,30 @@ function ItemPageReady({
           : null
       }
       conflict={conflict}
+      offline={offline}
+      uploads={uploads}
+      onRetryUpload={(id) => {
+        const file = queued.current.get(id);
+        // A file over the limit stays refused; a broken transfer is sent again.
+        if (file && file.size <= MAX_UPLOAD_BYTES) sendFile(file, id);
+      }}
+      onDismissUpload={(id) => {
+        queued.current.delete(id);
+        setUploads((list) => list.filter((entry) => entry.id !== id));
+      }}
+      people={{
+        people: directory?.people ?? [],
+        teams: directory?.teams ?? [],
+        loading: directory === null,
+        canInvite: directory?.canInvite === true,
+        onInvite: (userId) => invitePerson(userId),
+      }}
+      lifecycle={{
+        completed: isItemDone(card) ? (lifecycle?.completed ?? null) : null,
+        archived: lifecycle?.archived ?? null,
+        onReopen: () => reopen(),
+        onRestore: () => restore(),
+      }}
       onResolveConflict={(choice) => {
         const write = refused;
         setRefused(null);

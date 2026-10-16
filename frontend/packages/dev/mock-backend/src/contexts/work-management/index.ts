@@ -12,10 +12,12 @@ import { listsOperations } from "./lists.handlers";
 import { cardsOperations } from "./cards.handlers";
 import { myWorkOperations } from "./my-work.handlers";
 import { boardSettingsOperations } from "./board-settings.handlers";
+import { itemStatesOperations } from "./item-states.handlers";
 
 export {
   boardSettingsOperations,
   boardsOperations,
+  itemStatesOperations,
   listsOperations,
   cardsOperations,
   myWorkOperations,
@@ -27,4 +29,5 @@ export const workManagementOperations = [
   ...cardsOperations,
   ...myWorkOperations,
   ...boardSettingsOperations,
+  ...itemStatesOperations,
 ];

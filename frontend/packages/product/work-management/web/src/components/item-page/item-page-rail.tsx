@@ -17,23 +17,35 @@ import type {
   FieldDefinition,
   UpdateFieldValueInput,
 } from "@notrelix/work-management-core";
-import { personInitials } from "@notrelix/work-management-core";
+import {
+  personInitials,
+  priorityFromOptionName,
+} from "@notrelix/work-management-core";
 import {
   ITEM_LABEL_TONE_CLASS,
+  calendarDaysFromToday,
   formatItemDate,
   itemLabelTone,
 } from "../shared/item-display";
+import { PendingMark } from "./item-page-states";
+import {
+  ItemAssigneePicker,
+  ItemDatePicker,
+  ItemListPicker,
+  PickerPopover,
+  type PickerOption,
+  type PickerPerson,
+} from "./item-pickers";
 import {
   describeSheetDue,
   type SheetDueTone,
 } from "../card-detail/item-sheet-format";
 import {
   fillSheetCopy,
+  pluralSheetCopy,
   type ItemSheetCopy,
 } from "../card-detail/item-sheet.copy";
 import {
-  ItemAssigneePopover,
-  ItemDuePopover,
   ItemOptionMenu,
   PRIORITY_CLASS,
   STATUS_DOT_CLASS,
@@ -60,6 +72,9 @@ import {
 } from "./item-page-parts";
 import type {
   ItemPageConflict,
+  ItemPagePeople,
+  ItemPagePicker,
+  ItemPageOffline,
   ItemPageNavigation,
   ItemPageProperty,
   ItemPageViewKind,
@@ -85,7 +100,8 @@ const VALUE_CLASS =
 /** The row whose write the server refused (mockup `.pv.conf`). */
 const VALUE_CONFLICT_CLASS =
   "bg-warning-subtle font-semibold text-warning-text shadow-[inset_0_0_0_1px_var(--item-conflict-line)] hover:bg-warning-subtle";
-const VALUE_ACTIVE_CLASS = "cursor-pointer hover:bg-state-hover-strong";
+const VALUE_ACTIVE_CLASS =
+  "cursor-pointer hover:bg-state-hover-strong data-[state=open]:bg-popover data-[state=open]:shadow-[0_0_0_2px_var(--primary)]";
 const VALUE_READONLY_CLASS = "cursor-default aria-disabled:cursor-default";
 
 function PropertyValue({
@@ -114,6 +130,34 @@ function PropertyValue({
     </button>
   );
 }
+
+/** A property value that opens its picker; without edit access it is the value alone. */
+function RailPicker({
+  enabled,
+  open,
+  onOpenChange,
+  panel,
+  children,
+}: {
+  enabled: boolean;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  panel: (close: () => void) => ReactNode;
+  children: ReactNode;
+}) {
+  if (!enabled) return <>{children}</>;
+  return (
+    <PickerPopover trigger={children} open={open} onOpenChange={onOpenChange}>
+      {panel}
+    </PickerPopover>
+  );
+}
+
+const PRIORITY_MARKER_CLASS: Readonly<Record<string, string>> = {
+  urgent: "bg-danger",
+  high: "bg-priority-high",
+  medium: "bg-work-status-doing",
+};
 
 function RailHeading({
   children,
@@ -369,7 +413,19 @@ export function ItemPageRail({
   conflict,
   data,
   editedAt,
+  offline,
+  people,
+  viewerUserId,
+  openPicker,
+  onOpenPickerChange,
 }: {
+  offline?: ItemPageOffline | null;
+  /** The people the Assignee picker lists, with the invitation behind "Mời vào". */
+  people?: ItemPagePeople;
+  viewerUserId?: string;
+  /** The picker opened from the keyboard (S, P), when the page owns it. */
+  openPicker?: ItemPagePicker | null;
+  onOpenPickerChange?: (picker: ItemPagePicker | null) => void;
   board: Board;
   card: CardDetail;
   capabilities: TaskDetailCapabilities;
@@ -414,8 +470,64 @@ export function ItemPageRail({
     sheetCopy,
     timeZone,
   );
+  // A done item says how early or late it finished instead of turning red.
+  const doneTiming =
+    due?.tone === "done" && card.completedAt && dueAt
+      ? calendarDaysFromToday(dueAt, new Date(card.completedAt), timeZone)
+      : null;
+  const doneNote =
+    doneTiming === null
+      ? null
+      : doneTiming === 0
+        ? copy.states.completed.onTime
+        : doneTiming > 0
+          ? pluralSheetCopy(
+              copy.states.completed.early_one,
+              copy.states.completed.early_other,
+              doneTiming,
+            )
+          : pluralSheetCopy(
+              copy.states.completed.late_one,
+              copy.states.completed.late_other,
+              -doneTiming,
+            );
+  const pk = copy.pickers;
+  const statusOptions: PickerOption[] = (fields.status?.options ?? []).map(
+    (option) => ({
+      id: option.id,
+      label: option.label,
+      markerClass: option.category
+        ? STATUS_DOT_CLASS[option.category]
+        : "bg-muted-foreground",
+    }),
+  );
+  const priorityOptions: PickerOption[] = (fields.priority?.options ?? []).map(
+    (option) => {
+      const kind = priorityFromOptionName(option.label);
+      return {
+        id: option.id,
+        label: option.label,
+        markerClass: kind ? PRIORITY_MARKER_CLASS[kind] : undefined,
+        hollow: kind === "low" || !kind,
+      };
+    },
+  );
+  const pickerPeople: PickerPerson[] =
+    people && people.people.length > 0
+      ? [...people.people]
+      : board.members.map((member) => ({
+          userId: member.userId,
+          name: member.name,
+          department: null,
+          openCount: null,
+          onBoard: true,
+        }));
   const conflictOn = (property: ItemPageProperty) =>
     conflict && conflict.property === property ? conflict : null;
+  const pendingOn = (property: ItemPageProperty) =>
+    offline?.properties?.includes(property) ? (
+      <PendingMark copy={copy} />
+    ) : null;
   const dueEditable = editable && (!!fields.due || !!callbacks.onUpdateItem);
   const changeDue = (value: string | null) => {
     if (fields.due) update(fields.due, value);
@@ -430,8 +542,19 @@ export function ItemPageRail({
       : null;
   const startDate = card.startDate ?? null;
   const customFields = customFieldsOf(board);
+  // Unset optional fields fold away; "Hiện N trường trống" brings them back.
+  const [showEmpty, setShowEmpty] = useState(false);
+  const hiddenKeys = new Set<string>();
+  if (!startDate && !conflictOn("startDate")) hiddenKeys.add("startDate");
+  if (!dueAt && !conflictOn("due")) hiddenKeys.add("due");
+  for (const field of customFields) {
+    const raw = card.fieldValues[field.id];
+    if (raw === undefined || raw === null || raw === "")
+      hiddenKeys.add(field.id);
+  }
+  const isShown = (key: string) => showEmpty || !hiddenKeys.has(key);
   const customRow = (field: FieldDefinition | undefined) =>
-    field ? (
+    field && isShown(field.id) ? (
       <CustomFieldRow
         key={field.id}
         field={field}
@@ -482,10 +605,51 @@ export function ItemPageRail({
         </RailHeading>
         <dl className="m-0 grid grid-cols-[118px_minmax(0,1fr)] items-center gap-y-0.5">
           <PropertyRow label={t.status}>
-            <ItemOptionMenu
-              field={fields.status}
-              readOnly={!editable}
-              onSelect={(optionId) => update(fields.status, optionId)}
+            <RailPicker
+              enabled={editable && !!fields.status}
+              open={openPicker === "status"}
+              onOpenChange={(open) =>
+                onOpenPickerChange?.(open ? "status" : null)
+              }
+              panel={(close) => (
+                <ItemListPicker
+                  idPrefix="item-status"
+                  options={statusOptions}
+                  currentId={statusOption?.id ?? null}
+                  searchPlaceholder={pk.status.search}
+                  searchLabel={pk.status.label}
+                  noMatch={pk.noMatch}
+                  shortcut="S"
+                  onSelect={(optionId) => {
+                    update(fields.status, optionId);
+                    close();
+                  }}
+                  footer={
+                    navigation.onEditStatuses ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          close();
+                          navigation.onEditStatuses?.();
+                        }}
+                        className="border-0 bg-transparent p-0 font-medium text-brand-subtle-foreground"
+                      >
+                        {pk.status.editList}
+                      </button>
+                    ) : (
+                      <DisabledControl reason={pk.status.editListUnavailable}>
+                        <button
+                          type="button"
+                          aria-disabled="true"
+                          className="border-0 bg-transparent p-0 font-medium text-brand-subtle-foreground"
+                        >
+                          {pk.status.editList}
+                        </button>
+                      </DisabledControl>
+                    )
+                  }
+                />
+              )}
             >
               <PropertyValue
                 editable={editable && !!fields.status}
@@ -517,19 +681,29 @@ export function ItemPageRail({
                       aria-hidden="true"
                       className="size-3.25 shrink-0"
                     />
+                    {pendingOn("status")}
                   </>
                 )}
               </PropertyValue>
-            </ItemOptionMenu>
+            </RailPicker>
           </PropertyRow>
 
           <PropertyRow label={t.assignee}>
-            <ItemAssigneePopover
-              board={board}
-              card={card}
-              label={t.assignee}
-              readOnly={!editable || !fields.person}
-              onChange={(userIds) => update(fields.person, userIds)}
+            <RailPicker
+              enabled={editable && !!fields.person}
+              panel={(close) => (
+                <ItemAssigneePicker
+                  copy={pk}
+                  people={pickerPeople}
+                  loading={people?.loading}
+                  selectedUserIds={card.members.map((member) => member.userId)}
+                  viewerUserId={viewerUserId}
+                  canInvite={people?.canInvite === true}
+                  onInvite={people?.onInvite}
+                  onChange={(userIds) => update(fields.person, userIds)}
+                  onClose={close}
+                />
+              )}
             >
               <PropertyValue
                 editable={editable && !!fields.person}
@@ -558,82 +732,133 @@ export function ItemPageRail({
                           })
                         : firstMember.name}
                     </span>
+                    {pendingOn("assignee")}
                   </>
                 ) : (
                   p.unassigned
                 )}
               </PropertyValue>
-            </ItemAssigneePopover>
+            </RailPicker>
           </PropertyRow>
 
-          <PropertyRow label={t.startDate}>
-            {editable && callbacks.onUpdateItem ? (
-              <ItemDuePopover
-                dueAt={startDate}
-                clearLabel={p.clearDue}
-                readOnly={false}
-                onChange={(value) =>
-                  callbacks.onUpdateItem?.(card.id, { startDate: value })
-                }
-              >
-                <PropertyValue
-                  editable
-                  aria-label={t.startDate}
-                  className={
-                    conflictOn("startDate") ? VALUE_CONFLICT_CLASS : undefined
-                  }
+          {isShown("startDate") ? (
+            <PropertyRow label={t.startDate}>
+              {editable && callbacks.onUpdateItem ? (
+                <RailPicker
+                  enabled
+                  panel={(close) => (
+                    <ItemDatePicker
+                      copy={pk}
+                      value={startDate}
+                      now={now}
+                      timeZone={timeZone}
+                      onChange={(value) =>
+                        callbacks.onUpdateItem?.(card.id, { startDate: value })
+                      }
+                      onClose={close}
+                    />
+                  )}
                 >
-                  {conflictOn("startDate")
-                    ? conflictText(conflictOn("startDate"))
-                    : (formatFullDate(startDate, timeZone) ?? t.noStartDate)}
-                </PropertyValue>
-              </ItemDuePopover>
-            ) : editable ? (
-              <DisabledControl reason={t.startDateUnavailable}>
+                  <PropertyValue
+                    editable
+                    aria-label={t.startDate}
+                    className={
+                      conflictOn("startDate") ? VALUE_CONFLICT_CLASS : undefined
+                    }
+                  >
+                    {conflictOn("startDate")
+                      ? conflictText(conflictOn("startDate"))
+                      : (formatFullDate(startDate, timeZone) ?? t.noStartDate)}
+                  </PropertyValue>
+                </RailPicker>
+              ) : editable ? (
+                <DisabledControl reason={t.startDateUnavailable}>
+                  <PropertyValue editable={false} aria-label={t.startDate}>
+                    {formatFullDate(startDate, timeZone) ?? t.noStartDate}
+                  </PropertyValue>
+                </DisabledControl>
+              ) : (
                 <PropertyValue editable={false} aria-label={t.startDate}>
                   {formatFullDate(startDate, timeZone) ?? t.noStartDate}
                 </PropertyValue>
-              </DisabledControl>
-            ) : (
-              <PropertyValue editable={false} aria-label={t.startDate}>
-                {formatFullDate(startDate, timeZone) ?? t.noStartDate}
-              </PropertyValue>
-            )}
-          </PropertyRow>
+              )}
+            </PropertyRow>
+          ) : null}
 
-          <PropertyRow label={t.due}>
-            <ItemDuePopover
-              dueAt={dueAt}
-              clearLabel={p.clearDue}
-              readOnly={!dueEditable}
-              onChange={changeDue}
-            >
-              <PropertyValue
-                editable={dueEditable}
-                aria-label={t.due}
-                className={
-                  conflictOn("due")
-                    ? VALUE_CONFLICT_CLASS
-                    : due
-                      ? // A disabled value keeps the ink colour (mockup `.pv:disabled`).
-                        dueEditable
-                        ? DUE_TONE_CLASS[due.tone]
-                        : DUE_TONE_WEIGHT_CLASS[due.tone]
-                      : "font-normal text-meta-foreground"
-                }
+          {isShown("due") ? (
+            <PropertyRow label={t.due}>
+              <RailPicker
+                enabled={dueEditable}
+                panel={(close) => (
+                  <ItemDatePicker
+                    copy={pk}
+                    value={dueAt}
+                    rangeFrom={startDate}
+                    now={now}
+                    timeZone={timeZone}
+                    onChange={changeDue}
+                    onClose={close}
+                  />
+                )}
               >
-                {conflictOn("due")
-                  ? conflictText(conflictOn("due"))
-                  : (due?.text ?? p.noDue)}
-              </PropertyValue>
-            </ItemDuePopover>
-          </PropertyRow>
+                <PropertyValue
+                  editable={dueEditable}
+                  aria-label={t.due}
+                  className={
+                    conflictOn("due")
+                      ? VALUE_CONFLICT_CLASS
+                      : due
+                        ? // A disabled value keeps the ink colour (mockup `.pv:disabled`).
+                          dueEditable
+                          ? DUE_TONE_CLASS[due.tone]
+                          : DUE_TONE_WEIGHT_CLASS[due.tone]
+                        : "font-normal text-meta-foreground"
+                  }
+                >
+                  {conflictOn("due") ? (
+                    conflictText(conflictOn("due"))
+                  ) : (
+                    <>
+                      {due
+                        ? doneNote
+                          ? `${due.text} · ${doneNote}`
+                          : due.text
+                        : p.noDue}
+                      {pendingOn("due")}
+                    </>
+                  )}
+                </PropertyValue>
+              </RailPicker>
+            </PropertyRow>
+          ) : null}
 
           <PropertyRow label={t.priority}>
-            <ItemOptionMenu
-              field={fields.priority}
-              readOnly={!editable}
-              onSelect={(optionId) => update(fields.priority, optionId)}
+            <RailPicker
+              enabled={editable && !!fields.priority}
+              open={openPicker === "priority"}
+              onOpenChange={(open) =>
+                onOpenPickerChange?.(open ? "priority" : null)
+              }
+              panel={(close) => (
+                <ItemListPicker
+                  idPrefix="item-priority"
+                  options={priorityOptions}
+                  currentId={card.priorityOptionId ?? null}
+                  searchPlaceholder={pk.priority.search}
+                  searchLabel={pk.priority.label}
+                  noMatch={pk.noMatch}
+                  shortcut="P"
+                  none={pk.priority.none}
+                  onSelect={(optionId) => {
+                    update(fields.priority, optionId);
+                    close();
+                  }}
+                  onClear={() => {
+                    update(fields.priority, null);
+                    close();
+                  }}
+                />
+              )}
             >
               <PropertyValue
                 editable={editable && !!fields.priority}
@@ -653,6 +878,7 @@ export function ItemPageRail({
                   >
                     <Flag aria-hidden="true" className="size-3.25" />
                     {p.priorities[priority]}
+                    {pendingOn("priority")}
                   </span>
                 ) : (
                   <span className="font-normal text-meta-foreground">
@@ -660,7 +886,7 @@ export function ItemPageRail({
                   </span>
                 )}
               </PropertyValue>
-            </ItemOptionMenu>
+            </RailPicker>
           </PropertyRow>
 
           {customRow(customFields[0])}
@@ -736,6 +962,22 @@ export function ItemPageRail({
 
           {customFields.slice(2).map(customRow)}
         </dl>
+        {hiddenKeys.size > 0 ? (
+          <button
+            type="button"
+            aria-expanded={showEmpty}
+            onClick={() => setShowEmpty((open) => !open)}
+            className="mt-2 border-0 bg-transparent p-0 text-item-note font-medium text-brand-subtle-foreground"
+          >
+            {showEmpty
+              ? copy.states.empty.hideFields
+              : pluralSheetCopy(
+                  copy.states.empty.showFields_one,
+                  copy.states.empty.showFields_other,
+                  hiddenKeys.size,
+                )}
+          </button>
+        ) : null}
       </div>
 
       <div className="h-px shrink-0 bg-line" />

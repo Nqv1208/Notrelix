@@ -10,8 +10,10 @@ import type {
   ItemPageAccess,
   ItemPageConflict,
   ItemPageNavigation,
+  ItemPagePeople,
   ItemPagePerson,
   ItemPageSpace,
+  ItemPageUpload,
 } from "../components/item-page/item-page-types";
 import {
   ERP_SHEET_NOW,
@@ -235,6 +237,114 @@ export const erpPageChildItems: readonly ItemSheetChildItem[] = [
     itemKey: "ERP-142.5",
     dueAt: "2026-10-14T17:00:00+07:00",
     assignee: quan,
+  },
+];
+
+/** The 48 sub-items of ERP-160 (12 done): the first and second show as the mockup lists them. */
+export const erpPageLongChildItems: readonly ItemSheetChildItem[] = Array.from(
+  { length: 48 },
+  (_, index) => ({
+    id: `long-child-${index + 1}`,
+    title:
+      index === 0
+        ? "Chi nhánh Hà Nội"
+        : index === 1
+          ? "Chi nhánh Hải Phòng"
+          : `Đối chiếu mã kho chi nhánh ${index + 1}`,
+    done: index === 0 || (index >= 2 && index <= 12),
+    itemKey: `ERP-160.${index + 1}`,
+    dueAt: null,
+    assignee: null,
+  }),
+);
+
+/** People the Assignee picker and the @mention list offer on the ERP board. */
+export const erpPagePeople: ItemPagePeople = {
+  people: [
+    {
+      userId: "user-phuc",
+      name: "Lê Hoàng Phúc",
+      department: "Công nghệ",
+      openCount: 3,
+      onBoard: true,
+      level: "manager",
+    },
+    {
+      userId: "user-ngoc-anh",
+      name: "Phan Ngọc Anh",
+      department: "Công nghệ",
+      openCount: 5,
+      onBoard: true,
+      level: "editor",
+    },
+    {
+      userId: "user-quan",
+      name: "Trần Minh Quân",
+      department: "Công nghệ",
+      openCount: 4,
+      onBoard: true,
+      level: "editor",
+    },
+    {
+      userId: "user-linh",
+      name: "Đỗ Khánh Linh",
+      department: "Kế toán",
+      openCount: 1,
+      onBoard: true,
+      level: "commenter",
+    },
+    {
+      userId: "user-thinh",
+      name: "Phùng Đức Thịnh",
+      department: "Kế toán",
+      openCount: 0,
+      onBoard: false,
+      level: null,
+    },
+    {
+      userId: "user-van-tai",
+      name: "Khúc Văn Tài",
+      department: "Kho vận",
+      openCount: 0,
+      onBoard: false,
+      level: null,
+    },
+  ],
+  teams: [
+    {
+      id: "team-ke-toan",
+      name: "Nhóm Kế toán tổng hợp",
+      memberCount: 6,
+      viewableCount: 6,
+      viewableUserIds: ["user-linh"],
+    },
+  ],
+  canInvite: true,
+  onInvite: () => undefined,
+};
+
+/** One file sending, one over the limit, one sent. */
+export const erpPageUploads: readonly ItemPageUpload[] = [
+  {
+    id: "upload-pdf",
+    name: "bien-ban-doi-chieu.pdf",
+    size: 1_992_294,
+    status: "uploading",
+    progress: 64,
+  },
+  {
+    id: "upload-zip",
+    name: "du-lieu-goc-48k.zip",
+    size: 124_780_544,
+    status: "error",
+    error: "tooBig",
+    limit: "100 MB",
+  },
+  {
+    id: "upload-png",
+    name: "loi-gop-trung.png",
+    size: 860_160,
+    status: "done",
   },
 ];
 

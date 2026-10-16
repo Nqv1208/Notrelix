@@ -936,6 +936,55 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     mutation: true,
   },
   {
+    context: "WorkManagement",
+    classification: "COMPATIBILITY_GAP_MOCKED",
+    consumerSymbol: "useItemLifecycle",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/item-extras.api.ts",
+    capability: "Who completed or archived an item and when",
+    gapId: "CTR-GAP-WM-ITEM-STATES",
+    method: "GET",
+    pathTemplate: "/board-items/{id}/lifecycle",
+    mutation: false,
+  },
+  {
+    context: "WorkManagement",
+    classification: "COMPATIBILITY_GAP_MOCKED",
+    consumerSymbol: "useItemLifecycle",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/item-extras.api.ts",
+    capability: "Restore an archived item",
+    gapId: "CTR-GAP-WM-ITEM-STATES",
+    method: "POST",
+    pathTemplate: "/board-items/{id}/restore",
+    mutation: true,
+  },
+  {
+    context: "WorkManagement",
+    classification: "COMPATIBILITY_GAP_MOCKED",
+    consumerSymbol: "usePeopleDirectory",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/item-extras.api.ts",
+    capability: "People an item can name: assignee picker and mentions",
+    gapId: "CTR-GAP-WM-ITEM-STATES",
+    method: "GET",
+    pathTemplate: "/boards/{boardId}/people-directory",
+    mutation: false,
+  },
+  {
+    context: "WorkManagement",
+    classification: "COMPATIBILITY_GAP_MOCKED",
+    consumerSymbol: "usePeopleDirectory",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/item-extras.api.ts",
+    capability:
+      "Invite a person who does not see the board from the assignee picker",
+    gapId: "CTR-GAP-WM-ITEM-STATES",
+    method: "POST",
+    pathTemplate: "/boards/{boardId}/people-directory/invitations",
+    mutation: true,
+  },
+  {
     context: "Workspace",
     classification: "CANONICAL_MOCKED",
     consumerSymbol: "useCompleteItem",

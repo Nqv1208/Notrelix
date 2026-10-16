@@ -64,6 +64,7 @@ export interface ItemSheetLinkCandidate {
   readonly id: string;
   readonly key: string | null;
   readonly title: string;
+  readonly statusCategory?: "todo" | "in_progress" | "review" | "done" | null;
 }
 
 /** A person who follows the item. */

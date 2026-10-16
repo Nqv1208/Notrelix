@@ -1,12 +1,14 @@
-import { useRef, useState } from "react";
-import { Check, Download, Plus, Upload, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
+  AlertTriangle,
+  Check,
+  Download,
+  Plus,
+  Search,
+  Upload,
+  X,
+} from "lucide-react";
+import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -24,6 +26,9 @@ import {
 } from "../shared/item-display";
 import { ItemDescriptionBody } from "../shared/item-description";
 import { fillSheetCopy } from "../card-detail/item-sheet.copy";
+import { PendingMark } from "./item-page-states";
+import { foldForSearch } from "./item-pickers";
+import type { ItemPageUpload } from "./item-page-types";
 import type {
   ItemSheetChildItem,
   ItemSheetLink,
@@ -45,25 +50,81 @@ import {
   SectionHeading,
 } from "./item-page-parts";
 
+/**
+ * Lines the description shows before "Xem toàn bộ mô tả". The States mockup
+ * says six; the Detail mockup shows ERP-142's seven-line description whole,
+ * so the cut is made at eight.
+ */
+const DESCRIPTION_LINES = 8;
+
 export function ItemPageDescription({
   card,
   copy,
+  editable = false,
 }: {
   card: CardDetail;
   copy: ItemPageCopy;
+  /** The viewer may edit the item: an empty description invites writing one. */
+  editable?: boolean;
 }) {
   const text = card.descriptionMd?.trim();
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const [expanded, setExpanded] = useState(false);
+  const [overflows, setOverflows] = useState(false);
+  useEffect(() => {
+    const node = bodyRef.current;
+    if (!node) return;
+    // Measured on the clamped box: a longer scroll height means lines are cut.
+    setOverflows(node.scrollHeight > node.clientHeight + 1);
+  }, [text, expanded]);
+  const t = copy.states.long;
   return (
     <section aria-labelledby="item-page-description">
       <SectionHeading id="item-page-description">
         {copy.description.heading}
       </SectionHeading>
       {text ? (
-        <ItemDescriptionBody
-          text={text}
-          workspaceId={card.workspaceId}
-          className="text-item-prose"
-        />
+        <>
+          <div
+            ref={bodyRef}
+            style={
+              expanded
+                ? undefined
+                : {
+                    display: "-webkit-box",
+                    WebkitBoxOrient: "vertical",
+                    WebkitLineClamp: DESCRIPTION_LINES,
+                    overflow: "hidden",
+                  }
+            }
+          >
+            <ItemDescriptionBody
+              text={text}
+              workspaceId={card.workspaceId}
+              className="text-item-prose"
+            />
+          </div>
+          {overflows || expanded ? (
+            <button
+              type="button"
+              aria-expanded={expanded}
+              onClick={() => setExpanded((open) => !open)}
+              className="mt-2 border-0 bg-transparent p-0 text-item-ui font-semibold text-brand-subtle-foreground"
+            >
+              {expanded ? t.hideDescription : t.showDescription}
+            </button>
+          ) : null}
+        </>
+      ) : editable ? (
+        <DisabledControl reason={copy.description.editUnavailable}>
+          <button
+            type="button"
+            aria-disabled="true"
+            className="m-0 w-full border-0 bg-transparent p-0 text-left text-item-text text-meta-foreground"
+          >
+            {copy.states.empty.description}
+          </button>
+        </DisabledControl>
       ) : (
         <p className="m-0 text-item-text text-muted-foreground">
           {copy.description.empty}
@@ -79,6 +140,9 @@ export function ItemPageDescription({
  * input that adds one (Enter saves). A viewer who cannot edit sees the rows
  * without the controls.
  */
+/** Sub-items shown before "Hiện N việc con còn lại". */
+const CHILD_ROWS_SHOWN = 8;
+
 export function ItemPageChildItems({
   card,
   items,
@@ -87,6 +151,7 @@ export function ItemPageChildItems({
   copy,
   now,
   timeZone,
+  pending = false,
 }: {
   card: CardDetail;
   items: readonly ItemSheetChildItem[] | undefined;
@@ -95,10 +160,19 @@ export function ItemPageChildItems({
   copy: ItemPageCopy;
   now: Date;
   timeZone?: string;
+  /** A sub-item write waits for the network. */
+  pending?: boolean;
 }) {
   const t = copy.children;
   const rows = items ?? [];
   const [draft, setDraft] = useState("");
+  const [adding, setAdding] = useState(false);
+  const [showAll, setShowAll] = useState(false);
+  const visibleRows =
+    showAll || rows.length <= CHILD_ROWS_SHOWN + 2
+      ? rows
+      : rows.slice(0, CHILD_ROWS_SHOWN);
+  const hiddenRows = rows.length - visibleRows.length;
   const progress =
     rows.length > 0
       ? { done: rows.filter((row) => row.done).length, total: rows.length }
@@ -138,6 +212,7 @@ export function ItemPageChildItems({
         }}
         aria-label={t.heading}
         placeholder={t.add}
+        autoFocus={adding}
         className="min-w-0 border-0 bg-transparent p-0 text-item-text text-foreground outline-none placeholder:text-meta-foreground"
       />
     </label>
@@ -147,7 +222,14 @@ export function ItemPageChildItems({
     <section aria-labelledby="item-page-children">
       <SectionHeading
         id="item-page-children"
-        count={progress ? fillSheetCopy(t.progress, progress) : undefined}
+        count={
+          progress ? (
+            <>
+              {fillSheetCopy(t.progress, progress)}
+              {pending ? <PendingMark copy={copy} /> : null}
+            </>
+          ) : undefined
+        }
       >
         {t.heading}
       </SectionHeading>
@@ -168,12 +250,24 @@ export function ItemPageChildItems({
           {fillSheetCopy(t.rollup, { percent })}
         </div>
       ) : null}
-      {rows.length > 0 || showAdd ? (
+      {rows.length === 0 && showAdd && canAdd && !adding ? (
+        <div className="flex min-h-10.5 items-center gap-2.5 rounded-[10px] border border-dashed border-line-strong px-3 text-item-text text-meta-foreground">
+          <Plus aria-hidden="true" className="size-4" />
+          {copy.states.empty.children}
+          <button
+            type="button"
+            onClick={() => setAdding(true)}
+            className="border-0 bg-transparent p-0 font-semibold text-brand-subtle-foreground"
+          >
+            {copy.states.empty.addChild}
+          </button>
+        </div>
+      ) : rows.length > 0 || showAdd ? (
         <div
           role="list"
           className="overflow-hidden rounded-[10px] border border-line bg-popover"
         >
-          {rows.map((row) => (
+          {visibleRows.map((row) => (
             <ChildRow
               key={row.id}
               row={row}
@@ -187,6 +281,20 @@ export function ItemPageChildItems({
               }
             />
           ))}
+          {hiddenRows > 0 || (showAll && rows.length > CHILD_ROWS_SHOWN + 2) ? (
+            <button
+              type="button"
+              aria-expanded={showAll}
+              onClick={() => setShowAll((open) => !open)}
+              className="block w-full border-0 border-t border-line bg-transparent px-3 py-2.5 text-left text-item-ui font-semibold text-brand-subtle-foreground"
+            >
+              {showAll
+                ? copy.states.long.hideChildren
+                : fillSheetCopy(copy.states.long.showChildren, {
+                    count: hiddenRows,
+                  })}
+            </button>
+          ) : null}
           {showAdd ? (
             canAdd ? (
               addInput
@@ -198,7 +306,9 @@ export function ItemPageChildItems({
           ) : null}
         </div>
       ) : (
-        <p className="m-0 text-item-text text-muted-foreground">{t.empty}</p>
+        <p className="m-0 text-item-text text-muted-foreground">
+          {copy.states.empty.children}
+        </p>
       )}
     </section>
   );
@@ -305,7 +415,11 @@ export function ItemPageLinks({
   capabilities,
   callbacks,
   copy,
+  itemKey,
+  place,
 }: {
+  itemKey?: string | null;
+  place?: string | null;
   links: readonly ItemSheetLink[] | undefined;
   candidates: readonly ItemSheetLinkCandidate[] | undefined;
   capabilities: TaskDetailCapabilities;
@@ -324,7 +438,9 @@ export function ItemPageLinks({
           canEdit ? (
             <LinkPicker
               candidates={candidates ?? []}
-              linked={new Set(rows.map((link) => link.item.id))}
+              links={rows}
+              itemKey={itemKey ?? null}
+              place={place ?? null}
               copy={copy}
               onPick={(itemId, relation) =>
                 callbacks.onAddLink?.(itemId, relation)
@@ -407,14 +523,26 @@ export function ItemPageLinks({
   );
 }
 
+/**
+ * "Thêm liên kết": the relation first (waiting, blocking, related), then the
+ * item to link, found by key or title. An item already linked is listed and
+ * cannot be chosen again; one that would make the two wait for each other is
+ * listed with the reason.
+ */
 function LinkPicker({
   candidates,
-  linked,
+  links,
+  itemKey,
+  place,
   copy,
   onPick,
 }: {
   candidates: readonly ItemSheetLinkCandidate[];
-  linked: ReadonlySet<string>;
+  links: readonly ItemSheetLink[];
+  /** Key of the item the link is added to. */
+  itemKey: string | null;
+  /** Where the candidates live, "CN · Triển khai ERP Q4". */
+  place: string | null;
   copy: ItemPageCopy;
   onPick: (itemId: string, relation: ItemSheetLink["relation"]) => void;
 }) {
@@ -422,8 +550,54 @@ function LinkPicker({
   const [open, setOpen] = useState(false);
   const [relation, setRelation] =
     useState<ItemSheetLink["relation"]>("blocked-by");
+  const [query, setQuery] = useState("");
+  const [highlightId, setHighlightId] = useState<string | null>(null);
+  // Taken: already linked under this relation (another relation is a new link).
+  const linked = new Set(
+    links
+      .filter((link) => link.relation === relation)
+      .map((link) => link.item.id),
+  );
+  const needle = foldForSearch(query);
+  const matches = candidates
+    .filter(
+      (candidate) =>
+        !needle ||
+        foldForSearch(`${candidate.key ?? ""} ${candidate.title}`).includes(
+          needle,
+        ),
+    )
+    .slice(0, 8);
+  // Waiting for X while X waits for this item (or the reverse) is a loop.
+  const loopsWith = (candidateId: string) =>
+    (relation === "blocked-by" &&
+      links.some(
+        (link) => link.relation === "blocks" && link.item.id === candidateId,
+      )) ||
+    (relation === "blocks" &&
+      links.some(
+        (link) =>
+          link.relation === "blocked-by" && link.item.id === candidateId,
+      ));
+  const choosable = matches.filter(
+    (candidate) => !linked.has(candidate.id) && !loopsWith(candidate.id),
+  );
+  const highlighted =
+    choosable.find((candidate) => candidate.id === highlightId) ??
+    choosable[0] ??
+    null;
+  const choose = (candidateId: string) => {
+    setOpen(false);
+    onPick(candidateId, relation);
+  };
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (next) setQuery("");
+      }}
+    >
       <PopoverTrigger asChild>
         <button type="button" className={BUTTON_SM_VARIANT_CLASS.ghost}>
           <Plus aria-hidden="true" className="size-4" />
@@ -433,12 +607,12 @@ function LinkPicker({
       <PopoverContent
         align="end"
         aria-label={t.picker.label}
-        className="w-80 gap-2 p-2"
+        className="w-96 gap-0 overflow-hidden rounded-[10px] border border-line-strong bg-popover p-0 shadow-lg ring-0"
       >
         <div
           role="radiogroup"
           aria-label={t.picker.relation}
-          className="flex gap-1"
+          className="m-2 flex gap-0.5 rounded-[8px] bg-state-hover-strong p-0.5"
         >
           {LINK_GROUPS.map((value) => (
             <button
@@ -448,41 +622,130 @@ function LinkPicker({
               aria-checked={relation === value}
               onClick={() => setRelation(value)}
               className={cn(
-                "h-7 flex-1 cursor-pointer rounded-[7px] border-0 px-2 text-crumb font-medium",
+                "h-7 flex-1 cursor-pointer rounded-[6px] border-0 px-2 text-crumb font-medium",
                 relation === value
-                  ? "bg-state-selected text-state-selected-foreground"
-                  : "bg-transparent text-muted-foreground hover:bg-state-hover-strong",
+                  ? "bg-popover font-semibold text-foreground shadow-sm"
+                  : "bg-transparent text-muted-foreground",
               )}
             >
               {t.picker.relations[value]}
             </button>
           ))}
         </div>
-        <Command>
-          <CommandInput placeholder={t.picker.find} />
-          <CommandList>
-            <CommandEmpty>{t.picker.empty}</CommandEmpty>
-            <CommandGroup>
-              {candidates
-                .filter((candidate) => !linked.has(candidate.id))
-                .map((candidate) => (
-                  <CommandItem
-                    key={candidate.id}
-                    value={`${candidate.key ?? ""} ${candidate.title}`}
-                    onSelect={() => {
-                      setOpen(false);
-                      onPick(candidate.id, relation);
-                    }}
+        <div className="flex h-10 items-center gap-2 border-y border-line px-3 text-meta-foreground">
+          <Search aria-hidden="true" className="size-3.5 shrink-0" />
+          <input
+            data-picker-search
+            autoFocus
+            type="text"
+            role="combobox"
+            aria-expanded="true"
+            aria-label={t.picker.find}
+            placeholder={t.picker.find}
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+                event.preventDefault();
+                if (choosable.length === 0) return;
+                const index = highlighted
+                  ? choosable.findIndex((entry) => entry.id === highlighted.id)
+                  : -1;
+                const step = event.key === "ArrowDown" ? 1 : -1;
+                const next =
+                  choosable[
+                    (index + step + choosable.length) % choosable.length
+                  ];
+                if (next) setHighlightId(next.id);
+              } else if (event.key === "Enter") {
+                event.preventDefault();
+                if (highlighted) choose(highlighted.id);
+              }
+            }}
+            className="min-w-0 flex-1 border-0 bg-transparent p-0 text-item-ui text-foreground outline-none placeholder:text-meta-foreground"
+          />
+        </div>
+        <div role="listbox" aria-label={t.picker.label} className="p-1.5">
+          {matches.length === 0 ? (
+            <p className="m-0 px-2.5 py-2 text-item-ui text-meta-foreground">
+              {t.picker.empty}
+            </p>
+          ) : (
+            matches.map((candidate) => {
+              const loop = loopsWith(candidate.id);
+              const alreadyLinked = !loop && linked.has(candidate.id);
+              const disabled = alreadyLinked || loop;
+              return (
+                <div
+                  key={candidate.id}
+                  role="option"
+                  aria-selected={candidate.id === highlighted?.id}
+                  aria-disabled={disabled || undefined}
+                  onMouseEnter={() => !disabled && setHighlightId(candidate.id)}
+                  onClick={() => !disabled && choose(candidate.id)}
+                  className={cn(
+                    "rounded-[7px] px-2.5 py-1.5 text-item-ui",
+                    disabled ? "cursor-default" : "cursor-pointer",
+                    candidate.id === highlighted?.id && "bg-state-hover-strong",
+                  )}
+                >
+                  <div
+                    className={cn(
+                      "flex items-center gap-2",
+                      disabled && "text-muted-foreground",
+                    )}
                   >
+                    <span
+                      aria-hidden="true"
+                      className={cn(
+                        "size-2.25 shrink-0 rounded-full",
+                        candidate.statusCategory
+                          ? LINK_DOT_CLASS[candidate.statusCategory]
+                          : "bg-muted-foreground",
+                      )}
+                    />
                     <span className="font-mono text-item-note text-meta-foreground">
                       {candidate.key}
                     </span>
-                    <span className="truncate">{candidate.title}</span>
-                  </CommandItem>
-                ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
+                    <span className="min-w-0 flex-1 truncate">
+                      {candidate.title}
+                    </span>
+                    {alreadyLinked ? (
+                      <span className="shrink-0 text-item-note text-meta-foreground">
+                        {t.picker.linked}
+                      </span>
+                    ) : null}
+                  </div>
+                  {place ? (
+                    <div className="pl-4.25 text-item-note text-meta-foreground">
+                      {place}
+                    </div>
+                  ) : null}
+                  {loop ? (
+                    <div className="mt-0.5 flex items-start gap-1 pl-4.25 text-item-note leading-snug text-warning-text">
+                      <AlertTriangle
+                        aria-hidden="true"
+                        className="mt-0.5 size-3 shrink-0"
+                      />
+                      {fillSheetCopy(
+                        relation === "blocks"
+                          ? t.picker.cycleBlocks
+                          : t.picker.cycleWaits,
+                        {
+                          key: itemKey ?? "",
+                          other: candidate.key ?? candidate.title,
+                        },
+                      )}
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })
+          )}
+        </div>
+        <div className="border-t border-line px-3.5 py-2.5 text-item-note text-meta-foreground">
+          {t.picker.footer}
+        </div>
       </PopoverContent>
     </Popover>
   );
@@ -494,6 +757,132 @@ const FILE_KIND_CLASS: Readonly<Record<FileKind, string>> = {
   other: "bg-state-hover-strong text-muted-foreground",
 };
 
+/** A file being sent, or refused: its kind chip, what it is doing, and what can be done about it. */
+function UploadRow({
+  upload,
+  copy,
+  locale,
+  onRetry,
+  onDismiss,
+}: {
+  upload: ItemPageUpload;
+  copy: ItemPageCopy;
+  locale: string;
+  onRetry?: (uploadId: string) => void;
+  onDismiss?: (uploadId: string) => void;
+}) {
+  const t = copy.files;
+  const kind = describeFile({ name: upload.name, contentType: "" });
+  const size = formatFileSize(upload.size, locale);
+  const failed = upload.status === "error";
+  const percent =
+    upload.progress === null || upload.progress === undefined
+      ? null
+      : Math.max(0, Math.min(100, Math.round(upload.progress)));
+  return (
+    <div
+      data-upload-status={upload.status}
+      className={cn(
+        "mb-1.5 flex items-center gap-2.5 rounded-[10px] border px-2.5 py-2",
+        failed
+          ? "border-danger-text/40 bg-danger-subtle"
+          : "border-line bg-popover",
+      )}
+    >
+      <span
+        aria-hidden="true"
+        className={cn(
+          "grid size-8.5 flex-none place-items-center rounded-[7px] text-avatar-md tracking-[0.02em]",
+          FILE_KIND_CLASS[kind.kind],
+        )}
+      >
+        {kind.label}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-item-ui font-medium text-foreground">
+          {upload.name}
+        </span>
+        <small
+          className={cn(
+            "block text-item-note",
+            failed ? "text-danger-text" : "text-meta-foreground",
+          )}
+        >
+          {failed
+            ? upload.error === "tooBig"
+              ? fillSheetCopy(t.tooBig, { limit: upload.limit ?? "" })
+              : t.failed
+            : upload.status === "done"
+              ? fillSheetCopy(t.uploaded, { size })
+              : percent === null
+                ? fillSheetCopy(t.uploadingNoPercent, { size })
+                : fillSheetCopy(t.uploading, {
+                    percent,
+                    done: formatFileSize(
+                      Math.round((upload.size * percent) / 100),
+                      locale,
+                    ),
+                    size,
+                  })}
+        </small>
+        {upload.status === "uploading" ? (
+          <span
+            role="progressbar"
+            aria-label={upload.name}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={percent ?? undefined}
+            className="mt-1.5 block h-1.25 overflow-hidden rounded-[3px] bg-state-hover-strong"
+          >
+            <span
+              className={cn(
+                "block h-full rounded-[3px] bg-primary",
+                percent === null && "w-2/5 animate-pulse",
+              )}
+              style={percent === null ? undefined : { width: `${percent}%` }}
+            />
+          </span>
+        ) : null}
+      </span>
+      {failed ? (
+        <>
+          {onRetry ? (
+            <button
+              type="button"
+              className={BUTTON_SM_VARIANT_CLASS.outline}
+              onClick={() => onRetry(upload.id)}
+            >
+              {t.retry}
+            </button>
+          ) : null}
+          {onDismiss ? (
+            <button
+              type="button"
+              className={BUTTON_SM_VARIANT_CLASS.ghost}
+              onClick={() => onDismiss(upload.id)}
+            >
+              {t.skip}
+            </button>
+          ) : null}
+        </>
+      ) : null}
+      {onDismiss ? (
+        <button
+          type="button"
+          aria-label={fillSheetCopy(
+            upload.status === "uploading" ? t.cancel : t.dismiss,
+            { name: upload.name },
+          )}
+          onClick={() => onDismiss(upload.id)}
+          className={cn(ICON_BUTTON_CLASS, "size-7")}
+        >
+          <X aria-hidden="true" />
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 export function ItemPageFiles({
   files,
   updates,
@@ -503,7 +892,13 @@ export function ItemPageFiles({
   locale,
   now,
   timeZone,
+  uploads = [],
+  onRetryUpload,
+  onDismissUpload,
 }: {
+  uploads?: readonly ItemPageUpload[];
+  onRetryUpload?: (uploadId: string) => void;
+  onDismissUpload?: (uploadId: string) => void;
   files: readonly CardFile[];
   /** The comments, to tell which file came with one. */
   updates: readonly CardUpdate[];
@@ -578,6 +973,16 @@ export function ItemPageFiles({
       >
         {t.heading}
       </SectionHeading>
+      {uploads.map((upload) => (
+        <UploadRow
+          key={upload.id}
+          upload={upload}
+          copy={copy}
+          locale={locale}
+          onRetry={onRetryUpload}
+          onDismiss={onDismissUpload}
+        />
+      ))}
       {files.length === 0 && !capabilities.canEditFields ? (
         <p className="m-0 text-item-text text-muted-foreground">{t.empty}</p>
       ) : null}

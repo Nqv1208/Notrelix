@@ -138,17 +138,17 @@ test.describe("Item page", () => {
   }) => {
     await open(page, ITEM);
     await page.getByRole("button", { name: "Trạng thái" }).click();
-    await page.getByRole("menuitem", { name: "Chờ duyệt" }).click();
+    await page.getByRole("option", { name: /Chờ duyệt/ }).click();
     await expect(
-      page.getByRole("button", { name: "Trạng thái" }),
+      page.getByRole("button", { name: "Trạng thái", exact: true }),
     ).toContainText("Chờ duyệt");
     await expect(page.getByText(/trong Chờ duyệt$/)).toBeVisible();
   });
 
   test("says the item is not there and goes back", async ({ page }) => {
     await open(page, `${BOARD}/items/mock-erp-item-does-not-exist`);
-    await expect(page.getByText("Không mở được công việc")).toBeVisible();
-    await page.getByRole("button", { name: "Về board" }).click();
+    await expect(page.getByText("Không tìm thấy việc này")).toBeVisible();
+    await page.getByRole("link", { name: "Về board" }).click();
     await expect(page).toHaveURL(/\/boards\/mock-board-erp(\?|$)/);
   });
 
