@@ -391,7 +391,9 @@ const ARCHITECTURE_MANIFEST_SOURCE = [
     relativePath: "packages/features/auth",
     layer: "feature",
     freezeScope: "core-production",
-    allowedInternalImports: [...FEATURE_WEB_BASE],
+    // FE-ADR-006: catalogs are owned by the package that renders the copy;
+    // the sign-in pages (sign-in, reset, invitation) ship their own vi/en catalog.
+    allowedInternalImports: [...FEATURE_WEB_BASE, "@notrelix/i18n"],
     allowedVerificationInternalImports: ["@notrelix/testing"],
   },
   {

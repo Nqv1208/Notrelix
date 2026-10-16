@@ -109,6 +109,7 @@ import {
   type ErpHistoryCompact,
   type ErpHistoryDetail,
 } from "./mock-item-detail";
+import { MockAuthDirectory } from "./mock-auth-directory";
 import { ERP_STATE_ITEMS, erpLongChildTitles } from "./mock-item-states";
 import { MockBoardSharing, seedErpSharing } from "./mock-board-sharing";
 import { LIBRARY_DOCS, SECONDARY_BOARD_TITLES } from "./mock-docs-library";
@@ -208,6 +209,8 @@ export interface MockBoardPlan {
 }
 
 export class MockStore {
+  /** Sign-in attempts, second steps and guest invitations (gap `CTR-GAP-AUTH-FLOW`). */
+  readonly auth = new MockAuthDirectory();
   // Primary Maps
   private usersById = new Map<string, MockUserRecord>();
   private workspacesById = new Map<string, MockWorkspaceRecord>();
@@ -1703,6 +1706,7 @@ export class MockStore {
     this.fieldValuesByCardId.clear();
     this.userPreferencesByUserId.clear();
     this.loggedOutUserIds.clear();
+    this.auth.reset();
     this.navigationByMember.clear();
     this.navigationTick = 0;
     this.suspendedMembershipIds.clear();
@@ -1879,6 +1883,11 @@ export class MockStore {
       );
     }
     return user;
+  }
+
+  /** A sign-in succeeded: the persona's session is open again. */
+  loginCurrentUser(): void {
+    this.loggedOutUserIds.delete(this.getCurrentUser().id);
   }
 
   logoutCurrentUser(): void {

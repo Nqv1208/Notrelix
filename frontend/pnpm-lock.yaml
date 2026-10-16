@@ -531,6 +531,9 @@ importers:
       '@hookform/resolvers':
         specifier: ^5.2.2
         version: 5.4.0(react-hook-form@7.81.0(react@19.2.7))
+      '@notrelix/i18n':
+        specifier: workspace:*
+        version: link:../../foundation/i18n
       '@notrelix/ui-web':
         specifier: workspace:*
         version: link:../../ui/web

@@ -21,6 +21,7 @@
     "zod": "catalog:",
     "@tanstack/react-query": "catalog:",
     "@tanstack/react-router": "catalog:",
+    "@notrelix/i18n": "workspace:*",
     "@notrelix/ui-web": "workspace:*",
     "react-hook-form": "^7.71.2",
     "@hookform/resolvers": "^5.2.2",

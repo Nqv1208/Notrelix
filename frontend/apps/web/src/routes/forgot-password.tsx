@@ -1,22 +1,17 @@
-import { useMemo } from "react";
-import { createForgotPasswordForm } from "@notrelix/features-auth";
-import { useAppRuntime } from "@notrelix/runtime-web";
+import { ForgotFlow } from "@notrelix/features-auth";
 import { AuthLayout } from "./auth-layout";
+import { useAuthFlowDeps } from "./auth-flow-deps";
 
 export function ForgotPasswordPage() {
-  const { api: runtimeClient } = useAppRuntime();
-  const ForgotPasswordForm = useMemo(
-    () =>
-      createForgotPasswordForm({
-        api: runtimeClient.api,
-        endpoints: runtimeClient.endpoints,
-      }),
-    [runtimeClient],
-  );
-
+  const { service, navigation } = useAuthFlowDeps();
+  const search = new URLSearchParams(window.location.search);
   return (
     <AuthLayout>
-      <ForgotPasswordForm />
+      <ForgotFlow
+        service={service}
+        navigation={navigation}
+        initialEmail={search.get("email") ?? ""}
+      />
     </AuthLayout>
   );
 }

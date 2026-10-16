@@ -88,3 +88,13 @@ export function hanoiShortDay(iso: string): string {
     hanoi.getUTCMonth() + 1,
   ).padStart(2, "0")}`;
 }
+
+/**
+ * The wall clock, read here and nowhere else in the mock. The mock's own
+ * clock is frozen at the mockups' Monday morning, so a wait that must really
+ * pass (the sign-in lock) cannot use it. Nothing seeded or snapshotted reads
+ * this; only a wait the viewer sits through does.
+ */
+export function wallClockMs(): number {
+  return new Date().getTime();
+}

@@ -37,3 +37,20 @@ export type { ResetPasswordRequest as ResetPasswordFormRequest } from "./schemas
 // Utils
 export { parseAuthError, resolveErrorDisplay } from "./utils";
 export type { ParsedAuthError } from "./utils/parse-auth-error";
+
+// Sign-in flow (gap CTR-GAP-AUTH-FLOW)
+export {
+  createAuthFlowService,
+  AUTH_FLOW_PATHS,
+} from "./api/auth-flow.service";
+export type {
+  AuthFlowApiClient,
+  AuthFlowService,
+  IdentifyResult,
+  InviteAcceptResult,
+  InvitePreview,
+  InviteState,
+  LoginResult,
+  SessionResult,
+} from "./api/auth-flow.service";
+export { readFlowError, type FlowError } from "./utils/flow-error";

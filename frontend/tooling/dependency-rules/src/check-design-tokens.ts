@@ -94,6 +94,7 @@ export const RAW_Z_INDEX_EXCLUDED = [
  */
 export const VENDOR_MARK_FILES = [
   "packages/features/auth/src/web/components/google-mark.tsx",
+  "packages/features/auth/src/web/components/microsoft-mark.tsx",
 ] as const;
 
 export type FileCounts = Partial<Record<DesignTokenRule, number>>;

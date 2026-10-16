@@ -39,10 +39,44 @@ export {
   createUseRegister,
   createUseForgotPassword,
   createUseResetPassword,
-  createLoginForm,
   createRegisterForm,
-  createForgotPasswordForm,
   createAuthProvider,
   useAuth,
   useCurrentUser,
 } from "./web";
+
+// Sign-in pages (the Auth mockup)
+export {
+  AuthShell,
+  AuthSignInSurface,
+  AuthForgotSurface,
+  AuthInviteSurface,
+  SignInFlow,
+  ForgotFlow,
+  InviteFlow,
+  authCatalog,
+  authCopy,
+  useAuthCopy,
+} from "./web";
+export type {
+  AuthShellProps,
+  AuthSignInStep,
+  AuthSignInSurfaceProps,
+  AuthForgotStep,
+  AuthForgotSurfaceProps,
+  AuthInvite,
+  AuthInviteView,
+  AuthInviteSurfaceProps,
+  AuthFlowNavigation,
+  AuthCopy,
+} from "./web";
+export { createAuthFlowService, AUTH_FLOW_PATHS, readFlowError } from "./core";
+export type {
+  AuthFlowApiClient,
+  AuthFlowService,
+  IdentifyResult,
+  InvitePreview,
+  SessionResult,
+  LoginResult,
+  FlowError,
+} from "./core";
