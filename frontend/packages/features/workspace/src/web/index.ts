@@ -355,16 +355,41 @@ export {
   ReportListSurface,
   type ReportListSurfaceProps,
 } from "./reports/report-list-surface";
-export type {
-  ReportDrillState,
-} from "./reports/report-drill-sheet";
+export type { ReportDrillState } from "./reports/report-drill-sheet";
 export type {
   ReportSharingState,
   ReportWidgetOptionsState,
 } from "./reports/report-dialogs";
-export type {
-  ReportLink,
-  ReportLinks,
-} from "./reports/report-widgets";
+export type { ReportLink, ReportLinks } from "./reports/report-widgets";
 export type { ReportFormatters } from "./reports/reports-format";
 export * from "./reports/reports-models";
+
+// Billing (the Billing mockup)
+export { workspaceBillingCatalog } from "./billing/billing.catalog";
+export { billingCopy, type BillingCopy } from "./billing/billing.copy";
+export { useBillingCopy } from "./billing/use-billing-copy";
+export * from "./billing/billing-models";
+export {
+  BillingOverviewSurface,
+  type BillingOverviewProps,
+} from "./billing/billing-overview-surface";
+export {
+  BillingCompareSurface,
+  type BillingCompareProps,
+} from "./billing/billing-compare-surface";
+export {
+  BillingInvoicesSurface,
+  type BillingInvoicesProps,
+} from "./billing/billing-invoices-surface";
+export {
+  BillingDowngradeSurface,
+  type BillingDowngradeProps,
+} from "./billing/billing-downgrade-surface";
+export {
+  BillingBuyDialog,
+  BillingSeatInviteDialog,
+  SEAT_MAX,
+  SEAT_MIN,
+  type BillingBuyDialogProps,
+  type BillingSeatInviteDialogProps,
+} from "./billing/billing-dialogs";

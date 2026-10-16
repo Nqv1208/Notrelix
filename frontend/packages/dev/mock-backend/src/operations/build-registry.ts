@@ -15,6 +15,7 @@ import { notificationsOperations } from "../contexts/notifications/notifications
 import { workManagementOperations } from "../contexts/work-management";
 import { documentsOperations } from "../contexts/documents";
 import { reportsOperations } from "../contexts/analytics/reports.handlers";
+import { billingOperations } from "../contexts/billing/billing.handlers";
 import { workFeedOperations } from "../contexts/work-feed/work-feed.handlers";
 
 export function buildOperationRegistry(): MockOperationRegistry {
@@ -37,6 +38,8 @@ export function buildOperationRegistry(): MockOperationRegistry {
     ...workFeedOperations,
     // Analytics (CTR-GAP-REPORTS): the Reports pages
     ...reportsOperations,
+    // Billing (CTR-GAP-BILLING): the Plans and billing pages
+    ...billingOperations,
     // Note: Search is CONTRACT-BLOCKED (CTR-GAP-SEARCH) until authoritative producer contract lands.
   ]);
 

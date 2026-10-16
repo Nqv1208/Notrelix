@@ -37,6 +37,7 @@ export const libraryRoute = createRoute({
 
 const membersSearchSchema = z.object({
   tab: z.enum(["members", "invitations"]).optional(),
+  invite: z.literal("seats").optional(),
 });
 
 export const settingsRoute = createRoute({

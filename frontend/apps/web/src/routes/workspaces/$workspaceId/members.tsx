@@ -23,6 +23,7 @@ import {
 import { describeWorkspaceFailure } from "@notrelix/features-workspace/core";
 import { useFormatters } from "@notrelix/i18n";
 import { useAppRuntime } from "@notrelix/runtime-web";
+import { SeatInviteDialog } from "./billing/seat-invite";
 import { useWorkspaceContext } from "@/providers/workspace-provider";
 import { toastFailure } from "@/shell/workspace/failure-toast";
 import { sectionState } from "@/shell/workspace/section-state";
@@ -58,7 +59,10 @@ export function MembersPage() {
   const formatters = useFormatters();
   const now = useNow();
   const navigate = useNavigate();
-  const search = useSearch({ strict: false }) as { tab?: MembersTab };
+  const search = useSearch({ strict: false }) as {
+    tab?: MembersTab;
+    invite?: "seats";
+  };
   const tab: MembersTab =
     search.tab === "invitations" ? "invitations" : "members";
   const { api: runtimeClient } = useAppRuntime();
@@ -190,51 +194,65 @@ export function MembersPage() {
   );
 
   return (
-    <WorkspaceMembersSurface
-      copy={copy}
-      formatters={formatters}
-      now={now}
-      workspaceName={workspace?.name ?? null}
-      viewer={{ userId: viewer.userId, role: viewer.role }}
-      members={sectionState(viewer.members, viewer.members.data)}
-      invitations={admin ? sectionState(invitations, invitations.data) : null}
-      tab={tab}
-      onTabChange={(next) =>
-        void navigate({
-          to: "/workspaces/$workspaceId/members",
-          params: { workspaceId },
-          search: next === "invitations" ? { tab: "invitations" } : {},
-          replace: true,
-        } as never)
-      }
-      pendingMemberIds={pendingMembers.ids}
-      pendingInvitationIds={pendingInvitations.ids}
-      inviting={createInvitation.isPending}
-      inviteError={inviteError}
-      inviteResetKey={inviteResetKey}
-      onChangeRole={onChangeRole}
-      onRemove={(member) =>
-        run(member, (userId) => mutations.remove.mutateAsync(userId), {
-          success: copy.toasts.removed,
-          failure: copy.toasts.removeFailed,
-        })
-      }
-      onSuspend={(member) =>
-        run(member, (userId) => mutations.suspend.mutateAsync(userId), {
-          success: copy.toasts.suspended,
-          failure: copy.toasts.suspendFailed,
-        })
-      }
-      onActivate={(member) =>
-        run(member, (userId) => mutations.activate.mutateAsync(userId), {
-          success: copy.toasts.activated,
-          failure: copy.toasts.activateFailed,
-        })
-      }
-      onInvite={onInvite}
-      onRevoke={onRevoke}
-      onRetryMembers={() => void viewer.members.refetch()}
-      onRetryInvitations={() => void invitations.refetch()}
-    />
+    <>
+      <WorkspaceMembersSurface
+        copy={copy}
+        formatters={formatters}
+        now={now}
+        workspaceName={workspace?.name ?? null}
+        viewer={{ userId: viewer.userId, role: viewer.role }}
+        members={sectionState(viewer.members, viewer.members.data)}
+        invitations={admin ? sectionState(invitations, invitations.data) : null}
+        tab={tab}
+        onTabChange={(next) =>
+          void navigate({
+            to: "/workspaces/$workspaceId/members",
+            params: { workspaceId },
+            search: next === "invitations" ? { tab: "invitations" } : {},
+            replace: true,
+          } as never)
+        }
+        pendingMemberIds={pendingMembers.ids}
+        pendingInvitationIds={pendingInvitations.ids}
+        inviting={createInvitation.isPending}
+        inviteError={inviteError}
+        inviteResetKey={inviteResetKey}
+        onChangeRole={onChangeRole}
+        onRemove={(member) =>
+          run(member, (userId) => mutations.remove.mutateAsync(userId), {
+            success: copy.toasts.removed,
+            failure: copy.toasts.removeFailed,
+          })
+        }
+        onSuspend={(member) =>
+          run(member, (userId) => mutations.suspend.mutateAsync(userId), {
+            success: copy.toasts.suspended,
+            failure: copy.toasts.suspendFailed,
+          })
+        }
+        onActivate={(member) =>
+          run(member, (userId) => mutations.activate.mutateAsync(userId), {
+            success: copy.toasts.activated,
+            failure: copy.toasts.activateFailed,
+          })
+        }
+        onInvite={onInvite}
+        onRevoke={onRevoke}
+        onRetryMembers={() => void viewer.members.refetch()}
+        onRetryInvitations={() => void invitations.refetch()}
+      />
+      <SeatInviteDialog
+        open={admin && search.invite === "seats"}
+        onClose={() =>
+          void navigate({
+            to: "/workspaces/$workspaceId/members",
+            params: { workspaceId },
+            search: {},
+            replace: true,
+          } as never)
+        }
+        createInvitation={createInvitation.mutateAsync}
+      />
+    </>
   );
 }

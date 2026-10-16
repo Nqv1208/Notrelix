@@ -31,7 +31,9 @@ export type MockBusinessState =
   | "permission-limited"
   | "expired-session"
   /** Final-Home `xong-viec`: today's two items were completed at 10:05. */
-  | "done-today";
+  | "done-today"
+  /** Final-Billing `qua-han`: invoice HĐ-2026-0131 is overdue. */
+  | "billing-past-due";
 
 export type MockDensity = "tiny" | "normal" | "large" | "stress";
 
@@ -164,6 +166,7 @@ const VALID_STATES = new Set<string>([
   "permission-limited",
   "expired-session",
   "done-today",
+  "billing-past-due",
 ]);
 const VALID_DENSITIES = new Set<string>(["tiny", "normal", "large", "stress"]);
 const VALID_LATENCIES = new Set<string>(["instant", "fast", "normal", "slow"]);

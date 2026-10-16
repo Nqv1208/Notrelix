@@ -4450,6 +4450,213 @@
           "testFile": "src/web/reports/__tests__/reports.interaction.component.test.tsx"
         }
       ]
+    },
+    {
+      "surfaceId": "workspace.billing",
+      "owner": "@notrelix/features-workspace",
+      "surfaceKind": "data",
+      "pureEntry": "src/web/billing/billing-overview-surface.tsx",
+      "coveredSources": [
+        "src/web/billing/billing-compare-surface.tsx",
+        "src/web/billing/billing-dialogs.tsx",
+        "src/web/billing/billing-downgrade-surface.tsx",
+        "src/web/billing/billing-invoices-surface.tsx",
+        "src/web/billing/billing-parts.tsx"
+      ],
+      "stories": [
+        {
+          "id": "workspace-billing--overview",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-billing--compare",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-billing--invoices",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-billing--downgrade",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-billing--buy-seats",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-billing--buy-pending",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-billing--past-due",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-billing--viewer-only",
+          "state": "ReadOnly",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-billing--overview-loading",
+          "state": "Loading",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-billing--overview-error",
+          "state": "Error",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-billing--invoices-empty",
+          "state": "Empty",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-billing--invite-beyond-seats",
+          "state": "PermissionLimited",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": [
+          "Default",
+          "EdgeData",
+          "Empty",
+          "Error",
+          "Loading",
+          "PermissionLimited",
+          "ReadOnly"
+        ],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "HighDensity",
+            "reason": "The pages show one account's plan, a four-plan table and the invoices of one contract year; none is paged or windowed.",
+            "authority": "docs/product/billing.md"
+          }
+        ]
+      },
+      "responsive": false,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "overview",
+          "testFile": "src/web/billing/__tests__/billing.interaction.component.test.tsx"
+        },
+        {
+          "id": "past-due",
+          "testFile": "src/web/billing/__tests__/billing.interaction.component.test.tsx"
+        },
+        {
+          "id": "viewer",
+          "testFile": "src/web/billing/__tests__/billing.interaction.component.test.tsx"
+        },
+        {
+          "id": "compare",
+          "testFile": "src/web/billing/__tests__/billing.interaction.component.test.tsx"
+        },
+        {
+          "id": "buy",
+          "testFile": "src/web/billing/__tests__/billing.interaction.component.test.tsx"
+        },
+        {
+          "id": "invite",
+          "testFile": "src/web/billing/__tests__/billing.interaction.component.test.tsx"
+        }
+      ]
     }
   ]
 }
