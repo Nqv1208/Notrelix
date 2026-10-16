@@ -111,6 +111,7 @@ import {
 } from "./mock-item-detail";
 import { MockAuthDirectory } from "./mock-auth-directory";
 import { MockAccountPages } from "./mock-account-pages";
+import { MockReports } from "./mock-reports";
 import { MockBoardAutomations } from "./mock-board-automations";
 import { MockOnboarding } from "./mock-onboarding";
 import { ERP_STATE_ITEMS, erpLongChildTitles } from "./mock-item-states";
@@ -217,6 +218,7 @@ export class MockStore {
   /** Setup drafts, getting-started lists and welcome profiles (gap `CTR-GAP-ONBOARD-FLOW`). */
   readonly onboarding = new MockOnboarding();
   readonly accountPages = new MockAccountPages();
+  readonly reports = new MockReports();
   /** Automation rules, drafts and run log of a board (gap `CTR-GAP-WM-BOARD-AUTOMATIONS`). */
   readonly automations = new MockBoardAutomations(this);
   // Primary Maps
@@ -1717,6 +1719,7 @@ export class MockStore {
     this.auth.reset();
     this.onboarding.reset();
     this.accountPages.reset();
+    this.reports.reset();
     this.automations.reset();
     this.navigationByMember.clear();
     this.navigationTick = 0;
@@ -3926,6 +3929,11 @@ export class MockStore {
       .map((id) => this.notificationsById.get(id))
       .filter((n): n is MockNotificationRecord => n !== undefined)
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+
+  /** A notification a background job leaves in a person's inbox. */
+  pushNotification(record: MockNotificationRecord): void {
+    this.insertNotification(record);
   }
 
   markNotificationRead(id: string): boolean {

@@ -10,6 +10,7 @@ import { TeamPage } from "../../routes/workspaces/$workspaceId/teams.$teamId";
 import { MyWorkPage } from "../../routes/workspaces/$workspaceId/my-work";
 import { myWorkSearchSchema } from "../schemas/my-work-search-schema";
 import { InboxPage } from "../../routes/workspaces/$workspaceId/inbox";
+import { reportsSearchSchema } from "../schemas/reports-search-schema";
 import { ReportsPage } from "../../routes/workspaces/$workspaceId/reports";
 import { SpacePage } from "../../routes/workspaces/$workspaceId/spaces/$spaceId";
 import { SecurityPage } from "../../routes/workspaces/$workspaceId/security";
@@ -83,10 +84,11 @@ export const inboxRoute = createRoute({
   component: InboxPage,
 });
 
-/** Reports placeholder until the Reports phase (Final-Space sidebar). */
+/** Reports (Final-Reports): the list, or one report named by `report`. */
 export const reportsRoute = createRoute({
   getParentRoute: () => workspaceRoute,
   path: "/reports",
+  validateSearch: (search) => reportsSearchSchema.parse(search),
   component: ReportsPage,
 });
 

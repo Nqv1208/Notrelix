@@ -67,7 +67,7 @@ async function overflow(page: Page) {
   });
 }
 
-test("Sidebar lists the five primary items and opens the Reports placeholder", async ({
+test("Sidebar lists the five primary items and opens the Reports list", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
@@ -88,7 +88,9 @@ test("Sidebar lists the five primary items and opens the Reports placeholder", a
   await expect(
     page.getByRole("heading", { level: 1, name: "Báo cáo" }),
   ).toBeVisible();
-  await expect(page.getByText("Báo cáo chưa khả dụng")).toBeVisible();
+  await expect(
+    page.getByRole("table", { name: "Báo cáo" }).getByRole("row"),
+  ).toHaveCount(4);
   // The desktop design has no top bar, so no breadcrumb either.
   await expect(page.getByRole("navigation", { name: "Đường dẫn" })).toHaveCount(
     0,

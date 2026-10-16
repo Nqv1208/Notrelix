@@ -341,3 +341,30 @@ export {
   type OnboardingSummary,
 } from "./onboarding/onboarding-models";
 export { newInviteRow } from "./onboarding/onboarding-steps";
+
+// Reports (the Reports mockup)
+export { workspaceReportsCatalog } from "./reports/reports.catalog";
+export { reportsCopy, type ReportsCopy } from "./reports/reports.copy";
+export { useReportsCopy } from "./reports/use-reports-copy";
+export {
+  ReportDashboardSurface,
+  type ReportDashboardSurfaceProps,
+  type ReportPending,
+} from "./reports/report-dashboard-surface";
+export {
+  ReportListSurface,
+  type ReportListSurfaceProps,
+} from "./reports/report-list-surface";
+export type {
+  ReportDrillState,
+} from "./reports/report-drill-sheet";
+export type {
+  ReportSharingState,
+  ReportWidgetOptionsState,
+} from "./reports/report-dialogs";
+export type {
+  ReportLink,
+  ReportLinks,
+} from "./reports/report-widgets";
+export type { ReportFormatters } from "./reports/reports-format";
+export * from "./reports/reports-models";

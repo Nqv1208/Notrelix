@@ -4109,6 +4109,347 @@
           "testFile": "src/web/onboarding/__tests__/onboarding.interaction.component.test.tsx"
         }
       ]
+    },
+    {
+      "surfaceId": "workspace.report-dashboard",
+      "owner": "@notrelix/features-workspace",
+      "surfaceKind": "data",
+      "pureEntry": "src/web/reports/report-dashboard-surface.tsx",
+      "coveredSources": [
+        "src/web/reports/report-dialogs.tsx",
+        "src/web/reports/report-drill-sheet.tsx",
+        "src/web/reports/report-glyph.tsx",
+        "src/web/reports/report-start.tsx",
+        "src/web/reports/report-widgets.tsx",
+        "src/web/reports/reports-parts.tsx"
+      ],
+      "stories": [
+        {
+          "id": "workspace-reports--erp-dashboard",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-reports--edit-layout",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-reports--moving-widget",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-reports--add-widget",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-reports--drill-down",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-reports--export-running",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-reports--empty-report",
+          "state": "Empty",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-reports--viewer-only",
+          "state": "ReadOnly",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-reports--partial-numbers",
+          "state": "PermissionLimited",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-reports--nothing-to-count",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": [
+          "Default",
+          "EdgeData",
+          "Empty",
+          "PermissionLimited",
+          "ReadOnly"
+        ],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "Loading",
+            "reason": "The host page draws the wait while a report is read; the dashboard is only given a loaded report.",
+            "authority": "docs/product/analytics.md"
+          },
+          {
+            "state": "Error",
+            "reason": "The host page draws a failed read with a retry; the dashboard is only given a loaded report. Failed writes (save, export, rename, share, delete) are drawn here and tested.",
+            "authority": "docs/product/analytics.md"
+          },
+          {
+            "state": "HighDensity",
+            "reason": "A report holds a handful of widgets and each widget caps its rows; there is nothing to window.",
+            "authority": "docs/product/analytics.md"
+          }
+        ]
+      },
+      "responsive": false,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "view",
+          "testFile": "src/web/reports/__tests__/reports.interaction.component.test.tsx"
+        },
+        {
+          "id": "actions",
+          "testFile": "src/web/reports/__tests__/reports.interaction.component.test.tsx"
+        },
+        {
+          "id": "viewer",
+          "testFile": "src/web/reports/__tests__/reports.interaction.component.test.tsx"
+        },
+        {
+          "id": "partial",
+          "testFile": "src/web/reports/__tests__/reports.interaction.component.test.tsx"
+        },
+        {
+          "id": "zero",
+          "testFile": "src/web/reports/__tests__/reports.interaction.component.test.tsx"
+        },
+        {
+          "id": "drill",
+          "testFile": "src/web/reports/__tests__/reports.interaction.component.test.tsx"
+        },
+        {
+          "id": "drill-state",
+          "testFile": "src/web/reports/__tests__/reports.interaction.component.test.tsx"
+        },
+        {
+          "id": "edit",
+          "testFile": "src/web/reports/__tests__/reports.interaction.component.test.tsx"
+        },
+        {
+          "id": "edit-failure",
+          "testFile": "src/web/reports/__tests__/reports.interaction.component.test.tsx"
+        },
+        {
+          "id": "add",
+          "testFile": "src/web/reports/__tests__/reports.interaction.component.test.tsx"
+        },
+        {
+          "id": "add-note",
+          "testFile": "src/web/reports/__tests__/reports.interaction.component.test.tsx"
+        },
+        {
+          "id": "export",
+          "testFile": "src/web/reports/__tests__/reports.interaction.component.test.tsx"
+        },
+        {
+          "id": "export-failure",
+          "testFile": "src/web/reports/__tests__/reports.interaction.component.test.tsx"
+        },
+        {
+          "id": "menus",
+          "testFile": "src/web/reports/__tests__/reports.interaction.component.test.tsx"
+        },
+        {
+          "id": "report-menu",
+          "testFile": "src/web/reports/__tests__/reports.interaction.component.test.tsx"
+        },
+        {
+          "id": "empty",
+          "testFile": "src/web/reports/__tests__/reports.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "workspace.report-list",
+      "owner": "@notrelix/features-workspace",
+      "surfaceKind": "data",
+      "pureEntry": "src/web/reports/report-list-surface.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "workspace-reports--list-default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-reports--list-loading",
+          "state": "Loading",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-reports--list-empty",
+          "state": "Empty",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-reports--list-error",
+          "state": "Error",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-reports--list-mine-empty",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default", "EdgeData", "Empty", "Error", "Loading"],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "HighDensity",
+            "reason": "The list holds the reports one person may see; it is not paged or windowed.",
+            "authority": "docs/product/analytics.md"
+          },
+          {
+            "state": "ReadOnly",
+            "reason": "The list has no editable state; the access of each report is a column.",
+            "authority": "docs/product/analytics.md"
+          },
+          {
+            "state": "PermissionLimited",
+            "reason": "The list only has reports the viewer may see; there is no limited variant of it.",
+            "authority": "docs/product/analytics.md"
+          }
+        ]
+      },
+      "responsive": false,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "list",
+          "testFile": "src/web/reports/__tests__/reports.interaction.component.test.tsx"
+        },
+        {
+          "id": "states",
+          "testFile": "src/web/reports/__tests__/reports.interaction.component.test.tsx"
+        }
+      ]
     }
   ]
 }

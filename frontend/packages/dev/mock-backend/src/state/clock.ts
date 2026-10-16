@@ -98,3 +98,13 @@ export function hanoiShortDay(iso: string): string {
 export function wallClockMs(): number {
   return new Date().getTime();
 }
+
+/** The ISO text of an epoch instant (a pure conversion, no clock read). */
+export function isoOfMs(ms: number): string {
+  return new Date(ms).toISOString();
+}
+
+/** The UTC weekday (0 = Sunday) of an epoch instant. */
+export function utcWeekdayOfMs(ms: number): number {
+  return new Date(ms).getUTCDay();
+}

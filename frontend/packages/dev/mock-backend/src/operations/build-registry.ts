@@ -14,6 +14,7 @@ import { accountOperations } from "../contexts/account/account.handlers";
 import { notificationsOperations } from "../contexts/notifications/notifications.handlers";
 import { workManagementOperations } from "../contexts/work-management";
 import { documentsOperations } from "../contexts/documents";
+import { reportsOperations } from "../contexts/analytics/reports.handlers";
 import { workFeedOperations } from "../contexts/work-feed/work-feed.handlers";
 
 export function buildOperationRegistry(): MockOperationRegistry {
@@ -34,6 +35,8 @@ export function buildOperationRegistry(): MockOperationRegistry {
     ...documentsOperations,
     // Work feed (CTR-GAP-WS-*): Home, My work and Inbox beyond the contract
     ...workFeedOperations,
+    // Analytics (CTR-GAP-REPORTS): the Reports pages
+    ...reportsOperations,
     // Note: Search is CONTRACT-BLOCKED (CTR-GAP-SEARCH) until authoritative producer contract lands.
   ]);
 
