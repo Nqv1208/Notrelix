@@ -567,10 +567,11 @@ test.describe("Board settings (owner)", () => {
         name: "Bật quy tắc Gắn nhóm Dữ liệu cho việc kho",
       }),
     ).toBeDisabled();
-    // The Automation screen is not built yet: its entries say so instead of leading nowhere.
+    // Drafts sit under their own heading and cannot be switched on from the list.
+    await expect(page.getByText("Không chạy cho tới khi bật")).toBeVisible();
     await expect(
       page.getByRole("button", { name: "Tạo quy tắc" }),
-    ).toHaveAttribute("aria-disabled", "true");
+    ).toBeEnabled();
   });
 
   test("Quyền truy cập goes back to the board and opens the share dialog; Đã lưu trữ lists the archived fields", async ({

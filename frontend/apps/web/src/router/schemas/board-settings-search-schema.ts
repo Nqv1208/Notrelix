@@ -13,6 +13,12 @@ export const boardSettingsSearchSchema = z.object({
   /** The board view the page was opened from; "Về board" returns to it. */
   from: z.enum(["table", "kanban", "calendar", "timeline"]).optional(),
   view: z.string().optional(),
+  /** The automation rule open in its editor (section "automations"). */
+  rule: z.string().optional(),
+  /** The run log of the automations is open. */
+  log: z.boolean().optional(),
+  /** The run open in the log's sheet. */
+  run: z.string().optional(),
 });
 
 export type BoardSettingsSearch = z.infer<typeof boardSettingsSearchSchema>;

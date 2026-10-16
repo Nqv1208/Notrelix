@@ -118,6 +118,8 @@ export interface BoardSettingsAutomationDto {
   readonly then: readonly string[];
   readonly stats: string;
   readonly runAs: { readonly name: string; readonly initials: string };
+  /** A draft: it never ran and is not in the running or paused lists. */
+  readonly draft?: boolean;
   readonly pausedReason?: {
     readonly lead: string;
     readonly rest: string;

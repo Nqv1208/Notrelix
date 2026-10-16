@@ -139,7 +139,7 @@ function project(store: MockStore, boardId: string) {
         undefined,
     })),
     groups: groupsOf(store, boardId),
-    automations: registry.automations,
+    automations: store.automations.listFor(boardId),
   };
 }
 

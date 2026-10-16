@@ -8,6 +8,7 @@ import type {
   BoardSettingsViewPatch,
   BoardSettingsWriteResult,
 } from "@notrelix/work-management-core";
+import type { AutomationPanelProps } from "./automation-types";
 import type { BoardSettingsCopy } from "./board-settings.copy";
 
 export type { BoardSettingsWriteResult };
@@ -110,6 +111,8 @@ export interface BoardSettingsSurfaceProps {
   viewId: string | null;
   onSelectView: (viewId: string | null) => void;
   actions: BoardSettingsActions;
+  /** The rule editor and the run log of the automations section. */
+  automation?: AutomationPanelProps;
   /** The Kanban view's own settings (lane limit, who manages statuses), shown in its panel. */
   kanbanSettings?: ReactNode;
   /** Reads the settings again (after a conflict or an error). */

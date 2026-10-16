@@ -1,6 +1,8 @@
 import { useMemo } from "react";
 import {
   useBoardAccess,
+  useBoardAutomationRule,
+  useBoardAutomationRuns,
   useBoardSettings,
   useBoardView,
   useFullBoard,
@@ -10,6 +12,7 @@ import { KanbanSettingsPanel } from "../views/kanban/kanban-settings-panel";
 import { useKanbanLaneCopy } from "../views/kanban/use-kanban-lane-copy";
 import { useBoardSettingsCopy } from "./use-board-settings-copy";
 import { BoardSettingsSurface } from "./board-settings-surface";
+import type { AutomationPanelProps } from "./automation-types";
 import type {
   BoardSettingsActions,
   BoardSettingsSection,
@@ -35,6 +38,18 @@ export interface BoardSettingsPageProps extends BoardSettingsHost {
   readonly onSelectField: (fieldId: string | null) => void;
   readonly viewId: string | null;
   readonly onSelectView: (viewId: string | null) => void;
+  /** The automation rule open in its editor; null shows the list of rules. */
+  readonly ruleId: string | null;
+  readonly onSelectRule: (ruleId: string | null) => void;
+  /** The run log of the automations is open. */
+  readonly log: boolean;
+  readonly onSelectLog: (open: boolean) => void;
+  /** The run open in the log's sheet. */
+  readonly runId: string | null;
+  readonly onSelectRun: (runId: string | null) => void;
+  /** The Integrations and the billing pages, when they exist. */
+  readonly integrationsHref?: string;
+  readonly billingHref?: string;
 }
 
 /**
@@ -105,6 +120,70 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
     [boardId, write],
   );
 
+  const automationRule = useBoardAutomationRule(
+    boardId,
+    workspaceId,
+    props.log ? null : props.ruleId,
+  );
+  const automationRuns = useBoardAutomationRuns(
+    boardId,
+    workspaceId,
+    props.log,
+  );
+  const { onSelectRule } = props;
+  const automation = useMemo<AutomationPanelProps>(
+    () => ({
+      ruleId: props.log ? null : props.ruleId,
+      log: props.log,
+      runId: props.runId,
+      rule: {
+        status: !props.ruleId
+          ? "idle"
+          : automationRule.isLoading
+            ? "loading"
+            : automationRule.notFound
+              ? "not-found"
+              : automationRule.isError
+                ? "error"
+                : automationRule.rule
+                  ? "ready"
+                  : "loading",
+        data: automationRule.rule,
+      },
+      runs: {
+        status: automationRuns.isLoading
+          ? "loading"
+          : automationRuns.isError
+            ? "error"
+            : automationRuns.runs
+              ? "ready"
+              : "idle",
+        data: automationRuns.runs,
+      },
+      onOpenRule: (ruleId) => onSelectRule(ruleId),
+      onCreateRule: async () => {
+        const result = await automationRule.create();
+        if (result.ok && result.id) onSelectRule(result.id);
+        return result.ok;
+      },
+      onCloseRule: () => onSelectRule(null),
+      onOpenLog: () => props.onSelectLog(true),
+      onOpenRun: props.onSelectRun,
+      onReloadRule: () => void automationRule.refetch(),
+      onReloadRuns: () => void automationRuns.refetch(),
+      actions: {
+        save: automationRule.save,
+        setEnabled: actions.setAutomationEnabled,
+        changeRunner: automationRule.changeRunner,
+        restoreField: actions.restoreField,
+        rerunStep: automationRuns.rerunStep,
+      },
+      integrationsHref: props.integrationsHref,
+      billingHref: props.billingHref,
+    }),
+    [actions, automationRule, automationRuns, onSelectRule, props],
+  );
+
   const status = forbidden
     ? "forbidden"
     : isError
@@ -129,6 +208,7 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
       viewId={props.viewId}
       onSelectView={props.onSelectView}
       actions={actions}
+      automation={automation}
       kanbanSettings={
         <KanbanSettingsPanel
           copy={laneCopy}

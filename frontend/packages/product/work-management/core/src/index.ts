@@ -15,6 +15,7 @@ export * from "./types/label-types";
 export * from "./types/shared-types";
 export * from "./types/board-access-types";
 export * from "./types/board-settings-types";
+export * from "./types/board-automation-types";
 
 // Schemas
 export * from "./schemas";

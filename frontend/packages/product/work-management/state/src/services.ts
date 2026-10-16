@@ -8,6 +8,7 @@ import type { NotrelixClient } from "@notrelix/contracts";
 import { createBoardApi } from "./api/board.api";
 import { createBoardAccessApi } from "./api/board-access.api";
 import { createBoardSettingsApi } from "./api/board-settings.api";
+import { createBoardAutomationsApi } from "./api/board-automations.api";
 import { createCardApi } from "./api/item.api";
 import { createGroupApi } from "./api/group.api";
 import { createListApi } from "./api/list.api";
@@ -31,6 +32,7 @@ export interface WorkManagementServices {
   readonly comments: ReturnType<typeof createCommentApi>;
   readonly itemExtras: ReturnType<typeof createItemExtrasApi>;
   readonly boardSettings: ReturnType<typeof createBoardSettingsApi>;
+  readonly boardAutomations: ReturnType<typeof createBoardAutomationsApi>;
 }
 
 export function createWorkManagementServices(
@@ -49,6 +51,7 @@ export function createWorkManagementServices(
     comments: createCommentApi(client),
     itemExtras: createItemExtrasApi(client),
     boardSettings: createBoardSettingsApi(client),
+    boardAutomations: createBoardAutomationsApi(client),
   };
 }
 

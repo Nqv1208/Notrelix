@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import { Skeleton, cn } from "@notrelix/ui-web";
 import { PageLink } from "../item-page/item-page-parts";
+import { AutomationEditor } from "./automation-editor";
+import { AutomationLog } from "./automation-log";
 import { AutomationsSection } from "./board-settings-automations";
 import { BoardSettingsProvider, useSettings } from "./board-settings-context";
 import { FieldsSection } from "./board-settings-fields";
@@ -267,8 +269,40 @@ function ReadyBody(props: BoardSettingsSurfaceProps) {
       />
     );
   else if (section === "groups") content = <GroupsSection />;
-  else if (section === "automations") content = <AutomationsSection />;
-  else
+  else if (section === "automations") {
+    const panel = props.automation;
+    if (panel?.log)
+      content = (
+        <AutomationLog
+          copy={copy.automations.editor}
+          panel={panel}
+          timeZone={props.timeZone}
+          billingHref={panel.billingHref}
+        />
+      );
+    else if (panel?.ruleId)
+      content = (
+        <AutomationEditor
+          copy={copy.automations.editor}
+          panel={panel}
+          timeZone={props.timeZone}
+          scopeMark={
+            props.space ? (
+              <span
+                aria-hidden="true"
+                className={cn(
+                  "grid size-7 shrink-0 place-items-center rounded-lg text-mark-sm font-bold",
+                  MARK_TONE[props.space.mark.tone],
+                )}
+              >
+                {props.space.mark.initials}
+              </span>
+            ) : null
+          }
+        />
+      );
+    else content = <AutomationsSection panel={panel} />;
+  } else
     content = (
       <FieldsSection
         fieldId={props.fieldId}

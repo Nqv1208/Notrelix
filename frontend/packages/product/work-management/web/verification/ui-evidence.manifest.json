@@ -2628,6 +2628,14 @@
       "surfaceKind": "composition",
       "pureEntry": "src/components/board-settings/board-settings-surface.tsx",
       "coveredSources": [
+        "src/components/board-settings/automation-aside.tsx",
+        "src/components/board-settings/automation-editor.tsx",
+        "src/components/board-settings/automation-flow.tsx",
+        "src/components/board-settings/automation-log-parts.tsx",
+        "src/components/board-settings/automation-log.tsx",
+        "src/components/board-settings/automation-parts.tsx",
+        "src/components/board-settings/automation-pickers.tsx",
+        "src/components/board-settings/automation-run-sheet.tsx",
         "src/components/board-settings/board-settings-automations.tsx",
         "src/components/board-settings/board-settings-context.tsx",
         "src/components/board-settings/board-settings-field-archive.tsx",
@@ -2803,6 +2811,110 @@
               "theme": "light"
             }
           ]
+        },
+        {
+          "id": "work-management-board-settings-surface--automation-draft",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-board-settings-surface--automation-event-picker",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-board-settings-surface--automation-action-picker",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-board-settings-surface--automation-schedule",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-board-settings-surface--automation-edit-running",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-board-settings-surface--automation-blocked",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-board-settings-surface--automation-log",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-board-settings-surface--automation-run-detail",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         }
       ],
       "stateCoverage": {
@@ -2893,6 +3005,38 @@
         {
           "id": "empty",
           "testFile": "src/components/board-settings/__tests__/board-settings-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "automation-list",
+          "testFile": "src/components/board-settings/__tests__/board-automation.interaction.component.test.tsx"
+        },
+        {
+          "id": "automation-editor",
+          "testFile": "src/components/board-settings/__tests__/board-automation.interaction.component.test.tsx"
+        },
+        {
+          "id": "automation-pickers",
+          "testFile": "src/components/board-settings/__tests__/board-automation.interaction.component.test.tsx"
+        },
+        {
+          "id": "automation-running",
+          "testFile": "src/components/board-settings/__tests__/board-automation.interaction.component.test.tsx"
+        },
+        {
+          "id": "automation-schedule",
+          "testFile": "src/components/board-settings/__tests__/board-automation.interaction.component.test.tsx"
+        },
+        {
+          "id": "automation-blocked",
+          "testFile": "src/components/board-settings/__tests__/board-automation.interaction.component.test.tsx"
+        },
+        {
+          "id": "automation-state",
+          "testFile": "src/components/board-settings/__tests__/board-automation.interaction.component.test.tsx"
+        },
+        {
+          "id": "automation-log",
+          "testFile": "src/components/board-settings/__tests__/board-automation.interaction.component.test.tsx"
         }
       ]
     }

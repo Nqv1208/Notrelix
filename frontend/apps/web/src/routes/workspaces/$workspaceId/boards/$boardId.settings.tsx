@@ -52,7 +52,14 @@ export function BoardSettingsRoutePage() {
       boardId={boardId}
       section={search.section}
       onSelectSection={(section: BoardSettingsSection) =>
-        select({ section, field: undefined, view: undefined })
+        select({
+          section,
+          field: undefined,
+          view: undefined,
+          rule: undefined,
+          log: undefined,
+          run: undefined,
+        })
       }
       fieldId={search.field ?? null}
       onSelectField={(field) =>
@@ -62,6 +69,21 @@ export function BoardSettingsRoutePage() {
       onSelectView={(view) =>
         select({ view: view ?? undefined }, view === null)
       }
+      ruleId={search.rule ?? null}
+      onSelectRule={(rule) =>
+        select({ rule: rule ?? undefined, log: undefined, run: undefined })
+      }
+      log={search.log === true}
+      onSelectLog={(open) =>
+        select({
+          log: open ? true : undefined,
+          rule: undefined,
+          run: undefined,
+        })
+      }
+      runId={search.run ?? null}
+      onSelectRun={(run) => select({ run: run ?? undefined }, run === null)}
+      billingHref={`/workspaces/${workspaceId}/billing`}
       space={
         headerData.space
           ? {

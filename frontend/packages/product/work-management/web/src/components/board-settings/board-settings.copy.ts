@@ -6,6 +6,11 @@
  * producer words itself (a field's detail line, a usage cell, a view summary,
  * an automation sentence) arrives in the DTO and is shown as given.
  */
+import {
+  automationEditorEn,
+  automationEditorVi,
+} from "./board-automation.copy";
+
 export const en = {
   title: "Board settings",
   loading: "Loading the board settings",
@@ -392,12 +397,10 @@ export const en = {
     intro:
       "Rules do the repeated steps on the board. Each rule runs with the permission of one person; when that person loses access the rule pauses, it never runs with another person's permission.",
     create: "Create a rule",
-    createUnavailable: "Creating a rule is not available here yet",
     running: "Running",
     paused: "Paused",
     pausedNote: "Not counted in the running rules",
     edit: "Edit",
-    editUnavailable: "Editing a rule is not available here yet",
     toggle: "Turn on the rule {{name}}",
     when: "When",
     if: "if",
@@ -406,11 +409,10 @@ export const en = {
     runAs: "Runs with the permission of",
     footer: "Every run is recorded with who ran it and the result.",
     log: "Run log",
-    logUnavailable: "The run log is not available here yet",
     resumeBlocked: "This rule has no one to run it: change who runs it first",
     change: "Change who runs it",
-    changeUnavailable: "Changing who runs the rule is not available here yet",
     empty: "No rule yet.",
+    editor: automationEditorEn,
   },
 } as const;
 
@@ -805,12 +807,10 @@ export const vi: BoardSettingsCopy = {
     intro:
       "Quy tắc làm thay các bước lặp lại trên board. Mỗi quy tắc chạy với quyền của một người cụ thể; người đó mất quyền thì quy tắc tạm dừng, không chạy thay bằng quyền khác.",
     create: "Tạo quy tắc",
-    createUnavailable: "Chưa tạo quy tắc được ở đây",
     running: "Đang chạy",
     paused: "Tạm dừng",
     pausedNote: "Không tính vào số quy tắc đang chạy",
     edit: "Sửa",
-    editUnavailable: "Chưa sửa quy tắc được ở đây",
     toggle: "Bật quy tắc {{name}}",
     when: "Khi",
     if: "nếu",
@@ -819,11 +819,10 @@ export const vi: BoardSettingsCopy = {
     runAs: "Chạy với quyền của",
     footer: "Mỗi lần chạy được ghi lại cùng người chạy và kết quả.",
     log: "Nhật ký chạy",
-    logUnavailable: "Chưa mở được nhật ký chạy ở đây",
     resumeBlocked: "Quy tắc này không còn người chạy: hãy đổi người chạy trước",
     change: "Đổi người chạy",
-    changeUnavailable: "Chưa đổi người chạy ở đây được",
     empty: "Chưa có quy tắc nào.",
+    editor: automationEditorVi,
   },
 };
 
