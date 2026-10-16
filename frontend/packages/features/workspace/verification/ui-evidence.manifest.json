@@ -57,10 +57,7 @@
         }
       ],
       "stateCoverage": {
-        "required": [
-          "Default",
-          "Empty"
-        ],
+        "required": ["Default", "Empty"],
         "delegated": [],
         "notApplicable": [
           {
@@ -97,12 +94,7 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": [
-        "interaction",
-        "a11y",
-        "visual",
-        "purity"
-      ],
+      "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
           "id": "render",
@@ -214,13 +206,7 @@
         }
       ],
       "stateCoverage": {
-        "required": [
-          "Default",
-          "Loading",
-          "Empty",
-          "Error",
-          "EdgeData"
-        ],
+        "required": ["Default", "Loading", "Empty", "Error", "EdgeData"],
         "delegated": [],
         "notApplicable": [
           {
@@ -232,12 +218,7 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": [
-        "interaction",
-        "a11y",
-        "visual",
-        "purity"
-      ],
+      "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
           "id": "render",
@@ -356,11 +337,7 @@
         }
       ],
       "stateCoverage": {
-        "required": [
-          "Default",
-          "Loading",
-          "EdgeData"
-        ],
+        "required": ["Default", "Loading", "EdgeData"],
         "delegated": [],
         "notApplicable": [
           {
@@ -372,12 +349,7 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": [
-        "interaction",
-        "a11y",
-        "visual",
-        "purity"
-      ],
+      "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
           "id": "breadcrumb",
@@ -523,11 +495,7 @@
         }
       ],
       "stateCoverage": {
-        "required": [
-          "Default",
-          "Empty",
-          "EdgeData"
-        ],
+        "required": ["Default", "Empty", "EdgeData"],
         "delegated": [],
         "notApplicable": [
           {
@@ -539,12 +507,7 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": [
-        "interaction",
-        "a11y",
-        "visual",
-        "purity"
-      ],
+      "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
           "id": "render",
@@ -639,20 +602,13 @@
         }
       ],
       "stateCoverage": {
-        "required": [
-          "Default"
-        ],
+        "required": ["Default"],
         "delegated": [],
         "notApplicable": []
       },
       "responsive": false,
       "themeAware": true,
-      "checks": [
-        "interaction",
-        "a11y",
-        "visual",
-        "purity"
-      ],
+      "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
           "id": "render",
@@ -711,22 +667,13 @@
         }
       ],
       "stateCoverage": {
-        "required": [
-          "Default",
-          "Loading",
-          "Error"
-        ],
+        "required": ["Default", "Loading", "Error"],
         "delegated": [],
         "notApplicable": []
       },
       "responsive": true,
       "themeAware": true,
-      "checks": [
-        "interaction",
-        "a11y",
-        "visual",
-        "purity"
-      ],
+      "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
           "id": "forbidden",
@@ -811,10 +758,7 @@
         }
       ],
       "stateCoverage": {
-        "required": [
-          "Default",
-          "EdgeData"
-        ],
+        "required": ["Default", "EdgeData"],
         "delegated": [],
         "notApplicable": [
           {
@@ -826,12 +770,7 @@
       },
       "responsive": false,
       "themeAware": true,
-      "checks": [
-        "interaction",
-        "a11y",
-        "visual",
-        "purity"
-      ],
+      "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
           "id": "hidden",
@@ -900,9 +839,7 @@
       "owner": "@notrelix/features-workspace",
       "surfaceKind": "composition",
       "pureEntry": "src/web/home/workspace-home-surface.tsx",
-      "coveredSources": [
-        "src/web/home/work-row-parts.tsx"
-      ],
+      "coveredSources": ["src/web/home/work-row-parts.tsx"],
       "stories": [
         {
           "id": "workspace-home--home-default",
@@ -996,24 +933,13 @@
         }
       ],
       "stateCoverage": {
-        "required": [
-          "Default",
-          "Loading",
-          "Error",
-          "EdgeData",
-          "Empty"
-        ],
+        "required": ["Default", "Loading", "Error", "EdgeData", "Empty"],
         "delegated": [],
         "notApplicable": []
       },
       "responsive": true,
       "themeAware": true,
-      "checks": [
-        "interaction",
-        "a11y",
-        "visual",
-        "purity"
-      ],
+      "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
           "id": "render",
@@ -1098,21 +1024,13 @@
         }
       ],
       "stateCoverage": {
-        "required": [
-          "Default",
-          "PermissionLimited"
-        ],
+        "required": ["Default", "PermissionLimited"],
         "delegated": [],
         "notApplicable": []
       },
       "responsive": true,
       "themeAware": true,
-      "checks": [
-        "interaction",
-        "a11y",
-        "visual",
-        "purity"
-      ],
+      "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
           "id": "actions",
@@ -1175,11 +1093,7 @@
         }
       ],
       "stateCoverage": {
-        "required": [
-          "Default",
-          "Loading",
-          "Error"
-        ],
+        "required": ["Default", "Loading", "Error"],
         "delegated": [],
         "notApplicable": [
           {
@@ -1201,12 +1115,7 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": [
-        "interaction",
-        "a11y",
-        "visual",
-        "purity"
-      ],
+      "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
           "id": "submit",
@@ -1491,12 +1400,7 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": [
-        "interaction",
-        "a11y",
-        "visual",
-        "purity"
-      ],
+      "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
           "id": "render",
@@ -1740,12 +1644,7 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": [
-        "interaction",
-        "a11y",
-        "visual",
-        "purity"
-      ],
+      "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
           "id": "render",
@@ -1949,12 +1848,7 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": [
-        "interaction",
-        "a11y",
-        "visual",
-        "purity"
-      ],
+      "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
           "id": "render",
@@ -2124,12 +2018,7 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": [
-        "interaction",
-        "a11y",
-        "visual",
-        "purity"
-      ],
+      "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
           "id": "render",
@@ -2290,12 +2179,7 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": [
-        "interaction",
-        "a11y",
-        "visual",
-        "purity"
-      ],
+      "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
           "id": "render",
@@ -2444,12 +2328,7 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": [
-        "interaction",
-        "a11y",
-        "visual",
-        "purity"
-      ],
+      "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
           "id": "render",
@@ -2851,12 +2730,7 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": [
-        "interaction",
-        "a11y",
-        "visual",
-        "purity"
-      ],
+      "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
           "id": "render",
@@ -3037,12 +2911,7 @@
         }
       ],
       "stateCoverage": {
-        "required": [
-          "Default",
-          "Loading",
-          "Error",
-          "EdgeData"
-        ],
+        "required": ["Default", "Loading", "Error", "EdgeData"],
         "delegated": [],
         "notApplicable": [
           {
@@ -3059,12 +2928,7 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": [
-        "interaction",
-        "a11y",
-        "visual",
-        "purity"
-      ],
+      "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
           "id": "submit",
@@ -3161,13 +3025,7 @@
         }
       ],
       "stateCoverage": {
-        "required": [
-          "Default",
-          "Loading",
-          "Error",
-          "EdgeData",
-          "HighDensity"
-        ],
+        "required": ["Default", "Loading", "Error", "EdgeData", "HighDensity"],
         "delegated": [],
         "notApplicable": [
           {
@@ -3184,12 +3042,7 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": [
-        "interaction",
-        "a11y",
-        "visual",
-        "purity"
-      ],
+      "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
           "id": "targets",
@@ -3222,9 +3075,7 @@
       "owner": "@notrelix/features-workspace",
       "surfaceKind": "data",
       "pureEntry": "src/web/teams/workspace-teams-surface.tsx",
-      "coveredSources": [
-        "src/web/teams/workspace-setup-frame.tsx"
-      ],
+      "coveredSources": ["src/web/teams/workspace-setup-frame.tsx"],
       "stories": [
         {
           "id": "workspace-teams--list-default",
@@ -3401,12 +3252,7 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": [
-        "interaction",
-        "a11y",
-        "visual",
-        "purity"
-      ],
+      "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
           "id": "render",
@@ -3503,12 +3349,7 @@
         }
       ],
       "stateCoverage": {
-        "required": [
-          "Default",
-          "Loading",
-          "Error",
-          "EdgeData"
-        ],
+        "required": ["Default", "Loading", "Error", "EdgeData"],
         "delegated": [],
         "notApplicable": [
           {
@@ -3525,12 +3366,7 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": [
-        "interaction",
-        "a11y",
-        "visual",
-        "purity"
-      ],
+      "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
           "id": "validate",
@@ -3700,12 +3536,7 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": [
-        "interaction",
-        "a11y",
-        "visual",
-        "purity"
-      ],
+      "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
           "id": "render",
@@ -3840,12 +3671,7 @@
         }
       ],
       "stateCoverage": {
-        "required": [
-          "Default",
-          "Loading",
-          "Error",
-          "ReadOnly"
-        ],
+        "required": ["Default", "Loading", "Error", "ReadOnly"],
         "delegated": [],
         "notApplicable": [
           {
@@ -3867,12 +3693,7 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": [
-        "interaction",
-        "a11y",
-        "visual",
-        "purity"
-      ],
+      "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
           "id": "render",
@@ -3885,6 +3706,407 @@
         {
           "id": "read-only",
           "testFile": "src/web/teams/__tests__/workspace-team.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "workspace.setup-flow",
+      "owner": "@notrelix/features-workspace",
+      "surfaceKind": "form",
+      "pureEntry": "src/web/onboarding/onboarding-surface.tsx",
+      "coveredSources": [
+        "src/web/onboarding/onboarding-frame.tsx",
+        "src/web/onboarding/onboarding-preview.tsx",
+        "src/web/onboarding/onboarding-steps.tsx"
+      ],
+      "stories": [
+        {
+          "id": "workspace-onboarding--workspace-step",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-onboarding--workspace-step-empty",
+          "state": "Empty",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-onboarding--workspace-step-checking",
+          "state": "Loading",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-onboarding--workspace-step-taken",
+          "state": "Error",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-onboarding--workspace-step-locked",
+          "state": "ReadOnly",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-onboarding--departments-step",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-onboarding--invite-step",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-onboarding--invite-step-problems",
+          "state": "Error",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-onboarding--board-step",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-onboarding--board-step-saving",
+          "state": "Loading",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-onboarding--board-step-unreachable",
+          "state": "Error",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-onboarding--done",
+          "state": "Success",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-onboarding--done-without-optional-steps",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": [
+          "Default",
+          "EdgeData",
+          "Empty",
+          "Error",
+          "Loading",
+          "ReadOnly",
+          "Success"
+        ],
+        "delegated": [],
+        "notApplicable": []
+      },
+      "responsive": false,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "workspace",
+          "testFile": "src/web/onboarding/__tests__/onboarding.interaction.component.test.tsx"
+        },
+        {
+          "id": "address",
+          "testFile": "src/web/onboarding/__tests__/onboarding.interaction.component.test.tsx"
+        },
+        {
+          "id": "locked",
+          "testFile": "src/web/onboarding/__tests__/onboarding.interaction.component.test.tsx"
+        },
+        {
+          "id": "exit",
+          "testFile": "src/web/onboarding/__tests__/onboarding.interaction.component.test.tsx"
+        },
+        {
+          "id": "steps",
+          "testFile": "src/web/onboarding/__tests__/onboarding.interaction.component.test.tsx"
+        },
+        {
+          "id": "departments",
+          "testFile": "src/web/onboarding/__tests__/onboarding.interaction.component.test.tsx"
+        },
+        {
+          "id": "departments-create",
+          "testFile": "src/web/onboarding/__tests__/onboarding.interaction.component.test.tsx"
+        },
+        {
+          "id": "departments-locked",
+          "testFile": "src/web/onboarding/__tests__/onboarding.interaction.component.test.tsx"
+        },
+        {
+          "id": "invite",
+          "testFile": "src/web/onboarding/__tests__/onboarding.interaction.component.test.tsx"
+        },
+        {
+          "id": "invite-problems",
+          "testFile": "src/web/onboarding/__tests__/onboarding.interaction.component.test.tsx"
+        },
+        {
+          "id": "invite-skip",
+          "testFile": "src/web/onboarding/__tests__/onboarding.interaction.component.test.tsx"
+        },
+        {
+          "id": "board",
+          "testFile": "src/web/onboarding/__tests__/onboarding.interaction.component.test.tsx"
+        },
+        {
+          "id": "done",
+          "testFile": "src/web/onboarding/__tests__/onboarding.interaction.component.test.tsx"
+        },
+        {
+          "id": "done-skipped",
+          "testFile": "src/web/onboarding/__tests__/onboarding.interaction.component.test.tsx"
+        },
+        {
+          "id": "pending",
+          "testFile": "src/web/onboarding/__tests__/onboarding.interaction.component.test.tsx"
+        },
+        {
+          "id": "names",
+          "testFile": "src/web/onboarding/__tests__/onboarding.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "workspace.onboarding-join",
+      "owner": "@notrelix/features-workspace",
+      "surfaceKind": "form",
+      "pureEntry": "src/web/onboarding/onboarding-join-surface.tsx",
+      "coveredSources": ["src/web/onboarding/disabled-hint.tsx"],
+      "stories": [
+        {
+          "id": "workspace-onboarding--join-default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-onboarding--join-no-department",
+          "state": "Empty",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-onboarding--join-name-missing",
+          "state": "Error",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-onboarding--join-starting",
+          "state": "Loading",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default", "Empty", "Error", "Loading"],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "ReadOnly",
+            "reason": "The setup pages are one-time flows; this state is shown by the step it belongs to.",
+            "authority": "docs/workstreams/executions/workspace-experience/workspace-experience.plan.md"
+          },
+          {
+            "state": "Success",
+            "reason": "The setup pages are one-time flows; this state is shown by the step it belongs to.",
+            "authority": "docs/workstreams/executions/workspace-experience/workspace-experience.plan.md"
+          },
+          {
+            "state": "EdgeData",
+            "reason": "The setup pages are one-time flows; this state is shown by the step it belongs to.",
+            "authority": "docs/workstreams/executions/workspace-experience/workspace-experience.plan.md"
+          }
+        ]
+      },
+      "responsive": false,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "join",
+          "testFile": "src/web/onboarding/__tests__/onboarding.interaction.component.test.tsx"
+        },
+        {
+          "id": "none",
+          "testFile": "src/web/onboarding/__tests__/onboarding.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "workspace.getting-started",
+      "owner": "@notrelix/features-workspace",
+      "surfaceKind": "composition",
+      "pureEntry": "src/web/onboarding/getting-started-card.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "workspace-onboarding--getting-started-default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-onboarding--getting-started-partly-done",
+          "state": "Success",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default", "Success"],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "Loading",
+            "reason": "The setup pages are one-time flows; this state is shown by the step it belongs to.",
+            "authority": "docs/workstreams/executions/workspace-experience/workspace-experience.plan.md"
+          },
+          {
+            "state": "Error",
+            "reason": "The setup pages are one-time flows; this state is shown by the step it belongs to.",
+            "authority": "docs/workstreams/executions/workspace-experience/workspace-experience.plan.md"
+          },
+          {
+            "state": "ReadOnly",
+            "reason": "The setup pages are one-time flows; this state is shown by the step it belongs to.",
+            "authority": "docs/workstreams/executions/workspace-experience/workspace-experience.plan.md"
+          },
+          {
+            "state": "Empty",
+            "reason": "The setup pages are one-time flows; this state is shown by the step it belongs to.",
+            "authority": "docs/workstreams/executions/workspace-experience/workspace-experience.plan.md"
+          },
+          {
+            "state": "EdgeData",
+            "reason": "The setup pages are one-time flows; this state is shown by the step it belongs to.",
+            "authority": "docs/workstreams/executions/workspace-experience/workspace-experience.plan.md"
+          }
+        ]
+      },
+      "responsive": false,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "card",
+          "testFile": "src/web/onboarding/__tests__/onboarding.interaction.component.test.tsx"
         }
       ]
     }

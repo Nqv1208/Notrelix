@@ -18,9 +18,13 @@ test("renders the configured deterministic scenario without unhandled mock error
   await page.goto("/home");
 
   if (scenario === "new-user") {
-    // New user has no workspaces
+    // New user has no workspaces: the setup begins (the Onboarding mockup)
+    await expect(page).toHaveURL(/\/onboarding/);
     await expect(
-      page.getByText("No workspaces are available for this account."),
+      page.getByRole("heading", {
+        level: 1,
+        name: /Tạo workspace cho công ty|Create a workspace/,
+      }),
     ).toBeVisible();
   } else if (scenario === "expired-session") {
     // Expired session redirects to sign-in

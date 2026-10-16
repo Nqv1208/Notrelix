@@ -24,6 +24,7 @@ import {
 import { useCurrentUser } from "@notrelix/features-auth";
 import { useFormatters } from "@notrelix/i18n";
 import { useAppRuntime } from "@notrelix/runtime-web";
+import { HomeGettingStarted } from "@/routes/onboarding/home-getting-started";
 import { useWorkspaceContext } from "@/providers/workspace-provider";
 import { sectionState } from "@/shell/workspace/section-state";
 import { useBoardDepartments } from "@/shell/workspace/use-board-departments";
@@ -273,6 +274,12 @@ export function HomePage() {
   return (
     <>
       <WorkspaceHomeSurface
+        gettingStarted={
+          <HomeGettingStarted
+            workspaceId={workspaceId}
+            workspaceName={workspace?.name ?? ""}
+          />
+        }
         copy={copy}
         navigation={navigation}
         formatters={formatters}

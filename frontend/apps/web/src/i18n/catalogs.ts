@@ -10,6 +10,7 @@ import {
   workspaceShellCatalog,
   workspaceSpacesCatalog,
   workspaceTeamsCatalog,
+  workspaceOnboardingCatalog,
 } from "@notrelix/features-workspace/web";
 import {
   accountNavCatalog,
@@ -52,6 +53,7 @@ export const webCatalogs: readonly MessageCatalog[] = [
   workspaceSettingsCatalog,
   workspaceSpacesCatalog,
   workspaceTeamsCatalog,
+  workspaceOnboardingCatalog,
   kanbanCardCatalog,
   kanbanLaneCatalog,
   kanbanToolbarCatalog,

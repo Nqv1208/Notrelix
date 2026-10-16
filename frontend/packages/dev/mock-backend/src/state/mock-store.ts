@@ -110,6 +110,7 @@ import {
   type ErpHistoryDetail,
 } from "./mock-item-detail";
 import { MockAuthDirectory } from "./mock-auth-directory";
+import { MockOnboarding } from "./mock-onboarding";
 import { ERP_STATE_ITEMS, erpLongChildTitles } from "./mock-item-states";
 import { MockBoardSharing, seedErpSharing } from "./mock-board-sharing";
 import { LIBRARY_DOCS, SECONDARY_BOARD_TITLES } from "./mock-docs-library";
@@ -211,6 +212,8 @@ export interface MockBoardPlan {
 export class MockStore {
   /** Sign-in attempts, second steps and guest invitations (gap `CTR-GAP-AUTH-FLOW`). */
   readonly auth = new MockAuthDirectory();
+  /** Setup drafts, getting-started lists and welcome profiles (gap `CTR-GAP-ONBOARD-FLOW`). */
+  readonly onboarding = new MockOnboarding();
   // Primary Maps
   private usersById = new Map<string, MockUserRecord>();
   private workspacesById = new Map<string, MockWorkspaceRecord>();
@@ -1707,6 +1710,7 @@ export class MockStore {
     this.userPreferencesByUserId.clear();
     this.loggedOutUserIds.clear();
     this.auth.reset();
+    this.onboarding.reset();
     this.navigationByMember.clear();
     this.navigationTick = 0;
     this.suspendedMembershipIds.clear();

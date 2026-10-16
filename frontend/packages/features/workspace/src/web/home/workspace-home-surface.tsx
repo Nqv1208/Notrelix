@@ -134,6 +134,8 @@ export interface WorkspaceHomeSurfaceProps {
   readonly onInvite: () => void;
   readonly onRetryContinue: () => void;
   readonly onRetryMyWork: () => void;
+  /** The getting-started list of a workspace made through onboarding. */
+  readonly gettingStarted?: ReactNode;
 }
 
 const BUTTON_CLASS =
@@ -919,6 +921,8 @@ export function WorkspaceHomeSurface(props: WorkspaceHomeSurfaceProps) {
           {copy.home.addItem}
         </button>
       </div>
+
+      {props.gettingStarted ?? null}
 
       {props.onboarding ? (
         <WorkspaceOnboardingSurface

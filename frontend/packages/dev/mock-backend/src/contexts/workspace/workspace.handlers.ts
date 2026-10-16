@@ -23,6 +23,7 @@ import type {
 } from "@notrelix/features-workspace";
 import { defineMockOperation } from "../../operations/types";
 import { spacesOperations } from "./spaces.handlers";
+import { onboardingOperations } from "./onboarding.handlers";
 import {
   ok,
   created,
@@ -201,6 +202,7 @@ function navigationResourceExists(
 
 export const workspaceOperations = [
   ...spacesOperations,
+  ...onboardingOperations,
   // ─── GET /workspaces ──────────────────────────────────────────────────────
 
   defineMockOperation<Record<string, never>, never, WorkspaceSummary[]>({

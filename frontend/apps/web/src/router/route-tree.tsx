@@ -6,6 +6,8 @@ import {
   forgotPasswordRoute,
   homeRoute,
   inviteRoute,
+  onboardingRoute,
+  welcomeRoute,
   workspaceRoute,
 } from "./routes/base.routes";
 import {
@@ -46,6 +48,8 @@ export const routeTree = rootRoute.addChildren([
   forgotPasswordRoute,
   homeRoute,
   inviteRoute,
+  onboardingRoute,
+  welcomeRoute,
   workspaceRoute.addChildren([
     workspaceIndexRoute,
     boardRoute,

@@ -42,6 +42,10 @@ function HomeLanding() {
   const [createOpen, setCreateOpen] = useState(false);
 
   const first = workspaces?.[0];
+  // A member with no workspace yet sets one up (the Onboarding mockup).
+  if (!first && !isLoading && !isError) {
+    return <Navigate to="/onboarding" replace />;
+  }
   if (first) {
     return (
       <Navigate

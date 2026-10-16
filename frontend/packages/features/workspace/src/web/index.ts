@@ -295,3 +295,49 @@ export type {
   MyWorkCreateBoard,
   MyWorkWaitingView,
 } from "./home/my-work-types";
+
+// Onboarding (the Onboarding mockup)
+export { workspaceOnboardingCatalog } from "./onboarding/onboarding.catalog";
+export {
+  onboardingCopy,
+  type OnboardingCopy,
+} from "./onboarding/onboarding.copy";
+export { useOnboardingCopy } from "./onboarding/use-onboarding-copy";
+export {
+  OnboardingSurface,
+  type OnboardingSurfaceProps,
+} from "./onboarding/onboarding-surface";
+export {
+  OnboardingJoinSurface,
+  type JoinSpace,
+  type OnboardingJoinSurfaceProps,
+} from "./onboarding/onboarding-join-surface";
+export {
+  GettingStartedCard,
+  type GettingStartedCardProps,
+  type GettingStartedItem,
+} from "./onboarding/getting-started-card";
+export {
+  COMPANY_SIZES,
+  DEFAULT_COLOR_CYCLE,
+  DEPARTMENT_COLORS,
+  companyInitials,
+  departmentInitials,
+  emptyDraft,
+  shortCompanyName,
+  slugFromName,
+  type AddressCheck,
+  type BoardTemplateId,
+  type BoardTemplateInfo,
+  type CompanySize,
+  type DepartmentColor,
+  type DepartmentDraft,
+  type InviteRole,
+  type InviteRowDraft,
+  type OnboardingCatalog,
+  type OnboardingDraftData,
+  type OnboardingFormStep,
+  type OnboardingStepId,
+  type OnboardingSummary,
+} from "./onboarding/onboarding-models";
+export { newInviteRow } from "./onboarding/onboarding-steps";
