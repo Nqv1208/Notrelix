@@ -113,6 +113,7 @@ import { MockAuthDirectory } from "./mock-auth-directory";
 import { MockAccountPages } from "./mock-account-pages";
 import { MockReports } from "./mock-reports";
 import { MockBilling } from "./mock-billing";
+import { MockIntegrations } from "./mock-integrations";
 import { MockBoardAutomations } from "./mock-board-automations";
 import { MockOnboarding } from "./mock-onboarding";
 import { ERP_STATE_ITEMS, erpLongChildTitles } from "./mock-item-states";
@@ -221,6 +222,7 @@ export class MockStore {
   readonly accountPages = new MockAccountPages();
   readonly reports = new MockReports();
 readonly billing = new MockBilling();
+readonly integrations = new MockIntegrations();
   /** Automation rules, drafts and run log of a board (gap `CTR-GAP-WM-BOARD-AUTOMATIONS`). */
   readonly automations = new MockBoardAutomations(this);
   // Primary Maps
@@ -1723,6 +1725,7 @@ readonly billing = new MockBilling();
     this.accountPages.reset();
     this.reports.reset();
 this.billing.reset();
+this.integrations.reset();
     this.automations.reset();
     this.navigationByMember.clear();
     this.navigationTick = 0;

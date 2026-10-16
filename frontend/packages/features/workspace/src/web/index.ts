@@ -393,3 +393,24 @@ export {
   type BillingBuyDialogProps,
   type BillingSeatInviteDialogProps,
 } from "./billing/billing-dialogs";
+
+// Integrations (the Integrations mockup)
+export { workspaceIntegrationsCatalog } from "./integrations/integrations.catalog";
+export {
+  integrationsCopy,
+  type IntegrationsCopy,
+} from "./integrations/integrations.copy";
+export { useIntegrationsCopy } from "./integrations/use-integrations-copy";
+export * from "./integrations/integrations-models";
+export {
+  IntegrationConnectDialog,
+  IntegrationDetailSurface,
+  IntegrationDisconnectDialog,
+  IntegrationUpgradeSheet,
+  IntegrationsListSurface,
+  type IntegrationConnectDialogProps,
+  type IntegrationDetailProps,
+  type IntegrationDisconnectDialogProps,
+  type IntegrationUpgradeSheetProps,
+  type IntegrationsListProps,
+} from "./integrations/integrations-surface";

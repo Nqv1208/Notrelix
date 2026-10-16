@@ -63,7 +63,14 @@ export function useBillingLinks(): BillingLinks {
       invoice: (invoiceId) => page({ view: "invoices", invoice: invoiceId }),
       downgrade: page({ view: "downgrade" }),
       buy: (quantity) => page({ buy: String(quantity) }),
-      integrations: null,
+      integrations: {
+        href: `${base}/integrations`,
+        onNavigate: () =>
+          void navigate({
+            to: "/workspaces/$workspaceId/integrations",
+            params: { workspaceId },
+          } as never),
+      },
     };
   }, [navigate, workspaceId]);
 }

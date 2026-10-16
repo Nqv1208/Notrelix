@@ -50,6 +50,7 @@ export function BoardSettingsRoutePage() {
     <BoardSettingsPage
       workspaceId={workspaceId}
       boardId={boardId}
+      integrationsHref={`/workspaces/${encodeURIComponent(workspaceId)}/integrations`}
       section={search.section}
       onSelectSection={(section: BoardSettingsSection) =>
         select({

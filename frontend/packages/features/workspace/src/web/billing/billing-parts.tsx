@@ -40,6 +40,10 @@ const GLYPHS = {
   bank: ["M3 10h18M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 20h18M12 3 3 8h18z"],
   download: ["M12 3v12M7 10l5 5 5-5M5 21h14"],
   mail: ["rect:3,5,18,14,2", "m3 7 9 6 9-6"],
+  go: ["m9 6 6 6-6 6"],
+  ext: ["M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"],
+  lock: ["rect:5,11,14,9,2", "M8 11V8a4 4 0 0 1 8 0v3"],
+  clock: ["circle:12,12,9", "M12 7v5l3 2"],
 } as const;
 export type BillingGlyphName = keyof typeof GLYPHS;
 

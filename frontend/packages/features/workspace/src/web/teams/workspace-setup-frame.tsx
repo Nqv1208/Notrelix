@@ -59,12 +59,18 @@ export function WorkspaceSetupFrame({
   copy,
   frame,
   hideNav = false,
+  title,
+  only,
   children,
 }: {
   copy: WorkspaceTeamsCopy;
   frame: SetupFrameProps;
   /** A member who cannot manage the workspace sees the page without the menu. */
   hideNav?: boolean;
+  /** Replaces the page title (a member sees "Tích hợp của workspace"). */
+  title?: string;
+  /** Shows only this section in the menu (a member sees the one page they may open). */
+  only?: SetupSection;
   children: React.ReactNode;
 }) {
   const markTone: MarkToneId = markToneFor(frame.workspaceId);
@@ -85,7 +91,7 @@ export function WorkspaceSetupFrame({
               {frame.workspaceName}
             </small>
             <h1 className="m-0 text-list-title text-foreground">
-              {copy.setup.title}
+              {title ?? copy.setup.title}
             </h1>
           </div>
         </div>
@@ -97,67 +103,73 @@ export function WorkspaceSetupFrame({
             aria-label={copy.setup.label}
             className="box-border flex w-[212px] shrink-0 flex-col gap-0.5 border-r border-line px-3 py-4"
           >
-            {GROUPS.map((group, index) => (
-              <React.Fragment key={index}>
-                {index > 0 ? (
-                  <div
-                    data-f="sn-sep"
-                    className="mx-1.5 my-2 h-px bg-line"
-                    role="separator"
-                  />
-                ) : null}
-                {group.map((section) => {
-                  const link = frame.links[section];
-                  const on = section === frame.active;
-                  const count = frame.counts[section];
-                  const className = cn(
-                    "flex h-[34px] items-center gap-[9px] rounded-[7px] px-2.5 text-nav leading-[1.45] font-medium text-muted-foreground hover:bg-state-hover-strong hover:text-foreground",
-                    on &&
-                      "bg-popover font-semibold text-foreground ring-1 ring-line hover:bg-popover dark:bg-card dark:hover:bg-card",
-                    FOCUS,
-                  );
-                  const body = (
-                    <>
-                      <Glyph
-                        name={ICONS[section]}
-                        className="size-[15px] text-meta-foreground"
-                      />
-                      {copy.setup.items[section]}
-                      {count !== undefined && count !== null ? (
-                        <span className="ml-auto text-xs font-medium text-meta-foreground">
-                          {count}
-                        </span>
-                      ) : null}
-                    </>
-                  );
-                  return link ? (
-                    <a
-                      key={section}
-                      data-f="sn"
-                      href={link.href}
-                      aria-current={on ? "page" : undefined}
-                      onClick={(event) => {
-                        if (!isPlainClick(event)) return;
-                        event.preventDefault();
-                        link.onNavigate();
-                      }}
-                      className={className}
-                    >
-                      {body}
-                    </a>
-                  ) : (
-                    <span
-                      key={section}
-                      data-f="sn"
-                      aria-disabled="true"
-                      className={cn(className, "cursor-default opacity-70")}
-                    >
-                      {body}
-                    </span>
-                  );
-                })}
-              </React.Fragment>
-            ))}
+            {GROUPS.map((all, index) => {
+              const group = only
+                ? all.filter((section) => section === only)
+                : all;
+              if (group.length === 0) return null;
+              return (
+                <React.Fragment key={index}>
+                  {index > 0 && !only ? (
+                    <div
+                      data-f="sn-sep"
+                      className="mx-1.5 my-2 h-px bg-line"
+                      role="separator"
+                    />
+                  ) : null}
+                  {group.map((section) => {
+                    const link = frame.links[section];
+                    const on = section === frame.active;
+                    const count = frame.counts[section];
+                    const className = cn(
+                      "flex h-[34px] items-center gap-[9px] rounded-[7px] px-2.5 text-nav leading-[1.45] font-medium text-muted-foreground hover:bg-state-hover-strong hover:text-foreground",
+                      on &&
+                        "bg-popover font-semibold text-foreground ring-1 ring-line hover:bg-popover dark:bg-card dark:hover:bg-card",
+                      FOCUS,
+                    );
+                    const body = (
+                      <>
+                        <Glyph
+                          name={ICONS[section]}
+                          className="size-[15px] text-meta-foreground"
+                        />
+                        {copy.setup.items[section]}
+                        {count !== undefined && count !== null ? (
+                          <span className="ml-auto text-xs font-medium text-meta-foreground">
+                            {count}
+                          </span>
+                        ) : null}
+                      </>
+                    );
+                    return link ? (
+                      <a
+                        key={section}
+                        data-f="sn"
+                        href={link.href}
+                        aria-current={on ? "page" : undefined}
+                        onClick={(event) => {
+                          if (!isPlainClick(event)) return;
+                          event.preventDefault();
+                          link.onNavigate();
+                        }}
+                        className={className}
+                      >
+                        {body}
+                      </a>
+                    ) : (
+                      <span
+                        key={section}
+                        data-f="sn"
+                        aria-disabled="true"
+                        className={cn(className, "cursor-default opacity-70")}
+                      >
+                        {body}
+                      </span>
+                    );
+                  })}
+                </React.Fragment>
+              );
+            })}
           </nav>
         )}
         <div
