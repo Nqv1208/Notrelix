@@ -729,6 +729,30 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
   {
     context: "Workspace",
     classification: "COMPATIBILITY_GAP_MOCKED",
+    consumerSymbol: "useTeamsExt",
+    consumerFile: "frontend/apps/web/src/shell/workspace/use-teams-ext.ts",
+    capability:
+      "Teams pages: people with email and job, who made and archived a Team, where it is in use, workspace admins and the directory",
+    gapId: "CTR-GAP-WS-TEAMS-EXT",
+    method: "GET",
+    pathTemplate: "/workspaces/{workspaceId}/teams-ext",
+    mutation: false,
+  },
+  {
+    context: "Workspace",
+    classification: "COMPATIBILITY_GAP_MOCKED",
+    consumerSymbol: "useSecurityExt",
+    consumerFile: "frontend/apps/web/src/shell/workspace/use-teams-ext.ts",
+    capability:
+      "Sharing and security: guest count, default guest access end, company domain, since when links are off",
+    gapId: "CTR-GAP-WS-SECURITY-EXT",
+    method: "GET",
+    pathTemplate: "/workspaces/{workspaceId}/security-ext",
+    mutation: false,
+  },
+  {
+    context: "Workspace",
+    classification: "COMPATIBILITY_GAP_MOCKED",
     consumerSymbol: "useWorkspaceInbox",
     consumerFile: "frontend/apps/web/src/shell/workspace/work-feed-bridge.ts",
     capability: "Workspace inbox with actor, target, need and detail",

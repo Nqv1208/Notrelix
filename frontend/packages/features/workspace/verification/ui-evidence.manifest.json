@@ -57,7 +57,10 @@
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "Empty"],
+        "required": [
+          "Default",
+          "Empty"
+        ],
         "delegated": [],
         "notApplicable": [
           {
@@ -94,7 +97,12 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "render",
@@ -206,7 +214,13 @@
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "Loading", "Empty", "Error", "EdgeData"],
+        "required": [
+          "Default",
+          "Loading",
+          "Empty",
+          "Error",
+          "EdgeData"
+        ],
         "delegated": [],
         "notApplicable": [
           {
@@ -218,7 +232,12 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "render",
@@ -337,7 +356,11 @@
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "Loading", "EdgeData"],
+        "required": [
+          "Default",
+          "Loading",
+          "EdgeData"
+        ],
         "delegated": [],
         "notApplicable": [
           {
@@ -349,7 +372,12 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "breadcrumb",
@@ -495,7 +523,11 @@
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "Empty", "EdgeData"],
+        "required": [
+          "Default",
+          "Empty",
+          "EdgeData"
+        ],
         "delegated": [],
         "notApplicable": [
           {
@@ -507,7 +539,12 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "render",
@@ -602,13 +639,20 @@
         }
       ],
       "stateCoverage": {
-        "required": ["Default"],
+        "required": [
+          "Default"
+        ],
         "delegated": [],
         "notApplicable": []
       },
       "responsive": false,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "render",
@@ -667,13 +711,22 @@
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "Loading", "Error"],
+        "required": [
+          "Default",
+          "Loading",
+          "Error"
+        ],
         "delegated": [],
         "notApplicable": []
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "forbidden",
@@ -758,7 +811,10 @@
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "EdgeData"],
+        "required": [
+          "Default",
+          "EdgeData"
+        ],
         "delegated": [],
         "notApplicable": [
           {
@@ -770,7 +826,12 @@
       },
       "responsive": false,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "hidden",
@@ -839,7 +900,9 @@
       "owner": "@notrelix/features-workspace",
       "surfaceKind": "composition",
       "pureEntry": "src/web/home/workspace-home-surface.tsx",
-      "coveredSources": ["src/web/home/work-row-parts.tsx"],
+      "coveredSources": [
+        "src/web/home/work-row-parts.tsx"
+      ],
       "stories": [
         {
           "id": "workspace-home--home-default",
@@ -933,13 +996,24 @@
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "Loading", "Error", "EdgeData", "Empty"],
+        "required": [
+          "Default",
+          "Loading",
+          "Error",
+          "EdgeData",
+          "Empty"
+        ],
         "delegated": [],
         "notApplicable": []
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "render",
@@ -1024,13 +1098,21 @@
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "PermissionLimited"],
+        "required": [
+          "Default",
+          "PermissionLimited"
+        ],
         "delegated": [],
         "notApplicable": []
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "actions",
@@ -1093,7 +1175,11 @@
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "Loading", "Error"],
+        "required": [
+          "Default",
+          "Loading",
+          "Error"
+        ],
         "delegated": [],
         "notApplicable": [
           {
@@ -1115,7 +1201,12 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "submit",
@@ -1400,7 +1491,12 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "render",
@@ -1644,7 +1740,12 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "render",
@@ -1848,7 +1949,12 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "render",
@@ -2018,7 +2124,12 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "render",
@@ -2179,7 +2290,12 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "render",
@@ -2328,7 +2444,12 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "render",
@@ -2730,7 +2851,12 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "render",
@@ -2911,7 +3037,12 @@
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "Loading", "Error", "EdgeData"],
+        "required": [
+          "Default",
+          "Loading",
+          "Error",
+          "EdgeData"
+        ],
         "delegated": [],
         "notApplicable": [
           {
@@ -2928,7 +3059,12 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "submit",
@@ -3025,7 +3161,13 @@
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "Loading", "Error", "EdgeData", "HighDensity"],
+        "required": [
+          "Default",
+          "Loading",
+          "Error",
+          "EdgeData",
+          "HighDensity"
+        ],
         "delegated": [],
         "notApplicable": [
           {
@@ -3042,7 +3184,12 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "targets",
@@ -3075,7 +3222,9 @@
       "owner": "@notrelix/features-workspace",
       "surfaceKind": "data",
       "pureEntry": "src/web/teams/workspace-teams-surface.tsx",
-      "coveredSources": [],
+      "coveredSources": [
+        "src/web/teams/workspace-setup-frame.tsx"
+      ],
       "stories": [
         {
           "id": "workspace-teams--list-default",
@@ -3176,6 +3325,58 @@
               "theme": "light"
             }
           ]
+        },
+        {
+          "id": "workspace-teams--list-archive-confirm",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            },
+            {
+              "viewport": "mobile",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-teams--list-row-menu",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            },
+            {
+              "viewport": "mobile",
+              "theme": "dark"
+            }
+          ]
         }
       ],
       "stateCoverage": {
@@ -3193,14 +3394,19 @@
         "notApplicable": [
           {
             "state": "PermissionLimited",
-            "reason": "Teams are managed by workspace admins and owners only; every other viewer gets the whole list read-only (ReadOnly), never a partial set of actions.",
+            "reason": "Teams are managed by workspace admins and owners only; every other member gets the page that says whom to ask (ReadOnly), never a partial set of actions.",
             "authority": "docs/workstreams/executions/workspace-experience/workspace-experience.plan.md"
           }
         ]
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "render",
@@ -3212,6 +3418,10 @@
         },
         {
           "id": "create",
+          "testFile": "src/web/teams/__tests__/workspace-teams.interaction.component.test.tsx"
+        },
+        {
+          "id": "archive",
           "testFile": "src/web/teams/__tests__/workspace-teams.interaction.component.test.tsx"
         },
         {
@@ -3293,7 +3503,12 @@
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "Loading", "Error", "EdgeData"],
+        "required": [
+          "Default",
+          "Loading",
+          "Error",
+          "EdgeData"
+        ],
         "delegated": [],
         "notApplicable": [
           {
@@ -3310,7 +3525,12 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "validate",
@@ -3436,6 +3656,32 @@
               "theme": "light"
             }
           ]
+        },
+        {
+          "id": "workspace-teams--team-role-menu",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            },
+            {
+              "viewport": "mobile",
+              "theme": "dark"
+            }
+          ]
         }
       ],
       "stateCoverage": {
@@ -3454,7 +3700,12 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "render",
@@ -3494,6 +3745,145 @@
         },
         {
           "id": "high-density",
+          "testFile": "src/web/teams/__tests__/workspace-team.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "workspace.security",
+      "owner": "@notrelix/features-workspace",
+      "surfaceKind": "form",
+      "pureEntry": "src/web/teams/workspace-security-surface.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "workspace-teams--security-default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            },
+            {
+              "viewport": "mobile",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-teams--security-links-on",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            },
+            {
+              "viewport": "mobile",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-teams--security-loading",
+          "state": "Loading",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-teams--security-error",
+          "state": "Error",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-teams--security-read-only",
+          "state": "ReadOnly",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": [
+          "Default",
+          "Loading",
+          "Error",
+          "ReadOnly"
+        ],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "Success",
+            "reason": "A saved switch shows its new position; the host reports a failure beside it.",
+            "authority": "docs/workstreams/executions/workspace-experience/workspace-experience.plan.md"
+          },
+          {
+            "state": "Empty",
+            "reason": "The rules are always there; nothing to list.",
+            "authority": "docs/workstreams/executions/workspace-experience/workspace-experience.plan.md"
+          },
+          {
+            "state": "EdgeData",
+            "reason": "The page holds four fixed rules; nothing grows with the data.",
+            "authority": "docs/workstreams/executions/workspace-experience/workspace-experience.plan.md"
+          }
+        ]
+      },
+      "responsive": true,
+      "themeAware": true,
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
+      "interactionCases": [
+        {
+          "id": "render",
+          "testFile": "src/web/teams/__tests__/workspace-team.interaction.component.test.tsx"
+        },
+        {
+          "id": "toggle",
+          "testFile": "src/web/teams/__tests__/workspace-team.interaction.component.test.tsx"
+        },
+        {
+          "id": "read-only",
           "testFile": "src/web/teams/__tests__/workspace-team.interaction.component.test.tsx"
         }
       ]

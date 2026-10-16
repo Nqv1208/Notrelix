@@ -258,14 +258,18 @@ export {
 } from "./teams/workspace-teams.copy";
 export { useWorkspaceTeamsCopy } from "./teams/use-workspace-teams-copy";
 export {
+  ArchiveTeamDialog,
   CreateTeamDialog,
   TEAM_DESCRIPTION_MAX,
   TEAM_NAME_MAX,
+  type ArchiveTeamDialogProps,
   type CreateTeamDialogProps,
   type CreateTeamValues,
+  type TeamCandidate,
 } from "./teams/create-team-dialog";
 export {
   WorkspaceTeamsSurface,
+  type TeamsAdminView,
   type TeamsFilter,
   type WorkspaceTeamsSurfaceProps,
 } from "./teams/workspace-teams-surface";
@@ -274,6 +278,18 @@ export {
   type AddTeamMemberInput,
   type WorkspaceTeamSurfaceProps,
 } from "./teams/workspace-team-surface";
+export {
+  WorkspaceSecuritySurface,
+  type WorkspaceSecurityView,
+  type WorkspaceSecuritySurfaceProps,
+} from "./teams/workspace-security-surface";
+export {
+  WorkspaceSetupFrame,
+  type SetupFrameLink,
+  type SetupFrameProps,
+  type SetupSection,
+} from "./teams/workspace-setup-frame";
+export * from "./teams/workspace-teams-models";
 export type {
   MyWorkActions,
   MyWorkCreateBoard,

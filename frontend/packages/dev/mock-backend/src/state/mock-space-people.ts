@@ -53,7 +53,7 @@ export const EXECUTIVES: readonly SpacePerson[] = [
 
 /** The team Nhóm Kiểm thử QA (not in the department; the add dialog offers it). */
 export const QA_PEOPLE: readonly SpacePerson[] = [
-  person("qa-kien", "Phạm Văn Kiên"),
+  person("qa-nhat", "Tô Minh Nhật"),
   person("qa-oanh", "Nguyễn Thị Oanh"),
   person("qa-tu", "Trương Minh Tú"),
   person("qa-yen", "Lê Hải Yến"),
@@ -62,7 +62,7 @@ export const QA_PEOPLE: readonly SpacePerson[] = [
 
 /** The team Nhóm Kế toán tổng hợp (6): given the ERP Board by name, outside Công nghệ. */
 export const ACCOUNTING_PEOPLE: readonly SpacePerson[] = [
-  person("kt-kim", "Nguyễn Thị Kim"),
+  person("kt-hanh", "Võ Thị Hạnh"),
   person("kt-long", "Phạm Văn Long"),
   person("kt-ngan", "Trần Thị Ngân"),
   person("kt-phuong", "Lê Thu Phương"),
@@ -71,6 +71,9 @@ export const ACCOUNTING_PEOPLE: readonly SpacePerson[] = [
 ];
 
 export const ACCOUNTING_TEAM = {
+  description: "Kế toán tổng hợp và công nợ",
+  archived: false,
+  createdAt: "2026-09-05T02:00:00.000Z",
   id: "mock-team-erp-accounting",
   name: "Nhóm Kế toán tổng hợp",
   members: ACCOUNTING_PEOPLE.map((entry, index) => ({
@@ -79,7 +82,24 @@ export const ACCOUNTING_TEAM = {
   })),
 };
 
+/** The archived team Nhóm Trực hệ thống (3 people, leader Vũ Thanh), paused on Hạ tầng & bảo mật. */
+export const ONCALL_TEAM = {
+  id: "mock-team-oncall",
+  name: "Nhóm Trực hệ thống",
+  description: null as string | null,
+  archived: true,
+  createdAt: "2026-08-20T02:00:00.000Z",
+  members: [
+    { userId: ERP_PEOPLE.VT.id, role: "Lead" as const },
+    { userId: ERP_PEOPLE.PH.id, role: "Member" as const },
+    { userId: ERP_PEOPLE.LT.id, role: "Member" as const },
+  ],
+};
+
 export const ERP_ENGINEERS_TEAM = {
+  description: "Kỹ sư triển khai và dữ liệu ERP",
+  archived: false,
+  createdAt: "2026-09-01T02:00:00.000Z",
   id: "mock-team-erp-engineers",
   name: "Nhóm Kỹ sư ERP",
   members: [
@@ -91,6 +111,9 @@ export const ERP_ENGINEERS_TEAM = {
 };
 
 export const EXECUTIVE_TEAM = {
+  description: "Trịnh Quốc Hưng, Mai Thị Lan, Hoàng Văn Sơn",
+  archived: false,
+  createdAt: "2026-08-15T02:00:00.000Z",
   id: "mock-team-executive",
   name: "Ban giám đốc",
   members: [
@@ -101,6 +124,9 @@ export const EXECUTIVE_TEAM = {
 };
 
 export const QA_TEAM = {
+  description: "Kiểm thử phần mềm nội bộ",
+  archived: false,
+  createdAt: "2026-09-10T02:00:00.000Z",
   id: "mock-team-qa",
   name: "Nhóm Kiểm thử QA",
   members: QA_PEOPLE.map((entry, index) => ({

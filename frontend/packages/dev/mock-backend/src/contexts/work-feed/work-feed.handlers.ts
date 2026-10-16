@@ -40,6 +40,7 @@ import type { MockStore } from "../../state/mock-store";
 import { commandSearch } from "../../state/mock-command-search";
 import { spaceOverview } from "../../state/mock-space-overview";
 import { spaceMembersExtra } from "../../state/mock-space-members";
+import { securityExt, teamsExt } from "../../state/mock-teams-ext";
 import { canReadBoard } from "../work-management/boards.handlers";
 
 const MY_WORK_EXT = "CTR-GAP-WS-MYWORK-EXT" as const;
@@ -136,6 +137,30 @@ export const workFeedOperations = [
         (id) => canReadBoard(id, store),
       );
       return extra ? ok(extra) : notFound();
+    },
+  }),
+
+  // ── Teams pages extras (CTR-GAP-WS-TEAMS-EXT) ────────────────────────────
+  defineMockOperation<{ workspaceId: string }>({
+    id: "wsFeed.teamsExt",
+    contract: { kind: "gap", gapId: "CTR-GAP-WS-TEAMS-EXT" },
+    method: "GET",
+    route: "/workspaces/:workspaceId/teams-ext",
+    async handle({ params, store }) {
+      if (!store.isCurrentMemberOf(params.workspaceId)) return notFound();
+      return ok(teamsExt(store, params.workspaceId));
+    },
+  }),
+
+  // ── Sharing and security page extras (CTR-GAP-WS-SECURITY-EXT) ───────────
+  defineMockOperation<{ workspaceId: string }>({
+    id: "wsFeed.securityExt",
+    contract: { kind: "gap", gapId: "CTR-GAP-WS-SECURITY-EXT" },
+    method: "GET",
+    route: "/workspaces/:workspaceId/security-ext",
+    async handle({ params, store }) {
+      if (!store.isCurrentMemberOf(params.workspaceId)) return notFound();
+      return ok(securityExt(store, params.workspaceId));
     },
   }),
 

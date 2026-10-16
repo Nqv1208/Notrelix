@@ -32,6 +32,7 @@ export const en = {
     teams: "Teams",
     settings: "Settings",
     billing: "Billing",
+    security: "Sharing and security",
     account: "Account",
   },
   views: {
@@ -187,6 +188,7 @@ export const vi: WorkspaceShellCopy = {
     teams: "Nhóm",
     settings: "Cài đặt",
     billing: "Thanh toán",
+    security: "Chia sẻ và bảo mật",
     account: "Tài khoản",
   },
   views: {

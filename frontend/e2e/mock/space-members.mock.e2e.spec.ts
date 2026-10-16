@@ -75,7 +75,7 @@ test.describe("Department members (owner)", () => {
       jordan.getByRole("button", { name: /Người xem/ }),
     ).toBeVisible();
     await expect(
-      page.getByText(/2 quản trị · 0 thành viên · 2 người xem/),
+      page.getByText(/2 quản trị · 0 thành viên · 4 người xem/),
     ).toBeVisible();
     // Focus returned to the button that opened the dialog.
     await expect(
@@ -188,33 +188,35 @@ test.describe("Department members (owner)", () => {
     page,
   }) => {
     await open(page, ACCOUNTING, "Kế toán");
-    const team = row(page, "Helpdesk");
+    const team = row(page, "Ban giám đốc");
     // Teams open on the first load.
     await expect(
-      team.getByRole("button", { name: "Thu gọn Helpdesk" }),
+      team.getByRole("button", { name: "Thu gọn Ban giám đốc" }),
     ).toBeVisible();
     await expect(page.locator('[data-f="sub"]').first()).toBeVisible();
-    await team.getByRole("button", { name: "Thao tác với Helpdesk" }).click();
+    await team
+      .getByRole("button", { name: "Thao tác với Ban giám đốc" })
+      .click();
     await page.getByRole("menuitem", { name: /Gỡ khỏi phòng/ }).click();
     const dialog = page.getByRole("dialog", {
-      name: "Gỡ Helpdesk khỏi phòng?",
+      name: "Gỡ Ban giám đốc khỏi phòng?",
     });
     await expect(dialog).toBeVisible();
-    // The owner stays: added directly as the admin.
-    await expect(
-      dialog.getByText(/vẫn là Quản trị, thêm trực tiếp/),
-    ).toBeVisible();
+    // Nobody of the team was added directly: all three lose the department.
     await expect(dialog.getByText(/mất quyền vào phòng/).first()).toBeVisible();
+    await expect(dialog.getByText("Trịnh Quốc Hưng")).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(dialog).toBeHidden();
-    await team.getByRole("button", { name: "Thao tác với Helpdesk" }).click();
+    await team
+      .getByRole("button", { name: "Thao tác với Ban giám đốc" })
+      .click();
     await page.getByRole("menuitem", { name: /Gỡ khỏi phòng/ }).click();
     await page
       .getByRole("dialog")
       .getByRole("button", { name: "Gỡ nhóm" })
       .click();
-    await expect(page.getByText("Đã xóa Helpdesk.")).toBeVisible();
-    await expect(row(page, "Helpdesk")).toHaveCount(0);
+    await expect(page.getByText("Đã xóa Ban giám đốc.")).toBeVisible();
+    await expect(row(page, "Ban giám đốc")).toHaveCount(0);
   });
 
   test("removing a person asks first", async ({ page }) => {

@@ -77,6 +77,7 @@ import {
   ERP_ENGINEERS_TEAM,
   ACCOUNTING_PEOPLE,
   ACCOUNTING_TEAM,
+  ONCALL_TEAM,
   ERP_TEAM_ONLY,
   EXECUTIVES,
   EXECUTIVE_TEAM,
@@ -913,40 +914,28 @@ export class MockStore {
     for (const team of [
       ERP_ENGINEERS_TEAM,
       EXECUTIVE_TEAM,
-      QA_TEAM,
       ACCOUNTING_TEAM,
+      QA_TEAM,
+      ONCALL_TEAM,
     ]) {
       this.spaces.insertTeam({
         id: team.id,
         workspaceId,
         name: team.name,
-        description: null,
-        archived: false,
+        description: team.description,
+        archived: team.archived,
         version: 1,
         members: team.members.map((member) => ({ ...member })),
-        createdAt: at,
+        createdAt: team.createdAt,
       });
     }
-    this.spaces.insertTeam({
-      id: mockIds.teams.helpdesk,
-      workspaceId,
-      name: "Helpdesk",
-      description: null,
-      archived: false,
-      version: 1,
-      members: [
-        { userId: mockIds.users.owner, role: "Lead" },
-        { userId: mockIds.users.member, role: "Member" },
-        { userId: mockIds.users.viewer, role: "Member" },
-      ],
-      createdAt: at,
-    });
+    // Ban giám đốc is also a viewer of Kế toán (the Teams mockup).
     this.spaces.insertMember({
       spaceId: mockIds.spaces.accounting,
       subjectType: "Team",
-      subjectId: mockIds.teams.helpdesk,
+      subjectId: EXECUTIVE_TEAM.id,
       role: "Viewer",
-      addedAt: at,
+      addedAt: "2026-08-15T02:00:00.000Z",
     });
   }
 
@@ -1421,6 +1410,23 @@ export class MockStore {
         );
       });
     }
+    // Hạ tầng & bảo mật gave the on-call team the right to view it (paused with the team).
+    this.sharing.setBoard(
+      "mock-board-it-infra",
+      [
+        {
+          id: "share-infra-oncall",
+          kind: "team",
+          userId: null,
+          teamId: mockIds.teams.oncall,
+          level: "viewer",
+          expiresAt: null,
+          owner: false,
+          addedAt: "2026-08-20T02:00:00.000Z",
+        },
+      ],
+      [],
+    );
     // Ngân sách CNTT 2027 is private: four people were added to it.
     this.boardMembersByBoardId.set(
       "mock-board-it-budget",
@@ -1755,6 +1761,11 @@ export class MockStore {
   }
 
   // ─── Repository Accessors & Mutations ─────────────────────────────────────
+
+  /** Every user the world knows (the mock's workspace people directory). */
+  listUsers(): MockUserRecord[] {
+    return [...this.usersById.values()];
+  }
 
   getUser(id: string): MockUserRecord | undefined {
     return this.usersById.get(id);

@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { Meta, StoryObj } from "@storybook/react";
 
 import {
@@ -5,7 +6,13 @@ import {
   createTeamEdgeDataScenario,
   createTeamErrorScenario,
   createTeamPendingScenario,
+  securityDefaultScenario,
+  securityErrorScenario,
+  securityLinksOnScenario,
+  securityLoadingScenario,
+  securityReadOnlyScenario,
   teamArchivedScenario,
+  teamBackNavigationFixture,
   teamDefaultScenario,
   teamEdgeDataScenario,
   teamEmptyScenario,
@@ -13,6 +20,9 @@ import {
   teamHighDensityScenario,
   teamLoadingScenario,
   teamReadOnlyScenario,
+  teamRoleMenuScenario,
+  teamUsageNavigationFixture,
+  teamsArchiveScenario,
   teamsArchivedScenario,
   teamsDefaultScenario,
   teamsEdgeDataScenario,
@@ -20,10 +30,12 @@ import {
   teamsErrorScenario,
   teamsHighDensityScenario,
   teamsLoadingScenario,
+  teamsMenuScenario,
   teamsNavigationFixture,
   teamsReadOnlyScenario,
 } from "../../verification/workspace-teams-fixtures";
 import { CreateTeamDialog } from "./create-team-dialog";
+import { WorkspaceSecuritySurface } from "./workspace-security-surface";
 import { WorkspaceTeamSurface } from "./workspace-team-surface";
 import { WorkspaceTeamsSurface } from "./workspace-teams-surface";
 
@@ -36,11 +48,11 @@ export default meta;
 type Story = StoryObj;
 
 const noop = () => undefined;
-const navigation = teamsNavigationFixture();
 const listCallbacks = {
-  navigation,
-  onFilterChange: noop,
+  navigation: teamsNavigationFixture(),
   onCreate: noop,
+  onArchive: noop,
+  onRestore: noop,
   onRetry: noop,
 };
 const dialogCallbacks = { onOpenChange: noop, onSubmit: noop };
@@ -53,69 +65,118 @@ const teamCallbacks = {
   onChangeRole: noop,
   onRemove: noop,
   onRetry: noop,
+  backNavigation: teamBackNavigationFixture(),
+  usageNavigation: teamUsageNavigationFixture(),
 };
+const securityCallbacks = { onToggleLinks: noop, onRetry: noop };
+
+/** The main area is as high as the window; the story gives it the mockup's 1000 px. */
+function Stage({ children }: { children: ReactNode }) {
+  return <div className="h-[1000px] w-full">{children}</div>;
+}
 
 // ── Team list ─────────────────────────────────────────────────────
 
+/** Final-Teams `danh-sach`. */
 export const ListDefault: Story = {
   render: () => (
-    <WorkspaceTeamsSurface {...teamsDefaultScenario()} {...listCallbacks} />
+    <Stage>
+      <WorkspaceTeamsSurface {...teamsDefaultScenario()} {...listCallbacks} />
+    </Stage>
   ),
   tags: ["fui-surface--workspace.teams", "fui-state--Default"],
 };
 
 export const ListLoading: Story = {
   render: () => (
-    <WorkspaceTeamsSurface {...teamsLoadingScenario()} {...listCallbacks} />
+    <Stage>
+      <WorkspaceTeamsSurface {...teamsLoadingScenario()} {...listCallbacks} />
+    </Stage>
   ),
   tags: ["fui-surface--workspace.teams", "fui-state--Loading"],
 };
 
 export const ListError: Story = {
   render: () => (
-    <WorkspaceTeamsSurface {...teamsErrorScenario()} {...listCallbacks} />
+    <Stage>
+      <WorkspaceTeamsSurface {...teamsErrorScenario()} {...listCallbacks} />
+    </Stage>
   ),
   tags: ["fui-surface--workspace.teams", "fui-state--Error"],
 };
 
 export const ListEmpty: Story = {
   render: () => (
-    <WorkspaceTeamsSurface {...teamsEmptyScenario()} {...listCallbacks} />
+    <Stage>
+      <WorkspaceTeamsSurface {...teamsEmptyScenario()} {...listCallbacks} />
+    </Stage>
   ),
   tags: ["fui-surface--workspace.teams", "fui-state--Empty"],
 };
 
+/** Final-Teams `khong-co-quyen`: whom to ask. */
 export const ListReadOnly: Story = {
   render: () => (
-    <WorkspaceTeamsSurface {...teamsReadOnlyScenario()} {...listCallbacks} />
+    <Stage>
+      <WorkspaceTeamsSurface {...teamsReadOnlyScenario()} {...listCallbacks} />
+    </Stage>
   ),
   tags: ["fui-surface--workspace.teams", "fui-state--ReadOnly"],
 };
 
-/** The Archived filter: archived Teams stay listed, read-only elsewhere. */
+/** A search that reaches the archived Team. */
 export const ListArchived: Story = {
   render: () => (
-    <WorkspaceTeamsSurface {...teamsArchivedScenario()} {...listCallbacks} />
+    <Stage>
+      <WorkspaceTeamsSurface {...teamsArchivedScenario()} {...listCallbacks} />
+    </Stage>
   ),
   tags: ["fui-surface--workspace.teams", "fui-state--Success"],
 };
 
 export const ListEdgeData: Story = {
   render: () => (
-    <WorkspaceTeamsSurface {...teamsEdgeDataScenario()} {...listCallbacks} />
+    <Stage>
+      <WorkspaceTeamsSurface {...teamsEdgeDataScenario()} {...listCallbacks} />
+    </Stage>
   ),
   tags: ["fui-surface--workspace.teams", "fui-state--EdgeData"],
 };
 
 export const ListHighDensity: Story = {
   render: () => (
-    <WorkspaceTeamsSurface {...teamsHighDensityScenario()} {...listCallbacks} />
+    <Stage>
+      <WorkspaceTeamsSurface
+        {...teamsHighDensityScenario()}
+        {...listCallbacks}
+      />
+    </Stage>
   ),
   tags: ["fui-surface--workspace.teams", "fui-state--HighDensity"],
 };
 
+/** Final-Teams `luu-tru`: the archive confirmation of Nhóm Kỹ sư ERP. */
+export const ListArchiveConfirm: Story = {
+  render: () => (
+    <Stage>
+      <WorkspaceTeamsSurface {...teamsArchiveScenario()} {...listCallbacks} />
+    </Stage>
+  ),
+  tags: ["fui-surface--workspace.teams", "fui-state--Default"],
+};
+
+export const ListRowMenu: Story = {
+  render: () => (
+    <Stage>
+      <WorkspaceTeamsSurface {...teamsMenuScenario()} {...listCallbacks} />
+    </Stage>
+  ),
+  tags: ["fui-surface--workspace.teams", "fui-state--Default"],
+};
+
 // ── Create a Team ─────────────────────────────────────────────────
 
+/** Final-Teams `tao-moi`. */
 export const CreateDefault: Story = {
   render: () => (
     <CreateTeamDialog {...createTeamDefaultScenario()} {...dialogCallbacks} />
@@ -146,59 +207,149 @@ export const CreateEdgeData: Story = {
 
 // ── Team detail ───────────────────────────────────────────────────
 
+/** Final-Teams `chi-tiet`. */
 export const TeamDefault: Story = {
   render: () => (
-    <WorkspaceTeamSurface {...teamDefaultScenario()} {...teamCallbacks} />
+    <Stage>
+      <WorkspaceTeamSurface {...teamDefaultScenario()} {...teamCallbacks} />
+    </Stage>
+  ),
+  tags: ["fui-surface--workspace.team", "fui-state--Default"],
+};
+
+/** The role menu of the only lead: it cannot be lowered or removed. */
+export const TeamRoleMenu: Story = {
+  render: () => (
+    <Stage>
+      <WorkspaceTeamSurface {...teamRoleMenuScenario()} {...teamCallbacks} />
+    </Stage>
   ),
   tags: ["fui-surface--workspace.team", "fui-state--Default"],
 };
 
 export const TeamLoading: Story = {
   render: () => (
-    <WorkspaceTeamSurface {...teamLoadingScenario()} {...teamCallbacks} />
+    <Stage>
+      <WorkspaceTeamSurface {...teamLoadingScenario()} {...teamCallbacks} />
+    </Stage>
   ),
   tags: ["fui-surface--workspace.team", "fui-state--Loading"],
 };
 
 export const TeamError: Story = {
   render: () => (
-    <WorkspaceTeamSurface {...teamErrorScenario()} {...teamCallbacks} />
+    <Stage>
+      <WorkspaceTeamSurface {...teamErrorScenario()} {...teamCallbacks} />
+    </Stage>
   ),
   tags: ["fui-surface--workspace.team", "fui-state--Error"],
 };
 
 export const TeamEmpty: Story = {
   render: () => (
-    <WorkspaceTeamSurface {...teamEmptyScenario()} {...teamCallbacks} />
+    <Stage>
+      <WorkspaceTeamSurface {...teamEmptyScenario()} {...teamCallbacks} />
+    </Stage>
   ),
   tags: ["fui-surface--workspace.team", "fui-state--Empty"],
 };
 
 export const TeamReadOnly: Story = {
   render: () => (
-    <WorkspaceTeamSurface {...teamReadOnlyScenario()} {...teamCallbacks} />
+    <Stage>
+      <WorkspaceTeamSurface {...teamReadOnlyScenario()} {...teamCallbacks} />
+    </Stage>
   ),
   tags: ["fui-surface--workspace.team", "fui-state--ReadOnly"],
 };
 
-/** An archived Team: membership frozen, reason shown, Unarchive offered. */
+/** An archived Team: people frozen, the paused access shown, Restore offered. */
 export const TeamArchived: Story = {
   render: () => (
-    <WorkspaceTeamSurface {...teamArchivedScenario()} {...teamCallbacks} />
+    <Stage>
+      <WorkspaceTeamSurface {...teamArchivedScenario()} {...teamCallbacks} />
+    </Stage>
   ),
   tags: ["fui-surface--workspace.team", "fui-state--PermissionLimited"],
 };
 
 export const TeamEdgeData: Story = {
   render: () => (
-    <WorkspaceTeamSurface {...teamEdgeDataScenario()} {...teamCallbacks} />
+    <Stage>
+      <WorkspaceTeamSurface {...teamEdgeDataScenario()} {...teamCallbacks} />
+    </Stage>
   ),
   tags: ["fui-surface--workspace.team", "fui-state--EdgeData"],
 };
 
 export const TeamHighDensity: Story = {
   render: () => (
-    <WorkspaceTeamSurface {...teamHighDensityScenario()} {...teamCallbacks} />
+    <Stage>
+      <WorkspaceTeamSurface {...teamHighDensityScenario()} {...teamCallbacks} />
+    </Stage>
   ),
   tags: ["fui-surface--workspace.team", "fui-state--HighDensity"],
+};
+
+// ── Sharing and security ──────────────────────────────────────────
+
+/** Final-Teams `chia-se`. */
+export const SecurityDefault: Story = {
+  render: () => (
+    <Stage>
+      <WorkspaceSecuritySurface
+        {...securityDefaultScenario()}
+        {...securityCallbacks}
+      />
+    </Stage>
+  ),
+  tags: ["fui-surface--workspace.security", "fui-state--Default"],
+};
+
+export const SecurityLinksOn: Story = {
+  render: () => (
+    <Stage>
+      <WorkspaceSecuritySurface
+        {...securityLinksOnScenario()}
+        {...securityCallbacks}
+      />
+    </Stage>
+  ),
+  tags: ["fui-surface--workspace.security", "fui-state--Default"],
+};
+
+export const SecurityLoading: Story = {
+  render: () => (
+    <Stage>
+      <WorkspaceSecuritySurface
+        {...securityLoadingScenario()}
+        {...securityCallbacks}
+      />
+    </Stage>
+  ),
+  tags: ["fui-surface--workspace.security", "fui-state--Loading"],
+};
+
+export const SecurityError: Story = {
+  render: () => (
+    <Stage>
+      <WorkspaceSecuritySurface
+        {...securityErrorScenario()}
+        {...securityCallbacks}
+      />
+    </Stage>
+  ),
+  tags: ["fui-surface--workspace.security", "fui-state--Error"],
+};
+
+export const SecurityReadOnly: Story = {
+  render: () => (
+    <Stage>
+      <WorkspaceSecuritySurface
+        {...securityReadOnlyScenario()}
+        {...securityCallbacks}
+      />
+    </Stage>
+  ),
+  tags: ["fui-surface--workspace.security", "fui-state--ReadOnly"],
 };

@@ -1,58 +1,49 @@
 import * as React from "react";
 import {
-  Archive,
-  ArchiveRestore,
-  ArrowLeft,
-  Info,
-  Trash2,
-  UserPlus,
-} from "lucide-react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  Badge,
-  Button,
-  Field,
-  FieldDescription,
-  FieldError,
-  FieldLabel,
-  Input,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
   Skeleton,
-  Spinner,
-  Textarea,
+  cn,
 } from "@notrelix/ui-web";
+import { identityToneFor, markToneFor } from "../../core/model/navigation";
 import {
-  identityToneFor,
-  normalizeSearchText,
-} from "../../core/model/navigation";
-import {
-  TEAM_ROLES,
-  addableTeamMembers,
   teamCapabilities,
   teamMemberCapabilities,
   type Team,
   type TeamMember,
   type TeamRole,
 } from "../../core/model/teams";
-import type {
-  WorkspaceMember,
-  WorkspaceRole,
-} from "../../core/types/workspace";
-import { pluralForm, type SectionState } from "../home/home-models";
+import type { WorkspaceRole } from "../../core/types/workspace";
+import type { SectionState } from "../home/home-models";
 import { IdentityMark } from "../shell/shell-link";
 import { formatCopy, isPlainClick } from "../shell/shell-models";
-import { TEAM_DESCRIPTION_MAX, TEAM_NAME_MAX } from "./create-team-dialog";
+import {
+  BTN,
+  BTN_PRIMARY,
+  FOCUS,
+  Glyph,
+  SpaceAvatar,
+} from "../spaces/space-page-parts";
+import {
+  ArchiveTeamDialog,
+  TEAM_DESCRIPTION_MAX,
+  TEAM_NAME_MAX,
+  type TeamCandidate,
+} from "./create-team-dialog";
+import {
+  TeamTile,
+  WorkspaceSetupFrame,
+  type SetupFrameProps,
+} from "./workspace-setup-frame";
+import {
+  plainText,
+  spaceLabel,
+  teamInitials,
+  type ArchiveLoss,
+  type TeamExt,
+} from "./workspace-teams-models";
 import type { WorkspaceTeamsCopy } from "./workspace-teams.copy";
 
 export interface AddTeamMemberInput {
@@ -62,18 +53,21 @@ export interface AddTeamMemberInput {
 
 export interface WorkspaceTeamSurfaceProps {
   readonly copy: WorkspaceTeamsCopy;
+  readonly frame: SetupFrameProps;
   readonly team: SectionState<Team>;
   readonly members: SectionState<readonly TeamMember[]>;
+  /** Email, job line, day joined, who made it and where it is in use. */
+  readonly ext: TeamExt | null;
   readonly viewer: {
     readonly userId: string | null;
     readonly role: WorkspaceRole | null;
   };
-  /** Workspace members the host knows; the surface offers those not yet in the Team. */
-  readonly candidates: readonly WorkspaceMember[];
-  /** Members with a write in flight. */
+  /** Active people of the workspace who may join. */
+  readonly candidates: readonly TeamCandidate[];
   readonly pendingUserIds: ReadonlySet<string>;
-  /** A Team write (rename, describe, archive, add) is in flight. */
   readonly saving: boolean;
+  readonly lossFor: ArchiveLoss | null;
+  readonly formatDay: (iso: string) => string;
   readonly onRename: (name: string) => void;
   /** `null` clears the description. */
   readonly onDescribe: (description: string | null) => void;
@@ -88,753 +82,871 @@ export interface WorkspaceTeamSurfaceProps {
     readonly getHref: () => string;
     readonly onNavigate: () => void;
   };
+  readonly usageNavigation: {
+    readonly getHref: (usage: TeamExt["usage"][number]) => string;
+    readonly onNavigate: (usage: TeamExt["usage"][number]) => void;
+  };
+  readonly initialRoleMenuUserId?: string | null;
+  readonly initialEditOpen?: boolean;
+  readonly initialArchiveOpen?: boolean;
 }
 
-type Confirmation =
-  | { readonly type: "remove"; readonly member: TeamMember }
-  | { readonly type: "archive" | "unarchive" };
+const INPUT =
+  "box-border h-9 w-full rounded-[8px] border border-line-strong bg-popover px-2.5 text-body leading-[1.45] text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-state-selected dark:bg-card";
 
-function SectionError({
-  message,
-  retry,
-  onRetry,
-}: {
-  message: string;
-  retry: string;
-  onRetry: () => void;
-}) {
+const ROLE_TAG: Record<TeamRole, string> = {
+  Lead: "bg-primary",
+  Member: "bg-success",
+};
+
+function RoleTag({ role }: { role: TeamRole }) {
   return (
-    <div
-      role="alert"
-      className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-surface-panel px-4 py-3"
-    >
-      <p className="text-body text-muted-foreground">{message}</p>
-      <Button variant="outline" size="sm" onClick={onRetry}>
-        {retry}
-      </Button>
-    </div>
+    <span
+      data-f="rtag"
+      aria-hidden="true"
+      className={cn(
+        "inline-block size-2 shrink-0 rounded-[2px]",
+        ROLE_TAG[role],
+      )}
+    />
   );
 }
 
-function RowsSkeleton({ label, rows = 3 }: { label: string; rows?: number }) {
-  return (
-    <div
-      role="status"
-      aria-label={label}
-      className="overflow-hidden rounded-lg border border-border bg-surface-panel"
-    >
-      {Array.from({ length: rows }, (_, index) => (
-        <div
-          key={index}
-          className="flex h-14 items-center gap-3 border-b border-border px-4 last:border-0"
-        >
-          <Skeleton className="size-8 rounded-full" />
-          <Skeleton className={index % 2 ? "h-3.5 w-40" : "h-3.5 w-28"} />
-          <Skeleton className="ml-auto h-8 w-28" />
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function ReadOnlyNotice({ id, children }: { id: string; children: string }) {
-  return (
-    <p
-      id={id}
-      className="flex items-start gap-2 rounded-md bg-info-subtle px-3 py-2 text-metadata text-info-subtle-foreground"
-    >
-      <Info aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-      {children}
-    </p>
-  );
-}
-
-function MemberRow({
+function RoleMenu({
+  copy,
   member,
-  members,
-  team,
-  copy,
-  canEdit,
-  isSelf,
-  pending,
-  saving,
-  noticeId,
-  onChangeRole,
-  onConfirmRemove,
+  caps,
+  onPick,
+  onRemove,
+  onClose,
 }: {
+  copy: WorkspaceTeamsCopy;
   member: TeamMember;
-  members: readonly TeamMember[];
-  team: Team;
-  copy: WorkspaceTeamsCopy;
-  canEdit: boolean;
-  isSelf: boolean;
-  /** This member's own write is in flight (row-level feedback). */
-  pending: boolean;
-  /** Any Team write is in flight; each write needs the version the last one bumps. */
-  saving: boolean;
-  noticeId: string | undefined;
-  onChangeRole: WorkspaceTeamSurfaceProps["onChangeRole"];
-  onConfirmRemove: (member: TeamMember) => void;
+  caps: ReturnType<typeof teamMemberCapabilities>;
+  onPick: (role: TeamRole) => void;
+  onRemove: () => void;
+  onClose: () => void;
 }) {
-  const caps = teamMemberCapabilities(member, members, team, canEdit);
-  const reasonId = React.useId();
-  const lastLead = caps.blockedBy === "last-lead";
-  const editable = caps.roles.length > 1;
-  const name = member.displayName;
-
-  return (
-    <li className="flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-border px-4 py-2.5 first:border-t-0 hover:bg-state-hover sm:flex-nowrap">
-      <span className="flex min-w-0 flex-1 basis-48 items-center gap-3">
-        <IdentityMark
-          name={name}
-          tone={identityToneFor(member.userId)}
-          shape="round"
-        />
-        <span className="flex min-w-0 flex-col">
-          <span className="flex min-w-0 items-center gap-2">
-            <span className="truncate text-label text-foreground">{name}</span>
-            {isSelf ? (
-              <Badge variant="secondary" className="shrink-0">
-                {copy.members.you}
-              </Badge>
-            ) : null}
-          </span>
-          {member.email ? (
-            <span className="truncate text-metadata text-muted-foreground">
-              {member.email}
-            </span>
-          ) : null}
-          {lastLead ? (
-            <span
-              id={reasonId}
-              className="flex items-start gap-1 text-metadata text-muted-foreground"
-            >
-              <Info aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
-              <span>{copy.blocked.lastLead}</span>
-            </span>
-          ) : null}
-        </span>
-      </span>
-      <span className="flex shrink-0 items-center gap-1">
-        {editable ? (
-          <Select
-            value={member.role}
-            disabled={pending || saving}
-            onValueChange={(value) => {
-              const role = value as TeamRole;
-              if (role !== member.role) onChangeRole(member.userId, role);
-            }}
-          >
-            <SelectTrigger
-              size="sm"
-              className="w-32 focus-visible:ring-focus-ring sm:w-36"
-              aria-label={formatCopy(
-                pending ? copy.members.roleUpdating : copy.members.roleSelect,
-                { name },
-              )}
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {caps.roles.map((role) => (
-                <SelectItem
-                  key={role}
-                  value={role}
-                  description={copy.roleHelp[role]}
-                >
-                  {copy.roles[role]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        ) : (
-          <span
-            className="w-32 text-body text-foreground sm:w-36"
-            aria-describedby={lastLead ? reasonId : noticeId}
-          >
-            {copy.roles[member.role]}
-          </span>
-        )}
-        <span className="flex size-8 items-center justify-center">
-          {pending ? (
-            <>
-              <Spinner aria-hidden="true" />
-              <span className="sr-only">
-                {formatCopy(copy.members.removing, { name })}
-              </span>
-            </>
-          ) : caps.canRemove ? (
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              aria-label={formatCopy(copy.members.remove, { name })}
-              disabled={saving}
-              onClick={() => onConfirmRemove(member)}
-              className="text-muted-foreground hover:bg-danger-subtle hover:text-danger-text focus-visible:ring-focus-ring"
-            >
-              <Trash2 aria-hidden="true" />
-            </Button>
-          ) : null}
-        </span>
-      </span>
-    </li>
-  );
-}
-
-function AddMemberForm({
-  copy,
-  addable,
-  saving,
-  onAddMember,
-}: {
-  copy: WorkspaceTeamsCopy;
-  addable: readonly WorkspaceMember[];
-  saving: boolean;
-  onAddMember: WorkspaceTeamSurfaceProps["onAddMember"];
-}) {
-  const [filter, setFilter] = React.useState("");
-  const [userId, setUserId] = React.useState("");
-  const [role, setRole] = React.useState<TeamRole>("Member");
-  const [touched, setTouched] = React.useState(false);
-  const filterId = React.useId();
-  const userFieldId = React.useId();
-  const roleFieldId = React.useId();
-  const errorId = React.useId();
-
-  // Once the producer adds the person they leave the candidates; clear the choice.
+  const d = copy.detail;
+  const ref = React.useRef<HTMLDivElement>(null);
   React.useEffect(() => {
-    if (userId !== "" && !addable.some((member) => member.userId === userId)) {
-      setUserId("");
-      setTouched(false);
-    }
-  }, [addable, userId]);
-
-  const needle = normalizeSearchText(filter.trim());
-  const options = needle
-    ? addable.filter(
-        (member) =>
-          member.userId === userId ||
-          normalizeSearchText(member.name).includes(needle),
-      )
-    : addable;
-  const missing = touched && userId === "";
-  const hint =
-    addable.length === 0
-      ? copy.members.add.noCandidates
-      : options.length === 0
-        ? formatCopy(copy.members.add.noMatch, { query: filter.trim() })
-        : null;
-
+    ref.current?.querySelector<HTMLElement>("[aria-checked='true']")?.focus();
+    const away = (event: PointerEvent) => {
+      if (!ref.current?.contains(event.target as Node)) onClose();
+    };
+    document.addEventListener("pointerdown", away);
+    return () => document.removeEventListener("pointerdown", away);
+  }, [onClose]);
+  const locked = caps.blockedBy === "last-lead";
+  const row =
+    "mx-1 flex w-[calc(100%-8px)] items-start gap-2.5 rounded-[7px] border-0 bg-transparent px-3 py-[9px] text-left text-foreground hover:bg-state-hover-strong aria-disabled:cursor-not-allowed aria-disabled:opacity-55 aria-disabled:hover:bg-transparent";
+  const roles: readonly { role: TeamRole; label: string; hint: string }[] = [
+    { role: "Lead", label: d.roleLead, hint: d.roleHintLead },
+    {
+      role: "Member",
+      label: d.roleMember,
+      hint: locked
+        ? formatCopy(d.roleLockedMember, {
+            name: member.displayName.split(/\s+/).pop() ?? member.displayName,
+          })
+        : d.roleHintMember,
+    },
+  ];
   return (
-    <form
-      noValidate
-      aria-label={copy.members.add.title}
-      onSubmit={(event) => {
-        event.preventDefault();
-        setTouched(true);
-        if (userId === "" || saving) return;
-        onAddMember({ userId, role });
+    <div
+      ref={ref}
+      data-f="tmenu"
+      role="menu"
+      aria-label={formatCopy(d.roleMenuLabel, { name: member.displayName })}
+      onKeyDown={(event) => {
+        if (event.key === "Escape") {
+          event.stopPropagation();
+          onClose();
+        }
       }}
-      className="flex flex-col gap-3 rounded-lg border border-border bg-surface-panel p-4"
+      className="absolute top-12 right-16 z-20 w-[300px] rounded-[10px] border border-line-strong bg-popover py-1 shadow-dialog dark:bg-card"
     >
-      <h3 className="text-subheading text-foreground">
-        {copy.members.add.title}
-      </h3>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
-        <Field className="sm:flex-1">
-          <FieldLabel htmlFor={filterId}>
-            {copy.members.add.filterLabel}
-          </FieldLabel>
-          <Input
-            id={filterId}
-            type="search"
-            value={filter}
-            placeholder={copy.members.add.filterPlaceholder}
-            disabled={addable.length === 0}
-            onChange={(event) => setFilter(event.target.value)}
-          />
-        </Field>
-        <Field data-invalid={missing ? true : undefined} className="sm:flex-1">
-          <FieldLabel htmlFor={userFieldId}>
-            {copy.members.add.userLabel}
-          </FieldLabel>
-          <Select
-            value={userId}
-            onValueChange={setUserId}
-            disabled={options.length === 0}
+      {roles.map((item) => {
+        const checked = member.role === item.role;
+        const disabled = !checked && !caps.roles.includes(item.role);
+        return (
+          <button
+            key={item.role}
+            type="button"
+            role="menuitemradio"
+            aria-checked={checked}
+            aria-disabled={disabled ? true : undefined}
+            onClick={() => {
+              if (disabled) return;
+              if (!checked) onPick(item.role);
+              onClose();
+            }}
+            className={cn(row, FOCUS)}
           >
-            <SelectTrigger
-              id={userFieldId}
-              className="w-full"
-              aria-invalid={missing ? true : undefined}
-              aria-describedby={missing ? errorId : undefined}
-            >
-              <SelectValue placeholder={copy.members.add.userPlaceholder} />
-            </SelectTrigger>
-            <SelectContent>
-              {options.map((member) => (
-                <SelectItem key={member.userId} value={member.userId}>
-                  {member.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {missing ? (
-            <FieldError id={errorId}>{copy.members.add.required}</FieldError>
-          ) : hint ? (
-            <FieldDescription>{hint}</FieldDescription>
-          ) : null}
-        </Field>
-        <Field className="sm:w-40">
-          <FieldLabel htmlFor={roleFieldId}>
-            {copy.members.add.roleLabel}
-          </FieldLabel>
-          <Select
-            value={role}
-            onValueChange={(value) => setRole(value as TeamRole)}
-          >
-            <SelectTrigger id={roleFieldId} className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {TEAM_ROLES.map((option) => (
-                <SelectItem
-                  key={option}
-                  value={option}
-                  description={copy.roleHelp[option]}
-                >
-                  {copy.roles[option]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </Field>
-        <Button
-          type="submit"
-          disabled={saving || addable.length === 0}
-          className="sm:mt-8"
+            <span className="mt-1.5">
+              <RoleTag role={item.role} />
+            </span>
+            <span>
+              <b className="block text-body leading-[1.45] font-semibold">
+                {item.label}
+              </b>
+              <small className="block text-xs leading-[1.45] text-meta-foreground">
+                {item.hint}
+              </small>
+            </span>
+            {checked ? (
+              <Glyph
+                name="check"
+                className="mt-0.5 ml-auto size-4 text-state-selected-foreground"
+              />
+            ) : null}
+          </button>
+        );
+      })}
+      <div role="separator" className="my-1 h-px bg-line" />
+      <button
+        type="button"
+        role="menuitem"
+        aria-disabled={caps.canRemove ? undefined : true}
+        onClick={() => {
+          if (!caps.canRemove) return;
+          onRemove();
+          onClose();
+        }}
+        className={cn(row, FOCUS)}
+      >
+        <span className="w-2" />
+        <span>
+          <b className="block text-body leading-[1.45] font-semibold text-danger-text">
+            {d.removeFromTeam}
+          </b>
+          <small className="block text-xs leading-[1.45] text-meta-foreground">
+            {caps.canRemove ? "" : d.removeLocked}
+          </small>
+        </span>
+      </button>
+      {locked ? (
+        <div
+          id="team-lead-rule"
+          className="mt-1 flex gap-2 border-t border-line px-3 pt-2 pb-1.5 text-xs leading-normal text-muted-foreground"
         >
-          <UserPlus aria-hidden="true" />
-          {saving ? copy.members.add.submitting : copy.members.add.submit}
-        </Button>
-      </div>
-    </form>
+          <Glyph
+            name="infoCircle"
+            className="mt-px size-3.5 text-meta-foreground"
+          />
+          <span>{d.leadNote}</span>
+        </div>
+      ) : null}
+    </div>
   );
 }
 
-function DetailsSection({
+function EditDialog({
   copy,
+  open,
   team,
   saving,
+  onClose,
   onRename,
   onDescribe,
-}: Pick<
-  WorkspaceTeamSurfaceProps,
-  "copy" | "saving" | "onRename" | "onDescribe"
-> & { team: Team }) {
+}: {
+  copy: WorkspaceTeamsCopy;
+  open: boolean;
+  team: Team;
+  saving: boolean;
+  onClose: () => void;
+  onRename: (name: string) => void;
+  onDescribe: (description: string | null) => void;
+}) {
+  const d = copy.detail;
   const [name, setName] = React.useState(team.name);
   const [description, setDescription] = React.useState(team.description ?? "");
-  const [nameTouched, setNameTouched] = React.useState(false);
-  const [last, setLast] = React.useState<"name" | "description" | null>(null);
-  const nameId = React.useId();
-  const nameErrorId = React.useId();
-  const descriptionId = React.useId();
-  const descriptionHelpId = React.useId();
-  const titleId = React.useId();
-
-  // A new server value replaces the form (after a save or a refresh).
   React.useEffect(() => {
+    if (!open) return;
     setName(team.name);
-    setNameTouched(false);
-  }, [team.name]);
-  React.useEffect(() => {
     setDescription(team.description ?? "");
-  }, [team.description]);
-
-  const trimmedName = name.trim();
-  const trimmedDescription = description.trim();
-  const nameDirty = trimmedName !== team.name;
-  const descriptionDirty = trimmedDescription !== (team.description ?? "");
-  const nameMessage = !nameTouched
-    ? null
-    : trimmedName === ""
-      ? copy.team.nameRequired
-      : trimmedName.length > TEAM_NAME_MAX
-        ? copy.team.nameTooLong
-        : null;
-  const descriptionMessage =
-    trimmedDescription.length > TEAM_DESCRIPTION_MAX
-      ? copy.team.descriptionTooLong
-      : null;
-
+  }, [open, team.description, team.name]);
+  const trimmed = name.trim();
+  const valid =
+    trimmed !== "" &&
+    trimmed.length <= TEAM_NAME_MAX &&
+    description.length <= TEAM_DESCRIPTION_MAX;
+  const submit = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!valid) return;
+    if (trimmed !== team.name) onRename(trimmed);
+    const next = description.trim() === "" ? null : description.trim();
+    if (next !== (team.description ?? null)) onDescribe(next);
+    onClose();
+  };
   return (
-    <section aria-labelledby={titleId} className="flex flex-col gap-4">
-      <header className="flex flex-col gap-1">
-        <h2 id={titleId} className="text-section-heading text-foreground">
-          {copy.team.details.title}
-        </h2>
-        <p className="text-body text-muted-foreground">
-          {copy.team.details.description}
-        </p>
-      </header>
-      <form
-        noValidate
-        onSubmit={(event) => {
-          event.preventDefault();
-          setNameTouched(true);
-          if (
-            saving ||
-            !nameDirty ||
-            trimmedName === "" ||
-            trimmedName.length > TEAM_NAME_MAX
-          ) {
-            return;
-          }
-          setLast("name");
-          onRename(trimmedName);
-        }}
-        className="flex flex-col gap-3 rounded-lg border border-border bg-surface-panel p-4 sm:flex-row sm:items-start"
+    <Dialog open={open} onOpenChange={(next) => (next ? undefined : onClose())}>
+      <DialogContent
+        showCloseButton={false}
+        overlayClassName="bg-modal-scrim backdrop-blur-none"
+        className="top-[110px] box-border flex w-[470px] max-w-[calc(100%-2rem)] translate-y-0 flex-col gap-0 overflow-hidden rounded-[14px] border-0 bg-popover p-0 text-body shadow-dialog ring-0 sm:max-w-[calc(100%-2rem)] dark:bg-card"
       >
-        <Field
-          data-invalid={nameMessage ? true : undefined}
-          className="sm:flex-1"
-        >
-          <FieldLabel htmlFor={nameId}>{copy.team.nameLabel}</FieldLabel>
-          <Input
-            id={nameId}
-            value={name}
-            maxLength={TEAM_NAME_MAX}
-            aria-invalid={nameMessage ? true : undefined}
-            aria-describedby={nameMessage ? nameErrorId : undefined}
-            onChange={(event) => setName(event.target.value)}
-          />
-          {nameMessage ? (
-            <FieldError id={nameErrorId}>{nameMessage}</FieldError>
-          ) : null}
-        </Field>
-        <Button
-          type="submit"
-          disabled={!nameDirty || saving}
-          className="sm:mt-8"
-        >
-          {saving && last === "name" ? copy.team.saving : copy.team.rename}
-        </Button>
-      </form>
-      <form
-        noValidate
-        onSubmit={(event) => {
-          event.preventDefault();
-          if (saving || !descriptionDirty || descriptionMessage) return;
-          setLast("description");
-          onDescribe(trimmedDescription === "" ? null : trimmedDescription);
-        }}
-        className="flex flex-col gap-3 rounded-lg border border-border bg-surface-panel p-4"
-      >
-        <Field data-invalid={descriptionMessage ? true : undefined}>
-          <FieldLabel htmlFor={descriptionId}>
-            {copy.team.descriptionLabel}
-          </FieldLabel>
-          <Textarea
-            id={descriptionId}
-            value={description}
-            rows={3}
-            aria-describedby={descriptionHelpId}
-            aria-invalid={descriptionMessage ? true : undefined}
-            onChange={(event) => setDescription(event.target.value)}
-          />
-          {descriptionMessage ? (
-            <FieldError id={descriptionHelpId}>{descriptionMessage}</FieldError>
-          ) : (
-            <FieldDescription id={descriptionHelpId}>
-              {copy.team.descriptionHelp}
-            </FieldDescription>
-          )}
-        </Field>
-        <div className="flex justify-end">
-          <Button
-            type="submit"
-            disabled={
-              !descriptionDirty || Boolean(descriptionMessage) || saving
-            }
-          >
-            {saving && last === "description"
-              ? copy.team.saving
-              : copy.team.saveDescription}
-          </Button>
-        </div>
-      </form>
-    </section>
+        <form onSubmit={submit} noValidate className="contents">
+          <div className="px-5 pt-[18px] pb-1.5">
+            <DialogTitle className="m-0 text-dialog-title font-[650] text-foreground">
+              {d.editTitle}
+            </DialogTitle>
+          </div>
+          <DialogDescription className="sr-only">
+            {d.editTitle}
+          </DialogDescription>
+          <div className="flex flex-col gap-3.5 px-5 pt-3.5 pb-4">
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="team-edit-name"
+                className="text-crumb font-semibold text-muted-foreground"
+              >
+                {d.editName}
+              </label>
+              <input
+                id="team-edit-name"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                className={INPUT}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="team-edit-desc"
+                className="text-crumb font-semibold text-muted-foreground"
+              >
+                {d.editDescription}{" "}
+                <span className="font-medium text-meta-foreground">
+                  {d.editOptional}
+                </span>
+              </label>
+              <textarea
+                id="team-edit-desc"
+                value={description}
+                onChange={(event) => setDescription(event.target.value)}
+                className={cn(INPUT, "h-16 resize-none py-2")}
+              />
+            </div>
+          </div>
+          <div className="flex items-center gap-2 border-t border-line bg-background px-5 py-3.5">
+            <span className="flex-1" />
+            <button type="button" onClick={onClose} className={cn(BTN, FOCUS)}>
+              {d.editCancel}
+            </button>
+            <button
+              type="submit"
+              disabled={!valid || saving}
+              className={cn(BTN_PRIMARY, FOCUS)}
+            >
+              {d.editSave}
+            </button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 
 /**
- * One Team (WX-TEAM-001, GOV-026): its details, its members with their Team
- * role, adding members, and archive. The last Lead is never offered a
- * demotion or removal; an archived Team's membership is frozen; both show
- * their reason as text. Workspace members who are not admins see it read-only.
- * Every write is a callback; the host owns the producer's outcome.
+ * One Team inside "Thiết lập workspace" (Final-Teams `chi-tiet`): its people
+ * with their role, the day they joined and Remove; add people by name or
+ * email; where the Team has access; what a lead is; archive. Only workspace
+ * admins write; an archived Team is read-only until it is restored.
  */
 export function WorkspaceTeamSurface(props: WorkspaceTeamSurfaceProps) {
-  const { copy, team, members, viewer } = props;
-  const [confirmation, setConfirmation] = React.useState<Confirmation | null>(
-    null,
+  const { copy, team, members, ext, viewer } = props;
+  const d = copy.detail;
+  const [roleMenu, setRoleMenu] = React.useState<string | null>(
+    props.initialRoleMenuUserId ?? null,
   );
-  const noticeId = React.useId();
-  const membersTitleId = React.useId();
-  const dangerTitleId = React.useId();
+  const [editOpen, setEditOpen] = React.useState(
+    props.initialEditOpen ?? false,
+  );
+  const [archiveOpen, setArchiveOpen] = React.useState(
+    props.initialArchiveOpen ?? false,
+  );
+  const [moreOpen, setMoreOpen] = React.useState(false);
+  const [query, setQuery] = React.useState("");
+  const closeRoleMenu = React.useCallback(() => setRoleMenu(null), []);
+  const addInput = React.useRef<HTMLInputElement>(null);
+
+  const back = (
+    <a
+      data-f="back"
+      href={props.backNavigation.getHref()}
+      onClick={(event) => {
+        if (!isPlainClick(event)) return;
+        event.preventDefault();
+        props.backNavigation.onNavigate();
+      }}
+      className={cn(
+        "inline-flex items-center gap-1.5 self-start text-compact font-medium text-state-selected-foreground",
+        FOCUS,
+      )}
+    >
+      <Glyph name="chevronLeft" className="size-3.5" />
+      {d.back}
+    </a>
+  );
 
   if (team.status === "loading") {
     return (
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-6 sm:px-6">
-        <Skeleton className="h-8 w-64" />
-        <RowsSkeleton label={copy.team.loading} />
-      </div>
+      <WorkspaceSetupFrame copy={copy} frame={props.frame}>
+        <div
+          role="status"
+          aria-label={copy.team.loading}
+          className="flex flex-col gap-3"
+        >
+          <Skeleton className="h-4 w-16" />
+          <Skeleton className="h-11 w-72" />
+          <Skeleton className="h-40 w-full rounded-[12px]" />
+        </div>
+      </WorkspaceSetupFrame>
     );
   }
   if (team.status === "error") {
     return (
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-6 sm:px-6">
-        <SectionError
-          message={copy.team.error}
-          retry={copy.team.retry}
-          onRetry={props.onRetry}
-        />
-        <a
-          href={props.backNavigation.getHref()}
-          onClick={(event) => {
-            if (!isPlainClick(event)) return;
-            event.preventDefault();
-            props.backNavigation.onNavigate();
-          }}
-          className="inline-flex w-fit items-center gap-1.5 rounded-sm text-label text-link outline-none hover:underline focus-visible:ring-2 focus-visible:ring-focus-ring"
+      <WorkspaceSetupFrame copy={copy} frame={props.frame}>
+        {back}
+        <div
+          role="alert"
+          className="flex flex-wrap items-center justify-between gap-3 rounded-[12px] border border-line bg-popover px-4 py-3 dark:bg-card"
         >
-          <ArrowLeft aria-hidden="true" className="size-4" />
-          {copy.team.backToTeams}
-        </a>
-      </div>
+          <p className="m-0 text-body text-muted-foreground">
+            {copy.team.error}
+          </p>
+          <button
+            type="button"
+            onClick={props.onRetry}
+            className={cn(BTN, FOCUS)}
+          >
+            {copy.team.retry}
+          </button>
+        </div>
+      </WorkspaceSetupFrame>
     );
   }
 
-  const current = team.data;
-  const caps = teamCapabilities(current, viewer.role);
-  const archived = current.status === "Archived";
+  const t = team.data;
+  const caps = teamCapabilities(t, viewer.role);
+  const archived = t.status === "Archived";
   const list = members.status === "ready" ? members.data : [];
-  const addable = addableTeamMembers(props.candidates, list);
-  const memberCount =
-    members.status === "ready" ? list.length : current.memberCount;
-  const notice = !caps.canManage
-    ? copy.readOnly
-    : archived
-      ? copy.archivedReason
-      : null;
-
-  const confirmText = (() => {
-    if (!confirmation) return null;
-    if (confirmation.type === "remove") {
-      const values = {
-        name: confirmation.member.displayName,
-        team: current.name,
-      };
-      return {
-        title: formatCopy(copy.confirmRemove.title, values),
-        description: formatCopy(copy.confirmRemove.description, values),
-        action: copy.confirmRemove.action,
-        cancel: copy.confirmRemove.cancel,
-      };
-    }
-    const values = { team: current.name };
-    return confirmation.type === "archive"
-      ? {
-          title: formatCopy(copy.confirmArchive.title, values),
-          description: copy.confirmArchive.description,
-          action: copy.confirmArchive.action,
-          cancel: copy.confirmArchive.cancel,
-        }
-      : {
-          title: formatCopy(copy.confirmArchive.unarchiveTitle, values),
-          description: copy.confirmArchive.unarchiveDescription,
-          action: copy.confirmArchive.unarchiveAction,
-          cancel: copy.confirmArchive.cancel,
-        };
+  const info = new Map(
+    (ext?.people ?? []).map((person) => [person.userId, person]),
+  );
+  const inTeam = new Set(list.map((member) => member.userId));
+  const suggestions = (() => {
+    const needle = plainText(query.trim());
+    if (!needle) return [];
+    return props.candidates
+      .filter(
+        (candidate) =>
+          !inTeam.has(candidate.id) &&
+          plainText(`${candidate.name} ${candidate.email ?? ""}`).includes(
+            needle,
+          ),
+      )
+      .slice(0, 6);
   })();
-
-  const confirm = () => {
-    if (!confirmation) return;
-    if (confirmation.type === "remove") {
-      props.onRemove(confirmation.member.userId);
-    } else if (confirmation.type === "archive") {
-      props.onArchive();
-    } else {
-      props.onUnarchive();
-    }
-    setConfirmation(null);
-  };
+  const meta = formatCopy(t.description ? d.meta : d.metaNoDescription, {
+    description: t.description ?? "",
+    date: props.formatDay(ext?.createdAt ?? t.createdAt),
+    name: ext?.createdBy?.name ?? "",
+  });
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-6 sm:px-6">
-      <header className="flex flex-col gap-1">
-        <h1 className="flex flex-wrap items-center gap-2 text-page-title text-foreground">
-          <span className="min-w-0 break-words">{current.name}</span>
-          {archived ? (
-            <Badge variant="secondary" className="font-normal">
-              {copy.team.archivedBadge}
-            </Badge>
-          ) : null}
-        </h1>
-        <p className="text-metadata tabular-nums text-muted-foreground">
-          {pluralForm(
-            { one: copy.members.count_one, other: copy.members.count_other },
-            memberCount,
-          )}
-        </p>
-        {!caps.canEditDetails ? (
-          <p className="max-w-prose break-words text-body text-muted-foreground">
-            {current.description ?? copy.team.noDescription}
-          </p>
-        ) : null}
-      </header>
-
-      {notice ? <ReadOnlyNotice id={noticeId}>{notice}</ReadOnlyNotice> : null}
-
-      {caps.canEditDetails ? (
-        <DetailsSection
-          copy={copy}
-          team={current}
-          saving={props.saving}
-          onRename={props.onRename}
-          onDescribe={props.onDescribe}
+    <WorkspaceSetupFrame copy={copy} frame={props.frame}>
+      {back}
+      <div data-f="dhead" className="flex items-center gap-3.5">
+        <TeamTile
+          name={t.name}
+          tone={identityToneFor(t.id)}
+          className="size-11 rounded-[12px] text-mark-lg"
         />
-      ) : null}
-
-      <section aria-labelledby={membersTitleId} className="flex flex-col gap-4">
-        <header className="flex flex-col gap-1">
-          <h2
-            id={membersTitleId}
-            className="text-section-heading text-foreground"
-          >
-            {copy.members.title}
+        <div className="min-w-0">
+          <h2 className="m-0 text-xl leading-[1.35] font-[650] tracking-[-0.01em] text-foreground">
+            {t.name}
           </h2>
-          <p className="text-body text-muted-foreground">
-            {copy.members.description}
-          </p>
-        </header>
-        {caps.canEditMembers && members.status === "ready" ? (
-          <AddMemberForm
-            copy={copy}
-            addable={addable}
-            saving={props.saving}
-            onAddMember={props.onAddMember}
-          />
-        ) : null}
-        {members.status === "loading" ? (
-          <RowsSkeleton label={copy.members.loading} />
-        ) : members.status === "error" ? (
-          <SectionError
-            message={copy.members.error}
-            retry={copy.members.retry}
-            onRetry={props.onRetry}
-          />
-        ) : list.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-border bg-surface-panel px-4 py-6 text-center text-body text-muted-foreground">
-            {copy.members.empty}
-          </p>
-        ) : (
-          <ul
-            aria-label={copy.members.title}
-            className="overflow-hidden rounded-lg border border-border bg-surface-panel"
-          >
-            {list.map((member) => (
-              <MemberRow
-                key={member.userId}
-                member={member}
-                members={list}
-                team={current}
-                copy={copy}
-                canEdit={caps.canEditMembers}
-                isSelf={
-                  viewer.userId !== null && viewer.userId === member.userId
-                }
-                pending={props.pendingUserIds.has(member.userId)}
-                saving={props.saving}
-                noticeId={notice ? noticeId : undefined}
-                onChangeRole={props.onChangeRole}
-                onConfirmRemove={(target) =>
-                  setConfirmation({ type: "remove", member: target })
-                }
-              />
-            ))}
-          </ul>
-        )}
-      </section>
-
-      {caps.canManage ? (
-        <section
-          aria-labelledby={dangerTitleId}
-          className="flex flex-col gap-3 rounded-lg border border-danger-subtle bg-surface-panel p-4 sm:p-6"
-        >
-          <header className="flex flex-col gap-1">
-            <h2 id={dangerTitleId} className="text-subheading text-foreground">
-              {copy.danger.title}
-            </h2>
-            <p className="text-metadata text-muted-foreground">
-              {archived
-                ? copy.danger.archivedDescription
-                : copy.danger.description}
-            </p>
-          </header>
-          <div>
-            {archived ? (
-              <Button
-                variant="outline"
-                disabled={props.saving}
-                onClick={() => setConfirmation({ type: "unarchive" })}
-              >
-                <ArchiveRestore aria-hidden="true" />
-                {copy.danger.unarchive}
-              </Button>
-            ) : (
-              <Button
-                variant="outline"
-                disabled={props.saving}
-                onClick={() => setConfirmation({ type: "archive" })}
-                className="border-danger-subtle text-danger-text hover:bg-danger-subtle hover:text-danger-subtle-foreground"
-              >
-                <Archive aria-hidden="true" />
-                {copy.danger.archive}
-              </Button>
-            )}
-          </div>
-        </section>
-      ) : null}
-
-      <AlertDialog
-        open={confirmation !== null}
-        onOpenChange={(open) => {
-          if (!open) setConfirmation(null);
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="break-words">
-              {confirmText?.title}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {confirmText?.description}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{confirmText?.cancel}</AlertDialogCancel>
-            <AlertDialogAction
-              variant={
-                confirmation?.type === "unarchive" ? "default" : "destructive"
-              }
-              onClick={confirm}
+          <small className="mt-0.5 block text-crumb text-meta-foreground">
+            {meta}
+          </small>
+        </div>
+        <div className="ml-auto flex items-center gap-2">
+          {caps.canEditDetails ? (
+            <button
+              type="button"
+              onClick={() => setEditOpen(true)}
+              className={cn(BTN, FOCUS)}
             >
-              {confirmText?.action}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
+              {d.edit}
+            </button>
+          ) : null}
+          {caps.canEditMembers ? (
+            <button
+              type="button"
+              onClick={() => addInput.current?.focus()}
+              className={cn(BTN_PRIMARY, FOCUS)}
+            >
+              <Glyph name="userPlus" />
+              {d.addPeople}
+            </button>
+          ) : null}
+          {caps.canManage ? (
+            <span className="relative">
+              <button
+                type="button"
+                aria-haspopup="menu"
+                aria-expanded={moreOpen}
+                aria-label={formatCopy(d.more, { name: t.name })}
+                onClick={() => setMoreOpen((open) => !open)}
+                className={cn(
+                  "grid size-8 place-items-center rounded-[7px] border-0 bg-transparent text-meta-foreground hover:bg-state-hover-strong hover:text-foreground",
+                  FOCUS,
+                )}
+              >
+                <Glyph name="more" />
+              </button>
+              {moreOpen ? (
+                <div
+                  role="menu"
+                  onKeyDown={(event) => {
+                    if (event.key === "Escape") setMoreOpen(false);
+                  }}
+                  className="absolute top-9 right-0 z-20 w-[190px] rounded-[10px] border border-line-strong bg-popover p-1 shadow-dialog dark:bg-card"
+                >
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setMoreOpen(false);
+                      if (archived) props.onUnarchive();
+                      else setArchiveOpen(true);
+                    }}
+                    className={cn(
+                      "flex h-9 w-full items-center rounded-[7px] border-0 bg-transparent px-2.5 text-left text-compact hover:bg-state-hover-strong",
+                      archived ? "text-foreground" : "text-danger-text",
+                      FOCUS,
+                    )}
+                  >
+                    {archived ? d.restore : d.archive}
+                  </button>
+                </div>
+              ) : null}
+            </span>
+          ) : null}
+          {caps.canManage && archived ? (
+            <button
+              type="button"
+              disabled={props.saving}
+              onClick={props.onUnarchive}
+              className={cn(BTN_PRIMARY, FOCUS)}
+            >
+              <Glyph name="archive" />
+              {d.restore}
+            </button>
+          ) : null}
+        </div>
+      </div>
+      {archived ? (
+        <p
+          role="status"
+          className="m-0 rounded-[8px] border border-line bg-background px-3 py-2 text-crumb text-muted-foreground"
+        >
+          {d.archivedBanner}
+        </p>
+      ) : null}
+      <div
+        data-f="dgrid"
+        className="grid grid-cols-[minmax(0,1fr)_300px] items-start gap-5"
+      >
+        <section
+          aria-labelledby="team-people"
+          className="rounded-[12px] border border-line bg-popover dark:bg-card"
+        >
+          <div
+            data-f="card-t"
+            className="flex items-center gap-2 border-b border-line px-3.5 py-3 text-compact font-semibold"
+          >
+            <span id="team-people">
+              {d.peopleTitle}{" "}
+              <span className="font-normal text-meta-foreground">
+                {t.memberCount}
+              </span>
+            </span>
+          </div>
+          {members.status === "loading" ? (
+            <div
+              role="status"
+              aria-label={copy.members.loading}
+              className="flex flex-col gap-2 p-3.5"
+            >
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          ) : members.status === "error" ? (
+            <div
+              role="alert"
+              className="flex items-center justify-between gap-3 px-3.5 py-3"
+            >
+              <p className="m-0 text-body text-muted-foreground">
+                {copy.members.error}
+              </p>
+              <button
+                type="button"
+                onClick={props.onRetry}
+                className={cn(BTN, FOCUS)}
+              >
+                {copy.members.retry}
+              </button>
+            </div>
+          ) : (
+            list.map((member, index) => {
+              const person = info.get(member.userId);
+              const memberCaps = teamMemberCapabilities(
+                member,
+                list,
+                t,
+                caps.canEditMembers,
+              );
+              const pending = props.pendingUserIds.has(member.userId);
+              const open = roleMenu === member.userId;
+              const roleLabel =
+                member.role === "Lead" ? d.roleLead : d.roleMember;
+              return (
+                <div
+                  key={member.userId}
+                  data-f="pr"
+                  className={cn(
+                    "relative grid min-h-14 grid-cols-[minmax(0,1fr)_140px_74px_44px] items-center gap-3 px-3.5",
+                    index > 0 && "border-t border-line",
+                    open && "bg-state-selected",
+                  )}
+                >
+                  <span
+                    data-f="who"
+                    className="flex min-w-0 items-center gap-[11px]"
+                  >
+                    <SpaceAvatar
+                      person={{
+                        id: member.userId,
+                        name: member.displayName,
+                        tone: identityToneFor(member.userId),
+                      }}
+                      className="size-[30px] text-avatar-lg"
+                    />
+                    <span className="min-w-0">
+                      <b className="block truncate text-body leading-[1.45] font-semibold text-foreground">
+                        {member.displayName}
+                        {member.userId === viewer.userId ? (
+                          <span className="ml-1.5 rounded-[4px] bg-state-selected px-[5px] py-px text-key font-semibold text-state-selected-foreground">
+                            {copy.members.you}
+                          </span>
+                        ) : null}
+                      </b>
+                      <small className="block truncate text-xs leading-[1.45] text-meta-foreground">
+                        {[person?.email ?? member.email, person?.title]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </small>
+                    </span>
+                  </span>
+                  <span>
+                    <button
+                      type="button"
+                      aria-haspopup="menu"
+                      aria-expanded={open}
+                      aria-disabled={caps.canEditMembers ? undefined : true}
+                      disabled={pending}
+                      aria-label={formatCopy(d.roleAria, {
+                        name: member.displayName,
+                        role: roleLabel,
+                      })}
+                      onClick={
+                        caps.canEditMembers
+                          ? () =>
+                              setRoleMenu((current) =>
+                                current === member.userId
+                                  ? null
+                                  : member.userId,
+                              )
+                          : undefined
+                      }
+                      className={cn(
+                        "inline-flex h-[30px] items-center gap-1.5 rounded-[7px] border border-transparent bg-transparent px-[9px] text-compact leading-[1.45] font-medium text-foreground",
+                        caps.canEditMembers
+                          ? "hover:border-line-strong hover:bg-popover dark:hover:bg-card"
+                          : "cursor-default",
+                        open &&
+                          "border-primary bg-popover ring-2 ring-state-selected dark:bg-card",
+                        FOCUS,
+                      )}
+                    >
+                      <RoleTag role={member.role} />
+                      {roleLabel}
+                      {caps.canEditMembers ? (
+                        <Glyph
+                          name="chevronDown"
+                          className="size-[13px] text-meta-foreground"
+                        />
+                      ) : null}
+                    </button>
+                  </span>
+                  <span className="text-xs text-meta-foreground">
+                    {formatCopy(d.since, {
+                      date: props.formatDay(person?.since ?? t.createdAt),
+                    })}
+                  </span>
+                  <span>
+                    {caps.canEditMembers ? (
+                      <button
+                        type="button"
+                        disabled={!memberCaps.canRemove || pending}
+                        title={memberCaps.canRemove ? undefined : d.leadRule}
+                        aria-label={formatCopy(d.removeAria, {
+                          name: member.displayName,
+                        })}
+                        onClick={() => props.onRemove(member.userId)}
+                        className={cn(
+                          "border-0 bg-transparent p-0 text-crumb font-semibold",
+                          memberCaps.canRemove
+                            ? "cursor-pointer text-danger-text"
+                            : "cursor-not-allowed text-meta-foreground opacity-70",
+                          FOCUS,
+                        )}
+                      >
+                        {d.remove}
+                      </button>
+                    ) : null}
+                  </span>
+                  {open ? (
+                    <RoleMenu
+                      copy={copy}
+                      member={member}
+                      caps={memberCaps}
+                      onPick={(role) => props.onChangeRole(member.userId, role)}
+                      onRemove={() => props.onRemove(member.userId)}
+                      onClose={closeRoleMenu}
+                    />
+                  ) : null}
+                </div>
+              );
+            })
+          )}
+          {caps.canEditMembers ? (
+            <div
+              data-f="addrow"
+              className="relative flex flex-col gap-1.5 rounded-b-[12px] border-t border-line bg-background px-3.5 pt-3 pb-3.5"
+            >
+              <label className="flex h-8 w-full items-center gap-2 rounded-[7px] border border-line-strong bg-popover px-2.5 text-compact text-meta-foreground focus-within:border-primary focus-within:ring-2 focus-within:ring-state-selected dark:bg-card">
+                <Glyph name="userPlus" />
+                <span className="sr-only">{d.addPeople}</span>
+                <input
+                  ref={addInput}
+                  role="combobox"
+                  aria-expanded={suggestions.length > 0}
+                  aria-controls="team-add-list"
+                  aria-describedby="team-add-hint"
+                  autoComplete="off"
+                  value={query}
+                  placeholder={formatCopy(d.addPlaceholder, {
+                    workspace: props.frame.workspaceName,
+                  })}
+                  onChange={(event) => setQuery(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && suggestions[0]) {
+                      event.preventDefault();
+                      props.onAddMember({
+                        userId: suggestions[0].id,
+                        role: "Member",
+                      });
+                      setQuery("");
+                    }
+                  }}
+                  className="h-full min-w-0 flex-1 border-0 bg-transparent text-compact text-foreground outline-none placeholder:text-meta-foreground"
+                />
+              </label>
+              {suggestions.length > 0 ? (
+                <ul
+                  id="team-add-list"
+                  role="listbox"
+                  className="m-0 list-none rounded-[8px] border border-line-strong bg-popover p-1 dark:bg-card"
+                >
+                  {suggestions.map((person, index) => (
+                    <li
+                      key={person.id}
+                      role="option"
+                      aria-selected={index === 0}
+                      onMouseDown={(event) => {
+                        event.preventDefault();
+                        props.onAddMember({
+                          userId: person.id,
+                          role: "Member",
+                        });
+                        setQuery("");
+                      }}
+                      className={cn(
+                        "flex cursor-pointer items-center gap-2 rounded-[6px] px-2 py-1.5 text-compact",
+                        index === 0 && "bg-state-hover-strong",
+                      )}
+                    >
+                      {person.name}
+                      {person.email ? (
+                        <small className="text-xs text-meta-foreground">
+                          {person.email}
+                        </small>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              ) : query.trim() !== "" ? (
+                <p className="m-0 text-xs text-meta-foreground">
+                  {formatCopy(d.addNoMatch, { query: query.trim() })}
+                </p>
+              ) : null}
+              <span
+                id="team-add-hint"
+                className="text-xs leading-normal text-meta-foreground"
+              >
+                {d.addHint}
+              </span>
+            </div>
+          ) : null}
+        </section>
+        <div className="flex flex-col gap-3.5">
+          <section
+            aria-labelledby="team-grant"
+            className="flex flex-col gap-2.5 rounded-[12px] border border-line bg-popover p-3.5 dark:bg-card"
+          >
+            <h3
+              id="team-grant"
+              className="m-0 text-compact font-semibold text-muted-foreground"
+            >
+              {d.usageTitle}
+            </h3>
+            {(ext?.usage ?? []).length === 0 ? (
+              <p className="m-0 text-crumb leading-[1.55] text-muted-foreground">
+                {d.usageNone}
+              </p>
+            ) : (
+              (ext?.usage ?? []).map((usage) => (
+                <a
+                  key={`${usage.kind}:${usage.id}`}
+                  data-f="grant"
+                  href={props.usageNavigation.getHref(usage)}
+                  onClick={(event) => {
+                    if (!isPlainClick(event)) return;
+                    event.preventDefault();
+                    props.usageNavigation.onNavigate(usage);
+                  }}
+                  className={cn(
+                    "-mx-2 flex items-center gap-2.5 rounded-[8px] p-2 hover:bg-state-hover-strong",
+                    FOCUS,
+                  )}
+                >
+                  {usage.kind === "space" ? (
+                    <IdentityMark
+                      name={usage.name}
+                      markTone={markToneFor(usage.id)}
+                      className="size-7 rounded-[8px] text-mark-xs font-bold"
+                    />
+                  ) : (
+                    <span className="grid size-7 place-items-center rounded-[8px] bg-state-hover-strong text-muted-foreground">
+                      <Glyph name="kanban" />
+                    </span>
+                  )}
+                  <span className="min-w-0">
+                    <b className="block text-nav font-semibold text-foreground">
+                      {usage.kind === "space"
+                        ? spaceLabel(copy, usage.name, usage.spaceType)
+                        : usage.name}
+                    </b>
+                    <small className="block text-xs text-meta-foreground">
+                      {usage.kind === "space"
+                        ? formatCopy(d.usageSpace, {
+                            role: copy.page.spaceRoles[
+                              usage.grant as "Admin" | "Member" | "Viewer"
+                            ],
+                            date: props.formatDay(usage.since ?? t.createdAt),
+                          })
+                        : formatCopy(d.usageBoard, {
+                            level:
+                              copy.page.boardLevels[
+                                usage.grant as
+                                  "manager" | "editor" | "commenter" | "viewer"
+                              ],
+                            date: props.formatDay(usage.since ?? t.createdAt),
+                          })}
+                      {archived ? ` · ${d.usagePaused}` : ""}
+                    </small>
+                  </span>
+                  <Glyph
+                    name="chevronRight"
+                    className="ml-auto size-3.5 text-meta-foreground"
+                  />
+                </a>
+              ))
+            )}
+            <p className="m-0 text-crumb leading-[1.55] text-muted-foreground">
+              {d.usageNoteBefore}
+              <b className="font-semibold text-foreground">{d.usageNoteBold}</b>
+              {d.usageNoteAfter}
+            </p>
+            <p className="m-0 text-crumb leading-[1.55] text-muted-foreground">
+              {d.usageNoteChange}
+            </p>
+          </section>
+          <section
+            aria-labelledby="team-lead-what"
+            className="flex flex-col gap-2.5 rounded-[12px] border border-line bg-popover p-3.5 dark:bg-card"
+          >
+            <h3
+              id="team-lead-what"
+              className="m-0 text-compact font-semibold text-muted-foreground"
+            >
+              {d.leadTitle}
+            </h3>
+            <p className="m-0 text-crumb leading-[1.55] text-muted-foreground">
+              {d.leadText}
+            </p>
+          </section>
+          {caps.canManage && !archived ? (
+            <button
+              type="button"
+              onClick={() => setArchiveOpen(true)}
+              className={cn(
+                "inline-flex h-8 items-center gap-1.5 self-start rounded-[7px] border border-transparent bg-transparent px-3 text-compact font-medium text-danger-text hover:bg-state-hover-strong",
+                FOCUS,
+              )}
+            >
+              <Glyph name="archive" />
+              {d.archive}
+            </button>
+          ) : null}
+        </div>
+      </div>
+      <EditDialog
+        copy={copy}
+        open={editOpen}
+        team={t}
+        saving={props.saving}
+        onClose={() => setEditOpen(false)}
+        onRename={props.onRename}
+        onDescribe={props.onDescribe}
+      />
+      <ArchiveTeamDialog
+        copy={copy}
+        open={archiveOpen}
+        teamName={t.name}
+        loss={props.lossFor}
+        pending={props.saving}
+        onClose={() => setArchiveOpen(false)}
+        onConfirm={() => {
+          props.onArchive();
+          setArchiveOpen(false);
+        }}
+      />
+    </WorkspaceSetupFrame>
   );
 }
+
+export { teamInitials };

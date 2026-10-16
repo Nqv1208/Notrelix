@@ -33,7 +33,7 @@ export const mockIds = {
     executive: "mock-space-executive",
   },
   teams: {
-    helpdesk: "mock-team-helpdesk",
+    oncall: "mock-team-oncall",
     erpEngineers: "mock-team-erp-engineers",
     executive: "mock-team-executive",
     qa: "mock-team-qa",

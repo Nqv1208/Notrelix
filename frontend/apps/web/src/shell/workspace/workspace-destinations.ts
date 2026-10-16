@@ -56,6 +56,8 @@ export function routerTarget(
       return { to: "/workspaces/$workspaceId/settings", params };
     case "billing":
       return { to: "/workspaces/$workspaceId/billing", params };
+    case "security":
+      return { to: "/workspaces/$workspaceId/security", params };
     case "account":
       return destination.page === "appearance"
         ? { to: "/workspaces/$workspaceId/account/appearance", params }
@@ -121,6 +123,7 @@ const SECTION_BY_ROUTE_ID: Readonly<Record<string, WorkspaceDestination>> = {
   "/workspaces/$workspaceId/teams": { section: "teams" },
   "/workspaces/$workspaceId/settings": { section: "settings" },
   "/workspaces/$workspaceId/billing": { section: "billing" },
+  "/workspaces/$workspaceId/security": { section: "security" },
 };
 
 /**

@@ -770,9 +770,12 @@ export const spacesOperations = [
             userId,
             role,
             expectedVersion: body?.expectedVersion,
-            userExists: store
-              .getWorkspaceMembers(params.workspaceId)
-              .some((m) => m.userId === userId),
+            // An active member of the workspace, or a company person of the directory.
+            userExists:
+              store
+                .getWorkspaceMembers(params.workspaceId)
+                .some((m) => m.userId === userId) ||
+              (store.getUser(userId)?.email ?? "").endsWith("@minhan.vn"),
           },
         ),
       );

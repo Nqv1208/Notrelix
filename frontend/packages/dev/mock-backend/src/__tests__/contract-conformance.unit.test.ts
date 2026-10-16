@@ -503,7 +503,7 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
     // Membership writes carry the version; a stale one is a 412.
     await spaces.addMember(workspaceId, id!, {
       subjectType: "Team",
-      subjectId: mockIds.teams.helpdesk,
+      subjectId: mockIds.teams.qa,
       role: "Member",
       expectedVersion: created.version,
     });
@@ -529,7 +529,7 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
     ).rejects.toMatchObject({ status: 400 });
     await spaces.changeMemberRole(workspaceId, id!, {
       subjectType: "Team",
-      subjectId: mockIds.teams.helpdesk,
+      subjectId: mockIds.teams.qa,
       role: "Viewer",
       expectedVersion: afterAdd.version,
     });
@@ -600,9 +600,8 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
       guestClient.api,
       endpoints,
     ).getTree(workspaceId);
-    expect(guestTree.map((s) => [s.id, s.access])).toEqual([
-      [mockIds.spaces.accounting, "Viewer"],
-    ]);
+    // The guest persona is in no seeded Team: no department is visible to it.
+    expect(guestTree.map((s) => [s.id, s.access])).toEqual([]);
     // The Space picker offers the Active Teams of the shared Team list.
     expect(
       toSpaceTeams(
@@ -612,7 +611,6 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
         .sort(),
     ).toEqual(
       [
-        mockIds.teams.helpdesk,
         mockIds.teams.erpEngineers,
         mockIds.teams.executive,
         mockIds.teams.qa,
@@ -706,17 +704,15 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
     const teamOf = async (id: string) =>
       (await teams.list(workspaceId)).find((t) => t.id === id)!;
 
-    // The seeded Helpdesk Team has a Lead and two members.
-    expect(await teams.get(workspaceId, mockIds.teams.helpdesk)).toMatchObject({
+    // The seeded QA Team has a Lead and four members.
+    expect(await teams.get(workspaceId, mockIds.teams.qa)).toMatchObject({
       status: "Active",
-      memberCount: 3,
+      memberCount: 5,
       version: 1,
     });
     expect(
-      (await teams.members(workspaceId, mockIds.teams.helpdesk)).map(
-        (m) => m.role,
-      ),
-    ).toEqual(["Lead", "Member", "Member"]);
+      (await teams.members(workspaceId, mockIds.teams.qa)).map((m) => m.role),
+    ).toEqual(["Lead", "Member", "Member", "Member", "Member"]);
 
     // Create answers 201 with the id; the creator becomes the Lead.
     const id = await teams.create(workspaceId, {

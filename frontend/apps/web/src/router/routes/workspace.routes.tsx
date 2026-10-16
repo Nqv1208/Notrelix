@@ -12,6 +12,7 @@ import { myWorkSearchSchema } from "../schemas/my-work-search-schema";
 import { InboxPage } from "../../routes/workspaces/$workspaceId/inbox";
 import { ReportsPage } from "../../routes/workspaces/$workspaceId/reports";
 import { SpacePage } from "../../routes/workspaces/$workspaceId/spaces/$spaceId";
+import { SecurityPage } from "../../routes/workspaces/$workspaceId/security";
 
 export const workspaceIndexRoute = createRoute({
   getParentRoute: () => workspaceRoute,
@@ -101,4 +102,11 @@ export const spaceRoute = createRoute({
   path: "/spaces/$spaceId",
   validateSearch: (search) => spaceSearchSchema.parse(search),
   component: SpacePage,
+});
+
+/** Sharing and security of the workspace (Final-Teams). */
+export const securityRoute = createRoute({
+  getParentRoute: () => workspaceRoute,
+  path: "/security",
+  component: SecurityPage,
 });

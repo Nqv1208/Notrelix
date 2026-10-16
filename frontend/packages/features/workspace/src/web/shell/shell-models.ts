@@ -206,6 +206,7 @@ export function workspaceBreadcrumbLabels(
       teams: copy.sections.teams,
       settings: copy.sections.settings,
       billing: copy.sections.billing,
+      security: copy.sections.security,
       account: copy.sections.account,
     },
     views: copy.views,

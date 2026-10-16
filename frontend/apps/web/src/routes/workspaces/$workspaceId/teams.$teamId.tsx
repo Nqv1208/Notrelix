@@ -3,15 +3,19 @@ import { useParams } from "@tanstack/react-router";
 import { toast } from "sonner";
 import type { TeamRole } from "@notrelix/features-workspace/core";
 import {
+  archiveLoss,
   formatCopy,
   useWorkspaceTeamsCopy,
   WorkspaceTeamSurface,
   type AddTeamMemberInput,
+  type TeamCandidate,
 } from "@notrelix/features-workspace/web";
 import { useWorkspaceContext } from "@/providers/workspace-provider";
 import { sectionState } from "@/shell/workspace/section-state";
 import { useIdSet } from "@/shell/workspace/use-id-set";
+import { useSetupFrame } from "@/shell/workspace/use-setup-frame";
 import { useShellNavigation } from "@/shell/workspace/use-shell-navigation";
+import { useTeamsExt } from "@/shell/workspace/use-teams-ext";
 import {
   toastTeamFailure,
   useTeamHooks,
@@ -36,6 +40,12 @@ export function TeamPage() {
   const members = hooks.useTeamMembers(workspaceId, teamId);
   const mutations = hooks.useTeamMutations(workspaceId);
   const pending = useIdSet();
+  const frame = useSetupFrame("teams");
+  const ext = useTeamsExt(
+    workspaceId,
+    `${team.data?.version ?? 0}:${members.data?.length ?? 0}`,
+  );
+  const teamExt = ext?.teams.find((item) => item.id === teamId) ?? null;
 
   const version = team.data?.version ?? null;
   const name = team.data?.name ?? "";
@@ -57,8 +67,9 @@ export function TeamPage() {
     (userId: string) =>
       members.data?.find((member) => member.userId === userId)?.displayName ??
       viewer.members.data?.find((member) => member.userId === userId)?.name ??
+      ext?.directory.find((person) => person.id === userId)?.name ??
       "",
-    [members.data, viewer.members.data],
+    [ext, members.data, viewer.members.data],
   );
 
   const fail = useCallback(
@@ -179,14 +190,32 @@ export function TeamPage() {
     [copy, fail, memberName, mutations.removeMember, pending, teamId, version],
   );
 
-  const candidates = useMemo(
-    () => viewer.members.data ?? [],
-    [viewer.members.data],
+  const candidates = useMemo<readonly TeamCandidate[]>(
+    () => ext?.directory ?? [],
+    [ext],
   );
 
   return (
     <WorkspaceTeamSurface
       copy={copy}
+      frame={frame}
+      ext={teamExt}
+      lossFor={teamExt ? archiveLoss(copy, teamExt) : null}
+      formatDay={dayOf}
+      usageNavigation={{
+        getHref: (usage) =>
+          navigation.getHref(
+            usage.kind === "space"
+              ? { section: "space", spaceId: usage.id, tab: "members" }
+              : { section: "board", boardId: usage.id },
+          ),
+        onNavigate: (usage) =>
+          navigation.onNavigate(
+            usage.kind === "space"
+              ? { section: "space", spaceId: usage.id, tab: "members" }
+              : { section: "board", boardId: usage.id },
+          ),
+      }}
       team={sectionState(team, team.data)}
       members={sectionState(members, members.data)}
       viewer={{ userId: viewer.userId, role: viewer.role }}
@@ -207,4 +236,10 @@ export function TeamPage() {
       }}
     />
   );
+}
+
+function dayOf(iso: string): string {
+  const date = new Date(iso);
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}`;
 }

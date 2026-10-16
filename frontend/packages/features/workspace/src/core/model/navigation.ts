@@ -125,6 +125,8 @@ export type WorkspaceDestination =
     }
   | { readonly section: "settings" }
   | { readonly section: "billing" }
+  /** Sharing and security of "Thiết lập workspace". */
+  | { readonly section: "security" }
   | { readonly section: "account"; readonly page?: "profile" | "appearance" }
   | {
       readonly section: "board";

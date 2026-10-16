@@ -3,13 +3,10 @@ import { fireEvent, renderPureUi, screen, within } from "@notrelix/testing";
 
 import {
   createTeamDefaultScenario,
-  createTeamErrorScenario,
-  createTeamPendingScenario,
-  teamsArchivedScenario,
+  teamsArchiveScenario,
   teamsCopyFixture,
   teamsDefaultScenario,
   teamsEmptyScenario,
-  teamsErrorScenario,
   teamsLoadingScenario,
   teamsNavigationFixture,
   teamsReadOnlyScenario,
@@ -29,203 +26,164 @@ function renderTeams(
   scenario = teamsDefaultScenario(),
   overrides: Partial<WorkspaceTeamsSurfaceProps> = {},
 ) {
-  const onNavigate = vi.fn();
   const props: WorkspaceTeamsSurfaceProps = {
     ...scenario,
-    navigation: teamsNavigationFixture(onNavigate),
-    onFilterChange: vi.fn(),
+    navigation: teamsNavigationFixture(),
     onCreate: vi.fn(),
+    onArchive: vi.fn(),
+    onRestore: vi.fn(),
     onRetry: vi.fn(),
     ...overrides,
   };
   const view = renderPureUi(<WorkspaceTeamsSurface {...props} />);
-  return { props, onNavigate, view };
-}
-
-describe("WorkspaceTeamsSurface", () => {
-  it("FUI[workspace.teams:render] lists active Teams as links with their member counts", () => {
-    const { onNavigate } = renderTeams();
-    expect(
-      screen.getByRole("heading", { level: 1, name: copy.list.title }),
-    ).toBeTruthy();
-    const platform = screen.getByRole("link", { name: "Platform engineering" });
-    expect(platform.getAttribute("href")).toBe(
-      "/w/product/teams/team-platform",
-    );
-    expect(platform.className).toContain("text-link");
-    expect(screen.getByText("3 members")).toBeTruthy();
-    expect(screen.getByText("1 member")).toBeTruthy();
-    // The archived Teams belong to the other filter.
-    expect(screen.queryByText("Legacy billing")).toBeNull();
-
-    // JSDOM cannot navigate; swallow the browser default after React ran.
-    const swallow = (event: Event) => event.preventDefault();
-    document.addEventListener("click", swallow);
-    try {
-      fireEvent.click(platform);
-      expect(onNavigate).toHaveBeenCalledWith("team-platform");
-      // A modified click is left to the browser.
-      onNavigate.mockClear();
-      fireEvent.click(platform, { ctrlKey: true });
-      expect(onNavigate).not.toHaveBeenCalled();
-    } finally {
-      document.removeEventListener("click", swallow);
-    }
-  });
-
-  it("FUI[workspace.teams:filter] switches between active and archived Teams through the host", () => {
-    const { props } = renderTeams();
-    expect(
-      screen
-        .getByRole("radio", { name: copy.list.filter.active })
-        .getAttribute("aria-checked"),
-    ).toBe("true");
-    fireEvent.click(
-      screen.getByRole("radio", { name: copy.list.filter.archived }),
-    );
-    expect(props.onFilterChange).toHaveBeenCalledWith("archived");
-  });
-
-  it("shows archived Teams with an Archived badge under the Archived filter", () => {
-    renderTeams(teamsArchivedScenario());
-    const legacy = screen
-      .getByRole("link", { name: "Legacy billing" })
-      .closest("li") as HTMLElement;
-    expect(within(legacy).getByText(copy.list.archived)).toBeTruthy();
-    expect(screen.queryByText("Platform engineering")).toBeNull();
-  });
-
-  it("FUI[workspace.teams:create] offers New Team to managers", () => {
-    const { props } = renderTeams();
-    fireEvent.click(screen.getByRole("button", { name: copy.list.new }));
-    expect(props.onCreate).toHaveBeenCalledTimes(1);
-  });
-
-  it("FUI[workspace.teams:read-only] offers no creation and states why", () => {
-    renderTeams(teamsReadOnlyScenario());
-    expect(screen.queryByRole("button", { name: copy.list.new })).toBeNull();
-    expect(screen.getByText(copy.readOnly)).toBeTruthy();
-    expect(
-      screen.getByRole("link", { name: "Platform engineering" }),
-    ).toBeTruthy();
-  });
-
-  it("FUI[workspace.teams:empty] explains an empty list and offers New Team once", () => {
-    const { props } = renderTeams(teamsEmptyScenario());
-    expect(screen.getByText(copy.list.empty.title)).toBeTruthy();
-    const create = screen.getAllByRole("button", { name: copy.list.new });
-    expect(create).toHaveLength(1);
-    fireEvent.click(create[0]!);
-    expect(props.onCreate).toHaveBeenCalledTimes(1);
-  });
-
-  it("explains an empty archive and keeps New Team in the header only", () => {
-    renderTeams({ ...teamsEmptyScenario(), filter: "archived" });
-    expect(screen.getByText(copy.list.empty.archivedTitle)).toBeTruthy();
-    expect(screen.getAllByRole("button", { name: copy.list.new })).toHaveLength(
-      1,
-    );
-  });
-
-  it("offers nothing to create in an empty list to a viewer who cannot manage Teams", () => {
-    renderTeams({ ...teamsEmptyScenario(), canManage: false });
-    expect(screen.getByText(copy.list.empty.title)).toBeTruthy();
-    expect(screen.queryByRole("button", { name: copy.list.new })).toBeNull();
-  });
-
-  it("shows a status while loading and retries a failed load", () => {
-    const loading = renderTeams(teamsLoadingScenario());
-    expect(
-      screen.getByRole("status", { name: copy.list.loading }),
-    ).toBeTruthy();
-    loading.view.unmount();
-
-    const { props } = renderTeams(teamsErrorScenario());
-    expect(screen.getByRole("alert").textContent).toContain(copy.list.error);
-    fireEvent.click(screen.getByRole("button", { name: copy.list.retry }));
-    expect(props.onRetry).toHaveBeenCalledTimes(1);
-  });
-});
-
-function renderCreate(
-  scenario = createTeamDefaultScenario(),
-  overrides: Partial<CreateTeamDialogProps> = {},
-) {
-  const props: CreateTeamDialogProps = {
-    ...scenario,
-    onOpenChange: vi.fn(),
-    onSubmit: vi.fn(),
-    ...overrides,
-  };
-  const view = renderPureUi(<CreateTeamDialog {...props} />);
   return { props, view };
 }
 
-describe("CreateTeamDialog", () => {
-  it("FUI[workspace.create-team:validate] requires a name and enforces the 160 and 1024 character limits", () => {
-    const { props } = renderCreate();
-    const submit = screen.getByRole("button", { name: copy.create.submit });
-
-    fireEvent.click(submit);
-    expect(screen.getByText(copy.create.nameRequired)).toBeTruthy();
-    expect(props.onSubmit).not.toHaveBeenCalled();
-
-    const name = screen.getByLabelText(copy.create.nameLabel);
-    expect(name.getAttribute("maxlength")).toBe("160");
-    fireEvent.change(name, { target: { value: "   " } });
-    fireEvent.click(submit);
-    expect(screen.getByText(copy.create.nameRequired)).toBeTruthy();
-
-    fireEvent.change(name, { target: { value: "x".repeat(161) } });
-    fireEvent.click(submit);
-    expect(screen.getByText(copy.create.nameTooLong)).toBeTruthy();
-    expect(props.onSubmit).not.toHaveBeenCalled();
-
-    fireEvent.change(name, { target: { value: "x".repeat(160) } });
-    fireEvent.change(screen.getByLabelText(copy.create.descriptionLabel), {
-      target: { value: "d".repeat(1025) },
+describe("WorkspaceTeamsSurface", () => {
+  it("FUI[workspace.teams:render] lists the Teams with people, lead and where each is used, the archived one apart", () => {
+    renderTeams();
+    expect(screen.getByRole("heading", { name: "Nhóm" })).toBeTruthy();
+    expect(screen.getByText("4 nhóm đang dùng · 1 đã lưu trữ")).toBeTruthy();
+    const table = screen.getByRole("table", {
+      name: "Nhóm trong Minh An Group",
     });
-    fireEvent.click(submit);
-    expect(screen.getByText(copy.create.descriptionTooLong)).toBeTruthy();
-    expect(props.onSubmit).not.toHaveBeenCalled();
-  });
-
-  it("FUI[workspace.create-team:submit] submits the trimmed name and description, and null for none", () => {
-    const { props } = renderCreate();
-    fireEvent.change(screen.getByLabelText(copy.create.nameLabel), {
-      target: { value: "  Platform engineering  " },
-    });
-    fireEvent.click(screen.getByRole("button", { name: copy.create.submit }));
-    expect(props.onSubmit).toHaveBeenLastCalledWith({
-      name: "Platform engineering",
-      description: null,
-    });
-
-    fireEvent.change(screen.getByLabelText(copy.create.descriptionLabel), {
-      target: { value: "  Shared runtime  " },
-    });
-    fireEvent.click(screen.getByRole("button", { name: copy.create.submit }));
-    expect(props.onSubmit).toHaveBeenLastCalledWith({
-      name: "Platform engineering",
-      description: "Shared runtime",
-    });
-  });
-
-  it("keeps the form while pending, shows the producer error and cancels", () => {
-    const pending = renderCreate(createTeamPendingScenario());
-    const busy = screen.getByRole("button", {
-      name: copy.create.submitting,
-    }) as HTMLButtonElement;
-    expect(busy.disabled).toBe(true);
-    pending.view.unmount();
-
-    const { props } = renderCreate(createTeamErrorScenario());
-    const message = "A Team with this name already exists in the workspace.";
-    expect(screen.getByText(message)).toBeTruthy();
+    const rows = within(table).getAllByRole("row").slice(1);
+    expect(rows).toHaveLength(4);
+    expect(within(rows[0]!).getByText("Nhóm Kỹ sư ERP")).toBeTruthy();
+    expect(within(rows[0]!).getByText("4 người")).toBeTruthy();
+    expect(within(rows[0]!).getByText("Trần Minh Quân")).toBeTruthy();
     expect(
-      screen.getByLabelText(copy.create.nameLabel).getAttribute("aria-invalid"),
-    ).toBe("true");
-    fireEvent.click(screen.getByRole("button", { name: copy.create.cancel }));
-    expect(props.onOpenChange).toHaveBeenCalledWith(false);
+      within(rows[0]!).getByText("Phòng Công nghệ · Thành viên"),
+    ).toBeTruthy();
+    expect(
+      within(rows[1]!).getByText("Phòng Kế toán · Người xem"),
+    ).toBeTruthy();
+    expect(
+      within(rows[2]!).getByText("Board Triển khai ERP Q4 · Có thể xem"),
+    ).toBeTruthy();
+    expect(within(rows[3]!).getByText("Chưa dùng ở đâu")).toBeTruthy();
+    expect(screen.getByText("Đã lưu trữ 1")).toBeTruthy();
+    const archived = screen.getByRole("table", { name: "Nhóm đã lưu trữ" });
+    expect(
+      within(archived).getByText("Lưu trữ 20/09 · Nguyễn Thu Hà"),
+    ).toBeTruthy();
+    expect(
+      within(archived).getByText("Hạ tầng & bảo mật · tạm ngừng"),
+    ).toBeTruthy();
+  });
+
+  it("FUI[workspace.teams:filter] narrows by Team name or person, ignoring marks", () => {
+    renderTeams();
+    fireEvent.change(screen.getByRole("searchbox"), {
+      target: { value: "vo thi hanh" },
+    });
+    const table = screen.getByRole("table", {
+      name: "Nhóm trong Minh An Group",
+    });
+    expect(within(table).getAllByRole("row")).toHaveLength(2);
+    expect(within(table).getByText("Nhóm Kế toán tổng hợp")).toBeTruthy();
+    fireEvent.change(screen.getByRole("searchbox"), {
+      target: { value: "khong co nhom nay" },
+    });
+    expect(screen.getByText(copy.page.noMatches)).toBeTruthy();
+  });
+
+  it("FUI[workspace.teams:create] opens the create dialog from the button", () => {
+    renderTeams();
+    fireEvent.click(screen.getByRole("button", { name: "Tạo nhóm" }));
+    expect(screen.getByRole("dialog", { name: "Tạo nhóm" })).toBeTruthy();
+  });
+
+  it("FUI[workspace.teams:archive] confirms before archiving and says who loses access", () => {
+    const { props } = renderTeams(teamsArchiveScenario());
+    const dialog = screen.getByRole("dialog", {
+      name: "Lưu trữ Nhóm Kỹ sư ERP?",
+    });
+    expect(
+      within(dialog).getByText(/3 người sẽ mất quyền vào Phòng Công nghệ/),
+    ).toBeTruthy();
+    expect(within(dialog).getByText(/Trần Minh Quân vẫn còn/)).toBeTruthy();
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: "Lưu trữ nhóm" }),
+    );
+    expect(props.onArchive).toHaveBeenCalledWith("t-erp");
+  });
+
+  it("FUI[workspace.teams:read-only] tells a member whom to ask instead of the list", () => {
+    renderTeams(teamsReadOnlyScenario());
+    expect(
+      screen.getByRole("heading", {
+        name: "Chỉ quản trị workspace quản lý nhóm.",
+      }),
+    ).toBeTruthy();
+    expect(screen.getByText("Trịnh Quốc Hưng")).toBeTruthy();
+    expect(
+      screen.getByText(/Chủ sở hữu workspace · hung.tq@minhan.vn/),
+    ).toBeTruthy();
+    expect(screen.queryByRole("table")).toBeNull();
+    expect(screen.getByRole("link", { name: "Về Trang chủ" })).toBeTruthy();
+  });
+
+  it("FUI[workspace.teams:empty] explains when there is no Team yet", () => {
+    renderTeams(teamsEmptyScenario());
+    expect(screen.getByText(copy.list.empty.title)).toBeTruthy();
+  });
+
+  it("shows a loading placeholder while the Teams read", () => {
+    renderTeams(teamsLoadingScenario());
+    expect(
+      screen.getByRole("status", { name: copy.list.loading }),
+    ).toBeTruthy();
+  });
+
+  it("restores an archived Team from its row", () => {
+    const { props } = renderTeams();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Khôi phục Nhóm Trực hệ thống" }),
+    );
+    expect(props.onRestore).toHaveBeenCalledWith("t-oncall");
+  });
+});
+
+describe("CreateTeamDialog", () => {
+  function renderCreate(overrides: Partial<CreateTeamDialogProps> = {}) {
+    const props: CreateTeamDialogProps = {
+      ...createTeamDefaultScenario(),
+      onOpenChange: vi.fn(),
+      onSubmit: vi.fn(),
+      ...overrides,
+    };
+    renderPureUi(<CreateTeamDialog {...props} />);
+    return props;
+  }
+
+  it("FUI[workspace.create-team:validate] asks for a name and a team lead", () => {
+    const props = renderCreate();
+    fireEvent.click(screen.getByRole("button", { name: "Tạo nhóm" }));
+    expect(props.onSubmit).not.toHaveBeenCalled();
+    expect(screen.getAllByRole("alert").length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("FUI[workspace.create-team:submit] sends the name, the lead and the people added", () => {
+    const props = renderCreate();
+    fireEvent.change(screen.getByLabelText("Tên nhóm"), {
+      target: { value: "Nhóm Triển khai kho" },
+    });
+    fireEvent.change(screen.getByLabelText(/Trưởng nhóm/), {
+      target: { value: "u-bao" },
+    });
+    const input = screen.getByPlaceholderText("Gõ tên hoặc email");
+    fireEvent.change(input, { target: { value: "minh.lam" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(
+      screen.getByText("2 người · Đặng Quốc Bảo là trưởng nhóm"),
+    ).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Tạo nhóm" }));
+    expect(props.onSubmit).toHaveBeenCalledWith({
+      name: "Nhóm Triển khai kho",
+      description: null,
+      leadId: "u-bao",
+      memberIds: ["u-minh"],
+    });
   });
 });
