@@ -142,12 +142,18 @@ async function loneControls(page: Page): Promise<string[]> {
       });
     };
     const children = Array.from(bar.children);
-    children.forEach((child, index) => {
-      if (child.getAttribute("data-tl") === "toggles")
+    const visit = (child: Element, last: boolean) => {
+      const kind = child.getAttribute("data-tl");
+      if (kind === "toggles")
         Array.from(child.children).forEach((toggle) => add(toggle, false));
+      else if (kind === "tail")
+        Array.from(child.children).forEach((inner) => visit(inner, false));
       else if (!child.className.toString().includes("flex-1"))
-        add(child, index === children.length - 1 && child.tagName === "BUTTON");
-    });
+        add(child, last && child.tagName === "BUTTON");
+    };
+    children.forEach((child, index) =>
+      visit(child, index === children.length - 1),
+    );
     items.sort((a, b) => a.centre - b.centre);
     const lines: Array<typeof items> = [];
     let last = Number.NEGATIVE_INFINITY;

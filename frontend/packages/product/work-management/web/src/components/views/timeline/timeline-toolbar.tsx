@@ -173,60 +173,64 @@ export function TimelineToolbar({
         <b className="font-semibold text-foreground">{copy.barSpan.value}</b>
       </Button>
 
-      <div data-tl="toggles" className="flex flex-none items-center gap-2">
-        <button
-          type="button"
-          aria-pressed={links.available ? links.shown : true}
-          aria-disabled={links.available ? undefined : "true"}
-          title={links.available ? undefined : copy.unavailable.links}
-          aria-label={
-            links.available
-              ? undefined
-              : `${copy.links}: ${copy.unavailable.links}`
-          }
-          className={cn(
-            TOGGLE_CLASS,
-            (links.available ? links.shown : true) && TOGGLE_ON_CLASS,
-          )}
-          onClick={links.available ? links.onToggle : undefined}
-        >
-          {copy.links}
-        </button>
-        <button
-          type="button"
-          aria-pressed={criticalPath.available ? criticalPath.shown : false}
-          aria-disabled={criticalPath.available ? undefined : "true"}
-          title={
-            criticalPath.available ? undefined : copy.unavailable.criticalPath
-          }
-          aria-label={
-            criticalPath.available
-              ? undefined
-              : `${copy.criticalPath}: ${copy.unavailable.criticalPath}`
-          }
-          className={cn(
-            TOGGLE_CLASS,
-            criticalPath.available && criticalPath.shown && TOGGLE_ON_CLASS,
-          )}
-          onClick={criticalPath.available ? criticalPath.onToggle : undefined}
-        >
-          {copy.criticalPath}
-        </button>
+      {/* The toggles and the undated link wrap as one group, so a narrow bar
+          never leaves the link alone on a line of its own. */}
+      <div data-tl="tail" className="flex flex-auto items-center gap-2">
+        <div data-tl="toggles" className="flex flex-none items-center gap-2">
+          <button
+            type="button"
+            aria-pressed={links.available ? links.shown : true}
+            aria-disabled={links.available ? undefined : "true"}
+            title={links.available ? undefined : copy.unavailable.links}
+            aria-label={
+              links.available
+                ? undefined
+                : `${copy.links}: ${copy.unavailable.links}`
+            }
+            className={cn(
+              TOGGLE_CLASS,
+              (links.available ? links.shown : true) && TOGGLE_ON_CLASS,
+            )}
+            onClick={links.available ? links.onToggle : undefined}
+          >
+            {copy.links}
+          </button>
+          <button
+            type="button"
+            aria-pressed={criticalPath.available ? criticalPath.shown : false}
+            aria-disabled={criticalPath.available ? undefined : "true"}
+            title={
+              criticalPath.available ? undefined : copy.unavailable.criticalPath
+            }
+            aria-label={
+              criticalPath.available
+                ? undefined
+                : `${copy.criticalPath}: ${copy.unavailable.criticalPath}`
+            }
+            className={cn(
+              TOGGLE_CLASS,
+              criticalPath.available && criticalPath.shown && TOGGLE_ON_CLASS,
+            )}
+            onClick={criticalPath.available ? criticalPath.onToggle : undefined}
+          >
+            {copy.criticalPath}
+          </button>
+        </div>
+
+        <span className="flex-1" />
+
+        {undatedCount > 0 ? (
+          <a
+            href={undatedHref ?? "#"}
+            className="text-crumb leading-[1.45] font-semibold text-state-selected-foreground no-underline"
+            onClick={openUndated}
+          >
+            {fill(plural(copy.undated_one, copy.undated_other, undatedCount), {
+              count: undatedCount,
+            })}
+          </a>
+        ) : null}
       </div>
-
-      <span className="flex-1" />
-
-      {undatedCount > 0 ? (
-        <a
-          href={undatedHref ?? "#"}
-          className="text-crumb leading-[1.45] font-semibold text-state-selected-foreground no-underline"
-          onClick={openUndated}
-        >
-          {fill(plural(copy.undated_one, copy.undated_other, undatedCount), {
-            count: undatedCount,
-          })}
-        </a>
-      ) : null}
 
       {canAdd ? (
         <Button
