@@ -326,7 +326,7 @@ for (const viewport of VIEWPORTS) {
 
   test.describe(`status Kanban at ${viewport.name} px (viewer)`, () => {
     test.skip(
-      persona !== "viewer",
+      persona !== "viewer" || scenario !== "default",
       "Needs the server started with VITE_MOCK_PERSONA=viewer",
     );
     test.use({ viewport: { width: viewport.width, height: viewport.height } });

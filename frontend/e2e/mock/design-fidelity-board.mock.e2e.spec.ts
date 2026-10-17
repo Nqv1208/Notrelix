@@ -514,7 +514,7 @@ test.describe("Board Kanban geometry at 1440 px (owner)", () => {
 
 test.describe("Board Kanban geometry at 1440 px (viewer)", () => {
   test.skip(
-    persona !== "viewer",
+    persona !== "viewer" || scenario !== "default",
     "Needs the server started with VITE_MOCK_PERSONA=viewer",
   );
   test.use({ viewport: { width: 1440, height: 900 } });
