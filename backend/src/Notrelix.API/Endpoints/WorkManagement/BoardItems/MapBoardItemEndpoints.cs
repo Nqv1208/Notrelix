@@ -42,6 +42,13 @@ public static class MapBoardItemEndpoints
         itemGroup.MapUpdateBoardItemStatus();
         itemGroup.MapListBoardItemLinks();
 
+        var myWork = app
+            .MapGroup("/api/v1/workspaces/{workspaceId:guid}/my-work/items")
+            .WithTags("WorkManagement.BoardItems")
+            .WithOpenApi();
+
+        myWork.MapListMyWorkItems();
+
         return app;
     }
 }

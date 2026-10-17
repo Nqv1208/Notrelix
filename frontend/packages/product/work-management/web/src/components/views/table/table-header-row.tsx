@@ -1,133 +1,102 @@
-import type { PointerEvent } from "react";
-import { GripVertical, MoreHorizontal } from "lucide-react";
-import { Checkbox } from "@notrelix/ui-web";
+import { ArrowDown, ArrowUp } from "lucide-react";
+import { cn } from "@notrelix/ui-web";
+import type { TableSort } from "@notrelix/work-management-core";
+import { fillTableCopy, type MainTableCopy } from "./main-table.copy";
+import { TableColumnResizeHandle } from "./table-column-resize";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@notrelix/ui-web";
-import type { BoardTableColumn } from "@notrelix/work-management-core";
+  columnWidth,
+  type TableColumnSpec,
+  type TableColumnWidths,
+} from "./table-columns";
+import { TableCheckbox } from "./table-parts";
 
+const HEAD_CELL =
+  "relative box-border flex h-9 min-w-0 items-center gap-1.5 border-b border-line-strong bg-table-group px-2.5 text-caption font-semibold whitespace-nowrap text-meta-foreground";
+
+/**
+ * The header row, sticky at the top while the rows scroll: the select-all
+ * checkbox, then one cell per column. The sorted column reads in the ink
+ * colour with an arrow. Every column ends in a resize handle.
+ */
 export function TableHeaderRow({
+  copy,
   columns,
-  gridTemplate,
-  isAllSelected,
+  widths,
+  sort,
+  allChecked,
+  canSelect,
   onToggleAll,
-  onResizeColumn,
-  onHideColumn,
-  onRenameColumn,
-  onDeleteColumn,
+  onWidthPreview,
+  onWidthCommit,
+  onWidthReset,
 }: {
-  columns: BoardTableColumn[];
-  gridTemplate: string;
-  isAllSelected: boolean;
-  onToggleAll: () => void;
-  onResizeColumn: (columnId: string, width: number) => void;
-  onHideColumn: (columnId: string) => void;
-  onRenameColumn: (columnId: string, name: string) => void;
-  onDeleteColumn: (columnId: string) => void;
+  copy: MainTableCopy;
+  columns: readonly TableColumnSpec[];
+  /** Effective widths (saved widths with the live drag applied). */
+  widths: TableColumnWidths;
+  sort: TableSort;
+  allChecked: boolean | "mixed";
+  canSelect: boolean;
+  onToggleAll: (selectAll: boolean) => void;
+  onWidthPreview: (columnId: string, width: number | null) => void;
+  onWidthCommit: (columnId: string, width: number) => void;
+  onWidthReset: (columnId: string) => void;
 }) {
   return (
     <div
-      className="grid min-h-[44px] border-b border-border bg-table-header text-[11px] font-semibold tracking-wider text-muted-foreground uppercase"
-      style={{ gridTemplateColumns: gridTemplate }}
+      role="row"
+      className="sticky top-0 z-3 grid min-w-full"
+      style={{ gridTemplateColumns: "var(--table-grid)" }}
     >
-      <div className="sticky left-0 z-30 flex items-center gap-2 border-r border-border bg-table-header px-3">
-        <Checkbox
-          checked={isAllSelected}
-          onCheckedChange={onToggleAll}
-          aria-label="Select all tasks"
+      <div role="columnheader" className={cn(HEAD_CELL, "pr-0 pl-3.5")}>
+        <TableCheckbox
+          checked={allChecked}
+          label={copy.header.selectAll}
+          disabled={!canSelect}
+          onChange={onToggleAll}
         />
-        <GripVertical className="size-3.5 text-muted-foreground/50" />
       </div>
-      {columns.map((column) => (
-        <div
-          key={column.id}
-          className="group/header relative flex min-w-0 items-center justify-between border-r border-border px-3"
-        >
-          <span className="truncate">{column.field.name}</span>
-          <div className="flex items-center">
-            {!column.field.id.endsWith("field-title") ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    type="button"
-                    className="rounded p-1 text-muted-foreground opacity-0 transition hover:bg-background/30 hover:text-foreground group-hover/header:opacity-100"
-                    aria-label={`${column.field.name} column menu`}
-                  >
-                    <MoreHorizontal className="size-3.5" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-40">
-                  <DropdownMenuItem
-                    onClick={() => {
-                      const name = window.prompt(
-                        "Column name",
-                        column.field.name,
-                      );
-                      if (name?.trim()) onRenameColumn(column.id, name.trim());
-                    }}
-                  >
-                    Rename column
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onHideColumn(column.id)}>
-                    Hide column
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    className="text-destructive"
-                    onClick={() => onDeleteColumn(column.id)}
-                  >
-                    Delete column
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+      {columns.map((column) => {
+        const sorted = sort.key === column.id;
+        const Icon = column.Icon;
+        const Arrow = sort.direction === "asc" ? ArrowUp : ArrowDown;
+        const name = copy.columns[column.id];
+        return (
+          <div
+            key={column.id}
+            role="columnheader"
+            aria-sort={
+              sorted
+                ? sort.direction === "asc"
+                  ? "ascending"
+                  : "descending"
+                : undefined
+            }
+            className={cn(HEAD_CELL, sorted && "text-foreground")}
+          >
+            {Icon ? (
+              <Icon
+                className="size-3.25 flex-none text-meta-foreground"
+                aria-hidden="true"
+              />
             ) : null}
-            <ResizeHandle column={column} onResizeColumn={onResizeColumn} />
+            <span className="min-w-0 truncate">{name}</span>
+            {sorted ? (
+              <Arrow
+                className="size-3.25 flex-none text-state-selected-foreground"
+                aria-hidden="true"
+              />
+            ) : null}
+            <TableColumnResizeHandle
+              label={fillTableCopy(copy.header.resize, { name })}
+              width={columnWidth(column, widths)}
+              onPreview={(width) => onWidthPreview(column.id, width)}
+              onCommit={(width) => onWidthCommit(column.id, width)}
+              onReset={() => onWidthReset(column.id)}
+            />
           </div>
-        </div>
-      ))}
-      <div className="border-r border-border" />
+        );
+      })}
     </div>
-  );
-}
-
-function ResizeHandle({
-  column,
-  onResizeColumn,
-}: {
-  column: BoardTableColumn;
-  onResizeColumn: (columnId: string, width: number) => void;
-}) {
-  function handlePointerDown(event: PointerEvent<HTMLButtonElement>) {
-    event.preventDefault();
-    event.stopPropagation();
-    const startX = event.clientX;
-    const startWidth = column.width;
-
-    function handlePointerMove(moveEvent: globalThis.PointerEvent) {
-      const nextWidth = Math.max(
-        column.minWidth,
-        startWidth + moveEvent.clientX - startX,
-      );
-      onResizeColumn(column.id, nextWidth);
-    }
-
-    function handlePointerUp() {
-      window.removeEventListener("pointermove", handlePointerMove);
-      window.removeEventListener("pointerup", handlePointerUp);
-    }
-
-    window.addEventListener("pointermove", handlePointerMove);
-    window.addEventListener("pointerup", handlePointerUp);
-  }
-
-  return (
-    <button
-      type="button"
-      aria-label={`Resize ${column.field.name}`}
-      className="absolute right-0 top-0 h-full w-2 cursor-col-resize touch-none border-r border-transparent transition hover:border-primary"
-      onPointerDown={handlePointerDown}
-    />
   );
 }

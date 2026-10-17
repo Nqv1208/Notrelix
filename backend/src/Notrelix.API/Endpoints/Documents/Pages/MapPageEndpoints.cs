@@ -28,6 +28,7 @@ public static class MapPageEndpoints
         pageGroup.MapDeletePage();
         pageGroup.MapGetPageBreadcrumb();
         pageGroup.MapGetPageHistory();
+        pageGroup.MapMovePageToSpace();
 
         return app;
     }

@@ -5,7 +5,7 @@ namespace Notrelix.Application.Tests.Features.Workspaces.Members.Commands;
 public class SuspendMemberCommandHandlerTests : WorkspaceHandlerTestBase
 {
     private SuspendMemberCommandHandler CreateSut() => new(
-        DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object, GrantProjectionMock.Object);
+        DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object, GrantProjectionMock.Object, LockerMock.Object);
 
     [Fact]
     public async Task Handle_WhenMemberExists_SuspendsSuccessfully()

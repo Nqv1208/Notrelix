@@ -63,8 +63,10 @@ export function renderPureUi(
 
 export {
   render,
+  renderHook,
   screen,
   fireEvent,
   waitFor,
+  within,
   act,
 } from "@testing-library/react";

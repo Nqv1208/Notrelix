@@ -10,7 +10,8 @@ public static class ResendInvitationEndpoint
         group.MapWorkspacePost("/{invitationId:guid}/resend", HandleAsync)
             .WithName("Workspaces.Invitations.ResendInvitation")
             .WithTags("Workspaces.Invitations")
-            .WithSummary("Resend a workspace invitation");
+            .WithSummary("Resend a workspace invitation")
+            .Produces<Guid>(StatusCodes.Status200OK, "application/json");
         return group;
     }
 

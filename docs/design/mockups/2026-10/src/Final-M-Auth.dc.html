@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Hướng chốt · Di động · Đăng nhập</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+/* mobile shell — shared (copy verbatim into every Final-M-*.dc.html; source Final-M-Home) */
+body{margin:0}
+a{color:inherit}a:hover{color:inherit}
+.nx{--bg:#F7F8FA;--panel:#FFFFFF;--hover:#F1F3F6;--hover2:#E6E9EE;--line:#E6E9EE;--line2:#D2D7DE;--ring:#7A8391;--text:#161A21;--muted:#4F5866;--meta:#5F6875;--accent:#1666CC;--accent-ink:#FFFFFF;--accent-soft:#E7F0FC;--accent-text:#0F56AE;--st-todo:#7A8391;--st-doing:#1E7BE0;--st-review:#D99A00;--st-done:#2E8B57;--danger:#C42340;--danger-soft:#FDECEF;--warn-text:#8A5A00;--warn-soft:#FFF4D6;--ok-soft:#E2F1E7;--lane-todo:#ECEEF2;--lane-doing:#E2ECFA;--lane-review:#FBF0D6;--high:#B4500B;--badge:#C42340;--scrim:rgba(15,23,42,.42);--act-done:#1F7A4A;--act-snooze:#8A5A00;--act-neutral:#4F5866;font-family:'Be Vietnam Pro',system-ui,sans-serif;color:var(--text);background:var(--bg);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.nx.mode-dem{--bg:#0E1116;--panel:#151A21;--hover:#1C232C;--hover2:#232A34;--line:#232B35;--line2:#2E3743;--ring:#8C95A3;--text:#E6E9EE;--muted:#AAB3C0;--meta:#8F99A7;--accent:#5AA9FF;--accent-ink:#04111F;--accent-soft:rgba(90,169,255,.16);--accent-text:#7DBBFF;--st-todo:#8C95A3;--st-doing:#5AA9FF;--st-review:#F2C14E;--st-done:#56C98A;--danger:#FF6B81;--danger-soft:rgba(255,107,129,.14);--warn-text:#F2C14E;--warn-soft:rgba(242,193,78,.12);--ok-soft:#153024;--lane-todo:#1E252F;--lane-doing:#16284A;--lane-review:#30281A;--high:#FFA060;--badge:#C42340;--scrim:rgba(0,0,0,.6);--act-done:#1F7A4A;--act-snooze:#8A5A00;--act-neutral:#4F5866}
+.nx.m{width:390px;height:844px;position:relative;overflow:hidden;display:flex;flex-direction:column;border-radius:0}
+.nx.m .app-layer{flex:1;min-height:0;display:flex;flex-direction:column}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.i{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.i.lg{width:24px;height:24px}
+.i.sm{width:14px;height:14px}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;margin:-1px;padding:0;border:0}
+/* status bar 47px (decorative) */
+.sbar{height:47px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:4px 26px 0 34px;box-sizing:border-box;font-size:16px;font-weight:600;font-variant-numeric:tabular-nums;background:var(--bg);color:var(--text)}
+.sbar .sg{display:flex;align-items:center;gap:6px}
+.sbar svg{display:block}
+/* top bar 52px: leading control · spacer · trailing icon buttons */
+.tbar{height:52px;flex:none;display:flex;align-items:center;gap:2px;padding:0 8px 0 10px;background:var(--bg)}
+.tbar .sp{flex:1}
+.tbar-t{flex:1;min-width:0;text-align:center;font-size:17px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ib{width:44px;height:44px;border-radius:12px;border:0;background:transparent;color:var(--text);display:grid;place-items:center;cursor:pointer;padding:0;flex:none;text-decoration:none;font:inherit}
+.ib:hover,.ib:active{background:var(--hover2)}
+.ib .me{width:32px;height:32px;border-radius:50%;background:#4E8574;color:#fff;font-size:12px;font-weight:700;display:grid;place-items:center}
+.wschip{height:44px;display:inline-flex;align-items:center;gap:8px;padding:0 10px 0 6px;border-radius:12px;border:0;background:transparent;font:inherit;font-size:16px;font-weight:650;color:var(--text);cursor:pointer;min-width:0}
+.wschip:hover,.wschip:active{background:var(--hover2)}
+.wschip .dm{width:28px;height:28px;border-radius:8px;font-size:11px}
+.wschip .i{color:var(--meta)}
+/* scrolling content between top bar and tab bar (mockup clips at the bottom) */
+.content{flex:1;min-height:0;overflow:hidden;padding:0 16px 24px;display:flex;flex-direction:column;gap:18px}
+.tbar.scrolled{box-shadow:0 1px 0 var(--line)}
+.ltitle{margin:0;font-size:28px;font-weight:700;letter-spacing:-0.02em;line-height:1.2}
+.lsub{margin:4px 0 0;font-size:13px;color:var(--muted)}
+/* chips: horizontal scroll, 44px */
+.chips{display:flex;gap:8px;overflow-x:auto;margin:0 -16px;padding:0 16px;scrollbar-width:none;flex:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{height:44px;padding:0 14px;border-radius:12px;border:1px solid var(--line2);background:var(--panel);color:var(--text);font:inherit;font-size:14px;font-weight:500;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;flex:none;text-decoration:none;cursor:pointer;box-sizing:border-box}
+.chip b{font-weight:700;font-variant-numeric:tabular-nums}
+.chip.over{background:var(--danger-soft);border-color:transparent;color:var(--danger)}
+.chip.today{background:var(--warn-soft);border-color:transparent;color:var(--warn-text)}
+.chip.on{background:var(--text);border-color:var(--text);color:var(--bg);font-weight:600}
+/* section heading */
+.sec{display:flex;flex-direction:column}
+.sec-h{display:flex;align-items:center;gap:8px;min-height:40px;margin:0 0 4px;font-size:17px;font-weight:650;letter-spacing:-0.01em}
+.sec-h .n{color:var(--meta);font-weight:500;font-size:15px}
+.sec-h.over{color:var(--danger)}
+.sec-h a{margin-left:auto;margin-right:-8px;height:44px;padding:0 8px;display:inline-flex;align-items:center;font-size:14px;font-weight:500;color:var(--accent-text);text-decoration:none}
+/* grouped list + rows: [tick 44][link: title 2 lines + meta | due][⋯ 44] */
+.list{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.lrow{position:relative;border-top:1px solid var(--line);overflow:hidden}
+.lrow:first-child{border-top:0}
+.lrow-in{position:relative;z-index:1;display:flex;align-items:flex-start;gap:0;padding:6px 0 6px 2px;background:var(--panel)}
+.tick{width:44px;height:44px;border:0;background:transparent;padding:0;display:grid;place-items:center;flex:none;cursor:pointer;border-radius:12px}
+.tick span{width:22px;height:22px;border-radius:50%;box-sizing:border-box;border:1.75px solid var(--ring);display:block}
+.lr-main{flex:1;min-width:0;display:flex;align-items:flex-start;gap:10px;padding:5px 0;min-height:44px;box-sizing:border-box;text-decoration:none;color:var(--text);border-radius:8px}
+.lr-txt{flex:1;min-width:0}
+.lr-t{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:15px;font-weight:500;line-height:1.36}
+.lr-m{display:flex;align-items:center;gap:6px;margin-top:3px;font-size:13px;color:var(--meta);white-space:nowrap;min-width:0}
+.lr-m .bd{overflow:hidden;text-overflow:ellipsis;min-width:0}
+.lr-m .mono{font-size:12px;flex:none}
+.lr-end{flex:none;width:70px;display:flex;flex-direction:column;align-items:flex-end;gap:4px;text-align:right;font-size:13px;line-height:1.3;color:var(--meta);font-variant-numeric:tabular-nums;padding-top:1px}
+.lr-end.over{color:var(--danger);font-weight:600}
+.lr-end.today{color:var(--warn-text);font-weight:600}
+.pr{display:inline-flex;align-items:center;gap:3px;font-size:12px;font-weight:600}
+.pr.urgent{color:var(--danger)}
+.pr.high{color:var(--high)}
+.lr-more{color:var(--meta)}
+.lrow-link{display:flex;align-items:center;gap:8px;min-height:48px;padding:0 8px 0 16px;border-top:1px solid var(--line);font-size:14px;color:var(--muted);text-decoration:none}
+.lrow-link .go{margin-left:auto;color:var(--accent-text);font-weight:500;display:inline-flex;align-items:center;gap:2px}
+/* swipe: the front layer slides left over .swipe-acts (each action 76px) */
+.lrow.swiped .lrow-in{transform:translateX(-152px)}
+.swipe-acts{position:absolute;top:0;right:0;bottom:0;display:flex}
+.swipe-acts button{width:76px;border:0;margin:0;padding:0;color:#FFFFFF;font:inherit;font-size:13px;font-weight:600;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer}
+.swipe-acts .snooze{background:var(--act-snooze)}
+.swipe-acts .done{background:var(--act-done)}
+/* buttons */
+.btn{min-height:44px;padding:0 16px;border-radius:12px;border:1px solid var(--line2);background:var(--panel);color:var(--text);font:inherit;font-size:15px;font-weight:500;display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;white-space:nowrap;text-decoration:none;box-sizing:border-box}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.block{width:100%;min-height:50px}
+/* chips & avatars */
+.dm{width:20px;height:20px;border-radius:6px;display:grid;place-items:center;font-size:9px;font-weight:700;color:#fff;flex:none}
+.dm.sm{width:16px;height:16px;font-size:7.5px;border-radius:4px}
+.av{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-size:11.5px;font-weight:700;color:#fff;flex:none}
+/* bottom tab bar 49 + 34 safe area */
+.tabbar{flex:none;height:83px;box-sizing:border-box;padding:0 4px 34px;display:flex;border-top:1px solid var(--line);background:var(--panel)}
+.tab{flex:1;height:49px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-decoration:none;color:var(--meta);font-size:11px;font-weight:500;line-height:1.2;position:relative;white-space:nowrap}
+.tab.on{color:var(--accent-text);font-weight:600}
+.tab .bdg{position:absolute;top:3px;left:calc(50% + 6px);min-width:18px;height:18px;padding:0 5px;box-sizing:border-box;border-radius:9px;background:var(--badge);color:#FFFFFF;font-size:11px;font-weight:700;display:grid;place-items:center;box-shadow:0 0 0 2px var(--panel)}
+.homeind{position:absolute;left:50%;bottom:8px;width:134px;height:5px;margin-left:-67px;border-radius:3px;background:var(--text);z-index:60}
+/* bottom sheet: scrim + sheet, grabber 36×5, radius 14, primary action above the safe area */
+.scrim{position:absolute;inset:0;background:var(--scrim);z-index:40}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:41;background:var(--panel);border-radius:14px 14px 0 0;padding:6px 0 34px;box-shadow:0 -8px 32px rgba(0,0,0,.18);color:var(--text)}
+.grabber{width:36px;height:5px;border-radius:3px;background:var(--line2);margin:0 auto 2px}
+.sheet-h{display:flex;align-items:center;gap:8px;min-height:52px;padding:0 8px 0 20px}
+.sheet-h h2{margin:0;flex:1;font-size:17px;font-weight:650}
+.sheet-sub{margin:0;padding:6px 20px 4px;font-size:13px;font-weight:600;color:var(--meta)}
+.srow{display:flex;align-items:center;gap:12px;min-height:60px;padding:0 20px;text-decoration:none;color:var(--text)}
+.srow:hover,.srow:active{background:var(--hover)}
+.srow .tx{flex:1;min-width:0}
+.srow .tx b{display:block;font-size:15px;font-weight:600}
+.srow .tx small{display:block;font-size:13px;color:var(--meta)}
+.srow .end{flex:none;display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--meta)}
+.srow .ck{color:var(--accent-text)}
+.srow .ic{width:36px;height:36px;border-radius:10px;background:var(--bg);border:1px solid var(--line);display:grid;place-items:center;color:var(--muted);flex:none;box-sizing:border-box}
+.srow .wsm{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;color:#fff;font-size:13px;font-weight:700;flex:none}
+.cnt{min-width:22px;height:22px;padding:0 7px;box-sizing:border-box;border-radius:11px;background:var(--badge);color:#FFFFFF;font-size:12px;font-weight:700;display:inline-grid;place-items:center}
+.tag{height:22px;padding:0 8px;border-radius:6px;background:var(--hover2);color:var(--muted);font-size:12px;font-weight:600;display:inline-flex;align-items:center}
+.sheet-sep{height:1px;background:var(--line);margin:6px 20px}
+.sheet-foot{padding:10px 16px 0}
+/* skeleton (static under reduced motion) */
+.sk{display:block;background:var(--hover2);border-radius:6px}
+@media (prefers-reduced-motion: no-preference){.sk{animation:skp 1.4s ease-in-out infinite}}
+@keyframes skp{50%{opacity:.55}}
+/* end mobile shell */
+
+/* screen: Đăng nhập (no tab bar on sign-in screens) */
+.nx{--kb-bg:#D1D4DA;--kb-key:#FFFFFF;--kb-fn:#ACB2BC;--kb-ink:#161A21;--kb-shadow:#8C929C;--logo-grad:linear-gradient(135deg,#FF1E56 0%,#FC744C 25%,#F9C942 50%,#8CADA1 75%,#1E90FF 100%)}
+.nx.mode-dem{--kb-bg:#1F2228;--kb-key:#4B4F57;--kb-fn:#33373E;--kb-ink:#F2F4F7;--kb-shadow:#0B0C0E}
+.au{flex:1;min-height:0;display:flex;flex-direction:column;padding:8px 20px 50px;box-sizing:border-box;overflow:hidden}
+.au.kbd{padding-bottom:0}
+.au-h1{margin:0;font-size:28px;font-weight:700;letter-spacing:-0.02em;line-height:1.2}
+.au-p{margin:8px 0 0;font-size:15px;color:var(--muted);line-height:1.5}
+.au-p b{color:var(--text);font-weight:600}
+.stack{display:flex;flex-direction:column;gap:10px}
+.push{margin-top:auto}
+/* chào: decorative gradient (logo colours) — no text on it */
+.hero{height:300px;margin:4px 0 0;border-radius:28px;background:var(--logo-grad);position:relative;overflow:hidden;display:grid;place-items:center;flex:none}
+.nx.mode-dem .hero{filter:saturate(.85) brightness(.82)}
+.hero .ring{position:absolute;border-radius:50%;border:1.5px solid rgba(255,255,255,.35)}
+.hero .r1{width:360px;height:360px;left:-120px;top:-150px}
+.hero .r2{width:300px;height:300px;right:-140px;bottom:-170px}
+.mark{width:104px;height:104px;border-radius:28px;background:#FFFFFF;display:grid;place-items:center;box-shadow:0 10px 30px rgba(15,23,42,.18);position:relative}
+.nx.mode-dem .mark{background:#151A21}
+.brand{margin:28px 0 0;font-size:30px;font-weight:700;letter-spacing:-0.02em;line-height:1.15}
+.tagline{margin:6px 0 0;font-size:16px;color:var(--muted);line-height:1.5}
+.btn.prov{justify-content:center;gap:10px;font-weight:600}
+.btn.prov svg{width:20px;height:20px;flex:none}
+.or{display:flex;align-items:center;gap:12px;margin:6px 0;font-size:13px;color:var(--meta)}
+.or::before,.or::after{content:"";flex:1;height:1px;background:var(--line2)}
+.legal{margin:14px 0 0;font-size:13px;color:var(--meta);text-align:center;line-height:1.55}
+.legal a{color:var(--accent-text);font-weight:500}
+/* form fields: boundary ≥3:1 (--ring), focus = 2px accent + soft halo */
+.fld{display:flex;flex-direction:column;gap:6px;margin-top:22px}
+.fld label{font-size:14px;font-weight:600}
+.inp{height:52px;border-radius:12px;border:1px solid var(--ring);background:var(--panel);color:var(--text);font:inherit;font-size:17px;padding:0 14px;box-sizing:border-box;width:100%;outline:0}
+.inp.focus{border:2px solid var(--accent);padding:0 13px;box-shadow:0 0 0 3px var(--accent-soft)}
+.inp.bad{border:2px solid var(--danger);padding:0 13px}
+.pwrap{position:relative}
+.pwrap .inp{padding-right:52px}
+.pwrap .ib{position:absolute;right:4px;top:4px;color:var(--muted)}
+.help{margin:0;font-size:13px;color:var(--meta);line-height:1.45}
+.err{display:flex;gap:8px;align-items:flex-start;margin:2px 0 0;font-size:14px;font-weight:500;color:var(--danger);line-height:1.45}
+.err svg{margin-top:1px}
+.lnk{min-height:44px;display:inline-flex;align-items:center;align-self:flex-start;font-size:15px;font-weight:500;color:var(--accent-text);text-decoration:none;background:none;border:0;padding:0;font-family:inherit;cursor:pointer}
+.lnk.c{align-self:center}
+.acct{display:flex;align-items:center;gap:12px;margin-top:18px;padding:10px 6px 10px 12px;min-height:60px;box-sizing:border-box;background:var(--panel);border:1px solid var(--line);border-radius:14px}
+.acct .av{width:36px;height:36px;font-size:12px}
+.acct .tx{flex:1;min-width:0}
+.acct .tx b{display:block;font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.acct .tx small{display:block;font-size:13px;color:var(--meta)}
+.acct .ro{border:0;background:transparent;padding:0;font:inherit;font-size:15px;font-weight:600;color:var(--text);width:100%;outline:0}
+.acct .lnk{padding:0 10px}
+.note{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:12px;background:var(--hover);font-size:14px;color:var(--muted);line-height:1.45}
+.note svg{color:var(--meta);margin-top:1px}
+/* sso */
+.sso-ws{display:flex;align-items:center;gap:12px;margin:6px 0 20px}
+.sso-ws .wsm{width:48px;height:48px;border-radius:14px;color:#fff;font-size:16px;font-weight:700;display:grid;place-items:center;flex:none}
+.sso-ws .link{color:var(--meta)}
+.sso-ws .mk{width:48px;height:48px;border-radius:14px;background:var(--panel);border:1px solid var(--line);display:grid;place-items:center;flex:none;box-sizing:border-box}
+.sso-id{margin:12px 0 0;font-size:15px;line-height:1.5;color:var(--muted)}
+.sso-id .em{color:var(--text);font-weight:600;word-break:break-all}
+/* xác minh: one real input (one-time-code) over six drawn boxes */
+.otp{position:relative;margin-top:24px;height:58px}
+.otp .boxes{display:flex;gap:8px;height:58px}
+.otp .bx{flex:1;border-radius:12px;border:1px solid var(--ring);background:var(--panel);display:grid;place-items:center;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:26px;font-weight:500;box-sizing:border-box}
+.otp .bx.cur{border:2px solid var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.otp .bx.cur::after{content:"";width:2px;height:28px;background:var(--accent);border-radius:1px}
+.otp .bx.gap{margin-left:8px}
+.otp input{position:absolute;inset:0;width:100%;height:100%;opacity:.01;border:0;padding:0;font-size:16px;color:transparent;caret-color:transparent;background:transparent}
+/* lời mời */
+.inv-top{display:flex;align-items:center;gap:12px;margin:6px 0 18px}
+.inv-top .av{width:48px;height:48px;font-size:15px}
+.inv-top .mk{width:28px;height:28px;margin-left:-22px;margin-top:28px;border-radius:9px;background:var(--panel);border:1px solid var(--line);display:grid;place-items:center;box-sizing:border-box}
+.inv-h{margin:0;font-size:22px;font-weight:700;letter-spacing:-0.015em;line-height:1.3}
+.inv-h b{font-weight:700;color:var(--accent-text)}
+.bcard{margin-top:18px;background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.bcard-h{display:flex;align-items:center;gap:12px;padding:14px 16px}
+.bcard-h .dm{width:36px;height:36px;border-radius:10px;font-size:12px}
+.bcard-h b{display:block;font-size:16px;font-weight:650}
+.bcard-h small{display:block;font-size:13px;color:var(--meta)}
+.bcard-r{display:flex;gap:12px;align-items:flex-start;padding:12px 16px;border-top:1px solid var(--line);font-size:14px;color:var(--muted);line-height:1.45}
+.bcard-r > svg{color:var(--meta);margin-top:1px}
+.bcard-r > span{flex:1;min-width:0}
+.bcard-r b{display:block;color:var(--text);font-weight:600;font-size:15px}
+.rchip{display:inline-flex;align-items:center;gap:6px;min-height:28px;padding:2px 10px;border-radius:8px;background:var(--accent-soft);color:var(--accent-text);font-size:13px;font-weight:600;margin-top:6px}
+.rchip.guest{background:var(--warn-soft);color:var(--warn-text)}
+.who-ln{margin:16px 0 0;font-size:13px;color:var(--meta);line-height:1.5}
+.who-ln b{color:var(--text);font-weight:600}
+.duo{display:flex;gap:10px}
+.duo .btn{flex:1;min-height:50px}
+/* chọn workspace */
+.wslist{margin:18px 0 0;padding:0;list-style:none;background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.wslist li + li{border-top:1px solid var(--line)}
+.wslist .srow{min-height:72px;padding:0 14px 0 16px}
+.wslist .srow .wsm{width:44px;height:44px;border-radius:12px;font-size:14px}
+.wslist .srow .tx b{font-size:16px}
+.wslist .chev{color:var(--meta)}
+.tag.def{background:var(--accent-soft);color:var(--accent-text)}
+.tbar .logo-sm{display:flex;align-items:center;gap:8px;padding-left:8px;font-size:17px;font-weight:700;letter-spacing:-0.01em}
+/* bàn phím (vẽ minh hoạ, aria-hidden) */
+.kb{flex:none;position:relative;z-index:50;background:var(--kb-bg);font-family:system-ui,-apple-system,sans-serif;color:var(--kb-ink)}
+.kb.alpha{height:291px;box-sizing:border-box;padding:8px 3px 0;display:flex;flex-direction:column;gap:12px}
+.kr{display:flex;justify-content:center;gap:6px}
+.kr.sb{justify-content:space-between}
+.kr .grp{display:flex;gap:6px}
+.k{width:33px;height:42px;border-radius:5px;background:var(--kb-key);color:var(--kb-ink);display:grid;place-items:center;font-size:22px;line-height:1;box-shadow:0 1px 0 var(--kb-shadow);flex:none}
+.k.fn{width:42px;background:var(--kb-fn);font-size:15px}
+.k.fn svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linejoin:round;stroke-linecap:round}
+.k.n123{width:50px}
+.k.spc{flex:1;width:auto;font-size:15px}
+.k.go{width:80px;background:var(--accent);color:var(--accent-ink);font-size:15px;font-weight:600}
+.kb-bot{display:flex;justify-content:space-between;padding:8px 22px 0;color:var(--kb-ink)}
+.kb-bot svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.kb.num{height:262px;box-sizing:border-box;padding:6px 6px 38px;display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:46px;gap:7px 6px}
+.nk{border-radius:6px;background:var(--kb-key);box-shadow:0 1px 0 var(--kb-shadow);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1}
+.nk b{font-size:25px;font-weight:400}
+.nk small{font-size:10px;font-weight:600;letter-spacing:.14em;margin-top:2px}
+.nk.blank{background:transparent;box-shadow:none}
+.nk.del svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linejoin:round;stroke-linecap:round}
+</style>
+</helmet>
+<div class="nx m mode-{{mode}}">
+  <div class="sbar" aria-hidden="true">
+    <span>10:40</span>
+    <span class="sg">
+      <svg width="18" height="12" viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1" fill="currentColor"></rect><rect x="5" y="5.5" width="3" height="6.5" rx="1" fill="currentColor"></rect><rect x="10" y="3" width="3" height="9" rx="1" fill="currentColor"></rect><rect x="15" y="0" width="3" height="12" rx="1" fill="currentColor"></rect></svg>
+      <svg width="16" height="12" viewBox="0 0 16 12"><path d="M8 11.2 10.4 8.6a3.4 3.4 0 0 0-4.8 0z" fill="currentColor"></path><path d="M3.6 6.6a6.2 6.2 0 0 1 8.8 0l1.4-1.5a8.3 8.3 0 0 0-11.6 0z" fill="currentColor"></path><path d="M.8 3.6a10.2 10.2 0 0 1 14.4 0L16 2.2a12.2 12.2 0 0 0-16 0z" fill="currentColor" opacity=".9"></path></svg>
+      <svg width="27" height="13" viewBox="0 0 27 13"><rect x=".5" y=".5" width="23" height="12" rx="3.5" fill="none" stroke="currentColor" opacity=".45"></rect><rect x="2" y="2" width="17" height="9" rx="2" fill="currentColor"></rect><path d="M25 4.5v4a2 2 0 0 0 0-4z" fill="currentColor" opacity=".45"></path></svg>
+    </span>
+  </div>
+
+  <sc-if value="{{showBack}}" hint-placeholder-val="{{ false }}">
+  <header class="tbar">
+    <a class="ib" href="#" aria-label="Quay lại"><svg class="i lg" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"></path></svg></a>
+    <span class="sp"></span>
+  </header>
+  </sc-if>
+
+  <!-- chào -->
+  <sc-if value="{{isChao}}" hint-placeholder-val="{{ true }}">
+  <main class="au" style="padding-top:4px">
+    <div class="hero" aria-hidden="true">
+      <span class="ring r1"></span><span class="ring r2"></span>
+      <span class="mark"><svg width="64" height="64" viewBox="0 0 408 408" aria-hidden="true" focusable="false"><path d="M336.1 230.49L156.821 73.4495C116.321 35.9495 51.8207 52.9495 40.3233 110.752L27.6001 181C34.6001 166 53.1001 160.5 68.6001 171.5C116.439 213.286 240.005 321.949 240.005 321.949C298.505 373.449 354.505 343.449 367.823 291.252C367.823 291.252 373.206 261.526 380 223.449C371.1 241.99 349.1 242.99 336.1 230.49Z" fill="url(#gr-hero)"></path><path d="M380.005 223.46C371.1 242 349.1 243 336.005 230.46L276.505 178.262C281.972 146.825 284.537 129.7 290.005 98.2624C291.982 84.263 296.401 80.1727 305.505 74.2624L377.505 46.7624C392.005 39.2622 409.141 44.5717 407.504 63.9597C406.485 76.0378 391.23 160.547 380.005 223.46Z" fill="#1E90FF"></path><path d="M27.6 181C36.5045 162.46 58.5133 161.539 71.6088 174.079L131.109 226.277C125.641 257.714 123.076 274.84 117.609 306.277C115.631 320.276 111.212 324.366 102.109 330.277L30.1087 357.777C15.6087 365.277 -1.52779 359.967 0.10881 340.579C1.12836 328.501 16.3745 243.912 27.6 181Z" fill="#FF1E56"></path><defs><linearGradient id="gr-hero" x1="52.1" y1="90.49" x2="350.6" y2="317.99" gradientUnits="userSpaceOnUse"><stop stop-color="#FF1E56"></stop><stop offset="0.25" stop-color="#FC744C"></stop><stop offset="0.5" stop-color="#F9C942"></stop><stop offset="0.75" stop-color="#8CADA1"></stop><stop offset="1" stop-color="#1E90FF"></stop></linearGradient></defs></svg></span>
+    </div>
+    <h1 class="brand">Notrelix</h1>
+    <p class="tagline">Việc, tài liệu và phê duyệt của cả công ty ở một nơi.</p>
+    <div class="stack push">
+      <a class="btn block prov" href="#"><svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="0" y="0" width="9.4" height="9.4" fill="#F25022"></rect><rect x="10.6" y="0" width="9.4" height="9.4" fill="#7FBA00"></rect><rect x="0" y="10.6" width="9.4" height="9.4" fill="#00A4EF"></rect><rect x="10.6" y="10.6" width="9.4" height="9.4" fill="#FFB900"></rect></svg>Tiếp tục với Microsoft</a>
+      <a class="btn block prov" href="#"><svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"></path><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"></path><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"></path><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"></path></svg>Tiếp tục với Google</a>
+      <div class="or" aria-hidden="true">hoặc</div>
+      <a class="btn block pri" href="#">Dùng email</a>
+    </div>
+    <p class="legal">Khi tiếp tục, bạn đồng ý với <a href="#">Điều khoản sử dụng</a> và <a href="#">Chính sách quyền riêng tư</a>.</p>
+  </main>
+  </sc-if>
+
+  <!-- email -->
+  <sc-if value="{{isEmail}}" hint-placeholder-val="{{ false }}">
+  <main class="au kbd">
+    <h1 class="au-h1">Đăng nhập bằng email</h1>
+    <form class="stack" action="#" style="gap:0">
+      <div class="fld">
+        <label for="au-email">Email công việc</label>
+        <input class="inp focus" id="au-email" name="email" type="email" inputmode="email" autocomplete="username" autocapitalize="none" spellcheck="false" required value="thuha.nguyen@minhan.vn" aria-describedby="au-email-help">
+        <p class="help" id="au-email-help">Nếu công ty bạn dùng đăng nhập một lần, bước sau sẽ chuyển sang đó.</p>
+      </div>
+      <button class="btn block pri" type="submit" style="margin-top:20px">Tiếp tục</button>
+    </form>
+  </main>
+  <div class="kb alpha" aria-hidden="true">
+    <div class="kr"><span class="k">q</span><span class="k">w</span><span class="k">e</span><span class="k">r</span><span class="k">t</span><span class="k">y</span><span class="k">u</span><span class="k">i</span><span class="k">o</span><span class="k">p</span></div>
+    <div class="kr"><span class="k">a</span><span class="k">s</span><span class="k">d</span><span class="k">f</span><span class="k">g</span><span class="k">h</span><span class="k">j</span><span class="k">k</span><span class="k">l</span></div>
+    <div class="kr sb"><span class="k fn"><svg viewBox="0 0 24 24"><path d="M12 4 4 12h4v7h8v-7h4z"></path></svg></span><span class="grp"><span class="k">z</span><span class="k">x</span><span class="k">c</span><span class="k">v</span><span class="k">b</span><span class="k">n</span><span class="k">m</span></span><span class="k fn"><svg viewBox="0 0 24 24"><path d="M21 5H9l-6 7 6 7h12a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1z"></path><path d="m12 9 6 6M18 9l-6 6"></path></svg></span></div>
+    <div class="kr"><span class="k fn n123">123</span><span class="k spc">dấu cách</span><span class="k">@</span><span class="k">.</span><span class="k go">Tiếp</span></div>
+    <div class="kb-bot"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"></path></svg><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0M12 18v3"></path></svg></div>
+  </div>
+  </sc-if>
+
+  <!-- sso -->
+  <sc-if value="{{isSso}}" hint-placeholder-val="{{ false }}">
+  <main class="au">
+    <div class="sso-ws" aria-hidden="true">
+      <span class="wsm" style="background:#1666CC">MA</span>
+      <svg class="i link" viewBox="0 0 24 24"><path d="M5 12h14M15 8l4 4-4 4"></path></svg>
+      <span class="mk"><svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="0" y="0" width="9.4" height="9.4" fill="#F25022"></rect><rect x="10.6" y="0" width="9.4" height="9.4" fill="#7FBA00"></rect><rect x="0" y="10.6" width="9.4" height="9.4" fill="#00A4EF"></rect><rect x="10.6" y="10.6" width="9.4" height="9.4" fill="#FFB900"></rect></svg></span>
+    </div>
+    <h1 class="au-h1">Đăng nhập qua công ty</h1>
+    <p class="sso-id"><span class="em">thuha.nguyen@minhan.vn</span> · Minh An Group dùng Microsoft Entra</p>
+    <p class="au-p">Bạn dùng tài khoản công ty, không cần mật khẩu Notrelix. Mật khẩu và xác minh 2 bước do Minh An Group quản lý.</p>
+    <div class="stack push">
+      <p class="note" id="au-sso-note"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M3 9h18M7 6.5h.01M10 6.5h.01"></path></svg><span>Notrelix mở trình duyệt của máy để bạn đăng nhập với Microsoft. Xong bước đó, bạn tự quay lại ứng dụng.</span></p>
+      <a class="btn block pri" href="#" aria-describedby="au-sso-note">Tiếp tục với Microsoft Entra<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"></path></svg></a>
+      <a class="btn block" href="#">Dùng email khác</a>
+    </div>
+  </main>
+  </sc-if>
+
+  <!-- xác minh 2 bước -->
+  <sc-if value="{{isOtp}}" hint-placeholder-val="{{ false }}">
+  <main class="au kbd">
+    <h1 class="au-h1">Nhập mã xác minh</h1>
+    <p class="au-p">Mở ứng dụng xác thực và nhập mã 6 số của Notrelix cho <b>tuan@doitac-erp.vn</b>.</p>
+    <form action="#" class="stack" style="gap:0">
+      <label class="vh" for="au-otp">Mã xác minh 6 số</label>
+      <div class="otp">
+        <div class="boxes" aria-hidden="true"><span class="bx">4</span><span class="bx">8</span><span class="bx">2</span><span class="bx gap">9</span><span class="bx cur"></span><span class="bx"></span></div>
+        <input id="au-otp" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required value="4829" aria-describedby="au-otp-help">
+      </div>
+      <p class="help" id="au-otp-help" style="margin-top:10px">Mã đổi sau mỗi 30 giây. Mất điện thoại? Dùng một mã dự phòng đã lưu.</p>
+      <button class="btn block pri" type="submit" style="margin-top:18px">Xác minh</button>
+      <button class="lnk c" type="button" style="margin-top:2px">Dùng mã dự phòng</button>
+    </form>
+  </main>
+  <div class="kb num" aria-hidden="true">
+    <span class="nk"><b>1</b><small>&nbsp;</small></span><span class="nk"><b>2</b><small>ABC</small></span><span class="nk"><b>3</b><small>DEF</small></span>
+    <span class="nk"><b>4</b><small>GHI</small></span><span class="nk"><b>5</b><small>JKL</small></span><span class="nk"><b>6</b><small>MNO</small></span>
+    <span class="nk"><b>7</b><small>PQRS</small></span><span class="nk"><b>8</b><small>TUV</small></span><span class="nk"><b>9</b><small>WXYZ</small></span>
+    <span class="nk blank"></span><span class="nk"><b>0</b></span><span class="nk blank del"><svg viewBox="0 0 24 24"><path d="M21 5H9l-6 7 6 7h12a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1z"></path><path d="m12 9 6 6M18 9l-6 6"></path></svg></span>
+  </div>
+  </sc-if>
+
+  <!-- lỗi mật khẩu -->
+  <sc-if value="{{isErr}}" hint-placeholder-val="{{ false }}">
+  <main class="au">
+    <h1 class="au-h1">Nhập mật khẩu</h1>
+    <form action="#" class="stack" id="au-pw-form" style="gap:0">
+      <div class="acct">
+        <span class="av" style="background:#475569" aria-hidden="true">ĐT</span>
+        <span class="tx"><label class="vh" for="au-user">Email</label><input class="ro" id="au-user" name="email" type="email" autocomplete="username" readonly value="tuan@doitac-erp.vn"></span>
+        <a class="lnk" href="#">Đổi</a>
+      </div>
+      <div class="fld">
+        <label for="au-pw">Mật khẩu</label>
+        <div class="pwrap">
+          <input class="inp bad" id="au-pw" name="password" type="password" autocomplete="current-password" required value="matkhau2026" aria-invalid="true" aria-describedby="au-pw-err">
+          <button class="ib" type="button" aria-label="Hiện mật khẩu" aria-pressed="false" aria-controls="au-pw"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>
+        </div>
+        <p class="err" id="au-pw-err" role="alert"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5h.01"></path></svg><span>Email hoặc mật khẩu chưa đúng. Kiểm tra lại rồi thử lần nữa.</span></p>
+      </div>
+      <a class="lnk" href="#" style="margin-top:6px">Quên mật khẩu?</a>
+    </form>
+    <div class="stack push">
+      <button class="btn block pri" type="submit" form="au-pw-form">Đăng nhập</button>
+    </div>
+  </main>
+  </sc-if>
+
+  <!-- lời mời (deep link) -->
+  <sc-if value="{{isInvite}}" hint-placeholder-val="{{ false }}">
+  <header class="tbar">
+    <span class="logo-sm"><svg width="28" height="28" viewBox="0 0 408 408" aria-hidden="true" focusable="false"><path d="M336.1 230.49L156.821 73.4495C116.321 35.9495 51.8207 52.9495 40.3233 110.752L27.6001 181C34.6001 166 53.1001 160.5 68.6001 171.5C116.439 213.286 240.005 321.949 240.005 321.949C298.505 373.449 354.505 343.449 367.823 291.252C367.823 291.252 373.206 261.526 380 223.449C371.1 241.99 349.1 242.99 336.1 230.49Z" fill="url(#gr-sm1)"></path><path d="M380.005 223.46C371.1 242 349.1 243 336.005 230.46L276.505 178.262C281.972 146.825 284.537 129.7 290.005 98.2624C291.982 84.263 296.401 80.1727 305.505 74.2624L377.505 46.7624C392.005 39.2622 409.141 44.5717 407.504 63.9597C406.485 76.0378 391.23 160.547 380.005 223.46Z" fill="#1E90FF"></path><path d="M27.6 181C36.5045 162.46 58.5133 161.539 71.6088 174.079L131.109 226.277C125.641 257.714 123.076 274.84 117.609 306.277C115.631 320.276 111.212 324.366 102.109 330.277L30.1087 357.777C15.6087 365.277 -1.52779 359.967 0.10881 340.579C1.12836 328.501 16.3745 243.912 27.6 181Z" fill="#FF1E56"></path><defs><linearGradient id="gr-sm1" x1="52.1" y1="90.49" x2="350.6" y2="317.99" gradientUnits="userSpaceOnUse"><stop stop-color="#FF1E56"></stop><stop offset="0.25" stop-color="#FC744C"></stop><stop offset="0.5" stop-color="#F9C942"></stop><stop offset="0.75" stop-color="#8CADA1"></stop><stop offset="1" stop-color="#1E90FF"></stop></linearGradient></defs></svg>Notrelix</span>
+    <span class="sp"></span>
+    <a class="ib" href="#" aria-label="Đóng lời mời"><svg class="i lg" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></a>
+  </header>
+  <main class="au">
+    <div class="inv-top" aria-hidden="true">
+      <span class="av" style="background:#4E8574">HA</span>
+    </div>
+    <h1 class="inv-h">Nguyễn Thu Hà mời bạn vào board Triển khai ERP Q4 của Minh An Group</h1>
+    <div class="bcard">
+      <div class="bcard-h">
+        <span class="dm" style="background:#1E6FD0" aria-hidden="true">CN</span>
+        <span><b>Triển khai ERP Q4</b><small>Phòng Công nghệ · Minh An Group</small></span>
+      </div>
+      <div class="bcard-r">
+        <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>
+        <span><b>Quyền của bạn</b><span class="rchip guest">Khách · Có thể sửa · đến 31/01/2027</span></span>
+      </div>
+      <div class="bcard-r">
+        <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>
+        <span><b>Chỉ board này</b>Bạn không thấy board, phòng ban hay thành viên khác của Minh An Group.</span>
+      </div>
+    </div>
+    <p class="who-ln">Lời mời gửi tới <b>tuan@doitac-erp.vn</b>. Bạn chưa có quyền gì cho tới khi chấp nhận.</p>
+    <div class="stack push">
+      <div class="duo">
+        <button class="btn" type="button">Từ chối</button>
+        <button class="btn pri" type="button">Chấp nhận</button>
+      </div>
+    </div>
+  </main>
+  </sc-if>
+
+  <!-- chọn workspace -->
+  <sc-if value="{{isWs}}" hint-placeholder-val="{{ false }}">
+  <header class="tbar">
+    <span class="logo-sm"><svg width="28" height="28" viewBox="0 0 408 408" aria-hidden="true" focusable="false"><path d="M336.1 230.49L156.821 73.4495C116.321 35.9495 51.8207 52.9495 40.3233 110.752L27.6001 181C34.6001 166 53.1001 160.5 68.6001 171.5C116.439 213.286 240.005 321.949 240.005 321.949C298.505 373.449 354.505 343.449 367.823 291.252C367.823 291.252 373.206 261.526 380 223.449C371.1 241.99 349.1 242.99 336.1 230.49Z" fill="url(#gr-sm2)"></path><path d="M380.005 223.46C371.1 242 349.1 243 336.005 230.46L276.505 178.262C281.972 146.825 284.537 129.7 290.005 98.2624C291.982 84.263 296.401 80.1727 305.505 74.2624L377.505 46.7624C392.005 39.2622 409.141 44.5717 407.504 63.9597C406.485 76.0378 391.23 160.547 380.005 223.46Z" fill="#1E90FF"></path><path d="M27.6 181C36.5045 162.46 58.5133 161.539 71.6088 174.079L131.109 226.277C125.641 257.714 123.076 274.84 117.609 306.277C115.631 320.276 111.212 324.366 102.109 330.277L30.1087 357.777C15.6087 365.277 -1.52779 359.967 0.10881 340.579C1.12836 328.501 16.3745 243.912 27.6 181Z" fill="#FF1E56"></path><defs><linearGradient id="gr-sm2" x1="52.1" y1="90.49" x2="350.6" y2="317.99" gradientUnits="userSpaceOnUse"><stop stop-color="#FF1E56"></stop><stop offset="0.25" stop-color="#FC744C"></stop><stop offset="0.5" stop-color="#F9C942"></stop><stop offset="0.75" stop-color="#8CADA1"></stop><stop offset="1" stop-color="#1E90FF"></stop></linearGradient></defs></svg>Notrelix</span>
+    <span class="sp"></span>
+    <button class="ib" type="button" aria-label="Tài khoản thuha.nguyen@minhan.vn"><span class="me" aria-hidden="true">HA</span></button>
+  </header>
+  <main class="au">
+    <h1 class="au-h1">Chọn workspace</h1>
+    <p class="au-p">Bạn có 3 workspace với <b>thuha.nguyen@minhan.vn</b>.</p>
+    <ul class="wslist">
+      <li><a class="srow" href="Final-M-Home.dc.html"><span class="wsm" style="background:#1666CC" aria-hidden="true">MA</span><span class="tx"><b>Minh An Group</b><small>Quản trị workspace</small></span><span class="end"><span class="tag def">Mặc định</span><svg class="i ck" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5L20 7"></path></svg></span></a></li>
+      <li><a class="srow" href="#"><span class="wsm" style="background:#4E8574" aria-hidden="true">ĐN</span><span class="tx"><b>Minh An Đà Nẵng</b><small>Thành viên</small></span><span class="end"><span class="cnt">2</span>chưa đọc</span></a></li>
+      <li><a class="srow" href="#"><span class="wsm" style="background:#9A6A12" aria-hidden="true">TL</span><span class="tx"><b>Tân Lộc Logistics</b><small>Chỉ thấy phần được chia sẻ</small></span><span class="end"><span class="tag">Khách</span></span></a></li>
+    </ul>
+    <p class="help" style="margin-top:12px">Lần sau Notrelix mở thẳng workspace mặc định. Đổi trong Cài đặt tài khoản.</p>
+    <div class="stack push">
+      <a class="btn block" href="#"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Tạo hoặc tham gia workspace</a>
+    </div>
+  </main>
+  </sc-if>
+
+  <span class="homeind" aria-hidden="true"></span>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"state":{"editor":"enum","options":["chao","email","sso","xac-minh","loi","loi-moi","vao-workspace"],"default":"chao","section":"Trạng thái minh hoạ"},"mode":{"editor":"enum","options":["sang","dem"],"default":"sang","section":"Giao diện"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const state = this.props.state ?? 'chao';
+    const isEmail = state === 'email';
+    const isSso = state === 'sso';
+    const isOtp = state === 'xac-minh';
+    const isErr = state === 'loi';
+    return {
+      mode: this.props.mode ?? 'sang',
+      isChao: state === 'chao',
+      isEmail,
+      isSso,
+      isOtp,
+      isErr,
+      isInvite: state === 'loi-moi',
+      isWs: state === 'vao-workspace',
+      // the steps of one sign-in flow get a back chevron; welcome, invitation and workspace picker do not
+      showBack: isEmail || isSso || isOtp || isErr
+    };
+  }
+}
+</script>
+</body>
+</html>

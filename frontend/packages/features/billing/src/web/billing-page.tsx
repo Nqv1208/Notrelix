@@ -63,7 +63,7 @@ export function BillingPage({
         <div className="rounded-xl border border-primary/20 bg-primary/5 p-5">
           <div className="flex items-center gap-3">
             <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10">
-              <Crown className="size-5 text-primary" />
+              <Crown className="size-5 text-link" />
             </div>
             <div>
               <p className="font-semibold capitalize">{currentPlan}</p>
@@ -106,7 +106,7 @@ export function BillingPage({
                       key={feature}
                       className="flex items-start gap-2 text-sm text-muted-foreground"
                     >
-                      <Check className="size-4 text-primary shrink-0 mt-0.5" />
+                      <Check className="size-4 text-link shrink-0 mt-0.5" />
                       <span>{feature}</span>
                     </li>
                   ))}

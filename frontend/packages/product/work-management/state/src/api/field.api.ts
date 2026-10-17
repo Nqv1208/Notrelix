@@ -12,8 +12,8 @@ type CreateFieldBody = OperationRequestBody<CreateFieldOp>;
 type UpdateFieldOp = "WorkManagement.BoardFields.Update";
 type UpdateFieldBody = OperationRequestBody<UpdateFieldOp>;
 
-type ReorderFieldsOp = "WorkManagement.BoardFields.Reorder";
-type ReorderFieldsBody = OperationRequestBody<ReorderFieldsOp>;
+type MoveFieldOp = "WorkManagement.BoardFields.Move";
+type MoveFieldBody = OperationRequestBody<MoveFieldOp>;
 
 export type CreateColumnInput = {
   boardId: string;
@@ -42,7 +42,8 @@ export function createColumnApi(client: NotrelixClient) {
         settingsJson: input.settings
           ? JSON.stringify(input.settings)
           : undefined,
-        position: input.position,
+        // Backend-first cut-over (SPEC WM-V3-DEC-017): the server owns placement;
+        // until WM-V3-FE-001 sends neighbor ids, omitting both appends.
       };
       await api.post<void>(endpoints.boardFields.create(input.boardId), body, {
         headers: { "Idempotency-Key": crypto.randomUUID() },
@@ -50,9 +51,9 @@ export function createColumnApi(client: NotrelixClient) {
     },
 
     async updateColumn(input: UpdateColumnInput): Promise<void> {
+      // The field type is not patchable (SPEC WMREQ031); name and settings only.
       const body: UpdateFieldBody = {
         name: input.name,
-        type: input.fieldType,
         settingsJson: input.settings
           ? JSON.stringify(input.settings)
           : undefined,
@@ -73,13 +74,18 @@ export function createColumnApi(client: NotrelixClient) {
       boardId: string,
       columns: Pick<BoardTableColumn, "id">[] | string[],
     ): Promise<void> {
-      const body: ReorderFieldsBody = {
-        items: columns.map((column, index) => ({
-          id: typeof column === "string" ? column : column.id,
-          newPosition: index + 1,
-        })),
-      };
-      await api.post<void>(endpoints.boardFields.reorder(boardId), body);
+      // Transitional (WM-V3-FE-001 sends one neighbor-relative move per drag):
+      // the full-list reorder route is retired, so the desired order is applied
+      // by appending each column in turn; appending the current last column is
+      // a server-side no-op.
+      const body: MoveFieldBody = {};
+      for (const column of columns) {
+        const columnId = typeof column === "string" ? column : column.id;
+        await api.post<void>(
+          endpoints.boardFields.move(boardId, columnId),
+          body,
+        );
+      }
     },
   };
 }

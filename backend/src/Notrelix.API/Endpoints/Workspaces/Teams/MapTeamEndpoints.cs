@@ -33,6 +33,7 @@ public static class MapTeamEndpoints
             .WithTags("Workspaces.Teams.Members")
             .WithOpenApi();
 
+        membersGroup.MapGetTeamMembers();
         membersGroup.MapAddTeamMember();
         membersGroup.MapRemoveTeamMember();
         membersGroup.MapChangeTeamMemberRole();

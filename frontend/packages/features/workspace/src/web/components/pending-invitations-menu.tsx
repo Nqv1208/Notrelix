@@ -74,13 +74,13 @@ export function PendingInvitationsMenu({
           type="button"
           className={cn(
             "relative rounded-lg p-2 text-muted-foreground transition-all hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-            hasInvitations && "text-primary animate-pulse",
+            hasInvitations && "text-link animate-pulse",
           )}
           aria-label="Pending workspace invitations"
         >
           <UserPlus className="size-[18px]" />
           {hasInvitations && (
-            <span className="absolute -right-0.5 -top-0.5 flex size-4 items-center justify-center rounded-full border border-card bg-emerald-500 text-[9px] font-bold text-white shadow-sm animate-bounce">
+            <span className="absolute -right-0.5 -top-0.5 flex size-4 items-center justify-center rounded-full border border-card bg-success text-caption font-bold text-success-foreground shadow-sm animate-bounce">
               {invitations.length}
             </span>
           )}
@@ -89,11 +89,11 @@ export function PendingInvitationsMenu({
 
       <PopoverContent
         align="end"
-        className="w-80 p-0 border-border/40 bg-card/95 shadow-xl backdrop-blur-md rounded-2xl overflow-hidden z-[100]"
+        className="w-80 p-0 border-border/40 bg-card/95 shadow-xl backdrop-blur-md rounded-2xl overflow-hidden"
       >
         <div className="flex items-center justify-between border-b border-border/40 px-4 py-3 bg-muted/30">
           <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <UserPlus className="size-4 text-primary" />
+            <UserPlus className="size-4 text-link" />
             Invitations ({invitations?.length || 0})
           </h4>
           {isLoading && (
@@ -104,7 +104,7 @@ export function PendingInvitationsMenu({
         <div className="max-h-80 overflow-y-auto divide-y divide-border/40">
           {isLoading && !invitations ? (
             <div className="flex flex-col items-center justify-center py-8 text-center text-xs text-muted-foreground gap-2">
-              <Loader2 className="size-6 animate-spin text-primary" />
+              <Loader2 className="size-6 animate-spin text-link" />
               <span>Loading invitations...</span>
             </div>
           ) : !hasInvitations ? (
@@ -115,7 +115,7 @@ export function PendingInvitationsMenu({
               <p className="font-medium text-foreground/80">
                 No pending invitations
               </p>
-              <p className="text-[11px] leading-normal text-muted-foreground/80 max-w-[200px]">
+              <p className="text-caption leading-normal text-muted-foreground/80 max-w-[200px]">
                 When someone invites you to their workspace, it will appear
                 here.
               </p>
@@ -134,7 +134,7 @@ export function PendingInvitationsMenu({
                     </h5>
                     <div className="space-y-1 text-xs text-muted-foreground">
                       <div className="flex items-center gap-1.5">
-                        <User className="size-3.5 text-primary/75" />
+                        <User className="size-3.5 text-link/75" />
                         <span>
                           Invited by:{" "}
                           <strong className="text-foreground/90 font-medium">
@@ -143,7 +143,7 @@ export function PendingInvitationsMenu({
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <Briefcase className="size-3.5 text-primary/75" />
+                        <Briefcase className="size-3.5 text-link/75" />
                         <span>
                           Role:{" "}
                           <strong className="text-foreground/90 font-medium capitalize">
@@ -152,7 +152,7 @@ export function PendingInvitationsMenu({
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <Calendar className="size-3.5 text-primary/75" />
+                        <Calendar className="size-3.5 text-link/75" />
                         <span>
                           Expires:{" "}
                           {new Date(invite.expiresAt).toLocaleDateString()}
@@ -168,7 +168,7 @@ export function PendingInvitationsMenu({
                       disabled={
                         isAccepting || acceptMutation.isPending || !invite.token
                       }
-                      className="flex-1 h-8 rounded-lg text-xs font-semibold gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm"
+                      className="flex-1 h-8 rounded-lg text-xs font-semibold gap-1.5 bg-success hover:bg-success/90 text-success-foreground shadow-sm"
                     >
                       {isAccepting ? (
                         <Loader2 className="size-3 animate-spin" />

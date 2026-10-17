@@ -1,3 +1,4 @@
+using Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpace;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Workspaces.Spaces.Queries.GetWorkspaceSpaces;
 
@@ -10,7 +11,8 @@ public static class GetWorkspaceSpacesEndpoint
         group.MapWorkspaceGet("/", HandleAsync)
             .WithName("Workspaces.Spaces.GetWorkspaceSpaces")
             .WithTags("Workspaces.Spaces")
-            .WithSummary("Get all spaces in a workspace");
+            .WithSummary("Get all spaces in a workspace")
+            .Produces<List<SpaceDto>>(StatusCodes.Status200OK, "application/json");
         return group;
     }
 

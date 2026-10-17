@@ -1,5 +1,6 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Services;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemStatus;
 
@@ -29,21 +30,22 @@ public class UpdateBoardItemStatusCommandHandler : IRequestHandler<UpdateBoardIt
     public async Task<Result> Handle(UpdateBoardItemStatusCommand request, CancellationToken ct)
     {
         var card = await _context.BoardItems
+            // The value collection and the field options are loaded: an existing value
+            // is updated in place (unique per item/field) and option-backed values are
+            // validated against the persisted options (SPEC WM-V3-GAP-032).
+            .Include(c => c.FieldValues)
             .FirstOrDefaultAsync(c => c.Id == request.BoardItemId, ct);
         if (card is null) throw new NotFoundException(nameof(BoardItem), request.BoardItemId);
 
-        var statusFields = await _context.BoardFields
-            .Where(f => f.BoardId == card.BoardId && f.Type == FieldType.Status && !f.IsDeleted)
-            .ToListAsync(ct);
-
-        var statusField = statusFields.FirstOrDefault();
+        // The same Status field the board read surfaces (first by position, then id).
+        var statusField = await BoardItemFieldWrites.LoadStatusFieldAsync(_context, card.BoardId, ct);
         if (statusField == null)
             return Result.Failure(new ApplicationError("work.board-item.no-status-field", "No status field found on this board.", ApplicationErrorType.BusinessRule));
 
         var now = _timeProvider.UtcNow;
         var fieldValue = FieldValue.Create(JsonValue.Create(System.Text.Json.JsonSerializer.Serialize(request.Status)));
 
-        card.UpdateFieldValue(statusField, fieldValue, _currentUser.UserId, now);
+        BoardItemFieldWrites.Write(card, statusField, fieldValue, statusField, _currentUser.UserId, now);
 
         return Result.Success();
     }

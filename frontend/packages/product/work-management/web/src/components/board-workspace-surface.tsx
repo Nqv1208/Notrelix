@@ -13,6 +13,11 @@ interface BoardWorkspaceSurfaceProps {
   errorTitle?: string;
   errorDescription?: string;
   unsupportedViewName?: string;
+  /**
+   * The view lays out its own gutters and scrolling (the Kanban): the ready
+   * state adds no padding around it.
+   */
+  flush?: boolean;
 }
 
 export function BoardWorkspaceSurface({
@@ -23,6 +28,7 @@ export function BoardWorkspaceSurface({
   errorTitle = "Bảng công việc không khả dụng",
   errorDescription = "Bảng công việc có thể đã bị di chuyển, lưu trữ hoặc bạn không có quyền truy cập.",
   unsupportedViewName,
+  flush = false,
 }: BoardWorkspaceSurfaceProps) {
   if (status === "loading") return <ViewSkeleton rows={skeletonRows} />;
   if (status === "error") {
@@ -46,7 +52,11 @@ export function BoardWorkspaceSurface({
       </div>
     );
   }
-  return <div className="h-full overflow-auto p-4 sm:p-6">{viewContent}</div>;
+  return (
+    <div className={flush ? "h-full" : "h-full overflow-auto p-4 sm:p-6"}>
+      {viewContent}
+    </div>
+  );
 }
 
 function ViewSkeleton({ rows }: { rows: number }) {

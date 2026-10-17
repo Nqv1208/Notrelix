@@ -48,6 +48,15 @@ export const FORBIDDEN_IMPORTS: Record<string, string[]> = {
     "@notrelix/ui-web",
     "@notrelix/ui-mobile",
   ],
+  // i18n: host-neutral (shared by web and native hosts), no UI packages
+  "@notrelix/i18n": [
+    "react-dom",
+    "react-native",
+    "next",
+    "next-themes",
+    "@notrelix/ui-web",
+    "@notrelix/ui-mobile",
+  ],
   "@notrelix/ui-tokens": ["react", "react-dom", "react-native", "next"],
 
   // Product cores: no React, no UI

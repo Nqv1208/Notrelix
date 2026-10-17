@@ -1,6 +1,16 @@
 import { expect, test } from "@playwright/test";
 
 const scenario = process.env.VITE_MOCK_STATE ?? "default";
+const persona = process.env.VITE_MOCK_PERSONA ?? "owner";
+
+// The mock persona's role in the primary workspace (owner, admin, member,
+// guest for "viewer") decides which setup links the sidebar offers.
+const SETUP_PATHS_BY_PERSONA: Record<string, readonly string[]> = {
+  owner: ["settings", "members", "teams", "billing"],
+  admin: ["settings", "members", "teams", "billing"],
+  member: ["members", "teams"],
+  viewer: [],
+};
 
 test("loads auth and workspace routes without backend network", async ({
   page,
@@ -27,74 +37,62 @@ test("loads auth and workspace routes without backend network", async ({
     return;
   }
 
-  await expect(page).toHaveURL(/\/home$/);
+  // `/home` resolves into the member's first workspace (WX-SHELL-001).
+  await expect(page).toHaveURL(/\/workspaces\/mock-workspace-primary$/);
   await expect(page.getByText("Notrelix Sandbox")).toHaveCount(0);
-  await expect(page.getByText("work management")).toBeVisible();
-  await expect(
-    page.getByRole("navigation", { name: "Primary navigation" }),
-  ).toBeVisible();
-  await expect(page.getByText("Favorites", { exact: true })).toBeVisible();
-  await expect(
-    page.getByText("Recently viewed", { exact: true }),
-  ).toBeVisible();
-  await expect(
-    page.getByText("Workspaces", { exact: true }).first(),
-  ).toBeVisible();
-  await expect(page.getByText("Notrelix AI", { exact: true })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Home" })).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "Your workspaces" }),
-  ).toBeVisible();
-  await expect(page.getByText(/Notrelix Product Lab/).first()).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "Recent docs" }),
-  ).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Activity" })).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "Recent boards" }),
-  ).toBeVisible();
-  await expect(page.getByText("Product Roadmap").last()).toBeVisible();
-  await expect(page.getByText("Product specification").last()).toBeVisible();
+  const nav = page.getByRole("navigation", {
+    name: /Workspace navigation|Điều hướng/,
+  });
+  await expect(nav).toBeVisible();
+  for (const path of ["my-work", "inbox", "library", "reports"]) {
+    await expect(
+      nav.locator(`a[href="/workspaces/mock-workspace-primary/${path}"]`),
+    ).toHaveCount(1);
+  }
+  // Members and Settings sit under the role-gated "Workspace setup"
+  // disclosure (owners/admins: all; members: Members and Teams; guests: none).
+  const setupPaths = SETUP_PATHS_BY_PERSONA[persona] ?? [];
+  const setup = nav.getByRole("button", {
+    name: /^(Workspace setup|Thiết lập workspace)$/,
+  });
+  if (setupPaths.length === 0) {
+    await expect(setup).toHaveCount(0);
+  } else {
+    await setup.click();
+    for (const path of ["members", "settings"]) {
+      await expect(
+        nav.locator(`a[href="/workspaces/mock-workspace-primary/${path}"]`),
+      ).toHaveCount(setupPaths.includes(path) ? 1 : 0);
+    }
+  }
+  // Search is reached through the command row (⌘K), not a sidebar link.
+  await page
+    .getByRole("button", { name: /Search or run a command|Tìm hoặc chạy lệnh/ })
+    .click();
+  // ">" lists every command; the Search page is one of them.
+  await page.getByRole("combobox").fill(">");
+  await page
+    .getByRole("dialog")
+    .getByRole("option", { name: /^(Go to Search|Chuyển tới Tìm kiếm)$/ })
+    .click();
+  await expect(page).toHaveURL(/\/workspaces\/mock-workspace-primary\/search$/);
+  await expect(page.getByText("Quick access", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Team online", { exact: true })).toHaveCount(0);
+  await expect(page.locator("[data-home-sidebar]")).toHaveCount(0);
   await page.reload();
-  await expect(
-    page.getByRole("heading", { name: "Your workspaces" }),
-  ).toBeVisible();
   await expect(page).not.toHaveURL(/sign-in/);
 
-  await page.getByRole("button", { name: "User settings" }).click();
-  await expect(page.getByRole("menu", { name: "User settings" })).toBeVisible();
-  await expect(page.getByText("Account", { exact: true })).toBeVisible();
-  await expect(page.getByText("Explore", { exact: true })).toBeVisible();
-  await expect(
-    page.getByRole("menuitem", { name: "My profile" }),
-  ).toBeEnabled();
-  await expect(
-    page.getByRole("menuitem", { name: "Marketplace" }),
-  ).toBeDisabled();
-  await page.getByRole("menuitem", { name: "My profile" }).click();
-  await expect(page).toHaveURL(
-    /\/workspaces\/mock-workspace-primary\/account\/profile$/,
-  );
+  // Lost access is an explicit state, not a silent redirect (WX-SHELL-004).
+  await page.goto("/workspaces/not-a-member");
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await expect(page).toHaveURL(/\/workspaces\/not-a-member$/);
 
-  await page.goto("/home");
-  await page.getByRole("button", { name: "User settings" }).click();
-  await page.getByRole("button", { name: "Dark theme" }).click();
-  await expect(page.locator("html")).toHaveClass(/dark/);
-
-  await page.goto("/workspaces/mock-workspace-primary/dashboard");
-  await expect(page.locator("[data-home-sidebar]")).toHaveCount(0);
-  await expect(
-    page.getByText("Search workspace", { exact: true }),
-  ).toBeVisible();
-  await expect(page.getByText("Quick access", { exact: true })).toBeVisible();
-  await expect(page.getByText("Team online", { exact: true })).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "Active Boards" }),
-  ).toBeVisible();
-
-  await page.goto("/home");
-  await page.getByRole("button", { name: "User settings" }).click();
-  await page.getByRole("menuitem", { name: "Log out" }).click();
+  // Sign out from the user card.
+  await page.goto("/workspaces/mock-workspace-primary");
+  await page
+    .getByRole("button", { name: /Account menu|Menu tài khoản/ })
+    .click();
+  await page.getByRole("menuitem", { name: /Sign out|Đăng xuất/ }).click();
   await expect(page).toHaveURL(/\/sign-in/);
 
   // Verify no backend escapes after full flow

@@ -7,5 +7,6 @@ public class RemoveTeamMemberCommandValidator : AbstractValidator<RemoveTeamMemb
         RuleFor(x => x.WorkspaceId).NotEmpty();
         RuleFor(x => x.TeamId).NotEmpty();
         RuleFor(x => x.UserId).NotEmpty();
+        RuleFor(x => x.ExpectedVersion).GreaterThan(0);
     }
 }

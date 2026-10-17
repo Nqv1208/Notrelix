@@ -48,17 +48,28 @@ describe("createWorkManagementServices", () => {
     const { client, calls } = createRecordingClient();
     const services = createWorkManagementServices(client);
 
-    await services.cards.moveCard({
-      cardId: "card-1",
-      listId: "group-2",
-      position: 42,
-    });
+    await services.cards.moveCard(
+      {
+        cardId: "card-1",
+        listId: "group-2",
+        expectedVersion: 4,
+        previousSiblingId: "card-0",
+        nextSiblingId: null,
+      },
+      { correlationId: "corr-1", idempotencyKey: "idem-key-1" },
+    );
 
     expect(calls).toEqual([
       {
         method: "POST",
         url: "/board-items/card-1/move",
-        body: { groupId: "group-2", position: 42 },
+        body: {
+          groupId: "group-2",
+          expectedVersion: 4,
+          previousSiblingId: "card-0",
+          nextSiblingId: null,
+        },
+        options: { correlationId: "corr-1", idempotencyKey: "idem-key-1" },
       },
     ]);
   });
@@ -77,7 +88,7 @@ describe("createWorkManagementServices", () => {
       {
         method: "POST",
         url: "/boards/board-1/items",
-        body: { groupId: "group-1", title: "Created", position: 12 },
+        body: { groupId: "group-1", title: "Created" },
         options: { correlationId: "corr-1", idempotencyKey: "idem-1" },
       },
     ]);

@@ -174,21 +174,28 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
         if (field.IsDeleted)
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Field_CannotUpdateDeleted, "Cannot update value for a deleted field.");
 
-        if (field.IsSystem)
-            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Field_CannotUpdateSystem, "Cannot update a system field.");
+        // A system field's definition is protected by the field itself (it cannot be
+        // deleted). The Item's Status is ordinary Item data written here; the other
+        // system fields mirror state the Item owns directly (its name, DueAt, its
+        // assignee members), so a raw value would be a parallel truth and is rejected.
+        if (field.IsSystem && field.Type != FieldType.Status)
+            throw new BusinessRuleException(
+                WorkManagementRuleCodes.WorkManagement_Field_CannotUpdateSystem,
+                $"The system field '{field.Name}' is written through the Item's own path, not as a field value.");
 
         if (field.Type is FieldType.Formula or FieldType.Rollup)
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Field_CannotWriteComputed, "Cannot manually write to a computed field (Formula or Rollup).");
 
         FieldValueValidator.Validate(newValue, field.Type, field.Settings);
 
-        if (field.Type is FieldType.Select or FieldType.Status)
+        // Clearing (canonical JSON null) needs no option; FieldValueValidator accepts it.
+        if (!newValue.IsEmpty && field.Type is FieldType.Select or FieldType.Status)
         {
             var optionId = ParseOptionId(newValue, WorkManagementRuleCodes.WorkManagement_Field_InvalidOptionValue);
             if (!field.Options.Any(option => option.Id == optionId))
                 throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Field_InvalidOptionValue, $"Value '{optionId}' is not a valid option for field '{field.Name}'.");
         }
-        else if (field.Type == FieldType.MultiSelect)
+        else if (!newValue.IsEmpty && field.Type == FieldType.MultiSelect)
         {
             var selectedIds = ParseDistinctOptionIds(newValue);
             var allowedIds = field.Options.Select(option => option.Id).ToHashSet();
@@ -337,6 +344,21 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new BoardItemCompletedDomainEvent(AccountId, WorkspaceId, BoardId, Id, completedAt, updatedBy, updatedAt));
     }
 
+    /// <summary>
+    /// Keeps completion in step with the Item's Status: a status in the done
+    /// <paramref name="category"/> completes the Item at <paramref name="changedAt"/>
+    /// (an already completed Item keeps its completion time); any other category,
+    /// or no status, reopens it. The category is supplied by the caller from the
+    /// Board's Status field.
+    /// </summary>
+    public void SyncCompletionWithStatus(WorkStatusCategory? category, Guid changedBy, DateTimeOffset changedAt)
+    {
+        if (category == WorkStatusCategory.Done)
+            Complete(changedAt, changedBy, changedAt);
+        else
+            Reopen(changedBy, changedAt);
+    }
+
     public void Reopen(Guid reopenedBy, DateTimeOffset reopenedAt)
     {
         EnsureNotDeleted();
@@ -386,12 +408,17 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new BoardItemUnarchivedDomainEvent(AccountId, WorkspaceId, BoardId, Id, unarchivedBy, unarchivedAt));
     }
 
-    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    /// <param name="replacementPosition">
+    /// Supplied by the caller (under the GroupItems ordering lock) when the item's
+    /// previous key is now held by an active sibling; applied in the same version.
+    /// </param>
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt, FractionalIndex? replacementPosition = null)
     {
         Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
         var pendingRestore = PrepareRestore(restoredBy, restoredAt);
         ApplyRestore(pendingRestore);
+        if (replacementPosition is not null) Position = replacementPosition;
         IncrementVersion();
         RaiseDomainEvent(new BoardItemRestoredDomainEvent(AccountId, WorkspaceId, Id, BoardId, restoredBy, restoredAt));
     }

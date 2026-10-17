@@ -10,7 +10,8 @@ public record SaveBoardViewCommand(
     ViewMode ViewMode,
     string? Filters) : ICommand<Result>, IWriteRequest, IRequirePermission, IAuthenticatedRequest, IResourceScopedRequest, IIdempotentRequest
 {
-    public PermissionAction Action => PermissionAction.ViewBoard;
+    // Saves the Board's shared view, changed for everyone: an Editor change.
+    public PermissionAction Action => PermissionAction.UpdateBoardView;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);
 }
 

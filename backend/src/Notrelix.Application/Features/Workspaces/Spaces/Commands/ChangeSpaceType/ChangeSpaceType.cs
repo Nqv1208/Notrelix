@@ -9,8 +9,10 @@ public record ChangeSpaceTypeCommand(
     string SpaceType
 ) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission
 {
-    public PermissionAction Action => PermissionAction.ManageWorkspace;
-    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);
+    // GOV-028: ManageSpaces on the Space itself (workspace Owner/Admin, or an
+    // effective Space Admin of the Space or one of its ancestors).
+    public PermissionAction Action => PermissionAction.ManageSpaces;
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("workspaces.space"), SpaceId, WorkspaceId);
 }
 
 public class ChangeSpaceTypeCommandHandler : IRequestHandler<ChangeSpaceTypeCommand, Result>

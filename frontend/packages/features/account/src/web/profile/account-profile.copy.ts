@@ -1,0 +1,106 @@
+/**
+ * Account profile copy, vi and en, registered as the `account-profile`
+ * catalog (`account-profile.catalog.ts`). The pure surface takes a `copy`
+ * prop; `useAccountProfileCopy` resolves it for the active locale in the
+ * container. Placeholders use the catalog `{{name}}` form and are filled by
+ * `fillCopy`.
+ */
+export const en = {
+  title: "Profile",
+  description:
+    "Update your personal information. Your profile is shared by every workspace you belong to.",
+  loading: "Loading your profile…",
+  loadError: "We couldn't load your profile.",
+  retry: "Try again",
+  changePhoto: "Change photo",
+  changePhotoLabel: "Change profile photo",
+  photoError: "We couldn't use that photo. Choose a PNG, JPEG or WebP.",
+  memberSince: "Member since {{date}}",
+  nameLabel: "Name",
+  namePlaceholder: "Your name",
+  nameRequired: "Enter your name.",
+  jobTitleLabel: "Job title",
+  emailLabel: "Email",
+  emailManaged:
+    "Managed by {{workspace}} through {{provider}}. It can't be changed here.",
+  emailHelp: "Contact support to change your email.",
+  phoneLabel: "Phone number",
+  phoneInvalid: "Enter a phone number, or leave it empty.",
+  timezoneLabel: "Time zone",
+  timezoneHelp: "Due dates and quiet hours follow this time zone.",
+  dateFormatLabel: "Date format",
+  edited: "Edited",
+  unsaved: {
+    one: "You have 1 unsaved change",
+    other: "You have {{count}} unsaved changes",
+  },
+  unsavedRegion: "Unsaved changes",
+  save: "Save changes",
+  saving: "Saving…",
+  saved: "Profile updated.",
+  saveError: "We couldn't save your changes. Try again.",
+  discard: "Discard changes",
+  timezones: {
+    UTC: "UTC",
+    "Asia/Ho_Chi_Minh": "(GMT+7) Ho Chi Minh City",
+    "Asia/Tokyo": "(GMT+9) Tokyo",
+    "Europe/Paris": "(GMT+1) Paris",
+  },
+  dateFormats: {
+    "dd/mm/yyyy": "dd/mm/yyyy · 12/10/2026",
+    "yyyy-mm-dd": "yyyy-mm-dd · 2026-10-12",
+  },
+};
+
+export type AccountProfileCopy = typeof en;
+
+export const vi: AccountProfileCopy = {
+  title: "Hồ sơ",
+  description:
+    "Cập nhật thông tin cá nhân của bạn. Hồ sơ dùng chung cho mọi workspace bạn tham gia.",
+  loading: "Đang tải hồ sơ của bạn…",
+  loadError: "Không thể tải hồ sơ của bạn.",
+  retry: "Thử lại",
+  changePhoto: "Đổi ảnh",
+  changePhotoLabel: "Đổi ảnh đại diện",
+  photoError: "Không dùng được ảnh này. Hãy chọn ảnh PNG, JPEG hoặc WebP.",
+  memberSince: "Tham gia từ {{date}}",
+  nameLabel: "Tên",
+  namePlaceholder: "Tên của bạn",
+  nameRequired: "Hãy nhập tên của bạn.",
+  jobTitleLabel: "Chức danh",
+  emailLabel: "Email",
+  emailManaged:
+    "Do {{workspace}} quản lý qua {{provider}}. Không đổi được ở đây.",
+  emailHelp: "Liên hệ bộ phận hỗ trợ để đổi địa chỉ email.",
+  phoneLabel: "Số điện thoại",
+  phoneInvalid: "Hãy nhập số điện thoại, hoặc để trống.",
+  timezoneLabel: "Múi giờ",
+  timezoneHelp: "Hạn việc và giờ yên lặng tính theo múi giờ này.",
+  dateFormatLabel: "Định dạng ngày",
+  edited: "Đã sửa",
+  unsaved: {
+    one: "Bạn có 1 thay đổi chưa lưu",
+    other: "Bạn có {{count}} thay đổi chưa lưu",
+  },
+  unsavedRegion: "Thay đổi chưa lưu",
+  save: "Lưu thay đổi",
+  saving: "Đang lưu…",
+  saved: "Đã cập nhật hồ sơ.",
+  saveError: "Không thể lưu thay đổi của bạn. Hãy thử lại.",
+  discard: "Hủy thay đổi",
+  timezones: {
+    UTC: "UTC",
+    "Asia/Ho_Chi_Minh": "(GMT+7) Thành phố Hồ Chí Minh",
+    "Asia/Tokyo": "(GMT+9) Tô-ky-ô",
+    "Europe/Paris": "(GMT+1) Pa-ri",
+  },
+  dateFormats: {
+    "dd/mm/yyyy": "dd/mm/yyyy · 12/10/2026",
+    "yyyy-mm-dd": "yyyy-mm-dd · 2026-10-12",
+  },
+};
+
+export function accountProfileCopy(locale: "vi" | "en"): AccountProfileCopy {
+  return locale === "vi" ? vi : en;
+}

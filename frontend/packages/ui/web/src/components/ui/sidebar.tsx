@@ -16,6 +16,7 @@ import {
 import { Skeleton } from "./skeleton";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./tooltip";
 import { useIsMobile } from "../../hooks/use-mobile";
+import { useIsTablet } from "../../hooks/use-tablet";
 import { PanelLeftIcon } from "lucide-react";
 
 export const SIDEBAR_COOKIE_NAME = "sidebar_state";
@@ -23,6 +24,8 @@ export const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
 const SIDEBAR_WIDTH = "16rem";
 const SIDEBAR_WIDTH_MOBILE = "18rem";
 const SIDEBAR_WIDTH_ICON = "3rem";
+const SIDEBAR_WIDTH_TABLET = "15.5rem";
+const SIDEBAR_WIDTH_TABLET_ICON = "4rem";
 const SIDEBAR_KEYBOARD_SHORTCUT = "b";
 
 type SidebarContextProps = {
@@ -32,6 +35,10 @@ type SidebarContextProps = {
   openMobile: boolean;
   setOpenMobile: (open: boolean) => void;
   isMobile: boolean;
+  /** Viewport is in the tablet band (768-1279 px). */
+  isTablet: boolean;
+  /** Tablet sidebar collapsed to its 64 px icon column. */
+  iconOnly: boolean;
   toggleSidebar: () => void;
 };
 
@@ -48,29 +55,48 @@ function useSidebar() {
 
 function SidebarProvider({
   defaultOpen = true,
+  defaultOpenMobile = false,
   open: openProp,
   onOpenChange: setOpenProp,
   onPersistState,
+  defaultTabletOpen = true,
+  tabletOpen: tabletOpenProp,
+  onTabletOpenChange,
   className,
   style,
   children,
   ...props
 }: React.ComponentProps<"div"> & {
   defaultOpen?: boolean;
+  /** Initial state of the mobile drawer (stories, deep links). */
+  defaultOpenMobile?: boolean;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   onPersistState?: (open: boolean) => void;
+  /** Tablet band: the open (248 px) / icon-only (64 px) state, kept apart from
+   * the desktop state so a rotation never hides the desktop sidebar. */
+  defaultTabletOpen?: boolean;
+  tabletOpen?: boolean;
+  onTabletOpenChange?: (open: boolean) => void;
 }) {
   const isMobile = useIsMobile();
-  const [openMobile, setOpenMobile] = React.useState(false);
+  const isTablet = useIsTablet();
+  const [_tabletOpen, _setTabletOpen] = React.useState(defaultTabletOpen);
+  const tabletOpen = tabletOpenProp ?? _tabletOpen;
+  const [openMobile, setOpenMobile] = React.useState(defaultOpenMobile);
 
   // This is the internal state of the sidebar.
   // We use openProp and setOpenProp for control from outside the component.
   const [_open, _setOpen] = React.useState(defaultOpen);
-  const open = openProp ?? _open;
+  const open = isTablet && !isMobile ? tabletOpen : (openProp ?? _open);
   const setOpen = React.useCallback(
     (value: boolean | ((value: boolean) => boolean)) => {
       const openState = typeof value === "function" ? value(open) : value;
+      if (isTablet && !isMobile) {
+        _setTabletOpen(openState);
+        onTabletOpenChange?.(openState);
+        return;
+      }
       if (setOpenProp) {
         setOpenProp(openState);
       } else {
@@ -80,7 +106,7 @@ function SidebarProvider({
       // Persistence (e.g. cookie storage) is owned by the host via callback.
       onPersistState?.(openState);
     },
-    [setOpenProp, open, onPersistState],
+    [setOpenProp, open, onPersistState, isTablet, isMobile, onTabletOpenChange],
   );
 
   // Helper to toggle the sidebar.
@@ -114,11 +140,22 @@ function SidebarProvider({
       open,
       setOpen,
       isMobile,
+      isTablet,
+      iconOnly: isTablet && !isMobile && !open,
       openMobile,
       setOpenMobile,
       toggleSidebar,
     }),
-    [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar],
+    [
+      state,
+      open,
+      setOpen,
+      isMobile,
+      isTablet,
+      openMobile,
+      setOpenMobile,
+      toggleSidebar,
+    ],
   );
 
   return (
@@ -148,6 +185,8 @@ function Sidebar({
   side = "left",
   variant = "sidebar",
   collapsible = "offExamples",
+  mobileTitle = "Sidebar",
+  mobileDescription = "Displays the mobile sidebar.",
   className,
   children,
   ...props
@@ -155,8 +194,13 @@ function Sidebar({
   side?: "left" | "right";
   variant?: "sidebar" | "floating" | "inset";
   collapsible?: "offExamples" | "icon" | "none";
+  /** Accessible name of the mobile drawer (translated by the caller). */
+  mobileTitle?: string;
+  mobileDescription?: string;
 }) {
-  const { isMobile, state, openMobile, setOpenMobile } = useSidebar();
+  const { isMobile, isTablet, state, openMobile, setOpenMobile } = useSidebar();
+  // The tablet band always collapses to the 64 px icon column.
+  const effectiveCollapsible = isTablet ? "icon" : collapsible;
 
   if (collapsible === "none") {
     return (
@@ -189,8 +233,8 @@ function Sidebar({
           side={side}
         >
           <SheetHeader className="sr-only">
-            <SheetTitle>Sidebar</SheetTitle>
-            <SheetDescription>Displays the mobile sidebar.</SheetDescription>
+            <SheetTitle>{mobileTitle}</SheetTitle>
+            <SheetDescription>{mobileDescription}</SheetDescription>
           </SheetHeader>
           <div className="flex h-full w-full flex-col">{children}</div>
         </SheetContent>
@@ -202,7 +246,16 @@ function Sidebar({
     <div
       className="group peer text-sidebar-foreground hidden md:block"
       data-state={state}
-      data-collapsible={state === "collapsed" ? collapsible : ""}
+      data-collapsible={state === "collapsed" ? effectiveCollapsible : ""}
+      data-tablet={isTablet ? "true" : undefined}
+      style={
+        isTablet
+          ? ({
+              "--sidebar-width": SIDEBAR_WIDTH_TABLET,
+              "--sidebar-width-icon": SIDEBAR_WIDTH_TABLET_ICON,
+            } as React.CSSProperties)
+          : undefined
+      }
       data-variant={variant}
       data-side={side}
       data-slot="sidebar"
@@ -504,7 +557,9 @@ function SidebarMenuButton({
       data-slot="sidebar-menu-button"
       data-sidebar="menu-button"
       data-size={size}
-      data-active={isActive}
+      // Tailwind v4 `data-active:` matches attribute presence, so an inactive
+      // button must omit the attribute instead of rendering "false".
+      data-active={isActive || undefined}
       className={cn(sidebarMenuButtonVariants({ variant, size }), className)}
       {...props}
     />
@@ -660,7 +715,7 @@ function SidebarMenuSubButton({
       data-slot="sidebar-menu-sub-button"
       data-sidebar="menu-sub-button"
       data-size={size}
-      data-active={isActive}
+      data-active={isActive || undefined}
       className={cn(
         "text-sidebar-foreground ring-sidebar-ring hover:bg-sidebar-accent hover:text-sidebar-accent-foreground active:bg-sidebar-accent active:text-sidebar-accent-foreground [&>svg]:text-sidebar-accent-foreground data-active:bg-sidebar-accent data-active:text-sidebar-accent-foreground h-7 gap-2 rounded-md px-2 focus-visible:ring-2 data-[size=md]:text-sm data-[size=sm]:text-xs [&>svg]:size-4 flex min-w-0 -translate-x-px items-center overflow-hidden outline-hidden group-data-[collapsible=icon]:hidden disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&>span:last-child]:truncate [&>svg]:shrink-0",
         className,

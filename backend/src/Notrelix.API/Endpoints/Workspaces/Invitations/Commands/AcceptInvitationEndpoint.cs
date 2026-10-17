@@ -11,7 +11,8 @@ public static class AcceptInvitationEndpoint
         group.MapAuthenticatedPost("/accept", HandleAsync)
             .WithName("Workspaces.Invitations.AcceptInvitation")
             .WithTags("Workspaces.Invitations")
-            .WithSummary("Accept a workspace invitation by token");
+            .WithSummary("Accept a workspace invitation by token")
+            .Produces<AcceptInvitationResultDto>(StatusCodes.Status200OK, "application/json");
         return group;
     }
 

@@ -11,8 +11,9 @@ test.describe("Production Auth & App Smoke Flow", () => {
     await expect(
       page.locator('input[type="email"], input[name="email"]'),
     ).toBeVisible();
+    // Sign-in is two steps: the password field only appears after the email.
     await expect(
-      page.locator('input[type="password"], input[name="password"]'),
+      page.getByRole("button", { name: /Tiếp tục|Continue/ }).first(),
     ).toBeVisible();
   });
 });

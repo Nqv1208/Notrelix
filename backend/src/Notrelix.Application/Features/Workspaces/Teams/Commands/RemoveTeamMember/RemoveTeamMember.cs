@@ -6,11 +6,15 @@ namespace Notrelix.Application.Features.Workspaces.Teams.Commands.RemoveTeamMemb
 public record RemoveTeamMemberCommand(
     Guid WorkspaceId,
     Guid TeamId,
-    Guid UserId
-) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission
+    Guid UserId,
+    long ExpectedVersion
+) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IExpectedVersionRequest
 {
-    public PermissionAction Action => PermissionAction.ManageWorkspace;
+    // GOV-028: Team composition is managed by workspace Owners/Admins.
+    public PermissionAction Action => PermissionAction.ManageTeams;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);
+    // The concurrency authority is the Team aggregate; authorization stays on the Workspace (GOV-028).
+    ResourceRef IExpectedVersionRequest.Resource => ResourceRef.Create(ResourceKind.Create("workspaces.team"), TeamId, WorkspaceId);
 }
 
 public class RemoveTeamMemberCommandHandler : IRequestHandler<RemoveTeamMemberCommand, Result>
@@ -29,6 +33,7 @@ public class RemoveTeamMemberCommandHandler : IRequestHandler<RemoveTeamMemberCo
     public async Task<Result> Handle(RemoveTeamMemberCommand request, CancellationToken ct)
     {
         var team = await _context.Teams
+            .Include(t => t.Members) // the Team aggregate needs its members to apply member rules
             .FirstOrDefaultAsync(t => t.Id == request.TeamId && t.WorkspaceId == request.WorkspaceId, ct);
 
         if (team is null)

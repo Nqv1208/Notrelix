@@ -10,7 +10,8 @@ public static class GetWorkspaceSettingsEndpoint
         group.MapWorkspaceGet("/", HandleAsync)
             .WithName("Workspaces.Settings.GetWorkspaceSettings")
             .WithTags("Workspaces.Settings")
-            .WithSummary("Get workspace settings");
+            .WithSummary("Get workspace settings")
+            .Produces<WorkspaceSettingsDto>(StatusCodes.Status200OK, "application/json");
         return group;
     }
 

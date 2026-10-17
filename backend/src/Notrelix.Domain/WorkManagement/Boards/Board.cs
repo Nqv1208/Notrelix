@@ -131,6 +131,30 @@ public class Board : SoftDeletableAggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new BoardVisibilityChangedDomainEvent(AccountId, WorkspaceId, Id, oldVisibility, Visibility, updatedBy, updatedAt));
     }
 
+    /// <summary>
+    /// Places the Board in a Workspaces Space, or back at the Workspace root
+    /// (null). The target Space's existence/activity in this Workspace is an
+    /// Application-supplied fact checked before the call; authorization on the
+    /// source Board and the target is Governance's (GOV-028). Same Space = no-op.
+    /// </summary>
+    public void PlaceInSpace(Guid? spaceId, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
+        if (spaceId is { } id) Guard.NotEmpty(id);
+
+        if (IsArchived)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Board_CannotChangeSpaceArchived, "Cannot move an archived board to another space.");
+        if (SpaceId == spaceId) return;
+
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        var oldSpaceId = SpaceId;
+        SpaceId = spaceId;
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+        RaiseDomainEvent(new BoardSpaceChangedDomainEvent(AccountId, WorkspaceId, Id, oldSpaceId, SpaceId, updatedBy, updatedAt));
+    }
+
     public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
     {
         EnsureNotDeleted();
@@ -179,6 +203,19 @@ public class Board : SoftDeletableAggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new BoardDefaultGroupSetDomainEvent(AccountId, WorkspaceId, Id, groupId, updatedBy, updatedAt));
     }
 
+    /// <summary>
+    /// The display key of an Item: <c>{prefix}-{sequence}</c>, or the plain sequence
+    /// number when the Board has no prefix. Keys are unique within the Board and
+    /// never reused; the number comes from the Board's item sequence.
+    /// </summary>
+    public static string FormatItemKey(string? itemKeyPrefix, long sequence)
+    {
+        Guard.Positive(sequence);
+        return string.IsNullOrWhiteSpace(itemKeyPrefix)
+            ? sequence.ToString(System.Globalization.CultureInfo.InvariantCulture)
+            : $"{itemKeyPrefix}-{sequence.ToString(System.Globalization.CultureInfo.InvariantCulture)}";
+    }
+
     public (long Sequence, string Key) GenerateNextItemIdentity(Guid actorUserId, DateTimeOffset now)
     {
         EnsureNotDeleted();
@@ -187,9 +224,7 @@ public class Board : SoftDeletableAggregateRoot, IWorkspaceScoped
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Board_CannotGenerateIdentityArchived, "Cannot generate item identity for an archived board.");
         var pending = PrepareAuditUpdate(actorUserId, now);
         ItemSequence++;
-        var key = string.IsNullOrWhiteSpace(ItemKeyPrefix)
-            ? ItemSequence.ToString()
-            : $"{ItemKeyPrefix}-{ItemSequence}";
+        var key = FormatItemKey(ItemKeyPrefix, ItemSequence);
         ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BoardItemIdentityGeneratedDomainEvent(AccountId, WorkspaceId, Id, ItemSequence, key, actorUserId, now));

@@ -1,240 +1,249 @@
+import { useEffect, useRef, useState } from "react";
+import { Skeleton } from "@notrelix/ui-web";
+import type { DocPageCopy } from "./doc-page.copy";
+import {
+  DocArticleSurface,
+  type DocArticleSurfaceProps,
+} from "./doc-article-surface";
+import { DocPageBarSurface } from "./doc-page-bar-surface";
 import type {
-  Block,
-  BreadcrumbItem,
-  PageActivity,
-  PageComment,
-  PageTreeNode,
-} from "@notrelix/docs-core";
-import { Button, Skeleton } from "@notrelix/ui-web";
-import { CheckSquare, FileText, Square, Trash2 } from "lucide-react";
-import type { DocPageSurfaceCallbacks } from "./doc-page-surface-models";
-import { DocPageTreeSurface } from "./doc-page-tree-surface";
-import { DocPageHeaderSurface } from "./doc-page-header-surface";
-import { DocCommentsSurface } from "./doc-page-comments-surface";
-import { DocHistorySurface } from "./doc-page-history-surface";
+  DocBlockView,
+  DocChip,
+  DocCommentView,
+  DocHeaderView,
+  DocOverlay,
+  DocPageCallbacks,
+  DocPanelTab,
+  DocRelatedDoc,
+  DocSaveState,
+  DocShareView,
+  DocTaskRef,
+  DocTaskResolution,
+  DocTocEntry,
+  DocVersionView,
+} from "./doc-page-models";
+import { DocShareDialogSurface } from "./doc-share-dialog-surface";
+import { DocSidePanelSurface } from "./doc-side-panel-surface";
+import {
+  DEFAULT_TOOLBAR_CURRENT,
+  DocToolbarSurface,
+  type DocToolbarCurrent,
+} from "./doc-toolbar-surface";
+import {
+  DocVersionBarSurface,
+  DocVersionPanelSurface,
+} from "./doc-versions-surface";
+
+export interface DocVersionsState {
+  readonly list: readonly DocVersionView[];
+  readonly selectedId: string | null;
+  readonly namedOnly: boolean;
+  readonly onNamedOnlyChange?: (value: boolean) => void;
+}
 
 export interface DocPageScreenSurfaceProps {
-  status?: "ready" | "loading" | "error";
-  workspaceId: string;
-  pageId: string;
-  pageTitle: string;
-  isFavorited: boolean;
-  breadcrumbs: BreadcrumbItem[];
-  pages: PageTreeNode[];
-  blocks: Block[];
-  comments: PageComment[];
-  history: PageActivity[];
-  callbacks?: DocPageSurfaceCallbacks;
+  readonly status?: "ready" | "loading" | "notFound";
+  readonly copy: DocPageCopy;
+  readonly header: DocHeaderView;
+  readonly saveState: DocSaveState;
+  readonly chips: readonly DocChip[];
+  readonly why: string | null;
+  readonly blocks: readonly DocBlockView[];
+  readonly tasks: readonly DocTaskResolution[];
+  readonly relatedDocs: readonly DocRelatedDoc[];
+  readonly toc: readonly DocTocEntry[];
+  readonly comments: readonly DocCommentView[];
+  readonly panelTab: DocPanelTab;
+  readonly overlay: DocOverlay;
+  readonly mentionTasks: readonly DocTaskRef[];
+  readonly toolbar?: DocToolbarCurrent;
+  readonly versions?: DocVersionsState;
+  readonly share?: DocShareView;
+  readonly readOnly?: boolean;
+  readonly canComment?: boolean;
+  readonly canFormat?: boolean;
+  readonly callbacks?: DocPageCallbacks;
+  readonly onCopyLink?: () => void;
 }
 
-function BlockSurface({
-  block,
-  callbacks,
-}: {
-  block: Block;
-  callbacks?: DocPageSurfaceCallbacks;
-}) {
-  const text = block.properties.text ?? "";
-  const baseInput =
-    "w-full rounded-md border border-transparent bg-transparent px-2 py-1 text-foreground outline-none transition focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring";
+/**
+ * The document page (Final-Docs): the document bar, the menu bar and
+ * formatting toolbar, the page sheet and the side panel; version history
+ * swaps the toolbar for a compare banner and the side tabs for the list.
+ */
+export function DocPageScreenSurface(props: DocPageScreenSurfaceProps) {
+  const { copy, status = "ready" } = props;
 
-  if (block.type === "divider") {
-    return <hr className="my-3 border-border" />;
-  }
-
-  if (block.type === "todo") {
-    const checked = Boolean(block.properties.checked);
-    return (
-      <div className="group flex items-center gap-2 rounded-lg py-1">
-        <button
-          type="button"
-          aria-label={
-            checked ? `Mark ${text} incomplete` : `Mark ${text} complete`
-          }
-          className="text-muted-foreground hover:text-primary"
-          onClick={() => callbacks?.onToggleTodo?.(block.id, !checked)}
-        >
-          {checked ? (
-            <CheckSquare className="h-4 w-4 text-primary" />
-          ) : (
-            <Square className="h-4 w-4" />
-          )}
-        </button>
-        <input
-          aria-label={`Edit block ${block.id}`}
-          className={`${baseInput} ${checked ? "text-muted-foreground line-through" : ""}`}
-          defaultValue={text}
-          onBlur={(event) =>
-            callbacks?.onUpdateBlockText?.(block.id, event.currentTarget.value)
-          }
-        />
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7 opacity-0 transition group-hover:opacity-100"
-          aria-label={`Delete block ${block.id}`}
-          onClick={() => callbacks?.onDeleteBlock?.(block.id)}
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </Button>
-      </div>
-    );
-  }
-
-  if (block.type === "callout") {
-    return (
-      <div className="rounded-xl border bg-muted/40 p-4">
-        <div className="flex items-start gap-3">
-          <span aria-hidden="true" className="text-lg">
-            {block.properties.icon ?? "💡"}
-          </span>
-          <textarea
-            aria-label={`Edit block ${block.id}`}
-            className={`${baseInput} min-h-16 resize-none text-sm`}
-            defaultValue={text}
-            onBlur={(event) =>
-              callbacks?.onUpdateBlockText?.(
-                block.id,
-                event.currentTarget.value,
-              )
-            }
-          />
-        </div>
-      </div>
-    );
-  }
-
-  if (block.type === "code") {
-    return (
-      <textarea
-        aria-label={`Edit block ${block.id}`}
-        className={`${baseInput} min-h-20 resize-none bg-muted font-mono text-sm`}
-        defaultValue={text}
-        onBlur={(event) =>
-          callbacks?.onUpdateBlockText?.(block.id, event.currentTarget.value)
-        }
-      />
-    );
-  }
-
-  const textClass =
-    block.type === "heading_1"
-      ? "text-3xl font-semibold"
-      : block.type === "heading_2"
-        ? "text-2xl font-semibold"
-        : block.type === "heading_3"
-          ? "text-xl font-medium"
-          : block.type === "quote"
-            ? "border-l-2 border-primary/50 pl-4 italic text-muted-foreground"
-            : "";
-
-  return (
-    <div className="group flex items-start gap-2">
-      <input
-        aria-label={`Edit block ${block.id}`}
-        className={`${baseInput} ${textClass}`}
-        defaultValue={text}
-        onBlur={(event) =>
-          callbacks?.onUpdateBlockText?.(block.id, event.currentTarget.value)
-        }
-      />
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        className="mt-0.5 h-7 w-7 opacity-0 transition group-hover:opacity-100"
-        aria-label={`Delete block ${block.id}`}
-        onClick={() => callbacks?.onDeleteBlock?.(block.id)}
-      >
-        <Trash2 className="h-3.5 w-3.5" />
-      </Button>
-    </div>
-  );
-}
-
-export function DocPageScreenSurface({
-  status = "ready",
-  workspaceId,
-  pageId,
-  pageTitle,
-  isFavorited,
-  breadcrumbs,
-  pages,
-  blocks,
-  comments,
-  history,
-  callbacks,
-}: DocPageScreenSurfaceProps) {
   if (status === "loading") {
     return (
-      <div className="grid h-[720px] grid-cols-[280px_1fr] overflow-hidden rounded-lg border bg-background">
-        <div className="space-y-3 border-r p-4">
-          {Array.from({ length: 6 }, (_, index) => (
-            <Skeleton key={index} className="h-8 w-full" />
-          ))}
-        </div>
-        <div className="space-y-4 p-8">
-          <Skeleton className="h-10 w-2/3" />
-          <Skeleton className="h-6 w-full" />
-          <Skeleton className="h-6 w-5/6" />
-          <Skeleton className="h-24 w-full" />
-        </div>
+      <div
+        role="status"
+        aria-label={copy.loading}
+        className="flex h-full min-h-0 flex-1 flex-col gap-6 bg-doc-page p-8"
+      >
+        <Skeleton className="h-8 w-1/3" />
+        <Skeleton className="h-6 w-2/3" />
+        <Skeleton className="h-6 w-1/2" />
+        <Skeleton className="h-40 w-full" />
       </div>
     );
   }
 
-  if (status === "error") {
+  if (status === "notFound") {
     return (
-      <div className="grid h-[720px] place-items-center rounded-lg border bg-background p-8 text-center">
-        <div>
-          <FileText className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
-          <h2 className="text-lg font-semibold">Document unavailable</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            The document could not be prepared for presentation.
-          </p>
-        </div>
+      <div className="grid h-full min-h-0 flex-1 place-items-center bg-doc-page p-8 text-center text-compact leading-[1.45] text-meta-foreground">
+        {copy.notFound}
       </div>
     );
   }
+
+  return <DocPageReady {...props} />;
+}
+
+/** The ready page; its hooks live here so loading and not-found stay hook-free. */
+function DocPageReady(props: DocPageScreenSurfaceProps) {
+  const { copy } = props;
+  const {
+    header,
+    saveState,
+    chips,
+    why,
+    blocks,
+    tasks,
+    relatedDocs,
+    toc,
+    comments,
+    panelTab,
+    overlay,
+    mentionTasks,
+    toolbar = DEFAULT_TOOLBAR_CURRENT,
+    versions,
+    share,
+    readOnly = false,
+    canComment = false,
+    canFormat = false,
+    callbacks,
+    onCopyLink,
+  } = props;
+
+  const scroller = useRef<HTMLDivElement | null>(null);
+  const [spyId, setSpyId] = useState<string | null>(null);
+  const tocIds = toc.map((entry) => entry.id).join("|");
+
+  // Scroll spy: the contents entry of the last heading above the fold.
+  useEffect(() => {
+    const element = scroller.current;
+    if (!element) return;
+    const update = () => {
+      const top = element.getBoundingClientRect().top + 80;
+      let current: string | null = null;
+      for (const id of tocIds.split("|")) {
+        if (id === "title") continue;
+        const heading = element.querySelector<HTMLElement>(
+          `[data-block="${CSS.escape(id)}"]`,
+        );
+        if (heading && heading.getBoundingClientRect().top <= top) current = id;
+      }
+      setSpyId(current);
+    };
+    update();
+    element.addEventListener("scroll", update, { passive: true });
+    return () => element.removeEventListener("scroll", update);
+  }, [tocIds]);
+
+  const viewing = versions
+    ? (versions.list.find((entry) => entry.id === versions.selectedId) ?? null)
+    : null;
+  const shareOpen = overlay.kind === "share" && share !== undefined;
+  const articleProps: DocArticleSurfaceProps = {
+    copy,
+    title: header.title,
+    chips,
+    why,
+    blocks,
+    readOnly: readOnly || versions !== undefined,
+    compare: versions !== undefined,
+    overlay,
+    mentionTasks,
+    callbacks,
+  };
 
   return (
-    <div className="grid h-[720px] grid-cols-[280px_1fr] overflow-hidden rounded-lg border bg-background text-foreground">
-      <DocPageTreeSurface
-        pages={pages}
-        workspaceId={workspaceId}
-        currentPageId={pageId}
-        callbacks={callbacks}
-      />
-      <main className="min-w-0 overflow-y-auto">
-        <DocPageHeaderSurface
-          pageTitle={pageTitle}
-          breadcrumbs={breadcrumbs}
-          isFavorited={isFavorited}
+    <>
+      <div
+        className="flex h-full min-h-0 min-w-0 flex-1 flex-col bg-doc-page text-body leading-[1.45] text-foreground"
+        aria-hidden={shareOpen || undefined}
+        inert={shareOpen || undefined}
+      >
+        <DocPageBarSurface
+          copy={copy}
+          header={header}
+          saveState={saveState}
+          shareOpen={shareOpen}
+          canShare={share !== undefined}
           callbacks={callbacks}
         />
-        <article className="mx-auto max-w-3xl space-y-6 px-8 py-8">
-          {blocks.length === 0 ? (
-            <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
-              Start writing with a heading, paragraph, checklist, or callout.
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {blocks.map((block) => (
-                <BlockSurface
-                  key={block.id}
-                  block={block}
-                  callbacks={callbacks}
-                />
-              ))}
-            </div>
-          )}
-          <div className="grid gap-6 border-t pt-6 md:grid-cols-2">
-            <DocCommentsSurface comments={comments} callbacks={callbacks} />
-            <DocHistorySurface history={history} />
+        {versions ? (
+          viewing ? (
+            <DocVersionBarSurface
+              copy={copy}
+              version={viewing}
+              callbacks={callbacks}
+            />
+          ) : null
+        ) : (
+          <DocToolbarSurface
+            copy={copy}
+            current={toolbar}
+            fileMenuOpen={overlay.kind === "fileMenu"}
+            downloadOpen={overlay.kind === "fileMenu" && overlay.downloadOpen}
+            canShare={share !== undefined}
+            canFormat={canFormat && !readOnly}
+            callbacks={callbacks}
+          />
+        )}
+        <div className="flex min-h-0 flex-1">
+          <div
+            ref={scroller}
+            className="flex min-w-0 flex-1 justify-center overflow-auto px-8 pt-9 pb-16"
+          >
+            <DocArticleSurface {...articleProps} />
           </div>
-        </article>
-      </main>
-    </div>
+          {versions ? (
+            <DocVersionPanelSurface
+              copy={copy}
+              versions={versions.list}
+              selectedId={versions.selectedId}
+              namedOnly={versions.namedOnly}
+              onNamedOnlyChange={versions.onNamedOnlyChange}
+              callbacks={callbacks}
+            />
+          ) : (
+            <DocSidePanelSurface
+              copy={copy}
+              tab={panelTab}
+              tasks={tasks}
+              relatedDocs={relatedDocs}
+              toc={toc.map((entry) => ({
+                ...entry,
+                active: entry.active ?? (entry.id === spyId || undefined),
+              }))}
+              comments={comments}
+              canComment={canComment && !readOnly}
+              callbacks={callbacks}
+            />
+          )}
+        </div>
+      </div>
+      {shareOpen && share ? (
+        <DocShareDialogSurface
+          copy={copy}
+          pageTitle={header.title}
+          share={share}
+          callbacks={callbacks}
+          onCopyLink={onCopyLink}
+        />
+      ) : null}
+    </>
   );
 }

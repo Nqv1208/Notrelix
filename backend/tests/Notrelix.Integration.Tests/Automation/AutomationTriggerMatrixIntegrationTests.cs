@@ -380,7 +380,7 @@ public sealed class AutomationTriggerMatrixIntegrationTests : IAsyncLifetime
         var clockMock = new Mock<IDateTimeProvider>();
         clockMock.Setup(c => c.UtcNow).Returns(Now);
 
-        var useCase = new AutomationMoveItemUseCase(context, port, clockMock.Object);
+        var useCase = new AutomationMoveItemUseCase(context, port, clockMock.Object, new Notrelix.Infrastructure.Data.WorkManagement.PostgresOrderingConflictClassifier());
 
         var consumeContext = new Mock<ConsumeContext<AutomationMoveItemRequestedV1>>();
         consumeContext.SetupGet(c => c.Message).Returns(message);

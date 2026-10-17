@@ -18,7 +18,7 @@ public class GetPageBreadcrumbQueryHandler : IRequestHandler<GetPageBreadcrumbQu
     public async Task<Result<List<PageBreadcrumbDto>>> Handle(GetPageBreadcrumbQuery request, CancellationToken ct)
     {
         var pages = await _context.Pages.AsNoTracking()
-            .Where(page => !page.IsDeleted)
+            .Where(page => page.DeletedAt == null)
             .Select(page => new { page.Id, page.ParentId, page.Title, page.Icon })
             .ToListAsync(ct);
 

@@ -18,10 +18,11 @@ public static class ClearFieldValueEndpoint
     private static async Task<IResult> HandleAsync(
         Guid itemId,
         Guid fieldId,
+        [FromQuery] long expectedVersion,
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new ClearFieldValueCommand(itemId, fieldId), cancellationToken);
+        var result = await sender.Send(new ClearFieldValueCommand(itemId, fieldId, expectedVersion), cancellationToken);
         return result.ToNoContentResult();
     }
 }

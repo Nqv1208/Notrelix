@@ -1,8 +1,10 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.DuplicateBoardGroup;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Services;
 
-using Notrelix.Domain.SharedKernel.Ordering;
+using Notrelix.Application.Features.WorkManagement.Ordering;
+
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.DuplicateBoardItem;
 
 [IdempotencyOperation("work-management.board-items.duplicate-board-item.v1")]
@@ -17,30 +19,34 @@ public class DuplicateBoardItemCommandHandler : IRequestHandler<DuplicateBoardIt
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _timeProvider;
+    private readonly WorkPlacementResolver _placement;
+    private readonly IBoardItemKeyAllocator _keys;
 
-    public DuplicateBoardItemCommandHandler(IWorkManagementDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider timeProvider)
+    public DuplicateBoardItemCommandHandler(IWorkManagementDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider timeProvider, WorkPlacementResolver placement, IBoardItemKeyAllocator keys)
     {
+        _keys = keys;
         _context = context;
         _requestContext = requestContext;
         _timeProvider = timeProvider;
+        _placement = placement;
     }
 
     public async Task<Result<Guid>> Handle(DuplicateBoardItemCommand request, CancellationToken ct)
     {
         var source = await _context.BoardItems
-            .FirstOrDefaultAsync(c => c.Id == request.BoardItemId && !c.IsDeleted, ct);
+            .FirstOrDefaultAsync(c => c.Id == request.BoardItemId && c.DeletedAt == null, ct);
         if (source is null) throw new NotFoundException(nameof(BoardItem), request.BoardItemId);
 
-        var lastItem = await _context.BoardItems
-            .Where(c => c.GroupId == source.GroupId && !c.IsDeleted)
-            .OrderByDescending(c => c.Position)
-            .FirstOrDefaultAsync(ct);
-
-        var nextPosition = lastItem != null
-            ? FractionalIndex.Create(lastItem.Position.Value + "1")
-            : FractionalIndex.Initial();
+        // The copy goes directly after its source, under the group's ordering lock (WMREQ049).
+        var nextPosition = await _placement.ResolveAfterAsync(
+            new WorkOrderingScope(WorkOrderingScopeKind.GroupItems, source.GroupId),
+            source.Id,
+            token => GroupItemSiblings.LoadAsync(_context, source.GroupId, token),
+            ct);
 
         var now = _timeProvider.UtcNow;
+        // The copy is a new Item with its own key, allocated after the ordering lock.
+        var key = (await _keys.AllocateAsync(_context, source.BoardId, 1, ct))[0];
 
         var duplicate = DuplicateBoardGroupCommandHandler.CloneCard(
             source,
@@ -51,7 +57,8 @@ public class DuplicateBoardItemCommandHandler : IRequestHandler<DuplicateBoardIt
             _requestContext.UserId,
             $"{source.Name} copy",
             nextPosition,
-            now);
+            now,
+            key);
 
         _context.BoardItems.Add(duplicate);
         return Result<Guid>.Success(duplicate.Id);

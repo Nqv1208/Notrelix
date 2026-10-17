@@ -26,7 +26,7 @@ public class ToggleChecklistItemTests : WorkManagementHandlerTestBase
         var item = checklist.Items.First();
         SetupChecklists(checklist);
 
-        var command = new ToggleChecklistItemCommand(item.Id);
+        var command = new ToggleChecklistItemCommand(item.Id, 1);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -36,7 +36,7 @@ public class ToggleChecklistItemTests : WorkManagementHandlerTestBase
     [Fact]
     public async Task Handle_ChecklistItemNotFound_ThrowsNotFoundException()
     {
-        var command = new ToggleChecklistItemCommand(Guid.CreateVersion7());
+        var command = new ToggleChecklistItemCommand(Guid.CreateVersion7(), 1);
 
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<NotFoundException>();
@@ -50,7 +50,7 @@ public class ToggleChecklistItemTests : WorkManagementHandlerTestBase
         var item = checklist.Items.First();
         SetupChecklists(checklist);
 
-        var command = new ToggleChecklistItemCommand(item.Id);
+        var command = new ToggleChecklistItemCommand(item.Id, 1);
 
         await _handler.Handle(command, CancellationToken.None);
         await _handler.Handle(command, CancellationToken.None);

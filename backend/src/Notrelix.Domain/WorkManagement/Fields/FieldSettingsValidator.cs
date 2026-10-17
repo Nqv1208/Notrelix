@@ -7,6 +7,7 @@ public static class FieldSettingsValidator
         Guard.NotNull(settings);
 
         var data = settings.Data.Value;
+        FieldJsonBounds.EnsureWithin(data, FieldJsonBounds.MaxSettingsLength, WorkManagementRuleCodes.WorkManagement_FieldSettings_TooLarge, "Field settings");
 
         // Status fields require transitions even with empty settings.
         if (type == FieldType.Status && (string.IsNullOrWhiteSpace(data) || data == "{}"))

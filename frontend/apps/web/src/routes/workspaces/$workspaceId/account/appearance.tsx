@@ -1,30 +1,28 @@
-import { useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
+  AccountAppearanceSurface,
   createUsePreferences,
   createUseUpdatePreferences,
+  useAccountAppearanceCopy,
+  type AccountSaveStatus,
+  type AccountSection,
+  type AccountSidebarPreference,
 } from "@notrelix/features-account";
+import { useLocale } from "@notrelix/i18n";
 import { useAppRuntime } from "@notrelix/runtime-web";
-import { Button } from "@notrelix/ui-web";
-import { useColorTheme } from "@notrelix/ui-web";
-import { Monitor, Sun, Moon } from "lucide-react";
-import { toast } from "sonner";
-
-const THEME_OPTIONS = [
-  { value: "light" as const, label: "Light", icon: Sun },
-  { value: "dark" as const, label: "Dark", icon: Moon },
-  { value: "system" as const, label: "System", icon: Monitor },
-];
-
-const COLOR_THEMES = [
-  { id: "zinc", label: "Zinc" },
-  { id: "slate", label: "Slate" },
-  { id: "stone", label: "Stone" },
-  { id: "gray", label: "Gray" },
-  { id: "neutral", label: "Neutral" },
-];
+import { useTheme, type ThemeMode } from "@notrelix/ui-web";
+import {
+  accountPagesKeys,
+  useAccountPagesApi,
+  useToast,
+} from "./use-account-pages";
 
 export function AccountAppearancePage() {
   const { api: runtimeClient } = useAppRuntime();
+  const copy = useAccountAppearanceCopy();
+  const theme = useTheme();
+  const { locale, setLocale } = useLocale();
 
   const usePreferences = useMemo(
     () =>
@@ -44,110 +42,102 @@ export function AccountAppearancePage() {
     [runtimeClient],
   );
 
-  const { preferences, isLoading } = usePreferences();
+  const accountApi = useAccountPagesApi();
+  const details = useQuery({
+    queryKey: accountPagesKeys.details,
+    queryFn: () => accountApi.getDetails(),
+    retry: false,
+  });
+  const [toast, showToast] = useToast();
+  const { preferences, isError, refetch } = usePreferences();
   const updateMutation = useUpdatePreferences();
-  const { colorTheme, setColorTheme } = useColorTheme();
+  const [sidebarSave, setSidebarSave] = useState<AccountSaveStatus>({
+    state: "idle",
+  });
+  // The value just sent, shown until the refetched preference confirms it.
+  const [pendingCollapsed, setPendingCollapsed] = useState<boolean | null>(
+    null,
+  );
 
-  const handleThemeChange = async (theme: "light" | "dark" | "system") => {
-    try {
-      await updateMutation.mutateAsync({ theme });
-    } catch {
-      // Preferences endpoint may not exist yet
+  useEffect(() => {
+    if (
+      pendingCollapsed !== null &&
+      preferences?.sidebarCollapsed === pendingCollapsed
+    ) {
+      setPendingCollapsed(null);
     }
-  };
+  }, [preferences?.sidebarCollapsed, pendingCollapsed]);
 
-  if (isLoading) {
-    return (
-      <div className="space-y-4">
-        {[1, 2].map((i) => (
-          <div key={i} className="h-20 bg-muted rounded-lg animate-pulse" />
-        ))}
-      </div>
-    );
-  }
+  const sidebar = useMemo<AccountSection<AccountSidebarPreference>>(
+    () =>
+      preferences
+        ? {
+            status: "ready",
+            data: {
+              collapsed: pendingCollapsed ?? preferences.sidebarCollapsed,
+            },
+          }
+        : isError
+          ? { status: "error" }
+          : { status: "loading" },
+    [preferences, isError, pendingCollapsed],
+  );
+
+  // Mirror the device mode to account preferences; the preference contract
+  // only knows light/dark/system, so high contrast stays device-local.
+  const handleModeChange = useCallback(
+    async (mode: ThemeMode) => {
+      theme.setMode(mode);
+      showToast(copy.sidebar.saved);
+      if (mode === "high-contrast") return;
+      try {
+        await updateMutation.mutateAsync({ theme: mode });
+      } catch {
+        // The device mode is already applied; the account mirror is best effort.
+      }
+    },
+    [theme, updateMutation, showToast, copy.sidebar.saved],
+  );
+
+  const handleSidebarCollapsedChange = useCallback(
+    async (collapsed: boolean) => {
+      setPendingCollapsed(collapsed);
+      setSidebarSave({ state: "saving" });
+      try {
+        await updateMutation.mutateAsync({ sidebarCollapsed: collapsed });
+        setSidebarSave({ state: "saved" });
+        showToast(copy.sidebar.saved);
+      } catch {
+        setPendingCollapsed(null);
+        setSidebarSave({ state: "error" });
+      }
+    },
+    [updateMutation, showToast, copy.sidebar.saved],
+  );
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="font-semibold text-sm mb-1">Appearance</h2>
-        <p className="text-xs text-muted-foreground">
-          Customize how Notrelix looks on your device.
-        </p>
-      </div>
-
-      {/* Theme */}
-      <div className="space-y-3">
-        <label className="text-sm font-medium text-foreground">Theme</label>
-        <div className="grid grid-cols-3 gap-3">
-          {THEME_OPTIONS.map((option) => {
-            const Icon = option.icon;
-            const isActive = preferences?.theme === option.value;
-            return (
-              <button
-                key={option.value}
-                onClick={() => handleThemeChange(option.value)}
-                className={`flex flex-col items-center gap-2 rounded-lg border p-4 transition-colors ${
-                  isActive
-                    ? "border-primary bg-primary/5 text-foreground"
-                    : "border-border text-muted-foreground hover:bg-muted/50"
-                }`}
-              >
-                <Icon className="size-5" />
-                <span className="text-sm font-medium">{option.label}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Color Theme */}
-      <div className="space-y-3">
-        <label className="text-sm font-medium text-foreground">
-          Accent Color
-        </label>
-        <div className="flex gap-2">
-          {COLOR_THEMES.map((color) => (
-            <button
-              key={color.id}
-              onClick={() => {
-                setColorTheme(color.id as typeof colorTheme);
-                toast.success(`Color theme: ${color.label}`);
-              }}
-              className={`size-8 rounded-full border-2 transition-colors ${
-                colorTheme === color.id
-                  ? "border-primary ring-2 ring-primary/20"
-                  : "border-border hover:border-primary/50"
-              }`}
-              style={{
-                backgroundColor: `var(--color-${color.id}-500, #71717a)`,
-              }}
-              title={color.label}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* Sidebar */}
-      <div className="space-y-3">
-        <label className="text-sm font-medium text-foreground">Sidebar</label>
-        <div className="flex items-center justify-between rounded-lg border border-border p-4">
-          <div>
-            <p className="text-sm">Collapsed by default</p>
-            <p className="text-xs text-muted-foreground">
-              Start with sidebar collapsed
-            </p>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              toast.success("Sidebar preference saved");
-            }}
-          >
-            {preferences?.sidebarCollapsed ? "Expanded" : "Collapsed"}
-          </Button>
-        </div>
-      </div>
-    </div>
+    <AccountAppearanceSurface
+      copy={copy}
+      mode={theme.mode}
+      accent={theme.accent}
+      locale={locale}
+      workspaceName={details.data?.workspaceName ?? ""}
+      toast={toast !== null}
+      sidebar={sidebar}
+      sidebarSave={sidebarSave}
+      onModeChange={(mode) => void handleModeChange(mode)}
+      onAccentChange={(accent) => {
+        theme.setAccent(accent);
+        showToast(copy.sidebar.saved);
+      }}
+      onLocaleChange={(next) => {
+        setLocale(next);
+        showToast(copy.sidebar.saved);
+      }}
+      onSidebarCollapsedChange={(collapsed) =>
+        void handleSidebarCollapsedChange(collapsed)
+      }
+      onRetryPreferences={() => void refetch()}
+    />
   );
 }

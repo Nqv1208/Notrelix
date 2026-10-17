@@ -1,8 +1,9 @@
+using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 using Notrelix.API.Contracts.WorkManagement.BoardFields.Requests;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.CreateBoardField;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.DeleteBoardField;
-using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.ReorderBoardFields;
+using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.MoveBoardField;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.UpdateBoardField;
 using Notrelix.Application.Features.WorkManagement.BoardSchema.Queries.GetBoardSchema;
 
@@ -29,10 +30,10 @@ public static class MapBoardFieldEndpoints
             .WithIdempotencyKey()
             .WithName("WorkManagement.BoardFields.Delete")
             .WithSummary("Delete a field from a board");
-        group.MapResourcePost("/reorder", HandleReorderBoardFields)
+        group.MapResourcePost("/{fieldId:guid}/move", HandleMoveBoardField)
             .WithIdempotencyKey()
-            .WithName("WorkManagement.BoardFields.Reorder")
-            .WithSummary("Reorder board fields");
+            .WithName("WorkManagement.BoardFields.Move")
+            .WithSummary("Move a field relative to its neighbors");
 
         group.MapFieldOptionEndpoints();
 
@@ -43,6 +44,7 @@ public static class MapBoardFieldEndpoints
 
         schemaGroup.MapResourceGet("/schema", HandleGetBoardSchema)
             .WithName("WorkManagement.BoardFields.GetSchema")
+            .Produces<BoardSchemaDto>(StatusCodes.Status200OK, "application/json")
             .WithSummary("Get schema (fields, groups) of a board");
 
         return app;
@@ -58,9 +60,21 @@ public static class MapBoardFieldEndpoints
             boardId,
             body.Name,
             body.Type,
-            body.SettingsJson ?? "{}",
-            body.Position.ToString()), cancellationToken);
+            body.SettingsJson,
+            body.PreviousSiblingId,
+            body.NextSiblingId), cancellationToken);
         return result.ToCreatedResult();
+    }
+
+    private static async Task<IResult> HandleMoveBoardField(
+        Guid boardId,
+        Guid fieldId,
+        MoveBoardFieldRequest body,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        var result = await sender.Send(new MoveBoardFieldCommand(boardId, fieldId, body.ExpectedVersion, body.PreviousSiblingId, body.NextSiblingId), cancellationToken);
+        return result.ToNoContentResult();
     }
 
     private static async Task<IResult> HandleUpdateBoardField(
@@ -74,8 +88,7 @@ public static class MapBoardFieldEndpoints
             boardId,
             fieldId,
             body.Name,
-            body.Type,
-            body.SettingsJson ?? "{}",
+            body.SettingsJson,
             body.ExpectedVersion), cancellationToken);
         return result.ToApiResult();
     }
@@ -88,16 +101,6 @@ public static class MapBoardFieldEndpoints
     {
         await sender.Send(new DeleteBoardFieldCommand(boardId, fieldId), cancellationToken);
         return Results.NoContent();
-    }
-
-    private static async Task<IResult> HandleReorderBoardFields(
-        Guid boardId,
-        ReorderBoardFieldsCommand command,
-        ISender sender,
-        CancellationToken cancellationToken)
-    {
-        var result = await sender.Send(command with { BoardId = boardId }, cancellationToken);
-        return result.ToNoContentResult();
     }
 
     private static async Task<IResult> HandleGetBoardSchema(

@@ -1,3 +1,4 @@
+using Notrelix.Application.Features.Workspaces.DTOs;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Workspaces.Workspaces.Queries.GetAccountWorkspaces;
 
@@ -10,7 +11,8 @@ public static class GetAccountWorkspacesEndpoint
         group.MapAccountGet("/", HandleAsync)
             .WithName("Workspaces.Workspaces.GetAccountWorkspaces")
             .WithTags("Workspaces.Workspaces")
-            .WithSummary("Get all workspaces for an account");
+            .WithSummary("Get all workspaces for an account")
+            .Produces<List<WorkspaceDto>>(StatusCodes.Status200OK, "application/json");
         return group;
     }
 

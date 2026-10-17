@@ -46,7 +46,7 @@ public class UpdateBoardItemFieldValuesCommandHandlerTests : IAsyncLifetime
         var handler = CreateHandler(context, memberId);
 
         var result = await handler.Handle(
-            new UpdateBoardItemFieldValuesCommand(boardItem.Id, new Dictionary<Guid, object?> { [statusField.Id] = doneOption.Id.ToString() }),
+            new UpdateBoardItemFieldValuesCommand(boardItem.Id, new Dictionary<Guid, object?> { [statusField.Id] = doneOption.Id.ToString() }, 1),
             CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();

@@ -1,195 +1,228 @@
-import { useState } from "react";
+import { MoreHorizontal } from "lucide-react";
 import {
-  Check,
-  MessageSquareText,
-  MoreHorizontal,
-  Pencil,
-  Trash2,
-  X,
-} from "lucide-react";
-import { Avatar, AvatarFallback } from "@notrelix/ui-web";
-import { Button } from "@notrelix/ui-web";
-import {
+  Avatar,
+  AvatarFallback,
+  Button,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  Skeleton,
+  Textarea,
+  cn,
 } from "@notrelix/ui-web";
-import { Textarea } from "@notrelix/ui-web";
-import { Skeleton } from "@notrelix/ui-web";
-import type { CardDetail, CardUpdate } from "@notrelix/work-management-core";
-import { TaskDetailEmptyState } from "./task-detail-empty-state";
-import { UpdateComposer } from "./update-composer";
+import type {
+  CardActivity,
+  CardDetail,
+  CardUpdate,
+} from "@notrelix/work-management-core";
+import { identityMarkClass } from "../shared/item-display";
+import { describeSheetTime } from "./item-sheet-format";
+import type { ItemSheetCopy } from "./item-sheet.copy";
+import { useCommentEdit } from "./use-comment-edit";
 import type {
   TaskDetailCallbacks,
   TaskDetailCapabilities,
 } from "./task-detail-types";
 
+/** "Bình luận" subtab: the item's comments, oldest first. */
 export function TaskUpdatesTab({
-  card,
   updates,
+  events = [],
   isLoading,
   capabilities,
-  onCreateUpdate,
+  copy,
+  now,
+  timeZone,
   onUpdateUpdate,
   onDeleteUpdate,
 }: {
   card: CardDetail;
   updates: readonly CardUpdate[];
+  /** Recorded changes (due date, Status…) shown among the comments by time. */
+  events?: readonly CardActivity[];
   isLoading: boolean;
   capabilities: TaskDetailCapabilities;
+  copy: ItemSheetCopy;
+  now: Date;
+  timeZone?: string;
   onCreateUpdate: TaskDetailCallbacks["onCreateUpdate"];
   onUpdateUpdate: TaskDetailCallbacks["onUpdateUpdate"];
   onDeleteUpdate: TaskDetailCallbacks["onDeleteUpdate"];
 }) {
+  if (isLoading) {
+    return (
+      <div className="flex flex-col gap-2" aria-busy="true">
+        <Skeleton className="h-12 rounded-lg" />
+        <Skeleton className="h-12 rounded-lg" />
+      </div>
+    );
+  }
+  if (updates.length === 0 && events.length === 0) {
+    return (
+      <p className="m-0 text-sm text-muted-foreground">
+        {copy.sections.noComments}
+      </p>
+    );
+  }
   return (
-    <div className="flex flex-col gap-3 p-3.5">
-      <UpdateComposer
-        cardId={card.id}
-        members={card.members.length > 0 ? card.members : card.watchers}
-        disabled={!capabilities.canEditFields}
-        onCreateUpdate={onCreateUpdate}
-      />
-
-      {isLoading ? (
-        <div className="flex flex-col gap-2">
-          <Skeleton className="h-14 rounded-lg" />
-          <Skeleton className="h-14 rounded-lg" />
-        </div>
-      ) : updates.length === 0 ? (
-        <TaskDetailEmptyState
-          icon={MessageSquareText}
-          title="No updates yet"
-          description="Share decisions, blockers, and context so everyone can follow the task."
-        />
-      ) : (
-        <div className="flex flex-col gap-1.5 mt-1">
-          {updates.map((update) => (
-            <UpdateItem
-              key={update.id}
-              update={update}
-              canEdit={capabilities.canEditFields}
-              canDelete={capabilities.canDelete}
-              onSave={(body) => onUpdateUpdate(update.id, body)}
-              onDelete={() => onDeleteUpdate(update.id)}
-            />
-          ))}
-        </div>
-      )}
-    </div>
+    <ul className="m-0 flex list-none flex-col p-0">
+      {[
+        ...updates.map((update) => ({ kind: "comment" as const, update })),
+        ...events.map((event) => ({ kind: "event" as const, event })),
+      ]
+        .sort((a, b) =>
+          (a.kind === "comment"
+            ? a.update.createdAt
+            : a.event.createdAt
+          ).localeCompare(
+            b.kind === "comment" ? b.update.createdAt : b.event.createdAt,
+          ),
+        )
+        .map((entry) =>
+          entry.kind === "comment" ? (
+            <li key={entry.update.id}>
+              <CommentItem
+                update={entry.update}
+                canEdit={capabilities.canEditFields}
+                canDelete={capabilities.canDelete}
+                copy={copy}
+                time={describeSheetTime(
+                  entry.update.createdAt,
+                  now,
+                  copy,
+                  timeZone,
+                )}
+                onSave={(body) => onUpdateUpdate(entry.update.id, body)}
+                onDelete={() => onDeleteUpdate(entry.update.id)}
+              />
+            </li>
+          ) : (
+            <li
+              key={entry.event.id}
+              data-f="event"
+              className="flex items-center gap-2 py-1.5 pl-1 text-crumb text-meta-foreground"
+            >
+              <span
+                aria-hidden="true"
+                className="size-1.5 shrink-0 rounded-full bg-primary"
+              />
+              <span>
+                <span className="font-medium text-muted-foreground">
+                  {entry.event.actor}
+                </span>{" "}
+                {entry.event.action} ·{" "}
+                <time dateTime={entry.event.createdAt}>
+                  {describeSheetTime(
+                    entry.event.createdAt,
+                    now,
+                    copy,
+                    timeZone,
+                  )}
+                </time>
+              </span>
+            </li>
+          ),
+        )}
+    </ul>
   );
 }
 
-function UpdateItem({
+function CommentItem({
   update,
   canEdit,
   canDelete,
+  copy,
+  time,
   onSave,
   onDelete,
 }: {
   update: CardUpdate;
   canEdit: boolean;
   canDelete: boolean;
+  copy: ItemSheetCopy;
+  time: string;
   onSave: (body: string) => void;
   onDelete: () => void;
 }) {
-  const [editing, setEditing] = useState(false);
-  const [body, setBody] = useState(update.body);
+  const edit = useCommentEdit(update.body, onSave);
+  const t = copy.comment;
 
   return (
-    <article className="group/comment flex items-start gap-2.5 rounded-lg px-2 py-2 transition-colors hover:bg-muted/30">
-      <Avatar className="size-7 shrink-0 mt-0.5">
-        <AvatarFallback className="bg-foreground text-[10px] font-bold text-background">
+    <article className="group/comment flex gap-2.5 py-1.5 text-body leading-[1.45]">
+      <Avatar className="size-6.5 shrink-0">
+        <AvatarFallback
+          className={cn(
+            "text-avatar-md",
+            identityMarkClass(update.author.userId || update.author.id),
+          )}
+        >
           {update.author.initials}
         </AvatarFallback>
       </Avatar>
       <div className="min-w-0 flex-1">
-        <div className="flex items-baseline justify-between gap-2">
-          <div className="flex items-baseline gap-2">
-            <span className="text-xs font-semibold text-foreground">
-              {update.author.name}
-            </span>
-            <span className="text-[10px] text-muted-foreground/70">
-              {new Date(update.createdAt).toLocaleDateString(undefined, {
-                month: "short",
-                day: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
-            </span>
-          </div>
-          <div className="opacity-0 transition-opacity shrink-0 group-hover/comment:opacity-100">
+        <div className="flex items-baseline">
+          <span className="font-semibold text-foreground">
+            {update.author.name}
+          </span>
+          <time
+            dateTime={update.createdAt}
+            className="ml-1.5 text-metadata text-meta-foreground"
+          >
+            {time}
+          </time>
+          {canEdit || canDelete ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
+                  type="button"
                   variant="ghost"
                   size="icon-sm"
-                  className="size-6 p-0 hover:bg-muted"
-                  aria-label="Update actions"
-                  disabled={!canEdit && !canDelete}
+                  aria-label={t.actions}
+                  className="ml-auto size-6 text-muted-foreground opacity-0 group-hover/comment:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100 pointer-coarse:opacity-100"
                 >
-                  <MoreHorizontal className="size-3.5 text-muted-foreground" />
+                  <MoreHorizontal aria-hidden="true" className="size-3.5" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-24">
+              <DropdownMenuContent align="end">
                 {canEdit ? (
-                  <DropdownMenuItem
-                    onClick={() => setEditing(true)}
-                    className="text-xs py-1"
-                  >
-                    <Pencil className="mr-1.5 size-3.5" />
-                    Edit
+                  <DropdownMenuItem onSelect={edit.start}>
+                    {t.edit}
                   </DropdownMenuItem>
                 ) : null}
                 {canDelete ? (
-                  <DropdownMenuItem
-                    className="text-destructive text-xs py-1"
-                    onClick={onDelete}
-                  >
-                    <Trash2 className="mr-1.5 size-3.5" />
-                    Delete
+                  <DropdownMenuItem onSelect={onDelete}>
+                    {t.delete}
                   </DropdownMenuItem>
                 ) : null}
               </DropdownMenuContent>
             </DropdownMenu>
-          </div>
+          ) : null}
         </div>
-        {editing ? (
-          <div className="mt-2 space-y-2">
+        {edit.editing ? (
+          <div className="mt-2 flex flex-col gap-2">
             <Textarea
-              value={body}
-              onChange={(event) => setBody(event.target.value)}
-              className="min-h-16 text-xs resize-none bg-background p-2"
+              value={edit.body}
+              aria-label={t.editLabel}
+              onChange={(event) => edit.setBody(event.target.value)}
+              className="min-h-16 resize-none text-sm"
             />
             <div className="flex justify-end gap-1.5">
               <Button
+                type="button"
                 variant="ghost"
                 size="sm"
-                className="h-7 px-2 text-[10px] gap-1"
-                onClick={() => {
-                  setBody(update.body);
-                  setEditing(false);
-                }}
+                onClick={edit.cancel}
               >
-                <X className="size-3" />
-                Cancel
+                {t.cancel}
               </Button>
-              <Button
-                size="sm"
-                className="h-7 px-2 text-[10px] gap-1"
-                onClick={() => {
-                  const next = body.trim();
-                  if (next) onSave(next);
-                  setEditing(false);
-                }}
-              >
-                <Check className="size-3" />
-                Save
+              <Button type="button" size="sm" onClick={edit.save}>
+                {t.save}
               </Button>
             </div>
           </div>
         ) : (
-          <p className="mt-1 text-xs leading-relaxed text-muted-foreground whitespace-pre-wrap">
+          <p className="m-0 mt-[3px] leading-[1.55] whitespace-pre-wrap text-foreground">
             {update.body}
           </p>
         )}

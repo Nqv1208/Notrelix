@@ -130,6 +130,15 @@ const ARCHITECTURE_MANIFEST_SOURCE = [
     freezeScope: "core-production",
     allowedInternalImports: ["@notrelix/kernel"],
   },
+  {
+    // FE-ADR-006: product-agnostic i18n mechanism (i18next + react-i18next).
+    // Host-neutral (web + native); catalogs are owned by consuming packages.
+    packageName: "@notrelix/i18n",
+    relativePath: "packages/foundation/i18n",
+    layer: "foundation",
+    freezeScope: "core-production",
+    allowedInternalImports: [],
+  },
 
   // ── Runtimes ────────────────────────────────────────────────────────
   {
@@ -196,7 +205,7 @@ const ARCHITECTURE_MANIFEST_SOURCE = [
     relativePath: "packages/product/work-management/core",
     layer: "product-core",
     freezeScope: "core-production",
-    allowedInternalImports: ["@notrelix/contracts", "@notrelix/kernel"],
+    allowedInternalImports: ["@notrelix/kernel"],
   },
   {
     packageName: "@notrelix/work-management-state",
@@ -229,6 +238,9 @@ const ARCHITECTURE_MANIFEST_SOURCE = [
       "@notrelix/work-management-plugins",
       "@notrelix/ui-web",
       "@notrelix/platform",
+      // FE-ADR-006: catalogs are owned by the package that renders the copy;
+      // the Kanban card ships its own vi/en catalog (WX-BOARD-001).
+      "@notrelix/i18n",
     ],
     allowedVerificationInternalImports: [
       "@notrelix/testing",
@@ -253,7 +265,10 @@ const ARCHITECTURE_MANIFEST_SOURCE = [
     relativePath: "packages/product/work-management/testing",
     layer: "product-testing",
     freezeScope: "verification",
-    allowedInternalImports: ["@notrelix/work-management-core"],
+    allowedInternalImports: [
+      "@notrelix/work-management-core",
+      "@notrelix/work-management-state",
+    ],
   },
 
   // ── Product: Docs ──────────────────────────────────────────────────
@@ -294,6 +309,9 @@ const ARCHITECTURE_MANIFEST_SOURCE = [
       "@notrelix/docs-collaboration",
       "@notrelix/ui-web",
       "@notrelix/platform",
+      // FE-ADR-006: catalogs are owned by the package that renders the copy;
+      // the document page ships its own vi/en catalog (Final-Docs).
+      "@notrelix/i18n",
     ],
     allowedVerificationInternalImports: ["@notrelix/testing"],
   },
@@ -373,7 +391,9 @@ const ARCHITECTURE_MANIFEST_SOURCE = [
     relativePath: "packages/features/auth",
     layer: "feature",
     freezeScope: "core-production",
-    allowedInternalImports: [...FEATURE_WEB_BASE],
+    // FE-ADR-006: catalogs are owned by the package that renders the copy;
+    // the sign-in pages (sign-in, reset, invitation) ship their own vi/en catalog.
+    allowedInternalImports: [...FEATURE_WEB_BASE, "@notrelix/i18n"],
     allowedVerificationInternalImports: ["@notrelix/testing"],
   },
   {
@@ -381,7 +401,9 @@ const ARCHITECTURE_MANIFEST_SOURCE = [
     relativePath: "packages/features/workspace",
     layer: "feature",
     freezeScope: "core-production",
-    allowedInternalImports: [...FEATURE_WEB_BASE],
+    // FE-ADR-006: catalogs are owned by the package that renders the copy;
+    // the workspace shell (WX-SHELL-001…005) ships its own vi/en catalog.
+    allowedInternalImports: [...FEATURE_WEB_BASE, "@notrelix/i18n"],
     allowedVerificationInternalImports: ["@notrelix/testing"],
   },
   {
@@ -389,7 +411,11 @@ const ARCHITECTURE_MANIFEST_SOURCE = [
     relativePath: "packages/features/account",
     layer: "feature",
     freezeScope: "core-production",
-    allowedInternalImports: [...FEATURE_WEB_BASE],
+    // FE-ADR-006: catalogs are owned by the package that renders the copy;
+    // the account pages (profile, appearance, security, notifications) ship
+    // their own vi/en catalogs.
+    allowedInternalImports: [...FEATURE_WEB_BASE, "@notrelix/i18n"],
+    allowedVerificationInternalImports: ["@notrelix/testing"],
   },
   {
     packageName: "@notrelix/features-billing",
@@ -411,7 +437,9 @@ const ARCHITECTURE_MANIFEST_SOURCE = [
     relativePath: "packages/features/notifications",
     layer: "feature",
     freezeScope: "core-production",
-    allowedInternalImports: [...FEATURE_WEB_REALTIME],
+    // FE-ADR-006: catalogs are owned by the package that renders the copy;
+    // the notification bell ships its own vi/en catalog.
+    allowedInternalImports: [...FEATURE_WEB_REALTIME, "@notrelix/i18n"],
     allowedVerificationInternalImports: ["@notrelix/testing"],
   },
   {
@@ -475,6 +503,7 @@ const ARCHITECTURE_MANIFEST_SOURCE = [
       "@notrelix/query",
       "@notrelix/realtime",
       "@notrelix/observability",
+      "@notrelix/i18n",
       "@notrelix/runtime-web",
       "@notrelix/ui-tokens",
       "@notrelix/ui-web",

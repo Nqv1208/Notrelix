@@ -11,7 +11,8 @@ public static class AddTeamMemberEndpoint
         group.MapWorkspacePost("/", HandleAsync)
             .WithName("Workspaces.Teams.AddTeamMember")
             .WithTags("Workspaces.Teams")
-            .WithSummary("Add a member to a team");
+            .WithSummary("Add a member to a team")
+            .Produces(StatusCodes.Status204NoContent);
         return group;
     }
 
@@ -21,7 +22,7 @@ public static class AddTeamMemberEndpoint
         AddTeamMemberRequest request,
         ISender sender)
     {
-        var result = await sender.Send(new AddTeamMemberCommand(workspaceId, teamId, request.UserId, request.Role));
+        var result = await sender.Send(new AddTeamMemberCommand(workspaceId, teamId, request.UserId, request.Role, request.ExpectedVersion));
         return result.ToNoContentResult();
     }
 }

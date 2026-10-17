@@ -1,182 +1,218 @@
-import { useState } from "react";
+import { useState, type KeyboardEvent } from "react";
+import { AtSign, Send } from "lucide-react";
 import {
-  AtSign,
-  Bot,
-  ImageIcon,
-  Paperclip,
-  Send,
-  SmilePlus,
-} from "lucide-react";
-import { Avatar, AvatarFallback } from "@notrelix/ui-web";
-import { Button } from "@notrelix/ui-web";
-import {
+  Avatar,
+  AvatarFallback,
+  Button,
   Command,
   CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
   CommandList,
+  Popover,
+  PopoverAnchor,
+  PopoverContent,
+  PopoverTrigger,
+  Textarea,
 } from "@notrelix/ui-web";
-import { Popover, PopoverContent, PopoverTrigger } from "@notrelix/ui-web";
-import { Textarea } from "@notrelix/ui-web";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@notrelix/ui-web";
 import type { CardMember } from "@notrelix/work-management-core";
+import type { ItemSheetCopy } from "./item-sheet.copy";
 import type { TaskDetailCallbacks } from "./task-detail-types";
 
-export function UpdateComposer({
+/**
+ * The comment draft both composers share: the text, the people it mentions
+ * and the send state. ⌘↵ (or Ctrl+↵) submits; a failed post keeps the text
+ * for a retry; typing "@" opens the people picker and a pick inserts the name
+ * and records the mention.
+ */
+export function useCommentDraft({
   cardId,
   members,
   disabled = false,
   onCreateUpdate,
 }: {
   cardId: string;
-  members: CardMember[];
+  members: readonly CardMember[];
   disabled?: boolean;
   onCreateUpdate: TaskDetailCallbacks["onCreateUpdate"];
 }) {
   const [body, setBody] = useState("");
   const [mentionUserIds, setMentionUserIds] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [mentionOpen, setMentionOpen] = useState(false);
   const canSubmit = body.trim().length > 0 && !disabled && !isSubmitting;
 
   function submit() {
     const nextBody = body.trim();
-    if (!nextBody) return;
+    if (!nextBody || disabled || isSubmitting) return;
     setIsSubmitting(true);
     onCreateUpdate(
-      {
-        cardId,
-        body: nextBody,
-        mentionUserIds,
-        attachmentIds: [],
-      },
+      { cardId, body: nextBody, mentionUserIds, attachmentIds: [] },
       {
         onSuccess: () => {
           setBody("");
           setMentionUserIds([]);
-          setIsSubmitting(false);
         },
+        // Success or failure: a failed post keeps its text for a retry.
+        onSettled: () => setIsSubmitting(false),
       },
     );
   }
 
-  function toggleMention(userId: string) {
-    setMentionUserIds((current) =>
-      current.includes(userId)
-        ? current.filter((id) => id !== userId)
-        : [...current, userId],
-    );
+  function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+    if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
+      event.preventDefault();
+      submit();
+    }
   }
 
-  return (
-    <div className="rounded-lg border border-border bg-card overflow-hidden">
-      <Textarea
-        value={body}
-        onChange={(event) => setBody(event.target.value)}
-        placeholder="Write an update..."
-        className="min-h-16 h-16 resize-none border-0 bg-card p-2.5 text-xs shadow-none focus-visible:ring-0"
-        aria-label="Write an update"
-        disabled={disabled}
-      />
-      <div className="flex flex-wrap items-center justify-between gap-1.5 border-t border-border px-2 py-1 bg-muted/10">
-        <div className="flex items-center gap-0.5">
-          <Popover>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <PopoverTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    className="size-7"
-                    aria-label="Mention user"
-                    disabled={disabled}
-                  >
-                    <AtSign className="size-3.5" />
-                  </Button>
-                </PopoverTrigger>
-              </TooltipTrigger>
-              <TooltipContent className="text-[10px]">
-                Mention user
-              </TooltipContent>
-            </Tooltip>
-            <PopoverContent align="start" className="w-56 p-0">
-              <Command className="text-xs">
-                <CommandInput
-                  placeholder="Search people..."
-                  className="h-8 text-xs"
-                />
-                <CommandList>
-                  <CommandEmpty className="text-xs p-2 text-center text-muted-foreground">
-                    No people found.
-                  </CommandEmpty>
-                  <CommandGroup
-                    heading="People"
-                    className="text-[10px] text-muted-foreground p-1"
-                  >
-                    {members.map((member) => (
-                      <CommandItem
-                        key={member.userId}
-                        value={member.name}
-                        data-checked={mentionUserIds.includes(member.userId)}
-                        onSelect={() => toggleMention(member.userId)}
-                        className="text-xs py-1"
-                      >
-                        <Avatar className="size-5">
-                          <AvatarFallback className="bg-foreground text-[10px] font-bold text-background">
-                            {member.initials}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span>{member.name}</span>
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                </CommandList>
-              </Command>
-            </PopoverContent>
-          </Popover>
+  function changeBody(next: string) {
+    setBody(next);
+    if (next.endsWith("@") && members.length > 0) setMentionOpen(true);
+  }
 
-          <ComposerIcon icon={Paperclip} label="Attach file" />
-          <ComposerIcon icon={ImageIcon} label="Add GIF" />
-          <ComposerIcon icon={SmilePlus} label="Add emoji" />
-          <ComposerIcon icon={Bot} label="AI action" />
-        </div>
-        <Button
-          type="button"
-          size="sm"
-          className="h-7 px-2.5 text-xs gap-1"
-          disabled={!canSubmit}
-          onClick={submit}
-        >
-          <Send className="size-3" />
-          Update
-        </Button>
-      </div>
-    </div>
-  );
+  /** Replaces the typed "@…" at `range` with the chosen name and records who is reached. */
+  function insertMention(
+    range: { readonly from: number; readonly to: number },
+    label: string,
+    userIds: readonly string[],
+  ) {
+    setBody(
+      (current) =>
+        `${current.slice(0, range.from)}@${label} ${current.slice(range.to)}`,
+    );
+    setMentionUserIds((current) => [
+      ...current,
+      ...userIds.filter((id) => !current.includes(id)),
+    ]);
+  }
+
+  function mention(member: CardMember) {
+    setMentionUserIds((current) =>
+      current.includes(member.userId) ? current : [...current, member.userId],
+    );
+    setBody((current) => {
+      const withoutTrigger = current.endsWith("@")
+        ? current.slice(0, -1)
+        : current;
+      return `${withoutTrigger}@${member.name} `;
+    });
+    setMentionOpen(false);
+  }
+
+  return {
+    body,
+    canSubmit,
+    mentionOpen,
+    setMentionOpen,
+    changeBody,
+    handleKeyDown,
+    mention,
+    insertMention,
+    submit,
+  };
 }
 
-function ComposerIcon({
-  icon: Icon,
-  label,
+/**
+ * Sheet footer composer: "Viết bình luận, gõ @ để nhắc ai đó…", ⌘↵ (or
+ * Ctrl+↵) submits. Typing "@" opens the people picker; a pick inserts the
+ * name and records the mention. It stays for a commenter.
+ */
+export function UpdateComposer({
+  cardId,
+  members,
+  disabled = false,
+  copy,
+  onCreateUpdate,
 }: {
-  icon: typeof Paperclip;
-  label: string;
+  cardId: string;
+  members: readonly CardMember[];
+  disabled?: boolean;
+  copy: ItemSheetCopy;
+  onCreateUpdate: TaskDetailCallbacks["onCreateUpdate"];
 }) {
+  const {
+    body,
+    canSubmit,
+    mentionOpen,
+    setMentionOpen,
+    changeBody,
+    handleKeyDown,
+    mention,
+    submit,
+  } = useCommentDraft({ cardId, members, disabled, onCreateUpdate });
+  const t = copy.composer;
+
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          className="size-7"
-          aria-label={label}
-        >
-          <Icon className="size-3.5" />
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent className="text-[10px]">{label}</TooltipContent>
-    </Tooltip>
+    <div className="flex shrink-0 items-end gap-2 border-t border-line bg-popover px-4.5 py-3">
+      <Popover open={mentionOpen} onOpenChange={setMentionOpen}>
+        <PopoverAnchor asChild>
+          <div className="flex min-h-10.5 flex-1 items-center gap-2 rounded-[9px] border border-line-strong bg-background pr-2 pl-3 focus-within:ring-2 focus-within:ring-focus-ring">
+            <Textarea
+              value={body}
+              rows={1}
+              disabled={disabled}
+              aria-label={t.label}
+              placeholder={t.placeholder}
+              onChange={(event) => changeBody(event.target.value)}
+              onKeyDown={handleKeyDown}
+              className="max-h-32 min-h-0 flex-1 resize-none border-0 bg-transparent px-0 py-2 text-body shadow-none focus-visible:ring-0"
+            />
+            <kbd className="shrink-0 rounded-[4px] border border-line-strong bg-keycap px-1.25 text-key leading-[18px] text-muted-foreground">
+              {t.shortcut}
+            </kbd>
+          </div>
+        </PopoverAnchor>
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label={t.mention}
+            title={t.mention}
+            disabled={disabled || members.length === 0}
+            className="mb-1 text-muted-foreground"
+          >
+            <AtSign aria-hidden="true" className="size-4" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent align="start" className="w-60 p-0">
+          <Command>
+            <CommandInput placeholder={t.searchPeople} />
+            <CommandList>
+              <CommandEmpty>{t.noPeople}</CommandEmpty>
+              <CommandGroup heading={t.people}>
+                {members.map((member) => (
+                  <CommandItem
+                    key={member.userId}
+                    value={member.name}
+                    onSelect={() => mention(member)}
+                  >
+                    <Avatar className="size-5">
+                      <AvatarFallback className="bg-foreground text-caption font-bold text-background">
+                        {member.initials}
+                      </AvatarFallback>
+                    </Avatar>
+                    {member.name}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+      <Button
+        type="button"
+        size="icon-sm"
+        aria-label={t.submit}
+        title={t.submit}
+        disabled={!canSubmit}
+        onClick={submit}
+        className="mb-1"
+      >
+        <Send aria-hidden="true" className="size-4" />
+      </Button>
+    </div>
   );
 }

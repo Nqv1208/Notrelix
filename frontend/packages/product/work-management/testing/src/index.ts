@@ -32,11 +32,35 @@ export {
   updateFixture,
 } from "./fixtures/card-detail.fixture";
 export {
+  commenterCapabilities,
   editorCapabilities,
   ownerCapabilities,
   viewerCapabilities,
   type WorkManagementUiCapabilities,
 } from "./fixtures/capabilities.fixture";
+export {
+  ERP_BOARD_ID,
+  ERP_GROUP_ID,
+  ERP_ITEMS,
+  ERP_LABELS,
+  ERP_NOW,
+  ERP_PEOPLE,
+  ERP_PRIORITY_FIELD_ID,
+  ERP_PRIORITY_OPTION_IDS,
+  ERP_SPACE_ID,
+  ERP_STATUS_FIELD_ID,
+  ERP_STATUS_OPTION_IDS,
+  ERP_WORKSPACE_ID,
+  erpBoardScenario,
+  erpClock,
+  erpCommenterAccess,
+  erpCommenterAccessDto,
+  erpFullBoardDto,
+  erpItemId,
+  erpOwnerAccess,
+  erpOwnerAccessDto,
+  type ErpItemSeed,
+} from "./fixtures/erp-world.fixture";
 export { createBoardSnapshot } from "./factories/create-board-snapshot";
 export { createBoardPatch } from "./factories/create-board-patch";
 export { mockCommandBus } from "./mocks/mock-command-bus";

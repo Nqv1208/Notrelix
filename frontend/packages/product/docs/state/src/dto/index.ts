@@ -5,6 +5,8 @@ export type PageDtoApi = {
   workspaceId: string;
   parentId?: string | null;
   title: string;
+  /** Gap `CTR-GAP-DOCS-PAGE-EXT`: the short name the tree and the breadcrumb use. */
+  navTitle?: string;
   iconType?: string | null;
   iconValue?: string | null;
   coverUrl?: string | null;
@@ -16,6 +18,13 @@ export type PageDtoApi = {
   deadline?: string | null;
   createdAt: string;
   updatedAt?: string | null;
+  /** The Page aggregate version (`PageDto.version`). */
+  version?: number;
+  spaceId?: string | null;
+  /** Gap `CTR-GAP-DOCS-PAGE-EXT`: the review state and who is on the page now. */
+  status?: "draft" | "review" | "published";
+  activeUserIds?: string[];
+  people?: { id: string; name: string }[];
 };
 
 export type BreadcrumbDtoApi = {
@@ -38,6 +47,8 @@ export type HistoryDtoApi = {
   actorId: string;
   action: string;
   resourceTitle?: string | null;
+  /** Gap `CTR-GAP-DOCS-PAGE-EXT`: a version the member named. */
+  versionName?: string | null;
   createdAt: string;
 };
 

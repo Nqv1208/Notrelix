@@ -10,7 +10,8 @@ public static class RemoveTeamMemberEndpoint
         group.MapWorkspaceDelete("/{userId:guid}", HandleAsync)
             .WithName("Workspaces.Teams.RemoveTeamMember")
             .WithTags("Workspaces.Teams")
-            .WithSummary("Remove a member from a team");
+            .WithSummary("Remove a member from a team")
+            .Produces(StatusCodes.Status204NoContent);
         return group;
     }
 
@@ -18,9 +19,10 @@ public static class RemoveTeamMemberEndpoint
         Guid workspaceId,
         Guid teamId,
         Guid userId,
-        ISender sender)
+        ISender sender,
+        [FromQuery] long expectedVersion)
     {
-        var result = await sender.Send(new RemoveTeamMemberCommand(workspaceId, teamId, userId));
+        var result = await sender.Send(new RemoveTeamMemberCommand(workspaceId, teamId, userId, expectedVersion));
         return result.ToNoContentResult();
     }
 }

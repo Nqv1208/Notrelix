@@ -42,7 +42,7 @@ public class GetBoardsQueryHandlerTests : IAsyncLifetime
         context.Boards.AddRange(board1, board2);
         await context.SaveChangesAsync();
 
-        var handler = new GetBoardsQueryHandler(context);
+        var handler = new GetBoardsQueryHandler(context, FakeResourceVisibility.WithBoards(board1.Id, board2.Id), new FakeCurrentRequestContext());
 
         var result = await handler.Handle(new GetBoardsQuery(workspace.Id), CancellationToken.None);
 
@@ -68,7 +68,7 @@ public class GetBoardsQueryHandlerTests : IAsyncLifetime
         context.Boards.AddRange(active, archived);
         await context.SaveChangesAsync();
 
-        var handler = new GetBoardsQueryHandler(context);
+        var handler = new GetBoardsQueryHandler(context, FakeResourceVisibility.WithBoards(active.Id, archived.Id), new FakeCurrentRequestContext());
 
         var result = await handler.Handle(new GetBoardsQuery(workspace.Id), CancellationToken.None);
 
@@ -85,7 +85,7 @@ public class GetBoardsQueryHandlerTests : IAsyncLifetime
         tenant.SetSystem();
         await using var context = _db.CreateContext(tenant);
 
-        var handler = new GetBoardsQueryHandler(context);
+        var handler = new GetBoardsQueryHandler(context, new FakeResourceVisibility(), new FakeCurrentRequestContext());
 
         var result = await handler.Handle(new GetBoardsQuery(Guid.NewGuid()), CancellationToken.None);
         result.Succeeded.Should().BeTrue();

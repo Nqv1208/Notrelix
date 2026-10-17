@@ -116,11 +116,9 @@ public class ResourceEndpointContractArchitectureTests : ArchitectureTestBase
             "UpdateBoardGroupEndpoint.cs",
             "ArchiveBoardGroupEndpoint.cs",
             "UnarchiveBoardGroupEndpoint.cs",
-            "ReorderBoardGroupsEndpoint.cs",
             "ListBoardFieldsEndpoint.cs",
             "CreateBoardFieldEndpoint.cs",
             "UpdateBoardFieldEndpoint.cs",
-            "ReorderBoardFieldsEndpoint.cs",
             "DeleteBoardFieldEndpoint.cs",
         };
 

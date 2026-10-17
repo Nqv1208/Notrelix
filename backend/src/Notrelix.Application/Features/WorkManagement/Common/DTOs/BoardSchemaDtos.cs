@@ -5,4 +5,5 @@ public record BoardSchemaDto(
     string Title,
     string? Description,
     List<BoardFieldSchemaDto> Fields,
-    List<BoardGroupSchemaDto> Groups);
+    List<BoardGroupSchemaDto> Groups,
+    long Version);

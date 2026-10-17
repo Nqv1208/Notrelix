@@ -15,10 +15,15 @@ export interface MockClock {
   offsetDays(days: number): string;
 }
 
-/** Fixed base epoch — 2025-01-15T09:00:00.000Z */
-const BASE_EPOCH_MS = 1736934000000;
+/**
+ * Fixed base epoch: Monday 2026-10-12 10:40 in Hanoi (03:40Z), the "today"
+ * of the 2026-10 design mockups and of the e2e/fidelity page clock, less the
+ * default seed's offset below so the default world's "now" is exactly 10:40.
+ */
+const DEFAULT_SEED = 1001;
+const BASE_EPOCH_MS = Date.UTC(2026, 9, 12, 3, 40, 0) - DEFAULT_SEED * 1000;
 
-export function createMockClock(seed: number = 1001): MockClock {
+export function createMockClock(seed: number = DEFAULT_SEED): MockClock {
   // Deterministic offset derived from seed — no wall-clock reference
   const baseMs = BASE_EPOCH_MS + (seed % 10000) * 1000;
 
@@ -41,4 +46,65 @@ export function createMockClock(seed: number = 1001): MockClock {
   };
 }
 
-export const defaultClock: MockClock = createMockClock(1001);
+export const defaultClock: MockClock = createMockClock(DEFAULT_SEED);
+
+/** A UTC instant from calendar parts (the month is 0-based). */
+export function utcInstant(
+  year: number,
+  monthIndex: number,
+  day: number,
+  hour: number,
+  minute = 0,
+): string {
+  return new Date(
+    Date.UTC(year, monthIndex, day, hour, minute, 0),
+  ).toISOString();
+}
+
+/**
+ * The mock clock's Hanoi day (UTC+7) at `hour:minute` Hanoi time, shifted by
+ * `dayOffset` days, as a UTC instant.
+ */
+export function hanoiDayAt(
+  clock: MockClock,
+  hour: number,
+  minute = 0,
+  dayOffset = 0,
+): string {
+  const hanoi = new Date(clock.now().getTime() + 7 * 60 * 60 * 1000);
+  return utcInstant(
+    hanoi.getUTCFullYear(),
+    hanoi.getUTCMonth(),
+    hanoi.getUTCDate() + dayOffset,
+    hour - 7,
+    minute,
+  );
+}
+
+/** "dd/MM" of an instant in Hanoi (UTC+7). */
+export function hanoiShortDay(iso: string): string {
+  const hanoi = new Date(Date.parse(iso) + 7 * 60 * 60 * 1000);
+  return `${String(hanoi.getUTCDate()).padStart(2, "0")}/${String(
+    hanoi.getUTCMonth() + 1,
+  ).padStart(2, "0")}`;
+}
+
+/**
+ * The wall clock, read here and nowhere else in the mock. The mock's own
+ * clock is frozen at the mockups' Monday morning, so a wait that must really
+ * pass (the sign-in lock) cannot use it. Nothing seeded or snapshotted reads
+ * this; only a wait the viewer sits through does.
+ */
+export function wallClockMs(): number {
+  return new Date().getTime();
+}
+
+/** The ISO text of an epoch instant (a pure conversion, no clock read). */
+export function isoOfMs(ms: number): string {
+  return new Date(ms).toISOString();
+}
+
+/** The UTC weekday (0 = Sunday) of an epoch instant. */
+export function utcWeekdayOfMs(ms: number): number {
+  return new Date(ms).getUTCDay();
+}

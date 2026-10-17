@@ -10,6 +10,10 @@ public class UserProfileConfiguration : IEntityTypeConfiguration<UserProfile>
         builder.ToTable("user_profiles", DbSchemas.Identity);
 
         builder.HasKey(x => x.Id);
+
+        // is_deleted is a stored mirror of DeletedAt; IsDeleted is derived in the Domain,
+        // so EF must be told to map it through its backing field.
+        builder.Property(x => x.IsDeleted).HasColumnName("is_deleted");
         builder.Property(x => x.Id).HasColumnName("id");
 
         builder.Property(x => x.UserId).HasColumnName("user_id").IsRequired();

@@ -4,6 +4,7 @@ import { Dialog as DialogPrimitive } from "radix-ui";
 import { cn } from "../../lib/cn";
 import { Button } from "./button";
 import { XIcon } from "lucide-react";
+import { useRestoreFocus } from "../../hooks/use-restore-focus";
 
 function Dialog({
   ...props
@@ -37,7 +38,7 @@ function DialogOverlay({
     <DialogPrimitive.Overlay
       data-slot="dialog-overlay"
       className={cn(
-        "data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0 bg-black/40 backdrop-blur-sm duration-200 fixed inset-0 isolate z-50",
+        "data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0 bg-black/40 backdrop-blur-sm duration-200 fixed inset-0 isolate z-backdrop",
         className,
       )}
       {...props}
@@ -49,20 +50,27 @@ function DialogContent({
   className,
   children,
   showCloseButton = true,
+  overlayClassName,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean;
+  /** Overrides the backdrop's classes (a surface with its own scrim). */
+  overlayClassName?: string;
 }) {
+  const { onOpenAutoFocus, onCloseAutoFocus, ...rest } = props;
+  const restore = useRestoreFocus({ onOpenAutoFocus, onCloseAutoFocus });
   return (
     <DialogPortal>
-      <DialogOverlay />
+      <DialogOverlay className={overlayClassName} />
       <DialogPrimitive.Content
         data-slot="dialog-content"
+        onOpenAutoFocus={restore.onOpenAutoFocus}
+        onCloseAutoFocus={restore.onCloseAutoFocus}
         className={cn(
-          "bg-background data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0 data-closed:zoom-out-95 data-open:zoom-in-95 ring-foreground/10 grid max-w-[calc(100%-2rem)] gap-6 rounded-xl p-6 text-sm ring-1 duration-100 sm:max-w-md fixed top-1/2 left-1/2 z-50 w-full -translate-x-1/2 -translate-y-1/2",
+          "bg-background data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0 data-closed:zoom-out-95 data-open:zoom-in-95 ring-foreground/10 grid max-w-[calc(100%-2rem)] gap-6 rounded-xl p-6 text-sm ring-1 duration-100 sm:max-w-md fixed top-1/2 left-1/2 z-modal w-full -translate-x-1/2 -translate-y-1/2",
           className,
         )}
-        {...props}
+        {...rest}
       >
         {children}
         {showCloseButton && (

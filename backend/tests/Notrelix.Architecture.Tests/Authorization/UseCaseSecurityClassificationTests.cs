@@ -161,7 +161,6 @@ public class UseCaseSecurityClassificationTests
         // WorkManagement — BoardGroups (use BoardId)
         ["UnarchiveBoardGroupCommand"] = new("UnarchiveBoardGroupCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
         ["DuplicateBoardGroupCommand"] = new("DuplicateBoardGroupCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
-        ["ReorderBoardGroupsCommand"] = new("ReorderBoardGroupsCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
         ["UpdateBoardGroupCommand"] = new("UpdateBoardGroupCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
         ["CreateBoardGroupCommand"] = new("CreateBoardGroupCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
         ["ArchiveBoardGroupCommand"] = new("ArchiveBoardGroupCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
@@ -206,12 +205,10 @@ public class UseCaseSecurityClassificationTests
 
         // WorkManagement — Board (use BoardId)
         ["GetFullBoardQuery"] = new("GetFullBoardQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
-        ["CreateBoardBySlugCommand"] = new("CreateBoardBySlugCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
         ["UnarchiveBoardCommand"] = new("UnarchiveBoardCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
         ["AddBoardMemberCommand"] = new("AddBoardMemberCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
         ["RemoveBoardMemberCommand"] = new("RemoveBoardMemberCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
         ["DeleteBoardFieldCommand"] = new("DeleteBoardFieldCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
-        ["ReorderBoardFieldsCommand"] = new("ReorderBoardFieldsCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
         ["UpdateBoardFieldCommand"] = new("UpdateBoardFieldCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
         ["CreateBoardFieldCommand"] = new("CreateBoardFieldCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
 

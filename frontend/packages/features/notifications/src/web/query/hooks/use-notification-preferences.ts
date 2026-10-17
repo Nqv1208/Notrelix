@@ -40,6 +40,7 @@ export function createUseNotificationPreferences({
       preferences: query.data,
       isLoading: query.isLoading,
       isError: query.isError,
+      refetch: query.refetch,
       updatePreferences: mutation.mutate,
       isUpdating: mutation.isPending,
     };

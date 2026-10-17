@@ -3,8 +3,9 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.Checklists.Commands.DeleteChecklistItem;
 
+/// <summary>Removes an item through the owning Checklist aggregate (WM-V3-APP-CHK-001).</summary>
 [IdempotencyOperation("work-management.checklists.delete-checklist-item.v1")]
-public record DeleteChecklistItemCommand(Guid ItemId) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+public record DeleteChecklistItemCommand(Guid ItemId, long ExpectedVersion) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.checklist-item"), ItemId);
@@ -13,13 +14,20 @@ public record DeleteChecklistItemCommand(Guid ItemId) : ICommand<Result>, IWrite
 public class DeleteChecklistItemCommandHandler : IRequestHandler<DeleteChecklistItemCommand, Result>
 {
     private readonly IWorkManagementDbContext _context;
-    public DeleteChecklistItemCommandHandler(IWorkManagementDbContext context) => _context = context;
+    private readonly ICurrentUser _currentUser;
+    private readonly IDateTimeProvider _dateTimeProvider;
+
+    public DeleteChecklistItemCommandHandler(IWorkManagementDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
+    {
+        _context = context;
+        _currentUser = currentUser;
+        _dateTimeProvider = dateTimeProvider;
+    }
 
     public async Task<Result> Handle(DeleteChecklistItemCommand request, CancellationToken ct)
     {
-        var item = await _context.ChecklistItems.FirstOrDefaultAsync(i => i.Id == request.ItemId, ct);
-        if (item is null) throw new NotFoundException(nameof(ChecklistItem), request.ItemId);
-        _context.ChecklistItems.Remove(item);
+        var checklist = await ChecklistAggregateLoader.LoadOwningAsync(_context, request.ItemId, ct);
+        checklist.RemoveItem(request.ItemId, _currentUser.UserId, _dateTimeProvider.UtcNow);
         return Result.Success();
     }
 }

@@ -136,15 +136,44 @@ BEGIN
         RETURN;
     END IF;
 
+    PERFORM ops.apply_scope_expression_policies(p_schema, p_table, v_scope, p_allow_app_write);
+END;
+$$;
+
+-- Business policies for a table whose tenant scope is not a column of its own
+-- but is derived from a parent row (WM-V3-DATA-003). p_scope is a boolean SQL
+-- expression evaluated per row; it must resolve the parent and call
+-- ops.has_workspace_access/ops.has_account_access on the parent's scope.
+CREATE OR REPLACE FUNCTION ops.apply_scope_expression_policies(
+    p_schema text,
+    p_table text,
+    p_scope text,
+    p_allow_app_write boolean DEFAULT true
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog, ops, pg_temp
+AS $$
+BEGIN
+    IF NOT ops.table_exists(p_schema, p_table) THEN
+        RAISE NOTICE 'RLS skipped missing table %.%', p_schema, p_table;
+        RETURN;
+    END IF;
+
+    IF p_scope IS NULL OR btrim(p_scope) = '' THEN
+        RAISE EXCEPTION 'RLS scope expression for %.% must not be empty', p_schema, p_table;
+    END IF;
+
     PERFORM ops.drop_all_policies_for_table(p_schema, p_table);
     PERFORM ops.enable_rls_for_table(p_schema, p_table);
 
-    PERFORM ops.create_policy(p_schema, p_table, 'p_app_select', 'SELECT', 'notrelix_app', v_scope, NULL);
+    PERFORM ops.create_policy(p_schema, p_table, 'p_app_select', 'SELECT', 'notrelix_app', p_scope, NULL);
 
     IF p_allow_app_write THEN
-        PERFORM ops.create_policy(p_schema, p_table, 'p_app_insert', 'INSERT', 'notrelix_app', NULL, v_scope);
-        PERFORM ops.create_policy(p_schema, p_table, 'p_app_update', 'UPDATE', 'notrelix_app', v_scope, v_scope);
-        PERFORM ops.create_policy(p_schema, p_table, 'p_app_delete', 'DELETE', 'notrelix_app', v_scope, NULL);
+        PERFORM ops.create_policy(p_schema, p_table, 'p_app_insert', 'INSERT', 'notrelix_app', NULL, p_scope);
+        PERFORM ops.create_policy(p_schema, p_table, 'p_app_update', 'UPDATE', 'notrelix_app', p_scope, p_scope);
+        PERFORM ops.create_policy(p_schema, p_table, 'p_app_delete', 'DELETE', 'notrelix_app', p_scope, NULL);
     END IF;
 
     PERFORM ops.create_policy(p_schema, p_table, 'p_worker_all', 'ALL', 'notrelix_worker', 'true', 'true');

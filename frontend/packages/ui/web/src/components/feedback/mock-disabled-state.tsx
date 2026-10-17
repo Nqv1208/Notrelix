@@ -16,7 +16,7 @@ export function MockDisabledState({
 }: MockDisabledStateProps) {
   return (
     <div className="flex flex-col items-center justify-center p-8 text-center min-h-[300px] border border-dashed rounded-lg bg-muted/10 space-y-4">
-      <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 text-primary">
+      <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 text-link">
         <Lock className="h-6 w-6" />
       </div>
       <div className="space-y-1 max-w-sm">

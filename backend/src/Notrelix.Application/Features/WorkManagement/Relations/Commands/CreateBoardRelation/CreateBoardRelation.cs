@@ -10,7 +10,8 @@ public record CreateBoardRelationCommand(
     string RelationType)
     : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
-    public PermissionAction Action => PermissionAction.ManageBoard;
+    // A relation extends the Board schema (Editor), not Board management.
+    public PermissionAction Action => PermissionAction.CreateField;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), SourceBoardId);
 }
 

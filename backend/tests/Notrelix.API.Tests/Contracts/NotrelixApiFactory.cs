@@ -56,6 +56,7 @@ using Notrelix.Application.Features.Workspaces.Spaces.Commands.RestoreSpace;
 using Notrelix.Application.Features.Workspaces.Teams.Commands.CreateTeam;
 using Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeams;
 using Notrelix.Application.Features.Workspaces.Teams.Queries.GetTeam;
+using Notrelix.Application.Features.Workspaces.Teams.Queries.GetTeamMembers;
 using Notrelix.Application.Features.Workspaces.Teams.Commands.RenameTeam;
 using Notrelix.Application.Features.Workspaces.Teams.Commands.UpdateTeamDescription;
 using Notrelix.Application.Features.Workspaces.Teams.Commands.AddTeamMember;
@@ -76,18 +77,15 @@ using Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoards;
 using Notrelix.Application.Features.WorkManagement.Boards.Queries.GetFullBoard;
 using Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoardMembers;
 using Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoardsBySlug;
-using Notrelix.Application.Features.WorkManagement.Boards.Commands.CreateBoardBySlug;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.CreateBoardField;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.UpdateBoardField;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.DeleteBoardField;
-using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.ReorderBoardFields;
 using Notrelix.Application.Features.WorkManagement.BoardSchema.Queries.GetBoardSchema;
 using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.CreateBoardGroup;
 using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.UpdateBoardGroup;
 using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.ArchiveBoardGroup;
 using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.UnarchiveBoardGroup;
 using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.DuplicateBoardGroup;
-using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.ReorderBoardGroups;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.CreateBoardItem;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItem;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.ArchiveBoardItem;
@@ -369,7 +367,7 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
             // that the In-Memory test provider does not support.
             MockWorkspaceHandler<GetWorkspaceQuery, Result<WorkspaceDto>>(services,
                 Result<WorkspaceDto>.Success(new WorkspaceDto(
-                    Guid.NewGuid(), "Mocked", "mocked", null, false, "Free", null, null, null, false, 0, DateTime.UtcNow, null)));
+                    Guid.NewGuid(), "Mocked", "mocked", null, false, "Free", null, null, null, false, 0, DateTime.UtcNow, null, 1)));
             MockWorkspaceHandler<UpdateWorkspaceProfileCommand, Result>(services, Result.Success());
             MockWorkspaceHandler<ArchiveWorkspaceCommand, Result>(services, Result.Success());
             MockWorkspaceHandler<RestoreWorkspaceCommand, Result>(services, Result.Success());
@@ -415,7 +413,7 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
                 Result<List<WorkspaceDto>>.Success(new List<WorkspaceDto>()));
             MockWorkspaceHandler<ResolveSlugQuery, Result<WorkspaceDto>>(services,
                 Result<WorkspaceDto>.Success(new WorkspaceDto(
-                    Guid.NewGuid(), "Mocked", "mocked", null, false, "Free", null, null, null, false, 0, DateTime.UtcNow, null)));
+                    Guid.NewGuid(), "Mocked", "mocked", null, false, "Free", null, null, null, false, 0, DateTime.UtcNow, null, 1)));
             MockWorkspaceHandler<GetWorkspaceSettingsQuery, Result<WorkspaceSettingsDto>>(services,
                 Result<WorkspaceSettingsDto>.Success(new WorkspaceSettingsDto(false, false, false, "Member", 7)));
             MockWorkspaceHandler<UpdateWorkspaceSettingsCommand, Result>(services, Result.Success());
@@ -441,7 +439,8 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
             MockWorkspaceHandler<GetWorkspaceTeamsQuery, Result<List<TeamDto>>>(services,
                 Result<List<TeamDto>>.Success(new List<TeamDto>()));
             MockWorkspaceHandler<GetTeamQuery, Result<TeamDto>>(services,
-                Result<TeamDto>.Success(new TeamDto(Guid.NewGuid(), "Mocked", null, false, 0, DateTime.UtcNow)));
+                Result<TeamDto>.Success(new TeamDto(Guid.NewGuid(), "Mocked", null, "Active", 0, 1, DateTime.UtcNow)));
+            MockWorkspaceHandler<GetTeamMembersQuery, IReadOnlyList<TeamMemberDto>>(services, new List<TeamMemberDto>());
             MockWorkspaceHandler<RenameTeamCommand, Result>(services, Result.Success());
             MockWorkspaceHandler<UpdateTeamDescriptionCommand, Result>(services, Result.Success());
             MockWorkspaceHandler<AddTeamMemberCommand, Result>(services, Result.Success());
@@ -466,29 +465,26 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
             MockWorkspaceHandler<GetBoardQuery, Result<BoardDto>>(services,
                 Result<BoardDto>.Success(new BoardDto(
                     Guid.NewGuid(), Guid.NewGuid(), "Test Board", null, "default",
-                    "Workspace", false, 0, 0, DateTime.UtcNow)));
+                    "Workspace", false, 0, 0, DateTime.UtcNow, 1)));
             MockWorkspaceHandler<GetBoardsQuery, Result<List<BoardDto>>>(services,
                 Result<List<BoardDto>>.Success(new List<BoardDto>()));
             MockWorkspaceHandler<GetFullBoardQuery, Result<FullBoardDto>>(services,
                 Result<FullBoardDto>.Success(new FullBoardDto(
                     Guid.NewGuid(), Guid.NewGuid(), "Test Board", null, "default",
                     "Workspace", new List<BoardFieldDto>(), new List<BoardGroupDto>(),
-                    new List<BoardMemberDto>())));
+                    new List<BoardMemberDto>(), 1)));
             MockWorkspaceHandler<GetBoardMembersQuery, Result<List<BoardMemberDto>>>(services,
                 Result<List<BoardMemberDto>>.Success(new List<BoardMemberDto>()));
             MockWorkspaceHandler<GetBoardsBySlugQuery, Result<List<BoardDto>>>(services,
                 Result<List<BoardDto>>.Success(new List<BoardDto>()));
-            MockWorkspaceHandler<CreateBoardBySlugCommand, Result<Guid>>(services,
-                Result<Guid>.Success(Guid.NewGuid()));
             // Board fields
             MockWorkspaceHandler<CreateBoardFieldCommand, Result<Guid>>(services,
                 Result<Guid>.Success(Guid.NewGuid()));
             MockWorkspaceHandler<UpdateBoardFieldCommand, Result>(services, Result.Success());
             MockWorkspaceHandler<DeleteBoardFieldCommand, Result>(services, Result.Success());
-            MockWorkspaceHandler<ReorderBoardFieldsCommand, Result>(services, Result.Success());
             MockWorkspaceHandler<GetBoardSchemaQuery, BoardSchemaDto>(services,
                 new BoardSchemaDto(Guid.NewGuid(), "Test Board", null,
-                    new List<BoardFieldSchemaDto>(), new List<BoardGroupSchemaDto>()));
+                    new List<BoardFieldSchemaDto>(), new List<BoardGroupSchemaDto>(), 1));
             // Board groups
             MockWorkspaceHandler<CreateBoardGroupCommand, Result<Guid>>(services,
                 Result<Guid>.Success(Guid.NewGuid()));
@@ -497,28 +493,27 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
             MockWorkspaceHandler<UnarchiveBoardGroupCommand, Result>(services, Result.Success());
             MockWorkspaceHandler<DuplicateBoardGroupCommand, Result<Guid>>(services,
                 Result<Guid>.Success(Guid.NewGuid()));
-            MockWorkspaceHandler<ReorderBoardGroupsCommand, Result>(services, Result.Success());
             // Board items
             MockWorkspaceHandler<CreateBoardItemCommand, BoardItemSlimDto>(services,
                 new BoardItemSlimDto(Guid.NewGuid(), Guid.NewGuid(), "Test Item", "a0",
-                    new List<Guid>(), new List<Guid>()));
+                    new List<Guid>(), new List<Guid>(), 1));
             MockWorkspaceHandler<GetBoardItemsQuery, List<BoardItemSlimDto>>(services,
                 new List<BoardItemSlimDto>());
             MockWorkspaceHandler<GetBoardItemQuery, Result<BoardItemDto>>(services,
                 Result<BoardItemDto>.Success(new BoardItemDto(
                     Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
                     "Test Item", new List<BoardItemMemberDto>(), new List<BoardItemLabelDto>(),
-                    new List<ChecklistDto>(), 0, 0, "a0", DateTime.UtcNow, null)));
+                    new List<ChecklistDto>(), 0, 0, "a0", DateTime.UtcNow, null, 1)));
             MockWorkspaceHandler<UpdateBoardItemCommand, Result>(services, Result.Success());
             MockWorkspaceHandler<ArchiveBoardItemCommand, Result>(services, Result.Success());
             MockWorkspaceHandler<DuplicateBoardItemCommand, Result<Guid>>(services,
                 Result<Guid>.Success(Guid.NewGuid()));
             MockWorkspaceHandler<MoveBoardItemCommand, BoardItemSlimDto>(services,
                 new BoardItemSlimDto(Guid.NewGuid(), Guid.NewGuid(), "Test Item", "a0",
-                    new List<Guid>(), new List<Guid>()));
+                    new List<Guid>(), new List<Guid>(), 1));
             MockWorkspaceHandler<UpdateBoardItemFieldValueCommand, BoardItemSlimDto>(services,
                 new BoardItemSlimDto(Guid.NewGuid(), Guid.NewGuid(), "Test Item", "a0",
-                    new List<Guid>(), new List<Guid>()));
+                    new List<Guid>(), new List<Guid>(), 1));
             MockWorkspaceHandler<UpdateBoardItemFieldValuesCommand, Result>(services, Result.Success());
             MockWorkspaceHandler<AssignBoardItemMemberCommand, Result>(services, Result.Success());
             MockWorkspaceHandler<UnassignBoardItemMemberCommand, Result>(services, Result.Success());

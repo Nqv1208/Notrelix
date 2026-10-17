@@ -6,23 +6,33 @@ import {
 } from "react";
 import type { NotrelixClient } from "@notrelix/contracts";
 import { createBoardApi } from "./api/board.api";
+import { createBoardAccessApi } from "./api/board-access.api";
+import { createBoardSettingsApi } from "./api/board-settings.api";
+import { createBoardAutomationsApi } from "./api/board-automations.api";
 import { createCardApi } from "./api/item.api";
 import { createGroupApi } from "./api/group.api";
 import { createListApi } from "./api/list.api";
 import { createColumnApi } from "./api/field.api";
+import { createFieldOptionApi } from "./api/field-option.api";
 import { createLabelApi } from "./api/label.api";
 import { createChecklistApi } from "./api/checklist.api";
 import { createCommentApi } from "./api/item-comments.api";
+import { createItemExtrasApi } from "./api/item-extras.api";
 
 export interface WorkManagementServices {
   readonly boards: ReturnType<typeof createBoardApi>;
+  readonly access: ReturnType<typeof createBoardAccessApi>;
   readonly cards: ReturnType<typeof createCardApi>;
   readonly groups: ReturnType<typeof createGroupApi>;
   readonly lists: ReturnType<typeof createListApi>;
   readonly columns: ReturnType<typeof createColumnApi>;
+  readonly fieldOptions: ReturnType<typeof createFieldOptionApi>;
   readonly labels: ReturnType<typeof createLabelApi>;
   readonly checklists: ReturnType<typeof createChecklistApi>;
   readonly comments: ReturnType<typeof createCommentApi>;
+  readonly itemExtras: ReturnType<typeof createItemExtrasApi>;
+  readonly boardSettings: ReturnType<typeof createBoardSettingsApi>;
+  readonly boardAutomations: ReturnType<typeof createBoardAutomationsApi>;
 }
 
 export function createWorkManagementServices(
@@ -30,13 +40,18 @@ export function createWorkManagementServices(
 ): WorkManagementServices {
   return {
     boards: createBoardApi(client),
+    access: createBoardAccessApi(client),
     cards: createCardApi(client),
     groups: createGroupApi(client),
     lists: createListApi(client),
     columns: createColumnApi(client),
+    fieldOptions: createFieldOptionApi(client),
     labels: createLabelApi(client),
     checklists: createChecklistApi(client),
     comments: createCommentApi(client),
+    itemExtras: createItemExtrasApi(client),
+    boardSettings: createBoardSettingsApi(client),
+    boardAutomations: createBoardAutomationsApi(client),
   };
 }
 

@@ -18,21 +18,24 @@ public class GetChecklistsQueryHandler : IRequestHandler<GetChecklistsQuery, Res
     public async Task<Result<List<ChecklistDto>>> Handle(GetChecklistsQuery request, CancellationToken ct)
     {
         var checklists = await _context.Checklists.AsNoTracking()
+            .Include(c => c.Items)
             .Where(c => c.ItemId == request.BoardItemId)
-            .OrderBy(c => c.Position)
             .ToListAsync(ct);
 
-        var result = checklists.Select(c => new ChecklistDto(
-            c.Id, c.Title, c.Position.Value,
-            _context.ChecklistItems.AsNoTracking()
-                .Where(i => i.ChecklistId == c.Id)
-                .OrderBy(i => i.Position)
-                .Select(i => new ChecklistItemDto(
-                    i.Id, i.Title, i.Status.ToString(),
-                    i.DueAt.HasValue ? i.DueAt.Value.DateTime : (DateTime?)null,
-                    i.AssigneeUserId, i.Position.Value))
-                .ToList()
-        )).ToList();
+        // Ordinal key order with a stable id tie-break, the same canonical order the
+        // placement resolver uses (WM-V3-ORDER-002).
+        var result = checklists
+            .OrderBy(c => c.Position).ThenBy(c => c.Id)
+            .Select(c => new ChecklistDto(
+                c.Id, c.Title, c.Position.Value, c.Version,
+                c.Items
+                    .OrderBy(i => i.Position).ThenBy(i => i.Id)
+                    .Select(i => new ChecklistItemDto(
+                        i.Id, i.Title, i.Status.ToString(),
+                        i.DueAt.HasValue ? i.DueAt.Value.DateTime : (DateTime?)null,
+                        i.AssigneeUserId, i.Position.Value))
+                    .ToList()))
+            .ToList();
 
         return Result<List<ChecklistDto>>.Success(result);
     }

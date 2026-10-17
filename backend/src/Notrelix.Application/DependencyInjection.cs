@@ -81,6 +81,9 @@ public static class DependencyInjection
 
         // Integration event collector (scoped per request)
         services.AddScoped<IIntegrationEventCollector, IntegrationEventCollector>();
+        services.AddSingleton<Notrelix.Application.Features.WorkManagement.Ordering.WorkOrderingMetrics>();
+        services.AddScoped<Notrelix.Application.Features.WorkManagement.Ordering.WorkPlacementResolver>();
+        services.AddScoped<Notrelix.Application.Features.WorkManagement.Ordering.WorkOrderingRebalancer>();
         foreach (var mapper in assembly.GetTypes().Where(type => type is { IsAbstract: false, IsClass: true }))
         {
             foreach (var contract in mapper.GetInterfaces().Where(type =>
@@ -112,6 +115,16 @@ public static class DependencyInjection
         services.AddScoped<MoveBoardItemUseCase>();
         services.AddScoped<IWorkItemActions, WorkItemActions>();
         services.AddScoped<IWorkItemActionAuthorizer, WorkItemActionAuthorizer>();
+        services.AddScoped<Notrelix.Application.Features.Workspaces.Spaces.Services.ISpaceTargetAuthorizer,
+            Notrelix.Application.Features.Workspaces.Spaces.Services.SpaceTargetAuthorizer>();
+        services.AddScoped<Notrelix.Application.Features.Workspaces.Spaces.Services.ISpaceContentReader,
+            Notrelix.Application.Features.Workspaces.Spaces.Services.SpaceContentReader>();
+        services.AddScoped<Notrelix.Application.Features.WorkManagement.Boards.Services.IBoardSpacePlacement,
+            Notrelix.Application.Features.WorkManagement.Boards.Services.BoardSpacePlacement>();
+        services.AddScoped<Notrelix.Application.Features.Documents.Pages.Services.IPageSpacePlacement,
+            Notrelix.Application.Features.Documents.Pages.Services.PageSpacePlacement>();
+        services.AddScoped<Notrelix.Application.Features.Governance.Public.Access.IResourceAccessSummary,
+            Notrelix.Application.Features.Governance.Authorization.ResourceAccessSummaryService>();
 
         // Producer-owned public projection source (WorkManagement placement facts)
         services.AddScoped<IWorkItemProjectionSource, WorkItemProjectionSourceService>();

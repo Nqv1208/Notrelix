@@ -26,7 +26,7 @@ public class UpdatePageCommandHandler : IRequestHandler<UpdatePageCommand, Resul
 
     public async Task<Result> Handle(UpdatePageCommand request, CancellationToken ct)
     {
-        var page = await _context.Pages.FirstOrDefaultAsync(page => page.Id == request.PageId && !page.IsDeleted, ct);
+        var page = await _context.Pages.FirstOrDefaultAsync(page => page.Id == request.PageId && page.DeletedAt == null, ct);
         if (page is null) throw new NotFoundException(nameof(Page), request.PageId);
 
         if (request.Title is not null) page.Rename(request.Title, _currentUser.UserId, _dateTimeProvider.UtcNow);

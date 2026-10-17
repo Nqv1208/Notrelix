@@ -10,7 +10,13 @@
  *   cards.archive           — POST /board-items/:id/archive
  *   cards.duplicate         — POST /board-items/:id/duplicate (returns string cardId)
  *   cards.move              — POST /board-items/:id/move
+
+ *   cards.links             — GET/POST /board-items/:id/links, DELETE .../links/:linkId (gap)
+ *   cards.childItems.add    — POST /board-items/:id/child-items (gap)
+ *   cards.attachments.add   — POST /board-items/:id/attachments (gap)
+ *   cards.moveToBoard       — POST /board-items/:id/move-to-board (gap)
  *   cards.fieldValues       — PATCH /board-items/:id/field-values
+ *   cards.status            — PATCH /board-items/:id/status
  *   cards.attachments       — GET /board-items/:id/attachments
  *   cards.activity          — GET /board-items/:id/activity
  *   cards.labels.list       — GET /board-items/:id/labels
@@ -37,22 +43,41 @@ import type {
   CommentDtoApi,
 } from "@notrelix/work-management-core";
 import { defineMockOperation } from "../../operations/types";
-import { ok, notFound } from "../../transport/create-response";
+import {
+  forbidden,
+  noContent,
+  notFound,
+  ok,
+} from "../../transport/create-response";
+import { preconditionFailed } from "../workspace/space-target";
 import type { MockStore } from "../../state/mock-store";
+import type { MockCardRecord } from "../../state/records";
+import {
+  canWriteBoardItems,
+  projectItemMembers,
+  projectItemReadValues,
+} from "./boards.handlers";
 
-function projectCardDto(
-  c: {
-    id: string;
-    boardId: string;
-    listId: string;
-    title: string;
-    description?: string;
-    position: number;
-    createdAt: string;
-    updatedAt: string;
-  },
-  store: MockStore,
-): CardDtoApi {
+/** 400 with field errors, as the real API answers a validation failure. */
+function badRequest(errors: Record<string, string[]>) {
+  return {
+    status: 400,
+    body: { message: "Validation failed", code: "VALIDATION_ERROR", errors },
+  };
+}
+
+/** The real write endpoints require an `Idempotency-Key` header (else 400). */
+function missingIdempotencyKey(request: { headers: Headers }) {
+  return request.headers.get("Idempotency-Key")
+    ? null
+    : badRequest({ "Idempotency-Key": ["The header is required."] });
+}
+
+/**
+ * The item detail: the hand-written fields plus the generated item read
+ * values (`name`, key, Status/priority option ids, dates, child progress).
+ */
+function projectCardDto(c: MockCardRecord, store: MockStore): CardDtoApi {
   const board = store.getBoard(c.boardId);
   const labels = store.getCardLabels(c.id).map((l) => ({
     labelId: l.id,
@@ -75,6 +100,7 @@ function projectCardDto(
   }));
   const comments = store.getCardComments(c.id);
   const fieldValues = store.getFieldValues(c.id);
+  const { completedAt, ...readValues } = projectItemReadValues(c, store);
 
   return {
     id: c.id,
@@ -86,12 +112,12 @@ function projectCardDto(
     linkedPageId: null,
     priority: null,
     status: "todo",
-    dueDate: null,
-    startDate: null,
-    completedAt: null,
+    dueDate: c.dueAt ?? null,
+    startDate: c.startedAt ?? null,
+    completedAt,
     cover: null,
     position: c.position,
-    members: [],
+    members: projectItemMembers(c, store),
     labels,
     checklists,
     commentCount: comments.length,
@@ -99,6 +125,22 @@ function projectCardDto(
     fieldValues: Object.keys(fieldValues).length > 0 ? fieldValues : null,
     createdAt: c.createdAt,
     updatedAt: c.updatedAt ?? null,
+    ...{ name: c.title, groupId: c.listId },
+    ...readValues,
+  };
+}
+
+/** The status name and category of an item, for a link's chip. */
+function describeItemStatus(store: MockStore, card: MockCardRecord) {
+  const column = store
+    .getColumns(card.boardId)
+    .find((candidate) => candidate.fieldType === "status");
+  const option = column?.options?.find(
+    (candidate) => candidate.id === store.getFieldValues(card.id)[column.id],
+  );
+  return {
+    name: option?.name ?? null,
+    category: option?.category ?? null,
   };
 }
 
@@ -155,11 +197,20 @@ export const cardsOperations = [
       };
       const list = store.getList(data.groupId || "fallback");
       if (!list) return notFound("List not found");
-      const _newCard = store.createCardByListId(data.groupId || "fallback", {
+      const created = store.createCardByListId(data.groupId || "fallback", {
         title: data.title,
         position: data.position,
       });
-      return ok<void>(undefined);
+      // BoardItemSlimDto: the client reads the new item's id.
+      return ok({
+        id: created.id,
+        groupId: created.listId,
+        name: created.title,
+        position: String(created.position),
+        memberIds: created.assigneeUserIds ?? [],
+        labelIds: [],
+        version: 1,
+      });
     },
   }),
 
@@ -172,6 +223,8 @@ export const cardsOperations = [
       description?: string;
       descriptionMd?: string;
       listId?: string;
+      dueDate?: string | null;
+      startDate?: string | null;
     },
     void
   >({
@@ -188,15 +241,22 @@ export const cardsOperations = [
         description?: string;
         descriptionMd?: string;
         listId?: string;
+        dueDate?: string | null;
+        startDate?: string | null;
       };
       const description =
         data.descriptionMd !== undefined
           ? data.descriptionMd
           : data.description;
+      // Only the fields the request names change: a spread of `undefined`
+      // would wipe the title of a date-only patch.
       const updated = store.updateCard(params.id, {
-        title: data.title,
-        description,
-        listId: data.listId,
+        ...(data.title !== undefined ? { title: data.title } : {}),
+        ...(description !== undefined ? { description } : {}),
+        ...(data.listId !== undefined ? { listId: data.listId } : {}),
+        // The Calendar moves an item by its dates (null clears one).
+        ...(data.dueDate !== undefined ? { dueAt: data.dueDate } : {}),
+        ...(data.startDate !== undefined ? { startedAt: data.startDate } : {}),
       });
       if (!updated) return notFound("Card not found");
       return ok<void>(undefined);
@@ -230,9 +290,13 @@ export const cardsOperations = [
     } as any,
     method: "POST",
     route: "/board-items/:id/archive",
-    async handle({ params, store }) {
-      const archived = store.archiveCard(params.id);
-      if (!archived) return notFound("Card not found");
+    async handle({ params, store, request }) {
+      const missingKey = missingIdempotencyKey(request);
+      if (missingKey) return missingKey;
+      const item = store.getCard(params.id);
+      if (!item) return notFound("Card not found");
+      if (!canWriteBoardItems(item.boardId, store)) return forbidden();
+      store.archiveCard(params.id);
       return ok<void>(undefined);
     },
   }),
@@ -264,21 +328,82 @@ export const cardsOperations = [
     } as any,
     method: "POST",
     route: "/board-items/:id/move",
-    async handle({ params, body, store }) {
-      const data = (body ?? {}) as { groupId?: string; position?: number };
-      if (!data.groupId) {
-        return {
-          status: 400,
-          body: { message: "groupId required", code: "BAD_REQUEST" },
-        };
+    async handle({ params, body, store, request }) {
+      const missingKey = missingIdempotencyKey(request);
+      if (missingKey) return missingKey;
+      const data = (body ?? {}) as {
+        groupId?: string;
+        expectedVersion?: number;
+        previousSiblingId?: string | null;
+        nextSiblingId?: string | null;
+      };
+      if (!data.groupId)
+        return badRequest({ groupId: ["The group is required."] });
+      if (!data.expectedVersion || data.expectedVersion <= 0) {
+        return badRequest({
+          expectedVersion: ["ExpectedVersion must be a positive value."],
+        });
       }
-      const moved = store.moveCard(params.id, data.groupId, data.position ?? 0);
-      if (!moved) return notFound("Card not found");
-      return ok({
-        id: params.id,
-        listId: data.groupId,
-        position: data.position ?? 0,
+      const item = store.getCard(params.id);
+      if (!item) return notFound("Card not found");
+      // MoveItem: editors and managers only.
+      if (!canWriteBoardItems(item.boardId, store)) return forbidden();
+      const moved = store.moveItem(params.id, data.groupId, {
+        expectedVersion: data.expectedVersion,
+        previousSiblingId: data.previousSiblingId ?? null,
+        nextSiblingId: data.nextSiblingId ?? null,
       });
+      switch (moved.result) {
+        case "not-found":
+          return notFound("Card not found");
+        case "invalid":
+          return badRequest({
+            groupId: ["Not a group or neighbour of this board."],
+          });
+        case "stale":
+          return preconditionFailed();
+        case "ok":
+          // BoardItemSlimDto with the new version.
+          return ok({
+            id: moved.card.id,
+            groupId: moved.card.listId,
+            name: moved.card.title,
+            position: String(moved.card.position),
+            memberIds: moved.card.assigneeUserIds ?? [],
+            labelIds: [],
+            version: moved.version,
+          });
+      }
+    },
+  }),
+
+  // ─── POST /board-items/:id/move-to-board ────────────────────────────────────────
+  // Gap CTR-GAP-WM-TABLE-BULK: the table's "Chuyển board".
+
+  defineMockOperation<{ id: string }, { boardId?: string }, void>({
+    id: "wm.boardItems.moveToBoard",
+    contract: { kind: "gap", gapId: "CTR-GAP-WM-TABLE-BULK" },
+    method: "POST",
+    route: "/board-items/:id/move-to-board",
+    async handle({ params, body, store, request }) {
+      const missingKey = missingIdempotencyKey(request);
+      if (missingKey) return missingKey;
+      const targetBoardId = (body ?? {}).boardId;
+      if (!targetBoardId)
+        return badRequest({ boardId: ["The target board is required."] });
+      const item = store.getCard(params.id);
+      if (!item) return notFound("Card not found");
+      // Editors and managers of both boards.
+      if (
+        !canWriteBoardItems(item.boardId, store) ||
+        !canWriteBoardItems(targetBoardId, store)
+      )
+        return forbidden();
+      const moved = store.moveItemToBoard(params.id, targetBoardId);
+      if (moved.result === "not-found") return notFound("Card not found");
+      if (moved.result === "invalid")
+        return badRequest({ boardId: ["Not another board with groups."] });
+      return noContent();
     },
   }),
 
@@ -308,6 +433,37 @@ export const cardsOperations = [
     },
   }),
 
+  // ─── PATCH /board-items/:id/status ──────────────────────────────────────────────
+
+  defineMockOperation<{ id: string }, { status?: string | null }, void>({
+    id: "wm.boardItems.status.update",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardItems.UpdateStatus",
+    } as any,
+    method: "PATCH",
+    route: "/board-items/:id/status",
+    async handle({ params, body, store, request }) {
+      const missingKey = missingIdempotencyKey(request);
+      if (missingKey) return missingKey;
+      const item = store.getCard(params.id);
+      if (!item) return notFound("Card not found");
+      // UpdateItem: editors and managers only.
+      if (!canWriteBoardItems(item.boardId, store)) return forbidden();
+      const status = (body as { status?: string | null } | undefined)?.status;
+      if (!status) return badRequest({ status: ["The status is required."] });
+      const result = store.updateItemStatus(params.id, status);
+      if (result === "not-found") return notFound("Card not found");
+      if (result === "invalid") {
+        return badRequest({
+          status: ["Not an option of the board's Status field."],
+        });
+      }
+      // The real endpoint answers 204 No Content.
+      return noContent();
+    },
+  }),
+
   // ─── GET /board-items/:id/attachments ───────────────────────────────────────────
 
   defineMockOperation<{ id: string }, never, unknown[]>({
@@ -318,7 +474,149 @@ export const cardsOperations = [
     async handle({ params, store }) {
       const c = store.getCard(params.id);
       if (!c) return notFound("Card not found");
-      return ok([]);
+      return ok(
+        store.getAttachments(params.id).map((file) => ({
+          id: file.id,
+          resourceId: file.cardId,
+          filename: file.filename,
+          // A stand-in the browser can save: the mock keeps no file bytes.
+          url: `data:text/plain;charset=utf-8,${encodeURIComponent(
+            `Tệp mẫu của mock: ${file.filename}`,
+          )}`,
+          sizeBytes: file.sizeBytes,
+          contentType: file.contentType,
+          source: "upload",
+          uploadedBy: file.uploadedBy,
+          uploadedByName: store.getUser(file.uploadedBy)?.name ?? null,
+          createdAt: file.createdAt,
+        })),
+      );
+    },
+  }),
+
+  // ─── POST /board-items/:id/attachments ──────────────────────────────────────────
+  // Gap CTR-GAP-WM-ITEM-DETAIL: registers a file's metadata (no bytes in the mock).
+
+  defineMockOperation<
+    { id: string },
+    { filename?: string; sizeBytes?: number; contentType?: string },
+    void
+  >({
+    id: "cards.attachments.add",
+    contract: { kind: "gap", gapId: "CTR-GAP-WM-ITEM-DETAIL" },
+    method: "POST",
+    route: "/board-items/:id/attachments",
+    async handle({ params, body, store, request }) {
+      const missingKey = missingIdempotencyKey(request);
+      if (missingKey) return missingKey;
+      const item = store.getCard(params.id);
+      if (!item) return notFound("Card not found");
+      if (!canWriteBoardItems(item.boardId, store)) return forbidden();
+      const filename = body?.filename?.trim();
+      if (!filename)
+        return badRequest({ filename: ["The file name is required."] });
+      store.addAttachment(params.id, {
+        filename,
+        sizeBytes: Math.max(0, Math.round(body?.sizeBytes ?? 0)),
+        contentType: body?.contentType || "application/octet-stream",
+      });
+      return noContent();
+    },
+  }),
+
+  // ─── Links between items ────────────────────────────────────────────────────────
+  // Gap CTR-GAP-WM-ITEM-DETAIL.
+
+  defineMockOperation<{ id: string }, never, unknown>({
+    id: "cards.links.list",
+    contract: { kind: "gap", gapId: "CTR-GAP-WM-ITEM-DETAIL" },
+    method: "GET",
+    route: "/board-items/:id/links",
+    async handle({ params, store }) {
+      const item = store.getCard(params.id);
+      if (!item) return notFound("Card not found");
+      return ok({
+        links: store.getItemLinks(params.id).map((link) => {
+          const status = describeItemStatus(store, link.card);
+          return {
+            id: link.id,
+            relation: link.relation,
+            item: {
+              id: link.card.id,
+              key: link.card.itemKey ?? null,
+              title: link.card.title,
+              statusName: status.name,
+              statusCategory: status.category,
+            },
+          };
+        }),
+      });
+    },
+  }),
+  defineMockOperation<
+    { id: string },
+    { itemId?: string; relation?: string },
+    void
+  >({
+    id: "cards.links.add",
+    contract: { kind: "gap", gapId: "CTR-GAP-WM-ITEM-DETAIL" },
+    method: "POST",
+    route: "/board-items/:id/links",
+    async handle({ params, body, store, request }) {
+      const missingKey = missingIdempotencyKey(request);
+      if (missingKey) return missingKey;
+      const item = store.getCard(params.id);
+      if (!item) return notFound("Card not found");
+      if (!canWriteBoardItems(item.boardId, store)) return forbidden();
+      const relation = body?.relation;
+      if (
+        !body?.itemId ||
+        (relation !== "blocked-by" &&
+          relation !== "blocks" &&
+          relation !== "related")
+      )
+        return badRequest({ itemId: ["Pick an item and a relation."] });
+      const result = store.addItemLink(params.id, body.itemId, relation);
+      if (result === "not-found") return notFound("Card not found");
+      if (result === "invalid")
+        return badRequest({ itemId: ["Not another item of this board."] });
+      return noContent();
+    },
+  }),
+  defineMockOperation<{ id: string; linkId: string }, never, void>({
+    id: "cards.links.remove",
+    contract: { kind: "gap", gapId: "CTR-GAP-WM-ITEM-DETAIL" },
+    method: "DELETE",
+    route: "/board-items/:id/links/:linkId",
+    async handle({ params, store }) {
+      const item = store.getCard(params.id);
+      if (!item) return notFound("Card not found");
+      if (!canWriteBoardItems(item.boardId, store)) return forbidden();
+      return store.removeItemLink(params.linkId)
+        ? noContent()
+        : notFound("Link not found");
+    },
+  }),
+
+  // ─── POST /board-items/:id/child-items ──────────────────────────────────────────
+  // Gap CTR-GAP-WM-ITEM-DETAIL: adds a child item (sub-item) under an item.
+
+  defineMockOperation<{ id: string }, { title?: string }, void>({
+    id: "cards.childItems.add",
+    contract: { kind: "gap", gapId: "CTR-GAP-WM-ITEM-DETAIL" },
+    method: "POST",
+    route: "/board-items/:id/child-items",
+    async handle({ params, body, store, request }) {
+      const missingKey = missingIdempotencyKey(request);
+      if (missingKey) return missingKey;
+      const item = store.getCard(params.id);
+      if (!item) return notFound("Card not found");
+      if (!canWriteBoardItems(item.boardId, store)) return forbidden();
+      const title = body?.title?.trim();
+      if (!title) return badRequest({ title: ["The title is required."] });
+      return store.createChildItem(params.id, title)
+        ? noContent()
+        : badRequest({ title: ["A child item cannot have child items."] });
     },
   }),
 
@@ -327,7 +625,7 @@ export const cardsOperations = [
   defineMockOperation<
     { id: string },
     never,
-    { activities: unknown[]; total: number }
+    { data: unknown[]; total: number; page: number; pageSize: number }
   >({
     id: "cards.activity",
     contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
@@ -336,7 +634,24 @@ export const cardsOperations = [
     async handle({ params, store }) {
       const c = store.getCard(params.id);
       if (!c) return notFound("Card not found");
-      return ok({ activities: [], total: 0 });
+      const data = store.getActivity(params.id).map((entry) => ({
+        id: entry.id,
+        actorName: entry.actorId
+          ? (store.getUser(entry.actorId)?.name ?? null)
+          : null,
+        action: entry.action,
+        resourceTitle: null,
+        createdAt: entry.createdAt,
+        // Gap fields (CTR-GAP-WM-ITEM-DETAIL): the history as structured lines.
+        kind: entry.kind ?? null,
+        automationName: entry.automationName ?? null,
+        verb: entry.verb ?? null,
+        target: entry.target ?? null,
+        notified: entry.notified ?? null,
+        detail: entry.detail ?? null,
+        compact: entry.compact ?? null,
+      }));
+      return ok({ data, total: data.length, page: 1, pageSize: data.length });
     },
   }),
 
@@ -575,6 +890,7 @@ export const cardsOperations = [
             createdAt: cmt.createdAt,
             updatedAt: cmt.updatedAt ?? null,
             isEdited: Boolean(cmt.updatedAt),
+            attachmentIds: cmt.attachmentIds ?? [],
           };
         }),
       );

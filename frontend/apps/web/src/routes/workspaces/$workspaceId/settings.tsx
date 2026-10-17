@@ -1,113 +1,165 @@
-import { useState, useMemo } from "react";
-import { useParams } from "@tanstack/react-router";
-import { useWorkspaceContext } from "@/providers/workspace-provider";
-import { createUseUpdateWorkspace } from "@notrelix/features-workspace";
-import type { UpdateWorkspaceInput } from "@notrelix/features-workspace/core";
-import { useAppRuntime } from "@notrelix/runtime-web";
-import { Button, Input } from "@notrelix/ui-web";
+import { useMemo, useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
+import {
+  describeWorkspaceFailure,
+  isWorkspaceAdmin,
+  type WorkspaceSettings,
+} from "@notrelix/features-workspace/core";
+import {
+  createUseWorkspaceSettings,
+  createUseWorkspaceSettingsMutations,
+  formatCopy,
+  useWorkspaceSettingsCopy,
+  WorkspaceSettingsSurface,
+  type SaveStatus,
+  type WorkspaceProfileValues,
+  type WorkspaceSettingsCopy,
+} from "@notrelix/features-workspace/web";
+import { useAppRuntime } from "@notrelix/runtime-web";
+import { useWorkspaceContext } from "@/providers/workspace-provider";
+import { toastFailure } from "@/shell/workspace/failure-toast";
+import { sectionState } from "@/shell/workspace/section-state";
+import { useWorkspaceViewer } from "@/shell/workspace/use-workspace-viewer";
 
+/** Maps a failed write to the section's status (inline, never toast-only). */
+function failureStatus(
+  error: unknown,
+  copy: WorkspaceSettingsCopy,
+): SaveStatus {
+  const failure = describeWorkspaceFailure(error);
+  if (failure.kind === "conflict") return { state: "conflict" };
+  const fieldMessage = Object.values(failure.fieldErrors).flat()[0] ?? null;
+  const message =
+    failure.kind === "rule"
+      ? (failure.detail ?? copy.toasts.saveFailed)
+      : failure.kind === "validation"
+        ? (fieldMessage ?? failure.detail ?? copy.toasts.saveFailed)
+        : failure.kind === "forbidden"
+          ? copy.toasts.forbidden
+          : failure.kind === "network"
+            ? copy.toasts.network
+            : copy.toasts.unknown;
+  return { state: "error", message };
+}
+
+/**
+ * Workspace settings (WX-SET-001). Profile and defaults save separately and
+ * carry the workspace version the member last read; without a reported
+ * version the producer cannot accept a write, so saving is explained and off.
+ */
 export function SettingsPage() {
-  const { workspaceId } = useParams({ from: "/workspaces/$workspaceId" });
+  const { workspaceId, workspace, isLoading, isError, refetch } =
+    useWorkspaceContext();
+  const copy = useWorkspaceSettingsCopy();
+  const navigate = useNavigate();
   const { api: runtimeClient } = useAppRuntime();
-  const { workspace, refetch } = useWorkspaceContext();
+  const hooks = useMemo(() => {
+    const deps = { api: runtimeClient.api, endpoints: runtimeClient.endpoints };
+    return {
+      useSettings: createUseWorkspaceSettings(deps),
+      useMutations: createUseWorkspaceSettingsMutations(deps),
+    };
+  }, [runtimeClient]);
 
-  const useUpdateWorkspace = useMemo(
+  const viewer = useWorkspaceViewer(workspaceId);
+  const settings = hooks.useSettings(workspaceId);
+  const mutations = hooks.useMutations(workspaceId);
+  const [profileStatus, setProfileStatus] = useState<SaveStatus>({
+    state: "idle",
+  });
+  const [defaultsStatus, setDefaultsStatus] = useState<SaveStatus>({
+    state: "idle",
+  });
+
+  const version = workspace?.version;
+  const profile = useMemo(
     () =>
-      createUseUpdateWorkspace({
-        api: runtimeClient.api,
-        endpoints: runtimeClient.endpoints,
-      }),
-    [runtimeClient],
+      isError
+        ? { status: "error" as const }
+        : isLoading || !workspace
+          ? { status: "loading" as const }
+          : {
+              status: "ready" as const,
+              data: {
+                name: workspace.name,
+                description: workspace.description ?? "",
+              },
+            },
+    [isError, isLoading, workspace],
   );
 
-  const updateMutation = useUpdateWorkspace(workspaceId);
+  const onSaveProfile = (values: WorkspaceProfileValues) => {
+    if (version === undefined) return;
+    setProfileStatus({ state: "saving" });
+    mutations.updateProfile.mutate(
+      { ...values, expectedVersion: version },
+      {
+        onSuccess: () => {
+          setProfileStatus({ state: "saved" });
+          toast.success(copy.toasts.profileSaved);
+        },
+        onError: (error) => setProfileStatus(failureStatus(error, copy)),
+      },
+    );
+  };
 
-  const [name, setName] = useState(workspace?.name ?? "");
-  const [description, setDescription] = useState(workspace?.description ?? "");
-  const [isSaving, setIsSaving] = useState(false);
+  const onSaveDefaults = (next: WorkspaceSettings) => {
+    if (version === undefined) return;
+    setDefaultsStatus({ state: "saving" });
+    mutations.updateSettings.mutate(
+      { settings: next, expectedVersion: version },
+      {
+        onSuccess: () => {
+          setDefaultsStatus({ state: "saved" });
+          toast.success(copy.toasts.defaultsSaved);
+        },
+        onError: (error) => setDefaultsStatus(failureStatus(error, copy)),
+      },
+    );
+  };
 
-  const handleSave = async () => {
-    if (!name.trim()) {
-      toast.error("Workspace name is required");
-      return;
-    }
-
-    setIsSaving(true);
-    try {
-      const input: UpdateWorkspaceInput = {
-        name: name.trim(),
-      };
-      await updateMutation.mutateAsync(input);
-      await refetch();
-      toast.success("Workspace updated");
-    } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to update workspace",
-      );
-    } finally {
-      setIsSaving(false);
-    }
+  const onArchive = () => {
+    if (version === undefined || !workspace) return;
+    const values = { workspace: workspace.name };
+    mutations.archive.mutate(version, {
+      onSuccess: () => {
+        toast.success(formatCopy(copy.toasts.archived, values));
+        void navigate({ to: "/home" });
+      },
+      onError: (error) =>
+        toastFailure(
+          formatCopy(copy.toasts.archiveFailed, values),
+          error,
+          (failure) =>
+            failure.kind === "forbidden"
+              ? copy.toasts.forbidden
+              : copy.toasts.unknown,
+        ),
+    });
   };
 
   return (
-    <div className="p-8 max-w-2xl">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold tracking-tight mb-1">Settings</h1>
-        <p className="text-sm text-muted-foreground">
-          Manage your workspace settings.
-        </p>
-      </div>
-
-      <div className="space-y-8">
-        <div className="space-y-4">
-          <h2 className="font-semibold text-sm">General</h2>
-          <div className="space-y-3">
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-foreground">
-                Name
-              </label>
-              <Input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Workspace name"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-foreground">
-                Description
-              </label>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Optional description for your workspace"
-                rows={3}
-                className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 resize-none"
-              />
-            </div>
-          </div>
-          <Button onClick={handleSave} disabled={isSaving || !name.trim()}>
-            {isSaving ? "Saving..." : "Save changes"}
-          </Button>
-        </div>
-
-        <div className="space-y-4">
-          <h2 className="font-semibold text-sm">Danger Zone</h2>
-          <div className="rounded-lg border border-destructive/20 p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium text-sm">Delete workspace</p>
-                <p className="text-xs text-muted-foreground">
-                  Permanently delete this workspace and all its data.
-                </p>
-              </div>
-              <Button variant="destructive" size="sm" disabled>
-                Delete
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <WorkspaceSettingsSurface
+      copy={copy}
+      workspaceName={workspace?.name ?? null}
+      canManage={isWorkspaceAdmin(viewer.role)}
+      versionAvailable={version !== undefined}
+      profile={profile}
+      defaults={sectionState(settings, settings.data)}
+      profileStatus={profileStatus}
+      defaultsStatus={defaultsStatus}
+      archiving={mutations.archive.isPending}
+      onSaveProfile={onSaveProfile}
+      onSaveDefaults={onSaveDefaults}
+      onArchive={onArchive}
+      onReload={() => {
+        setProfileStatus({ state: "idle" });
+        setDefaultsStatus({ state: "idle" });
+        void refetch();
+        void settings.refetch();
+      }}
+      onRetryDefaults={() => void settings.refetch()}
+    />
   );
 }

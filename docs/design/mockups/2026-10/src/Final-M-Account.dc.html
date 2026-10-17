@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Hướng chốt · Di động · Tài khoản</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+/* mobile shell — shared (copy verbatim into every Final-M-*.dc.html; source Final-M-Home) */
+body{margin:0}
+a{color:inherit}a:hover{color:inherit}
+.nx{--bg:#F7F8FA;--panel:#FFFFFF;--hover:#F1F3F6;--hover2:#E6E9EE;--line:#E6E9EE;--line2:#D2D7DE;--ring:#7A8391;--text:#161A21;--muted:#4F5866;--meta:#5F6875;--accent:#1666CC;--accent-ink:#FFFFFF;--accent-soft:#E7F0FC;--accent-text:#0F56AE;--st-todo:#7A8391;--st-doing:#1E7BE0;--st-review:#D99A00;--st-done:#2E8B57;--danger:#C42340;--danger-soft:#FDECEF;--warn-text:#8A5A00;--warn-soft:#FFF4D6;--ok-soft:#E2F1E7;--lane-todo:#ECEEF2;--lane-doing:#E2ECFA;--lane-review:#FBF0D6;--high:#B4500B;--badge:#C42340;--scrim:rgba(15,23,42,.42);--act-done:#1F7A4A;--act-snooze:#8A5A00;--act-neutral:#4F5866;font-family:'Be Vietnam Pro',system-ui,sans-serif;color:var(--text);background:var(--bg);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.nx.mode-dem{--bg:#0E1116;--panel:#151A21;--hover:#1C232C;--hover2:#232A34;--line:#232B35;--line2:#2E3743;--ring:#8C95A3;--text:#E6E9EE;--muted:#AAB3C0;--meta:#8F99A7;--accent:#5AA9FF;--accent-ink:#04111F;--accent-soft:rgba(90,169,255,.16);--accent-text:#7DBBFF;--st-todo:#8C95A3;--st-doing:#5AA9FF;--st-review:#F2C14E;--st-done:#56C98A;--danger:#FF6B81;--danger-soft:rgba(255,107,129,.14);--warn-text:#F2C14E;--warn-soft:rgba(242,193,78,.12);--ok-soft:#153024;--lane-todo:#1E252F;--lane-doing:#16284A;--lane-review:#30281A;--high:#FFA060;--badge:#C42340;--scrim:rgba(0,0,0,.6);--act-done:#1F7A4A;--act-snooze:#8A5A00;--act-neutral:#4F5866}
+.nx.m{width:390px;height:844px;position:relative;overflow:hidden;display:flex;flex-direction:column;border-radius:0}
+.nx.m .app-layer{flex:1;min-height:0;display:flex;flex-direction:column}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.i{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.i.lg{width:24px;height:24px}
+.i.sm{width:14px;height:14px}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;margin:-1px;padding:0;border:0}
+/* status bar 47px (decorative) */
+.sbar{height:47px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:4px 26px 0 34px;box-sizing:border-box;font-size:16px;font-weight:600;font-variant-numeric:tabular-nums;background:var(--bg);color:var(--text)}
+.sbar .sg{display:flex;align-items:center;gap:6px}
+.sbar svg{display:block}
+/* top bar 52px: leading control · spacer · trailing icon buttons */
+.tbar{height:52px;flex:none;display:flex;align-items:center;gap:2px;padding:0 8px 0 10px;background:var(--bg)}
+.tbar .sp{flex:1}
+.tbar-t{flex:1;min-width:0;text-align:center;font-size:17px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ib{width:44px;height:44px;border-radius:12px;border:0;background:transparent;color:var(--text);display:grid;place-items:center;cursor:pointer;padding:0;flex:none;text-decoration:none;font:inherit}
+.ib:hover,.ib:active{background:var(--hover2)}
+.ib .me{width:32px;height:32px;border-radius:50%;background:#4E8574;color:#fff;font-size:12px;font-weight:700;display:grid;place-items:center}
+.wschip{height:44px;display:inline-flex;align-items:center;gap:8px;padding:0 10px 0 6px;border-radius:12px;border:0;background:transparent;font:inherit;font-size:16px;font-weight:650;color:var(--text);cursor:pointer;min-width:0}
+.wschip:hover,.wschip:active{background:var(--hover2)}
+.wschip .dm{width:28px;height:28px;border-radius:8px;font-size:11px}
+.wschip .i{color:var(--meta)}
+/* scrolling content between top bar and tab bar (mockup clips at the bottom) */
+.content{flex:1;min-height:0;overflow:hidden;padding:0 16px 24px;display:flex;flex-direction:column;gap:18px}
+.tbar.scrolled{box-shadow:0 1px 0 var(--line)}
+.ltitle{margin:0;font-size:28px;font-weight:700;letter-spacing:-0.02em;line-height:1.2}
+.lsub{margin:4px 0 0;font-size:13px;color:var(--muted)}
+/* chips: horizontal scroll, 44px */
+.chips{display:flex;gap:8px;overflow-x:auto;margin:0 -16px;padding:0 16px;scrollbar-width:none;flex:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{height:44px;padding:0 14px;border-radius:12px;border:1px solid var(--line2);background:var(--panel);color:var(--text);font:inherit;font-size:14px;font-weight:500;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;flex:none;text-decoration:none;cursor:pointer;box-sizing:border-box}
+.chip b{font-weight:700;font-variant-numeric:tabular-nums}
+.chip.over{background:var(--danger-soft);border-color:transparent;color:var(--danger)}
+.chip.today{background:var(--warn-soft);border-color:transparent;color:var(--warn-text)}
+.chip.on{background:var(--text);border-color:var(--text);color:var(--bg);font-weight:600}
+/* section heading */
+.sec{display:flex;flex-direction:column}
+.sec-h{display:flex;align-items:center;gap:8px;min-height:40px;margin:0 0 4px;font-size:17px;font-weight:650;letter-spacing:-0.01em}
+.sec-h .n{color:var(--meta);font-weight:500;font-size:15px}
+.sec-h.over{color:var(--danger)}
+.sec-h a{margin-left:auto;margin-right:-8px;height:44px;padding:0 8px;display:inline-flex;align-items:center;font-size:14px;font-weight:500;color:var(--accent-text);text-decoration:none}
+/* grouped list + rows: [tick 44][link: title 2 lines + meta | due][⋯ 44] */
+.list{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.lrow{position:relative;border-top:1px solid var(--line);overflow:hidden}
+.lrow:first-child{border-top:0}
+.lrow-in{position:relative;z-index:1;display:flex;align-items:flex-start;gap:0;padding:6px 0 6px 2px;background:var(--panel)}
+.tick{width:44px;height:44px;border:0;background:transparent;padding:0;display:grid;place-items:center;flex:none;cursor:pointer;border-radius:12px}
+.tick span{width:22px;height:22px;border-radius:50%;box-sizing:border-box;border:1.75px solid var(--ring);display:block}
+.lr-main{flex:1;min-width:0;display:flex;align-items:flex-start;gap:10px;padding:5px 0;min-height:44px;box-sizing:border-box;text-decoration:none;color:var(--text);border-radius:8px}
+.lr-txt{flex:1;min-width:0}
+.lr-t{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:15px;font-weight:500;line-height:1.36}
+.lr-m{display:flex;align-items:center;gap:6px;margin-top:3px;font-size:13px;color:var(--meta);white-space:nowrap;min-width:0}
+.lr-m .bd{overflow:hidden;text-overflow:ellipsis;min-width:0}
+.lr-m .mono{font-size:12px;flex:none}
+.lr-end{flex:none;width:70px;display:flex;flex-direction:column;align-items:flex-end;gap:4px;text-align:right;font-size:13px;line-height:1.3;color:var(--meta);font-variant-numeric:tabular-nums;padding-top:1px}
+.lr-end.over{color:var(--danger);font-weight:600}
+.lr-end.today{color:var(--warn-text);font-weight:600}
+.pr{display:inline-flex;align-items:center;gap:3px;font-size:12px;font-weight:600}
+.pr.urgent{color:var(--danger)}
+.pr.high{color:var(--high)}
+.lr-more{color:var(--meta)}
+.lrow-link{display:flex;align-items:center;gap:8px;min-height:48px;padding:0 8px 0 16px;border-top:1px solid var(--line);font-size:14px;color:var(--muted);text-decoration:none}
+.lrow-link .go{margin-left:auto;color:var(--accent-text);font-weight:500;display:inline-flex;align-items:center;gap:2px}
+/* swipe: the front layer slides left over .swipe-acts (each action 76px) */
+.lrow.swiped .lrow-in{transform:translateX(-152px)}
+.swipe-acts{position:absolute;top:0;right:0;bottom:0;display:flex}
+.swipe-acts button{width:76px;border:0;margin:0;padding:0;color:#FFFFFF;font:inherit;font-size:13px;font-weight:600;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer}
+.swipe-acts .snooze{background:var(--act-snooze)}
+.swipe-acts .done{background:var(--act-done)}
+/* buttons */
+.btn{min-height:44px;padding:0 16px;border-radius:12px;border:1px solid var(--line2);background:var(--panel);color:var(--text);font:inherit;font-size:15px;font-weight:500;display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;white-space:nowrap;text-decoration:none;box-sizing:border-box}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.block{width:100%;min-height:50px}
+/* chips & avatars */
+.dm{width:20px;height:20px;border-radius:6px;display:grid;place-items:center;font-size:9px;font-weight:700;color:#fff;flex:none}
+.dm.sm{width:16px;height:16px;font-size:7.5px;border-radius:4px}
+.av{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-size:11.5px;font-weight:700;color:#fff;flex:none}
+/* bottom tab bar 49 + 34 safe area */
+.tabbar{flex:none;height:83px;box-sizing:border-box;padding:0 4px 34px;display:flex;border-top:1px solid var(--line);background:var(--panel)}
+.tab{flex:1;height:49px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-decoration:none;color:var(--meta);font-size:11px;font-weight:500;line-height:1.2;position:relative;white-space:nowrap}
+.tab.on{color:var(--accent-text);font-weight:600}
+.tab .bdg{position:absolute;top:3px;left:calc(50% + 6px);min-width:18px;height:18px;padding:0 5px;box-sizing:border-box;border-radius:9px;background:var(--badge);color:#FFFFFF;font-size:11px;font-weight:700;display:grid;place-items:center;box-shadow:0 0 0 2px var(--panel)}
+.homeind{position:absolute;left:50%;bottom:8px;width:134px;height:5px;margin-left:-67px;border-radius:3px;background:var(--text);z-index:60}
+/* bottom sheet: scrim + sheet, grabber 36×5, radius 14, primary action above the safe area */
+.scrim{position:absolute;inset:0;background:var(--scrim);z-index:40}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:41;background:var(--panel);border-radius:14px 14px 0 0;padding:6px 0 34px;box-shadow:0 -8px 32px rgba(0,0,0,.18);color:var(--text)}
+.grabber{width:36px;height:5px;border-radius:3px;background:var(--line2);margin:0 auto 2px}
+.sheet-h{display:flex;align-items:center;gap:8px;min-height:52px;padding:0 8px 0 20px}
+.sheet-h h2{margin:0;flex:1;font-size:17px;font-weight:650}
+.sheet-sub{margin:0;padding:6px 20px 4px;font-size:13px;font-weight:600;color:var(--meta)}
+.srow{display:flex;align-items:center;gap:12px;min-height:60px;padding:0 20px;text-decoration:none;color:var(--text)}
+.srow:hover,.srow:active{background:var(--hover)}
+.srow .tx{flex:1;min-width:0}
+.srow .tx b{display:block;font-size:15px;font-weight:600}
+.srow .tx small{display:block;font-size:13px;color:var(--meta)}
+.srow .end{flex:none;display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--meta)}
+.srow .ck{color:var(--accent-text)}
+.srow .ic{width:36px;height:36px;border-radius:10px;background:var(--bg);border:1px solid var(--line);display:grid;place-items:center;color:var(--muted);flex:none;box-sizing:border-box}
+.srow .wsm{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;color:#fff;font-size:13px;font-weight:700;flex:none}
+.cnt{min-width:22px;height:22px;padding:0 7px;box-sizing:border-box;border-radius:11px;background:var(--badge);color:#FFFFFF;font-size:12px;font-weight:700;display:inline-grid;place-items:center}
+.tag{height:22px;padding:0 8px;border-radius:6px;background:var(--hover2);color:var(--muted);font-size:12px;font-weight:600;display:inline-flex;align-items:center}
+.sheet-sep{height:1px;background:var(--line);margin:6px 20px}
+.sheet-foot{padding:10px 16px 0}
+/* skeleton (static under reduced motion) */
+.sk{display:block;background:var(--hover2);border-radius:6px}
+@media (prefers-reduced-motion: no-preference){.sk{animation:skp 1.4s ease-in-out infinite}}
+@keyframes skp{50%{opacity:.55}}
+/* end mobile shell */
+
+/* screen: Tài khoản (pushed from the HA avatar on Trang chủ; tab bar hidden) */
+.nx :focus-visible{outline:2px solid var(--accent-text);outline-offset:2px}
+/* swatch fills per mode (accent tones from ui/tokens; amber gets a deep edge for 3:1 on light) */
+.nx{--sw-blue:#1666CC;--sw-coral:#B5461D;--sw-ember:#BD1C6B;--sw-sage:#2D6A59;--sw-amber:#EBB427;--sw-ck:#FFFFFF;--sw-ck-amber:#1F1A0A;--sw-edge:#8A6400;--danger-line:#E8A3AF}
+.nx.mode-dem{--sw-blue:#5AA9FF;--sw-coral:#FA7A45;--sw-ember:#FD69A4;--sw-sage:#72B49F;--sw-amber:#EBB427;--sw-ck:#0F1216;--sw-ck-amber:#0F1216;--sw-edge:#EBB427;--danger-line:#7A3340}
+/* chosen accent overrides the accent tokens only (status, department and danger colours stay) */
+.nx.acc-coral{--accent:#B5461D;--accent-ink:#FFFFFF;--accent-soft:#FBE9E1;--accent-text:#8E3506}
+.nx.mode-dem.acc-coral{--accent:#FA7A45;--accent-ink:#0F1216;--accent-soft:rgba(250,122,69,.16);--accent-text:#FC9A6E}
+.tbar .bt-sp{width:44px;height:44px;flex:none}
+.content{gap:16px;padding-bottom:34px}
+.content > *{flex:none}
+.pdesc{margin:0;font-size:13px;line-height:1.45;color:var(--muted)}
+.sec-h{min-height:32px;margin:0 0 6px;font-size:15px;color:var(--muted);font-weight:600;letter-spacing:0}
+/* profile header */
+.prof{display:flex;align-items:center;gap:14px;padding:4px 0 2px}
+.prof .av{width:64px;height:64px;font-size:22px;background:#4E8574}
+.prof .pt{min-width:0}
+.prof .nm{margin:0;font-size:20px;font-weight:700;line-height:1.3;letter-spacing:-0.01em}
+.prof .em{margin:2px 0 0;font-size:14px;color:var(--muted);overflow-wrap:anywhere}
+.prof .rl{margin:2px 0 0;font-size:13px;color:var(--meta)}
+/* settings rows (link or button), ≥52px */
+.arow{display:flex;align-items:center;gap:12px;width:100%;min-height:60px;padding:8px 8px 8px 12px;border:0;border-top:1px solid var(--line);background:transparent;font:inherit;color:var(--text);text-align:left;text-decoration:none;cursor:pointer;box-sizing:border-box}
+.arow:first-child{border-top:0}
+.arow:hover,.arow:active{background:var(--hover)}
+.arow.short{min-height:52px}
+.ic{width:36px;height:36px;border-radius:10px;background:var(--bg);border:1px solid var(--line);display:grid;place-items:center;color:var(--muted);flex:none;box-sizing:border-box}
+.arow .tx{flex:1;min-width:0}
+.arow .tx b{display:block;font-size:15px;font-weight:600;line-height:1.3}
+.arow .tx small{display:block;margin-top:2px;font-size:13px;color:var(--meta);line-height:1.35}
+.arow .end{flex:none;display:inline-flex;align-items:center;gap:4px;font-size:14px;color:var(--meta);font-variant-numeric:tabular-nums}
+.arow .chev{color:var(--meta)}
+.arow.danger{color:var(--danger)}
+.arow.danger .ic{background:var(--danger-soft);border-color:transparent;color:var(--danger)}
+.foot{margin:0;padding:0 4px;font-size:13px;color:var(--meta);line-height:1.45}
+/* appearance: mode radios */
+.opt .rd{width:22px;height:22px;border-radius:50%;border:2px solid var(--ring);box-sizing:border-box;flex:none;margin:0 4px 0 0}
+.opt[aria-checked="true"] .rd{border:7px solid var(--accent)}
+.opt[aria-checked="true"] .ic{background:var(--accent-soft);border-color:transparent;color:var(--accent-text)}
+.opt{min-height:56px;padding-top:5px;padding-bottom:5px;gap:10px}
+.look{gap:12px}
+.look .sec-h{min-height:28px;margin-bottom:4px}
+.opt .tx small{font-size:12.5px}
+.look .accs{padding-top:10px}
+.look .cap{padding-top:8px;padding-bottom:10px}
+/* appearance: accent swatches 44px, names visible */
+.accs{display:grid;grid-template-columns:repeat(5,1fr);gap:2px;padding:12px 4px 8px}
+.acc{display:flex;flex-direction:column;align-items:center;gap:8px;padding:6px 0 4px;border:0;border-radius:12px;background:transparent;font:inherit;color:var(--muted);cursor:pointer}
+.acc .dot{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--c);color:var(--k);box-sizing:border-box}
+.acc .dot svg{opacity:0}
+.acc.amber .dot{border:1.5px solid var(--sw-edge)}
+.acc[aria-checked="true"] .dot{box-shadow:0 0 0 3px var(--panel),0 0 0 5px var(--text)}
+.acc[aria-checked="true"] .dot svg{opacity:1}
+.acc .an{font-size:12.5px;line-height:1.3;text-align:center}
+.acc[aria-checked="true"] .an{color:var(--text);font-weight:600}
+.cap{display:flex;gap:10px;align-items:flex-start;margin:0;padding:10px 14px 12px;border-top:1px solid var(--line);font-size:13px;line-height:1.45;color:var(--muted)}
+.cap .i{color:var(--meta);margin-top:1px}
+/* appearance: live preview (decorative copy of real components, not interactive) */
+.pv{margin:0;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px 14px 12px}
+.pv-h{margin:0 0 8px;font-size:13px;font-weight:600;color:var(--meta)}
+.pv-row{display:flex;gap:10px;align-items:flex-start}
+.pv-row .tk{width:22px;height:22px;border-radius:50%;border:1.75px solid var(--ring);box-sizing:border-box;flex:none;margin-top:1px}
+.pv-t{display:block;font-size:15px;font-weight:500;line-height:1.36;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pv-row > span:last-child{flex:1;min-width:0}
+.pv-m{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin-top:4px;font-size:13px;color:var(--meta)}
+.pv-m .st{display:inline-flex;align-items:center;gap:5px;color:var(--text)}
+.pv-m .st i{width:8px;height:8px;border-radius:50%;background:var(--st-doing);display:block}
+.pv-m .ov{color:var(--danger);font-weight:600}
+.pv-m .mono{font-size:12px}
+.pv-acts{display:flex;align-items:center;gap:12px;margin-top:8px;padding-left:32px}
+.pv-acts .btn{min-height:36px;pointer-events:none}
+.pv-lk{font-size:14px;font-weight:500;color:var(--accent-text);text-decoration:underline;text-underline-offset:3px}
+.pv-sel{margin-left:auto;height:28px;padding:0 10px;border-radius:8px;background:var(--accent-soft);color:var(--accent-text);font-size:13px;font-weight:600;display:inline-flex;align-items:center}
+/* switch rows (whole row is the switch) */
+.swrow{display:flex;align-items:center;gap:12px;width:100%;min-height:60px;padding:8px 14px 8px 12px;border:0;border-top:1px solid var(--line);background:transparent;font:inherit;color:var(--text);text-align:left;cursor:pointer;box-sizing:border-box}
+.swrow:first-child{border-top:0}
+.swrow .tx{flex:1;min-width:0}
+.swrow .tx b{display:block;font-size:15px;font-weight:600;line-height:1.3}
+.swrow .tx small{display:block;margin-top:2px;font-size:13px;color:var(--meta);line-height:1.35}
+.trk{width:48px;height:28px;border-radius:14px;background:var(--ring);position:relative;flex:none;box-sizing:border-box}
+.trk::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#FFFFFF;box-shadow:0 1px 2px rgba(0,0,0,.25)}
+.swrow[aria-checked="true"] .trk{background:var(--accent)}
+.swrow[aria-checked="true"] .trk::after{left:23px}
+.mode-dem .swrow[aria-checked="true"] .trk::after{background:var(--accent-ink)}
+/* security */
+.sso{display:flex;gap:12px;align-items:flex-start;padding:12px 14px 12px 12px}
+.sso .tx{flex:1;min-width:0}
+.sso .tx b{display:block;font-size:15px;font-weight:600;line-height:1.3}
+.sso .tx small{display:block;margin-top:3px;font-size:13px;color:var(--meta);line-height:1.45}
+.dev{display:flex;align-items:center;gap:12px;min-height:64px;padding:8px 10px 8px 12px;border-top:1px solid var(--line);box-sizing:border-box}
+.dev:first-child{border-top:0}
+.dev .tx{flex:1;min-width:0}
+.dev .tx b{display:flex;align-items:center;gap:6px;font-size:15px;font-weight:600;line-height:1.3;white-space:nowrap}
+.dev .tx small{display:block;margin-top:2px;font-size:13px;color:var(--meta);line-height:1.35}
+.dev .tag{height:20px;font-size:11.5px}
+.dev .tag.now{background:var(--accent-soft);color:var(--accent-text)}
+.btn.sm{padding:0 12px;font-size:14px;flex:none}
+.btn.dgr{color:var(--danger);border-color:var(--danger-line)}
+.hint{margin:6px 4px 0;font-size:13px;color:var(--meta);line-height:1.45}
+/* notifications: per-type rows with three labelled checkbox buttons */
+.evr{padding:12px 12px 12px 14px;border-top:1px solid var(--line)}
+.evr:first-child{border-top:0}
+.evr h3{margin:0;font-size:15px;font-weight:600;line-height:1.3}
+.chs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
+.ch{min-height:44px;display:flex;align-items:center;justify-content:center;gap:7px;padding:0 6px;border:1px solid var(--line2);border-radius:10px;background:var(--panel);font:inherit;font-size:14px;font-weight:500;color:var(--text);cursor:pointer;box-sizing:border-box;white-space:nowrap}
+.ch .bx{width:20px;height:20px;border-radius:5px;border:2px solid var(--ring);box-sizing:border-box;display:grid;place-items:center;flex:none;color:var(--accent-ink)}
+.ch .bx svg{opacity:0;width:14px;height:14px;stroke-width:2.6}
+.ch[aria-checked="true"]{background:var(--accent-soft);border-color:transparent}
+.ch[aria-checked="true"] .bx{background:var(--accent);border-color:var(--accent)}
+.ch[aria-checked="true"] .bx svg{opacity:1}
+.evn{display:flex;gap:8px;align-items:flex-start;margin:10px 0 0;font-size:13px;line-height:1.45;color:var(--muted)}
+.evn .i{color:var(--meta);margin-top:1px}
+</style>
+</helmet>
+<div class="nx m mode-{{modeCls}} {{accCls}}">
+  <div class="app-layer">
+  <div class="sbar" aria-hidden="true">
+    <span>10:40</span>
+    <span class="sg">
+      <svg width="18" height="12" viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1" fill="currentColor"></rect><rect x="5" y="5.5" width="3" height="6.5" rx="1" fill="currentColor"></rect><rect x="10" y="3" width="3" height="9" rx="1" fill="currentColor"></rect><rect x="15" y="0" width="3" height="12" rx="1" fill="currentColor"></rect></svg>
+      <svg width="16" height="12" viewBox="0 0 16 12"><path d="M8 11.2 10.4 8.6a3.4 3.4 0 0 0-4.8 0z" fill="currentColor"></path><path d="M3.6 6.6a6.2 6.2 0 0 1 8.8 0l1.4-1.5a8.3 8.3 0 0 0-11.6 0z" fill="currentColor"></path><path d="M.8 3.6a10.2 10.2 0 0 1 14.4 0L16 2.2a12.2 12.2 0 0 0-16 0z" fill="currentColor" opacity=".9"></path></svg>
+      <svg width="27" height="13" viewBox="0 0 27 13"><rect x=".5" y=".5" width="23" height="12" rx="3.5" fill="none" stroke="currentColor" opacity=".45"></rect><rect x="2" y="2" width="17" height="9" rx="2" fill="currentColor"></rect><path d="M25 4.5v4a2 2 0 0 0 0-4z" fill="currentColor" opacity=".45"></path></svg>
+    </span>
+  </div>
+
+  <header class="tbar">
+    <a class="ib" href="{{backHref}}" aria-label="{{backLabel}}"><svg class="i lg" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"></path></svg></a>
+    <h1 class="tbar-t">{{title}}</h1>
+    <span class="bt-sp" aria-hidden="true"></span>
+  </header>
+
+  <main class="content {{contentCls}}">
+    <sc-if value="{{isHome}}" hint-placeholder-val="{{ true }}">
+    <div class="prof">
+      <span class="av" aria-hidden="true">HA</span>
+      <div class="pt">
+        <p class="nm">Nguyễn Thu Hà</p>
+        <p class="em">thuha.nguyen@minhan.vn</p>
+        <p class="rl">Quản trị workspace · Minh An Group</p>
+      </div>
+    </div>
+
+    <nav class="list" aria-label="Cài đặt tài khoản">
+      <a class="arow" href="#"><span class="ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg></span><span class="tx"><b>Hồ sơ</b><small>Tên, ảnh đại diện, chức danh</small></span><svg class="i chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg></a>
+      <a class="arow" href="#"><span class="ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18c1.1 0 1.7-.8 1.7-1.7 0-.5-.2-.9-.5-1.2-.3-.3-.5-.7-.5-1.2 0-.9.8-1.7 1.7-1.7H16a5 5 0 0 0 5-5c0-4-4-7.2-9-7.2z"></path><circle cx="7.5" cy="11" r="1.2"></circle><circle cx="10.5" cy="7.2" r="1.2"></circle><circle cx="15" cy="7.8" r="1.2"></circle></svg></span><span class="tx"><b>Giao diện</b><small>{{lookSummary}}</small></span><svg class="i chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg></a>
+      <a class="arow" href="#"><span class="ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 5 6v5c0 4.5 3 8.3 7 10 4-1.7 7-5.5 7-10V6z"></path><path d="m9 12 2 2 4-4"></path></svg></span><span class="tx"><b>Bảo mật</b><small>Xác thực hai yếu tố đang bật</small></span><svg class="i chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg></a>
+      <a class="arow" href="#"><span class="ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"></path><path d="M10 20.5a2 2 0 0 0 4 0"></path></svg></span><span class="tx"><b>Thông báo</b><small>Giờ yên lặng 21:00–07:00</small></span><svg class="i chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg></a>
+      <a class="arow" href="#"><span class="ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect></svg></span><span class="tx"><b>Workspace của bạn</b><small>Minh An Group, Minh An Đà Nẵng, Tân Lộc Logistics</small></span><span class="end">3<span class="vh"> workspace</span></span><svg class="i chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg></a>
+    </nav>
+
+    <div class="list">
+      <a class="arow short" href="#"><span class="ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.5v.7"></path><path d="M12 17.2h.01"></path></svg></span><span class="tx"><b>Trợ giúp</b></span><svg class="i chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg></a>
+      <button class="arow short danger" type="button"><span class="ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"></path><path d="M10 8l-4 4 4 4M6 12h10"></path></svg></span><span class="tx"><b>Đăng xuất</b></span></button>
+    </div>
+    <p class="foot">Đăng nhập bằng Microsoft Entra (SSO) của Minh An Group.</p>
+    </sc-if>
+
+    <sc-if value="{{isLook}}" hint-placeholder-val="{{ false }}">
+    <p class="pdesc">Tùy chỉnh cách Notrelix hiển thị trên thiết bị này.</p>
+
+    <section aria-labelledby="h-mode">
+      <h2 class="sec-h" id="h-mode">Chế độ hiển thị</h2>
+      <div class="list" role="radiogroup" aria-labelledby="h-mode">
+        <button class="arow opt" type="button" role="radio" aria-checked="{{ckLight}}" tabindex="{{tiLight}}"><span class="ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"></path></svg></span><span class="tx"><b>Sáng</b><small>Nền sáng cho môi trường nhiều ánh sáng</small></span><span class="rd" aria-hidden="true"></span></button>
+        <button class="arow opt" type="button" role="radio" aria-checked="{{ckDark}}" tabindex="{{tiDark}}"><span class="ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"></path></svg></span><span class="tx"><b>Tối</b><small>Nền tối, dịu mắt khi thiếu sáng</small></span><span class="rd" aria-hidden="true"></span></button>
+        <button class="arow opt" type="button" role="radio" aria-checked="false" tabindex="-1"><span class="ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="2.5"></rect><path d="M11 18.5h2"></path></svg></span><span class="tx"><b>Theo hệ thống</b><small>Tự động theo cài đặt của thiết bị</small></span><span class="rd" aria-hidden="true"></span></button>
+        <button class="arow opt" type="button" role="radio" aria-checked="false" tabindex="-1"><span class="ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"></path></svg></span><span class="tx"><b>Tương phản cao</b><small>Chữ và viền rõ nét tối đa</small></span><span class="rd" aria-hidden="true"></span></button>
+      </div>
+    </section>
+
+    <section aria-labelledby="h-acc">
+      <h2 class="sec-h" id="h-acc">Màu nhấn</h2>
+      <div class="list">
+        <div class="accs" role="radiogroup" aria-labelledby="h-acc">
+          <button class="acc" type="button" role="radio" aria-checked="{{ckBlue}}" tabindex="{{tiBlue}}" aria-describedby="acc-d-blue" style="--c:var(--sw-blue);--k:var(--sw-ck)"><span class="dot"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5L20 7"></path></svg></span><span class="an">Xanh Notrelix</span><span class="vh" id="acc-d-blue">Màu thương hiệu mặc định</span></button>
+          <button class="acc" type="button" role="radio" aria-checked="{{ckCoral}}" tabindex="{{tiCoral}}" aria-describedby="acc-d-coral" style="--c:var(--sw-coral);--k:var(--sw-ck)"><span class="dot"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5L20 7"></path></svg></span><span class="an">San hô</span><span class="vh" id="acc-d-coral">Cam ấm</span></button>
+          <button class="acc" type="button" role="radio" aria-checked="false" tabindex="-1" aria-describedby="acc-d-ember" style="--c:var(--sw-ember);--k:var(--sw-ck)"><span class="dot"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5L20 7"></path></svg></span><span class="an">Than hồng</span><span class="vh" id="acc-d-ember">Đỏ hồng đậm</span></button>
+          <button class="acc" type="button" role="radio" aria-checked="false" tabindex="-1" aria-describedby="acc-d-sage" style="--c:var(--sw-sage);--k:var(--sw-ck)"><span class="dot"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5L20 7"></path></svg></span><span class="an">Xô thơm</span><span class="vh" id="acc-d-sage">Xanh lục dịu</span></button>
+          <button class="acc amber" type="button" role="radio" aria-checked="false" tabindex="-1" aria-describedby="acc-d-amber" style="--c:var(--sw-amber);--k:var(--sw-ck-amber)"><span class="dot"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5L20 7"></path></svg></span><span class="an">Hổ phách</span><span class="vh" id="acc-d-amber">Vàng ấm, chữ tối trên nền màu</span></button>
+        </div>
+        <p class="cap"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16M16 9h2a2 2 0 0 1 2 2v10M8 7h4M8 11h4M8 15h4M2 21h20"></path></svg><span>Quản trị Minh An Group đặt mặc định Xanh Notrelix. Lựa chọn của bạn được ưu tiên.</span></p>
+      </div>
+    </section>
+
+    <figure class="pv" aria-labelledby="pv-h">
+      <figcaption class="pv-h" id="pv-h">Xem trước · màu trạng thái giữ nguyên</figcaption>
+      <div class="pv-row" aria-hidden="true">
+        <span class="tk"></span>
+        <span><span class="pv-t">Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP</span><span class="pv-m"><span class="st"><i></i>Đang làm</span><span class="ov">Quá hạn 2 ngày</span><span class="mono">ERP-142</span></span></span>
+      </div>
+      <div class="pv-acts" aria-hidden="true"><span class="btn pri">Duyệt</span><span class="pv-lk">Xem board</span><span class="pv-sel">Bảng</span></div>
+    </figure>
+
+    <div class="list">
+      <button class="arow short" type="button" aria-haspopup="dialog"><span class="ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3c2.5 2.6 3.7 5.6 3.7 9s-1.2 6.4-3.7 9c-2.5-2.6-3.7-5.6-3.7-9S9.5 5.6 12 3z"></path></svg></span><span class="tx"><b>Ngôn ngữ</b></span><span class="end">Tiếng Việt</span><svg class="i chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg></button>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{isSecurity}}" hint-placeholder-val="{{ false }}">
+    <p class="pdesc">Quản lý mật khẩu và các cài đặt bảo mật của bạn.</p>
+
+    <section aria-labelledby="h-pw">
+      <h2 class="sec-h" id="h-pw">Mật khẩu</h2>
+      <div class="list">
+        <div class="sso"><span class="ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="15" r="4"></circle><path d="m11 12 9-9M17 6l2.5 2.5M14.5 8.5 17 11"></path></svg></span><span class="tx"><b>Mật khẩu do Minh An Group quản lý</b><small>Đăng nhập một lần qua Microsoft Entra. Đổi mật khẩu trong tài khoản công ty.</small></span><span class="tag">SSO</span></div>
+      </div>
+    </section>
+
+    <section aria-labelledby="h-2fa">
+      <h2 class="sec-h" id="h-2fa">Xác thực hai yếu tố</h2>
+      <div class="list">
+        <button class="swrow" type="button" role="switch" aria-checked="true" aria-labelledby="sw-2fa-t" aria-describedby="sw-2fa-d"><span class="ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="2.5"></rect><path d="M9.5 10.5l2 2 3.5-3.5"></path></svg></span><span class="tx"><b id="sw-2fa-t">Xác thực hai yếu tố</b><small id="sw-2fa-d">Đang bật · mã 6 số từ ứng dụng xác thực</small></span><span class="trk" aria-hidden="true"></span></button>
+        <a class="arow" href="#"><span class="ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"></rect><path d="M8 9h3M13 9h3M8 13h3M13 13h3M8 17h8"></path></svg></span><span class="tx"><b>Mã dự phòng</b><small>Còn 8 mã chưa dùng</small></span><span class="end">Xem</span><svg class="i chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg></a>
+      </div>
+    </section>
+
+    <section aria-labelledby="h-dev">
+      <h2 class="sec-h" id="h-dev">Thiết bị đăng nhập <span class="n">3</span></h2>
+      <ul class="list" style="margin:0;padding:0;list-style:none">
+        <li class="dev"><span class="ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="2.5"></rect><path d="M11 18.5h2"></path></svg></span><span class="tx"><b>iPhone 15<span class="tag now">Đang dùng</span></b><small>Ứng dụng Notrelix</small></span><button class="btn sm" type="button" aria-label="Đăng xuất iPhone 15 này">Đăng xuất</button></li>
+        <li class="dev"><span class="ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4.5" width="16" height="11" rx="1.5"></rect><path d="M2 19h20"></path></svg></span><span class="tx"><b>MacBook · Chrome</b><small>10 phút trước</small></span><button class="btn sm" type="button" aria-label="Đăng xuất MacBook · Chrome">Đăng xuất</button></li>
+        <li class="dev"><span class="ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="4.5" y="2.5" width="15" height="19" rx="2"></rect><path d="M11 18.5h2"></path></svg></span><span class="tx"><b>iPad</b><small>Ứng dụng · 3 ngày trước</small></span><button class="btn sm" type="button" aria-label="Đăng xuất iPad">Đăng xuất</button></li>
+      </ul>
+    </section>
+
+    <div>
+      <button class="btn block dgr" type="button" aria-describedby="out-all-d">Đăng xuất mọi thiết bị khác</button>
+      <p class="hint" id="out-all-d">MacBook và iPad sẽ phải đăng nhập lại. iPhone này vẫn giữ phiên.</p>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{isNotify}}" hint-placeholder-val="{{ false }}">
+    <p class="pdesc">Chọn cách bạn muốn nhận thông báo cho từng loại việc.</p>
+
+    <div class="list">
+      <button class="swrow" type="button" role="switch" aria-checked="true" aria-labelledby="sw-q-t" aria-describedby="sw-q-d"><span class="ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"></path></svg></span><span class="tx"><b id="sw-q-t">Giờ yên lặng 21:00–07:00</b><small id="sw-q-d">Tạm dừng email và thông báo đẩy. Mọi thứ vẫn vào Hộp thư.</small></span><span class="trk" aria-hidden="true"></span></button>
+    </div>
+
+    <section aria-labelledby="h-types">
+      <h2 class="sec-h" id="h-types">Theo loại thông báo</h2>
+      <div class="list">
+        <div class="evr" role="group" aria-labelledby="ev1">
+          <h3 id="ev1">Nhắc tên bạn</h3>
+          <div class="chs">
+            <button class="ch" type="button" role="checkbox" aria-checked="true"><span class="bx" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"></path></svg></span>Ứng dụng</button>
+            <button class="ch" type="button" role="checkbox" aria-checked="true"><span class="bx" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"></path></svg></span>Email</button>
+            <button class="ch" type="button" role="checkbox" aria-checked="true"><span class="bx" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"></path></svg></span>Đẩy</button>
+          </div>
+          <p class="evn"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg><span>Ai nhắc tên bạn ở việc bạn không mở được thì không có thông báo nào gửi đi và bạn cũng không được thêm quyền (COL-030).</span></p>
+        </div>
+        <div class="evr" role="group" aria-labelledby="ev2">
+          <h3 id="ev2">Cần bạn duyệt</h3>
+          <div class="chs">
+            <button class="ch" type="button" role="checkbox" aria-checked="true"><span class="bx" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"></path></svg></span>Ứng dụng</button>
+            <button class="ch" type="button" role="checkbox" aria-checked="true"><span class="bx" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"></path></svg></span>Email</button>
+            <button class="ch" type="button" role="checkbox" aria-checked="true"><span class="bx" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"></path></svg></span>Đẩy</button>
+          </div>
+        </div>
+        <div class="evr" role="group" aria-labelledby="ev3">
+          <h3 id="ev3">Việc giao cho bạn</h3>
+          <div class="chs">
+            <button class="ch" type="button" role="checkbox" aria-checked="true"><span class="bx" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"></path></svg></span>Ứng dụng</button>
+            <button class="ch" type="button" role="checkbox" aria-checked="false"><span class="bx" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"></path></svg></span>Email</button>
+            <button class="ch" type="button" role="checkbox" aria-checked="true"><span class="bx" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"></path></svg></span>Đẩy</button>
+          </div>
+        </div>
+        <div class="evr" role="group" aria-labelledby="ev4">
+          <h3 id="ev4">Sắp đến hạn và quá hạn</h3>
+          <div class="chs">
+            <button class="ch" type="button" role="checkbox" aria-checked="true"><span class="bx" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"></path></svg></span>Ứng dụng</button>
+            <button class="ch" type="button" role="checkbox" aria-checked="false"><span class="bx" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"></path></svg></span>Email</button>
+            <button class="ch" type="button" role="checkbox" aria-checked="true"><span class="bx" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"></path></svg></span>Đẩy</button>
+          </div>
+        </div>
+        <div class="evr" role="group" aria-labelledby="ev5">
+          <h3 id="ev5">Việc bạn theo dõi có cập nhật</h3>
+          <div class="chs">
+            <button class="ch" type="button" role="checkbox" aria-checked="true"><span class="bx" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"></path></svg></span>Ứng dụng</button>
+            <button class="ch" type="button" role="checkbox" aria-checked="false"><span class="bx" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"></path></svg></span>Email</button>
+            <button class="ch" type="button" role="checkbox" aria-checked="false"><span class="bx" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"></path></svg></span>Đẩy</button>
+          </div>
+        </div>
+        <div class="evr" role="group" aria-labelledby="ev6">
+          <h3 id="ev6">Lời mời và thay đổi quyền truy cập</h3>
+          <div class="chs">
+            <button class="ch" type="button" role="checkbox" aria-checked="true"><span class="bx" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"></path></svg></span>Ứng dụng</button>
+            <button class="ch" type="button" role="checkbox" aria-checked="true"><span class="bx" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"></path></svg></span>Email</button>
+            <button class="ch" type="button" role="checkbox" aria-checked="false"><span class="bx" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"></path></svg></span>Đẩy</button>
+          </div>
+        </div>
+      </div>
+    </section>
+    </sc-if>
+  </main>
+  </div>
+  <span class="homeind" aria-hidden="true"></span>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"state":{"editor":"enum","options":["tong-quan","giao-dien","giao-dien-dem","bao-mat","thong-bao"],"default":"tong-quan","section":"Trạng thái minh hoạ"},"mode":{"editor":"enum","options":["sang","dem"],"default":"sang","section":"Giao diện"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const state = this.props.state ?? 'tong-quan';
+    const coralDark = state === 'giao-dien-dem';
+    // giao-dien-dem always renders Tối + San hô; elsewhere the mode tweak decides
+    const mode = coralDark ? 'dem' : (this.props.mode ?? 'sang');
+    const dark = mode === 'dem';
+    const accent = coralDark ? 'coral' : 'blue';
+    const isHome = state === 'tong-quan';
+    const titles = { 'tong-quan': 'Tài khoản', 'giao-dien': 'Giao diện', 'giao-dien-dem': 'Giao diện', 'bao-mat': 'Bảo mật', 'thong-bao': 'Thông báo' };
+    return {
+      mode,
+      modeCls: mode,
+      accCls: accent === 'coral' ? 'acc-coral' : '',
+      isHome,
+      contentCls: (state === 'giao-dien' || coralDark) ? 'look' : '',
+      isLook: state === 'giao-dien' || coralDark,
+      isSecurity: state === 'bao-mat',
+      isNotify: state === 'thong-bao',
+      title: titles[state] ?? 'Tài khoản',
+      backHref: isHome ? 'Final-M-Home.dc.html' : 'Final-M-Account.dc.html',
+      backLabel: isHome ? 'Quay lại Trang chủ' : 'Quay lại Tài khoản',
+      lookSummary: (dark ? 'Tối' : 'Sáng') + ' · Xanh Notrelix',
+      ckLight: dark ? 'false' : 'true',
+      tiLight: dark ? '-1' : '0',
+      ckDark: dark ? 'true' : 'false',
+      tiDark: dark ? '0' : '-1',
+      ckBlue: accent === 'blue' ? 'true' : 'false',
+      tiBlue: accent === 'blue' ? '0' : '-1',
+      ckCoral: accent === 'coral' ? 'true' : 'false',
+      tiCoral: accent === 'coral' ? '0' : '-1'
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -22,7 +22,7 @@ public static class CreateBoardGroupEndpoint
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new CreateBoardGroupCommand(boardId, body.Title, body.Position?.ToString(), body.Color), cancellationToken);
+        var result = await sender.Send(new CreateBoardGroupCommand(boardId, body.Title, body.Color, body.PreviousSiblingId, body.NextSiblingId), cancellationToken);
         return result.ToCreatedResult();
     }
 }

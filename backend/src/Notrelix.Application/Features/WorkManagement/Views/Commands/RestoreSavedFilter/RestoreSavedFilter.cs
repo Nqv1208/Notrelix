@@ -26,8 +26,13 @@ public class RestoreSavedFilterCommandHandler : IRequestHandler<RestoreSavedFilt
 
     public async Task<Result> Handle(RestoreSavedFilterCommand request, CancellationToken ct)
     {
+        // The global filter hides soft-deleted rows, and on EF Core 9 bypassing it also
+        // drops its tenant predicate, so the resolved tenant scope is re-applied here.
+        var accountId = _requestContext.RequireAccountId();
+        var workspaceId = _requestContext.RequireWorkspaceId();
         var filter = await _context.SavedFilters
-            .FirstOrDefaultAsync(f => f.Id == request.FilterId, ct);
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(f => f.Id == request.FilterId && f.AccountId == accountId && f.WorkspaceId == workspaceId, ct);
         if (filter is null) throw new NotFoundException("SavedFilter", request.FilterId);
 
         filter.Restore(_requestContext.UserId, _dateTimeProvider.UtcNow);

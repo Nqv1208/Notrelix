@@ -1,43 +1,51 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import {
-  kanbanDefaultScenario,
-  kanbanEdgeScenario,
-} from "@notrelix/work-management-testing";
 import { KanbanColumn } from "./kanban-column";
+import { kanbanCardCopy } from "./kanban-card.copy";
+import { kanbanLaneCopy } from "./kanban-lane.copy";
+import {
+  KANBAN_STORY_NOW,
+  erpKanbanEdgeLanes,
+  erpKanbanLanes,
+} from "../../../verification/kanban-board-fixtures";
 
 const noOp = () => undefined;
-const base = kanbanDefaultScenario();
+const todo = erpKanbanLanes()[0]!;
+
 const meta = {
   title: "Work Management/Kanban/Column",
   component: KanbanColumn,
+  args: {
+    lane: todo,
+    name: todo.name,
+    copy: kanbanLaneCopy("vi"),
+    cardCopy: kanbanCardCopy("vi"),
+    now: KANBAN_STORY_NOW,
+    filterActive: false,
+    canAdd: true,
+    canDrag: true,
+    collapsed: false,
+    onCollapsedChange: noOp,
+    onHide: noOp,
+    onOpenDetails: noOp,
+    onCreateItem: noOp,
+  },
 } satisfies Meta<typeof KanbanColumn>;
 export default meta;
 type Story = StoryObj<typeof meta>;
-const callbacks = {
-  onOpenDetails: noOp,
-  onCopyCardLink: noOp,
-  onRename: noOp,
-  onColorChange: noOp,
-  onDelete: noOp,
-  onDuplicateCard: noOp,
-  onDeleteCard: noOp,
-  onCreateCard: noOp,
-};
 
 export const Default: Story = {
-  args: { ...callbacks, board: base.board, group: base.columns[0]! },
   tags: ["fui-surface--wm.kanban.column", "fui-state--Default"],
 };
 export const Empty: Story = {
-  args: {
-    ...callbacks,
-    board: base.board,
-    group: { ...base.columns[0]!, cards: [] },
-  },
+  args: { lane: { ...todo, cards: [], total: 0 } },
   tags: ["fui-surface--wm.kanban.column", "fui-state--Empty"],
 };
-const edge = kanbanEdgeScenario();
+const edge = erpKanbanEdgeLanes()[1]!;
 export const EdgeData: Story = {
-  args: { ...callbacks, board: edge.board, group: edge.columns[0]! },
+  args: { lane: edge, name: edge.name },
+  tags: ["fui-surface--wm.kanban.column", "fui-state--EdgeData"],
+};
+export const Collapsed: Story = {
+  args: { collapsed: true },
   tags: ["fui-surface--wm.kanban.column", "fui-state--EdgeData"],
 };

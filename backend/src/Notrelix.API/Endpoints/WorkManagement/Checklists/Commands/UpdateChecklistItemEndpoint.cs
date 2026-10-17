@@ -22,7 +22,7 @@ public static class UpdateChecklistItemEndpoint
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new UpdateChecklistItemCommand(itemId, body.IsChecked), cancellationToken);
+        var result = await sender.Send(new UpdateChecklistItemCommand(itemId, body.ExpectedVersion, body.Title, body.IsChecked), cancellationToken);
         return result.ToApiResult();
     }
 }

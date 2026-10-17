@@ -38,7 +38,7 @@ public class NewWorkspaceEndpointTests : IClassFixture<NotrelixApiFactory>
     [Fact]
     public async Task DeleteWorkspace_ReturnsSuccess()
     {
-        var response = await _client.DeleteAsync($"/api/v1/workspaces/{WorkspaceId}");
+        var response = await _client.DeleteAsync($"/api/v1/workspaces/{WorkspaceId}?expectedVersion=1");
         response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NoContent, HttpStatusCode.BadRequest, HttpStatusCode.NotFound);
     }
 

@@ -1,3 +1,4 @@
+using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetBoardItems;
 
 namespace Notrelix.API.Endpoints.WorkManagement.BoardItems.Queries;
@@ -8,6 +9,7 @@ public static class ListBoardItemsEndpoint
     {
         group.MapResourceGet("/", HandleAsync)
             .WithName("WorkManagement.BoardItems.List")
+            .Produces<List<BoardItemSlimDto>>(StatusCodes.Status200OK, "application/json")
             .WithTags("WorkManagement.BoardItems")
             .WithSummary("Get all items of a board");
         return group;

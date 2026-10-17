@@ -28,6 +28,7 @@ evidence:
   - backend/tests/Notrelix.Integration.Tests/
   - backend/tests/Notrelix.Architecture.Tests/
   - backend/docs/decisions/ADR-002-rls-bootstrap-connection-lifecycle.md
+  - backend/docs/decisions/ADR-009-space-scoped-authorization.md
   - backend/docs/decisions/ADR-003-csrf-protection.md
   - backend/docs/decisions/ADR-004-rate-limiting-architecture.md
 review_on:
@@ -566,6 +567,18 @@ authorization: rules about what role a target principal must hold for an
 operation to be meaningful (for example provisioning constraints) belong to
 Domain/handler business logic; whether the current actor may perform the
 operation is decided only by the pipeline chain above.
+
+Space-scoped access (ADR-009) extends this one chain, it does not add a
+second one: `AccessFactsQuery` resolves the Space facts (existence,
+effective Space role through the `workspace.space_paths` closure, open/Private
+path, User and active-Team subjects) in its single command, and the
+Governance-owned engine applies the order fixed by
+`docs/product/governance.md` GOV-025..GOV-028. A move that also needs
+authority on a target (Space parent, Board/Page destination Space) evaluates
+the target's create contract through the same facts provider and engine.
+Collection reads apply the same decision in the datastore through the
+Governance-owned `ResourceVisibilityQuery` (GOV-029); a PostgreSQL parity
+test pins it to the engine.
 
 ---
 

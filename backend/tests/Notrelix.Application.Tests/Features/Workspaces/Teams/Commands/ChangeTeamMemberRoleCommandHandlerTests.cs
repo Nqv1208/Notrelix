@@ -15,7 +15,7 @@ public class ChangeTeamMemberRoleCommandHandlerTests : WorkspaceHandlerTestBase
         team.AddMember(TestUserId, TeamMemberRole.Member, TestUserId, TestNow);
         SetupTeams(team);
         var sut = CreateSut();
-        var command = new ChangeTeamMemberRoleCommand(TestWorkspaceId, team.Id, TestUserId, "Lead");
+        var command = new ChangeTeamMemberRoleCommand(TestWorkspaceId, team.Id, TestUserId, "Lead", ExpectedVersion: 1);
         var result = await sut.Handle(command, CancellationToken.None);
         result.Succeeded.Should().BeTrue();
     }
@@ -25,7 +25,7 @@ public class ChangeTeamMemberRoleCommandHandlerTests : WorkspaceHandlerTestBase
     {
         SetupTeams();
         var sut = CreateSut();
-        Func<Task> act = () => sut.Handle(new ChangeTeamMemberRoleCommand(TestWorkspaceId, Guid.CreateVersion7(), TestUserId, "Lead"), CancellationToken.None);
+        Func<Task> act = () => sut.Handle(new ChangeTeamMemberRoleCommand(TestWorkspaceId, Guid.CreateVersion7(), TestUserId, "Lead", ExpectedVersion: 1), CancellationToken.None);
         await act.Should().ThrowAsync<NotFoundException>();
     }
 
@@ -35,7 +35,7 @@ public class ChangeTeamMemberRoleCommandHandlerTests : WorkspaceHandlerTestBase
         var team = CreateTeam();
         SetupTeams(team);
         var sut = CreateSut();
-        Func<Task> act = () => sut.Handle(new ChangeTeamMemberRoleCommand(TestWorkspaceId, team.Id, TestUserId, "Lead"), CancellationToken.None);
+        Func<Task> act = () => sut.Handle(new ChangeTeamMemberRoleCommand(TestWorkspaceId, team.Id, TestUserId, "Lead", ExpectedVersion: 1), CancellationToken.None);
         await act.Should().ThrowAsync<BusinessRuleException>();
     }
 }

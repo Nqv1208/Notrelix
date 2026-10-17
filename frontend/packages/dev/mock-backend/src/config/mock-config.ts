@@ -22,14 +22,18 @@ export class MockConfigurationError extends Error {
 
 // ─── Dimension types ──────────────────────────────────────────────────────────
 
-export type MockPersona = "owner" | "admin" | "member" | "viewer";
+export type MockPersona = "owner" | "admin" | "member" | "viewer" | "commenter";
 
 export type MockBusinessState =
   | "default"
   | "new-user"
   | "empty-workspace"
   | "permission-limited"
-  | "expired-session";
+  | "expired-session"
+  /** Final-Home `xong-viec`: today's two items were completed at 10:05. */
+  | "done-today"
+  /** Final-Billing `qua-han`: invoice HĐ-2026-0131 is overdue. */
+  | "billing-past-due";
 
 export type MockDensity = "tiny" | "normal" | "large" | "stress";
 
@@ -148,13 +152,21 @@ export function applyPreset(
 
 // ─── Env variable parsing (Plan: 05-SCENARIOS-DENSITY-FAULTS.md §Env parsing) ─
 
-const VALID_PERSONAS = new Set<string>(["owner", "admin", "member", "viewer"]);
+const VALID_PERSONAS = new Set<string>([
+  "owner",
+  "admin",
+  "member",
+  "viewer",
+  "commenter",
+]);
 const VALID_STATES = new Set<string>([
   "default",
   "new-user",
   "empty-workspace",
   "permission-limited",
   "expired-session",
+  "done-today",
+  "billing-past-due",
 ]);
 const VALID_DENSITIES = new Set<string>(["tiny", "normal", "large", "stress"]);
 const VALID_LATENCIES = new Set<string>(["instant", "fast", "normal", "slow"]);
@@ -164,6 +176,14 @@ const VALID_OVERLAYS = new Set<string>([
   "missing-avatars",
   "many-columns",
   "many-cards",
+]);
+
+const VALID_FAULTS = new Set<string>([
+  "network",
+  "401",
+  "409",
+  "500",
+  "validation",
 ]);
 
 export function parseMockConfigFromEnv(
@@ -266,6 +286,22 @@ export function parseMockConfigFromEnv(
       );
     }
     partial.seed = seed;
+  }
+
+  // VITE_MOCK_FAULTS — "path=fault" pairs separated by commas, e.g.
+  // "/board-items/mock-erp-item-149/status=500"; fail fast on anything else.
+  if (env["VITE_MOCK_FAULTS"] !== undefined && env["VITE_MOCK_FAULTS"] !== "") {
+    const faults: MockFaultProfile = {};
+    for (const entry of env["VITE_MOCK_FAULTS"].split(",")) {
+      const [path, fault] = entry.trim().split("=");
+      if (!path || !fault || !VALID_FAULTS.has(fault)) {
+        throw new MockConfigurationError(
+          `Invalid VITE_MOCK_FAULTS entry "${entry.trim()}". Use path=fault with fault one of: ${Array.from(VALID_FAULTS).join(", ")}`,
+        );
+      }
+      faults[path] = fault as MockFaultProfile[string];
+    }
+    partial.faultProfile = { ...(partial.faultProfile ?? {}), ...faults };
   }
 
   return partial;

@@ -9,6 +9,6 @@ public class CreateChecklistCommandValidator : AbstractValidator<CreateChecklist
 
         RuleFor(x => x.Title)
             .NotEmpty()
-            .MaximumLength(200);
+            .MaximumLength(Checklist.MaxTitleLength);
     }
 }

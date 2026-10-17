@@ -1,11 +1,14 @@
 using Notrelix.Application.Features.Workspaces.Spaces.Commands.CreateSpace;
+using Notrelix.Testing.Application.Fakes;
 
 namespace Notrelix.Application.Tests.Features.Workspaces.Spaces.Commands;
 
 public class CreateSpaceCommandHandlerTests : WorkspaceHandlerTestBase
 {
+    private readonly InMemorySpaceStore _spaces = new();
+
     private CreateSpaceCommandHandler CreateSut() => new(
-        DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object);
+        DbContextMock.Object, _spaces, RequestContextMock.Object, DateTimeProviderMock.Object);
 
     [Fact]
     public async Task Handle_WhenWorkspaceExists_CreatesSpaceSuccessfully()

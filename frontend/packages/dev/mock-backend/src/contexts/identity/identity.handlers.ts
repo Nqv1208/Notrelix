@@ -16,8 +16,11 @@
 import type { User } from "@notrelix/features-auth";
 import { defineMockOperation } from "../../operations/types";
 import { ok, unauthorized } from "../../transport/create-response";
+import { MOCK_AUTH } from "../../state/mock-auth-directory";
+import { authFlowOperations, sessionOf } from "./auth-flow.handlers";
 
 export const identityOperations = [
+  ...authFlowOperations,
   defineMockOperation<Record<string, never>, never, User>({
     id: "identity.profile",
     contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
@@ -37,22 +40,55 @@ export const identityOperations = [
     },
   }),
 
-  defineMockOperation({
+  defineMockOperation<
+    Record<string, never>,
+    { email?: string; password?: string },
+    unknown
+  >({
     id: "identity.login",
-    contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
+    contract: { kind: "gap", gapId: "CTR-GAP-AUTH-FLOW" },
     method: "POST",
     route: "/auth/login",
-    async handle({ store }) {
-      const user = store.getCurrentUser();
-      return ok({
-        accessToken: "mock-access-token",
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          avatarUrl: user.avatarUrl,
-        },
-      });
+    async handle({ body, store }) {
+      // Without an email the call is the old stub: the persona signs in.
+      if (!body?.email) {
+        store.loginCurrentUser();
+        return ok(sessionOf(store));
+      }
+      if (store.auth.identify(body.email).method === "sso")
+        return {
+          status: 400,
+          body: {
+            message: "This company signs in through its own provider.",
+            code: "SSO_REQUIRED",
+          },
+        };
+      const outcome = store.auth.login(body.email, body.password ?? "");
+      if (outcome.kind === "locked")
+        return {
+          status: 429,
+          body: {
+            message: "Too many attempts",
+            code: "ACCOUNT_LOCKED",
+            retryAfterSeconds: outcome.retryAfterSeconds,
+          },
+        };
+      if (outcome.kind === "invalid")
+        return {
+          status: 401,
+          body: {
+            message: "Invalid credentials",
+            code: "INVALID_CREDENTIALS",
+            attemptsLeft: outcome.attemptsLeft,
+            ...(outcome.locked
+              ? { retryAfterSeconds: MOCK_AUTH.lockSeconds }
+              : {}),
+          },
+        };
+      if (outcome.kind === "otp")
+        return ok({ requiresOtp: true, challengeId: outcome.challengeId });
+      store.loginCurrentUser();
+      return ok(sessionOf(store));
     },
   }),
 

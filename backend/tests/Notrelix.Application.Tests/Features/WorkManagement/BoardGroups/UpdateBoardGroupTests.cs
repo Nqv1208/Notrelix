@@ -24,7 +24,7 @@ public class UpdateBoardGroupTests : WorkManagementHandlerTestBase
         var group = CreateBoardGroup();
         SetupBoardGroups(group);
 
-        var command = new UpdateBoardGroupCommand(group.Id, "Updated Title");
+        var command = new UpdateBoardGroupCommand(group.Id, "Updated Title", 1);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -37,7 +37,7 @@ public class UpdateBoardGroupTests : WorkManagementHandlerTestBase
         var group = CreateBoardGroup();
         SetupBoardGroups(group);
 
-        var command = new UpdateBoardGroupCommand(group.Id, null, "#FF0000");
+        var command = new UpdateBoardGroupCommand(group.Id, null, 1, "#FF0000");
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -47,7 +47,7 @@ public class UpdateBoardGroupTests : WorkManagementHandlerTestBase
     [Fact]
     public async Task Handle_GroupNotFound_ThrowsNotFoundException()
     {
-        var command = new UpdateBoardGroupCommand(Guid.CreateVersion7(), "Title");
+        var command = new UpdateBoardGroupCommand(Guid.CreateVersion7(), "Title", 1);
 
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<NotFoundException>();
@@ -59,7 +59,7 @@ public class UpdateBoardGroupTests : WorkManagementHandlerTestBase
         var group = CreateBoardGroup();
         SetupBoardGroups(group);
 
-        var command = new UpdateBoardGroupCommand(group.Id, "New Title", "#00FF00");
+        var command = new UpdateBoardGroupCommand(group.Id, "New Title", 1, "#00FF00");
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -72,7 +72,7 @@ public class UpdateBoardGroupTests : WorkManagementHandlerTestBase
         var group = CreateBoardGroup();
         SetupBoardGroups(group);
 
-        var command = new UpdateBoardGroupCommand(group.Id, null, null);
+        var command = new UpdateBoardGroupCommand(group.Id, null, 1, null);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 

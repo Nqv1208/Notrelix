@@ -9,6 +9,6 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Error: Story = {
-  args: { message: "The board table could not be loaded." },
+  args: {},
   tags: ["fui-surface--wm.table.unavailable", "fui-state--Error"],
 };

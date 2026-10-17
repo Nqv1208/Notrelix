@@ -1,3 +1,4 @@
+using Notrelix.Application.Features.Workspaces.Teams.Queries.GetTeam;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeams;
 
@@ -10,7 +11,8 @@ public static class GetWorkspaceTeamsEndpoint
         group.MapWorkspaceGet("/", HandleAsync)
             .WithName("Workspaces.Teams.GetWorkspaceTeams")
             .WithTags("Workspaces.Teams")
-            .WithSummary("Get all teams in a workspace");
+            .WithSummary("Get all teams in a workspace")
+            .Produces<List<TeamDto>>(StatusCodes.Status200OK, "application/json");
         return group;
     }
 

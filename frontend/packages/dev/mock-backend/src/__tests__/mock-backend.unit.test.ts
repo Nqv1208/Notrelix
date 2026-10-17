@@ -36,7 +36,7 @@ describe("@notrelix/dev-mock-backend — Canonical v3 Architecture", () => {
     >(endpoints.workspaces.list);
 
     expect(workspaces.length).toBeGreaterThan(0);
-    expect(workspaces[0]?.name).toBe("Notrelix Product Lab");
+    expect(workspaces[0]?.name).toBe("Minh An Group");
   });
 
   it("fails closed on unhandled operations with MockUnhandledOperationError", async () => {

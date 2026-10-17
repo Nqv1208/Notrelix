@@ -39,14 +39,19 @@ jobs:
         if: inputs.source_sha != ''
         env:
           SOURCE_SHA: ${{ inputs.source_sha }}
-          RANGE: ${{ inputs.change_range_json }}
+          # Only three fields of the plan range are read. The whole JSON also
+          # lists every changed file and overflows the 128 KB environment
+          # string limit on a large PR, so it is not exported.
+          RANGE_BASE: ${{ fromJSON(inputs.change_range_json).base_sha || '' }}
+          RANGE_HEAD: ${{ fromJSON(inputs.change_range_json).head_sha || '' }}
+          RANGE_MODE: ${{ fromJSON(inputs.change_range_json).mode || '' }}
           SCHEMA_CHANGE: ${{ inputs.schema_change }}
           REDIS_REF: ${{ inputs.redis_image }}
         run: |
           set -euo pipefail
-          base="$(jq -r '.base_sha // ""' <<<"$RANGE")"
-          head="$(jq -r '.head_sha // ""' <<<"$RANGE")"
-          mode="$(jq -r '.mode // ""' <<<"$RANGE")"
+          base="$RANGE_BASE"
+          head="$RANGE_HEAD"
+          mode="$RANGE_MODE"
           [[ -n "$base" ]] || base="$SOURCE_SHA"
           [[ -n "$head" ]] || head="$SOURCE_SHA"
           # "known range" means a comparable base..head pair exists. A rule-

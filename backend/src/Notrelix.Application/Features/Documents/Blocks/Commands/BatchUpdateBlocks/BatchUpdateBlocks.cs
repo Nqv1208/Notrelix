@@ -36,7 +36,7 @@ public class BatchUpdateBlocksCommandHandler : IRequestHandler<BatchUpdateBlocks
     {
         var blockIds = request.Blocks.Select(block => block.Id).ToHashSet();
         var blocks = await _context.Blocks
-            .Where(block => block.PageId == request.PageId && blockIds.Contains(block.Id) && !block.IsDeleted)
+            .Where(block => block.PageId == request.PageId && blockIds.Contains(block.Id) && block.DeletedAt == null)
             .ToDictionaryAsync(block => block.Id, ct);
 
         var now = _dateTimeProvider.UtcNow;
@@ -58,7 +58,7 @@ public class BatchUpdateBlocksCommandHandler : IRequestHandler<BatchUpdateBlocks
                 else
                 {
                     var parentBlock = await _context.Blocks
-                        .FirstOrDefaultAsync(b => b.Id == patch.ParentBlockId.Value && b.PageId == request.PageId && !b.IsDeleted, ct);
+                        .FirstOrDefaultAsync(b => b.Id == patch.ParentBlockId.Value && b.PageId == request.PageId && b.DeletedAt == null, ct);
                     if (parentBlock is null)
                         return Result<List<Guid>>.Failure($"Parent block '{patch.ParentBlockId}' was not found on page '{request.PageId}'.");
 

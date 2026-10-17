@@ -72,27 +72,37 @@ describe("createWebApplicationServices", () => {
     await first.workManagement.cards.moveCard({
       cardId: "card-1",
       listId: "group-1",
-      position: 1,
+      expectedVersion: 1,
+      previousSiblingId: null,
+      nextSiblingId: null,
     });
     await second.workManagement.cards.moveCard({
       cardId: "card-2",
       listId: "group-2",
-      position: 2,
+      expectedVersion: 2,
+      previousSiblingId: null,
+      nextSiblingId: null,
     });
 
     expect(firstClient.api.post).toHaveBeenCalledWith(
       "/board-items/card-1/move",
       {
         groupId: "group-1",
-        position: 1,
+        expectedVersion: 1,
+        previousSiblingId: null,
+        nextSiblingId: null,
       },
+      expect.objectContaining({ idempotencyKey: expect.any(String) }),
     );
     expect(secondClient.api.post).toHaveBeenCalledWith(
       "/board-items/card-2/move",
       {
         groupId: "group-2",
-        position: 2,
+        expectedVersion: 2,
+        previousSiblingId: null,
+        nextSiblingId: null,
       },
+      expect.objectContaining({ idempotencyKey: expect.any(String) }),
     );
     expect(firstClient.api.post).not.toHaveBeenCalledWith(
       "/board-items/card-2/move",

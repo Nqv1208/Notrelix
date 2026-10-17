@@ -13,14 +13,19 @@ export * from "./types/group-types";
 export * from "./types/item-types";
 export * from "./types/label-types";
 export * from "./types/shared-types";
+export * from "./types/board-access-types";
+export * from "./types/board-settings-types";
+export * from "./types/board-automation-types";
 
 // Schemas
 export * from "./schemas";
 
 // Utils
-export * from "./utils/board-api-mappers";
+export * from "./utils/status-lanes";
 export * from "./utils/fractional-index";
 export * from "./utils/board-cache-updaters";
+export * from "./utils/table-projection";
+export * from "./utils/person-initials";
 
 // Kanban types
 export * from "./types/kanban-types";

@@ -151,7 +151,8 @@ public sealed class BoardEventMapper :
             CorrelationId: domainEvent.EventId,
             ActorUserId: domainEvent.UpdatedBy,
             CausationId: null,
-            OccurredAt: domainEvent.OccurredAt
+            OccurredAt: domainEvent.OccurredAt,
+            NewPosition: domainEvent.NewPosition
         );
     }
 

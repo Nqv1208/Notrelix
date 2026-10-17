@@ -16,12 +16,11 @@ import type {
   UpdateFieldValueInput,
   UploadCardFileInput,
 } from "@notrelix/work-management-core";
-import type { MoveCardInput } from "@notrelix/work-management-core";
 import {
   mapActivityResponse,
   mapAttachmentDtoToCardFile,
   mapCardDto,
-} from "@notrelix/work-management-core";
+} from "./board-api-mappers";
 
 type CreateItemOp = "WorkManagement.BoardItems.Create";
 type CreateItemBody = OperationRequestBody<CreateItemOp>;
@@ -32,9 +31,13 @@ type UpdateItemBody = OperationRequestBody<UpdateItemOp>;
 
 type MoveItemOp = "WorkManagement.BoardItems.Move";
 type MoveItemBody = OperationRequestBody<MoveItemOp>;
+type MoveItemResponse = OperationResponse<MoveItemOp, 200>;
 
 type UpdateFieldValueOp = "WorkManagement.BoardItems.UpdateFieldValue";
 type UpdateFieldValueBody = OperationRequestBody<UpdateFieldValueOp>;
+
+type UpdateStatusOp = "WorkManagement.BoardItems.UpdateStatus";
+type UpdateStatusBody = OperationRequestBody<UpdateStatusOp>;
 
 export function createCardApi(client: NotrelixClient) {
   const api = client.api;
@@ -46,22 +49,24 @@ export function createCardApi(client: NotrelixClient) {
       return mapCardDto(card);
     },
 
+    /** Creates the item and returns its id (absent when the server sends none). */
     async createCard(
       boardId: string,
       payload: CreateCardInput,
       options?: ApiRequestOptions,
-    ): Promise<void> {
+    ): Promise<string | undefined> {
       const body: CreateItemBody = {
         groupId: payload.listId, // canonical uses groupId!
         title: payload.title,
-        position: payload.position,
+        // Backend-first cut-over (SPEC WM-V3-DEC-017): the server now owns placement
+        // and expects neighbor ids; until WM-V3-FE-001 maps them, omitting both appends.
       };
-      await api.post<CreateItemResponse>(
+      const created = await api.post<CreateItemResponse | null | undefined>(
         endpoints.boardItems.create(boardId),
         body,
         options ?? { headers: { "Idempotency-Key": crypto.randomUUID() } },
       );
-      // no longer returning getCard(id) because response is void.
+      return created?.id ?? undefined;
     },
 
     async updateCard(cardId: string, patch: UpdateCardInput): Promise<void> {
@@ -73,31 +78,48 @@ export function createCardApi(client: NotrelixClient) {
       await api.delete<void>(endpoints.boardItems.detail(cardId));
     },
 
-    async archiveCard(cardId: string): Promise<void> {
-      await api.post<void>(endpoints.boardItems.archive(cardId));
+    async archiveCard(
+      cardId: string,
+      options?: ApiRequestOptions,
+    ): Promise<void> {
+      await api.post<void>(
+        endpoints.boardItems.archive(cardId),
+        undefined,
+        options ?? { idempotencyKey: crypto.randomUUID() },
+      );
     },
 
     async duplicateCard(cardId: string): Promise<void> {
       await api.post<void>(endpoints.boardItems.duplicate(cardId));
     },
 
+    /**
+     * `POST /board-items/{id}/move`: the target group, the item version the
+     * move is based on and the new neighbours (both `null` appends).
+     * Returns the item's new version.
+     */
     async moveCard(
-      payload: MoveCardInput,
+      move: {
+        cardId: string;
+        listId: string;
+        expectedVersion: number;
+        previousSiblingId: string | null;
+        nextSiblingId: string | null;
+      },
       options?: ApiRequestOptions,
-    ): Promise<void> {
+    ): Promise<{ version?: number }> {
       const body: MoveItemBody = {
-        groupId: payload.listId, // mapping listId to groupId
-        position: payload.position,
+        groupId: move.listId,
+        expectedVersion: move.expectedVersion,
+        previousSiblingId: move.previousSiblingId,
+        nextSiblingId: move.nextSiblingId,
       };
-      if (options) {
-        await api.post<void>(
-          endpoints.boardItems.move(payload.cardId),
-          body,
-          options,
-        );
-        return;
-      }
-      await api.post<void>(endpoints.boardItems.move(payload.cardId), body);
+      const moved = await api.post<MoveItemResponse | null | undefined>(
+        endpoints.boardItems.move(move.cardId),
+        body,
+        options ?? { idempotencyKey: crypto.randomUUID() },
+      );
+      return { version: moved?.version ?? undefined };
     },
 
     async updateFieldValue(payload: UpdateFieldValueInput): Promise<void> {
@@ -108,6 +130,23 @@ export function createCardApi(client: NotrelixClient) {
           payload.fieldDefinitionId,
         ),
         body,
+      );
+    },
+
+    /**
+     * Sets the item's Status option (`PATCH /board-items/{id}/status`). The
+     * server resolves the board's Status field; the value is the option id.
+     */
+    async updateStatus(
+      cardId: string,
+      statusOptionId: string,
+      options?: ApiRequestOptions,
+    ): Promise<void> {
+      const body: UpdateStatusBody = { status: statusOptionId };
+      await api.patch<void>(
+        endpoints.boardItems.status(cardId),
+        body,
+        options ?? { idempotencyKey: crypto.randomUUID() },
       );
     },
 

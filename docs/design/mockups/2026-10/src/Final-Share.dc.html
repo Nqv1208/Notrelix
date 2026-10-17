@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Hướng chốt · Chia sẻ và quyền</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}a:hover{color:inherit}
+.nx{--bg:#F7F8FA;--side:#EFF1F4;--panel:#FFFFFF;--hover:#E6E9EE;--line:#E1E5EA;--line2:#D2D7DE;--text:#161A21;--muted:#4F5866;--meta:#5F6875;--accent:#1666CC;--accent-ink:#FFFFFF;--accent-soft:#E7F0FC;--accent-text:#0F56AE;--st-done:#2E8B57;--danger:#C42340;--danger-soft:#FDECEF;--warn-text:#8A5A00;--warn-soft:#FFF4D6;--warn-line:#EBCB7A;--kbd:#EEF0F3;--modal-scrim:rgba(15,23,42,.38);--pop-shadow:0 12px 32px rgba(15,23,42,.14),0 2px 6px rgba(15,23,42,.06);--lane-todo:#ECEEF2;--lane-doing:#E6EFFB;--lane-review:#FDF3DC;--lane-done:#E5F3EA;font-family:'Be Vietnam Pro',system-ui,sans-serif;color:var(--text);background:var(--bg);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.nx.mode-dem{--bg:#0E1116;--side:#13181E;--panel:#1A2028;--hover:#232A34;--line:#232B35;--line2:#2E3743;--text:#E6E9EE;--muted:#AAB3C0;--meta:#8F99A7;--accent:#5AA9FF;--accent-ink:#04111F;--accent-soft:rgba(90,169,255,.16);--accent-text:#7DBBFF;--st-done:#56C98A;--danger:#FF6B81;--danger-soft:rgba(255,107,129,.12);--warn-text:#F2C14E;--warn-soft:rgba(242,193,78,.12);--warn-line:rgba(242,193,78,.4);--kbd:#232B35;--modal-scrim:rgba(0,0,0,.6);--pop-shadow:0 12px 32px rgba(0,0,0,.55),0 2px 6px rgba(0,0,0,.3);--lane-todo:#151B23;--lane-doing:#13203A;--lane-review:#272012;--lane-done:#12251C}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.kbd{font-family:'IBM Plex Mono',monospace;font-size:11px;background:var(--kbd);border:1px solid var(--line2);border-radius:4px;padding:0 5px;color:var(--muted);line-height:18px}
+.av{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:10.5px;font-weight:700;color:#fff;flex:none}
+.dm{width:20px;height:20px;border-radius:6px;display:grid;place-items:center;font-size:9px;font-weight:700;color:#fff;flex:none}
+.btn{height:32px;padding:0 12px;border-radius:7px;border:1px solid var(--line2);background:var(--panel);color:var(--text);font:inherit;font-size:13px;font-weight:500;display:inline-flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap;box-sizing:border-box}
+.btn:hover{background:var(--hover)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.sm{height:28px;padding:0 10px;font-size:12.5px}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--muted)}
+.icon-btn{width:32px;height:32px;border-radius:7px;border:0;background:transparent;color:var(--meta);display:grid;place-items:center;cursor:pointer;flex:none}
+.icon-btn:hover{background:var(--hover);color:var(--text)}
+.grow{flex:1}
+/* background: board, simplified */
+.side{width:256px;flex:none;background:var(--side);border-right:1px solid var(--line);padding:14px 12px;box-sizing:border-box;display:flex;flex-direction:column;gap:6px}
+.side .ws{display:flex;align-items:center;gap:10px;padding:4px 6px 12px;font-weight:600}
+.side .ln{height:30px;border-radius:7px;display:flex;align-items:center;padding:0 10px;color:var(--muted);font-size:13px;gap:9px}
+.side .ln.on{background:var(--accent-soft);color:var(--accent-text);font-weight:600}
+.bgm{flex:1;min-width:0;display:flex;flex-direction:column}
+.bgh{display:flex;align-items:center;gap:12px;padding:16px 24px}
+.bgh h1{margin:0;font-size:21px;font-weight:650}
+.bgh small{color:var(--meta);font-size:12.5px;display:block}
+.bgh .btn.on{box-shadow:0 0 0 2px var(--accent);border-color:var(--accent)}
+.lanes{display:flex;gap:12px;padding:12px 24px}
+.lane{width:264px;border-radius:14px;padding:8px;display:flex;flex-direction:column;gap:8px}
+.lane h4{margin:0;padding:6px;font-size:13.5px;font-weight:600}
+.card{background:var(--panel);border-radius:11px;padding:12px;font-size:13.5px;box-shadow:0 1px 2px rgba(20,26,36,.08)}
+.card small{display:block;color:var(--meta);font-size:12px;margin-top:6px}
+/* dialog */
+.scrim{position:absolute;inset:0;background:var(--modal-scrim);z-index:40;display:flex;align-items:flex-start;justify-content:center;padding-top:56px}
+.dlg{width:640px;background:var(--panel);border-radius:14px;box-shadow:0 24px 60px rgba(0,0,0,.28);overflow:visible;position:relative;display:flex;flex-direction:column}
+.dh{display:flex;align-items:center;gap:10px;padding:18px 20px 4px}
+.dh h2{margin:0;font-size:18px;font-weight:650}
+.dh .icon-btn{margin-left:auto}
+.dsub{margin:0;padding:0 20px;color:var(--meta);font-size:13px;display:flex;align-items:center;gap:6px}
+.db{padding:16px 20px 6px;display:flex;flex-direction:column;gap:16px}
+.add{display:flex;gap:8px}
+.add .in{flex:1;display:flex;align-items:center;gap:8px;height:38px;padding:0 10px;border:1px solid var(--line2);border-radius:9px;color:var(--meta);font-size:13.5px}
+.lvl{height:38px;display:inline-flex;align-items:center;gap:6px;padding:0 10px;border-radius:9px;border:1px solid var(--line2);background:var(--panel);color:var(--text);font:inherit;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap}
+.lvl .i{width:13px;height:13px;color:var(--meta)}
+.lbl{font-size:12px;font-weight:600;color:var(--meta);margin:0 0 6px}
+/* general access */
+.ga{display:flex;gap:12px;align-items:flex-start;padding:12px;border:1px solid var(--line);border-radius:10px}
+.ga.sel{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.ga .ic{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;flex:none}
+.ga b{display:block;font-size:14px;font-weight:600}
+.ga small{display:block;font-size:12.5px;color:var(--meta);line-height:1.5;margin-top:1px}
+.ga .map{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.ga .map span{font-size:11.5px;height:22px;padding:0 7px;border-radius:5px;background:var(--hover);color:var(--muted);display:inline-flex;align-items:center}
+.ga .ch{margin-left:auto}
+/* people */
+.pl{display:flex;flex-direction:column;max-height:248px;overflow:visible;margin:0 -8px;padding:0 8px}
+.pr{display:flex;align-items:center;gap:11px;min-height:50px;position:relative}
+.pr .who{flex:1;min-width:0}
+.pr .who b{display:block;font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pr .who small{display:block;font-size:12px;color:var(--meta)}
+.badge{font-size:11px;font-weight:600;border-radius:4px;padding:1px 6px;margin-left:6px;vertical-align:1px}
+.badge.g{background:var(--warn-soft);color:var(--warn-text)}
+.badge.x{background:var(--danger-soft);color:var(--danger)}
+.from{font-size:12px;color:var(--meta);white-space:nowrap;padding:0 10px}
+.tm{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;flex:none;background:var(--hover);color:var(--muted)}
+.lvl.plain{border-color:transparent;height:30px}
+.lvl.plain:hover{border-color:var(--line2)}
+.lvl.open{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+/* level menu */
+.lmenu{position:absolute;right:0;top:44px;width:300px;background:var(--panel);border:1px solid var(--line2);border-radius:10px;box-shadow:var(--pop-shadow);z-index:5;padding:4px 0}
+.lo{display:flex;gap:10px;align-items:flex-start;padding:8px 12px;margin:0 4px;border-radius:7px}
+.lo.hl{background:var(--hover)}
+.lo b{display:block;font-size:13.5px;font-weight:600}
+.lo small{display:block;font-size:12px;color:var(--meta);line-height:1.45}
+.lo .ck{margin-left:auto;color:var(--accent-text)}
+.lo.dis{opacity:.55}
+.lo.danger b{color:var(--danger)}
+.lsep{height:1px;background:var(--line);margin:4px 0}
+.exp{display:flex;align-items:center;gap:8px;padding:8px 12px;margin:0 4px;font-size:13px}
+.exp .val{margin-left:auto;font-size:12.5px;color:var(--text);font-weight:500}
+/* link + footer */
+.lk{display:flex;align-items:center;gap:12px;padding:12px;border-radius:10px;background:var(--bg)}
+.lk .ic{width:34px;height:34px;border-radius:9px;background:var(--panel);border:1px solid var(--line);display:grid;place-items:center;color:var(--muted);flex:none}
+.lk b{display:block;font-size:13.5px;font-weight:600}
+.lk small{display:block;font-size:12px;color:var(--meta)}
+.lk .off{margin-left:auto;font-size:12px;color:var(--meta);display:flex;align-items:center;gap:5px;text-align:right}
+.df{display:flex;align-items:center;gap:8px;padding:14px 20px;border-top:1px solid var(--line);margin-top:14px}
+.df a{font-size:12.5px;color:var(--accent-text);font-weight:500}
+/* private confirm */
+.imp{display:flex;flex-direction:column;gap:12px}
+.imp .warn{display:flex;gap:10px;align-items:flex-start;padding:12px;border-radius:10px;background:var(--warn-soft);border:1px solid var(--warn-line);color:var(--warn-text);font-size:13px;line-height:1.5}
+.imp .warn .i{margin-top:2px}
+.imp .warn b{font-weight:600}
+.imp ul{margin:0;padding:0;list-style:none;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.imp li{display:flex;align-items:center;gap:10px;padding:10px 12px;border-top:1px solid var(--line);font-size:13.5px}
+.imp li:first-child{border-top:0}
+.imp li small{display:block;font-size:12px;color:var(--meta)}
+.imp li .ck{width:18px;height:18px;border-radius:5px;background:var(--accent);display:grid;place-items:center;color:#fff;flex:none}
+.imp li .k{margin-left:auto;font-size:12px;color:var(--meta)}
+.imp .keep{font-size:12.5px;color:var(--meta);line-height:1.55}
+.imp .keep b{color:var(--text);font-weight:600}
+.lane .more{height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12.5px;color:var(--muted);font-weight:500}
+.imp li label{display:flex;align-items:center;gap:10px;flex:1;min-width:0;cursor:pointer}
+.imp li input{width:16px;height:16px;margin:0;accent-color:var(--accent);flex:none}
+.log{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.log li{display:flex;gap:11px;align-items:flex-start;padding:11px 0;border-top:1px solid var(--line);font-size:13px;line-height:1.5}
+.log li:first-child{border-top:0}
+.log .av,.log .tm{width:26px;height:26px;font-size:9.5px;margin-top:1px}
+.log .tm{border-radius:8px}
+.log .tm .i{width:14px;height:14px}
+.log b{font-weight:600}
+.log small{display:block;font-size:12px;color:var(--meta)}
+.lh2{display:flex;align-items:center;gap:8px}
+.lh2 h3{margin:0;font-size:15px;font-weight:650}
+</style>
+</helmet>
+<div class="nx mode-{{mode}}" style="display:flex;width:100%;min-height:900px;height:900px;position:relative;overflow:hidden">
+  <nav class="side" aria-hidden="true">
+    <div class="ws"><span class="dm" style="background:#1666CC;width:28px;height:28px;border-radius:8px;font-size:11px">MA</span>Minh An Group</div>
+    <div class="ln">Trang chủ</div><div class="ln">Việc của tôi</div><div class="ln">Hộp thư</div><div class="ln">Tài liệu</div>
+    <div class="ln" style="margin-top:12px;color:var(--text);font-weight:500"><span class="dm" style="background:#1E6FD0">CN</span>Công nghệ</div>
+    <div class="ln on" style="padding-left:39px">Triển khai ERP Q4</div>
+    <div class="ln" style="padding-left:39px">Hạ tầng &amp; bảo mật</div>
+    <div class="ln"><span class="dm" style="background:#9A6A12">KT</span>Kế toán</div>
+    <div class="ln"><span class="dm" style="background:#C2410C">MK</span>Marketing</div>
+  </nav>
+  <div class="bgm" aria-hidden="true">
+    <div class="bgh"><span class="dm" style="background:#1E6FD0;width:34px;height:34px;border-radius:9px;font-size:12px">CN</span><div><small>Phòng Công nghệ</small><h1>Triển khai ERP Q4</h1></div><span class="grow"></span><span class="btn">Thiết lập</span><span class="btn on">Chia sẻ</span></div>
+    <div class="lanes">
+      <div class="lane" style="background:var(--lane-todo)"><h4>Cần làm 6</h4><div class="card">Cấu hình quyền truy cập theo phòng ban cho phân hệ Kế toán<small>ERP-151</small></div><div class="card">Viết tài liệu quy trình nhập hoá đơn đầu vào<small>ERP-149</small></div><span class="more">Xem thêm 4 việc</span></div>
+      <div class="lane" style="background:var(--lane-doing)"><h4>Đang làm 3</h4><div class="card">Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP<small>ERP-142</small></div><div class="card">Kiểm thử phân hệ công nợ với số liệu tháng 9<small>ERP-144</small></div><span class="more">Xem thêm 1 việc</span></div>
+      <div class="lane" style="background:var(--lane-review)"><h4>Chờ duyệt 2</h4><div class="card">Thiết lập đăng nhập một lần (SSO) cho toàn công ty<small>ERP-138</small></div><span class="more">Xem thêm 1 việc</span></div>
+      <div class="lane" style="background:var(--lane-done)"><h4>Hoàn thành 5</h4><div class="card">Sao lưu cơ sở dữ liệu tự động hằng đêm<small>ERP-131</small></div><span class="more">Xem thêm 4 việc</span></div>
+    </div>
+  </div>
+
+  <div class="scrim">
+    <div class="dlg" role="dialog" aria-modal="true" aria-labelledby="sh-t">
+      <div class="dh"><h2 id="sh-t">{{dlgTitle}}</h2><a class="icon-btn" href="Final-Board.dc.html" aria-label="Đóng"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></a></div>
+      <p class="dsub"><span class="dm" style="background:#1E6FD0;width:16px;height:16px;font-size:7px;border-radius:4px">CN</span>Board trong Phòng Công nghệ</p>
+
+      <sc-if value="{{isShare}}" hint-placeholder-val="{{ true }}">
+      <div class="db">
+        <div class="add">
+          <label class="in"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="4"></circle><path d="M2 21a7 7 0 0 1 14 0M19 8v6M16 11h6"></path></svg>Thêm người, nhóm, hoặc email khách</label>
+          <button class="lvl" type="button">Có thể sửa<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button>
+          <button class="btn pri" type="button" style="height:38px">Mời</button>
+        </div>
+
+        <div>
+          <div class="lbl">Ai vào được board</div>
+          <div class="ga sel" role="radiogroup" aria-label="Ai vào được board">
+            <span class="ic" style="background:#1E6FD0;color:#fff;font-weight:700;font-size:11px">CN</span>
+            <span style="min-width:0" role="radio" aria-checked="true"><b>Theo Phòng Công nghệ</b><small>24 người trong phòng vào được, quyền theo vai trò ở phòng ban.</small>
+              <span class="map"><span>Quản trị → Quản lý</span><span>Thành viên → Sửa</span><span>Người xem → Xem</span></span></span>
+            <button class="lvl plain ch" type="button" aria-haspopup="listbox" aria-expanded="false">Đổi<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button>
+          </div>
+        </div>
+
+        <div>
+          <div class="lbl">Quyền riêng trên board này · 5</div>
+          <div class="pl">
+            <div class="pr"><span class="av" style="background:#B4500B">HP</span><span class="who"><b>Lê Hoàng Phúc</b><small>Chủ board · Quản trị Phòng Công nghệ</small></span><span class="from">Quản lý</span></div>
+            <div class="pr"><span class="tm"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"></circle><circle cx="17" cy="9" r="2.5"></circle><path d="M2.5 20a6.5 6.5 0 0 1 13 0M15 20a5 5 0 0 1 6.5-4.7"></path></svg></span><span class="who"><b>Nhóm Kế toán tổng hợp</b><small>Nhóm workspace · 6 người · ngoài phòng Công nghệ</small></span><button class="lvl plain" type="button">Có thể xem<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button></div>
+            <div class="pr"><span class="av" style="background:#9A6A12">KL</span><span class="who"><b>Đỗ Khánh Linh</b><small>Phòng Kế toán · ngoài phòng Công nghệ · hết quyền 31/12/2026</small></span><button class="lvl plain" type="button">Có thể bình luận<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button></div>
+            <div class="pr"><span class="av" style="background:#475569">MT</span><span class="who"><b>Đặng Minh Tuấn<span class="badge x">Ngoài công ty</span></b><small>tuan@doitac-erp.vn · khách, chỉ thấy board này · hết quyền 31/01/2027</small></span>
+              <button class="lvl plain {{lvlOpen}}" type="button" aria-expanded="{{lvlExp}}">Có thể sửa<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button>
+              <sc-if value="{{isLevel}}" hint-placeholder-val="{{ false }}">
+                <div class="lmenu" role="menu" aria-label="Quyền của Đặng Minh Tuấn" style="top:auto;bottom:44px">
+                  <div class="lo" role="menuitemradio" aria-checked="false"><span><b>Có thể xem</b><small>Xem việc, tài liệu đính kèm</small></span></div>
+                  <div class="lo" role="menuitemradio" aria-checked="false"><span><b>Có thể bình luận</b><small>Xem, bình luận, nhắc tên; đính kèm tệp chỉ trong bình luận</small></span></div>
+                  <div class="lo" role="menuitemradio" aria-checked="true"><span><b>Có thể sửa</b><small>Tạo, sửa, giao, di chuyển việc</small></span><svg class="i ck" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5L20 7"></path></svg></div>
+                  <div class="lo dis" role="menuitemradio" aria-disabled="true"><span><b>Quản lý</b><small>Khách không được quản lý board hay chia sẻ tiếp (GOV-030)</small></span></div>
+                  <div class="lsep"></div>
+                  <div class="exp"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>Hết quyền<span class="val">31/01/2027</span></div>
+                  <div class="lo danger" role="menuitem"><span><b>Gỡ quyền</b><small>Tuấn không còn thấy board này</small></span></div>
+                </div>
+              </sc-if>
+            </div>
+            <div class="pr"><span class="av" style="background:#4E8574">HA</span><span class="who"><b>Nguyễn Thu Hà <span style="color:var(--meta);font-weight:400">(bạn)</span></b><small>Quản trị Phòng Công nghệ</small></span><span class="from">Quản lý</span></div>
+          </div>
+        </div>
+
+        <div class="lk">
+          <span class="ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"></path><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"></path></svg></span>
+          <span><b>Liên kết của board</b><small>Chỉ người đã có quyền mở được. Gửi liên kết không cấp thêm quyền.</small></span>
+          <span class="off"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:13px;height:13px"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>Công khai: quản trị workspace đã tắt</span>
+        </div>
+      </div>
+      <div class="df"><a href="#">Nhật ký thay đổi quyền</a><span class="grow"></span><button class="btn" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"></path><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"></path></svg>Sao chép liên kết</button><a class="btn pri" href="Final-Board.dc.html">Xong</a></div>
+      </sc-if>
+
+      <sc-if value="{{isLog}}" hint-placeholder-val="{{ false }}">
+      <div class="db">
+        <div class="lh2"><button class="icon-btn" type="button" aria-label="Quay lại danh sách quyền"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"></path></svg></button><h3 id="log-t">Nhật ký thay đổi quyền</h3><span class="grow"></span><span style="font-size:12px;color:var(--meta)">Chỉ người quản lý board xem được</span></div>
+        <ul class="log" aria-labelledby="log-t">
+          <li><span class="av" style="background:#4E8574">HA</span><span><b>Nguyễn Thu Hà</b> thêm <b>Đặng Minh Tuấn</b> (khách, Có thể sửa, hết quyền 31/01/2027)<small>08/10 · 14:12</small></span></li>
+          <li><span class="av" style="background:#B4500B">HP</span><span><b>Lê Hoàng Phúc</b> đổi <b>Nhóm Kế toán tổng hợp</b>: Có thể sửa → Có thể xem<small>02/10</small></span></li>
+          <li><span class="tm"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg></span><span><b>Hệ thống:</b> quyền của <b>Nguyễn Văn Bình</b> hết hạn<small>30/09 · gia hạn phải thêm lại quyền</small></span></li>
+          <li><span class="tm"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"></path><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"></path></svg></span><span><b>Quản trị workspace</b> tắt liên kết công khai<small>15/09</small></span></li>
+          <li><span class="av" style="background:#B4500B">HP</span><span><b>Lê Hoàng Phúc</b> tạo board<small>01/09</small></span></li>
+        </ul>
+      </div>
+      <div class="df"><button class="btn" type="button">Quay lại</button><span class="grow"></span><a class="btn pri" href="Final-Board.dc.html">Xong</a></div>
+      </sc-if>
+
+      <sc-if value="{{isPrivate}}" hint-placeholder-val="{{ false }}">
+      <div class="db">
+        <div class="lbl" style="margin:0" id="ga-l">Ai vào được board</div>
+        <div role="radiogroup" aria-labelledby="ga-l" style="display:flex;flex-direction:column;gap:16px">
+        <div class="ga" role="radio" aria-checked="false" tabindex="-1">
+          <span class="ic" style="background:#1E6FD0;color:#fff;font-weight:700;font-size:11px">CN</span>
+          <span><b>Theo Phòng Công nghệ</b><small>Đang dùng</small></span>
+        </div>
+        <div class="ga sel" role="radio" aria-checked="true" tabindex="0">
+          <span class="ic" style="background:var(--hover);color:var(--muted)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg></span>
+          <span><b>Riêng tư</b><small>Chỉ người và nhóm được thêm vào board. Vai trò ở phòng ban không còn mở được board này, kể cả Quản trị phòng. Quản trị workspace cũng cần được thêm riêng; chỉ chủ sở hữu workspace luôn vào được.</small></span>
+        </div>
+        </div>
+        <div class="imp">
+          <div class="warn"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9v4M12 17h.01"></path><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path></svg><span><b>22 người trong Phòng Công nghệ sẽ không còn thấy board.</b> Trong đó 3 người đang được giao việc chưa xong. Thêm họ vào board trước khi chuyển để việc không bị bỏ dở.</span></div>
+          <ul aria-label="Người đang có việc trên board">
+            <li><label for="keep-mq"><input type="checkbox" id="keep-mq" checked><span class="av" style="background:#1E6FD0;width:26px;height:26px;font-size:9.5px" aria-hidden="true">MQ</span><span><b style="font-weight:600">Trần Minh Quân</b><small>2 việc chưa xong, 1 quá hạn trên board này</small></span></label><span class="k">chưa có quyền riêng</span></li>
+            <li><label for="keep-na"><input type="checkbox" id="keep-na" checked><span class="av" style="background:#7C4DDB;width:26px;height:26px;font-size:9.5px" aria-hidden="true">NA</span><span><b style="font-weight:600">Phan Ngọc Anh</b><small>1 việc chưa xong trên board này</small></span></label><span class="k">chưa có quyền riêng</span></li>
+            <li><label for="keep-vt"><input type="checkbox" id="keep-vt" checked><span class="av" style="background:#0E7490;width:26px;height:26px;font-size:9.5px" aria-hidden="true">VT</span><span><b style="font-weight:600">Vũ Thanh</b><small>1 việc chưa xong trên board này</small></span></label><span class="k">chưa có quyền riêng</span></li>
+          </ul>
+          <p class="keep" style="margin:0">Giữ nguyên quyền: <b>Lê Hoàng Phúc, Nguyễn Thu Hà</b> (đã được thêm riêng), <b>Nhóm Kế toán tổng hợp</b>, <b>Đỗ Khánh Linh</b> và khách <b>Đặng Minh Tuấn</b>. Quản trị workspace cũng cần được thêm riêng; chỉ chủ sở hữu workspace luôn vào được. Việc của người mất quyền vẫn còn nguyên, chỉ họ không mở được.</p>
+        </div>
+      </div>
+      <div class="df"><span class="grow"></span><button class="btn" type="button">Huỷ</button><button class="btn" type="button">Chuyển, không thêm ai</button><button class="btn pri" type="button">Thêm 3 người rồi chuyển</button></div>
+      </sc-if>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"state":{"editor":"enum","options":["chia-se","doi-quyen","rieng-tu","nhat-ky"],"default":"chia-se","section":"Trạng thái minh hoạ"},"mode":{"editor":"enum","options":["sang","dem"],"default":"sang","section":"Giao diện"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.props.state ?? 'chia-se';
+    const priv = s === 'rieng-tu';
+    const lvl = s === 'doi-quyen';
+    const log = s === 'nhat-ky';
+    return {
+      mode: this.props.mode ?? 'sang',
+      isPrivate: priv,
+      notPrivate: !priv,
+      isLog: log,
+      isShare: !priv && !log,
+      isLevel: lvl,
+      lvlOpen: lvl ? 'open' : '',
+      lvlExp: lvl ? 'true' : 'false',
+      dlgTitle: priv ? 'Chuyển board sang Riêng tư?' : 'Chia sẻ Triển khai ERP Q4'
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -74,7 +74,7 @@ internal class TestAsyncQueryProvider<T>(IQueryable<T> inner) : IAsyncQueryProvi
 }
 
 internal class TestAsyncEnumerable<T>(IQueryable<T> queryable)
-    : IAsyncEnumerable<T>, IQueryable<T>
+    : IAsyncEnumerable<T>, IOrderedQueryable<T>
 {
     public Type ElementType => queryable.ElementType;
     public Expression Expression => queryable.Expression;

@@ -14,6 +14,10 @@ import { accountOperations } from "../contexts/account/account.handlers";
 import { notificationsOperations } from "../contexts/notifications/notifications.handlers";
 import { workManagementOperations } from "../contexts/work-management";
 import { documentsOperations } from "../contexts/documents";
+import { reportsOperations } from "../contexts/analytics/reports.handlers";
+import { billingOperations } from "../contexts/billing/billing.handlers";
+import { integrationsOperations } from "../contexts/integrations/integrations.handlers";
+import { workFeedOperations } from "../contexts/work-feed/work-feed.handlers";
 
 export function buildOperationRegistry(): MockOperationRegistry {
   const registry = new MockOperationRegistry();
@@ -31,6 +35,14 @@ export function buildOperationRegistry(): MockOperationRegistry {
     ...workManagementOperations,
     // Documents (pages)
     ...documentsOperations,
+    // Work feed (CTR-GAP-WS-*): Home, My work and Inbox beyond the contract
+    ...workFeedOperations,
+    // Analytics (CTR-GAP-REPORTS): the Reports pages
+    ...reportsOperations,
+    // Billing (CTR-GAP-BILLING): the Plans and billing pages
+    ...billingOperations,
+    // Integrations (CTR-GAP-INTEGRATIONS): the Integrations pages
+    ...integrationsOperations,
     // Note: Search is CONTRACT-BLOCKED (CTR-GAP-SEARCH) until authoritative producer contract lands.
   ]);
 

@@ -23,7 +23,7 @@ public class ListSavedFiltersQueryHandler : IRequestHandler<ListSavedFiltersQuer
     {
         var filters = await _context.SavedFilters
             .AsNoTracking()
-            .Where(f => f.BoardId == request.BoardId && !f.IsDeleted)
+            .Where(f => f.BoardId == request.BoardId && f.DeletedAt == null)
             .OrderBy(f => f.CreatedAt)
             .Select(f => new SavedFilterDto(
                 f.Id,

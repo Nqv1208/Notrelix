@@ -1,3 +1,4 @@
+using Notrelix.Application.Features.Workspaces.DTOs;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Workspaces.Workspaces.Queries.ResolveSlug;
 
@@ -10,7 +11,8 @@ public static class ResolveSlugEndpoint
         endpoints.MapPublicGet("/api/v1/accounts/{accountId:guid}/resolve", HandleAsync)
             .WithName("Workspaces.Workspaces.ResolveSlug")
             .WithTags("Workspaces.Workspaces")
-            .WithSummary("Resolve a workspace by account ID and slug");
+            .WithSummary("Resolve a workspace by account ID and slug")
+            .Produces<WorkspaceDto>(StatusCodes.Status200OK, "application/json");
         return endpoints;
     }
 

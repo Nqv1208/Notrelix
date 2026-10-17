@@ -24,9 +24,17 @@ export interface Board {
   members: BoardMember[];
   createdAt: string;
   updatedAt?: string;
+  /**
+   * Whether the caller may add items to this board (workspace board list only;
+   * gap `CTR-GAP-WM-TABLE-BULK`). Absent = not known.
+   */
+  canAddItems?: boolean;
 }
 
 export type ViewMode = "table" | "kanban" | "calendar" | "timeline";
+
+/** Row height of the table: "comfortable" 40 px (the default), "compact" 32 px. */
+export type TableDensity = "compact" | "comfortable";
 
 export interface ViewConfig {
   groupBy: "list" | "status" | "priority" | "assignee" | string;
@@ -36,7 +44,14 @@ export interface ViewConfig {
   collapsedGroups: Record<string, boolean>;
   filters: FilterConfig[];
   sortBy: SortConfig[];
+  density: TableDensity;
   searchQuery?: string;
+  /** Kanban: cards a lane shows before "Xem thêm N việc" (1..20, default 4). */
+  laneCardLimit?: number;
+  /** Kanban: board levels that see the status controls (manager is always in). */
+  statusManageRoles?: Array<"manager" | "editor">;
+  /** Kanban: Alt+Arrow moves the focused card (default on). */
+  keyboardMove?: boolean;
 }
 
 export interface FilterConfig {
@@ -73,6 +88,8 @@ export interface BoardDtoApi {
   memberCount: number;
   listCount: number;
   createdAt: string;
+  /** Gap field (`CTR-GAP-WM-TABLE-BULK`): the caller may add items. */
+  canAddItems?: boolean;
 }
 
 export interface FullBoardDtoApi {

@@ -6,5 +6,6 @@ public class ArchiveTeamCommandValidator : AbstractValidator<ArchiveTeamCommand>
     {
         RuleFor(x => x.WorkspaceId).NotEmpty();
         RuleFor(x => x.TeamId).NotEmpty();
+        RuleFor(x => x.ExpectedVersion).GreaterThan(0);
     }
 }

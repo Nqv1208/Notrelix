@@ -1,99 +1,382 @@
-import { useMemo } from "react";
+import { useId, useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import {
-  CalendarDays,
-  CheckCircle2,
-  FileText,
-  GripVertical,
-  MessageSquareText,
-  MoreHorizontal,
-  Paperclip,
-} from "lucide-react";
-import { format } from "date-fns";
-import { Avatar, AvatarFallback } from "@notrelix/ui-web";
-import { Badge } from "@notrelix/ui-web";
-import { Progress } from "@notrelix/ui-web";
-import { Button } from "@notrelix/ui-web";
+import { Flag } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
-import type { Board, Card } from "@notrelix/work-management-core";
-import { KanbanCardMenu } from "./kanban-card-menu";
+import type { Card, CardMember } from "@notrelix/work-management-core";
+import {
+  fillCopy,
+  kanbanCardCopy,
+  pluralCopy,
+  type KanbanCardCopy,
+} from "./kanban-card.copy";
+import { prefersReducedMotion } from "./kanban-chrome";
+import { KANBAN_CARD_TYPE } from "./kanban-collision";
+import type { KanbanMoveDirection } from "./kanban-dnd";
+import {
+  ITEM_LABEL_TONE_CLASS,
+  identityMarkClass,
+  itemDueState,
+  itemLabelTone,
+  type ItemDueState,
+} from "../../shared/item-display";
 
-const priorityColors: Record<
-  string,
-  { bg: string; text: string; border: string }
-> = {
-  urgent: {
-    bg: "rgba(246, 73, 50, 0.1)",
-    text: "#f64932",
-    border: "rgba(246, 73, 50, 0.3)",
-  },
-  high: {
-    bg: "rgba(97, 97, 255, 0.1)",
-    text: "#6161ff",
-    border: "rgba(97, 97, 255, 0.3)",
-  },
-  medium: {
-    bg: "rgba(255, 201, 94, 0.15)",
-    text: "#ffb110",
-    border: "rgba(255, 201, 94, 0.4)",
-  },
-  low: {
-    bg: "rgba(103, 104, 121, 0.1)",
-    text: "#676879",
-    border: "rgba(103, 104, 121, 0.3)",
-  },
+const defaultCopy = kanbanCardCopy("en");
+
+function markFor(member: CardMember): string {
+  const initials = member.initials.trim() || Array.from(member.name)[0] || "?";
+  return initials.toUpperCase();
+}
+
+const DUE_CLASS: Readonly<Record<ItemDueState["kind"], string>> = {
+  overdue: "bg-danger-subtle font-semibold text-danger-subtle-foreground",
+  today: "bg-warning-subtle font-semibold text-warning-subtle-foreground",
+  date: "font-medium text-meta-foreground",
 };
 
-export function KanbanCard({
-  board: _board,
+const ALT_ARROW: Readonly<Record<string, KanbanMoveDirection | undefined>> = {
+  ArrowLeft: "left",
+  ArrowRight: "right",
+  ArrowUp: "up",
+  ArrowDown: "down",
+};
+
+const CARD_CLASS =
+  "relative flex flex-col gap-[9px] rounded-[11px] bg-popover p-3 dark:bg-card";
+
+/** What a card shows, worked out once for its body and its open control. */
+function cardParts(
+  card: Card,
+  copy: KanbanCardCopy,
+  now: Date | undefined,
+  timeZone: string | undefined,
+  fallbackNow: Date,
+) {
+  const reference = now ?? fallbackNow;
+  const isDone = card.statusCategory === "done" || Boolean(card.completedAt);
+  const due = isDone
+    ? null
+    : itemDueState(card.dueAt ?? card.dueDate, reference, timeZone);
+  const dueText =
+    due?.kind === "overdue"
+      ? pluralCopy(
+          { one: copy.overdueDays_one, other: copy.overdueDays_other },
+          due.days,
+        )
+      : due?.kind === "today"
+        ? copy.dueToday
+        : (due?.text ?? null);
+
+  const label = card.labels?.[0];
+  const labelTone = label ? itemLabelTone(label) : null;
+  const itemKey = card.itemKey?.trim() || null;
+
+  const progress =
+    card.childProgress && card.childProgress.total > 0
+      ? card.childProgress
+      : null;
+  const progressPercent = progress
+    ? Math.max(
+        4,
+        Math.min(100, Math.round((progress.done / progress.total) * 100)),
+      )
+    : 0;
+
+  const priority =
+    card.priority === "urgent" || card.priority === "high"
+      ? card.priority
+      : null;
+
+  const assignee = card.members?.[0];
+  const moreAssignees = Math.max((card.members?.length ?? 0) - 1, 0);
+  const assigneeLabel = assignee
+    ? moreAssignees > 0
+      ? fillCopy(copy.assignedToMore, {
+          name: assignee.name,
+          count: moreAssignees,
+        })
+      : fillCopy(copy.assignedTo, { name: assignee.name })
+    : "";
+
+  return {
+    isDone,
+    due,
+    dueText,
+    label,
+    labelTone,
+    itemKey,
+    progress,
+    progressPercent,
+    priority,
+    assignee,
+    assigneeLabel,
+    hasTop: Boolean(label && labelTone) || itemKey !== null,
+    hasMeta: dueText !== null || priority !== null || Boolean(assignee),
+  };
+}
+
+/**
+ * The inside of a card: label chip and key, title, child-item progress, due
+ * wording, priority (urgent and high only) and the first assignee's avatar.
+ * Shared by the card in its lane and by the copy that follows the pointer
+ * while the card is dragged, so both look the same.
+ */
+function KanbanCardContent({
   card,
-  onOpenDetails,
-  onCopyLink,
-  onDuplicate,
-  onDelete,
+  copy,
+  parts,
+  idPrefix,
 }: {
-  board: Board;
   card: Card;
-  onOpenDetails: (cardId: string) => void;
-  onCopyLink: (cardId: string) => void;
-  onDuplicate: () => void;
-  onDelete: () => void;
+  copy: KanbanCardCopy;
+  parts: ReturnType<typeof cardParts>;
+  idPrefix: string;
 }) {
   const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({
-    id: card.id,
-    data: { type: "kanban-card", card },
-  });
+    isDone,
+    due,
+    dueText,
+    label,
+    labelTone,
+    itemKey,
+    progress,
+    progressPercent,
+    priority,
+    assignee,
+    assigneeLabel,
+    hasTop,
+    hasMeta,
+  } = parts;
+  return (
+    <>
+      {hasTop ? (
+        <div
+          id={`${idPrefix}-top`}
+          className="flex min-w-0 items-center gap-1.5 text-metadata text-meta-foreground"
+        >
+          {label && labelTone ? (
+            <>
+              <span className="sr-only">{copy.label} </span>
+              <span
+                data-label-tone={labelTone}
+                className={cn(
+                  "inline-flex h-5.5 min-w-0 items-center truncate rounded-sm px-2 text-micro font-semibold",
+                  ITEM_LABEL_TONE_CLASS[labelTone],
+                )}
+              >
+                {label.name}
+              </span>
+            </>
+          ) : null}
+          {itemKey ? (
+            <span className="ml-auto shrink-0 font-mono text-metadata leading-[1.45]">
+              {itemKey}
+            </span>
+          ) : null}
+        </div>
+      ) : null}
 
-  const priorityStyle = card.priority ? priorityColors[card.priority] : null;
+      <h3
+        className={cn(
+          "line-clamp-3 break-words text-nav leading-[1.4]",
+          isDone ? "text-muted-foreground" : "text-foreground",
+        )}
+      >
+        {card.title}
+      </h3>
 
-  const checklistProgress = useMemo(() => {
-    const checklists = card.checklists || [];
-    const total = checklists.reduce(
-      (count, checklist) => count + (checklist.items?.length || 0),
-      0,
-    );
-    const done = checklists.reduce(
-      (count, checklist) =>
-        count + (checklist.items?.filter((item) => item.isDone)?.length || 0),
-      0,
-    );
-    return total === 0 ? 0 : Math.round((done / total) * 100);
-  }, [card.checklists]);
+      {progress ? (
+        <div
+          data-child-progress=""
+          className="flex items-center gap-2 text-micro tabular-nums text-meta-foreground"
+        >
+          <span
+            aria-hidden="true"
+            className="block h-1.25 flex-1 overflow-hidden rounded-[3px] bg-state-hover-strong"
+          >
+            <span
+              data-progress-fill=""
+              className="block h-full rounded-[3px] bg-primary"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </span>
+          <span aria-hidden="true">
+            {progress.done}/{progress.total}
+          </span>
+          <span id={`${idPrefix}-progress`} className="sr-only">
+            {fillCopy(copy.childProgress, {
+              done: progress.done,
+              total: progress.total,
+            })}
+          </span>
+        </div>
+      ) : null}
 
-  const checklistTotalItems = useMemo(() => {
-    return (card.checklists || []).reduce(
-      (count, cl) => count + (cl.items?.length || 0),
-      0,
-    );
-  }, [card.checklists]);
+      {hasMeta ? (
+        <div
+          id={`${idPrefix}-meta`}
+          className="flex min-w-0 flex-wrap items-center gap-1.5 text-metadata text-meta-foreground"
+        >
+          {due && dueText ? (
+            <span
+              data-due={due.kind}
+              className={cn(
+                "inline-flex h-5.5 items-center gap-1 rounded-sm px-1.5",
+                DUE_CLASS[due.kind],
+              )}
+            >
+              {due.kind === "overdue" ? null : (
+                <span className="sr-only">{copy.due} </span>
+              )}
+              {dueText}
+            </span>
+          ) : null}
+          {priority ? (
+            <span
+              data-priority={priority}
+              className={cn(
+                "inline-flex items-center gap-1 leading-[1.45] font-semibold",
+                priority === "urgent"
+                  ? "text-danger-text"
+                  : "text-priority-high-text",
+              )}
+            >
+              <Flag className="size-3.25" aria-hidden="true" />
+              <span className="sr-only">{copy.priorityPrefix} </span>
+              {copy.priority[priority]}
+            </span>
+          ) : null}
+          {assignee ? (
+            <span
+              role="group"
+              aria-label={assigneeLabel}
+              className="ml-auto flex shrink-0 items-center"
+            >
+              <span
+                aria-hidden="true"
+                className={cn(
+                  "flex size-5.5 items-center justify-center rounded-full text-mark-xs select-none",
+                  identityMarkClass(assignee.userId || assignee.id),
+                )}
+              >
+                {markFor(assignee)}
+              </span>
+            </span>
+          ) : null}
+        </div>
+      ) : null}
+    </>
+  );
+}
+
+/**
+ * The copy of a card that follows the pointer while it is dragged: the card
+ * as it looks in its lane (same width, padding and radius), lifted by a
+ * slight tilt and a stronger shadow. It is not interactive and hidden from
+ * assistive technology; the card itself stays in its lane as the placeholder.
+ */
+export function KanbanCardOverlay({
+  card,
+  now,
+  timeZone,
+  copy = defaultCopy,
+}: {
+  card: Card;
+  now?: Date;
+  timeZone?: string;
+  copy?: KanbanCardCopy;
+}) {
+  const [fallbackNow] = useState(() => new Date());
+  const reducedMotion = prefersReducedMotion();
+  const parts = cardParts(card, copy, now, timeZone, fallbackNow);
+  return (
+    <article
+      aria-hidden="true"
+      data-kanban-drag-overlay=""
+      data-card-id={card.id}
+      className={cn(
+        CARD_CLASS,
+        "h-full cursor-grabbing shadow-popover ring-1 ring-primary/30",
+        reducedMotion
+          ? "scale-[1.02]"
+          : "scale-[1.03] rotate-2 transition-transform duration-150 ease-out starting:scale-100 starting:rotate-0",
+      )}
+    >
+      <KanbanCardContent
+        card={card}
+        copy={copy}
+        parts={parts}
+        idPrefix={`${card.id}-overlay`}
+      />
+    </article>
+  );
+}
+
+/**
+ * A Kanban card. The whole card opens the item (pointer, Enter, Space) and is
+ * the drag handle: a mouse drag starts after a few pixels of movement, so a
+ * plain click still opens, and a touch drag starts after a long press. While
+ * it is dragged the card stays in its lane as a gap of its own height at the
+ * place it would be dropped at; moving with the keyboard happens from the item
+ * sheet. Actions such as copy link, duplicate and archive live in the sheet,
+ * not on the card.
+ */
+export function KanbanCard({
+  card,
+  laneKey,
+  now,
+  timeZone,
+  copy = defaultCopy,
+  selected = false,
+  dragDisabled = false,
+  onMoveKey,
+  onOpenDetails,
+}: {
+  card: Card;
+  /** The lane this card is shown in (the lane it is dragged over while dragging). */
+  laneKey?: string;
+  /** The reference time for the due wording; read once by the container. */
+  now?: Date;
+  /** IANA time zone for calendar days; the runtime zone when omitted. */
+  timeZone?: string;
+  copy?: KanbanCardCopy;
+  /** The card whose item sheet is open. */
+  selected?: boolean;
+  /** No pointer drag (a read-only board); the card still opens. */
+  dragDisabled?: boolean;
+  /**
+   * Alt+ArrowLeft/Right/Up/Down asks to move the card (to the adjacent lane,
+   * or within its lane). Absent: those keys do nothing.
+   */
+  onMoveKey?: (cardId: string, direction: KanbanMoveDirection) => void;
+  onOpenDetails: (cardId: string) => void;
+}) {
+  const { listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({
+      id: card.id,
+      data: { type: KANBAN_CARD_TYPE, card, laneKey },
+      disabled: dragDisabled,
+      // The sortable animation of the cards that make room is the smooth part
+      // of the drag; reduced motion drops it.
+      transition: prefersReducedMotion()
+        ? null
+        : { duration: 180, easing: "cubic-bezier(0.2, 0, 0, 1)" },
+    });
+  // Pointer and touch only: Enter and Space belong to opening the card.
+  const { onKeyDown: _keyboard, ...dragListeners } = (listeners ??
+    {}) as Record<string, unknown>;
+  void _keyboard;
+
+  const [fallbackNow] = useState(() => new Date());
+  const descriptionId = useId();
+  const parts = cardParts(card, copy, now, timeZone, fallbackNow);
+  const describedBy = [
+    parts.hasTop ? `${descriptionId}-top` : null,
+    parts.progress ? `${descriptionId}-progress` : null,
+    parts.hasMeta ? `${descriptionId}-meta` : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <article
@@ -101,159 +384,52 @@ export function KanbanCard({
       style={{
         transform: CSS.Transform.toString(transform),
         transition,
-        zIndex: isDragging ? 1000 : undefined,
       }}
+      {...dragListeners}
+      aria-current={selected ? "true" : undefined}
+      data-dragging={isDragging ? "" : undefined}
       className={cn(
-        "group relative flex flex-col rounded-xl border border-border bg-card p-3 shadow-xs transition hover:-translate-y-0.5 hover:shadow-md cursor-pointer",
-        isDragging && "opacity-60 border-primary",
+        CARD_CLASS,
+        "group cursor-pointer shadow-card transition-shadow hover:shadow-card-hover",
+        !dragDisabled && "touch-manipulation",
+        selected && "shadow-card-hover ring-2 ring-inset ring-primary",
+        // The slot the card leaves is the gap it will fill: an empty, tinted
+        // box of the card's own height (its content stays, hidden).
+        isDragging &&
+          "z-dropdown bg-state-selected shadow-none ring-1 ring-inset ring-primary/40 hover:shadow-none dark:bg-state-selected [&>*]:invisible",
       )}
-      aria-label={card.title}
-      aria-grabbed={isDragging}
     >
       <button
         type="button"
-        className="absolute inset-0 z-10 rounded-xl focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        className="absolute inset-0 z-10 rounded-[11px] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
         aria-label={card.title}
+        aria-describedby={describedBy || undefined}
+        data-card-id={card.id}
+        aria-keyshortcuts={
+          onMoveKey
+            ? "Alt+ArrowLeft Alt+ArrowRight Alt+ArrowUp Alt+ArrowDown"
+            : undefined
+        }
         onClick={() => onOpenDetails(card.id)}
         onKeyDown={(event) => {
+          const direction = onMoveKey ? ALT_ARROW[event.key] : undefined;
+          if (direction && event.altKey && !event.ctrlKey && !event.metaKey) {
+            event.preventDefault();
+            onMoveKey?.(card.id, direction);
+            return;
+          }
           if (event.key === "Enter" || event.key === " ") {
             event.preventDefault();
             onOpenDetails(card.id);
           }
         }}
       />
-
-      <div className="relative mb-2 flex items-start gap-2">
-        {/* Grip Handle */}
-        <button
-          type="button"
-          className="relative z-20 mt-0.5 cursor-grab rounded p-0.5 text-muted-foreground/40 transition-colors hover:bg-muted/50 group-hover:text-muted-foreground/80 active:cursor-grabbing"
-          aria-label={`Move ${card.title}`}
-          onClick={(e) => e.stopPropagation()}
-          {...attributes}
-          {...listeners}
-        >
-          <GripVertical className="size-3.5" aria-hidden="true" />
-        </button>
-
-        {/* Card Title */}
-        <div className="min-w-0 flex-1">
-          <p className="line-clamp-2 text-sm font-semibold leading-5 text-foreground font-display">
-            {card.title}
-          </p>
-          {card.linkedPageId ? (
-            <div className="mt-1 flex items-center gap-1 text-[11px] text-primary font-medium">
-              <FileText className="size-3" aria-hidden="true" />
-              <span>Doc Linked</span>
-            </div>
-          ) : null}
-        </div>
-
-        {/* Actions Button */}
-        <div
-          className="relative z-20 opacity-0 transition-opacity group-hover:opacity-100"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <KanbanCardMenu
-            onCopyLink={() => onCopyLink(card.id)}
-            onDuplicate={onDuplicate}
-            onDelete={onDelete}
-          >
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              className="size-6"
-              aria-label={`Open ${card.title} menu`}
-            >
-              <MoreHorizontal className="size-3.5" aria-hidden="true" />
-            </Button>
-          </KanbanCardMenu>
-        </div>
-      </div>
-
-      {/* Priority Badge */}
-      {card.priority && priorityStyle ? (
-        <div className="relative z-20 mb-2">
-          <Badge
-            variant="secondary"
-            className="rounded-md border px-2 py-0 h-5 text-[10px] font-semibold uppercase tracking-wider font-display"
-            style={{
-              backgroundColor: priorityStyle.bg,
-              color: priorityStyle.text,
-              borderColor: priorityStyle.border,
-            }}
-          >
-            {card.priority}
-          </Badge>
-        </div>
-      ) : null}
-
-      {/* Checklist Progress */}
-      {checklistTotalItems > 0 ? (
-        <div className="relative z-20 mb-3 space-y-1.5">
-          <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-            <span className="inline-flex items-center gap-1 font-body">
-              <CheckCircle2
-                className="size-3 text-muted-foreground/60"
-                aria-hidden="true"
-              />
-              Checklist
-            </span>
-            <span className="font-semibold">{checklistProgress}%</span>
-          </div>
-          <Progress value={checklistProgress} className="h-1.5" />
-        </div>
-      ) : null}
-
-      {/* Bottom Metadata row */}
-      <div className="relative z-20 mt-auto flex items-center justify-between gap-2 border-t border-border/40 pt-2 text-xs text-muted-foreground font-body">
-        <div className="flex items-center gap-2.5">
-          {card.dueDate ? (
-            <span className="inline-flex items-center gap-1 text-[11px]">
-              <CalendarDays
-                className="size-3 text-muted-foreground/60"
-                aria-hidden="true"
-              />
-              {format(new Date(card.dueDate), "MMM d")}
-            </span>
-          ) : null}
-          {card._count.comments > 0 ? (
-            <span className="inline-flex items-center gap-1 text-[11px]">
-              <MessageSquareText
-                className="size-3 text-muted-foreground/60"
-                aria-hidden="true"
-              />
-              {card._count.comments}
-            </span>
-          ) : null}
-          {card._count.attachments > 0 ? (
-            <span className="inline-flex items-center gap-1 text-[11px]">
-              <Paperclip
-                className="size-3 text-muted-foreground/60"
-                aria-hidden="true"
-              />
-              {card._count.attachments}
-            </span>
-          ) : null}
-        </div>
-
-        {/* Assignee Avatar */}
-        <div className="-space-x-1.5 flex shrink-0">
-          {card.members?.slice(0, 3).map((member) => (
-            <Avatar
-              key={member.id}
-              className="inline-flex size-6 border-2 border-card ring-1 ring-border/20"
-            >
-              <AvatarFallback
-                className="text-[9px] font-bold text-primary-foreground"
-                style={{ backgroundColor: member.color }}
-              >
-                {member.initials}
-              </AvatarFallback>
-            </Avatar>
-          ))}
-        </div>
-      </div>
+      <KanbanCardContent
+        card={card}
+        copy={copy}
+        parts={parts}
+        idPrefix={descriptionId}
+      />
     </article>
   );
 }

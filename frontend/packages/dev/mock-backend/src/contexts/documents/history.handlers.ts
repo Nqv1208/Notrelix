@@ -1,5 +1,6 @@
 import { defineMockOperation } from "../../operations/types";
 import { ok, notFound } from "../../transport/create-response";
+import { INVOICE_DOC_ID, invoiceSnapshot } from "../../state/mock-docs-invoice";
 type HistoryDtoApi = any;
 
 export const historyOperations = [
@@ -24,8 +25,58 @@ export const historyOperations = [
           actorId: h.actorId,
           action: h.action,
           resourceTitle: h.resourceTitle,
+          ...(h.versionName ? { versionName: h.versionName } : {}),
           createdAt: h.createdAt,
         })),
+      );
+    },
+  }),
+
+  // ─── GET /pages/:pageId/history/:entryId/snapshot ───────────────────────
+  // Gap `CTR-GAP-DOCS-PAGE-EXT`: the blocks as they stood after the entry.
+
+  defineMockOperation<{ pageId: string; entryId: string }, never, unknown>({
+    id: "docs.history.snapshot",
+    contract: { kind: "gap", gapId: "CTR-GAP-DOCS-PAGE-EXT" },
+    method: "GET",
+    route: "/pages/:pageId/history/:entryId/snapshot",
+    async handle({ params, store }) {
+      const page = store.getPage(params.pageId);
+      if (!page) return notFound("Page not found");
+      const entries = [...store.getPageHistory(params.pageId)].sort((a, b) =>
+        b.createdAt.localeCompare(a.createdAt),
+      );
+      const index = entries.findIndex((entry) => entry.id === params.entryId);
+      if (index < 0) return notFound("Version not found");
+      const blocks = store.getPageBlocks(params.pageId);
+      const snapshot =
+        params.pageId === INVOICE_DOC_ID ? invoiceSnapshot(index) : null;
+      return ok(
+        blocks.flatMap((b, position) => {
+          if (snapshot?.without.has(position)) return [];
+          const override = snapshot?.text.get(position);
+          const properties =
+            override === undefined
+              ? b.properties
+              : JSON.stringify({
+                  ...(JSON.parse(b.properties || "{}") as object),
+                  text: override,
+                });
+          return [
+            {
+              id: b.id,
+              pageId: b.pageId,
+              parentBlockId: b.parentBlockId ?? null,
+              type: b.type,
+              properties,
+              position: b.position,
+              version: b.version,
+              createdByUserId: b.createdByUserId,
+              createdAt: b.createdAt,
+              updatedAt: b.updatedAt ?? null,
+            },
+          ];
+        }),
       );
     },
   }),

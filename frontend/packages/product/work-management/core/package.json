@@ -14,8 +14,7 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@notrelix/kernel": "workspace:*",
-    "@notrelix/contracts": "workspace:*"
+    "@notrelix/kernel": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.0.0",

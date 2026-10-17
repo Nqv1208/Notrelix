@@ -1,0 +1,606 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Hướng chốt · Di động · Chi tiết việc</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+/* mobile shell — shared (copy verbatim into every Final-M-*.dc.html; source Final-M-Home) */
+body{margin:0}
+a{color:inherit}a:hover{color:inherit}
+.nx{--bg:#F7F8FA;--panel:#FFFFFF;--hover:#F1F3F6;--hover2:#E6E9EE;--line:#E6E9EE;--line2:#D2D7DE;--ring:#7A8391;--text:#161A21;--muted:#4F5866;--meta:#5F6875;--accent:#1666CC;--accent-ink:#FFFFFF;--accent-soft:#E7F0FC;--accent-text:#0F56AE;--st-todo:#7A8391;--st-doing:#1E7BE0;--st-review:#D99A00;--st-done:#2E8B57;--danger:#C42340;--danger-soft:#FDECEF;--warn-text:#8A5A00;--warn-soft:#FFF4D6;--ok-soft:#E2F1E7;--lane-todo:#ECEEF2;--lane-doing:#E2ECFA;--lane-review:#FBF0D6;--high:#B4500B;--badge:#C42340;--scrim:rgba(15,23,42,.42);--act-done:#1F7A4A;--act-snooze:#8A5A00;--act-neutral:#4F5866;font-family:'Be Vietnam Pro',system-ui,sans-serif;color:var(--text);background:var(--bg);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.nx.mode-dem{--bg:#0E1116;--panel:#151A21;--hover:#1C232C;--hover2:#232A34;--line:#232B35;--line2:#2E3743;--ring:#8C95A3;--text:#E6E9EE;--muted:#AAB3C0;--meta:#8F99A7;--accent:#5AA9FF;--accent-ink:#04111F;--accent-soft:rgba(90,169,255,.16);--accent-text:#7DBBFF;--st-todo:#8C95A3;--st-doing:#5AA9FF;--st-review:#F2C14E;--st-done:#56C98A;--danger:#FF6B81;--danger-soft:rgba(255,107,129,.14);--warn-text:#F2C14E;--warn-soft:rgba(242,193,78,.12);--ok-soft:#153024;--lane-todo:#1E252F;--lane-doing:#16284A;--lane-review:#30281A;--high:#FFA060;--badge:#C42340;--scrim:rgba(0,0,0,.6);--act-done:#1F7A4A;--act-snooze:#8A5A00;--act-neutral:#4F5866}
+.nx.m{width:390px;height:844px;position:relative;overflow:hidden;display:flex;flex-direction:column;border-radius:0}
+.nx.m .app-layer{flex:1;min-height:0;display:flex;flex-direction:column}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.i{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.i.lg{width:24px;height:24px}
+.i.sm{width:14px;height:14px}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;margin:-1px;padding:0;border:0}
+/* status bar 47px (decorative) */
+.sbar{height:47px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:4px 26px 0 34px;box-sizing:border-box;font-size:16px;font-weight:600;font-variant-numeric:tabular-nums;background:var(--bg);color:var(--text)}
+.sbar .sg{display:flex;align-items:center;gap:6px}
+.sbar svg{display:block}
+/* top bar 52px: leading control · spacer · trailing icon buttons */
+.tbar{height:52px;flex:none;display:flex;align-items:center;gap:2px;padding:0 8px 0 10px;background:var(--bg)}
+.tbar .sp{flex:1}
+.tbar-t{flex:1;min-width:0;text-align:center;font-size:17px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ib{width:44px;height:44px;border-radius:12px;border:0;background:transparent;color:var(--text);display:grid;place-items:center;cursor:pointer;padding:0;flex:none;text-decoration:none;font:inherit}
+.ib:hover,.ib:active{background:var(--hover2)}
+.ib .me{width:32px;height:32px;border-radius:50%;background:#4E8574;color:#fff;font-size:12px;font-weight:700;display:grid;place-items:center}
+.wschip{height:44px;display:inline-flex;align-items:center;gap:8px;padding:0 10px 0 6px;border-radius:12px;border:0;background:transparent;font:inherit;font-size:16px;font-weight:650;color:var(--text);cursor:pointer;min-width:0}
+.wschip:hover,.wschip:active{background:var(--hover2)}
+.wschip .dm{width:28px;height:28px;border-radius:8px;font-size:11px}
+.wschip .i{color:var(--meta)}
+/* scrolling content between top bar and tab bar (mockup clips at the bottom) */
+.content{flex:1;min-height:0;overflow:hidden;padding:0 16px 24px;display:flex;flex-direction:column;gap:18px}
+.tbar.scrolled{box-shadow:0 1px 0 var(--line)}
+.ltitle{margin:0;font-size:28px;font-weight:700;letter-spacing:-0.02em;line-height:1.2}
+.lsub{margin:4px 0 0;font-size:13px;color:var(--muted)}
+/* chips: horizontal scroll, 44px */
+.chips{display:flex;gap:8px;overflow-x:auto;margin:0 -16px;padding:0 16px;scrollbar-width:none;flex:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{height:44px;padding:0 14px;border-radius:12px;border:1px solid var(--line2);background:var(--panel);color:var(--text);font:inherit;font-size:14px;font-weight:500;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;flex:none;text-decoration:none;cursor:pointer;box-sizing:border-box}
+.chip b{font-weight:700;font-variant-numeric:tabular-nums}
+.chip.over{background:var(--danger-soft);border-color:transparent;color:var(--danger)}
+.chip.today{background:var(--warn-soft);border-color:transparent;color:var(--warn-text)}
+.chip.on{background:var(--text);border-color:var(--text);color:var(--bg);font-weight:600}
+/* section heading */
+.sec{display:flex;flex-direction:column}
+.sec-h{display:flex;align-items:center;gap:8px;min-height:40px;margin:0 0 4px;font-size:17px;font-weight:650;letter-spacing:-0.01em}
+.sec-h .n{color:var(--meta);font-weight:500;font-size:15px}
+.sec-h.over{color:var(--danger)}
+.sec-h a{margin-left:auto;margin-right:-8px;height:44px;padding:0 8px;display:inline-flex;align-items:center;font-size:14px;font-weight:500;color:var(--accent-text);text-decoration:none}
+/* grouped list + rows: [tick 44][link: title 2 lines + meta | due][⋯ 44] */
+.list{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.lrow{position:relative;border-top:1px solid var(--line);overflow:hidden}
+.lrow:first-child{border-top:0}
+.lrow-in{position:relative;z-index:1;display:flex;align-items:flex-start;gap:0;padding:6px 0 6px 2px;background:var(--panel)}
+.tick{width:44px;height:44px;border:0;background:transparent;padding:0;display:grid;place-items:center;flex:none;cursor:pointer;border-radius:12px}
+.tick span{width:22px;height:22px;border-radius:50%;box-sizing:border-box;border:1.75px solid var(--ring);display:block}
+.lr-main{flex:1;min-width:0;display:flex;align-items:flex-start;gap:10px;padding:5px 0;min-height:44px;box-sizing:border-box;text-decoration:none;color:var(--text);border-radius:8px}
+.lr-txt{flex:1;min-width:0}
+.lr-t{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:15px;font-weight:500;line-height:1.36}
+.lr-m{display:flex;align-items:center;gap:6px;margin-top:3px;font-size:13px;color:var(--meta);white-space:nowrap;min-width:0}
+.lr-m .bd{overflow:hidden;text-overflow:ellipsis;min-width:0}
+.lr-m .mono{font-size:12px;flex:none}
+.lr-end{flex:none;width:70px;display:flex;flex-direction:column;align-items:flex-end;gap:4px;text-align:right;font-size:13px;line-height:1.3;color:var(--meta);font-variant-numeric:tabular-nums;padding-top:1px}
+.lr-end.over{color:var(--danger);font-weight:600}
+.lr-end.today{color:var(--warn-text);font-weight:600}
+.pr{display:inline-flex;align-items:center;gap:3px;font-size:12px;font-weight:600}
+.pr.urgent{color:var(--danger)}
+.pr.high{color:var(--high)}
+.lr-more{color:var(--meta)}
+.lrow-link{display:flex;align-items:center;gap:8px;min-height:48px;padding:0 8px 0 16px;border-top:1px solid var(--line);font-size:14px;color:var(--muted);text-decoration:none}
+.lrow-link .go{margin-left:auto;color:var(--accent-text);font-weight:500;display:inline-flex;align-items:center;gap:2px}
+/* swipe: the front layer slides left over .swipe-acts (each action 76px) */
+.lrow.swiped .lrow-in{transform:translateX(-152px)}
+.swipe-acts{position:absolute;top:0;right:0;bottom:0;display:flex}
+.swipe-acts button{width:76px;border:0;margin:0;padding:0;color:#FFFFFF;font:inherit;font-size:13px;font-weight:600;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer}
+.swipe-acts .snooze{background:var(--act-snooze)}
+.swipe-acts .done{background:var(--act-done)}
+/* buttons */
+.btn{min-height:44px;padding:0 16px;border-radius:12px;border:1px solid var(--line2);background:var(--panel);color:var(--text);font:inherit;font-size:15px;font-weight:500;display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;white-space:nowrap;text-decoration:none;box-sizing:border-box}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.block{width:100%;min-height:50px}
+/* chips & avatars */
+.dm{width:20px;height:20px;border-radius:6px;display:grid;place-items:center;font-size:9px;font-weight:700;color:#fff;flex:none}
+.dm.sm{width:16px;height:16px;font-size:7.5px;border-radius:4px}
+.av{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-size:11.5px;font-weight:700;color:#fff;flex:none}
+/* bottom tab bar 49 + 34 safe area */
+.tabbar{flex:none;height:83px;box-sizing:border-box;padding:0 4px 34px;display:flex;border-top:1px solid var(--line);background:var(--panel)}
+.tab{flex:1;height:49px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-decoration:none;color:var(--meta);font-size:11px;font-weight:500;line-height:1.2;position:relative;white-space:nowrap}
+.tab.on{color:var(--accent-text);font-weight:600}
+.tab .bdg{position:absolute;top:3px;left:calc(50% + 6px);min-width:18px;height:18px;padding:0 5px;box-sizing:border-box;border-radius:9px;background:var(--badge);color:#FFFFFF;font-size:11px;font-weight:700;display:grid;place-items:center;box-shadow:0 0 0 2px var(--panel)}
+.homeind{position:absolute;left:50%;bottom:8px;width:134px;height:5px;margin-left:-67px;border-radius:3px;background:var(--text);z-index:60}
+/* bottom sheet: scrim + sheet, grabber 36×5, radius 14, primary action above the safe area */
+.scrim{position:absolute;inset:0;background:var(--scrim);z-index:40}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:41;background:var(--panel);border-radius:14px 14px 0 0;padding:6px 0 34px;box-shadow:0 -8px 32px rgba(0,0,0,.18);color:var(--text)}
+.grabber{width:36px;height:5px;border-radius:3px;background:var(--line2);margin:0 auto 2px}
+.sheet-h{display:flex;align-items:center;gap:8px;min-height:52px;padding:0 8px 0 20px}
+.sheet-h h2{margin:0;flex:1;font-size:17px;font-weight:650}
+.sheet-sub{margin:0;padding:6px 20px 4px;font-size:13px;font-weight:600;color:var(--meta)}
+.srow{display:flex;align-items:center;gap:12px;min-height:60px;padding:0 20px;text-decoration:none;color:var(--text)}
+.srow:hover,.srow:active{background:var(--hover)}
+.srow .tx{flex:1;min-width:0}
+.srow .tx b{display:block;font-size:15px;font-weight:600}
+.srow .tx small{display:block;font-size:13px;color:var(--meta)}
+.srow .end{flex:none;display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--meta)}
+.srow .ck{color:var(--accent-text)}
+.srow .ic{width:36px;height:36px;border-radius:10px;background:var(--bg);border:1px solid var(--line);display:grid;place-items:center;color:var(--muted);flex:none;box-sizing:border-box}
+.srow .wsm{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;color:#fff;font-size:13px;font-weight:700;flex:none}
+.cnt{min-width:22px;height:22px;padding:0 7px;box-sizing:border-box;border-radius:11px;background:var(--badge);color:#FFFFFF;font-size:12px;font-weight:700;display:inline-grid;place-items:center}
+.tag{height:22px;padding:0 8px;border-radius:6px;background:var(--hover2);color:var(--muted);font-size:12px;font-weight:600;display:inline-flex;align-items:center}
+.sheet-sep{height:1px;background:var(--line);margin:6px 20px}
+.sheet-foot{padding:10px 16px 0}
+/* skeleton (static under reduced motion) */
+.sk{display:block;background:var(--hover2);border-radius:6px}
+@media (prefers-reduced-motion: no-preference){.sk{animation:skp 1.4s ease-in-out infinite}}
+@keyframes skp{50%{opacity:.55}}
+/* end mobile shell */
+
+/* screen: Chi tiết việc (full screen, tab bar hidden) */
+.nx{--warn-line:#E9C46A;--tag-data:#E1EEFC;--tag-data-text:#124C8E;--ft-x:#E1F0EA;--ft-x-text:#1F6B43;--ft-p:#FDE5EA;--ft-p-text:#9E1736;--off:#3B2A00;--off-ink:#FFF4D6;--kb:#D1D4DA;--key:#FFFFFF;--key2:#AEB4BD;--key-ink:#161A21}
+.nx.mode-dem{--warn-line:rgba(242,193,78,.38);--tag-data:#16304F;--tag-data-text:#9CC8FA;--ft-x:#173A30;--ft-x-text:#9ED6C2;--ft-p:#4A1A26;--ft-p-text:#FFA8B8;--off:#3A2E10;--off-ink:#FCE7B0;--kb:#2A2D33;--key:#55585E;--key2:#3E4147;--key-ink:#F1F2F4}
+.dt .tbar{padding:0 6px}
+.dt .tbar .lead{width:88px;display:flex;flex:none}
+.dt .tbar .trail{width:88px;display:flex;justify-content:flex-end;flex:none}
+.dt .tbar-t{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:16px;font-weight:500}
+.ib.on{color:var(--accent-text)}
+.ib.on .fillme{fill:currentColor}
+.dt .content{gap:26px;padding-bottom:14px}
+.dt .content > *{flex:none}
+.dt .content.end{justify-content:flex-end}
+/* offline bar (under the top bar, does not scroll) */
+.offbar{flex:none;display:flex;align-items:center;gap:8px;min-height:40px;padding:8px 16px;box-sizing:border-box;background:var(--off);color:var(--off-ink);font-size:14px;line-height:1.35}
+.offbar b{font-weight:650}
+/* header */
+.ctx{margin:0;display:flex;align-items:center;gap:6px;font-size:13px;color:var(--meta)}
+.ttl{margin:6px 0 0;font-size:23px;font-weight:700;line-height:1.3;letter-spacing:-0.015em;border-radius:8px;outline:none}
+.ttl[contenteditable="true"]:focus-visible{box-shadow:0 0 0 2px var(--accent)}
+.made{margin:8px 0 0;font-size:13px;color:var(--meta)}
+/* banners */
+.bn{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:14px;border:1px solid var(--line2);background:var(--panel);font-size:14px;line-height:1.45}
+.bn > .i{margin-top:1px;color:var(--meta)}
+.bn b{font-weight:650;display:block;font-size:15px}
+.bn small{display:block;color:var(--muted);font-size:13px;margin-top:2px}
+.bn.warn{background:var(--warn-soft);border-color:var(--warn-line)}
+.bn.warn > .i{color:var(--warn-text)}
+.bn .acts{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.bn .acts .btn{flex:1 1 140px;padding:0 10px;font-size:14px}
+/* property rows: [label | value | chevron], ≥ 50px */
+.plist{list-style:none;margin:0;padding:0;background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.plist li{border-top:1px solid var(--line)}
+.plist li:first-child{border-top:0}
+.prow{width:100%;min-height:50px;display:flex;align-items:center;gap:10px;padding:0 10px 0 16px;box-sizing:border-box;border:0;background:transparent;font:inherit;color:var(--text);text-align:left;cursor:pointer}
+.prow:active{background:var(--hover)}
+.prow[aria-disabled="true"]{cursor:default}
+.prow[aria-disabled="true"]:active{background:transparent}
+.prow .pl{width:128px;flex:none;color:var(--muted);font-size:15px;display:inline-flex;align-items:center;gap:6px}
+.prow .pv{flex:1;min-width:0;display:flex;align-items:center;justify-content:flex-end;gap:8px;font-size:15px;font-weight:500;text-align:right}
+.prow .pv .tx{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prow .chev{color:var(--meta)}
+.prow.noch{padding-right:16px}
+.prow .pv.over{color:var(--danger);font-weight:600}
+.prow .pv.conf{color:var(--warn-text);font-weight:600}
+.prow.lock{cursor:default;padding:8px 16px}
+.prow.lock .pv{flex-direction:column;align-items:flex-end;gap:2px}
+.prow.lock small{font-size:12px;font-weight:400;color:var(--meta)}
+.prow.lock .lk{width:14px;height:14px;color:var(--meta)}
+.pend-dot{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 8px;border-radius:6px;background:var(--warn-soft);color:var(--warn-text);font-size:12px;font-weight:650;white-space:nowrap}
+.dot{width:10px;height:10px;border-radius:50%;flex:none;display:inline-block}
+.dot.todo{box-shadow:inset 0 0 0 2px var(--st-todo)}
+.dot.doing{background:var(--st-doing)}
+.dot.review{background:var(--st-review)}
+.dot.done{background:var(--st-done)}
+.av.s{width:24px;height:24px;font-size:9.5px}
+.prio{display:inline-flex;align-items:center;gap:4px;color:var(--danger);font-weight:600}
+.tagd{height:24px;padding:0 9px;border-radius:6px;background:var(--tag-data);color:var(--tag-data-text);font-size:13px;font-weight:600;display:inline-flex;align-items:center}
+.mini{width:56px;height:6px;border-radius:3px;background:var(--hover2);display:inline-block;overflow:hidden;vertical-align:middle}
+.mini span{display:block;width:60%;height:100%;background:var(--st-done)}
+.pmore{width:100%;min-height:50px;display:flex;align-items:center;gap:8px;padding:6px 14px 6px 16px;box-sizing:border-box;border:0;background:transparent;font:inherit;color:var(--accent-text);text-align:left;cursor:pointer}
+.pmore .tx{flex:1;min-width:0}
+.pmore b{display:block;font-size:15px;font-weight:600}
+.pmore small{display:block;font-size:13px;color:var(--meta)}
+/* sections */
+.dsec{display:flex;flex-direction:column}
+.dsec-h{display:flex;align-items:center;gap:8px;min-height:44px;margin:0 0 6px;font-size:17px;font-weight:650;letter-spacing:-0.01em}
+.dsec-h .n{color:var(--meta);font-weight:500;font-size:15px;font-variant-numeric:tabular-nums}
+.dsec-h .ib{margin-left:auto;margin-right:-8px;color:var(--accent-text)}
+.dsec-h .tlink{margin-left:auto;margin-right:-8px;min-height:44px;padding:0 10px;border:0;background:transparent;border-radius:12px;font:inherit;font-size:14px;font-weight:500;color:var(--accent-text);display:inline-flex;align-items:center;gap:4px;cursor:pointer}
+.desc{font-size:15px;line-height:1.6}
+.desc p{margin:0 0 10px}
+.desc ul{margin:0;padding-left:20px}
+.desc li{margin:0 0 6px}
+.desc a{color:var(--accent-text);font-weight:500;text-underline-offset:3px}
+/* sub-items */
+.prog{display:flex;align-items:center;gap:10px;margin:-2px 0 10px;font-size:13px;color:var(--meta)}
+.prog .track{flex:1;height:6px;border-radius:3px;background:var(--hover2);overflow:hidden}
+.prog .track span{display:block;width:60%;height:100%;background:var(--st-done)}
+.prog b{color:var(--text);font-weight:600}
+.subl{list-style:none;margin:0;padding:0;background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.subl li{display:flex;align-items:flex-start;border-top:1px solid var(--line);padding:4px 8px 4px 2px}
+.subl li:first-child{border-top:0}
+.cbx{width:44px;height:44px;border:0;background:transparent;padding:0;display:grid;place-items:center;flex:none;cursor:pointer;border-radius:12px}
+.cbx span{width:22px;height:22px;border-radius:6px;box-sizing:border-box;border:1.75px solid var(--ring);display:grid;place-items:center;color:#FFFFFF}
+.cbx[aria-checked="true"] span{background:var(--act-done);border-color:var(--act-done)}
+.cbx[aria-disabled="true"]{cursor:default}
+.cbx[aria-disabled="true"] span{border-style:dashed}
+.cbx[aria-disabled="true"][aria-checked="true"] span{border-style:solid}
+.sub-main{flex:1;min-width:0;min-height:44px;padding:6px 0;box-sizing:border-box;text-decoration:none;color:var(--text);display:block}
+.sub-t{display:block;font-size:15px;font-weight:500;line-height:1.38}
+.sub-m{display:flex;align-items:center;gap:6px;margin-top:3px;font-size:13px;color:var(--meta);white-space:nowrap}
+.sub-m .mono{font-size:12px}
+.sub-m .over{color:var(--danger);font-weight:600}
+.sub-m .av{width:18px;height:18px;font-size:7.5px}
+li.done .sub-t{color:var(--meta);text-decoration:line-through;text-decoration-color:var(--line2)}
+.addrow{display:flex;align-items:center;gap:10px;width:100%;min-height:50px;padding:0 16px 0 13px;border:0;border-top:1px solid var(--line);background:transparent;font:inherit;font-size:15px;color:var(--accent-text);font-weight:500;cursor:pointer;box-sizing:border-box}
+/* links */
+.rg{margin:10px 0 6px;font-size:13px;font-weight:650;color:var(--meta)}
+.rg:first-of-type{margin-top:0}
+.rlist{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.rl{display:flex;align-items:center;gap:10px;min-height:60px;padding:8px 10px 8px 14px;box-sizing:border-box;text-decoration:none;color:var(--text);border-top:1px solid var(--line)}
+.rl:first-child{border-top:0}
+.rl .tx{flex:1;min-width:0}
+.rl .l1{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--meta)}
+.rl .l1 .mono{font-size:12.5px;color:var(--muted);font-weight:500}
+.rl .l2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-top:2px;font-size:15px;font-weight:500;line-height:1.38}
+.rl .chev{color:var(--meta)}
+/* files */
+.fl{display:flex;align-items:center;gap:12px;min-height:60px;padding:6px 4px 6px 12px;box-sizing:border-box;border-top:1px solid var(--line)}
+.fl:first-child{border-top:0}
+.fl .tx{flex:1;min-width:0}
+.fl .nm{display:block;font-size:15px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fl small{display:block;font-size:13px;color:var(--meta);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fl .ib{color:var(--muted)}
+.ft{width:36px;height:36px;border-radius:9px;display:grid;place-items:center;font-size:9.5px;font-weight:700;letter-spacing:.02em;flex:none}
+.ft.x{background:var(--ft-x);color:var(--ft-x-text)}
+.ft.p{background:var(--ft-p);color:var(--ft-p-text)}
+/* activity */
+.seg{display:flex;gap:4px;padding:3px;border-radius:12px;background:var(--hover2);margin:0 0 10px}
+.seg button{flex:1;min-height:44px;border:0;border-radius:9px;background:transparent;font:inherit;font-size:14px;font-weight:500;color:var(--muted);cursor:pointer;white-space:nowrap}
+.seg button .n{font-variant-numeric:tabular-nums;color:var(--meta);margin-left:2px}
+.seg button[aria-pressed="true"]{background:var(--panel);color:var(--text);font-weight:650;box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.older{min-height:44px;border:1px solid var(--line2);border-radius:12px;background:var(--panel);font:inherit;font-size:14px;font-weight:500;color:var(--accent-text);cursor:pointer;margin-bottom:0}
+.day{font-size:13px;font-weight:650;color:var(--meta);margin:12px 0 4px}
+.cm{display:flex;gap:10px;padding:6px 0}
+.cm .body{flex:1;min-width:0;border:1px solid var(--line);background:var(--panel);border-radius:14px;padding:10px 12px 12px}
+.cm .hd{display:flex;align-items:baseline;gap:6px;font-size:14px;min-height:20px}
+.cm .hd b{font-weight:650}
+.cm time{color:var(--meta);font-size:13px;font-variant-numeric:tabular-nums}
+.cm p{margin:4px 0 0;font-size:15px;line-height:1.5}
+.cm .at{color:var(--accent-text);font-weight:500}
+.cm .cmx{margin:-12px -10px -12px auto;color:var(--meta);align-self:center}
+.cm.pending .body{border-style:dashed;border-color:var(--line2)}
+.cm .pend{display:inline-flex;align-items:center;gap:5px;margin:8px 0 0;font-size:13px;font-weight:650;color:var(--warn-text)}
+.cm .pend .i{width:15px;height:15px}
+.att{display:flex;align-items:center;gap:10px;min-height:48px;margin-top:8px;padding:6px 12px 6px 6px;box-sizing:border-box;border:1px solid var(--line);border-radius:10px;font-size:14px;font-weight:500;text-decoration:none;color:var(--text)}
+.att .ft{width:32px;height:32px;font-size:8.5px}
+.att small{color:var(--meta);font-weight:400;font-size:13px;margin-left:4px}
+.ev{display:flex;gap:10px;padding:8px 0;font-size:14px;line-height:1.45;color:var(--muted)}
+.ev .ic{width:32px;display:grid;place-items:center;flex:none;align-self:flex-start}
+.ev .ic .av{width:24px;height:24px;font-size:9px}
+.ev .bot{width:24px;height:24px;border-radius:7px;background:var(--hover2);color:var(--muted);display:grid;place-items:center}
+.ev .bot .i{width:14px;height:14px}
+.ev b{color:var(--text);font-weight:600}
+.ev time{color:var(--meta);font-size:13px;margin-left:4px;white-space:nowrap}
+.chg{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:3px}
+.old{color:var(--meta);text-decoration:line-through}
+.new{color:var(--text);font-weight:500}
+/* composer: sticky above the safe area */
+.composer{flex:none;display:flex;align-items:flex-end;gap:4px;padding:8px 6px 34px;border-top:1px solid var(--line);background:var(--panel)}
+.composer.kb{padding-bottom:6px}
+.cin{flex:1;min-width:0;min-height:44px;display:flex;align-items:center;border:1px solid var(--line2);border-radius:22px;background:var(--bg);padding:0 12px;box-sizing:border-box}
+.cin textarea{flex:1;min-width:0;border:0;background:transparent;resize:none;font:inherit;font-size:15px;line-height:20px;color:var(--text);padding:11px 0;height:42px;box-sizing:border-box;outline:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cin textarea::placeholder{color:var(--meta);opacity:1}
+.cin.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent);font-size:15px;line-height:20px;padding:11px 14px;outline:none}
+.cin .at{color:var(--accent-text);background:var(--accent-soft);border-radius:4px;padding:0 2px;font-weight:500}
+.caret{display:inline-block;width:2px;height:19px;background:var(--accent);vertical-align:-4px;margin-left:1px}
+.send{width:44px;height:44px;border:0;background:transparent;padding:0;display:grid;place-items:center;flex:none;cursor:pointer}
+.send span{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:var(--accent-ink)}
+.send[aria-disabled="true"]{cursor:default}
+.send[aria-disabled="true"] span{background:var(--hover2);color:var(--meta)}
+/* mention suggestions above the keyboard */
+.mn{flex:none;background:var(--panel);border-top:1px solid var(--line);box-shadow:0 -6px 18px rgba(0,0,0,.08);padding:4px 0}
+.mn-h{margin:0;padding:6px 16px 2px;font-size:12px;font-weight:650;color:var(--meta)}
+.opt{display:flex;align-items:center;gap:12px;min-height:52px;padding:6px 16px;box-sizing:border-box;cursor:pointer}
+.opt[aria-selected="true"]{background:var(--accent-soft)}
+.opt .tx{flex:1;min-width:0}
+.opt .tx b{display:block;font-size:15px;font-weight:600}
+.opt .tx small{display:block;font-size:13px;color:var(--meta);line-height:1.35}
+.opt u{text-decoration:none;background:var(--warn-soft);color:inherit;border-radius:3px}
+.opt.dim .tx b{color:var(--muted);font-weight:500}
+.opt.dim .av{opacity:.55}
+.opt .warnl{display:flex;gap:5px;align-items:flex-start;color:var(--warn-text);font-size:13px;margin-top:2px;line-height:1.35}
+.opt .warnl .i{width:15px;height:15px;margin-top:1px}
+.gm{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;color:#fff;font-size:11px;font-weight:700;flex:none}
+/* simplified keyboard (decorative) */
+.kbd-blk{flex:none;height:291px;box-sizing:border-box;background:var(--kb);padding:8px 3px 0;display:flex;flex-direction:column;gap:11px}
+.kr{display:flex;justify-content:center;gap:6px}
+.kr span{height:42px;flex:0 0 32px;border-radius:5px;background:var(--key);color:var(--key-ink);display:grid;place-items:center;font-size:20px;box-shadow:0 1px 0 rgba(0,0,0,.25)}
+.kr span.w{flex:0 0 42px;background:var(--key2);font-size:14px}
+.kr span.sp{flex:1 1 auto;font-size:14px}
+.kr span.rt{flex:0 0 88px;background:var(--key2);font-size:14px}
+/* sheets (screen specific) */
+.sheet .cap{margin:0;padding:10px 20px 2px;font-size:13px;color:var(--meta);line-height:1.45}
+.srow{width:100%;border:0;background:transparent;font:inherit;text-align:left;cursor:pointer;box-sizing:border-box}
+.srow.st{min-height:56px}
+.srow[aria-checked="true"] .tx b{font-weight:700}
+.srow .dot{width:12px;height:12px}
+.srow[aria-disabled="true"]{cursor:default}
+.srow[aria-disabled="true"]:hover,.srow[aria-disabled="true"]:active{background:transparent}
+.srow[aria-disabled="true"] .av{opacity:.55}
+.srow[aria-disabled="true"] .tx b{color:var(--muted);font-weight:500}
+.srch{display:flex;align-items:center;gap:8px;margin:2px 16px 6px;min-height:44px;padding:0 12px;border-radius:12px;background:var(--hover2);color:var(--meta);box-sizing:border-box}
+.srch input{flex:1;min-width:0;border:0;background:transparent;font:inherit;font-size:16px;color:var(--text);outline:none;height:44px}
+.inv{display:flex;align-items:center;gap:4px;padding-right:16px}
+.inv .srow{flex:1;min-width:0;padding-right:4px}
+.mrow{min-height:56px}
+.mrow .i{color:var(--muted)}
+</style>
+</helmet>
+<div class="nx m dt mode-{{mode}}">
+  <div class="app-layer" aria-hidden="{{sheetOpen}}">
+  <div class="sbar" aria-hidden="true">
+    <span>10:40</span>
+    <span class="sg">
+      <svg width="18" height="12" viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1" fill="currentColor"></rect><rect x="5" y="5.5" width="3" height="6.5" rx="1" fill="currentColor"></rect><rect x="10" y="3" width="3" height="9" rx="1" fill="currentColor"></rect><rect x="15" y="0" width="3" height="12" rx="1" fill="currentColor"></rect></svg>
+      <sc-if value="{{online}}" hint-placeholder-val="{{ true }}"><svg width="16" height="12" viewBox="0 0 16 12"><path d="M8 11.2 10.4 8.6a3.4 3.4 0 0 0-4.8 0z" fill="currentColor"></path><path d="M3.6 6.6a6.2 6.2 0 0 1 8.8 0l1.4-1.5a8.3 8.3 0 0 0-11.6 0z" fill="currentColor"></path><path d="M.8 3.6a10.2 10.2 0 0 1 14.4 0L16 2.2a12.2 12.2 0 0 0-16 0z" fill="currentColor" opacity=".9"></path></svg></sc-if>
+      <svg width="27" height="13" viewBox="0 0 27 13"><rect x=".5" y=".5" width="23" height="12" rx="3.5" fill="none" stroke="currentColor" opacity=".45"></rect><rect x="2" y="2" width="17" height="9" rx="2" fill="currentColor"></rect><path d="M25 4.5v4a2 2 0 0 0 0-4z" fill="currentColor" opacity=".45"></path></svg>
+    </span>
+  </div>
+
+  <header class="tbar {{tbarCls}}">
+    <span class="lead"><a class="ib" href="Final-M-Board.dc.html" aria-label="Triển khai ERP Q4"><svg class="i lg" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg></a></span>
+    <h1 class="tbar-t"><span class="vh">Công việc </span>ERP-142</h1>
+    <span class="trail">
+      <button class="ib on" type="button" aria-pressed="true" aria-label="Theo dõi việc này"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path class="fillme" d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"></path></svg></button>
+      <button class="ib" type="button" aria-haspopup="dialog" aria-expanded="{{menuOpen}}" aria-label="{{moreLabel}}"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle></svg></button>
+    </span>
+  </header>
+
+  <sc-if value="{{offline}}" hint-placeholder-val="{{ false }}">
+  <div class="offbar" role="status"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 8.8a15 15 0 0 1 20 0M5 12.6a10 10 0 0 1 14 0M8.5 16.4a5 5 0 0 1 7 0M12 20h.01M3 3l18 18"></path></svg><span><b>Mất kết nối</b> · thay đổi sẽ gửi khi có mạng</span></div>
+  </sc-if>
+
+  <main class="content {{contentCls}}">
+    <div class="top-blk" style="margin-top:{{scrollOff}};display:flex;flex-direction:column;gap:18px">
+      <sc-if value="{{isReadOnly}}" hint-placeholder-val="{{ false }}">
+      <div class="bn" role="status"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg><div><b>Bạn có quyền bình luận trên board này</b><small>Phòng Kế toán · hết hạn 31/12/2026. Bạn bình luận và gửi tệp kèm bình luận được; thuộc tính, việc con chỉ người có quyền sửa đổi.</small></div></div>
+      </sc-if>
+      <header>
+        <p class="ctx"><span class="dm sm" style="background:#1E6FD0" aria-hidden="true">CN</span>Phòng Công nghệ · Triển khai ERP Q4</p>
+        <h2 class="ttl" contenteditable="{{titleEditable}}" spellcheck="false" aria-label="{{titleLabel}}">Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP</h2>
+        <p class="made">Nguyễn Thu Hà tạo 23/09 · sửa lần cuối 10:06 hôm nay</p>
+      </header>
+
+      <sc-if value="{{isConflict}}" hint-placeholder-val="{{ false }}">
+      <div class="bn warn" role="alert"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9v4M12 17h.01"></path><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path></svg><div><b>Trần Minh Quân vừa đổi Hạn chót sang 14/10 khi bạn đang sửa</b><small>Bạn chọn 12/10. Chưa giá trị nào bị ghi đè, chọn giá trị muốn giữ.</small>
+        <div class="acts"><button class="btn" type="button">Giữ của tôi (12/10)</button><button class="btn pri" type="button">Lấy của Quân (14/10)</button></div></div></div>
+      </sc-if>
+
+      <section aria-label="Thuộc tính">
+        <ul class="plist">
+          <li><button class="prow {{rowCls}}" type="button" aria-haspopup="{{popAttr}}" aria-expanded="{{stOpen}}" aria-disabled="{{roAttr}}"><span class="pl">Trạng thái</span><span class="pv"><span class="dot doing" aria-hidden="true"></span><span class="tx">Đang làm</span></span><sc-if value="{{canEdit}}" hint-placeholder-val="{{ true }}"><svg class="i chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg></sc-if></button></li>
+          <li><button class="prow {{rowCls}}" type="button" aria-haspopup="{{popAttr}}" aria-expanded="{{asOpen}}" aria-disabled="{{roAttr}}"><span class="pl">Người phụ trách</span><span class="pv"><span class="av s" style="background:#1E6FD0" aria-hidden="true">MQ</span><span class="tx">Trần Minh Quân</span></span><sc-if value="{{canEdit}}" hint-placeholder-val="{{ true }}"><svg class="i chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg></sc-if></button></li>
+          <li><button class="prow {{rowCls}}" type="button" aria-haspopup="{{popAttr}}" aria-expanded="false" aria-disabled="{{roAttr}}"><span class="pl">Hạn chót</span><span class="pv {{dueCls}}"><span class="tx">{{dueText}}</span><sc-if value="{{isConflict}}" hint-placeholder-val="{{ false }}"><span class="pend-dot">Xung đột</span></sc-if></span><sc-if value="{{canEdit}}" hint-placeholder-val="{{ true }}"><svg class="i chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg></sc-if></button></li>
+          <li><button class="prow {{rowCls}}" type="button" aria-haspopup="{{popAttr}}" aria-expanded="false" aria-disabled="{{roAttr}}"><span class="pl">Mức ưu tiên</span><span class="pv"><span class="prio"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4M5 4h11l-2 4 2 4H5"></path></svg>Khẩn</span></span><sc-if value="{{canEdit}}" hint-placeholder-val="{{ true }}"><svg class="i chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg></sc-if></button></li>
+          <sc-if value="{{propsOpen}}" hint-placeholder-val="{{ false }}">
+          <li><button class="prow {{rowCls}}" type="button" aria-haspopup="{{popAttr}}" aria-expanded="false" aria-disabled="{{roAttr}}"><span class="pl">Phân hệ</span><span class="pv"><span class="tx">Kế toán</span></span><sc-if value="{{canEdit}}" hint-placeholder-val="{{ true }}"><svg class="i chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg></sc-if></button></li>
+          <li><button class="prow {{rowCls}}" type="button" aria-haspopup="{{popAttr}}" aria-expanded="false" aria-disabled="{{roAttr}}"><span class="pl">Nhãn</span><span class="pv"><span class="tagd">Dữ liệu</span></span><sc-if value="{{canEdit}}" hint-placeholder-val="{{ true }}"><svg class="i chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg></sc-if></button></li>
+          <li><button class="prow {{rowCls}}" type="button" aria-haspopup="{{popAttr}}" aria-expanded="false" aria-disabled="{{roAttr}}"><span class="pl">Ước lượng</span><span class="pv"><span class="tx">40 giờ</span></span><sc-if value="{{canEdit}}" hint-placeholder-val="{{ true }}"><svg class="i chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg></sc-if></button></li>
+          <li><div class="prow lock"><span class="pl">Tiến độ<svg class="i lk" viewBox="0 0 24 24" role="img" aria-label="Khoá, không sửa tay"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg></span><span class="pv"><span><span class="mini" aria-hidden="true"><span></span></span> 3/5 · 60%</span><small>tự tính từ việc con</small></span></div></li>
+          </sc-if>
+          <li>
+          <sc-if value="{{propsClosed}}" hint-placeholder-val="{{ true }}">
+          <button class="pmore" type="button" aria-expanded="false"><span class="tx"><b>Hiện 4 thuộc tính khác</b><small>Phân hệ, Nhãn, Ước lượng, Tiến độ</small></span><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button>
+          </sc-if>
+          <sc-if value="{{propsOpen}}" hint-placeholder-val="{{ false }}">
+          <button class="pmore" type="button" aria-expanded="true"><span class="tx"><b>Hiện ít hơn</b></span><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 15 6-6 6 6"></path></svg></button>
+          </sc-if>
+          </li>
+        </ul>
+      </section>
+    </div>
+
+    <section class="dsec" aria-labelledby="h-desc">
+      <h2 class="dsec-h" id="h-desc">Mô tả<sc-if value="{{canEdit}}" hint-placeholder-val="{{ true }}"><button class="tlink" type="button" aria-label="Sửa mô tả">Sửa</button></sc-if></h2>
+      <div class="desc">
+        <p>Chuyển 48.200 hồ sơ khách hàng từ phần mềm bán hàng cũ. Giữ nguyên mã khách hàng, gộp bản ghi trùng theo mã số thuế, đối chiếu công nợ đầu kỳ với phòng Kế toán trước khi chốt. Quy tắc gộp chi tiết ở <a href="Final-M-Docs.dc.html">Kế hoạch chuyển đổi dữ liệu</a>.</p>
+        <p style="margin-bottom:4px"><b style="font-weight:650">Xong khi:</b></p>
+        <ul>
+          <li>Số khách hàng trên ERP khớp danh sách đã gộp, lệch không quá 0,1%.</li>
+          <li>Công nợ đầu kỳ của 200 khách lớn nhất khớp sổ Kế toán.</li>
+          <li>Chị Linh (Kế toán) ký xác nhận trên biên bản đối chiếu.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="dsec" id="s-sub" aria-labelledby="h-sub">
+      <h2 class="dsec-h" id="h-sub">Việc con <span class="n">3/5</span></h2>
+      <div class="prog"><span class="track" aria-hidden="true"><span></span></span><span><b>60%</b> · tự tính từ việc con</span></div>
+      <ul class="subl">
+        <sc-for list="{{subs}}" as="t" hint-placeholder-count="5">
+        <li class="{{t.cls}}">
+          <button class="cbx" type="button" role="checkbox" aria-checked="{{t.checked}}" aria-disabled="{{t.roAttr}}" aria-label="{{t.title}}"><span><sc-if value="{{t.done}}" hint-placeholder-val="{{ false }}"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:14px;height:14px;stroke-width:3"><path d="m5 12 5 5L20 7"></path></svg></sc-if></span></button>
+          <a class="sub-main" href="Final-M-Board.dc.html"><span class="sub-t">{{t.title}}</span><span class="sub-m"><span class="mono">{{t.key}}</span><span aria-hidden="true">·</span><span class="{{t.dCls}}">{{t.due}}</span><span aria-hidden="true">·</span><span class="av" style="background:{{t.color}}" aria-hidden="true">{{t.who}}</span>{{t.name}}</span></a>
+        </li>
+        </sc-for>
+        <sc-if value="{{canEdit}}" hint-placeholder-val="{{ true }}">
+        <li style="padding:0;display:block"><button class="addrow" type="button" style="border-top:0"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Thêm việc con</button></li>
+        </sc-if>
+      </ul>
+    </section>
+
+    <section class="dsec" id="s-rel" aria-labelledby="h-rel">
+      <h2 class="dsec-h" id="h-rel">Liên kết <span class="n">4</span><sc-if value="{{canEdit}}" hint-placeholder-val="{{ true }}"><button class="tlink" type="button" aria-label="Thêm liên kết"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Thêm</button></sc-if></h2>
+      <h3 class="rg">Đang chờ</h3>
+      <div class="rlist">
+        <a class="rl" href="Final-M-Board.dc.html"><span class="tx"><span class="l1"><span class="mono">ERP-129</span><span class="dot done" aria-hidden="true"></span>Hoàn thành</span><span class="l2">Chốt danh mục tài khoản kế toán dùng chung</span></span><svg class="i chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg></a>
+      </div>
+      <h3 class="rg">Đang chặn</h3>
+      <div class="rlist">
+        <a class="rl" href="Final-M-Board.dc.html"><span class="tx"><span class="l1"><span class="mono">ERP-146</span><span class="dot doing" aria-hidden="true"></span>Đang làm</span><span class="l2">Đồng bộ tồn kho giữa kho Bình Dương và kho Long An</span></span><svg class="i chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg></a>
+        <a class="rl" href="Final-M-Board.dc.html"><span class="tx"><span class="l1"><span class="mono">ERP-147</span><span class="dot todo" aria-hidden="true"></span>Cần làm</span><span class="l2">Chuẩn bị dữ liệu mẫu cho buổi đào tạo người dùng</span></span><svg class="i chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg></a>
+      </div>
+      <h3 class="rg">Liên quan</h3>
+      <div class="rlist">
+        <a class="rl" href="Final-M-Board.dc.html"><span class="tx"><span class="l1"><span class="mono">ERP-151</span><span class="dot todo" aria-hidden="true"></span>Cần làm</span><span class="l2">Cấu hình quyền truy cập theo phòng ban cho phân hệ Kế toán</span></span><svg class="i chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg></a>
+      </div>
+    </section>
+
+    <section class="dsec" aria-labelledby="h-file">
+      <h2 class="dsec-h" id="h-file">Tệp <span class="n">3</span><sc-if value="{{canEdit}}" hint-placeholder-val="{{ true }}"><button class="tlink" type="button" aria-label="Thêm tệp"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Thêm</button></sc-if></h2>
+      <div class="rlist">
+        <div class="fl"><span class="ft x" aria-hidden="true">XLSX</span><span class="tx"><span class="nm">khach-hang-da-gop.xlsx</span><small>18,4 MB · Trần Minh Quân · 03/10</small></span><button class="ib" type="button" aria-label="Tải khach-hang-da-gop.xlsx"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"></path></svg></button></div>
+        <div class="fl"><span class="ft x" aria-hidden="true">XLSX</span><span class="tx"><span class="nm">cong-no-dau-ky-T9.xlsx</span><small>2,1 MB · Đỗ Khánh Linh · kèm bình luận</small></span><button class="ib" type="button" aria-label="Tải cong-no-dau-ky-T9.xlsx"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"></path></svg></button></div>
+        <div class="fl"><span class="ft p" aria-hidden="true">PDF</span><span class="tx"><span class="nm">quy-tac-gop-trung-v2.pdf</span><small>340 KB · Nguyễn Thu Hà · 26/09</small></span><button class="ib" type="button" aria-label="Tải quy-tac-gop-trung-v2.pdf"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"></path></svg></button></div>
+      </div>
+    </section>
+
+    <section class="dsec" aria-labelledby="h-act">
+      <h2 class="dsec-h" id="h-act">Hoạt động</h2>
+      <div class="seg" role="group" aria-label="Lọc hoạt động">
+        <button type="button" aria-pressed="true">Tất cả <span class="n">17</span></button>
+        <button type="button" aria-pressed="false">Bình luận <span class="n">4</span></button>
+        <button type="button" aria-pressed="false">Lịch sử <span class="n">13</span></button>
+      </div>
+      <button class="older" type="button">Hiện thêm 15 hoạt động cũ hơn</button>
+      <h3 class="day">Hôm nay</h3>
+      <div class="cm"><span class="av" style="background:#9A6A12" aria-hidden="true">KL</span><div class="body"><div class="hd"><b>Đỗ Khánh Linh</b><span style="color:var(--meta);font-size:13px">kèm tệp</span><time>09:12</time><button class="ib cmx" type="button" aria-label="Thao tác cho bình luận của Đỗ Khánh Linh: trả lời, thả cảm xúc"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle></svg></button></div><p>Gửi file công nợ đầu kỳ tháng 9 để đối chiếu.</p><a class="att" href="#" aria-label="Tải cong-no-dau-ky-T9.xlsx, 2,1 MB"><span class="ft x" aria-hidden="true">XLSX</span><span>cong-no-dau-ky-T9.xlsx<small>2,1 MB</small></span></a></div></div>
+      <div class="cm"><span class="av" style="background:#1E6FD0" aria-hidden="true">MQ</span><div class="body"><div class="hd"><b>Trần Minh Quân</b><time>10:05</time><button class="ib cmx" type="button" aria-label="Thao tác cho bình luận của Trần Minh Quân: trả lời, thả cảm xúc"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle></svg></button></div><p>Đã gộp xong bản ghi trùng. Nhận được file của chị Linh rồi, em đối chiếu xong trong hôm nay, dự kiến nhập chính thức thứ Tư.</p></div></div>
+      <sc-if value="{{offline}}" hint-placeholder-val="{{ false }}">
+      <div class="cm pending"><span class="av" style="background:#4E8574" aria-hidden="true">HA</span><div class="body"><div class="hd"><b>Nguyễn Thu Hà</b><time>10:40</time></div><p>Quân ơi, đối chiếu xong em gắn biên bản đã ký vào đây nhé.</p><span class="pend" role="status"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>Đang chờ gửi</span></div></div>
+      </sc-if>
+    </section>
+  </main>
+
+  <sc-if value="{{mention}}" hint-placeholder-val="{{ false }}">
+  <div class="mn" role="listbox" id="mn-list" aria-label="Gợi ý nhắc tên">
+    <p class="mn-h" aria-hidden="true">Xem được việc này</p>
+    <div class="opt" role="option" id="mn-1" aria-selected="true"><span class="av" style="background:#9A6A12" aria-hidden="true">KL</span><span class="tx"><b>Đỗ <u>Kh</u>ánh Linh</b><small>Phòng Kế toán · quyền bình luận</small></span></div>
+    <div class="opt" role="option" id="mn-2" aria-selected="false"><span class="gm" style="background:#9A6A12" aria-hidden="true">KT</span><span class="tx"><b>Nhóm Kế toán tổng hợp</b><small>6 người · cả 6 xem được việc</small></span></div>
+    <p class="mn-h" aria-hidden="true">Không xem được việc này</p>
+    <div class="opt dim" role="option" id="mn-3" aria-selected="false"><span class="av" style="background:#0F766E" aria-hidden="true">KV</span><span class="tx"><b><u>Kh</u>úc Văn Tài</b><span class="warnl"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9v4M12 17h.01"></path><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path></svg><span>Kho vận · không xem được việc này, nhắc tên sẽ không báo cho Tài</span></span></span></div>
+  </div>
+  </sc-if>
+
+  <div class="composer {{compCls}}">
+    <button class="ib" type="button" aria-label="Đính kèm tệp vào bình luận"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m21 11-8.5 8.5a5 5 0 0 1-7-7L14 4a3.5 3.5 0 0 1 5 5l-8.5 8.5a2 2 0 0 1-3-3L15 7"></path></svg></button>
+    <sc-if value="{{notMention}}" hint-placeholder-val="{{ true }}">
+    <label class="cin"><span class="vh">Viết bình luận</span><textarea rows="1" placeholder="Viết bình luận, gõ @ để nhắc ai đó…"></textarea></label>
+    <button class="send" type="button" aria-disabled="true" aria-label="Gửi bình luận"><span><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"></path></svg></span></button>
+    </sc-if>
+    <sc-if value="{{mention}}" hint-placeholder-val="{{ false }}">
+    <div class="cin on" role="textbox" contenteditable="true" aria-multiline="true" aria-label="Viết bình luận" aria-haspopup="listbox" aria-controls="mn-list" aria-activedescendant="mn-1"><span class="at">@Kh</span><span class="caret" aria-hidden="true"></span></div>
+    <button class="send" type="button" aria-disabled="false" aria-label="Gửi bình luận"><span><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"></path></svg></span></button>
+    </sc-if>
+  </div>
+
+  <sc-if value="{{mention}}" hint-placeholder-val="{{ false }}">
+  <div class="kbd-blk" aria-hidden="true">
+    <div class="kr"><span>q</span><span>w</span><span>e</span><span>r</span><span>t</span><span>y</span><span>u</span><span>i</span><span>o</span><span>p</span></div>
+    <div class="kr"><span>a</span><span>s</span><span>d</span><span>f</span><span>g</span><span>h</span><span>j</span><span>k</span><span>l</span></div>
+    <div class="kr"><span class="w">⇧</span><span>z</span><span>x</span><span>c</span><span>v</span><span>b</span><span>n</span><span>m</span><span class="w">⌫</span></div>
+    <div class="kr" style="padding:0 3px"><span class="w">123</span><span class="w">@</span><span class="sp">dấu cách</span><span class="rt">Xuống dòng</span></div>
+  </div>
+  </sc-if>
+  </div>
+
+  <sc-if value="{{stSheet}}" hint-placeholder-val="{{ false }}">
+  <div class="scrim" aria-hidden="true"></div>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="st-sheet-t">
+    <div class="grabber" aria-hidden="true"></div>
+    <div class="sheet-h"><h2 id="st-sheet-t">Trạng thái</h2><button class="ib" type="button" aria-label="Đóng"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button></div>
+    <div role="radiogroup" aria-labelledby="st-sheet-t">
+      <button class="srow st" type="button" role="radio" aria-checked="false"><span class="dot todo" aria-hidden="true"></span><span class="tx"><b>Cần làm</b></span></button>
+      <button class="srow st" type="button" role="radio" aria-checked="true"><span class="dot doing" aria-hidden="true"></span><span class="tx"><b>Đang làm</b></span><span class="end ck"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5L20 7"></path></svg></span></button>
+      <button class="srow st" type="button" role="radio" aria-checked="false"><span class="dot review" aria-hidden="true"></span><span class="tx"><b>Chờ duyệt</b></span></button>
+      <button class="srow st" type="button" role="radio" aria-checked="false"><span class="dot done" aria-hidden="true"></span><span class="tx"><b>Hoàn thành</b></span></button>
+    </div>
+    <div class="sheet-sep"></div>
+    <p class="cap">Kéo thẻ trên Kanban cũng đổi Trạng thái. Chọn xong là lưu ngay, kèm thông báo có nút Hoàn tác.</p>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{asSheet}}" hint-placeholder-val="{{ false }}">
+  <div class="scrim" aria-hidden="true"></div>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="as-sheet-t">
+    <div class="grabber" aria-hidden="true"></div>
+    <div class="sheet-h"><h2 id="as-sheet-t">Người phụ trách</h2><button class="ib" type="button" aria-label="Đóng"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button></div>
+    <label class="srch"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg><span class="vh">Tìm người</span><input type="search" value="Ph" placeholder="Tìm theo tên hoặc phòng ban"></label>
+    <p class="sheet-sub">Đang phụ trách</p>
+    <button class="srow" type="button" aria-pressed="true"><span class="av" style="background:#1E6FD0" aria-hidden="true">MQ</span><span class="tx"><b>Trần Minh Quân</b><small>Công nghệ · đang làm 4 việc</small></span><span class="end ck"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5L20 7"></path></svg><span class="vh">Đang chọn</span></span></button>
+    <p class="sheet-sub">Thành viên board · khớp “Ph”</p>
+    <button class="srow" type="button"><span class="av" style="background:#B4500B" aria-hidden="true">HP</span><span class="tx"><b>Lê Hoàng Phúc</b><small>Công nghệ · đang làm 3 việc</small></span></button>
+    <button class="srow" type="button"><span class="av" style="background:#7C4DDB" aria-hidden="true">NA</span><span class="tx"><b>Phan Ngọc Anh</b><small>Công nghệ · đang làm 5 việc</small></span></button>
+    <p class="sheet-sub">Chưa vào board</p>
+    <div class="inv"><button class="srow" type="button" aria-disabled="true"><span class="av" style="background:#9A6A12" aria-hidden="true">ĐT</span><span class="tx"><b>Phùng Đức Thịnh</b><small>Kế toán · không xem được board</small></span></button><button class="btn" type="button" aria-label="Mời Phùng Đức Thịnh vào board">Mời vào</button></div>
+    <p class="cap">Chỉ giao được cho người xem được board. Mời vào board trước rồi mới giao; chỉ quản lý board thấy nút Mời vào (WM-040).</p>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{menuOpen}}" hint-placeholder-val="{{ false }}">
+  <div class="scrim" aria-hidden="true"></div>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="mn-sheet-t">
+    <div class="grabber" aria-hidden="true"></div>
+    <div class="sheet-h"><h2 id="mn-sheet-t">ERP-142</h2><button class="ib" type="button" aria-label="Đóng"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button></div>
+    <div role="menu" aria-labelledby="mn-sheet-t">
+      <button class="srow mrow" type="button" role="menuitem"><span class="ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"></path><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"></path></svg></span><span class="tx"><b>Sao chép liên kết</b><small>Chỉ người xem được board mới mở được</small></span></button>
+      <button class="srow mrow" type="button" role="menuitem"><span class="ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h11M11 3l4 4-4 4M20 17H9M13 13l-4 4 4 4"></path></svg></span><span class="tx"><b>Chuyển board…</b><small>Giữ mã ERP-142 và liên kết cũ</small></span></button>
+      <button class="srow mrow" type="button" role="menuitem"><span class="ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="5" rx="1"></rect><path d="M5 9v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9M10 13h4"></path></svg></span><span class="tx"><b>Lưu trữ…</b><small>Ẩn khỏi mọi chế độ xem, khôi phục được</small></span></button>
+    </div>
+  </div>
+  </sc-if>
+  <span class="homeind" aria-hidden="true"></span>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"state":{"editor":"enum","options":["tong-quan","doi-trang-thai","giao-viec","nhac-ten","xung-dot","chi-xem","ngoai-tuyen","cuon-viec-con","cuon-lien-ket","thao-tac"],"default":"tong-quan","section":"Trạng thái minh hoạ"},"mode":{"editor":"enum","options":["sang","dem"],"default":"sang","section":"Giao diện"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.props.state ?? 'tong-quan';
+    const ro = s === 'chi-xem';
+    const conflict = s === 'xung-dot';
+    const offline = s === 'ngoai-tuyen';
+    const mention = s === 'nhac-ten';
+    const stSheet = s === 'doi-trang-thai';
+    const asSheet = s === 'giao-viec';
+    const menuOpen = s === 'thao-tac';
+    const midSub = s === 'cuon-viec-con';
+    const midRel = s === 'cuon-lien-ket';
+    const mid = midSub || midRel;
+    const atEnd = offline || mention;
+    // chi-xem shows every property (incl. the locked Tiến độ); other states keep the list collapsed after 4 rows
+    const propsOpen = ro;
+    const C = { MQ: '#1E6FD0', KL: '#9A6A12', VT: '#0E7490' };
+    const N = { MQ: 'Quân', KL: 'Linh', VT: 'Thanh' };
+    const sub = (done, title, key, due, dCls, who) => ({
+      done, cls: done ? 'done' : '', checked: done ? 'true' : 'false', roAttr: ro ? 'true' : 'false',
+      title, key, due, dCls: dCls || '', who, color: C[who], name: N[who]
+    });
+    return {
+      mode: this.props.mode ?? 'sang',
+      sheetOpen: stSheet || asSheet || menuOpen,
+      stSheet, asSheet, menuOpen,
+      stOpen: stSheet ? 'true' : 'false',
+      asOpen: asSheet ? 'true' : 'false',
+      online: !offline,
+      offline,
+      mention,
+      notMention: !mention,
+      isConflict: conflict,
+      isReadOnly: ro,
+      canEdit: !ro,
+      propsOpen,
+      propsClosed: !propsOpen,
+      roAttr: ro ? 'true' : 'false',
+      popAttr: ro ? 'false' : 'dialog',
+      rowCls: ro ? 'noch' : '',
+      titleEditable: ro ? 'false' : 'true',
+      titleLabel: ro ? 'Tiêu đề việc' : 'Tiêu đề việc, chạm để sửa',
+      moreLabel: ro ? 'Thêm thao tác: sao chép liên kết' : 'Thêm thao tác: sao chép liên kết, chuyển board, lưu trữ',
+      dueCls: conflict ? 'conf' : 'over',
+      dueText: conflict ? '12/10' : '10/10 · Quá hạn 2 ngày',
+      contentCls: atEnd ? 'end' : '',
+      compCls: mention ? 'kb' : '',
+      tbarCls: (mid || atEnd) ? 'scrolled' : '',
+      scrollOff: midSub ? '-802px' : (midRel ? '-1295px' : '0'),
+      subs: [
+        sub(true, 'Xuất dữ liệu từ hệ thống cũ', 'ERP-142.1', '25/09', '', 'VT'),
+        sub(true, 'Gộp 1.316 bản ghi trùng theo mã số thuế', 'ERP-142.2', '03/10', '', 'MQ'),
+        sub(true, 'Chuẩn hoá địa chỉ và số điện thoại', 'ERP-142.3', '07/10', '', 'MQ'),
+        sub(false, 'Đối chiếu công nợ đầu kỳ với Kế toán', 'ERP-142.4', '10/10 · quá hạn', 'over', 'KL'),
+        sub(false, 'Nhập chính thức và kiểm tra mẫu 200 khách', 'ERP-142.5', '14/10', '', 'MQ')
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

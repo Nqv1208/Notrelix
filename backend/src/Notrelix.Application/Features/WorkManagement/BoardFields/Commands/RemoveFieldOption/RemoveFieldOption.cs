@@ -8,7 +8,8 @@ namespace Notrelix.Application.Features.WorkManagement.BoardFields.Commands.Remo
 public record RemoveFieldOptionCommand(
     Guid BoardId,
     Guid FieldId,
-    Guid OptionId) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+    Guid OptionId,
+    long ExpectedVersion) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.UpdateField;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-field"), FieldId);
@@ -33,6 +34,7 @@ public class RemoveFieldOptionCommandHandler : IRequestHandler<RemoveFieldOption
     public async Task<Result> Handle(RemoveFieldOptionCommand request, CancellationToken ct)
     {
         var field = await _context.BoardFields
+            .Include(f => f.Options)
             .FirstOrDefaultAsync(f => f.Id == request.FieldId && f.BoardId == request.BoardId, ct);
         if (field is null) throw new NotFoundException(nameof(BoardFieldEntity), request.FieldId);
 

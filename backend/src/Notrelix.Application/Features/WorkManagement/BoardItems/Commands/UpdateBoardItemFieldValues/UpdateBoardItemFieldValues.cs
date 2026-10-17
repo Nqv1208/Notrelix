@@ -1,11 +1,12 @@
 using System.Text.Json;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Services;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemFieldValues;
 
 [IdempotencyOperation("work-management.board-items.update-board-item-field-values.v1")]
-public record UpdateBoardItemFieldValuesCommand(Guid BoardItemId, Dictionary<Guid, object?> Values) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+public record UpdateBoardItemFieldValuesCommand(Guid BoardItemId, Dictionary<Guid, object?> Values, long ExpectedVersion) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-item"), BoardItemId);
@@ -13,6 +14,12 @@ public record UpdateBoardItemFieldValuesCommand(Guid BoardItemId, Dictionary<Gui
 
 public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBoardItemFieldValuesCommand, Result>
 {
+    private static readonly HashSet<string> SupportedSemanticFields = new(StringComparer.Ordinal)
+    {
+        "title", "status", "priority", "due_date", "linked_page", "assignees",
+        "text", "number", "checkbox", "date", "timeline", "progress", "select", "multi_select",
+    };
+
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _timeProvider;
@@ -33,6 +40,10 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
     public async Task<Result> Handle(UpdateBoardItemFieldValuesCommand request, CancellationToken ct)
     {
         var card = await _context.BoardItems
+            // The value collection and the field options are loaded: an existing value
+            // is updated in place (unique per item/field) and option-backed values are
+            // validated against the persisted options (SPEC WM-V3-GAP-032).
+            .Include(c => c.FieldValues)
             .FirstOrDefaultAsync(c => c.Id == request.BoardItemId && c.DeletedAt == null, ct);
         if (card is null) throw new NotFoundException(nameof(BoardItem), request.BoardItemId);
 
@@ -42,6 +53,18 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
             .Include(f => f.Options)
             .Where(column => column.BoardId == card.BoardId && request.Values.Keys.Contains(column.Id))
             .ToDictionaryAsync(column => column.Id, ct);
+
+        // All-or-nothing (WMREQ025): every field is validated before any value is
+        // applied, because a failed Result still commits the data session.
+        var unsupported = request.Values.Keys.FirstOrDefault(id => id != card.BoardId && !columns.ContainsKey(id));
+        if (unsupported != Guid.Empty)
+            return Result.Failure(new ApplicationError("work.board-item.unsupported-field", $"Unsupported field '{unsupported}'.", ApplicationErrorType.Validation));
+
+        var unsupportedType = columns.Values.FirstOrDefault(column => !SupportedSemanticFields.Contains(ResolveSemanticField(column)));
+        if (unsupportedType is not null)
+            return Result.Failure(new ApplicationError("work.board-item.unsupported-field", $"Unsupported field '{unsupportedType.Name}'.", ApplicationErrorType.Validation));
+
+        var statusField = await BoardItemFieldWrites.LoadStatusFieldAsync(_context, card.BoardId, ct);
 
         foreach (var (columnId, value) in request.Values)
         {
@@ -64,7 +87,7 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
                 case "priority":
                     {
                         var fv = FieldValue.Create(JsonValue.Create(JsonSerializer.Serialize(NormalizeStoredValue(value))));
-                        card.UpdateFieldValue(column, fv, _requestContext.UserId, now);
+                        BoardItemFieldWrites.Write(card, column, fv, statusField, _requestContext.UserId, now);
                         break;
                     }
                 case "due_date":
@@ -113,7 +136,7 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
                 case "multi_select":
                     {
                         var fv = FieldValue.Create(JsonValue.Create(JsonSerializer.Serialize(NormalizeStoredValue(value))));
-                        card.UpdateFieldValue(column, fv, _requestContext.UserId, now);
+                        BoardItemFieldWrites.Write(card, column, fv, statusField, _requestContext.UserId, now);
                         break;
                     }
                 default:

@@ -5,6 +5,7 @@ import {
   createAppRuntime,
   type AppRuntimeFactories,
 } from "@notrelix/runtime-web";
+import { installMockDemoClock } from "./config/mock-demo-clock";
 import { readWebRuntimeEnvironment } from "./config/read-runtime-environment";
 import { createWebApplicationServices } from "./composition/application-services";
 import { AppProviders } from "./providers/app-providers";
@@ -29,6 +30,17 @@ async function init(): Promise<void> {
   let runtimeFactories: AppRuntimeFactories = {};
 
   if (import.meta.env.DEV && runtimeEnvironment.mockApi) {
+    // The mock world lives on the demo day: a plain browser must show it too.
+    installMockDemoClock(import.meta.env.VITE_MOCK_NOW);
+    // The mockups and the product copy are Vietnamese first: without a stored
+    // choice the mock app opens in vi (the real default is decided by
+    // `detectLocale` in @notrelix/i18n: stored, then browser, then vi).
+    try {
+      if (!window.localStorage.getItem("notrelix-locale"))
+        window.localStorage.setItem("notrelix-locale", "vi");
+    } catch {
+      // Private mode: the detected locale applies.
+    }
     // Dynamic import in dev only — completely omitted from production build
     const mockBackend = await import("@notrelix/dev-mock-backend");
 

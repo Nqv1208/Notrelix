@@ -1,0 +1,715 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Hướng chốt · Thiết lập board</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}a:hover{color:inherit}
+.nx{--bg:#F7F8FA;--side:#EFF1F4;--panel:#FFFFFF;--hover:#F1F3F6;--hover2:#E6E9EE;--line:#E6E9EE;--line2:#D2D7DE;--text:#161A21;--muted:#4F5866;--meta:#5F6875;--accent:#1666CC;--accent-ink:#FFFFFF;--accent-soft:#E7F0FC;--accent-text:#0F56AE;--sel:#EEF4FD;--danger:#C42340;--warn-text:#8A5A00;--warn-soft:#FDF3DC;--kbd:#EEF0F3;--scrim:rgba(15,23,42,.38);--pop-shadow:0 12px 32px rgba(15,23,42,.16);--dlg-shadow:0 24px 64px rgba(15,23,42,.28);font-family:'Be Vietnam Pro',system-ui,sans-serif;color:var(--text);background:var(--bg);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.nx.mode-dem{--bg:#0E1116;--side:#13181E;--panel:#151A21;--hover:#1C232C;--hover2:#232A34;--line:#232B35;--line2:#2E3743;--text:#E6E9EE;--muted:#AAB3C0;--meta:#8F99A7;--accent:#5AA9FF;--accent-ink:#04111F;--accent-soft:rgba(90,169,255,.16);--accent-text:#7DBBFF;--sel:#172334;--danger:#FF6B81;--warn-text:#F2C14E;--warn-soft:rgba(242,193,78,.13);--kbd:#232B35;--scrim:rgba(0,0,0,.6);--pop-shadow:0 12px 32px rgba(0,0,0,.5);--dlg-shadow:0 24px 64px rgba(0,0,0,.6)}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.i.s{width:14px;height:14px}
+.kbd{font-family:'IBM Plex Mono',monospace;font-size:11px;background:var(--kbd);border:1px solid var(--line2);border-radius:4px;padding:0 5px;color:var(--muted);line-height:18px}
+.side{width:256px;flex:none;background:var(--side);border-right:1px solid var(--line);display:flex;flex-direction:column;gap:2px;padding:10px 10px 12px;box-sizing:border-box}
+.ws{display:flex;align-items:center;gap:10px;padding:8px}
+.ws b{font-weight:600;font-size:14px;display:block}
+.ws small{color:var(--meta);font-size:12px;display:block}
+.search{display:flex;align-items:center;gap:8px;margin:6px 0 8px;padding:0 10px;height:34px;border-radius:8px;background:var(--panel);border:1px solid var(--line);color:var(--meta);font-size:13px;box-sizing:border-box}
+.search .kbd{margin-left:auto}
+.nav{display:flex;align-items:center;gap:10px;height:34px;padding:0 10px;border-radius:7px;color:var(--muted);font-weight:500;font-size:13.5px}
+.nav:hover{background:var(--hover2);color:var(--text)}
+.count{margin-left:auto;font-size:12px;color:var(--meta);font-weight:500}
+.count.hot{background:var(--accent);color:var(--accent-ink);border-radius:999px;padding:0 7px;font-weight:600}
+.grp-t{margin:16px 10px 4px;font-size:12px;font-weight:600;color:var(--meta)}
+.space{display:flex;align-items:center;gap:9px;height:32px;padding:0 10px;border-radius:7px;font-size:13.5px;font-weight:500}
+.dm{width:20px;height:20px;border-radius:6px;display:grid;place-items:center;font-size:9px;font-weight:700;color:#fff;flex:none}
+.board-link{display:flex;align-items:center;height:30px;padding:0 10px 0 39px;border-radius:7px;color:var(--muted);font-size:13px}
+.board-link.on{background:var(--accent-soft);color:var(--accent-text);font-weight:600}
+.main{flex:999 1 560px;min-width:0;display:flex;flex-direction:column;position:relative}
+.title-row{display:flex;align-items:center;gap:12px;padding:16px 24px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.crumbt small{display:block;color:var(--meta);font-size:12.5px}
+.crumbt small a{color:var(--accent-text);font-weight:500}
+h1{margin:0;font-size:21px;line-height:1.3;font-weight:650;letter-spacing:-0.01em}
+.btn{height:32px;padding:0 12px;border-radius:7px;border:1px solid var(--line2);background:var(--panel);color:var(--text);font:inherit;font-size:13px;font-weight:500;display:inline-flex;align-items:center;gap:6px;cursor:pointer;box-sizing:border-box;white-space:nowrap}
+.btn:hover{background:var(--hover2)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.dng{background:var(--danger);border-color:var(--danger);color:#fff;font-weight:600}
+.btn.txt{border-color:transparent;background:transparent;color:var(--muted)}
+.btn.txt.red{color:var(--danger)}
+.grow{flex:1}
+.body{flex:1;display:flex;min-height:0}
+.snav{width:212px;flex:none;padding:16px 12px;border-right:1px solid var(--line);box-sizing:border-box;display:flex;flex-direction:column;gap:2px}
+.sn{display:flex;align-items:center;gap:9px;height:34px;padding:0 10px;border-radius:7px;color:var(--muted);font-size:13.5px;font-weight:500}
+.sn.on{background:var(--panel);color:var(--text);font-weight:600;box-shadow:0 0 0 1px var(--line)}
+.sn-sep{height:1px;background:var(--line);margin:8px 6px}
+.content{flex:1;min-width:0;display:flex;min-height:0;position:relative}
+.list{flex:1;min-width:0;overflow:auto;padding:20px 24px 24px}
+.lh{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px}
+.lh h2{margin:0;font-size:17px;font-weight:650}
+.lh p{margin:2px 0 0;color:var(--meta);font-size:13px;max-width:62ch}
+.sec{display:flex;align-items:center;gap:8px;margin:18px 0 6px;font-size:12.5px;font-weight:600;color:var(--meta)}
+.sec .n{font-weight:500}
+.sec .note{font-weight:400;margin-left:auto}
+.frows{border:1px solid var(--line);border-radius:10px;background:var(--panel);overflow:hidden}
+.fr{display:grid;grid-template-columns:22px minmax(0,1fr) 150px 132px 104px;align-items:center;gap:10px;min-height:44px;padding:0 12px 0 8px;border-top:1px solid var(--line);font-size:13px}
+.fr:first-child{border-top:0}
+.fr.hd{min-height:34px;background:var(--bg);font-size:12px;font-weight:600;color:var(--meta)}
+.fr.sel{background:var(--sel);box-shadow:inset 0 0 0 1.5px var(--accent)}
+.fr.arch{color:var(--meta)}
+.grip{color:var(--meta);opacity:.7;display:grid;place-items:center}
+.fn{display:flex;align-items:center;gap:9px;min-width:0;font-weight:500}
+.fn span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ty{width:24px;height:24px;border-radius:6px;display:grid;place-items:center;background:var(--bg);border:1px solid var(--line);color:var(--muted);flex:none}
+.tyl{color:var(--muted)}
+.tyl small{display:block;color:var(--meta);font-size:11.5px}
+.key{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--meta);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.use{color:var(--meta);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lock{display:inline-flex;align-items:center;gap:5px;color:var(--meta);font-size:12px}
+.tag{display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:5px;font-size:11.5px;font-weight:600;background:var(--accent-soft);color:var(--accent-text);white-space:nowrap}
+.tag.warn{background:var(--warn-soft);color:var(--warn-text)}
+.ed{width:400px;flex:none;border-left:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;min-height:0}
+.edh{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line)}
+.edh b{font-size:15px;font-weight:650}
+.edh small{display:block;color:var(--meta);font-size:12px}
+.iconbtn{width:30px;height:30px;border-radius:7px;border:0;background:transparent;color:var(--muted);display:grid;place-items:center;cursor:pointer}
+.edb{flex:1;overflow:auto;padding:14px 18px 18px;display:flex;flex-direction:column;gap:16px}
+.fg{display:flex;flex-direction:column;gap:6px}
+.fg>label,.fg>.lb{font-size:12.5px;font-weight:600;color:var(--muted)}
+.hint{font-size:12px;color:var(--meta);line-height:1.45}
+.inp{height:34px;border:1px solid var(--line2);border-radius:7px;background:var(--panel);padding:0 10px;font:inherit;font-size:13.5px;color:var(--text);display:flex;align-items:center;gap:8px;box-sizing:border-box}
+.inp.ro{background:var(--bg);color:var(--meta)}
+.inp .chev{margin-left:auto;color:var(--meta)}
+.opts{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.opt{display:flex;align-items:center;gap:9px;height:36px;padding:0 10px 0 6px;border-top:1px solid var(--line);font-size:13px}
+.opt:first-child{border-top:0}
+.sw-c{width:14px;height:14px;border-radius:4px;flex:none}
+.opt .c{margin-left:auto;color:var(--meta);font-size:12px}
+.addopt{display:flex;align-items:center;gap:7px;height:34px;padding:0 10px;color:var(--accent-text);font-size:13px;font-weight:500;border-top:1px solid var(--line)}
+.callout{display:flex;gap:9px;padding:10px 12px;border-radius:8px;background:var(--bg);border:1px solid var(--line);font-size:12.5px;color:var(--muted);line-height:1.5}
+.callout.warn{background:var(--warn-soft);border-color:transparent;color:var(--text)}
+.callout .i{margin-top:2px}
+.tg{display:flex;align-items:center;gap:10px;font-size:13px}
+.tg .lb2{flex:1}
+.tg .lb2 small{display:block;color:var(--meta);font-size:12px}
+.sw{width:34px;height:20px;border-radius:999px;background:var(--line2);position:relative;flex:none}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.uses{display:flex;flex-direction:column;gap:4px}
+.u{display:flex;align-items:center;gap:9px;min-height:32px;padding:0 8px;border-radius:7px;font-size:13px}
+.u:hover{background:var(--hover)}
+.u .m{margin-left:auto;color:var(--meta);font-size:12px}
+.u.box{border:1px solid var(--line);padding:10px 12px}
+.u.box b{font-weight:600;display:block}
+.u.box small{color:var(--meta);display:block;font-size:12px}
+.edf{display:flex;align-items:center;gap:8px;padding:12px 18px;border-top:1px solid var(--line)}
+.ta{min-height:58px;align-items:flex-start;padding-top:8px;height:auto;line-height:1.45}
+.seg{display:flex;border:1px solid var(--line2);border-radius:8px;padding:2px;gap:2px;background:var(--bg)}
+.seg span{flex:1;height:30px;display:flex;align-items:center;justify-content:center;gap:6px;border-radius:6px;font-size:12.5px;font-weight:500;color:var(--muted)}
+.seg span.on{background:var(--panel);color:var(--text);font-weight:600;box-shadow:0 1px 2px rgba(15,23,42,.12)}
+.cond{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:12.5px}
+.cond b{font-weight:600}
+.cond .op{color:var(--meta)}
+.chk{display:flex;align-items:center;gap:9px;height:32px;font-size:13px}
+.cb{width:16px;height:16px;border-radius:4px;border:1.5px solid var(--line2);display:grid;place-items:center;flex:none;box-sizing:border-box}
+.cb.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.vlist{display:flex;flex-direction:column;gap:2px}
+.vr{display:flex;align-items:center;gap:10px;min-height:48px;padding:6px 12px;border-radius:9px;border:1px solid transparent}
+.vr.sel{background:var(--panel);border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.vr .ty{width:30px;height:30px;border-radius:8px}
+.vr .vt{flex:1;min-width:0}
+.vr .vt b{display:block;font-size:13.5px;font-weight:600}
+.vr .vt small{display:block;font-size:12px;color:var(--meta);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pop{position:absolute;right:424px;top:66px;width:520px;background:var(--panel);border:1px solid var(--line2);border-radius:12px;box-shadow:var(--pop-shadow);z-index:20;display:flex;flex-direction:column;overflow:hidden}
+.pop .ps{display:flex;align-items:center;gap:8px;height:42px;padding:0 14px;border-bottom:1px solid var(--line);color:var(--meta);font-size:13.5px}
+.pg{padding:8px 10px 4px}
+.pg .gt{font-size:12px;font-weight:600;color:var(--meta);padding:4px 6px}
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:2px}
+.pt{display:flex;align-items:center;gap:10px;padding:7px 8px;border-radius:8px}
+.pt.on{background:var(--sel)}
+.pt b{display:block;font-size:13px;font-weight:600}
+.pt small{display:block;font-size:11.5px;color:var(--meta)}
+.pfoot{margin-top:4px;padding:10px 14px;border-top:1px solid var(--line);background:var(--bg);font-size:12.5px;color:var(--muted);line-height:1.5}
+.pfoot b{color:var(--text)}
+.scrim{position:absolute;inset:0;background:var(--scrim);z-index:30}
+.dlg{position:absolute;left:50%;top:150px;transform:translateX(-50%);width:540px;max-width:calc(100% - 32px);background:var(--panel);border-radius:14px;box-shadow:var(--dlg-shadow);z-index:31;overflow:hidden}
+.dlg .dh{padding:20px 22px 6px}
+.dlg h3{margin:0;font-size:18px;font-weight:650}
+.dlg .dh p{margin:6px 0 0;color:var(--muted);font-size:13.5px}
+.imp{margin:12px 22px 0;border:1px solid var(--line);border-radius:10px}
+.im{display:flex;gap:11px;padding:11px 14px;border-top:1px solid var(--line);font-size:13px}
+.im:first-child{border-top:0}
+.im .ic{width:28px;height:28px;border-radius:7px;display:grid;place-items:center;background:var(--bg);border:1px solid var(--line);color:var(--muted);flex:none}
+.im b{font-weight:600;display:block}
+.im small{display:block;color:var(--meta);font-size:12.5px}
+.im.warn .ic{background:var(--warn-soft);border-color:transparent;color:var(--warn-text)}
+.df{display:flex;align-items:center;gap:8px;padding:16px 22px 18px}
+.df .hint{flex:1}
+button.sw{border:0;padding:0;cursor:pointer;font:inherit}
+.sw[aria-checked="true"]{background:var(--accent)}
+.sw[aria-checked="true"]::after{left:16px}
+a.space:hover{background:var(--hover2)}
+.deny{flex:1;display:grid;place-items:center;padding:24px}
+.deny>div{max-width:420px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center}
+.deny .ic{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;background:var(--panel);border:1px solid var(--line);color:var(--muted)}
+.deny h2{margin:0;font-size:17px;font-weight:650}
+.deny p{margin:0;color:var(--muted);font-size:13.5px;line-height:1.55}
+.narrow{max-width:780px}
+.card{border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+.gr{display:grid;grid-template-columns:190px minmax(0,1fr);gap:16px;padding:10px 16px;border-top:1px solid var(--line);align-items:start}
+.gr:first-child{border-top:0}
+.gr>.gl{font-size:13px;font-weight:600;padding-top:7px}
+.gr>.gl small{display:block;font-weight:400;color:var(--meta);font-size:12px}
+input.inp,select.inp,textarea.inp{width:100%;outline-offset:1px}
+textarea.inp{display:block;resize:vertical;padding:7px 10px;height:auto;min-height:56px;line-height:1.45}
+.inrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.swatch{width:22px;height:22px;border-radius:6px;border:0;padding:0;cursor:pointer;flex:none}
+.swatch[aria-pressed="true"]{box-shadow:0 0 0 2px var(--panel),0 0 0 4px var(--text)}
+.dz{margin-top:16px;border:1px solid var(--danger);border-radius:10px;background:color-mix(in srgb,var(--danger) 5%,var(--panel))}
+.dz h3{margin:0;padding:12px 16px 2px;font-size:13.5px;font-weight:650;color:var(--danger)}
+.dzr{display:flex;align-items:center;gap:16px;padding:12px 16px}
+.dzr+.dzr,.dzr+.dzc+.dzr{border-top:1px solid color-mix(in srgb,var(--danger) 30%,transparent)}
+.dzr .t{flex:1;min-width:0}
+.dzr .t b{display:block;font-weight:600;font-size:13.5px}
+.dzr .t small{display:block;color:var(--muted);font-size:12.5px;line-height:1.5}
+.btn.dngo{color:var(--danger);border-color:var(--danger);background:var(--panel)}
+.dzc{display:flex;flex-direction:column;gap:6px;padding:0 16px 14px}
+.dzc label{font-size:12.5px;font-weight:600;color:var(--muted)}
+.gx{display:grid;grid-template-columns:28px 14px minmax(0,1fr) 92px 66px;align-items:center;gap:10px;min-height:46px;padding:0 10px 0 6px;border-top:1px solid var(--line);font-size:13.5px}
+.gx:first-child{border-top:0}
+.gx.hd{min-height:34px;background:var(--bg);font-size:12px;font-weight:600;color:var(--meta)}
+.gx.sel{background:var(--sel)}
+.gx .nm{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gx .ct{color:var(--meta);font-size:12.5px}
+.gx .ac{display:flex;gap:2px;justify-content:flex-end}
+.gx .iconbtn{width:30px;height:30px}
+.gx .iconbtn:hover,button.grip:hover{background:var(--hover2)}
+button.grip{border:0;background:transparent;padding:0;width:28px;height:28px;border-radius:6px;cursor:grab}
+.gconf{display:flex;flex-direction:column;gap:10px;padding:12px 14px 14px 58px;border-top:1px solid var(--line);background:var(--bg)}
+.gconf b{font-weight:600}
+.gconf p{margin:0;font-size:13px;color:var(--muted)}
+.gconf .inrow label{font-size:13px;font-weight:500}
+.gconf select.inp{width:220px}
+.rules{display:flex;flex-direction:column;gap:10px}
+.rule{border:1px solid var(--line);border-radius:10px;background:var(--panel);padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.rh{display:flex;align-items:center;gap:10px}
+.rh b{font-size:14px;font-weight:600}
+.sent{margin:0;display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:13px}
+.sent .op{color:var(--meta)}
+.chip{display:inline-flex;align-items:center;height:24px;padding:0 8px;border-radius:6px;background:var(--bg);border:1px solid var(--line);font-size:12.5px;font-weight:600;white-space:nowrap}
+.chip.k{background:var(--accent-soft);border-color:transparent;color:var(--accent-text)}
+.rm{display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--meta)}
+.rm .who{display:inline-flex;align-items:center;gap:6px}
+.rm .who b{color:var(--text);font-weight:600}
+.av{width:20px;height:20px;border-radius:50%;display:inline-grid;place-items:center;font-size:9px;font-weight:700;color:#fff;flex:none}
+.rule.paused .rh b,.rule.paused .sent{color:var(--muted)}
+.rule .callout{align-items:center}
+.lfoot{display:flex;align-items:center;gap:10px;margin-top:14px;font-size:12.5px;color:var(--meta)}
+/* Notrelix system rail (source Final-Space) */
+.sysnav{--rail:#16202E;--rail-ink:#AFBACB;--scrim:rgba(15,23,42,.14)}
+.nx.mode-dem .sysnav{--rail:#05070A;--rail-ink:#8C97A8;--scrim:rgba(0,0,0,.42)}
+.sysnav{position:absolute;left:0;top:0;bottom:0;width:10px;z-index:30}
+.edge-btn{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;padding:0;margin:-1px}
+.rail{position:absolute;left:0;top:0;bottom:0;width:76px;background:var(--rail);display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 0;box-sizing:border-box;transform:translateX(-100%);transition:transform .22s cubic-bezier(.22,1,.36,1),box-shadow .22s ease-out}
+.sysnav:hover .rail,.sysnav:focus-within .rail,.nav-hien-de .rail{transform:none;box-shadow:0 0 0 4000px var(--scrim),8px 0 28px rgba(0,0,0,.2)}
+.nav-hien-day .sysnav{position:relative;width:76px;flex:none}
+.nav-hien-day .rail{transform:none;box-shadow:none}
+.app{width:64px;display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 0 6px;border-radius:10px;color:var(--rail-ink);font-size:10.5px;font-weight:500;position:relative}
+.app .i{width:20px;height:20px}
+.app:hover,.app:focus-visible{background:rgba(255,255,255,.08);color:#fff}
+.app.on{color:#fff}
+.app .badge{position:absolute;top:2px;right:8px;min-width:16px;height:16px;border-radius:8px;background:#E8174B;color:#fff;font-size:10px;font-weight:700;display:grid;place-items:center;padding:0 3px;box-sizing:border-box}
+.wsm{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;color:#fff;font-weight:700;font-size:13px}
+.app.on .wsm{box-shadow:0 0 0 2px var(--rail),0 0 0 4px #FFFFFF}
+.wsm.add{background:transparent;border:1.5px dashed rgba(255,255,255,.35);color:var(--rail-ink);box-sizing:border-box}
+.rail .sep{width:36px;height:1px;background:rgba(255,255,255,.14);margin:6px 0}
+.rail .me{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-size:10.5px;font-weight:700;color:#fff;background:#4E8574;margin-top:6px}
+@media (prefers-reduced-motion: reduce){.rail{transition:none}}
+/* canonical workspace sidebar (same on every screen; source Final-Space) */
+.sysnav a,.side a{text-decoration:none}
+.nx .side{--side:#EFF1F4;--panel:#FFFFFF;--hover:#E6E9EE;--line:#E1E5EA;--line2:#D2D7DE;--text:#161A21;--muted:#4F5866;--meta:#5F6875;--accent:#1666CC;--accent-ink:#FFFFFF;--accent-soft:#E7F0FC;--accent-text:#0F56AE;--kbd:#EEF0F3;width:256px;flex:none;background:var(--side);border-right:1px solid var(--line);display:flex;flex-direction:column;gap:2px;padding:10px 10px 12px;box-sizing:border-box;max-height:100%;overflow-y:auto;color:var(--text)}
+.nx.mode-dem .side{--side:#13181E;--panel:#1A2028;--hover:#232A34;--line:#232B35;--line2:#2E3743;--text:#E6E9EE;--muted:#AAB3C0;--meta:#8F99A7;--accent:#5AA9FF;--accent-ink:#04111F;--accent-soft:rgba(90,169,255,.16);--accent-text:#7DBBFF;--kbd:#232B35}
+.side .ws{display:flex;align-items:center;gap:10px;padding:8px;border-radius:8px;border:0;background:transparent;color:var(--text);font:inherit;text-align:left;cursor:pointer;width:100%;box-sizing:border-box;flex:none}
+.side .ws:hover{background:var(--hover)}
+.side .ws b{font-weight:600;font-size:14px;display:block}
+.side .ws small{color:var(--meta);font-size:12px;display:block}
+.side .search{display:flex;align-items:center;gap:8px;margin:6px 0 8px;padding:0 10px;height:34px;border-radius:8px;background:var(--panel);border:1px solid var(--line);color:var(--meta);font:inherit;font-size:13px;width:100%;box-sizing:border-box;text-decoration:none;flex:none}
+.side .search .kbd{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;background:var(--kbd);border:1px solid var(--line2);border-radius:4px;padding:0 5px;color:var(--muted);line-height:18px}
+.side .nav{display:flex;align-items:center;gap:10px;height:34px;padding:0 10px;border-radius:7px;color:var(--muted);font-weight:500;font-size:13.5px;text-decoration:none;background:transparent;box-shadow:none;flex:none}
+.side .nav:hover{background:var(--hover);color:var(--text)}
+.side .nav.on{background:var(--accent-soft);color:var(--accent-text);font-weight:600}
+.side .count{margin-left:auto;font-size:12px;color:var(--meta);font-weight:500}
+.side .count.hot{background:var(--accent);color:var(--accent-ink);border-radius:999px;padding:0 7px;font-weight:600}
+.side .grp{display:flex;align-items:center;justify-content:space-between;min-height:24px;margin:16px 10px 4px;font-size:12px;font-weight:600;color:var(--meta);flex:none}
+.side .grp button{border:0;background:transparent;color:var(--meta);width:24px;height:24px;border-radius:6px;display:grid;place-items:center;cursor:pointer}
+.side .grp button:hover{background:var(--hover);color:var(--text)}
+.side .srow{display:flex;align-items:center;gap:2px;flex:none}
+.side .srow .space{flex:1;min-width:0}
+.side .space{display:flex;align-items:center;gap:9px;height:32px;padding:0 10px;border-radius:7px;color:var(--text);font-size:13.5px;font-weight:500;text-decoration:none;flex:none}
+.side .space:hover{background:var(--hover)}
+.side .space.on{background:var(--accent-soft);color:var(--accent-text);font-weight:600}
+.side .dm{width:20px;height:20px;border-radius:6px;display:grid;place-items:center;font-size:9px;font-weight:700;color:#fff;flex:none}
+.side .tw{width:24px;height:24px;border:0;background:transparent;color:var(--meta);border-radius:6px;display:grid;place-items:center;cursor:pointer;flex:none;margin:0;padding:0}
+.side .tw:hover{background:var(--hover);color:var(--text)}
+.side .tw .i{width:14px;height:14px}
+.side .board-link,.side .sub-link{display:flex;align-items:center;gap:8px;height:30px;padding:0 10px 0 39px;border-radius:7px;color:var(--muted);font-size:13px;font-weight:400;text-decoration:none;flex:none}
+.side .board-link:hover,.side .sub-link:hover{background:var(--hover);color:var(--text)}
+.side .board-link.on{background:var(--accent-soft);color:var(--accent-text);font-weight:600}
+.side .sub-link .dm{width:16px;height:16px;border-radius:5px;font-size:7px}
+.side .i.lk{display:block;margin-left:auto;padding:0;border:0;border-radius:0;background:none;color:var(--meta);width:13px;height:13px}
+.side .spacer{flex:1}
+.side .user{display:flex;align-items:center;gap:9px;padding:8px;margin-top:4px;flex:none}
+.side .user .av{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:10px;font-weight:700;color:#fff;flex:none;box-shadow:none;margin:0}
+.side .user b{font-size:13px;font-weight:600;display:block}
+.side .user small{font-size:12px;color:var(--meta);display:block}
+</style>
+</helmet>
+<div class="nx mode-{{mode}} nav-{{nav}}" style="display:flex;width:100%;min-height:900px;height:900px;overflow:hidden;position:relative">
+  <div class="sysnav">
+    <button class="edge-btn" type="button">Mở thanh hệ thống Notrelix</button>
+    <nav class="rail" aria-label="Hệ thống Notrelix">
+      <svg width="34" height="34" viewBox="0 0 408 408" aria-label="Notrelix" role="img" style="margin-bottom:12px"><path d="M336.1 230.49L156.821 73.4495C116.321 35.9495 51.8207 52.9495 40.3233 110.752L27.6001 181C34.6001 166 53.1001 160.5 68.6001 171.5C116.439 213.286 240.005 321.949 240.005 321.949C298.505 373.449 354.505 343.449 367.823 291.252C367.823 291.252 373.206 261.526 380 223.449C371.1 241.99 349.1 242.99 336.1 230.49Z" fill="url(#gr0)"></path><path d="M380.005 223.46C371.1 242 349.1 243 336.005 230.46L276.505 178.262C281.972 146.825 284.537 129.7 290.005 98.2624C291.982 84.263 296.401 80.1727 305.505 74.2624L377.505 46.7624C392.005 39.2622 409.141 44.5717 407.504 63.9597C406.485 76.0378 391.23 160.547 380.005 223.46Z" fill="#1E90FF"></path><path d="M27.6 181C36.5045 162.46 58.5133 161.539 71.6088 174.079L131.109 226.277C125.641 257.714 123.076 274.84 117.609 306.277C115.631 320.276 111.212 324.366 102.109 330.277L30.1087 357.777C15.6087 365.277 -1.52779 359.967 0.10881 340.579C1.12836 328.501 16.3745 243.912 27.6 181Z" fill="#FF1E56"></path><defs><linearGradient id="gr0" x1="52.1" y1="90.49" x2="350.6" y2="317.99" gradientUnits="userSpaceOnUse"><stop stop-color="#FF1E56"></stop><stop offset="0.25" stop-color="#FC744C"></stop><stop offset="0.5" stop-color="#F9C942"></stop><stop offset="0.75" stop-color="#8CADA1"></stop><stop offset="1" stop-color="#1E90FF"></stop></linearGradient></defs></svg>
+      <a class="app on" href="#" aria-current="true" title="Minh An Group"><span class="wsm" style="background:#1666CC">MA</span>Minh An</a>
+      <a class="app" href="#" title="Minh An Đà Nẵng"><span class="wsm" style="background:#4E8574">ĐN</span>Đà Nẵng<span class="badge">2</span></a>
+      <a class="app" href="#" title="Tân Lộc Logistics (khách)"><span class="wsm" style="background:#9A6A12">TL</span>Tân Lộc</a>
+      <a class="app" href="#" title="Tạo hoặc tham gia workspace"><span class="wsm add"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></span>Thêm</a>
+      <span class="sep"></span>
+      <a class="app" href="#" title="Hộp thư mọi workspace"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 12h-6l-2 3h-4l-2-3H2"></path><path d="M5.5 5h13L22 12v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6z"></path></svg>Tất cả<span class="badge">5</span></a>
+      <a class="app" href="#" title="Tìm trong mọi workspace"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>Tìm</a>
+      <span style="flex:1"></span>
+      <a class="app" href="Final-Account.dc.html" title="Tài khoản và giao diện"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"></path><circle cx="16" cy="6" r="2"></circle><circle cx="10" cy="12" r="2"></circle><circle cx="18" cy="18" r="2"></circle></svg>Cài đặt</a>
+      <span class="me" title="Nguyễn Thu Hà">HA</span>
+    </nav>
+  </div>
+
+  <nav class="side" aria-label="Điều hướng trong workspace">
+    <button class="ws" type="button">
+      <span class="dm" style="background:#1666CC;width:28px;height:28px;border-radius:8px;font-size:11px">MA</span>
+      <span style="flex:1;min-width:0"><b>Minh An Group</b><small>5 phòng ban · 86 người</small></span>
+      <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5-5 5 5M7 14l5 5 5-5"></path></svg>
+    </button>
+    <a class="search" href="Final-Command.dc.html"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>Tìm hoặc chạy lệnh<span class="kbd">⌘K</span></a>
+    <a class="nav" href="Final-Home.dc.html"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"></path></svg>Trang chủ</a>
+    <a class="nav" href="Final-MyWork.dc.html"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11l3 3 8-8"></path><path d="M20 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>Việc của tôi<span class="count">7</span></a>
+    <a class="nav" href="Final-Inbox.dc.html"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 12h-6l-2 3h-4l-2-3H2"></path><path d="M5.5 5h13L22 12v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6z"></path></svg>Hộp thư<span class="count hot">3</span></a>
+    <a class="nav" href="Final-Docs.dc.html"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><path d="M14 3v6h6"></path></svg>Tài liệu</a>
+    <a class="nav" href="Final-Reports.dc.html"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V11M10 20V5M16 20v-7M21 20H3"></path></svg>Báo cáo</a>
+    <div class="grp">Phòng ban<button type="button" aria-label="Tạo phòng ban"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button></div>
+    <div class="srow"><a class="space" href="Final-Space.dc.html"><span class="dm" style="background:#1E6FD0">CN</span>Công nghệ<svg class="i lk" viewBox="0 0 24 24" aria-label="Riêng tư" role="img"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg></a><button class="tw" type="button" aria-expanded="true" aria-label="Thu gọn Công nghệ"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button></div>
+    <a class="board-link on" href="Final-Board.dc.html" aria-current="page">Triển khai ERP Q4</a>
+    <a class="board-link" href="Final-Board.dc.html">Hạ tầng &amp; bảo mật</a>
+    <a class="board-link" href="Final-Board.dc.html">Hỗ trợ nội bộ</a>
+    <a class="board-link" href="Final-Board.dc.html">Ngân sách CNTT 2027<svg class="i lk" viewBox="0 0 24 24" aria-label="Riêng tư" role="img"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg></a>
+    <a class="sub-link" href="Final-Space.dc.html"><span class="dm" style="background:#1E6FD0">HT</span>Nhóm Hạ tầng</a>
+    <a class="sub-link" href="Final-Space.dc.html"><span class="dm" style="background:#1E6FD0">UD</span>Nhóm Ứng dụng<svg class="i lk" viewBox="0 0 24 24" aria-label="Riêng tư" role="img"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg></a>
+    <a class="space" href="#"><span class="dm" style="background:#9A6A12">KT</span>Kế toán<svg class="i lk" viewBox="0 0 24 24" aria-label="Riêng tư" role="img"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg></a>
+    <a class="space" href="#"><span class="dm" style="background:#C2410C">MK</span>Marketing</a>
+    <a class="space" href="#"><span class="dm" style="background:#4E8574">NS</span>Nhân sự<svg class="i lk" viewBox="0 0 24 24" aria-label="Riêng tư" role="img"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg></a>
+    <a class="space" href="#"><span class="dm" style="background:#C8143F">GĐ</span>Ban giám đốc<svg class="i lk" viewBox="0 0 24 24" aria-label="Riêng tư" role="img"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg></a>
+    <span class="spacer"></span>
+    <a class="nav" href="Final-Teams.dc.html"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"></path></svg>Thiết lập workspace</a>
+    <div class="user">
+      <span class="av" style="background:#4E8574">HA</span>
+      <span style="flex:1"><b>Nguyễn Thu Hà</b><small>Quản trị workspace</small></span>
+    </div>
+  </nav>
+
+  <main class="main">
+    <div class="title-row">
+      <span class="dm" style="background:#1E6FD0;width:34px;height:34px;border-radius:9px;font-size:12px">CN</span>
+      <div class="crumbt"><small><a href="Final-Board.dc.html">Triển khai ERP Q4</a> / Thiết lập</small><h1>Thiết lập board</h1></div>
+      <span class="grow"></span>
+      <sc-if value="{{canEdit}}" hint-placeholder-val="{{ true }}"><span class="hint">Chỉ quản lý board mở được trang này · Mọi thay đổi được ghi vào lịch sử board</span></sc-if>
+      <a class="btn" href="Final-Board.dc.html"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>Về board</a>
+    </div>
+
+    <div class="body">
+      <sc-if value="{{noAccess}}" hint-placeholder-val="{{ false }}">
+        <section class="deny" aria-labelledby="dh">
+          <div>
+            <span class="ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg></span>
+            <h2 id="dh">Chỉ người quản lý board mở được thiết lập.</h2>
+            <p>Hỏi Lê Hoàng Phúc nếu cần đổi trường, chế độ xem hay quyền truy cập của board này. Bạn vẫn xem và làm việc trên board như bình thường.</p>
+            <a class="btn" href="Final-Board.dc.html"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>Về board</a>
+          </div>
+        </section>
+      </sc-if>
+      <sc-if value="{{canEdit}}" hint-placeholder-val="{{ true }}">
+      <nav class="snav" aria-label="Mục thiết lập">
+        <a class="sn {{chungOn}}" href="#" aria-current="{{chungCur}}"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"></path></svg>Chung</a>
+        <a class="sn {{fieldsOn}}" href="#" aria-current="{{fieldsCur}}"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M3 10h18M9 4v16"></path></svg>Trường dữ liệu<span class="count">16</span></a>
+        <a class="sn {{viewsOn}}" href="#" aria-current="{{viewsCur}}"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>Chế độ xem<span class="count">7</span></a>
+        <a class="sn {{groupsOn}}" href="#" aria-current="{{groupsCur}}"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"></path></svg>Nhóm việc<span class="count">4</span></a>
+        <div class="sn-sep"></div>
+        <a class="sn" href="Final-Share.dc.html"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>Quyền truy cập</a>
+        <a class="sn {{autoOn}}" href="Final-Automation.dc.html" aria-current="{{autoCur}}"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"></path></svg>Tự động hoá<span class="count">3</span></a>
+        <a class="sn" href="#"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="5" rx="1"></rect><path d="M5 9v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9M10 13h4"></path></svg>Đã lưu trữ<span class="count">1</span></a>
+      </nav>
+
+      <div class="content">
+        <sc-if value="{{isFields}}" hint-placeholder-val="{{ true }}">
+          <section class="list" aria-labelledby="fh">
+            <div class="lh">
+              <div><h2 id="fh">Trường dữ liệu</h2><p>Mỗi trường là một cột dữ liệu dùng chung cho mọi chế độ xem của board. Đổi tên không làm hỏng bộ lọc, công thức hay tự động hoá vì chúng dùng khoá của trường.</p></div>
+              <span class="grow"></span>
+              <button class="btn pri" type="button" aria-haspopup="dialog"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Thêm trường</button>
+            </div>
+
+            <div class="sec">Trường của board <span class="n">11</span><span class="note">Kéo để đổi thứ tự mặc định</span></div>
+            <div class="frows" role="list">
+              <div class="fr hd" aria-hidden="true"><span></span><span>Tên trường</span><span>Loại</span><span>Khoá</span><span>Đang dùng</span></div>
+              <div class="fr" role="listitem"><span class="grip"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01" stroke-width="3"></path></svg></span><span class="fn"><span class="ty"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="m8.5 12 2.5 2.5 4.5-5"></path></svg></span><span>Trạng thái</span></span><span class="tyl">Trạng thái<small>4 lựa chọn</small></span><span class="key">status</span><span class="use"><span class="tag">Chia cột Kanban</span></span></div>
+              <div class="fr" role="listitem"><span class="grip"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01" stroke-width="3"></path></svg></span><span class="fn"><span class="ty"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg></span><span>Người phụ trách</span></span><span class="tyl">Người<small>nhiều người</small></span><span class="key">assignee</span><span class="use">5 view</span></div>
+              <div class="fr" role="listitem"><span class="grip"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01" stroke-width="3"></path></svg></span><span class="fn"><span class="ty"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg></span><span>Ngày bắt đầu</span></span><span class="tyl">Ngày</span><span class="key">start_date</span><span class="use">2 view</span></div>
+              <div class="fr" role="listitem"><span class="grip"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01" stroke-width="3"></path></svg></span><span class="fn"><span class="ty"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg></span><span>Hạn chót</span></span><span class="tyl">Ngày<small>có giờ, GMT+7</small></span><span class="key">due_date</span><span class="use">6 view</span></div>
+              <div class="fr sel" role="listitem" aria-current="true"><span class="grip"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01" stroke-width="3"></path></svg></span><span class="fn"><span class="ty"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4h12l-2 4 2 4H5"></path></svg></span><span>Mức ưu tiên</span></span><span class="tyl">Lựa chọn<small>4 lựa chọn</small></span><span class="key">priority</span><span class="use">3 view · 1 quy tắc</span></div>
+              <div class="fr" role="listitem"><span class="grip"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01" stroke-width="3"></path></svg></span><span class="fn"><span class="ty"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"></path><circle cx="7.5" cy="7.5" r="1.5"></circle></svg></span><span>Phân hệ ERP</span></span><span class="tyl">Nhiều lựa chọn<small>6 lựa chọn</small></span><span class="key">erp_module</span><span class="use">2 view</span></div>
+              <div class="fr" role="listitem"><span class="grip"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01" stroke-width="3"></path></svg></span><span class="fn"><span class="ty"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"></path><circle cx="7.5" cy="7.5" r="1.5"></circle></svg></span><span>Nhãn</span></span><span class="tyl">Nhiều lựa chọn<small>Dữ liệu, Bảo mật, Đào tạo, Báo cáo…</small></span><span class="key">labels</span><span class="use">Kanban, Bảng</span></div>
+              <div class="fr" role="listitem"><span class="grip"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01" stroke-width="3"></path></svg></span><span class="fn"><span class="ty"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"></path></svg></span><span>Ước lượng (giờ)</span></span><span class="tyl">Số<small>1 chữ số thập phân</small></span><span class="key">estimate_hours</span><span class="use">1 view</span></div>
+              <div class="fr" role="listitem"><span class="grip"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01" stroke-width="3"></path></svg></span><span class="fn"><span class="ty"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9h-9z"></path></svg></span><span>Tiến độ</span></span><span class="tyl">Tiến độ<small>tự tính từ việc con</small></span><span class="key">progress</span><span class="use">2 view</span></div>
+              <div class="fr" role="listitem"><span class="grip"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01" stroke-width="3"></path></svg></span><span class="fn"><span class="ty"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"></path><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"></path></svg></span><span>Phụ thuộc</span></span><span class="tyl">Quan hệ<small>Đang chờ, Đang chặn, Liên quan</small></span><span class="key">depends_on</span><span class="use">Dòng thời gian, Chi tiết</span></div>
+              <div class="fr" role="listitem"><span class="grip"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01" stroke-width="3"></path></svg></span><span class="fn"><span class="ty"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="m9 11 3 3 3-3"></path></svg></span><span>Phòng ban yêu cầu</span></span><span class="tyl">Lựa chọn<small>5 lựa chọn</small></span><span class="key">requester_dept</span><span class="use">Chưa dùng</span></div>
+            </div>
+
+            <div class="sec">Trường hệ thống <span class="n">5</span><span class="note">Do Notrelix quản lý, không sửa hay xoá được</span></div>
+            <div class="frows" role="list">
+              <div class="fr" role="listitem"><span></span><span class="fn"><span class="ty"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7V5h16v2M9 19h6M12 5v14"></path></svg></span><span>Tên việc</span></span><span class="tyl">Văn bản<small>trường chính</small></span><span class="key">title</span><span class="lock"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>Chỉ đổi tên</span></div>
+              <div class="fr" role="listitem"><span></span><span class="fn"><span class="ty"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"></path></svg></span><span>Mã việc</span></span><span class="tyl">Mã tự tăng<small>ERP-1, ERP-2…</small></span><span class="key">item_key</span><span class="lock"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>Khoá</span></div>
+              <div class="fr" role="listitem"><span></span><span class="fn"><span class="ty"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg></span><span>Người tạo, Ngày tạo, Cập nhật lần cuối</span></span><span class="tyl">Người, Ngày giờ</span><span class="key">created_by…</span><span class="lock"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>Khoá</span></div>
+            </div>
+
+            <div class="sec">Đã lưu trữ <span class="n">1</span><span class="note">Giá trị cũ vẫn được giữ, khôi phục là hiện lại</span></div>
+            <div class="frows" role="list">
+              <div class="fr arch" role="listitem"><span></span><span class="fn"><span class="ty"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg></span><span>Ngày bàn giao</span></span><span class="tyl">Ngày<small>lưu trữ 02/10 · Trần Minh Quân</small></span><span class="key">handover_date</span><span><button class="btn txt" type="button" style="height:28px;padding:0 8px;color:var(--accent-text)">Khôi phục</button></span></div>
+            </div>
+          </section>
+
+          <aside class="ed" aria-label="Sửa trường Mức ưu tiên">
+            <div class="edh"><span class="ty" style="width:30px;height:30px;border-radius:8px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4h12l-2 4 2 4H5"></path></svg></span><div><b>Mức ưu tiên</b><small>Lựa chọn · 16 việc có giá trị</small></div><span class="grow"></span><button class="iconbtn" type="button" aria-label="Đóng"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button></div>
+            <div class="edb">
+              <div class="fg"><label>Tên hiển thị</label><div class="inp">Mức ưu tiên</div></div>
+              <div class="fg"><span class="lb">Khoá</span><div class="inp ro mono" style="font-size:12.5px">priority<svg class="i s chev" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg></div><span class="hint">Giữ nguyên khi đổi tên. Bộ lọc, công thức, tự động hoá và tích hợp đều trỏ tới khoá này.</span></div>
+              <div class="fg"><span class="lb">Loại</span><div class="inp">Lựa chọn (một giá trị)<span class="chev" style="font-size:12.5px;color:var(--accent-text);font-weight:500">Đổi loại…</span></div><span class="hint">Khi đổi loại, Notrelix kiểm tra 16 giá trị hiện có và cho xem trước giá trị nào không chuyển được, trước khi áp dụng.</span></div>
+              <div class="fg"><span class="lb">Các lựa chọn</span>
+                <div class="opts">
+                  <div class="opt"><span class="grip"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01" stroke-width="3"></path></svg></span><span class="sw-c" style="background:#C42340"></span>Khẩn<span class="c">1 việc</span></div>
+                  <div class="opt"><span class="grip"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01" stroke-width="3"></path></svg></span><span class="sw-c" style="background:#B4500B"></span>Cao<span class="c">5 việc</span></div>
+                  <div class="opt"><span class="grip"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01" stroke-width="3"></path></svg></span><span class="sw-c" style="background:#1E7BE0"></span>Trung bình<span class="c">7 việc</span></div>
+                  <div class="opt"><span class="grip"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01" stroke-width="3"></path></svg></span><span class="sw-c" style="background:#7A8391"></span>Thấp<span class="c">3 việc</span></div>
+                  <div class="addopt"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Thêm lựa chọn</div>
+                </div>
+                <span class="hint">Thứ tự ở đây cũng là thứ tự khi sắp xếp và khi chia cột.</span>
+              </div>
+              <div class="fg"><span class="lb">Giá trị mặc định cho việc mới</span><div class="inp"><span class="sw-c" style="background:#1E7BE0"></span>Trung bình<svg class="i s chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></div>
+                <div class="callout"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 8h.01M11 12h1v5h1"></path></svg><span>Chỉ áp dụng cho việc tạo từ bây giờ. 16 việc hiện có giữ nguyên giá trị.</span></div>
+              </div>
+              <div class="tg"><span class="lb2">Bắt buộc khi tạo việc<small>Form và nút "Thêm công việc" sẽ hỏi trường này</small></span><button class="sw" type="button" role="switch" aria-checked="false" aria-label="Bắt buộc khi tạo việc"></button></div>
+              <div class="fg"><label>Hướng dẫn cho người điền</label><div class="inp ta">Chỉ chọn Khẩn khi việc chặn ngày go-live 01/11.</div></div>
+              <div class="fg"><span class="lb">Đang được dùng ở</span>
+                <div class="uses">
+                  <a class="u" href="Final-Table.dc.html"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M3 10h18M3 15h18M9 4v16"></path></svg>Bảng<span class="m">cột hiển thị</span></a>
+                  <a class="u" href="Final-Board.dc.html"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M9 4v16M15 4v10"></path></svg>Kanban<span class="m">hiện trên thẻ</span></a>
+                  <div class="u"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M3 10h18M3 15h18M9 4v16"></path></svg>Việc khẩn của tôi<span class="m">bộ lọc</span></div>
+                  <div class="u"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"></path></svg>Khẩn → báo Trưởng phòng<span class="m">quy tắc tự động</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="edf"><button class="btn txt red" type="button">Lưu trữ trường</button><span class="grow"></span><button class="btn" type="button">Huỷ</button><button class="btn pri" type="button">Lưu thay đổi</button></div>
+          </aside>
+        </sc-if>
+
+        <sc-if value="{{pickerOpen}}" hint-placeholder-val="{{ false }}">
+          <div class="pop" role="dialog" aria-label="Chọn loại trường">
+            <div class="ps"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>Tìm loại trường…<span class="grow"></span><span class="kbd">Esc</span></div>
+            <div class="pg"><div class="gt">Cơ bản</div><div class="pgrid">
+              <div class="pt"><span class="ty"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7V5h16v2M9 19h6M12 5v14"></path></svg></span><span><b>Văn bản</b><small>Một dòng, ghi chú ngắn</small></span></div>
+              <div class="pt"><span class="ty"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"></path></svg></span><span><b>Văn bản dài</b><small>Nhiều dòng, có định dạng</small></span></div>
+              <div class="pt"><span class="ty"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"></path></svg></span><span><b>Số</b><small>Tiền, giờ, số lượng</small></span></div>
+              <div class="pt on"><span class="ty"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg></span><span><b>Ngày</b><small>Có hoặc không kèm giờ</small></span></div>
+              <div class="pt"><span class="ty"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"></rect><path d="m8.5 12 2.5 2.5 4.5-5"></path></svg></span><span><b>Hộp kiểm</b><small>Có hoặc không</small></span></div>
+              <div class="pt"><span class="ty"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"></path></svg></span><span><b>Tệp, liên kết</b><small>Tệp đính kèm hoặc URL</small></span></div>
+            </div></div>
+            <div class="pg"><div class="gt">Phân loại và người</div><div class="pgrid">
+              <div class="pt"><span class="ty"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="m9 11 3 3 3-3"></path></svg></span><span><b>Lựa chọn</b><small>Một giá trị trong danh sách</small></span></div>
+              <div class="pt"><span class="ty"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"></path><circle cx="7.5" cy="7.5" r="1.5"></circle></svg></span><span><b>Nhiều lựa chọn</b><small>Gắn nhiều nhãn</small></span></div>
+              <div class="pt"><span class="ty"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="m8.5 12 2.5 2.5 4.5-5"></path></svg></span><span><b>Trạng thái</b><small>Có nhóm Cần làm, Đang làm, Chờ duyệt, Hoàn thành</small></span></div>
+              <div class="pt"><span class="ty"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg></span><span><b>Người</b><small>Thành viên hoặc khách của board</small></span></div>
+            </div></div>
+            <div class="pg"><div class="gt">Tính toán và liên kết</div><div class="pgrid">
+              <div class="pt"><span class="ty"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"></path><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"></path></svg></span><span><b>Quan hệ</b><small>Nối tới việc khác (cùng board hoặc board khác bạn xem được)</small></span></div>
+              <div class="pt"><span class="ty"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h8l-6 8 6 8H5M15 10l5 5M20 10l-5 5"></path></svg></span><span><b>Công thức</b><small>Tính từ trường khác</small></span></div>
+              <div class="pt"><span class="ty"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18"></path><path d="M7 15l4-4 3 3 5-6"></path></svg></span><span><b>Tổng hợp</b><small>Cộng, đếm qua quan hệ</small></span></div>
+              <div class="pt"><span class="ty"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9h-9z"></path></svg></span><span><b>Tiến độ</b><small>Tự tính từ việc con</small></span></div>
+            </div></div>
+            <div class="pfoot"><b>Ngày</b> · hiện được trên Lịch và Dòng thời gian. Lọc theo trước, sau, trong khoảng, quá hạn. Sắp xếp tăng dần, ô trống xếp cuối. Tự động hoá dùng được làm mốc nhắc hạn.</div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{isViews}}" hint-placeholder-val="{{ false }}">
+          <section class="list" aria-labelledby="vh">
+            <div class="lh">
+              <div><h2 id="vh">Chế độ xem</h2><p>Mỗi chế độ xem là một cách nhìn đã lưu (lọc, nhóm, sắp xếp, cột) trên cùng dữ liệu của board. Xoá một chế độ xem không xoá việc nào.</p></div>
+              <span class="grow"></span>
+              <button class="btn pri" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Chế độ xem mới</button>
+            </div>
+            <div class="sec">Chung cho board <span class="n">5</span><span class="note">Mọi thành viên thấy · kéo để đổi thứ tự tab</span></div>
+            <div class="vlist">
+              <div class="vr"><span class="ty"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M3 10h18M3 15h18M9 4v16"></path></svg></span><span class="vt"><b>Bảng</b><small>Nhóm theo Trạng thái · 9/12 cột · Hạn ↑</small></span><span class="tag">Mặc định</span></div>
+              <div class="vr {{kanbanSel}}"><span class="ty"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M9 4v16M15 4v10"></path></svg></span><span class="vt"><b>Kanban</b><small>Chia cột theo Trạng thái · lọc Phân hệ Kế toán, Kho</small></span></div>
+              <div class="vr"><span class="ty"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg></span><span class="vt"><b>Lịch</b><small>Từ Ngày bắt đầu tới Hạn chót</small></span></div>
+              <div class="vr"><span class="ty"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h10M8 12h12M6 18h8"></path></svg></span><span class="vt"><b>Dòng thời gian</b><small>Theo giai đoạn · có đường phụ thuộc</small></span></div>
+              <div class="vr {{lichSel}}"><span class="ty" style="color:var(--warn-text)"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg></span><span class="vt"><b>Lịch bàn giao</b><small>Theo Ngày bàn giao (đã lưu trữ)</small></span><span class="tag warn">Cần sửa</span></div>
+            </div>
+            <div class="sec">Chỉ mình bạn <span class="n">2</span><span class="note">Người khác không thấy</span></div>
+            <div class="vlist">
+              <div class="vr"><span class="ty"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M3 10h18M3 15h18M9 4v16"></path></svg></span><span class="vt"><b>Việc khẩn của tôi</b><small>Người phụ trách là tôi · Mức ưu tiên Khẩn, Cao</small></span></div>
+              <div class="vr"><span class="ty"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg></span><span class="vt"><b>Tuần này</b><small>Lịch tuần · Hạn chót trong tuần</small></span></div>
+            </div>
+          </section>
+
+          <sc-if value="{{viewOk}}" hint-placeholder-val="{{ false }}">
+            <aside class="ed" aria-label="Sửa chế độ xem Kanban">
+              <div class="edh"><span class="ty" style="width:30px;height:30px;border-radius:8px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M9 4v16M15 4v10"></path></svg></span><div><b>Kanban</b><small>Chung cho board · sửa lần cuối bởi Trần Minh Quân</small></div><span class="grow"></span><button class="iconbtn" type="button" aria-label="Đóng"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button></div>
+              <div class="edb">
+                <div class="fg"><label>Tên</label><div class="inp">Kanban</div></div>
+                <div class="fg"><span class="lb">Chia cột theo</span><div class="inp"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="m8.5 12 2.5 2.5 4.5-5"></path></svg>Trạng thái<svg class="i s chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></div><span class="hint">Chỉ chọn được trường Trạng thái, Lựa chọn hoặc Người. Kéo thẻ sang cột khác sẽ đổi giá trị Trạng thái của việc đó.</span></div>
+                <div class="fg"><span class="lb">Lọc</span>
+                  <div class="cond"><b>Phân hệ ERP</b><span class="op">có một trong</span><b>Kế toán, Kho</b></div>
+                  <span class="hint" style="color:var(--accent-text);font-weight:500">+ Thêm điều kiện</span>
+                </div>
+                <div class="fg"><span class="lb">Sắp xếp trong cột</span><div class="cond"><b>Hạn chót</b><span class="op">tăng dần · ô trống xếp cuối</span></div></div>
+                <div class="fg"><span class="lb">Hiện trên thẻ</span>
+                  <div>
+                    <div class="chk"><span class="cb on"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:11px;height:11px;stroke-width:3"><path d="m5 12 5 5 9-10"></path></svg></span>Người phụ trách</div>
+                    <div class="chk"><span class="cb on"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:11px;height:11px;stroke-width:3"><path d="m5 12 5 5 9-10"></path></svg></span>Hạn chót</div>
+                    <div class="chk"><span class="cb on"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:11px;height:11px;stroke-width:3"><path d="m5 12 5 5 9-10"></path></svg></span>Mức ưu tiên</div>
+                    <div class="chk"><span class="cb on"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:11px;height:11px;stroke-width:3"><path d="m5 12 5 5 9-10"></path></svg></span>Phân hệ ERP</div>
+                    <div class="chk"><span class="cb on"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:11px;height:11px;stroke-width:3"><path d="m5 12 5 5 9-10"></path></svg></span>Tiến độ</div>
+                    <div class="chk"><span class="cb"></span>Ước lượng (giờ)</div>
+                    <div class="chk"><span class="cb"></span>Phụ thuộc</div>
+                  </div>
+                </div>
+                <div class="fg"><span class="lb">Ai thấy chế độ xem này</span><div class="seg"><span class="on">Mọi người trong board</span><span>Chỉ mình tôi</span></div><span class="hint">Chế độ xem không thay đổi quyền: ai không có quyền xem một việc thì vẫn không thấy việc đó.</span></div>
+              </div>
+              <div class="edf"><button class="btn txt red" type="button">Xoá</button><button class="btn txt" type="button">Nhân bản</button><span class="grow"></span><button class="btn" type="button">Huỷ</button><button class="btn pri" type="button">Lưu</button></div>
+            </aside>
+          </sc-if>
+
+          <sc-if value="{{viewBroken}}" hint-placeholder-val="{{ false }}">
+            <aside class="ed" aria-label="Sửa chế độ xem Lịch bàn giao">
+              <div class="edh"><span class="ty" style="width:30px;height:30px;border-radius:8px;color:var(--warn-text)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg></span><div><b>Lịch bàn giao</b><small>Chung cho board · tạo bởi Lê Hoàng Phúc</small></div><span class="grow"></span><button class="iconbtn" type="button" aria-label="Đóng"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button></div>
+              <div class="edb">
+                <div class="callout warn" role="alert"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="color:var(--warn-text)"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path><path d="M12 9v4M12 17h.01"></path></svg><span><b style="font-weight:600">Chế độ xem này đang trống vì trường ngày của nó đã bị lưu trữ.</b><br>"Ngày bàn giao" được lưu trữ ngày 02/10 bởi Trần Minh Quân. Ai mở tab Lịch bàn giao sẽ thấy thông báo này thay vì một lịch rỗng.</span></div>
+                <div class="fg"><span class="lb">Sửa bằng một trong hai cách</span>
+                  <div class="uses">
+                    <div class="u box"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg><span><b>Đổi sang trường ngày khác</b><small>Hạn chót hoặc Ngày bắt đầu</small></span><span class="m"><button class="btn" type="button" style="height:28px">Chọn…</button></span></div>
+                    <div class="u box"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path><path d="M3 3v5h5"></path></svg><span><b>Khôi phục "Ngày bàn giao"</b><small>9 việc có giá trị cũ sẽ hiện lại</small></span><span class="m"><button class="btn" type="button" style="height:28px">Khôi phục</button></span></div>
+                  </div>
+                </div>
+                <div class="fg"><span class="lb">Hiện trên lịch theo</span><div class="inp" style="border-color:var(--warn-text);color:var(--meta)">Ngày bàn giao (đã lưu trữ)<svg class="i s chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></div><span class="hint">Lịch chỉ dùng trường kiểu Ngày, không đoán ngày từ văn bản.</span></div>
+                <div class="fg"><span class="lb">Lọc</span><div class="cond"><b>Trạng thái</b><span class="op">không phải</span><b>Hoàn thành</b></div></div>
+              </div>
+              <div class="edf"><button class="btn txt red" type="button">Xoá chế độ xem</button><span class="grow"></span><button class="btn" type="button">Huỷ</button><button class="btn pri" type="button" disabled style="opacity:.5">Lưu</button></div>
+            </aside>
+          </sc-if>
+        </sc-if>
+
+        <sc-if value="{{isChung}}" hint-placeholder-val="{{ false }}">
+          <section class="list" aria-labelledby="ch">
+            <div class="narrow">
+            <div class="lh">
+              <div><h2 id="ch">Chung</h2><p>Thông tin nhận diện của board và các mặc định dùng cho mọi chế độ xem.</p></div>
+              <span class="grow"></span>
+              <button class="btn" type="button">Huỷ</button>
+              <button class="btn pri" type="button">Lưu thay đổi</button>
+            </div>
+
+            <div class="card">
+              <div class="gr"><label class="gl" for="g-name">Tên board</label><input class="inp" id="g-name" type="text" value="Triển khai ERP Q4"></div>
+              <div class="gr"><label class="gl" for="g-desc">Mô tả<small>Hiện ở đầu board</small></label><textarea class="inp" id="g-desc" rows="2">Đưa phân hệ Kế toán, Kho và Mua hàng lên ERP mới, go-live 01/11/2026.</textarea></div>
+              <div class="gr"><span class="gl" id="g-icon">Biểu tượng và màu</span>
+                <div class="inrow" role="group" aria-labelledby="g-icon">
+                  <button class="dm" type="button" aria-label="Đổi biểu tượng" style="background:#1E6FD0;width:30px;height:30px;border:0;border-radius:8px;cursor:pointer"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M9 4v16M15 4v10"></path></svg></button>
+                  <span class="hint" style="margin-right:6px">Màu</span>
+                  <button class="swatch" type="button" aria-pressed="true" aria-label="Xanh dương" style="background:#1E6FD0"></button>
+                  <button class="swatch" type="button" aria-pressed="false" aria-label="Tím" style="background:#5B5BD6"></button>
+                  <button class="swatch" type="button" aria-pressed="false" aria-label="Xanh rêu" style="background:#4E8574"></button>
+                  <button class="swatch" type="button" aria-pressed="false" aria-label="Cam" style="background:#C2410C"></button>
+                  <button class="swatch" type="button" aria-pressed="false" aria-label="Nâu vàng" style="background:#9A6A12"></button>
+                  <button class="swatch" type="button" aria-pressed="false" aria-label="Xám" style="background:#475569"></button>
+                </div>
+              </div>
+              <div class="gr"><span class="gl">Thuộc phòng ban</span>
+                <div class="fg">
+                  <div class="inrow"><span class="inp ro" style="flex:1;min-width:0;color:var(--text)"><span class="dm" style="background:#1E6FD0">CN</span>Phòng Công nghệ</span><button class="btn" type="button" aria-haspopup="dialog">Chuyển sang phòng khác</button></div>
+                  <span class="hint">Cần quyền Quản lý trên board này và quyền tạo board ở phòng ban đích (GOV-028). Quyền riêng của board đi theo board.</span>
+                </div>
+              </div>
+              <div class="gr"><label class="gl" for="g-key">Mã việc<small>Tiền tố của mã tự tăng</small></label>
+                <div class="fg">
+                  <input class="inp mono" id="g-key" type="text" value="ERP" style="width:120px;font-size:13px" aria-describedby="g-key-h">
+                  <span class="hint" id="g-key-h">Đổi mã không đổi mã việc cũ; ERP-142 vẫn mở được.</span>
+                </div>
+              </div>
+              <div class="gr"><label class="gl" for="g-tz">Múi giờ hạn chót<small id="g-tz-h">Áp dụng cho mọi người xem</small></label>
+<select class="inp" id="g-tz" aria-describedby="g-tz-h"><option selected>(GMT+7) Hà Nội, TP. Hồ Chí Minh</option><option>(GMT+8) Singapore</option><option>(GMT+9) Tokyo</option></select>
+              </div>
+              <div class="gr"><label class="gl" for="g-week">Ngày bắt đầu tuần</label><select class="inp" id="g-week" style="width:200px"><option selected>Thứ Hai</option><option>Chủ nhật</option></select></div>
+            </div>
+
+            <section class="dz" aria-labelledby="dzh">
+              <h3 id="dzh">Vùng nguy hiểm</h3>
+              <div class="dzr">
+                <span class="t"><b>Lưu trữ board</b><small>Board ẩn khỏi danh sách của phòng ban. Việc và lịch sử giữ nguyên, khôi phục được bất cứ lúc nào.</small></span>
+                <button class="btn dngo" type="button">Lưu trữ board</button>
+              </div>
+              <div class="dzr">
+                <span class="t"><b>Xoá board</b><small>Khôi phục được trong 30 ngày, sau đó xoá vĩnh viễn. Không xoá tài liệu đã nhắc tới board.</small></span>
+              </div>
+              <div class="dzc">
+                <label for="g-del">Nhập tên board để xác nhận: <b style="color:var(--text)">Triển khai ERP Q4</b></label>
+                <div class="inrow"><input class="inp" id="g-del" type="text" value="" placeholder="Triển khai ERP Q4" style="flex:1;min-width:0" autocomplete="off"><button class="btn dng" type="button" disabled aria-disabled="true" style="opacity:.5;cursor:not-allowed">Xoá board</button></div>
+              </div>
+            </section>
+            </div>
+          </section>
+        </sc-if>
+
+        <sc-if value="{{isGroups}}" hint-placeholder-val="{{ false }}">
+          <section class="list" aria-labelledby="gh">
+            <div class="narrow">
+            <div class="lh">
+              <div><h2 id="gh">Nhóm việc</h2><p>Nhóm việc chia board thành các phần lớn, ví dụ theo giai đoạn. Mỗi việc thuộc đúng một nhóm. Thứ tự ở đây là thứ tự nhóm trên Bảng.</p></div>
+              <span class="grow"></span>
+              <button class="btn pri" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Thêm nhóm</button>
+            </div>
+
+            <div class="callout" style="margin-bottom:14px"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 8h.01M11 12h1v5h1"></path></svg><span>Nhóm việc khác Trạng thái: kéo thẻ trên Kanban đổi Trạng thái, không đổi nhóm (WM-015).</span></div>
+
+            <div class="sec">Nhóm của board <span class="n">4 nhóm · 16 việc</span><span class="note">Kéo để đổi thứ tự</span></div>
+            <div class="frows" role="list">
+              <div class="gx hd" aria-hidden="true"><span></span><span></span><span>Tên nhóm</span><span>Số việc</span><span></span></div>
+              <div class="gx" role="listitem"><button class="grip" type="button" aria-label="Kéo để sắp xếp"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01" stroke-width="3"></path></svg></button><span class="sw-c" style="background:#1E6FD0"></span><span class="nm">Dữ liệu</span><span class="ct">5 việc</span><span class="ac"><button class="iconbtn" type="button" aria-label="Đổi tên nhóm Dữ liệu"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"></path></svg></button><button class="iconbtn" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Thao tác khác với nhóm Dữ liệu"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h.01M12 12h.01M19 12h.01" stroke-width="3"></path></svg></button></span></div>
+              <div class="gx" role="listitem"><button class="grip" type="button" aria-label="Kéo để sắp xếp"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01" stroke-width="3"></path></svg></button><span class="sw-c" style="background:#5B5BD6"></span><span class="nm">Phân quyền &amp; bảo mật</span><span class="ct">4 việc</span><span class="ac"><button class="iconbtn" type="button" aria-label="Đổi tên nhóm Phân quyền và bảo mật"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"></path></svg></button><button class="iconbtn" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Thao tác khác với nhóm Phân quyền và bảo mật"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h.01M12 12h.01M19 12h.01" stroke-width="3"></path></svg></button></span></div>
+              <div class="gx sel" role="listitem"><button class="grip" type="button" aria-label="Kéo để sắp xếp"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01" stroke-width="3"></path></svg></button><span class="sw-c" style="background:#4E8574"></span><span class="nm">Đào tạo</span><span class="ct">4 việc</span><span class="ac"><button class="iconbtn" type="button" aria-label="Đổi tên nhóm Đào tạo"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"></path></svg></button><button class="iconbtn" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="gdel" aria-label="Thao tác khác với nhóm Đào tạo"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h.01M12 12h.01M19 12h.01" stroke-width="3"></path></svg></button></span></div>
+              <div class="gconf" id="gdel" role="listitem" aria-labelledby="gdel-t">
+                <p id="gdel-t"><b style="color:var(--text)">Xoá nhóm "Đào tạo"?</b> Không việc nào bị xoá: 4 việc trong nhóm được chuyển sang nhóm bạn chọn.</p>
+                <div class="inrow"><label for="gdel-to">Chuyển 4 việc sang nhóm</label><select class="inp" id="gdel-to"><option value="">Chọn nhóm…</option><option>Dữ liệu</option><option>Phân quyền &amp; bảo mật</option><option selected>Go-live</option></select><span class="grow"></span><button class="btn" type="button">Huỷ</button><button class="btn dng" type="button">Chuyển việc và xoá nhóm</button></div>
+              </div>
+              <div class="gx" role="listitem"><button class="grip" type="button" aria-label="Kéo để sắp xếp"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01" stroke-width="3"></path></svg></button><span class="sw-c" style="background:#C2410C"></span><span class="nm">Go-live</span><span class="ct">3 việc</span><span class="ac"><button class="iconbtn" type="button" aria-label="Đổi tên nhóm Go-live"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"></path></svg></button><button class="iconbtn" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Thao tác khác với nhóm Go-live"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h.01M12 12h.01M19 12h.01" stroke-width="3"></path></svg></button></span></div>
+            </div>
+            <p class="hint" style="margin:10px 2px 0">Xoá nhóm không bao giờ xoá việc. Nhóm cuối cùng của board không xoá được.</p>
+            </div>
+          </section>
+        </sc-if>
+
+        <sc-if value="{{isAuto}}" hint-placeholder-val="{{ false }}">
+          <section class="list" aria-labelledby="ah2">
+            <div class="narrow">
+            <div class="lh">
+              <div><h2 id="ah2">Tự động hoá</h2><p>Quy tắc làm thay các bước lặp lại trên board. Mỗi quy tắc chạy với quyền của một người cụ thể; người đó mất quyền thì quy tắc tạm dừng, không chạy thay bằng quyền khác.</p></div>
+              <span class="grow"></span>
+              <a class="btn pri" href="Final-Automation.dc.html"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Tạo quy tắc</a>
+            </div>
+
+            <div class="sec">Đang chạy <span class="n">3</span></div>
+            <div class="rules">
+              <article class="rule" aria-labelledby="r1">
+                <div class="rh"><span class="ty"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"></path></svg></span><b id="r1">Gửi duyệt khi chuyển sang Chờ duyệt</b><span class="grow"></span><a class="btn txt" href="Final-Automation.dc.html" style="height:28px">Sửa</a><button class="sw" type="button" role="switch" aria-checked="true" aria-label="Bật quy tắc Gửi duyệt khi chuyển sang Chờ duyệt"></button></div>
+                <p class="sent"><span class="op">Khi</span><span class="chip k">Trạng thái chuyển sang Chờ duyệt</span><span class="op">thì</span><span class="chip">Giao Nguyễn Thu Hà duyệt</span><span class="op">và</span><span class="chip">Gửi thông báo cho người duyệt</span></p>
+                <div class="rm"><span>Chạy 3 lần trong 7 ngày · lần cuối 10:28 hôm nay, thành công</span><span class="who">Chạy với quyền của <span class="av" style="background:#B4500B">HP</span><b>Lê Hoàng Phúc</b></span></div>
+              </article>
+              <article class="rule" aria-labelledby="r2">
+                <div class="rh"><span class="ty"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"></path></svg></span><b id="r2">Nhắc việc quá hạn</b><span class="grow"></span><a class="btn txt" href="Final-Automation.dc.html" style="height:28px">Sửa</a><button class="sw" type="button" role="switch" aria-checked="true" aria-label="Bật quy tắc Nhắc việc quá hạn"></button></div>
+                <p class="sent"><span class="op">Khi</span><span class="chip k">Hạn chót đã qua</span><span class="op">nếu</span><span class="chip">Trạng thái không phải Hoàn thành</span><span class="op">thì</span><span class="chip">Nhắc người phụ trách lúc 09:00 hằng ngày</span></p>
+                <div class="rm"><span>Chạy 7 lần trong 7 ngày · lần cuối 09:00 hôm nay, thành công</span><span class="who">Chạy với quyền của <span class="av" style="background:#B4500B">HP</span><b>Lê Hoàng Phúc</b></span></div>
+              </article>
+              <article class="rule" aria-labelledby="r4">
+                <div class="rh"><span class="ty"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"></path></svg></span><b id="r4">Khẩn → báo Trưởng phòng</b><span class="grow"></span><a class="btn txt" href="Final-Automation.dc.html" style="height:28px">Sửa</a><button class="sw" type="button" role="switch" aria-checked="true" aria-label="Bật quy tắc Khẩn → báo Trưởng phòng"></button></div>
+                <p class="sent"><span class="op">Khi</span><span class="chip k">Mức ưu tiên đổi thành Khẩn</span><span class="op">thì</span><span class="chip">Gửi thông báo cho Lê Hoàng Phúc</span><span class="op">và</span><span class="chip">Đăng tin vào kênh Microsoft Teams "ERP – Điều hành"</span></p>
+                <div class="rm"><span>Chạy 1 lần trong 7 ngày · lần cuối Thứ Bảy 10/10 18:05, <a href="Final-Automation.dc.html" style="color:var(--danger);font-weight:600">lỗi một phần</a> — kết nối Microsoft Teams cần uỷ quyền lại</span><span class="who">Chạy với quyền của <span class="av" style="background:#B4500B">HP</span><b>Lê Hoàng Phúc</b></span></div>
+              </article>
+            </div>
+
+            <div class="sec">Tạm dừng <span class="n">1</span><span class="note">Không tính vào số quy tắc đang chạy</span></div>
+            <div class="rules">
+              <article class="rule paused" aria-labelledby="r3">
+                <div class="rh"><span class="ty"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"></path></svg></span><b id="r3">Gắn nhóm Dữ liệu cho việc kho</b><span class="grow"></span><a class="btn txt" href="Final-Automation.dc.html" style="height:28px">Sửa</a><button class="sw" type="button" role="switch" aria-checked="false" aria-label="Bật quy tắc Gắn nhóm Dữ liệu cho việc kho"></button></div>
+                <p class="sent"><span class="op">Khi</span><span class="chip k">Có việc mới</span><span class="op">nếu</span><span class="chip">Phân hệ ERP có Kho</span><span class="op">thì</span><span class="chip">Chuyển vào nhóm Dữ liệu</span></p>
+                <div class="callout warn" role="status"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true" style="color:var(--warn-text)"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path><path d="M12 9v4M12 17h.01"></path></svg><span style="flex:1"><b style="font-weight:600">Tạm dừng: Hồ Quang Minh đã rời Phòng Công nghệ, không còn quyền Sửa trên board.</b> Quy tắc không chạy từ 08/10. Đổi người chạy rồi bật lại.</span><button class="btn" type="button" style="height:28px">Đổi người chạy</button></div>
+                <div class="rm"><span>Lần cuối chạy 07/10, thành công</span><span class="who">Chạy với quyền của <span class="av" style="background:#57534E">HM</span><b>Hồ Quang Minh</b></span></div>
+              </article>
+            </div>
+
+            <div class="lfoot"><span>Mỗi lần chạy được ghi lại cùng người chạy và kết quả.</span><span class="grow"></span><a class="btn txt" href="Final-Automation.dc.html" style="color:var(--accent-text)"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>Nhật ký chạy</a></div>
+            </div>
+          </section>
+        </sc-if>
+      </div>
+      </sc-if>
+    </div>
+  </main>
+
+  <sc-if value="{{archiveOpen}}" hint-placeholder-val="{{ false }}">
+    <div class="scrim"></div>
+    <div class="dlg" role="alertdialog" aria-modal="true" aria-labelledby="ah" aria-describedby="ad">
+      <div class="dh"><h3 id="ah">Lưu trữ trường "Mức ưu tiên"?</h3><p id="ad">Lưu trữ không xoá dữ liệu. Trường biến mất khỏi mọi chế độ xem và có thể khôi phục bất cứ lúc nào trong mục Đã lưu trữ.</p></div>
+      <div class="imp">
+        <div class="im"><span class="ic"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M3 10h18M9 4v16"></path></svg></span><span><b>16 việc đang có giá trị</b><small>Giá trị được giữ nguyên và hiện lại khi khôi phục.</small></span></div>
+        <div class="im warn"><span class="ic"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg></span><span><b>3 chế độ xem dùng trường này</b><small>Bảng và Kanban chỉ mất cột và nhãn trên thẻ. "Việc khẩn của tôi" lọc theo trường này nên sẽ được đánh dấu Cần sửa.</small></span></div>
+        <div class="im warn"><span class="ic"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"></path></svg></span><span><b>1 quy tắc tự động sẽ tạm dừng</b><small>"Khẩn → báo Trưởng phòng" ngừng chạy cho tới khi được sửa hoặc trường được khôi phục.</small></span></div>
+      </div>
+      <div class="df"><span class="hint">Người tạo các mục trên sẽ nhận thông báo.</span><button class="btn" type="button">Huỷ</button><button class="btn dng" type="button">Lưu trữ trường</button></div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"state":{"editor":"enum","options":["truong","them-truong","luu-tru","che-do-xem","xem-loi","khong-co-quyen","chung","nhom-viec","tu-dong"],"default":"truong","section":"Trạng thái minh hoạ"},"mode":{"editor":"enum","options":["sang","dem"],"default":"sang","section":"Giao diện"},"nav":{"editor":"enum","options":["an","hien-de","hien-day"],"default":"an","section":"Thanh hệ thống"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.props.state ?? 'truong';
+    const fields = s === 'truong' || s === 'them-truong' || s === 'luu-tru';
+    const views = s === 'che-do-xem' || s === 'xem-loi';
+    const noAccess = s === 'khong-co-quyen';
+    const chung = s === 'chung';
+    const groups = s === 'nhom-viec';
+    const auto = s === 'tu-dong';
+    return {
+      mode: this.props.mode ?? 'sang',
+      nav: this.props.nav ?? 'an',
+      noAccess: noAccess,
+      canEdit: !noAccess,
+      fieldsCur: fields ? 'page' : 'false',
+      viewsCur: views ? 'page' : 'false',
+      chungCur: chung ? 'page' : 'false',
+      groupsCur: groups ? 'page' : 'false',
+      autoCur: auto ? 'page' : 'false',
+      chungOn: chung ? 'on' : '',
+      groupsOn: groups ? 'on' : '',
+      autoOn: auto ? 'on' : '',
+      isChung: chung,
+      isGroups: groups,
+      isAuto: auto,
+      isFields: fields,
+      isViews: views,
+      fieldsOn: fields ? 'on' : '',
+      viewsOn: views ? 'on' : '',
+      pickerOpen: s === 'them-truong',
+      archiveOpen: s === 'luu-tru',
+      viewOk: s === 'che-do-xem',
+      viewBroken: s === 'xem-loi',
+      kanbanSel: s === 'che-do-xem' ? 'sel' : '',
+      lichSel: s === 'xem-loi' ? 'sel' : ''
+    };
+  }
+}
+</script>
+</body>
+</html>

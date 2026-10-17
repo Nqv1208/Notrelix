@@ -11,7 +11,8 @@ public static class GetInvitationByTokenEndpoint
         group.MapPublicPost("/preview", HandleAsync)
             .WithName("Workspaces.Invitations.GetInvitationByToken")
             .WithTags("Workspaces.Invitations")
-            .WithSummary("Get workspace invitation details by token");
+            .WithSummary("Get workspace invitation details by token")
+            .Produces<WorkspaceInvitationDto>(StatusCodes.Status200OK, "application/json");
         return group;
     }
 

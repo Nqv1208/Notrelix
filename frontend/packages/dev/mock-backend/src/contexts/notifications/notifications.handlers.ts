@@ -15,16 +15,11 @@
  */
 
 import { defineMockOperation } from "../../operations/types";
+import type { MockNotificationRecord } from "../../state/records";
 import { ok, notFound } from "../../transport/create-response";
 
-interface NotificationDtoApi {
-  id: string;
-  userId: string;
-  title: string;
-  message: string;
-  isRead: boolean;
-  createdAt: string;
-}
+/** The app's own `Notification` type: the contract has none (gap register). */
+type NotificationDtoApi = MockNotificationRecord;
 
 export const notificationsOperations = [
   // ─── GET /notifications ───────────────────────────────────────────────────
@@ -36,16 +31,7 @@ export const notificationsOperations = [
     route: "/notifications",
     async handle({ store }) {
       const user = store.getCurrentUser();
-      return ok(
-        store.getNotifications(user.id).map((n) => ({
-          id: n.id,
-          userId: n.userId,
-          title: n.title,
-          message: n.message,
-          isRead: n.isRead,
-          createdAt: n.createdAt,
-        })),
-      );
+      return ok(store.getNotifications(user.id).map((n) => ({ ...n })));
     },
   }),
 

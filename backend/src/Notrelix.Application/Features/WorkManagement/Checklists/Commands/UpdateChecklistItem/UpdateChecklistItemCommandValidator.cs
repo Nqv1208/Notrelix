@@ -4,7 +4,12 @@ public class UpdateChecklistItemCommandValidator : AbstractValidator<UpdateCheck
 {
     public UpdateChecklistItemCommandValidator()
     {
+        RuleFor(x => x.ExpectedVersion).MustBeAnAuthoritativeVersion();
         RuleFor(x => x.ItemId)
             .NotEmpty();
+        RuleFor(x => x.Title!)
+            .Must(title => !string.IsNullOrWhiteSpace(title)).WithMessage("Title cannot be blank.")
+            .MaximumLength(Checklist.MaxTitleLength)
+            .When(x => x.Title is not null);
     }
 }

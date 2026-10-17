@@ -1,3 +1,3 @@
 namespace Notrelix.API.Contracts.WorkManagement.BoardItems.Requests;
 
-public record UpdateBoardItemFieldValueRequest(object? Value);
+public record UpdateBoardItemFieldValueRequest(object? Value, long ExpectedVersion);

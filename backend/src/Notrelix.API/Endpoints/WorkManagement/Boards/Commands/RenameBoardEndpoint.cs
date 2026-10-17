@@ -1,3 +1,4 @@
+using Notrelix.API.Contracts.WorkManagement.Boards.Requests;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.WorkManagement.Boards.Commands.UpdateBoard;
 
@@ -17,12 +18,12 @@ public static class RenameBoardEndpoint
 
     private static async Task<IResult> HandleAsync(
         Guid boardId,
-        UpdateBoardCommand command,
+        UpdateBoardRequest body,
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var cmd = command with { BoardId = boardId };
-        var result = await sender.Send(cmd, cancellationToken);
+        var result = await sender.Send(new UpdateBoardCommand(
+            boardId, body.Title, body.Description, body.Background, body.Visibility, body.ExpectedVersion), cancellationToken);
         return result.ToApiResult();
     }
 }

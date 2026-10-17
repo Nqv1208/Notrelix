@@ -1,51 +1,41 @@
-using Notrelix.Application.Features.WorkManagement.Checklists.Commands.DeleteChecklist;
-
+using Notrelix.Domain.Common;
 using Notrelix.Domain.SharedKernel.Ordering;
+using Notrelix.Application.Features.WorkManagement.Checklists.Commands.DeleteChecklist;
+using Notrelix.Domain.WorkManagement.Checklists.Events;
+
 namespace Notrelix.Application.Tests.Features.WorkManagement.Checklists;
 
+/// <summary>WM-V3-APP-CHK-001: deleting a checklist is the aggregate's soft delete.</summary>
 public class DeleteChecklistTests : WorkManagementHandlerTestBase
 {
+    private readonly Mock<ICurrentUser> _currentUserMock = new();
     private readonly DeleteChecklistCommandHandler _handler;
 
     public DeleteChecklistTests()
     {
-        _handler = new DeleteChecklistCommandHandler(DbContextMock.Object);
+        _currentUserMock.Setup(c => c.UserId).Returns(TestUserId);
+        _handler = new DeleteChecklistCommandHandler(DbContextMock.Object, _currentUserMock.Object, DateTimeProviderMock.Object);
     }
 
     [Fact]
-    public async Task Handle_ValidCommand_DeletesChecklist()
+    public async Task Handle_SoftDeletesTheChecklist_WithoutRemovingItemRows()
     {
         var checklist = CreateChecklist();
+        checklist.AddItem("Item 1", FractionalIndex.Create("a1"), TestUserId, TestNow);
+        ((IHasDomainEvents)checklist).ClearDomainEvents();
         SetupChecklists(checklist);
 
-        var command = new DeleteChecklistCommand(checklist.Id);
+        await _handler.Handle(new DeleteChecklistCommand(checklist.Id), CancellationToken.None);
 
-        var result = await _handler.Handle(command, CancellationToken.None);
-
-        result.Succeeded.Should().BeTrue();
+        checklist.IsDeleted.Should().BeTrue();
+        checklist.Items.Should().ContainSingle();
+        checklist.DomainEvents.Should().ContainSingle(e => e is ChecklistDeletedDomainEvent);
     }
 
     [Fact]
     public async Task Handle_ChecklistNotFound_ThrowsNotFoundException()
     {
-        var command = new DeleteChecklistCommand(Guid.CreateVersion7());
-
-        await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
+        await _handler.Invoking(h => h.Handle(new DeleteChecklistCommand(Guid.CreateVersion7()), CancellationToken.None))
             .Should().ThrowAsync<NotFoundException>();
-    }
-
-    [Fact]
-    public async Task Handle_ChecklistWithItems_DeletesBothChecklistAndItems()
-    {
-        var checklist = CreateChecklist();
-        var itemId = Guid.CreateVersion7();
-        checklist.AddItem("Item 1", FractionalIndex.Create("a1"), TestUserId, TestNow);
-        SetupChecklists(checklist);
-
-        var command = new DeleteChecklistCommand(checklist.Id);
-
-        var result = await _handler.Handle(command, CancellationToken.None);
-
-        result.Succeeded.Should().BeTrue();
     }
 }

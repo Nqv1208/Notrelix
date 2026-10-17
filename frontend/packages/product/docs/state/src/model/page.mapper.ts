@@ -7,16 +7,18 @@ export function mapPage(dto: PageDtoApi): Page {
     workspaceId: dto.workspaceId,
     workspaceSlug: dto.workspaceId,
     title: dto.title,
+    ...(dto.navTitle ? { navTitle: dto.navTitle } : {}),
     icon: dto.iconValue ?? null,
     coverUrl: dto.coverUrl ?? null,
     coverColor: "var(--muted)",
     parentId: dto.parentId ?? null,
     position: dto.position,
+    deadline: dto.deadline ?? null,
     status: dto.isArchived
       ? "archived"
       : dto.publishedAt
         ? "published"
-        : "draft",
+        : (dto.status ?? "draft"),
     isPublished: Boolean(dto.publishedAt),
     isFavorited: false,
     isShared: false,
@@ -30,13 +32,17 @@ export function mapPage(dto: PageDtoApi): Page {
     metadata: {
       version: 1,
       lockOwnerId: null,
-      activeUserIds: [],
+      activeUserIds: dto.activeUserIds ?? [],
       lastSyncedAt: dto.updatedAt ?? dto.createdAt,
       realtimeChannel: `page:${dto.id}`,
       aiSummaryStatus: "idle",
     },
     linkedTaskIds: [],
     linkedBoardIds: [],
+    version:
+      typeof dto.version === "number" && dto.version > 0 ? dto.version : null,
+    spaceId: dto.spaceId ?? null,
+    people: dto.people ?? [],
   };
 }
 
@@ -48,13 +54,24 @@ export function mapBreadcrumb(dto: BreadcrumbDtoApi): BreadcrumbItem {
   };
 }
 
+function activityOf(action: string): PageActivity["action"] {
+  const name = action.toLowerCase();
+  if (name.includes("comment")) return "commented";
+  if (name.includes("share")) return "shared";
+  if (name.includes("move")) return "moved";
+  if (name.includes("publish")) return "published";
+  if (name.startsWith("create") && name.includes("page")) return "created";
+  return "edited";
+}
+
 export function mapHistory(dto: HistoryDtoApi, pageId: string): PageActivity {
   return {
     id: dto.id,
     pageId,
     actorId: dto.actorId,
-    action: "edited",
-    targetLabel: dto.resourceTitle ?? dto.action,
+    action: activityOf(dto.action),
+    targetLabel: dto.resourceTitle ?? "",
+    ...(dto.versionName ? { versionName: dto.versionName } : {}),
     createdAt: dto.createdAt,
   };
 }

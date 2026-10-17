@@ -13,6 +13,7 @@ public static class MapSpaceEndpoints
             .WithOpenApi();
 
         group.MapGetWorkspaceSpaces();
+        group.MapGetSpaceTree();
         group.MapCreateSpace();
 
         var byIdGroup = app
@@ -29,6 +30,11 @@ public static class MapSpaceEndpoints
         byIdGroup.MapUnarchiveSpace();
         byIdGroup.MapDeleteSpace();
         byIdGroup.MapRestoreSpace();
+        byIdGroup.MapMoveSpace();
+        byIdGroup.MapGetSpaceMembers();
+        byIdGroup.MapAddSpaceMember();
+        byIdGroup.MapChangeSpaceMemberRole();
+        byIdGroup.MapRemoveSpaceMember();
 
         return app;
     }

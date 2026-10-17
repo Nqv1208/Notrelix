@@ -11,7 +11,8 @@ public static class RenameTeamEndpoint
         group.MapWorkspacePut("/", HandleAsync)
             .WithName("Workspaces.Teams.RenameTeam")
             .WithTags("Workspaces.Teams")
-            .WithSummary("Rename a team");
+            .WithSummary("Rename a team")
+            .Produces(StatusCodes.Status204NoContent);
         return group;
     }
 
@@ -21,7 +22,7 @@ public static class RenameTeamEndpoint
         RenameTeamRequest request,
         ISender sender)
     {
-        var result = await sender.Send(new RenameTeamCommand(workspaceId, teamId, request.Name));
+        var result = await sender.Send(new RenameTeamCommand(workspaceId, teamId, request.Name, request.ExpectedVersion));
         return result.ToNoContentResult();
     }
 }

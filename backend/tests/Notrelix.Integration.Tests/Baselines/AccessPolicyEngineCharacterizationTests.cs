@@ -688,6 +688,161 @@ public sealed class AccessPolicyEngineCharacterizationTests
         decision.Kind.Should().Be(AccessDecisionKind.Forbidden);
     }
 
+    // ── Space-scoped access (ADR-009, GOV-025..GOV-028) ─────────────────────
+    // Unplaced Boards/Pages keep every decision above; the scenarios below pin
+    // what a Space placement adds.
+
+    private static readonly ResourceKind BoardKind = ResourceKind.Create("work-management.board");
+    private static readonly ResourceKind PageKind = ResourceKind.Create("documents.page");
+    private static readonly ResourceKind SpaceKind = ResourceKind.Create("workspaces.space");
+    private static readonly ResourceKind WorkspaceKind = ResourceKind.Create("workspaces.workspace");
+
+    private static AccessFacts Placed(
+        string workspaceRole,
+        string? spaceRole = null,
+        bool spaceIsOpen = false,
+        string audience = "Workspace",
+        string? boardMemberRole = null,
+        bool explicitPermission = false,
+        PermissionLevel? explicitLevel = null,
+        bool spaceExists = true) =>
+        Facts(
+            workspaceMemberRole: workspaceRole,
+            resourceExists: true,
+            resourceAudience: audience,
+            resourceMemberRole: boardMemberRole,
+            hasExplicitResourcePermission: explicitPermission,
+            activeResourcePermissionLevel: explicitLevel) with
+        {
+            ResourceSpaceId = Guid.NewGuid(),
+            SpaceExists = spaceExists,
+            SpaceRole = spaceRole,
+            SpaceIsOpen = spaceIsOpen,
+        };
+
+    private AccessDecisionKind ResourceDecision(AccessFacts facts, PermissionAction action, ResourceKind kind) =>
+        Engine.Evaluate(
+            Descriptor(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Resource, RequiresPermission: true),
+            Context(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Resource),
+            facts,
+            PermissionRequest(action, kind)).Kind;
+
+    private AccessDecisionKind WorkspaceDecision(AccessFacts facts, PermissionAction action, ResourceKind kind) =>
+        Engine.Evaluate(
+            Descriptor(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Workspace, RequiresPermission: true),
+            Context(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Workspace),
+            facts,
+            PermissionRequest(action, kind)).Kind;
+
+    [Fact]
+    public void PlacedBoard_InAPrivateSpace_IsHiddenFromAWorkspaceMemberWithoutSpaceAccess()
+    {
+        ResourceDecision(Placed("Member"), PermissionAction.ViewBoard, BoardKind).Should().Be(AccessDecisionKind.NotFound);
+    }
+
+    [Fact]
+    public void PlacedBoard_InAnOpenSpace_KeepsTheWorkspaceMemberDefault_ButNotForGuests()
+    {
+        // The open-Space default is Editor: content edits pass. Managing the Board
+        // (ManageBoard on a Board) now needs Manager, so it is refused for this
+        // default; previously ManageBoard was an Editor action and was Allowed here.
+        ResourceDecision(Placed("Member", spaceIsOpen: true), PermissionAction.CreateItem, BoardKind).Should().Be(AccessDecisionKind.Allowed);
+        ResourceDecision(Placed("Member", spaceIsOpen: true), PermissionAction.ManageBoard, BoardKind).Should().Be(AccessDecisionKind.Forbidden);
+        ResourceDecision(Placed("Guest", spaceIsOpen: true), PermissionAction.ViewBoard, BoardKind).Should().Be(AccessDecisionKind.NotFound);
+    }
+
+    [Theory]
+    [InlineData("Viewer", PermissionAction.ViewBoard, AccessDecisionKind.Allowed)]
+    [InlineData("Viewer", PermissionAction.CreateComment, AccessDecisionKind.Forbidden)]
+    [InlineData("Viewer", PermissionAction.ManageBoard, AccessDecisionKind.Forbidden)]
+    // A Space Member is an Editor: content passes, Board management (ManageBoard
+    // on a Board, now Manager) is refused; previously ManageBoard was Allowed here.
+    [InlineData("Member", PermissionAction.CreateItem, AccessDecisionKind.Allowed)]
+    [InlineData("Member", PermissionAction.ManageBoard, AccessDecisionKind.Forbidden)]
+    [InlineData("Member", PermissionAction.ManageBoardPermission, AccessDecisionKind.Forbidden)]
+    [InlineData("Admin", PermissionAction.ManageBoard, AccessDecisionKind.Allowed)]
+    [InlineData("Admin", PermissionAction.ManageBoardPermission, AccessDecisionKind.Allowed)]
+    public void PlacedBoard_SpaceRoleLevels_GateTheAction_WhenTheyAreTheOnlyAccess(string spaceRole, PermissionAction action, AccessDecisionKind expected)
+    {
+        ResourceDecision(Placed("Member", spaceRole), action, BoardKind).Should().Be(expected);
+    }
+
+    [Fact]
+    public void PrivateBoard_InASpace_IsNotReachedBySpaceRoles_NorByWorkspaceAdmin()
+    {
+        ResourceDecision(Placed("Member", "Admin", audience: "Restricted"), PermissionAction.ViewBoard, BoardKind).Should().Be(AccessDecisionKind.NotFound);
+        ResourceDecision(Placed("Admin", audience: "Restricted"), PermissionAction.ViewBoard, BoardKind).Should().Be(AccessDecisionKind.NotFound);
+        ResourceDecision(Placed("Member", audience: "Restricted", boardMemberRole: "Member"), PermissionAction.ViewBoard, BoardKind).Should().Be(AccessDecisionKind.Allowed);
+    }
+
+    [Fact]
+    public void PlacedBoard_AnExplicitGrant_LetsAnOutsiderOfTheSpaceIn()
+    {
+        ResourceDecision(Placed("Member", explicitPermission: true, explicitLevel: PermissionLevel.Viewer), PermissionAction.ViewBoard, BoardKind)
+            .Should().Be(AccessDecisionKind.Allowed);
+    }
+
+    [Fact]
+    public void PlacedBoard_WorkspaceAdmin_HoldsManagerOnEverySpace()
+    {
+        ResourceDecision(Placed("Admin"), PermissionAction.ManageBoardPermission, BoardKind).Should().Be(AccessDecisionKind.Allowed);
+    }
+
+    [Fact]
+    public void PlacedBoard_InADeletedSpace_FailsClosed()
+    {
+        ResourceDecision(Placed("Member", "Admin", spaceExists: false), PermissionAction.ViewBoard, BoardKind).Should().Be(AccessDecisionKind.NotFound);
+    }
+
+    [Fact]
+    public void PlacedPage_SpaceAdmin_MayArchive_SpaceMember_MayNot()
+    {
+        ResourceDecision(Placed("Member", "Admin"), PermissionAction.ArchivePage, PageKind).Should().Be(AccessDecisionKind.Allowed);
+        ResourceDecision(Placed("Member", "Member"), PermissionAction.ArchivePage, PageKind).Should().Be(AccessDecisionKind.Forbidden);
+        ResourceDecision(Placed("Member", "Member"), PermissionAction.UpdatePage, PageKind).Should().Be(AccessDecisionKind.Allowed);
+    }
+
+    [Theory]
+    [InlineData("Admin", null, false, PermissionAction.ManageSpaces, AccessDecisionKind.Allowed)]
+    [InlineData("Member", "Admin", false, PermissionAction.ManageSpaces, AccessDecisionKind.Allowed)]
+    [InlineData("Member", "Member", false, PermissionAction.ManageSpaces, AccessDecisionKind.Forbidden)]
+    [InlineData("Member", "Member", false, PermissionAction.CreateBoard, AccessDecisionKind.Allowed)]
+    [InlineData("Member", "Viewer", false, PermissionAction.CreateBoard, AccessDecisionKind.Forbidden)]
+    [InlineData("Member", null, true, PermissionAction.CreatePage, AccessDecisionKind.Allowed)]
+    [InlineData("Member", null, false, PermissionAction.ManageSpaces, AccessDecisionKind.NotFound)]
+    [InlineData("Guest", null, true, PermissionAction.ViewWorkspace, AccessDecisionKind.NotFound)]
+    public void SpaceResource_Decisions_FollowTheEffectiveSpaceLevel(
+        string workspaceRole, string? spaceRole, bool open, PermissionAction action, AccessDecisionKind expected)
+    {
+        var facts = Facts(workspaceMemberRole: workspaceRole) with
+        {
+            ResourceSpaceId = Guid.NewGuid(),
+            SpaceExists = true,
+            SpaceRole = spaceRole,
+            SpaceIsOpen = open,
+        };
+
+        WorkspaceDecision(facts, action, SpaceKind).Should().Be(expected);
+    }
+
+    [Fact]
+    public void SpaceResource_ThatDoesNotExist_IsNotFound_EvenForAnAdmin()
+    {
+        WorkspaceDecision(Facts(workspaceMemberRole: "Admin"), PermissionAction.ManageSpaces, SpaceKind).Should().Be(AccessDecisionKind.NotFound);
+    }
+
+    [Theory]
+    [InlineData("Admin", PermissionAction.ManageSpaces, AccessDecisionKind.Allowed)]
+    [InlineData("Admin", PermissionAction.ManageTeams, AccessDecisionKind.Allowed)]
+    [InlineData("Member", PermissionAction.ManageSpaces, AccessDecisionKind.Forbidden)]
+    [InlineData("Member", PermissionAction.ManageTeams, AccessDecisionKind.Forbidden)]
+    [InlineData("Admin", PermissionAction.DeleteWorkspace, AccessDecisionKind.Forbidden)]
+    public void WorkspaceLevel_SpaceAndTeamManagement_IsAnAdminDefault_WithoutOwnerOnlyActions(
+        string workspaceRole, PermissionAction action, AccessDecisionKind expected)
+    {
+        WorkspaceDecision(Facts(workspaceMemberRole: workspaceRole), action, WorkspaceKind).Should().Be(expected);
+    }
+
     // ── helpers ──────────────────────────────────────────────────────────────
 
     private static AccessFacts NoFacts => new(

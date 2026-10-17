@@ -9,7 +9,8 @@ public record CreateTeamCommand(
     string? Description
 ) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IRequireVerifiedEmail
 {
-    public PermissionAction Action => PermissionAction.ManageWorkspace;
+    // GOV-028: Team composition is managed by workspace Owners/Admins.
+    public PermissionAction Action => PermissionAction.ManageTeams;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);
 }
 
@@ -29,7 +30,7 @@ public class CreateTeamCommandHandler : IRequestHandler<CreateTeamCommand, Resul
     public async Task<Result<Guid>> Handle(CreateTeamCommand request, CancellationToken ct)
     {
         var workspace = await _context.Workspaces
-            .FirstOrDefaultAsync(w => w.Id == request.WorkspaceId && w.Status == WorkspaceStatus.Active && !w.IsDeleted, ct);
+            .FirstOrDefaultAsync(w => w.Id == request.WorkspaceId && w.Status == WorkspaceStatus.Active && w.DeletedAt == null, ct);
 
         if (workspace is null)
             throw new NotFoundException(nameof(Workspace), request.WorkspaceId);

@@ -11,7 +11,8 @@ public static class CreateWorkspaceEndpoint
         group.MapAuthenticatedPost("/", HandleAsync)
             .WithName("Workspaces.Workspaces.CreateWorkspace")
             .WithTags("Workspaces.Workspaces")
-            .WithSummary("Create a new workspace");
+            .WithSummary("Create a new workspace")
+            .Produces<Guid>(StatusCodes.Status201Created, "application/json");
         return group;
     }
 

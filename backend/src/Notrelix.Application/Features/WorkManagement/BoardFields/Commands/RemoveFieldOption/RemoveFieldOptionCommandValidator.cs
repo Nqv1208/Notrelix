@@ -4,6 +4,7 @@ public class RemoveFieldOptionCommandValidator : AbstractValidator<RemoveFieldOp
 {
     public RemoveFieldOptionCommandValidator()
     {
+        RuleFor(x => x.ExpectedVersion).MustBeAnAuthoritativeVersion();
         RuleFor(x => x.BoardId).NotEmpty();
         RuleFor(x => x.FieldId).NotEmpty();
         RuleFor(x => x.OptionId).NotEmpty();

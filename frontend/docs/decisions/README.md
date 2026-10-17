@@ -14,6 +14,7 @@ evidence:
   - frontend/docs/decisions/FE-ADR-003-package-exports.md
   - frontend/docs/decisions/FE-ADR-004-no-next-in-packages.md
   - frontend/docs/decisions/FE-ADR-005-auth-session-model.md
+  - frontend/docs/decisions/FE-ADR-006-i18n-library.md
 review_on:
   - frontend-adr-created
   - frontend-adr-status-change
@@ -90,15 +91,16 @@ Renaming a file does not change the ADR ID.
 
 Current frontend ADRs are:
 
-| ID           | Decision                        | Status   | Historical date | Current architecture owner                                                                 |
-| ------------ | ------------------------------- | -------- | --------------- | ------------------------------------------------------------------------------------------ |
-| `FE-ADR-001` | Framework split                 | Accepted | 2026-07-12      | `../architecture/frontend-overview.md`, `../architecture/hosts-composition-routing.md`     |
-| `FE-ADR-002` | Package manager                 | Accepted | 2026-07-12      | `../architecture/dependency-boundaries.md`, frontend workspace/tooling configuration       |
-| `FE-ADR-003` | Package exports                 | Accepted | 2026-07-12      | `../architecture/dependency-boundaries.md`                                                 |
-| `FE-ADR-004` | No Next.js in reusable packages | Accepted | 2026-07-12      | `../architecture/dependency-boundaries.md`, `../architecture/hosts-composition-routing.md` |
-| `FE-ADR-005` | Auth session model              | Accepted | 2026-07-09      | `../architecture/hosts-composition-routing.md`, `../architecture/api-and-contracts.md`     |
+| ID           | Decision                          | Status   | Historical date | Current architecture owner                                                                 |
+| ------------ | --------------------------------- | -------- | --------------- | ------------------------------------------------------------------------------------------ |
+| `FE-ADR-001` | Framework split                   | Accepted | 2026-07-12      | `../architecture/frontend-overview.md`, `../architecture/hosts-composition-routing.md`     |
+| `FE-ADR-002` | Package manager                   | Accepted | 2026-07-12      | `../architecture/dependency-boundaries.md`, frontend workspace/tooling configuration       |
+| `FE-ADR-003` | Package exports                   | Accepted | 2026-07-12      | `../architecture/dependency-boundaries.md`                                                 |
+| `FE-ADR-004` | No Next.js in reusable packages   | Accepted | 2026-07-12      | `../architecture/dependency-boundaries.md`, `../architecture/hosts-composition-routing.md` |
+| `FE-ADR-005` | Auth session model                | Accepted | 2026-07-09      | `../architecture/hosts-composition-routing.md`, `../architecture/api-and-contracts.md`     |
+| `FE-ADR-006` | i18n library and package boundary | Accepted | 2026-10-10      | `../architecture/dependency-boundaries.md`, `../architecture/ui-and-design-system.md`      |
 
-The status/date values above are recovered directly from the current legacy ADR documents.
+The status/date values for FE-ADR-001…005 are recovered directly from the legacy ADR documents; FE-ADR-006 is a new ADR written to the full schema.
 
 ---
 
@@ -726,25 +728,25 @@ Do not blindly assume the next number from memory.
 With the current registry:
 
 ```text
-FE-ADR-001 ... FE-ADR-005
+FE-ADR-001 ... FE-ADR-006
 ```
 
 the next normally available ID is:
 
 ```text
-FE-ADR-006
+FE-ADR-007
 ```
 
 but it MUST be rechecked at creation time for concurrent changes.
 
 ---
 
-# 46. FE-DEC-023 — Do not reserve FE-ADR-006 speculatively
+# 46. FE-DEC-023 — Do not reserve the next ADR ID speculatively
 
 Documentation MAY say:
 
 ```text
-next normally available ID: FE-ADR-006
+next normally available ID: FE-ADR-007
 ```
 
 but MUST NOT create placeholder files/decisions without a real decision.

@@ -33,7 +33,7 @@ public class SpaceTests
     public void Rename_ShouldThrow_WhenArchived()
     {
         var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        space.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        space.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow, SpaceContentFact.Empty);
 
         var act = () => space.Rename("Sales", Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -44,11 +44,11 @@ public class SpaceTests
     public void Unarchive_ShouldSetStatusToActive_AndRaiseEvent()
     {
         var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        space.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        space.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow, SpaceContentFact.Empty);
         ((IHasDomainEvents)space).ClearDomainEvents();
         var actor = Guid.NewGuid();
 
-        space.Unarchive(actor, DateTimeOffset.UtcNow);
+        space.Unarchive(actor, DateTimeOffset.UtcNow, parentIsActive: true);
 
         space.Status.Should().Be(SpaceStatus.Active);
         space.DomainEvents.Should().ContainSingle(e => e is SpaceUnarchivedDomainEvent);
@@ -60,7 +60,7 @@ public class SpaceTests
         var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
         ((IHasDomainEvents)space).ClearDomainEvents();
 
-        space.Unarchive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        space.Unarchive(Guid.NewGuid(), DateTimeOffset.UtcNow, parentIsActive: true);
 
         space.Status.Should().Be(SpaceStatus.Active);
         space.DomainEvents.Should().BeEmpty();
@@ -70,9 +70,9 @@ public class SpaceTests
     public void Unarchive_Deleted_ShouldThrow()
     {
         var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        space.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        space.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow, SpaceContentFact.Empty);
 
-        var act = () => space.Unarchive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var act = () => space.Unarchive(Guid.NewGuid(), DateTimeOffset.UtcNow, parentIsActive: true);
         act.Should().Throw<DomainException>().WithMessage("*deleted*");
     }
 
@@ -120,7 +120,7 @@ public class SpaceTests
     public void UpdateDescription_ArchivedSpace_ShouldThrow()
     {
         var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        space.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        space.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow, SpaceContentFact.Empty);
 
         var act = () => space.UpdateDescription("New", Guid.NewGuid(), DateTimeOffset.UtcNow);
         act.Should().Throw<BusinessRuleException>().WithMessage("*archived*");
@@ -158,7 +158,7 @@ public class SpaceTests
     public void ChangeVisibility_ArchivedSpace_ShouldThrow()
     {
         var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        space.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        space.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow, SpaceContentFact.Empty);
 
         var act = () => space.ChangeVisibility(SpaceVisibility.Private, Guid.NewGuid(), DateTimeOffset.UtcNow);
         act.Should().Throw<BusinessRuleException>().WithMessage("*archived*");
@@ -196,7 +196,7 @@ public class SpaceTests
     public void ChangeType_ArchivedSpace_ShouldThrow()
     {
         var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        space.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        space.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow, SpaceContentFact.Empty);
 
         var act = () => space.ChangeType(SpaceType.Portfolio, Guid.NewGuid(), DateTimeOffset.UtcNow);
         act.Should().Throw<BusinessRuleException>().WithMessage("*archived*");
@@ -207,7 +207,7 @@ public class SpaceTests
     {
         var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
-        space.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        space.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow, SpaceContentFact.Empty);
 
         space.IsDeleted.Should().BeTrue();
         space.DomainEvents.Should().Contain(e => e is SpaceDeletedDomainEvent);
@@ -217,10 +217,10 @@ public class SpaceTests
     public void Restore_ShouldSetIsDeleted_AndRaiseEvent()
     {
         var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        space.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        space.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow, SpaceContentFact.Empty);
         ((IHasDomainEvents)space).ClearDomainEvents();
 
-        space.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        space.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow, SpacePlacement.Root(space.Position, []));
 
         space.IsDeleted.Should().BeFalse();
         space.DomainEvents.Should().Contain(e => e is SpaceRestoredDomainEvent);
@@ -230,7 +230,7 @@ public class SpaceTests
     public void Rename_OnDeletedSpace_ShouldThrow()
     {
         var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        space.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        space.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow, SpaceContentFact.Empty);
 
         var act = () => space.Rename("Sales", Guid.NewGuid(), DateTimeOffset.UtcNow);
         act.Should().Throw<DomainException>().WithMessage("*deleted and cannot be modified*");
@@ -240,7 +240,7 @@ public class SpaceTests
     public void Rename_ArchivedSpace_ShouldNotMutateName()
     {
         var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Space", SpaceVisibility.Private, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        space.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        space.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow, SpaceContentFact.Empty);
         ((IHasDomainEvents)space).ClearDomainEvents();
         var originalName = space.Name;
 
@@ -255,7 +255,7 @@ public class SpaceTests
     public void UpdateDescription_ArchivedSpace_ShouldNotMutateDescription()
     {
         var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Space", SpaceVisibility.Private, Guid.NewGuid(), DateTimeOffset.UtcNow, description: "Original");
-        space.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        space.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow, SpaceContentFact.Empty);
         ((IHasDomainEvents)space).ClearDomainEvents();
         var originalDescription = space.Description;
 
@@ -270,7 +270,7 @@ public class SpaceTests
     public void ChangeVisibility_ArchivedSpace_ShouldNotMutateVisibility()
     {
         var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Space", SpaceVisibility.Private, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        space.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        space.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow, SpaceContentFact.Empty);
         ((IHasDomainEvents)space).ClearDomainEvents();
         var originalVisibility = space.Visibility;
 
@@ -285,7 +285,7 @@ public class SpaceTests
     public void ChangeType_ArchivedSpace_ShouldNotMutateType()
     {
         var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Space", SpaceVisibility.Private, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        space.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        space.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow, SpaceContentFact.Empty);
         ((IHasDomainEvents)space).ClearDomainEvents();
         var originalType = space.SpaceType;
 
@@ -317,7 +317,7 @@ public class SpaceTests
         ((IHasDomainEvents)space).ClearDomainEvents();
         var originalStatus = space.Status;
 
-        var act = () => space.Archive(Guid.Empty, DateTimeOffset.UtcNow);
+        var act = () => space.Archive(Guid.Empty, DateTimeOffset.UtcNow, SpaceContentFact.Empty);
 
         act.Should().Throw<BusinessRuleException>();
         space.Status.Should().Be(originalStatus);

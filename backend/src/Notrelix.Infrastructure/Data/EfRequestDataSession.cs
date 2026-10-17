@@ -1,3 +1,5 @@
+using Notrelix.Application.Features.WorkManagement.Ordering;
+using Notrelix.Infrastructure.Data.WorkManagement;
 using Notrelix.Application.Common.Diagnostics;
 using Notrelix.Application.Common.Exceptions;
 using Notrelix.Infrastructure.Data.Concurrency;
@@ -17,14 +19,18 @@ public sealed class EfRequestDataSession : IRequestDataSession
     private readonly ExpectedVersionTargetMap _expectedVersionTargets;
     private readonly PipelineMetrics _metrics;
 
+    private readonly Notrelix.Application.Features.WorkManagement.Ordering.WorkOrderingMetrics? _orderingMetrics;
+
     public EfRequestDataSession(
         ApplicationDbContext dbContext,
         IRlsSessionContext rls,
         ILogger<EfRequestDataSession> logger,
         IOutboxWakeSignal? outboxWakeSignal = null,
         ExpectedVersionTargetMap? expectedVersionTargets = null,
-        PipelineMetrics? metrics = null)
+        PipelineMetrics? metrics = null,
+        Notrelix.Application.Features.WorkManagement.Ordering.WorkOrderingMetrics? orderingMetrics = null)
     {
+        _orderingMetrics = orderingMetrics;
         _dbContext = dbContext;
         _rls = rls;
         _logger = logger;
@@ -80,6 +86,15 @@ public sealed class EfRequestDataSession : IRequestDataSession
                     throw new PreconditionFailedException(
                         "The resource was modified by another request. Reload and retry.", "common.precondition-failed");
                 }
+                catch (DbUpdateException exception) when (WorkOrderingConstraints.IsOrderingViolation(exception))
+                {
+                    // A named ordering uniqueness guard caught a placement collision.
+                    _orderingMetrics?.Conflict();
+                    // SaveChanges runs after the handler returns, so this is never
+                    // retried here; the caller reloads and rebases (WM-V3-ORDER-003).
+                    throw new ConflictException(
+                        "The position was taken by a concurrent change. Reload and retry.", WorkOrderingErrorCodes.Conflict);
+                }
             }
 
             using var transactionCommit = PipelineActivitySource.Instance.StartActivity("data_session.commit");
@@ -129,7 +144,7 @@ public sealed class EfRequestDataSession : IRequestDataSession
 
         var tracked = _dbContext.ChangeTracker.Entries()
             .Where(candidate => target.AggregateType.IsInstanceOfType(candidate.Entity))
-            .Where(candidate => ((AggregateRoot)candidate.Entity).Id == constraint.Resource.ResourceId)
+            .Where(candidate => target.Matches((AggregateRoot)candidate.Entity, constraint.Resource.ResourceId))
             .ToArray();
 
         if (tracked.Length == 0)

@@ -11,13 +11,17 @@ public class DuplicateBoardItemTests : WorkManagementHandlerTestBase
         _handler = new DuplicateBoardItemCommandHandler(
             DbContextMock.Object,
             RequestContextMock.Object,
-            DateTimeProviderMock.Object);
+            DateTimeProviderMock.Object,
+            Placement,
+            KeyAllocator);
     }
 
     [Fact]
     public async Task Handle_ValidCommand_CreatesDuplicate()
     {
-        var item = CreateBoardItem();
+        var board = CreateBoard();
+        var item = CreateBoardItem(boardId: board.Id);
+        SetupBoards(board);
         SetupBoardItems(item);
 
         var command = new DuplicateBoardItemCommand(item.Id);

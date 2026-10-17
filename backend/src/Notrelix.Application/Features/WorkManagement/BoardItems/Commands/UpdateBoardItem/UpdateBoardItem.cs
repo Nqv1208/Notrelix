@@ -3,12 +3,10 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItem;
 
-public record UpdateBoardItemCommand(Guid BoardItemId, string? Title, string? DescriptionMd, string? Priority, string? Cover, DateTime? DueDate, DateTime? StartDate, long? ExpectedVersion = null) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IExpectedVersionRequest
+public record UpdateBoardItemCommand(Guid BoardItemId, string? Title, DateTime? DueDate, DateTime? StartDate, long ExpectedVersion) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-item"), BoardItemId);
-    long IExpectedVersionRequest.ExpectedVersion => ExpectedVersion ?? 0;
-    ResourceRef IExpectedVersionRequest.Resource => Resource;
 }
 
 public class UpdateBoardItemCommandHandler : IRequestHandler<UpdateBoardItemCommand, Result>
@@ -30,7 +28,7 @@ public class UpdateBoardItemCommandHandler : IRequestHandler<UpdateBoardItemComm
     public async Task<Result> Handle(UpdateBoardItemCommand request, CancellationToken ct)
     {
         var card = await _context.BoardItems
-            .FirstOrDefaultAsync(c => c.Id == request.BoardItemId && !c.IsDeleted, ct);
+            .FirstOrDefaultAsync(c => c.Id == request.BoardItemId && c.DeletedAt == null, ct);
         if (card is null) throw new NotFoundException(nameof(BoardItem), request.BoardItemId);
 
         var now = _timeProvider.UtcNow;

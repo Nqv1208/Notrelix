@@ -7,7 +7,8 @@ namespace Notrelix.Application.Features.WorkManagement.BoardViews.Commands.SetDe
 public record SetDefaultViewCommand(Guid BoardId, Guid ViewId)
     : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
-    public PermissionAction Action => PermissionAction.ManageBoard;
+    // Choosing the default view is a view change (Editor), not Board management.
+    public PermissionAction Action => PermissionAction.UpdateBoardView;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);
 }
 
@@ -36,7 +37,7 @@ public class SetDefaultViewCommandHandler : IRequestHandler<SetDefaultViewComman
         var now = _dateTimeProvider.UtcNow;
 
         var otherDefaults = await _context.BoardViews
-            .Where(v => v.BoardId == request.BoardId && v.Id != request.ViewId && v.IsDefault && !v.IsDeleted)
+            .Where(v => v.BoardId == request.BoardId && v.Id != request.ViewId && v.IsDefault && v.DeletedAt == null)
             .ToListAsync(ct);
 
         foreach (var other in otherDefaults)

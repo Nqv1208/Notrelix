@@ -120,8 +120,6 @@ public class CommandMarkerArchitectureTests
             "User updates own profile — permission is identity-based, not resource-based", "Keep as-is"),
         ["UpdateEmailCommand"] = new("UpdateEmailCommand", AllowlistClassification.Intentional,
             "User updates own email — permission is identity-based, not resource-based", "Keep as-is"),
-        ["CreateBoardBySlugCommand"] = new("CreateBoardBySlugCommand", AllowlistClassification.Intentional,
-            "Module authorized via workspace-role policy (AccessControlBehavior); no fine-grained PermissionAction exists.", "Keep as-is; intentional non-fine-grained authorization"),
         ["ArchiveWorkspaceBySlugCommand"] = new("ArchiveWorkspaceBySlugCommand", AllowlistClassification.Intentional,
             "Module authorized via workspace-role policy (AccessControlBehavior); no fine-grained PermissionAction exists.", "Keep as-is; intentional non-fine-grained authorization"),
         ["RemoveMemberBySlugCommand"] = new("RemoveMemberBySlugCommand", AllowlistClassification.Intentional,

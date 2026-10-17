@@ -1,0 +1,9 @@
+{
+  "description": "WX-FND-003 ratchet: existing hex / primitive-palette / arbitrary-text-size offenders per file. Counts may only go down; regenerate with `pnpm check:design-tokens --update-baseline` after removing offenders.",
+  "files": {
+    "apps/web/src/shell/sidebar/sidebar.tsx": {
+      "palette-color": 28,
+      "arbitrary-text-size": 2
+    }
+  }
+}

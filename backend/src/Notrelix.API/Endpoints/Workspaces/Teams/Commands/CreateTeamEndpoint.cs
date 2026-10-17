@@ -11,7 +11,8 @@ public static class CreateTeamEndpoint
         group.MapWorkspacePost("/", HandleAsync)
             .WithName("Workspaces.Teams.CreateTeam")
             .WithTags("Workspaces.Teams")
-            .WithSummary("Create a new team in the workspace");
+            .WithSummary("Create a new team in the workspace")
+            .Produces<Guid>(StatusCodes.Status201Created, "application/json");
         return group;
     }
 

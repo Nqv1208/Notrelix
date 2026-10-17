@@ -11,7 +11,8 @@ public class CreateBoardFieldTests : WorkManagementHandlerTestBase
         _handler = new CreateBoardFieldCommandHandler(
             DbContextMock.Object,
             RequestContextMock.Object,
-            DateTimeProviderMock.Object);
+            DateTimeProviderMock.Object,
+            Placement);
     }
 
     [Fact]
@@ -20,7 +21,7 @@ public class CreateBoardFieldTests : WorkManagementHandlerTestBase
         var board = CreateBoard();
         SetupBoards(board);
 
-        var command = new CreateBoardFieldCommand(board.Id, "Status", "Status", null, "a0");
+        var command = new CreateBoardFieldCommand(board.Id, "Status", "Status", null);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -31,7 +32,7 @@ public class CreateBoardFieldTests : WorkManagementHandlerTestBase
     [Fact]
     public async Task Handle_BoardNotFound_ThrowsNotFoundException()
     {
-        var command = new CreateBoardFieldCommand(Guid.CreateVersion7(), "Status", "Status", null, "a0");
+        var command = new CreateBoardFieldCommand(Guid.CreateVersion7(), "Status", "Status", null);
 
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<NotFoundException>();
@@ -44,7 +45,7 @@ public class CreateBoardFieldTests : WorkManagementHandlerTestBase
         board.Archive(TestUserId, TestNow);
         SetupBoards(board);
 
-        var command = new CreateBoardFieldCommand(board.Id, "Status", "Status", null, "a0");
+        var command = new CreateBoardFieldCommand(board.Id, "Status", "Status", null);
 
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<NotFoundException>();
@@ -56,7 +57,7 @@ public class CreateBoardFieldTests : WorkManagementHandlerTestBase
         var board = CreateBoard();
         SetupBoards(board);
 
-        var command = new CreateBoardFieldCommand(board.Id, "Description", "Text", null, null);
+        var command = new CreateBoardFieldCommand(board.Id, "Description", "Text", null);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -69,7 +70,7 @@ public class CreateBoardFieldTests : WorkManagementHandlerTestBase
         var board = CreateBoard();
         SetupBoards(board);
 
-        var command = new CreateBoardFieldCommand(board.Id, "Priority", "Select", "{\"options\":[]}", "a0");
+        var command = new CreateBoardFieldCommand(board.Id, "Priority", "Select", "{\"options\":[]}");
 
         var result = await _handler.Handle(command, CancellationToken.None);
 

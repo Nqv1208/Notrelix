@@ -1,6 +1,8 @@
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.WorkManagement.Common.DTOs;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Features.Governance.Public.Visibility;
+using Notrelix.Application.Features.WorkManagement.Boards.Queries.Common;
 
 namespace Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoardsBySlug;
 
@@ -14,11 +16,19 @@ public class GetBoardsBySlugQueryHandler : IRequestHandler<GetBoardsBySlugQuery,
 {
     private readonly IWorkManagementDbContext _context;
     private readonly IWorkspaceAccessResolver _workspaceAccess;
+    private readonly IResourceVisibility _visibility;
+    private readonly ICurrentRequestContext _requestContext;
 
-    public GetBoardsBySlugQueryHandler(IWorkManagementDbContext context, IWorkspaceAccessResolver workspaceAccess)
+    public GetBoardsBySlugQueryHandler(
+        IWorkManagementDbContext context,
+        IWorkspaceAccessResolver workspaceAccess,
+        IResourceVisibility visibility,
+        ICurrentRequestContext requestContext)
     {
         _context = context;
         _workspaceAccess = workspaceAccess;
+        _visibility = visibility;
+        _requestContext = requestContext;
     }
 
     public async Task<Result<List<BoardDto>>> Handle(GetBoardsBySlugQuery request, CancellationToken ct)
@@ -26,31 +36,11 @@ public class GetBoardsBySlugQueryHandler : IRequestHandler<GetBoardsBySlugQuery,
         var workspace = await _workspaceAccess.ResolveBySlugAsync(request.Slug, ct);
         if (workspace is null) throw new NotFoundException(nameof(Workspace), request.Slug);
 
-        var boards = await _context.Boards.AsNoTracking()
-            .Where(b => b.WorkspaceId == workspace.Id && !b.IsArchived)
-            .ToListAsync(ct);
-
-        var boardIds = boards.Select(b => b.Id).ToList();
-
-        var memberCounts = await _context.BoardMembers.AsNoTracking()
-            .Where(m => boardIds.Contains(m.BoardId))
-            .GroupBy(m => m.BoardId)
-            .Select(g => new { BoardId = g.Key, Count = g.Count() })
-            .ToDictionaryAsync(x => x.BoardId, x => x.Count, ct);
-
-        var groupCounts = await _context.BoardGroups.AsNoTracking()
-            .Where(l => boardIds.Contains(l.BoardId) && !l.IsDeleted)
-            .GroupBy(l => l.BoardId)
-            .Select(g => new { BoardId = g.Key, Count = g.Count() })
-            .ToDictionaryAsync(x => x.BoardId, x => x.Count, ct);
-
-        var result = boards.Select(b => new BoardDto(
-            b.Id, b.WorkspaceId, b.Title, b.Description,
-            b.Background, b.Visibility.ToString(), b.IsArchived,
-            memberCounts.GetValueOrDefault(b.Id),
-            groupCounts.GetValueOrDefault(b.Id),
-            b.CreatedAt.DateTime
-        )).ToList();
+        // Same per-Board ViewBoard decision as a single read (GOV-029); a
+        // principal without membership in the resolved Workspace sees nothing.
+        var visible = await _visibility.VisibleBoardIdsAsync(workspace.Id, _requestContext.UserId, ct);
+        var spaces = (await _visibility.VisibleSpaceIdsAsync(workspace.Id, _requestContext.UserId, ct)).ToHashSet();
+        var result = await BoardListProjection.LoadAsync(_context, workspace.Id, visible, spaces, ct);
 
         return Result<List<BoardDto>>.Success(result);
     }

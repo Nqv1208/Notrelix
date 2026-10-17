@@ -1,3 +1,3 @@
 namespace Notrelix.API.Contracts.Workspaces.Teams.Requests;
 
-public sealed record ChangeTeamMemberRoleRequest(string NewRole);
+public sealed record ChangeTeamMemberRoleRequest(string NewRole, long ExpectedVersion);

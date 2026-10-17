@@ -1,187 +1,480 @@
-import React, { type KeyboardEvent, type MouseEvent } from "react";
-import { MoreHorizontal, GripVertical } from "lucide-react";
-import { useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-import { Checkbox } from "@notrelix/ui-web";
+import type { CSSProperties, KeyboardEvent } from "react";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+  cn,
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
 } from "@notrelix/ui-web";
-import type {
-  Board,
-  BoardGroup,
-  BoardTableColumn,
-  Card,
-  UpdateCardInput,
-} from "@notrelix/work-management-core";
-import { cn } from "@notrelix/ui-web";
-import { TableCell, type TableFieldValueUpdate } from "./table-cell";
+import {
+  ITEM_LABEL_TONE_CLASS,
+  identityMarkClass,
+} from "../../shared/item-display";
+import { fillTableCopy, type MainTableCopy } from "./main-table.copy";
+import { STATUS_TINT_CLASS, tablePanelClass } from "./table-chrome";
+import type { TableColumnSpec } from "./table-columns";
+import type { TableRowModel, TableStatusOption } from "./table-model";
+import {
+  AssigneeEditor,
+  DueEditor,
+  PriorityEditor,
+  type TableEditors,
+} from "./table-cell-editors";
+import { StatusDot, TableCheckbox } from "./table-parts";
+import { TableStatusPicker } from "./table-status-picker";
 
-export function TableRow({
-  board,
-  group,
-  card,
-  columns,
-  gridTemplate,
-  groupColor,
-  isChecked,
-  isDetailSelected,
-  onSelect,
-  onOpenDetail,
-  onDuplicateCard,
-  onDeleteCard,
-  onUpdateCard,
-  onUpdateFieldValue,
+/** The row's own menu (right click, or the context-menu key). */
+export interface TableRowActions {
+  /** Absent: the viewer may not add items, so no "Nhân bản". */
+  readonly onDuplicate?: () => void;
+  readonly onCopyLink: () => void;
+  /** Absent: the viewer may not archive, so no "Lưu trữ". */
+  readonly onArchive?: () => void;
+}
+
+export interface TableRowProps {
+  row: TableRowModel;
+  copy: MainTableCopy;
+  columns: readonly TableColumnSpec[];
+  /** Accent of the row's group: the left edge takes its colour. */
+  accent: string;
+  statusOptions: readonly TableStatusOption[];
+  selected: boolean;
+  /** The item whose side sheet is open. */
+  active: boolean;
+  /** The row that takes the Tab stop of the grid. */
+  tabStop: boolean;
+  /** The viewer may change the status of items. */
+  canEdit: boolean;
+  /** In-place editors of assignee, due date and priority; absent = read-only. */
+  editors?: TableEditors;
+  /** The row's menu; absent = no menu. */
+  actions?: TableRowActions;
+  /** The status list is open on this row. */
+  editing: boolean;
+  /** Option highlighted when the status list opens (stories and tests). */
+  highlightStatusId?: string | null;
+  onSelectedChange: (selected: boolean) => void;
+  onOpen: () => void;
+  onEditingChange: (editing: boolean) => void;
+  onStatusChange: (optionId: string) => void;
+  onKeyDown: (event: KeyboardEvent<HTMLDivElement>) => void;
+}
+
+const DUE_CLASS: Readonly<Record<TableRowModel["due"]["kind"], string>> = {
+  overdue: "font-semibold text-danger-text",
+  today: "font-semibold text-warning-subtle-foreground",
+  date: "text-muted-foreground",
+  none: "italic text-meta-foreground",
+};
+
+const PRIORITY_CLASS = {
+  urgent: "font-semibold text-danger-text",
+  high: "font-semibold text-priority-high-text",
+} as const;
+
+function Cell({
+  className,
+  selected,
+  children,
 }: {
-  board: Board;
-  group: BoardGroup;
-  card: Card;
-  columns: BoardTableColumn[];
-  gridTemplate: string;
-  groupColor?: string;
-  isChecked: boolean;
-  isDetailSelected: boolean;
-  onSelect: (selected: boolean) => void;
-  onOpenDetail: () => void;
-  onDuplicateCard: (cardId: string) => void;
-  onDeleteCard: (cardId: string) => void;
-  onUpdateCard: (cardId: string, patch: UpdateCardInput) => void;
-  onUpdateFieldValue: (update: TableFieldValueUpdate) => void;
+  className?: string;
+  selected: boolean;
+  children?: React.ReactNode;
 }) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({
-    id: card.id,
-    data: { type: "card", card, group },
-  });
-  const accent = groupColor ?? "transparent";
-  const rowTransition = [
-    transition,
-    "background-color 200ms ease",
-    "box-shadow 200ms ease",
-    "border-left-color 200ms ease",
-  ]
-    .filter(Boolean)
-    .join(", ");
-
   return (
     <div
-      ref={setNodeRef}
-      tabIndex={0}
-      onKeyDown={(event: KeyboardEvent<HTMLDivElement>) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          onOpenDetail();
-        }
-      }}
-      aria-label={`${card.title} in ${group.title}`}
-      data-selected={isDetailSelected ? "true" : "false"}
-      data-dragging={isDragging ? "true" : "false"}
+      role="cell"
       className={cn(
-        "group/row grid min-h-12 cursor-pointer items-center border-b border-l-[6px] border-border/70 bg-table-row text-sm duration-150 ease-out hover:bg-table-row-hover",
-        isChecked && "bg-table-selected/40 hover:bg-table-selected/50",
-        isDetailSelected &&
-          "bg-table-selected ring-1 ring-inset ring-primary/40",
-        isDragging && "relative z-10 shadow-xl shadow-black/30",
+        "relative box-border flex h-(--table-row-height) min-w-0 items-center gap-[7px] overflow-hidden border-b border-border px-2.5 whitespace-nowrap",
+        selected
+          ? "bg-row-selected"
+          : cn(tablePanelClass, "group-hover/row:bg-state-hover"),
+        className,
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
+/**
+ * One row of the table. Its left edge carries the group's colour: faint at
+ * rest, full on hover, keyboard focus and while its item is open. A click on
+ * the row (or the title) opens the item; the status pill opens the status
+ * list and the checkbox selects, neither opens the item. The row itself takes
+ * the arrow keys, Enter and Space (open the item) and X (select) from the
+ * table.
+ */
+export function TableRow({
+  row,
+  copy,
+  columns,
+  accent,
+  statusOptions,
+  selected,
+  active,
+  tabStop,
+  canEdit,
+  editors,
+  actions,
+  editing,
+  highlightStatusId,
+  onSelectedChange,
+  onOpen,
+  onEditingChange,
+  onStatusChange,
+  onKeyDown,
+}: TableRowProps) {
+  const keyLabel = row.key ?? row.title;
+
+  const render = (column: TableColumnSpec) => {
+    switch (column.id) {
+      case "key":
+        return (
+          <Cell key="key" selected={selected}>
+            <span className="font-mono text-metadata leading-[1.45] text-meta-foreground">
+              {row.key}
+            </span>
+          </Cell>
+        );
+      case "title":
+        return (
+          <Cell key="title" selected={selected}>
+            <button
+              type="button"
+              onClick={onOpen}
+              title={row.title}
+              data-row-open=""
+              className="min-w-0 truncate text-left text-nav text-foreground focus-visible:outline-2 focus-visible:outline-ring"
+            >
+              {row.title}
+            </button>
+          </Cell>
+        );
+      case "status": {
+        const status = row.status;
+        const pill = (
+          <button
+            type="button"
+            disabled={!canEdit}
+            aria-haspopup="listbox"
+            aria-expanded={editing}
+            aria-label={fillTableCopy(copy.row.changeStatus, { key: keyLabel })}
+            className={cn(
+              "inline-flex h-6 items-center gap-1.5 rounded-full border-0 px-[9px] text-crumb font-semibold text-foreground",
+              status ? STATUS_TINT_CLASS[status.category] : "bg-state-hover",
+              editing && "ring-2 ring-primary",
+              canEdit ? "cursor-pointer" : "cursor-default",
+            )}
+          >
+            <StatusDot category={status?.category ?? null} />
+            {status?.name ?? copy.group.noStatus}
+          </button>
+        );
+        return (
+          <Cell key="status" selected={selected}>
+            {canEdit ? (
+              <Popover open={editing} onOpenChange={onEditingChange}>
+                <PopoverTrigger asChild>{pill}</PopoverTrigger>
+                <PopoverContent
+                  align="start"
+                  side="bottom"
+                  aria-label={copy.status.change}
+                  sideOffset={2}
+                  alignOffset={-4}
+                  className="w-58.5 gap-0 rounded-[10px] border border-line-strong bg-popover p-1.5 text-compact shadow-pop ring-0 dark:bg-card"
+                >
+                  <TableStatusPicker
+                    copy={copy.status}
+                    options={statusOptions}
+                    currentId={status?.id ?? null}
+                    initialHighlightId={highlightStatusId}
+                    onSelect={(optionId) => {
+                      onEditingChange(false);
+                      if (optionId !== status?.id) onStatusChange(optionId);
+                    }}
+                  />
+                </PopoverContent>
+              </Popover>
+            ) : (
+              pill
+            )}
+          </Cell>
+        );
+      }
+      case "assignee": {
+        const person = row.assignee ? (
+          <>
+            <span
+              aria-hidden="true"
+              className={cn(
+                "flex size-6 shrink-0 items-center justify-center rounded-full text-avatar-md select-none",
+                identityMarkClass(row.assignee.userId),
+              )}
+            >
+              {row.assignee.initials}
+            </span>
+            <span className="min-w-0 truncate text-nav font-normal">
+              {row.assignee.name}
+            </span>
+          </>
+        ) : (
+          <>
+            <span
+              aria-hidden="true"
+              className="flex size-6 shrink-0 items-center justify-center rounded-full text-avatar-md font-bold text-meta-foreground shadow-[inset_0_0_0_1.5px_var(--line-strong)]"
+            >
+              +
+            </span>
+            <span className="min-w-0 truncate text-nav font-normal">
+              {copy.row.unassigned}
+            </span>
+          </>
+        );
+        return (
+          <Cell
+            key="assignee"
+            selected={selected}
+            className="text-muted-foreground"
+          >
+            {canEdit && editors ? (
+              <AssigneeEditor
+                copy={copy}
+                members={editors.members}
+                currentId={row.assignee?.userId ?? null}
+                label={fillTableCopy(copy.row.changeAssignee, {
+                  key: keyLabel,
+                })}
+                onPick={(userId) => editors.onAssignee(row.id, userId)}
+              >
+                {person}
+              </AssigneeEditor>
+            ) : (
+              person
+            )}
+          </Cell>
+        );
+      }
+      case "due": {
+        const due = (
+          <span
+            data-due={row.due.kind}
+            className={cn(
+              "text-nav font-normal tabular-nums",
+              DUE_CLASS[row.due.kind],
+            )}
+          >
+            {row.due.text}
+          </span>
+        );
+        return (
+          <Cell key="due" selected={selected}>
+            {canEdit && editors ? (
+              <DueEditor
+                copy={copy}
+                dueAt={row.dueAt}
+                label={fillTableCopy(copy.row.changeDue, { key: keyLabel })}
+                onPick={(day) => editors.onDue(row.id, day)}
+              >
+                {due}
+              </DueEditor>
+            ) : (
+              due
+            )}
+          </Cell>
+        );
+      }
+      case "priority": {
+        const priority =
+          row.priority === "urgent" || row.priority === "high"
+            ? row.priority
+            : null;
+        const shown = (
+          <span
+            data-priority={priority ?? undefined}
+            className={cn(
+              "text-crumb",
+              priority
+                ? PRIORITY_CLASS[priority]
+                : "font-normal text-meta-foreground",
+            )}
+          >
+            {priority ? copy.row.priority[priority] : copy.row.noPriority}
+          </span>
+        );
+        return (
+          <Cell key="priority" selected={selected}>
+            {canEdit && editors && editors.priorities.length > 0 ? (
+              <PriorityEditor
+                options={editors.priorities}
+                currentLabel={
+                  row.priority ? copy.row.priority[row.priority] : null
+                }
+                label={fillTableCopy(copy.row.changePriority, {
+                  key: keyLabel,
+                })}
+                onPick={(optionId) => editors.onPriority(row.id, optionId)}
+              >
+                {shown}
+              </PriorityEditor>
+            ) : (
+              shown
+            )}
+          </Cell>
+        );
+      }
+      case "label":
+        return (
+          <Cell key="label" selected={selected}>
+            {row.label ? (
+              <span
+                data-label-tone={row.label.tone}
+                className={cn(
+                  "inline-flex h-5.5 items-center truncate rounded-sm px-2 text-micro font-semibold",
+                  ITEM_LABEL_TONE_CLASS[row.label.tone],
+                )}
+              >
+                {row.label.name}
+              </span>
+            ) : null}
+          </Cell>
+        );
+      case "progress":
+        return (
+          <Cell key="progress" selected={selected}>
+            {row.progress ? (
+              <span
+                data-child-progress=""
+                role="img"
+                aria-label={fillTableCopy(copy.row.childProgress, {
+                  done: row.progress.done,
+                  total: row.progress.total,
+                })}
+                className="flex w-27.5 items-center gap-2 text-metadata leading-[1.45] tabular-nums text-meta-foreground"
+              >
+                <span
+                  aria-hidden="true"
+                  className="block h-1.25 flex-1 overflow-hidden rounded-[3px] bg-state-hover-strong"
+                >
+                  <span
+                    data-progress-fill=""
+                    className="block h-full rounded-[3px] bg-primary"
+                    style={{ width: `${row.progress.percent}%` }}
+                  />
+                </span>
+                <span aria-hidden="true">
+                  {row.progress.done}/{row.progress.total}
+                </span>
+              </span>
+            ) : null}
+          </Cell>
+        );
+      case "updated":
+        return (
+          <Cell key="updated" selected={selected}>
+            <span className="text-crumb text-meta-foreground">
+              {row.updatedText}
+            </span>
+          </Cell>
+        );
+      case "start":
+      case "created":
+      case "completed": {
+        const text =
+          column.id === "start"
+            ? row.startText
+            : column.id === "created"
+              ? row.createdText
+              : row.completedText;
+        return (
+          <Cell key={column.id} selected={selected}>
+            <span className="text-nav font-normal tabular-nums text-muted-foreground">
+              {text}
+            </span>
+          </Cell>
+        );
+      }
+    }
+  };
+
+  const rowElement = (
+    <div
+      role="row"
+      tabIndex={tabStop ? 0 : -1}
+      aria-selected={selected}
+      aria-current={active ? "true" : undefined}
+      data-row-id={row.id}
+      onKeyDown={onKeyDown}
+      onClick={(event) => {
+        // Controls inside the row (status pill, checkbox, the title button)
+        // do their own thing; a status list in a portal also bubbles here.
+        if (!event.currentTarget.contains(event.target as Node)) return;
+        if (
+          (event.target as HTMLElement).closest(
+            "button, input, [role=checkbox]",
+          )
+        )
+          return;
+        onOpen();
+      }}
+      data-accent-active={active ? "true" : undefined}
+      className={cn(
+        "group/row relative grid min-w-full cursor-pointer focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
+        editing && "z-5",
       )}
       style={
         {
-          gridTemplateColumns: gridTemplate,
-          transform: CSS.Transform.toString(transform),
-          transition: rowTransition,
-          opacity: isDragging ? 0.72 : 1,
-          "--group-color": accent,
-          borderLeftColor: `color-mix(in oklch, ${accent} 22%, transparent)`,
-        } as React.CSSProperties & { "--group-color": string }
+          gridTemplateColumns: "var(--table-grid)",
+          "--row-accent": accent,
+        } as CSSProperties
       }
-      onMouseEnter={(event: MouseEvent<HTMLDivElement>) => {
-        event.currentTarget.style.borderLeftColor = accent;
-      }}
-      onMouseLeave={(event: MouseEvent<HTMLDivElement>) => {
-        event.currentTarget.style.borderLeftColor = `color-mix(in oklch, ${accent} 22%, transparent)`;
-      }}
-      onClick={onOpenDetail}
     >
-      <div className="sticky left-0 z-10 flex h-full items-center gap-2 border-r border-border/70 bg-inherit px-3">
-        <Checkbox
-          checked={isChecked}
-          onCheckedChange={(checked) => onSelect(Boolean(checked))}
-          onClick={(event: MouseEvent<HTMLButtonElement>) =>
-            event.stopPropagation()
-          }
-          aria-label={`Select ${card.title}`}
-          className="opacity-0 transition-opacity group-hover/row:opacity-100 data-[state=checked]:opacity-100"
+      <span
+        aria-hidden="true"
+        data-row-accent=""
+        className={cn(
+          "pointer-events-none absolute inset-y-0 left-0 z-1 w-1.5 transition-colors duration-200 ease-out",
+          "bg-[color-mix(in_oklch,var(--row-accent)_22%,transparent)]",
+          "group-hover/row:bg-(--row-accent) group-focus-within/row:bg-(--row-accent)",
+          active && "bg-(--row-accent)",
+        )}
+      />
+      <Cell selected={selected} className="pr-0 pl-3.5">
+        <TableCheckbox
+          checked={selected}
+          label={fillTableCopy(copy.row.select, { key: keyLabel })}
+          onChange={onSelectedChange}
         />
-        <button
-          type="button"
-          className="cursor-grab rounded p-0.5 text-muted-foreground/40 opacity-0 transition hover:text-muted-foreground active:cursor-grabbing group-hover/row:opacity-100"
-          aria-label={`Move ${card.title}`}
-          onClick={(event: MouseEvent<HTMLButtonElement>) =>
-            event.stopPropagation()
-          }
-          {...attributes}
-          {...listeners}
-        >
-          <GripVertical className="size-3.5" aria-hidden />
-        </button>
-      </div>
-      {columns.map((column) => (
-        <div
-          key={column.id}
-          className="flex min-w-0 items-center border-r border-border/70 px-3 py-2"
-        >
-          <TableCell
-            board={board}
-            card={card}
-            field={column.field}
-            onOpenDetail={onOpenDetail}
-            onUpdateCard={onUpdateCard}
-            onUpdateFieldValue={onUpdateFieldValue}
-          />
-        </div>
-      ))}
-      <div className="flex h-full items-center justify-center border-r border-border/70 px-2">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              type="button"
-              className="rounded p-1 text-muted-foreground opacity-0 transition hover:bg-foreground/8 hover:text-foreground group-hover/row:opacity-100"
-              aria-label={`${card.title} row menu`}
-              onClick={(event: MouseEvent<HTMLButtonElement>) =>
-                event.stopPropagation()
-              }
-            >
-              <MoreHorizontal className="size-4" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            align="end"
-            onClick={(event: MouseEvent<HTMLDivElement>) =>
-              event.stopPropagation()
-            }
-          >
-            <DropdownMenuItem onClick={onOpenDetail}>
-              Open details
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onDuplicateCard(card.id)}>
-              Duplicate task
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              className="text-destructive"
-              onClick={() => onDeleteCard(card.id)}
-            >
-              Delete task
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+      </Cell>
+      {columns.map(render)}
     </div>
+  );
+  if (!actions) return rowElement;
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger asChild>{rowElement}</ContextMenuTrigger>
+      <ContextMenuContent className="w-52">
+        <ContextMenuItem onSelect={onOpen}>
+          {copy.row.menu.open}
+        </ContextMenuItem>
+        {actions.onDuplicate ? (
+          <ContextMenuItem onSelect={actions.onDuplicate}>
+            {copy.row.menu.duplicate}
+          </ContextMenuItem>
+        ) : null}
+        <ContextMenuItem onSelect={actions.onCopyLink}>
+          {copy.row.menu.copyLink}
+        </ContextMenuItem>
+        {actions.onArchive ? (
+          <ContextMenuItem onSelect={actions.onArchive}>
+            {copy.row.menu.archive}
+          </ContextMenuItem>
+        ) : null}
+      </ContextMenuContent>
+    </ContextMenu>
   );
 }

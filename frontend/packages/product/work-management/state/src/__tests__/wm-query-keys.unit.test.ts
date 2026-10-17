@@ -9,6 +9,7 @@ describe("QRY-010 all WM keys require workspace ID", () => {
       wmQueryKeys.list("ws-1"),
       wmQueryKeys.workspaceList("ws-1"),
       wmQueryKeys.fullBoard("ws-1", "b1"),
+      wmQueryKeys.boardAccess("ws-1", "b1"),
       wmQueryKeys.view("ws-1", "b1"),
       wmQueryKeys.groups("ws-1", "b1"),
       wmQueryKeys.columns("ws-1", "b1"),

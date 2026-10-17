@@ -10,16 +10,18 @@ public static class DeleteTeamEndpoint
         group.MapWorkspaceDelete("/", HandleAsync)
             .WithName("Workspaces.Teams.DeleteTeam")
             .WithTags("Workspaces.Teams")
-            .WithSummary("Permanently delete a team");
+            .WithSummary("Permanently delete a team")
+            .Produces(StatusCodes.Status204NoContent);
         return group;
     }
 
     private static async Task<IResult> HandleAsync(
         Guid workspaceId,
         Guid teamId,
-        ISender sender)
+        ISender sender,
+        [FromQuery] long expectedVersion)
     {
-        var result = await sender.Send(new DeleteTeamCommand(workspaceId, teamId));
+        var result = await sender.Send(new DeleteTeamCommand(workspaceId, teamId, expectedVersion));
         return result.ToNoContentResult();
     }
 }

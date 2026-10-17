@@ -1,14 +1,38 @@
-import { useState, useEffect, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  AccountProfileSurface,
   createUseProfile,
   createUseUpdateProfile,
+  useAccountProfileCopy,
+  type AccountProfileData,
+  type AccountProfileValues,
+  type AccountSaveStatus,
+  type AccountSection,
 } from "@notrelix/features-account";
+import { useFormatters } from "@notrelix/i18n";
 import { useAppRuntime } from "@notrelix/runtime-web";
-import { Button, Input } from "@notrelix/ui-web";
-import { toast } from "sonner";
+import { accountPagesKeys, useAccountPagesApi } from "./use-account-pages";
+
+/** A photo is sent as a data URL; anything bigger is refused here. */
+const MAX_PHOTO_BYTES = 1_500_000;
+const PHOTO_TYPES = ["image/png", "image/jpeg", "image/webp"];
+
+function readAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
 
 export function AccountProfilePage() {
   const { api: runtimeClient } = useAppRuntime();
+  const copy = useAccountProfileCopy();
+  const formatters = useFormatters();
+  const queryClient = useQueryClient();
+  const api = useAccountPagesApi();
 
   const useProfile = useMemo(
     () =>
@@ -18,7 +42,6 @@ export function AccountProfilePage() {
       }),
     [runtimeClient],
   );
-
   const useUpdateProfile = useMemo(
     () =>
       createUseUpdateProfile({
@@ -28,124 +51,98 @@ export function AccountProfilePage() {
     [runtimeClient],
   );
 
-  const { profile, isLoading } = useProfile();
-  const updateMutation = useUpdateProfile();
+  const { profile, isError, refetch } = useProfile();
+  const details = useQuery({
+    queryKey: accountPagesKeys.details,
+    queryFn: () => api.getDetails(),
+    retry: false,
+  });
+  const updateName = useUpdateProfile();
+  const updateDetails = useMutation({
+    mutationFn: (input: Parameters<typeof api.updateDetails>[0]) =>
+      api.updateDetails(input),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: accountPagesKeys.details }),
+  });
+  const [save, setSave] = useState<AccountSaveStatus>({ state: "idle" });
+  const [photoError, setPhotoError] = useState(false);
 
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [timezone, setTimezone] = useState("");
-  const [locale, setLocale] = useState("");
+  const section = useMemo<AccountSection<AccountProfileData>>(
+    () =>
+      profile && details.data
+        ? {
+            status: "ready",
+            data: {
+              name: profile.name,
+              email: profile.email,
+              jobTitle: details.data.jobTitle,
+              phone: details.data.phone,
+              timezone: details.data.timezone,
+              dateFormat: details.data.dateFormat,
+              joinedAt: details.data.joinedAt,
+              avatarUrl: details.data.avatarUrl,
+              managedBy: details.data.managedBy,
+              workspaceName: details.data.workspaceName,
+            },
+          }
+        : isError || details.isError
+          ? { status: "error" }
+          : { status: "loading" },
+    [profile, details.data, details.isError, isError],
+  );
 
-  useEffect(() => {
-    if (profile) {
-      setName(profile.name);
-      setEmail(profile.email);
-      setTimezone(profile.timezone);
-      setLocale(profile.locale);
-    }
-  }, [profile]);
+  const handleSave = useCallback(
+    async (values: AccountProfileValues) => {
+      setSave({ state: "saving" });
+      try {
+        if (values.name !== profile?.name)
+          await updateName.mutateAsync({ name: values.name });
+        await updateDetails.mutateAsync({
+          jobTitle: values.jobTitle,
+          phone: values.phone,
+          timezone: values.timezone,
+          dateFormat: values.dateFormat,
+        });
+        setSave({ state: "saved" });
+      } catch {
+        setSave({ state: "error" });
+      }
+    },
+    [profile?.name, updateName, updateDetails],
+  );
 
-  const handleSave = async () => {
-    if (!name.trim()) {
-      toast.error("Name is required");
-      return;
-    }
-
-    try {
-      await updateMutation.mutateAsync({
-        name: name.trim(),
-        timezone,
-        locale,
-      });
-      toast.success("Profile updated");
-    } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to update profile",
-      );
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <div className="space-y-4">
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="h-10 bg-muted rounded-lg animate-pulse" />
-        ))}
-      </div>
-    );
-  }
+  const handlePhoto = useCallback(
+    async (file: File) => {
+      if (!PHOTO_TYPES.includes(file.type) || file.size > MAX_PHOTO_BYTES) {
+        setPhotoError(true);
+        return;
+      }
+      try {
+        await api.setAvatar(await readAsDataUrl(file));
+        setPhotoError(false);
+        await queryClient.invalidateQueries({
+          queryKey: accountPagesKeys.details,
+        });
+      } catch {
+        setPhotoError(true);
+      }
+    },
+    [api, queryClient],
+  );
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="font-semibold text-sm mb-1">Profile</h2>
-        <p className="text-xs text-muted-foreground">
-          Update your personal information.
-        </p>
-      </div>
-
-      <div className="space-y-4">
-        <div className="space-y-1.5">
-          <label className="text-sm font-medium text-foreground">Name</label>
-          <Input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Your name"
-          />
-        </div>
-
-        <div className="space-y-1.5">
-          <label className="text-sm font-medium text-foreground">Email</label>
-          <Input value={email} disabled className="opacity-60" />
-          <p className="text-xs text-muted-foreground">
-            Contact support to change your email.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-foreground">
-              Timezone
-            </label>
-            <select
-              value={timezone}
-              onChange={(e) => setTimezone(e.target.value)}
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-            >
-              <option value="UTC">UTC</option>
-              <option value="America/New_York">Eastern Time</option>
-              <option value="America/Chicago">Central Time</option>
-              <option value="America/Denver">Mountain Time</option>
-              <option value="America/Los_Angeles">Pacific Time</option>
-              <option value="Europe/London">London</option>
-              <option value="Europe/Paris">Paris</option>
-              <option value="Asia/Tokyo">Tokyo</option>
-              <option value="Asia/Ho_Chi_Minh">Ho Chi Minh</option>
-            </select>
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-foreground">
-              Language
-            </label>
-            <select
-              value={locale}
-              onChange={(e) => setLocale(e.target.value)}
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-            >
-              <option value="en">English</option>
-              <option value="vi">Tiếng Việt</option>
-            </select>
-          </div>
-        </div>
-
-        <Button
-          onClick={handleSave}
-          disabled={updateMutation.isPending || !name.trim()}
-        >
-          {updateMutation.isPending ? "Saving..." : "Save changes"}
-        </Button>
-      </div>
-    </div>
+    <AccountProfileSurface
+      copy={copy}
+      formatters={formatters}
+      profile={section}
+      save={save}
+      photoError={photoError}
+      onSave={(values) => void handleSave(values)}
+      onRetry={() => {
+        void refetch();
+        void details.refetch();
+      }}
+      onPhotoChange={(file) => void handlePhoto(file)}
+    />
   );
 }

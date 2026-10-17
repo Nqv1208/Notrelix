@@ -6,6 +6,8 @@ export const boardSearchSchema = z.object({
   sort: z.string().optional(),
   groupBy: z.string().optional(),
   item: z.string().optional(),
+  /** The share dialog is open (the settings page's "Quyền truy cập" lands here). */
+  share: z.boolean().optional(),
 });
 
 export type BoardSearch = z.infer<typeof boardSearchSchema>;

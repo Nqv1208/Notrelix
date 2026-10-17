@@ -23,7 +23,7 @@ export function UpgradeRequiredState({
         className,
       )}
     >
-      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-link">
         <LockKeyhole className="h-6 w-6" />
       </div>
       <div className="max-w-sm space-y-1">

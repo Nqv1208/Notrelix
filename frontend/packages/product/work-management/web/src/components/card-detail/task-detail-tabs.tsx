@@ -1,143 +1,293 @@
-import {
-  Activity,
-  Files,
-  FileText,
-  ListChecks,
-  MessageSquareText,
-} from "lucide-react";
-import { ScrollArea } from "@notrelix/ui-web";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@notrelix/ui-web";
+import { useId, useState, type KeyboardEvent } from "react";
+import { Check } from "lucide-react";
+import { cn } from "@notrelix/ui-web";
 import type { CardDetail, CardDetailTab } from "@notrelix/work-management-core";
+import { ItemDescriptionBody } from "../shared/item-description";
 import { TaskActivityTab } from "./task-activity-tab";
-import { TaskDetailEmptyState } from "./task-detail-empty-state";
-import { TaskFilesTab } from "./task-files-tab";
 import { TaskUpdatesTab } from "./task-updates-tab";
+import { fillSheetCopy, type ItemSheetCopy } from "./item-sheet.copy";
 import type {
+  ItemSheetChildItem,
   TaskDetailCallbacks,
   TaskDetailCapabilities,
   TaskDetailData,
 } from "./task-detail-types";
 
+type ActivityTab = "updates" | "activity";
+
+/**
+ * Body sections of the item sheet: "Mô tả", "Việc con {done}/{total}" and the
+ * "Bình luận {n}" / "Lịch sử" subtabs. The composer sits in the sheet footer.
+ */
 export function TaskDetailTabs({
   card,
   data,
   capabilities,
   callbacks,
-  activeTab = "updates",
+  copy,
+  now,
+  timeZone,
+  activeTab,
 }: {
   card: CardDetail;
   data: TaskDetailData;
   capabilities: TaskDetailCapabilities;
   callbacks: TaskDetailCallbacks;
+  copy: ItemSheetCopy;
+  now: Date;
+  timeZone?: string;
   activeTab?: CardDetailTab;
 }) {
+  const t = copy.sections;
   return (
-    <Tabs
-      defaultValue={activeTab}
-      onValueChange={(value) => callbacks.onSelectTab(value as CardDetailTab)}
-      className="flex min-h-0 flex-1 flex-col gap-0"
-    >
-      <div className="sticky top-0 z-10 border-b border-border bg-popover px-4 py-2">
-        <TabsList className="max-w-full overflow-x-auto">
-          <TabsTrigger
-            value="updates"
-            className="text-foreground"
-            onClick={() => callbacks.onSelectTab("updates")}
-          >
-            <MessageSquareText className="size-4" />
-            Updates
-          </TabsTrigger>
-          <TabsTrigger
-            value="files"
-            className="text-foreground"
-            onClick={() => callbacks.onSelectTab("files")}
-          >
-            <Files className="size-4" />
-            Files
-          </TabsTrigger>
-          <TabsTrigger
-            value="activity"
-            className="text-foreground"
-            onClick={() => callbacks.onSelectTab("activity")}
-          >
-            <Activity className="size-4" />
-            Activity Log
-          </TabsTrigger>
-          <TabsTrigger
-            value="linked-docs"
-            className="text-foreground"
-            onClick={() => callbacks.onSelectTab("linked-docs")}
-          >
-            <FileText className="size-4" />
-            Linked Docs
-          </TabsTrigger>
-          <TabsTrigger
-            value="subtasks"
-            className="text-foreground"
-            onClick={() => callbacks.onSelectTab("subtasks")}
-          >
-            <ListChecks className="size-4" />
-            Subtasks
-          </TabsTrigger>
-        </TabsList>
-      </div>
+    <>
+      <section>
+        <SectionHeading>{t.description}</SectionHeading>
+        {card.descriptionMd?.trim() ? (
+          <ItemDescriptionBody
+            workspaceId={card.workspaceId}
+            text={card.descriptionMd}
+            className="text-body leading-[1.65]"
+          />
+        ) : (
+          <p className="m-0 text-sm text-muted-foreground">
+            {t.descriptionUnavailable}
+          </p>
+        )}
+      </section>
 
-      <TabsContent value="updates" className="m-0 min-h-0 flex-1">
-        <ScrollArea className="h-full">
+      <ChildItemsSection
+        progress={card.childProgress ?? null}
+        items={data.childItems}
+        copy={copy}
+        onToggle={
+          capabilities.canEditFields ? callbacks.onToggleChildItem : undefined
+        }
+      />
+
+      <ActivitySection
+        card={card}
+        data={data}
+        capabilities={capabilities}
+        callbacks={callbacks}
+        copy={copy}
+        now={now}
+        timeZone={timeZone}
+        initialTab={activeTab === "activity" ? "activity" : "updates"}
+      />
+    </>
+  );
+}
+
+function SectionHeading({ children }: { children: React.ReactNode }) {
+  return (
+    <h3 className="m-0 mb-2 flex items-center gap-2 text-compact font-semibold text-muted-foreground">
+      {children}
+    </h3>
+  );
+}
+
+function ChildItemsSection({
+  progress,
+  items,
+  copy,
+  onToggle,
+}: {
+  progress: { readonly done: number; readonly total: number } | null;
+  items: readonly ItemSheetChildItem[] | undefined;
+  copy: ItemSheetCopy;
+  /** Ticks or unticks a child item; the checkboxes are inert without it. */
+  onToggle?: (childId: string, done: boolean) => void;
+}) {
+  const t = copy.sections;
+  const counted =
+    items && items.length > 0
+      ? {
+          done: items.filter((item) => item.done).length,
+          total: items.length,
+        }
+      : progress && progress.total > 0
+        ? progress
+        : null;
+
+  return (
+    <section>
+      <SectionHeading>
+        {t.childItems}
+        {counted ? (
+          <span className="font-normal text-meta-foreground">
+            {fillSheetCopy(t.childProgress, counted)}
+          </span>
+        ) : null}
+      </SectionHeading>
+      {items && items.length > 0 ? (
+        <ul className="m-0 flex list-none flex-col p-0">
+          {items.map((item) => (
+            <li
+              key={item.id}
+              className="-mx-1.5 flex min-h-8.5 items-center gap-2.5 rounded-[7px] px-1.5 text-body hover:bg-state-hover-strong"
+            >
+              {onToggle ? (
+                <button
+                  type="button"
+                  role="checkbox"
+                  aria-checked={item.done}
+                  aria-label={item.title}
+                  onClick={() => onToggle(item.id, !item.done)}
+                  className={cn(
+                    "grid size-4 shrink-0 cursor-pointer place-items-center rounded-[4px] border-[1.5px] p-0 outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
+                    item.done
+                      ? "border-work-status-done bg-work-status-done text-background"
+                      : "border-line-strong",
+                  )}
+                >
+                  {item.done ? (
+                    <Check className="size-2.75" strokeWidth={3} />
+                  ) : null}
+                </button>
+              ) : (
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    "grid size-4 shrink-0 place-items-center rounded-[4px] border-[1.5px]",
+                    item.done
+                      ? "border-work-status-done bg-work-status-done text-background"
+                      : "border-line-strong",
+                  )}
+                >
+                  {item.done ? (
+                    <Check className="size-2.75" strokeWidth={3} />
+                  ) : null}
+                </span>
+              )}
+              <span
+                className={
+                  item.done ? "text-meta-foreground line-through" : undefined
+                }
+              >
+                {item.title}
+              </span>
+              {item.done ? (
+                <span className="sr-only">{t.childDone}</span>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      ) : counted ? null : (
+        <p className="m-0 text-sm text-muted-foreground">{t.noChildItems}</p>
+      )}
+    </section>
+  );
+}
+
+function ActivitySection({
+  card,
+  data,
+  capabilities,
+  callbacks,
+  copy,
+  now,
+  timeZone,
+  initialTab,
+}: {
+  card: CardDetail;
+  data: TaskDetailData;
+  capabilities: TaskDetailCapabilities;
+  callbacks: TaskDetailCallbacks;
+  copy: ItemSheetCopy;
+  now: Date;
+  timeZone?: string;
+  initialTab: ActivityTab;
+}) {
+  const t = copy.sections;
+  const baseId = useId();
+  const [tab, setTab] = useState<ActivityTab>(initialTab);
+  const tabs: ReadonlyArray<readonly [ActivityTab, string]> = [
+    ["updates", fillSheetCopy(t.comments, { count: data.updates.length })],
+    ["activity", t.history],
+  ];
+
+  function select(next: ActivityTab) {
+    setTab(next);
+    callbacks.onSelectTab(next);
+  }
+
+  function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
+    event.preventDefault();
+    const next = tab === "updates" ? "activity" : "updates";
+    select(next);
+    document.getElementById(`${baseId}-${next}-tab`)?.focus();
+  }
+
+  return (
+    <section>
+      <div
+        role="tablist"
+        aria-label={t.activity}
+        onKeyDown={handleKeyDown}
+        className="mb-3 flex gap-0.5 border-b border-line"
+      >
+        {tabs.map(([value, label]) => {
+          const selected = tab === value;
+          return (
+            <button
+              key={value}
+              id={`${baseId}-${value}-tab`}
+              type="button"
+              role="tab"
+              aria-selected={selected}
+              aria-controls={`${baseId}-${value}-panel`}
+              tabIndex={selected ? 0 : -1}
+              onClick={() => select(value)}
+              className={cn(
+                "-mb-px h-8 border-b-2 px-2.5 text-compact font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
+                selected
+                  ? "border-primary font-semibold text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {label}
+            </button>
+          );
+        })}
+      </div>
+      <div
+        role="tabpanel"
+        id={`${baseId}-${tab}-panel`}
+        aria-labelledby={`${baseId}-${tab}-tab`}
+      >
+        {tab === "updates" ? (
           <TaskUpdatesTab
             card={card}
             updates={data.updates}
+            events={data.activity.filter(
+              (entry) =>
+                entry.type === "updated" ||
+                entry.type === "system" ||
+                entry.type === "automation",
+            )}
             isLoading={data.updatesLoading}
             capabilities={capabilities}
+            copy={copy}
+            now={now}
+            timeZone={timeZone}
             onCreateUpdate={callbacks.onCreateUpdate}
             onUpdateUpdate={callbacks.onUpdateUpdate}
             onDeleteUpdate={callbacks.onDeleteUpdate}
           />
-        </ScrollArea>
-      </TabsContent>
-      <TabsContent value="files" className="m-0 min-h-0 flex-1">
-        <ScrollArea className="h-full">
-          <TaskFilesTab files={data.files} isLoading={data.filesLoading} />
-        </ScrollArea>
-      </TabsContent>
-      <TabsContent value="activity" className="m-0 min-h-0 flex-1">
-        <ScrollArea className="h-full">
+        ) : (
           <TaskActivityTab
             activity={data.activity}
             isLoading={data.activityLoading}
             isFetching={data.activityFetching}
+            copy={copy}
+            now={now}
+            timeZone={timeZone}
             onRefresh={callbacks.onRefreshActivity}
           />
-        </ScrollArea>
-      </TabsContent>
-      <TabsContent value="linked-docs" className="m-0 min-h-0 flex-1">
-        <ScrollArea className="h-full">
-          <div className="p-4">
-            <TaskDetailEmptyState
-              icon={FileText}
-              title={
-                card.linkedPageId ? "Linked doc connected" : "No linked docs"
-              }
-              description={
-                card.linkedPageId
-                  ? card.linkedPageId
-                  : "Link a workspace doc from the table to keep specs and task execution together."
-              }
-            />
-          </div>
-        </ScrollArea>
-      </TabsContent>
-      <TabsContent value="subtasks" className="m-0 min-h-0 flex-1">
-        <ScrollArea className="h-full">
-          <div className="p-4">
-            <TaskDetailEmptyState
-              icon={ListChecks}
-              title="No subtasks yet"
-              description="Checklist-backed subtasks will appear here as the card checklist API is expanded."
-            />
-          </div>
-        </ScrollArea>
-      </TabsContent>
-    </Tabs>
+        )}
+      </div>
+    </section>
   );
 }

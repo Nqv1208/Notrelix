@@ -24,7 +24,7 @@ public class GetWorkspaceInvitationsQueryHandler : IRequestHandler<GetWorkspaceI
     {
         var workspaceExists = await _context.Workspaces
             .AsNoTracking()
-            .AnyAsync(w => w.Id == request.WorkspaceId && w.Status == WorkspaceStatus.Active && !w.IsDeleted, ct);
+            .AnyAsync(w => w.Id == request.WorkspaceId && w.Status == WorkspaceStatus.Active && w.DeletedAt == null, ct);
 
         if (!workspaceExists)
             throw new NotFoundException(nameof(Workspace), request.WorkspaceId);
@@ -41,7 +41,8 @@ public class GetWorkspaceInvitationsQueryHandler : IRequestHandler<GetWorkspaceI
             invitation.Role.ToString(),
             invitation.ExpiresAt.DateTime,
             invitation.Status == WorkspaceInvitationStatus.Accepted,
-            invitation.CreatedAt.DateTime
+            invitation.CreatedAt.DateTime,
+            invitation.Status.ToString()
         )).ToList();
 
         return Result<List<WorkspaceInvitationDto>>.Success(result);

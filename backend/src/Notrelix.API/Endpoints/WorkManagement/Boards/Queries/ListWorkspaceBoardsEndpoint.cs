@@ -1,3 +1,4 @@
+using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoards;
 
@@ -9,6 +10,7 @@ public static class ListWorkspaceBoardsEndpoint
     {
         group.MapWorkspaceGet("/", HandleAsync)
             .WithName("WorkManagement.Boards.ListWorkspaceBoards")
+            .Produces<List<BoardDto>>(StatusCodes.Status200OK, "application/json")
             .WithTags("WorkManagement.Boards")
             .WithSummary("Get all boards in a workspace by workspace ID");
         return group;

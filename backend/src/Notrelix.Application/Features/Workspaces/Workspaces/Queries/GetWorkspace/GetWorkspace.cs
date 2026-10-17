@@ -30,7 +30,7 @@ public class GetWorkspaceQueryHandler : IRequestHandler<GetWorkspaceQuery, Resul
             throw new NotFoundException(nameof(Workspace), request.WorkspaceId);
 
         var memberCount = await _context.WorkspaceMembers
-            .CountAsync(m => m.WorkspaceId == workspace.Id, ct);
+            .CountAsync(m => m.WorkspaceId == workspace.Id && m.Status != WorkspaceMemberStatus.Removed, ct);
 
         return Result<WorkspaceDto>.Success(new WorkspaceDto(
             workspace.Id,
@@ -45,7 +45,8 @@ public class GetWorkspaceQueryHandler : IRequestHandler<GetWorkspaceQuery, Resul
             workspace.Status == WorkspaceStatus.Archived,
             memberCount,
             workspace.CreatedAt.DateTime,
-            null
+            null,
+            workspace.Version
         ));
     }
 }
