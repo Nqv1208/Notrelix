@@ -2609,6 +2609,10 @@
           "testFile": "src/components/board-share/__tests__/board-share-dialog.interaction.component.test.tsx"
         },
         {
+          "id": "private-confirm",
+          "testFile": "src/components/board-share/__tests__/board-share-dialog.interaction.component.test.tsx"
+        },
+        {
           "id": "log",
           "testFile": "src/components/board-share/__tests__/board-share-dialog.interaction.component.test.tsx"
         },
