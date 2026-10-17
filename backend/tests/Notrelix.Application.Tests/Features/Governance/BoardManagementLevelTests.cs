@@ -1,5 +1,4 @@
 using System.Runtime.CompilerServices;
-using Notrelix.Application.Features.Governance.Authorization;
 using Notrelix.Application.Features.WorkManagement.Approvals.Commands.CreateApprovalRequest;
 using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.ArchiveBoardGroup;
 using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.CreateBoardGroup;

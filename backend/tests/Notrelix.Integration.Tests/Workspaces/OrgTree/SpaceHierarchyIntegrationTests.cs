@@ -2,7 +2,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
 using Notrelix.Application.Features.Workspaces.Spaces.Commands.AddSpaceMember;
 using Notrelix.Application.Features.Workspaces.Spaces.Commands.ArchiveSpace;
-using Notrelix.Application.Features.Workspaces.Spaces.Commands.ChangeSpaceMemberRole;
 using Notrelix.Application.Features.Workspaces.Spaces.Commands.CreateSpace;
 using Notrelix.Application.Features.Workspaces.Spaces.Commands.DeleteSpace;
 using Notrelix.Application.Features.Workspaces.Spaces.Commands.MoveSpace;

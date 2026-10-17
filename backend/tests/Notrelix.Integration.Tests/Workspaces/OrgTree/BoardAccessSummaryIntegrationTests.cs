@@ -1,6 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
 using Notrelix.Application.Features.Governance.Abstractions;
-using Notrelix.Application.Features.Governance.Authorization;
 using Notrelix.Application.Features.Governance.Public.Access;
 using Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoardAccess;
 using Notrelix.Application.Features.WorkManagement.Common.DTOs;

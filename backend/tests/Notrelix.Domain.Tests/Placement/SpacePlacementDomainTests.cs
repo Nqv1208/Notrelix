@@ -1,10 +1,8 @@
 using FluentAssertions;
 using Notrelix.Domain.Documents;
 using Notrelix.Domain.Documents.Pages;
-using Notrelix.Domain.Documents.Pages.Events;
 using Notrelix.Domain.WorkManagement;
 using Notrelix.Domain.WorkManagement.Boards;
-using Notrelix.Domain.WorkManagement.Boards.Events;
 
 namespace Notrelix.Domain.Tests.Placement;
 

@@ -1,6 +1,4 @@
-﻿using System;
-using Microsoft.EntityFrameworkCore.Migrations;
-using Notrelix.Infrastructure.Data.Workspaces;
+﻿using Notrelix.Infrastructure.Data.Workspaces;
 
 #nullable disable
 

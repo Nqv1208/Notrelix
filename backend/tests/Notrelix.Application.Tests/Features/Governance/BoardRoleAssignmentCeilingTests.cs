@@ -1,4 +1,3 @@
-using Notrelix.Application.Features.Governance.Authorization;
 using Notrelix.Application.Features.WorkManagement.Boards.Commands.AddBoardMember;
 using Notrelix.Application.Features.WorkManagement.Boards.Commands.UpdateBoardMemberRole;
 

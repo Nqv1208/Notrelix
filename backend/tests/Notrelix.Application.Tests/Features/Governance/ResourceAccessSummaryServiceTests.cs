@@ -1,5 +1,4 @@
 using Notrelix.Application.Features.Governance.Abstractions;
-using Notrelix.Application.Features.Governance.Authorization;
 using Notrelix.Application.Features.Governance.Public.Access;
 using Notrelix.Application.Features.WorkManagement.Public.BoardAccess;
 using Notrelix.Testing.Application.Fakes;

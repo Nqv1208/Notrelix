@@ -1,4 +1,3 @@
-using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Workspaces.Teams.Queries.GetTeamMembers;
 
 namespace Notrelix.API.Endpoints.Workspaces.Teams.Queries;

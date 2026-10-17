@@ -1,4 +1,3 @@
-using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Governance.Public.Visibility;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetBoardItem;
 using Notrelix.Application.Features.WorkManagement.Boards.Queries.GetFullBoard;
@@ -11,7 +10,6 @@ using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.WorkManagement.Fields;
 using Notrelix.Domain.WorkManagement.Items;
 using Notrelix.Domain.Workspaces.Workspaces;
-using Notrelix.Infrastructure.Data;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
 

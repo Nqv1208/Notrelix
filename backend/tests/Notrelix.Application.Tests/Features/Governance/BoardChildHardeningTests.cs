@@ -1,4 +1,3 @@
-using Notrelix.Application.Features.Governance.Authorization;
 using Notrelix.Application.Features.WorkManagement.BoardViews.Commands.SaveBoardView;
 using Notrelix.Domain.Governance.Permissions;
 

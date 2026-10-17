@@ -1,7 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Notrelix.Application.Features.Collaboration.Comments.Commands.CreateComment;
 using Notrelix.Application.Features.Governance.Abstractions;
-using Notrelix.Application.Features.Governance.Authorization;
 using Notrelix.Application.Features.Governance.Public.Access;
 using Notrelix.Application.Features.Governance.ResourcePermissions.Commands.GrantResourcePermission;
 using Notrelix.Application.Features.Governance.ResourcePermissions.Queries.GetResourcePermissions;

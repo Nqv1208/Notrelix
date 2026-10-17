@@ -1,4 +1,3 @@
-using Notrelix.Application.Features.Governance.Authorization;
 using Notrelix.Domain.Governance.Permissions;
 
 namespace Notrelix.Application.Tests.Features.Governance;

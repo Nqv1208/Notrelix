@@ -1,4 +1,3 @@
-using Notrelix.Application.Features.Governance.Authorization;
 using Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoard;
 
 namespace Notrelix.Application.Tests.Features.Governance;

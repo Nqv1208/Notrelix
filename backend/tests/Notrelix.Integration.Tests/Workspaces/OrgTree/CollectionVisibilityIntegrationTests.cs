@@ -1,5 +1,4 @@
 using Microsoft.Extensions.DependencyInjection;
-using Notrelix.Application.Features.Documents.DTOs;
 using Notrelix.Application.Features.Documents.Pages.Queries.GetPage;
 using Notrelix.Application.Features.Documents.Pages.Queries.GetPageTree;
 using Notrelix.Application.Features.Documents.Pages.Queries.GetWorkspacePages;

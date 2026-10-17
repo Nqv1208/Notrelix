@@ -1,5 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
-using Notrelix.Infrastructure.Data.WorkManagement;
+﻿using Notrelix.Infrastructure.Data.WorkManagement;
 
 #nullable disable
 

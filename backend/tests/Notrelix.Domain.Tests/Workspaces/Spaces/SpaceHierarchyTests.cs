@@ -1,7 +1,5 @@
 using FluentAssertions;
 using Notrelix.Domain.Workspaces;
-using Notrelix.Domain.Workspaces.Spaces;
-using Notrelix.Domain.Workspaces.Spaces.Events;
 
 namespace Notrelix.Domain.Tests.Workspaces.Spaces;
 
