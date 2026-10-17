@@ -349,6 +349,8 @@ test.describe("My work (owner)", () => {
   }) => {
     await openMyWork(page);
     const links = page.locator('[data-f="rt"] a');
+    // The keys act on the rows: wait for them before pressing.
+    await expect(links.nth(1)).toBeVisible();
     await page.keyboard.press("j");
     await expect(links.nth(0)).toBeFocused();
     await page.keyboard.press("j");
