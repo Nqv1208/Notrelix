@@ -25,7 +25,6 @@ function Page({ children }: { children: React.ReactNode }) {
   return <div className="h-225 w-296 overflow-hidden">{children}</div>;
 }
 
-
 export const ErpDashboard: Story = {
   render: () => (
     <Page>
@@ -102,7 +101,9 @@ export const ExportRunning: Story = {
 export const EmptyReport: Story = {
   render: () => (
     <Page>
-      <ReportDashboardSurface {...dashboardScenario({ report: emptyReport() })} />
+      <ReportDashboardSurface
+        {...dashboardScenario({ report: emptyReport() })}
+      />
     </Page>
   ),
   tags: ["fui-surface--workspace.report-dashboard", "fui-state--Empty"],
@@ -111,7 +112,9 @@ export const EmptyReport: Story = {
 export const ViewerOnly: Story = {
   render: () => (
     <Page>
-      <ReportDashboardSurface {...dashboardScenario({ report: viewerReport() })} />
+      <ReportDashboardSurface
+        {...dashboardScenario({ report: viewerReport() })}
+      />
     </Page>
   ),
   tags: ["fui-surface--workspace.report-dashboard", "fui-state--ReadOnly"],
@@ -120,16 +123,23 @@ export const ViewerOnly: Story = {
 export const PartialNumbers: Story = {
   render: () => (
     <Page>
-      <ReportDashboardSurface {...dashboardScenario({ report: weeklyReport() })} />
+      <ReportDashboardSurface
+        {...dashboardScenario({ report: weeklyReport() })}
+      />
     </Page>
   ),
-  tags: ["fui-surface--workspace.report-dashboard", "fui-state--PermissionLimited"],
+  tags: [
+    "fui-surface--workspace.report-dashboard",
+    "fui-state--PermissionLimited",
+  ],
 };
 
 export const NothingToCount: Story = {
   render: () => (
     <Page>
-      <ReportDashboardSurface {...dashboardScenario({ report: zeroReport() })} />
+      <ReportDashboardSurface
+        {...dashboardScenario({ report: zeroReport() })}
+      />
     </Page>
   ),
   tags: ["fui-surface--workspace.report-dashboard", "fui-state--EdgeData"],

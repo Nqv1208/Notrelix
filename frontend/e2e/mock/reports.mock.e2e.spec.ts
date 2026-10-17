@@ -57,7 +57,9 @@ test.describe("the report list", () => {
       group.getByRole("button", { name: /Được chia sẻ/ }),
     ).toContainText("3");
     await group.getByRole("button", { name: /Của tôi/ }).click();
-    await expect(page.getByText("Chưa có báo cáo nào trong mục này.")).toBeVisible();
+    await expect(
+      page.getByText("Chưa có báo cáo nào trong mục này."),
+    ).toBeVisible();
     await group.getByRole("button", { name: /Tất cả/ }).click();
     await expect(table.getByRole("row")).toHaveCount(4);
     await noOverflow(page);
@@ -65,10 +67,15 @@ test.describe("the report list", () => {
 
   test("opens a report from its row", async ({ page }) => {
     await page.goto(BASE);
-    await page.getByRole("row", { name: /Tổng quan triển khai ERP Q4/ }).click();
+    await page
+      .getByRole("row", { name: /Tổng quan triển khai ERP Q4/ })
+      .click();
     await expect(page).toHaveURL(/report=mock-report-erp/);
     await expect(
-      page.getByRole("heading", { level: 1, name: "Tổng quan triển khai ERP Q4" }),
+      page.getByRole("heading", {
+        level: 1,
+        name: "Tổng quan triển khai ERP Q4",
+      }),
     ).toBeVisible();
   });
 });
@@ -76,15 +83,21 @@ test.describe("the report list", () => {
 test.describe("the ERP dashboard", () => {
   test("counts the ERP board the way the mockup does", async ({ page }) => {
     await page.goto(ERP);
-    const sum = page.getByRole("list", { name: /Tóm tắt board Triển khai ERP Q4/ });
+    const sum = page.getByRole("list", {
+      name: /Tóm tắt board Triển khai ERP Q4/,
+    });
     await expect(sum).toContainText("5/16 việc hoàn thành · 31%");
     await expect(sum).toContainText("1 việc quá hạn");
     await expect(sum).toContainText("4 việc đến hạn trong 7 ngày");
     await expect(sum).toContainText("20 ngày tới go-live 01/11");
     await expect(page.getByText("Lê Hoàng Phúc tạo")).toBeVisible();
-    await expect(page.getByText(/Cập nhật 10:38 · số liệu đến 10:37/)).toBeVisible();
     await expect(
-      page.getByRole("img", { name: /Theo trạng thái: Cần làm 6, Đang làm 3, Chờ duyệt 2, Hoàn thành 5; tổng 16 việc/ }),
+      page.getByText(/Cập nhật 10:38 · số liệu đến 10:37/),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("img", {
+        name: /Theo trạng thái: Cần làm 6, Đang làm 3, Chờ duyệt 2, Hoàn thành 5; tổng 16 việc/,
+      }),
     ).toBeVisible();
     const velocity = widget(page, "Tốc độ hoàn thành");
     await expect(velocity.getByRole("img")).toHaveAttribute(
@@ -94,9 +107,7 @@ test.describe("the ERP dashboard", () => {
     await expect(velocity.getByRole("note")).toContainText(
       "Có nguy cơ trễ go-live. 3 tuần gần nhất: trung bình 1,7 việc/tuần (2 + 2 + 1). Còn 11 việc và 3 tuần tới 01/11 nên cần khoảng 3,7 việc/tuần.",
     );
-    await expect(
-      widget(page, "Theo phân hệ").getByRole("img"),
-    ).toHaveAttribute(
+    await expect(widget(page, "Theo phân hệ").getByRole("img")).toHaveAttribute(
       "aria-label",
       "Việc chưa hoàn thành theo phân hệ: Kế toán 5, Kho 2, Mua hàng 2, Chưa đặt 2",
     );
@@ -114,7 +125,9 @@ test.describe("the ERP dashboard", () => {
     const load = widget(page, "Khối lượng theo người phụ trách");
     await expect(load.getByRole("listitem")).toHaveCount(8);
     await expect(
-      load.getByRole("button", { name: /Trần Minh Quân · 2 việc chưa hoàn thành, 1 quá hạn/ }),
+      load.getByRole("button", {
+        name: /Trần Minh Quân · 2 việc chưa hoàn thành, 1 quá hạn/,
+      }),
     ).toBeVisible();
     await noOverflow(page);
   });
@@ -172,7 +185,9 @@ test.describe("drill-down", () => {
   }) => {
     await page.goto(ERP);
     await page
-      .getByRole("button", { name: /Trần Minh Quân · 2 việc chưa hoàn thành, 1 quá hạn/ })
+      .getByRole("button", {
+        name: /Trần Minh Quân · 2 việc chưa hoàn thành, 1 quá hạn/,
+      })
       .click();
     await expect(page).toHaveURL(/drill=mock-user-erp-quan/);
     const sheet = page.getByRole("dialog", {
@@ -216,17 +231,21 @@ test.describe("export", () => {
     await dialog.getByRole("button", { name: "Tạo tệp" }).click();
     await expect(dialog).toContainText("Đang tạo tệp… thường dưới 1 phút");
     await expect(dialog).toContainText("Bắt đầu 10:41.");
-    await expect(dialog).toContainText("Liên kết tải xuống hết hạn sau 7 ngày.");
-    await expect(dialog.getByRole("button", { name: "Đang tạo…" })).toHaveAttribute(
-      "aria-disabled",
-      "true",
+    await expect(dialog).toContainText(
+      "Liên kết tải xuống hết hạn sau 7 ngày.",
     );
+    await expect(
+      dialog.getByRole("button", { name: "Đang tạo…" }),
+    ).toHaveAttribute("aria-disabled", "true");
     await dialog.getByRole("button", { name: "Kiểm tra lại" }).click();
     await expect(dialog).toContainText("Tệp đã sẵn sàng");
     const link = dialog.getByRole("link", {
       name: /Tải xuống tong-quan-trien-khai-erp-q4\.csv/,
     });
-    await expect(link).toHaveAttribute("download", "tong-quan-trien-khai-erp-q4.csv");
+    await expect(link).toHaveAttribute(
+      "download",
+      "tong-quan-trien-khai-erp-q4.csv",
+    );
     await expect(link).toHaveAttribute("href", /^data:text\/csv/);
     await page.keyboard.press("Escape");
     await expect(dialog).toBeHidden();
@@ -240,7 +259,10 @@ test.describe("partial numbers", () => {
   }) => {
     await page.goto(WEEKLY);
     await expect(
-      page.getByRole("heading", { level: 1, name: "Báo cáo tuần Ban giám đốc" }),
+      page.getByRole("heading", {
+        level: 1,
+        name: "Báo cáo tuần Ban giám đốc",
+      }),
     ).toBeVisible();
     await expect(page.getByText("Bạn: Chỉ xem")).toBeVisible();
     await expect(page.getByRole("button", { name: "Sửa" })).toHaveCount(0);
@@ -298,7 +320,9 @@ test.describe("a new report", () => {
     await expect(
       page.getByRole("heading", { name: "Bắt đầu từ một bố cục" }),
     ).toBeVisible();
-    await expect(page.getByRole("button", { name: "Dùng bố cục" })).toHaveCount(3);
+    await expect(page.getByRole("button", { name: "Dùng bố cục" })).toHaveCount(
+      3,
+    );
 
     // Name it.
     await page.getByRole("button", { name: "Đổi tên báo cáo" }).click();
@@ -317,35 +341,39 @@ test.describe("a new report", () => {
     await expect(share).toBeHidden();
 
     // Use a starting layout.
-    await page
-      .getByRole("button", { name: "Dùng bố cục" })
-      .first()
-      .click();
+    await page.getByRole("button", { name: "Dùng bố cục" }).first().click();
     await expect(widget(page, "Theo trạng thái")).toBeVisible();
     await expect(widget(page, "Tốc độ hoàn thành")).toBeVisible();
     await expect(widget(page, "Đến hạn trong 7 ngày")).toBeVisible();
     await expect(page.getByText("Chia sẻ với Ban giám đốc")).toBeVisible();
 
     // It is in the list as mine.
-    await page.getByRole("link", { name: "Báo cáo", exact: true }).first().click();
+    await page
+      .getByRole("link", { name: "Báo cáo", exact: true })
+      .first()
+      .click();
     const group = page.getByRole("group", { name: "Lọc báo cáo" });
-    await expect(group.getByRole("button", { name: /Của tôi/ })).toContainText("1");
+    await expect(group.getByRole("button", { name: /Của tôi/ })).toContainText(
+      "1",
+    );
     await expect(page.getByRole("table", { name: "Báo cáo" })).toContainText(
       "Theo dõi ERP của tôi",
     );
 
     // Delete it.
     await page.getByRole("row", { name: /Theo dõi ERP của tôi/ }).click();
-    await page.getByRole("button", { name: "Thêm thao tác cho báo cáo" }).click();
+    await page
+      .getByRole("button", { name: "Thêm thao tác cho báo cáo" })
+      .click();
     await page.getByRole("menuitem", { name: "Xoá báo cáo" }).click();
     await page
       .getByRole("alertdialog")
       .getByRole("button", { name: "Xoá báo cáo" })
       .click();
     await expect(page).not.toHaveURL(/report=/);
-    await expect(page.getByRole("table", { name: "Báo cáo" })).not.toContainText(
-      "Theo dõi ERP của tôi",
-    );
+    await expect(
+      page.getByRole("table", { name: "Báo cáo" }),
+    ).not.toContainText("Theo dõi ERP của tôi");
   });
 });
 
@@ -377,7 +405,9 @@ test.describe("editing the layout", () => {
 
     // Keyboard move: Esc puts it back.
     const velocity = widget(page, "Tốc độ hoàn thành");
-    await velocity.getByRole("button", { name: "Di chuyển", exact: true }).click();
+    await velocity
+      .getByRole("button", { name: "Di chuyển", exact: true })
+      .click();
     await expect(velocity.getByRole("status")).toContainText(
       "Đang di chuyển · vị trí 2/3",
     );
@@ -393,7 +423,9 @@ test.describe("editing the layout", () => {
     ]);
 
     // Move and place.
-    await velocity.getByRole("button", { name: "Di chuyển", exact: true }).click();
+    await velocity
+      .getByRole("button", { name: "Di chuyển", exact: true })
+      .click();
     await page.keyboard.press("ArrowUp");
     await page.keyboard.press("Enter");
     expect((await order()).slice(0, 2)).toEqual([
@@ -422,19 +454,22 @@ test.describe("editing the layout", () => {
     await expect(dialog.getByLabel("Tên widget")).toHaveValue(
       "Việc chưa hoàn thành theo người phụ trách",
     );
-    await expect(dialog).toContainText("Số việc · định nghĩa: mỗi việc chưa lưu trữ đếm 1");
+    await expect(dialog).toContainText(
+      "Số việc · định nghĩa: mỗi việc chưa lưu trữ đếm 1",
+    );
     await expect(
       dialog.getByRole("img", { name: /Trần Minh Quân 2/ }),
     ).toBeVisible();
     await dialog.getByLabel("Nhóm theo").selectOption("week");
-    await expect(dialog.getByRole("radio", { name: "Đường" })).not.toHaveAttribute(
-      "aria-disabled",
-      "true",
-    );
+    await expect(
+      dialog.getByRole("radio", { name: "Đường" }),
+    ).not.toHaveAttribute("aria-disabled", "true");
     await dialog.getByRole("radio", { name: "Cột" }).click();
     await dialog.getByLabel("Nhóm theo").selectOption("assignee");
     await dialog.getByLabel("Tên widget").fill("Việc mở theo người");
-    await dialog.getByRole("button", { name: "Bỏ điều kiện lọc Trạng thái" }).click();
+    await dialog
+      .getByRole("button", { name: "Bỏ điều kiện lọc Trạng thái" })
+      .click();
     await dialog.getByRole("button", { name: "Thêm điều kiện" }).click();
     await page.getByRole("menuitem", { name: "Quá hạn" }).click();
     await dialog.getByRole("button", { name: "Thêm", exact: true }).click();
@@ -483,7 +518,9 @@ test.describe("editing the layout", () => {
     await dialog.getByLabel("Tên widget").fill("Lưu ý tuần này");
     await dialog.getByRole("button", { name: "Thêm", exact: true }).click();
     await expect(dialog.getByText("Hãy viết nội dung ghi chú.")).toBeVisible();
-    await dialog.getByLabel("Nội dung ghi chú").fill("Chốt dữ liệu trước thứ Sáu.");
+    await dialog
+      .getByLabel("Nội dung ghi chú")
+      .fill("Chốt dữ liệu trước thứ Sáu.");
     await dialog.getByRole("button", { name: "Thêm", exact: true }).click();
     await page
       .getByRole("region", { name: "Sửa bố cục báo cáo" })
@@ -492,14 +529,18 @@ test.describe("editing the layout", () => {
     const note = widget(page, "Lưu ý tuần này");
     await expect(note).toContainText("Chốt dữ liệu trước thứ Sáu.");
     await expect(note).toContainText("Nguyễn Thu Hà viết · 12/10");
-    await page.getByRole("button", { name: "Tuỳ chọn widget Lưu ý tuần này" }).click();
+    await page
+      .getByRole("button", { name: "Tuỳ chọn widget Lưu ý tuần này" })
+      .click();
     await page.getByRole("menuitem", { name: "Xoá khỏi báo cáo" }).click();
     await page
       .getByRole("alertdialog")
       .getByRole("button", { name: "Xoá widget" })
       .click();
     await expect(note).toHaveCount(0);
-    await expect(page.getByRole("heading", { name: "Bắt đầu từ một bố cục" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Bắt đầu từ một bố cục" }),
+    ).toBeVisible();
   });
 });
 

@@ -81,7 +81,10 @@ export function createColumnApi(client: NotrelixClient) {
       const body: MoveFieldBody = {};
       for (const column of columns) {
         const columnId = typeof column === "string" ? column : column.id;
-        await api.post<void>(endpoints.boardFields.move(boardId, columnId), body);
+        await api.post<void>(
+          endpoints.boardFields.move(boardId, columnId),
+          body,
+        );
       }
     },
   };

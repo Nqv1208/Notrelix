@@ -307,7 +307,11 @@
   --color-inverse-success: var(--inverse-success);
   --color-inverse-muted: var(--inverse-muted);
   /* Selected table row: the accent soft tone, one step lighter (Final-Table --sel-row). */
-  --color-row-selected: color-mix(in oklab, var(--state-selected) 70%, var(--surface-panel));
+  --color-row-selected: color-mix(
+    in oklab,
+    var(--state-selected) 70%,
+    var(--surface-panel)
+  );
 
   /* State set. */
   --color-state-hover: var(--state-hover);

@@ -54,7 +54,10 @@ const GLYPHS = {
   lock: ["rect:4,11,16,10,2", "M8 11V7a4 4 0 0 1 8 0v4"],
   check: ["M5 12l5 5 9-10"],
   trash: ["M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"],
-  copy: ["rect:8,8,12,12,2", "M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"],
+  copy: [
+    "rect:8,8,12,12,2",
+    "M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2",
+  ],
 } as const satisfies Record<string, readonly string[]>;
 
 export type ReportGlyphName = keyof typeof GLYPHS;

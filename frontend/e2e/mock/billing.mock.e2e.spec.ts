@@ -22,7 +22,9 @@ test("the overview shows the plan, the usage of both workspaces and the payment 
   page,
 }) => {
   await page.goto(billing);
-  await expect(page.getByRole("heading", { name: "Business", exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Business", exact: true }),
+  ).toBeVisible();
   await expect(page.getByText("Còn 6 chỗ")).toBeVisible();
   await expect(page.getByText("Visa •••• 4821")).toBeVisible();
   await expect(

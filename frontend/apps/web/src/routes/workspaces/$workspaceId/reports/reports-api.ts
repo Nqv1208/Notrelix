@@ -128,11 +128,7 @@ export function createReportsApi(api: ReportsApiClient) {
         QUIET,
       );
     },
-    startExport(
-      workspaceId: string,
-      reportId: string,
-      format: "pdf" | "csv",
-    ) {
+    startExport(workspaceId: string, reportId: string, format: "pdf" | "csv") {
       return api.post<ReportExportJobDto>(
         `${reportPath(workspaceId, reportId)}/exports`,
         { format },

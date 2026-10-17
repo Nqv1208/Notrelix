@@ -221,8 +221,8 @@ export class MockStore {
   readonly onboarding = new MockOnboarding();
   readonly accountPages = new MockAccountPages();
   readonly reports = new MockReports();
-readonly billing = new MockBilling();
-readonly integrations = new MockIntegrations();
+  readonly billing = new MockBilling();
+  readonly integrations = new MockIntegrations();
   /** Automation rules, drafts and run log of a board (gap `CTR-GAP-WM-BOARD-AUTOMATIONS`). */
   readonly automations = new MockBoardAutomations(this);
   // Primary Maps
@@ -1724,8 +1724,8 @@ readonly integrations = new MockIntegrations();
     this.onboarding.reset();
     this.accountPages.reset();
     this.reports.reset();
-this.billing.reset();
-this.integrations.reset();
+    this.billing.reset();
+    this.integrations.reset();
     this.automations.reset();
     this.navigationByMember.clear();
     this.navigationTick = 0;

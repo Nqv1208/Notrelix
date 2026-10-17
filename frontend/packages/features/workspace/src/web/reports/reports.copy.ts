@@ -148,8 +148,7 @@ export const en = {
       due: "Unfinished items due from tomorrow to 7 days ahead. An item due with no time of day is due at the end of that day.",
       workload:
         "Unfinished items by assignee. An item is overdue when its due moment passed at the time of the numbers.",
-      deptDone:
-        "Items that moved to Done last week, on boards you may see.",
+      deptDone: "Items that moved to Done last week, on boards you may see.",
       deptOverdue:
         "Unfinished items past their due moment at the time of the numbers.",
       note: "Text written by a person; it is not computed.",
@@ -172,7 +171,8 @@ export const en = {
       legendAvg: "Average of the last 3 weeks",
       legendPace: "Pace needed to make {{day}}",
       aria: "Completion pace by week: {{weeks}}. Average of the last 3 weeks {{avg}} items a week.{{pace}}",
-      ariaPace: " Pace needed from this week to {{day}} is {{pace}} items a week.",
+      ariaPace:
+        " Pace needed from this week to {{day}} is {{pace}} items a week.",
       ariaThisWeek: "this week {{range}} {{count}} items as of {{asOf}}",
       late: "Go-live may slip.",
       lateBody:
@@ -401,7 +401,8 @@ export const en = {
     cancel: "Cancel",
     saved: "Sharing saved.",
     failed: "Sharing was not saved. Try again.",
-    readOnly: "Only people who can edit the report change who it is shared with.",
+    readOnly:
+      "Only people who can edit the report change who it is shared with.",
     loading: "Loading departments",
   },
   remove: {
@@ -592,14 +593,14 @@ export const vi: ReportsCopy = {
         "Việc chưa hoàn thành theo người phụ trách. Việc quá hạn khi thời điểm hạn đã qua tại thời điểm số liệu.",
       deptDone:
         "Việc chuyển sang Hoàn thành trong tuần gần nhất, trên board bạn được xem.",
-      deptOverdue:
-        "Việc chưa hoàn thành đã qua hạn tại thời điểm số liệu.",
+      deptOverdue: "Việc chưa hoàn thành đã qua hạn tại thời điểm số liệu.",
       note: "Văn bản do một người viết; không tính từ số liệu.",
       erpProgress: "Việc Hoàn thành trên việc chưa lưu trữ của board.",
       custom: "Đếm từ board đã chọn với các điều kiện lọc đang hiện.",
     },
     status: {
-      subtitle: "Số việc theo trạng thái hiện tại · {{total}} việc chưa lưu trữ",
+      subtitle:
+        "Số việc theo trạng thái hiện tại · {{total}} việc chưa lưu trữ",
       aria: "Theo trạng thái: {{parts}}; tổng {{total}} việc",
       rate: " hoàn thành = {{done}} việc Hoàn thành / {{total}} việc chưa lưu trữ. Việc đã lưu trữ không tính.",
     },
@@ -614,8 +615,7 @@ export const vi: ReportsCopy = {
       legendAvg: "Trung bình 3 tuần gần nhất",
       legendPace: "Nhịp cần để kịp {{day}}",
       aria: "Tốc độ hoàn thành theo tuần: {{weeks}}. Trung bình 3 tuần gần nhất {{avg}} việc mỗi tuần.{{pace}}",
-      ariaPace:
-        " Nhịp cần từ tuần này tới {{day}} là {{pace}} việc mỗi tuần.",
+      ariaPace: " Nhịp cần từ tuần này tới {{day}} là {{pace}} việc mỗi tuần.",
       ariaThisWeek: "tuần này {{range}} {{count}} việc tính đến {{asOf}}",
       late: "Có nguy cơ trễ go-live.",
       lateBody:

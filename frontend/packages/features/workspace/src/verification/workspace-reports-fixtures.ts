@@ -292,7 +292,11 @@ export function zeroReport(): ReportDto {
   const zero = (widget: ReportWidgetDto): ReportWidgetDto => {
     switch (widget.kind) {
       case "status":
-        return { ...widget, total: 0, counts: { todo: 0, doing: 0, review: 0, done: 0 } };
+        return {
+          ...widget,
+          total: 0,
+          counts: { todo: 0, doing: 0, review: 0, done: 0 },
+        };
       case "velocity":
         return {
           ...widget,

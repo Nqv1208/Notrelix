@@ -2,10 +2,7 @@ import * as React from "react";
 import { cn } from "@notrelix/ui-web";
 import { formatCopy } from "../shell/shell-models";
 import { ReportGlyph } from "./report-glyph";
-import {
-  ReportAnchor,
-  type ReportLinks,
-} from "./report-widgets";
+import { ReportAnchor, type ReportLinks } from "./report-widgets";
 import {
   dayLabel,
   timeLabel,
@@ -76,10 +73,7 @@ export function ReportDrillSheet({
       <div className="flex items-start gap-2.5 border-b border-line px-5 pt-[18px] pb-3.5">
         {data ? (
           data.person ? (
-            <PersonMark
-              person={data.person}
-              className="size-8 text-mark-md"
-            />
+            <PersonMark person={data.person} className="size-8 text-mark-md" />
           ) : (
             <NoneMark className="size-8 text-mark-md" />
           )
@@ -150,7 +144,9 @@ export function ReportDrillSheet({
                       <span className="inline-flex items-center gap-1 font-semibold text-danger-text">
                         <ReportGlyph name="clock" className="size-[13px]" />
                         {formatCopy(
-                          item.overdueDays === 1 ? c.overdue_one : c.overdue_other,
+                          item.overdueDays === 1
+                            ? c.overdue_one
+                            : c.overdue_other,
                           {
                             days: item.overdueDays,
                             day: dayLabel(formatters, item.day),

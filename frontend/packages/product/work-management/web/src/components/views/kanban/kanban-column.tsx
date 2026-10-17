@@ -165,7 +165,9 @@ export function KanbanColumn({
     : -1;
   const showAll =
     expanded ||
-    count <= limit || selectedIndex >= limit || draggedIndex >= limit;
+    count <= limit ||
+    selectedIndex >= limit ||
+    draggedIndex >= limit;
   const visibleCards = showAll ? lane.cards : lane.cards.slice(0, limit);
   const hiddenCount = count - visibleCards.length;
   const tint = lane.category

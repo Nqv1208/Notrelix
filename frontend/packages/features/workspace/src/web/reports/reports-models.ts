@@ -24,18 +24,10 @@ export interface ReportScopeDto {
 export type ReportAccess = "edit" | "view";
 export type ReportWidgetSize = "wide" | "half" | "side";
 export type ReportGroupBy =
-  | "assignee"
-  | "status"
-  | "priority"
-  | "module"
-  | "week";
+  "assignee" | "status" | "priority" | "module" | "week";
 export type ReportMetric = "count" | "overdue";
 export type ReportFilterId =
-  | "not-done"
-  | "overdue"
-  | "assigned"
-  | "unassigned"
-  | "high-priority";
+  "not-done" | "overdue" | "assigned" | "unassigned" | "high-priority";
 export type ReportWidgetType =
   | "number"
   | "columns"
@@ -320,7 +312,13 @@ export function moveWidget<T>(
   from: number,
   to: number,
 ): T[] {
-  if (from === to || from < 0 || to < 0 || from >= list.length || to >= list.length)
+  if (
+    from === to ||
+    from < 0 ||
+    to < 0 ||
+    from >= list.length ||
+    to >= list.length
+  )
     return [...list];
   const next = [...list];
   const [item] = next.splice(from, 1);

@@ -404,10 +404,7 @@ export function WorkspaceTeamsSurface(props: WorkspaceTeamsSurfaceProps) {
             <span className="grid size-11 place-items-center rounded-[12px] bg-state-hover-strong text-muted-foreground">
               <Glyph name="lock" className="size-5" />
             </span>
-            <h2
-              id="teams-deny"
-              className="m-0 text-subheading text-foreground"
-            >
+            <h2 id="teams-deny" className="m-0 text-subheading text-foreground">
               {d.title}
             </h2>
             <p className="m-0 text-compact leading-[1.55] text-muted-foreground">

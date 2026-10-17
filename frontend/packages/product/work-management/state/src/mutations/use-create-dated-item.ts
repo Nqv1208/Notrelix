@@ -91,7 +91,9 @@ export function useCreateDatedItem(
   const queryClient = useQueryClient();
   const { cards } = useWorkManagementServices();
   return useMutation({
-    mutationFn: (input: Omit<CreateDatedItemVariables, "boardId" | "workspaceId">) =>
+    mutationFn: (
+      input: Omit<CreateDatedItemVariables, "boardId" | "workspaceId">,
+    ) =>
       runCreateDatedItem(queryClient, cards, {
         workspaceId,
         boardId,

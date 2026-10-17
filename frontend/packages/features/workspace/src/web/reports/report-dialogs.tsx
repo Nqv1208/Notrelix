@@ -201,9 +201,7 @@ export function ReportExportDialog({
                   }}
                   className={cn(
                     "flex cursor-pointer items-start gap-2.5 rounded-[10px] border px-3 py-2.5",
-                    on
-                      ? "border-primary bg-brand-subtle"
-                      : "border-line",
+                    on ? "border-primary bg-brand-subtle" : "border-line",
                     FOCUS,
                   )}
                 >
@@ -413,7 +411,9 @@ function defaultNameFor(
           : "all";
     return formatCopy(c.defaultName[key], { group });
   }
-  return c.defaultName[type as "number" | "progress" | "workload" | "table" | "note"];
+  return c.defaultName[
+    type as "number" | "progress" | "workload" | "table" | "note"
+  ];
 }
 
 function SelectBox({
@@ -666,7 +666,10 @@ export function ReportAddWidgetDialog({
                       className={cn(INPUT, "h-28 resize-none py-2")}
                     />
                     {noteInvalid ? (
-                      <p role="alert" className="m-0 text-crumb text-danger-text">
+                      <p
+                        role="alert"
+                        className="m-0 text-crumb text-danger-text"
+                      >
                         {c.noteRequired}
                       </p>
                     ) : null}
@@ -678,7 +681,10 @@ export function ReportAddWidgetDialog({
                         {c.source}
                       </label>
                       {options.status === "error" ? (
-                        <p role="alert" className="m-0 text-crumb text-danger-text">
+                        <p
+                          role="alert"
+                          className="m-0 text-crumb text-danger-text"
+                        >
                           {copy.page.errorTitle}{" "}
                           <button
                             type="button"
@@ -790,10 +796,7 @@ export function ReportAddWidgetDialog({
                         {remaining.length > 0 ? (
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <button
-                                type="button"
-                                className={cn(LINK_BTN)}
-                              >
+                              <button type="button" className={cn(LINK_BTN)}>
                                 <ReportGlyph
                                   name="plus"
                                   className="size-[13px]"
@@ -880,7 +883,10 @@ export function ReportAddWidgetDialog({
                     {c.previewError}
                   </p>
                 ) : (
-                  <p role="status" className="m-0 text-crumb text-meta-foreground">
+                  <p
+                    role="status"
+                    className="m-0 text-crumb text-meta-foreground"
+                  >
                     {c.previewLoading}
                   </p>
                 )}

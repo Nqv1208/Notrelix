@@ -127,9 +127,7 @@ export const pagesOperations = [
     route: "/workspaces/:workspaceId/pages",
     async handle({ params, store }) {
       const pages = store.getPages(params.workspaceId);
-      return ok<PageDtoApi[]>(
-        pages.map((page) => mapPageDto(page, store)),
-      );
+      return ok<PageDtoApi[]>(pages.map((page) => mapPageDto(page, store)));
     },
   }),
 
@@ -142,9 +140,7 @@ export const pagesOperations = [
     route: "/workspaces/:workspaceId/pages/tree",
     async handle({ params, store }) {
       const pages = store.getPages(params.workspaceId);
-      return ok<PageDtoApi[]>(
-        pages.map((page) => mapPageDto(page, store)),
-      );
+      return ok<PageDtoApi[]>(pages.map((page) => mapPageDto(page, store)));
     },
   }),
 

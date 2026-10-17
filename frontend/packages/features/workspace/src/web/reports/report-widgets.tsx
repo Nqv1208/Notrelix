@@ -92,8 +92,7 @@ export function widgetTitle(widget: ReportWidgetDto, env: WidgetEnv): string {
 
 const WU =
   "m-0 mb-2.5 text-caption tracking-normal leading-[1.5] font-normal text-meta-foreground";
-const AXIS =
-  "grid gap-2 text-key leading-[1.45] text-meta-foreground";
+const AXIS = "grid gap-2 text-key leading-[1.45] text-meta-foreground";
 const TRACK =
   "flex h-2.5 gap-0.5 overflow-hidden rounded-[3px] bg-state-hover-strong";
 
@@ -168,7 +167,10 @@ function StatusBody({
             </b>
             <small className="inline-flex items-center gap-[5px] text-caption tracking-normal leading-[1.45] whitespace-nowrap text-muted-foreground">
               <i
-                className={cn("size-2 rounded-[2px] not-italic", STATUS_BG[bucket])}
+                className={cn(
+                  "size-2 rounded-[2px] not-italic",
+                  STATUS_BG[bucket],
+                )}
               />
               {copy.buckets[bucket]}
             </small>
@@ -215,7 +217,8 @@ function VelocityBody({
     ? dayLabel(formatters, widget.launchDate)
     : "";
   const avgText = decimalLabel(formatters, widget.average);
-  const paceText = widget.pace !== null ? decimalLabel(formatters, widget.pace) : "";
+  const paceText =
+    widget.pace !== null ? decimalLabel(formatters, widget.pace) : "";
   const weekAria = widget.weeks
     .map((week) => {
       const range = rangeLabel(formatters, week.from, week.to);
@@ -542,9 +545,7 @@ function BarsBody({
         <span />
         <span className="flex justify-between">
           <span>0</span>
-          <span>
-            {formatCopy(copy.widget.axisItems, { max: widget.max })}
-          </span>
+          <span>{formatCopy(copy.widget.axisItems, { max: widget.max })}</span>
         </span>
         <span />
       </div>
@@ -559,13 +560,7 @@ function BarsBody({
 
 // ── Due list and table ──────────────────────────────────────────────────
 
-function DueRow({
-  item,
-  env,
-}: {
-  item: ReportDueItem;
-  env: WidgetEnv;
-}) {
+function DueRow({ item, env }: { item: ReportDueItem; env: WidgetEnv }) {
   const { formatters } = env;
   return (
     <ReportAnchor
@@ -610,7 +605,9 @@ function DueBody({
   const { copy, formatters } = env;
   const c = copy.widget.due;
   const range =
-    widget.from && widget.to ? rangeLabel(formatters, widget.from, widget.to) : "";
+    widget.from && widget.to
+      ? rangeLabel(formatters, widget.from, widget.to)
+      : "";
   return (
     <>
       <Subtitle>
@@ -895,10 +892,7 @@ function groupLabel(row: ReportGroupRow, env: WidgetEnv): string {
   return row.label;
 }
 
-function metricLabel(
-  metric: "count" | "overdue",
-  env: WidgetEnv,
-): string {
+function metricLabel(metric: "count" | "overdue", env: WidgetEnv): string {
   return env.copy.add.metrics[metric];
 }
 
@@ -931,11 +925,7 @@ function NumberBody({
   );
 }
 
-function rowName(
-  row: ReportGroupRow,
-  groupBy: string,
-  env: WidgetEnv,
-): string {
+function rowName(row: ReportGroupRow, groupBy: string, env: WidgetEnv): string {
   if (groupBy === "week")
     return rangeLabel(
       env.formatters,
@@ -966,7 +956,10 @@ function GroupedBody({
     asOf: timeLabel(env.formatters, env.dataAsOf, env.timeZone),
   });
   if (widget.kind === "donut") {
-    const total = Math.max(1, rows.reduce((sum, row) => sum + row.count, 0));
+    const total = Math.max(
+      1,
+      rows.reduce((sum, row) => sum + row.count, 0),
+    );
     const radius = 15.9155;
     let offset = 0;
     return (
@@ -1093,7 +1086,11 @@ function GroupedBody({
   return (
     <>
       <Subtitle>{subtitle}</Subtitle>
-      <div role="img" aria-label={parts} className="grid grid-cols-[16px_minmax(0,1fr)] gap-x-1.5">
+      <div
+        role="img"
+        aria-label={parts}
+        className="grid grid-cols-[16px_minmax(0,1fr)] gap-x-1.5"
+      >
         <div aria-hidden="true" className="relative h-24">
           <span
             className="absolute right-0 text-key leading-[11px] tabular-nums text-meta-foreground"

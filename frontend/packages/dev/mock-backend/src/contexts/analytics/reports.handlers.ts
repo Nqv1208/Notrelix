@@ -179,9 +179,7 @@ function filtersOf(store: MockStore, report: StoredReport) {
             to: "2026-10-11",
           }
         : null,
-    assignee: boardId
-      ? { options: assigneeOptions(store, boardId) }
-      : null,
+    assignee: boardId ? { options: assigneeOptions(store, boardId) } : null,
     sources: report.multiSource
       ? {
           departments: [
@@ -283,7 +281,12 @@ function parseSpec(
       : "assignee",
     filters,
     text: noteText,
-    authorId: kind === "note" ? (typeof input.authorId === "string" ? input.authorId : viewerId) : null,
+    authorId:
+      kind === "note"
+        ? typeof input.authorId === "string"
+          ? input.authorId
+          : viewerId
+        : null,
     writtenOn:
       kind === "note"
         ? typeof input.writtenOn === "string"
@@ -338,9 +341,11 @@ function exportContent(
       (data.title as string | null) ??
       TITLE_VI[(data.titleKey as string | null) ?? ""] ??
       String(data.kind);
-    const rows = (data.rows as { label: string; count: number; person?: { name: string } | null }[] | undefined)?.map(
-      (row) => [row.person?.name ?? row.label, row.count],
-    ) ??
+    const rows = (
+      data.rows as
+        | { label: string; count: number; person?: { name: string } | null }[]
+        | undefined
+    )?.map((row) => [row.person?.name ?? row.label, row.count]) ??
       (data.items as { key: string; title: string }[] | undefined)?.map(
         (item) => [item.key, item.title],
       ) ?? [[String(data.kind), String(data.total ?? data.done ?? "")]];
@@ -380,9 +385,7 @@ export const reportsOperations = [
     async handle({ store }) {
       return ok({
         serverTime: store.getClock().isoNow(),
-        reports: store.reports
-          .list()
-          .map((report) => listItem(store, report)),
+        reports: store.reports.list().map((report) => listItem(store, report)),
       });
     },
   }),
@@ -410,8 +413,9 @@ export const reportsOperations = [
       const now = store.getClock().isoNow();
       const id = store.reports.nextId("mock-report-new");
       const scope =
-        SHARE_TARGETS.find((target) => target.id === mockIds.spaces.engineering) ??
-        SHARE_TARGETS[0]!;
+        SHARE_TARGETS.find(
+          (target) => target.id === mockIds.spaces.engineering,
+        ) ?? SHARE_TARGETS[0]!;
       const report: StoredReport = {
         id,
         name: null,
@@ -493,7 +497,13 @@ export const reportsOperations = [
         seen.add(spec.id);
         specs.push(spec);
       }
-      const boardIds = [...new Set(specs.map((spec) => spec.boardId ?? report.sourceBoardId).filter((id): id is string => !!id))];
+      const boardIds = [
+        ...new Set(
+          specs
+            .map((spec) => spec.boardId ?? report.sourceBoardId)
+            .filter((id): id is string => !!id),
+        ),
+      ];
       const now = store.getClock().isoNow();
       store.reports.put({
         ...report,
@@ -526,7 +536,8 @@ export const reportsOperations = [
         (report.scopeId === mockIds.spaces.accounting
           ? mockIds.boards.accounting
           : mockIds.boards.erp);
-      const boardId = boards.find((b) => b.id === preferred)?.id ?? boards[0]?.id;
+      const boardId =
+        boards.find((b) => b.id === preferred)?.id ?? boards[0]?.id;
       if (!boardId) return validationError({ layout: ["no-board"] });
       let counter = 0;
       const widgets = presetWidgets(
@@ -573,8 +584,13 @@ export const reportsOperations = [
       if (!report) return notFound();
       const assignee = request.searchParams.get("assignee");
       const boardId = report.sourceBoardId;
-      if (!assignee || !boardId) return validationError({ assignee: ["required"] });
-      const result = drillDown(contextOf(store, report, null), boardId, assignee);
+      if (!assignee || !boardId)
+        return validationError({ assignee: ["required"] });
+      const result = drillDown(
+        contextOf(store, report, null),
+        boardId,
+        assignee,
+      );
       if (!result) return notFound();
       return ok({
         person: result.person,

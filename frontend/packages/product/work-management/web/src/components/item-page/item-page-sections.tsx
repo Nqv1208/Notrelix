@@ -8,12 +8,7 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-  cn,
-} from "@notrelix/ui-web";
+import { Popover, PopoverContent, PopoverTrigger, cn } from "@notrelix/ui-web";
 import type {
   CardDetail,
   CardFile,

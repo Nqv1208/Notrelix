@@ -140,7 +140,15 @@ export function ReportPage({ reportId }: { reportId: string }) {
         patchSearch({ edit: undefined, add: undefined });
         toast.success(copy.edit.saved);
       }),
-    [api, attempt, copy.edit.saved, patchSearch, reportId, setReport, workspaceId],
+    [
+      api,
+      attempt,
+      copy.edit.saved,
+      patchSearch,
+      reportId,
+      setReport,
+      workspaceId,
+    ],
   );
 
   const onRemoveWidget = useCallback(
@@ -178,7 +186,15 @@ export function ReportPage({ reportId }: { reportId: string }) {
         });
         toast.success(copy.share.saved);
       }),
-    [api, attempt, copy.share.saved, queryClient, reportId, setReport, workspaceId],
+    [
+      api,
+      attempt,
+      copy.share.saved,
+      queryClient,
+      reportId,
+      setReport,
+      workspaceId,
+    ],
   );
 
   const onDelete = useCallback(
@@ -195,7 +211,15 @@ export function ReportPage({ reportId }: { reportId: string }) {
           search: {},
         } as never);
       }),
-    [api, attempt, copy.remove.done, navigate, queryClient, reportId, workspaceId],
+    [
+      api,
+      attempt,
+      copy.remove.done,
+      navigate,
+      queryClient,
+      reportId,
+      workspaceId,
+    ],
   );
 
   const onApplyLayout = useCallback(

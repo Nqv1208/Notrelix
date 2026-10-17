@@ -12,10 +12,7 @@ import {
   timeLabel,
   type ReportFormatters,
 } from "./reports-format";
-import type {
-  ReportListFilter,
-  ReportListItemDto,
-} from "./reports-models";
+import type { ReportListFilter, ReportListItemDto } from "./reports-models";
 import { PersonMark, ScopeChip } from "./reports-parts";
 import type { ReportsCopy } from "./reports.copy";
 
@@ -39,10 +36,7 @@ export interface ReportListSurfaceProps {
 const COLS = "grid-cols-[minmax(0,1fr)_170px_190px_130px_120px]";
 const FILTERS: readonly ReportListFilter[] = ["mine", "shared", "all"];
 
-function subtitleOf(
-  copy: ReportsCopy,
-  report: ReportListItemDto,
-): string {
+function subtitleOf(copy: ReportsCopy, report: ReportListItemDto): string {
   const c = copy.list;
   const parts: string[] = [];
   parts.push(

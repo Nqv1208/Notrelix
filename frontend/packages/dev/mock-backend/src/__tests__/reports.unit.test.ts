@@ -70,9 +70,9 @@ describe("the ERP report", () => {
       done: 5,
     });
     const velocity = byKind("velocity");
-    expect((velocity.weeks as { count: number | null }[]).map((w) => w.count)).toEqual(
-      [2, 2, 1, 0, null, null],
-    );
+    expect(
+      (velocity.weeks as { count: number | null }[]).map((w) => w.count),
+    ).toEqual([2, 2, 1, 0, null, null]);
     expect(velocity.average as number).toBeCloseTo(5 / 3);
     expect(velocity.pace as number).toBeCloseTo(11 / 3);
     expect(velocity.verdict).toBe("late");
@@ -142,9 +142,9 @@ describe("the partial report", () => {
     const stale = before.widgets.find((w) => w.kind === "bars" && w.staleAsOf);
     expect(stale).toBeDefined();
     const after = (await api.post(`${path}/refresh`, {})) as Report;
-    expect(
-      after.widgets.every((widget) => !(widget as Widget).staleAsOf),
-    ).toBe(true);
+    expect(after.widgets.every((widget) => !(widget as Widget).staleAsOf)).toBe(
+      true,
+    );
   });
 });
 
@@ -173,7 +173,9 @@ describe("editing", () => {
       "velocity",
       "due",
     ]);
-    await expect(api.post(`${path}/layout`, { layout: "x" })).rejects.toBeDefined();
+    await expect(
+      api.post(`${path}/layout`, { layout: "x" }),
+    ).rejects.toBeDefined();
     const named = (await api.patch(path, { name: "  Theo dõi  " })) as Report;
     expect(named.name).toBe("Theo dõi");
     await expect(api.patch(path, { name: "   " })).rejects.toBeDefined();
@@ -235,7 +237,9 @@ describe("exports", () => {
     };
     expect(job.status).toBe("running");
     const path = `${WS}/report-exports/${job.id}`;
-    expect(((await api.get(path)) as { status: string }).status).toBe("running");
+    expect(((await api.get(path)) as { status: string }).status).toBe(
+      "running",
+    );
     const done = (await api.get(path)) as {
       status: string;
       downloadUrl: string;

@@ -5,8 +5,7 @@ import { ReportGlyph } from "./report-glyph";
 import type { ReportLayoutId } from "./reports-models";
 import type { ReportsCopy } from "./reports.copy";
 
-const CELL =
-  "flex items-end gap-0.5 rounded bg-state-hover-strong p-[3px]";
+const CELL = "flex items-end gap-0.5 rounded bg-state-hover-strong p-[3px]";
 const BAR = "block w-[5px] rounded-[1px] bg-line-strong";
 const LINE = "block h-1 w-[70%] self-center rounded-sm bg-line-strong";
 

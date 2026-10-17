@@ -2,7 +2,10 @@ import type { SurfaceFormatters } from "../home/home-models";
 
 /** The locale formatters the Reports surfaces use (`useFormatters()`). */
 export interface ReportFormatters extends SurfaceFormatters {
-  readonly number: (value: number, options?: Intl.NumberFormatOptions) => string;
+  readonly number: (
+    value: number,
+    options?: Intl.NumberFormatOptions,
+  ) => string;
   readonly list: (
     items: readonly string[],
     options?: Intl.ListFormatOptions,

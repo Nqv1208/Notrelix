@@ -471,7 +471,8 @@ export function WorkspaceCommandPaletteSurface({
       // this works where the page may take it).
       const row = rows.find(
         (candidate) =>
-          candidate.id === "command:create-item-named" && !candidate.unavailable,
+          candidate.id === "command:create-item-named" &&
+          !candidate.unavailable,
       );
       if (!row) return;
       event.preventDefault();

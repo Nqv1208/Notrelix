@@ -160,7 +160,9 @@ function orderOptions(options: readonly FieldOption[]): FieldOption[] {
 export const OPTIMISTIC_OPTION_ID_PREFIX = "optimistic-option-";
 
 /** Whether an option exists only locally so far (the server has not answered). */
-export function isOptimisticOptionId(optionId: string | null | undefined): boolean {
+export function isOptimisticOptionId(
+  optionId: string | null | undefined,
+): boolean {
   return Boolean(optionId?.startsWith(OPTIMISTIC_OPTION_ID_PREFIX));
 }
 

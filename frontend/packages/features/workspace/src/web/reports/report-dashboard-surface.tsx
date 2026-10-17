@@ -11,7 +11,13 @@ import {
   cn,
 } from "@notrelix/ui-web";
 import { formatCopy } from "../shell/shell-models";
-import { BTN, BTN_PRIMARY, BTN_SM, BTN_SM_PRIMARY, FOCUS } from "../spaces/space-page-parts";
+import {
+  BTN,
+  BTN_PRIMARY,
+  BTN_SM,
+  BTN_SM_PRIMARY,
+  FOCUS,
+} from "../spaces/space-page-parts";
 import { ReportGlyph } from "./report-glyph";
 import {
   ReportAddWidgetDialog,
@@ -52,23 +58,12 @@ import {
   type ReportWidgetSize,
   type ReportWidgetSpec,
 } from "./reports-models";
-import {
-  ICON_BTN,
-  Kbd,
-  LINK_BTN,
-  ScopeChip,
-} from "./reports-parts";
+import { ICON_BTN, Kbd, LINK_BTN, ScopeChip } from "./reports-parts";
 import type { ReportsCopy } from "./reports.copy";
 
 /** What a person may be waiting on while the dashboard is open. */
 export type ReportPending =
-  | "save"
-  | "rename"
-  | "share"
-  | "delete"
-  | "remove"
-  | "layout"
-  | "export";
+  "save" | "rename" | "share" | "delete" | "remove" | "layout" | "export";
 
 export interface ReportDashboardSurfaceProps {
   readonly copy: ReportsCopy;
@@ -184,15 +179,8 @@ function MenuButton({
 }
 
 export function ReportDashboardSurface(props: ReportDashboardSurfaceProps) {
-  const {
-    copy,
-    formatters,
-    links,
-    report,
-    assigneeId,
-    editing,
-    drillKey,
-  } = props;
+  const { copy, formatters, links, report, assigneeId, editing, drillKey } =
+    props;
   const [pending, setPending] = React.useState<ReadonlySet<ReportPending>>(
     () => new Set(),
   );
@@ -267,7 +255,9 @@ export function ReportDashboardSurface(props: ReportDashboardSurfaceProps) {
     dataAsOf: report.dataAsOf,
     links,
     drillKey,
-    onDrill: editing ? undefined : (key) => props.onDrill(drillKey === key ? null : key),
+    onDrill: editing
+      ? undefined
+      : (key) => props.onDrill(drillKey === key ? null : key),
     onReload: props.onReload,
     reloading: props.reloading,
   };
@@ -291,9 +281,7 @@ export function ReportDashboardSurface(props: ReportDashboardSurfaceProps) {
   };
   const placeMove = () => {
     const index = shown.findIndex((widget) => widget.id === movingId);
-    setAnnounce(
-      formatCopy(e.placed, { pos: index + 1, total: shown.length }),
-    );
+    setAnnounce(formatCopy(e.placed, { pos: index + 1, total: shown.length }));
     setMovingId(null);
     setMovingFrom(null);
   };
@@ -319,9 +307,7 @@ export function ReportDashboardSurface(props: ReportDashboardSurfaceProps) {
         const to = neighbourIndex(list, index, direction);
         if (to !== index) {
           setDraft(moveWidget(list, index, to));
-          setAnnounce(
-            formatCopy(e.moved, { pos: to + 1, total: list.length }),
-          );
+          setAnnounce(formatCopy(e.moved, { pos: to + 1, total: list.length }));
         }
       } else if (event.key === "Enter") {
         event.preventDefault();
@@ -340,7 +326,11 @@ export function ReportDashboardSurface(props: ReportDashboardSurfaceProps) {
     setDraft(
       shown.map((widget) =>
         widget.id === id
-          ? ({ ...widget, size, spec: { ...widget.spec, size } } as ReportWidgetDto)
+          ? ({
+              ...widget,
+              size,
+              spec: { ...widget.spec, size },
+            } as ReportWidgetDto)
           : widget,
       ),
     );
@@ -403,9 +393,7 @@ export function ReportDashboardSurface(props: ReportDashboardSurfaceProps) {
                 <button
                   type="button"
                   aria-pressed={moving}
-                  onClick={() =>
-                    moving ? placeMove() : startMove(widget.id)
-                  }
+                  onClick={() => (moving ? placeMove() : startMove(widget.id))}
                   className={BTN_SM}
                 >
                   <ReportGlyph name="move" />
@@ -417,9 +405,7 @@ export function ReportDashboardSurface(props: ReportDashboardSurfaceProps) {
                   aria-pressed={moving}
                   aria-label={formatCopy(e.moveAria, { title })}
                   title={e.move}
-                  onClick={() =>
-                    moving ? placeMove() : startMove(widget.id)
-                  }
+                  onClick={() => (moving ? placeMove() : startMove(widget.id))}
                   className={cn(ICON_BTN)}
                 >
                   <ReportGlyph name="move" />
@@ -457,9 +443,7 @@ export function ReportDashboardSurface(props: ReportDashboardSurfaceProps) {
             </span>
           ) : (
             <span className="ml-auto">
-              <MenuButton
-                label={formatCopy(copy.widget.options, { title })}
-              >
+              <MenuButton label={formatCopy(copy.widget.options, { title })}>
                 <DropdownMenuItem onSelect={() => setDefinitionId(widget.id)}>
                   <ReportGlyph name="info" />
                   {copy.widget.definition}

@@ -5,10 +5,7 @@ import { useAppRuntime } from "@notrelix/runtime-web";
 import type { ReportLinks } from "@notrelix/features-workspace/web";
 import { useWorkspaceContext } from "@/providers/workspace-provider";
 import { destinationHref } from "@/shell/workspace/workspace-destinations";
-import {
-  createReportsApi,
-  type ReportsApiClient,
-} from "./reports-api";
+import { createReportsApi, type ReportsApiClient } from "./reports-api";
 
 /** The report calls on the app's runtime client. */
 export function useReportsApi() {
