@@ -148,12 +148,12 @@ public sealed class BoardChildAccessMatrixTests
         FeatureEnabled: true,
         ActiveResourcePermissionRank: explicitRank,
         TargetPermissionRank: null)
-    {
-        ParentBoardId = BoardId,
-        ResourceSpaceId = spaceId,
-        SpaceExists = spaceId is not null,
-        SpaceRole = spaceRole,
-    };
+        {
+            ParentBoardId = BoardId,
+            ResourceSpaceId = spaceId,
+            SpaceExists = spaceId is not null,
+            SpaceRole = spaceRole,
+        };
 
     private sealed record Probe(PermissionAction Action, string Kind) : IRequirePermission
     {

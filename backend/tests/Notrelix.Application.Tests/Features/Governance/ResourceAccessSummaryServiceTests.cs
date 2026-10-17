@@ -423,11 +423,11 @@ public sealed class ResourceAccessSummaryServiceTests
         FeatureEnabled: true,
         ActiveResourcePermissionRank: explicitRank,
         TargetPermissionRank: null)
-    {
-        ResourceSpaceId = spaceId,
-        SpaceExists = spaceId is not null,
-        SpaceRole = spaceRole,
-    };
+        {
+            ResourceSpaceId = spaceId,
+            SpaceExists = spaceId is not null,
+            SpaceRole = spaceRole,
+        };
 
     private sealed class FakeFacts : IAccessFactsProvider
     {

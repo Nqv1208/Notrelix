@@ -212,12 +212,12 @@ public sealed class ResourceLevelEnforcementMatrixTests
         FeatureEnabled: true,
         ActiveResourcePermissionRank: explicitRank,
         TargetPermissionRank: null)
-    {
-        ResourceSpaceId = spaceId,
-        SpaceExists = spaceId is not null,
-        SpaceRole = spaceRole,
-        SpaceIsOpen = spaceIsOpen,
-    };
+        {
+            ResourceSpaceId = spaceId,
+            SpaceExists = spaceId is not null,
+            SpaceRole = spaceRole,
+            SpaceIsOpen = spaceIsOpen,
+        };
 
     private sealed record Probe(PermissionAction Action, string Kind) : IRequirePermission
     {

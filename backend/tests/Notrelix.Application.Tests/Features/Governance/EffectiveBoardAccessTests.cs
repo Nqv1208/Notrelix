@@ -172,32 +172,32 @@ public sealed class EffectiveBoardAccessTests
         var checkedCases = 0;
 
         foreach (var role in new[] { "Owner", "Admin", "Member", "Guest", null })
-        foreach (var audience in new[] { "Workspace", "Private" })
-        foreach (var placed in new[] { false, true })
-        foreach (var spaceRole in new[] { null, "Viewer", "Member", "Admin" })
-        foreach (var open in new[] { false, true })
-        foreach (var boardRole in new[] { null, "Member", "Observer" })
-        foreach (var explicitRank in new int?[] { null, 0, 1, 2, 4 })
-        foreach (var rule in new[] { null, "Allow", "Deny" })
-        {
-            if (!placed && (spaceRole is not null || open))
-                continue;
+            foreach (var audience in new[] { "Workspace", "Private" })
+                foreach (var placed in new[] { false, true })
+                    foreach (var spaceRole in new[] { null, "Viewer", "Member", "Admin" })
+                        foreach (var open in new[] { false, true })
+                            foreach (var boardRole in new[] { null, "Member", "Observer" })
+                                foreach (var explicitRank in new int?[] { null, 0, 1, 2, 4 })
+                                    foreach (var rule in new[] { null, "Allow", "Deny" })
+                                    {
+                                        if (!placed && (spaceRole is not null || open))
+                                            continue;
 
-            var facts = Facts(
-                role, audience: audience, spaceId: placed ? Guid.NewGuid() : null, spaceRole: spaceRole,
-                spaceIsOpen: open, boardRole: boardRole, explicitRank: explicitRank,
-                rules: rule is null ? [] : [new AccessPermissionRule(0, rule)]);
+                                        var facts = Facts(
+                                            role, audience: audience, spaceId: placed ? Guid.NewGuid() : null, spaceRole: spaceRole,
+                                            spaceIsOpen: open, boardRole: boardRole, explicitRank: explicitRank,
+                                            rules: rule is null ? [] : [new AccessPermissionRule(0, rule)]);
 
-            var allowed = engine.Evaluate(ViewBoardDescriptor, context, facts, request).Kind == AccessDecisionKind.Allowed;
-            var effective = AccessPolicyEngine.EvaluateEffectiveBoardAccess(facts);
+                                        var allowed = engine.Evaluate(ViewBoardDescriptor, context, facts, request).Kind == AccessDecisionKind.Allowed;
+                                        var effective = AccessPolicyEngine.EvaluateEffectiveBoardAccess(facts);
 
-            (effective.Basis != EffectiveAccessBasis.None).Should().Be(allowed,
-                $"role={role ?? "-"} audience={audience} placed={placed} spaceRole={spaceRole ?? "-"} open={open} " +
-                $"boardRole={boardRole ?? "-"} explicit={explicitRank?.ToString() ?? "-"} rule={rule ?? "-"}");
-            if (effective.Basis != EffectiveAccessBasis.None)
-                effective.Level.Should().NotBeNull();
-            checkedCases++;
-        }
+                                        (effective.Basis != EffectiveAccessBasis.None).Should().Be(allowed,
+                                            $"role={role ?? "-"} audience={audience} placed={placed} spaceRole={spaceRole ?? "-"} open={open} " +
+                                            $"boardRole={boardRole ?? "-"} explicit={explicitRank?.ToString() ?? "-"} rule={rule ?? "-"}");
+                                        if (effective.Basis != EffectiveAccessBasis.None)
+                                            effective.Level.Should().NotBeNull();
+                                        checkedCases++;
+                                    }
 
         checkedCases.Should().BeGreaterThan(1000, "the parity sweep must evaluate the real matrix (NRX-016)");
     }
@@ -227,10 +227,10 @@ public sealed class EffectiveBoardAccessTests
         FeatureEnabled: true,
         ActiveResourcePermissionRank: explicitRank,
         TargetPermissionRank: null)
-    {
-        ResourceSpaceId = spaceId,
-        SpaceExists = spaceId is not null,
-        SpaceRole = spaceRole,
-        SpaceIsOpen = spaceIsOpen,
-    };
+        {
+            ResourceSpaceId = spaceId,
+            SpaceExists = spaceId is not null,
+            SpaceRole = spaceRole,
+            SpaceIsOpen = spaceIsOpen,
+        };
 }
