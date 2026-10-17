@@ -1,6 +1,10 @@
 import { defineConfig } from "vitest/config";
 import path from "node:path";
 
+// The product shows workspace times in Hanoi time, so the suites that assert
+// formatted clock times must not depend on the machine or CI runner zone.
+process.env.TZ = "Asia/Ho_Chi_Minh";
+
 export default defineConfig({
   root: path.resolve(__dirname, "../../"),
   resolve: {
