@@ -12,6 +12,11 @@ export { cn } from "./lib/cn";
 
 // ── Responsive Hooks ───────────────────────────────────────────────
 export { useIsMobile } from "./hooks/use-mobile";
+export {
+  useIsTablet,
+  TABLET_MIN_WIDTH,
+  TABLET_MAX_WIDTH,
+} from "./hooks/use-tablet";
 export { useMediaQuery } from "./hooks/use-media-query";
 
 // ── Theme ──────────────────────────────────────────────────────────

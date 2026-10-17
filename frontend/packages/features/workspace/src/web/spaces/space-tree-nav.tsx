@@ -291,7 +291,13 @@ function SpaceRow({
   };
   const top = entry.level === 1;
   return (
-    <div role="none" className="flex w-full items-center gap-0.5">
+    <div
+      role="none"
+      className={cn(
+        "flex w-full items-center gap-0.5 group-data-[collapsible=icon]:justify-center",
+        !top && "group-data-[collapsible=icon]:hidden",
+      )}
+    >
       <a
         role="treeitem"
         href={navigation.getHref(destination)}
@@ -318,8 +324,8 @@ function SpaceRow({
           ROW_CLASS,
           "min-w-0 flex-1",
           top
-            ? "h-8 gap-2.25 px-2.5 text-nav text-sidebar-foreground"
-            : "h-7.5 gap-2 pr-2.5 text-compact text-muted-foreground",
+            ? "h-8 gap-2.25 px-2.5 text-nav text-sidebar-foreground group-data-[tablet=true]:h-11 group-data-[tablet=true]:gap-2.5 group-data-[tablet=true]:rounded-[10px] group-data-[tablet=true]:px-3 group-data-[tablet=true]:text-label group-data-[collapsible=icon]:size-11! group-data-[collapsible=icon]:flex-none group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0!"
+            : "h-7.5 gap-2 pr-2.5 text-compact text-muted-foreground group-data-[tablet=true]:h-11 group-data-[tablet=true]:gap-2.5 group-data-[tablet=true]:rounded-[10px] group-data-[tablet=true]:text-label",
           active && ACTIVE_ROW_CLASS,
           node.isArchived && "text-muted-foreground",
         )}
@@ -331,15 +337,20 @@ function SpaceRow({
           className={cn(
             "leading-none font-bold",
             top
-              ? "size-5 rounded-[6px] text-mark-xs"
-              : "size-4 rounded-[5px] text-mark-2xs",
+              ? "size-5 rounded-[6px] text-mark-xs group-data-[tablet=true]:size-5.5 group-data-[collapsible=icon]:size-7! group-data-[collapsible=icon]:rounded-lg"
+              : "size-4 rounded-[5px] text-mark-2xs group-data-[tablet=true]:size-4.5",
           )}
         />
-        <span className="min-w-0 flex-1 truncate" title={node.name}>
+        <span
+          className="min-w-0 flex-1 truncate group-data-[collapsible=icon]:sr-only"
+          title={node.name}
+        >
           {node.name}
         </span>
         {node.visibility === "Private" ? (
-          <PrivateMarker label={copy.tree.private} />
+          <span className="flex group-data-[collapsible=icon]:hidden">
+            <PrivateMarker label={copy.tree.private} />
+          </span>
         ) : null}
         {node.isArchived ? (
           <span className="flex shrink-0 items-center text-muted-foreground">
@@ -353,7 +364,7 @@ function SpaceRow({
           data-tree-toggle=""
           aria-hidden="true"
           onClick={() => onToggle(entry)}
-          className="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-[6px] text-meta-foreground hover:bg-sidebar-accent hover:text-foreground"
+          className="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-[6px] text-meta-foreground hover:bg-sidebar-accent hover:text-foreground group-data-[tablet=true]:size-11 group-data-[collapsible=icon]:hidden"
         >
           <ChevronDown
             className={cn(
@@ -402,7 +413,7 @@ function BoardRow({
       style={{ paddingInlineStart: `${nestedInset(entry.level)}px` }}
       className={cn(
         ROW_CLASS,
-        "h-7.5 gap-2 pr-2.5 text-compact text-muted-foreground",
+        "h-7.5 gap-2 pr-2.5 text-compact text-muted-foreground group-data-[tablet=true]:h-11 group-data-[tablet=true]:gap-2.5 group-data-[tablet=true]:rounded-[10px] group-data-[tablet=true]:text-label group-data-[collapsible=icon]:hidden",
         active && ACTIVE_ROW_CLASS,
       )}
     >
@@ -682,7 +693,7 @@ export function SpaceTreeNav({
             onClick={onCreateSpace}
             aria-label={copy.tree.create}
             title={copy.tree.create}
-            className="flex size-6 items-center justify-center rounded-[6px] text-meta-foreground outline-none hover:bg-sidebar-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-focus-ring"
+            className="flex size-6 items-center justify-center rounded-[6px] text-meta-foreground outline-none group-data-[tablet=true]:size-11 hover:bg-sidebar-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-focus-ring"
           >
             <Plus aria-hidden="true" className="size-4 stroke-[1.8]" />
           </button>

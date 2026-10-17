@@ -16,6 +16,7 @@ import {
 import { Skeleton } from "./skeleton";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./tooltip";
 import { useIsMobile } from "../../hooks/use-mobile";
+import { useIsTablet } from "../../hooks/use-tablet";
 import { PanelLeftIcon } from "lucide-react";
 
 export const SIDEBAR_COOKIE_NAME = "sidebar_state";
@@ -23,6 +24,8 @@ export const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
 const SIDEBAR_WIDTH = "16rem";
 const SIDEBAR_WIDTH_MOBILE = "18rem";
 const SIDEBAR_WIDTH_ICON = "3rem";
+const SIDEBAR_WIDTH_TABLET = "15.5rem";
+const SIDEBAR_WIDTH_TABLET_ICON = "4rem";
 const SIDEBAR_KEYBOARD_SHORTCUT = "b";
 
 type SidebarContextProps = {
@@ -32,6 +35,10 @@ type SidebarContextProps = {
   openMobile: boolean;
   setOpenMobile: (open: boolean) => void;
   isMobile: boolean;
+  /** Viewport is in the tablet band (768-1279 px). */
+  isTablet: boolean;
+  /** Tablet sidebar collapsed to its 64 px icon column. */
+  iconOnly: boolean;
   toggleSidebar: () => void;
 };
 
@@ -52,6 +59,9 @@ function SidebarProvider({
   open: openProp,
   onOpenChange: setOpenProp,
   onPersistState,
+  defaultTabletOpen = true,
+  tabletOpen: tabletOpenProp,
+  onTabletOpenChange,
   className,
   style,
   children,
@@ -63,17 +73,30 @@ function SidebarProvider({
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   onPersistState?: (open: boolean) => void;
+  /** Tablet band: the open (248 px) / icon-only (64 px) state, kept apart from
+   * the desktop state so a rotation never hides the desktop sidebar. */
+  defaultTabletOpen?: boolean;
+  tabletOpen?: boolean;
+  onTabletOpenChange?: (open: boolean) => void;
 }) {
   const isMobile = useIsMobile();
+  const isTablet = useIsTablet();
+  const [_tabletOpen, _setTabletOpen] = React.useState(defaultTabletOpen);
+  const tabletOpen = tabletOpenProp ?? _tabletOpen;
   const [openMobile, setOpenMobile] = React.useState(defaultOpenMobile);
 
   // This is the internal state of the sidebar.
   // We use openProp and setOpenProp for control from outside the component.
   const [_open, _setOpen] = React.useState(defaultOpen);
-  const open = openProp ?? _open;
+  const open = isTablet && !isMobile ? tabletOpen : (openProp ?? _open);
   const setOpen = React.useCallback(
     (value: boolean | ((value: boolean) => boolean)) => {
       const openState = typeof value === "function" ? value(open) : value;
+      if (isTablet && !isMobile) {
+        _setTabletOpen(openState);
+        onTabletOpenChange?.(openState);
+        return;
+      }
       if (setOpenProp) {
         setOpenProp(openState);
       } else {
@@ -83,7 +106,7 @@ function SidebarProvider({
       // Persistence (e.g. cookie storage) is owned by the host via callback.
       onPersistState?.(openState);
     },
-    [setOpenProp, open, onPersistState],
+    [setOpenProp, open, onPersistState, isTablet, isMobile, onTabletOpenChange],
   );
 
   // Helper to toggle the sidebar.
@@ -117,11 +140,22 @@ function SidebarProvider({
       open,
       setOpen,
       isMobile,
+      isTablet,
+      iconOnly: isTablet && !isMobile && !open,
       openMobile,
       setOpenMobile,
       toggleSidebar,
     }),
-    [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar],
+    [
+      state,
+      open,
+      setOpen,
+      isMobile,
+      isTablet,
+      openMobile,
+      setOpenMobile,
+      toggleSidebar,
+    ],
   );
 
   return (
@@ -164,7 +198,9 @@ function Sidebar({
   mobileTitle?: string;
   mobileDescription?: string;
 }) {
-  const { isMobile, state, openMobile, setOpenMobile } = useSidebar();
+  const { isMobile, isTablet, state, openMobile, setOpenMobile } = useSidebar();
+  // The tablet band always collapses to the 64 px icon column.
+  const effectiveCollapsible = isTablet ? "icon" : collapsible;
 
   if (collapsible === "none") {
     return (
@@ -210,7 +246,16 @@ function Sidebar({
     <div
       className="group peer text-sidebar-foreground hidden md:block"
       data-state={state}
-      data-collapsible={state === "collapsed" ? collapsible : ""}
+      data-collapsible={state === "collapsed" ? effectiveCollapsible : ""}
+      data-tablet={isTablet ? "true" : undefined}
+      style={
+        isTablet
+          ? ({
+              "--sidebar-width": SIDEBAR_WIDTH_TABLET,
+              "--sidebar-width-icon": SIDEBAR_WIDTH_TABLET_ICON,
+            } as React.CSSProperties)
+          : undefined
+      }
       data-variant={variant}
       data-side={side}
       data-slot="sidebar"

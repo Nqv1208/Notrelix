@@ -131,7 +131,8 @@ const ACTIVE_ITEM =
  * 10 px inline padding, 7 px radius, 13.5/500 muted text.
  */
 const NAV_ROW =
-  "h-8.5 gap-2.5 rounded-[7px] px-2.5 py-0 text-nav text-muted-foreground [&_svg]:stroke-[1.8]";
+  "h-8.5 gap-2.5 rounded-[7px] px-2.5 py-0 text-nav text-muted-foreground [&_svg]:stroke-[1.8] group-data-[tablet=true]:h-11 group-data-[tablet=true]:gap-3 group-data-[tablet=true]:rounded-[10px] group-data-[tablet=true]:px-3 group-data-[tablet=true]:text-label group-data-[tablet=true]:[&_svg]:size-5 group-data-[collapsible=icon]:size-11! group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0!";
+const LABEL_HIDE = "group-data-[collapsible=icon]:sr-only";
 
 type CountKind = "myWork" | "inbox";
 
@@ -163,9 +164,9 @@ function CountBadge({
     <span
       aria-hidden="true"
       className={cn(
-        "ml-auto flex h-4.25 shrink-0 items-center text-metadata font-medium tabular-nums",
+        "ml-auto flex h-4.25 shrink-0 items-center text-metadata font-medium tabular-nums group-data-[tablet=true]:text-compact group-data-[collapsible=icon]:absolute group-data-[collapsible=icon]:top-0.5 group-data-[collapsible=icon]:right-0 group-data-[collapsible=icon]:ml-0 group-data-[collapsible=icon]:h-4.5 group-data-[collapsible=icon]:min-w-4.5 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:rounded-full group-data-[collapsible=icon]:bg-sidebar-accent group-data-[collapsible=icon]:px-1.25 group-data-[collapsible=icon]:text-key! group-data-[collapsible=icon]:font-bold",
         kind === "inbox"
-          ? "rounded-full bg-brand-solid px-1.75 font-semibold text-brand-solid-foreground"
+          ? "rounded-full bg-brand-solid px-1.75 font-semibold text-brand-solid-foreground group-data-[collapsible=icon]:bg-brand-solid"
           : "text-meta-foreground",
       )}
     >
@@ -230,14 +231,14 @@ function PrimaryNav({
                 aria-label={label}
               >
                 <item.icon aria-hidden="true" />
-                <span className="truncate">{item.label}</span>
+                <span className={cn("truncate", LABEL_HIDE)}>{item.label}</span>
                 {item.count ? (
                   <CountBadge kind={item.count} count={count} />
                 ) : null}
               </ShellLink>
             </SidebarMenuButton>
             {item.id === "library" && docsTree ? (
-              <div className="mt-0.5">
+              <div className="mt-0.5 group-data-[collapsible=icon]:hidden">
                 <SidebarDocsTreeNav
                   copy={copy}
                   navigation={navigation}
@@ -312,14 +313,14 @@ function WorkspaceChip({
         name: workspace.name,
       })}
       aria-expanded={systemRailOpen}
-      className="h-13.5 gap-2.5 rounded-md p-2 hover:bg-sidebar-accent focus-visible:ring-focus-ring [&_svg]:stroke-[1.8]"
+      className="h-13.5 gap-2.5 rounded-md p-2 hover:bg-sidebar-accent focus-visible:ring-focus-ring group-data-[tablet=true]:h-13 group-data-[tablet=true]:rounded-xl group-data-[tablet=true]:px-2.5 group-data-[tablet=true]:py-1.5 group-data-[collapsible=icon]:size-11! group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0! [&_svg]:stroke-[1.8]"
     >
       <IdentityMark
         name={workspace.name}
         markTone={workspace.mark}
-        className="size-7 rounded-md text-mark-md font-bold"
+        className="size-7 rounded-md text-mark-md font-bold group-data-[tablet=true]:size-8 group-data-[tablet=true]:rounded-[9px]"
       />
-      <span className="flex min-w-0 flex-1 flex-col text-left">
+      <span className="flex min-w-0 flex-1 flex-col text-left group-data-[collapsible=icon]:sr-only">
         <span className="truncate text-label font-semibold text-foreground">
           {workspace.name}
         </span>
@@ -329,7 +330,10 @@ function WorkspaceChip({
           </span>
         ) : null}
       </span>
-      <ChevronsUpDown aria-hidden="true" className="ml-auto" />
+      <ChevronsUpDown
+        aria-hidden="true"
+        className="ml-auto group-data-[collapsible=icon]:hidden"
+      />
     </SidebarMenuButton>
   );
 }
@@ -346,7 +350,7 @@ function CommandRow({
     <button
       type="button"
       onClick={onOpenCommand}
-      className="mt-1.5 mb-2.5 flex h-8.5 w-full items-center gap-2 rounded-md border border-line bg-surface-panel px-2.5 text-left text-compact text-meta-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-focus-ring"
+      className="mt-1.5 mb-2.5 flex h-8.5 w-full group-data-[tablet=true]:hidden items-center gap-2 rounded-md border border-line bg-surface-panel px-2.5 text-left text-compact text-meta-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-focus-ring"
     >
       <Search aria-hidden="true" className="size-4 shrink-0 stroke-[1.8]" />
       <span className="min-w-0 flex-1 truncate">{copy.sidebar.search}</span>
@@ -389,12 +393,39 @@ function WorkspaceSetup({
   navigation: ShellNavigation;
 }) {
   const closeDrawer = useCloseMobileDrawer();
+  const { iconOnly } = useSidebar();
   const items = links.map((link) => ({
     label: setupLabel(copy, link),
     destination: { section: link } satisfies WorkspaceDestination,
   }));
   const inSetup =
     location !== null && links.some((link) => link === location.section);
+
+  const first = items[0];
+  // The icon column has no room for the disclosure: one icon opens setup.
+  if (iconOnly && first) {
+    return (
+      <SidebarMenuItem>
+        <SidebarMenuButton
+          asChild
+          isActive={inSetup}
+          className={cn(NAV_ROW, ACTIVE_ITEM)}
+        >
+          <ShellLink
+            destination={first.destination}
+            navigation={navigation}
+            onNavigated={closeDrawer}
+            aria-current={inSetup ? "page" : undefined}
+          >
+            <Settings2 aria-hidden="true" />
+            <span className={cn("truncate", LABEL_HIDE)}>
+              {copy.sidebar.setup}
+            </span>
+          </ShellLink>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    );
+  }
 
   return (
     <Collapsible defaultOpen={inSetup} className="group/setup">
@@ -407,7 +438,9 @@ function WorkspaceSetup({
             )}
           >
             <Settings2 aria-hidden="true" />
-            <span className="truncate">{copy.sidebar.setup}</span>
+            <span className={cn("truncate", LABEL_HIDE)}>
+              {copy.sidebar.setup}
+            </span>
           </SidebarMenuButton>
         </CollapsibleTrigger>
         <CollapsibleContent>
@@ -469,16 +502,16 @@ function UserCard({
         <SidebarMenuButton
           size="lg"
           aria-label={formatCopy(copy.user.menu, { name })}
-          className="h-13 gap-2.25 rounded-[7px] p-2 hover:bg-sidebar-accent data-[state=open]:bg-sidebar-accent focus-visible:ring-focus-ring"
+          className="h-13 gap-2.25 rounded-[7px] p-2 hover:bg-sidebar-accent data-[state=open]:bg-sidebar-accent focus-visible:ring-focus-ring group-data-[tablet=true]:h-12 group-data-[tablet=true]:gap-2.5 group-data-[tablet=true]:rounded-[10px] group-data-[collapsible=icon]:size-11! group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0!"
         >
           <IdentityMark
             name={name}
             tone={user?.identity ?? "blue"}
             shape="round"
             imageUrl={user?.avatarUrl}
-            className="size-6.5 text-mark-sm font-bold"
+            className="size-6.5 text-mark-sm font-bold group-data-[tablet=true]:size-8"
           />
-          <span className="flex min-w-0 flex-1 flex-col text-left">
+          <span className="flex min-w-0 flex-1 flex-col text-left group-data-[collapsible=icon]:sr-only">
             <span className="truncate text-compact leading-4.75 font-semibold text-foreground">
               {name}
             </span>
@@ -556,6 +589,9 @@ function PinnedList({
   onRetry: () => void;
 }) {
   const closeDrawer = useCloseMobileDrawer();
+  const { iconOnly } = useSidebar();
+  // Pinned items have no icon-column presentation in the tablet design.
+  if (iconOnly) return null;
   if (state.status === "loading") return null;
   if (state.status === "ready" && state.entries.length === 0) return null;
 
@@ -611,7 +647,10 @@ function PinnedList({
                       <span className="sr-only">
                         {isBoard ? copy.sidebar.board : copy.sidebar.doc}:{" "}
                       </span>
-                      <span className="truncate" title={entry.name}>
+                      <span
+                        className={cn("truncate", LABEL_HIDE)}
+                        title={entry.name}
+                      >
                         {entry.name}
                       </span>
                     </ShellLink>
@@ -689,7 +728,10 @@ function SharedBoards({
                         size="sm"
                       />
                     )}
-                    <span className="truncate" title={board.name}>
+                    <span
+                      className={cn("truncate", LABEL_HIDE)}
+                      title={board.name}
+                    >
                       {board.name}
                     </span>
                   </ShellLink>

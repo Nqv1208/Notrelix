@@ -43,6 +43,7 @@ import {
   WorkspaceCommandPaletteSurface,
   WorkspaceShortcutSheetSurface,
   WorkspaceSidebarSurface,
+  WorkspaceTabletTopbar,
   WorkspaceTopbarSurface,
   workspaceBreadcrumbLabels,
   type NavigationListState,
@@ -66,6 +67,7 @@ import { useBoardPlacements } from "./board-placement-bridge";
 import { buildSidebarDocs } from "./docs-sidebar-tree";
 import { CreateWorkspaceDialog } from "./create-workspace-dialog";
 import { useSystemRailPreference } from "./use-system-rail-preference";
+import { useTabletSidebarPreference } from "./use-tablet-sidebar-preference";
 import { useInboxSummary } from "./work-feed-bridge";
 import { flattenMyWork, useMyWorkItems } from "./work-management-bridge";
 import { useCommandPaletteData } from "./use-command-palette-data";
@@ -416,6 +418,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
   // ── Notrelix system rail (Final-Space `nav`) ────────────────────
   const railCopy = useNotrelixSystemRailCopy();
   const rail = useSystemRailPreference(storage);
+  const tabletSidebar = useTabletSidebarPreference(storage);
   const isMobile = useIsMobile();
   const railOpener = useRef<HTMLElement | null>(null);
   const inboxSummary = useInboxSummary();
@@ -601,7 +604,11 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
     [railWorkspaces],
   );
   const [paletteQuery, setPaletteQuery] = useState("");
-  const paletteSearch = useCommandSearch(workspaceId, paletteQuery, paletteOpen);
+  const paletteSearch = useCommandSearch(
+    workspaceId,
+    paletteQuery,
+    paletteOpen,
+  );
   const paletteData = useCommandPaletteData({
     search: paletteSearch,
     workspaceId,
@@ -643,6 +650,8 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
 
   return (
     <SidebarProvider
+      tabletOpen={tabletSidebar.open}
+      onTabletOpenChange={tabletSidebar.setOpen}
       data-system-rail={desktopRail}
       className={cn(
         "h-svh overflow-hidden bg-surface-canvas",
@@ -704,6 +713,13 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
             edge and search, notifications and appearance live in the sidebar,
             the rail and the account pages. Narrow screens keep the bar, which
             owns the navigation drawer trigger. */}
+        {isMobile ? null : (
+          <WorkspaceTabletTopbar
+            copy={copy}
+            commandShortcut={commandShortcut}
+            onOpenCommand={() => setPaletteOpen(true)}
+          />
+        )}
         {isMobile ? (
           <WorkspaceTopbarSurface
             copy={copy}

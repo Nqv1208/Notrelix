@@ -56,7 +56,7 @@ export interface ShellSidebarCounts {
  * with a 10 px inline margin, 16 px above and 6 px below (4 plus the gap).
  */
 export const SIDEBAR_SECTION_LABEL_CLASS =
-  "mx-2.5 mt-4 mb-1.5 flex min-h-6 items-center justify-between text-metadata font-semibold text-meta-foreground";
+  "mx-2.5 mt-4 mb-1.5 flex min-h-6 items-center justify-between text-metadata font-semibold text-meta-foreground group-data-[tablet=true]:mx-0 group-data-[tablet=true]:mt-2 group-data-[tablet=true]:mb-0 group-data-[tablet=true]:min-h-11 group-data-[tablet=true]:pl-3 group-data-[tablet=true]:text-crumb group-data-[collapsible=icon]:mx-auto! group-data-[collapsible=icon]:my-2! group-data-[collapsible=icon]:h-px! group-data-[collapsible=icon]:min-h-0! group-data-[collapsible=icon]:w-8! group-data-[collapsible=icon]:bg-line-strong group-data-[collapsible=icon]:pl-0! group-data-[collapsible=icon]:*:hidden";
 
 /** Badge text for a count: none for `null` or 0, "99+" above 99. */
 export function sidebarCountBadge(count: number | null): string | null {
