@@ -914,7 +914,9 @@ const calendarLight: CalendarTones = {
   eventDone: oklch(0.944, 0.021, 156.8), // #E2F1E7
   eventOverdue: oklch(0.957, 0.019, 5.3), // #FDECEF
   dotReview: oklch(0.728, 0.151, 79.4), // #D99A00
-  faint: oklch(0.657, 0.02, 258.4), // #8A929E
+  // Out-of-month day numbers: darker than the mockup's #8A929E (3.1:1), which
+  // axe rejects on the calendar surface; this keeps them quiet at 4.5:1 or more.
+  faint: oklch(0.54, 0.02, 258.4), // light faint, see above
   tip: oklch(0.217, 0.015, 261.6), // #161A21
   onTip: oklch(0.966, 0.005, 258.3), // #F2F4F7
 };

@@ -553,7 +553,7 @@ const CALENDAR_VALUES: Record<"light" | "dark", Record<string, string>> = {
     "calendar-event-done": "#e2f1e7",
     "calendar-event-overdue": "#fdecef",
     "calendar-dot-review": "#d99a00",
-    "calendar-faint": "#8a929e",
+    "calendar-faint": "#686f7b",
     "calendar-tip": "#161a21",
     "calendar-tip-foreground": "#f2f4f7",
   },
