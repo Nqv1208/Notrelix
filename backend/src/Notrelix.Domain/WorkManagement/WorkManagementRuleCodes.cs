@@ -11,6 +11,7 @@ public static class WorkManagementRuleCodes
     public const string WorkManagement_Board_CannotUpdateBackgroundArchived = "WorkManagement_Board_CannotUpdateBackgroundArchived";
     public const string WorkManagement_Board_CannotChangeVisibilityArchived = "WorkManagement_Board_CannotChangeVisibilityArchived";
     public const string WorkManagement_Board_CannotGenerateIdentityArchived = "WorkManagement_Board_CannotGenerateIdentityArchived";
+    public const string WorkManagement_Board_CannotChangeSpaceArchived = "WorkManagement_Board_CannotChangeSpaceArchived";
     public const string WorkManagement_Board_CannotDeleteDefaultGroup = "WorkManagement_Board_CannotDeleteDefaultGroup";
 
     // ── Field ─────────────────────────────────────────────────────────────
@@ -27,8 +28,14 @@ public static class WorkManagementRuleCodes
     public const string WorkManagement_Field_BelongsToDifferentWorkspace = "WorkManagement_Field_BelongsToDifferentWorkspace";
     public const string WorkManagement_Field_DefaultRequiresConfiguredOptions = "WorkManagement_Field_DefaultRequiresConfiguredOptions";
     public const string WorkManagement_Field_OptionUsedByDefault = "WorkManagement_Field_OptionUsedByDefault";
+    public const string WorkManagement_Field_StatusOptionCategoryRequired = "WorkManagement_Field_StatusOptionCategoryRequired";
+    public const string WorkManagement_Field_OptionCategoryNotAllowed = "WorkManagement_Field_OptionCategoryNotAllowed";
+    public const string WorkManagement_Field_StatusRequiresTodoAndDone = "WorkManagement_Field_StatusRequiresTodoAndDone";
+    public const string WorkManagement_Field_DefaultStatusesRequireEmptyStatusField = "WorkManagement_Field_DefaultStatusesRequireEmptyStatusField";
 
     // ── FieldSettings ─────────────────────────────────────────────────────
+    public const string WorkManagement_FieldSettings_TooLarge = "WorkManagement_FieldSettings_TooLarge";
+    public const string WorkManagement_FieldValue_TooLarge = "WorkManagement_FieldValue_TooLarge";
     public const string WorkManagement_FieldSettings_InvalidJsonFormat = "WorkManagement_FieldSettings_InvalidJsonFormat";
     public const string WorkManagement_FieldSettings_NumberMinMustBeNumber = "WorkManagement_FieldSettings_NumberMinMustBeNumber";
     public const string WorkManagement_FieldSettings_NumberMaxMustBeNumber = "WorkManagement_FieldSettings_NumberMaxMustBeNumber";

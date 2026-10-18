@@ -14,9 +14,14 @@
         "reason": "Container composing TaskDetailPanelSurface with card-detail state and actions."
       },
       {
-        "path": "src/components/views/kanban/kanban-filter-menu.tsx",
+        "path": "src/components/item-page/item-page-container.tsx",
         "category": "container",
-        "reason": "Unconsumed Kanban filter presentation menu with no registered consumer surface at this baseline; classified rather than silently registered."
+        "reason": "Container composing ItemPageSurface with the item, board and access reads, the item commands and the refused-write state."
+      },
+      {
+        "path": "src/components/views/calendar/board-calendar-view.tsx",
+        "category": "container",
+        "reason": "Stateful view adapter owning the calendar board query state, route filter and writes, composing the registered calendar surface."
       },
       {
         "path": "src/components/views/kanban/kanban-view.tsx",
@@ -27,6 +32,21 @@
         "path": "src/components/views/table/main-table-view.tsx",
         "category": "container",
         "reason": "Stateful view adapter owning table main query state and composing registered table surfaces."
+      },
+      {
+        "path": "src/components/views/timeline/board-timeline-view.tsx",
+        "category": "container",
+        "reason": "Stateful view adapter owning the timeline board query state, the window and the writes, composing the registered timeline surface."
+      },
+      {
+        "path": "src/components/shared/board-item-sheet-host.tsx",
+        "category": "container",
+        "reason": "Container hosting the shared item side sheet for a page that is not a Board view: it reads the item's Board and access and wires the sheet's actions, composing the registered item sheet surface."
+      },
+      {
+        "path": "src/components/board-settings/board-settings-container.tsx",
+        "category": "container",
+        "reason": "Container composing BoardSettingsSurface with the settings, board and access reads, every settings write and the Kanban view's own settings through useBoardView."
       }
     ]
   },
@@ -68,17 +88,17 @@
           {
             "state": "Loading",
             "reason": "The shell renders whatever child view content it receives; per-view loading presentation is owned by the dedicated loading surfaces.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           },
           {
             "state": "Error",
             "reason": "The shell renders whatever child view content it receives; per-view error presentation is owned by the dedicated unavailable surfaces.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           },
           {
             "state": "EdgeData",
             "reason": "The shell composes static chrome around child content and carries no data-driven values of its own.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           }
         ]
       },
@@ -115,43 +135,185 @@
               "theme": "dark"
             }
           ]
+        },
+        {
+          "id": "work-management-board-layout-toolbar--read-only",
+          "state": "ReadOnly",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         }
       ],
       "stateCoverage": {
-        "required": ["Default"],
-        "delegated": [],
-        "notApplicable": [
+        "required": ["Default", "ReadOnly"],
+        "delegated": [
           {
             "state": "EdgeData",
-            "reason": "The toolbar renders a short board title and fixed action controls; long-text and Unicode edges are exercised by the data surfaces it composes.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
-          },
-          {
-            "state": "ReadOnly",
-            "reason": "No product-authoritative read-only contract exists for the board toolbar at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "surfaceId": "wm.board-layout.header",
+            "targetState": "EdgeData"
           }
-        ]
+        ],
+        "notApplicable": []
       },
       "responsive": true,
       "themeAware": true,
       "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
-          "id": "filter",
-          "testFile": "src/components/board-layout/__tests__/board-layout.interaction.component.test.tsx"
-        },
-        {
           "id": "view",
-          "testFile": "src/components/board-layout/__tests__/board-layout.interaction.component.test.tsx"
-        },
-        {
-          "id": "search",
           "testFile": "src/components/board-layout/__tests__/board-layout.interaction.component.test.tsx"
         },
         {
           "id": "add-view",
           "testFile": "src/components/board-layout/__tests__/board-layout.interaction.component.test.tsx"
+        },
+        {
+          "id": "filter-absent",
+          "testFile": "src/components/board-layout/__tests__/board-layout.interaction.component.test.tsx"
+        },
+        {
+          "id": "locale",
+          "testFile": "src/components/board-layout/__tests__/board-layout.interaction.component.test.tsx"
+        },
+        {
+          "id": "dom-order",
+          "testFile": "src/components/board-layout/__tests__/board-layout.interaction.component.test.tsx"
+        },
+        {
+          "id": "header-context",
+          "testFile": "src/components/board-layout/__tests__/board-layout.interaction.component.test.tsx"
+        },
+        {
+          "id": "untitled",
+          "testFile": "src/components/board-layout/__tests__/board-layout.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "wm.board-layout.header",
+      "owner": "@notrelix/work-management-web",
+      "surfaceKind": "navigation",
+      "pureEntry": "src/components/board-layout/board-header-surface.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "work-management-board-layout-header--default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-board-layout-header--read-only",
+          "state": "ReadOnly",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-board-layout-header--edge-data",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default", "ReadOnly", "EdgeData"],
+        "delegated": [],
+        "notApplicable": []
+      },
+      "responsive": true,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "title",
+          "testFile": "src/components/board-layout/__tests__/board-header.interaction.component.test.tsx"
+        },
+        {
+          "id": "crumb-modified-click",
+          "testFile": "src/components/board-layout/__tests__/board-header.interaction.component.test.tsx"
+        },
+        {
+          "id": "access-chip",
+          "testFile": "src/components/board-layout/__tests__/board-header.interaction.component.test.tsx"
+        },
+        {
+          "id": "avatar-stack",
+          "testFile": "src/components/board-layout/__tests__/board-header.interaction.component.test.tsx"
+        },
+        {
+          "id": "share-unavailable",
+          "testFile": "src/components/board-layout/__tests__/board-header.interaction.component.test.tsx"
+        },
+        {
+          "id": "share",
+          "testFile": "src/components/board-layout/__tests__/board-header.interaction.component.test.tsx"
+        },
+        {
+          "id": "settings",
+          "testFile": "src/components/board-layout/__tests__/board-header.interaction.component.test.tsx"
+        },
+        {
+          "id": "more-menu",
+          "testFile": "src/components/board-layout/__tests__/board-header.interaction.component.test.tsx"
+        },
+        {
+          "id": "commenter-banner",
+          "testFile": "src/components/board-layout/__tests__/board-header.interaction.component.test.tsx"
+        },
+        {
+          "id": "manager-no-banner",
+          "testFile": "src/components/board-layout/__tests__/board-header.interaction.component.test.tsx"
+        },
+        {
+          "id": "workspace-source",
+          "testFile": "src/components/board-layout/__tests__/board-header.interaction.component.test.tsx"
+        },
+        {
+          "id": "access-pending",
+          "testFile": "src/components/board-layout/__tests__/board-header.interaction.component.test.tsx"
+        },
+        {
+          "id": "no-space",
+          "testFile": "src/components/board-layout/__tests__/board-header.interaction.component.test.tsx"
+        },
+        {
+          "id": "sentence-counts",
+          "testFile": "src/components/board-layout/__tests__/board-header.interaction.component.test.tsx"
+        },
+        {
+          "id": "sentence-at-least",
+          "testFile": "src/components/board-layout/__tests__/board-header.interaction.component.test.tsx"
+        },
+        {
+          "id": "sentence-empty",
+          "testFile": "src/components/board-layout/__tests__/board-header.interaction.component.test.tsx"
         }
       ]
     },
@@ -192,12 +354,12 @@
           {
             "state": "EdgeData",
             "reason": "The tab set is a fixed constant list of view types, not data-driven text; there are no data-shape edges to stress.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           },
           {
             "state": "ReadOnly",
             "reason": "No product-authoritative read-only contract exists for board view tabs at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           }
         ]
       },
@@ -223,6 +385,26 @@
         },
         {
           "id": "escape",
+          "testFile": "src/components/board-layout/__tests__/board-layout.interaction.component.test.tsx"
+        },
+        {
+          "id": "menu-keyboard",
+          "testFile": "src/components/board-layout/__tests__/board-layout.interaction.component.test.tsx"
+        },
+        {
+          "id": "outside-click",
+          "testFile": "src/components/board-layout/__tests__/board-layout.interaction.component.test.tsx"
+        },
+        {
+          "id": "stacking",
+          "testFile": "src/components/board-layout/__tests__/board-layout.interaction.component.test.tsx"
+        },
+        {
+          "id": "aria-controls",
+          "testFile": "src/components/board-layout/__tests__/board-layout.interaction.component.test.tsx"
+        },
+        {
+          "id": "selected-style",
           "testFile": "src/components/board-layout/__tests__/board-layout.interaction.component.test.tsx"
         }
       ]
@@ -304,9 +486,10 @@
       "pureEntry": "src/components/views/kanban/kanban-board.tsx",
       "coveredSources": [
         "src/components/views/kanban/kanban-add-card.tsx",
-        "src/components/views/kanban/kanban-add-column.tsx",
+        "src/components/views/kanban/kanban-add-lane.tsx",
         "src/components/views/kanban/kanban-card-detail-panel.tsx",
-        "src/components/views/kanban/kanban-empty-state.tsx"
+        "src/components/views/kanban/kanban-empty-state.tsx",
+        "src/components/views/kanban/kanban-settings-panel.tsx"
       ],
       "stories": [
         {
@@ -360,10 +543,60 @@
               "theme": "light"
             }
           ]
+        },
+        {
+          "id": "work-management-kanban-board--no-results",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-kanban-board--read-only",
+          "state": "ReadOnly",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-kanban-board--lane-limit",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-kanban-settings-panel--default",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-kanban-board--english",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "Empty", "EdgeData", "HighDensity"],
+        "required": ["Default", "Empty", "EdgeData", "HighDensity", "ReadOnly"],
         "delegated": [
           {
             "state": "Loading",
@@ -379,12 +612,7 @@
         "notApplicable": [
           {
             "state": "PermissionLimited",
-            "reason": "No product-authoritative Kanban capability contract exists at this baseline.",
-            "authority": "docs/product/work-management.md"
-          },
-          {
-            "state": "ReadOnly",
-            "reason": "No product-authoritative Kanban read-only contract exists at this baseline.",
+            "reason": "Board access gives one read-only presentation for commenters and viewers (no drag, no add), evidenced by ReadOnly; there is no partially permitted Kanban state.",
             "authority": "docs/product/work-management.md"
           }
         ]
@@ -398,8 +626,48 @@
           "testFile": "src/components/views/kanban/__tests__/kanban-board.interaction.component.test.tsx"
         },
         {
+          "id": "show-more",
+          "testFile": "src/components/views/kanban/__tests__/kanban-board.interaction.component.test.tsx"
+        },
+        {
+          "id": "lane-menu",
+          "testFile": "src/components/views/kanban/__tests__/kanban-board.interaction.component.test.tsx"
+        },
+        {
+          "id": "add",
+          "testFile": "src/components/views/kanban/__tests__/kanban-board.interaction.component.test.tsx"
+        },
+        {
+          "id": "read-only",
+          "testFile": "src/components/views/kanban/__tests__/kanban-board.interaction.component.test.tsx"
+        },
+        {
+          "id": "empty-lane",
+          "testFile": "src/components/views/kanban/__tests__/kanban-board.interaction.component.test.tsx"
+        },
+        {
           "id": "move",
           "testFile": "src/components/views/kanban/__tests__/kanban-board.interaction.component.test.tsx"
+        },
+        {
+          "id": "drag",
+          "testFile": "src/components/views/kanban/__tests__/kanban-board.interaction.component.test.tsx"
+        },
+        {
+          "id": "add-lane",
+          "testFile": "src/components/views/kanban/__tests__/kanban-board.interaction.component.test.tsx"
+        },
+        {
+          "id": "lane-limit",
+          "testFile": "src/components/views/kanban/__tests__/kanban-board.interaction.component.test.tsx"
+        },
+        {
+          "id": "keyboard-move",
+          "testFile": "src/components/views/kanban/__tests__/kanban-board.interaction.component.test.tsx"
+        },
+        {
+          "id": "settings",
+          "testFile": "src/components/views/kanban/__tests__/kanban-settings-panel.interaction.component.test.tsx"
         }
       ]
     },
@@ -408,7 +676,7 @@
       "owner": "@notrelix/work-management-web",
       "surfaceKind": "composition",
       "pureEntry": "src/components/views/kanban/kanban-column.tsx",
-      "coveredSources": ["src/components/views/kanban/kanban-column-menu.tsx"],
+      "coveredSources": [],
       "stories": [
         {
           "id": "work-management-kanban-column--default",
@@ -451,6 +719,16 @@
               "theme": "light"
             }
           ]
+        },
+        {
+          "id": "work-management-kanban-column--collapsed",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         }
       ],
       "stateCoverage": {
@@ -460,12 +738,12 @@
           {
             "state": "Loading",
             "reason": "Column content arrives already resolved from the board query; board-level loading is owned by wm.kanban.loading.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           },
           {
             "state": "Error",
             "reason": "Column content arrives already resolved from the board query; board-level fetch failure is owned by wm.kanban.unavailable.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           }
         ]
       },
@@ -480,6 +758,10 @@
         {
           "id": "escape",
           "testFile": "src/components/views/kanban/__tests__/kanban-column.interaction.component.test.tsx"
+        },
+        {
+          "id": "edit",
+          "testFile": "src/components/views/kanban/__tests__/kanban-column.interaction.component.test.tsx"
         }
       ]
     },
@@ -488,7 +770,7 @@
       "owner": "@notrelix/work-management-web",
       "surfaceKind": "data",
       "pureEntry": "src/components/views/kanban/kanban-card.tsx",
-      "coveredSources": ["src/components/views/kanban/kanban-card-menu.tsx"],
+      "coveredSources": ["src/components/views/kanban/kanban-card.copy.ts"],
       "stories": [
         {
           "id": "work-management-kanban-card--default",
@@ -521,6 +803,80 @@
               "theme": "light"
             }
           ]
+        },
+        {
+          "id": "work-management-kanban-card--overdue",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-kanban-card--no-due-no-status",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-kanban-card--overdue-twelve-days",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-kanban-card--due-today",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-kanban-card--done",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-kanban-card--selected",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-kanban-card--english",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         }
       ],
       "stateCoverage": {
@@ -530,32 +886,32 @@
           {
             "state": "Loading",
             "reason": "A card renders synchronously from resolved board data; board-level loading is owned by wm.kanban.loading.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           },
           {
             "state": "Empty",
             "reason": "An empty board is evidenced by wm.kanban.board Empty; a card always carries at least a title.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           },
           {
             "state": "Error",
             "reason": "Board-level fetch failure is evidenced by wm.kanban.unavailable Error.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           },
           {
             "state": "HighDensity",
             "reason": "High-density board input is evidenced by wm.kanban.board HighDensity with the documented 8x40 cardinality.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           },
           {
             "state": "ReadOnly",
             "reason": "No product-authoritative read-only contract exists for kanban cards at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           },
           {
             "state": "PermissionLimited",
             "reason": "No product-authoritative permission-limited capability contract exists for kanban cards at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           }
         ]
       },
@@ -574,7 +930,7 @@
       "owner": "@notrelix/work-management-web",
       "surfaceKind": "navigation",
       "pureEntry": "src/components/views/kanban/kanban-toolbar.tsx",
-      "coveredSources": ["src/components/views/kanban/kanban-sort-menu.tsx"],
+      "coveredSources": ["src/components/views/kanban/kanban-filter-menu.tsx"],
       "stories": [
         {
           "id": "work-management-kanban-toolbar--default",
@@ -597,23 +953,32 @@
               "theme": "dark"
             }
           ]
+        },
+        {
+          "id": "work-management-kanban-toolbar--read-only",
+          "state": "ReadOnly",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-kanban-toolbar--edge-data",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         }
       ],
       "stateCoverage": {
-        "required": ["Default"],
+        "required": ["Default", "ReadOnly", "EdgeData"],
         "delegated": [],
-        "notApplicable": [
-          {
-            "state": "EdgeData",
-            "reason": "Sort options are a fixed label set; there is no data-driven text edge to stress.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
-          },
-          {
-            "state": "ReadOnly",
-            "reason": "No product-authoritative read-only contract exists for the kanban toolbar at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
-          }
-        ]
+        "notApplicable": []
       },
       "responsive": true,
       "themeAware": true,
@@ -621,6 +986,26 @@
       "interactionCases": [
         {
           "id": "toolbar",
+          "testFile": "src/components/views/kanban/__tests__/kanban-toolbar.interaction.component.test.tsx"
+        },
+        {
+          "id": "filter",
+          "testFile": "src/components/views/kanban/__tests__/kanban-toolbar.interaction.component.test.tsx"
+        },
+        {
+          "id": "filter-chip",
+          "testFile": "src/components/views/kanban/__tests__/kanban-toolbar.interaction.component.test.tsx"
+        },
+        {
+          "id": "group-by",
+          "testFile": "src/components/views/kanban/__tests__/kanban-toolbar.interaction.component.test.tsx"
+        },
+        {
+          "id": "read-only",
+          "testFile": "src/components/views/kanban/__tests__/kanban-toolbar.interaction.component.test.tsx"
+        },
+        {
+          "id": "no-results",
           "testFile": "src/components/views/kanban/__tests__/kanban-toolbar.interaction.component.test.tsx"
         }
       ]
@@ -650,7 +1035,7 @@
           {
             "state": "Default",
             "reason": "This surface renders exclusively the loading skeleton presentation; Default board presentation is owned by wm.kanban.board.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           }
         ]
       },
@@ -684,7 +1069,7 @@
           {
             "state": "Default",
             "reason": "This surface renders exclusively the error presentation; Default board presentation is owned by wm.kanban.board.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           }
         ]
       },
@@ -699,13 +1084,16 @@
       "surfaceKind": "data",
       "pureEntry": "src/components/views/table/main-table-surface.tsx",
       "coveredSources": [
-        "src/components/views/table/table-add-task-row.tsx",
-        "src/components/views/table/table-cell.tsx",
+        "src/components/views/table/table-add-group.tsx",
+        "src/components/views/table/table-bulk-bar.tsx",
+        "src/components/views/table/table-cell-editors.tsx",
+        "src/components/views/table/table-column-resize.tsx",
         "src/components/views/table/table-group-section.tsx",
         "src/components/views/table/table-header-row.tsx",
+        "src/components/views/table/table-parts.tsx",
         "src/components/views/table/table-row.tsx",
-        "src/components/views/table/table-scroll-container.tsx",
-        "src/components/views/table/table-sticky-header.tsx"
+        "src/components/views/table/table-states.tsx",
+        "src/components/views/table/table-status-picker.tsx"
       ],
       "stories": [
         {
@@ -731,8 +1119,116 @@
           ]
         },
         {
+          "id": "work-management-table-main-table--selected-rows",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-table-main-table--editing-cell",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-table-main-table--resized-columns",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-table-main-table--archived",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-table-main-table--no-results",
+          "state": "Empty",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
           "id": "work-management-table-main-table--empty",
           "state": "Empty",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-table-main-table--compact",
+          "state": "HighDensity",
           "visualTargets": [
             {
               "viewport": "desktop",
@@ -789,7 +1285,7 @@
           {
             "state": "PermissionLimited",
             "reason": "No product-authoritative permission-limited capability contract exists for the main table at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           }
         ]
       },
@@ -798,11 +1294,15 @@
       "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
-          "id": "table",
+          "id": "select",
           "testFile": "src/components/views/table/__tests__/main-table-surface.interaction.component.test.tsx"
         },
         {
-          "id": "create",
+          "id": "bulk",
+          "testFile": "src/components/views/table/__tests__/main-table-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "archive",
           "testFile": "src/components/views/table/__tests__/main-table-surface.interaction.component.test.tsx"
         },
         {
@@ -810,8 +1310,125 @@
           "testFile": "src/components/views/table/__tests__/main-table-surface.interaction.component.test.tsx"
         },
         {
+          "id": "keyboard",
+          "testFile": "src/components/views/table/__tests__/main-table-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "open",
+          "testFile": "src/components/views/table/__tests__/main-table-surface.interaction.component.test.tsx"
+        },
+        {
           "id": "group",
           "testFile": "src/components/views/table/__tests__/main-table-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "read-only",
+          "testFile": "src/components/views/table/__tests__/main-table-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "no-results",
+          "testFile": "src/components/views/table/__tests__/main-table-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "hover",
+          "testFile": "src/components/views/table/__tests__/main-table-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "resize",
+          "testFile": "src/components/views/table/__tests__/main-table-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "add-group",
+          "testFile": "src/components/views/table/__tests__/main-table-surface.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "wm.table.toolbar",
+      "owner": "@notrelix/work-management-web",
+      "surfaceKind": "navigation",
+      "pureEntry": "src/components/views/table/table-toolbar.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "work-management-table-toolbar--default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-table-toolbar--read-only",
+          "state": "ReadOnly",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-table-toolbar--edge-data",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default", "ReadOnly", "EdgeData"],
+        "delegated": [],
+        "notApplicable": []
+      },
+      "responsive": true,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "toolbar",
+          "testFile": "src/components/views/table/__tests__/table-toolbar.interaction.component.test.tsx"
+        },
+        {
+          "id": "chips",
+          "testFile": "src/components/views/table/__tests__/table-toolbar.interaction.component.test.tsx"
+        },
+        {
+          "id": "filter",
+          "testFile": "src/components/views/table/__tests__/table-toolbar.interaction.component.test.tsx"
+        },
+        {
+          "id": "sort",
+          "testFile": "src/components/views/table/__tests__/table-toolbar.interaction.component.test.tsx"
+        },
+        {
+          "id": "group-by",
+          "testFile": "src/components/views/table/__tests__/table-toolbar.interaction.component.test.tsx"
+        },
+        {
+          "id": "columns",
+          "testFile": "src/components/views/table/__tests__/table-toolbar.interaction.component.test.tsx"
+        },
+        {
+          "id": "read-only",
+          "testFile": "src/components/views/table/__tests__/table-toolbar.interaction.component.test.tsx"
         }
       ]
     },
@@ -840,7 +1457,7 @@
           {
             "state": "Default",
             "reason": "This surface renders exclusively the loading skeleton presentation; Default table presentation is owned by wm.table.main.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           }
         ]
       },
@@ -874,7 +1491,7 @@
           {
             "state": "Default",
             "reason": "This surface renders exclusively the error presentation; Default table presentation is owned by wm.table.main.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           }
         ]
       },
@@ -887,8 +1504,14 @@
       "surfaceId": "wm.calendar.board",
       "owner": "@notrelix/work-management-web",
       "surfaceKind": "data",
-      "pureEntry": "src/components/views/calendar/board-calendar-view.tsx",
-      "coveredSources": [],
+      "pureEntry": "src/components/views/calendar/board-calendar-surface.tsx",
+      "coveredSources": [
+        "src/components/views/calendar/calendar-agenda.tsx",
+        "src/components/views/calendar/calendar-aside.tsx",
+        "src/components/views/calendar/calendar-event.tsx",
+        "src/components/views/calendar/calendar-grid.tsx",
+        "src/components/views/calendar/calendar-toolbar.tsx"
+      ],
       "stories": [
         {
           "id": "work-management-calendar-board-calendar--default",
@@ -941,10 +1564,20 @@
               "theme": "light"
             }
           ]
+        },
+        {
+          "id": "work-management-calendar-board-calendar--read-only",
+          "state": "ReadOnly",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "Empty", "EdgeData", "HighDensity"],
+        "required": ["Default", "Empty", "EdgeData", "HighDensity", "ReadOnly"],
         "delegated": [
           {
             "state": "Loading",
@@ -959,14 +1592,9 @@
         ],
         "notApplicable": [
           {
-            "state": "ReadOnly",
-            "reason": "No product-authoritative read-only contract exists for the calendar board view at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
-          },
-          {
             "state": "PermissionLimited",
             "reason": "No product-authoritative permission-limited capability contract exists for the calendar board view at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           }
         ]
       },
@@ -975,8 +1603,80 @@
       "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
-          "id": "calendar",
-          "testFile": "src/components/views/calendar/__tests__/board-calendar-view.component.test.tsx"
+          "id": "month",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "event",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "navigation",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "range-switch",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "week",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "day",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "drag",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "drag-cancel",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "keyboard",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "undated",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "quick-create",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "add",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "overflow",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "date-basis",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "filter",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "no-results",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "read-only",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "empty",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "edge-data",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
         }
       ]
     },
@@ -984,8 +1684,12 @@
       "surfaceId": "wm.timeline.board",
       "owner": "@notrelix/work-management-web",
       "surfaceKind": "data",
-      "pureEntry": "src/components/views/timeline/board-timeline-view.tsx",
-      "coveredSources": [],
+      "pureEntry": "src/components/views/timeline/board-timeline-surface.tsx",
+      "coveredSources": [
+        "src/components/views/timeline/timeline-chart.tsx",
+        "src/components/views/timeline/timeline-list.tsx",
+        "src/components/views/timeline/timeline-toolbar.tsx"
+      ],
       "stories": [
         {
           "id": "work-management-timeline-board-timeline--default",
@@ -1028,10 +1732,30 @@
               "theme": "light"
             }
           ]
+        },
+        {
+          "id": "work-management-timeline-board-timeline--high-density",
+          "state": "HighDensity",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-timeline-board-timeline--read-only",
+          "state": "ReadOnly",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "Empty", "EdgeData"],
+        "required": ["Default", "Empty", "EdgeData", "HighDensity", "ReadOnly"],
         "delegated": [
           {
             "state": "Loading",
@@ -1046,19 +1770,9 @@
         ],
         "notApplicable": [
           {
-            "state": "HighDensity",
-            "reason": "Timeline intentionally caps visible cards at 10; high-density input is covered by component evidence rather than a distinct visual state.",
-            "authority": "frontend-ui-construction.plan.md FUIC-WU-078"
-          },
-          {
-            "state": "ReadOnly",
-            "reason": "No product-authoritative read-only contract exists for the timeline board view at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
-          },
-          {
             "state": "PermissionLimited",
             "reason": "No product-authoritative permission-limited capability contract exists for the timeline board view at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           }
         ]
       },
@@ -1067,12 +1781,84 @@
       "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
-          "id": "timeline",
-          "testFile": "src/components/views/timeline/__tests__/board-timeline-view.component.test.tsx"
+          "id": "scale-switch",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
         },
         {
-          "id": "density",
-          "testFile": "src/components/views/timeline/__tests__/board-timeline-view.component.test.tsx"
+          "id": "scale-keyboard",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "navigation",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "open-item",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "bars",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "inert-controls",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "links",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "critical-path",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "undated",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "keyboard",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "drag-resize",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "drag-move",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "drag-cancel",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "drag-limit",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "dragging",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "read-only",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "empty",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "edge-data",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "high-density",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "legend",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
         }
       ]
     },
@@ -1082,13 +1868,14 @@
       "surfaceKind": "composition",
       "pureEntry": "src/components/card-detail/task-detail-panel-surface.tsx",
       "coveredSources": [
+        "src/components/card-detail/item-field-editors.tsx",
         "src/components/card-detail/task-activity-tab.tsx",
         "src/components/card-detail/task-detail-empty-state.tsx",
         "src/components/card-detail/task-detail-header.tsx",
         "src/components/card-detail/task-detail-tabs.tsx",
-        "src/components/card-detail/task-files-tab.tsx",
         "src/components/card-detail/task-updates-tab.tsx",
-        "src/components/card-detail/update-composer.tsx"
+        "src/components/card-detail/update-composer.tsx",
+        "src/components/shared/item-description.tsx"
       ],
       "stories": [
         {
@@ -1167,7 +1954,7 @@
           {
             "state": "Error",
             "reason": "Fetch failures render the dedicated Unavailable presentation evidenced by the Unavailable story.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           }
         ]
       },
@@ -1202,6 +1989,1058 @@
         {
           "id": "readonly",
           "testFile": "src/components/card-detail/__tests__/task-detail-panel-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "focus-in",
+          "testFile": "src/components/card-detail/__tests__/task-detail-panel-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "focus-return",
+          "testFile": "src/components/card-detail/__tests__/task-detail-panel-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "escape",
+          "testFile": "src/components/card-detail/__tests__/task-detail-panel-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "kj",
+          "testFile": "src/components/card-detail/__tests__/task-detail-panel-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "head",
+          "testFile": "src/components/card-detail/__tests__/task-detail-panel-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "edge",
+          "testFile": "src/components/card-detail/__tests__/task-detail-panel-surface.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "wm.status-option.form",
+      "owner": "@notrelix/work-management-web",
+      "surfaceKind": "form",
+      "pureEntry": "src/components/status-option/status-option-form.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "work-management-status-option-form--default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-status-option-form--duplicate",
+          "state": "Error",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-status-option-form--pending",
+          "state": "Loading",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-status-option-form--edge-data",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default", "Error", "Loading", "EdgeData"],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "Success",
+            "reason": "The form hands the draft to its container and is closed by it; success is the new or renamed lane, evidenced by wm.kanban.board and wm.kanban.column.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "ReadOnly",
+            "reason": "A viewer or commenter is never offered the form: the container passes no form copy and no callbacks, so there is no read-only presentation of it.",
+            "authority": "docs/product/work-management.md"
+          }
+        ]
+      },
+      "responsive": true,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "create",
+          "testFile": "src/components/status-option/__tests__/status-option-form.interaction.component.test.tsx"
+        },
+        {
+          "id": "default-color",
+          "testFile": "src/components/status-option/__tests__/status-option-form.interaction.component.test.tsx"
+        },
+        {
+          "id": "validation",
+          "testFile": "src/components/status-option/__tests__/status-option-form.interaction.component.test.tsx"
+        },
+        {
+          "id": "duplicate-state",
+          "testFile": "src/components/status-option/__tests__/status-option-form.interaction.component.test.tsx"
+        },
+        {
+          "id": "cancel",
+          "testFile": "src/components/status-option/__tests__/status-option-form.interaction.component.test.tsx"
+        },
+        {
+          "id": "edit",
+          "testFile": "src/components/status-option/__tests__/status-option-form.interaction.component.test.tsx"
+        },
+        {
+          "id": "pending",
+          "testFile": "src/components/status-option/__tests__/status-option-form.interaction.component.test.tsx"
+        },
+        {
+          "id": "no-category",
+          "testFile": "src/components/status-option/__tests__/status-option-form.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "wm.item-page.surface",
+      "owner": "@notrelix/work-management-web",
+      "surfaceKind": "composition",
+      "pureEntry": "src/components/item-page/item-page-surface.tsx",
+      "coveredSources": [
+        "src/components/item-page/item-page-activity.tsx",
+        "src/components/item-page/item-page-header.tsx",
+        "src/components/item-page/item-page-mention.tsx",
+        "src/components/item-page/item-page-parts.tsx",
+        "src/components/item-page/item-page-rail.tsx",
+        "src/components/item-page/item-page-sections.tsx",
+        "src/components/item-page/item-page-states.tsx",
+        "src/components/item-page/item-page-topbar.tsx",
+        "src/components/item-page/item-pickers.tsx"
+      ],
+      "stories": [
+        {
+          "id": "work-management-item-page-surface--default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-item-page-surface--history",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-item-page-surface--comments",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-item-page-surface--loading",
+          "state": "Loading",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-item-page-surface--unavailable",
+          "state": "Unavailable",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-item-page-surface--edge-data",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-item-page-surface--conflict",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-item-page-surface--read-only",
+          "state": "ReadOnly",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-item-page-surface--not-found",
+          "state": "Unavailable",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-item-page-surface--loading-slow",
+          "state": "Loading",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-item-page-surface--empty",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-item-page-surface--completed",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-item-page-surface--archived",
+          "state": "ReadOnly",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-item-page-surface--offline",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-item-page-surface--long-content",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-item-page-surface--uploading",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": [
+          "Default",
+          "Loading",
+          "Unavailable",
+          "EdgeData",
+          "ReadOnly"
+        ],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "Error",
+            "reason": "Fetch failures render the dedicated Unavailable presentation evidenced by the Unavailable story.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          }
+        ]
+      },
+      "responsive": false,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "loading",
+          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "unavailable",
+          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "ready",
+          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "back",
+          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "kj",
+          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "tabs",
+          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "history",
+          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "properties",
+          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "conflict",
+          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "readonly",
+          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "composer",
+          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "unavailable-controls",
+          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "edge",
+          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "not-found",
+          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "loading-slow",
+          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "lifecycle",
+          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "offline",
+          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "empty",
+          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "long",
+          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "pickers",
+          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "assignee-picker",
+          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "assignee-ask",
+          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "mention",
+          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "link-picker",
+          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "uploads",
+          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "wm.board-share",
+      "owner": "@notrelix/work-management-web",
+      "surfaceKind": "navigation",
+      "pureEntry": "src/components/board-share/board-share-dialog-surface.tsx",
+      "coveredSources": ["src/components/board-share/board-share-models.ts"],
+      "stories": [
+        {
+          "id": "work-management-board-share--share-default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-board-share--share-level-menu",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-board-share--share-private",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-board-share--share-log",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-board-share--share-produced-only",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-board-share--share-workspace-board",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-board-share--share-empty",
+          "state": "Empty",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default", "Empty", "EdgeData"],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "ReadOnly",
+            "reason": "The Share button of the board header is offered to Board managers only; a member who cannot manage never sees this dialog.",
+            "authority": "docs/product/governance.md"
+          }
+        ]
+      },
+      "responsive": true,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "render",
+          "testFile": "src/components/board-share/__tests__/board-share-dialog.interaction.component.test.tsx"
+        },
+        {
+          "id": "inert",
+          "testFile": "src/components/board-share/__tests__/board-share-dialog.interaction.component.test.tsx"
+        },
+        {
+          "id": "copy-close",
+          "testFile": "src/components/board-share/__tests__/board-share-dialog.interaction.component.test.tsx"
+        },
+        {
+          "id": "level-menu",
+          "testFile": "src/components/board-share/__tests__/board-share-dialog.interaction.component.test.tsx"
+        },
+        {
+          "id": "level-remove",
+          "testFile": "src/components/board-share/__tests__/board-share-dialog.interaction.component.test.tsx"
+        },
+        {
+          "id": "private",
+          "testFile": "src/components/board-share/__tests__/board-share-dialog.interaction.component.test.tsx"
+        },
+        {
+          "id": "private-confirm",
+          "testFile": "src/components/board-share/__tests__/board-share-dialog.interaction.component.test.tsx"
+        },
+        {
+          "id": "log",
+          "testFile": "src/components/board-share/__tests__/board-share-dialog.interaction.component.test.tsx"
+        },
+        {
+          "id": "more",
+          "testFile": "src/components/board-share/__tests__/board-share-dialog.interaction.component.test.tsx"
+        },
+        {
+          "id": "variants",
+          "testFile": "src/components/board-share/__tests__/board-share-dialog.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "wm.board-settings",
+      "owner": "@notrelix/work-management-web",
+      "surfaceKind": "composition",
+      "pureEntry": "src/components/board-settings/board-settings-surface.tsx",
+      "coveredSources": [
+        "src/components/board-settings/automation-aside.tsx",
+        "src/components/board-settings/automation-editor.tsx",
+        "src/components/board-settings/automation-flow.tsx",
+        "src/components/board-settings/automation-log-parts.tsx",
+        "src/components/board-settings/automation-log.tsx",
+        "src/components/board-settings/automation-parts.tsx",
+        "src/components/board-settings/automation-pickers.tsx",
+        "src/components/board-settings/automation-run-sheet.tsx",
+        "src/components/board-settings/board-settings-automations.tsx",
+        "src/components/board-settings/board-settings-context.tsx",
+        "src/components/board-settings/board-settings-field-archive.tsx",
+        "src/components/board-settings/board-settings-field-panel.tsx",
+        "src/components/board-settings/board-settings-field-picker.tsx",
+        "src/components/board-settings/board-settings-fields.tsx",
+        "src/components/board-settings/board-settings-general.tsx",
+        "src/components/board-settings/board-settings-groups.tsx",
+        "src/components/board-settings/board-settings-parts.tsx",
+        "src/components/board-settings/board-settings-sortable.tsx",
+        "src/components/board-settings/board-settings-view-panel.tsx",
+        "src/components/board-settings/board-settings-views.tsx"
+      ],
+      "stories": [
+        {
+          "id": "work-management-board-settings-surface--default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-board-settings-surface--field-type-picker",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-board-settings-surface--archive-field",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-board-settings-surface--views",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-board-settings-surface--view-needs-fix",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-board-settings-surface--general",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-board-settings-surface--groups",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-board-settings-surface--automations",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-board-settings-surface--loading",
+          "state": "Loading",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-board-settings-surface--load-error",
+          "state": "Error",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-board-settings-surface--edge-data",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-board-settings-surface--conflict",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-board-settings-surface--no-access",
+          "state": "ReadOnly",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-board-settings-surface--automation-draft",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-board-settings-surface--automation-event-picker",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-board-settings-surface--automation-action-picker",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-board-settings-surface--automation-schedule",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-board-settings-surface--automation-edit-running",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-board-settings-surface--automation-blocked",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-board-settings-surface--automation-log",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-board-settings-surface--automation-run-detail",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default", "Loading", "Error", "EdgeData", "ReadOnly"],
+        "delegated": [],
+        "notApplicable": []
+      },
+      "responsive": false,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "loading",
+          "testFile": "src/components/board-settings/__tests__/board-settings-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "error",
+          "testFile": "src/components/board-settings/__tests__/board-settings-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "no-access",
+          "testFile": "src/components/board-settings/__tests__/board-settings-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "ready",
+          "testFile": "src/components/board-settings/__tests__/board-settings-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "menu",
+          "testFile": "src/components/board-settings/__tests__/board-settings-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "field-panel",
+          "testFile": "src/components/board-settings/__tests__/board-settings-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "options",
+          "testFile": "src/components/board-settings/__tests__/board-settings-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "select-field",
+          "testFile": "src/components/board-settings/__tests__/board-settings-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "add-field",
+          "testFile": "src/components/board-settings/__tests__/board-settings-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "archive-field",
+          "testFile": "src/components/board-settings/__tests__/board-settings-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "restore-field",
+          "testFile": "src/components/board-settings/__tests__/board-settings-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "status-field",
+          "testFile": "src/components/board-settings/__tests__/board-settings-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "views",
+          "testFile": "src/components/board-settings/__tests__/board-settings-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "view-needs-fix",
+          "testFile": "src/components/board-settings/__tests__/board-settings-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "general",
+          "testFile": "src/components/board-settings/__tests__/board-settings-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "groups",
+          "testFile": "src/components/board-settings/__tests__/board-settings-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "automations",
+          "testFile": "src/components/board-settings/__tests__/board-settings-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "conflict",
+          "testFile": "src/components/board-settings/__tests__/board-settings-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "failed",
+          "testFile": "src/components/board-settings/__tests__/board-settings-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "empty",
+          "testFile": "src/components/board-settings/__tests__/board-settings-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "automation-list",
+          "testFile": "src/components/board-settings/__tests__/board-automation.interaction.component.test.tsx"
+        },
+        {
+          "id": "automation-editor",
+          "testFile": "src/components/board-settings/__tests__/board-automation.interaction.component.test.tsx"
+        },
+        {
+          "id": "automation-pickers",
+          "testFile": "src/components/board-settings/__tests__/board-automation.interaction.component.test.tsx"
+        },
+        {
+          "id": "automation-running",
+          "testFile": "src/components/board-settings/__tests__/board-automation.interaction.component.test.tsx"
+        },
+        {
+          "id": "automation-schedule",
+          "testFile": "src/components/board-settings/__tests__/board-automation.interaction.component.test.tsx"
+        },
+        {
+          "id": "automation-blocked",
+          "testFile": "src/components/board-settings/__tests__/board-automation.interaction.component.test.tsx"
+        },
+        {
+          "id": "automation-state",
+          "testFile": "src/components/board-settings/__tests__/board-automation.interaction.component.test.tsx"
+        },
+        {
+          "id": "automation-log",
+          "testFile": "src/components/board-settings/__tests__/board-automation.interaction.component.test.tsx"
         }
       ]
     }

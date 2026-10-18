@@ -1,4 +1,5 @@
 using Notrelix.Application.Common.Requests.Execution;
+using Notrelix.Application.Features.Governance.Public.Access;
 
 namespace Notrelix.Application.Features.Governance.Authorization;
 
@@ -7,6 +8,9 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
     // Technical rank ordering for Governance permission levels: None=0,
     // Viewer=1, Commenter=2, Editor=3, Manager=4, Owner=5. The pipeline seam
     // compares ranks only; the vocabulary itself stays Governance-owned.
+    private const int ViewerRank = 1;
+    private const int CommenterRank = 2;
+    private const int EditorRank = 3;
     private const int ManagerRank = 4;
     private const int OwnerRank = 5;
 
@@ -45,7 +49,7 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
 
         if (descriptor.Access.RequiresPermission)
         {
-            var permission = EvaluatePermission(descriptor, facts, request);
+            var permission = EvaluatePermission(descriptor, facts, request, context.UserId);
             if (permission.Kind != AccessDecisionKind.Allowed)
             {
                 return permission;
@@ -94,7 +98,8 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
     private static AccessDecision EvaluatePermission(
         RequestDescriptor descriptor,
         AccessFacts facts,
-        object request)
+        object request,
+        Guid? actorId)
     {
         if (request is not IRequirePermission permission)
         {
@@ -118,6 +123,13 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
             return AccessDecision.Deny(AccessDecisionKind.NotFound, "Resource not found.");
         }
 
+        // A Board child whose Board cannot be resolved is NotFound in any scope;
+        // it never falls back to the resource-kind fallthrough (GOV-033).
+        if (facts.IsBoardChild && facts.ParentBoardId is null)
+        {
+            return AccessDecision.Deny(AccessDecisionKind.NotFound, "Resource not found.");
+        }
+
         if (string.Equals(role, "Owner", StringComparison.Ordinal))
         {
             return AccessDecision.Allow();
@@ -135,7 +147,7 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
 
         if (firstPriority.Any(rule => string.Equals(rule.Effect, "Allow", StringComparison.OrdinalIgnoreCase)))
         {
-            return GrantAwareAllow(request, facts, role);
+            return GrantAwareAllow(request, facts, role, actorId);
         }
 
         if (isAccount)
@@ -151,25 +163,51 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
             return AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
         }
 
+        // GOV-028: Spaces are managed by workspace Owners/Admins anywhere, and by
+        // an effective Space Admin within the Space's subtree. Creating a Board or
+        // Page in a Space needs Editor level on that Space (GOV-027).
+        if (permission.Resource?.Kind.Value == "workspaces.space")
+        {
+            return EvaluateSpace(permission, facts, role);
+        }
+
+        // GOV-028: root Space creation and Team composition are workspace Owner/Admin
+        // capabilities by default (Owners passed the fast path above). Explicit
+        // permission rules were evaluated first.
+        if (permission.Resource?.Kind.Value == "workspaces.workspace"
+            && permission.Action is PermissionAction.ManageSpaces or PermissionAction.ManageTeams)
+        {
+            return string.Equals(role, "Admin", StringComparison.Ordinal)
+                ? AccessDecision.Allow()
+                : AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
+        }
+
         if (permission.Action == PermissionAction.DeleteWorkspace)
         {
             return AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
         }
 
-        if (permission.Resource?.Kind.Value == "work-management.board")
+        // A Board child resource is decided on its parent Board (GOV-033): the
+        // facts are the Board's, so the Board policy applies to the child's action.
+        if (permission.Resource?.Kind.Value == "work-management.board" || facts.ParentBoardId is not null)
         {
             if (!facts.ResourceExists)
             {
                 return AccessDecision.Deny(AccessDecisionKind.NotFound, "Resource not found.");
             }
 
-            var restricted = !string.Equals(facts.ResourceAudience, "Workspace", StringComparison.Ordinal);
-            var guest = string.Equals(role, "Guest", StringComparison.Ordinal);
-            if ((restricted || guest)
-                && facts.ResourceMemberRole is null
-                && !facts.HasExplicitResourcePermission)
+            var access = EvaluatePlacedResourceAccess(permission, facts, role);
+            if (access.Denial is { } denied)
             {
-                return AccessDecision.Deny(AccessDecisionKind.NotFound, "Resource not found.");
+                return denied;
+            }
+
+            // A Board child accepts only the Board-child action vocabulary; an
+            // unrelated action (a workspace-level share, Space management, …)
+            // is refused rather than gated by the Board level.
+            if (facts.ParentBoardId is not null && !IsBoardChildAction(permission.Action))
+            {
+                return AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
             }
 
             if (permission.Action == PermissionAction.UpdateItem
@@ -178,7 +216,7 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
                 return AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
             }
 
-            return ManageAwareAllow(permission, request, facts, role);
+            return ManageAwareAllow(permission, request, facts, role, access.EffectiveRank, actorId);
         }
 
         if (permission.Resource?.Kind.Value == "documents.page")
@@ -188,13 +226,10 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
                 return AccessDecision.Deny(AccessDecisionKind.NotFound, "Resource not found.");
             }
 
-            var restricted = !string.Equals(facts.ResourceAudience, "Workspace", StringComparison.Ordinal);
-            var guest = string.Equals(role, "Guest", StringComparison.Ordinal);
-            if ((restricted || guest)
-                && facts.ResourceMemberRole is null
-                && !facts.HasExplicitResourcePermission)
+            var access = EvaluatePlacedResourceAccess(permission, facts, role);
+            if (access.Denial is { } denied)
             {
-                return AccessDecision.Deny(AccessDecisionKind.NotFound, "Resource not found.");
+                return denied;
             }
 
             // M2G extension (reviewer-approved): page lifecycle mutation
@@ -206,12 +241,12 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
             // Governance vocabulary: neither ManageBoard nor
             // ManagePagePermission (ACL management).
             if (permission.Action == PermissionAction.ArchivePage
-                && (facts.ActiveResourcePermissionRank ?? 0) < ManagerRank)
+                && access.EffectiveRank < ManagerRank)
             {
                 return AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
             }
 
-            return ManageAwareAllow(permission, request, facts, role);
+            return ManageAwareAllow(permission, request, facts, role, access.EffectiveRank, actorId);
         }
 
         // M8 intended policy: connecting/revoking external provider
@@ -265,13 +300,61 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
                 return AccessDecision.Deny(AccessDecisionKind.NotFound, "Resource not found.");
             }
 
-            return GrantAwareAllow(request, facts, role);
+            return GrantAwareAllow(request, facts, role, actorId);
         }
 
         return permission.Action is PermissionAction.ViewWorkspace or PermissionAction.ViewBoard or PermissionAction.ViewMembers
             ? AccessDecision.Allow()
             : AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
     }
+
+    /// <summary>
+    /// The principal's effective level on a Board and its source, over the same
+    /// facts as the single read (<c>ViewBoard</c>), in GOV-025 order: a missing
+    /// resource or no Workspace membership → none; workspace Owner → Owner;
+    /// a first-priority Deny rule → none. Otherwise the level the engine
+    /// enforces for Board actions (<see cref="ResolveResourceLevel"/>: the
+    /// highest level among every source, a Guest capped at Editor). An Allow
+    /// rule with no other source gives Viewer. The result is none exactly when
+    /// the single read is denied; it describes access for clients and never
+    /// replaces the per-action decision.
+    /// </summary>
+    public static EffectiveResourceAccess EvaluateEffectiveBoardAccess(AccessFacts facts)
+    {
+        var role = facts.WorkspaceMemberRole;
+        if (role is null || !facts.ResourceExists)
+        {
+            return EffectiveResourceAccess.None;
+        }
+
+        if (string.Equals(role, "Owner", StringComparison.Ordinal))
+        {
+            return new EffectiveResourceAccess(OwnerRank, EffectiveAccessBasis.WorkspaceOwner);
+        }
+
+        var firstPriority = facts.PermissionRules.Count == 0
+            ? []
+            : facts.PermissionRules
+                .Where(rule => rule.Priority == facts.PermissionRules.Min(candidate => candidate.Priority))
+                .ToArray();
+        if (firstPriority.Any(rule => string.Equals(rule.Effect, "Deny", StringComparison.OrdinalIgnoreCase)))
+        {
+            return EffectiveResourceAccess.None;
+        }
+
+        var best = ResolveResourceLevel(facts, role);
+
+        if (best.Basis == EffectiveAccessBasis.None
+            && firstPriority.Any(rule => string.Equals(rule.Effect, "Allow", StringComparison.OrdinalIgnoreCase)))
+        {
+            return new EffectiveResourceAccess(ViewerRank, EffectiveAccessBasis.PermissionRule);
+        }
+
+        return best;
+    }
+
+    private static EffectiveResourceAccess Higher(EffectiveResourceAccess current, EffectiveResourceAccess candidate) =>
+        candidate.Rank > current.Rank ? candidate : current;
 
     /// <summary>
     /// Managing a resource's ACL (viewing or mutating governance.resource_permissions)
@@ -284,30 +367,48 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
         IRequirePermission permission,
         object request,
         AccessFacts facts,
-        string? role)
+        string? role,
+        int effectiveRank,
+        Guid? actorId)
     {
         var isManagementAction = permission.Action
             is PermissionAction.ManageBoardPermission or PermissionAction.ManagePagePermission;
         if (isManagementAction
             && !string.Equals(role, "Owner", StringComparison.Ordinal)
-            && (facts.ActiveResourcePermissionRank ?? 0) < ManagerRank)
+            && effectiveRank < ManagerRank)
         {
             return AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
         }
 
-        return GrantAwareAllow(request, facts, role);
+        return GrantAwareAllow(request, facts, role, effectiveRank, actorId);
     }
 
-    private static AccessDecision GrantAwareAllow(object request, AccessFacts facts, string? role)
+    private static AccessDecision GrantAwareAllow(object request, AccessFacts facts, string? role, Guid? actorId) =>
+        GrantAwareAllow(request, facts, role, facts.ActiveResourcePermissionRank ?? 0, actorId);
+
+    /// <summary>
+    /// Grant ceiling: the caller's authority (their effective level, Owner for a
+    /// workspace Owner) must reach the requested level and any higher level the
+    /// target already holds (explicit grant or board role, see
+    /// <see cref="BoardRoleLevels"/>). A caller below Manager may not raise their
+    /// own board role (assigning a board role is a grant of its level): that would
+    /// lift limits such as Observer's. Any other request acting on a target user
+    /// (removing a board member) needs authority reaching the target's level.
+    /// </summary>
+    private static AccessDecision GrantAwareAllow(object request, AccessFacts facts, string? role, int effectiveRank, Guid? actorId)
     {
         if (request is IRequireGrantPermission grant)
         {
-            var authority = EffectiveGrantAuthority(facts, role);
-            var ceiling = grant.RequestedPermissionRank;
-            if (facts.TargetPermissionRank is { } existingRank && existingRank > ceiling)
+            var authority = EffectiveGrantAuthority(effectiveRank, role);
+            if (authority < ManagerRank
+                && request is IRequirePermissionTarget { TargetSubjectType: "User", TargetSubjectId: { } target }
+                && actorId is { } actor && target == actor
+                && grant.RequestedPermissionRank > BoardRoleLevels.RankOf(facts.ResourceMemberRole))
             {
-                ceiling = existingRank;
+                return AccessDecision.Deny(AccessDecisionKind.Forbidden, "You cannot raise your own access level.");
             }
+
+            var ceiling = Math.Max(grant.RequestedPermissionRank, TargetRank(facts));
 
             return ceiling > 0 && authority >= ceiling
                 ? AccessDecision.Allow()
@@ -321,17 +422,211 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
                 return AccessDecision.Allow();
             }
 
-            var authority = EffectiveGrantAuthority(facts, role);
+            var authority = EffectiveGrantAuthority(effectiveRank, role);
             return facts.TargetPermissionRank > 0 && authority >= facts.TargetPermissionRank
                 ? AccessDecision.Allow()
                 : AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to revoke this permission level.");
         }
 
+        if (request is IRequirePermissionTarget { TargetSubjectId: not null })
+        {
+            var targetRank = TargetRank(facts);
+            return targetRank == 0 || EffectiveGrantAuthority(effectiveRank, role) >= targetRank
+                ? AccessDecision.Allow()
+                : AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to change this member's access.");
+        }
+
         return AccessDecision.Allow();
     }
 
-    private static int EffectiveGrantAuthority(AccessFacts facts, string? role) =>
+    /// <summary>The target user's existing level: the higher of their explicit grant and board role.</summary>
+    private static int TargetRank(AccessFacts facts) =>
+        Math.Max(facts.TargetPermissionRank ?? 0, BoardRoleLevels.RankOf(facts.TargetBoardMemberRole));
+
+    private static int EffectiveGrantAuthority(int effectiveRank, string? role) =>
         string.Equals(role, "Owner", StringComparison.Ordinal)
             ? OwnerRank
-            : facts.ActiveResourcePermissionRank ?? 0;
+            : effectiveRank;
+
+    private readonly record struct PlacedResourceAccess(AccessDecision? Denial, int EffectiveRank);
+
+    /// <summary>
+    /// GOV-025 steps 4–6 for a Board or Page (existence, Owner and explicit
+    /// permission rules were decided earlier). Visibility is unchanged: a
+    /// Private resource needs board membership or an explicit grant and Space
+    /// roles never reach it; a Workspace-visible resource placed in a Space is
+    /// reached by a Space level, an unplaced one by the Workspace default
+    /// (Guests need explicit access); no source → NotFound. The resource level
+    /// is the highest level among every source (<see cref="ResolveResourceLevel"/>),
+    /// a Workspace Guest is capped at Editor (GOV-030), and the action threshold
+    /// of GOV-027 applies to that level whatever the source → Forbidden below it.
+    /// The same level is the authority for ACL management and grant ceilings.
+    /// </summary>
+    private static PlacedResourceAccess EvaluatePlacedResourceAccess(
+        IRequirePermission permission,
+        AccessFacts facts,
+        string? role)
+    {
+        var level = ResolveResourceLevel(facts, role);
+        if (level.Basis == EffectiveAccessBasis.None)
+        {
+            return new PlacedResourceAccess(AccessDecision.Deny(AccessDecisionKind.NotFound, "Resource not found."), 0);
+        }
+
+        var boardDecided = permission.Resource?.Kind.Value == "work-management.board" || facts.ParentBoardId is not null;
+        return level.Rank < RequiredRank(permission.Action, boardDecided)
+            ? new PlacedResourceAccess(
+                AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action."),
+                level.Rank)
+            : new PlacedResourceAccess(null, level.Rank);
+    }
+
+    /// <summary>
+    /// The level every access source gives on a Board or Page, and the highest
+    /// of them (ties keep the earlier source: explicit grant, board membership,
+    /// Space / workspace Admin, Workspace default):
+    /// <list type="bullet">
+    /// <item>explicit resource permission (User or active Team): its level (a
+    ///   level-less entry still reads, i.e. Viewer);</item>
+    /// <item>board membership: <see cref="BoardRoleRank"/>;</item>
+    /// <item>Workspace-visible resource placed in a Space: the Space level
+    ///   (<see cref="SpaceRank"/>, workspace Admin → Manager);</item>
+    /// <item>unplaced Workspace-visible resource: Editor for non-Guest members
+    ///   (every Board/Page action but permission management).</item>
+    /// </list>
+    /// A Workspace Guest's level is capped at Editor whatever the source
+    /// (GOV-030). No source → <see cref="EffectiveResourceAccess.None"/>.
+    /// </summary>
+    private static EffectiveResourceAccess ResolveResourceLevel(AccessFacts facts, string? role)
+    {
+        var guest = string.Equals(role, "Guest", StringComparison.Ordinal);
+        var best = EffectiveResourceAccess.None;
+
+        // The explicit rank only exists for an active grant; either fact marks the source.
+        if (facts.HasExplicitResourcePermission || facts.ActiveResourcePermissionRank > 0)
+        {
+            best = Higher(best, new EffectiveResourceAccess(
+                Math.Max(facts.ActiveResourcePermissionRank ?? 0, ViewerRank), EffectiveAccessBasis.ResourcePermission));
+        }
+
+        if (facts.ResourceMemberRole is { } boardRole)
+        {
+            best = Higher(best, new EffectiveResourceAccess(BoardRoleRank(boardRole), EffectiveAccessBasis.BoardMembership));
+        }
+
+        if (string.Equals(facts.ResourceAudience, "Workspace", StringComparison.Ordinal))
+        {
+            if (facts.ResourceSpaceId is not null)
+            {
+                var spaceRank = SpaceRank(facts, role);
+                if (spaceRank > 0)
+                {
+                    var basis = string.Equals(role, "Admin", StringComparison.Ordinal)
+                        ? EffectiveAccessBasis.WorkspaceAdmin
+                        : EffectiveAccessBasis.Space;
+                    best = Higher(best, new EffectiveResourceAccess(spaceRank, basis));
+                }
+            }
+            else if (!guest)
+            {
+                best = Higher(best, new EffectiveResourceAccess(EditorRank, EffectiveAccessBasis.WorkspaceDefault));
+            }
+        }
+
+        return guest && best.Rank > EditorRank ? best with { Rank = EditorRank } : best;
+    }
+
+    /// <summary>
+    /// Board membership roles map to levels (the single mapping table):
+    /// Owner, Admin → Manager; Member → Editor; Observer → Viewer (reads only);
+    /// Guest → Viewer (no documented edit semantics; least privilege). An
+    /// unknown role reads only.
+    /// </summary>
+    private static int BoardRoleRank(string boardRole) => BoardRoleLevels.RankOf(boardRole);
+
+    /// <summary>The actions a Board child resource accepts (GOV-033).</summary>
+    private static bool IsBoardChildAction(PermissionAction action) => action
+        is PermissionAction.ViewBoard or PermissionAction.ViewMembers or PermissionAction.CreateComment
+        or PermissionAction.CreateItem or PermissionAction.UpdateItem or PermissionAction.MoveItem or PermissionAction.AssignItem
+        or PermissionAction.CreateField or PermissionAction.UpdateField or PermissionAction.DeleteField
+        or PermissionAction.CreateBoardView or PermissionAction.UpdateBoardView
+        or PermissionAction.ManageBoard or PermissionAction.ManageBoardPermission;
+
+    /// <summary>
+    /// GOV-028 for a Space resource: invisible (or missing) → NotFound; otherwise
+    /// the effective Space level must meet the action threshold (ManageSpaces →
+    /// Manager, i.e. Space Admin; creating a Board/Page there → Editor).
+    /// </summary>
+    private static AccessDecision EvaluateSpace(IRequirePermission permission, AccessFacts facts, string? role)
+    {
+        if (!facts.SpaceExists)
+        {
+            return AccessDecision.Deny(AccessDecisionKind.NotFound, "Resource not found.");
+        }
+
+        var rank = SpaceRank(facts, role);
+        if (rank == 0)
+        {
+            return AccessDecision.Deny(AccessDecisionKind.NotFound, "Resource not found.");
+        }
+
+        return rank >= RequiredRank(permission.Action)
+            ? AccessDecision.Allow()
+            : AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
+    }
+
+    /// <summary>
+    /// Effective level on the target Space (GOV-025/GOV-027): workspace Owner/Admin
+    /// → Manager on every Space; Space Admin → Manager, Member → Editor, Viewer →
+    /// Viewer (from User or active Team entries, inheritance as resolved by the
+    /// facts); an open Space (no Private Space from the root) gives workspace
+    /// Members Editor. Guests get nothing implicitly. 0 = no access.
+    /// </summary>
+    private static int SpaceRank(AccessFacts facts, string? role)
+    {
+        if (!facts.SpaceExists)
+        {
+            return 0;
+        }
+
+        if (string.Equals(role, "Owner", StringComparison.Ordinal) || string.Equals(role, "Admin", StringComparison.Ordinal))
+        {
+            return ManagerRank;
+        }
+
+        var fromSpaceRole = facts.SpaceRole switch
+        {
+            "Admin" => ManagerRank,
+            "Member" => EditorRank,
+            "Viewer" => ViewerRank,
+            _ => 0,
+        };
+        var fromOpenSpace = facts.SpaceIsOpen && string.Equals(role, "Member", StringComparison.Ordinal) ? EditorRank : 0;
+        return Math.Max(fromSpaceRole, fromOpenSpace);
+    }
+
+    /// <summary>
+    /// GOV-027 action thresholds, applied to the level from every source.
+    /// <c>ManageBoard</c> decided on a Board (the Board or one of its children) is
+    /// Board management — settings and title, visibility, moving, archiving,
+    /// deleting or restoring the Board, and its members — and needs Manager;
+    /// Editors only edit content, so Board content commands declare the content
+    /// action they perform (groups: CreateItem/UpdateItem; labels, forms,
+    /// templates, relations: CreateField/UpdateField/DeleteField; default view and
+    /// saved filters: UpdateBoardView/CreateBoardView). Page edits that declare
+    /// <c>ManageBoard</c> on a Page keep the Editor threshold.
+    /// </summary>
+    private static int RequiredRank(PermissionAction action, bool boardDecided) =>
+        action == PermissionAction.ManageBoard && boardDecided ? ManagerRank : RequiredRank(action);
+
+    /// <summary>GOV-027 action thresholds by action.</summary>
+    private static int RequiredRank(PermissionAction action) => action switch
+    {
+        PermissionAction.ViewBoard or PermissionAction.ViewPage
+            or PermissionAction.ViewWorkspace or PermissionAction.ViewMembers => ViewerRank,
+        PermissionAction.CreateComment => CommenterRank,
+        PermissionAction.ManageBoardPermission or PermissionAction.ManagePagePermission
+            or PermissionAction.ArchivePage or PermissionAction.ManageSpaces => ManagerRank,
+        _ => EditorRank,
+    };
 }

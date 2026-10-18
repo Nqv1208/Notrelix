@@ -26,7 +26,7 @@ public static class UpdateBoardItemFieldValuesEndpoint
         if (body.FieldDefinitionId.HasValue)
             values[body.FieldDefinitionId.Value] = body.Value;
 
-        var result = await sender.Send(new UpdateBoardItemFieldValuesCommand(itemId, values), cancellationToken);
+        var result = await sender.Send(new UpdateBoardItemFieldValuesCommand(itemId, values, body.ExpectedVersion), cancellationToken);
         return result.ToApiResult();
     }
 }

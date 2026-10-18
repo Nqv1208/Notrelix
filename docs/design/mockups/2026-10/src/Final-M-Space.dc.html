@@ -1,0 +1,555 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Hướng chốt · Di động · Phòng ban</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+/* mobile shell — shared (copy verbatim into every Final-M-*.dc.html; source Final-M-Home) */
+body{margin:0}
+a{color:inherit}a:hover{color:inherit}
+.nx{--bg:#F7F8FA;--panel:#FFFFFF;--hover:#F1F3F6;--hover2:#E6E9EE;--line:#E6E9EE;--line2:#D2D7DE;--ring:#7A8391;--text:#161A21;--muted:#4F5866;--meta:#5F6875;--accent:#1666CC;--accent-ink:#FFFFFF;--accent-soft:#E7F0FC;--accent-text:#0F56AE;--st-todo:#7A8391;--st-doing:#1E7BE0;--st-review:#D99A00;--st-done:#2E8B57;--danger:#C42340;--danger-soft:#FDECEF;--warn-text:#8A5A00;--warn-soft:#FFF4D6;--ok-soft:#E2F1E7;--lane-todo:#ECEEF2;--lane-doing:#E2ECFA;--lane-review:#FBF0D6;--high:#B4500B;--badge:#C42340;--scrim:rgba(15,23,42,.42);--act-done:#1F7A4A;--act-snooze:#8A5A00;--act-neutral:#4F5866;font-family:'Be Vietnam Pro',system-ui,sans-serif;color:var(--text);background:var(--bg);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.nx.mode-dem{--bg:#0E1116;--panel:#151A21;--hover:#1C232C;--hover2:#232A34;--line:#232B35;--line2:#2E3743;--ring:#8C95A3;--text:#E6E9EE;--muted:#AAB3C0;--meta:#8F99A7;--accent:#5AA9FF;--accent-ink:#04111F;--accent-soft:rgba(90,169,255,.16);--accent-text:#7DBBFF;--st-todo:#8C95A3;--st-doing:#5AA9FF;--st-review:#F2C14E;--st-done:#56C98A;--danger:#FF6B81;--danger-soft:rgba(255,107,129,.14);--warn-text:#F2C14E;--warn-soft:rgba(242,193,78,.12);--ok-soft:#153024;--lane-todo:#1E252F;--lane-doing:#16284A;--lane-review:#30281A;--high:#FFA060;--badge:#C42340;--scrim:rgba(0,0,0,.6);--act-done:#1F7A4A;--act-snooze:#8A5A00;--act-neutral:#4F5866}
+.nx.m{width:390px;height:844px;position:relative;overflow:hidden;display:flex;flex-direction:column;border-radius:0}
+.nx.m .app-layer{flex:1;min-height:0;display:flex;flex-direction:column}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.i{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.i.lg{width:24px;height:24px}
+.i.sm{width:14px;height:14px}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;margin:-1px;padding:0;border:0}
+/* status bar 47px (decorative) */
+.sbar{height:47px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:4px 26px 0 34px;box-sizing:border-box;font-size:16px;font-weight:600;font-variant-numeric:tabular-nums;background:var(--bg);color:var(--text)}
+.sbar .sg{display:flex;align-items:center;gap:6px}
+.sbar svg{display:block}
+/* top bar 52px: leading control · spacer · trailing icon buttons */
+.tbar{height:52px;flex:none;display:flex;align-items:center;gap:2px;padding:0 8px 0 10px;background:var(--bg)}
+.tbar .sp{flex:1}
+.tbar-t{flex:1;min-width:0;text-align:center;font-size:17px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ib{width:44px;height:44px;border-radius:12px;border:0;background:transparent;color:var(--text);display:grid;place-items:center;cursor:pointer;padding:0;flex:none;text-decoration:none;font:inherit}
+.ib:hover,.ib:active{background:var(--hover2)}
+.ib .me{width:32px;height:32px;border-radius:50%;background:#4E8574;color:#fff;font-size:12px;font-weight:700;display:grid;place-items:center}
+.wschip{height:44px;display:inline-flex;align-items:center;gap:8px;padding:0 10px 0 6px;border-radius:12px;border:0;background:transparent;font:inherit;font-size:16px;font-weight:650;color:var(--text);cursor:pointer;min-width:0}
+.wschip:hover,.wschip:active{background:var(--hover2)}
+.wschip .dm{width:28px;height:28px;border-radius:8px;font-size:11px}
+.wschip .i{color:var(--meta)}
+/* scrolling content between top bar and tab bar (mockup clips at the bottom) */
+.content{flex:1;min-height:0;overflow:hidden;padding:0 16px 24px;display:flex;flex-direction:column;gap:18px}
+.tbar.scrolled{box-shadow:0 1px 0 var(--line)}
+.ltitle{margin:0;font-size:28px;font-weight:700;letter-spacing:-0.02em;line-height:1.2}
+.lsub{margin:4px 0 0;font-size:13px;color:var(--muted)}
+/* chips: horizontal scroll, 44px */
+.chips{display:flex;gap:8px;overflow-x:auto;margin:0 -16px;padding:0 16px;scrollbar-width:none;flex:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{height:44px;padding:0 14px;border-radius:12px;border:1px solid var(--line2);background:var(--panel);color:var(--text);font:inherit;font-size:14px;font-weight:500;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;flex:none;text-decoration:none;cursor:pointer;box-sizing:border-box}
+.chip b{font-weight:700;font-variant-numeric:tabular-nums}
+.chip.over{background:var(--danger-soft);border-color:transparent;color:var(--danger)}
+.chip.today{background:var(--warn-soft);border-color:transparent;color:var(--warn-text)}
+.chip.on{background:var(--text);border-color:var(--text);color:var(--bg);font-weight:600}
+/* section heading */
+.sec{display:flex;flex-direction:column}
+.sec-h{display:flex;align-items:center;gap:8px;min-height:40px;margin:0 0 4px;font-size:17px;font-weight:650;letter-spacing:-0.01em}
+.sec-h .n{color:var(--meta);font-weight:500;font-size:15px}
+.sec-h.over{color:var(--danger)}
+.sec-h a{margin-left:auto;margin-right:-8px;height:44px;padding:0 8px;display:inline-flex;align-items:center;font-size:14px;font-weight:500;color:var(--accent-text);text-decoration:none}
+/* grouped list + rows: [tick 44][link: title 2 lines + meta | due][⋯ 44] */
+.list{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.lrow{position:relative;border-top:1px solid var(--line);overflow:hidden}
+.lrow:first-child{border-top:0}
+.lrow-in{position:relative;z-index:1;display:flex;align-items:flex-start;gap:0;padding:6px 0 6px 2px;background:var(--panel)}
+.tick{width:44px;height:44px;border:0;background:transparent;padding:0;display:grid;place-items:center;flex:none;cursor:pointer;border-radius:12px}
+.tick span{width:22px;height:22px;border-radius:50%;box-sizing:border-box;border:1.75px solid var(--ring);display:block}
+.lr-main{flex:1;min-width:0;display:flex;align-items:flex-start;gap:10px;padding:5px 0;min-height:44px;box-sizing:border-box;text-decoration:none;color:var(--text);border-radius:8px}
+.lr-txt{flex:1;min-width:0}
+.lr-t{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:15px;font-weight:500;line-height:1.36}
+.lr-m{display:flex;align-items:center;gap:6px;margin-top:3px;font-size:13px;color:var(--meta);white-space:nowrap;min-width:0}
+.lr-m .bd{overflow:hidden;text-overflow:ellipsis;min-width:0}
+.lr-m .mono{font-size:12px;flex:none}
+.lr-end{flex:none;width:70px;display:flex;flex-direction:column;align-items:flex-end;gap:4px;text-align:right;font-size:13px;line-height:1.3;color:var(--meta);font-variant-numeric:tabular-nums;padding-top:1px}
+.lr-end.over{color:var(--danger);font-weight:600}
+.lr-end.today{color:var(--warn-text);font-weight:600}
+.pr{display:inline-flex;align-items:center;gap:3px;font-size:12px;font-weight:600}
+.pr.urgent{color:var(--danger)}
+.pr.high{color:var(--high)}
+.lr-more{color:var(--meta)}
+.lrow-link{display:flex;align-items:center;gap:8px;min-height:48px;padding:0 8px 0 16px;border-top:1px solid var(--line);font-size:14px;color:var(--muted);text-decoration:none}
+.lrow-link .go{margin-left:auto;color:var(--accent-text);font-weight:500;display:inline-flex;align-items:center;gap:2px}
+/* swipe: the front layer slides left over .swipe-acts (each action 76px) */
+.lrow.swiped .lrow-in{transform:translateX(-152px)}
+.swipe-acts{position:absolute;top:0;right:0;bottom:0;display:flex}
+.swipe-acts button{width:76px;border:0;margin:0;padding:0;color:#FFFFFF;font:inherit;font-size:13px;font-weight:600;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer}
+.swipe-acts .snooze{background:var(--act-snooze)}
+.swipe-acts .done{background:var(--act-done)}
+/* buttons */
+.btn{min-height:44px;padding:0 16px;border-radius:12px;border:1px solid var(--line2);background:var(--panel);color:var(--text);font:inherit;font-size:15px;font-weight:500;display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;white-space:nowrap;text-decoration:none;box-sizing:border-box}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.block{width:100%;min-height:50px}
+/* chips & avatars */
+.dm{width:20px;height:20px;border-radius:6px;display:grid;place-items:center;font-size:9px;font-weight:700;color:#fff;flex:none}
+.dm.sm{width:16px;height:16px;font-size:7.5px;border-radius:4px}
+.av{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-size:11.5px;font-weight:700;color:#fff;flex:none}
+/* bottom tab bar 49 + 34 safe area */
+.tabbar{flex:none;height:83px;box-sizing:border-box;padding:0 4px 34px;display:flex;border-top:1px solid var(--line);background:var(--panel)}
+.tab{flex:1;height:49px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-decoration:none;color:var(--meta);font-size:11px;font-weight:500;line-height:1.2;position:relative;white-space:nowrap}
+.tab.on{color:var(--accent-text);font-weight:600}
+.tab .bdg{position:absolute;top:3px;left:calc(50% + 6px);min-width:18px;height:18px;padding:0 5px;box-sizing:border-box;border-radius:9px;background:var(--badge);color:#FFFFFF;font-size:11px;font-weight:700;display:grid;place-items:center;box-shadow:0 0 0 2px var(--panel)}
+.homeind{position:absolute;left:50%;bottom:8px;width:134px;height:5px;margin-left:-67px;border-radius:3px;background:var(--text);z-index:60}
+/* bottom sheet: scrim + sheet, grabber 36×5, radius 14, primary action above the safe area */
+.scrim{position:absolute;inset:0;background:var(--scrim);z-index:40}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:41;background:var(--panel);border-radius:14px 14px 0 0;padding:6px 0 34px;box-shadow:0 -8px 32px rgba(0,0,0,.18);color:var(--text)}
+.grabber{width:36px;height:5px;border-radius:3px;background:var(--line2);margin:0 auto 2px}
+.sheet-h{display:flex;align-items:center;gap:8px;min-height:52px;padding:0 8px 0 20px}
+.sheet-h h2{margin:0;flex:1;font-size:17px;font-weight:650}
+.sheet-sub{margin:0;padding:6px 20px 4px;font-size:13px;font-weight:600;color:var(--meta)}
+.srow{display:flex;align-items:center;gap:12px;min-height:60px;padding:0 20px;text-decoration:none;color:var(--text)}
+.srow:hover,.srow:active{background:var(--hover)}
+.srow .tx{flex:1;min-width:0}
+.srow .tx b{display:block;font-size:15px;font-weight:600}
+.srow .tx small{display:block;font-size:13px;color:var(--meta)}
+.srow .end{flex:none;display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--meta)}
+.srow .ck{color:var(--accent-text)}
+.srow .ic{width:36px;height:36px;border-radius:10px;background:var(--bg);border:1px solid var(--line);display:grid;place-items:center;color:var(--muted);flex:none;box-sizing:border-box}
+.srow .wsm{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;color:#fff;font-size:13px;font-weight:700;flex:none}
+.cnt{min-width:22px;height:22px;padding:0 7px;box-sizing:border-box;border-radius:11px;background:var(--badge);color:#FFFFFF;font-size:12px;font-weight:700;display:inline-grid;place-items:center}
+.tag{height:22px;padding:0 8px;border-radius:6px;background:var(--hover2);color:var(--muted);font-size:12px;font-weight:600;display:inline-flex;align-items:center}
+.sheet-sep{height:1px;background:var(--line);margin:6px 20px}
+.sheet-foot{padding:10px 16px 0}
+/* skeleton (static under reduced motion) */
+.sk{display:block;background:var(--hover2);border-radius:6px}
+@media (prefers-reduced-motion: no-preference){.sk{animation:skp 1.4s ease-in-out infinite}}
+@keyframes skp{50%{opacity:.55}}
+/* end mobile shell */
+
+/* screen: Phòng ban */
+.nx a:focus-visible,.nx button:focus-visible,.nx input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* tab root: large title sits in the 52px bar, trailing + */
+.tbar.big{padding:0 8px 0 16px}
+.tbar.big .ltitle{flex:1;min-width:0}
+/* pushed page: text back link */
+.back{height:44px;display:inline-flex;align-items:center;padding:0 10px 0 0;border-radius:12px;color:var(--accent-text);text-decoration:none;font-size:16px;font-weight:500;flex:none}
+.back:hover,.back:active{background:var(--hover2);color:var(--accent-text)}
+.tbar.push{padding:0 8px 0 4px}
+.tbar .txtbtn{height:44px;padding:0 10px;border:0;border-radius:12px;background:transparent;color:var(--accent-text);font:inherit;font-size:16px;font-weight:600;cursor:pointer;flex:none}
+.content.pg{gap:14px;padding-top:4px}
+.content.pg.set-pg{gap:12px}
+.bt-t{flex:1;min-width:0;padding:0 6px 0 2px;text-align:center}
+.bt-t h1{margin:0;font-size:17px;font-weight:650;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bt-t p{margin:2px 0 0;display:flex;align-items:center;justify-content:center;gap:5px;font-size:12.5px;color:var(--meta);white-space:nowrap}
+.bt-t .dm.sm{width:18px;height:16px;font-size:7.5px}
+/* filter field */
+.sfield{flex:none;height:44px;box-sizing:border-box;display:flex;align-items:center;padding-left:12px;border-radius:12px;border:1px solid var(--ring);background:var(--panel);color:var(--meta)}
+.sfield:focus-within{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.sfield input{flex:1;min-width:0;height:100%;box-sizing:border-box;border:0;margin:0;padding:0 12px 0 8px;background:transparent;color:var(--text);font:inherit;font-size:16px;outline:none;-webkit-appearance:none;appearance:none}
+.sfield input::placeholder{color:var(--meta);opacity:1}
+.sfield input::-webkit-search-cancel-button{-webkit-appearance:none;display:none}
+.sec-h.s{min-height:36px;margin:0 0 2px}
+/* rows: link + optional trailing 44px control */
+.drow{display:flex;align-items:center;border-top:1px solid var(--line)}
+.list > .drow:first-child{border-top:0}
+.dlink{flex:1;min-width:0;display:flex;align-items:center;gap:12px;min-height:52px;padding:4px 4px 4px 12px;box-sizing:border-box;text-decoration:none;color:var(--text)}
+.dlink .dm{width:32px;height:32px;border-radius:9px;font-size:12px}
+.dtx{flex:1;min-width:0;display:flex;flex-direction:column}
+.dtx b{display:flex;align-items:center;gap:6px;font-size:15px;font-weight:600;line-height:1.3;min-width:0}
+.dtx b span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dtx small{display:flex;align-items:center;gap:4px;font-size:13px;line-height:1.35;color:var(--meta);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dtx .lk{color:var(--meta)}
+.bi{width:32px;height:32px;border-radius:9px;background:var(--accent-soft);color:var(--accent-text);display:grid;place-items:center;flex:none}
+.bi.doc{background:var(--hover2);color:var(--muted)}
+.disc{width:44px;height:44px;margin-right:4px;border:0;border-radius:12px;background:transparent;color:var(--meta);display:grid;place-items:center;cursor:pointer;flex:none;padding:0}
+.disc:hover,.disc:active{background:var(--hover2)}
+.disc[aria-expanded="true"]{color:var(--text)}
+.disc[aria-expanded="true"] svg{transform:rotate(180deg)}
+/* children of an expanded department: inset under the name, separators start at the inset */
+.kids{margin:0;padding:0;list-style:none}
+.krow{display:flex;align-items:center;margin-left:56px;border-top:1px solid var(--line)}
+.klink{flex:1;min-width:0;display:flex;align-items:center;gap:10px;min-height:44px;padding:0 8px 0 0;text-decoration:none;color:var(--text);font-size:15px}
+.klink > .i{color:var(--meta)}
+.klink .dm{width:22px;height:22px;border-radius:6px;font-size:9px}
+.klink .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.klink .lk{color:var(--meta)}
+.klink small{margin-left:auto;padding-left:8px;font-size:13px;color:var(--meta);white-space:nowrap}
+.foot-note{margin:0;font-size:13px;line-height:1.45;color:var(--muted)}
+/* department page header */
+.ph{display:flex;flex-direction:column;gap:4px;flex:none}
+.ph-r1{display:flex;align-items:center;gap:12px}
+.ph-r1 .dm{width:44px;height:44px;border-radius:12px;font-size:15px}
+.ph h1{margin:0;font-size:24px;font-weight:700;letter-spacing:-0.02em;line-height:1.2}
+.ph-m{margin:4px 0 0;display:flex;align-items:center;gap:8px;font-size:13px;color:var(--meta)}
+.pchip{height:24px;padding:0 8px;border-radius:7px;background:var(--hover2);color:var(--muted);font-size:12.5px;font-weight:600;display:inline-flex;align-items:center;gap:4px}
+.ph-r2{display:flex;align-items:center;gap:10px;min-height:44px}
+.mstack{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 6px 0 0;border-radius:12px;text-decoration:none;color:var(--text);font-size:14px;font-weight:600;flex:none}
+.mstack:hover,.mstack:active{color:var(--text)}
+.mstack .go{color:var(--meta)}
+.avs{display:flex}
+.avs .av{width:28px;height:28px;font-size:10.5px;box-shadow:0 0 0 2px var(--bg)}
+.avs .av + .av{margin-left:-5px}
+.avs .av.more{background:var(--hover2);color:var(--muted)}
+.role{margin-left:auto;font-size:13px;color:var(--muted);text-align:right;line-height:1.35}
+/* segmented page sections */
+.pseg{flex:none;display:flex;padding:3px;border-radius:13px;background:var(--hover2)}
+.pseg a{flex:1 1 auto;min-height:44px;padding:0 7px;border-radius:10px;color:var(--muted);font-size:14px;font-weight:500;display:inline-flex;align-items:center;justify-content:center;gap:4px;text-decoration:none;white-space:nowrap}
+.pseg a:hover{color:var(--text)}
+.pseg a[aria-current="page"]{background:var(--panel);color:var(--text);font-weight:600;box-shadow:0 1px 2px rgba(15,23,42,.14)}
+.pseg .n{color:var(--meta);font-weight:500;font-variant-numeric:tabular-nums}
+/* attention rows */
+.num{min-width:32px;height:28px;padding:0 6px;box-sizing:border-box;border-radius:8px;display:grid;place-items:center;font-size:15px;font-weight:700;font-variant-numeric:tabular-nums;flex:none}
+.num.over{background:var(--danger-soft);color:var(--danger)}
+.num.warn{background:var(--warn-soft);color:var(--warn-text)}
+.chev{color:var(--meta);margin-right:6px}
+.att{flex:none;font-size:13px;font-weight:600;white-space:nowrap;margin-right:8px}
+.att.over{color:var(--danger)}
+.att.warn{color:var(--warn-text)}
+.dlink.tall{min-height:58px}
+.add-row{width:100%;min-height:48px;border:0;border-top:1px solid var(--line);background:transparent;color:var(--accent-text);font:inherit;font-size:15px;font-weight:600;display:flex;align-items:center;gap:10px;padding:0 12px 0 18px;cursor:pointer;text-align:left}
+/* workload */
+.wl{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:6px 16px 10px}
+.wr{display:grid;grid-template-columns:28px minmax(0,1fr) 92px;align-items:center;gap:10px;min-height:40px;font-size:14px}
+.wr .av{width:28px;height:28px;font-size:10.5px}
+.wr .c{text-align:right;font-size:13px;color:var(--meta);font-variant-numeric:tabular-nums}
+.wr .c.over{color:var(--danger);font-weight:600}
+.wbar{grid-column:2 / 4;height:6px;border-radius:3px;background:var(--hover2);display:flex;overflow:hidden;margin:-6px 0 6px}
+.wbar span{display:block;height:100%}
+.wbar .a{background:var(--st-doing)}
+.wbar .o{background:var(--danger)}
+.wl small{display:block;font-size:12.5px;color:var(--meta);margin-top:2px}
+/* access summary */
+.acc{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 16px 4px;display:flex;flex-direction:column;gap:10px}
+.vis{display:flex;gap:12px;align-items:flex-start}
+.vis .ic{width:36px;height:36px;border-radius:10px;background:var(--hover2);color:var(--muted);display:grid;place-items:center;flex:none}
+.vis b{display:block;font-size:15px;font-weight:600}
+.vis small{display:block;font-size:13px;color:var(--muted);line-height:1.4}
+.acc dl{margin:0;display:grid;grid-template-columns:92px minmax(0,1fr);gap:8px 12px;font-size:14px}
+.acc dt{color:var(--meta)}
+.acc dd{margin:0}
+.acc dd small{display:block;font-size:12.5px;color:var(--meta)}
+.acc dd a{color:var(--accent-text);font-weight:600;text-decoration:none;display:inline-flex;align-items:center;min-height:24px}
+.acc .more{display:flex;align-items:center;justify-content:space-between;min-height:48px;margin:0 -16px;padding:0 12px 0 16px;border-top:1px solid var(--line);color:var(--accent-text);font-size:15px;font-weight:600;text-decoration:none}
+.acc .me-role{font-size:13px;color:var(--muted)}
+/* settings */
+.set{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 16px 14px;display:flex;flex-direction:column;gap:10px;flex:none}
+.set h2,.set label.h{margin:0;font-size:15px;font-weight:650}
+.inp{height:48px;width:100%;box-sizing:border-box;border-radius:12px;border:1px solid var(--ring);background:var(--panel);color:var(--text);font:inherit;font-size:16px;padding:0 12px}
+.rads{display:flex;flex-direction:column;border:1px solid var(--line2);border-radius:12px;overflow:hidden}
+.rad{display:flex;gap:12px;align-items:flex-start;padding:11px 12px;min-height:44px;box-sizing:border-box;cursor:pointer}
+.rad + .rad{border-top:1px solid var(--line2)}
+.rad.on{background:var(--accent-soft)}
+.rad input{width:20px;height:20px;margin:1px 0 0;flex:none;accent-color:var(--accent)}
+.nx.mode-dem .rad input,.nx.mode-dem .inp,.nx.mode-dem .sfield input{color-scheme:dark}
+.rad b{display:block;font-size:15px;font-weight:600}
+.rad small{display:block;font-size:13px;color:var(--muted);line-height:1.4}
+.hint{margin:0;font-size:13px;line-height:1.45;color:var(--muted)}
+.place{display:flex;align-items:center;gap:10px}
+.place span{flex:1;min-width:0;font-size:15px}
+.place span small{display:block;margin-top:2px;font-size:14px;color:var(--muted)}
+.set.danger{border-color:var(--danger);background:var(--danger-soft)}
+.set.danger .hint{color:var(--text)}
+.dgr-row{display:flex;align-items:center;gap:12px;padding-top:10px;border-top:1px solid var(--line2)}
+.dgr-row span{flex:1;min-width:0}
+.dgr-row b{display:block;font-size:15px;font-weight:600}
+.dgr-row small{display:block;font-size:13px;color:var(--muted)}
+.btn.dgr{color:var(--danger);border-color:var(--danger)}
+/* sheet rows as buttons */
+button.srow{width:100%;border:0;background:transparent;font:inherit;text-align:left;cursor:pointer}
+.srow .ic.acc-ic{background:var(--accent-soft);border-color:transparent;color:var(--accent-text)}
+.sheet-note{margin:6px 20px 4px;padding:10px 12px;border-radius:10px;background:var(--hover);font-size:13px;color:var(--muted);line-height:1.4}
+</style>
+</helmet>
+<div class="nx m mode-{{mode}}">
+  <div class="app-layer" aria-hidden="{{sheetOpen}}">
+  <div class="sbar" aria-hidden="true">
+    <span>10:40</span>
+    <span class="sg">
+      <svg width="18" height="12" viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1" fill="currentColor"></rect><rect x="5" y="5.5" width="3" height="6.5" rx="1" fill="currentColor"></rect><rect x="10" y="3" width="3" height="9" rx="1" fill="currentColor"></rect><rect x="15" y="0" width="3" height="12" rx="1" fill="currentColor"></rect></svg>
+      <svg width="16" height="12" viewBox="0 0 16 12"><path d="M8 11.2 10.4 8.6a3.4 3.4 0 0 0-4.8 0z" fill="currentColor"></path><path d="M3.6 6.6a6.2 6.2 0 0 1 8.8 0l1.4-1.5a8.3 8.3 0 0 0-11.6 0z" fill="currentColor"></path><path d="M.8 3.6a10.2 10.2 0 0 1 14.4 0L16 2.2a12.2 12.2 0 0 0-16 0z" fill="currentColor" opacity=".9"></path></svg>
+      <svg width="27" height="13" viewBox="0 0 27 13"><rect x=".5" y=".5" width="23" height="12" rx="3.5" fill="none" stroke="currentColor" opacity=".45"></rect><rect x="2" y="2" width="17" height="9" rx="2" fill="currentColor"></rect><path d="M25 4.5v4a2 2 0 0 0 0-4z" fill="currentColor" opacity=".45"></path></svg>
+    </span>
+  </div>
+
+  <sc-if value="{{isList}}" hint-placeholder-val="{{ true }}">
+  <header class="tbar big">
+    <h1 class="ltitle">Phòng ban</h1>
+    <button class="ib" type="button" aria-label="Tạo phòng ban" aria-haspopup="dialog"><svg class="i lg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button>
+  </header>
+
+  <main class="content pg">
+    <div class="sfield" role="search">
+      <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+      <input type="search" placeholder="Lọc phòng ban và board" aria-label="Lọc phòng ban và board" enterkeyhint="search" autocomplete="off">
+    </div>
+
+    <section class="sec" aria-labelledby="h-pin">
+      <h2 class="sec-h s" id="h-pin">Ghim <span class="n">1</span></h2>
+      <div class="list">
+        <div class="drow">
+          <a class="dlink" href="Final-M-Board.dc.html">
+            <span class="bi" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M9 4v16M15 4v10"></path></svg></span>
+            <span class="dtx"><b><span>Triển khai ERP Q4</span></b><small>Phòng Công nghệ · Kanban · có 1 khách</small></span>
+          </a>
+          <button class="disc" type="button" aria-label="Thao tác với Triển khai ERP Q4" aria-haspopup="menu"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="transform:none"><circle cx="5" cy="12" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle></svg></button>
+        </div>
+      </div>
+    </section>
+
+    <section class="sec" aria-labelledby="h-all">
+      <h2 class="sec-h s" id="h-all">Phòng ban trong Minh An Group <span class="n">5</span></h2>
+      <div class="list">
+        <div class="drow">
+          <a class="dlink" href="Final-M-Space.dc.html">
+            <span class="dm" style="background:#1E6FD0" aria-hidden="true">CN</span>
+            <span class="dtx"><b><span>Công nghệ</span></b><small><svg class="i sm lk" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>Riêng tư · 24 người</small></span>
+          </a>
+          <button class="disc" type="button" aria-expanded="true" aria-controls="cn-kids" aria-label="Thu gọn Công nghệ"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button>
+        </div>
+        <ul class="kids" id="cn-kids" aria-label="Trong Công nghệ">
+          <li class="krow"><a class="klink" href="Final-M-Board.dc.html"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M9 4v16M15 4v10"></path></svg><span class="nm">Triển khai ERP Q4</span></a></li>
+          <li class="krow"><a class="klink" href="Final-M-Board.dc.html"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M3 10h18M3 15h18M9 4v16"></path></svg><span class="nm">Hạ tầng &amp; bảo mật</span></a></li>
+          <li class="krow"><a class="klink" href="Final-M-Board.dc.html"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 12h-6l-2 3h-4l-2-3H2"></path><path d="M5.5 5h13L22 12v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6z"></path></svg><span class="nm">Hỗ trợ nội bộ</span></a></li>
+          <li class="krow"><a class="klink" href="Final-M-Board.dc.html"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M3 10h18M3 15h18M9 4v16"></path></svg><span class="nm">Ngân sách CNTT 2027</span><svg class="i sm lk" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg><small>Riêng tư</small></a></li>
+          <li class="krow"><a class="klink" href="Final-M-Space.dc.html"><span class="dm" style="background:#1E6FD0" aria-hidden="true">HT</span><span class="nm">Nhóm Hạ tầng</span><small>6 người</small></a><button class="disc" type="button" aria-expanded="false" aria-label="Mở Nhóm Hạ tầng"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button></li>
+          <li class="krow"><a class="klink" href="Final-M-Space.dc.html"><span class="dm" style="background:#1E6FD0" aria-hidden="true">UD</span><span class="nm">Nhóm Ứng dụng</span><svg class="i sm lk" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg><small>Riêng tư</small></a><button class="disc" type="button" aria-expanded="false" aria-label="Mở Nhóm Ứng dụng"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button></li>
+        </ul>
+        <div class="drow">
+          <a class="dlink" href="#">
+            <span class="dm" style="background:#9A6A12" aria-hidden="true">KT</span>
+            <span class="dtx"><b><span>Kế toán</span></b><small><svg class="i sm lk" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>Riêng tư</small></span>
+          </a>
+          <button class="disc" type="button" aria-expanded="false" aria-label="Mở Kế toán"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button>
+        </div>
+        <div class="drow">
+          <a class="dlink" href="#">
+            <span class="dm" style="background:#C2410C" aria-hidden="true">MK</span>
+            <span class="dtx"><b><span>Marketing</span></b><small>Mở cho cả workspace</small></span>
+          </a>
+          <button class="disc" type="button" aria-expanded="false" aria-label="Mở Marketing"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button>
+        </div>
+        <div class="drow">
+          <a class="dlink" href="#">
+            <span class="dm" style="background:#4E8574" aria-hidden="true">NS</span>
+            <span class="dtx"><b><span>Nhân sự</span></b><small><svg class="i sm lk" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>Riêng tư</small></span>
+          </a>
+          <button class="disc" type="button" aria-expanded="false" aria-label="Mở Nhân sự"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button>
+        </div>
+        <div class="drow">
+          <a class="dlink" href="#">
+            <span class="dm" style="background:#C8143F" aria-hidden="true">GĐ</span>
+            <span class="dtx"><b><span>Ban giám đốc</span></b><small><svg class="i sm lk" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>Riêng tư</small></span>
+          </a>
+          <button class="disc" type="button" aria-expanded="false" aria-label="Mở Ban giám đốc"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button>
+        </div>
+      </div>
+    </section>
+    <p class="foot-note">Bạn thấy cả phòng ban riêng tư vì là quản trị workspace. Board riêng tư chỉ hiện khi bạn được thêm vào board đó (GOV-025).</p>
+  </main>
+  </sc-if>
+
+  <sc-if value="{{isPage}}" hint-placeholder-val="{{ false }}">
+  <header class="tbar push">
+    <a class="back" href="Final-M-Space.dc.html"><svg class="i lg" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"></path></svg>Phòng ban</a>
+    <span class="sp"></span>
+    <sc-if value="{{isAdmin}}" hint-placeholder-val="{{ true }}">
+    <button class="ib" type="button" aria-label="Tạo trong Phòng Công nghệ" aria-haspopup="dialog" aria-expanded="{{sheetOpen}}"><svg class="i lg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button>
+    <button class="ib" type="button" aria-label="Thao tác với Phòng Công nghệ" aria-haspopup="menu"><svg class="i lg" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle></svg></button>
+    </sc-if>
+  </header>
+
+  <main class="content pg">
+    <div class="ph">
+      <div class="ph-r1">
+        <span class="dm" style="background:#1E6FD0" aria-hidden="true">CN</span>
+        <div>
+          <h1>Phòng Công nghệ</h1>
+          <p class="ph-m"><span class="pchip"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>Riêng tư</span>Minh An Group</p>
+        </div>
+      </div>
+      <div class="ph-r2">
+        <a class="mstack" href="Final-M-Members.dc.html" aria-label="24 người trong phòng, xem thành viên">
+          <span class="avs" aria-hidden="true"><span class="av" style="background:#B4500B">HP</span><span class="av" style="background:#4E8574">HA</span><span class="av" style="background:#1E6FD0">MQ</span><span class="av more">+21</span></span>24 người<svg class="i sm go" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg>
+        </a>
+        <span class="role">{{roleLine}}</span>
+      </div>
+    </div>
+
+    <nav class="pseg" aria-label="Phòng Công nghệ">
+      <a href="Final-M-Space.dc.html" aria-current="page">Tổng quan</a>
+      <a href="#">Board và tài liệu <span class="n">{{docTabN}}</span></a>
+      <a href="Final-M-Members.dc.html">Thành viên <span class="n">24</span></a>
+    </nav>
+
+    <section class="sec" aria-labelledby="h-att">
+      <h2 class="sec-h s" id="h-att">Cần chú ý</h2>
+      <div class="list">
+        <div class="drow"><a class="dlink" href="Final-M-Board.dc.html"><span class="num over">3</span><span class="dtx"><b><span>Việc quá hạn</span></b><small>ERP-142 và 2 việc khác</small></span><svg class="i chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg></a></div>
+        <div class="drow"><a class="dlink" href="Final-M-Board.dc.html"><span class="num warn">5</span><span class="dtx"><b><span>Việc đang chờ duyệt</span></b><small>{{waitMeta}}</small></span><svg class="i chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg></a></div>
+      </div>
+    </section>
+
+    <section class="sec" aria-labelledby="h-boards">
+      <h2 class="sec-h s" id="h-boards">Board đang chạy <span class="n">{{runN}}</span><a href="#">Xem cả {{allN}}</a></h2>
+      <div class="list">
+        <div class="drow"><a class="dlink tall" href="Final-M-Board.dc.html"><span class="bi" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M9 4v16M15 4v10"></path></svg></span><span class="dtx"><b><span>Triển khai ERP Q4</span></b><small>Kanban · 5/16 · Go-live 01/11</small></span><span class="att over">1 quá hạn</span></a></div>
+        <div class="drow"><a class="dlink tall" href="Final-M-Board.dc.html"><span class="bi" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M3 10h18M3 15h18M9 4v16"></path></svg></span><span class="dtx"><b><span>Hạ tầng &amp; bảo mật</span></b><small>Bảng · 41/57 · nhóm Hạ tầng</small></span><span class="att warn">1 chờ duyệt</span></a></div>
+        <div class="drow"><a class="dlink tall" href="Final-M-Board.dc.html"><span class="bi" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="M22 12h-6l-2 3h-4l-2-3H2"></path><path d="M5.5 5h13L22 12v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6z"></path></svg></span><span class="dtx"><b><span>Hỗ trợ nội bộ</span></b><small>Bảng · 23 yêu cầu mở</small></span><span class="att warn">6 chưa ai nhận</span></a></div>
+        <sc-if value="{{isAdmin}}" hint-placeholder-val="{{ true }}">
+        <div class="drow"><a class="dlink tall" href="Final-M-Board.dc.html"><span class="bi" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M3 10h18M3 15h18M9 4v16"></path></svg></span><span class="dtx"><b><span>Ngân sách CNTT 2027</span><svg class="i sm lk" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg></b><small>Riêng tư · bạn được thêm · 4 người</small></span><svg class="i chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg></a></div>
+        </sc-if>
+      </div>
+    </section>
+
+    <section class="sec" aria-labelledby="h-subs">
+      <h2 class="sec-h s" id="h-subs">Phòng ban con <span class="n">{{subN}}</span></h2>
+      <div class="list">
+        <div class="drow"><a class="dlink tall" href="Final-M-Space.dc.html"><span class="dm" style="background:#1E6FD0" aria-hidden="true">HT</span><span class="dtx"><b><span>Nhóm Hạ tầng</span></b><small>6 người · 2 board · mở cho cả phòng</small></span><svg class="i chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg></a></div>
+        <sc-if value="{{isAdmin}}" hint-placeholder-val="{{ true }}">
+        <div class="drow"><a class="dlink tall" href="Final-M-Space.dc.html"><span class="dm" style="background:#1E6FD0" aria-hidden="true">UD</span><span class="dtx"><b><span>Nhóm Ứng dụng</span><svg class="i sm lk" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg></b><small>9 người · 3 board · riêng tư</small></span><svg class="i chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg></a></div>
+        <button class="add-row" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Tạo phòng ban con</button>
+        </sc-if>
+      </div>
+    </section>
+
+    <section class="sec" aria-labelledby="h-rep">
+
+      <h2 class="sec-h s" id="h-rep">Báo cáo<a href="Final-M-Reports.dc.html">Xem cả 1</a></h2>
+
+      <div class="list">
+
+        <div class="drow"><a class="dlink tall" href="Final-M-Reports.dc.html"><span class="bi" aria-hidden="true" style="display:grid;place-items:center;color:var(--accent-text)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V11M10 20V5M16 20v-7M21 20H3"></path></svg></span><span class="dtx"><b><span>Tổng quan triển khai ERP Q4</span></b><small>Lê Hoàng Phúc · cập nhật 10:38</small></span></a></div>
+
+      </div>
+
+    </section>
+
+
+    <section class="sec" aria-labelledby="h-docs">
+      <h2 class="sec-h s" id="h-docs">Tài liệu gần đây<a href="Final-M-Docs.dc.html">Xem cả 3</a></h2>
+      <div class="list">
+        <div class="drow"><a class="dlink tall" href="Final-M-Docs.dc.html"><span class="bi doc" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><path d="M14 3v6h6"></path></svg></span><span class="dtx"><b><span>Kế hoạch chuyển đổi dữ liệu</span></b><small>Trần Minh Quân sửa hôm qua</small></span></a></div>
+        <div class="drow"><a class="dlink tall" href="Final-M-Docs.dc.html"><span class="bi doc" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><path d="M14 3v6h6"></path></svg></span><span class="dtx"><b><span>Sổ tay trực hệ thống</span></b><small>Vũ Thanh sửa 03/10</small></span></a></div>
+      </div>
+    </section>
+
+    <section class="sec" aria-labelledby="h-wl">
+      <h2 class="sec-h s" id="h-wl">Việc đang làm theo người</h2>
+      <div class="wl">
+        <div class="wr"><span class="av" style="background:#1E6FD0" aria-hidden="true">MQ</span><span>Trần Minh Quân</span><span class="c over">7 · 2 quá hạn</span><span class="wbar" aria-hidden="true"><span class="a" style="width:62%"></span><span class="o" style="width:25%"></span></span></div>
+        <div class="wr"><span class="av" style="background:#7C4DDB" aria-hidden="true">NA</span><span>Phan Ngọc Anh</span><span class="c">5</span><span class="wbar" aria-hidden="true"><span class="a" style="width:62%"></span></span></div>
+        <div class="wr"><span class="av" style="background:#0E7490" aria-hidden="true">VT</span><span>Vũ Thanh</span><span class="c over">4 · 1 quá hạn</span><span class="wbar" aria-hidden="true"><span class="a" style="width:37%"></span><span class="o" style="width:13%"></span></span></div>
+        <small>Chỉ tính board bạn xem được</small>
+      </div>
+    </section>
+
+    <section class="sec" aria-labelledby="h-acc">
+      <h2 class="sec-h s" id="h-acc">Ai vào được phòng này</h2>
+      <div class="acc">
+        <div class="vis"><span class="ic" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg></span><span><b>Riêng tư · 24 người</b><small>2 quản trị · 19 thành viên · 3 người xem. Chỉ họ và quản trị workspace thấy phòng này.</small></span></div>
+        <dl>
+          <dt>Quản trị</dt><dd>Lê Hoàng Phúc, Nguyễn Thu Hà</dd>
+          <dt>Người xem</dt><dd>Nhóm Ban giám đốc<small>3 người, chỉ xem</small></dd>
+          <dt>Khách ở board</dt><dd><a href="Final-M-Share.dc.html">Đặng Minh Tuấn</a><small>chỉ board Triển khai ERP Q4</small></dd>
+        </dl>
+        <a class="more" href="Final-M-Members.dc.html">{{accLink}}<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg></a>
+      </div>
+    </section>
+  </main>
+  </sc-if>
+
+  <sc-if value="{{isSettings}}" hint-placeholder-val="{{ false }}">
+  <header class="tbar push">
+    <a class="ib" href="Final-M-Space.dc.html" aria-label="Quay lại Phòng Công nghệ"><svg class="i lg" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"></path></svg></a>
+    <div class="bt-t"><h1>Thiết lập phòng ban</h1><p><span class="dm sm" style="background:#1E6FD0" aria-hidden="true">CN</span>Phòng Công nghệ</p></div>
+    <button class="txtbtn" type="button">Lưu</button>
+  </header>
+
+  <main class="content pg set-pg">
+    <section class="set" aria-label="Tên">
+      <label class="h" for="sp-name">Tên phòng ban</label>
+      <input class="inp" id="sp-name" type="text" value="Phòng Công nghệ" autocomplete="off">
+    </section>
+
+    <section class="set" aria-labelledby="h-vis">
+      <h2 id="h-vis">Hiển thị</h2>
+      <div class="rads" role="radiogroup" aria-labelledby="h-vis">
+        <label class="rad on"><input type="radio" name="vis" checked><span><b>Riêng tư</b><small>Chỉ thành viên phòng và quản trị workspace</small></span></label>
+        <label class="rad"><input type="radio" name="vis"><span><b>Mở cho cả workspace</b><small>Mọi người trong workspace thấy phòng</small></span></label>
+      </div>
+      <p class="hint">Phòng ban con Riêng tư không thừa hưởng thành viên từ phòng cha; Quản trị phòng cha vẫn vào được (WSP-023).</p>
+    </section>
+
+    <section class="set" aria-labelledby="h-place">
+      <div class="place"><span><h2 id="h-place">Vị trí trong cây</h2><small>Minh An Group › gốc</small></span><button class="btn" type="button" aria-label="Chuyển Phòng Công nghệ sang vị trí khác">Chuyển</button></div>
+    </section>
+
+    <section class="set danger" aria-labelledby="h-danger">
+      <h2 id="h-danger">Lưu trữ hoặc xoá phòng ban</h2>
+      <p class="hint">Không kéo theo: phòng ban con và board giữ nguyên, chuyển sang mục Chưa xếp phòng (WSP-022).</p>
+      <div class="dgr-row"><span><b>Lưu trữ</b><small>Khôi phục lại được</small></span><button class="btn" type="button">Lưu trữ</button></div>
+      <div class="dgr-row"><span><b>Xoá</b><small>Không hoàn tác được</small></span><button class="btn dgr" type="button">Xoá phòng ban</button></div>
+    </section>
+  </main>
+  </sc-if>
+
+  <sc-if value="{{showTabbar}}" hint-placeholder-val="{{ true }}">
+  <nav class="tabbar" aria-label="Điều hướng chính">
+    <a class="tab" href="Final-M-Home.dc.html"><svg class="i lg" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"></path></svg>Trang chủ</a>
+    <a class="tab" href="Final-M-MyWork.dc.html"><svg class="i lg" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11l3 3 8-8"></path><path d="M20 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>Việc của tôi<span class="bdg"><span class="vh">, </span>7<span class="vh"> việc đang mở</span></span></a>
+    <a class="tab" href="Final-M-Inbox.dc.html"><svg class="i lg" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 12h-6l-2 3h-4l-2-3H2"></path><path d="M5.5 5h13L22 12v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6z"></path></svg>Hộp thư<span class="bdg"><span class="vh">, </span>3<span class="vh"> chưa đọc</span></span></a>
+    <a class="tab on" href="Final-M-Space.dc.html" aria-current="page"><svg class="i lg" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect></svg>Phòng ban</a>
+    <a class="tab" href="Final-M-Search.dc.html"><svg class="i lg" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>Tìm</a>
+  </nav>
+  </sc-if>
+  </div>
+
+  <sc-if value="{{sheetOpen}}" hint-placeholder-val="{{ false }}">
+  <div class="scrim" aria-hidden="true"></div>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="create-t">
+    <div class="grabber" aria-hidden="true"></div>
+    <div class="sheet-h"><h2 id="create-t">Tạo trong Phòng Công nghệ</h2><button class="ib" type="button" aria-label="Đóng"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button></div>
+    <button class="srow" type="button"><span class="ic acc-ic" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M9 4v16M15 4v10"></path></svg></span><span class="tx"><b>Board</b><small>Theo dõi việc bằng Bảng, Kanban, Lịch</small></span><span class="end"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg></span></button>
+    <button class="srow" type="button"><span class="ic acc-ic" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><path d="M14 3v6h6"></path></svg></span><span class="tx"><b>Tài liệu</b><small>Quy trình, biên bản, kế hoạch</small></span><span class="end"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg></span></button>
+    <button class="srow" type="button"><span class="ic" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><path d="M12 11v5M9.5 13.5h5"></path></svg></span><span class="tx"><b>Phòng ban con</b><small>Một nhóm nhỏ trong Công nghệ</small></span><span class="end"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg></span></button>
+    <div class="sheet-sep"></div>
+    <button class="srow" type="button"><span class="ic" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect></svg></span><span class="tx"><b>Từ mẫu</b><small>Hỗ trợ nội bộ, quản lý tài sản IT, sprint</small></span><span class="end"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg></span></button>
+    <p class="sheet-note">24 người trong phòng thấy ngay thứ bạn tạo. Muốn hẹp hơn thì đặt Riêng tư sau khi tạo.</p>
+  </div>
+  </sc-if>
+  <span class="homeind" aria-hidden="true"></span>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"state":{"editor":"enum","options":["danh-sach","phong","tao-moi","chi-xem","thiet-lap"],"default":"danh-sach","section":"Trạng thái minh hoạ"},"mode":{"editor":"enum","options":["sang","dem"],"default":"sang","section":"Giao diện"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const state = this.props.state ?? 'danh-sach';
+    const isList = state === 'danh-sach';
+    const isSettings = state === 'thiet-lap';
+    const isMember = state === 'chi-xem';
+    const isPage = state === 'phong' || state === 'tao-moi' || isMember;
+    const sheetOpen = state === 'tao-moi';
+    return {
+      mode: this.props.mode ?? 'sang',
+      isList,
+      isPage,
+      isSettings,
+      isMember,
+      // Hà is workspace Admin and Quản trị of Phòng Công nghệ; Lý Thu Trang (chi-xem) is a plain Thành viên
+      isAdmin: isPage && !isMember,
+      sheetOpen,
+      // settings is a full-screen form with destructive actions, so the tab bar is hidden there
+      showTabbar: !isSettings,
+      // counts are per viewer: the private board and the private sub-department are not counted for a Member
+      docTabN: isMember ? 8 : 9,
+      runN: isMember ? 3 : 4,
+      allN: isMember ? 5 : 6,
+      subN: isMember ? 1 : 2,
+      roleLine: isMember ? 'Bạn là Thành viên của phòng này' : 'Bạn là Quản trị phòng',
+      waitMeta: isMember ? 'Không có việc nào chờ bạn duyệt' : '1 việc chờ bạn duyệt',
+      accLink: isMember ? 'Xem thành viên' : 'Quản lý thành viên và quyền'
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -132,7 +132,7 @@ public sealed class CreateCommentTargetPolicyMatrixTests
     {
         var descriptor = MoveItemDescriptor;
         var snapshot = Snapshot();
-        var request = new MoveBoardItemCommand(Guid.NewGuid(), Guid.NewGuid(), 1.0d);
+        var request = new MoveBoardItemCommand(Guid.NewGuid(), Guid.NewGuid(), 1);
         var facts = Facts(workspaceRole: "Member");
 
         var decision = new AccessPolicyEngine().Evaluate(descriptor, snapshot, facts, request);

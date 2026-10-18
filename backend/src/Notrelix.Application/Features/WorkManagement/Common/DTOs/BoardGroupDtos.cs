@@ -6,7 +6,8 @@ public record BoardGroupDto(
     string Color,
     string Position,
     bool IsArchived,
-    List<BoardItemSummaryDto> BoardItems
+    List<BoardItemSummaryDto> BoardItems,
+    long Version
 );
 
 public record BoardGroupSchemaDto(
@@ -14,4 +15,5 @@ public record BoardGroupSchemaDto(
     string Title,
     string Color,
     string Position,
-    bool IsCollapsed);
+    bool IsCollapsed,
+    long Version);

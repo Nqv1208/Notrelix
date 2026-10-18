@@ -6,7 +6,8 @@ namespace Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.Unar
 [IdempotencyOperation("work-management.board-groups.unarchive-board-group.v1")]
 public record UnarchiveBoardGroupCommand(Guid GroupId) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
-    public PermissionAction Action => PermissionAction.ManageBoard;
+    // Unarchiving a group edits Board content (Editor), not Board management.
+    public PermissionAction Action => PermissionAction.UpdateItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-group"), GroupId);
 }
 

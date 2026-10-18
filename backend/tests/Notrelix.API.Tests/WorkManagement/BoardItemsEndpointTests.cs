@@ -68,7 +68,7 @@ public class BoardItemsEndpointTests : IClassFixture<NotrelixApiFactory>
     [Fact]
     public async Task MoveItem_WithValidData_ReturnsOk()
     {
-        var body = new { GroupId = GroupId.ToString(), Position = 1.0 };
+        var body = new { GroupId = GroupId.ToString(), ExpectedVersion = 1 };
         var response = await _client.PostAsync($"/api/v1/board-items/{ItemId}/move", JsonContent(body));
         response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NotFound);
     }

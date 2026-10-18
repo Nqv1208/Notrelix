@@ -27,8 +27,22 @@ SELECT ops.apply_scoped_business_policies('workspace', 'workspaces', true);
 SELECT ops.apply_scoped_business_policies('workspace', 'workspace_members', true);
 SELECT ops.apply_scoped_business_policies('workspace', 'workspace_invitations', true);
 SELECT ops.apply_scoped_business_policies('workspace', 'spaces', true);
+-- Space membership and the Space closure index (ADR-009): tenant-scoped like
+-- spaces; Governance access evaluation and Application authorization remain
+-- the primary controls, these policies are defence in depth.
+SELECT ops.apply_scoped_business_policies('workspace', 'space_members', true);
+SELECT ops.apply_scoped_business_policies('workspace', 'space_paths', true);
 SELECT ops.apply_scoped_business_policies('workspace', 'teams', true);
 SELECT ops.apply_scoped_business_policies('workspace', 'team_members', true);
+
+-- Personal navigation state (WX-DEC-011): workspace scope AND row ownership.
+-- A member reads and writes only their own recents and pins, even inside a
+-- Workspace they can access; the Application handlers filter by the current
+-- user as the primary control, these policies are defence in depth.
+SELECT ops.apply_scope_expression_policies('workspace', 'recent_resources',
+    'ops.has_workspace_access(account_id, workspace_id) AND user_id = ops.current_user_id()', true);
+SELECT ops.apply_scope_expression_policies('workspace', 'pinned_resources',
+    'ops.has_workspace_access(account_id, workspace_id) AND user_id = ops.current_user_id()', true);
 SELECT ops.apply_scoped_business_policies('governance', 'custom_roles', true);
 SELECT ops.apply_scoped_business_policies('governance', 'custom_role_permissions', true);
 SELECT ops.apply_scoped_business_policies('governance', 'workspace_member_role_assignments', true);

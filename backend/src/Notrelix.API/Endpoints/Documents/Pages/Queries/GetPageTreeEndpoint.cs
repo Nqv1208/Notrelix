@@ -1,4 +1,5 @@
 using Notrelix.API.Extensions;
+using Notrelix.Application.Features.Documents.DTOs;
 using Notrelix.Application.Features.Documents.Pages.Queries.GetPageTree;
 
 namespace Notrelix.API.Endpoints.Documents.Pages.Queries;
@@ -9,6 +10,7 @@ public static class GetPageTreeEndpoint
     {
         group.MapWorkspaceGet("/tree", HandleAsync)
             .WithName("Documents.Pages.GetPageTree")
+            .Produces<List<PageTreeItemDto>>(StatusCodes.Status200OK, "application/json")
             .WithTags("Documents.Pages")
             .WithSummary("Get page tree for a workspace");
         return group;

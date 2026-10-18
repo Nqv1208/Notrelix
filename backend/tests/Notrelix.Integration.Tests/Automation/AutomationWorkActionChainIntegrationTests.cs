@@ -79,7 +79,7 @@ public sealed class AutomationWorkActionChainIntegrationTests : IAsyncLifetime
         var restrictedMember = WorkspaceMember.Create(accountId, workspace.Id, memberUser.Id, WorkspaceRole.Member, ownerId, Now);
         var board = Board.Create(accountId, workspace.Id, ownerId, "Board", null, Now);
         var sourceGroup = BoardGroup.Create(accountId, workspace.Id, board.Id, "Todo", Domain.SharedKernel.Color.Create("#808080"), FractionalIndex.Initial(), ownerId, Now);
-        var targetGroup = BoardGroup.Create(accountId, workspace.Id, board.Id, "Done", Domain.SharedKernel.Color.Create("#00FF00"), FractionalIndex.Initial(), ownerId, Now);
+        var targetGroup = BoardGroup.Create(accountId, workspace.Id, board.Id, "Done", Domain.SharedKernel.Color.Create("#00FF00"), FractionalIndex.Create("a1"), ownerId, Now);
         var item = BoardItem.CreateRoot(accountId, workspace.Id, board.Id, sourceGroup.Id, "Task", FractionalIndex.Initial(), ownerId, Now);
 
         await using var seed = _db.CreateContext(SystemTenant());
@@ -115,7 +115,9 @@ public sealed class AutomationWorkActionChainIntegrationTests : IAsyncLifetime
         var clockMock = new Moq.Mock<Notrelix.Application.Common.Time.IDateTimeProvider>();
         clockMock.Setup(c => c.UtcNow).Returns(Now);
         var workItemActions = new Application.Features.WorkManagement.BoardItems.Services.MoveBoardItemUseCase(
-            workContext, clockMock.Object);
+            workContext, clockMock.Object,
+            new Application.Features.WorkManagement.Ordering.WorkPlacementResolver(
+                new Notrelix.Infrastructure.Data.WorkManagement.PostgresWorkOrderingScopeLock(workContext)));
         var idempotencyStore = new Notrelix.Infrastructure.Operations.Idempotency.EfIdempotencyStore(
             workContext,
             System.TimeProvider.System,
@@ -248,10 +250,22 @@ public sealed class AutomationWorkActionChainIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task AutomationMoveItem_ActiveMember_CanonicalPolicyDenies_NoDedupNoMutationNoEvent()
     {
-        // The canonical MoveItem decision currently denies an active workspace
-        // member over a board-item resource. The public target action must
-        // honor that exact decision: no dedup record, no mutation, no event.
+        // The public target action must honor the canonical MoveItem decision
+        // exactly: no dedup record, no mutation, no event.
+        // Board children are decided on their Board (GOV-033): an ordinary
+        // member of a Workspace-visible Board is now an Editor and may move
+        // items. The denied principal is therefore made a board Observer
+        // (Viewer) on a Private Board; the protected property is unchanged —
+        // the canonical decision denies and nothing else may bypass it.
         var graph = await SeedChainAsync();
+
+        await using (var restrict = _db.CreateContext(SystemTenant()))
+        {
+            var restricted = await restrict.Boards.SingleAsync(b => b.Id == graph.BoardId);
+            restricted.ChangeVisibility(BoardVisibility.Private, restricted.CreatedBy!.Value, DateTimeOffset.UtcNow);
+            restrict.BoardMembers.Add(BoardMember.Create(graph.BoardId, graph.MemberUserId, BoardRole.Observer, DateTimeOffset.UtcNow));
+            await restrict.SaveChangesAsync();
+        }
         var (port, workContext) = CreatePort(graph);
         var executionId = Guid.CreateVersion7();
 

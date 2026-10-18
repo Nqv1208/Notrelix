@@ -21,7 +21,7 @@ export function LoadingState({
         className,
       )}
     >
-      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <Loader2 className="h-8 w-8 animate-spin text-link" />
       <div className="space-y-1">
         <h3 className="text-lg font-medium tracking-tight">{title}</h3>
         <p className="text-sm text-muted-foreground max-w-xs">{description}</p>

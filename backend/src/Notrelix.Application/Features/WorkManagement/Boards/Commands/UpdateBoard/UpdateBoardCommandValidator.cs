@@ -10,11 +10,11 @@ public class UpdateBoardCommandValidator : AbstractValidator<UpdateBoardCommand>
             .NotEmpty();
 
         RuleFor(x => x.Title)
-            .MaximumLength(200)
+            .MaximumLength(255)
             .When(x => x.Title is not null);
 
         RuleFor(x => x.Description)
-            .MaximumLength(2000)
+            .MaximumLength(5000)
             .When(x => x.Description is not null);
 
         RuleFor(x => x.Background)
@@ -25,8 +25,6 @@ public class UpdateBoardCommandValidator : AbstractValidator<UpdateBoardCommand>
             .Must(v => v is null || Enum.IsDefined(typeof(BoardVisibility), v))
             .WithMessage("Visibility must be a valid board visibility value.");
 
-        RuleFor(x => x.ExpectedVersion)
-            .GreaterThan(0)
-            .When(x => x.ExpectedVersion.HasValue);
+        RuleFor(x => x.ExpectedVersion).MustBeAnAuthoritativeVersion();
     }
 }

@@ -1,45 +1,26 @@
-import { Outlet, useParams, useLocation } from "@tanstack/react-router";
+import { Outlet, useParams } from "@tanstack/react-router";
 import { AuthGuard } from "@/shell/guards/auth-guard";
-import { WorkspaceGuard } from "@/shell/guards/workspace-guard";
 import { WorkspaceProvider } from "@/providers/workspace-provider";
-import { WorkspaceSidebar } from "@/shell/sidebar/sidebar";
-import { WorkspaceTopbar } from "@/shell/topbar/topbar";
-import { WorkspaceTabbedFrame } from "@/shell/workspace-tabbed-frame";
+import { WorkspaceScopeBoundary } from "@/shell/workspace/workspace-scope-boundary";
+import { WorkspaceShell } from "@/shell/workspace/workspace-shell";
 
-const CONTENT_ROUTES = ["/", "/dashboard", "/boards", "/docs"];
-
-function isContentRoute(pathname: string, workspaceId: string): boolean {
-  const path = pathname.replace(`/workspaces/${workspaceId}`, "") || "/";
-  return CONTENT_ROUTES.some(
-    (route) => path === route || path.startsWith(route + "/"),
-  );
-}
-
+/**
+ * Workspace layout: one shell (sidebar, topbar, palette) and one scroll
+ * container for every workspace route (WX-SHELL-001…005). `key` resets the
+ * shell's local state when the workspace changes; server state is already
+ * scoped by workspace and cleared on switch by the route's `beforeLoad`.
+ */
 export function WorkspaceLayout() {
   const { workspaceId } = useParams({ from: "/workspaces/$workspaceId" });
-  const location = useLocation();
-  const useTabbedFrame = isContentRoute(location.pathname, workspaceId);
 
   return (
     <AuthGuard>
-      <WorkspaceProvider workspaceId={workspaceId}>
-        <WorkspaceGuard workspaceId={workspaceId}>
-          <div className="flex h-screen w-screen overflow-hidden bg-background">
-            <WorkspaceSidebar />
-            <div className="flex-1 flex flex-col min-w-0">
-              {!useTabbedFrame && <WorkspaceTopbar />}
-              <main className="flex-1 overflow-y-auto min-h-0">
-                {useTabbedFrame ? (
-                  <WorkspaceTabbedFrame>
-                    <Outlet />
-                  </WorkspaceTabbedFrame>
-                ) : (
-                  <Outlet />
-                )}
-              </main>
-            </div>
-          </div>
-        </WorkspaceGuard>
+      <WorkspaceProvider key={workspaceId} workspaceId={workspaceId}>
+        <WorkspaceScopeBoundary>
+          <WorkspaceShell>
+            <Outlet />
+          </WorkspaceShell>
+        </WorkspaceScopeBoundary>
       </WorkspaceProvider>
     </AuthGuard>
   );

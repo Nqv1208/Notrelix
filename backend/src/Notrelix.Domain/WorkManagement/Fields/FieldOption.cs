@@ -7,9 +7,15 @@ public class FieldOption : Entity
     public Color Color { get; private set; } = null!;
     public FractionalIndex Position { get; private set; } = null!;
 
+    /// <summary>
+    /// Work-status category of an option of a Status field; null for options of
+    /// every other field type. The owning <see cref="BoardField"/> enforces both.
+    /// </summary>
+    public WorkStatusCategory? Category { get; private set; }
+
     private FieldOption() : base() { }
 
-    public static FieldOption Create(Guid fieldId, string name, Color color, FractionalIndex position)
+    public static FieldOption Create(Guid fieldId, string name, Color color, FractionalIndex position, WorkStatusCategory? category = null)
     {
         Guard.NotEmpty(fieldId);
         Guard.NotNullOrWhiteSpace(name);
@@ -21,7 +27,8 @@ public class FieldOption : Entity
             FieldId = fieldId,
             Name = name.Trim(),
             Color = color,
-            Position = position
+            Position = position,
+            Category = category
         };
     }
 
@@ -37,5 +44,10 @@ public class FieldOption : Entity
     {
         Guard.NotNull(position);
         Position = position;
+    }
+
+    public void UpdateCategory(WorkStatusCategory? category)
+    {
+        Category = category;
     }
 }

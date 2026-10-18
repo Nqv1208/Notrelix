@@ -7,6 +7,7 @@ import {
 } from "../query/hooks/use-comments";
 import { Button, Input, Avatar } from "@notrelix/ui-web";
 import { MessageSquare, Send, Trash2 } from "lucide-react";
+import { commentActionLabel } from "./comment-action-label";
 
 const collabEndpoints = {
   comments: {
@@ -80,10 +81,10 @@ export function ResourceComments({
           {comments.map((comment: Comment) => (
             <div
               key={comment.id}
-              className="flex gap-3 p-3 rounded-lg bg-muted/30"
+              className="group flex gap-3 p-3 rounded-lg bg-muted/30"
             >
               <Avatar className="size-8 shrink-0">
-                <div className="flex items-center justify-center size-full text-xs font-medium bg-primary/10 text-primary rounded-full">
+                <div className="flex items-center justify-center size-full text-xs font-medium bg-primary/10 text-link rounded-full">
                   {comment.authorName.charAt(0).toUpperCase()}
                 </div>
               </Avatar>
@@ -102,8 +103,10 @@ export function ResourceComments({
               </div>
               {comment.authorId === currentUserId && (
                 <button
+                  type="button"
+                  aria-label={commentActionLabel("Delete comment", comment)}
                   onClick={() => deleteComment.mutate(comment.id)}
-                  className="p-1 hover:bg-muted rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="p-1 hover:bg-muted rounded opacity-0 group-hover:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-100 transition-opacity"
                 >
                   <Trash2 className="size-3.5 text-muted-foreground hover:text-destructive" />
                 </button>
@@ -130,6 +133,7 @@ export function ResourceComments({
         <Button
           type="submit"
           size="icon"
+          aria-label="Send comment"
           disabled={!newComment.trim() || createComment.isPending}
         >
           <Send className="size-4" />

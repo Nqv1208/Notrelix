@@ -34,6 +34,16 @@ public class PageConfiguration : IEntityTypeConfiguration<Page>
             .HasForeignKey(x => x.ParentId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        // Placement in a Workspaces Space (docs/product/workspaces.md §79): a scalar
+        // reference only. Space containment is not a cross-context object graph, so there
+        // is no navigation and no database foreign key; the target Space is validated in
+        // Application (IPageSpacePlacement.EnsureActiveTargetAsync).
+        builder.Property(x => x.SpaceId).HasColumnName("space_id");
+        builder.HasIndex(x => x.SpaceId).HasDatabaseName("ix_pages_space_id");
+        builder.HasIndex(x => new { x.WorkspaceId, x.SpaceId })
+            .HasFilter("deleted_at IS NULL")
+            .HasDatabaseName("ix_docs_pages_workspace_space");
+
         builder.HasIndex(x => x.WorkspaceId).HasFilter("deleted_at IS NULL").HasDatabaseName("idx_pages_workspace_id");
         builder.HasIndex(x => x.ParentId).HasFilter("parent_id IS NOT NULL AND deleted_at IS NULL").HasDatabaseName("idx_pages_parent_id");
     }

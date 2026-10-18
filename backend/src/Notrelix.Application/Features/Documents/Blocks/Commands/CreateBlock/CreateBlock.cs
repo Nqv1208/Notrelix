@@ -32,7 +32,7 @@ public class CreateBlockCommandHandler : IRequestHandler<CreateBlockCommand, Res
     public async Task<Result<Guid>> Handle(CreateBlockCommand request, CancellationToken ct)
     {
         var page = await _context.Pages.AsNoTracking()
-            .FirstOrDefaultAsync(p => p.Id == request.PageId && !p.IsDeleted, ct);
+            .FirstOrDefaultAsync(p => p.Id == request.PageId && p.DeletedAt == null, ct);
         if (page is null) throw new NotFoundException(nameof(Page), request.PageId);
 
         var content = BlockContent.Create(JsonValue.Create(request.Properties ?? "{}"));
@@ -43,11 +43,11 @@ public class CreateBlockCommandHandler : IRequestHandler<CreateBlockCommand, Res
         if (request.ParentBlockId.HasValue)
         {
             var parentBlock = await _context.Blocks.AsNoTracking()
-                .FirstOrDefaultAsync(b => b.Id == request.ParentBlockId.Value && !b.IsDeleted, ct);
+                .FirstOrDefaultAsync(b => b.Id == request.ParentBlockId.Value && b.DeletedAt == null, ct);
             if (parentBlock is null) throw new NotFoundException(nameof(Block), request.ParentBlockId.Value);
 
             var ancestorIds = await _context.Blocks.AsNoTracking()
-                .Where(b => b.PageId == request.PageId && !b.IsDeleted)
+                .Where(b => b.PageId == request.PageId && b.DeletedAt == null)
                 .Select(b => new { b.Id, b.ParentId })
                 .ToListAsync(ct);
 

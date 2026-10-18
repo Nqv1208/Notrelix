@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   AlertCircle,
   Bell,
@@ -9,141 +8,209 @@ import {
   Trash2,
   UserPlus,
 } from "lucide-react";
-import { Button } from "@notrelix/ui-web";
+import {
+  Button,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@notrelix/ui-web";
 import type { Notification } from "../../core/types/notifications";
+import {
+  fillCopy,
+  pluralCopy,
+  type NotificationBellCopy,
+} from "./notification-bell.copy";
+
+type DateInput = Date | number | string;
+
+/** Locale-bound formatters the surface needs; the container supplies them. */
+export interface NotificationBellFormatters {
+  readonly relativeTime: (value: DateInput, now?: DateInput) => string;
+  readonly number: (value: number) => string;
+}
 
 export interface NotificationBellSurfaceProps {
   notifications: readonly Notification[];
   unreadCount?: number;
   status?: "idle" | "loading";
+  /** Injected "now" for relative times; defaults to the formatter's clock. */
   referenceDate?: string;
+  copy: NotificationBellCopy;
+  formatters: NotificationBellFormatters;
   onMarkAllRead?: () => void;
   onMarkRead?: (id: string) => void;
   onArchive?: (id: string) => void;
 }
 
+/** Unread counts above this render as `99+` (the accessible name keeps the exact count). */
+const UNREAD_BADGE_CAP = 99;
+
 function getIcon(type: Notification["type"]) {
   switch (type) {
     case "mention":
-      return <UserPlus className="h-4 w-4 text-blue-500" />;
+      return <UserPlus className="h-4 w-4 text-info-text" aria-hidden="true" />;
     case "comment":
-      return <MessageSquare className="h-4 w-4 text-green-500" />;
+      return (
+        <MessageSquare
+          className="h-4 w-4 text-success-text"
+          aria-hidden="true"
+        />
+      );
     case "assignment":
-      return <LayoutGrid className="h-4 w-4 text-amber-500" />;
+      return (
+        <LayoutGrid className="h-4 w-4 text-warning-text" aria-hidden="true" />
+      );
     case "invitation":
-      return <UserPlus className="h-4 w-4 text-violet-500" />;
+      return <UserPlus className="h-4 w-4 text-link" aria-hidden="true" />;
     case "status_change":
-      return <AlertCircle className="h-4 w-4 text-cyan-500" />;
+      return (
+        <AlertCircle className="h-4 w-4 text-info-text" aria-hidden="true" />
+      );
     case "system":
     default:
-      return <AlertCircle className="h-4 w-4 text-red-500" />;
+      return (
+        <AlertCircle className="h-4 w-4 text-danger-text" aria-hidden="true" />
+      );
   }
-}
-
-function formatTime(isoString: string): string {
-  const date = new Date(isoString);
-  return date.toISOString().slice(0, 10);
 }
 
 export function NotificationBellSurface({
   notifications,
   unreadCount = 0,
   status = "idle",
+  referenceDate,
+  copy,
+  formatters,
   onMarkAllRead,
   onMarkRead,
   onArchive,
 }: NotificationBellSurfaceProps) {
-  const [open, setOpen] = useState(false);
   const isLoading = status === "loading";
+  const bellName =
+    unreadCount > 0
+      ? pluralCopy(
+          { one: copy.bellUnread_one, other: copy.bellUnread_other },
+          unreadCount,
+        )
+      : copy.bell;
+  const badgeText =
+    unreadCount > UNREAD_BADGE_CAP
+      ? copy.unreadOverflow
+      : formatters.number(unreadCount);
 
   return (
-    <div className="relative">
-      <button
-        type="button"
-        aria-label="Notifications"
-        onClick={() => setOpen((value) => !value)}
-        className="relative inline-flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground"
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="relative h-9 w-9 text-muted-foreground"
+          aria-label={bellName}
+          title={copy.bell}
+        >
+          <Bell className="h-4 w-4" aria-hidden="true" />
+          {unreadCount > 0 ? (
+            <span
+              aria-hidden="true"
+              className="absolute -top-0.5 -right-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-caption font-semibold leading-none text-destructive-foreground tabular-nums"
+            >
+              {badgeText}
+            </span>
+          ) : null}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        className="w-80 max-w-(--radix-popover-content-available-width) gap-0 p-0"
+        align="end"
       >
-        <Bell className="h-4 w-4" />
-        {unreadCount > 0 ? (
-          <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-destructive animate-pulse" />
-        ) : null}
-      </button>
-
-      {open ? (
-        <div className="absolute right-0 top-11 z-20 w-80 rounded-xl border border-border bg-card p-0 shadow-xl">
-          <div className="flex items-center justify-between px-4 py-3 border-b">
-            <span className="text-sm font-semibold">Notifications</span>
-            {unreadCount > 0 ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onMarkAllRead}
-                className="h-7 text-xs gap-1 text-primary"
-              >
-                <Check className="h-3 w-3" /> Mark all read
-              </Button>
-            ) : null}
-          </div>
-          <div className="max-h-72 overflow-y-auto">
-            {isLoading ? (
-              <div className="text-center py-10 text-xs text-muted-foreground">
-                Loading notifications...
-              </div>
-            ) : notifications.length === 0 ? (
-              <div className="text-center py-10 text-xs text-muted-foreground italic">
-                No notifications found
-              </div>
-            ) : (
-              <div className="divide-y">
-                {notifications.map((notif) => (
-                  <div
-                    key={notif.id}
-                    className={`group relative flex items-start gap-3 space-y-1 p-3 text-left transition-colors hover:bg-muted/30 ${
-                      !notif.isRead ? "bg-muted/10 font-medium" : ""
-                    }`}
-                  >
-                    <div className="mt-0.5 shrink-0 bg-muted/40 p-1.5 rounded-lg">
-                      {getIcon(notif.type)}
-                    </div>
-                    <div className="flex-1 space-y-0.5 overflow-hidden">
-                      <p className="text-xs text-foreground leading-tight truncate">
-                        {notif.title}
-                      </p>
-                      <p className="text-[11px] text-muted-foreground leading-snug">
-                        {notif.body}
-                      </p>
-                      <span className="text-[10px] text-muted-foreground">
-                        {formatTime(notif.createdAt)}
-                      </span>
-                    </div>
-                    <div className="absolute right-2 top-2.5 flex items-center gap-1 rounded-md border bg-background/80 p-0.5 opacity-0 shadow-sm backdrop-blur-sm transition-opacity group-hover:opacity-100">
-                      {!notif.isRead ? (
-                        <button
-                          type="button"
-                          aria-label={`Mark ${notif.id} as read`}
-                          className="inline-flex h-5 w-5 items-center justify-center rounded hover:bg-primary/10 hover:text-primary"
-                          onClick={() => onMarkRead?.(notif.id)}
-                        >
-                          <MailOpen className="h-3 w-3" />
-                        </button>
-                      ) : null}
-                      <button
-                        type="button"
-                        aria-label={`Archive ${notif.id}`}
-                        className="inline-flex h-5 w-5 items-center justify-center rounded hover:bg-destructive/10 hover:text-destructive"
-                        onClick={() => onArchive?.(notif.id)}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+        <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 border-b px-4 py-3">
+          <span className="min-w-0 text-sm font-semibold">
+            {copy.panelTitle}
+          </span>
+          {unreadCount > 0 ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onMarkAllRead}
+              className="h-7 shrink-0 gap-1 text-xs text-link"
+            >
+              <Check className="h-3 w-3" aria-hidden="true" />
+              {copy.markAllRead}
+            </Button>
+          ) : null}
         </div>
-      ) : null}
-    </div>
+        <div className="max-h-72 overflow-y-auto">
+          {isLoading ? (
+            <div className="py-10 text-center text-xs text-muted-foreground">
+              {copy.loading}
+            </div>
+          ) : notifications.length === 0 ? (
+            <div className="py-10 text-center text-xs italic text-muted-foreground">
+              {copy.empty}
+            </div>
+          ) : (
+            <div className="divide-y">
+              {notifications.map((notif) => (
+                <div
+                  key={notif.id}
+                  className={`group relative flex items-start gap-3 p-3 text-left transition-colors hover:bg-muted/30 ${
+                    !notif.isRead ? "bg-muted/10 font-medium" : ""
+                  }`}
+                >
+                  <div className="mt-0.5 shrink-0 rounded-lg bg-muted/40 p-1.5">
+                    {getIcon(notif.type)}
+                  </div>
+                  <div className="min-w-0 flex-1 space-y-0.5">
+                    <p
+                      className="truncate pr-14 text-xs leading-tight text-foreground"
+                      title={notif.title}
+                    >
+                      {notif.title}
+                    </p>
+                    <p className="break-words text-caption leading-snug text-muted-foreground">
+                      {notif.body}
+                    </p>
+                    <time
+                      dateTime={notif.createdAt}
+                      className="block text-caption text-muted-foreground"
+                    >
+                      {formatters.relativeTime(notif.createdAt, referenceDate)}
+                    </time>
+                  </div>
+                  <div className="absolute right-2 top-2.5 flex items-center gap-1 rounded-md border bg-background/80 p-0.5 opacity-0 shadow-sm backdrop-blur-sm transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 pointer-coarse:opacity-100">
+                    {!notif.isRead ? (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-5 w-5 hover:bg-primary/10 hover:text-link"
+                        onClick={() => onMarkRead?.(notif.id)}
+                        title={copy.markReadHint}
+                        aria-label={fillCopy(copy.markRead, {
+                          title: notif.title,
+                        })}
+                      >
+                        <MailOpen className="h-3 w-3" aria-hidden="true" />
+                      </Button>
+                    ) : null}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-5 w-5 hover:bg-destructive/10 hover:text-destructive"
+                      onClick={() => onArchive?.(notif.id)}
+                      title={copy.archiveHint}
+                      aria-label={fillCopy(copy.archive, {
+                        title: notif.title,
+                      })}
+                    >
+                      <Trash2 className="h-3 w-3" aria-hidden="true" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }

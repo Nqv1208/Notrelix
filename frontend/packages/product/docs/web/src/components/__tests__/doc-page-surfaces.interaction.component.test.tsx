@@ -1,121 +1,429 @@
 import { describe, expect, it, vi } from "vitest";
-import { fireEvent, renderPureUi, screen } from "@notrelix/testing";
+import { fireEvent, renderPureUi, screen, within } from "@notrelix/testing";
 
 import {
-  docsCommentsDefaultScenario,
-  docsHistoryDefaultScenario,
+  BLOCKS,
+  COMMENTS,
+  HEADER,
+  RELATED_DOCS,
+  SHARE,
+  TASKS,
+  TOC,
+  VERSIONS,
+  docsCopy,
   docsPageScreenDefaultScenario,
   docsPageScreenEmptyScenario,
-  docsPageTreeDefaultScenario,
+  docsPageScreenFileMenuScenario,
+  docsPageScreenLoadingScenario,
+  docsPageScreenMentionScenario,
+  docsPageScreenNotFoundScenario,
+  docsPageScreenReadOnlyScenario,
+  docsPageScreenSaveErrorScenario,
+  docsPageScreenShareScenario,
+  docsPageScreenSlashScenario,
+  docsPageScreenVersionsScenario,
 } from "../../verification/docs-ui-fixtures";
 import {
-  DocCommentsSurface,
-  DocPageHeaderSurface,
+  DocArticleSurface,
+  DocPageBarSurface,
   DocPageScreenSurface,
-  DocPageTreeSurface,
+  DocShareDialogSurface,
+  DocSidePanelSurface,
+  DocToolbarSurface,
+  DocVersionPanelSurface,
 } from "../doc-page-surfaces";
-import { DocHistorySurface } from "../doc-page-history-surface";
+
+const ARTICLE = {
+  copy: docsCopy,
+  title: HEADER.title,
+  chips: docsPageScreenDefaultScenario().chips,
+  why: docsPageScreenDefaultScenario().why,
+  blocks: BLOCKS,
+  overlay: { kind: "none" } as const,
+  mentionTasks: [],
+};
 
 describe("docs web pure surfaces", () => {
-  it("FUI[docs.page.screen:render] renders the composed document screen from deterministic fixture data", () => {
-    renderPureUi(<DocPageScreenSurface {...docsPageScreenDefaultScenario()} />);
-
-    expect(
-      screen.getByRole("heading", { name: "Operating plan" }),
-    ).toBeTruthy();
-    expect(screen.getByDisplayValue("Operating plan")).toBeTruthy();
-    expect(screen.getByText("Migration risks")).toBeTruthy();
-    expect(
-      screen.getByText("Can we link this to the launch checklist?"),
-    ).toBeTruthy();
-  });
-
-  it("FUI[docs.page.tree:render] routes page tree create actions through injected callbacks", () => {
-    const onAddPage = vi.fn();
-
+  it("FUI[docs.page.screen:render] renders the document bar, tools, sheet and side panel from fixture data", () => {
+    const onPanelTab = vi.fn();
     renderPureUi(
-      <DocPageTreeSurface
-        pages={docsPageTreeDefaultScenario()}
-        workspaceId="workspace-docs"
-        currentPageId="page-operating-plan"
-        callbacks={{ onAddPage }}
+      <DocPageScreenSurface
+        {...docsPageScreenDefaultScenario()}
+        callbacks={{ onPanelTab }}
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Create root page" }));
+    expect(
+      screen.getByRole("heading", {
+        level: 1,
+        name: docsCopy.titlePlaceholder,
+      }),
+    ).toHaveProperty("textContent", HEADER.title);
+    expect(
+      screen.getByRole("heading", { name: "Phạm vi áp dụng" }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("toolbar", { name: docsCopy.toolbar.label }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("table", { name: docsCopy.blocks.liveTable }),
+    ).toBeTruthy();
+    expect(
+      screen.getByText("Công việc được nhắc", { selector: "h3" }),
+    ).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("tab", { name: /Mục lục/ }));
+    fireEvent.click(screen.getByRole("tab", { name: /Bình luận/ }));
+    expect(onPanelTab).toHaveBeenNthCalledWith(1, "toc");
+    expect(onPanelTab).toHaveBeenNthCalledWith(2, "comments");
+  });
+
+  it("FUI[docs.page.screen:states] renders loading, not found, empty, read-only, save error and overlay states", () => {
+    const loading = renderPureUi(
+      <DocPageScreenSurface {...docsPageScreenLoadingScenario()} />,
+    );
+    expect(screen.getByRole("status", { name: docsCopy.loading })).toBeTruthy();
+    loading.unmount();
+
+    const missing = renderPureUi(
+      <DocPageScreenSurface {...docsPageScreenNotFoundScenario()} />,
+    );
+    expect(screen.getByText(docsCopy.notFound)).toBeTruthy();
+    missing.unmount();
+
+    const empty = renderPureUi(
+      <DocPageScreenSurface {...docsPageScreenEmptyScenario()} />,
+    );
+    expect(screen.getByText(docsCopy.blocks.emptyDoc)).toBeTruthy();
+    empty.unmount();
+
+    const readOnly = renderPureUi(
+      <DocPageScreenSurface {...docsPageScreenReadOnlyScenario()} />,
+    );
+    expect(
+      screen
+        .getByRole("heading", { level: 1, name: docsCopy.titlePlaceholder })
+        .getAttribute("contenteditable"),
+    ).toBe("false");
+    expect(
+      screen
+        .getAllByRole("textbox")
+        .every((box) => box.getAttribute("aria-readonly") === "true"),
+    ).toBe(true);
+    readOnly.unmount();
+
+    const failed = renderPureUi(
+      <DocPageScreenSurface {...docsPageScreenSaveErrorScenario()} />,
+    );
+    expect(screen.getByRole("alert").textContent).toContain(
+      docsCopy.header.retry,
+    );
+    failed.unmount();
+
+    const menu = renderPureUi(
+      <DocPageScreenSurface {...docsPageScreenFileMenuScenario()} />,
+    );
+    expect(
+      screen.getByRole("menu", { name: docsCopy.fileMenu.label }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("menu", { name: docsCopy.fileMenu.downloadLabel }),
+    ).toBeTruthy();
+    menu.unmount();
+
+    const slash = renderPureUi(
+      <DocPageScreenSurface {...docsPageScreenSlashScenario()} />,
+    );
+    expect(
+      screen.getByRole("listbox", { name: docsCopy.slash.label }),
+    ).toBeTruthy();
+    slash.unmount();
+
+    const mention = renderPureUi(
+      <DocPageScreenSurface {...docsPageScreenMentionScenario()} />,
+    );
+    expect(screen.getAllByRole("option")).toHaveLength(4);
+    mention.unmount();
+
+    renderPureUi(<DocPageScreenSurface {...docsPageScreenShareScenario()} />);
+    expect(screen.getByRole("dialog")).toBeTruthy();
+
+    // The page behind the dialog is not reachable.
+    expect(
+      screen.queryByRole("toolbar", { name: docsCopy.toolbar.label }),
+    ).toBeNull();
+  });
+
+  it("FUI[docs.page.screen:versions] swaps the tools and side tabs for the compare banner and version list", () => {
+    renderPureUi(
+      <DocPageScreenSurface {...docsPageScreenVersionsScenario()} />,
+    );
+
+    expect(
+      screen.getByRole("region", { name: docsCopy.versions.bar }),
+    ).toBeTruthy();
+    expect(screen.queryByRole("toolbar")).toBeNull();
+    expect(
+      screen.getByRole("heading", { name: docsCopy.versions.title }),
+    ).toBeTruthy();
+    expect(document.querySelectorAll("ins").length).toBeGreaterThan(0);
+    expect(document.querySelectorAll("del").length).toBeGreaterThan(0);
+  });
+
+  it("FUI[docs.page.bar:actions] routes retry and share through callbacks and states the unavailable actions", () => {
+    const onSaveRetry = vi.fn();
+    const onOpenShare = vi.fn();
+    renderPureUi(
+      <DocPageBarSurface
+        copy={docsCopy}
+        header={HEADER}
+        saveState="error"
+        canShare
+        callbacks={{ onSaveRetry, onOpenShare }}
+      />,
+    );
+
     fireEvent.click(
-      screen.getByRole("button", { name: "Add page under Operating plan" }),
+      screen.getByRole("button", { name: docsCopy.header.retry }),
     );
-
-    expect(onAddPage).toHaveBeenNthCalledWith(1, null);
-    expect(onAddPage).toHaveBeenNthCalledWith(2, "page-operating-plan");
+    fireEvent.click(
+      screen.getByRole("button", { name: docsCopy.header.share }),
+    );
+    expect(onSaveRetry).toHaveBeenCalledTimes(1);
+    expect(onOpenShare).toHaveBeenCalledTimes(1);
+    expect(
+      screen
+        .getByRole("button", { name: docsCopy.header.approve })
+        .getAttribute("aria-disabled"),
+    ).toBe("true");
   });
 
-  it("FUI[docs.page.header:render] routes header favorite/share/actions through injected callbacks", () => {
-    const onToggleFavorite = vi.fn();
-    const onShare = vi.fn();
-    const onAction = vi.fn();
+  it("FUI[docs.page.toolbar:menus] opens the File menu and routes its actions through callbacks", () => {
+    const onOpenFileMenu = vi.fn();
+    const onNewDoc = vi.fn();
+    const onDownload = vi.fn();
+    const onOpenVersions = vi.fn();
+    const onToggleDownload = vi.fn();
+    const closed = renderPureUi(
+      <DocToolbarSurface
+        copy={docsCopy}
+        fileMenuOpen={false}
+        callbacks={{ onOpenFileMenu }}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: docsCopy.menus.file }));
+    expect(onOpenFileMenu).toHaveBeenCalledTimes(1);
+    closed.unmount();
 
     renderPureUi(
-      <DocPageHeaderSurface
-        pageTitle="Operating plan"
-        breadcrumbs={[
-          { id: "page-operating-plan", title: "Operating plan", icon: "📘" },
-        ]}
-        isFavorited={false}
-        callbacks={{ onToggleFavorite, onShare, onAction }}
+      <DocToolbarSurface
+        copy={docsCopy}
+        fileMenuOpen
+        downloadOpen
+        canShare
+        callbacks={{ onNewDoc, onDownload, onOpenVersions, onToggleDownload }}
+      />,
+    );
+    fireEvent.click(screen.getByRole("menuitem", { name: /Tài liệu mới/ }));
+    fireEvent.click(screen.getByRole("menuitem", { name: /Markdown/ }));
+    fireEvent.click(
+      screen.getByRole("menuitem", { name: /Lịch sử phiên bản/ }),
+    );
+    fireEvent.click(screen.getByRole("menuitem", { name: /Tải xuống/ }));
+    expect(onNewDoc).toHaveBeenCalledTimes(1);
+    expect(onDownload).toHaveBeenCalledWith("markdown");
+    expect(onOpenVersions).toHaveBeenCalledTimes(1);
+    expect(onToggleDownload).toHaveBeenCalledTimes(1);
+    expect(
+      screen
+        .getByRole("menuitem", { name: /Word/ })
+        .getAttribute("aria-disabled"),
+    ).toBe("true");
+  });
+
+  it("FUI[docs.page.article:editing] commits text on blur, toggles a checklist item and picks a block from the slash menu", () => {
+    const onBlockCommit = vi.fn();
+    const onTodoToggle = vi.fn();
+    const onSlashSelect = vi.fn();
+    const onBlockTrigger = vi.fn();
+    const scenario = docsPageScreenSlashScenario();
+    renderPureUi(
+      <DocArticleSurface
+        {...ARTICLE}
+        blocks={scenario.blocks}
+        overlay={scenario.overlay}
+        callbacks={{
+          onBlockCommit,
+          onTodoToggle,
+          onSlashSelect,
+          onBlockTrigger,
+        }}
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Favorite" }));
-    fireEvent.click(screen.getByRole("button", { name: "Share" }));
-    fireEvent.click(screen.getByRole("button", { name: "Document actions" }));
-    fireEvent.click(screen.getByRole("button", { name: "Export" }));
+    const heading = screen.getByRole("heading", { name: "Phạm vi áp dụng" });
+    heading.textContent = "Phạm vi mới";
+    fireEvent.input(heading);
+    fireEvent.blur(heading);
+    expect(onBlockCommit).toHaveBeenCalledWith("b1", "Phạm vi mới");
 
-    expect(onToggleFavorite).toHaveBeenCalledTimes(1);
-    expect(onShare).toHaveBeenCalledTimes(1);
-    expect(onAction).toHaveBeenCalledWith("Export");
+    fireEvent.click(
+      screen.getByRole("checkbox", {
+        name: "Đánh dấu hoàn thành: Đào tạo nhóm Công nợ về đối chiếu tự động",
+      }),
+    );
+    expect(onTodoToggle).toHaveBeenCalledWith("b10", true);
+
+    const options = screen.getAllByRole("option");
+    expect(options).toHaveLength(3);
+    fireEvent.keyDown(window, { key: "ArrowDown" });
+    fireEvent.keyDown(window, { key: "Enter" });
+    expect(onSlashSelect).toHaveBeenCalledWith("b-slash", "todo");
   });
 
-  it("FUI[docs.comments:render] routes comment composition and deletion through injected callbacks", () => {
-    const onCreateComment = vi.fn();
-    const onDeleteComment = vi.fn();
-
+  it("FUI[docs.page.article:mention] lists matching tasks and routes the pick through the callback", () => {
+    const onMentionSelect = vi.fn();
+    const scenario = docsPageScreenMentionScenario();
     renderPureUi(
-      <DocCommentsSurface
-        comments={docsCommentsDefaultScenario()}
-        callbacks={{ onCreateComment, onDeleteComment }}
+      <DocArticleSurface
+        {...ARTICLE}
+        blocks={scenario.blocks}
+        overlay={scenario.overlay}
+        mentionTasks={scenario.mentionTasks}
+        callbacks={{ onMentionSelect }}
       />,
     );
 
-    fireEvent.change(screen.getByRole("textbox", { name: "New comment" }), {
-      target: { value: "Ready for review" },
+    const list = screen.getByRole("listbox", { name: docsCopy.mention.label });
+    fireEvent.click(within(list).getByText("ERP-144"));
+    expect(onMentionSelect).toHaveBeenCalledWith("b-mention", "task-erp-144");
+  });
+
+  it("FUI[docs.page.side-panel:tabs] switches tabs, selects a heading and posts a comment on Enter", () => {
+    const onPanelTab = vi.fn();
+    const onTocSelect = vi.fn();
+    const onCommentCreate = vi.fn();
+    const links = renderPureUi(
+      <DocSidePanelSurface
+        copy={docsCopy}
+        tab="links"
+        tasks={TASKS}
+        relatedDocs={RELATED_DOCS}
+        toc={TOC}
+        comments={COMMENTS}
+        callbacks={{ onPanelTab }}
+      />,
+    );
+    expect(screen.getByText("ERP-144")).toBeTruthy();
+    expect(screen.getByText(docsCopy.panel.restrictedTask)).toBeTruthy();
+    fireEvent.click(screen.getByRole("tab", { name: /Bình luận/ }));
+    expect(onPanelTab).toHaveBeenCalledWith("comments");
+    links.unmount();
+
+    const toc = renderPureUi(
+      <DocSidePanelSurface
+        copy={docsCopy}
+        tab="toc"
+        tasks={TASKS}
+        relatedDocs={[]}
+        toc={TOC}
+        comments={COMMENTS}
+        callbacks={{ onTocSelect }}
+      />,
+    );
+    fireEvent.click(screen.getByRole("link", { name: "Các bước xử lý" }));
+    expect(onTocSelect).toHaveBeenCalledWith("b3");
+    toc.unmount();
+
+    renderPureUi(
+      <DocSidePanelSurface
+        copy={docsCopy}
+        tab="comments"
+        tasks={[]}
+        relatedDocs={[]}
+        toc={TOC}
+        comments={COMMENTS}
+        canComment
+        callbacks={{ onCommentCreate }}
+      />,
+    );
+    const reply = screen.getByRole("textbox", {
+      name: docsCopy.comments.reply,
     });
-    fireEvent.click(screen.getByRole("button", { name: "Send comment" }));
-    fireEvent.click(
-      screen.getByRole("button", { name: "Delete comment comment-1" }),
+    fireEvent.change(reply, { target: { value: "Đã rà lại" } });
+    fireEvent.keyDown(reply, { key: "Enter" });
+    expect(onCommentCreate).toHaveBeenCalledWith("Đã rà lại");
+  });
+
+  it("FUI[docs.page.versions:select] selects a version, filters named versions and closes the panel", () => {
+    const onSelectVersion = vi.fn();
+    const onCloseVersions = vi.fn();
+    const onNamedOnlyChange = vi.fn();
+    const view = renderPureUi(
+      <DocVersionPanelSurface
+        copy={docsCopy}
+        versions={VERSIONS}
+        selectedId="v3"
+        callbacks={{ onSelectVersion, onCloseVersions }}
+        onNamedOnlyChange={onNamedOnlyChange}
+      />,
     );
 
-    expect(onCreateComment).toHaveBeenCalledWith("Ready for review");
-    expect(onDeleteComment).toHaveBeenCalledWith("comment-1");
-  });
+    fireEvent.click(screen.getByRole("button", { name: /15:05/ }));
+    expect(onSelectVersion).toHaveBeenCalledWith("v2");
+    fireEvent.click(screen.getByRole("checkbox"));
+    expect(onNamedOnlyChange).toHaveBeenCalledWith(true);
+    fireEvent.click(
+      screen.getByRole("button", { name: docsCopy.versions.closePanel }),
+    );
+    expect(onCloseVersions).toHaveBeenCalledTimes(1);
+    view.unmount();
 
-  it("FUI[docs.history:render] renders the history surface from deterministic fixture data", () => {
-    renderPureUi(<DocHistorySurface history={docsHistoryDefaultScenario()} />);
-
-    expect(screen.getByText(/History \(\d+\)/)).toBeTruthy();
-  });
-
-  it("renders the empty document state without state/query providers", () => {
-    renderPureUi(<DocPageScreenSurface {...docsPageScreenEmptyScenario()} />);
-
-    expect(screen.getByText("No pages yet")).toBeTruthy();
+    renderPureUi(
+      <DocVersionPanelSurface
+        copy={docsCopy}
+        versions={VERSIONS}
+        selectedId="v3"
+        namedOnly
+      />,
+    );
     expect(
-      screen.getByText(
-        "Start writing with a heading, paragraph, checklist, or callout.",
-      ),
+      screen.getAllByRole("button", { name: /Bản trình Ban giám đốc/ }),
+    ).toHaveLength(1);
+  });
+
+  it("FUI[docs.page.share:dialog] closes on Escape and Done, copies the link and keeps unavailable controls disabled", () => {
+    const onCloseOverlay = vi.fn();
+    const onCopyLink = vi.fn();
+    renderPureUi(
+      <DocShareDialogSurface
+        copy={docsCopy}
+        pageTitle={HEADER.title}
+        share={SHARE}
+        callbacks={{ onCloseOverlay }}
+        onCopyLink={onCopyLink}
+      />,
+    );
+
+    const dialog = screen.getByRole("dialog");
+    expect(
+      within(dialog).getByRole("heading", {
+        name: `Chia sẻ ${HEADER.title}`,
+      }),
     ).toBeTruthy();
-    expect(screen.getByText("No comments yet")).toBeTruthy();
-    expect(screen.getByText("No history yet")).toBeTruthy();
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: docsCopy.share.copyLink }),
+    );
+    expect(onCopyLink).toHaveBeenCalledTimes(1);
+    expect(
+      within(dialog)
+        .getByRole("button", { name: docsCopy.share.invite })
+        .getAttribute("aria-disabled"),
+    ).toBe("true");
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: docsCopy.share.done }),
+    );
+    fireEvent.keyDown(dialog, { key: "Escape" });
+    expect(onCloseOverlay).toHaveBeenCalledTimes(2);
   });
 });

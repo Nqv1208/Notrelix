@@ -1,33 +1,41 @@
 {
+  "revision": "v3.1-source-reconciled",
   "baseline_branch": "develop",
-  "baseline_sha": "35702d0fa9fb01ed68b0667bab500030d60bd028",
-  "wmreq_count": 154,
-  "plan_work_unit_count": 40,
-  "substantive_test_family_count": 93,
-  "semantic_requirement_mapping": "154/154",
-  "plan_to_test_mapping": "40/40",
-  "broken_internal_references": 0,
-  "final_baseline_decision": "BLOCKED until implementation evidence exists",
+  "baseline_sha": "8400a4c0",
+  "previous_baseline_sha": "35702d0fa9fb01ed68b0667bab500030d60bd028",
+  "wmreq_count": 156,
+  "plan_work_unit_count": 42,
+  "retired_plan_units": [
+    "WM-V3-MIG-ORDER-002"
+  ],
+  "substantive_test_family_count": 101,
+  "retired_test_families": [
+    "ORDER-NORM-001"
+  ],
+  "semantic_requirement_mapping": "156/156",
+  "plan_to_test_mapping": "42/42",
+  "final_baseline_decision": "Candidate 63a81692: backend producer VERIFIED; P3 release BLOCKED (WM-V3-FE-001, large-Board pagination decision)",
   "files": {
     "work-management.spec.md": {
-      "bytes": 37996,
-      "lines": 805,
-      "sha256": "d90f242724553329aa8eb732cedea1237dab7e519d4041a700ef6de1602d4606"
+      "bytes": 50908,
+      "lines": 861,
+      "sha256": "8ad95df38013a2c884e4d836dadb0225a6189c369c67a5d4e067b2ad3b677995"
     },
     "work-management.plan.md": {
-      "bytes": 37029,
-      "lines": 1236,
-      "sha256": "772c7bdc841f61c7f81fd1936a691e54f641c53a939a3add15b1ff3dc6898dfc"
+      "bytes": 81119,
+      "lines": 1460,
+      "sha256": "f0f0cc26f5e4318bd7be589da488a5a50e2b59934aeb2a5f1b15d03f7cf129b1"
     },
     "work-management.tests.md": {
-      "bytes": 46896,
-      "lines": 1559,
-      "sha256": "29ca8182038638e517c5c11f0285d2d87fb67a719d7b9faa41170caec9e043b2"
+      "bytes": 50917,
+      "lines": 1686,
+      "sha256": "d6010f1aa2aea352f651b4dec61e0617971cbe322997cea9a849995f74fe22ac"
     },
     "work-management.certification.md": {
-      "bytes": 34534,
-      "lines": 1338,
-      "sha256": "6aca8650b33370b13e9a569cb727de3efeb5a633890c609bed894a0d653be6ea"
+      "bytes": 45731,
+      "lines": 1476,
+      "sha256": "27f7779e21df605bb1b7536a937b9e55f36a9f45ffd32fb6354c712d82d0a0cb"
     }
-  }
+  },
+  "candidate_sha": "63a81692ec67182674e97ba34fc53536f38c5a3b"
 }

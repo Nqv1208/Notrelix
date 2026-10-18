@@ -216,7 +216,12 @@ public sealed class PipelineObservabilityTests
             Guid.NewGuid().ToString("D")));
 
         return new AccessControlBehavior<TRequest, string>(
-            descriptors.Object, executionContext.Object, provider, new AccessPolicyEngine(), new PipelineMetrics());
+            descriptors.Object,
+            executionContext.Object,
+            provider,
+            new AccessPolicyEngine(),
+            new PipelineMetrics(),
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<AccessControlBehavior<TRequest, string>>.Instance);
     }
 
     private static DataSessionBehavior<TRequest, string> CreateDataSessionBehavior<TRequest>(

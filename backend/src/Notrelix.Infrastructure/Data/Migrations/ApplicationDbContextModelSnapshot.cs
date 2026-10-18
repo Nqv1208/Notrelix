@@ -2994,6 +2994,10 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("parent_id");
 
+                    b.Property<Guid?>("SpaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("space_id");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -3038,8 +3042,15 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasDatabaseName("idx_pages_parent_id")
                         .HasFilter("parent_id IS NOT NULL AND deleted_at IS NULL");
 
+                    b.HasIndex("SpaceId")
+                        .HasDatabaseName("ix_pages_space_id");
+
                     b.HasIndex("WorkspaceId")
                         .HasDatabaseName("idx_pages_workspace_id")
+                        .HasFilter("deleted_at IS NULL");
+
+                    b.HasIndex("WorkspaceId", "SpaceId")
+                        .HasDatabaseName("ix_docs_pages_workspace_space")
                         .HasFilter("deleted_at IS NULL");
 
                     b.ToTable("pages", "docs");
@@ -5507,9 +5518,9 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                     b.Property<string>("Position")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("position");
+                        .HasColumnType("text")
+                        .HasColumnName("position")
+                        .UseCollation("C");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -5540,7 +5551,8 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasName("pk_board_groups");
 
                     b.HasIndex("BoardId", "Position")
-                        .HasDatabaseName("idx_board_groups_board_position")
+                        .IsUnique()
+                        .HasDatabaseName("ux_work_board_groups_board_position_active")
                         .HasFilter("deleted_at IS NULL");
 
                     b.ToTable("board_groups", "work");
@@ -5600,8 +5612,8 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnName("deleted_by");
 
                     b.Property<string>("Description")
-                        .HasMaxLength(1024)
-                        .HasColumnType("character varying(1024)")
+                        .HasMaxLength(5000)
+                        .HasColumnType("character varying(5000)")
                         .HasColumnName("description");
 
                     b.Property<bool>("IsArchived")
@@ -5656,12 +5668,19 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.HasKey("Id")
                         .HasName("pk_boards");
 
+                    b.HasIndex("SpaceId")
+                        .HasDatabaseName("ix_boards_space_id");
+
                     b.HasIndex("Title")
                         .HasDatabaseName("idx_boards_title");
 
                     b.HasIndex("WorkspaceId")
                         .HasDatabaseName("idx_boards_workspace_id")
                         .HasFilter("deleted_at IS NULL AND is_archived = false");
+
+                    b.HasIndex("WorkspaceId", "SpaceId")
+                        .HasDatabaseName("ix_work_boards_workspace_space")
+                        .HasFilter("deleted_at IS NULL");
 
                     b.ToTable("boards", "work");
                 });
@@ -5794,9 +5813,9 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                     b.Property<string>("Position")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("position");
+                        .HasColumnType("text")
+                        .HasColumnName("position")
+                        .UseCollation("C");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -5829,6 +5848,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.HasIndex("ItemId")
                         .HasDatabaseName("idx_checklists_item_id");
 
+                    b.HasIndex("ItemId", "Position")
+                        .IsUnique()
+                        .HasDatabaseName("ux_work_checklists_item_position_active")
+                        .HasFilter("deleted_at IS NULL");
+
                     b.ToTable("checklists", "work");
                 });
 
@@ -5856,9 +5880,9 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                     b.Property<string>("Position")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("position");
+                        .HasColumnType("text")
+                        .HasColumnName("position")
+                        .UseCollation("C");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -5876,7 +5900,8 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasName("pk_checklist_items");
 
                     b.HasIndex("ChecklistId", "Position")
-                        .HasDatabaseName("idx_checklist_items_checklist_position");
+                        .IsUnique()
+                        .HasDatabaseName("ux_work_checklist_items_checklist_position");
 
                     b.ToTable("checklist_items", "work");
                 });
@@ -5942,7 +5967,8 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.Property<string>("Position")
                         .IsRequired()
                         .HasColumnType("text")
-                        .HasColumnName("position");
+                        .HasColumnName("position")
+                        .UseCollation("C");
 
                     b.Property<string>("Type")
                         .IsRequired()
@@ -5973,7 +5999,9 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasName("pk_board_fields");
 
                     b.HasIndex("BoardId", "Position")
-                        .HasDatabaseName("idx_board_fields_board_position");
+                        .IsUnique()
+                        .HasDatabaseName("ux_work_board_fields_board_position_active")
+                        .HasFilter("deleted_at IS NULL");
 
                     b.ToTable("board_fields", "work");
                 });
@@ -5983,6 +6011,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
                         .HasColumnName("id");
+
+                    b.Property<string>("Category")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("category");
 
                     b.Property<Guid>("FieldId")
                         .HasColumnType("uuid")
@@ -5996,15 +6029,19 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                     b.Property<string>("Position")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("position");
+                        .HasColumnType("text")
+                        .HasColumnName("position")
+                        .UseCollation("C");
 
                     b.HasKey("Id")
                         .HasName("pk_field_options");
 
                     b.HasIndex("FieldId")
                         .HasDatabaseName("idx_field_options_field_id");
+
+                    b.HasIndex("FieldId", "Position")
+                        .IsUnique()
+                        .HasDatabaseName("ux_work_field_options_field_position");
 
                     b.ToTable("field_options", "work");
                 });
@@ -6330,7 +6367,8 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.Property<string>("Position")
                         .IsRequired()
                         .HasColumnType("text")
-                        .HasColumnName("position");
+                        .HasColumnName("position")
+                        .UseCollation("C");
 
                     b.Property<DateTimeOffset?>("StartedAt")
                         .HasColumnType("timestamp with time zone")
@@ -6362,9 +6400,18 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasDatabaseName("idx_board_items_board_id")
                         .HasFilter("deleted_at IS NULL");
 
+                    b.HasIndex("ParentItemId")
+                        .HasDatabaseName("idx_board_items_parent_item_id")
+                        .HasFilter("parent_item_id IS NOT NULL");
+
+                    b.HasIndex("BoardId", "ItemKey")
+                        .IsUnique()
+                        .HasDatabaseName("ux_work_board_items_board_item_key");
+
                     b.HasIndex("GroupId", "Position")
-                        .HasDatabaseName("idx_board_items_group_position")
-                        .HasFilter("deleted_at IS NULL");
+                        .IsUnique()
+                        .HasDatabaseName("ux_work_board_items_group_position_active")
+                        .HasFilter("deleted_at IS NULL AND parent_item_id IS NULL");
 
                     b.ToTable("board_items", "work");
                 });
@@ -7711,6 +7758,100 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.ToTable("workspace_members", "workspace");
                 });
 
+            modelBuilder.Entity("Notrelix.Domain.Workspaces.Navigation.PinnedResource", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<DateTimeOffset>("PinnedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("pinned_at");
+
+                    b.Property<Guid>("ResourceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("resource_id");
+
+                    b.Property<string>("ResourceKind")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("resource_kind");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_pinned_resources");
+
+                    b.HasIndex("WorkspaceId", "UserId", "PinnedAt")
+                        .HasDatabaseName("ix_workspace_pinned_resources_member_pinned");
+
+                    b.HasIndex("WorkspaceId", "UserId", "ResourceKind", "ResourceId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_workspace_pinned_resources_member_resource");
+
+                    b.ToTable("pinned_resources", "workspace");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Workspaces.Navigation.RecentResource", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset>("LastOpenedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_opened_at");
+
+                    b.Property<Guid>("ResourceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("resource_id");
+
+                    b.Property<string>("ResourceKind")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("resource_kind");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_recent_resources");
+
+                    b.HasIndex("WorkspaceId", "UserId", "LastOpenedAt")
+                        .HasDatabaseName("ix_workspace_recent_resources_member_last_opened");
+
+                    b.HasIndex("WorkspaceId", "UserId", "ResourceKind", "ResourceId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_workspace_recent_resources_member_resource");
+
+                    b.ToTable("recent_resources", "workspace");
+                });
+
             modelBuilder.Entity("Notrelix.Domain.Workspaces.Spaces.Space", b =>
                 {
                     b.Property<Guid>("Id")
@@ -7752,6 +7893,16 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(256)")
                         .HasColumnName("name");
 
+                    b.Property<Guid?>("ParentSpaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("parent_space_id");
+
+                    b.Property<string>("Position")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("position")
+                        .UseCollation("C");
+
                     b.Property<string>("SpaceType")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -7792,10 +7943,86 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.HasKey("Id")
                         .HasName("pk_spaces");
 
+                    b.HasIndex("ParentSpaceId")
+                        .HasDatabaseName("ix_spaces_parent_space_id");
+
                     b.HasIndex("WorkspaceId")
                         .HasDatabaseName("idx_spaces_workspace_id");
 
+                    b.HasIndex("WorkspaceId", "ParentSpaceId")
+                        .HasDatabaseName("ix_workspace_spaces_parent");
+
+                    b.HasIndex("WorkspaceId", "ParentSpaceId", "Position")
+                        .IsUnique()
+                        .HasDatabaseName("ux_workspace_spaces_parent_position_active")
+                        .HasFilter("deleted_at IS NULL");
+
+                    NpgsqlIndexBuilderExtensions.AreNullsDistinct(b.HasIndex("WorkspaceId", "ParentSpaceId", "Position"), false);
+
                     b.ToTable("spaces", "workspace");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Workspaces.Spaces.SpaceMember", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("role");
+
+                    b.Property<Guid>("SpaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("space_id");
+
+                    b.Property<Guid>("SubjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subject_id");
+
+                    b.Property<string>("SubjectType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("subject_type");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_space_members");
+
+                    b.HasIndex("SpaceId", "SubjectType", "SubjectId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_workspace_space_members_space_subject");
+
+                    b.HasIndex("WorkspaceId", "SubjectType", "SubjectId")
+                        .HasDatabaseName("ix_workspace_space_members_subject");
+
+                    b.ToTable("space_members", "workspace");
                 });
 
             modelBuilder.Entity("Notrelix.Domain.Workspaces.Teams.Team", b =>
@@ -10710,6 +10937,37 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.ToTable("search_index_jobs", "search");
                 });
 
+            modelBuilder.Entity("Notrelix.Infrastructure.Data.Workspaces.SpacePathRecord", b =>
+                {
+                    b.Property<Guid>("AncestorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("ancestor_id");
+
+                    b.Property<Guid>("DescendantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("descendant_id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<int>("Depth")
+                        .HasColumnType("integer")
+                        .HasColumnName("depth");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("AncestorId", "DescendantId")
+                        .HasName("pk_space_paths");
+
+                    b.HasIndex("DescendantId", "Depth")
+                        .HasDatabaseName("ix_workspace_space_paths_descendant");
+
+                    b.ToTable("space_paths", "workspace");
+                });
+
             modelBuilder.Entity("Notrelix.Infrastructure.Operations.Idempotency.IdempotencyRecord", b =>
                 {
                     b.Property<Guid>("Id")
@@ -12613,6 +12871,25 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Notrelix.Domain.Workspaces.Spaces.Space", b =>
+                {
+                    b.HasOne("Notrelix.Domain.Workspaces.Spaces.Space", null)
+                        .WithMany()
+                        .HasForeignKey("ParentSpaceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_spaces_parent_space");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Workspaces.Spaces.SpaceMember", b =>
+                {
+                    b.HasOne("Notrelix.Domain.Workspaces.Spaces.Space", null)
+                        .WithMany("Members")
+                        .HasForeignKey("SpaceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_space_members_spaces_space_id");
+                });
+
             modelBuilder.Entity("Notrelix.Domain.Workspaces.Teams.TeamMember", b =>
                 {
                     b.HasOne("Notrelix.Domain.Workspaces.Teams.Team", null)
@@ -12664,6 +12941,23 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_notification_recipients_notification_items_notification_id");
+                });
+
+            modelBuilder.Entity("Notrelix.Infrastructure.Data.Workspaces.SpacePathRecord", b =>
+                {
+                    b.HasOne("Notrelix.Domain.Workspaces.Spaces.Space", null)
+                        .WithMany()
+                        .HasForeignKey("AncestorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_space_paths_ancestor");
+
+                    b.HasOne("Notrelix.Domain.Workspaces.Spaces.Space", null)
+                        .WithMany()
+                        .HasForeignKey("DescendantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_space_paths_descendant");
                 });
 
             modelBuilder.Entity("Notrelix.Domain.Analytics.Dashboards.Dashboard", b =>
@@ -12734,6 +13028,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
             modelBuilder.Entity("Notrelix.Domain.WorkManagement.Items.BoardItem", b =>
                 {
                     b.Navigation("FieldValues");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Workspaces.Spaces.Space", b =>
+                {
+                    b.Navigation("Members");
                 });
 
             modelBuilder.Entity("Notrelix.Domain.Workspaces.Teams.Team", b =>

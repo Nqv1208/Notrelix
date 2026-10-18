@@ -26,6 +26,25 @@ public class RawSqlArchitectureTests
 
         // Reason: lock active verification tokens with FromSqlInterpolated
         "src/Notrelix.Infrastructure/Identity/Services/ActiveVerificationTokenLocker.cs",
+
+        // Reason: serialize owner-affecting workspace membership ops with
+        // SELECT ... FOR UPDATE on the workspace row (PostgreSQL row lock)
+        "src/Notrelix.Infrastructure/Workspaces/Members/WorkspaceOwnerUpdateLocker.cs",
+        // WX-BE-001/002: transaction-scoped advisory lock (pg_advisory_xact_lock)
+        // serializing one member's navigation writes (recents trim, pin cap)
+        // inside the request transaction.
+        "src/Notrelix.Infrastructure/Workspaces/Navigation/WorkspaceNavigationStore.cs",
+        // WM-V3-ORDER-001: transaction-scoped advisory lock (pg_advisory_xact_lock)
+        // serializing one Work ordering scope inside the request transaction.
+        "src/Notrelix.Infrastructure/Data/WorkManagement/PostgresWorkOrderingScopeLock.cs",
+        // Reserves a Board's Item keys with one row-locking UPDATE ... RETURNING
+        // on work.boards inside the request transaction (EF cannot express it
+        // without loading and versioning the Board aggregate).
+        "src/Notrelix.Infrastructure/Data/WorkManagement/PostgresBoardItemKeyAllocator.cs",
+        // ADR-009: transaction-scoped advisory lock (pg_advisory_xact_lock)
+        // serializing one Workspace's Space hierarchy writes (create/move/rename/
+        // restore) so ancestry, sibling and closure reads cannot interleave.
+        "src/Notrelix.Infrastructure/Workspaces/Spaces/SpaceStore.cs",
     };
 
     [Fact]

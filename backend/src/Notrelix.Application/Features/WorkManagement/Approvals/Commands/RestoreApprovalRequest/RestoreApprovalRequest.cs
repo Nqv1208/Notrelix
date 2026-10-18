@@ -30,8 +30,13 @@ public class RestoreApprovalRequestCommandHandler : IRequestHandler<RestoreAppro
 
     public async Task<Result> Handle(RestoreApprovalRequestCommand request, CancellationToken ct)
     {
+        // The global filter hides soft-deleted rows, and on EF Core 9 bypassing it also
+        // drops its tenant predicate, so the resolved tenant scope is re-applied here.
+        var accountId = _requestContext.RequireAccountId();
+        var workspaceId = _requestContext.RequireWorkspaceId();
         var approvalRequest = await _context.ApprovalRequests
-            .FirstOrDefaultAsync(r => r.Id == request.RequestId, ct);
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(r => r.Id == request.RequestId && r.AccountId == accountId && r.WorkspaceId == workspaceId, ct);
         if (approvalRequest is null) throw new NotFoundException("ApprovalRequest", request.RequestId);
 
         approvalRequest.Restore(_requestContext.UserId, _dateTimeProvider.UtcNow);

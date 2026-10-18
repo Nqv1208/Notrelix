@@ -25,6 +25,7 @@ using Notrelix.Application.Features.Governance.ResourcePermissions.Queries.GetRe
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.MoveBoardItem;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Services;
+using Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoard;
 using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 using Notrelix.Application.Features.WorkManagement.Relations.DTOs;
 using Notrelix.Application.Features.WorkManagement.Relations.Queries.ListBoardRelations;
@@ -480,18 +481,27 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
                 .Set($"gov-move-{Guid.NewGuid():N}", IdempotencyExecutionSource.Internal);
 
             await scope.ServiceProvider.GetRequiredService<ISender>()
-                .Send(new MoveBoardItemCommand(itemId, groupId, 1.0d));
+                .Send(new MoveBoardItemCommand(itemId, groupId, 1));
         }
     }
 
     [Fact]
-    public async Task MoveBoardItem_WorkspaceMember_IsDenied_UntilItemScopeDecision()
+    public async Task MoveBoardItem_BoardObserver_IsDenied_ByTheBoardDecision()
     {
-        // Board-item resources have no audience facts in the canonical query,
-        // so the canonical pipeline denies ordinary members for MoveItem. This
-        // freezes the current observable contract; granting members item
-        // moves is a separate product decision, not a pipeline change.
+        // Board children are decided on their Board (GOV-033): an ordinary
+        // member of a Workspace-visible Board is now an Editor and may move
+        // items. The denied principal is therefore made a board Observer
+        // (Viewer) on a Private Board; the protected property is unchanged —
+        // the canonical decision denies and nothing else may bypass it.
         var (accountId, _, _, boardId, memberId) = await SeedBoardStackAsync();
+
+        await using (var restrict = _db.CreateContext(SystemTenant()))
+        {
+            var restricted = await restrict.Boards.SingleAsync(b => b.Id == boardId);
+            restricted.ChangeVisibility(BoardVisibility.Private, restricted.CreatedBy!.Value, DateTimeOffset.UtcNow);
+            restrict.BoardMembers.Add(BoardMember.Create(boardId, memberId, BoardRole.Observer, DateTimeOffset.UtcNow));
+            await restrict.SaveChangesAsync();
+        }
 
         using var provider = CreateProvider(accountId, memberId);
         var itemId = await ResolveBoardItemIdAsync(boardId);
@@ -503,10 +513,10 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
                 .Set($"gov-move-{Guid.NewGuid():N}", IdempotencyExecutionSource.Internal);
 
             var act = () => scope.ServiceProvider.GetRequiredService<ISender>()
-                .Send(new MoveBoardItemCommand(itemId, groupId, 1.0d));
+                .Send(new MoveBoardItemCommand(itemId, groupId, 1));
 
             await act.Should().ThrowAsync<AppForbidden>(
-                "the canonical pipeline currently denies member item moves; no second evaluator may bypass it");
+                "a Viewer on the Board cannot move its items; no second evaluator may bypass the canonical decision");
         }
     }
 
@@ -1043,6 +1053,30 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
     }
 
     /// <summary>
+    /// WG-TST-WM-X-003 / WG-TEST-GAP-005 (P2B-CERT-011): a Board owned by
+    /// another account must not be reachable through the production pipeline for
+    /// a legitimate member of a different account — even when that member holds
+    /// a valid grant in their own account. The result is NotFound, never
+    /// Forbidden, so cross-tenant existence does not leak.
+    /// </summary>
+    [Fact]
+    public async Task GetBoard_FromForeignAccount_IsNotFound_AndForeignBoardStaysUntouched()
+    {
+        var (accountA, _, _, _, memberA) = await SeedBoardStackAsync();
+        var (_, _, _, boardB, _) = await SeedBoardStackAsync();
+
+        using var provider = CreateProvider(accountA, memberA);
+        var act = () => SendAsync<Result<BoardDto>>(provider, new GetBoardQuery(boardB));
+
+        await act.Should().ThrowAsync<AppNotFound>(
+            "a foreign-account board must be invisible to a granted account-A member");
+
+        await using var verify = _db.CreateContext(SystemTenant());
+        var foreignBoard = await verify.Boards.IgnoreQueryFilters().SingleAsync(b => b.Id == boardB);
+        foreignBoard.Title.Should().NotBeNull("the foreign board must remain intact");
+    }
+
+    /// <summary>
     /// M7 RESOURCE-SCOPE freeze — same account, two real workspaces. The
     /// resource-scoped request follows the authoritative resource location:
     /// a workspace-W2 member comments on a W2 board item with the request
@@ -1227,6 +1261,14 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         services.AddGovernanceInfrastructure(new ConfigurationBuilder().Build());
 
         services.AddScoped<IResourceLocator, ResourceLocator>();
+        // ADR-009 placement: the create handlers resolve Space placement targets
+        // and the target authorizer even when the request is not placed.
+        services.AddScoped<global::Notrelix.Application.Features.Workspaces.Public.SpacePlacement.ISpacePlacementTargets,
+            global::Notrelix.Infrastructure.Workspaces.Spaces.SpacePlacementTargets>();
+        services.AddScoped<global::Notrelix.Application.Features.WorkManagement.Boards.Services.IBoardSpacePlacement,
+            global::Notrelix.Application.Features.WorkManagement.Boards.Services.BoardSpacePlacement>();
+        services.AddScoped<global::Notrelix.Application.Features.Documents.Pages.Services.IPageSpacePlacement,
+            global::Notrelix.Application.Features.Documents.Pages.Services.PageSpacePlacement>();
         services.AddScoped<global::Notrelix.Application.Common.Tenancy.ITenantBootstrapStore, TenantBootstrapStore>();
 
         services.AddScoped<Notrelix.Application.Common.Context.ExecutionContext>();
@@ -1270,12 +1312,18 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
             IRequestHandler<CreateCommentCommand, Result<Guid>>,
             CreateCommentCommandHandler>();
         services.AddScoped<MoveBoardItemUseCase>();
+        services.AddScoped<Notrelix.Application.Features.WorkManagement.Ordering.WorkPlacementResolver>();
+        services.AddScoped<Notrelix.Application.Features.WorkManagement.Ordering.IWorkOrderingScopeLock,
+            Notrelix.Infrastructure.Data.WorkManagement.PostgresWorkOrderingScopeLock>();
         services.AddScoped<
             IRequestHandler<MoveBoardItemCommand, BoardItemSlimDto>,
             MoveBoardItemCommandHandler>();
         services.AddScoped<
             IRequestHandler<ListBoardRelationsQuery, Result<List<BoardRelationDto>>>,
             ListBoardRelationsQueryHandler>();
+        services.AddScoped<
+            IRequestHandler<GetBoardQuery, Result<BoardDto>>,
+            GetBoardQueryHandler>();
 
         return services.BuildServiceProvider();
     }

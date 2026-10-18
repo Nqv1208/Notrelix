@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Hướng chốt · Di động · Chia sẻ board</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+/* mobile shell — shared (copy verbatim into every Final-M-*.dc.html; source Final-M-Home) */
+body{margin:0}
+a{color:inherit}a:hover{color:inherit}
+.nx{--bg:#F7F8FA;--panel:#FFFFFF;--hover:#F1F3F6;--hover2:#E6E9EE;--line:#E6E9EE;--line2:#D2D7DE;--ring:#7A8391;--text:#161A21;--muted:#4F5866;--meta:#5F6875;--accent:#1666CC;--accent-ink:#FFFFFF;--accent-soft:#E7F0FC;--accent-text:#0F56AE;--st-todo:#7A8391;--st-doing:#1E7BE0;--st-review:#D99A00;--st-done:#2E8B57;--danger:#C42340;--danger-soft:#FDECEF;--warn-text:#8A5A00;--warn-soft:#FFF4D6;--ok-soft:#E2F1E7;--lane-todo:#ECEEF2;--lane-doing:#E2ECFA;--lane-review:#FBF0D6;--high:#B4500B;--badge:#C42340;--scrim:rgba(15,23,42,.42);--act-done:#1F7A4A;--act-snooze:#8A5A00;--act-neutral:#4F5866;font-family:'Be Vietnam Pro',system-ui,sans-serif;color:var(--text);background:var(--bg);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.nx.mode-dem{--bg:#0E1116;--panel:#151A21;--hover:#1C232C;--hover2:#232A34;--line:#232B35;--line2:#2E3743;--ring:#8C95A3;--text:#E6E9EE;--muted:#AAB3C0;--meta:#8F99A7;--accent:#5AA9FF;--accent-ink:#04111F;--accent-soft:rgba(90,169,255,.16);--accent-text:#7DBBFF;--st-todo:#8C95A3;--st-doing:#5AA9FF;--st-review:#F2C14E;--st-done:#56C98A;--danger:#FF6B81;--danger-soft:rgba(255,107,129,.14);--warn-text:#F2C14E;--warn-soft:rgba(242,193,78,.12);--ok-soft:#153024;--lane-todo:#1E252F;--lane-doing:#16284A;--lane-review:#30281A;--high:#FFA060;--badge:#C42340;--scrim:rgba(0,0,0,.6);--act-done:#1F7A4A;--act-snooze:#8A5A00;--act-neutral:#4F5866}
+.nx.m{width:390px;height:844px;position:relative;overflow:hidden;display:flex;flex-direction:column;border-radius:0}
+.nx.m .app-layer{flex:1;min-height:0;display:flex;flex-direction:column}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.i{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.i.lg{width:24px;height:24px}
+.i.sm{width:14px;height:14px}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;margin:-1px;padding:0;border:0}
+/* status bar 47px (decorative) */
+.sbar{height:47px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:4px 26px 0 34px;box-sizing:border-box;font-size:16px;font-weight:600;font-variant-numeric:tabular-nums;background:var(--bg);color:var(--text)}
+.sbar .sg{display:flex;align-items:center;gap:6px}
+.sbar svg{display:block}
+/* top bar 52px: leading control · spacer · trailing icon buttons */
+.tbar{height:52px;flex:none;display:flex;align-items:center;gap:2px;padding:0 8px 0 10px;background:var(--bg)}
+.tbar .sp{flex:1}
+.tbar-t{flex:1;min-width:0;text-align:center;font-size:17px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ib{width:44px;height:44px;border-radius:12px;border:0;background:transparent;color:var(--text);display:grid;place-items:center;cursor:pointer;padding:0;flex:none;text-decoration:none;font:inherit}
+.ib:hover,.ib:active{background:var(--hover2)}
+.ib .me{width:32px;height:32px;border-radius:50%;background:#4E8574;color:#fff;font-size:12px;font-weight:700;display:grid;place-items:center}
+.wschip{height:44px;display:inline-flex;align-items:center;gap:8px;padding:0 10px 0 6px;border-radius:12px;border:0;background:transparent;font:inherit;font-size:16px;font-weight:650;color:var(--text);cursor:pointer;min-width:0}
+.wschip:hover,.wschip:active{background:var(--hover2)}
+.wschip .dm{width:28px;height:28px;border-radius:8px;font-size:11px}
+.wschip .i{color:var(--meta)}
+/* scrolling content between top bar and tab bar (mockup clips at the bottom) */
+.content{flex:1;min-height:0;overflow:hidden;padding:0 16px 24px;display:flex;flex-direction:column;gap:18px}
+.tbar.scrolled{box-shadow:0 1px 0 var(--line)}
+.ltitle{margin:0;font-size:28px;font-weight:700;letter-spacing:-0.02em;line-height:1.2}
+.lsub{margin:4px 0 0;font-size:13px;color:var(--muted)}
+/* chips: horizontal scroll, 44px */
+.chips{display:flex;gap:8px;overflow-x:auto;margin:0 -16px;padding:0 16px;scrollbar-width:none;flex:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{height:44px;padding:0 14px;border-radius:12px;border:1px solid var(--line2);background:var(--panel);color:var(--text);font:inherit;font-size:14px;font-weight:500;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;flex:none;text-decoration:none;cursor:pointer;box-sizing:border-box}
+.chip b{font-weight:700;font-variant-numeric:tabular-nums}
+.chip.over{background:var(--danger-soft);border-color:transparent;color:var(--danger)}
+.chip.today{background:var(--warn-soft);border-color:transparent;color:var(--warn-text)}
+.chip.on{background:var(--text);border-color:var(--text);color:var(--bg);font-weight:600}
+/* section heading */
+.sec{display:flex;flex-direction:column}
+.sec-h{display:flex;align-items:center;gap:8px;min-height:40px;margin:0 0 4px;font-size:17px;font-weight:650;letter-spacing:-0.01em}
+.sec-h .n{color:var(--meta);font-weight:500;font-size:15px}
+.sec-h.over{color:var(--danger)}
+.sec-h a{margin-left:auto;margin-right:-8px;height:44px;padding:0 8px;display:inline-flex;align-items:center;font-size:14px;font-weight:500;color:var(--accent-text);text-decoration:none}
+/* grouped list + rows: [tick 44][link: title 2 lines + meta | due][⋯ 44] */
+.list{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.lrow{position:relative;border-top:1px solid var(--line);overflow:hidden}
+.lrow:first-child{border-top:0}
+.lrow-in{position:relative;z-index:1;display:flex;align-items:flex-start;gap:0;padding:6px 0 6px 2px;background:var(--panel)}
+.tick{width:44px;height:44px;border:0;background:transparent;padding:0;display:grid;place-items:center;flex:none;cursor:pointer;border-radius:12px}
+.tick span{width:22px;height:22px;border-radius:50%;box-sizing:border-box;border:1.75px solid var(--ring);display:block}
+.lr-main{flex:1;min-width:0;display:flex;align-items:flex-start;gap:10px;padding:5px 0;min-height:44px;box-sizing:border-box;text-decoration:none;color:var(--text);border-radius:8px}
+.lr-txt{flex:1;min-width:0}
+.lr-t{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:15px;font-weight:500;line-height:1.36}
+.lr-m{display:flex;align-items:center;gap:6px;margin-top:3px;font-size:13px;color:var(--meta);white-space:nowrap;min-width:0}
+.lr-m .bd{overflow:hidden;text-overflow:ellipsis;min-width:0}
+.lr-m .mono{font-size:12px;flex:none}
+.lr-end{flex:none;width:70px;display:flex;flex-direction:column;align-items:flex-end;gap:4px;text-align:right;font-size:13px;line-height:1.3;color:var(--meta);font-variant-numeric:tabular-nums;padding-top:1px}
+.lr-end.over{color:var(--danger);font-weight:600}
+.lr-end.today{color:var(--warn-text);font-weight:600}
+.pr{display:inline-flex;align-items:center;gap:3px;font-size:12px;font-weight:600}
+.pr.urgent{color:var(--danger)}
+.pr.high{color:var(--high)}
+.lr-more{color:var(--meta)}
+.lrow-link{display:flex;align-items:center;gap:8px;min-height:48px;padding:0 8px 0 16px;border-top:1px solid var(--line);font-size:14px;color:var(--muted);text-decoration:none}
+.lrow-link .go{margin-left:auto;color:var(--accent-text);font-weight:500;display:inline-flex;align-items:center;gap:2px}
+/* swipe: the front layer slides left over .swipe-acts (each action 76px) */
+.lrow.swiped .lrow-in{transform:translateX(-152px)}
+.swipe-acts{position:absolute;top:0;right:0;bottom:0;display:flex}
+.swipe-acts button{width:76px;border:0;margin:0;padding:0;color:#FFFFFF;font:inherit;font-size:13px;font-weight:600;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer}
+.swipe-acts .snooze{background:var(--act-snooze)}
+.swipe-acts .done{background:var(--act-done)}
+/* buttons */
+.btn{min-height:44px;padding:0 16px;border-radius:12px;border:1px solid var(--line2);background:var(--panel);color:var(--text);font:inherit;font-size:15px;font-weight:500;display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;white-space:nowrap;text-decoration:none;box-sizing:border-box}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.block{width:100%;min-height:50px}
+/* chips & avatars */
+.dm{width:20px;height:20px;border-radius:6px;display:grid;place-items:center;font-size:9px;font-weight:700;color:#fff;flex:none}
+.dm.sm{width:16px;height:16px;font-size:7.5px;border-radius:4px}
+.av{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-size:11.5px;font-weight:700;color:#fff;flex:none}
+/* bottom tab bar 49 + 34 safe area */
+.tabbar{flex:none;height:83px;box-sizing:border-box;padding:0 4px 34px;display:flex;border-top:1px solid var(--line);background:var(--panel)}
+.tab{flex:1;height:49px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-decoration:none;color:var(--meta);font-size:11px;font-weight:500;line-height:1.2;position:relative;white-space:nowrap}
+.tab.on{color:var(--accent-text);font-weight:600}
+.tab .bdg{position:absolute;top:3px;left:calc(50% + 6px);min-width:18px;height:18px;padding:0 5px;box-sizing:border-box;border-radius:9px;background:var(--badge);color:#FFFFFF;font-size:11px;font-weight:700;display:grid;place-items:center;box-shadow:0 0 0 2px var(--panel)}
+.homeind{position:absolute;left:50%;bottom:8px;width:134px;height:5px;margin-left:-67px;border-radius:3px;background:var(--text);z-index:60}
+/* bottom sheet: scrim + sheet, grabber 36×5, radius 14, primary action above the safe area */
+.scrim{position:absolute;inset:0;background:var(--scrim);z-index:40}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:41;background:var(--panel);border-radius:14px 14px 0 0;padding:6px 0 34px;box-shadow:0 -8px 32px rgba(0,0,0,.18);color:var(--text)}
+.grabber{width:36px;height:5px;border-radius:3px;background:var(--line2);margin:0 auto 2px}
+.sheet-h{display:flex;align-items:center;gap:8px;min-height:52px;padding:0 8px 0 20px}
+.sheet-h h2{margin:0;flex:1;font-size:17px;font-weight:650}
+.sheet-sub{margin:0;padding:6px 20px 4px;font-size:13px;font-weight:600;color:var(--meta)}
+.srow{display:flex;align-items:center;gap:12px;min-height:60px;padding:0 20px;text-decoration:none;color:var(--text)}
+.srow:hover,.srow:active{background:var(--hover)}
+.srow .tx{flex:1;min-width:0}
+.srow .tx b{display:block;font-size:15px;font-weight:600}
+.srow .tx small{display:block;font-size:13px;color:var(--meta)}
+.srow .end{flex:none;display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--meta)}
+.srow .ck{color:var(--accent-text)}
+.srow .ic{width:36px;height:36px;border-radius:10px;background:var(--bg);border:1px solid var(--line);display:grid;place-items:center;color:var(--muted);flex:none;box-sizing:border-box}
+.srow .wsm{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;color:#fff;font-size:13px;font-weight:700;flex:none}
+.cnt{min-width:22px;height:22px;padding:0 7px;box-sizing:border-box;border-radius:11px;background:var(--badge);color:#FFFFFF;font-size:12px;font-weight:700;display:inline-grid;place-items:center}
+.tag{height:22px;padding:0 8px;border-radius:6px;background:var(--hover2);color:var(--muted);font-size:12px;font-weight:600;display:inline-flex;align-items:center}
+.sheet-sep{height:1px;background:var(--line);margin:6px 20px}
+.sheet-foot{padding:10px 16px 0}
+/* skeleton (static under reduced motion) */
+.sk{display:block;background:var(--hover2);border-radius:6px}
+@media (prefers-reduced-motion: no-preference){.sk{animation:skp 1.4s ease-in-out infinite}}
+@keyframes skp{50%{opacity:.55}}
+/* end mobile shell */
+
+/* screen: Chia sẻ board (full-height sheet over Final-M-Board) */
+.nx{--warn-line:#EBCB7A;--toast-bg:#161A21;--toast-ink:#FFFFFF;--toast-ok:#7FD6A3}
+.nx.mode-dem{--warn-line:rgba(242,193,78,.4);--toast-bg:#E6E9EE;--toast-ink:#0E1116;--toast-ok:#1F7A4A}
+.nx.m a:focus-visible,.nx.m button:focus-visible,.nx.m input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* dimmed board behind (top bar of Final-M-Board) */
+.bt{height:56px;gap:0;padding:0 6px 0 4px}
+.bt-t{flex:1;min-width:0;padding:0 6px 0 2px}
+.bt-t h1{margin:0;font-size:17px;font-weight:650;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bt-t p{margin:2px 0 0;display:flex;align-items:center;gap:5px;font-size:12.5px;color:var(--meta);white-space:nowrap;overflow:hidden}
+.bt-t .dm.sm{width:18px;height:16px;font-size:7.5px}
+.bg-rest{flex:1;min-height:0;padding:2px 16px 0;display:flex;flex-direction:column;gap:12px}
+.bg-seg{height:50px;border-radius:13px;background:var(--hover2)}
+.bg-lane{flex:1;border-radius:14px 14px 0 0;background:var(--lane-doing)}
+/* full-height sheet */
+.fsheet{position:absolute;top:88px;left:0;right:0;bottom:0;z-index:41;display:flex;flex-direction:column;background:var(--bg);border-radius:14px 14px 0 0;box-shadow:0 -8px 32px rgba(0,0,0,.18);color:var(--text);overflow:hidden}
+.fsheet .grabber{margin-top:6px;flex:none}
+.fs-h{flex:none;display:flex;align-items:center;gap:4px;min-height:52px;padding:0 8px 0 20px}
+.fs-h.sub{padding-left:6px}
+.fs-h h2{margin:0;flex:1;min-width:0;font-size:17px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fs-h.scrolled{box-shadow:0 1px 0 var(--line)}
+.fs-body{flex:1;min-height:0;overflow:hidden;position:relative}
+.fs-in{padding:6px 16px 24px;display:flex;flex-direction:column;gap:22px}
+.fs-in.tight{gap:14px;padding-top:0}
+.fs-in.toasted{padding-bottom:96px}
+.fs-foot{flex:none;padding:12px 16px 34px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:8px;background:var(--bg)}
+.fs-foot .row{display:flex;gap:10px}
+.fs-foot .row .btn{flex:1}
+.btn.quiet{border-color:transparent;background:transparent;color:var(--accent-text);font-weight:600}
+.grp{display:flex;flex-direction:column}
+.lbl{margin:0 4px 8px;font-size:13px;font-weight:600;color:var(--meta)}
+/* add people */
+.addf{position:relative}
+.addf .i{position:absolute;left:13px;top:15px;color:var(--meta);pointer-events:none}
+.addf input{display:block;width:100%;height:50px;box-sizing:border-box;margin:0;padding:0 12px 0 42px;border-radius:12px;border:1px solid var(--line2);background:var(--panel);color:var(--text);font:inherit;font-size:16px}
+.addf input::placeholder{color:var(--meta);opacity:1}
+.addlv{display:flex;align-items:center;gap:8px;margin-top:4px;padding-left:4px;font-size:13px;color:var(--meta)}
+.lv{min-height:44px;padding:0 6px 0 8px;border:0;border-radius:10px;background:transparent;color:var(--accent-text);font:inherit;font-size:14px;font-weight:600;display:inline-flex;align-items:center;gap:2px;cursor:pointer;white-space:nowrap;flex:none}
+.lv .i{width:16px;height:16px}
+.lv:active,.lv.open{background:var(--accent-soft)}
+.lvs{flex:none;padding:0 14px 0 8px;font-size:14px;color:var(--meta);white-space:nowrap}
+/* who can reach the board */
+.acc{width:100%;display:flex;align-items:center;gap:12px;min-height:72px;padding:12px 10px 12px 14px;box-sizing:border-box;border:1px solid var(--line);border-radius:14px;background:var(--panel);color:var(--text);font:inherit;text-align:left;cursor:pointer}
+.acc:active{background:var(--hover)}
+.tile{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;flex:none;font-size:12px;font-weight:700;color:#fff}
+.acc .tx{flex:1;min-width:0}
+.acc .tx b{display:block;font-size:15px;font-weight:600}
+.acc .map{display:flex;flex-wrap:wrap;gap:4px 6px;margin-top:6px}
+.acc .map span{height:24px;padding:0 8px;border-radius:6px;background:var(--hover2);color:var(--muted);font-size:12.5px;display:inline-flex;align-items:center;white-space:nowrap}
+.acc > .i{color:var(--meta)}
+/* explicit entries */
+.plist{list-style:none;margin:0;padding:0;background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.prow{display:flex;align-items:center;gap:12px;min-height:60px;padding:8px 4px 8px 14px;border-top:1px solid var(--line)}
+.prow:first-child{border-top:0}
+.prow .av,.prow .tm{width:36px;height:36px;font-size:12px}
+.tm{border-radius:10px;display:grid;place-items:center;flex:none;background:var(--hover2);color:var(--muted)}
+.prow .tx{flex:1;min-width:0}
+.prow .tx b{display:block;font-size:15px;font-weight:600;line-height:1.35}
+.prow .tx small{display:block;margin-top:1px;font-size:13px;line-height:1.38;color:var(--meta)}
+.prow .tx .me{color:var(--meta);font-weight:400}
+.badge{display:inline-block;margin-right:2px;padding:0 6px;border-radius:5px;background:var(--danger-soft);color:var(--danger);font-size:12px;font-weight:600;vertical-align:1px}
+/* link */
+.lnk{display:flex;gap:12px;align-items:flex-start;padding:14px;border:1px solid var(--line);border-radius:14px;background:var(--panel)}
+.lnk .ic{width:36px;height:36px;border-radius:10px;background:var(--bg);border:1px solid var(--line);box-sizing:border-box;display:grid;place-items:center;color:var(--muted);flex:none}
+.lnk h3{margin:0;font-size:15px;font-weight:600}
+.lnk p{margin:2px 0 0;font-size:13px;line-height:1.42;color:var(--meta)}
+.lnk .off{display:flex;align-items:center;gap:6px;margin-top:8px;color:var(--muted);font-weight:500}
+/* toast */
+.toast{position:absolute;left:16px;right:16px;bottom:160px;z-index:45;display:flex;align-items:center;gap:10px;min-height:48px;padding:12px 14px;box-sizing:border-box;border-radius:12px;background:var(--toast-bg);color:var(--toast-ink);font-size:14px;font-weight:500;line-height:1.35;box-shadow:0 8px 24px rgba(0,0,0,.24)}
+.toast .i{color:var(--toast-ok)}
+/* stacked level sheet */
+.scrim.top{z-index:50}
+.sheet.top{z-index:51}
+.sheet-h .tx{flex:1;min-width:0}
+.sheet-h .tx h2{font-size:17px;font-weight:650;margin:0}
+.sheet-h .tx p{margin:1px 0 0;font-size:13px;color:var(--meta)}
+.lopts{display:flex;flex-direction:column}
+button.srow{width:100%;border:0;background:transparent;font:inherit;text-align:left;cursor:pointer;box-sizing:border-box}
+.srow.opt{min-height:62px;align-items:center}
+.srow.opt .tx small{line-height:1.38}
+.srow.opt .mk{width:24px;display:grid;place-items:center;flex:none;color:var(--accent-text)}
+.srow.opt[aria-checked="true"] .tx b{color:var(--accent-text)}
+.srow.opt[aria-disabled="true"]{cursor:not-allowed}
+.srow.opt[aria-disabled="true"]:hover,.srow.opt[aria-disabled="true"]:active{background:transparent}
+.srow.opt[aria-disabled="true"] .tx b{color:var(--muted)}
+.srow.opt[aria-disabled="true"] .mk{color:var(--meta)}
+.srow .val{font-size:15px;font-weight:500;color:var(--text);font-variant-numeric:tabular-nums}
+.srow.danger .tx b{color:var(--danger)}
+.srow.danger .ic{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+/* make private */
+.ft{margin:0 4px;font-size:14px;color:var(--muted);display:flex;align-items:center;flex-wrap:wrap;gap:4px 6px}
+.ft b{color:var(--text);font-weight:600}
+.desc{margin:6px 4px 0;font-size:14px;line-height:1.45;color:var(--muted)}
+.warn{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:12px;background:var(--warn-soft);border:1px solid var(--warn-line);color:var(--warn-text);font-size:14px;line-height:1.45}
+.warn .i{margin-top:1px}
+.warn b{font-weight:650}
+fieldset.grp{margin:0;padding:0;border:0;min-width:0}
+fieldset.grp legend{padding:0}
+.ckrow{display:flex;align-items:center;gap:10px;min-height:52px;padding:2px 14px 2px 4px;cursor:pointer}
+.ckrow .hit{width:44px;height:44px;display:grid;place-items:center;flex:none}
+.ckrow input{width:22px;height:22px;margin:0;accent-color:var(--accent);cursor:pointer}
+.ckrow .av{width:36px;height:36px;font-size:12px}
+.ckrow .tx{flex:1;min-width:0}
+.ckrow .tx b{display:block;font-size:15px;font-weight:600}
+.ckrow .tx small{display:block;font-size:13px;color:var(--meta)}
+.ckrow .tx small.over{color:var(--danger)}
+.ckrow + .ckrow{border-top:1px solid var(--line)}
+.keep{margin:0 4px;font-size:14px;line-height:1.5;color:var(--muted)}
+.keep.note{margin-top:-6px;font-size:13px;color:var(--meta)}
+.keep b{color:var(--text);font-weight:600}
+/* audit log */
+.lsub2{margin:0 4px -8px;font-size:13px;color:var(--meta)}
+.log{list-style:none;margin:0;padding:0 14px;background:var(--panel);border:1px solid var(--line);border-radius:14px}
+.log li{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-top:1px solid var(--line);font-size:14px;line-height:1.48}
+.log li:first-child{border-top:0}
+.log .av,.log .tm{width:32px;height:32px;font-size:11.5px}
+.log .tm{border-radius:9px}
+.log b{font-weight:600}
+.log small{display:block;margin-top:2px;font-size:13px;color:var(--meta)}
+</style>
+</helmet>
+<div class="nx m mode-{{mode}}">
+  <div class="app-layer" aria-hidden="true" inert>
+  <div class="sbar" aria-hidden="true">
+    <span>10:40</span>
+    <span class="sg">
+      <svg width="18" height="12" viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1" fill="currentColor"></rect><rect x="5" y="5.5" width="3" height="6.5" rx="1" fill="currentColor"></rect><rect x="10" y="3" width="3" height="9" rx="1" fill="currentColor"></rect><rect x="15" y="0" width="3" height="12" rx="1" fill="currentColor"></rect></svg>
+      <svg width="16" height="12" viewBox="0 0 16 12"><path d="M8 11.2 10.4 8.6a3.4 3.4 0 0 0-4.8 0z" fill="currentColor"></path><path d="M3.6 6.6a6.2 6.2 0 0 1 8.8 0l1.4-1.5a8.3 8.3 0 0 0-11.6 0z" fill="currentColor"></path><path d="M.8 3.6a10.2 10.2 0 0 1 14.4 0L16 2.2a12.2 12.2 0 0 0-16 0z" fill="currentColor" opacity=".9"></path></svg>
+      <svg width="27" height="13" viewBox="0 0 27 13"><rect x=".5" y=".5" width="23" height="12" rx="3.5" fill="none" stroke="currentColor" opacity=".45"></rect><rect x="2" y="2" width="17" height="9" rx="2" fill="currentColor"></rect><path d="M25 4.5v4a2 2 0 0 0 0-4z" fill="currentColor" opacity=".45"></path></svg>
+    </span>
+  </div>
+  <header class="tbar bt">
+    <span class="ib"><svg class="i lg" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"></path></svg></span>
+    <div class="bt-t">
+      <h1>Triển khai ERP Q4</h1>
+      <p><span class="dm sm" style="background:#1E6FD0">CN</span>Phòng Công nghệ · có 1 khách</p>
+    </div>
+    <span class="ib"><svg class="i lg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></span>
+    <span class="ib"><svg class="i lg" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle></svg></span>
+  </header>
+  <div class="bg-rest"><span class="bg-seg"></span><span class="bg-lane"></span></div>
+  <div class="tabbar"><span class="tab"></span></div>
+  </div>
+  <div class="scrim" aria-hidden="true"></div>
+
+  <div class="fsheet" role="dialog" aria-modal="true" aria-labelledby="sh-t" aria-hidden="{{levelOpen}}">
+    <div class="grabber" aria-hidden="true"></div>
+    <div class="fs-h {{hCls}}">
+      <sc-if value="{{hasBack}}" hint-placeholder-val="{{ false }}">
+      <button class="ib" type="button" aria-label="Quay lại Chia sẻ"><svg class="i lg" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"></path></svg></button>
+      </sc-if>
+      <h2 id="sh-t">{{sheetTitle}}</h2>
+      <a class="ib" href="Final-M-Board.dc.html" aria-label="Đóng, về board Triển khai ERP Q4"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></a>
+    </div>
+
+    <sc-if value="{{isShare}}" hint-placeholder-val="{{ true }}">
+    <div class="fs-body">
+      <div class="fs-in {{inCls}}" style="margin-top:{{scrollOff}}">
+        <div class="grp">
+          <div class="addf">
+            <label class="vh" for="share-add">Thêm người, nhóm, hoặc email khách</label>
+            <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="4"></circle><path d="M2 21a7 7 0 0 1 14 0M19 8v6M16 11h6"></path></svg>
+            <input id="share-add" type="text" inputmode="email" autocomplete="off" placeholder="Thêm người, nhóm, hoặc email khách">
+          </div>
+          <div class="addlv"><span id="add-lv-l">Quyền khi thêm</span><button class="lv" type="button" aria-haspopup="dialog" aria-expanded="false" aria-labelledby="add-lv-l add-lv-v"><span id="add-lv-v">Có thể sửa</span><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button></div>
+        </div>
+
+        <section class="grp" aria-labelledby="acc-h">
+          <h3 class="lbl" id="acc-h">Ai vào được board</h3>
+          <button class="acc" type="button" aria-haspopup="dialog" aria-expanded="false">
+            <span class="tile" style="background:#1E6FD0" aria-hidden="true">CN</span>
+            <span class="tx"><b>Theo Phòng Công nghệ · 24 người</b><span class="vh">Quyền theo vai trò ở phòng ban: </span><span class="map"><span>Quản trị → Quản lý</span><span>Thành viên → Sửa</span><span>Người xem → Xem</span></span><span class="vh">. Đổi ai vào được board</span></span>
+            <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg>
+          </button>
+        </section>
+
+        <section class="grp" aria-labelledby="ex-h">
+          <h3 class="lbl" id="ex-h">Quyền riêng trên board này · 5</h3>
+          <ul class="plist">
+            <li class="prow"><span class="av" style="background:#B4500B" aria-hidden="true">HP</span><span class="tx"><b>Lê Hoàng Phúc</b><small>Chủ board · Quản trị Phòng Công nghệ</small></span><span class="lvs">Quản lý</span></li>
+            <li class="prow"><span class="tm" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"></circle><circle cx="17" cy="9" r="2.5"></circle><path d="M2.5 20a6.5 6.5 0 0 1 13 0M15 20a5 5 0 0 1 6.5-4.7"></path></svg></span><span class="tx"><b>Nhóm Kế toán tổng hợp</b><small>Nhóm workspace · 6 người · ngoài phòng Công nghệ</small></span><button class="lv" type="button" aria-haspopup="dialog" aria-expanded="false" aria-label="Quyền của Nhóm Kế toán tổng hợp: Có thể xem. Đổi quyền">Xem<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button></li>
+            <li class="prow"><span class="av" style="background:#9A6A12" aria-hidden="true">KL</span><span class="tx"><b>Đỗ Khánh Linh</b><small>Phòng Kế toán · ngoài phòng Công nghệ · hết quyền 31/12/2026</small></span><button class="lv" type="button" aria-haspopup="dialog" aria-expanded="false" aria-label="Quyền của Đỗ Khánh Linh: Có thể bình luận. Đổi quyền">Bình luận<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button></li>
+            <li class="prow"><span class="av" style="background:#475569" aria-hidden="true">MT</span><span class="tx"><b>Đặng Minh Tuấn</b><small><span class="badge">Ngoài công ty</span> tuan@doitac-erp.vn · khách, chỉ thấy board này · hết quyền 31/01/2027</small></span><button class="lv {{tuanCls}}" type="button" aria-haspopup="dialog" aria-expanded="{{levelOpen}}" aria-label="Quyền của Đặng Minh Tuấn: Có thể sửa. Đổi quyền">Sửa<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button></li>
+            <li class="prow"><span class="av" style="background:#4E8574" aria-hidden="true">HA</span><span class="tx"><b>Nguyễn Thu Hà <span class="me">(bạn)</span></b><small>Quản trị Phòng Công nghệ</small></span><span class="lvs">Quản lý</span></li>
+          </ul>
+        </section>
+
+        <section class="lnk" aria-labelledby="lk-h">
+          <span class="ic" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"></path><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"></path></svg></span>
+          <div><h3 id="lk-h">Liên kết của board</h3><p>Chỉ người đã có quyền mở được. Gửi liên kết không cấp thêm quyền.</p><p class="off"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>Công khai: quản trị workspace đã tắt</p></div>
+        </section>
+      </div>
+    </div>
+    <div class="fs-foot">
+      <button class="btn pri block" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"></path><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"></path></svg>Sao chép liên kết</button>
+      <button class="btn quiet" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path><path d="M3 3v5h5M12 7v5l3 2"></path></svg>Nhật ký thay đổi quyền</button>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{isPrivate}}" hint-placeholder-val="{{ false }}">
+    <div class="fs-body">
+      <div class="fs-in tight">
+        <p class="desc">Chỉ người và nhóm được thêm vào board vào được. Vai trò ở phòng ban không còn mở được board này, kể cả Quản trị phòng.</p>
+        <div class="warn" role="note"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9v4M12 17h.01"></path><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path></svg><span><b>22 người trong Phòng Công nghệ sẽ không còn thấy board.</b> 3 người trong đó đang có việc chưa xong ở đây.</span></div>
+        <fieldset class="grp">
+          <legend class="lbl">Thêm vào board trước khi chuyển</legend>
+          <div class="plist">
+            <label class="ckrow" for="keep-mq"><span class="hit"><input type="checkbox" id="keep-mq" checked></span><span class="av" style="background:#1E6FD0" aria-hidden="true">MQ</span><span class="tx"><b>Trần Minh Quân</b><small class="over">2 việc chưa xong, 1 quá hạn</small></span></label>
+            <label class="ckrow" for="keep-na"><span class="hit"><input type="checkbox" id="keep-na" checked></span><span class="av" style="background:#7C4DDB" aria-hidden="true">NA</span><span class="tx"><b>Phan Ngọc Anh</b><small>1 việc chưa xong</small></span></label>
+            <label class="ckrow" for="keep-vt"><span class="hit"><input type="checkbox" id="keep-vt" checked></span><span class="av" style="background:#0E7490" aria-hidden="true">VT</span><span class="tx"><b>Vũ Thanh</b><small>1 việc chưa xong</small></span></label>
+          </div>
+        </fieldset>
+        <p class="keep">Giữ nguyên quyền: <b>Lê Hoàng Phúc, Nguyễn Thu Hà</b> (đã được thêm riêng), <b>Nhóm Kế toán tổng hợp</b>, <b>Đỗ Khánh Linh</b> và khách <b>Đặng Minh Tuấn</b>.</p>
+        <p class="keep note">Quản trị workspace cũng cần được thêm riêng; chỉ chủ sở hữu workspace luôn vào được. Việc của người mất quyền vẫn còn nguyên.</p>
+      </div>
+    </div>
+    <div class="fs-foot">
+      <button class="btn pri block" type="button">Thêm 3 người rồi chuyển</button>
+      <div class="row"><button class="btn" type="button" style="flex:0 0 96px">Huỷ</button><button class="btn" type="button">Chuyển, không thêm ai</button></div>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{isLog}}" hint-placeholder-val="{{ false }}">
+    <div class="fs-body">
+      <div class="fs-in">
+        <p class="lsub2">Chỉ người quản lý board xem được</p>
+        <ul class="log" aria-label="Thay đổi quyền, mới nhất trước">
+          <li><span class="av" style="background:#4E8574" aria-hidden="true">HA</span><span><b>Nguyễn Thu Hà</b> thêm <b>Đặng Minh Tuấn</b> (khách, Có thể sửa, hết quyền 31/01/2027)<small>08/10 · 14:12</small></span></li>
+          <li><span class="av" style="background:#B4500B" aria-hidden="true">HP</span><span><b>Lê Hoàng Phúc</b> đổi <b>Nhóm Kế toán tổng hợp</b>: Có thể sửa → Có thể xem<small>02/10</small></span></li>
+          <li><span class="tm" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg></span><span><b>Hệ thống:</b> quyền của <b>Nguyễn Văn Bình</b> hết hạn<small>30/09 · gia hạn phải thêm lại quyền</small></span></li>
+          <li><span class="tm" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"></path><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"></path></svg></span><span><b>Quản trị workspace</b> tắt liên kết công khai<small>15/09</small></span></li>
+          <li><span class="av" style="background:#B4500B" aria-hidden="true">HP</span><span><b>Lê Hoàng Phúc</b> tạo board<small>01/09</small></span></li>
+        </ul>
+      </div>
+    </div>
+    </sc-if>
+  </div>
+
+  <sc-if value="{{isCopied}}" hint-placeholder-val="{{ false }}">
+  <div class="toast" role="status"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5L20 7"></path></svg><span>Đã sao chép liên kết · chỉ người có quyền mở được</span></div>
+  </sc-if>
+
+  <sc-if value="{{isLevel}}" hint-placeholder-val="{{ false }}">
+  <div class="scrim top" aria-hidden="true"></div>
+  <div class="sheet top" role="dialog" aria-modal="true" aria-labelledby="lv-t">
+    <div class="grabber" aria-hidden="true"></div>
+    <div class="sheet-h"><div class="tx"><h2 id="lv-t">Quyền của Đặng Minh Tuấn</h2><p>Khách · tuan@doitac-erp.vn</p></div><button class="ib" type="button" aria-label="Đóng"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button></div>
+    <div class="lopts" role="radiogroup" aria-labelledby="lv-t">
+      <button class="srow opt" type="button" role="radio" aria-checked="false" tabindex="-1"><span class="tx"><b>Có thể xem</b><small>Xem việc, tài liệu đính kèm</small></span><span class="mk"></span></button>
+      <button class="srow opt" type="button" role="radio" aria-checked="false" tabindex="-1"><span class="tx"><b>Có thể bình luận</b><small>Xem, bình luận, nhắc tên; đính kèm tệp chỉ trong bình luận</small></span><span class="mk"></span></button>
+      <button class="srow opt" type="button" role="radio" aria-checked="true" tabindex="0"><span class="tx"><b>Có thể sửa</b><small>Tạo, sửa, giao, di chuyển việc</small></span><span class="mk"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5L20 7"></path></svg></span></button>
+      <button class="srow opt" type="button" role="radio" aria-checked="false" aria-disabled="true" tabindex="-1" aria-describedby="lv-mgr-why"><span class="tx"><b>Quản lý</b><small id="lv-mgr-why">Khách không được quản lý board hay chia sẻ tiếp (GOV-030)</small></span><span class="mk"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg></span></button>
+    </div>
+    <div class="sheet-sep"></div>
+    <button class="srow" type="button" aria-haspopup="dialog"><span class="ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg></span><span class="tx"><b>Hết quyền</b></span><span class="end"><span class="val">31/01/2027</span><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg></span></button>
+    <button class="srow danger" type="button"><span class="ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"></path></svg></span><span class="tx"><b>Gỡ quyền</b><small>Tuấn không còn thấy board này</small></span></button>
+  </div>
+  </sc-if>
+  <span class="homeind" aria-hidden="true"></span>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"state":{"editor":"enum","options":["chia-se","doi-quyen","rieng-tu","nhat-ky","da-sao-chep"],"default":"chia-se","section":"Trạng thái minh hoạ"},"mode":{"editor":"enum","options":["sang","dem"],"default":"sang","section":"Giao diện"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const state = this.props.state ?? 'chia-se';
+    const isPrivate = state === 'rieng-tu';
+    const isLog = state === 'nhat-ky';
+    const isLevel = state === 'doi-quyen';
+    const isCopied = state === 'da-sao-chep';
+    const isShare = state === 'chia-se' || isLevel || isCopied;
+    const hasBack = isPrivate || isLog;
+    return {
+      mode: this.props.mode ?? 'sang',
+      isShare,
+      isPrivate,
+      isLog,
+      isLevel,
+      isCopied,
+      hasBack,
+      levelOpen: isLevel ? 'true' : 'false',
+      tuanCls: isLevel ? 'open' : '',
+      hCls: (hasBack ? 'sub' : '') + (isCopied ? ' scrolled' : ''),
+      // da-sao-chep: list scrolled to the end so the link section sits above the footer
+      inCls: isCopied ? 'toasted' : '',
+      scrollOff: isCopied ? '-420px' : '0',
+      sheetTitle: isPrivate ? 'Chuyển board sang Riêng tư?' : (isLog ? 'Nhật ký thay đổi quyền' : 'Chia sẻ Triển khai ERP Q4')
+    };
+  }
+}
+</script>
+</body>
+</html>

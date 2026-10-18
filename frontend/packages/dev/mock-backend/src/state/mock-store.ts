@@ -23,21 +23,114 @@ import type {
   MockPageRecord,
   MockBoardViewRecord,
   MockColumnRecord,
+  MockFieldOptionRecord,
   MockLabelRecord,
   MockChecklistRecord,
   MockChecklistItemRecord,
+  MockAttachmentRecord,
   MockCommentRecord,
+  MockItemLinkRecord,
   MockUserPreferencesRecord,
   MockBlockRecord,
   MockPageCommentRecord,
   MockPageHistoryRecord,
+  MockBoardMemberRecord,
+  MockBoardGrantRecord,
+  MockBoardAudienceRecord,
 } from "./records";
 import { mockIds } from "./mock-ids";
 import type { MockBackendConfig, MockPersona } from "../config/mock-config";
 import { defaultConfig } from "../config/mock-config";
-import { createMockClock, type MockClock } from "./clock";
+import { createMockClock, hanoiShortDay, type MockClock } from "./clock";
 import { createFactories, type MockFactories } from "./factories";
 import { MOCK_DATASET_CARDINALITIES } from "./mock-dataset.manifest";
+import {
+  MockBoardSettingsState,
+  erpSettingsRegistry,
+} from "./mock-board-settings";
+import { MockSpaceState, type MockSpaceViewer } from "./mock-spaces";
+import { MockWorkFeedState } from "./mock-work-feed";
+import {
+  defaultStatusOptions,
+  ERP_AUDIENCE,
+  ERP_BOARD_MEMBERS,
+  ERP_COMMENTER,
+  ERP_ITEMS,
+  ERP_LABELS,
+  ERP_GROUPS,
+  erpGroupId,
+  ERP_OWNER_COLUMN_ID,
+  ERP_PEOPLE,
+  ERP_PRIORITY_COLUMN_ID,
+  ERP_PRIORITY_OPTIONS,
+  ERP_STATUS_COLUMN_ID,
+  ERP_STATUS_OPTIONS,
+  erpAssigneeId,
+  erpItemId,
+  erpLabelId,
+  erpPriorityOptionId,
+  erpStatusOptionId,
+  hanoiInstant,
+} from "./mock-erp-board";
+import {
+  ENGINEERING_MEMBERS,
+  ERP_ENGINEERS_TEAM,
+  ACCOUNTING_PEOPLE,
+  ACCOUNTING_TEAM,
+  ONCALL_TEAM,
+  ERP_TEAM_ONLY,
+  EXECUTIVES,
+  EXECUTIVE_TEAM,
+  QA_PEOPLE,
+  QA_TEAM,
+} from "./mock-space-people";
+import {
+  ERP_ITEM_PERCENT,
+  ERP_PLAN_GROUPS,
+  ERP_PLAN_ITEMS,
+  ERP_PLAN_LINKS,
+  ERP_CHILD_ITEMS,
+  ERP_COMMENTS,
+  ERP_DESCRIPTIONS,
+} from "./mock-erp-detail";
+import {
+  ERP_CUSTOM_VALUES,
+  ERP_ESTIMATE_COLUMN_ID,
+  ERP_FILES,
+  ERP_FOLLOWERS,
+  ERP_EXTRA_COMMENTS,
+  ERP_HISTORY,
+  ERP_ITEM_CREATED,
+  ERP_MODULE_COLUMN_ID,
+  ERP_MODULE_OPTIONS,
+  ERP_RELATED_LINKS,
+  ERP_REQUESTER_COLUMN_ID,
+  ERP_REQUESTER_OPTIONS,
+  type ErpHistoryCompact,
+  type ErpHistoryDetail,
+} from "./mock-item-detail";
+import { MockAuthDirectory } from "./mock-auth-directory";
+import { MockAccountPages } from "./mock-account-pages";
+import { MockReports } from "./mock-reports";
+import { MockBilling } from "./mock-billing";
+import { MockIntegrations } from "./mock-integrations";
+import { MockBoardAutomations } from "./mock-board-automations";
+import { MockOnboarding } from "./mock-onboarding";
+import { ERP_STATE_ITEMS, erpLongChildTitles } from "./mock-item-states";
+import { MockBoardSharing, seedErpSharing } from "./mock-board-sharing";
+import { LIBRARY_DOCS, SECONDARY_BOARD_TITLES } from "./mock-docs-library";
+import {
+  INVOICE_BLOCKS,
+  INVOICE_COMMENTS,
+  INVOICE_DOC_ID,
+  INVOICE_FOLDER_ID,
+  INVOICE_HISTORY,
+} from "./mock-docs-invoice";
+import {
+  DEPARTMENT_BOARDS,
+  TECH_SIDE_BOARDS,
+  departmentItemId,
+} from "./mock-department-boards";
 
 export class MockSeedInvariantError extends Error {
   constructor(message: string) {
@@ -53,15 +146,93 @@ export class MockRelationalInvariantError extends Error {
   }
 }
 
+// ─── Workspace experience records (WX-MEM-001, WX-SET-001) ──────────────────
+
+export interface MockInvitationRecord {
+  id: string;
+  workspaceId: string;
+  email: string;
+  role: "admin" | "member" | "guest";
+  createdAt: string;
+  expiresAt: string;
+  status: "pending" | "accepted" | "revoked";
+}
+
+export interface MockWorkspaceSettingsRecord {
+  allowPublicSharing: boolean;
+  enforceMfa: boolean;
+  allowGuestInvites: boolean;
+  defaultMemberRole: "Admin" | "Member" | "Guest";
+  invitationExpiryDays: number;
+}
+
+/** Mirrors the producer's member-rule outcomes (WSP-008). */
+export type MockMemberChange =
+  "ok" | "not-found" | "last-owner" | "owner-direct" | "inactive";
+
+/**
+ * Outcome of a versioned workspace write (`expectedVersion`, WX-SET-001):
+ * `stale` mirrors the producer's 412 when the version the member last read is
+ * not the current one; nothing changes in that case.
+ */
+export type MockVersionedWrite = "ok" | "not-found" | "stale";
+
 // ─── MockStore ────────────────────────────────────────────────────────────────
 
+/** One line of an item's history (gap `CTR-GAP-TODO`, with structured fields). */
+export interface MockActivityRecord {
+  id: string;
+  /** `null` = an automation. */
+  actorId: string | null;
+  action: string;
+  createdAt: string;
+  kind?: "created";
+  automationName?: string;
+  verb?: string;
+  target?: string;
+  notified?: string;
+  detail?: ErpHistoryDetail;
+  compact?: ErpHistoryCompact;
+}
+
+/** A board's plan read (gap `CTR-GAP-WM-PLAN-ITEMS`). */
+export interface MockBoardPlan {
+  readonly items: readonly {
+    readonly id: string;
+    readonly kind: "phase" | "milestone";
+    readonly title: string;
+    readonly startDay: string;
+    readonly endDay: string;
+    readonly category: "todo" | "doing" | "review" | "done";
+    readonly groupId: string;
+    readonly percent: number;
+    readonly index: number;
+  }[];
+  readonly links: readonly { readonly from: string; readonly to: string }[];
+  readonly percents: Readonly<Record<string, number>>;
+  /** Group id by item id, where the plan lists an item elsewhere. */
+  readonly groups: Readonly<Record<string, string>>;
+}
+
 export class MockStore {
+  /** Sign-in attempts, second steps and guest invitations (gap `CTR-GAP-AUTH-FLOW`). */
+  readonly auth = new MockAuthDirectory();
+  /** Setup drafts, getting-started lists and welcome profiles (gap `CTR-GAP-ONBOARD-FLOW`). */
+  readonly onboarding = new MockOnboarding();
+  readonly accountPages = new MockAccountPages();
+  readonly reports = new MockReports();
+  readonly billing = new MockBilling();
+  readonly integrations = new MockIntegrations();
+  /** Automation rules, drafts and run log of a board (gap `CTR-GAP-WM-BOARD-AUTOMATIONS`). */
+  readonly automations = new MockBoardAutomations(this);
   // Primary Maps
   private usersById = new Map<string, MockUserRecord>();
   private workspacesById = new Map<string, MockWorkspaceRecord>();
   private membershipsById = new Map<string, MockMembershipRecord>();
   private viewsById = new Map<string, MockWorkspaceViewRecord>();
   private boardsById = new Map<string, MockBoardRecord>();
+  /** Settings registry of the boards (the gap `CTR-GAP-WM-BOARD-SETTINGS`). */
+  readonly settings = new MockBoardSettingsState(this);
   private listsById = new Map<string, MockListRecord>();
   private cardsById = new Map<string, MockCardRecord>();
   private notificationsById = new Map<string, MockNotificationRecord>();
@@ -81,6 +252,50 @@ export class MockStore {
     MockUserPreferencesRecord
   >();
   private loggedOutUserIds = new Set<string>();
+  /** Per-member navigation state (WX-BE-001/002), keyed by workspace:user. */
+  private navigationByMember = new Map<
+    string,
+    {
+      recents: { kind: string; resourceId: string; at: string }[];
+      pins: { kind: string; resourceId: string; at: string }[];
+    }
+  >();
+  private navigationTick = 0;
+  /** Membership access status (WX-MEM-001); absent = active. */
+  private suspendedMembershipIds = new Set<string>();
+  /** Workspace invitations (WX-MEM-001). */
+  private invitationsById = new Map<string, MockInvitationRecord>();
+  /** Workspace defaults (`Workspaces.Settings.*`). */
+  private settingsByWorkspaceId = new Map<
+    string,
+    MockWorkspaceSettingsRecord
+  >();
+  /** Workspace aggregate version (`WorkspaceDto.version`); absent = 1. */
+  private workspaceVersionById = new Map<string, number>();
+  /** Workspace description (`WorkspaceDto.description`). */
+  private workspaceDescriptionById = new Map<string, string>();
+  /** Archived workspaces drop out of the list and detail reads. */
+  private archivedWorkspaceIds = new Set<string>();
+  /** Items completed through `WorkManagement.BoardItems.Complete`. */
+  private completedCardIds = new Set<string>();
+  /** The item history ("Lịch sử"): one line per recorded change, by card. */
+  private activityByCardId = new Map<string, MockActivityRecord[]>();
+  /** Files attached to an item, by card. */
+  private attachmentsByCardId = new Map<string, MockAttachmentRecord[]>();
+  /** Links between the items of a board (dependencies and relations). */
+  private itemLinks: MockItemLinkRecord[] = [];
+  /** People who follow an item besides the member, by card. */
+  private followersByCardId = new Map<string, string[]>();
+  /** Phases and milestones of a board (gap `CTR-GAP-WM-PLAN-ITEMS`), by board. */
+  private planByBoardId = new Map<string, MockBoardPlan>();
+  /** Board members (`/full` members), keyed by board. */
+  private boardMembersByBoardId = new Map<string, MockBoardMemberRecord[]>();
+  /** Explicit board access entries, keyed by board. */
+  private boardGrantsByBoardId = new Map<string, MockBoardGrantRecord[]>();
+  /** The Board permissions the share dialog draws (gap `CTR-GAP-WM-BOARD-SHARING`). */
+  readonly sharing = new MockBoardSharing();
+  /** Seeded board audiences for the access read, keyed by board. */
+  private boardAudienceByBoardId = new Map<string, MockBoardAudienceRecord>();
 
   // Secondary indexes (Plan: 03-MOCK-DATA-MODEL.md §Store structure)
   private membershipIdsByWorkspaceId = new Map<string, Set<string>>();
@@ -96,6 +311,12 @@ export class MockStore {
   private checklistIdsByCardId = new Map<string, Set<string>>();
   private checklistItemIdsByChecklistId = new Map<string, Set<string>>();
   private commentIdsByCardId = new Map<string, Set<string>>();
+
+  /** Space org tree, Space members and Teams (OT-5). */
+  readonly spaces = new MockSpaceState();
+
+  /** The member's work feed: relationships, approvals, mentions, inbox. */
+  readonly feed = new MockWorkFeedState();
 
   private config: MockBackendConfig;
   private clock: MockClock;
@@ -158,7 +379,7 @@ export class MockStore {
     const owner = this.factories.user(0, {
       id: mockIds.users.owner,
       email: "ui-dev@notrelix.local",
-      name: isUnicode ? "UI Developer (Owner) 🚀" : "UI Developer (Owner)",
+      name: isUnicode ? "Nguyễn Thu Hà 🚀" : "Nguyễn Thu Hà",
       avatarUrl: isMissingAvatars
         ? null
         : "https://api.dicebear.com/7.x/avataaars/svg?seed=owner",
@@ -188,10 +409,25 @@ export class MockStore {
         : "https://api.dicebear.com/7.x/avataaars/svg?seed=viewer",
     });
 
-    const actors = [owner, admin, member, viewer];
+    // Đỗ Khánh Linh (persona `commenter`): a workspace member only in her own
+    // world, so the other personas' member lists stay as they are.
+    const commenter = this.factories.user(4, {
+      id: ERP_COMMENTER.id,
+      email: ERP_COMMENTER.email,
+      name: ERP_COMMENTER.name,
+      avatarUrl: null,
+    });
+
+    const actors = [owner, admin, member, viewer, commenter];
 
     if (this.config.state === "new-user") {
-      const pMap: Record<string, any> = { owner, admin, member, viewer };
+      const pMap: Record<string, any> = {
+        owner,
+        admin,
+        member,
+        viewer,
+        commenter,
+      };
       const u = pMap[this.config.persona] || owner;
       this.insertUser(u);
       this.userPreferencesByUserId.set(u.id, {
@@ -216,11 +452,11 @@ export class MockStore {
     }
 
     // ── Workspaces ──────────────────────────────────────────────────────────
-    let primaryWsName = "Notrelix Product Lab";
-    if (isUnicode) primaryWsName = "🪐 Notrelix Product Lab (プロダクト)";
+    let primaryWsName = "Minh An Group";
+    if (isUnicode) primaryWsName = "🪐 Minh An Group (プロダクト)";
     if (isLongTitles)
       primaryWsName =
-        "Notrelix Product Lab — Enterprise Digital Workspace & Engineering Innovation Hub";
+        "Minh An Group — Enterprise Digital Workspace & Engineering Innovation Hub";
 
     for (let w = 0; w < manifest.workspacesVisibleToOwner; w++) {
       const isPrimary = w === 0;
@@ -232,8 +468,10 @@ export class MockStore {
         wName = primaryWsName;
         id = mockIds.workspaces.primary;
       } else if (isSecondary) {
-        wName = "Secondary Workspace";
+        wName = "Đà Nẵng";
         id = mockIds.workspaces.secondary;
+      } else if (w === 2) {
+        wName = "Tân Lộc";
       }
 
       const ws = this.factories.workspace(w, {
@@ -257,6 +495,11 @@ export class MockStore {
         this.insertMembership(
           this.factories.membership(3, id, viewer.id, { role: "guest" }),
         );
+        if (this.config.persona === "commenter") {
+          this.insertMembership(
+            this.factories.membership(4, id, commenter.id, { role: "member" }),
+          );
+        }
       } else {
         this.insertMembership(
           this.factories.membership(w * 10, id, owner.id, { role: "owner" }),
@@ -293,6 +536,8 @@ export class MockStore {
 
     if (this.config.state === "empty-workspace") return;
 
+    this.seedSpaces(primaryWsId);
+
     // ── Boards ─────────────────────────────────────────────────────────────
     let primaryBoardTitle = "Product Roadmap";
     if (isUnicode) primaryBoardTitle = "🚀 Product Roadmap (日本語・Üñîçødé)";
@@ -303,7 +548,7 @@ export class MockStore {
     for (let b = 0; b < manifest.boardsInPrimaryWorkspace; b++) {
       const isPrimaryBoard = b === 0;
       let bId = this.factories.board(b, primaryWsId).id;
-      let bTitle = `Board ${b}`;
+      let bTitle = SECONDARY_BOARD_TITLES[b - 1] ?? `Board ${b}`;
 
       if (isPrimaryBoard) {
         bId = "mock-board-roadmap";
@@ -328,6 +573,7 @@ export class MockStore {
           name: "Status",
           fieldType: "status",
           position: 1,
+          options: defaultStatusOptions("mock-status"),
         });
         this.insertColumn({
           id: "col-0002",
@@ -444,6 +690,12 @@ export class MockStore {
       }
     }
 
+    this.seedRoadmapStatuses();
+    this.seedErpBoard(primaryWsId);
+    this.seedDepartmentBoards(primaryWsId);
+    this.seedInvoiceDoc(primaryWsId);
+    this.feed.seed(this);
+
     // Extras for card-main-0001
     if (this.cardsById.has("card-main-0001")) {
       this.addIndex(this.labelIdsByCardId, "card-main-0001", "lbl-0002");
@@ -486,38 +738,899 @@ export class MockStore {
 
     // ── Pages ──────────────────────────────────────────────────────────────
     for (let p = 0; p < manifest.pagesInPrimaryWorkspace; p++) {
-      let pTitle = p === 0 ? "Product specification" : `Page ${p}`;
+      const curated = LIBRARY_DOCS[p];
+      let pTitle = curated?.title ?? `Page ${p}`;
       if (isUnicode) pTitle = `📑 ${pTitle} (ドキュメント)`;
       if (isLongTitles)
         pTitle = `${pTitle} — Architectural Specification & Engineering Requirements`;
 
       let pId = this.factories.page(p, primaryWsId).id;
-      if (p === 0) pId = "mock-doc-product-spec";
+      if (curated) pId = curated.id;
 
       const page = this.factories.page(p, primaryWsId, {
         id: pId,
         title: pTitle,
+        ...(curated
+          ? {
+              spaceId: curated.spaceId,
+              parentId: curated.parentId,
+              createdAt: curated.createdAt,
+              updatedAt: curated.updatedAt,
+            }
+          : {}),
       });
       this.insertPage(page);
 
       // Representative blocks
-      const blockCount = p === 0 ? manifest.blocksPerRepresentativePage : 2;
+      const blockCount = curated
+        ? curated.blocks.length
+        : p === 0
+          ? manifest.blocksPerRepresentativePage
+          : 2;
       for (let blk = 0; blk < blockCount; blk++) {
+        const source = curated ? curated.blocks[blk]! : `Block ${blk}`;
+        const isSection = source.startsWith("## ");
+        const text = blk === 0 ? page.title : source.replace(/^## /, "");
         this.createBlock(pId, {
-          type: blk === 0 ? "heading_1" : "paragraph",
-          properties: JSON.stringify({
-            text: blk === 0 ? page.title : `Block ${blk}`,
-          }),
+          type: blk === 0 ? "heading_1" : isSection ? "heading_2" : "paragraph",
+          properties: JSON.stringify({ text }),
           position: blk * 1000,
         });
       }
 
+      if (curated) {
+        this.createPageHistory(
+          pId,
+          curated.editorId,
+          "created_page",
+          page.title,
+          curated.createdAt,
+        );
+        continue;
+      }
       this.createPageComment(pId, owner.id, "This is a seeded page comment.");
       this.createPageHistory(pId, owner.id, "created_page", page.title);
     }
   }
 
   // ─── Private seed helpers ─────────────────────────────────────────────────
+
+  /**
+   * Department Spaces of the primary workspace (OT-5): Engineering (Private,
+   * with an open Platform folder), Accounting (Private) and Marketing (open).
+   * The owner created them (Space Admin); Jordan (member) is a Member of
+   * Engineering; the Helpdesk team (the owner as Lead, Jordan and Taylor) views
+   * Accounting.
+   */
+  private seedSpaces(workspaceId: string): void {
+    const at = this.clock.offsetDays(-20);
+    const space = (
+      id: string,
+      name: string,
+      position: string,
+      extra: Partial<Parameters<MockSpaceState["insertSpace"]>[0]> = {},
+    ) =>
+      this.spaces.insertSpace({
+        id,
+        workspaceId,
+        parentId: null,
+        name,
+        description: null,
+        type: "Department",
+        visibility: "Private",
+        archived: false,
+        position,
+        version: 2,
+        createdAt: at,
+        ...extra,
+      });
+    space(mockIds.spaces.engineering, "Công nghệ", "a0000", {
+      color: "blue",
+      description:
+        "Vận hành hạ tầng, phần mềm nội bộ và triển khai ERP cho toàn tập đoàn.",
+    });
+    space(mockIds.spaces.itInfra, "Nhóm Hạ tầng", "a0001", {
+      parentId: mockIds.spaces.engineering,
+      type: "Folder",
+      visibility: "Workspace",
+    });
+    space(mockIds.spaces.itApps, "Nhóm Ứng dụng", "a0002", {
+      parentId: mockIds.spaces.engineering,
+      type: "Folder",
+    });
+    space(mockIds.spaces.accounting, "Kế toán", "a0001", { color: "gold" });
+    space(mockIds.spaces.marketing, "Marketing", "a0002", {
+      color: "coral",
+      visibility: "Workspace",
+    });
+    // The one department with nothing in it, as the Space mockup shows.
+    space(mockIds.spaces.hr, "Nhân sự", "a0003", {
+      color: "sage",
+    });
+    space(mockIds.spaces.executive, "Ban giám đốc", "a0004", {
+      color: "crimson",
+    });
+    // Lê Hoàng Phúc heads Công nghệ: listed before the owner.
+    this.spaces.insertMember({
+      spaceId: mockIds.spaces.engineering,
+      subjectType: "User",
+      subjectId: ERP_PEOPLE.HP.id,
+      role: "Admin",
+      addedAt: at,
+    });
+    for (const id of Object.values(mockIds.spaces)) {
+      this.spaces.insertMember({
+        spaceId: id,
+        subjectType: "User",
+        subjectId: mockIds.users.owner,
+        role: "Admin",
+        addedAt: at,
+      });
+    }
+    // Đỗ Khánh Linh (persona `commenter`) administers the Accounting department.
+    this.spaces.insertMember({
+      spaceId: mockIds.spaces.accounting,
+      subjectType: "User",
+      subjectId: mockIds.users.commenter,
+      role: "Admin",
+      addedAt: at,
+    });
+    // The Công nghệ department of the Space mockup: 24 people (see
+    // `mock-space-people.ts`): 2 admins, 19 members and 3 viewers.
+    const engineering = (
+      subjectType: "User" | "Team",
+      subjectId: string,
+      role: "Admin" | "Member" | "Viewer",
+      addedAt = at,
+    ) =>
+      this.spaces.insertMember({
+        spaceId: mockIds.spaces.engineering,
+        subjectType,
+        subjectId,
+        role,
+        addedAt,
+      });
+    for (const id of [
+      ERP_PEOPLE.MQ.id,
+      ERP_PEOPLE.VT.id,
+      ERP_PEOPLE.LT.id,
+      ERP_PEOPLE.TT.id,
+      ERP_PEOPLE.PH.id,
+      mockIds.users.member,
+      ...ENGINEERING_MEMBERS.map((entry) => entry.id),
+    ]) {
+      engineering("User", id, "Member");
+    }
+    engineering(
+      "Team",
+      ERP_ENGINEERS_TEAM.id,
+      "Member",
+      "2026-09-01T02:00:00.000Z",
+    );
+    engineering(
+      "Team",
+      EXECUTIVE_TEAM.id,
+      "Viewer",
+      "2026-08-15T02:00:00.000Z",
+    );
+    for (const person of [
+      ...ENGINEERING_MEMBERS,
+      ...ERP_TEAM_ONLY,
+      ...EXECUTIVES,
+      ...QA_PEOPLE,
+      ...ACCOUNTING_PEOPLE,
+    ]) {
+      if (!this.usersById.has(person.id)) {
+        this.insertUser({
+          id: person.id,
+          email: person.email,
+          name: person.name,
+          avatarUrl: null,
+        });
+      }
+    }
+    for (const team of [
+      ERP_ENGINEERS_TEAM,
+      EXECUTIVE_TEAM,
+      ACCOUNTING_TEAM,
+      QA_TEAM,
+      ONCALL_TEAM,
+    ]) {
+      this.spaces.insertTeam({
+        id: team.id,
+        workspaceId,
+        name: team.name,
+        description: team.description,
+        archived: team.archived,
+        version: 1,
+        members: team.members.map((member) => ({ ...member })),
+        createdAt: team.createdAt,
+      });
+    }
+    // Ban giám đốc is also a viewer of Kế toán (the Teams mockup).
+    this.spaces.insertMember({
+      spaceId: mockIds.spaces.accounting,
+      subjectType: "Team",
+      subjectId: EXECUTIVE_TEAM.id,
+      role: "Viewer",
+      addedAt: "2026-08-15T02:00:00.000Z",
+    });
+  }
+
+  /**
+   * The roadmap's Status values follow its groups: To Do → Cần làm,
+   * In Progress → Đang làm, Done → Hoàn thành, any other group → Chờ duyệt.
+   * Items created later have no status until one is set.
+   */
+  private seedRoadmapStatuses(): void {
+    const statusByList: Record<string, string> = {
+      "list-todo": "mock-status-todo",
+      "list-inprogress": "mock-status-doing",
+      "list-done": "mock-status-done",
+    };
+    for (const list of this.getLists(mockIds.boards.roadmap)) {
+      const optionId = statusByList[list.id] ?? "mock-status-review";
+      for (const card of this.getCards(list.id)) {
+        this.updateFieldValue(card.id, "col-0001", optionId);
+      }
+    }
+  }
+
+  /**
+   * The Accounting document of the 2026-10 Docs mockup (see
+   * `mock-docs-invoice.ts`): a folder page and the page inside it, with
+   * blocks that mention ERP board items, two comments and the edit history.
+   */
+  private seedInvoiceDoc(workspaceId: string): void {
+    const created = "2026-10-05T07:20:00.000Z";
+    this.insertPage({
+      id: INVOICE_FOLDER_ID,
+      workspaceId,
+      title: "Quy trình",
+      icon: "Folder",
+      spaceId: mockIds.spaces.accounting,
+      position: 0,
+      createdAt: created,
+      updatedAt: created,
+    });
+    this.insertPage({
+      id: INVOICE_DOC_ID,
+      workspaceId,
+      title: "Quy trình nhập hoá đơn đầu vào",
+      navTitle: "Nhập hoá đơn đầu vào",
+      icon: "FileText",
+      parentId: INVOICE_FOLDER_ID,
+      spaceId: mockIds.spaces.accounting,
+      position: 0,
+      deadline: "2026-11-01T00:00:00.000Z",
+      status: "review",
+      activeUserIds: [mockIds.users.commenter, "mock-user-erp-trang"],
+      createdAt: created,
+      updatedAt: "2026-10-11T09:40:00.000Z",
+    });
+    INVOICE_BLOCKS.forEach((block, index) => {
+      this.createBlock(INVOICE_DOC_ID, {
+        type: block.type as MockBlockRecord["type"],
+        properties: JSON.stringify(block.properties),
+        position: (index + 1) * 1000,
+      });
+    });
+    for (const comment of INVOICE_COMMENTS) {
+      this.createPageComment(
+        INVOICE_DOC_ID,
+        comment.userId,
+        comment.body,
+        comment.at,
+      );
+    }
+    [...INVOICE_HISTORY].reverse().forEach((entry) => {
+      this.createPageHistory(
+        INVOICE_DOC_ID,
+        entry.userId,
+        entry.action,
+        entry.detail,
+        entry.at,
+        entry.versionName,
+      );
+    });
+  }
+
+  /**
+   * The ERP board of the 2026-10 mockups (see `mock-erp-board.ts`), placed
+   * in the Engineering Space, viewed as a Kanban.
+   */
+  private seedErpBoard(workspaceId: string): void {
+    const boardId = mockIds.boards.erp;
+    for (const person of Object.values(ERP_PEOPLE)) {
+      if (!this.usersById.has(person.id)) {
+        this.insertUser({
+          id: person.id,
+          email: person.email,
+          name: person.name,
+          avatarUrl: null,
+        });
+      }
+    }
+    this.insertBoard({
+      id: boardId,
+      workspaceId,
+      title: "Triển khai ERP Q4",
+      description:
+        "Đưa phân hệ Kế toán, Kho và Mua hàng lên ERP mới, go-live 01/11/2026.",
+      background: { type: "color", value: "#1E6FD0" },
+      visibility: "workspace",
+      isArchived: false,
+      createdAt: "2026-09-15T02:00:00.000Z",
+      updatedAt: "2026-10-12T03:28:00.000Z",
+      spaceId: mockIds.spaces.engineering,
+      version: 1,
+      itemKeyPrefix: "ERP",
+    });
+    this.boardViewsByBoardId.set(boardId, {
+      boardId,
+      viewMode: "kanban",
+      viewConfig: "{}",
+    });
+    this.insertColumn({
+      id: ERP_STATUS_COLUMN_ID,
+      boardId,
+      name: "Trạng thái",
+      fieldType: "status",
+      position: 1,
+      options: ERP_STATUS_OPTIONS.map((option) => ({ ...option })),
+    });
+    this.insertColumn({
+      id: ERP_PRIORITY_COLUMN_ID,
+      boardId,
+      name: "Ưu tiên",
+      fieldType: "select",
+      position: 2,
+      options: ERP_PRIORITY_OPTIONS.map((option) => ({ ...option })),
+    });
+    this.insertColumn({
+      id: ERP_OWNER_COLUMN_ID,
+      boardId,
+      name: "Người thực hiện",
+      fieldType: "user",
+      position: 3,
+    });
+    // The custom fields the Detail mockup shows in the right column.
+    this.insertColumn({
+      id: ERP_MODULE_COLUMN_ID,
+      boardId,
+      name: "Phân hệ ERP",
+      fieldType: "select",
+      position: 4,
+      options: ERP_MODULE_OPTIONS.map(
+        (option, index): MockFieldOptionRecord => ({
+          id: option.id,
+          name: option.name,
+          color: "#64748B",
+          position: `a${String(index).padStart(4, "0")}`,
+        }),
+      ),
+    });
+    this.insertColumn({
+      id: ERP_ESTIMATE_COLUMN_ID,
+      boardId,
+      name: "Ước lượng",
+      fieldType: "number",
+      settings: JSON.stringify({ unit: "giờ" }),
+      position: 5,
+    });
+    this.insertColumn({
+      id: ERP_REQUESTER_COLUMN_ID,
+      boardId,
+      name: "Phòng ban yêu cầu",
+      fieldType: "select",
+      settings: JSON.stringify({ display: "mark" }),
+      position: 6,
+      options: ERP_REQUESTER_OPTIONS.map(
+        (option, index): MockFieldOptionRecord => ({
+          id: option.id,
+          name: option.name,
+          color: option.color,
+          position: `a${String(index).padStart(4, "0")}`,
+        }),
+      ),
+    });
+    this.settings.set(
+      boardId,
+      erpSettingsRegistry({
+        status: ERP_STATUS_COLUMN_ID,
+        priority: ERP_PRIORITY_COLUMN_ID,
+        owner: ERP_OWNER_COLUMN_ID,
+        module: ERP_MODULE_COLUMN_ID,
+        estimate: ERP_ESTIMATE_COLUMN_ID,
+        requester: ERP_REQUESTER_COLUMN_ID,
+      }),
+    );
+    for (const label of ERP_LABELS) this.insertLabel({ ...label });
+    ERP_GROUPS.forEach((group, index) => {
+      this.insertList({
+        id: group.id,
+        boardId,
+        title: group.title,
+        color: ["#1E6FD0", "#0E7490", "#5532A8", "#9A6A12"][index] ?? "#1E6FD0",
+        position: index + 1,
+        isCollapsed: false,
+      });
+    });
+    ERP_ITEMS.forEach((item, index) => {
+      const id = erpItemId(item.key);
+      this.insertCard({
+        id,
+        boardId,
+        listId: erpGroupId(item.group),
+        title: item.title,
+        position: index + 1,
+        createdAt: ERP_ITEM_CREATED[item.key]?.at ?? "2026-09-21T02:00:00.000Z",
+        updatedAt: "2026-10-12T01:40:00.000Z",
+        itemKey: item.key,
+        description: ERP_DESCRIPTIONS[item.key],
+        parentItemId: null,
+        dueAt: item.due ? hanoiInstant(item.due, item.dueHour) : null,
+        startedAt: item.start ? hanoiInstant(item.start, 9) : null,
+        completedAt: item.completed ? hanoiInstant(item.completed, 16) : null,
+        assigneeUserIds: item.assignee ? [erpAssigneeId(item.assignee)] : [],
+        childProgress: item.children ? { ...item.children } : null,
+      });
+      this.updateFieldValue(
+        id,
+        ERP_STATUS_COLUMN_ID,
+        erpStatusOptionId(item.status),
+      );
+      this.updateFieldValue(
+        id,
+        ERP_PRIORITY_COLUMN_ID,
+        erpPriorityOptionId(item.priority),
+      );
+      this.addIndex(this.labelIdsByCardId, id, erpLabelId(item.label));
+    });
+    // Child items ("Việc con"): real cards under their parent, so the sheet
+    // lists them, ticks them and the parent's progress follows.
+    ERP_CHILD_ITEMS.forEach((child, index) => {
+      const parent = ERP_ITEMS.find((item) => item.key === child.parentKey);
+      if (!parent) return;
+      const id = `${erpItemId(child.parentKey)}-child-${index + 1}`;
+      this.insertCard({
+        id,
+        boardId,
+        listId: erpGroupId(parent.group),
+        title: child.title,
+        position: index + 1,
+        createdAt: "2026-09-21T02:00:00.000Z",
+        updatedAt: "2026-10-12T01:40:00.000Z",
+        itemKey: child.key,
+        parentItemId: erpItemId(child.parentKey),
+        dueAt: hanoiInstant(child.due),
+        startedAt: null,
+        completedAt: child.done ? hanoiInstant(child.due, 16) : null,
+        assigneeUserIds: [erpAssigneeId(child.assignee)],
+        childProgress: null,
+      });
+      this.updateFieldValue(
+        id,
+        ERP_STATUS_COLUMN_ID,
+        erpStatusOptionId(child.done ? "done" : "todo"),
+      );
+    });
+    // Items of the States mockup: opened by address, left out of board reads.
+    for (const item of ERP_STATE_ITEMS) {
+      const id = erpItemId(item.key);
+      const archived = item.archived;
+      this.insertCard({
+        id,
+        boardId,
+        listId: erpGroupId(item.group),
+        title: item.title,
+        position: 100 + this.cardsById.size,
+        createdAt: item.createdAt,
+        updatedAt: archived?.at ?? item.createdAt,
+        itemKey: item.key,
+        description: item.description,
+        parentItemId: null,
+        dueAt: null,
+        startedAt: null,
+        completedAt: null,
+        assigneeUserIds: item.assignee ? [erpAssigneeId(item.assignee)] : [],
+        childProgress: item.children
+          ? { done: 12, total: item.children }
+          : null,
+        unlisted: true,
+        ...(archived
+          ? {
+              isArchived: true,
+              archivedAt: archived.at,
+              archivedByUserId: archived.byUserId,
+            }
+          : {}),
+      });
+      this.updateFieldValue(
+        id,
+        ERP_STATUS_COLUMN_ID,
+        erpStatusOptionId(item.status),
+      );
+      this.updateFieldValue(
+        id,
+        ERP_PRIORITY_COLUMN_ID,
+        erpPriorityOptionId(item.priority),
+      );
+      this.recordActivity(id, ERP_PEOPLE.HA.id, "tạo việc", item.createdAt, {
+        kind: "created",
+        verb: "tạo việc",
+      });
+      erpLongChildTitles()
+        .slice(0, item.children ?? 0)
+        .forEach((title, index) => {
+          const done = index === 0 || (index >= 2 && index <= 12);
+          const childId = `${id}-child-${index + 1}`;
+          this.insertCard({
+            id: childId,
+            boardId,
+            listId: erpGroupId(item.group),
+            title,
+            position: index + 1,
+            createdAt: item.createdAt,
+            updatedAt: item.createdAt,
+            itemKey: `${item.key}.${index + 1}`,
+            parentItemId: id,
+            dueAt: null,
+            startedAt: null,
+            completedAt: done ? hanoiInstant("11/10", 16) : null,
+            assigneeUserIds: [],
+            childProgress: null,
+            unlisted: true,
+          });
+          this.updateFieldValue(
+            childId,
+            ERP_STATUS_COLUMN_ID,
+            erpStatusOptionId(done ? "done" : "todo"),
+          );
+        });
+    }
+    const planId = (ref: string) =>
+      ref.startsWith("ERP-") ? erpItemId(ref) : ref;
+    this.planByBoardId.set(boardId, {
+      items: ERP_PLAN_ITEMS.map(({ groupKey, ...item }) => ({
+        ...item,
+        groupId: erpGroupId(groupKey),
+      })),
+      links: [],
+      groups: Object.fromEntries(
+        Object.entries(ERP_PLAN_GROUPS).map(([key, group]) => [
+          erpItemId(key),
+          erpGroupId(group),
+        ]),
+      ),
+      percents: Object.fromEntries(
+        Object.entries(ERP_ITEM_PERCENT).map(([key, value]) => [
+          erpItemId(key),
+          value,
+        ]),
+      ),
+    });
+    this.itemLinks = [
+      ...ERP_PLAN_LINKS.map((link, index) => ({
+        id: `link-dep-${index + 1}`,
+        boardId,
+        from: planId(link.from),
+        to: planId(link.to),
+        kind: "dependency" as const,
+      })),
+      ...ERP_RELATED_LINKS.map((link, index) => ({
+        id: `link-rel-${index + 1}`,
+        boardId,
+        from: planId(link.from),
+        to: planId(link.to),
+        kind: "related" as const,
+      })),
+    ];
+    for (const entry of ERP_HISTORY) {
+      this.recordActivity(
+        erpItemId(entry.itemKey),
+        entry.userId,
+        entry.action,
+        entry.createdAt,
+        {
+          kind: entry.kind,
+          automationName: entry.automationName,
+          verb: entry.verb,
+          target: entry.target,
+          notified: entry.notified,
+          detail: entry.detail,
+          compact: entry.compact,
+        },
+      );
+    }
+    for (const [key, values] of Object.entries(ERP_CUSTOM_VALUES)) {
+      for (const [columnId, value] of Object.entries(values))
+        this.updateFieldValue(erpItemId(key), columnId, value);
+    }
+    for (const [key, userIds] of Object.entries(ERP_FOLLOWERS))
+      this.followersByCardId.set(erpItemId(key), [...userIds]);
+    for (const file of ERP_FILES) {
+      const list = this.attachmentsByCardId.get(erpItemId(file.itemKey)) ?? [];
+      list.push({
+        id: file.id,
+        cardId: erpItemId(file.itemKey),
+        filename: file.filename,
+        sizeBytes: file.sizeBytes,
+        contentType: file.contentType,
+        uploadedBy: file.userId,
+        createdAt: file.createdAt,
+      });
+      this.attachmentsByCardId.set(erpItemId(file.itemKey), list);
+    }
+    for (const comment of ERP_COMMENTS) {
+      this.insertComment({
+        id: this.nextId("cmt"),
+        cardId: erpItemId(comment.itemKey),
+        userId: comment.userId,
+        contentMd: comment.contentMd,
+        createdAt: comment.createdAt,
+      });
+    }
+    for (const comment of ERP_EXTRA_COMMENTS) {
+      this.insertComment({
+        id: this.nextId("cmt"),
+        cardId: erpItemId(comment.itemKey),
+        userId: comment.userId,
+        contentMd: comment.contentMd,
+        createdAt: comment.createdAt,
+        ...("attachmentFileId" in comment
+          ? { attachmentIds: [comment.attachmentFileId] }
+          : {}),
+      });
+    }
+    this.boardMembersByBoardId.set(
+      boardId,
+      ERP_BOARD_MEMBERS.map((member) => ({ ...member })),
+    );
+    this.boardGrantsByBoardId.set(boardId, [
+      {
+        boardId,
+        userId: ERP_COMMENTER.id,
+        level: "commenter",
+        grantedByUserId: ERP_PEOPLE.HP.id,
+        expiresAt: "2026-12-31T16:59:59.000Z",
+      },
+      // Đặng Minh Tuấn, from a partner company, edits here until 31/01/2027.
+      {
+        boardId,
+        userId: ERP_PEOPLE.DT.id,
+        level: "editor",
+        grantedByUserId: ERP_PEOPLE.HP.id,
+        expiresAt: "2027-01-31T16:59:59.000Z",
+      },
+      // The viewer persona (a workspace guest) can only view this board.
+      {
+        boardId,
+        userId: mockIds.users.viewer,
+        level: "viewer",
+        grantedByUserId: ERP_PEOPLE.HP.id,
+      },
+    ]);
+    seedErpSharing(this.sharing);
+    this.boardAudienceByBoardId.set(boardId, {
+      ...ERP_AUDIENCE,
+      sources: ERP_AUDIENCE.sources.map((source) => ({ ...source })),
+    });
+  }
+
+  private seedDepartmentBoards(workspaceId: string): void {
+    for (const dept of [...DEPARTMENT_BOARDS, ...TECH_SIDE_BOARDS]) {
+      this.insertBoard({
+        id: dept.id,
+        workspaceId,
+        title: dept.title,
+        description: dept.description,
+        background: { type: "color", value: dept.color },
+        visibility: dept.visibility ?? "workspace",
+        isArchived: false,
+        createdAt: "2026-09-15T02:00:00.000Z",
+        updatedAt: "2026-10-12T01:00:00.000Z",
+        spaceId: dept.spaceId,
+        version: 1,
+        itemKeyPrefix: dept.prefix,
+      });
+      this.boardViewsByBoardId.set(dept.id, {
+        boardId: dept.id,
+        viewMode: "table",
+        viewConfig: "{}",
+      });
+      this.insertColumn({
+        id: dept.statusColumnId,
+        boardId: dept.id,
+        name: "Trạng thái",
+        fieldType: "status",
+        position: 1,
+        options: defaultStatusOptions(dept.statusPrefix),
+      });
+      this.insertColumn({
+        id: dept.priorityColumnId,
+        boardId: dept.id,
+        name: "Ưu tiên",
+        fieldType: "select",
+        position: 2,
+        options: ERP_PRIORITY_OPTIONS.map((option) => ({
+          ...option,
+          id: option.id.replace(
+            "mock-erp-priority",
+            `${dept.statusPrefix}-priority`,
+          ),
+        })),
+      });
+      this.insertList({
+        id: dept.listId,
+        boardId: dept.id,
+        title: dept.listTitle,
+        color: dept.color,
+        position: 1,
+        isCollapsed: false,
+      });
+      dept.items.forEach((item, index) => {
+        const id = departmentItemId(item.key);
+        this.insertCard({
+          id,
+          boardId: dept.id,
+          listId: dept.listId,
+          title: item.title,
+          description: item.description,
+          position: index + 1,
+          createdAt: "2026-09-28T02:00:00.000Z",
+          updatedAt: "2026-10-12T01:00:00.000Z",
+          itemKey: item.key,
+          parentItemId: null,
+          dueAt: item.due ? hanoiInstant(item.due, item.dueHour) : null,
+          startedAt: null,
+          completedAt: item.completed
+            ? hanoiInstant(item.completed, item.completedHour)
+            : null,
+          assigneeUserIds: item.assigneeId ? [item.assigneeId] : [],
+          childProgress: null,
+        });
+        this.updateFieldValue(
+          id,
+          dept.statusColumnId,
+          `${dept.statusPrefix}-${item.status}`,
+        );
+        this.updateFieldValue(
+          id,
+          dept.priorityColumnId,
+          `${dept.statusPrefix}-priority-${item.priority}`,
+        );
+      });
+    }
+    // Hạ tầng & bảo mật gave the on-call team the right to view it (paused with the team).
+    this.sharing.setBoard(
+      "mock-board-it-infra",
+      [
+        {
+          id: "share-infra-oncall",
+          kind: "team",
+          userId: null,
+          teamId: mockIds.teams.oncall,
+          level: "viewer",
+          expiresAt: null,
+          owner: false,
+          addedAt: "2026-08-20T02:00:00.000Z",
+        },
+      ],
+      [],
+    );
+    // Ngân sách CNTT 2027 is private: four people were added to it.
+    this.boardMembersByBoardId.set(
+      "mock-board-it-budget",
+      (
+        [
+          [ERP_PEOPLE.HP.id, "Owner"],
+          [ERP_PEOPLE.HA.id, "Admin"],
+          [ERP_PEOPLE.MQ.id, "Member"],
+          [ENGINEERING_MEMBERS[0]!.id, "Member"],
+        ] as const
+      ).map(([userId, role]) => ({
+        boardId: "mock-board-it-budget",
+        userId,
+        role,
+        joinedAt: "2026-09-15T02:00:00.000Z",
+      })) as MockBoardMemberRecord[],
+    );
+  }
+
+  /** Members of a board, in seeded order. */
+  getBoardMembers(boardId: string): MockBoardMemberRecord[] {
+    return [...(this.boardMembersByBoardId.get(boardId) ?? [])];
+  }
+
+  /** The explicit access entry of a user on a board, when there is one. */
+  getBoardGrant(
+    boardId: string,
+    userId: string,
+  ): MockBoardGrantRecord | undefined {
+    return this.boardGrantsByBoardId
+      .get(boardId)
+      ?.find((grant) => grant.userId === userId);
+  }
+
+  /** Sets (or adds) a user's explicit level on a board. */
+  setBoardGrant(
+    boardId: string,
+    userId: string,
+    level: MockBoardGrantRecord["level"],
+    grantedByUserId: string,
+  ): void {
+    const list = this.boardGrantsByBoardId.get(boardId) ?? [];
+    const existing = list.find((grant) => grant.userId === userId);
+    if (existing) existing.level = level;
+    else list.push({ boardId, userId, level, grantedByUserId });
+    this.boardGrantsByBoardId.set(boardId, list);
+  }
+
+  /** Removes a user's explicit entry on a board. */
+  removeBoardGrant(boardId: string, userId: string): void {
+    const list = this.boardGrantsByBoardId.get(boardId);
+    if (!list) return;
+    this.boardGrantsByBoardId.set(
+      boardId,
+      list.filter((grant) => grant.userId !== userId),
+    );
+  }
+
+  /** Switches who can open a board (the share dialog's "Private"). */
+  setBoardVisibility(
+    boardId: string,
+    visibility: "private" | "workspace",
+  ): void {
+    const board = this.boardsById.get(boardId);
+    if (board) board.visibility = visibility;
+  }
+
+  /** The seeded audience of a board, when the world defines one. */
+  getBoardAudience(boardId: string): MockBoardAudienceRecord | undefined {
+    return this.boardAudienceByBoardId.get(boardId);
+  }
+
+  /** The current member as a Space access subject. */
+  spaceViewer(workspaceId: string): MockSpaceViewer {
+    return {
+      userId: this.getCurrentUser().id,
+      workspaceRole: this.getCurrentMemberRole(workspaceId),
+    };
+  }
+
+  /** Non-deleted Boards and Pages placed in a Space (WSP-022 archive check). */
+  countPlacedInSpace(spaceId: string): { boards: number; pages: number } {
+    let boards = 0;
+    let pages = 0;
+    for (const board of this.boardsById.values()) {
+      if (board.spaceId === spaceId && !board.isArchived) boards += 1;
+    }
+    for (const page of this.pagesById.values()) {
+      if (page.spaceId === spaceId) pages += 1;
+    }
+    return { boards, pages };
+  }
+
+  getBoardVersion(boardId: string): number {
+    return this.boardsById.get(boardId)?.version ?? 1;
+  }
+
+  /** Places a Board in a Space (or at the workspace level), versioned. */
+  placeBoard(
+    boardId: string,
+    spaceId: string | null,
+    expectedVersion: unknown,
+  ): MockVersionedWrite {
+    const board = this.boardsById.get(boardId);
+    if (!board) return "not-found";
+    const version = board.version ?? 1;
+    if (expectedVersion !== version) return "stale";
+    if ((board.spaceId ?? null) === spaceId) return "ok";
+    board.spaceId = spaceId;
+    board.version = version + 1;
+    return "ok";
+  }
 
   private seedNotifications(userId: string, count: number): void {
     for (let i = 0; i < count; i++) {
@@ -593,6 +1706,7 @@ export class MockStore {
     this.membershipsById.clear();
     this.viewsById.clear();
     this.boardsById.clear();
+    this.settings.clear();
     this.listsById.clear();
     this.cardsById.clear();
     this.notificationsById.clear();
@@ -606,6 +1720,33 @@ export class MockStore {
     this.fieldValuesByCardId.clear();
     this.userPreferencesByUserId.clear();
     this.loggedOutUserIds.clear();
+    this.auth.reset();
+    this.onboarding.reset();
+    this.accountPages.reset();
+    this.reports.reset();
+    this.billing.reset();
+    this.integrations.reset();
+    this.automations.reset();
+    this.navigationByMember.clear();
+    this.navigationTick = 0;
+    this.suspendedMembershipIds.clear();
+    this.invitationsById.clear();
+    this.settingsByWorkspaceId.clear();
+    this.workspaceVersionById.clear();
+    this.workspaceDescriptionById.clear();
+    this.archivedWorkspaceIds.clear();
+    this.boardMembersByBoardId.clear();
+    this.boardGrantsByBoardId.clear();
+    this.sharing.clear();
+    this.boardAudienceByBoardId.clear();
+    this.spaces.clear();
+    this.feed.clear();
+    this.completedCardIds.clear();
+    this.activityByCardId.clear();
+    this.attachmentsByCardId.clear();
+    this.itemLinks = [];
+    this.followersByCardId.clear();
+    this.planByBoardId.clear();
 
     this.membershipIdsByWorkspaceId.clear();
     this.viewIdsByWorkspaceId.clear();
@@ -720,6 +1861,11 @@ export class MockStore {
 
   // ─── Repository Accessors & Mutations ─────────────────────────────────────
 
+  /** Every user the world knows (the mock's workspace people directory). */
+  listUsers(): MockUserRecord[] {
+    return [...this.usersById.values()];
+  }
+
   getUser(id: string): MockUserRecord | undefined {
     return this.usersById.get(id);
   }
@@ -747,6 +1893,7 @@ export class MockStore {
       admin: mockIds.users.admin,
       member: mockIds.users.member,
       viewer: mockIds.users.viewer,
+      commenter: mockIds.users.commenter,
     };
     const targetId = personaMap[this.config.persona] ?? mockIds.users.owner;
     const user = this.usersById.get(targetId);
@@ -756,6 +1903,11 @@ export class MockStore {
       );
     }
     return user;
+  }
+
+  /** A sign-in succeeded: the persona's session is open again. */
+  loginCurrentUser(): void {
+    this.loggedOutUserIds.delete(this.getCurrentUser().id);
   }
 
   logoutCurrentUser(): void {
@@ -846,7 +1998,7 @@ export class MockStore {
 
   createBoard(
     workspaceId: string,
-    input: { title?: string; description?: string },
+    input: { title?: string; description?: string; spaceId?: string | null },
   ): MockBoardRecord {
     if (!this.workspacesById.has(workspaceId)) {
       throw new MockRelationalInvariantError(
@@ -863,8 +2015,8 @@ export class MockStore {
         description: input.description,
       },
     );
-    this.insertBoard(board);
-    return board;
+    this.insertBoard({ ...board, spaceId: input.spaceId ?? null, version: 1 });
+    return this.boardsById.get(board.id)!;
   }
 
   getBoardView(boardId: string): MockBoardViewRecord | undefined {
@@ -954,6 +2106,86 @@ export class MockStore {
     return true;
   }
 
+  /**
+   * Adds an option to a Status or Select field and bumps the field version
+   * (the backend's `AddFieldOption`): appended after the last option, or
+   * between the named neighbours. `stale` = the expected version is behind.
+   */
+  addFieldOption(
+    columnId: string,
+    input: {
+      name: string;
+      color: string;
+      category?: MockFieldOptionRecord["category"];
+      expectedVersion: number;
+    },
+  ):
+    | { result: "ok"; option: MockFieldOptionRecord }
+    | { result: "not-found" | "invalid" | "stale" } {
+    const col = this.columnsById.get(columnId);
+    if (!col) return { result: "not-found" };
+    if (col.fieldType !== "status" && col.fieldType !== "select") {
+      return { result: "invalid" };
+    }
+    if ((col.version ?? 1) !== input.expectedVersion) {
+      return { result: "stale" };
+    }
+    const options = [...(col.options ?? [])].sort((a, b) =>
+      a.position < b.position ? -1 : a.position > b.position ? 1 : 0,
+    );
+    const last = options.at(-1)?.position;
+    const option: MockFieldOptionRecord = {
+      id: this.nextId("opt"),
+      name: input.name,
+      color: input.color,
+      // Appending "0" to the last key sorts after it and before any longer key.
+      position: last === undefined ? "a0" : `${last}0`,
+      ...(col.fieldType === "status"
+        ? { category: input.category ?? "in_progress" }
+        : {}),
+    };
+    this.columnsById.set(columnId, {
+      ...col,
+      options: [...options, option],
+      version: (col.version ?? 1) + 1,
+    });
+    return { result: "ok", option };
+  }
+
+  /** Renames or recolours an option and bumps the field version. */
+  updateFieldOption(
+    columnId: string,
+    optionId: string,
+    patch: {
+      name?: string;
+      color?: string;
+      category?: MockFieldOptionRecord["category"];
+      expectedVersion: number;
+    },
+  ): "ok" | "not-found" | "stale" {
+    const col = this.columnsById.get(columnId);
+    const option = col?.options?.find((candidate) => candidate.id === optionId);
+    if (!col || !option) return "not-found";
+    if ((col.version ?? 1) !== patch.expectedVersion) return "stale";
+    this.columnsById.set(columnId, {
+      ...col,
+      options: (col.options ?? []).map((candidate) =>
+        candidate.id === optionId
+          ? {
+              ...candidate,
+              name: patch.name ?? candidate.name,
+              color: patch.color ?? candidate.color,
+              ...(col.fieldType === "status" && patch.category
+                ? { category: patch.category }
+                : {}),
+            }
+          : candidate,
+      ),
+      version: (col.version ?? 1) + 1,
+    });
+    return "ok";
+  }
+
   deleteColumn(columnId: string): boolean {
     const col = this.columnsById.get(columnId);
     if (!col) return false;
@@ -962,17 +2194,42 @@ export class MockStore {
     return true;
   }
 
-  reorderColumns(
+  /**
+   * Neighbor-relative placement over numeric mock positions, mirroring the
+   * backend move contract: no neighbors appends, otherwise place between them.
+   */
+  private placeBetween(
+    siblings: { id: string; position: number }[],
+    previousSiblingId?: string | null,
+    nextSiblingId?: string | null,
+  ): number {
+    const byId = new Map(siblings.map((s) => [s.id, s.position]));
+    const max = siblings.reduce((m, s) => Math.max(m, s.position), 0);
+    const prev = previousSiblingId ? byId.get(previousSiblingId) : undefined;
+    const next = nextSiblingId ? byId.get(nextSiblingId) : undefined;
+    if (prev === undefined && next === undefined) return max + 1;
+    if (prev !== undefined && next === undefined) return prev + 1;
+    if (prev === undefined && next !== undefined) return next - 1;
+    return ((prev as number) + (next as number)) / 2;
+  }
+
+  moveColumn(
     boardId: string,
-    items: { id: string; newPosition: number }[],
+    columnId: string,
+    previousSiblingId?: string | null,
+    nextSiblingId?: string | null,
   ): boolean {
-    if (!this.boardsById.has(boardId)) return false;
-    for (const item of items) {
-      const col = this.columnsById.get(item.id);
-      if (col && col.boardId === boardId) {
-        this.columnsById.set(item.id, { ...col, position: item.newPosition });
-      }
-    }
+    const col = this.columnsById.get(columnId);
+    if (!col || col.boardId !== boardId) return false;
+    const siblings = Array.from(this.columnsById.values()).filter(
+      (c) => c.boardId === boardId && c.id !== columnId,
+    );
+    const position = this.placeBetween(
+      siblings,
+      previousSiblingId,
+      nextSiblingId,
+    );
+    this.columnsById.set(columnId, { ...col, position });
     return true;
   }
 
@@ -1132,17 +2389,22 @@ export class MockStore {
     return newList;
   }
 
-  reorderLists(
-    boardId: string,
-    items: { id: string; newPosition: number }[],
+  moveList(
+    listId: string,
+    previousSiblingId?: string | null,
+    nextSiblingId?: string | null,
   ): boolean {
-    if (!this.boardsById.has(boardId)) return false;
-    for (const item of items) {
-      const list = this.listsById.get(item.id);
-      if (list && list.boardId === boardId) {
-        this.listsById.set(item.id, { ...list, position: item.newPosition });
-      }
-    }
+    const list = this.listsById.get(listId);
+    if (!list) return false;
+    const siblings = Array.from(this.listsById.values()).filter(
+      (l) => l.boardId === list.boardId && l.id !== listId,
+    );
+    const position = this.placeBetween(
+      siblings,
+      previousSiblingId,
+      nextSiblingId,
+    );
+    this.listsById.set(listId, { ...list, position });
     return true;
   }
 
@@ -1174,6 +2436,8 @@ export class MockStore {
       createdAt: this.clock.isoNow(),
       updatedAt: this.clock.isoNow(),
     };
+    const itemKey = this.nextItemKey(boardId);
+    if (itemKey) card.itemKey = itemKey;
     this.insertCard(card);
     return card;
   }
@@ -1191,9 +2455,75 @@ export class MockStore {
     return this.createCard(list.boardId, listId, input);
   }
 
+  /** The phases, milestones, dependencies and completions of a board's plan. */
+  getPlan(boardId: string): MockBoardPlan {
+    const plan = this.planByBoardId.get(boardId) ?? {
+      items: [],
+      links: [],
+      percents: {},
+      groups: {},
+    };
+    return {
+      ...plan,
+      links: this.itemLinks
+        .filter(
+          (link) => link.boardId === boardId && link.kind === "dependency",
+        )
+        .map((link) => ({ from: link.from, to: link.to })),
+    };
+  }
+
+  /** Records one line of an item's history ("đổi hạn từ 08/10 sang 10/10"). */
+  recordActivity(
+    cardId: string,
+    actorId: string | null,
+    action: string,
+    createdAt?: string,
+    extra: Omit<
+      MockActivityRecord,
+      "id" | "actorId" | "action" | "createdAt"
+    > = {},
+  ): void {
+    const list = this.activityByCardId.get(cardId) ?? [];
+    list.push({
+      id: `act-${cardId}-${list.length + 1}`,
+      actorId,
+      action,
+      createdAt: createdAt ?? this.clock.isoNow(),
+      ...extra,
+    });
+    this.activityByCardId.set(cardId, list);
+  }
+
+  getActivity(cardId: string) {
+    return [...(this.activityByCardId.get(cardId) ?? [])].sort((a, b) =>
+      a.createdAt.localeCompare(b.createdAt),
+    );
+  }
+
+  private shortDay(iso: string | null | undefined): string {
+    return iso ? hanoiShortDay(iso) : "không có hạn";
+  }
+
   updateCard(cardId: string, patch: Partial<MockCardRecord>): boolean {
     const card = this.cardsById.get(cardId);
     if (!card) return false;
+    if ("dueAt" in patch && (patch.dueAt ?? null) !== (card.dueAt ?? null)) {
+      this.recordActivity(
+        cardId,
+        this.getCurrentUser().id,
+        `đổi hạn từ ${this.shortDay(card.dueAt)} sang ${this.shortDay(patch.dueAt)}`,
+        undefined,
+        {
+          verb: "đổi Hạn chót",
+          detail: {
+            kind: "diff",
+            from: card.dueAt ? hanoiShortDay(card.dueAt) : "—",
+            to: patch.dueAt ? hanoiShortDay(patch.dueAt) : "—",
+          },
+        },
+      );
+    }
     const updated: MockCardRecord = {
       ...card,
       ...patch,
@@ -1242,6 +2572,19 @@ export class MockStore {
       position: card.position + 1,
     });
 
+    // The copy keeps the item's values: status, priority, due date, people.
+    const values = this.fieldValuesByCardId.get(cardId);
+    if (values) this.fieldValuesByCardId.set(newCard.id, new Map(values));
+    const current = this.cardsById.get(newCard.id);
+    if (current) {
+      this.cardsById.set(newCard.id, {
+        ...current,
+        dueAt: card.dueAt ?? null,
+        startedAt: card.startedAt ?? null,
+        assigneeUserIds: [...(card.assigneeUserIds ?? [])],
+      });
+    }
+
     // Duplicate labels
     const labels = this.labelIdsByCardId.get(cardId);
     if (labels) {
@@ -1253,8 +2596,160 @@ export class MockStore {
     return newCard;
   }
 
+  /** Archives an item: it leaves the board read and keeps its data. */
   archiveCard(cardId: string): boolean {
-    return this.cardsById.has(cardId);
+    const card = this.cardsById.get(cardId);
+    if (!card) return false;
+    this.cardsById.set(cardId, {
+      ...card,
+      isArchived: true,
+      archivedAt: this.clock.isoNow(),
+      archivedByUserId: this.getCurrentUser().id,
+      version: (card.version ?? 1) + 1,
+      updatedAt: this.clock.isoNow(),
+    });
+    return true;
+  }
+
+  /** Brings an archived item back to its own place on the board. */
+  restoreCard(cardId: string): boolean {
+    const card = this.cardsById.get(cardId);
+    if (!card || !card.isArchived) return false;
+    this.cardsById.set(cardId, {
+      ...card,
+      isArchived: false,
+      archivedAt: null,
+      archivedByUserId: null,
+      version: (card.version ?? 1) + 1,
+      updatedAt: this.clock.isoNow(),
+    });
+    return true;
+  }
+
+  /** Adds a person to a board as a member; false when they already are. */
+  addBoardMember(boardId: string, userId: string): boolean {
+    const members = this.boardMembersByBoardId.get(boardId) ?? [];
+    if (members.some((member) => member.userId === userId)) return false;
+    this.boardMembersByBoardId.set(boardId, [
+      ...members,
+      { boardId, userId, role: "Member", joinedAt: this.clock.isoNow() },
+    ]);
+    return true;
+  }
+
+  /**
+   * `WorkManagement.BoardItems.Move`, like the server: the item's version must
+   * match `expectedVersion` ("stale" otherwise); it is placed between the
+   * given neighbours of the target group (both `null` appends) and its
+   * version goes up.
+   */
+  moveItem(
+    cardId: string,
+    groupId: string,
+    placement: {
+      readonly expectedVersion: number;
+      readonly previousSiblingId: string | null;
+      readonly nextSiblingId: string | null;
+    },
+  ):
+    | {
+        readonly result: "ok";
+        readonly version: number;
+        readonly card: MockCardRecord;
+      }
+    | { readonly result: "not-found" | "invalid" | "stale" } {
+    const card = this.cardsById.get(cardId);
+    if (!card) return { result: "not-found" };
+    const group = this.listsById.get(groupId);
+    if (!group || group.boardId !== card.boardId) return { result: "invalid" };
+    if ((card.version ?? 1) !== placement.expectedVersion) {
+      return { result: "stale" };
+    }
+    const others = this.getCards(groupId).filter(
+      (other) => other.id !== cardId,
+    );
+    const previous = placement.previousSiblingId
+      ? others.find((other) => other.id === placement.previousSiblingId)
+      : undefined;
+    const next = placement.nextSiblingId
+      ? others.find((other) => other.id === placement.nextSiblingId)
+      : undefined;
+    if (
+      (placement.previousSiblingId && !previous) ||
+      (placement.nextSiblingId && !next)
+    ) {
+      return { result: "invalid" };
+    }
+    const at = (index: number) => others[index]?.position;
+    const afterPrevious = previous
+      ? at(others.indexOf(previous) + 1)
+      : undefined;
+    const beforeNext = next ? at(others.indexOf(next) - 1) : undefined;
+    const between = (low: number, high: number) => (low + high) / 2;
+    const position =
+      previous && next
+        ? between(previous.position, next.position)
+        : previous
+          ? afterPrevious !== undefined
+            ? between(previous.position, afterPrevious)
+            : previous.position + 1
+          : next
+            ? beforeNext !== undefined
+              ? between(beforeNext, next.position)
+              : next.position - 1
+            : (others.at(-1)?.position ?? 0) + 1;
+    this.moveCard(cardId, groupId, position);
+    const version = (card.version ?? 1) + 1;
+    const moved = { ...this.cardsById.get(cardId)!, version };
+    this.cardsById.set(cardId, moved);
+    return { result: "ok", version, card: moved };
+  }
+
+  /**
+   * `WorkManagement.BoardItems.UpdateStatus`: sets the item's option of its
+   * board's Status column, like the server. Moving into a Done-category
+   * option marks the item completed; moving out clears it. Returns
+   * "not-found" for an unknown item and "invalid" when the board has no
+   * Status column or the option is not one of it.
+   */
+  updateItemStatus(
+    cardId: string,
+    optionId: string,
+  ): "ok" | "not-found" | "invalid" {
+    const card = this.cardsById.get(cardId);
+    if (!card) return "not-found";
+    const statusColumn = this.getColumns(card.boardId).find(
+      (column) => column.fieldType === "status",
+    );
+    const option = statusColumn?.options?.find(
+      (candidate) => candidate.id === optionId,
+    );
+    if (!statusColumn || !option) return "invalid";
+    const previousId = this.getFieldValues(cardId)[statusColumn.id];
+    const previous = statusColumn.options?.find(
+      (candidate) => candidate.id === previousId,
+    );
+    if (previous && previous.id !== option.id) {
+      this.recordActivity(
+        cardId,
+        this.getCurrentUser().id,
+        `đổi trạng thái từ ${previous.name} sang ${option.name}`,
+        undefined,
+        {
+          verb: "đổi Trạng thái",
+          detail: { kind: "diff", from: previous.name, to: option.name },
+        },
+      );
+    }
+    this.updateFieldValue(cardId, statusColumn.id, optionId);
+    const done = option.category === "done";
+    this.cardsById.set(cardId, {
+      ...card,
+      version: (card.version ?? 1) + 1,
+      completedAt: done ? (card.completedAt ?? this.clock.isoNow()) : null,
+      updatedAt: this.clock.isoNow(),
+    });
+    return "ok";
   }
 
   updateFieldValue(
@@ -1270,6 +2765,22 @@ export class MockStore {
       this.fieldValuesByCardId.set(cardId, fieldMap);
     }
     fieldMap.set(fieldDefinitionId, value);
+    // A person field's value is the item's assignee set (the item's members).
+    const field = this.getColumns(card.boardId).find(
+      (column) => column.id === fieldDefinitionId,
+    );
+    if (
+      (field?.fieldType === "user" || field?.fieldType === "person") &&
+      Array.isArray(value)
+    ) {
+      this.cardsById.set(cardId, {
+        ...card,
+        assigneeUserIds: value.filter(
+          (id): id is string => typeof id === "string",
+        ),
+        updatedAt: this.clock.isoNow(),
+      });
+    }
     return true;
   }
 
@@ -1310,6 +2821,60 @@ export class MockStore {
     // Add to new list index
     this.addIndex(this.cardIdsByListId, targetListId, card.id);
     return true;
+  }
+
+  /**
+   * Moves an item (and its child items) to another board: it lands at the end
+   * of the target group with the same name as its current group, else of the
+   * target's first group, and takes the next item key of the target board.
+   * Gap operation `CTR-GAP-WM-TABLE-BULK`.
+   */
+  moveItemToBoard(
+    cardId: string,
+    targetBoardId: string,
+  ):
+    | { readonly result: "ok"; readonly card: MockCardRecord }
+    | { readonly result: "not-found" | "invalid" } {
+    const card = this.cardsById.get(cardId);
+    const target = this.boardsById.get(targetBoardId);
+    if (!card || !target) return { result: "not-found" };
+    if (card.boardId === targetBoardId || card.parentItemId)
+      return { result: "invalid" };
+    const targetLists = this.getLists(targetBoardId);
+    if (targetLists.length === 0) return { result: "invalid" };
+    const sourceName = this.listsById.get(card.listId)?.title;
+    const list =
+      targetLists.find((candidate) => candidate.title === sourceName) ??
+      targetLists[0]!;
+    const now = this.clock.isoNow();
+    const position = this.getCards(list.id).length;
+    const itemKey = this.nextItemKey(targetBoardId);
+    const relocate = (record: MockCardRecord, key: string | null) => {
+      this.removeIndex(this.cardIdsByListId, record.listId, record.id);
+      this.cardsById.set(record.id, {
+        ...record,
+        boardId: targetBoardId,
+        listId: list.id,
+        position,
+        itemKey: key,
+        version: (record.version ?? 1) + 1,
+        updatedAt: now,
+      });
+      this.addIndex(this.cardIdsByListId, list.id, record.id);
+    };
+    const children = [...this.cardsById.values()].filter(
+      (candidate) => candidate.parentItemId === cardId,
+    );
+    relocate(card, itemKey);
+    this.recordActivity(
+      cardId,
+      this.getCurrentUser().id,
+      `chuyển việc sang board ${target.title}`,
+    );
+    children.forEach((child, index) =>
+      relocate(child, itemKey ? `${itemKey}.${index + 1}` : null),
+    );
+    return { result: "ok", card: this.cardsById.get(cardId)! };
   }
 
   // ── Checklists ──
@@ -1500,7 +3065,12 @@ export class MockStore {
   // ── Pages ──
   createPage(
     workspaceId: string,
-    input: { title?: string; icon?: string; parentId?: string },
+    input: {
+      title?: string;
+      icon?: string;
+      parentId?: string;
+      spaceId?: string | null;
+    },
   ): MockPageRecord {
     if (!this.workspacesById.has(workspaceId)) {
       throw new MockRelationalInvariantError(
@@ -1518,8 +3088,12 @@ export class MockStore {
         parentId: input.parentId,
       },
     );
-    this.insertPage(page);
-    return page;
+    // A nested page follows its parent's Space (OT-4).
+    const spaceId = input.parentId
+      ? (this.pagesById.get(input.parentId)?.spaceId ?? null)
+      : (input.spaceId ?? null);
+    this.insertPage({ ...page, spaceId });
+    return this.pagesById.get(page.id)!;
   }
 
   updatePage(
@@ -1533,10 +3107,58 @@ export class MockStore {
       title: patch.title ?? page.title,
       icon: patch.icon !== undefined ? patch.icon : page.icon,
       parentId: patch.parentId !== undefined ? patch.parentId : page.parentId,
+      version: (page.version ?? 1) + 1,
       updatedAt: this.clock.isoNow(),
     };
     this.pagesById.set(pageId, updated);
     return true;
+  }
+
+  getPageVersion(pageId: string): number {
+    return this.pagesById.get(pageId)?.version ?? 1;
+  }
+
+  /**
+   * Places a root page in a Space (or at the workspace level) with its whole
+   * subtree, versioned like the producer (`Documents.Pages.MoveToSpace`): a
+   * nested page follows its root and is refused (docs/product/workspaces.md
+   * §79), a stale version changes nothing, the same place is a no-op.
+   */
+  placePage(
+    pageId: string,
+    spaceId: string | null,
+    expectedVersion: unknown,
+  ): MockVersionedWrite | "nested" {
+    const page = this.pagesById.get(pageId);
+    if (!page) return "not-found";
+    if (page.parentId) return "nested";
+    const version = page.version ?? 1;
+    if (expectedVersion !== version) return "stale";
+    if ((page.spaceId ?? null) === spaceId) return "ok";
+    const moving = new Set([pageId]);
+    let grew = true;
+    while (grew) {
+      grew = false;
+      for (const other of this.pagesById.values()) {
+        if (
+          other.parentId &&
+          moving.has(other.parentId) &&
+          !moving.has(other.id)
+        ) {
+          moving.add(other.id);
+          grew = true;
+        }
+      }
+    }
+    for (const id of moving) {
+      const record = this.pagesById.get(id)!;
+      this.pagesById.set(id, { ...record, spaceId });
+    }
+    this.pagesById.set(pageId, {
+      ...this.pagesById.get(pageId)!,
+      version: version + 1,
+    });
+    return "ok";
   }
 
   deletePage(pageId: string): boolean {
@@ -1555,6 +3177,630 @@ export class MockStore {
     return Array.from(ids)
       .map((id) => this.membershipsById.get(id))
       .filter((m): m is MockMembershipRecord => m !== undefined);
+  }
+
+  // ─── Navigation state (recents and pins, WX-BE-001/002) ─────────────────
+
+  private memberNavigation(workspaceId: string) {
+    const key = `${workspaceId}:${this.getCurrentUser().id}`;
+    let state = this.navigationByMember.get(key);
+    if (!state) {
+      state = { recents: [], pins: [] };
+      this.navigationByMember.set(key, state);
+    }
+    return state;
+  }
+
+  private nextNavigationTimestamp(): string {
+    this.navigationTick += 1;
+    return this.clock.offsetSeconds(this.navigationTick);
+  }
+
+  /**
+   * The workspace's member total as `WorkspaceDto.memberCount` reports it. The
+   * primary workspace is the mockups' Minh An Group (86 people) while its
+   * member list stays small; every other workspace reports its list.
+   */
+  getWorkspaceMemberCount(workspaceId: string): number {
+    const listed = this.getWorkspaceMembers(workspaceId).length;
+    return workspaceId === mockIds.workspaces.primary
+      ? Math.max(listed, 86)
+      : listed;
+  }
+
+  /** True when the current member belongs to the workspace. */
+  isCurrentMemberOf(workspaceId: string): boolean {
+    const userId = this.getCurrentUser().id;
+    return this.getWorkspaceMembers(workspaceId).some(
+      (m) => m.userId === userId,
+    );
+  }
+
+  getRecentResources(workspaceId: string) {
+    return [...this.memberNavigation(workspaceId).recents];
+  }
+
+  recordRecentResource(
+    workspaceId: string,
+    kind: string,
+    resourceId: string,
+  ): void {
+    const state = this.memberNavigation(workspaceId);
+    const rest = state.recents.filter(
+      (entry) => !(entry.kind === kind && entry.resourceId === resourceId),
+    );
+    state.recents = [
+      { kind, resourceId, at: this.nextNavigationTimestamp() },
+      ...rest,
+    ].slice(0, 30);
+  }
+
+  /** Seeds one recent at a stated time (the world's history), newest first. */
+  seedRecentResource(
+    workspaceId: string,
+    kind: string,
+    resourceId: string,
+    at: string,
+  ): void {
+    const state = this.memberNavigation(workspaceId);
+    state.recents = [...state.recents, { kind, resourceId, at }].sort((a, b) =>
+      b.at.localeCompare(a.at),
+    );
+  }
+
+  getPinnedResources(workspaceId: string) {
+    return [...this.memberNavigation(workspaceId).pins];
+  }
+
+  /** Returns false when the 50-pin cap is reached. Re-pin is a no-op. */
+  pinResource(workspaceId: string, kind: string, resourceId: string): boolean {
+    const state = this.memberNavigation(workspaceId);
+    if (
+      state.pins.some((p) => p.kind === kind && p.resourceId === resourceId)
+    ) {
+      return true;
+    }
+    if (state.pins.length >= 50) return false;
+    state.pins = [
+      { kind, resourceId, at: this.nextNavigationTimestamp() },
+      ...state.pins,
+    ];
+    return true;
+  }
+
+  unpinResource(workspaceId: string, kind: string, resourceId: string): void {
+    const state = this.memberNavigation(workspaceId);
+    state.pins = state.pins.filter(
+      (p) => !(p.kind === kind && p.resourceId === resourceId),
+    );
+  }
+
+  // ─── Members, invitations, settings (WX-MEM-001, WX-SET-001) ────────────
+
+  private findMembership(
+    workspaceId: string,
+    userId: string,
+  ): MockMembershipRecord | undefined {
+    return this.getWorkspaceMembers(workspaceId).find(
+      (m) => m.userId === userId,
+    );
+  }
+
+  /** The current member's role in a workspace, when a member. */
+  getCurrentMemberRole(
+    workspaceId: string,
+  ): MockMembershipRecord["role"] | null {
+    return (
+      this.findMembership(workspaceId, this.getCurrentUser().id)?.role ?? null
+    );
+  }
+
+  isMembershipSuspended(membershipId: string): boolean {
+    return this.suspendedMembershipIds.has(membershipId);
+  }
+
+  private activeOwnerCount(workspaceId: string): number {
+    return this.getWorkspaceMembers(workspaceId).filter(
+      (m) => m.role === "owner" && !this.suspendedMembershipIds.has(m.id),
+    ).length;
+  }
+
+  changeMemberRole(
+    workspaceId: string,
+    userId: string,
+    role: MockMembershipRecord["role"],
+  ): MockMemberChange {
+    const member = this.findMembership(workspaceId, userId);
+    if (!member) return "not-found";
+    if (role === "owner") return "owner-direct";
+    if (this.suspendedMembershipIds.has(member.id)) return "inactive";
+    if (member.role === "owner" && this.activeOwnerCount(workspaceId) <= 1) {
+      return "last-owner";
+    }
+    member.role = role;
+    return "ok";
+  }
+
+  removeMember(workspaceId: string, userId: string): MockMemberChange {
+    const member = this.findMembership(workspaceId, userId);
+    if (!member) return "not-found";
+    if (member.role === "owner" && this.activeOwnerCount(workspaceId) <= 1) {
+      return "last-owner";
+    }
+    this.membershipsById.delete(member.id);
+    this.membershipIdsByWorkspaceId.get(workspaceId)?.delete(member.id);
+    this.suspendedMembershipIds.delete(member.id);
+    return "ok";
+  }
+
+  setMemberSuspended(
+    workspaceId: string,
+    userId: string,
+    suspended: boolean,
+  ): MockMemberChange {
+    const member = this.findMembership(workspaceId, userId);
+    if (!member) return "not-found";
+    if (
+      suspended &&
+      member.role === "owner" &&
+      !this.suspendedMembershipIds.has(member.id) &&
+      this.activeOwnerCount(workspaceId) <= 1
+    ) {
+      return "last-owner";
+    }
+    if (suspended) this.suspendedMembershipIds.add(member.id);
+    else this.suspendedMembershipIds.delete(member.id);
+    return "ok";
+  }
+
+  getInvitations(workspaceId: string): MockInvitationRecord[] {
+    return Array.from(this.invitationsById.values())
+      .filter((invitation) => invitation.workspaceId === workspaceId)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+
+  /** Returns the new id, or `null` when a pending invitation already exists. */
+  createInvitation(
+    workspaceId: string,
+    email: string,
+    role: MockInvitationRecord["role"],
+  ): string | null {
+    const clean = email.trim().toLowerCase();
+    if (
+      this.getInvitations(workspaceId).some(
+        (invitation) =>
+          invitation.email === clean && invitation.status === "pending",
+      )
+    ) {
+      return null;
+    }
+    const id = this.nextId("invitation");
+    const days = this.getWorkspaceSettings(workspaceId).invitationExpiryDays;
+    this.navigationTick += 1;
+    this.invitationsById.set(id, {
+      id,
+      workspaceId,
+      email: clean,
+      role,
+      createdAt: this.clock.offsetSeconds(this.navigationTick),
+      expiresAt: this.clock.offsetDays(days),
+      status: "pending",
+    });
+    return id;
+  }
+
+  revokeInvitation(workspaceId: string, invitationId: string): boolean {
+    const invitation = this.invitationsById.get(invitationId);
+    if (!invitation || invitation.workspaceId !== workspaceId) return false;
+    if (invitation.status === "pending") invitation.status = "revoked";
+    return true;
+  }
+
+  getWorkspaceSettings(workspaceId: string): MockWorkspaceSettingsRecord {
+    let settings = this.settingsByWorkspaceId.get(workspaceId);
+    if (!settings) {
+      settings = {
+        allowPublicSharing: false,
+        enforceMfa: false,
+        allowGuestInvites: true,
+        defaultMemberRole: "Member",
+        invitationExpiryDays: 7,
+      };
+      this.settingsByWorkspaceId.set(workspaceId, settings);
+    }
+    return settings;
+  }
+
+  // ─── Versioned workspace writes (WX-SET-001) ─────────────────────────────
+
+  getWorkspaceVersion(workspaceId: string): number {
+    return this.workspaceVersionById.get(workspaceId) ?? 1;
+  }
+
+  getWorkspaceDescription(workspaceId: string): string | null {
+    return this.workspaceDescriptionById.get(workspaceId) ?? null;
+  }
+
+  isWorkspaceArchived(workspaceId: string): boolean {
+    return this.archivedWorkspaceIds.has(workspaceId);
+  }
+
+  /** Runs `apply` only when `expectedVersion` is current, then advances it. */
+  private versionedWorkspaceWrite(
+    workspaceId: string,
+    expectedVersion: unknown,
+    apply: () => void,
+  ): MockVersionedWrite {
+    if (
+      !this.getWorkspace(workspaceId) ||
+      this.isWorkspaceArchived(workspaceId)
+    )
+      return "not-found";
+    if (expectedVersion !== this.getWorkspaceVersion(workspaceId))
+      return "stale";
+    apply();
+    this.workspaceVersionById.set(
+      workspaceId,
+      this.getWorkspaceVersion(workspaceId) + 1,
+    );
+    return "ok";
+  }
+
+  updateWorkspaceProfile(
+    workspaceId: string,
+    expectedVersion: unknown,
+    profile: { name?: string | null; description?: string | null },
+  ): MockVersionedWrite {
+    return this.versionedWorkspaceWrite(workspaceId, expectedVersion, () => {
+      const workspace = this.getWorkspace(workspaceId)!;
+      if (typeof profile.name === "string") workspace.name = profile.name;
+      if (typeof profile.description === "string")
+        this.workspaceDescriptionById.set(workspaceId, profile.description);
+    });
+  }
+
+  updateWorkspaceSettings(
+    workspaceId: string,
+    expectedVersion: unknown,
+    settings: MockWorkspaceSettingsRecord,
+  ): MockVersionedWrite {
+    return this.versionedWorkspaceWrite(workspaceId, expectedVersion, () => {
+      this.settingsByWorkspaceId.set(workspaceId, { ...settings });
+    });
+  }
+
+  archiveWorkspace(
+    workspaceId: string,
+    expectedVersion: unknown,
+  ): MockVersionedWrite {
+    return this.versionedWorkspaceWrite(workspaceId, expectedVersion, () => {
+      this.archivedWorkspaceIds.add(workspaceId);
+    });
+  }
+
+  // ─── My work (WX-BE-005) ─────────────────────────────────────────────────
+
+  /**
+   * Open Items "assigned" to the current member. The mock dataset's
+   * assignees are the board people, so the member's work is a curated set of
+   * the real Items of the 2026-10 mockups (the ERP Board's and the
+   * Accounting and Marketing Boards'): each name, Group and dates come from
+   * the Item itself, so My work and the Board agree. Ordered like the
+   * producer: due date ascending, undated last, then id.
+   */
+  getMyWorkItems(workspaceId: string) {
+    const wanted = new Set(this.myWorkItemIds());
+    const boardIds = new Set(
+      this.getBoards(workspaceId)
+        .filter((board) => !board.isArchived)
+        .map((board) => board.id),
+    );
+    const items: {
+      id: string;
+      boardId: string;
+      groupId: string;
+      name: string;
+      dueAt: string | null;
+      startedAt: string | null;
+      updatedAt: string;
+      version: number;
+    }[] = [];
+    for (const id of wanted) {
+      const card = this.cardsById.get(id);
+      if (!card || !boardIds.has(card.boardId)) continue;
+      if (this.completedCardIds.has(id) || card.completedAt || card.isArchived)
+        continue;
+      items.push({
+        id: card.id,
+        boardId: card.boardId,
+        groupId: card.listId,
+        name: card.title,
+        dueAt: card.dueAt ?? null,
+        startedAt: card.startedAt ?? null,
+        updatedAt: card.updatedAt,
+        version: card.version ?? 1,
+      });
+    }
+    return items.sort((a, b) => {
+      if (a.dueAt === b.dueAt) return a.id.localeCompare(b.id);
+      if (a.dueAt === null) return 1;
+      if (b.dueAt === null) return -1;
+      return a.dueAt.localeCompare(b.dueAt) || a.id.localeCompare(b.id);
+    });
+  }
+
+  /** The Items the 2026-10 mockups list as the member's work. */
+  private myWorkItemIds(): string[] {
+    return this.feed.relatedIds();
+  }
+
+  completeCard(cardId: string): boolean {
+    const card = this.cardsById.get(cardId);
+    if (!card) return false;
+    this.completedCardIds.add(cardId);
+    const statusColumn = this.getColumns(card.boardId).find(
+      (column) => column.fieldType === "status",
+    );
+    const done = statusColumn?.options?.find(
+      (option) => option.category === "done",
+    );
+    const before = this.childProgressOf(card.parentItemId);
+    if (done) this.updateItemStatus(cardId, done.id);
+    else this.updateCard(cardId, { completedAt: this.clock.isoNow() });
+    this.recordChildTick(cardId, before, "đánh dấu xong việc con");
+    return true;
+  }
+
+  /** Done and total child items of a parent, as a percent of done. */
+  private childProgressOf(parentId: string | null | undefined): number | null {
+    if (!parentId) return null;
+    const children = this.getChildCards(parentId);
+    if (children.length === 0) return null;
+    const done = children.filter((child) => this.isCardDone(child)).length;
+    return Math.round((done / children.length) * 100);
+  }
+
+  private isCardDone(card: MockCardRecord): boolean {
+    const statusColumn = this.getColumns(card.boardId).find(
+      (column) => column.fieldType === "status",
+    );
+    const value = this.getFieldValues(card.id)[statusColumn?.id ?? ""];
+    const option = statusColumn?.options?.find(
+      (candidate) => candidate.id === value,
+    );
+    return option?.category === "done" || Boolean(card.completedAt);
+  }
+
+  /** Records on the parent that a child item was ticked or reopened. */
+  private recordChildTick(
+    childId: string,
+    before: number | null,
+    verb: string,
+  ): void {
+    const child = this.cardsById.get(childId);
+    if (!child?.parentItemId || before === null) return;
+    const after = this.childProgressOf(child.parentItemId);
+    if (after === null || after === before) return;
+    this.recordActivity(
+      child.parentItemId,
+      this.getCurrentUser().id,
+      `${verb} ${child.itemKey ?? child.title}`,
+      undefined,
+      {
+        verb,
+        target: child.itemKey ?? child.title,
+        detail: {
+          kind: "diff",
+          label: "Tiến độ",
+          from: `${before}%`,
+          to: `${after}%`,
+          note: "tự tính",
+        },
+        compact: {
+          verb: verb === "mở lại việc con" ? "mở lại" : "đánh dấu xong",
+          target: child.title,
+          hideDetail: true,
+        },
+      },
+    );
+  }
+
+  /** Adds a child item (a sub-item) under an item; it starts open and unassigned. */
+  createChildItem(parentId: string, title: string): MockCardRecord | undefined {
+    const parent = this.cardsById.get(parentId);
+    if (!parent || parent.parentItemId) return undefined;
+    const siblings = this.getChildCards(parentId);
+    const before = this.childProgressOf(parentId);
+    const key = parent.itemKey
+      ? `${parent.itemKey}.${siblings.length + 1}`
+      : null;
+    const statusColumn = this.getColumns(parent.boardId).find(
+      (column) => column.fieldType === "status",
+    );
+    const todo = statusColumn?.options?.find(
+      (option) => option.category === "todo",
+    );
+    const card: MockCardRecord = {
+      id: this.nextId("card"),
+      boardId: parent.boardId,
+      listId: parent.listId,
+      title,
+      position: siblings.length + 1,
+      createdAt: this.clock.isoNow(),
+      updatedAt: this.clock.isoNow(),
+      itemKey: key,
+      parentItemId: parentId,
+      dueAt: null,
+      startedAt: null,
+      completedAt: null,
+      assigneeUserIds: [],
+      childProgress: null,
+    };
+    this.insertCard(card);
+    if (statusColumn && todo)
+      this.updateFieldValue(card.id, statusColumn.id, todo.id);
+    this.recordActivity(
+      parentId,
+      this.getCurrentUser().id,
+      `thêm việc con ${key ?? title}`,
+      undefined,
+      {
+        verb: "thêm việc con",
+        target: key ?? title,
+        ...(before === null
+          ? {}
+          : {
+              detail: {
+                kind: "diff" as const,
+                label: "Tiến độ",
+                from: `${before}%`,
+                to: `${this.childProgressOf(parentId) ?? 0}%`,
+                note: "tự tính",
+              },
+            }),
+      },
+    );
+    return card;
+  }
+
+  /** Reopens a completed item: it is open again, as it was before. */
+  reopenCard(cardId: string): boolean {
+    const card = this.cardsById.get(cardId);
+    if (!card) return false;
+    const before = this.childProgressOf(card.parentItemId);
+    this.completedCardIds.delete(cardId);
+    this.updateCard(cardId, { completedAt: null });
+    this.recordChildTick(cardId, before, "mở lại việc con");
+    return true;
+  }
+
+  // ── Links, files and followers of an item ──
+
+  /** The links of an item as the Detail page groups them. */
+  getItemLinks(cardId: string): {
+    id: string;
+    relation: "blocked-by" | "blocks" | "related";
+    card: MockCardRecord;
+  }[] {
+    const out: {
+      id: string;
+      relation: "blocked-by" | "blocks" | "related";
+      card: MockCardRecord;
+    }[] = [];
+    for (const link of this.itemLinks) {
+      if (link.from !== cardId && link.to !== cardId) continue;
+      const otherId = link.from === cardId ? link.to : link.from;
+      const other = this.cardsById.get(otherId);
+      if (!other || other.isArchived) continue;
+      out.push({
+        id: link.id,
+        relation:
+          link.kind === "related"
+            ? "related"
+            : link.to === cardId
+              ? "blocked-by"
+              : "blocks",
+        card: other,
+      });
+    }
+    return out;
+  }
+
+  /** Links two items of one board; `from` is what `to` waits for. */
+  addItemLink(
+    cardId: string,
+    otherId: string,
+    relation: "blocked-by" | "blocks" | "related",
+  ): "ok" | "not-found" | "invalid" {
+    const card = this.cardsById.get(cardId);
+    const other = this.cardsById.get(otherId);
+    if (!card || !other) return "not-found";
+    if (card.id === other.id || card.boardId !== other.boardId)
+      return "invalid";
+    const from = relation === "blocked-by" ? other.id : card.id;
+    const to = relation === "blocked-by" ? card.id : other.id;
+    const kind = relation === "related" ? "related" : "dependency";
+    const exists = this.itemLinks.some(
+      (link) =>
+        link.kind === kind &&
+        ((link.from === from && link.to === to) ||
+          (kind === "related" && link.from === to && link.to === from)),
+    );
+    if (exists) return "invalid";
+    this.itemLinks.push({
+      id: this.nextId("link"),
+      boardId: card.boardId,
+      from,
+      to,
+      kind,
+    });
+    const word =
+      relation === "blocked-by"
+        ? "Đang chờ"
+        : relation === "blocks"
+          ? "Đang chặn"
+          : "Liên quan";
+    this.recordActivity(
+      cardId,
+      this.getCurrentUser().id,
+      `thêm liên kết ${word} ${other.itemKey ?? other.title}`,
+      undefined,
+      {
+        verb: "thêm liên kết",
+        detail: {
+          kind: "link",
+          relation: word,
+          key: other.itemKey ?? "",
+          title: other.title,
+        },
+      },
+    );
+    return "ok";
+  }
+
+  removeItemLink(linkId: string): boolean {
+    const before = this.itemLinks.length;
+    this.itemLinks = this.itemLinks.filter((link) => link.id !== linkId);
+    return this.itemLinks.length < before;
+  }
+
+  getAttachments(cardId: string): MockAttachmentRecord[] {
+    return [...(this.attachmentsByCardId.get(cardId) ?? [])];
+  }
+
+  addAttachment(
+    cardId: string,
+    file: { filename: string; sizeBytes: number; contentType: string },
+  ): MockAttachmentRecord | undefined {
+    if (!this.cardsById.has(cardId)) return undefined;
+    const record: MockAttachmentRecord = {
+      id: this.nextId("file"),
+      cardId,
+      filename: file.filename,
+      sizeBytes: file.sizeBytes,
+      contentType: file.contentType,
+      uploadedBy: this.getCurrentUser().id,
+      createdAt: this.clock.isoNow(),
+    };
+    const list = this.attachmentsByCardId.get(cardId) ?? [];
+    list.push(record);
+    this.attachmentsByCardId.set(cardId, list);
+    this.recordActivity(
+      cardId,
+      this.getCurrentUser().id,
+      `thêm tệp ${file.filename}`,
+      undefined,
+      {
+        verb: "thêm tệp",
+        detail: { kind: "file", name: file.filename },
+      },
+    );
+    return record;
+  }
+
+  /** People who follow an item besides the member. */
+  getFollowerIds(cardId: string): readonly string[] {
+    return this.followersByCardId.get(cardId) ?? [];
   }
 
   getWorkspaceViews(workspaceId: string): MockWorkspaceViewRecord[] {
@@ -1578,6 +3824,53 @@ export class MockStore {
     return this.boardsById.get(id);
   }
 
+  /** Settings write: changes the general facts of a board and bumps its version. */
+  patchBoard(
+    boardId: string,
+    patch: Partial<
+      Pick<
+        MockBoardRecord,
+        "title" | "description" | "background" | "itemKeyPrefix" | "isArchived"
+      >
+    >,
+  ): boolean {
+    const board = this.boardsById.get(boardId);
+    if (!board) return false;
+    this.boardsById.set(boardId, {
+      ...board,
+      ...patch,
+      updatedAt: this.clock.isoNow(),
+      version: (board.version ?? 1) + 1,
+    });
+    return true;
+  }
+
+  /** Settings write: removes a board with its lists, items and fields. */
+  deleteBoard(boardId: string): boolean {
+    const board = this.boardsById.get(boardId);
+    if (!board) return false;
+    for (const list of this.getLists(boardId)) this.deleteList(list.id);
+    for (const column of this.getColumns(boardId)) this.deleteColumn(column.id);
+    this.removeIndex(this.boardIdsByWorkspaceId, board.workspaceId, boardId);
+    this.boardsById.delete(boardId);
+    return true;
+  }
+
+  /** Settings write: replaces the options of a select field (keeps order given). */
+  setColumnOptions(
+    columnId: string,
+    options: MockFieldOptionRecord[],
+  ): boolean {
+    const col = this.columnsById.get(columnId);
+    if (!col) return false;
+    this.columnsById.set(columnId, {
+      ...col,
+      options,
+      version: (col.version ?? 1) + 1,
+    });
+    return true;
+  }
+
   getLists(boardId: string): MockListRecord[] {
     const ids = this.listIdsByBoardId.get(boardId);
     if (!ids) return [];
@@ -1585,6 +3878,14 @@ export class MockStore {
       .map((id) => this.listsById.get(id))
       .filter((l): l is MockListRecord => l !== undefined)
       .sort((a, b) => a.position - b.position);
+  }
+
+  /** Settings write: places a group among its siblings. */
+  setListPosition(listId: string, position: number): boolean {
+    const list = this.listsById.get(listId);
+    if (!list) return false;
+    this.listsById.set(listId, { ...list, position });
+    return true;
   }
 
   getList(id: string): MockListRecord | undefined {
@@ -1596,12 +3897,35 @@ export class MockStore {
     if (!ids) return [];
     return Array.from(ids)
       .map((id) => this.cardsById.get(id))
-      .filter((c): c is MockCardRecord => c !== undefined)
+      .filter((c): c is MockCardRecord => c !== undefined && !c.unlisted)
       .sort((a, b) => a.position - b.position);
   }
 
   getCard(id: string): MockCardRecord | undefined {
     return this.cardsById.get(id);
+  }
+
+  /** Child items of an item (never top-level cards of a group). */
+  getChildCards(parentItemId: string): MockCardRecord[] {
+    return Array.from(this.cardsById.values())
+      .filter((card) => card.parentItemId === parentItemId)
+      .sort((a, b) => a.position - b.position || a.id.localeCompare(b.id));
+  }
+
+  /** Next item key of a board with a key prefix ("ERP-154"); else none. */
+  private nextItemKey(boardId: string): string | null {
+    const prefix = this.boardsById.get(boardId)?.itemKeyPrefix;
+    if (!prefix) return null;
+    let highest = 0;
+    for (const card of this.cardsById.values()) {
+      // The States mockup items are numbered apart from the board's own run.
+      if (card.boardId !== boardId || !card.itemKey || card.unlisted) continue;
+      const number = Number(
+        card.itemKey.slice(card.itemKey.lastIndexOf("-") + 1),
+      );
+      if (Number.isFinite(number)) highest = Math.max(highest, number);
+    }
+    return `${prefix}-${highest + 1}`;
   }
 
   getNotifications(userId: string): MockNotificationRecord[] {
@@ -1611,6 +3935,11 @@ export class MockStore {
       .map((id) => this.notificationsById.get(id))
       .filter((n): n is MockNotificationRecord => n !== undefined)
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+
+  /** A notification a background job leaves in a person's inbox. */
+  pushNotification(record: MockNotificationRecord): void {
+    this.insertNotification(record);
   }
 
   markNotificationRead(id: string): boolean {
@@ -1661,7 +3990,7 @@ export class MockStore {
       pageId,
       type: data.type || "paragraph",
       properties: data.properties || "{}",
-      position: data.position || 0,
+      position: data.position ?? 0,
       version: 1,
       createdByUserId: mockIds.users.owner,
       createdAt: this.clock.isoNow(),
@@ -1696,6 +4025,7 @@ export class MockStore {
     pageId: string,
     userId: string,
     contentMd: string,
+    createdAt?: string,
   ): MockPageCommentRecord {
     const id = this.nextId("pcomment");
     const comment: MockPageCommentRecord = {
@@ -1703,7 +4033,7 @@ export class MockStore {
       pageId,
       userId,
       contentMd,
-      createdAt: this.clock.isoNow(),
+      createdAt: createdAt ?? this.clock.isoNow(),
     };
     this.pageCommentsById.set(id, comment);
     return comment;
@@ -1735,6 +4065,8 @@ export class MockStore {
     userId: string,
     action: string,
     details?: string,
+    createdAt?: string,
+    versionName?: string,
   ): MockPageHistoryRecord {
     const id = this.nextId("phist");
     const history: MockPageHistoryRecord = {
@@ -1743,7 +4075,8 @@ export class MockStore {
       actorId: userId,
       action,
       resourceTitle: details,
-      createdAt: this.clock.isoNow(),
+      ...(versionName ? { versionName } : {}),
+      createdAt: createdAt ?? this.clock.isoNow(),
     };
     this.pageHistoryById.set(id, history);
     return history;
@@ -1986,6 +4319,10 @@ export class MockStore {
       blocks: Array.from(this.blocksById.values()),
       pageComments: Array.from(this.pageCommentsById.values()),
       pageHistory: Array.from(this.pageHistoryById.values()),
+      boardMembers: Array.from(this.boardMembersByBoardId.values()).flat(),
+      boardGrants: Array.from(this.boardGrantsByBoardId.values()).flat(),
+      boardAudiences: Array.from(this.boardAudienceByBoardId.values()),
+      ...this.spaces.snapshot(),
     };
   }
 }

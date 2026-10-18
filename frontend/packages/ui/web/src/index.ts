@@ -12,13 +12,15 @@ export { cn } from "./lib/cn";
 
 // ── Responsive Hooks ───────────────────────────────────────────────
 export { useIsMobile } from "./hooks/use-mobile";
+export {
+  useIsTablet,
+  TABLET_MIN_WIDTH,
+  TABLET_MAX_WIDTH,
+} from "./hooks/use-tablet";
 export { useMediaQuery } from "./hooks/use-media-query";
 
 // ── Theme ──────────────────────────────────────────────────────────
-export { ThemeProvider, useTheme } from "./theme/theme-provider";
-export { useColorTheme, COLOR_THEMES } from "./theme/use-color-theme";
-export type { ColorTheme, ColorThemeMeta } from "./theme/use-color-theme";
-export { colorThemeScript } from "./theme/color-theme-script";
+export * from "./theme";
 
 // ── Brand Primitives ──────────────────────────────────────────────
 export * from "./components/brand/notrelix-logo";

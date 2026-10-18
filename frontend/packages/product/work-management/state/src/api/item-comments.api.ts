@@ -2,7 +2,7 @@ import type { NotrelixClient } from "@notrelix/contracts";
 import { endpoints } from "@notrelix/contracts";
 import type { OperationRequestBody } from "@notrelix/contracts";
 import type { CreateCardUpdateInput } from "@notrelix/work-management-core";
-import { mapCommentDtoToCardUpdate } from "@notrelix/work-management-core";
+import { mapCommentDtoToCardUpdate } from "./board-api-mappers";
 
 type CreateCommentOp = "Collaboration.Comments.CreateBoardItemComment";
 type CreateCommentBody = OperationRequestBody<CreateCommentOp>;

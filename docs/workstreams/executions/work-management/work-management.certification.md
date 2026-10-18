@@ -2,19 +2,22 @@
 document_id: WRK-CERT-WORK-MANAGEMENT
 document_type: workstream-certification
 status: active
-revision: final-audit-v3
+revision: v3.1-source-reconciled
 owner: work-management-team
 candidate_baseline:
   branch: develop
-  sha: 35702d0fa9fb01ed68b0667bab500030d60bd028
+  sha: 8400a4c0
+previous_baseline_sha: 35702d0fa9fb01ed68b0667bab500030d60bd028
 supersedes: work-management.certification.v2.md
 ---
 
-# CERTIFICATION — Work Management Transactional Core (Final-Audit V3)
+# CERTIFICATION — Work Management Transactional Core (V3.1)
 
 ## 1. Purpose
 
-V3 is the final release-decision artifact. It separates source posture from executable certification and incorporates the final audit findings for ordering serialization, ordinal persistence, read-side Version propagation, brownfield normalization and semantic test completeness.
+This is the release-decision artifact. It separates source posture from executable certification and incorporates the audit findings for ordering serialization, ordinal persistence, read-side Version propagation and semantic test completeness.
+
+V3.1 re-baselines the source posture at `8400a4c0` and adds the defects found by source inspection (SPEC WM-V3-GAP-017..025). No record has been executed yet; every certification value below remains a baseline value.
 
 ## 2. State model
 
@@ -37,7 +40,7 @@ No `PARTIALLY_VERIFIED` status is used.
 ## 3. Exact candidate rule
 
 ```text
-Baseline audit SHA: 35702d0fa9fb01ed68b0667bab500030d60bd028
+Baseline audit SHA: 8400a4c0 (V3: 35702d0fa9fb01ed68b0667bab500030d60bd028)
 Final certification SHA: <post-implementation exact SHA>
 ```
 
@@ -46,18 +49,21 @@ Baseline inspection can establish `GAP_CONFIRMED` and therefore `BLOCKED`; it ca
 ## 4. Baseline status matrix
 | Area | Source posture | Certification | Baseline reason |
 |---|---|---|---|
-| Board | `IMPLEMENTED_UNCERTIFIED` | `NOT_EVALUATED` | strong core; final version/read/API/mapping proof pending |
-| BoardItem | `GAP_CONFIRMED` | `BLOCKED` | numeric/ignored placement + phantom update + duplicate ordering |
+| Board | `GAP_CONFIRMED` | `BLOCKED` | update unreachable (nullable ExpectedVersion→0); restore unreachable; description width 1024 vs Domain 5000 |
+| BoardItem | `GAP_CONFIRMED` | `BLOCKED` | create/move always persist `"a0"`; phantom update fields; update and restore unreachable |
+| Soft-delete lifecycle | `GAP_CONFIRMED` | `BLOCKED` | global filter hides deleted rows from Restore; EF-ignored `IsDeleted` reads false after reload |
+| First-party idempotency headers | `GAP_CONFIRMED` | `BLOCKED` | most group/field/checklist/item mutations omit the required key → 400 |
 | BoardField/Value | `GAP_CONFIRMED` | `BLOCKED` | type/update drift, version propagation, value race evidence |
 | BoardGroup | `GAP_CONFIRMED` | `BLOCKED` | normal full-list reorder + string successor |
 | FieldOption | `LEGACY_DUPLICATE` | `BLOCKED` | two command families + noncanonical option ordering |
 | Checklist | `GAP_CONFIRMED` | `BLOCKED` | aggregate bypass + PATCH toggle defect + ordering/version |
 | Ordering lock/adjacency | `GAP_CONFIRMED` | `BLOCKED` | no scope serialization/adjacency mechanism |
 | Ordering persistence | `GAP_CONFIRMED` | `BLOCKED` | no explicit C collation; old varchar limits; nonunique indexes |
-| Ordering brownfield migration | `UNKNOWN` | `BLOCKED` | duplicate/invalid data not yet inventoried/normalized |
+| Ordering migration (reset path) | `GAP_CONFIRMED` | `BLOCKED` | every used database holds duplicate `"a0"` positions; reset + fail-closed preflight not implemented |
+| Automation ordering writer | `GAP_CONFIRMED` | `BLOCKED` | commits outside `EfRequestDataSession`; no lock/conflict contract |
 | Direct-scope app RLS | `IMPLEMENTED_UNCERTIFIED` | `NOT_EVALUATED` | mechanism exists; exact focused runtime proof pending |
-| Child-table app RLS | `GAP_CONFIRMED` | `BLOCKED` | generic helper skips scope-less child tables |
-| Authorization | `IMPLEMENTED_UNCERTIFIED` | `NOT_EVALUATED` | canonical Governance path exists; P3-B exact matrix pending |
+| Child-table app RLS | `GAP_CONFIRMED` | `BLOCKED` | generic helper skips six scope-less `work` tables (incl. unlisted `board_members`); verification results discarded |
+| Authorization | `IMPLEMENTED_UNCERTIFIED` | `NOT_EVALUATED` | canonical Governance path exists; P3-B exact matrix pending; inherited WG-DEBT-006/007 undispositioned |
 | ExpectedVersion write contract | `GAP_CONFIRMED` | `BLOCKED` | nullable→0 pattern conflicts with required runtime |
 | Read-side Version | `GAP_CONFIRMED` | `BLOCKED` | canonical DTOs currently omit aggregate Version |
 | Idempotency producer | `IMPLEMENTED_UNCERTIFIED` | `NOT_EVALUATED` | server store/mechanism substantial |
@@ -66,11 +72,11 @@ Baseline inspection can establish `GAP_CONFIRMED` and therefore `BLOCKED`; it ca
 | Cross-context | `IMPLEMENTED_UNCERTIFIED` | `NOT_EVALUATED` | direction correct; reverify after ordering/API cutover |
 | API/OpenAPI | `GAP_CONFIRMED` | `BLOCKED` | producer shapes must change |
 | First-party consumer | `GAP_CONFIRMED` | `BLOCKED` | ordering/version/idempotency migration required |
-| Relational migration | `GAP_CONFIRMED` | `BLOCKED` | normalization/collation/uniqueness/width migration absent |
+| Relational migration | `GAP_CONFIRMED` | `BLOCKED` | preflight/collation/uniqueness/width migration absent |
 | RLS deployment | `GAP_CONFIRMED` | `BLOCKED` | explicit child policies absent |
 | Worker scope | `DEPENDENCY_BLOCKED` | `NOT_EVALUATED` | Platform-owned semantics |
 | Performance/observability | `UNKNOWN` | `NOT_EVALUATED` | final budgets/telemetry evidence absent |
-| Semantic test coverage | `IMPLEMENTED_UNCERTIFIED` | `NOT_EVALUATED` | V3 defines 154/154; implementation tests not yet executed |
+| Semantic test coverage | `IMPLEMENTED_UNCERTIFIED` | `NOT_EVALUATED` | V3.1 defines 156/156 per-requirement mappings; implementation tests not yet executed |
 | P3 final | `GAP_CONFIRMED` | `BLOCKED` | material source and evidence blockers remain |
 
 # Milestone A — P3-A data foundation
@@ -116,20 +122,21 @@ Notes:
 **Baseline certification:** `BLOCKED`  
 **Target:** `STABLE`  
 **SPEC:** WMREQ041–055,098–104  
-**PLAN:** WM-V3-ORDER-001..004; WM-V3-MIG-ORDER-001/002; WM-V3-DATA-001/002  
-**TESTS:** ORDER-LOCK-001, ORDER-PLACE-001, ORDER-DB-001..003, ORDER-CONC-001, ORDER-NORM-001  
+**PLAN:** WM-V3-ORDER-001..005; WM-V3-MIG-ORDER-001; WM-V3-DATA-001/002  
+**TESTS:** ORDER-LOCK-001, ORDER-PLACE-001, ORDER-DB-001..003, ORDER-CONC-001, ORDER-PREFLIGHT-001, ORDER-AUT-001  
 
 ### Required criteria
 - [ ] scope lock occurs before sibling read
 - [ ] adjacency exact
 - [ ] DB ordinal order equals Domain
 - [ ] position text/C collation
-- [ ] brownfield normalization complete
+- [ ] reset path recorded; fail-closed preflight passes
+- [ ] every ordering writer (HTTP + automation) compliant before unique indexes
 - [ ] unique active indexes installed
 - [ ] rebalance path preserves logical order
 
 ### Baseline blockers
-- [ ] none of the lock/collation/normalization/unique V3 mechanism is implemented at baseline
+- [ ] none of the lock/collation/preflight/unique V3 mechanism is implemented at baseline
 
 ### Execution record
 ```text
@@ -159,10 +166,11 @@ Notes:
 **Target:** `VERIFIED`  
 **SPEC:** WMREQ080–093  
 **PLAN:** WM-V3-DATA-003  
-**TESTS:** RLS-OPTION-001, RLS-VALUE-001, RLS-CHK-001, RLS-DEPLOY-001  
+**TESTS:** RLS-OPTION-001, RLS-VALUE-001, RLS-CHK-001, RLS-WORK-ALL-001, RLS-VERIFY-001, RLS-DEPLOY-001  
 
 ### Required criteria
-- [ ] three explicit child policies exist
+- [ ] six explicit parent-derived policies exist (field_options, checklist_items, board_item_values, board_members, approval_steps, relation_field_configs)
+- [ ] verification fails closed
 - [ ] same-tenant CRUD allowed
 - [ ] cross-tenant/null denied
 - [ ] BoardItemValue enforces Item+Field same Board
@@ -267,6 +275,82 @@ Final certification: NOT_EVALUATED
 Reviewer:
 Notes:
 ```
+## P3A-V3-006 — Soft-delete lifecycle and unreachable mutations (V3.1)
+
+**Baseline source posture:** `GAP_CONFIRMED`  
+**Baseline certification:** `BLOCKED`  
+**Target:** `VERIFIED`  
+**SPEC:** WMREQ004, WMREQ014, WMAC015; WM-V3-DEC-013; WM-V3-GAP-017/019/020/021  
+**PLAN:** WM-V3-LIFE-001, WM-V3-FIX-001  
+**TESTS:** LIFE-RESTORE-001, LIFE-GUARD-001, FIX-MUT-001  
+
+### Required criteria
+- [ ] restore succeeds from a fresh request on PostgreSQL for every P3 soft-deletable aggregate
+- [ ] restore stays tenant-bounded (foreign tenant NotFound)
+- [ ] lifecycle guards hold after reload
+- [ ] DeleteBoardGroup reachable; rename-only Field PATCH preserves settings
+
+### Baseline blockers
+- [ ] restore unreachable; DeleteBoardGroup unreachable; Field PATCH erases settings
+
+### Execution record
+```text
+Candidate SHA:
+Source posture:
+Test families:
+Commands/filters:
+Discovered:
+Executed:
+Passed:
+Failed:
+Skipped:
+PostgreSQL/runtime:
+Relational migration evidence:
+RLS pack evidence:
+OpenAPI/frontend evidence:
+CI job/link:
+Final certification: NOT_EVALUATED
+Reviewer:
+Notes:
+```
+
+## P3A-V3-007 — First-party idempotency headers (V3.1)
+
+**Baseline source posture:** `GAP_CONFIRMED`  
+**Baseline certification:** `BLOCKED`  
+**Target:** `VERIFIED`  
+**SPEC:** WMREQ115–117, WMREQ143; WM-V3-DEC-018; WM-V3-GAP-018  
+**PLAN:** WM-V3-IDEMP-001  
+**TESTS:** IDEMP-HEADER-001, IDEMP-FE-001, IDEMP-RETRY-001  
+
+### Required criteria
+- [ ] every required header sent by enabled Work adapters
+- [ ] keys are random UUIDs owned by the mutation attempt
+
+### Baseline blockers
+- [ ] most group/field/checklist/item mutations omit the key (400)
+
+### Execution record
+```text
+Candidate SHA:
+Source posture:
+Test families:
+Commands/filters:
+Discovered:
+Executed:
+Passed:
+Failed:
+Skipped:
+PostgreSQL/runtime:
+Relational migration evidence:
+RLS pack evidence:
+OpenAPI/frontend evidence:
+CI job/link:
+Final certification: NOT_EVALUATED
+Reviewer:
+Notes:
+```
+
 # Milestone B — P3-B authorization
 
 ## P3B-V3-001 — Governance-owned protected path
@@ -276,13 +360,14 @@ Notes:
 **Target:** `STABLE`  
 **SPEC:** WMREQ105–109,145  
 **PLAN:** WM-V3-GATE-002  
-**TESTS:** AUTH-ARCH-001, AUTH-INT-001  
+**TESTS:** AUTH-ARCH-001, AUTH-INT-001, GOV-DEBT-001  
 
 ### Required criteria
 - [ ] canonical resource/action descriptors
 - [ ] allow/deny/cross-tenant/revoked matrix
 - [ ] no handler-local role ladder
 - [ ] denial commits no effect
+- [ ] WG-DEBT-006 and WG-DEBT-007 dispositioned (WMREQ155, GOV-DEBT-001)
 
 ### Execution record
 ```text
@@ -704,23 +789,23 @@ Notes:
 ```
 # Milestone E — migration / deployment
 
-## P3-V3-MIG-001 — Brownfield ordering normalization
+## P3-V3-MIG-001 — Ordering migration reset path and preflight
 
 **Baseline source posture:** `UNKNOWN`  
 **Baseline certification:** `BLOCKED`  
 **Target:** `VERIFIED`  
 **SPEC:** WMREQ055,098–102  
-**PLAN:** WM-V3-MIG-ORDER-001/002  
-**TESTS:** ORDER-PREFLIGHT-001, ORDER-NORM-001, MIG-UPGRADE-001  
+**PLAN:** WM-V3-MIG-ORDER-001  
+**TESTS:** ORDER-PREFLIGHT-001, MIG-UPGRADE-001  
 
 ### Required criteria
-- [ ] all scopes inventoried
-- [ ] affected scopes deterministically normalized
-- [ ] ambiguous scope blocks
-- [ ] stable IDs/logical order preserved
+- [ ] no production database existed at cut-over (else STOP, SPEC WMSTOP004)
+- [ ] development/staging reset recorded
+- [ ] preflight aborts on duplicate/invalid positions without mutation
+- [ ] passing database keeps stable IDs/logical order
 
 ### Baseline blockers
-- [ ] baseline data inventory not executed
+- [ ] preflight not implemented; every used database holds duplicate `"a0"` positions
 
 ### Execution record
 ```text
@@ -753,7 +838,7 @@ Notes:
 **TESTS:** MIG-CLEAN-001, MIG-UPGRADE-001, MIG-HISTORY-001, MIG-PENDING-001, ORDER-DB-*  
 
 ### Required criteria
-- [ ] upgrade order fixed: preflight→normalize→collation/type→unique indexes→width fixes
+- [ ] upgrade order fixed: reset→preflight→collation/type→unique indexes→width fixes
 - [ ] clean/upgrade pass
 - [ ] no pending model
 - [ ] history append-only
@@ -1159,13 +1244,13 @@ Notes:
 **Baseline source posture:** `IMPLEMENTED_UNCERTIFIED`  
 **Baseline certification:** `NOT_EVALUATED`  
 **Target:** `VERIFIED`  
-**SPEC:** WMREQ001–154  
+**SPEC:** WMREQ001–156  
 **PLAN:** WM-V3-TEST-001  
-**TESTS:** work-management.tests.v3.md matrix  
+**TESTS:** work-management.tests.md matrix  
 
 ### Required criteria
-- [ ] 154 rows present
-- [ ] WMREQ001–150 each has >=1 substantive family
+- [ ] 156 rows present
+- [ ] WMREQ001–150 and WMREQ155–156 each have >=1 substantive family
 - [ ] no meta-only false coverage
 - [ ] all referenced family IDs exist
 
@@ -1195,7 +1280,7 @@ Notes:
 **Baseline source posture:** `UNKNOWN`  
 **Baseline certification:** `NOT_EVALUATED`  
 **Target:** `STABLE`  
-**SPEC:** WMREQ151–154  
+**SPEC:** WMREQ151–156  
 **PLAN:** WM-V3-CERT-001  
 **TESTS:** DISCOVERY-001, CERT-SHA-001, CERT-BLOCKER-001  
 
@@ -1243,7 +1328,7 @@ Notes:
 | `WM3-BLK-002` | adjacency/stale-placement contract absent |
 | `WM3-BLK-003` | ordinal DB collation not explicit |
 | `WM3-BLK-004` | old position varchar limits remain |
-| `WM3-BLK-005` | brownfield ordering preflight/normalization not executed |
+| `WM3-BLK-005` | ordering reset path + fail-closed preflight not implemented (V3.1; was brownfield normalization) |
 | `WM3-BLK-006` | unique active ordering indexes absent |
 | `WM3-BLK-007` | legacy/noncanonical ordering writers remain |
 | `WM3-BLK-008` | FieldOption duplicate authority |
@@ -1255,66 +1340,106 @@ Notes:
 | `WM3-BLK-014` | Board mapping/validator drift |
 | `WM3-BLK-015` | producer/consumer API cutover pending |
 | `WM3-BLK-016` | exact-candidate V3 semantic suites not executed |
+| `WM3-BLK-017` | soft-delete restore unreachable; guards wrong after reload |
+| `WM3-BLK-018` | first-party mutations omit required Idempotency-Key |
+| `WM3-BLK-019` | Board/Item/Field updates unreachable (nullable ExpectedVersion→0, no read Version) |
+| `WM3-BLK-020` | DeleteBoardGroup unreachable; Field PATCH erases settings |
+| `WM3-BLK-021` | `board_members`, `approval_steps`, `relation_field_configs` RLS disabled; verification discarded |
+| `WM3-BLK-022` | conflict/business-rule stable codes lost at API boundary |
+| `WM3-BLK-023` | automation ordering writer outside the lock/conflict contract |
+| `WM3-BLK-024` | inherited WG-DEBT-006/007 undispositioned |
 
 # Certification stop conditions
 - **WM3-CERT-STOP-001** — candidate SHA differs across evidence;
 - **WM3-CERT-STOP-002** — ordering lock is not held before sibling read;
 - **WM3-CERT-STOP-003** — neighbors are not proven current first/last/adjacent;
 - **WM3-CERT-STOP-004** — database order differs from Domain ordinal order;
-- **WM3-CERT-STOP-005** — unique indexes are installed before deterministic normalization;
+- **WM3-CERT-STOP-005** — unique indexes are installed before the preflight passes or while a non-compliant writer remains;
 - **WM3-CERT-STOP-006** — handler-level collision retry is used despite SaveChanges being outside handler;
 - **WM3-CERT-STOP-007** — required ExpectedVersion has no authoritative read-side Version source;
 - **WM3-CERT-STOP-008** — idempotency key changes during an unchanged-payload transport retry, or is incorrectly reused after semantic rebase changes the canonical payload;
 - **WM3-CERT-STOP-009** — scope-less child table remains unprotected under app role;
 - **WM3-CERT-STOP-010** — worker broad policy is used as tenant-safety evidence;
-- **WM3-CERT-STOP-011** — any WMREQ001–150 maps only to meta tests;
+- **WM3-CERT-STOP-011** — any WMREQ001–150 or WMREQ155–156 maps only to meta tests;
 - **WM3-CERT-STOP-012** — required PostgreSQL focused group is skipped or zero;
 - **WM3-CERT-STOP-013** — generated client is edited manually;
 - **WM3-CERT-STOP-014** — open blocker is downgraded without evidence/authority.
 
 # Final evidence record
 ```text
-Candidate SHA:
-P3-A:
-P3-B:
-Board:
-BoardItem:
-BoardField/Value:
-FieldOption:
-BoardGroup:
-Checklist:
-Ordering lock/adjacency:
-Ordering collation/uniqueness:
-Brownfield normalization:
-ExpectedVersion/Version:
-Idempotency:
-App RLS direct:
-App RLS child:
-Worker dependency:
-Relational migration:
-RLS policy deployment:
-Events/Outbox:
-Cross-context:
-Realtime:
-API/OpenAPI:
-First-party consumer:
-Architecture:
-Security:
-Performance:
-Observability:
-Semantic coverage:
-Full CI:
-Focused CI:
-Blocking debt:
-P4A handoff:
-FINAL CERTIFICATION: NOT_EVALUATED | BLOCKED | VERIFIED | STABLE
-Reviewer:
-Date:
+Candidate SHA: 63a81692ec67182674e97ba34fc53536f38c5a3b (branch develop; every command below ran on this SHA; this record is a docs-only follow-up commit)
+P3-A: VERIFIED — GATE-001 prerequisite groups, ordering lock/collation/uniqueness/RLS groups below
+P3-B: VERIFIED — WorkPermissionActionMatrixArchitectureTests (pinned action per P3 request), CreateBoardInWorkspacePipelineTests (owner allowed / outsider forbidden), WorkQueryTenantIsolationIntegrationTests (cross-workspace reads denied); STABLE needs full CI on this SHA
+Board: VERIFIED — WorkExpectedVersionIntegrationTests (UpdateBoard maps every field, stale writer 412), BoardTests/BoardEventTests, lifecycle tests
+BoardItem: VERIFIED — WorkItemPlacementIntegrationTests, WorkItemFieldValueIntegrationTests (GAP-032 fixed), WorkSoftDeleteLifecycleIntegrationTests
+BoardField/Value: VERIFIED — BoardFieldRenameTests, FieldTypeNamesTests, FieldJsonBoundsTests, field placement/rename integration cases
+FieldOption: VERIFIED — FieldOptionMoveTests, option integration cases (GAP-030 fixed), RetiredWorkAuthorities_AreAbsent
+BoardGroup: VERIFIED — group create/move/duplicate integration case, DeleteBoardGroup transport test
+Checklist: VERIFIED — ChecklistChildMutationTests (14), WorkChecklistIntegrationTests (GAP-031 fixed), direct-ChecklistItems-write gate
+Ordering lock/adjacency: VERIFIED — WorkOrderingScopeLockIntegrationTests, WorkPlacementResolverTests, NormalDrag_RewritesOnlyTheMovedItemsKey
+Ordering collation/uniqueness: VERIFIED — WorkOrderingSchemaIntegrationTests (ordinal text, DB order = Domain order, six named indexes reject duplicates)
+Soft-delete lifecycle: VERIFIED — WorkSoftDeleteLifecycleIntegrationTests, RestoreItem_WhoseKeyWasReissued (DEC-019)
+Idempotency headers: BLOCKED — producer enforces the key; web adapters still omit it on non-create mutations (WM-V3-FE-001)
+Ordering reset/preflight: VERIFIED — WorkOrderingPreflightIntegrationTests; no production database existed at cut-over (SPEC WM-V3-DEC-006)
+Automation ordering writer: VERIFIED — MoveItemComposition_OrderingCollisionAtCommit (stable conflict, no second write, redelivery succeeds)
+Governance debts (WG-DEBT-006/007): DISPOSITIONED — accepted owned debts with gates (WM-V3-GATE-002)
+ExpectedVersion/Version: VERIFIED (producer) — 22-request manifest gate, WorkExpectedVersionIntegrationTests, WorkP3OpenApiShapeTests; consumers do not send it yet
+Idempotency: VERIFIED (producer) — WorkIdempotencyIntegrationTests (replay, mismatch, rollback); first-party key ownership BLOCKED (FE-001)
+App RLS direct: VERIFIED — RlsRuntimeEnforcementTests
+App RLS child: VERIFIED — WorkChildTableRlsIntegrationTests (allowed/denied tenant read/write as notrelix_app, fail-closed verification)
+Worker dependency: DEPENDENCY_BLOCKED — Platform-owned worker scope; automation.automation_execution_steps has no RLS (reported to Automation, not in the enforced schema list)
+Relational migration: VERIFIED — clean chain in every Integration container; supported upgrade through the preflight; pending model changes: none
+RLS policy deployment: VERIFIED — separate apply channel, fail-closed verification, script SHA-256 identities recorded in PLAN WM-V3-DEPLOY-002
+Events/Outbox: VERIFIED — board_item.moved v2 carries newPosition; event manifest drift gate; outbox runtime/recovery tests; Messaging+Automation integration groups (82)
+Cross-context: VERIFIED — cross-context architecture gates (101)
+Realtime: VERIFIED for item create/move/field value (version and key on the payload); group/field/option/checklist changes have no realtime fact and are refetched (accepted, PLAN WM-V3-EVT-001)
+API/OpenAPI: VERIFIED — WorkP3OpenApiShapeTests (9), ConflictProblemDetailsTests (exact codes), OpenAPI export drift: none; requiredness is not expressed in the schema
+First-party consumer: BLOCKED — WM-V3-FE-001 not executed (backend-first, SPEC WM-V3-DEC-017); adapters are compile-compatible stopgaps (sequential append for reorder, no expectedVersion, create-only keys)
+Architecture: VERIFIED — Architecture 635 incl. manifest, persistence no-growth, request baseline, metric label gates
+Security: VERIFIED — FieldJsonBoundsTests, WorkQueryTenantIsolationIntegrationTests, RLS groups
+Performance: BLOCKED — large Board reads unbounded (GetBoardItems, GetFullBoard); pagination contract UNRESOLVED (PLAN WM-V3-QUAL-002)
+Observability: VERIFIED — WorkOrderingMetricsTests (key length, stale placement, rebalance runs), conflict counter on the HTTP path
+Semantic coverage: VERIFIED — WorkTraceabilityArchitectureTests: 156/156 substantive, mandatory P3 groups discovered non-zero
+Full CI: local full run on the candidate (CI job not run from this session) — backend restore/format/build OK; Domain 2628, Application 755, Infrastructure 186, Platform 153, API 289, Architecture 635, Integration 641 (5287 passed, 0 failed, 0 skipped); frontend typecheck 43/43, test:node 401/401, codegen drift none; frontend lint fails only in apps/marketing (missing eslint-plugin-react-hooks, pre-existing environment issue)
+Focused CI: all focused P3 families above executed non-zero inside the full run
+Blocking debt: open — WM3-BLK-013, WM3-BLK-015, WM3-BLK-018 (first-party consumer); performance pagination decision
+P4A handoff: BLOCKED until the first-party consumer cutover and the pagination decision
+FINAL CERTIFICATION: BLOCKED (backend producer VERIFIED; P3 release blocked by WM-V3-FE-001 and the pagination decision)
+Reviewer: pending human review
+Date: 2026-10-10
 ```
+
+# Blocking debt disposition (candidate 63a81692)
+| ID | Disposition | Evidence |
+|---|---|---|
+| `WM3-BLK-001` | closed | ordering scope lock (ORDER-001) |
+| `WM3-BLK-002` | closed | placement resolver + stale-placement contract (ORDER-002/003) |
+| `WM3-BLK-003` | closed | `text COLLATE "C"` (DATA-001) |
+| `WM3-BLK-004` | closed | varchar(50) removed (DATA-001) |
+| `WM3-BLK-005` | closed | reset path + fail-closed preflight (MIG-ORDER-001) |
+| `WM3-BLK-006` | closed | six named unique indexes (DATA-002) |
+| `WM3-BLK-007` | closed | retired writers deleted; every recorded writer compliant |
+| `WM3-BLK-008` | closed | legacy FieldOptions family deleted (APP-OPTION-001) |
+| `WM3-BLK-009` | closed | aggregate-owned child mutation, desired-state PATCH (APP-CHK-001) |
+| `WM3-BLK-010` | closed | parent-derived RLS (DATA-003) |
+| `WM3-BLK-011` | closed | required ExpectedVersion (CONC-001) |
+| `WM3-BLK-012` | closed | Version on reads (CONC-002, API-001) |
+| `WM3-BLK-013` | **open** | first-party key ownership — WM-V3-FE-001 |
+| `WM3-BLK-014` | closed | mapping/validator parity (DATA-004, APP-BOARD-001) |
+| `WM3-BLK-015` | **open (consumer half)** | producer cut over (API-001); consumer cutover — WM-V3-FE-001 |
+| `WM3-BLK-016` | closed | candidate run above |
+| `WM3-BLK-017` | closed | LIFE-001 |
+| `WM3-BLK-018` | **open** | web adapters omit Idempotency-Key on non-create mutations — WM-V3-FE-001 |
+| `WM3-BLK-019` | closed | CONC-001/002 |
+| `WM3-BLK-020` | closed | FIX-001 |
+| `WM3-BLK-021` | closed | DATA-003 |
+| `WM3-BLK-022` | closed | stable codes at the API boundary (ORDER-003, API-001) |
+| `WM3-BLK-023` | closed | ORDER-005 |
+| `WM3-BLK-024` | closed | GATE-002 |
 
 # Baseline final decision
 ```text
-Baseline SHA: 35702d0fa9fb01ed68b0667bab500030d60bd028
+Baseline SHA: 8400a4c0
 Source posture: GAP_CONFIRMED
 P3-A: BLOCKED
 P3-B: NOT_EVALUATED (release gate closed)
@@ -1323,16 +1448,29 @@ P4A gate: BLOCKED
 D5: NO
 ```
 
+# Candidate decision (63a81692)
+```text
+Candidate SHA: 63a81692ec67182674e97ba34fc53536f38c5a3b
+Source posture: backend producer IMPLEMENTED and VERIFIED; first-party consumer GAP_CONFIRMED
+P3-A: VERIFIED
+P3-B: VERIFIED
+P3 Core (producer): VERIFIED
+P3 release: BLOCKED (WM-V3-FE-001; large-Board pagination decision)
+P4A gate: BLOCKED
+D5: NO
+```
+
 # D5 Definition of Done
 - [ ] P3-A VERIFIED and P3-B STABLE.
 - [ ] Board and BoardItem STABLE.
 - [ ] Field/Value/Option/Group/Checklist reach required VERIFIED/STABLE thresholds.
-- [ ] ordering scope lock, exact adjacency, ordinal persistence, normalization, uniqueness and maintenance strategy are verified.
+- [ ] ordering scope lock, exact adjacency, ordinal persistence, reset/preflight, uniqueness and maintenance strategy are verified on every writer.
+- [ ] soft-delete lifecycle and restore are verified from persisted state.
 - [ ] read Version/write ExpectedVersion and logical idempotency identity are end-to-end exact.
 - [ ] direct + child app RLS pass on real PostgreSQL; worker dependency is not falsely certified.
 - [ ] relational migration and RLS pack deployment both pass clean/upgrade/deployment evidence.
 - [ ] events/outbox/realtime and cross-context consumers remain compatible.
 - [ ] producer OpenAPI and first-party consumers agree.
 - [ ] security/performance/observability minimums pass.
-- [ ] TESTS semantic matrix is 154/154 and mandatory suites execute non-zero on one exact candidate.
+- [ ] TESTS semantic matrix is 156/156 and mandatory suites execute non-zero on one exact candidate.
 - [ ] no WM3-BLK remains open.

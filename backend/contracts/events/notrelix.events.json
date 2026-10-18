@@ -1454,6 +1454,11 @@
           "nullable": false
         },
         {
+          "name": "newPosition",
+          "type": "string",
+          "nullable": true
+        },
+        {
           "name": "eventId",
           "type": "Guid",
           "nullable": false

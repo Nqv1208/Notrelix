@@ -17,7 +17,7 @@ public static class DeleteWorkspaceEndpoint
     private static async Task<IResult> HandleAsync(
         Guid workspaceId,
         ISender sender,
-        [AsParameters] long expectedVersion = 0)
+        [FromQuery] long expectedVersion)
     {
         var result = await sender.Send(new DeleteWorkspaceCommand(workspaceId, expectedVersion));
         return result.ToNoContentResult();

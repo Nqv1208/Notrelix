@@ -37,6 +37,7 @@ export function createUsePreferences({ api, endpoints }: UsePreferencesDeps) {
       preferences: query.data,
       isLoading: query.isLoading,
       isError: query.isError,
+      refetch: query.refetch,
       updatePreferences: mutation.mutate,
       isUpdating: mutation.isPending,
     };

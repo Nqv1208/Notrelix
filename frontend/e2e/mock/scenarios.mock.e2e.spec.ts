@@ -18,16 +18,20 @@ test("renders the configured deterministic scenario without unhandled mock error
   await page.goto("/home");
 
   if (scenario === "new-user") {
-    // New user has no workspaces
+    // New user has no workspaces: the setup begins (the Onboarding mockup)
+    await expect(page).toHaveURL(/\/onboarding/);
     await expect(
-      page.getByText("No workspaces are available for this account."),
+      page.getByRole("heading", {
+        level: 1,
+        name: /Tạo workspace cho công ty|Create a workspace/,
+      }),
     ).toBeVisible();
   } else if (scenario === "expired-session") {
     // Expired session redirects to sign-in
     await expect(page).toHaveURL(/sign-in/);
   } else {
     // default, empty-workspace, permission-limited — all have primary workspace
-    await expect(page.getByText(/Notrelix Product Lab/).first()).toBeVisible();
+    await expect(page.getByText(/Minh An Group/).first()).toBeVisible();
   }
 
   expect(unhandled).toEqual([]);
@@ -50,6 +54,6 @@ test("personas load distinct deterministic worlds", async ({ page }) => {
 
   await page.goto("/home");
   // All personas in default state should see the primary workspace
-  await expect(page.getByText(/Notrelix Product Lab/).first()).toBeVisible();
+  await expect(page.getByText(/Minh An Group/).first()).toBeVisible();
   expect(unhandled).toEqual([]);
 });

@@ -1,3 +1,4 @@
+using Notrelix.Application.Features.Workspaces.DTOs;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Workspaces.Workspaces.Queries.GetUserWorkspaces;
 
@@ -10,7 +11,8 @@ public static class ListUserWorkspacesEndpoint
         group.MapAuthenticatedGet("/", HandleAsync)
             .WithName("Workspaces.Workspaces.ListUserWorkspaces")
             .WithTags("Workspaces.Workspaces")
-            .WithSummary("Get current user's workspaces");
+            .WithSummary("Get current user's workspaces")
+            .Produces<List<WorkspaceDto>>(StatusCodes.Status200OK, "application/json");
         return group;
     }
 

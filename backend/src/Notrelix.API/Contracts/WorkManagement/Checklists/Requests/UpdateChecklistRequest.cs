@@ -1,3 +1,3 @@
 namespace Notrelix.API.Contracts.WorkManagement.Checklists.Requests;
 
-public record UpdateChecklistRequest(string? Title, double? Position);
+public record UpdateChecklistRequest(long ExpectedVersion, string? Title);

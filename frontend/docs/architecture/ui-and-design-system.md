@@ -142,24 +142,36 @@ Current source explicitly documents framework-neutral token files.
 Current token exports include:
 
 ```text
-primitive colors
-brand
-semantic state colors
-surface colors
-gradients
-badge colors
-typography
-spacing/layout/grid
-radius
-shadows
-motion
-semantic surfaces
-focus ring
-light theme
-dark theme
+OKLCH color model (sRGB conversion, contrast, ΔE)
+palette: tinted neutrals (mockup values), accents, status, work status (todo/doing/review/done) with Board lane tints, label tones, high priority, identity, mark tones (workspace/Space chips), system rail tones
+system rail roles: --rail, --rail-foreground, --rail-active-foreground, --rail-hover, --rail-separator, --rail-badge, --rail-badge-foreground, --rail-focus-ring (dark in every appearance; Notrelix system rail only)
+semantic color roles per appearance × accent
+typography (Be Vietnam Pro + IBM Plex Mono, rem scale, semantic text roles)
+spacing / sizes / layout
+radius and radius roles
+elevation (per appearance)
+motion (durations, ease-out curves, reduced-motion value)
+z-index roles
+focus ring geometry
+light / dark / high-contrast theme maps
+generated CSS variables (`@notrelix/ui-tokens/css`)
 ```
 
 as current implementation evidence.
+
+Stacking uses the z-index roles (`z-dropdown` < `z-sticky` < `z-backdrop` < `z-modal` < `z-toast` < `z-tooltip`), never a raw number:
+
+```text
+in-flow dropdowns and inline menus   z-dropdown
+sticky headers / table headers       z-sticky
+dialog, sheet, drawer backdrops      z-backdrop
+dialog, sheet, drawer content        z-modal
+portalled popover / select / menus   z-modal (same role as dialogs; portal order puts the later-opened layer on top)
+toaster                              z-toast
+tooltip                              z-tooltip
+```
+
+`z-0`, `z-10` and `z-20` remain allowed for local layering inside one component. `pnpm check:design-tokens` fails on any other numeric or arbitrary z utility, on inline `zIndex: <number>` of 30 or more and on Tailwind v4 `z-(--x)` variable forms (other than `z-(--z-<role>)`) outside the explicit exclusions in `check-design-tokens.ts`; inline styles use `"var(--z-<role>)"`.
 
 ---
 
@@ -233,7 +245,7 @@ This preserves theme evolution.
 
 # 9. Brand palette
 
-Current token source defines brand colors including violet/indigo/purple/ocean/sky/frost and gradients.
+Current token source derives the brand from the Notrelix logo (`packages/ui/web/src/assets/logo.svg`): Notrelix Blue `#1E90FF` (OKLCH hue ≈253) split into `brand-mark` (marks only), `brand-solid` (filled actions) and `brand-ink` (links). The logo's warm colors (coral, gold, sage, ember) are identity colors for workspace/Board/avatar marks and chart series; they are never status colors.
 
 Brand palette is a design input.
 
@@ -258,18 +270,9 @@ A design refresh changes token authority first.
 
 # 11. Current primary-source alignment risk
 
-Current source contains several representations of primary/brand intent:
+Primary/brand intent has one authority: the accent tones in `packages/ui/tokens/src/color/palette.ts`. `--primary`, `--ring`, `--sidebar-primary`, `--brand-*` and `--link` are emitted from those tones into the generated CSS; picker swatches read `--accent-swatch-<accent>` (preview only, FE-UI-068). The former `brand.violet`, `COLOR_THEMES.primaryColor` and `theme-*` class palettes were removed in WX-FND-001/002.
 
-```text
-brand.violet
-light/dark --primary
-COLOR_THEMES.default primaryColor
-theme-* accent behavior
-```
-
-Different representations can be valid if they map to semantic roles.
-
-They become source debt if they independently define competing visual authority.
+A new representation is source debt if it defines visual authority outside the token source.
 
 ---
 
@@ -299,6 +302,8 @@ danger
 info
 ```
 
+each with `solid`/`foreground`, `text`, and `subtle`/`subtle-foreground` pairs, plus the interaction state set (`state-hover`, `state-selected`, `state-disabled`, `focus-ring`).
+
 Semantic state color is not product status meaning by itself.
 
 ---
@@ -320,18 +325,16 @@ Product owner chooses mapping.
 
 # 15. Surfaces
 
-Current semantic surfaces define roles such as:
+Current semantic surfaces define four tiers:
 
 ```text
-underlay
-canvas
-raised
-card
-overlay
-toast
+canvas    page background
+sidebar   second neutral layer
+panel     inline content (card, table)
+raised    floating content (menu, popover, dialog)
 ```
 
-for light/dark.
+for light, dark and high contrast. Neutrals are tinted toward hue 255 with chroma ≤ 0.01.
 
 ---
 
@@ -358,19 +361,21 @@ Current token source exports explicit:
 ```text
 lightTheme
 darkTheme
+highContrastTheme
 ```
 
-CSS-variable mappings.
+CSS-variable mappings, and generates `@notrelix/ui-tokens/css`, which the web host imports.
 
-Current web `ThemeProvider` supports:
+Current web `ThemeProvider` supports the modes:
 
 ```text
-light
+light      (default)
 dark
 system
+high-contrast
 ```
 
-appearance.
+Light, dark and high contrast are complete, independently tuned appearances, not inversions.
 
 ---
 
@@ -382,6 +387,7 @@ Appearance mode answers:
 light?
 dark?
 system?
+high contrast?
 ```
 
 It is separate from:
@@ -404,20 +410,17 @@ unless a future theme architecture deliberately changes.
 
 # 19. Color/accent themes
 
-Current `useColorTheme()` exposes themes such as:
+Current accents are:
 
 ```text
-default
-editorial
+blue    (Notrelix Blue, default)
+coral
+ember   (kept ΔE_OK ≥ 0.08 from danger)
 sage
-ocean
-sunset
-midnight
-rose
-aurora
+amber   (light fills carry dark text; accent text uses `link`)
 ```
 
-and applies a `theme-*` class.
+applied as `data-accent="<id>"` on the themed element and exposed through `useTheme().accent` / `useColorTheme()`.
 
 This is a second theme axis.
 
@@ -440,14 +443,14 @@ branching across the codebase.
 
 # 21. Theme persistence
 
-Current web theme provider accepts injected storage and uses keys such as:
+Current web theme provider accepts injected storage and uses the keys:
 
 ```text
-notrelix-ui-theme
-notrelix-color-theme
+notrelix-theme-mode
+notrelix-theme-accent
 ```
 
-for appearance/accent persistence.
+for mode/accent persistence. Values under the legacy keys `theme`, `notrelix-ui-theme` and `notrelix-color-theme` are read once, mapped (old accent ids to the nearest new accent) and re-persisted under the current keys.
 
 ---
 
@@ -488,7 +491,7 @@ When user explicitly selects light/dark, OS changes should not override that cho
 
 # 25. Theme flash
 
-Current web exports `colorThemeScript` intended to apply stored accent theme before rendering.
+Current web exports `themeInitScript`, generated from the same constants as the provider, which applies stored mode and accent before first paint; the web host inlines it in `index.html` and a test proves the inlined copy behaves identically.
 
 Appearance/theme initialization should minimize flash/hydration mismatch.
 
@@ -539,17 +542,16 @@ Respect reduced-motion/accessibility.
 
 # 29. Motion tokens
 
-Current motion tokens include duration categories:
+Current motion tokens are:
 
 ```text
-instant
-fast
-base
-slow
-deliberate
+fast   150ms
+base   180ms
+slow   200ms
+ease-out, ease-out-emphasized
 ```
 
-and easing roles.
+Under `prefers-reduced-motion: reduce` the duration variables collapse to 0.01ms.
 
 ---
 
@@ -613,7 +615,7 @@ Provide non-motion cues.
 
 # 35. Spacing
 
-Current token source uses an 8-based layout system with explicit spacing values and layout/grid roles.
+Current token source uses a 4px base grid expressed in rem, with semantic spacing roles (`inline-*`, `stack-*`, `section`, `page-gutter`), control/row sizes and layout roles.
 
 Exact values are implementation/design evidence.
 
@@ -688,12 +690,14 @@ components demonstrate coherent behavior and accessibility.
 Typography tokens own:
 
 ```text
-font families
+font family (Be Vietnam Pro for UI, IBM Plex Mono for keys/code/IDs; both self-hosted, WX-DEC-013)
 weights
-type scale
+fixed rem scale (adjacent ratio 1.125–1.2)
+semantic text roles: display, page-title, section-heading, subheading,
+  body, dense-body, label, metadata, caption, code, prose
 ```
 
-according to current token package.
+The web host exposes the roles as `text-<role>` utilities. Use `tabular-nums` for data columns, counts, dates and durations; `text-metadata` is tabular by contract.
 
 ---
 
@@ -1109,25 +1113,22 @@ contrast for every component.
 
 Use automated/manual checks at rendered component level.
 
-Operative brand pair in the web host (`apps/web/src/styles/globals.css`):
+Operative brand pair (light, Notrelix Blue), owned by `packages/ui/tokens` and emitted into
+the generated CSS (`apps/web/src/styles/globals.css` only maps variables):
 
 ```text
---primary: oklch(0.5 0.2 250)
---primary-foreground: oklch(0.985 0 0)
-≈ 5.6:1 white-on-primary (AA)
+--primary (brand-solid): oklch(0.53 0.16 253.2)
+--primary-foreground:    oklch(0.99 0.002 255)
 ```
 
-Updated 2026-09 because the previous `oklch(0.62 0.2 250)` measured ≈ 3.4:1 on
-solid-primary controls and failed axe `color-contrast` (serious). The light pair must
-hold WCAG AA both ways for small text: white-on-primary ≥ 4.5:1 and primary-on-background
-≥ 4.5:1. `bg-primary/80` hover fades toward `--background` below AA; hover is transient
-and not gate-enforced, but future primary changes must re-check the resting and hover
-pairs. Drift note: `packages/ui/tokens/themes/light.ts` still declares
-`oklch(0.58 0.23 285)`; the web renderer/storybook operatively use the globals.css value.
-Align the token package with the web host as part of token-ownership work; do not regress
-below AA. Visual baselines are linux-renderer pinned (`visual-baseline.lock.json`), so a
-primary change requires regenerating affected linux baselines in the CI `ui-foundation`
-job, not locally.
+`packages/ui/tokens/src/__tests__/contrast-matrix.unit.test.ts` verifies every appearance ×
+accent from the token source (OKLCH → sRGB): text pairs ≥ 4.5:1 (high contrast ≥ 7:1),
+focus ring, icons and brand marks ≥ 3:1, destructive text on its own 10%/20% tint. Accents
+whose light fill carries dark text (Amber) must not use `primary` as text; accent-colored
+text uses `link` / `brand-ink`. `bg-primary/80` hover fades toward `--background`; hover is
+transient and not gate-enforced. Visual baselines are linux-renderer pinned
+(`visual-baseline.lock.json`), so a primary change requires regenerating affected linux
+baselines in the CI `ui-foundation` job, not locally.
 
 ---
 
@@ -1684,9 +1685,7 @@ Web can derive CSS variables from it.
 
 # 127. CSS-only token export
 
-`ui-tokens` package currently advertises a `./css` export in package metadata.
-
-The exact source/output path must remain valid and generated/maintained according to package contract.
+`ui-tokens` exports `./css` → `src/css/index.css`, generated by `pnpm --filter @notrelix/ui-tokens generate:css`; a unit test fails when the committed file drifts from the generator.
 
 ---
 
@@ -1712,14 +1711,17 @@ Architecture/build tests should catch it.
 Current `ui-web/theme` exports:
 
 ```text
-ThemeProvider
-useTheme
-useColorTheme
-COLOR_THEMES
-colorThemeScript
+ThemeProvider            (storage, defaultMode, defaultAccent, target, matchMedia)
+useTheme                 → { mode, accent, appearance, setMode, setAccent, modes, accents }
+useOptionalTheme         (intentional fallback for standalone primitives)
+useColorTheme            → accent axis view
+ThemePicker              (copy via `labels` prop)
+themeInitScript
+THEME_MODES, THEME_ACCENTS, THEME_ACCENT_OPTIONS, LEGACY_ACCENT_MIGRATION
+readThemePreference, writeThemePreference, resolveAppearance
 ```
 
-as current evidence.
+as current evidence. `useTheme` throws outside a provider (FE-UI-066).
 
 ---
 
@@ -1790,6 +1792,8 @@ Actual styling comes through theme/token semantics.
 # 137. Localization
 
 Design-system component APIs should not hardcode product-visible copy where consumers need localization.
+
+The i18n mechanism is `@notrelix/i18n` (i18next + react-i18next, FE-ADR-006); catalogs live with their owning package and `pnpm check:i18n` gates completeness for `vi` and `en`.
 
 Generic accessible defaults can be configurable.
 

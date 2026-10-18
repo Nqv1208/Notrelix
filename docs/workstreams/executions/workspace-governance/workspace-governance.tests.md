@@ -1351,11 +1351,16 @@ Preparation evidence state: PARTIAL-SOURCE
 
 ### Certification evidence
 
-- Static inventory/architecture evidence.
+- Executed: `PermissionActionInventoryTests.cs` (added in candidate `4878dd0a`, green inside the
+  Architecture suite 623/623) — freezes the declared action set, asserts uniqueness (WGREQ051),
+  rejects HTTP-verb names (WGREQ053), and asserts every action is consumed by an
+  `IRequirePermission` request or explicitly documented (WGREQ050).
 
 ### Gap / follow-up
 
-- A dedicated action ownership registry/gate may need extension for full coverage.
+- CLOSED — the dedicated action ownership gate now exists as `PermissionActionInventoryTests`,
+  executed green locally on candidate `4878dd0a` (623/623 Architecture). An aggregate CI run on
+  the candidate is still required for release-level certification (`CERT-CI-001..009`).
 
 ## 25. WG-TST-RES-X-001 — resource facts come from approved semantic owner
 
@@ -3066,7 +3071,9 @@ Preparation evidence state: GAP
 
 ### Existing source evidence
 
-- No exact existing test was confirmed during preparation audit.
+- CLOSED — fault-injection seam proven at runtime on candidate SHA e74bbc75.
+- `AuthorizationFailClosedFaultInjectionTests` (Notrelix.Integration.Tests, real PostgreSQL + production pipeline slice).
+- Disarm regression recorded: removing the facts fault makes the negative test fail (admin succeeds), proving the deny is the fault, not the harness.
 
 ### Setup
 
@@ -3086,7 +3093,7 @@ Preparation evidence state: GAP
 
 ### Certification evidence
 
-- Fault-injection test evidence.
+- Fault-injection test evidence: 3/3 PASS with fault armed; control path proves same composition still allows authorized actor.
 
 ## 73. WG-TST-SEC-MASTER-004 — secret telemetry scan
 
@@ -3096,12 +3103,13 @@ Preparation evidence state: GAP
 Requirements: WGREQ109, WGREQ137, WGREQ156, WGREQ164
 PLAN: WG-SEC-004
 Layer: T0/T7
-Preparation evidence state: GAP
+Preparation evidence state: CLOSED
 ```
 
 ### Existing source evidence
 
-- No exact existing test was confirmed during preparation audit.
+- `Notrelix.Integration.Tests/Integration/WorkspaceInvitationSecretTelemetryTests.cs :: InviteMember_RawInvitationToken_IsNeverPersistedReturnedOrEmittedInCleartext`
+- `Notrelix.Integration.Tests/Integration/WorkspaceInvitationSecretTelemetryTests.cs :: DeliveryEvent_ClassifiesProtectedTokenAsSensitive`
 
 ### Setup
 
@@ -3119,7 +3127,47 @@ Preparation evidence state: GAP
 
 ### Certification evidence
 
-- Static scan + representative runtime logs.
+Static scan + representative runtime logs.
+
+The reusable single-use invitation credential is proven not to leak by driving the
+**real** `InviteMemberCommandHandler` over real PostgreSQL with the real
+`OneTimeTokenService`, real `SecretEncryptor`, and real `IntegrationEventCollector`.
+The raw credential is captured at the issuance seam through a pass-through decorator
+so assertions compare against the actual secret.
+
+Verified for the Workspace invitation slice:
+
+- the raw token is never persisted — only the 64-char purpose-bound `InvitationTokenHash`;
+- the command result carries only the invitation ID, never the credential;
+- the delivery event carries only the encrypted `ProtectedToken`, never the raw
+  credential, and `Unprotect(ProtectedToken, purpose) == rawToken` proving it is
+  protected rather than merely absent;
+- `ProtectedToken` is contractually classified `[EventSensitiveField]` with an
+  explicit "never be logged" justification for outbox/retry/DLQ diagnostics.
+
+Result: **2/2 PASS** (real PostgreSQL, `Notrelix.Integration.Tests`).
+
+Disarm regression: replacing `_secretEncryptor.Protect(issuedToken.RawToken, …)`
+with `issuedToken.RawToken` failed the test with
+`Expected delivery.ProtectedToken not to be "v1.…" because the event must not carry
+the raw credential in cleartext`; restoring the encryptor returned 2/2 PASS. The
+assertions are therefore capable of rejecting a real credential leak.
+
+Repository scan findings:
+
+- no `ILogger` usage in the Workspaces/Governance Application or Infrastructure slices;
+- no source-tree secret-scan workflow exists; the only configured secret scanner is
+  Trivy under `.github/security/trivy-secret.yaml`, consumed by the runtime-images
+  lane of `.github/workflows/security-ci.yml`, i.e. image-scoped.
+
+Not verified (recorded honestly rather than claimed):
+
+- a repository secret-scan gate PASS was **not** produced. No source-tree gate exists
+  in the repository, and no local scanner is available in this environment
+  (`trivy`, `gitleaks`, `trufflehog` are all absent), so the image-scoped Trivy gate
+  remains owned by Delivery/CI and unrun locally.
+- ShareLink end-to-end capability-token telemetry is tracked separately as
+  `WG-DEBT-CERT-010` (does not block Milestone B).
 
 ## 74. WG-TST-REL-PROV-001 — personal Workspace provisioning retry safety
 
@@ -3310,7 +3358,11 @@ Preparation evidence state: GAP
 
 ### Existing source evidence
 
-- No exact existing test was confirmed during preparation audit.
+- NOT_APPLICABLE at candidate SHA e74bbc75 — the repository contains exactly one migration
+  `20260702093805_SchemaBaseline` (greenfield, 148 CreateTable, no prior chain). No supported
+  previous schema exists to upgrade FROM, so there is no upgrade path to exercise. Per plan §8.6 a
+  synthetic/compatibility fixture must not be invented. Recorded NOT_CHANGED / NOT_APPLICABLE.
+- Clean-DB path (WG-TST-MIG-DB-001) and no-pending-model-changes (WG-TST-MIG-DB-003) are proven instead.
 
 ### Setup
 
@@ -3328,7 +3380,7 @@ Preparation evidence state: GAP
 
 ### Certification evidence
 
-- Upgrade integration evidence.
+- Not applicable at candidate (single baseline, no prior schema). Clean-DB + no-pending-changes evidence recorded in P2B-CERT-013/CERT-MIG-001.
 
 ### Gap / follow-up
 
@@ -4239,15 +4291,15 @@ P3 handoff
 
 | Gap ID | Gap | Blocking for P2 Milestone B? |
 |---|---|---|
-| WG-TEST-GAP-001 | Exact DB-level duplicate membership race proof not confirmed | YES |
-| WG-TEST-GAP-002 | Explicit last-owner concurrent transaction proof not confirmed | YES |
-| WG-TEST-GAP-003 | Membership suspend/remove → access-grant revocation runtime proof must be confirmed | YES |
+| WG-TEST-GAP-001 | Exact DB-level duplicate membership race proof not confirmed | CLOSED — `ConcurrentDuplicateMembershipAdds_DatabaseAllowsOnlyOneMember` (real PostgreSQL, loser `DbUpdateException` on unique constraint) PASS |
+| WG-TEST-GAP-002 | Explicit last-owner concurrent transaction proof not confirmed | CLOSED — `ConcurrentDemoteAndRemoveOwners_NeverLeavesZeroActiveOwners` (FOR UPDATE row lock via `IWorkspaceOwnerUpdateLocker`) PASS, deterministic + regression-proven |
+| WG-TEST-GAP-003 | Membership suspend/remove → access-grant revocation runtime proof must be confirmed | CLOSED — `RlsRuntimeEnforcementTests` revision runtime (18/18) |
 | WG-TEST-GAP-004 | Same-priority PermissionRule allow+deny/time-window matrix may need extension | YES if current policy relies on it |
-| WG-TEST-GAP-005 | Board-specific cross-account negative P2 gate case should be explicit | YES |
+| WG-TEST-GAP-005 | Board-specific cross-account negative P2 gate case should be explicit | CLOSED — `GetBoard_FromForeignAccount_IsNotFound_AndForeignBoardStaysUntouched` (GovernanceResourcePermissionFlowTests 52/52) |
 | WG-TEST-GAP-006 | Governance transport-level API test suite not confirmed by dedicated file | NO for P2 core if integration+OpenAPI prove release surface; required for full API DoD |
-| WG-TEST-GAP-007 | Authorization dependency fault-injection/fail-closed proof not confirmed | YES for D5 reliability claim |
-| WG-TEST-GAP-008 | Secret telemetry scan not confirmed | YES for full security certification |
-| WG-TEST-GAP-009 | Supported upgrade DB fixture not confirmed | YES if candidate includes material schema/identifier change; otherwise NOT-CHANGED |
+| WG-TEST-GAP-007 | Authorization dependency fault-injection/fail-closed proof not confirmed | CLOSED — `AuthorizationFailClosedFaultInjectionTests` 3/3 (facts-outage + policy-outage abort before handler with no durable mutation; un-faulted control still allows) |
+| WG-TEST-GAP-008 | Secret telemetry scan not confirmed | PARTIAL — slice-owned runtime redaction CLOSED by `WorkspaceInvitationSecretTelemetryTests` 2/2 (real PostgreSQL, real token issuer/encryptor/event collector: raw invitation credential never persisted, never returned, never emitted in cleartext; `ProtectedToken` carries `[EventSensitiveField]` "never be logged" classification), disarm-regression-proven. Repository secret-scan gate NOT run: no source-tree gate exists in-repo and no local scanner available (`trivy`/`gitleaks`/`trufflehog` absent); the image-scoped Trivy gate stays owned by Delivery/CI |
+| WG-TEST-GAP-009 | Supported upgrade DB fixture not confirmed | NOT-CHANGED / NOT_APPLICABLE — single greenfield baseline `20260702093805_SchemaBaseline`, no prior supported schema to upgrade FROM; clean-DB (MigrationSmokeTests 4/4) + no-pending-model-changes (EF tooling) proven instead (P2B-CERT-013/CERT-MIG-001) |
 | WG-TEST-GAP-010 | ShareLink end-to-end capability-token consumption path not confirmed | NO for P2 core; blocks ShareLink full release |
 | WG-TEST-GAP-011 | WorkspacePolicy runtime composition not confirmed | NO for P2 core; blocks claiming policy enforcement |
 | WG-TEST-GAP-012 | CustomRole runtime composition/Application/API not confirmed | NO for P2 core; blocks CustomRole release |

@@ -9,9 +9,11 @@ public class IgnoreQueryFiltersArchitectureTests
         "src/Notrelix.Infrastructure/Services/WorkspaceAccessResolver.cs",
         "src/Notrelix.Infrastructure/Services/ResourceLocator.cs",
         "src/Notrelix.Infrastructure/Data/Authz/PostgresPageAuthorizationFacts.cs",
+        "src/Notrelix.Infrastructure/CrossContext/Governance/WorkManagement/BoardChildAuthorizationFactsAdapter.cs",
         "src/Notrelix.Infrastructure/Notifications/Email/EmailTemplateMaterialization.cs",
         "src/Notrelix.Application/Features/Identity/Verification/Services/EmailVerificationTokenIssuer.cs",
         "src/Notrelix.Infrastructure/Identity/Services/ActiveVerificationTokenLocker.cs",
+        "src/Notrelix.Infrastructure/Workspaces/Members/WorkspaceOwnerUpdateLocker.cs",
         "src/Notrelix.Infrastructure/Integrations/Webhooks/CalendarWebhookBindingResolver.cs",
     };
 

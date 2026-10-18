@@ -30,14 +30,14 @@ review_on:
 > This file is generated discovery evidence.
 > It does not replace the canonical authority described by each source document.
 
-Document count: 92
+Document count: 94
 
 ## Documents by type
 
 | Value | Count |
 |:---|---:|
 | `architecture` | 22 |
-| `architecture-decision` | 13 |
+| `architecture-decision` | 15 |
 | `architecture-policy` | 1 |
 | `decision-registry` | 3 |
 | `delivery-handbook` | 1 |
@@ -58,7 +58,7 @@ Document count: 92
 
 | Value | Count |
 |:---|---:|
-| `Accepted` | 11 |
+| `Accepted` | 13 |
 | `active` | 76 |
 | `generated` | 3 |
 | `Superseded` | 2 |
@@ -75,6 +75,7 @@ Document count: 92
 | `ADR-006` | `architecture-decision` | `Accepted` | `backend-architecture` | `backend`, `backend-application`, `application-pipeline` | [`backend/docs/decisions/ADR-006-frozen-seven-behavior-pipeline.md`](../../backend/docs/decisions/ADR-006-frozen-seven-behavior-pipeline.md) |
 | `ADR-007` | `architecture-decision` | `Accepted` | `backend-architecture` | `backend`, `backend-application`, `application-pipeline`, `governance-context` | [`backend/docs/decisions/ADR-007-governance-owned-authorization-evaluator.md`](../../backend/docs/decisions/ADR-007-governance-owned-authorization-evaluator.md) |
 | `ADR-008` | `architecture-decision` | `Accepted` | `backend-architecture` | `backend`, `backend-platform-messaging`, `provider-integration` | [`backend/docs/decisions/ADR-008-provider-outcome-classification-and-settlement.md`](../../backend/docs/decisions/ADR-008-provider-outcome-classification-and-settlement.md) |
+| `ADR-009` | `architecture-decision` | `Accepted` | `backend-architecture` | `backend`, `governance-context`, `workspaces-context`, `authorization`, `persistence` | [`backend/docs/decisions/ADR-009-space-scoped-authorization.md`](../../backend/docs/decisions/ADR-009-space-scoped-authorization.md) |
 | `BE-ACCESS-FACTS-EVIDENCE` | `operations` | `active` | `backend-runtime-operations` | `backend`, `backend-access-control`, `backend-performance` | [`backend/docs/operations/access-facts-query-evidence.md`](../../backend/docs/operations/access-facts-query-evidence.md) |
 | `BE-API-CONTRACTS` | `architecture` | `active` | `backend-architecture` | `backend/src/Notrelix.API`, `backend/tests/Notrelix.API.Tests`, `backend/tests/Notrelix.Integration.Tests` | [`backend/docs/architecture/api-and-contracts.md`](../../backend/docs/architecture/api-and-contracts.md) |
 | `BE-APPLICATION-MODEL` | `architecture` | `active` | `backend-architecture` | `backend/src/Notrelix.Application`, `backend/tests/Notrelix.Application.Tests`, `backend/tests/Notrelix.Integration.Tests` | [`backend/docs/architecture/application-model.md`](../../backend/docs/architecture/application-model.md) |
@@ -110,6 +111,7 @@ Document count: 92
 | `FE-ADR-003` | `architecture-decision` | `Accepted` | `frontend-architecture` | `frontend-package-exports`, `frontend-public-package-api`, `frontend-cross-package-imports`, `frontend-deep-import-policy`, `frontend-package-encapsulation` | [`frontend/docs/decisions/FE-ADR-003-package-exports.md`](../../frontend/docs/decisions/FE-ADR-003-package-exports.md) |
 | `FE-ADR-004` | `architecture-decision` | `Accepted` | `frontend-architecture` | `frontend-framework-boundaries`, `frontend-nextjs-boundary`, `frontend-reusable-packages`, `frontend-web`, `frontend-mobile`, `frontend-marketing` | [`frontend/docs/decisions/FE-ADR-004-no-next-in-packages.md`](../../frontend/docs/decisions/FE-ADR-004-no-next-in-packages.md) |
 | `FE-ADR-005` | `architecture-decision` | `Accepted` | `frontend-architecture` | `frontend-authentication`, `frontend-session-management`, `frontend-cookie-auth`, `frontend-auth-refresh`, `frontend-session-expiry`, `frontend-auth-navigation`, `frontend-csrf-client-contract` | [`frontend/docs/decisions/FE-ADR-005-auth-session-model.md`](../../frontend/docs/decisions/FE-ADR-005-auth-session-model.md) |
+| `FE-ADR-006` | `architecture-decision` | `Accepted` | `frontend-architecture` | `frontend-i18n`, `frontend-foundation`, `frontend-web`, `frontend-mobile` | [`frontend/docs/decisions/FE-ADR-006-i18n-library.md`](../../frontend/docs/decisions/FE-ADR-006-i18n-library.md) |
 | `FE-ARCH-API-CONTRACTS` | `architecture` | `active` | `frontend-platform` | `frontend-api`, `frontend-contracts`, `frontend-codegen`, `frontend-api-client`, `frontend-error-contracts`, `frontend-auth-transport`, `frontend-idempotency` | [`frontend/docs/architecture/api-and-contracts.md`](../../frontend/docs/architecture/api-and-contracts.md) |
 | `FE-ARCH-CHANGE-POLICY` | `architecture-policy` | `active` | `frontend-platform` | `frontend-architecture-changes`, `frontend-package-changes`, `frontend-host-changes`, `frontend-contract-foundation`, `frontend-state-foundation`, `frontend-realtime-foundation`, `frontend-ui-foundation`, `frontend-testing-foundation` | [`frontend/docs/architecture/architecture-change-policy.md`](../../frontend/docs/architecture/architecture-change-policy.md) |
 | `FE-ARCH-DEPENDENCY-BOUNDARIES` | `architecture` | `active` | `frontend-platform` | `frontend-package-graph`, `frontend-import-boundaries`, `frontend-public-exports`, `frontend-mobile-purity`, `frontend-generated-architecture-evidence` | [`frontend/docs/architecture/dependency-boundaries.md`](../../frontend/docs/architecture/dependency-boundaries.md) |

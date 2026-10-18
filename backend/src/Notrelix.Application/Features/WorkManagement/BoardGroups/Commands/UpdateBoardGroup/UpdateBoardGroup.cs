@@ -4,9 +4,10 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 namespace Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.UpdateBoardGroup;
 
 [IdempotencyOperation("work-management.board-groups.update-board-group.v1")]
-public record UpdateBoardGroupCommand(Guid GroupId, string? Title, string? Color = null) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+public record UpdateBoardGroupCommand(Guid GroupId, string? Title, long ExpectedVersion, string? Color = null) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
 {
-    public PermissionAction Action => PermissionAction.ManageBoard;
+    // Changing a group edits Board content (Editor), not Board management.
+    public PermissionAction Action => PermissionAction.UpdateItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-group"), GroupId);
 }
 

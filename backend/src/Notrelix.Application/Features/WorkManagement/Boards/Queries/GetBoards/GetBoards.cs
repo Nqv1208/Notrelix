@@ -1,6 +1,8 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.WorkManagement.Common.DTOs;
+using Notrelix.Application.Features.Governance.Public.Visibility;
+using Notrelix.Application.Features.WorkManagement.Boards.Queries.Common;
 
 namespace Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoards;
 
@@ -13,27 +15,26 @@ public record GetBoardsQuery(Guid WorkspaceId) : IQuery<Result<List<BoardDto>>>,
 public class GetBoardsQueryHandler : IRequestHandler<GetBoardsQuery, Result<List<BoardDto>>>
 {
     private readonly IWorkManagementDbContext _context;
+    private readonly IResourceVisibility _visibility;
+    private readonly ICurrentRequestContext _requestContext;
 
-    public GetBoardsQueryHandler(IWorkManagementDbContext context)
+    public GetBoardsQueryHandler(
+        IWorkManagementDbContext context,
+        IResourceVisibility visibility,
+        ICurrentRequestContext requestContext)
     {
         _context = context;
+        _visibility = visibility;
+        _requestContext = requestContext;
     }
 
     public async Task<Result<List<BoardDto>>> Handle(GetBoardsQuery request, CancellationToken ct)
     {
-        // WorkspaceContextBehavior already resolved workspace access and set tenant context
-        var boards = await _context.Boards.AsNoTracking()
-            .Where(b => b.WorkspaceId == request.WorkspaceId && !b.IsArchived)
-            .ToListAsync(ct);
-
-        var result = boards.Select(b => new BoardDto(
-            b.Id, b.WorkspaceId, b.Title, b.Description,
-            b.Background, b.Visibility.ToString(), b.IsArchived,
-            _context.BoardMembers.Count(m => m.BoardId == b.Id),
-            _context.BoardGroups.Count(l => l.BoardId == b.Id && l.DeletedAt == null),
-            b.CreatedAt.DateTime
-        )).ToList();
-
+        // The pipeline authorized ViewWorkspace; each Board still needs the
+        // single-read ViewBoard decision, applied in the datastore (GOV-029).
+        var visible = await _visibility.VisibleBoardIdsAsync(request.WorkspaceId, _requestContext.UserId, ct);
+        var spaces = (await _visibility.VisibleSpaceIdsAsync(request.WorkspaceId, _requestContext.UserId, ct)).ToHashSet();
+        var result = await BoardListProjection.LoadAsync(_context, request.WorkspaceId, visible, spaces, ct);
         return Result<List<BoardDto>>.Success(result);
     }
 }

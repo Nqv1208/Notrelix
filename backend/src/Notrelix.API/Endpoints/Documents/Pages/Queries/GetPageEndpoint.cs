@@ -1,4 +1,5 @@
 using Notrelix.API.Extensions;
+using Notrelix.Application.Features.Documents.DTOs;
 using Notrelix.Application.Features.Documents.Pages.Queries.GetPage;
 
 namespace Notrelix.API.Endpoints.Documents.Pages.Queries;
@@ -9,6 +10,7 @@ public static class GetPageEndpoint
     {
         group.MapResourceGet("/", HandleAsync)
             .WithName("Documents.Pages.GetPage")
+            .Produces<PageDto>(StatusCodes.Status200OK, "application/json")
             .WithTags("Documents.Pages")
             .WithSummary("Get a page by ID");
         return group;

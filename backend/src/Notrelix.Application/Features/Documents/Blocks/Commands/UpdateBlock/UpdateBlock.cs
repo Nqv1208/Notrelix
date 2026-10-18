@@ -25,7 +25,7 @@ public class UpdateBlockCommandHandler : IRequestHandler<UpdateBlockCommand, Res
 
     public async Task<Result> Handle(UpdateBlockCommand request, CancellationToken ct)
     {
-        var block = await _context.Blocks.FirstOrDefaultAsync(block => block.Id == request.BlockId && !block.IsDeleted, ct);
+        var block = await _context.Blocks.FirstOrDefaultAsync(block => block.Id == request.BlockId && block.DeletedAt == null, ct);
         if (block is null) throw new NotFoundException(nameof(Block), request.BlockId);
 
         return Result.Success();

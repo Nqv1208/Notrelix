@@ -90,27 +90,31 @@ export const listsOperations = [
     },
   }),
 
-  // ─── POST /boards/:boardId/groups/reorder ─────────────────────────────────
+  // ─── POST /board-groups/:groupId/move ──────────────────────────────────────
 
   defineMockOperation<
-    { boardId: string },
-    { items?: { id: string; newPosition: number }[] },
+    { groupId: string },
+    { previousSiblingId?: string | null; nextSiblingId?: string | null },
     void
   >({
-    id: "wm.boardGroups.reorder",
+    id: "wm.boardGroups.move",
     contract: {
       kind: "openapi",
-      operationId: "WorkManagement.BoardGroups.Reorder",
+      operationId: "WorkManagement.BoardGroups.Move",
     } as any,
     method: "POST",
-    route: "/boards/:boardId/groups/reorder",
+    route: "/board-groups/:groupId/move",
     async handle({ params, body, store }) {
       const data = (body ?? {}) as {
-        items?: { id: string; newPosition: number }[];
+        previousSiblingId?: string | null;
+        nextSiblingId?: string | null;
       };
-      if (data.items) {
-        store.reorderLists(params.boardId, data.items);
-      }
+      const moved = store.moveList(
+        params.groupId,
+        data.previousSiblingId,
+        data.nextSiblingId,
+      );
+      if (!moved) return notFound("Group not found");
       return ok<void>(undefined);
     },
   }),

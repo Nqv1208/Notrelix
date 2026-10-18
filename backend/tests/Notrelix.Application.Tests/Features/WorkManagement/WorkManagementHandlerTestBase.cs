@@ -12,7 +12,42 @@ namespace Notrelix.Application.Tests.Features.WorkManagement;
 
 public abstract class WorkManagementHandlerTestBase
 {
+    /// <summary>Placement resolver over a no-op scope lock; ordering serialization is proven on PostgreSQL.</summary>
+    protected Notrelix.Application.Features.WorkManagement.Ordering.WorkPlacementResolver Placement { get; } =
+        new(new Mock<Notrelix.Application.Features.WorkManagement.Ordering.IWorkOrderingScopeLock>().Object);
+
     protected readonly Mock<IWorkManagementDbContext> DbContextMock = new();
+
+    private InMemoryBoardItemKeyAllocator? _keyAllocator;
+
+    /// <summary>
+    /// In-memory Item-key allocator over the mocked Boards; the row-locking
+    /// reservation and its concurrency are proven on PostgreSQL.
+    /// </summary>
+    protected Notrelix.Application.Features.WorkManagement.BoardItems.Services.IBoardItemKeyAllocator KeyAllocator =>
+        _keyAllocator ??= new InMemoryBoardItemKeyAllocator(() => DbContextMock.Object.Boards);
+
+    private sealed class InMemoryBoardItemKeyAllocator(Func<IQueryable<Board>> boards)
+        : Notrelix.Application.Features.WorkManagement.BoardItems.Services.IBoardItemKeyAllocator
+    {
+        private readonly Dictionary<Guid, long> _last = new();
+
+        public Task<IReadOnlyList<Notrelix.Application.Features.WorkManagement.BoardItems.Services.BoardItemKey>?> TryAllocateAsync(
+            Guid boardId, int count, CancellationToken cancellationToken)
+        {
+            var board = boards().FirstOrDefault(b => b.Id == boardId && b.DeletedAt == null && !b.IsArchived);
+            if (board is null)
+                return Task.FromResult<IReadOnlyList<Notrelix.Application.Features.WorkManagement.BoardItems.Services.BoardItemKey>?>(null);
+
+            var last = _last.GetValueOrDefault(boardId, board.ItemSequence);
+            var keys = Enumerable.Range(1, count)
+                .Select(offset => new Notrelix.Application.Features.WorkManagement.BoardItems.Services.BoardItemKey(
+                    last + offset, Board.FormatItemKey(board.ItemKeyPrefix, last + offset)))
+                .ToList();
+            _last[boardId] = last + count;
+            return Task.FromResult<IReadOnlyList<Notrelix.Application.Features.WorkManagement.BoardItems.Services.BoardItemKey>?>(keys);
+        }
+    }
     protected readonly Mock<ICurrentRequestContext> RequestContextMock = new();
     protected readonly Mock<IDateTimeProvider> DateTimeProviderMock = new();
 

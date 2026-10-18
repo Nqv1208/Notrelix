@@ -14,7 +14,7 @@ public class BoardConfiguration : IEntityTypeConfiguration<Board>
         builder.Property(x => x.AccountId).HasColumnName("account_id").IsRequired();
         builder.Property(x => x.WorkspaceId).HasColumnName("workspace_id").IsRequired();
         builder.Property(x => x.Title).HasColumnName("title").IsRequired().HasMaxLength(256);
-        builder.Property(x => x.Description).HasColumnName("description").HasMaxLength(1024);
+        builder.Property(x => x.Description).HasColumnName("description").HasMaxLength(5000);
         builder.Property(x => x.Background).HasColumnName("background").HasColumnType("jsonb").IsRequired().HasDefaultValue("{\"type\":\"color\",\"value\":\"#0079BF\"}");
         builder.Property(x => x.Visibility).HasColumnName("visibility").HasConversion<string>().IsRequired().HasMaxLength(50).HasDefaultValue(BoardVisibility.Workspace).HasSentinel(BoardVisibility.Workspace);
         builder.Property(x => x.IsArchived).HasColumnName("is_archived");
@@ -27,6 +27,16 @@ public class BoardConfiguration : IEntityTypeConfiguration<Board>
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
+
+        // Placement in a Workspaces Space (docs/product/workspaces.md §79): a scalar
+        // reference only. Space containment is not a cross-context object graph, so there
+        // is no navigation and no database foreign key; the target Space is validated in
+        // Application (IBoardSpacePlacement.EnsureActiveTargetAsync).
+        builder.Property(x => x.SpaceId).HasColumnName("space_id");
+        builder.HasIndex(x => x.SpaceId).HasDatabaseName("ix_boards_space_id");
+        builder.HasIndex(x => new { x.WorkspaceId, x.SpaceId })
+            .HasFilter("deleted_at IS NULL")
+            .HasDatabaseName("ix_work_boards_workspace_space");
 
         builder.HasIndex(x => x.WorkspaceId).HasFilter("deleted_at IS NULL AND is_archived = false").HasDatabaseName("idx_boards_workspace_id");
         builder.HasIndex(x => x.Title).HasDatabaseName("idx_boards_title");

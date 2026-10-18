@@ -19,16 +19,21 @@
   },
   "dependencies": {
     "@notrelix/contracts": "workspace:*",
+    "@notrelix/i18n": "workspace:*",
     "@notrelix/kernel": "workspace:*",
     "@notrelix/platform": "workspace:*",
     "@notrelix/query": "workspace:*",
-    "@tanstack/react-query": "^5.95.2"
+    "@notrelix/ui-web": "workspace:*",
+    "@tanstack/react-query": "^5.95.2",
+    "lucide-react": "^0.562.0"
   },
   "devDependencies": {
     "typescript": "^5.0.0",
     "@types/react": "^19.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "@notrelix/testing": "workspace:*",
+    "@storybook/react": "8.6.17",
     "@notrelix/eslint-config": "workspace:*"
   }
 }

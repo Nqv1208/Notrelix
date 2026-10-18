@@ -7,5 +7,6 @@ public class CreateBoardFromTemplateCommandValidator : AbstractValidator<CreateB
         RuleFor(x => x.TemplateId).NotEmpty();
         RuleFor(x => x.WorkspaceId).NotEmpty();
         RuleFor(x => x.Name).NotEmpty().MaximumLength(255);
+        RuleFor(x => x.SpaceId).NotEqual(Guid.Empty).When(x => x.SpaceId.HasValue);
     }
 }

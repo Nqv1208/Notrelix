@@ -180,7 +180,7 @@ export function SearchResultsView({
                           </p>
                         )}
                       </div>
-                      <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded shrink-0 mt-0.5">
+                      <span className="text-caption text-muted-foreground bg-muted px-1.5 py-0.5 rounded shrink-0 mt-0.5">
                         {result.type}
                       </span>
                     </button>

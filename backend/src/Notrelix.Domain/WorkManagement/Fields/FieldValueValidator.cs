@@ -17,6 +17,8 @@ public static class FieldValueValidator
         if (data == null)
             return;
 
+        FieldJsonBounds.EnsureWithin(data.Value, FieldJsonBounds.MaxValueLength, WorkManagementRuleCodes.WorkManagement_FieldValue_TooLarge, "Field value");
+
         if (data.Value == "null")
             return;
 

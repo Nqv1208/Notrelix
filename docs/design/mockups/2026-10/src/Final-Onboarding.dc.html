@@ -1,0 +1,718 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Hướng chốt · Bắt đầu dùng Notrelix</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:inherit}a:hover{color:inherit}
+.nx{--bg:#F7F8FA;--side:#EFF1F4;--panel:#FFFFFF;--hover:#F1F3F6;--hover2:#E6E9EE;--line:#E6E9EE;--line2:#D2D7DE;--text:#161A21;--muted:#4F5866;--meta:#5F6875;--accent:#1666CC;--accent-ink:#FFFFFF;--accent-soft:#E7F0FC;--accent-text:#0F56AE;--st-todo:#7A8391;--st-doing:#1E7BE0;--st-review:#D99A00;--st-done:#2E8B57;--danger:#C42340;--danger-soft:#FDECEF;--warn-text:#8A5A00;--warn-soft:#FFF4D6;--ok-soft:#E2F1E7;--ok-text:#1E7444;--kbd:#EEF0F3;--lane-todo:#ECEEF2;--lane-doing:#E2ECFA;--lane-review:#FBF0D6;--lane-done:#E2F1E7;--field:#FFFFFF;--shadow:0 18px 40px rgba(15,23,42,.10),0 2px 6px rgba(15,23,42,.06);font-family:'Be Vietnam Pro',system-ui,sans-serif;color:var(--text);background:var(--bg);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.nx.mode-dem{--bg:#0E1116;--side:#13181E;--panel:#151A21;--hover:#1C232C;--hover2:#232A34;--line:#232B35;--line2:#2E3743;--text:#E6E9EE;--muted:#AAB3C0;--meta:#8F99A7;--accent:#5AA9FF;--accent-ink:#04111F;--accent-soft:rgba(90,169,255,.16);--accent-text:#7DBBFF;--st-todo:#8C95A3;--st-doing:#5AA9FF;--st-review:#F2C14E;--st-done:#56C98A;--danger:#FF6B81;--danger-soft:rgba(255,107,129,.14);--warn-text:#F2C14E;--warn-soft:rgba(242,193,78,.12);--ok-soft:#153024;--ok-text:#6FD49C;--kbd:#232B35;--lane-todo:#1E252F;--lane-doing:#16284A;--lane-review:#30281A;--lane-done:#153024;--field:#10151B;--shadow:0 18px 40px rgba(0,0,0,.45)}
+/* accent chosen live in the join step (Xô thơm) */
+.nx.acc-sage{--accent:#2D6A59;--accent-ink:#FFFFFF;--accent-soft:#E2EFEA;--accent-text:#245746}
+.nx.mode-dem.acc-sage{--accent:#72B49F;--accent-ink:#04111F;--accent-soft:rgba(114,180,159,.16);--accent-text:#8CCBB6}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;padding:0;margin:-1px}
+.nx :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.dm{width:20px;height:20px;border-radius:6px;display:grid;place-items:center;font-size:9px;font-weight:700;color:#fff;flex:none}
+.av{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:9.5px;font-weight:700;color:#fff;flex:none}
+/* top bar */
+.top{height:56px;flex:none;display:flex;align-items:center;gap:16px;padding:0 24px;background:var(--panel);border-bottom:1px solid var(--line);box-sizing:border-box}
+.brand{display:flex;align-items:center;gap:9px;font-weight:650;font-size:16px;letter-spacing:-0.01em;text-decoration:none}
+.top .sep{width:1px;height:22px;background:var(--line2)}
+.stepn{font-size:13.5px;color:var(--meta)}
+.stepn b{color:var(--text);font-weight:600}
+.top .end{margin-left:auto;display:flex;align-items:center;gap:12px}
+.who{font-size:12.5px;color:var(--meta)}
+/* buttons */
+.btn{height:34px;padding:0 12px;border-radius:8px;border:1px solid var(--line2);background:var(--panel);color:var(--text);font:inherit;font-size:13px;font-weight:500;display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;white-space:nowrap;text-decoration:none;box-sizing:border-box}
+.btn:hover{background:var(--hover)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.pri:hover{filter:brightness(1.06)}
+.btn.lg{height:40px;padding:0 16px;font-size:14px}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--muted)}
+.btn.ghost:hover{background:var(--hover);color:var(--text)}
+.btn.sm{height:30px;padding:0 10px;font-size:12.5px}
+.btn:disabled,.btn.pri:disabled{background:var(--hover2);border-color:var(--hover2);color:var(--meta);cursor:not-allowed;filter:none}
+.icon-btn{width:32px;height:32px;border-radius:8px;border:0;background:transparent;color:var(--meta);display:grid;place-items:center;cursor:pointer;flex:none}
+.icon-btn:hover{background:var(--hover);color:var(--text)}
+/* layout */
+.wrap{flex:1;min-height:0;display:flex}
+.mainc{flex:1;min-width:0;overflow:auto;display:flex;justify-content:center;padding:0 40px}
+.col{width:100%;max-width:640px;padding:28px 0 22px;display:flex;flex-direction:column;gap:20px;box-sizing:border-box;min-height:100%}
+h1{margin:0;font-size:26px;font-weight:650;letter-spacing:-0.015em;line-height:1.25}
+.lede{margin:6px 0 0;color:var(--muted);font-size:14.5px;line-height:1.55;max-width:60ch}
+h2{margin:0;font-size:14px;font-weight:650}
+.foot{margin-top:auto;display:flex;align-items:center;gap:10px;padding-top:16px;border-top:1px solid var(--line)}
+.foot .grow{flex:1}
+.fmeta{flex:1;font-size:12.5px;color:var(--meta)}
+/* progress */
+.prog{list-style:none;margin:0;padding:0;display:flex;gap:8px}
+.prog li{flex:1;min-width:0;display:flex;flex-direction:column;gap:7px}
+.prog .bar{height:4px;border-radius:2px;background:var(--line2)}
+.prog .done .bar,.prog .cur .bar{background:var(--accent)}
+.prog .lab{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--meta);font-weight:500;white-space:nowrap}
+.prog .num{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font-size:10.5px;font-weight:700;border:1.5px solid var(--line2);box-sizing:border-box;flex:none}
+.prog .ck{display:none;width:18px;height:18px;border-radius:50%;background:var(--accent);color:var(--accent-ink);place-items:center;flex:none}
+.prog .done .ck{display:grid}
+.prog .done .num{display:none}
+.prog .done .lab{color:var(--muted)}
+.prog .cur .lab{color:var(--text);font-weight:650}
+.prog .cur .num{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+/* fields */
+.fld{display:flex;flex-direction:column;gap:6px}
+.fld>label,legend{font-size:13px;font-weight:600;color:var(--text)}
+fieldset{border:0;margin:0;padding:0;min-width:0}
+legend{padding:0;margin-bottom:8px}
+.hint{margin:0;font-size:12.5px;color:var(--meta);line-height:1.5}
+.inp::placeholder{color:var(--meta);opacity:1}
+.inp{height:40px;padding:0 12px;border-radius:8px;border:1px solid var(--line2);background:var(--field);color:var(--text);font:inherit;font-size:14px;box-sizing:border-box;width:100%}
+select.inp{padding:0 30px 0 10px;appearance:none;-webkit-appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--meta) 50%),linear-gradient(135deg,var(--meta) 50%,transparent 50%);background-position:calc(100% - 15px) 18px,calc(100% - 10px) 18px;background-size:5px 5px;background-repeat:no-repeat}
+.addr{display:flex;align-items:stretch;height:40px;border:1px solid var(--line2);border-radius:8px;background:var(--field);overflow:hidden;box-sizing:border-box}
+.addr:focus-within{outline:2px solid var(--accent);outline-offset:1px}
+.addr input{flex:1;min-width:0;border:0;background:transparent;color:var(--text);font:inherit;font-size:14px;padding:0 12px;outline:none}
+.addr .sfx{display:flex;align-items:center;padding:0 12px;color:var(--muted);background:var(--hover);border-left:1px solid var(--line2);font-size:13.5px}
+.addr.bad{border-color:var(--danger);box-shadow:0 0 0 1px var(--danger)}
+.ok{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ok-text);font-weight:500;margin:0}
+.err{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;color:var(--danger);font-weight:500;margin:0}
+.err .btn{color:var(--text);font-weight:600}
+.two{display:flex;gap:16px}
+.two>*{flex:1;min-width:0}
+/* radio chips */
+.rcs{display:flex;gap:8px;flex-wrap:wrap}
+.rc{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px 0 12px;border:1px solid var(--line2);border-radius:10px;cursor:pointer;font-weight:500;font-size:13.5px;background:var(--panel);box-sizing:border-box}
+.rc input{accent-color:var(--accent);margin:0;width:16px;height:16px;flex:none}
+.rc:hover{background:var(--hover)}
+.rc:has(input:checked){border-color:var(--accent);background:var(--accent-soft);color:var(--text)}
+.rc:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
+.rc input:focus-visible{outline:none}
+.rc small{color:var(--meta);font-size:12px;font-weight:400}
+/* note */
+.note{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--panel);font-size:13px;line-height:1.5;color:var(--muted)}
+.note .ic{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;background:var(--hover);color:var(--text);flex:none}
+.note b{color:var(--text);font-weight:600}
+/* departments step */
+.dchips{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:10px}
+.dchip{display:flex;align-items:center;gap:6px;height:44px;padding:0 4px 0 6px;border:1px solid var(--line2);border-radius:11px;background:var(--panel);box-sizing:border-box}
+.dchip.edit{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.dchip .cb{width:30px;height:30px;border-radius:8px;border:0;display:grid;place-items:center;color:#fff;font:inherit;font-size:10.5px;font-weight:700;cursor:pointer;padding:0}
+.dchip input{border:0;background:transparent;color:var(--text);font:inherit;font-size:14px;font-weight:500;padding:4px 2px;width:auto;border-radius:5px}
+.dchip input:hover{background:var(--hover)}
+.dchip .lk{color:var(--meta);width:14px;height:14px}
+.dchip .icon-btn{width:28px;height:28px}
+.addchip{height:44px;border:1px dashed var(--line2);border-radius:11px;background:transparent;color:var(--muted);font:inherit;font-size:13.5px;font-weight:500;padding:0 14px;display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+.addchip:hover{background:var(--hover);color:var(--text)}
+.sugg{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;color:var(--meta)}
+.sugg button{height:30px;border-radius:999px;border:1px solid var(--line2);background:transparent;color:var(--text);font:inherit;font-size:12.5px;padding:0 11px;display:inline-flex;align-items:center;gap:5px;cursor:pointer}
+.sugg button:hover{background:var(--hover)}
+.pal{border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.pal legend{margin:0;float:left;width:100%;font-size:12.5px;color:var(--muted);font-weight:600}
+.sws{display:flex;gap:6px;flex-wrap:wrap;clear:both}
+.sw{display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 10px 0 5px;border-radius:9px;border:1px solid transparent;cursor:pointer;font-size:12.5px;font-weight:500;color:var(--muted)}
+.sw:hover{background:var(--hover)}
+.sw .c{width:22px;height:22px;border-radius:6px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.18);flex:none;display:grid;place-items:center;color:#fff}
+.sw .c .i{width:13px;height:13px;stroke-width:3;opacity:0}
+.sw input:checked + .c .i{opacity:1}
+.sw:has(input:checked){border-color:var(--line2);background:var(--hover);color:var(--text);font-weight:600}
+.sw:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
+/* invite step */
+.inv{display:flex;flex-direction:column;gap:8px}
+.inv .hd,.inv .r{display:grid;grid-template-columns:minmax(0,1fr) 150px 132px 32px;gap:8px;align-items:center}
+.inv .hd{font-size:12px;font-weight:600;color:var(--meta);padding:0 2px}
+.inv .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:2px}
+.roles{font-size:12.5px;color:var(--meta);line-height:1.55;margin:0}
+.roles b{color:var(--text);font-weight:600}
+/* template step */
+.tpls{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
+.tc{grid-column:span 3;display:flex;flex-direction:column;gap:10px;padding:12px;border:1px solid var(--line2);border-radius:12px;background:var(--panel);cursor:pointer;box-sizing:border-box;min-width:0}
+.tc.s{grid-column:span 2}
+.tc:hover{background:var(--hover)}
+.tc:has(input:checked){border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.tc:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:3px}
+.tc .th{display:flex;align-items:flex-start;gap:9px}
+.tc .th input{accent-color:var(--accent);margin:2px 0 0;width:16px;height:16px;flex:none}
+.tc .th input:focus-visible{outline:none}
+.tc b{display:block;font-size:14px;font-weight:600}
+.tc small{display:block;font-size:12px;color:var(--meta);line-height:1.45;margin-top:1px}
+.tp{display:flex;border-radius:8px;background:var(--bg);border:1px solid var(--line);padding:8px;box-sizing:border-box;font-size:10.5px;color:var(--muted);font-weight:500;line-height:1.2}
+.tp.kan{gap:5px;height:82px}
+.tp.kan .ln{flex:1;border-radius:5px;padding:5px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.tp.kan .ln span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tp .crd{display:block;height:12px;border-radius:3px;background:var(--panel);box-shadow:0 0 0 1px var(--line)}
+.tp.flow{flex-direction:column;gap:8px;height:82px;justify-content:center}
+.tp.flow .ch{display:flex;align-items:center;gap:4px}
+.tp.flow .ch span{padding:4px 7px;border-radius:999px;background:var(--panel);box-shadow:0 0 0 1px var(--line2);white-space:nowrap}
+.tp.flow .ch span.end{background:var(--lane-done);box-shadow:none;color:var(--text)}
+.tp.flow .ch .i{width:11px;height:11px;color:var(--meta)}
+.tp.flow .fl{display:flex;gap:5px;flex-wrap:wrap}
+.tp.flow .fl em{font-style:normal;padding:2px 6px;border-radius:4px;background:var(--hover2)}
+.tp.fun{flex-direction:column;gap:4px;height:92px;justify-content:center}
+.tp.fun .fr{display:flex;align-items:center;gap:6px}
+.tp.fun .fr i{display:block;height:10px;border-radius:3px;background:var(--st-doing);opacity:.75}
+.tp.fun .fr span{width:58px;flex:none}
+.tp.tbl{flex-direction:column;height:92px;padding:0;overflow:hidden}
+.tp.tbl .tr{display:grid;grid-template-columns:1.25fr .9fr 1fr;border-top:1px solid var(--line)}
+.tp.tbl .tr:first-child{border-top:0;background:var(--hover);font-weight:600;color:var(--text)}
+.tp.tbl .tr span{padding:5px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tp.tbl .hi{color:var(--danger);font-weight:600}
+.tp.emp{height:92px;border-style:dashed;border-color:var(--line2);flex-direction:column;align-items:flex-start;gap:6px}
+.tp.emp .h{padding:3px 8px;border-radius:4px;background:var(--hover2);color:var(--text);font-weight:600}
+.tp.emp .ad{display:inline-flex;align-items:center;gap:3px;color:var(--meta)}
+.tp.emp .ad .i{width:11px;height:11px}
+/* done step */
+.big-ok{width:52px;height:52px;border-radius:14px;background:var(--ok-soft);color:var(--ok-text);display:grid;place-items:center}
+.sum{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:12px;background:var(--panel);overflow:hidden}
+.sum .r{display:flex;align-items:center;gap:12px;padding:10px 14px;border-top:1px solid var(--line);font-size:13.5px}
+.sum .r:first-child{border-top:0}
+.sum .r .ic{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:var(--ok-soft);color:var(--ok-text);flex:none}
+.sum .r .ic .i{width:13px;height:13px;stroke-width:2.6}
+.sum .r small{margin-left:auto;color:var(--meta);font-size:12.5px;text-align:right}
+.chk{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.chk li{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+.chk .o{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--line2);box-sizing:border-box;flex:none}
+.chk b{display:block;font-size:14px;font-weight:600}
+.chk small{display:block;font-size:12.5px;color:var(--meta)}
+.chk .ic{width:34px;height:34px;border-radius:9px;background:var(--hover);color:var(--muted);display:grid;place-items:center;flex:none;margin-left:auto}
+/* join step */
+.access{border:1px solid var(--line);border-radius:12px;background:var(--panel);overflow:hidden}
+.access .hd{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.access .hd b{font-size:14px;font-weight:600}
+.role{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:999px;font-size:12px;font-weight:600;background:var(--hover2);color:var(--text)}
+.access .hd .role{margin-left:auto}
+.access .bd{display:flex;align-items:center;gap:10px;padding:8px 14px 8px 48px;font-size:13.5px}
+.access .bd .i{width:14px;height:14px;color:var(--meta);margin-left:-24px}
+.access .bd small{margin-left:auto;font-size:12.5px;color:var(--meta)}
+.access .ft{padding:9px 14px;border-top:1px solid var(--line);font-size:12.5px;color:var(--meta);background:var(--bg)}
+.prof{display:flex;align-items:flex-end;gap:14px}
+.prof .bigav{width:52px;height:52px;border-radius:50%;background:#BE185D;color:#fff;display:grid;place-items:center;font-weight:700;font-size:16px;flex:none}
+.acc-sw .c{border-radius:50%}
+/* brand / preview side */
+.bside{width:468px;flex:none;background:var(--side);border-left:1px solid var(--line);position:relative;display:flex;flex-direction:column;justify-content:center;gap:14px;padding:40px 40px 48px;box-sizing:border-box;overflow:hidden}
+.bside .band{position:absolute;left:0;right:0;top:0;height:6px;background:linear-gradient(90deg,#FF1E56,#FC744C 25%,#F9C942 50%,#8CADA1 75%,#1E90FF)}
+.bside .ttl{font-size:13px;font-weight:600;color:var(--muted);margin:0}
+.bside .cap{margin:0;font-size:13px;color:var(--muted);line-height:1.55}
+.pv{display:flex;height:476px;border:1px solid var(--line2);border-radius:14px;background:var(--bg);overflow:hidden;box-shadow:var(--shadow)}
+.pv .ps{width:156px;flex:none;background:var(--side);border-right:1px solid var(--line);padding:10px 8px;display:flex;flex-direction:column;gap:2px;box-sizing:border-box;font-size:11.5px;min-width:0}
+.pv .pws{display:flex;align-items:flex-start;gap:7px;padding:4px 4px 8px;min-width:0}
+.pv .pws b{display:block;font-size:11.5px;font-weight:600;line-height:1.3}
+.pv .pws small{display:block;font-size:10.5px;color:var(--meta);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pv .pws>span:last-child{min-width:0}
+.pv .pn{display:flex;align-items:center;gap:7px;height:24px;padding:0 6px;border-radius:5px;color:var(--muted);font-weight:500}
+.pv .pn .i{width:12px;height:12px}
+.pv .pn.on{background:var(--accent-soft);color:var(--accent-text);font-weight:600}
+.pv .pg{margin:10px 6px 3px;font-size:10.5px;font-weight:600;color:var(--meta)}
+.pv .pd{display:flex;align-items:center;gap:7px;height:24px;padding:0 6px;border-radius:5px;font-weight:500;color:var(--text);min-width:0}
+.pv .pd .dm{width:15px;height:15px;border-radius:4px;font-size:6.5px}
+.pv .pd .nm{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pv .pd .i{width:10px;height:10px;color:var(--meta)}
+.pv .pb{display:block;line-height:22px;height:22px;padding:0 6px 0 28px;border-radius:5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pv .pb.new{background:var(--accent-soft);color:var(--accent-text);font-weight:600}
+.pv .ph{margin:6px 6px;min-height:24px;line-height:1.35;padding-top:4px;padding-bottom:4px;box-sizing:border-box;border:1px dashed var(--line2);border-radius:5px;display:flex;align-items:center;padding:0 6px;color:var(--meta);font-size:10.5px}
+.pv .pu{margin-top:auto;display:flex;align-items:center;gap:7px;padding:4px}
+.pv .pu .av{width:20px;height:20px;font-size:7.5px}
+.pv .pu b{display:block;font-size:11px;font-weight:600}
+.pv .pu small{display:block;font-size:10px;color:var(--meta)}
+.pv .pc{flex:1;min-width:0;padding:16px 14px;display:flex;flex-direction:column;gap:10px;font-size:11.5px}
+.pv .sk{display:block;background:var(--hover2);border-radius:4px;height:9px}
+.pv .skc{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:7px}
+.pv .pt{font-size:14px;font-weight:650;margin:0}
+.pv .pcard{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:9px 10px;display:flex;flex-direction:column;gap:6px}
+.pv .pcard .row{display:flex;align-items:center;gap:7px}
+.pv .pcard .o{width:12px;height:12px;border-radius:50%;border:1.5px solid var(--line2);box-sizing:border-box;flex:none}
+.pv .pbar{display:flex;align-items:center;gap:8px}
+.pv .pbtn{margin-left:auto;font-size:10.5px;font-weight:600;padding:4px 9px;border-radius:6px;background:var(--accent);color:var(--accent-ink)}
+.pv .ptabs{display:flex;gap:12px;font-size:11px;color:var(--meta);border-bottom:1px solid var(--line)}
+.pv .ptabs span{padding-bottom:5px}
+.pv .ptabs span.on{color:var(--text);font-weight:600;box-shadow:inset 0 -2px 0 var(--accent)}
+.pv .tag{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;padding:1px 6px;border-radius:4px}
+.pv .tag.over{background:var(--danger-soft);color:var(--danger)}
+.pv .dot{width:7px;height:7px;border-radius:50%;display:inline-block;flex:none}
+.pv .lane{font-size:10.5px;font-weight:600;color:var(--muted);display:flex;align-items:center;gap:6px}
+.pv .prg{height:5px;border-radius:3px;background:var(--hover2);overflow:hidden}
+.pv .prg i{display:block;height:100%;width:0;background:var(--accent)}
+</style>
+</helmet>
+<div class="nx mode-{{mode}} {{accCls}}" style="display:flex;flex-direction:column;width:100%;height:900px;overflow:hidden;position:relative">
+  <header class="top">
+    <a class="brand" href="#" aria-label="Notrelix">
+      <svg width="26" height="26" viewBox="0 0 408 408" aria-hidden="true"><path d="M336.1 230.49L156.821 73.4495C116.321 35.9495 51.8207 52.9495 40.3233 110.752L27.6001 181C34.6001 166 53.1001 160.5 68.6001 171.5C116.439 213.286 240.005 321.949 240.005 321.949C298.505 373.449 354.505 343.449 367.823 291.252C367.823 291.252 373.206 261.526 380 223.449C371.1 241.99 349.1 242.99 336.1 230.49Z" fill="url(#onb-gr)"></path><path d="M380.005 223.46C371.1 242 349.1 243 336.005 230.46L276.505 178.262C281.972 146.825 284.537 129.7 290.005 98.2624C291.982 84.263 296.401 80.1727 305.505 74.2624L377.505 46.7624C392.005 39.2622 409.141 44.5717 407.504 63.9597C406.485 76.0378 391.23 160.547 380.005 223.46Z" fill="#1E90FF"></path><path d="M27.6 181C36.5045 162.46 58.5133 161.539 71.6088 174.079L131.109 226.277C125.641 257.714 123.076 274.84 117.609 306.277C115.631 320.276 111.212 324.366 102.109 330.277L30.1087 357.777C15.6087 365.277 -1.52779 359.967 0.10881 340.579C1.12836 328.501 16.3745 243.912 27.6 181Z" fill="#FF1E56"></path><defs><linearGradient id="onb-gr" x1="52.1" y1="90.49" x2="350.6" y2="317.99" gradientUnits="userSpaceOnUse"><stop stop-color="#FF1E56"></stop><stop offset="0.25" stop-color="#FC744C"></stop><stop offset="0.5" stop-color="#F9C942"></stop><stop offset="0.75" stop-color="#8CADA1"></stop><stop offset="1" stop-color="#1E90FF"></stop></linearGradient></defs></svg>
+      <span aria-hidden="true">Notrelix</span>
+    </a>
+    <span class="sep" aria-hidden="true"></span>
+    <span class="stepn"><b>{{stepLabel}}</b> · {{stepName}}</span>
+    <div class="end">
+      <span class="who">{{whoLine}}</span>
+      <sc-if value="{{showExit}}" hint-placeholder-val="{{ true }}">
+        <a class="btn" href="{{exitHref}}">{{exitLabel}}</a>
+      </sc-if>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <main class="mainc">
+      <div class="col">
+        <sc-if value="{{showProgress}}" hint-placeholder-val="{{ true }}">
+        <ol class="prog" aria-label="Các bước tạo workspace">
+          <sc-for list="{{steps}}" as="st" hint-placeholder-count="4">
+          <li class="{{st.cls}}" aria-current="{{st.cur}}">
+            <span class="bar" aria-hidden="true"></span>
+            <span class="lab"><span class="num" aria-hidden="true">{{st.n}}</span><span class="ck" aria-hidden="true"><svg class="i" viewBox="0 0 24 24" style="width:11px;height:11px;stroke-width:3"><path d="m5 12 5 5L20 7"></path></svg></span>{{st.name}}<span class="vh">, {{st.sr}}</span></span>
+          </li>
+          </sc-for>
+        </ol>
+        </sc-if>
+
+        <!-- A1 · Tạo workspace -->
+        <sc-if value="{{isCreate}}" hint-placeholder-val="{{ true }}">
+        <div>
+          <h1>Tạo workspace cho công ty</h1>
+          <p class="lede">Workspace là nơi cả công ty làm việc chung. Bạn sẽ là chủ sở hữu và mời đồng đội ở bước 3.</p>
+        </div>
+        <div class="fld">
+          <label for="f-name">Tên công ty</label>
+          <input class="inp" id="f-name" type="text" value="Công ty CP Thực phẩm Sao Mai" autocomplete="organization" required>
+        </div>
+        <div class="fld">
+          <label for="f-addr">Địa chỉ workspace</label>
+          <sc-if value="{{addrOk}}" hint-placeholder-val="{{ true }}">
+          <div class="addr"><input id="f-addr" type="text" value="saomai" spellcheck="false" autocomplete="off" required aria-describedby="addr-ok addr-hint"><span class="sfx" aria-hidden="true">.notrelix.vn</span></div>
+          <p class="ok" id="addr-ok" role="status"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:14px;height:14px;stroke-width:2.6"><path d="m5 12 5 5L20 7"></path></svg>saomai.notrelix.vn còn trống</p>
+          </sc-if>
+          <sc-if value="{{addrTaken}}" hint-placeholder-val="{{ false }}">
+          <div class="addr bad"><input id="f-addr" type="text" value="saomai" spellcheck="false" autocomplete="off" required aria-invalid="true" aria-describedby="addr-err addr-hint"><span class="sfx" aria-hidden="true">.notrelix.vn</span></div>
+          <p class="err" id="addr-err" role="alert"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:14px;height:14px"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5M12 16v.5"></path></svg>saomai đã có người dùng, thử saomai-food<button class="btn sm" type="button">Dùng saomai-food</button></p>
+          </sc-if>
+          <p class="hint" id="addr-hint">Chữ thường, số và dấu gạch ngang. Mọi người mở workspace qua địa chỉ này.</p>
+        </div>
+        <fieldset>
+          <legend>Quy mô công ty</legend>
+          <div class="rcs">
+            <label class="rc"><input type="radio" name="size" value="1-20">1–20 người</label>
+            <label class="rc"><input type="radio" name="size" value="21-100">21–100 người</label>
+            <label class="rc"><input type="radio" name="size" value="101-500" checked>101–500 người</label>
+            <label class="rc"><input type="radio" name="size" value="500+">Trên 500 người</label>
+          </div>
+          <p class="hint" style="margin-top:8px">Dùng để gợi ý phòng ban và mẫu board. Không ảnh hưởng gói dịch vụ.</p>
+        </fieldset>
+        <fieldset>
+          <legend>Ngôn ngữ mặc định</legend>
+          <div class="rcs">
+            <label class="rc"><input type="radio" name="lang" value="vi" checked>Tiếng Việt</label>
+            <label class="rc"><input type="radio" name="lang" value="en">English</label>
+          </div>
+          <p class="hint" style="margin-top:8px">Cho email mời và nội dung mẫu. Mỗi người vẫn tự chọn ngôn ngữ của mình trong Cài đặt.</p>
+        </fieldset>
+        <div class="foot">
+          <span class="fmeta" id="next-why">{{createFootNote}}</span>
+          <sc-if value="{{addrOk}}" hint-placeholder-val="{{ true }}"><button class="btn pri lg" type="button">Tiếp tục</button></sc-if>
+          <sc-if value="{{addrTaken}}" hint-placeholder-val="{{ false }}"><button class="btn pri lg" type="button" disabled aria-describedby="next-why">Tiếp tục</button></sc-if>
+        </div>
+        </sc-if>
+
+        <!-- A2 · Phòng ban -->
+        <sc-if value="{{isDept}}" hint-placeholder-val="{{ false }}">
+        <div>
+          <h1>Các phòng ban của bạn</h1>
+          <p class="lede">Gợi ý theo quy mô 101–500 người. Sửa tên, đổi màu, bỏ hoặc thêm phòng. Mỗi phòng có board và thành viên riêng.</p>
+        </div>
+        <section aria-labelledby="h-dl">
+          <h2 id="h-dl" class="vh">Phòng ban sẽ tạo</h2>
+          <ul class="dchips">
+            <li class="dchip"><button class="cb" type="button" style="background:#C2410C" aria-label="Màu phòng Kinh doanh: San hô. Đổi màu" aria-expanded="false">KD</button><input type="text" value="Kinh doanh" size="9" aria-label="Tên phòng ban thứ 1"><svg class="i lk" viewBox="0 0 24 24" role="img" aria-label="Riêng tư"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg><button class="icon-btn" type="button" aria-label="Bỏ phòng Kinh doanh"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:14px;height:14px"><path d="M6 6l12 12M18 6 6 18"></path></svg></button></li>
+            <li class="dchip"><button class="cb" type="button" style="background:#9A6A12" aria-label="Màu phòng Kế toán: Vàng đậm. Đổi màu" aria-expanded="false">KT</button><input type="text" value="Kế toán" size="7" aria-label="Tên phòng ban thứ 2"><svg class="i lk" viewBox="0 0 24 24" role="img" aria-label="Riêng tư"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg><button class="icon-btn" type="button" aria-label="Bỏ phòng Kế toán"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:14px;height:14px"><path d="M6 6l12 12M18 6 6 18"></path></svg></button></li>
+            <li class="dchip edit"><button class="cb" type="button" style="background:#1E6FD0" aria-label="Màu phòng Sản xuất: Lam. Đổi màu" aria-expanded="true" aria-controls="pal-sx">SX</button><input type="text" value="Sản xuất" size="8" aria-label="Tên phòng ban thứ 3"><svg class="i lk" viewBox="0 0 24 24" role="img" aria-label="Riêng tư"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg><button class="icon-btn" type="button" aria-label="Bỏ phòng Sản xuất"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:14px;height:14px"><path d="M6 6l12 12M18 6 6 18"></path></svg></button></li>
+            <li class="dchip"><button class="cb" type="button" style="background:#4E8574" aria-label="Màu phòng Nhân sự: Xô thơm. Đổi màu" aria-expanded="false">NS</button><input type="text" value="Nhân sự" size="7" aria-label="Tên phòng ban thứ 4"><svg class="i lk" viewBox="0 0 24 24" role="img" aria-label="Riêng tư"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg><button class="icon-btn" type="button" aria-label="Bỏ phòng Nhân sự"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:14px;height:14px"><path d="M6 6l12 12M18 6 6 18"></path></svg></button></li>
+            <li><button class="addchip" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Thêm phòng ban</button></li>
+          </ul>
+        </section>
+        <fieldset class="pal" id="pal-sx">
+          <legend>Màu nhận diện của phòng Sản xuất</legend>
+          <div class="sws">
+            <label class="sw"><input class="vh" type="radio" name="sx-col" checked><span class="c" style="background:#1E6FD0"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5L20 7"></path></svg></span>Lam</label>
+            <label class="sw"><input class="vh" type="radio" name="sx-col"><span class="c" style="background:#9A6A12"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5L20 7"></path></svg></span>Vàng đậm</label>
+            <label class="sw"><input class="vh" type="radio" name="sx-col"><span class="c" style="background:#C2410C"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5L20 7"></path></svg></span>San hô</label>
+            <label class="sw"><input class="vh" type="radio" name="sx-col"><span class="c" style="background:#4E8574"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5L20 7"></path></svg></span>Xô thơm</label>
+            <label class="sw"><input class="vh" type="radio" name="sx-col"><span class="c" style="background:#C8143F"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5L20 7"></path></svg></span>Đỏ</label>
+            <label class="sw"><input class="vh" type="radio" name="sx-col"><span class="c" style="background:#5B5BD6"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5L20 7"></path></svg></span>Tím</label>
+          </div>
+          <p class="hint">Màu chỉ để nhận ra phòng, không bao giờ mang nghĩa trạng thái. Hai phòng đang dùng chung màu sẽ được báo.</p>
+        </fieldset>
+        <div class="sugg"><span>Gợi ý thêm cho ngành thực phẩm:</span>
+          <button type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:12px;height:12px"><path d="M12 5v14M5 12h14"></path></svg>Mua hàng</button>
+          <button type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:12px;height:12px"><path d="M12 5v14M5 12h14"></path></svg>Kho vận</button>
+          <button type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:12px;height:12px"><path d="M12 5v14M5 12h14"></path></svg>Kiểm soát chất lượng</button>
+        </div>
+        <div class="note"><span class="ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg></span><span><b>Mỗi phòng mới đều Riêng tư.</b> Chỉ thành viên của phòng và quản trị workspace thấy phòng đó. Đổi sang “Mở cho cả workspace” sau, trong Thiết lập của từng phòng.</span></div>
+        <div class="foot">
+          <button class="btn lg" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg>Quay lại</button>
+          <span class="grow"></span>
+          <button class="btn pri lg" type="button">Tạo 4 phòng ban</button>
+        </div>
+        </sc-if>
+
+        <!-- A3 · Mời đồng đội -->
+        <sc-if value="{{isInvite}}" hint-placeholder-val="{{ false }}">
+        <div>
+          <h1>Mời đồng đội</h1>
+          <p class="lede">Họ vào workspace với vai trò Thành viên. Phòng ban và vai trò trong phòng được áp dụng khi họ nhận lời mời.</p>
+        </div>
+        <section class="inv" aria-labelledby="h-inv">
+          <h2 id="h-inv" class="vh">Danh sách lời mời</h2>
+          <div class="hd" aria-hidden="true"><span>Email</span><span>Phòng ban</span><span>Vai trò trong phòng</span><span></span></div>
+          <div class="r" role="group" aria-label="Lời mời 1">
+            <input class="inp" type="email" value="hoang.minh.khoa@saomaifood.vn" aria-label="Email người thứ 1">
+            <select class="inp" aria-label="Phòng ban của người thứ 1"><option>Kinh doanh</option><option>Kế toán</option><option selected>Sản xuất</option><option>Nhân sự</option></select>
+            <select class="inp" aria-label="Vai trò của người thứ 1"><option selected>Quản trị</option><option>Thành viên</option><option>Người xem</option></select>
+            <button class="icon-btn" type="button" aria-label="Bỏ lời mời 1"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:14px;height:14px"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
+          </div>
+          <div class="r" role="group" aria-label="Lời mời 2">
+            <input class="inp" type="email" value="tran.thi.lan@saomaifood.vn" aria-label="Email người thứ 2">
+            <select class="inp" aria-label="Phòng ban của người thứ 2"><option>Kinh doanh</option><option selected>Kế toán</option><option>Sản xuất</option><option>Nhân sự</option></select>
+            <select class="inp" aria-label="Vai trò của người thứ 2"><option>Quản trị</option><option selected>Thành viên</option><option>Người xem</option></select>
+            <button class="icon-btn" type="button" aria-label="Bỏ lời mời 2"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:14px;height:14px"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
+          </div>
+          <div class="r" role="group" aria-label="Lời mời 3">
+            <input class="inp" type="email" value="vo.duc.long@saomaifood.vn" aria-label="Email người thứ 3">
+            <select class="inp" aria-label="Phòng ban của người thứ 3"><option selected>Kinh doanh</option><option>Kế toán</option><option>Sản xuất</option><option>Nhân sự</option></select>
+            <select class="inp" aria-label="Vai trò của người thứ 3"><option>Quản trị</option><option selected>Thành viên</option><option>Người xem</option></select>
+            <button class="icon-btn" type="button" aria-label="Bỏ lời mời 3"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:14px;height:14px"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
+          </div>
+          <div class="r" role="group" aria-label="Lời mời 4, chưa điền">
+            <input class="inp" type="email" placeholder="ten@saomaifood.vn" aria-label="Email người thứ 4">
+            <select class="inp" aria-label="Phòng ban của người thứ 4"><option selected>Kinh doanh</option><option>Kế toán</option><option>Sản xuất</option><option>Nhân sự</option></select>
+            <select class="inp" aria-label="Vai trò của người thứ 4"><option>Quản trị</option><option selected>Thành viên</option><option>Người xem</option></select>
+            <span></span>
+          </div>
+          <div class="acts">
+            <button class="btn" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Thêm dòng</button>
+            <button class="btn" type="button" aria-expanded="false"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="3" width="8" height="4" rx="1"></rect><path d="M8 5H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"></path></svg>Dán nhiều email cùng lúc</button>
+          </div>
+        </section>
+        <p class="roles"><b>Quản trị</b> thêm người và thiết lập phòng · <b>Thành viên</b> tạo và sửa việc · <b>Người xem</b> chỉ xem và theo dõi.</p>
+        <div class="note"><span class="ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="m3 7 9 6 9-6"></path></svg></span><span><b>Lời mời chưa cấp quyền gì cho tới khi được nhận lời.</b> Trước đó họ không thấy phòng ban hay board nào. Bạn gửi lại hoặc thu hồi lời mời trong Thiết lập workspace › Thành viên.</span></div>
+        <div class="foot">
+          <button class="btn lg" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg>Quay lại</button>
+          <span class="grow"></span>
+          <button class="btn ghost lg" type="button">Bỏ qua, mời sau</button>
+          <button class="btn pri lg" type="button">Gửi 3 lời mời</button>
+        </div>
+        </sc-if>
+
+        <!-- A4 · Mẫu board -->
+        <sc-if value="{{isTpl}}" hint-placeholder-val="{{ false }}">
+        <div>
+          <h1>Bắt đầu với một board</h1>
+          <p class="lede">Board là nơi theo dõi một việc lớn theo từng bước. Chọn một mẫu gần giống cách phòng bạn làm, sửa cột và trường sau.</p>
+        </div>
+        <fieldset>
+          <legend class="vh">Mẫu board</legend>
+          <div class="tpls">
+            <label class="tc"><span class="th"><input type="radio" name="tpl" checked><span><b>Dự án</b><small>4 trạng thái · Người làm, Hạn, Ưu tiên</small></span></span>
+              <span class="tp kan" aria-hidden="true">
+                <span class="ln" style="background:var(--lane-todo)"><span>Cần làm</span><i class="crd"></i><i class="crd"></i><i class="crd"></i></span>
+                <span class="ln" style="background:var(--lane-doing)"><span>Đang làm</span><i class="crd"></i><i class="crd"></i></span>
+                <span class="ln" style="background:var(--lane-review)"><span>Chờ duyệt</span><i class="crd"></i></span>
+                <span class="ln" style="background:var(--lane-done)"><span>Hoàn thành</span><i class="crd"></i><i class="crd"></i></span>
+              </span>
+            </label>
+            <label class="tc"><span class="th"><input type="radio" name="tpl"><span><b>Quy trình duyệt</b><small>Duyệt hai cấp · Số tiền, Người duyệt</small></span></span>
+              <span class="tp flow" aria-hidden="true">
+                <span class="ch"><span>Gửi</span><svg class="i" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"></path></svg><span>Trưởng phòng</span><svg class="i" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"></path></svg><span>Kế toán</span><svg class="i" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"></path></svg><span class="end">Xong</span></span>
+                <span class="fl"><em>Số tiền</em><em>Người duyệt</em><em>Hạn duyệt</em><em>Chứng từ</em></span>
+              </span>
+            </label>
+            <label class="tc s"><span class="th"><input type="radio" name="tpl"><span><b>Tuyển dụng</b><small>Ứng viên qua bốn vòng</small></span></span>
+              <span class="tp fun" aria-hidden="true">
+                <span class="fr"><span>Ứng tuyển</span><i style="width:100%"></i></span>
+                <span class="fr"><span>Phỏng vấn</span><i style="width:58%"></i></span>
+                <span class="fr"><span>Đề nghị</span><i style="width:30%"></i></span>
+                <span class="fr"><span>Nhận việc</span><i style="width:14%"></i></span>
+              </span>
+            </label>
+            <label class="tc s"><span class="th"><input type="radio" name="tpl"><span><b>Chăm sóc khách hàng</b><small>Yêu cầu theo kênh, mức độ</small></span></span>
+              <span class="tp tbl" aria-hidden="true">
+                <span class="tr"><span>Khách hàng</span><span>Kênh</span><span>Mức độ</span></span>
+                <span class="tr"><span>Đại lý Phú Mỹ</span><span>Zalo</span><span class="hi">Gấp</span></span>
+                <span class="tr"><span>Siêu thị An Bình</span><span>Email</span><span>Thường</span></span>
+                <span class="tr"><span>Chị Hạnh</span><span>Điện thoại</span><span>Thường</span></span>
+              </span>
+            </label>
+            <label class="tc s"><span class="th"><input type="radio" name="tpl"><span><b>Trống</b><small>Chỉ có cột Tên</small></span></span>
+              <span class="tp emp" aria-hidden="true">
+                <span class="h">Tên</span>
+                <span class="ad"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></svg>Thêm cột</span>
+                <span class="ad"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></svg>Thêm việc</span>
+              </span>
+            </label>
+          </div>
+        </fieldset>
+        <div class="two">
+          <div class="fld" style="flex:1.1">
+            <label for="f-board">Tên board</label>
+            <input class="inp" id="f-board" type="text" value="Ra mắt nước chấm Sao Mai" required>
+          </div>
+          <div class="fld" style="flex:1">
+            <label for="f-dept">Thuộc phòng ban</label>
+            <select class="inp" id="f-dept" aria-describedby="dept-hint"><option>Kinh doanh</option><option>Kế toán</option><option selected>Sản xuất</option><option>Nhân sự</option></select>
+          </div>
+        </div>
+        <p class="hint" id="dept-hint" style="margin-top:-12px">Thành viên phòng Sản xuất sẽ thấy board này. Phòng vẫn Riêng tư với những người khác.</p>
+        <div class="foot">
+          <button class="btn lg" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg>Quay lại</button>
+          <span class="grow"></span>
+          <button class="btn ghost lg" type="button">Bỏ qua</button>
+          <button class="btn pri lg" type="button">Tạo board</button>
+        </div>
+        </sc-if>
+
+        <!-- A5 · Xong -->
+        <sc-if value="{{isDone}}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;gap:16px;align-items:flex-start">
+          <span class="big-ok" aria-hidden="true"><svg class="i" viewBox="0 0 24 24" style="width:26px;height:26px;stroke-width:2.4"><path d="m5 12 5 5L20 7"></path></svg></span>
+          <div><h1>Sao Mai đã sẵn sàng</h1><p class="lede">Workspace của Công ty CP Thực phẩm Sao Mai đang chạy ở saomai.notrelix.vn.</p></div>
+        </div>
+        <section aria-labelledby="h-sum">
+          <h2 id="h-sum" class="vh">Đã thiết lập</h2>
+          <div class="sum">
+            <div class="r"><span class="ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5L20 7"></path></svg></span>Workspace saomai.notrelix.vn<small>bạn là chủ sở hữu</small></div>
+            <div class="r"><span class="ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5L20 7"></path></svg></span>4 phòng ban<small>Kinh doanh, Kế toán, Sản xuất, Nhân sự · Riêng tư</small></div>
+            <div class="r"><span class="ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5L20 7"></path></svg></span>3 lời mời đã gửi<small>chờ nhận lời</small></div>
+            <div class="r"><span class="ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5L20 7"></path></svg></span>Board Ra mắt nước chấm Sao Mai<small>mẫu Dự án · phòng Sản xuất</small></div>
+          </div>
+        </section>
+        <section aria-labelledby="h-next">
+          <h2 id="h-next" style="margin-bottom:4px">Tiếp tục trên Trang chủ <span style="color:var(--meta);font-weight:500">0/3</span></h2>
+          <p class="hint" style="margin-bottom:10px">Danh sách này nằm trên Trang chủ cho tới khi bạn làm xong hoặc ẩn đi.</p>
+          <ul class="chk">
+            <li><span class="o" aria-hidden="true"></span><span><b>Tạo việc đầu tiên</b><small>Trong board Ra mắt nước chấm Sao Mai</small></span><span class="ic" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="M9 11l3 3 8-8"></path><path d="M20 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg></span></li>
+            <li><span class="o" aria-hidden="true"></span><span><b>Mời thêm người</b><small>3 người đang chờ nhận lời. Phòng Nhân sự chưa có ai ngoài bạn</small></span><span class="ic" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"></circle><path d="M2 21a7 7 0 0 1 14 0M19 8v6M16 11h6"></path></svg></span></li>
+            <li><span class="o" aria-hidden="true"></span><span><b>Tải ứng dụng di động</b><small>iOS và Android, đăng nhập bằng cùng tài khoản</small></span><span class="ic" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"></rect><path d="M11 18h2"></path></svg></span></li>
+          </ul>
+        </section>
+        <div class="foot">
+          <span class="fmeta">Bạn đổi mọi thứ ở trên trong Thiết lập workspace.</span>
+          <a class="btn pri lg" href="Final-Home.dc.html">Vào Trang chủ<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a>
+        </div>
+        </sc-if>
+
+        <!-- B · Thành viên được mời tham gia -->
+        <sc-if value="{{isJoin}}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;gap:14px;align-items:flex-start">
+          <span class="dm" style="background:#1666CC;width:44px;height:44px;border-radius:12px;font-size:14px" aria-hidden="true">MA</span>
+          <div><h1>Chào Trang, bạn đã vào Minh An Group</h1><p class="lede">Nguyễn Thu Hà đã mời bạn. Thiết lập nhanh vài thứ dưới đây, đổi lại lúc nào cũng được.</p></div>
+        </div>
+        <section aria-labelledby="h-acc">
+          <h2 id="h-acc" style="margin-bottom:8px">Bạn vào được</h2>
+          <div class="access">
+            <div class="hd"><span class="dm" style="background:#1E6FD0;width:24px;height:24px;font-size:9.5px;border-radius:7px">CN</span><b>Phòng Công nghệ</b><span class="role">Thành viên</span></div>
+            <div class="bd"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M9 4v16M15 4v10"></path></svg>Triển khai ERP Q4<small>Có thể sửa</small></div>
+            <div class="bd"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M9 4v16M15 4v10"></path></svg>Hạ tầng &amp; bảo mật<small>Có thể sửa</small></div>
+            <div class="bd"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M9 4v16M15 4v10"></path></svg>Hỗ trợ nội bộ<small>Có thể sửa</small></div>
+            <div class="ft">Cùng các phòng mở cho cả workspace, như Marketing. Board riêng tư chỉ hiện khi có người thêm bạn.</div>
+          </div>
+        </section>
+        <section aria-labelledby="h-prof">
+          <h2 id="h-prof" style="margin-bottom:8px">Hồ sơ</h2>
+          <div class="prof">
+            <span class="bigav" aria-hidden="true">LT</span>
+            <div class="fld" style="flex:1">
+              <label for="f-dn">Tên hiển thị</label>
+              <input class="inp" id="f-dn" type="text" value="Lý Thu Trang" autocomplete="name" required>
+            </div>
+            <button class="btn lg" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5"></path><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"></path></svg>Tải ảnh đại diện</button>
+          </div>
+        </section>
+        <section aria-labelledby="h-look">
+          <h2 id="h-look" style="margin-bottom:8px">Giao diện</h2>
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <fieldset>
+              <legend class="vh">Chế độ hiển thị</legend>
+              <div class="rcs" style="align-items:center"><span class="hint" aria-hidden="true" style="width:72px;font-weight:600;color:var(--muted)">Chế độ</span>
+                <sc-for list="{{modeOpts}}" as="m" hint-placeholder-count="4">
+                <sc-if value="{{m.on}}" hint-placeholder-val="{{ false }}"><label class="rc" style="height:36px"><input type="radio" name="mode" value="{{m.val}}" checked>{{m.label}}</label></sc-if>
+                <sc-if value="{{m.off}}" hint-placeholder-val="{{ true }}"><label class="rc" style="height:36px"><input type="radio" name="mode" value="{{m.val}}">{{m.label}}</label></sc-if>
+                </sc-for>
+              </div>
+            </fieldset>
+            <fieldset>
+              <legend class="vh">Màu nhấn</legend>
+              <div class="sws acc-sw" style="align-items:center;gap:4px"><span class="hint" aria-hidden="true" style="width:72px;font-weight:600;color:var(--muted)">Màu nhấn</span>
+                <label class="sw"><input class="vh" type="radio" name="acc"><span class="c" style="background:#1666CC"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5L20 7"></path></svg></span>Xanh Notrelix</label>
+                <label class="sw"><input class="vh" type="radio" name="acc"><span class="c" style="background:#B5461D"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5L20 7"></path></svg></span>San hô</label>
+                <label class="sw"><input class="vh" type="radio" name="acc"><span class="c" style="background:#BD1C6B"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5L20 7"></path></svg></span>Than hồng</label>
+                <label class="sw"><input class="vh" type="radio" name="acc" checked><span class="c" style="background:#2D6A59"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5L20 7"></path></svg></span>Xô thơm</label>
+                <label class="sw"><input class="vh" type="radio" name="acc"><span class="c" style="background:#EBB427;color:#161A21"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5L20 7"></path></svg></span>Hổ phách</label>
+              </div>
+            </fieldset>
+            <p class="hint">Minh An Group mặc định Xanh Notrelix; lựa chọn của bạn được ưu tiên.</p>
+          </div>
+        </section>
+        <fieldset>
+          <legend>Email thông báo</legend>
+          <div class="rcs">
+            <label class="rc"><input type="radio" name="digest" checked>Tóm tắt mỗi ngày</label>
+            <label class="rc"><input type="radio" name="digest">Chỉ khi có người nhắc tên bạn</label>
+          </div>
+        </fieldset>
+        <div class="foot">
+          <span class="fmeta">Đổi lại trong Cài đặt › Giao diện và Thông báo.</span>
+          <a class="btn pri lg" href="Final-Home.dc.html">Bắt đầu<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a>
+        </div>
+        </sc-if>
+      </div>
+    </main>
+
+    <aside class="bside" aria-label="Xem trước">
+      <span class="band" aria-hidden="true"></span>
+      <p class="ttl">{{pvTitle}}</p>
+      <div class="pv" role="img" aria-label="{{pvAlt}}">
+        <div class="ps">
+          <div class="pws"><span class="dm" style="background:{{pvMarkBg}};width:22px;height:22px;border-radius:6px;font-size:8.5px">{{pvMark}}</span><span><b>{{pvName}}</b><small>{{pvSub}}</small></span></div>
+          <span class="pn on"><svg class="i" viewBox="0 0 24 24"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"></path></svg>Trang chủ</span>
+          <span class="pn"><svg class="i" viewBox="0 0 24 24"><path d="M9 11l3 3 8-8"></path><path d="M20 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>Việc của tôi</span>
+          <span class="pn"><svg class="i" viewBox="0 0 24 24"><path d="M22 12h-6l-2 3h-4l-2-3H2"></path><path d="M5.5 5h13L22 12v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6z"></path></svg>Hộp thư</span>
+          <span class="pn"><svg class="i" viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><path d="M14 3v6h6"></path></svg>Tài liệu</span>
+          <span class="pg">Phòng ban</span>
+          <sc-if value="{{noDepts}}" hint-placeholder-val="{{ false }}"><span class="ph">Phòng ban sẽ hiện ở đây</span></sc-if>
+          <sc-for list="{{depts}}" as="d" hint-placeholder-count="4">
+            <span class="pd"><span class="dm" style="background:{{d.col}}">{{d.ini}}</span><span class="nm">{{d.name}}</span><sc-if value="{{d.lock}}" hint-placeholder-val="{{ true }}"><svg class="i" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg></sc-if></span>
+            <sc-for list="{{d.boards}}" as="b" hint-placeholder-count="0"><span class="pb {{b.cls}}">{{b.name}}</span></sc-for>
+          </sc-for>
+          <div class="pu"><span class="av" style="background:{{pvUserBg}}">{{pvUserIni}}</span><span><b>{{pvUser}}</b><small>{{pvUserRole}}</small></span></div>
+        </div>
+        <div class="pc">
+          <sc-if value="{{pvStub}}" hint-placeholder-val="{{ true }}">
+            <span class="sk" style="width:58%;height:13px"></span>
+            <span class="sk" style="width:40%"></span>
+            <span class="skc" style="margin-top:6px"><span class="sk" style="width:80%"></span><span class="sk" style="width:55%"></span></span>
+            <span class="skc"><span class="sk" style="width:70%"></span><span class="sk" style="width:45%"></span></span>
+            <span class="skc"><span class="sk" style="width:76%"></span><span class="sk" style="width:38%"></span></span>
+          </sc-if>
+          <sc-if value="{{pvHome}}" hint-placeholder-val="{{ false }}">
+            <p class="pt">Chào buổi sáng, Hà</p>
+            <span style="color:var(--meta);font-size:10.5px;margin-top:-6px">Thứ Hai, 12 tháng 10</span>
+            <div class="pcard">
+              <div class="row" style="justify-content:space-between"><b style="font-size:11.5px">Bắt đầu với Sao Mai</b><span style="color:var(--meta);font-size:10.5px">0/3</span></div>
+              <div class="prg"><i></i></div>
+              <div class="row"><span class="o"></span>Tạo việc đầu tiên</div>
+              <div class="row"><span class="o"></span>Mời thêm người</div>
+              <div class="row"><span class="o"></span>Tải ứng dụng di động</div>
+            </div>
+            <span class="skc"><span class="sk" style="width:70%"></span><span class="sk" style="width:45%"></span></span>
+          </sc-if>
+          <sc-if value="{{pvBoard}}" hint-placeholder-val="{{ false }}">
+            <div class="pbar"><p class="pt" style="font-size:13px">Triển khai ERP Q4</p><span class="pbtn">Thêm</span></div>
+            <div class="ptabs"><span>Bảng</span><span class="on">Kanban</span><span>Lịch</span></div>
+            <span class="lane"><span class="dot" style="background:var(--st-doing)"></span>Đang làm 3</span>
+            <div class="pcard"><b style="font-weight:500">Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP</b><div class="row"><span class="tag over">Quá hạn 2 ngày</span><span class="mono" style="color:var(--meta);font-size:10px">ERP-142</span></div></div>
+            <span class="lane"><span class="dot" style="background:var(--st-review)"></span>Chờ duyệt 2</span>
+            <div class="pcard"><b style="font-weight:500">Thiết lập đăng nhập một lần (SSO) cho toàn công ty</b><div class="row"><span style="color:var(--meta);font-size:10px">Thứ Tư 14/10</span><span class="mono" style="color:var(--meta);font-size:10px">ERP-138</span></div></div>
+          </sc-if>
+        </div>
+      </div>
+      <p class="cap">{{pvCap}}</p>
+    </aside>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"state":{"editor":"enum","options":["tao-workspace","dia-chi-trung","phong-ban","moi-nguoi","mau-board","xong","tham-gia"],"default":"tao-workspace","section":"Trạng thái minh hoạ"},"mode":{"editor":"enum","options":["sang","dem"],"default":"sang","section":"Giao diện"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.props.state ?? 'tao-workspace';
+    const mode = this.props.mode ?? 'sang';
+    const idxMap = { 'tao-workspace': 0, 'dia-chi-trung': 0, 'phong-ban': 1, 'moi-nguoi': 2, 'mau-board': 3, 'xong': 4, 'tham-gia': -1 };
+    const idx = idxMap[s] ?? 0;
+    const isJoin = s === 'tham-gia';
+    const isDone = s === 'xong';
+    const addrTaken = s === 'dia-chi-trung';
+    const isCreate = idx === 0;
+    const names = ['Tạo workspace', 'Phòng ban', 'Mời đồng đội', 'Board đầu tiên'];
+    const steps = names.map((name, i) => ({
+      n: i + 1,
+      name,
+      cls: i < idx ? 'done' : (i === idx ? 'cur' : 'todo'),
+      cur: i === idx ? 'step' : 'false',
+      sr: i < idx ? 'đã xong' : (i === idx ? 'bước hiện tại' : 'chưa làm')
+    }));
+    const lock = true;
+    const sxBoards = idx >= 3 ? [{ name: 'Ra mắt nước chấm Sao Mai', cls: 'new' }] : [];
+    const saoMaiDepts = [
+      { ini: 'KD', name: 'Kinh doanh', col: '#C2410C', lock, boards: [] },
+      { ini: 'KT', name: 'Kế toán', col: '#9A6A12', lock, boards: [] },
+      { ini: 'SX', name: 'Sản xuất', col: '#1E6FD0', lock, boards: sxBoards },
+      { ini: 'NS', name: 'Nhân sự', col: '#4E8574', lock, boards: [] }
+    ];
+    const joinDepts = [
+      { ini: 'CN', name: 'Công nghệ', col: '#1E6FD0', lock, boards: [{ name: 'Triển khai ERP Q4', cls: 'new' }, { name: 'Hạ tầng & bảo mật', cls: '' }, { name: 'Hỗ trợ nội bộ', cls: '' }] },
+      { ini: 'MK', name: 'Marketing', col: '#C2410C', lock: false, boards: [] }
+    ];
+    const depts = isJoin ? joinDepts : (idx >= 1 ? saoMaiDepts : []);
+    const stepName = isJoin ? 'Tham gia Minh An Group' : (isDone ? 'Hoàn tất' : names[idx]);
+    const stepLabel = isJoin ? 'Lời mời đã nhận' : (isDone ? 'Đã xong 4/4' : 'Bước ' + (idx + 1) + '/4');
+    const subs = { 'tao-workspace': 'saomai.notrelix.vn', 'dia-chi-trung': 'Chưa có địa chỉ', 'phong-ban': 'saomai.notrelix.vn', 'moi-nguoi': '1 người · 3 lời mời', 'mau-board': '1 người · 3 lời mời', 'xong': '1 người · 3 lời mời', 'tham-gia': '86 người' };
+    const caps = {
+      'tao-workspace': 'Tên và địa chỉ hiện ở đầu thanh bên. Mọi người vào workspace qua địa chỉ này.',
+      'dia-chi-trung': 'Địa chỉ là duy nhất trong Notrelix. Chọn một địa chỉ còn trống để tiếp tục.',
+      'phong-ban': 'Phòng ban hiện trên thanh bên ngay khi tạo. Biểu tượng khoá nghĩa là Riêng tư.',
+      'moi-nguoi': 'Người được mời chỉ thấy phòng ban của họ sau khi nhận lời mời.',
+      'mau-board': 'Board mới nằm trong phòng Sản xuất.',
+      'xong': 'Ba việc còn lại chờ bạn trên Trang chủ.',
+      'tham-gia': 'Màu nhấn đổi nút và mục đang chọn. Màu trạng thái và màu phòng ban giữ nguyên.'
+    };
+    const alts = {
+      'tham-gia': 'Xem trước Minh An Group với màu nhấn Xô thơm: thanh bên có Phòng Công nghệ với 3 board và phòng Marketing; board Triển khai ERP Q4 ở dạng Kanban.',
+      'xong': 'Xem trước Trang chủ của Sao Mai với danh sách bắt đầu 0/3: Tạo việc đầu tiên, Mời thêm người, Tải ứng dụng di động.'
+    };
+    const deptAlt = depts.length ? 'Xem trước thanh bên của Sao Mai với ' + depts.length + ' phòng ban riêng tư: Kinh doanh, Kế toán, Sản xuất, Nhân sự.' : 'Xem trước thanh bên của Sao Mai, chưa có phòng ban.';
+    const modeOpts = [['sang', 'Sáng'], ['dem', 'Tối'], ['he-thong', 'Theo hệ thống'], ['tuong-phan', 'Tương phản cao']].map(([val, label]) => ({ val, label, on: val === mode, off: val !== mode }));
+    return {
+      mode,
+      accCls: isJoin ? 'acc-sage' : '',
+      isCreate,
+      addrOk: isCreate && s !== 'dia-chi-trung',
+      addrTaken,
+      createFootNote: addrTaken ? 'Chọn một địa chỉ còn trống để tiếp tục.' : 'Đổi tên công ty sau trong Thiết lập workspace.',
+      isDept: s === 'phong-ban',
+      isInvite: s === 'moi-nguoi',
+      isTpl: s === 'mau-board',
+      isDone,
+      isJoin,
+      showProgress: idx >= 0,
+      steps,
+      stepLabel,
+      stepName,
+      whoLine: isJoin ? 'trang.ly@minhan.vn' : 'ha.nguyen@saomaifood.vn',
+      showExit: isDone === false,
+      exitLabel: isJoin ? 'Làm sau' : 'Lưu và thoát',
+      exitHref: isJoin ? 'Final-Home.dc.html' : '#',
+      modeOpts,
+      pvTitle: isJoin ? 'Xem trước giao diện của bạn' : 'Workspace của bạn đang thành hình',
+      pvMark: isJoin ? 'MA' : 'SM',
+      pvMarkBg: '#1666CC',
+      pvName: isJoin ? 'Minh An Group' : 'Công ty CP Thực phẩm Sao Mai',
+      pvSub: subs[s] ?? '',
+      depts,
+      noDepts: depts.length === 0,
+      pvUser: isJoin ? 'Lý Thu Trang' : 'Nguyễn Thu Hà',
+      pvUserIni: isJoin ? 'LT' : 'HA',
+      pvUserBg: isJoin ? '#BE185D' : '#4E8574',
+      pvUserRole: isJoin ? 'Thành viên' : 'Chủ sở hữu',
+      pvStub: isJoin === false && isDone === false,
+      pvHome: isDone,
+      pvBoard: isJoin,
+      pvCap: caps[s] ?? '',
+      pvAlt: alts[s] ?? deptAlt
+    };
+  }
+}
+</script>
+</body>
+</html>

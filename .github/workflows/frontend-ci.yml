@@ -147,6 +147,8 @@ jobs:
         run: pnpm check:architecture-docs
       - name: pnpm check:test-taxonomy
         run: pnpm check:test-taxonomy
+      - name: pnpm check:i18n
+        run: pnpm check:i18n
       - name: pnpm check:lint-coverage
         run: pnpm check:lint-coverage
       - name: pnpm format:check

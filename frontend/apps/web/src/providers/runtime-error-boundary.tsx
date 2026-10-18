@@ -48,7 +48,7 @@ class InnerRuntimeErrorBoundary extends Component<Props, State> {
             <pre
               style={{
                 textAlign: "left",
-                background: "#f5f5f5",
+                background: "var(--muted)",
                 padding: "1rem",
                 overflow: "auto",
               }}

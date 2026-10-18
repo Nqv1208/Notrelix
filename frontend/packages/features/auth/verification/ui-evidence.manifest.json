@@ -14,9 +14,14 @@
         "reason": "Session/session-storage provider that renders no standalone visual surface."
       },
       {
-        "path": "src/web/components/login-form.tsx",
-        "category": "container",
-        "reason": "Container composing AuthLoginFormSurface with account-scoped session actions."
+        "path": "src/web/components/google-mark.tsx",
+        "category": "nonvisual-composition",
+        "reason": "Vendor brand mark (Google G, fixed brand colours) rendered inside the sign-in and register surfaces; covered by their stories and exempt from the token gate through VENDOR_MARK_FILES."
+      },
+      {
+        "path": "src/web/components/microsoft-mark.tsx",
+        "category": "nonvisual-composition",
+        "reason": "Vendor brand mark (Microsoft four squares, fixed brand colours) rendered inside the sign-in surface; covered by its stories and exempt from the token gate through VENDOR_MARK_FILES."
       },
       {
         "path": "src/web/components/register-form.tsx",
@@ -24,22 +29,35 @@
         "reason": "Container composing AuthRegisterFormSurface with account-scoped session actions."
       },
       {
-        "path": "src/web/components/forgot-password-form.tsx",
+        "path": "src/web/containers/forgot-flow.tsx",
         "category": "container",
-        "reason": "Container composing AuthForgotPasswordFormSurface with account-scoped recovery actions."
+        "reason": "Container holding the reset request and the resend countdown and composing AuthForgotSurface."
+      },
+      {
+        "path": "src/web/containers/invite-flow.tsx",
+        "category": "container",
+        "reason": "Container reading the guest invitation and composing AuthInviteSurface with its accept and decline writes."
+      },
+      {
+        "path": "src/web/containers/sign-in-flow.tsx",
+        "category": "container",
+        "reason": "Container holding the sign-in state machine (identify, login, second step, single sign-on) and composing AuthSignInSurface."
       }
     ]
   },
   "surfaces": [
     {
-      "surfaceId": "auth.login",
+      "surfaceId": "auth.sign-in",
       "owner": "@notrelix/features-auth",
       "surfaceKind": "form",
-      "pureEntry": "src/web/components/auth-login-form-surface.tsx",
-      "coveredSources": [],
+      "pureEntry": "src/web/components/auth-sign-in-surface.tsx",
+      "coveredSources": [
+        "src/web/components/auth-parts.tsx",
+        "src/web/components/auth-shell.tsx"
+      ],
       "stories": [
         {
-          "id": "auth-auth-form-surfaces--login-default",
+          "id": "auth-auth-form-surfaces--sign-in-email",
           "state": "Default",
           "visualTargets": [
             {
@@ -53,7 +71,63 @@
           ]
         },
         {
-          "id": "auth-auth-form-surfaces--login-pending",
+          "id": "auth-auth-form-surfaces--sign-in-password",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "auth-auth-form-surfaces--sign-in-sso",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "auth-auth-form-surfaces--sign-in-otp",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "auth-auth-form-surfaces--sign-in-otp-backup",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "auth-auth-form-surfaces--sign-in-email-pending",
           "state": "Loading",
           "visualTargets": [
             {
@@ -63,7 +137,37 @@
           ]
         },
         {
-          "id": "auth-auth-form-surfaces--login-error",
+          "id": "auth-auth-form-surfaces--sign-in-email-invalid",
+          "state": "Error",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "auth-auth-form-surfaces--sign-in-password-wrong",
+          "state": "Error",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "auth-auth-form-surfaces--sign-in-locked",
+          "state": "Error",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "auth-auth-form-surfaces--sign-in-otp-wrong",
           "state": "Error",
           "visualTargets": [
             {
@@ -79,18 +183,18 @@
         "notApplicable": [
           {
             "state": "Success",
-            "reason": "A successful login navigates to the workspace shell; there is no inline success presentation.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "reason": "A successful sign-in navigates to the workspace shell; there is no inline success presentation.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           },
           {
             "state": "EdgeData",
-            "reason": "Login inputs are standard email/password fields; long-text and Unicode edges are exercised by the register flow's shared input controls.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "reason": "The surface holds an email, a password and a code: no lists or long text; the wrong-password and lock stories cover its long messages.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           },
           {
             "state": "ReadOnly",
-            "reason": "Read-only presentation does not apply to an authenticated-out form; disabled states are covered by input semantics.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "reason": "Read-only presentation does not apply to a signed-out form.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           }
         ]
       },
@@ -99,11 +203,241 @@
       "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
-          "id": "submit",
+          "id": "email",
           "testFile": "src/web/components/__tests__/auth-form-surfaces.interaction.component.test.tsx"
         },
         {
-          "id": "navigation",
+          "id": "providers",
+          "testFile": "src/web/components/__tests__/auth-form-surfaces.interaction.component.test.tsx"
+        },
+        {
+          "id": "pending",
+          "testFile": "src/web/components/__tests__/auth-form-surfaces.interaction.component.test.tsx"
+        },
+        {
+          "id": "password",
+          "testFile": "src/web/components/__tests__/auth-form-surfaces.interaction.component.test.tsx"
+        },
+        {
+          "id": "wrong",
+          "testFile": "src/web/components/__tests__/auth-form-surfaces.interaction.component.test.tsx"
+        },
+        {
+          "id": "locked",
+          "testFile": "src/web/components/__tests__/auth-form-surfaces.interaction.component.test.tsx"
+        },
+        {
+          "id": "sso",
+          "testFile": "src/web/components/__tests__/auth-form-surfaces.interaction.component.test.tsx"
+        },
+        {
+          "id": "otp",
+          "testFile": "src/web/components/__tests__/auth-form-surfaces.interaction.component.test.tsx"
+        },
+        {
+          "id": "otp-backup",
+          "testFile": "src/web/components/__tests__/auth-form-surfaces.interaction.component.test.tsx"
+        },
+        {
+          "id": "language",
+          "testFile": "src/web/components/__tests__/auth-form-surfaces.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "auth.forgot",
+      "owner": "@notrelix/features-auth",
+      "surfaceKind": "form",
+      "pureEntry": "src/web/components/auth-forgot-surface.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "auth-auth-form-surfaces--forgot-ask",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "auth-auth-form-surfaces--forgot-ask-pending",
+          "state": "Loading",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "auth-auth-form-surfaces--forgot-ask-invalid",
+          "state": "Error",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "auth-auth-form-surfaces--forgot-sent",
+          "state": "Success",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "auth-auth-form-surfaces--forgot-sent-ready",
+          "state": "Success",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default", "Loading", "Error", "Success"],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "EdgeData",
+            "reason": "The surface holds one email field and fixed copy.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "ReadOnly",
+            "reason": "Read-only presentation does not apply to a signed-out form.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          }
+        ]
+      },
+      "responsive": false,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "ask",
+          "testFile": "src/web/components/__tests__/auth-form-surfaces.interaction.component.test.tsx"
+        },
+        {
+          "id": "sent",
+          "testFile": "src/web/components/__tests__/auth-form-surfaces.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "auth.invite",
+      "owner": "@notrelix/features-auth",
+      "surfaceKind": "form",
+      "pureEntry": "src/web/components/auth-invite-surface.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "auth-auth-form-surfaces--invite-default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "auth-auth-form-surfaces--invite-pending",
+          "state": "Loading",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "auth-auth-form-surfaces--invite-refused",
+          "state": "Error",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "auth-auth-form-surfaces--invite-expired",
+          "state": "Unavailable",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "auth-auth-form-surfaces--invite-used",
+          "state": "Unavailable",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "auth-auth-form-surfaces--invite-declined",
+          "state": "Success",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default", "Loading", "Error", "Unavailable", "Success"],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "EdgeData",
+            "reason": "The invitation shows names and a board title the inviter chose; the long inviter-and-board heading is part of the Default story.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "ReadOnly",
+            "reason": "Read-only presentation does not apply to a signed-out form.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          }
+        ]
+      },
+      "responsive": false,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "accept",
+          "testFile": "src/web/components/__tests__/auth-form-surfaces.interaction.component.test.tsx"
+        },
+        {
+          "id": "decline",
+          "testFile": "src/web/components/__tests__/auth-form-surfaces.interaction.component.test.tsx"
+        },
+        {
+          "id": "gone",
           "testFile": "src/web/components/__tests__/auth-form-surfaces.interaction.component.test.tsx"
         }
       ]
@@ -157,17 +491,17 @@
           {
             "state": "Success",
             "reason": "A successful registration navigates into the product; there is no inline success presentation.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           },
           {
             "state": "EdgeData",
             "reason": "Register inputs are standard profile fields; the forgot-password EdgeData story exercises long-text and Unicode edges on shared controls.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           },
           {
             "state": "ReadOnly",
             "reason": "Read-only presentation does not apply to an authenticated-out form; disabled states are covered by input semantics.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           }
         ]
       },
@@ -177,92 +511,6 @@
       "interactionCases": [
         {
           "id": "submit",
-          "testFile": "src/web/components/__tests__/auth-form-surfaces.interaction.component.test.tsx"
-        }
-      ]
-    },
-    {
-      "surfaceId": "auth.forgot-password",
-      "owner": "@notrelix/features-auth",
-      "surfaceKind": "form",
-      "pureEntry": "src/web/components/auth-forgot-password-form-surface.tsx",
-      "coveredSources": [],
-      "stories": [
-        {
-          "id": "auth-auth-form-surfaces--forgot-email-default",
-          "state": "Default",
-          "visualTargets": [
-            {
-              "viewport": "desktop",
-              "theme": "light"
-            },
-            {
-              "viewport": "desktop",
-              "theme": "dark"
-            }
-          ]
-        },
-        {
-          "id": "auth-auth-form-surfaces--forgot-otp-default",
-          "state": "Default",
-          "visualTargets": [
-            {
-              "viewport": "desktop",
-              "theme": "light"
-            },
-            {
-              "viewport": "desktop",
-              "theme": "dark"
-            }
-          ]
-        },
-        {
-          "id": "auth-auth-form-surfaces--forgot-success-default",
-          "state": "Success",
-          "visualTargets": [
-            {
-              "viewport": "desktop",
-              "theme": "light"
-            }
-          ]
-        }
-      ],
-      "stateCoverage": {
-        "required": ["Default", "Success"],
-        "delegated": [],
-        "notApplicable": [
-          {
-            "state": "Loading",
-            "reason": "Each step renders synchronously from local step state; no async loading presentation exists between steps.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
-          },
-          {
-            "state": "Error",
-            "reason": "Step transitions are local; submission failure presentation is owned by the login/register Error evidence.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
-          },
-          {
-            "state": "EdgeData",
-            "reason": "Shared input controls receive their long-text and Unicode edge evidence from the login/register surface stories.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
-          },
-          {
-            "state": "ReadOnly",
-            "reason": "Read-only presentation does not apply to an authenticated-out form; disabled states are covered by input semantics.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
-          }
-        ]
-      },
-      "responsive": false,
-      "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
-      "interactionCases": [
-        {
-          "id": "submit",
-          "testFile": "src/web/components/__tests__/auth-form-surfaces.interaction.component.test.tsx"
-        },
-        {
-          "id": "reset",
           "testFile": "src/web/components/__tests__/auth-form-surfaces.interaction.component.test.tsx"
         }
       ]

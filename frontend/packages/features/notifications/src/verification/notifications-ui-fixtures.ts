@@ -1,4 +1,25 @@
+import { createFormatters } from "@notrelix/i18n";
 import type { Notification } from "../core/types/notifications";
+import {
+  notificationBellCopy,
+  type NotificationBellCopy,
+} from "../web/components/notification-bell.copy";
+import type { NotificationBellFormatters } from "../web/components/notification-bell-surface";
+
+/** Injected "now" so relative times are deterministic (two hours after the fixtures). */
+export const NOTIFICATIONS_REFERENCE_DATE = "2026-01-15T12:30:00.000Z";
+
+export function notificationsCopyFixture(
+  locale: "en" | "vi" = "en",
+): NotificationBellCopy {
+  return notificationBellCopy(locale);
+}
+
+export function notificationsFormattersFixture(
+  locale: "en" | "vi" = "en",
+): NotificationBellFormatters {
+  return createFormatters(locale);
+}
 
 export function notification(
   overrides: Partial<Notification> & Pick<Notification, "id" | "title">,
@@ -51,6 +72,13 @@ export function notificationsEdgeDataScenario(): Notification[] {
       title:
         "Enterprise rollout governance review requires additional approval",
       body: "Security and legal sign-off is required before publication.",
+    }),
+    notification({
+      id: "notif-long-title-vi",
+      type: "mention",
+      title:
+        "Nguyễn Thị Phương Anh đã nhắc đến bạn trong bản kế hoạch triển khai doanh nghiệp quý bốn",
+      body: "Vui lòng xem lại phần đánh giá rủi ro di chuyển dữ liệu trước khi phát hành cho toàn bộ không gian làm việc.",
     }),
     notification({
       id: "notif-invitation",

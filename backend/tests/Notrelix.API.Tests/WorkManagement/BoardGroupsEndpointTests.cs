@@ -27,7 +27,7 @@ public class BoardGroupsEndpointTests : IClassFixture<NotrelixApiFactory>
     [Fact]
     public async Task UpdateGroup_WithValidData_ReturnsOk()
     {
-        var body = new { Title = "Updated Group" };
+        var body = new { Title = "Updated Group", ExpectedVersion = 1 };
         var response = await _client.SendAsync(new HttpRequestMessage(new HttpMethod("PATCH"), $"/api/v1/board-groups/{GroupId}")
         {
             Content = JsonContent(body)

@@ -139,7 +139,6 @@ jobs:
           severity: ${{ env.TRIVY_SEVERITY }}
           ignore-unfixed: "true"
           exit-code: "1"
-          trivyignores: .github/security/trivy-nginx.ignore
       - name: Enforce scoped ignore expiry and digest binding
         run: |
           python3 - <<'EOF'

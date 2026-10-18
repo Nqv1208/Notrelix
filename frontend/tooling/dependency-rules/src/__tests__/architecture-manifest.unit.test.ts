@@ -199,26 +199,41 @@ describe("closed-world architecture manifest", () => {
       );
     };
 
+    // The sign-in pages own their vi/en catalog (FE-ADR-006).
     expectExact("@notrelix/features-auth", [
       "@notrelix/contracts",
       "@notrelix/kernel",
       "@notrelix/platform",
       "@notrelix/query",
       "@notrelix/ui-web",
+      "@notrelix/i18n",
     ]);
+    // WX-SHELL: the workspace shell owns its vi/en catalog (FE-ADR-006).
     expectExact("@notrelix/features-workspace", [
       "@notrelix/contracts",
       "@notrelix/kernel",
       "@notrelix/platform",
       "@notrelix/query",
       "@notrelix/ui-web",
+      "@notrelix/i18n",
     ]);
+    // WX-BOARD-001: the Kanban card owns its vi/en catalog (FE-ADR-006).
+    expectExact("@notrelix/work-management-web", [
+      "@notrelix/work-management-core",
+      "@notrelix/work-management-state",
+      "@notrelix/work-management-plugins",
+      "@notrelix/ui-web",
+      "@notrelix/platform",
+      "@notrelix/i18n",
+    ]);
+    // The account pages own their vi/en catalogs (FE-ADR-006).
     expectExact("@notrelix/features-account", [
       "@notrelix/contracts",
       "@notrelix/kernel",
       "@notrelix/platform",
       "@notrelix/query",
       "@notrelix/ui-web",
+      "@notrelix/i18n",
     ]);
     expectExact("@notrelix/features-billing", [
       "@notrelix/contracts",
@@ -262,6 +277,7 @@ describe("closed-world architecture manifest", () => {
       "@notrelix/ui-web",
       "@notrelix/realtime",
     ]);
+    // The notification bell owns its vi/en catalog (FE-ADR-006).
     expectExact("@notrelix/features-notifications", [
       "@notrelix/contracts",
       "@notrelix/kernel",
@@ -269,6 +285,7 @@ describe("closed-world architecture manifest", () => {
       "@notrelix/query",
       "@notrelix/ui-web",
       "@notrelix/realtime",
+      "@notrelix/i18n",
     ]);
   });
 

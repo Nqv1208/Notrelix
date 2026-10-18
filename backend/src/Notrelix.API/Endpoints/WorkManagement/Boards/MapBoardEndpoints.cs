@@ -23,11 +23,13 @@ public static class MapBoardEndpoints
         boardGroup.MapGetBoard();
         boardGroup.MapRenameBoard();
         boardGroup.MapGetBoardOverview();
+        boardGroup.MapGetBoardAccess();
         boardGroup.MapArchiveBoard();
         boardGroup.MapUnarchiveBoard();
         boardGroup.MapDeleteBoard();
         boardGroup.MapRestoreBoard();
         boardGroup.MapUpdateBoardVisibility();
+        boardGroup.MapMoveBoardToSpace();
 
         var members = app
             .MapGroup("/api/v1/boards/{boardId:guid}/members")

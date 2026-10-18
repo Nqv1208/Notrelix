@@ -27,6 +27,7 @@ export type {
   PageDetail,
   PageActivity,
   CreatePagePayload,
+  MovePageToSpacePayload,
   UpdatePagePayload,
   PageComment,
   CreateCommentPayload,

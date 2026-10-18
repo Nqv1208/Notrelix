@@ -4,7 +4,7 @@
 #   - bound to the exact digest below (a re-pinned digest invalidates this file and CI fails)
 # Renewal requires an explicit security decision; this file must never be renewed silently.
 #
-# applies-to-image-ref: postgres@sha256:efedf3595f1d6f415c08568ba171029bf54052e754cc9f030e3f2412b21f3d67
+# applies-to-image-ref: postgres@sha256:0ea6700a3b4f0ae6ce746519073558aed4d88a79d8d07622a9a644946c7319c4
 # expires: 2026-10-27
 # reassessment: if upstream has not shipped a gosu rebuild (Go >= 1.24.13/1.25.7) by expiry,
 #   reassess building a security-patched postgres runtime image instead of renewing.
@@ -16,6 +16,12 @@
 #   Trivy 0.70.0 flags 22 stdlib findings (CVE-2025-68121 CRITICAL + 21 HIGH).
 #   Renewed 30 days on the existing pin; building a security-patched postgres runtime
 #   image reassessed and deferred to a follow-up delivery change.
+# renewal-3: 2026-10-18 — explicit instruction from the repository owner to clear the
+#   runtime-image gate. Re-pinned to digest 0ea6700a (postgres 16-bookworm, perl-base
+#   5.36.0-7+deb12u4): the debian scan with --ignore-unfixed is clean (verified with
+#   Trivy 0.70.0). The gosu waiver is unchanged in kind: same gosu (Go 1.24.6); three
+#   newer stdlib findings (CVE-2026-78667, CVE-2026-78669, CVE-2026-97031) are added
+#   under the same import-set reachability reasoning. The expiry date is NOT extended.
 #
 # ============================================================================
 # Waiver block 1 of 1 — gosu / embedded Go stdlib 1.24.6 (usr/local/bin/gosu)
@@ -47,6 +53,9 @@
 # CVE-2026-56859 encoding/xml DecodeElement depth - gosu imports no encoding/xml
 # CVE-2026-56860 os.Root '..' path resolution - gosu imports os but never constructs os.Root
 # CVE-2026-56862 crypto/tls handshake state - gosu imports no crypto/tls
+# CVE-2026-78667 net/http Range header DoS - gosu imports no net/http
+# CVE-2026-78669 net/http HTTP/2 SETTINGS frames DoS - gosu imports no net/http
+# CVE-2026-97031 crypto/tls ECH outer extension DoS - gosu imports no crypto/tls
 #
 # Only these CVEs are suppressed. Anything else must fail the scan.
 CVE-2025-68121
@@ -71,3 +80,6 @@ CVE-2026-56858
 CVE-2026-56859
 CVE-2026-56860
 CVE-2026-56862
+CVE-2026-78667
+CVE-2026-78669
+CVE-2026-97031

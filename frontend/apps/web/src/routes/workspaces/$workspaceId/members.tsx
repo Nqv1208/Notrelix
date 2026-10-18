@@ -1,383 +1,258 @@
-import { useState, useMemo } from "react";
-import { useParams } from "@tanstack/react-router";
-import { useWorkspaceContext } from "@/providers/workspace-provider";
-import {
-  createUseWorkspaceMembers,
-  createUseWorkspaceInvitations,
-  createUseCreateInvitation,
-  createUseDeleteInvitation,
-  createUseRemoveMember,
-  createUseUpdateMemberRole,
-} from "@notrelix/features-workspace";
-import type {
-  WorkspaceMember,
-  WorkspaceInvitation,
-} from "@notrelix/features-workspace/core";
-import { useAppRuntime } from "@notrelix/runtime-web";
-import {
-  Button,
-  Input,
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  Badge,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@notrelix/ui-web";
+import { useCallback, useMemo, useState } from "react";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { Trash2, UserMinus, Mail } from "lucide-react";
+import {
+  isWorkspaceAdmin,
+  pendingInvitationFor,
+  type WorkspaceFailure,
+  type WorkspaceInvitation,
+  type WorkspaceMember,
+  type WorkspaceRole,
+} from "@notrelix/features-workspace/core";
+import {
+  createUseCreateInvitation,
+  createUseMemberMutations,
+  createUseRevokeInvitation,
+  createUseWorkspaceInvitations,
+  formatCopy,
+  useWorkspaceMembersCopy,
+  WorkspaceMembersSurface,
+  type MembersTab,
+  type WorkspaceMembersCopy,
+} from "@notrelix/features-workspace/web";
+import { describeWorkspaceFailure } from "@notrelix/features-workspace/core";
+import { useFormatters } from "@notrelix/i18n";
+import { useAppRuntime } from "@notrelix/runtime-web";
+import { SeatInviteDialog } from "./billing/seat-invite";
+import { useWorkspaceContext } from "@/providers/workspace-provider";
+import { toastFailure } from "@/shell/workspace/failure-toast";
+import { sectionState } from "@/shell/workspace/section-state";
+import { useIdSet } from "@/shell/workspace/use-id-set";
+import { useNow } from "@/shell/workspace/use-now";
+import { useWorkspaceViewer } from "@/shell/workspace/use-workspace-viewer";
 
+function recoveryHint(copy: WorkspaceMembersCopy) {
+  return (failure: WorkspaceFailure): string => {
+    switch (failure.kind) {
+      case "forbidden":
+        return copy.toasts.forbidden;
+      case "conflict":
+        return copy.toasts.conflict;
+      case "not-found":
+        return copy.toasts.notFound;
+      case "network":
+        return copy.toasts.network;
+      default:
+        return copy.toasts.unknown;
+    }
+  };
+}
+
+/**
+ * Members and invitations (WX-MEM-001): composes the Workspaces member and
+ * invitation producers into the pure surface; every outcome is reported with
+ * the producer's own rule message when it sends one.
+ */
 export function MembersPage() {
-  const { workspaceId } = useParams({ from: "/workspaces/$workspaceId" });
+  const { workspaceId, workspace } = useWorkspaceContext();
+  const copy = useWorkspaceMembersCopy();
+  const formatters = useFormatters();
+  const now = useNow();
+  const navigate = useNavigate();
+  const search = useSearch({ strict: false }) as {
+    tab?: MembersTab;
+    invite?: "seats";
+  };
+  const tab: MembersTab =
+    search.tab === "invitations" ? "invitations" : "members";
   const { api: runtimeClient } = useAppRuntime();
-  const { workspace } = useWorkspaceContext();
 
-  const useWorkspaceMembers = useMemo(
-    () => createUseWorkspaceMembers({ api: runtimeClient.api }),
-    [runtimeClient],
+  const hooks = useMemo(() => {
+    const deps = { api: runtimeClient.api, endpoints: runtimeClient.endpoints };
+    return {
+      useMemberMutations: createUseMemberMutations(deps),
+      useInvitations: createUseWorkspaceInvitations(deps),
+      useCreateInvitation: createUseCreateInvitation(deps),
+      useRevokeInvitation: createUseRevokeInvitation(deps),
+    };
+  }, [runtimeClient]);
+
+  const viewer = useWorkspaceViewer(workspaceId);
+  const admin = isWorkspaceAdmin(viewer.role);
+  const invitations = hooks.useInvitations(workspaceId, { enabled: admin });
+  const mutations = hooks.useMemberMutations(workspaceId);
+  const createInvitation = hooks.useCreateInvitation(workspaceId);
+  const revokeInvitation = hooks.useRevokeInvitation(workspaceId);
+  const pendingMembers = useIdSet();
+  const pendingInvitations = useIdSet();
+  const [inviteError, setInviteError] = useState<string | null>(null);
+  const [inviteResetKey, setInviteResetKey] = useState(0);
+  const hint = useMemo(() => recoveryHint(copy), [copy]);
+
+  const run = useCallback(
+    (
+      member: WorkspaceMember,
+      action: (userId: string) => Promise<unknown>,
+      messages: { success: string; failure: string },
+    ) => {
+      pendingMembers.add(member.userId);
+      action(member.userId)
+        .then(() =>
+          toast.success(formatCopy(messages.success, { name: member.name })),
+        )
+        .catch((error: unknown) =>
+          toastFailure(
+            formatCopy(messages.failure, { name: member.name }),
+            error,
+            hint,
+          ),
+        )
+        .finally(() => pendingMembers.remove(member.userId));
+    },
+    [hint, pendingMembers],
   );
 
-  const useWorkspaceInvitations = useMemo(
-    () =>
-      createUseWorkspaceInvitations({
-        api: runtimeClient.api,
-        endpoints: runtimeClient.endpoints,
-      }),
-    [runtimeClient],
+  const onChangeRole = useCallback(
+    (member: WorkspaceMember, role: WorkspaceRole) =>
+      run(
+        member,
+        (userId) => mutations.updateRole.mutateAsync({ userId, role }),
+        {
+          success: formatCopy(copy.toasts.roleChanged, {
+            name: "{{name}}",
+            role: copy.roles[role],
+          }),
+          failure: copy.toasts.roleFailed,
+        },
+      ),
+    [copy, mutations.updateRole, run],
   );
 
-  const useCreateInvitation = useMemo(
-    () =>
-      createUseCreateInvitation({
-        api: runtimeClient.api,
-        endpoints: runtimeClient.endpoints,
-      }),
-    [runtimeClient],
-  );
-
-  const useDeleteInvitation = useMemo(
-    () =>
-      createUseDeleteInvitation({
-        api: runtimeClient.api,
-        endpoints: runtimeClient.endpoints,
-      }),
-    [runtimeClient],
-  );
-
-  const useRemoveMember = useMemo(
-    () => createUseRemoveMember({ api: runtimeClient.api }),
-    [runtimeClient],
-  );
-
-  const useUpdateMemberRole = useMemo(
-    () => createUseUpdateMemberRole({ api: runtimeClient.api }),
-    [runtimeClient],
-  );
-
-  const { data: members = [], isLoading } = useWorkspaceMembers(workspaceId);
-  const { data: invitations = [] } = useWorkspaceInvitations(workspaceId);
-  const createInvitationMutation = useCreateInvitation(workspaceId);
-  const deleteInvitationMutation = useDeleteInvitation(workspaceId);
-  const removeMemberMutation = useRemoveMember(workspaceId);
-  const updateRoleMutation = useUpdateMemberRole(workspaceId);
-
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState("member");
-
-  const handleInvite = async () => {
-    if (!inviteEmail.trim()) {
-      toast.error("Please enter an email address.");
-      return;
-    }
-    try {
-      await createInvitationMutation.mutateAsync({
-        email: inviteEmail.trim(),
-        role: inviteRole,
-      });
-      setInviteEmail("");
-      toast.success("Invitation sent successfully.");
-    } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to send invitation.",
+  const onInvite = useCallback(
+    (input: { email: string; role: Exclude<WorkspaceRole, "owner"> }) => {
+      setInviteError(null);
+      // One pending invitation per address (the producer's rule): say so in
+      // the member's language before sending. The producer still decides.
+      const waiting = pendingInvitationFor(
+        invitations.data ?? [],
+        input.email,
+        now,
       );
-    }
-  };
+      if (waiting) {
+        setInviteError(
+          formatCopy(copy.invitations.alreadyPending, { email: waiting.email }),
+        );
+        return;
+      }
+      createInvitation.mutate(input, {
+        onSuccess: () => {
+          setInviteResetKey((key) => key + 1);
+          toast.success(
+            formatCopy(copy.toasts.invited, { email: input.email }),
+          );
+        },
+        onError: (error) => {
+          const failure = describeWorkspaceFailure(error);
+          const fieldMessage =
+            Object.values(failure.fieldErrors).flat()[0] ?? null;
+          if (failure.kind === "validation" || failure.kind === "rule") {
+            // Shown next to the field; the typed address is kept.
+            setInviteError(
+              fieldMessage ?? failure.detail ?? copy.toasts.unknown,
+            );
+            return;
+          }
+          toastFailure(
+            formatCopy(copy.toasts.inviteFailed, { email: input.email }),
+            error,
+            hint,
+          );
+        },
+      });
+    },
+    [copy, createInvitation, hint, invitations.data, now],
+  );
 
-  const handleRoleChange = (
-    userId: string,
-    newRole: "member" | "owner" | "admin" | "guest",
-  ) => {
-    updateRoleMutation.mutate({ userId, role: newRole });
-  };
-
-  const handleRemoveMember = (userId: string, name: string) => {
-    if (
-      window.confirm(
-        `Are you sure you want to remove ${name} from this workspace?`,
-      )
-    ) {
-      removeMemberMutation.mutate(userId);
-    }
-  };
-
-  const handleRevokeInvitation = (invitationId: string, email: string) => {
-    if (
-      window.confirm(
-        `Are you sure you want to revoke the invitation to ${email}?`,
-      )
-    ) {
-      deleteInvitationMutation.mutate(invitationId);
-    }
-  };
+  const onRevoke = useCallback(
+    (invitation: WorkspaceInvitation) => {
+      pendingInvitations.add(invitation.id);
+      revokeInvitation.mutate(invitation.id, {
+        onSuccess: () =>
+          toast.success(
+            formatCopy(copy.toasts.revoked, { email: invitation.email }),
+          ),
+        onError: (error) =>
+          toastFailure(
+            formatCopy(copy.toasts.revokeFailed, { email: invitation.email }),
+            error,
+            hint,
+          ),
+        onSettled: () => pendingInvitations.remove(invitation.id),
+      });
+    },
+    [copy, hint, pendingInvitations, revokeInvitation],
+  );
 
   return (
-    <div className="p-8 max-w-4xl">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold tracking-tight mb-1">Members</h1>
-        <p className="text-sm text-muted-foreground">
-          Manage who has access to {workspace?.name ?? "this workspace"} and
-          control their permission levels.
-        </p>
-      </div>
-
-      {/* Invite Section */}
-      <div className="p-5 rounded-xl border border-border/80 bg-muted/10 mb-8">
-        <h3 className="text-sm font-semibold text-foreground mb-3">
-          Invite new member
-        </h3>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleInvite();
-          }}
-          className="flex flex-col sm:flex-row gap-3"
-        >
-          <div className="flex-1">
-            <Input
-              type="email"
-              placeholder="Enter email address (name@example.com)"
-              value={inviteEmail}
-              onChange={(e) => setInviteEmail(e.target.value)}
-              className="rounded-lg bg-card"
-            />
-          </div>
-          <div className="w-full sm:w-36">
-            <Select value={inviteRole} onValueChange={setInviteRole}>
-              <SelectTrigger className="rounded-lg bg-card">
-                <SelectValue placeholder="Select role" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="member">Member</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
-                <SelectItem value="guest">Guest</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <Button
-            type="submit"
-            disabled={createInvitationMutation.isPending || !inviteEmail.trim()}
-            className="rounded-lg px-5"
-          >
-            <Mail className="size-4 mr-2" />
-            {createInvitationMutation.isPending ? "Sending..." : "Send Invite"}
-          </Button>
-        </form>
-      </div>
-
-      {/* Members Table */}
-      <div className="space-y-3 mb-8">
-        <h3 className="text-sm font-semibold text-foreground">
-          Active members ({members.length})
-        </h3>
-        <div className="rounded-xl border border-border/60 overflow-hidden bg-card">
-          <Table>
-            <TableHeader className="bg-muted/30">
-              <TableRow className="hover:bg-transparent">
-                <TableHead className="py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted-foreground">
-                  Member
-                </TableHead>
-                <TableHead className="py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted-foreground">
-                  Role
-                </TableHead>
-                <TableHead className="py-3 px-4 w-[80px]"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                [1, 2, 3].map((i) => (
-                  <TableRow key={i}>
-                    <TableCell colSpan={3}>
-                      <div className="h-10 bg-muted rounded animate-pulse" />
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : members.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={3}
-                    className="py-8 text-center text-sm text-muted-foreground"
-                  >
-                    No members yet.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                members.map((member: WorkspaceMember) => (
-                  <TableRow
-                    key={member.id}
-                    className="hover:bg-muted/10 transition-colors border-border/50"
-                  >
-                    <TableCell className="py-3 px-4">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="size-8 ring-1 ring-border/20">
-                          <AvatarImage
-                            src={member.avatarUrl}
-                            alt={member.name}
-                          />
-                          <AvatarFallback
-                            className="text-[11px] font-semibold text-primary-foreground"
-                            style={{ backgroundColor: member.color }}
-                          >
-                            {member.initials}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-semibold text-foreground text-sm flex items-center gap-1.5">
-                            {member.name}
-                            {member.role === "owner" && (
-                              <Badge
-                                variant="outline"
-                                className="text-[9px] py-0 px-1.5 font-normal tracking-wide bg-primary/5 border-primary/20 text-primary rounded-md"
-                              >
-                                Owner
-                              </Badge>
-                            )}
-                          </p>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="py-3 px-4">
-                      {member.role === "owner" ? (
-                        <Badge
-                          variant="secondary"
-                          className="capitalize text-[11px] font-medium bg-muted/65 rounded-md"
-                        >
-                          {member.role}
-                        </Badge>
-                      ) : (
-                        <Select
-                          defaultValue={member.role}
-                          onValueChange={(val) =>
-                            handleRoleChange(
-                              member.userId,
-                              val as "member" | "owner" | "admin" | "guest",
-                            )
-                          }
-                        >
-                          <SelectTrigger className="w-28 h-8 rounded-lg text-xs bg-card">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="member">Member</SelectItem>
-                            <SelectItem value="admin">Admin</SelectItem>
-                            <SelectItem value="guest">Guest</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      )}
-                    </TableCell>
-                    <TableCell className="py-3 px-4 text-right">
-                      {member.role !== "owner" && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          aria-label={`Remove ${member.name} from workspace`}
-                          onClick={() =>
-                            handleRemoveMember(member.userId, member.name)
-                          }
-                          className="rounded-lg hover:bg-destructive/5 text-muted-foreground hover:text-destructive transition size-8"
-                        >
-                          <UserMinus className="size-4" />
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </div>
-
-      {/* Pending Invitations */}
-      {invitations.length > 0 && (
-        <div className="space-y-3 pt-4 border-t border-border/40">
-          <h3 className="text-sm font-semibold text-foreground">
-            Pending invitations ({invitations.length})
-          </h3>
-          <div className="rounded-xl border border-border/60 overflow-hidden bg-card">
-            <Table>
-              <TableHeader className="bg-muted/30">
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className="py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted-foreground">
-                    Email
-                  </TableHead>
-                  <TableHead className="py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted-foreground">
-                    Role
-                  </TableHead>
-                  <TableHead className="py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted-foreground">
-                    Sent date
-                  </TableHead>
-                  <TableHead className="py-3 px-4 w-[80px]"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {invitations.map((inv: WorkspaceInvitation) => (
-                  <TableRow
-                    key={inv.id}
-                    className="hover:bg-muted/10 transition-colors border-border/50"
-                  >
-                    <TableCell className="py-3 px-4 font-medium text-foreground text-sm">
-                      {inv.email}
-                    </TableCell>
-                    <TableCell className="py-3 px-4">
-                      <Badge
-                        variant="secondary"
-                        className="capitalize text-[11px] font-medium rounded-md"
-                      >
-                        {inv.role}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="py-3 px-4 text-muted-foreground text-xs">
-                      {new Date(inv.createdAt).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell className="py-3 px-4 text-right">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        aria-label={`Revoke invitation to ${inv.email}`}
-                        onClick={() =>
-                          handleRevokeInvitation(inv.id, inv.email)
-                        }
-                        className="rounded-lg hover:bg-destructive/5 text-muted-foreground hover:text-destructive transition size-8"
-                      >
-                        <Trash2 className="size-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </div>
-      )}
-    </div>
+    <>
+      <WorkspaceMembersSurface
+        copy={copy}
+        formatters={formatters}
+        now={now}
+        workspaceName={workspace?.name ?? null}
+        viewer={{ userId: viewer.userId, role: viewer.role }}
+        members={sectionState(viewer.members, viewer.members.data)}
+        invitations={admin ? sectionState(invitations, invitations.data) : null}
+        tab={tab}
+        onTabChange={(next) =>
+          void navigate({
+            to: "/workspaces/$workspaceId/members",
+            params: { workspaceId },
+            search: next === "invitations" ? { tab: "invitations" } : {},
+            replace: true,
+          } as never)
+        }
+        pendingMemberIds={pendingMembers.ids}
+        pendingInvitationIds={pendingInvitations.ids}
+        inviting={createInvitation.isPending}
+        inviteError={inviteError}
+        inviteResetKey={inviteResetKey}
+        onChangeRole={onChangeRole}
+        onRemove={(member) =>
+          run(member, (userId) => mutations.remove.mutateAsync(userId), {
+            success: copy.toasts.removed,
+            failure: copy.toasts.removeFailed,
+          })
+        }
+        onSuspend={(member) =>
+          run(member, (userId) => mutations.suspend.mutateAsync(userId), {
+            success: copy.toasts.suspended,
+            failure: copy.toasts.suspendFailed,
+          })
+        }
+        onActivate={(member) =>
+          run(member, (userId) => mutations.activate.mutateAsync(userId), {
+            success: copy.toasts.activated,
+            failure: copy.toasts.activateFailed,
+          })
+        }
+        onInvite={onInvite}
+        onRevoke={onRevoke}
+        onRetryMembers={() => void viewer.members.refetch()}
+        onRetryInvitations={() => void invitations.refetch()}
+      />
+      <SeatInviteDialog
+        open={admin && search.invite === "seats"}
+        onClose={() =>
+          void navigate({
+            to: "/workspaces/$workspaceId/members",
+            params: { workspaceId },
+            search: {},
+            replace: true,
+          } as never)
+        }
+        createInvitation={createInvitation.mutateAsync}
+      />
+    </>
   );
 }

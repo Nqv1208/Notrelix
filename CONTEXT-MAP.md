@@ -148,7 +148,7 @@ Also read when relevant:
 
 ```text
 docs/product/contexts/billing.md
-docs/product/contexts/governance.md
+docs/product/governance.md
 backend/docs/architecture/security-tenancy-authorization.md
 ```
 
@@ -176,7 +176,7 @@ Use for:
 For authorization questions also read:
 
 ```text
-docs/product/contexts/governance.md
+docs/product/governance.md
 backend/docs/architecture/security-tenancy-authorization.md
 ```
 
@@ -190,7 +190,7 @@ Read:
 
 ```text
 PRODUCT.md
-docs/product/contexts/workspaces.md
+docs/product/workspaces.md
 ```
 
 Use for:
@@ -204,7 +204,7 @@ Use for:
 Also read for protected resource work:
 
 ```text
-docs/product/contexts/governance.md
+docs/product/governance.md
 backend/docs/architecture/security-tenancy-authorization.md
 ```
 
@@ -216,7 +216,7 @@ Read:
 
 ```text
 PRODUCT.md
-docs/product/contexts/governance.md
+docs/product/governance.md
 ```
 
 Use for:
@@ -352,7 +352,7 @@ Use for:
 For resource access:
 
 ```text
-docs/product/contexts/governance.md
+docs/product/governance.md
 backend/docs/architecture/security-tenancy-authorization.md
 ```
 
@@ -1025,7 +1025,7 @@ Use for:
 Read:
 
 ```text
-docs/product/contexts/governance.md
+docs/product/governance.md
 backend/docs/architecture/security-tenancy-authorization.md
 backend/docs/architecture/application-model.md
 ```
@@ -2239,8 +2239,8 @@ docs/product/contexts/analytics.md
 Read:
 
 ```text
-docs/product/contexts/workspaces.md
-docs/product/contexts/governance.md
+docs/product/workspaces.md
+docs/product/governance.md
 
 RULE.md
     NRX-003
@@ -2697,8 +2697,8 @@ Primary product owners:
 
 ```text
 docs/product/contexts/identity.md
-docs/product/contexts/workspaces.md
-docs/product/contexts/governance.md
+docs/product/workspaces.md
+docs/product/governance.md
 ```
 
 Primary backend owner:

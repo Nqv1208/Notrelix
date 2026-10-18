@@ -18,6 +18,7 @@ evidence:
   - docs/product/contexts/governance.md
   - docs/architecture/bounded-context-map.md
   - backend/src/Notrelix.Domain/Workspaces/
+  - backend/docs/decisions/ADR-009-space-scoped-authorization.md
   - backend/tests/Notrelix.Domain.Tests/
   - backend/tests/Notrelix.Integration.Tests/
   - frontend/packages/features/workspace/
@@ -396,37 +397,101 @@ Account-wide domain, IdP, SCIM, region, ownership, and commercial semantics rema
 
 # 41. Spaces
 
-A Space can organize Workspace resources if product-approved.
+A Space is a Workspace-owned organizational container. Product-approved use (2026-10-11): a Workspace is composed of department Spaces (for example IT, Accounting, Marketing) organized as an org tree, with people partitioned per department.
 
-Potential semantics:
+A Space has:
 
 ```text
-hierarchical/organizational container
-visibility
-status
-type
-parent relation
+stable identity
+Workspace (tenant) — immutable
+parent Space (optional) — same Workspace only
+sibling position (fractional ordering key)
+name, description, type (Folder | Portfolio | Department | ProjectArea)
+visibility (Private | Workspace)
+status (Active | Archived), soft deletion
+members (Users and Teams with a Space role)
 ```
+
+Boards (Work Management) and Pages (Documents) may be placed in a Space. Placement is a reference held by the resource owner; the Space never owns their lifecycle (§79).
 
 # 42. WSP-013 — Space is organizational structure, not implicit authorization
 
-Space hierarchy or visibility may influence Governance policy.
+Space hierarchy, visibility and membership are inputs to Governance policy (`docs/product/governance.md` GOV-025..GOV-029).
 
-It must not become an undocumented permission shortcut.
+They never become an undocumented permission shortcut: the meaning of a Space role for a protected operation is defined by Governance, not by the Space or by a client.
 
 # 43. Space hierarchy
 
-If hierarchy exists:
+# 43.1. WSP-021 — Space hierarchy is one acyclic tree per Workspace
 
-- parent must be in same Workspace;
-- cycles are forbidden;
-- moving between parents preserves Workspace scope.
+- a parent Space must belong to the same Workspace;
+- cycles are forbidden: a Space cannot become its own ancestor (moving a Space under itself or any of its descendants is rejected before mutation);
+- depth is unlimited;
+- moving a Space moves its whole subtree and preserves Workspace scope;
+- siblings are ordered by a fractional position key; placement is neighbor-relative and a stale neighbor intent is rejected, not guessed;
+- sibling names are unique, case-insensitively, among the non-deleted Spaces under the same parent (the Workspace root counts as one parent);
+- a Space cannot be created under, or moved under, an archived or deleted parent.
+
+The Domain validates cycles and sibling uniqueness from facts supplied by Application (ancestry of the target parent, sibling names); it never queries the hierarchy itself.
+
+# 43.2. WSP-022 — Archive and delete never cascade through a Space
+
+To keep organization changes from silently hiding or destroying work owned by other contexts:
+
+```text
+archive Space
+→ rejected while it has an active (not archived, not deleted) child Space
+  or an active Board/Page placed in it
+
+delete Space
+→ rejected while it has any non-deleted child Space
+  or any non-deleted Board/Page placed in it
+
+unarchive/restore Space
+→ rejected while its parent is archived or deleted
+```
+
+The owner empties, moves, archives or deletes the children and resources first. There is no ORM/database cascade and no implicit move to the parent.
 
 # 44. Space visibility
 
-Visibility labels such as public/private/internal require explicit Governance relationship.
+# 44.1. WSP-023 — Space visibility controls who inherits access, Governance defines what access means
 
-Do not assume a boolean visibility flag fully implements resource access policy.
+```text
+Private
+→ only the Space's own members (and Space Admins of an ancestor,
+  workspace Owners/Admins) reach the Space and what is placed in it
+
+Workspace
+→ open to everyone who can reach the parent;
+  a root Space with Workspace visibility is open to every
+  workspace Member (not Guests)
+```
+
+A department Space (`type = Department`) is Private by default when the creator does not choose a visibility; other Space types default to Workspace (open to the parent's audience). Visibility can be changed later by a Space manager.
+
+A visibility label alone never implements resource access; Governance composes it (GOV-025).
+
+# 44.2. Space membership
+
+# 44.3. WSP-024 — Space membership is Users and Teams with a Space role
+
+A Space member entry is:
+
+```text
+subject: User (an active member of the same Workspace)
+       | Team (an active Team of the same Workspace)
+role:    Admin | Member | Viewer
+```
+
+- the creator of a Space becomes its first Space Admin;
+- one entry per subject per Space; changing the role of an existing entry is an explicit operation;
+- the last Admin entry of a Space cannot be removed or downgraded (mirrors the last-Team-lead rule); workspace Owners/Admins can still manage every Space, so a Space is never administratively orphaned;
+- a Team entry grants its role to the Team's active members only while the Team itself is active;
+- membership inherits downward: a member of a Space is a member of its descendants with the same role, except that a Private descendant stops Member and Viewer inheritance (it keeps its own member list); Admin inheritance is not stopped, so a Space Admin manages the whole subtree;
+- membership changes are versioned Space mutations (expected version) so concurrent last-Admin races resolve deterministically.
+
+Existing Spaces created before membership existed receive their creator as Space Admin during migration.
 
 # 45. Teams
 
@@ -434,7 +499,7 @@ A Team can group Workspace members for collaboration/organization.
 
 Current source includes Team and TeamMember concepts.
 
-Product semantics should distinguish Team membership from Workspace membership.
+Team membership is distinct from Workspace membership.
 
 # 46. WSP-014 — Team membership requires Workspace membership compatibility
 
@@ -446,23 +511,23 @@ Do not allow cross-Workspace Team membership through raw IDs.
 
 # 47. Team role
 
-Team-level role may describe responsibility inside Team.
+Team-level role (Lead/Member) describes responsibility inside the Team.
 
-It is not automatically a Workspace role or universal resource permission.
+It is not a Workspace role, not a Space role and not a universal resource permission.
 
 # 48. Teams and Governance
 
-Governance may use Team identity as a subject/group in permission policy if product-approved.
+# 48.1. WSP-025 — A Team is a membership group that Governance may evaluate as a subject
 
-Workspaces owns Team composition.
+Workspaces owns Team composition (members, lead, lifecycle).
 
-Governance owns permission meaning.
+Governance owns what a Team grant means: a Team may be the subject of a Space membership entry, a resource permission or a permission rule (GOV-026). Managing Teams is a workspace Owner/Admin capability by default.
 
 # 49. Organizational containers
 
-Spaces and Teams exist only if they provide real product organization value.
+Spaces and Teams exist because they provide real organization value (department org tree, people partitioning).
 
-Do not create more hierarchy by symmetry.
+Do not create more hierarchy levels or container kinds by symmetry.
 
 # 50. Workspace switch
 
@@ -618,6 +683,8 @@ Leave/remove/demote that violates last-owner policy fails before mutation.
 
 Space/Team relationships must reject resources/members from another Workspace.
 
+A Space parent, Space member (User or Team) or placed Board/Page from another Workspace is rejected before mutation.
+
 # 69. Failure — stale Workspace switch
 
 Old Workspace request/realtime response arriving after switch must not contaminate current scope.
@@ -694,6 +761,17 @@ Adding Team Member must respect Workspace membership compatibility.
 Moving resources into Spaces requires the target resource/context to support the relationship explicitly.
 
 Space containment does not become a generic cross-context object graph.
+
+Current approved placements:
+
+```text
+Board (Work Management)  → work.boards.space_id
+Page  (Documents)        → docs.pages.space_id
+```
+
+- the resource owner stores and changes the placement; Workspaces publishes the Space facts it needs (exists, same Workspace, active);
+- a nested Page follows the Space of its root Page; moving a root Page to a Space moves its whole Page subtree;
+- creating a resource in a Space and moving a resource between Spaces are authorized on the target Space (and, for a move, on the resource) by Governance (GOV-028).
 
 # 80. Audit
 
@@ -778,6 +856,8 @@ Rules
 
 Current source includes `Workspace`, `WorkspaceSettings`, `WorkspaceStatus`, `WorkspaceMember`, `WorkspaceRole`, `WorkspaceInvitation`, `Space`, `Team`, and related status/role concepts.
 
+Space hierarchy, ordering, membership (`SpaceMember`, `SpaceRole`, `SpaceMemberSubjectType`) and the `workspace.space_paths` closure index implement §41–§49 (decision record: `backend/docs/decisions/ADR-009-space-scoped-authorization.md`).
+
 This supports a richer Workspace organization context than membership alone.
 
 # 89. Source ambiguity watch
@@ -785,7 +865,7 @@ This supports a richer Workspace organization context than membership alone.
 Do not normalize:
 
 - WorkspaceRole into universal permission;
-- SpaceVisibility into complete authorization;
+- SpaceVisibility or SpaceRole into complete authorization (Governance composes them, GOV-025);
 - TeamRole into WorkspaceRole;
 - current Workspace selection into durable Identity state.
 
@@ -835,7 +915,9 @@ membership add/remove/suspend/role
 last-owner guard
 invitation accept/revoke/expiry/retry
 cross-Workspace rejection
-Space cycles/parentage
+Space cycles/parentage, sibling order and name uniqueness
+Space archive/delete blocked by active children/resources
+Space membership (User/Team), last-Space-Admin guard
 Team membership compatibility
 tenant propagation
 RLS/authz integration

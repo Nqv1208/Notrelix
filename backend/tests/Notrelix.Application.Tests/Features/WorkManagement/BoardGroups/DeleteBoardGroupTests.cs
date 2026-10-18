@@ -25,7 +25,7 @@ public class DeleteBoardGroupTests : WorkManagementHandlerTestBase
         var group = CreateBoardGroup();
         SetupBoardGroups(group);
 
-        var command = new DeleteBoardGroupCommand(group.Id);
+        var command = new DeleteBoardGroupCommand(group.Id, group.Version);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -35,7 +35,7 @@ public class DeleteBoardGroupTests : WorkManagementHandlerTestBase
     [Fact]
     public async Task Handle_GroupNotFound_ThrowsNotFoundException()
     {
-        var command = new DeleteBoardGroupCommand(Guid.CreateVersion7());
+        var command = new DeleteBoardGroupCommand(Guid.CreateVersion7(), 1);
 
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<NotFoundException>();
@@ -48,7 +48,7 @@ public class DeleteBoardGroupTests : WorkManagementHandlerTestBase
         group.Delete(TestUserId, TestNow);
         SetupBoardGroups(group);
 
-        var command = new DeleteBoardGroupCommand(group.Id);
+        var command = new DeleteBoardGroupCommand(group.Id, group.Version);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 

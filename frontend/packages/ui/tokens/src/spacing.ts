@@ -1,46 +1,59 @@
 /**
  * @notrelix/ui-tokens — Spacing and layout tokens.
  *
+ * 4px base grid expressed in rem. Semantic roles name repeated rhythm; one-off
+ * gaps use the Tailwind scale directly (FE-UI-018).
+ *
  * Framework-neutral: no React, no DOM.
  */
 
-// ─── Base Unit ───
+export const baseUnitPx = 4;
 
-export const baseUnit = 8;
-
-// ─── Spacing Scale ───
-
+/** Spacing scale in rem (step × 4px). */
 export const spacing = {
-  4: "4px",
-  8: "8px",
-  12: "12px",
-  16: "16px",
-  24: "24px",
-  32: "32px",
-  40: "40px",
-  48: "48px",
-  64: "64px",
-  80: "80px",
-  96: "96px",
+  0: "0rem",
+  1: "0.25rem",
+  2: "0.5rem",
+  3: "0.75rem",
+  4: "1rem",
+  5: "1.25rem",
+  6: "1.5rem",
+  8: "2rem",
+  10: "2.5rem",
+  12: "3rem",
+  16: "4rem",
 } as const;
 
-// ─── Layout ───
+/** Semantic spacing roles. */
+export const space = {
+  "inline-xs": spacing[1],
+  "inline-sm": spacing[2],
+  "inline-md": spacing[3],
+  "stack-xs": spacing[1],
+  "stack-sm": spacing[2],
+  "stack-md": spacing[4],
+  "stack-lg": spacing[6],
+  section: spacing[12],
+  "page-gutter": spacing[6],
+  "panel-padding": spacing[4],
+} as const;
+
+/** Control and row heights (density contract inputs). */
+export const sizes = {
+  "control-sm": "2rem",
+  "control-md": "2.25rem",
+  "control-lg": "2.5rem",
+  "row-dense": "2rem",
+  row: "2.5rem",
+  "touch-target": "2.75rem",
+} as const;
 
 export const layout = {
-  sectionGap: "48px",
-  cardPadding: "24px",
-  elementGap: "8px",
-  sidebarWidth: 240,
-  sidebarCollapsedWidth: 56,
-  contentMaxWidth: 720,
-  pageMaxWidth: 1280,
-  topBarHeight: 56,
-} as const;
-
-// ─── Grid ───
-
-export const grid = {
-  desktop: { columns: 12, gutter: "24px", maxWidth: 1280 },
-  tablet: { columns: 8, gutter: "16px", maxWidth: 960 },
-  mobile: { columns: 4, gutter: "16px", maxWidth: "100%" },
+  "sidebar-width": "15rem",
+  "sidebar-collapsed-width": "3.5rem",
+  "topbar-height": "3.5rem",
+  "content-max-width": "45rem",
+  "page-max-width": "80rem",
+  /** Fixed width of a Kanban column (and its skeleton / add-column slot). */
+  "kanban-column": "16.5rem",
 } as const;

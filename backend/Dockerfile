@@ -1,7 +1,7 @@
 # Immutable build/runtime bases. CI supplies these arguments from
 # delivery/images.lock.toml; defaults keep local builds on the same base bytes.
 ARG DOTNET_SDK_IMAGE=mcr.microsoft.com/dotnet/sdk:9.0.317@sha256:f190d2dd9eef2899c91ac323caa0bd2b39334a5400ba93013e5199da39dad940
-ARG DOTNET_RUNTIME_IMAGE=mcr.microsoft.com/dotnet/aspnet:9.0.20-bookworm-slim@sha256:779b0b298964fe93e6c6388c8bb823393a7c301b79cd5b3d80632bc886b2ffd4
+ARG DOTNET_RUNTIME_IMAGE=mcr.microsoft.com/dotnet/aspnet:9.0.21-bookworm-slim@sha256:4d94cf3204df98d321e8dbf8d6d06e0b34fd136aa75c945abf4390ee07eb30dd
 
 FROM ${DOTNET_SDK_IMAGE} AS build
 ARG BUILD_CONFIGURATION=Release
@@ -36,7 +36,7 @@ WORKDIR /app
 # releases; explicitly installing the patched package keeps the runtime image
 # remediated without an ignore, a threshold change, or an unpinned base.
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends wget ca-certificates libpcre2-8-0 \
+    && apt-get install -y --no-install-recommends wget ca-certificates libpcre2-8-0 perl-base \
     && rm -rf /var/lib/apt/lists/* \
     && groupadd --system notrelix \
     && useradd --system --gid notrelix --no-create-home --shell /usr/sbin/nologin notrelix

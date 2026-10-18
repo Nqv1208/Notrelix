@@ -15,8 +15,9 @@
     "lint": "eslint ."
   },
   "devDependencies": {
-    "typescript": "^5.0.0",
+    "@notrelix/eslint-config": "workspace:*",
+    "@notrelix/i18n": "workspace:*",
     "tsx": "^4.19.0",
-    "@notrelix/eslint-config": "workspace:*"
+    "typescript": "^5.0.0"
   }
 }

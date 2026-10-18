@@ -6,5 +6,6 @@ public class UnarchiveTeamCommandValidator : AbstractValidator<UnarchiveTeamComm
     {
         RuleFor(x => x.WorkspaceId).NotEmpty();
         RuleFor(x => x.TeamId).NotEmpty();
+        RuleFor(x => x.ExpectedVersion).GreaterThan(0);
     }
 }

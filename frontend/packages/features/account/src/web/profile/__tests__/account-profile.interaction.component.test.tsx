@@ -1,0 +1,292 @@
+import { describe, expect, it, vi } from "vitest";
+import { fireEvent, renderPureUi, screen, within } from "@notrelix/testing";
+
+import {
+  profileCopyFixture,
+  profileDefaultScenario,
+  profileEdgeDataScenario,
+  profileErrorScenario,
+  profileFixture,
+  profileLoadingScenario,
+  profileSaveErrorScenario,
+  profileSavedScenario,
+  profileSavingScenario,
+  type ProfileScenario,
+} from "../../../verification/account-profile-fixtures";
+import { en } from "../account-profile.copy";
+import {
+  AccountProfileSurface,
+  type AccountProfileSurfaceProps,
+} from "../account-profile-surface";
+
+const LOCALES = ["vi", "en"] as const;
+
+function renderProfile(
+  scenario: ProfileScenario,
+  overrides: Partial<AccountProfileSurfaceProps> = {},
+) {
+  const props: AccountProfileSurfaceProps = {
+    ...scenario,
+    onSave: vi.fn(),
+    onRetry: vi.fn(),
+    onPhotoChange: vi.fn(),
+    ...overrides,
+  };
+  const view = renderPureUi(<AccountProfileSurface {...props} />);
+  return { props, view };
+}
+
+describe("AccountProfileSurface", () => {
+  it("FUI[account.profile:render] shows the profile with bound labels in vi and en", () => {
+    for (const locale of LOCALES) {
+      const copy = profileCopyFixture(locale);
+      const { view } = renderProfile(profileDefaultScenario(locale));
+
+      expect(
+        screen.getByRole("heading", { level: 2, name: copy.title }),
+      ).toBeTruthy();
+      expect(
+        (screen.getByLabelText(copy.nameLabel) as HTMLInputElement).value,
+      ).toBe("Ada Lovelace");
+      expect(
+        (screen.getByLabelText(copy.jobTitleLabel) as HTMLInputElement).value,
+      ).toBe("Implementation lead");
+      const email = screen.getByLabelText(copy.emailLabel) as HTMLInputElement;
+      expect(email.value).toBe("ada@example.com");
+      expect(email.readOnly).toBe(true);
+      expect(
+        screen.getByText(
+          copy.emailManaged
+            .replace("{{workspace}}", "Minh An Group")
+            .replace("{{provider}}", "Microsoft Entra"),
+        ),
+      ).toBeTruthy();
+      expect(
+        (screen.getByLabelText(copy.timezoneLabel) as HTMLSelectElement).value,
+      ).toBe("Asia/Ho_Chi_Minh");
+      expect(
+        (screen.getByLabelText(copy.dateFormatLabel) as HTMLSelectElement)
+          .value,
+      ).toBe("dd/mm/yyyy");
+      // Nothing changed yet: no save bar.
+      expect(screen.queryByRole("region", { name: copy.unsavedRegion })).toBe(
+        null,
+      );
+      view.unmount();
+    }
+  });
+
+  it("FUI[account.profile:dirty] shows the save bar with what changed, and hides it when changes are undone", () => {
+    for (const locale of LOCALES) {
+      const copy = profileCopyFixture(locale);
+      const { view } = renderProfile(profileDefaultScenario(locale));
+      const phone = screen.getByLabelText(copy.phoneLabel);
+      fireEvent.change(phone, { target: { value: "0988 000 111" } });
+      const bar = screen.getByRole("region", { name: copy.unsavedRegion });
+      expect(bar.textContent).toContain(copy.unsaved.one);
+      expect(bar.textContent).toContain(copy.phoneLabel);
+      expect(screen.getByText(copy.edited)).toBeTruthy();
+
+      fireEvent.change(screen.getByLabelText(copy.jobTitleLabel), {
+        target: { value: "Director" },
+      });
+      expect(
+        screen.getByRole("region", { name: copy.unsavedRegion }).textContent,
+      ).toContain(copy.unsaved.other.replace("{{count}}", "2"));
+
+      // Back to the saved values (trailing space ignored): nothing to save.
+      fireEvent.change(phone, { target: { value: "0912 468 135 " } });
+      fireEvent.change(screen.getByLabelText(copy.jobTitleLabel), {
+        target: { value: "Implementation lead" },
+      });
+      expect(screen.queryByRole("region", { name: copy.unsavedRegion })).toBe(
+        null,
+      );
+      view.unmount();
+    }
+  });
+
+  it("FUI[account.profile:save] sends the trimmed values with the chosen time zone and date format", () => {
+    for (const locale of LOCALES) {
+      const copy = profileCopyFixture(locale);
+      const { props, view } = renderProfile(profileDefaultScenario(locale));
+
+      fireEvent.change(screen.getByLabelText(copy.nameLabel), {
+        target: { value: "  Ada King  " },
+      });
+      fireEvent.change(screen.getByLabelText(copy.timezoneLabel), {
+        target: { value: "Asia/Tokyo" },
+      });
+      fireEvent.change(screen.getByLabelText(copy.dateFormatLabel), {
+        target: { value: "yyyy-mm-dd" },
+      });
+      fireEvent.click(screen.getByRole("button", { name: copy.save }));
+
+      expect(props.onSave).toHaveBeenCalledTimes(1);
+      expect(props.onSave).toHaveBeenCalledWith({
+        name: "Ada King",
+        jobTitle: "Implementation lead",
+        phone: "0912 468 135",
+        timezone: "Asia/Tokyo",
+        dateFormat: "yyyy-mm-dd",
+      });
+      view.unmount();
+    }
+  });
+
+  it("FUI[account.profile:discard] restores the saved values", () => {
+    for (const locale of LOCALES) {
+      const copy = profileCopyFixture(locale);
+      const { view } = renderProfile(profileDefaultScenario(locale));
+      fireEvent.change(screen.getByLabelText(copy.nameLabel), {
+        target: { value: "Someone else" },
+      });
+      fireEvent.click(screen.getByRole("button", { name: copy.discard }));
+      expect(
+        (screen.getByLabelText(copy.nameLabel) as HTMLInputElement).value,
+      ).toBe("Ada Lovelace");
+      expect(screen.queryByRole("button", { name: copy.discard })).toBeNull();
+      view.unmount();
+    }
+  });
+
+  it("FUI[account.profile:validation] blocks an empty name and a bad phone and explains why", () => {
+    for (const locale of LOCALES) {
+      const copy = profileCopyFixture(locale);
+      const { props, view } = renderProfile(profileDefaultScenario(locale));
+      const name = screen.getByLabelText(copy.nameLabel);
+
+      fireEvent.change(name, { target: { value: "   " } });
+      expect(screen.getByText(copy.nameRequired)).toBeTruthy();
+      expect(name.getAttribute("aria-invalid")).toBe("true");
+      expect(
+        (screen.getByRole("button", { name: copy.save }) as HTMLButtonElement)
+          .disabled,
+      ).toBe(true);
+      fireEvent.submit(name.closest("form") as HTMLFormElement);
+
+      fireEvent.change(name, { target: { value: "Ada" } });
+      fireEvent.change(screen.getByLabelText(copy.phoneLabel), {
+        target: { value: "call me" },
+      });
+      expect(screen.getByText(copy.phoneInvalid)).toBeTruthy();
+      fireEvent.submit(name.closest("form") as HTMLFormElement);
+      expect(props.onSave).not.toHaveBeenCalled();
+      view.unmount();
+    }
+  });
+
+  it("FUI[account.profile:saving] disables the form and names the pending save", () => {
+    for (const locale of LOCALES) {
+      const copy = profileCopyFixture(locale);
+      const { view } = renderProfile(profileSavingScenario(locale), {
+        profile: {
+          status: "ready",
+          data: profileFixture({ name: "Ada" }),
+        },
+      });
+      // The draft only differs after an edit; the pending state alone keeps
+      // the fields locked.
+      expect(
+        (screen.getByLabelText(copy.nameLabel) as HTMLInputElement).disabled,
+      ).toBe(true);
+      view.unmount();
+    }
+  });
+
+  it("FUI[account.profile:saved] confirms the save and the failure is announced", () => {
+    for (const locale of LOCALES) {
+      const copy = profileCopyFixture(locale);
+      const saved = renderProfile(profileSavedScenario(locale));
+      expect(screen.getByRole("status").textContent).toContain(copy.saved);
+      saved.view.unmount();
+
+      const failed = renderProfile(profileSaveErrorScenario(locale));
+      expect(screen.getByRole("alert").textContent).toContain(copy.saveError);
+      failed.view.unmount();
+    }
+  });
+
+  it("FUI[account.profile:loading] shows a named loading state without the form", () => {
+    for (const locale of LOCALES) {
+      const copy = profileCopyFixture(locale);
+      const { view } = renderProfile(profileLoadingScenario(locale));
+      expect(screen.getByRole("status", { name: copy.loading })).toBeTruthy();
+      expect(screen.queryByLabelText(copy.nameLabel)).toBeNull();
+      view.unmount();
+    }
+  });
+
+  it("FUI[account.profile:error] offers a retry when the profile cannot load", () => {
+    for (const locale of LOCALES) {
+      const copy = profileCopyFixture(locale);
+      const { props, view } = renderProfile(profileErrorScenario(locale));
+      const alert = screen.getByRole("alert");
+      expect(alert.textContent).toContain(copy.loadError);
+      fireEvent.click(within(alert).getByRole("button", { name: copy.retry }));
+      expect(props.onRetry).toHaveBeenCalledTimes(1);
+      view.unmount();
+    }
+  });
+
+  it("FUI[account.profile:photo] hands the chosen photo over and reports a refused one", () => {
+    const copy = profileCopyFixture("en");
+    const { props, view } = renderProfile(profileDefaultScenario("en"));
+    const button = screen.getByRole("button", { name: copy.changePhotoLabel });
+    expect(button.textContent).toBe(copy.changePhoto);
+    const input = document.querySelector(
+      "input[type=file]",
+    ) as HTMLInputElement;
+    const file = new File(["x"], "me.png", { type: "image/png" });
+    fireEvent.change(input, { target: { files: [file] } });
+    expect(props.onPhotoChange).toHaveBeenCalledWith(file);
+    view.unmount();
+
+    const refused = renderProfile({
+      ...profileDefaultScenario("en"),
+      photoError: true,
+    });
+    expect(screen.getByRole("alert").textContent).toContain(copy.photoError);
+    refused.view.unmount();
+  });
+
+  it("FUI[account.profile:edge] keeps long Vietnamese data and unknown choices readable", () => {
+    const copy = profileCopyFixture("vi");
+    const { view } = renderProfile(profileEdgeDataScenario());
+    const name = screen.getByLabelText(copy.nameLabel) as HTMLInputElement;
+    expect(name.value).toContain("Nguyễn Thị Phương Anh");
+    const email = screen.getByLabelText(copy.emailLabel) as HTMLInputElement;
+    expect(email.value.length).toBeGreaterThan(60);
+    expect(email.readOnly).toBe(true);
+    // Nobody manages this email: the plain help shows instead.
+    expect(screen.getByText(copy.emailHelp)).toBeTruthy();
+    // A zone outside the list stays selectable by its raw id.
+    expect(
+      (screen.getByLabelText(copy.timezoneLabel) as HTMLSelectElement).value,
+    ).toBe("Pacific/Auckland");
+    const alerts = screen.getAllByRole("alert").map((a) => a.textContent);
+    expect(alerts.join(" ")).toContain(copy.saveError);
+    expect(alerts.join(" ")).toContain(copy.photoError);
+    view.unmount();
+  });
+
+  it("FUI[account.profile:copy] leaves no English literal in the Vietnamese page", () => {
+    const { view } = renderProfile(profileSaveErrorScenario("vi"));
+    const text = document.body.textContent ?? "";
+    for (const literal of [
+      en.title,
+      en.description,
+      en.nameLabel,
+      en.emailManaged.slice(0, 10),
+      en.timezoneLabel,
+      en.dateFormatLabel,
+      en.saveError,
+    ]) {
+      expect(text).not.toContain(literal);
+    }
+    expect((screen.getByLabelText("Tên") as HTMLInputElement).placeholder).toBe(
+      "Tên của bạn",
+    );
+    view.unmount();
+  });
+});

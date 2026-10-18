@@ -23,7 +23,7 @@ public class GetWorkspaceActivityQueryHandler : IRequestHandler<GetWorkspaceActi
     {
         var workspaceExists = await _context.Workspaces
             .AsNoTracking()
-            .AnyAsync(w => w.Id == request.WorkspaceId && w.Status == WorkspaceStatus.Active && !w.IsDeleted, ct);
+            .AnyAsync(w => w.Id == request.WorkspaceId && w.Status == WorkspaceStatus.Active && w.DeletedAt == null, ct);
 
         if (!workspaceExists)
             throw new NotFoundException(nameof(Workspace), request.WorkspaceId);

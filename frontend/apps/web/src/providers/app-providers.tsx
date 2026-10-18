@@ -1,14 +1,22 @@
 import { type ReactNode, useMemo } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "sonner";
 import { createAuthProvider } from "@notrelix/features-auth";
 import { endpoints } from "@notrelix/contracts";
 import { AppRuntimeProvider } from "@notrelix/runtime-web";
 import { WorkManagementServicesProvider } from "@notrelix/work-management-state";
-import { ThemeProvider, useTheme } from "@notrelix/ui-web";
+import { I18nProvider } from "@notrelix/i18n";
+import { ThemeProvider, Toaster, useTheme } from "@notrelix/ui-web";
 import type { WebApplicationServices } from "../composition/application-services";
 import { ApplicationServicesProvider } from "../composition/application-services-context";
 import { GlobalErrorBoundary } from "../components/global-error-boundary";
+import { webCatalogs } from "../i18n/catalogs";
+
+const browserLocales =
+  typeof navigator === "undefined" ? [] : [...navigator.languages];
+
+function applyDocumentLanguage(locale: string) {
+  document.documentElement.lang = locale;
+}
 
 export { useTheme };
 
@@ -35,12 +43,19 @@ export function AppProviders({
         <AppRuntimeProvider runtime={runtime}>
           <QueryClientProvider client={queryClient}>
             <FeatureAuthProvider>
-              <ThemeProvider storageKey="theme" storage={runtime.storage}>
-                <WorkManagementServicesProvider services={workManagement}>
-                  {children}
-                  <Toaster />
-                </WorkManagementServicesProvider>
-              </ThemeProvider>
+              <I18nProvider
+                catalogs={webCatalogs}
+                storage={runtime.storage}
+                browserLocales={browserLocales}
+                onLocaleChange={applyDocumentLanguage}
+              >
+                <ThemeProvider storage={runtime.storage}>
+                  <WorkManagementServicesProvider services={workManagement}>
+                    {children}
+                    <Toaster />
+                  </WorkManagementServicesProvider>
+                </ThemeProvider>
+              </I18nProvider>
             </FeatureAuthProvider>
           </QueryClientProvider>
         </AppRuntimeProvider>

@@ -1,127 +1,93 @@
-import { useState, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  createUsePreferences,
-  createUseUpdatePreferences,
+  AccountNotificationsSurface,
+  createUseProfile,
+  useAccountNotificationsCopy,
+  type AccountNotificationsState,
+  type AccountNotificationValues,
+  type AccountSaveStatus,
 } from "@notrelix/features-account";
 import { useAppRuntime } from "@notrelix/runtime-web";
-import { Button } from "@notrelix/ui-web";
-import { toast } from "sonner";
+import { accountPagesKeys, useAccountPagesApi } from "./use-account-pages";
 
-const NOTIFICATION_CHANNELS = [
-  {
-    id: "email",
-    label: "Email notifications",
-    description: "Receive notifications via email",
-  },
-  {
-    id: "in_app",
-    label: "In-app notifications",
-    description: "Show notifications in the app",
-  },
-  {
-    id: "desktop",
-    label: "Desktop push notifications",
-    description: "Receive push notifications on your desktop",
-  },
-];
+const GMT: Record<string, string> = {
+  UTC: "GMT",
+  "Asia/Ho_Chi_Minh": "GMT+7",
+  "Asia/Tokyo": "GMT+9",
+  "Europe/Paris": "GMT+1",
+};
 
 export function AccountNotificationsPage() {
   const { api: runtimeClient } = useAppRuntime();
+  const copy = useAccountNotificationsCopy();
+  const api = useAccountPagesApi();
+  const queryClient = useQueryClient();
+  const [save, setSave] = useState<AccountSaveStatus>({ state: "idle" });
 
-  const usePreferences = useMemo(
+  const useProfile = useMemo(
     () =>
-      createUsePreferences({
+      createUseProfile({
         api: runtimeClient.api,
         endpoints: runtimeClient.endpoints,
       }),
     [runtimeClient],
   );
-
-  const useUpdatePreferences = useMemo(
-    () =>
-      createUseUpdatePreferences({
-        api: runtimeClient.api,
-        endpoints: runtimeClient.endpoints,
+  const { profile } = useProfile();
+  const matrix = useQuery({
+    queryKey: accountPagesKeys.notifications,
+    queryFn: () => api.getNotificationMatrix(),
+    retry: false,
+  });
+  const details = useQuery({
+    queryKey: accountPagesKeys.details,
+    queryFn: () => api.getDetails(),
+    retry: false,
+  });
+  const write = useMutation({
+    mutationFn: (values: AccountNotificationValues) =>
+      api.saveNotificationMatrix(values),
+    onSuccess: () =>
+      queryClient.invalidateQueries({
+        queryKey: accountPagesKeys.notifications,
       }),
-    [runtimeClient],
-  );
-
-  const { preferences: _preferences, isLoading } = usePreferences();
-  const updateMutation = useUpdatePreferences();
-
-  const [settings, setSettings] = useState({
-    email: true,
-    in_app: true,
-    desktop: false,
   });
 
-  const handleToggle = (id: keyof typeof settings) => {
-    setSettings((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
+  const state = useMemo<AccountNotificationsState>(
+    () =>
+      matrix.data
+        ? {
+            status: "ready",
+            values: matrix.data,
+            personName: profile?.name ?? "",
+            zoneLabel: GMT[details.data?.timezone ?? ""] ?? "GMT+7",
+          }
+        : matrix.isError
+          ? { status: "error" }
+          : { status: "loading" },
+    [matrix.data, matrix.isError, profile?.name, details.data?.timezone],
+  );
 
-  const handleSave = async () => {
-    try {
-      await updateMutation.mutateAsync({});
-      toast.success("Notification preferences saved");
-    } catch {
-      toast.success("Notification preferences saved");
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <div className="space-y-4">
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="h-16 bg-muted rounded-lg animate-pulse" />
-        ))}
-      </div>
-    );
-  }
+  const handleSave = useCallback(
+    async (values: AccountNotificationValues) => {
+      setSave({ state: "saving" });
+      try {
+        await write.mutateAsync(values);
+        setSave({ state: "saved" });
+      } catch {
+        setSave({ state: "error" });
+      }
+    },
+    [write],
+  );
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="font-semibold text-sm mb-1">Notifications</h2>
-        <p className="text-xs text-muted-foreground">
-          Choose how you want to be notified.
-        </p>
-      </div>
-
-      <div className="space-y-3">
-        {NOTIFICATION_CHANNELS.map((channel) => (
-          <div
-            key={channel.id}
-            className="flex items-center justify-between rounded-lg border border-border p-4"
-          >
-            <div>
-              <p className="text-sm font-medium">{channel.label}</p>
-              <p className="text-xs text-muted-foreground">
-                {channel.description}
-              </p>
-            </div>
-            <button
-              onClick={() => handleToggle(channel.id as keyof typeof settings)}
-              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
-                settings[channel.id as keyof typeof settings]
-                  ? "bg-primary"
-                  : "bg-input"
-              }`}
-            >
-              <span
-                className={`pointer-events-none block size-4 rounded-full bg-background shadow-lg ring-0 transition-transform ${
-                  settings[channel.id as keyof typeof settings]
-                    ? "translate-x-4"
-                    : "translate-x-0"
-                }`}
-              />
-            </button>
-          </div>
-        ))}
-      </div>
-
-      <Button onClick={handleSave} disabled={updateMutation.isPending}>
-        {updateMutation.isPending ? "Saving..." : "Save preferences"}
-      </Button>
-    </div>
+    <AccountNotificationsSurface
+      copy={copy}
+      preferences={state}
+      save={save}
+      onSave={(values) => void handleSave(values)}
+      onRetry={() => void matrix.refetch()}
+    />
   );
 }

@@ -1,4 +1,5 @@
-import { Skeleton } from "@notrelix/ui-web";
+import { Skeleton, cn } from "@notrelix/ui-web";
+import { kanbanColumnWidthClass } from "./kanban-layout";
 
 export function KanbanSkeleton() {
   return (
@@ -20,7 +21,10 @@ export function KanbanSkeleton() {
         {Array.from({ length: 4 }).map((_, colIndex) => (
           <div
             key={colIndex}
-            className="flex w-[290px] shrink-0 flex-col gap-3 rounded-2xl border border-border bg-muted/20 p-3"
+            className={cn(
+              "flex shrink-0 flex-col gap-3 rounded-2xl border border-border bg-muted/20 p-3",
+              kanbanColumnWidthClass,
+            )}
           >
             {/* Header skeleton */}
             <div className="flex items-center justify-between border-b border-border pb-2">

@@ -1,29 +1,89 @@
 <!doctype html>
-<html lang="en">
+<html lang="vi">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700&display=swap"
-      rel="stylesheet"
-    />
     <title>Notrelix</title>
+    <!--
+      Pre-paint theme (no flash). Generated from @notrelix/ui-web themeInitScript;
+      src/__tests__/theme-init-script.component.test.ts proves it behaves identically.
+    -->
     <script>
       (function () {
+        var c = {
+          k: { mode: "notrelix-theme-mode", accent: "notrelix-theme-accent" },
+          l: {
+            mode: ["theme", "notrelix-ui-theme"],
+            accent: ["notrelix-color-theme"],
+          },
+          m: {
+            default: "blue",
+            ocean: "blue",
+            midnight: "blue",
+            sage: "sage",
+            aurora: "sage",
+            editorial: "amber",
+            sunset: "coral",
+            rose: "ember",
+          },
+          modes: ["light", "dark", "system", "high-contrast"],
+          accents: ["blue", "coral", "ember", "sage", "amber"],
+          d: { mode: "light", accent: "blue" },
+        };
+        var r = document.documentElement,
+          mode = c.d.mode,
+          accent = c.d.accent;
         try {
-          var theme = localStorage.getItem("theme") || "system";
-          var root = document.documentElement;
-          root.classList.add(
-            theme === "system"
-              ? window.matchMedia("(prefers-color-scheme: dark)").matches
-                ? "dark"
-                : "light"
-              : theme,
-          );
+          var s = window.localStorage;
+          var g = function (k) {
+            try {
+              return s.getItem(k);
+            } catch (e) {
+              return null;
+            }
+          };
+          var v = g(c.k.mode),
+            i;
+          if (c.modes.indexOf(v) >= 0) {
+            mode = v;
+          } else {
+            for (i = 0; i < c.l.mode.length; i++) {
+              v = g(c.l.mode[i]);
+              if (v === "light" || v === "dark" || v === "system") {
+                mode = v;
+                break;
+              }
+            }
+          }
+          v = g(c.k.accent);
+          if (c.accents.indexOf(v) >= 0) {
+            accent = v;
+          } else {
+            for (i = 0; i < c.l.accent.length; i++) {
+              v = g(c.l.accent[i]);
+              if (v && c.m[v]) {
+                accent = c.m[v];
+                break;
+              }
+            }
+          }
         } catch (e) {}
+        var dark = mode === "dark";
+        try {
+          if (mode === "system") {
+            dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+          }
+        } catch (e) {}
+        r.classList.remove("light", "dark");
+        r.classList.add(dark ? "dark" : "light");
+        if (mode === "high-contrast") {
+          r.setAttribute("data-contrast", "high");
+        } else {
+          r.removeAttribute("data-contrast");
+        }
+        r.setAttribute("data-accent", accent);
+        r.style.colorScheme = dark ? "dark" : "light";
       })();
     </script>
   </head>

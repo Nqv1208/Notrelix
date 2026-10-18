@@ -456,6 +456,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/pages/{pageId}/move-to-space": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Move a root page and its subtree into a space or back to the workspace root */
+        post: operations["Documents.Pages.MoveToSpace"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/resources/{resourceType}/{resourceId}/permissions": {
         parameters: {
             query?: never;
@@ -1429,7 +1446,7 @@ export interface paths {
         patch: operations["WorkManagement.BoardFields.Update"];
         trace?: never;
     };
-    "/api/v1/boards/{boardId}/fields/reorder": {
+    "/api/v1/boards/{boardId}/fields/{fieldId}/move": {
         parameters: {
             query?: never;
             header?: never;
@@ -1438,8 +1455,8 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Reorder board fields */
-        post: operations["WorkManagement.BoardFields.Reorder"];
+        /** Move a field relative to its neighbors */
+        post: operations["WorkManagement.BoardFields.Move"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1481,7 +1498,7 @@ export interface paths {
         patch: operations["WorkManagement.BoardFields.UpdateFieldOption"];
         trace?: never;
     };
-    "/api/v1/boards/{boardId}/fields/{fieldId}/options/reorder": {
+    "/api/v1/boards/{boardId}/fields/{fieldId}/options/{optionId}/move": {
         parameters: {
             query?: never;
             header?: never;
@@ -1490,8 +1507,8 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Reorder field options */
-        post: operations["WorkManagement.BoardFields.ReorderFieldOptions"];
+        /** Move a field option relative to its neighbors */
+        post: operations["WorkManagement.BoardFields.MoveFieldOption"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1532,23 +1549,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/boards/{boardId}/groups/reorder": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Reorder groups in a board */
-        post: operations["WorkManagement.BoardGroups.Reorder"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/board-groups/{groupId}": {
         parameters: {
             query?: never;
@@ -1578,6 +1578,23 @@ export interface paths {
         put?: never;
         /** Duplicate a group and its items */
         post: operations["WorkManagement.BoardGroups.Duplicate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/board-groups/{groupId}/move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Move a group relative to its neighbors */
+        post: operations["WorkManagement.BoardGroups.Move"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1929,6 +1946,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/my-work/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List open Items assigned to the current user in a workspace
+         * @description Cursor-paginated (default 50, max 100). Ordered by due date, earliest first and undated last, so the client can group items into due windows. Pass nextCursor back as cursor for the next page.
+         */
+        get: operations["WorkManagement.BoardItems.ListMyWork"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/boards/{boardId}/preferences/{viewId}": {
         parameters: {
             query?: never;
@@ -2051,6 +2088,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/boards/{boardId}/access": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the caller's access to a board and who can reach it */
+        get: operations["WorkManagement.Boards.GetAccess"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/boards/{boardId}/archive": {
         parameters: {
             query?: never;
@@ -2115,6 +2169,23 @@ export interface paths {
         head?: never;
         /** Update board visibility */
         patch: operations["WorkManagement.Boards.UpdateVisibility"];
+        trace?: never;
+    };
+    "/api/v1/boards/{boardId}/move-to-space": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Move a board into a space or back to the workspace root */
+        post: operations["WorkManagement.Boards.MoveToSpace"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/boards/{boardId}/members": {
@@ -2340,6 +2411,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/checklists/{checklistId}/move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Move a checklist relative to its neighbors */
+        post: operations["WorkManagement.Checklists.Move"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/checklist-items/{itemId}": {
         parameters: {
             query?: never;
@@ -2369,6 +2457,23 @@ export interface paths {
         put?: never;
         /** Toggle the completion status of a checklist item */
         post: operations["WorkManagement.Checklists.ToggleItem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/checklist-items/{itemId}/move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Move a checklist item relative to its neighbors */
+        post: operations["WorkManagement.Checklists.MoveItem"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3149,6 +3254,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/recents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the current member's recently opened Boards and Docs
+         * @description Newest first, at most 30 entries. References only; display names come from the Board and Doc lists.
+         */
+        get: operations["Workspaces.Navigation.ListRecents"];
+        put?: never;
+        /**
+         * Record that the current member opened a Board or Doc
+         * @description Upserts the member's recent entry and keeps the 30 most recent per workspace.
+         */
+        post: operations["Workspaces.Navigation.RecordRecent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/pins": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the current member's pinned Boards and Docs
+         * @description Ordered by pin time, newest first. References only; display names come from the Board and Doc lists.
+         */
+        get: operations["Workspaces.Navigation.ListPins"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/pins/{kind}/{resourceId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Pin a Board or Doc for the current member
+         * @description Idempotent: pinning an already pinned resource is a no-op. At most 50 pins per member per workspace.
+         */
+        put: operations["Workspaces.Navigation.Pin"];
+        post?: never;
+        /**
+         * Remove the current member's pin
+         * @description Idempotent: unpinning a resource that is not pinned succeeds without change.
+         */
+        delete: operations["Workspaces.Navigation.Unpin"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/settings": {
         parameters: {
             query?: never;
@@ -3179,6 +3352,23 @@ export interface paths {
         put?: never;
         /** Create a new space in the workspace */
         post: operations["Workspaces.Spaces.CreateSpace"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/spaces/tree": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the caller's visible space org tree as a parent-linked list */
+        get: operations["Workspaces.Spaces.GetSpaceTree"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3306,6 +3496,59 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/spaces/{spaceId}/move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Move a space (with its subtree) under another parent or to the root, at a sibling position */
+        post: operations["Workspaces.Spaces.MoveSpace"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/spaces/{spaceId}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the user and team entries of a space */
+        get: operations["Workspaces.Spaces.GetSpaceMembers"];
+        put?: never;
+        /** Add a user or a team to a space with a space role */
+        post: operations["Workspaces.Spaces.AddSpaceMember"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/spaces/{spaceId}/members/{subjectType}/{subjectId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove a user or team entry from a space */
+        delete: operations["Workspaces.Spaces.RemoveSpaceMember"];
+        options?: never;
+        head?: never;
+        /** Change the space role of a user or team entry */
+        patch: operations["Workspaces.Spaces.ChangeSpaceMemberRole"];
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/teams": {
         parameters: {
             query?: never;
@@ -3418,7 +3661,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** List the active members of a team */
+        get: operations["Workspaces.Teams.GetTeamMembers"];
         put?: never;
         /** Add a member to a team */
         post: operations["Workspaces.Teams.AddTeamMember"];
@@ -3692,6 +3936,14 @@ export interface components {
             title?: string | null;
             /** Format: uuid */
             parentId?: string | null;
+            /** Format: uuid */
+            spaceId?: string | null;
+        };
+        "Notrelix.API.Contracts.Documents.Pages.Requests.MovePageToSpaceRequest": {
+            /** Format: uuid */
+            spaceId?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
         };
         "Notrelix.API.Contracts.Documents.Pages.Requests.UpdatePageRequest": {
             title?: string | null;
@@ -3747,23 +3999,44 @@ export interface components {
             name?: string | null;
             type?: string | null;
             settingsJson?: string | null;
-            /** Format: double */
-            position?: number;
+            /** Format: uuid */
+            previousSiblingId?: string | null;
+            /** Format: uuid */
+            nextSiblingId?: string | null;
+        };
+        "Notrelix.API.Contracts.WorkManagement.BoardFields.Requests.MoveBoardFieldRequest": {
+            /** Format: int64 */
+            expectedVersion?: number;
+            /** Format: uuid */
+            previousSiblingId?: string | null;
+            /** Format: uuid */
+            nextSiblingId?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.BoardFields.Requests.UpdateBoardFieldRequest": {
             name?: string | null;
-            type?: string | null;
             settingsJson?: string | null;
             /** Format: int64 */
-            expectedVersion?: number | null;
+            expectedVersion?: number;
         };
         "Notrelix.API.Contracts.WorkManagement.BoardGroups.Requests.CreateBoardGroupRequest": {
             title?: string | null;
-            /** Format: double */
-            position?: number | null;
             color?: string | null;
+            /** Format: uuid */
+            previousSiblingId?: string | null;
+            /** Format: uuid */
+            nextSiblingId?: string | null;
+        };
+        "Notrelix.API.Contracts.WorkManagement.BoardGroups.Requests.MoveBoardGroupRequest": {
+            /** Format: int64 */
+            expectedVersion?: number;
+            /** Format: uuid */
+            previousSiblingId?: string | null;
+            /** Format: uuid */
+            nextSiblingId?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.BoardGroups.Requests.UpdateBoardGroupRequest": {
+            /** Format: int64 */
+            expectedVersion?: number;
             title?: string | null;
             color?: string | null;
         };
@@ -3783,8 +4056,10 @@ export interface components {
             /** Format: uuid */
             groupId?: string;
             title?: string | null;
-            /** Format: double */
-            position?: number;
+            /** Format: uuid */
+            previousSiblingId?: string | null;
+            /** Format: uuid */
+            nextSiblingId?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.LinkPageToBoardItemRequest": {
             /** Format: uuid */
@@ -3793,8 +4068,12 @@ export interface components {
         "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.MoveBoardItemRequest": {
             /** Format: uuid */
             groupId?: string;
-            /** Format: double */
-            position?: number;
+            /** Format: int64 */
+            expectedVersion?: number;
+            /** Format: uuid */
+            previousSiblingId?: string | null;
+            /** Format: uuid */
+            nextSiblingId?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.SetBoardItemDueDateRequest": {
             /** Format: date-time */
@@ -3804,14 +4083,27 @@ export interface components {
         };
         "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.UpdateBoardItemFieldValueRequest": {
             value?: unknown;
+            /** Format: int64 */
+            expectedVersion?: number;
         };
         "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.UpdateBoardItemFieldValuesRequest": {
+            /** Format: int64 */
+            expectedVersion?: number;
             values?: {
                 [key: string]: unknown;
             } | null;
             /** Format: uuid */
             fieldDefinitionId?: string | null;
             value?: unknown;
+        };
+        "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.UpdateBoardItemRequest": {
+            /** Format: int64 */
+            expectedVersion?: number;
+            title?: string | null;
+            /** Format: date-time */
+            dueDate?: string | null;
+            /** Format: date-time */
+            startDate?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.UpdateBoardItemStatusRequest": {
             status?: string | null;
@@ -3857,31 +4149,71 @@ export interface components {
             description?: string | null;
             background?: string | null;
             visibility?: string | null;
+            /** Format: uuid */
+            spaceId?: string | null;
+        };
+        "Notrelix.API.Contracts.WorkManagement.Boards.Requests.MoveBoardToSpaceRequest": {
+            /** Format: uuid */
+            spaceId?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
         };
         "Notrelix.API.Contracts.WorkManagement.Boards.Requests.UpdateBoardMemberRoleRequest": {
             role?: string | null;
+        };
+        "Notrelix.API.Contracts.WorkManagement.Boards.Requests.UpdateBoardRequest": {
+            /** Format: int64 */
+            expectedVersion?: number;
+            title?: string | null;
+            description?: string | null;
+            background?: string | null;
+            visibility?: components["schemas"]["Notrelix.Domain.WorkManagement.Boards.BoardVisibility"];
         };
         "Notrelix.API.Contracts.WorkManagement.Boards.Requests.UpdateBoardVisibilityRequest": {
             visibility?: components["schemas"]["Notrelix.Domain.WorkManagement.Boards.BoardVisibility"];
         };
         "Notrelix.API.Contracts.WorkManagement.Checklists.Requests.CreateChecklistItemRequest": {
             title?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
+            /** Format: uuid */
+            previousSiblingId?: string | null;
+            /** Format: uuid */
+            nextSiblingId?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.Checklists.Requests.CreateChecklistRequest": {
             title?: string | null;
+            /** Format: uuid */
+            previousSiblingId?: string | null;
+            /** Format: uuid */
+            nextSiblingId?: string | null;
+        };
+        "Notrelix.API.Contracts.WorkManagement.Checklists.Requests.MoveChecklistItemRequest": {
+            /** Format: int64 */
+            expectedVersion?: number;
+            /** Format: uuid */
+            previousSiblingId?: string | null;
+            /** Format: uuid */
+            nextSiblingId?: string | null;
+        };
+        "Notrelix.API.Contracts.WorkManagement.Checklists.Requests.MoveChecklistRequest": {
+            /** Format: int64 */
+            expectedVersion?: number;
+            /** Format: uuid */
+            previousSiblingId?: string | null;
+            /** Format: uuid */
+            nextSiblingId?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.Checklists.Requests.UpdateChecklistItemRequest": {
+            /** Format: int64 */
+            expectedVersion?: number;
             title?: string | null;
             isChecked?: boolean | null;
-            /** Format: date-time */
-            dueDate?: string | null;
-            /** Format: uuid */
-            assigneeId?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.Checklists.Requests.UpdateChecklistRequest": {
+            /** Format: int64 */
+            expectedVersion?: number;
             title?: string | null;
-            /** Format: double */
-            position?: number | null;
         };
         "Notrelix.API.Contracts.WorkManagement.Forms.Requests.AddFormQuestionRequest": {
             questionKey?: string | null;
@@ -3953,6 +4285,8 @@ export interface components {
         "Notrelix.API.Contracts.WorkManagement.Templates.Requests.CreateBoardFromTemplateRequest": {
             workspaceId?: string | null;
             name?: string | null;
+            /** Format: uuid */
+            spaceId?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.Templates.Requests.CreateBoardTemplateRequest": {
             name?: string | null;
@@ -3973,6 +4307,11 @@ export interface components {
         "Notrelix.API.Contracts.Workspaces.Members.Requests.UpdateMemberRoleRequest": {
             role?: components["schemas"]["Notrelix.Domain.Workspaces.Members.WorkspaceRole"];
         };
+        "Notrelix.API.Contracts.Workspaces.Navigation.Requests.RecordRecentResourceRequest": {
+            kind?: string | null;
+            /** Format: uuid */
+            resourceId?: string;
+        };
         "Notrelix.API.Contracts.Workspaces.Settings.Requests.UpdateWorkspaceSettingsRequest": {
             allowPublicSharing?: boolean;
             enforceMfa?: boolean;
@@ -3980,6 +4319,19 @@ export interface components {
             defaultMemberRole?: string | null;
             /** Format: int32 */
             invitationExpiryDays?: number;
+            /** Format: int64 */
+            expectedVersion?: number;
+        };
+        "Notrelix.API.Contracts.Workspaces.Spaces.Requests.AddSpaceMemberRequest": {
+            subjectType?: string | null;
+            /** Format: uuid */
+            subjectId?: string;
+            role?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
+        };
+        "Notrelix.API.Contracts.Workspaces.Spaces.Requests.ChangeSpaceMemberRoleRequest": {
+            role?: string | null;
             /** Format: int64 */
             expectedVersion?: number;
         };
@@ -3993,6 +4345,23 @@ export interface components {
             name?: string | null;
             visibility?: string | null;
             description?: string | null;
+            spaceType?: string | null;
+            /** Format: uuid */
+            parentSpaceId?: string | null;
+            /** Format: uuid */
+            previousSiblingId?: string | null;
+            /** Format: uuid */
+            nextSiblingId?: string | null;
+        };
+        "Notrelix.API.Contracts.Workspaces.Spaces.Requests.MoveSpaceRequest": {
+            /** Format: uuid */
+            newParentSpaceId?: string | null;
+            /** Format: uuid */
+            previousSiblingId?: string | null;
+            /** Format: uuid */
+            nextSiblingId?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
         };
         "Notrelix.API.Contracts.Workspaces.Spaces.Requests.RenameSpaceRequest": {
             name?: string | null;
@@ -4004,9 +4373,17 @@ export interface components {
             /** Format: uuid */
             userId?: string;
             role?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
+        };
+        "Notrelix.API.Contracts.Workspaces.Teams.Requests.ArchiveTeamRequest": {
+            /** Format: int64 */
+            expectedVersion?: number;
         };
         "Notrelix.API.Contracts.Workspaces.Teams.Requests.ChangeTeamMemberRoleRequest": {
             newRole?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
         };
         "Notrelix.API.Contracts.Workspaces.Teams.Requests.CreateTeamRequest": {
             name?: string | null;
@@ -4014,9 +4391,13 @@ export interface components {
         };
         "Notrelix.API.Contracts.Workspaces.Teams.Requests.RenameTeamRequest": {
             name?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
         };
         "Notrelix.API.Contracts.Workspaces.Teams.Requests.UpdateTeamDescriptionRequest": {
             description?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
         };
         "Notrelix.API.Contracts.Workspaces.Workspaces.Requests.ArchiveWorkspaceRequest": {
             /** Format: int64 */
@@ -4099,14 +4480,65 @@ export interface components {
         "Notrelix.API.Endpoints.WorkManagement.BoardFields.AddFieldOptionRequest": {
             name?: string | null;
             color?: string | null;
-            position?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
+            /** Format: uuid */
+            previousSiblingId?: string | null;
+            /** Format: uuid */
+            nextSiblingId?: string | null;
+            category?: string | null;
         };
-        "Notrelix.API.Endpoints.WorkManagement.BoardFields.ReorderFieldOptionsRequest": {
-            orderedOptionIds?: string[] | null;
+        "Notrelix.API.Endpoints.WorkManagement.BoardFields.MoveFieldOptionRequest": {
+            /** Format: int64 */
+            expectedVersion?: number;
+            /** Format: uuid */
+            previousSiblingId?: string | null;
+            /** Format: uuid */
+            nextSiblingId?: string | null;
         };
         "Notrelix.API.Endpoints.WorkManagement.BoardFields.UpdateFieldOptionRequest": {
             name?: string | null;
             color?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
+            category?: string | null;
+        };
+        "Notrelix.Application.Common.Models.CursorPageOfMyWorkItemDto": {
+            items?: components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetMyBoardItems.MyWorkItemDto"][] | null;
+            nextCursor?: string | null;
+            readonly hasNextPage?: boolean;
+        };
+        "Notrelix.Application.Features.Documents.DTOs.PageDto": {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            workspaceId?: string;
+            /** Format: uuid */
+            parentId?: string | null;
+            title?: string | null;
+            icon?: string | null;
+            coverImage?: string | null;
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: date-time */
+            updatedAt?: string | null;
+            /** Format: int64 */
+            version?: number;
+            /** Format: uuid */
+            spaceId?: string | null;
+        };
+        "Notrelix.Application.Features.Documents.DTOs.PageTreeItemDto": {
+            /** Format: uuid */
+            id?: string;
+            title?: string | null;
+            icon?: string | null;
+            /** Format: uuid */
+            parentId?: string | null;
+            hasChildren?: boolean;
+            /** Format: int64 */
+            version?: number;
+            /** Format: uuid */
+            spaceId?: string | null;
         };
         "Notrelix.Application.Features.Identity.ApiTokens.DTOs.ApiTokenSummaryDto": {
             /** Format: uuid */
@@ -4148,68 +4580,447 @@ export interface components {
             name: string | null;
             avatar?: string | null;
         };
-        "Notrelix.Application.Features.WorkManagement.BoardFields.Commands.ReorderBoardFields.ReorderBoardFieldsCommand": {
+        "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetMyBoardItems.MyWorkItemDto": {
+            /** Format: uuid */
+            id?: string;
             /** Format: uuid */
             boardId?: string;
-            items?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.ReorderItem"][] | null;
-            action?: components["schemas"]["Notrelix.Domain.Governance.Permissions.PermissionAction"];
-            resource?: components["schemas"]["Notrelix.Domain.SharedKernel.ResourceRef"];
-        };
-        "Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.ReorderBoardGroups.ReorderBoardGroupsCommand": {
             /** Format: uuid */
-            boardId?: string;
-            items?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.ReorderItem"][] | null;
-            action?: components["schemas"]["Notrelix.Domain.Governance.Permissions.PermissionAction"];
-            resource?: components["schemas"]["Notrelix.Domain.SharedKernel.ResourceRef"];
-        };
-        "Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItem.UpdateBoardItemCommand": {
-            /** Format: uuid */
-            boardItemId?: string;
-            title?: string | null;
-            descriptionMd?: string | null;
-            priority?: string | null;
-            cover?: string | null;
+            groupId?: string;
+            name?: string | null;
             /** Format: date-time */
-            dueDate?: string | null;
+            dueAt?: string | null;
             /** Format: date-time */
-            startDate?: string | null;
+            startedAt?: string | null;
+            /** Format: date-time */
+            updatedAt?: string | null;
             /** Format: int64 */
-            expectedVersion?: number | null;
-            action?: components["schemas"]["Notrelix.Domain.Governance.Permissions.PermissionAction"];
-            resource?: components["schemas"]["Notrelix.Domain.SharedKernel.ResourceRef"];
+            version?: number;
         };
-        "Notrelix.Application.Features.WorkManagement.Boards.Commands.UpdateBoard.UpdateBoardCommand": {
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardAccessDto": {
             /** Format: uuid */
             boardId?: string;
+            /** Format: int64 */
+            version?: number;
+            myLevel?: string | null;
+            mySource?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardAccessSourceDto"];
+            /** Format: int32 */
+            peopleCount?: number;
+            /** Format: int32 */
+            guestCount?: number;
+            peopleCountComplete?: boolean;
+            sources?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardAccessSourceCountDto"][] | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardAccessGrantorDto": {
+            /** Format: uuid */
+            userId?: string;
+            name?: string | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardAccessSourceCountDto": {
+            kind?: string | null;
+            /** Format: uuid */
+            id?: string | null;
+            name?: string | null;
+            /** Format: int32 */
+            count?: number;
+        };
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardAccessSourceDto": {
+            kind?: string | null;
+            grantedBy?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardAccessGrantorDto"];
+        };
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardDto": {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            workspaceId?: string;
             title?: string | null;
             description?: string | null;
             background?: string | null;
-            visibility?: components["schemas"]["Notrelix.Domain.WorkManagement.Boards.BoardVisibility"];
+            visibility?: string | null;
+            isArchived?: boolean;
+            /** Format: int32 */
+            memberCount?: number;
+            /** Format: int32 */
+            listCount?: number;
+            /** Format: date-time */
+            createdAt?: string;
             /** Format: int64 */
-            expectedVersion?: number | null;
-            action?: components["schemas"]["Notrelix.Domain.Governance.Permissions.PermissionAction"];
-            resource?: components["schemas"]["Notrelix.Domain.SharedKernel.ResourceRef"];
+            version?: number;
+            /** Format: uuid */
+            spaceId?: string | null;
         };
-        "Notrelix.Application.Features.WorkManagement.Common.DTOs.ReorderItem": {
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardFieldDto": {
             /** Format: uuid */
             id?: string;
-            /** Format: double */
-            newPosition?: number;
-        };
-        /**
-         * Format: int32
-         * @enum {integer}
-         */
-        "Notrelix.Domain.Governance.Permissions.PermissionAction": 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 | 32 | 33 | 34 | 35 | 36;
-        "Notrelix.Domain.SharedKernel.ResourceKind": {
-            readonly value?: string | null;
-        };
-        "Notrelix.Domain.SharedKernel.ResourceRef": {
-            kind?: components["schemas"]["Notrelix.Domain.SharedKernel.ResourceKind"];
             /** Format: uuid */
-            readonly resourceId?: string;
+            boardId?: string;
+            name?: string | null;
+            fieldType?: string | null;
+            settings?: string | null;
+            defaultValue?: string | null;
+            position?: string | null;
+            isSystem?: boolean;
+            isDeleted?: boolean;
+            /** Format: int64 */
+            version?: number;
+            options?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardFieldOptionDto"][] | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardFieldOptionDto": {
             /** Format: uuid */
-            readonly workspaceId?: string | null;
+            id?: string;
+            name?: string | null;
+            color?: string | null;
+            position?: string | null;
+            category?: string | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardFieldSchemaDto": {
+            /** Format: uuid */
+            id?: string;
+            name?: string | null;
+            type?: string | null;
+            settings?: string | null;
+            defaultValue?: string | null;
+            position?: string | null;
+            isSystem?: boolean;
+            /** Format: int64 */
+            version?: number;
+        };
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardGroupDto": {
+            /** Format: uuid */
+            id?: string;
+            title?: string | null;
+            color?: string | null;
+            position?: string | null;
+            isArchived?: boolean;
+            boardItems?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemSummaryDto"][] | null;
+            /** Format: int64 */
+            version?: number;
+        };
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardGroupSchemaDto": {
+            /** Format: uuid */
+            id?: string;
+            title?: string | null;
+            color?: string | null;
+            position?: string | null;
+            isCollapsed?: boolean;
+            /** Format: int64 */
+            version?: number;
+        };
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemChildProgressDto": {
+            /** Format: int32 */
+            done?: number;
+            /** Format: int32 */
+            total?: number;
+        };
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemDto": {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            boardId?: string;
+            /** Format: uuid */
+            workspaceId?: string;
+            /** Format: uuid */
+            groupId?: string;
+            name?: string | null;
+            members?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemMemberDto"][] | null;
+            labels?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemLabelDto"][] | null;
+            checklists?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.ChecklistDto"][] | null;
+            /** Format: int32 */
+            commentCount?: number;
+            /** Format: int32 */
+            attachmentCount?: number;
+            position?: string | null;
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: date-time */
+            updatedAt?: string | null;
+            /** Format: int64 */
+            version?: number;
+            itemKey?: string | null;
+            /** Format: uuid */
+            parentItemId?: string | null;
+            /** Format: uuid */
+            statusOptionId?: string | null;
+            /** Format: uuid */
+            priorityOptionId?: string | null;
+            /** Format: date-time */
+            dueAt?: string | null;
+            /** Format: date-time */
+            startedAt?: string | null;
+            /** Format: date-time */
+            completedAt?: string | null;
+            childProgress?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemChildProgressDto"];
+        };
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemLabelDto": {
+            /** Format: uuid */
+            labelId?: string;
+            name?: string | null;
+            color?: string | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemMemberDto": {
+            /** Format: uuid */
+            userId?: string;
+            name?: string | null;
+            avatar?: string | null;
+            /** Format: date-time */
+            assignedAt?: string;
+        };
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemSlimDto": {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            groupId?: string;
+            name?: string | null;
+            position?: string | null;
+            memberIds?: string[] | null;
+            labelIds?: string[] | null;
+            /** Format: int64 */
+            version?: number;
+        };
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemSummaryDto": {
+            /** Format: uuid */
+            id?: string;
+            name?: string | null;
+            /** Format: int32 */
+            memberCount?: number;
+            members?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemMemberDto"][] | null;
+            labels?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemLabelDto"][] | null;
+            /** Format: int32 */
+            checklistProgress?: number;
+            /** Format: int32 */
+            checklistTotal?: number;
+            /** Format: int32 */
+            commentCount?: number;
+            /** Format: int32 */
+            attachmentCount?: number;
+            position?: string | null;
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: date-time */
+            updatedAt?: string | null;
+            /** Format: int64 */
+            version?: number;
+            itemKey?: string | null;
+            /** Format: uuid */
+            parentItemId?: string | null;
+            /** Format: uuid */
+            statusOptionId?: string | null;
+            /** Format: uuid */
+            priorityOptionId?: string | null;
+            /** Format: date-time */
+            dueAt?: string | null;
+            /** Format: date-time */
+            startedAt?: string | null;
+            /** Format: date-time */
+            completedAt?: string | null;
+            childProgress?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemChildProgressDto"];
+        };
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardMemberDto": {
+            /** Format: uuid */
+            userId?: string;
+            name?: string | null;
+            avatar?: string | null;
+            role?: string | null;
+            /** Format: date-time */
+            joinedAt?: string;
+        };
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardSchemaDto": {
+            /** Format: uuid */
+            id?: string;
+            title?: string | null;
+            description?: string | null;
+            fields?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardFieldSchemaDto"][] | null;
+            groups?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardGroupSchemaDto"][] | null;
+            /** Format: int64 */
+            version?: number;
+        };
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.ChecklistDto": {
+            /** Format: uuid */
+            id?: string;
+            title?: string | null;
+            position?: string | null;
+            /** Format: int64 */
+            version?: number;
+            items?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.ChecklistItemDto"][] | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.ChecklistItemDto": {
+            /** Format: uuid */
+            id?: string;
+            title?: string | null;
+            status?: string | null;
+            /** Format: date-time */
+            dueAt?: string | null;
+            /** Format: uuid */
+            assigneeUserId?: string | null;
+            position?: string | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.FullBoardDto": {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            workspaceId?: string;
+            title?: string | null;
+            description?: string | null;
+            background?: string | null;
+            visibility?: string | null;
+            columns?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardFieldDto"][] | null;
+            lists?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardGroupDto"][] | null;
+            members?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardMemberDto"][] | null;
+            /** Format: int64 */
+            version?: number;
+            /** Format: uuid */
+            spaceId?: string | null;
+            itemKeyPrefix?: string | null;
+        };
+        "Notrelix.Application.Features.Workspaces.DTOs.WorkspaceDto": {
+            /** Format: uuid */
+            id?: string;
+            name?: string | null;
+            slug?: string | null;
+            description?: string | null;
+            isPersonal?: boolean;
+            plan?: string | null;
+            iconType?: string | null;
+            iconValue?: string | null;
+            coverUrl?: string | null;
+            isArchived?: boolean;
+            /** Format: int32 */
+            memberCount?: number;
+            /** Format: date-time */
+            createdAt?: string;
+            settings?: string | null;
+            /** Format: int64 */
+            version?: number;
+        };
+        "Notrelix.Application.Features.Workspaces.DTOs.WorkspaceInvitationDto": {
+            /** Format: uuid */
+            id?: string;
+            email?: string | null;
+            role?: string | null;
+            /** Format: date-time */
+            expiresAt?: string;
+            isAccepted?: boolean;
+            /** Format: date-time */
+            createdAt?: string;
+            status?: string | null;
+        };
+        "Notrelix.Application.Features.Workspaces.DTOs.WorkspaceMemberDto": {
+            /** Format: uuid */
+            userId?: string;
+            name?: string | null;
+            avatar?: string | null;
+            role?: string | null;
+            /** Format: date-time */
+            joinedAt?: string;
+            status?: string | null;
+        };
+        "Notrelix.Application.Features.Workspaces.Invitations.Commands.AcceptInvitation.AcceptInvitationResultDto": {
+            workspaceSlug?: string | null;
+            /** Format: uuid */
+            workspaceId?: string;
+        };
+        "Notrelix.Application.Features.Workspaces.Invitations.Queries.GetInvitationByToken.WorkspaceInvitationDto": {
+            /** Format: uuid */
+            id?: string;
+            workspaceName?: string | null;
+            inviterName?: string | null;
+            email?: string | null;
+            role?: string | null;
+            isExpired?: boolean;
+            isAccepted?: boolean;
+        };
+        "Notrelix.Application.Features.Workspaces.Invitations.Queries.GetUserPendingInvitations.UserPendingInvitationDto": {
+            /** Format: uuid */
+            id?: string;
+            workspaceName?: string | null;
+            workspaceSlug?: string | null;
+            inviterName?: string | null;
+            email?: string | null;
+            role?: string | null;
+            token?: string | null;
+            /** Format: date-time */
+            expiresAt?: string;
+        };
+        "Notrelix.Application.Features.Workspaces.Navigation.Queries.GetPinnedResources.PinnedResourceDto": {
+            kind?: string | null;
+            /** Format: uuid */
+            resourceId?: string;
+            /** Format: date-time */
+            pinnedAt?: string;
+        };
+        "Notrelix.Application.Features.Workspaces.Navigation.Queries.GetRecentResources.RecentResourceDto": {
+            kind?: string | null;
+            /** Format: uuid */
+            resourceId?: string;
+            /** Format: date-time */
+            lastOpenedAt?: string;
+        };
+        "Notrelix.Application.Features.Workspaces.Settings.Queries.GetWorkspaceSettings.WorkspaceSettingsDto": {
+            allowPublicSharing?: boolean;
+            enforceMfa?: boolean;
+            allowGuestInvites?: boolean;
+            defaultMemberRole?: string | null;
+            /** Format: int32 */
+            invitationExpiryDays?: number;
+        };
+        "Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpace.SpaceDto": {
+            /** Format: uuid */
+            id?: string;
+            name?: string | null;
+            description?: string | null;
+            visibility?: string | null;
+            spaceType?: string | null;
+            isArchived?: boolean;
+            /** Format: date-time */
+            createdAt?: string;
+        };
+        "Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceMembers.SpaceMemberDto": {
+            subjectType?: string | null;
+            /** Format: uuid */
+            subjectId?: string;
+            role?: string | null;
+            displayName?: string | null;
+            avatarUrl?: string | null;
+            /** Format: date-time */
+            addedAt?: string;
+        };
+        "Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceTree.SpaceTreeNodeDto": {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            parentSpaceId?: string | null;
+            name?: string | null;
+            description?: string | null;
+            spaceType?: string | null;
+            visibility?: string | null;
+            isArchived?: boolean;
+            position?: string | null;
+            /** Format: int64 */
+            version?: number;
+            /** Format: date-time */
+            createdAt?: string;
+            accessLevel?: string | null;
+        };
+        "Notrelix.Application.Features.Workspaces.Teams.Queries.GetTeam.TeamDto": {
+            /** Format: uuid */
+            id?: string;
+            name?: string | null;
+            description?: string | null;
+            status?: string | null;
+            /** Format: int32 */
+            memberCount?: number;
+            /** Format: int64 */
+            version?: number;
+            /** Format: date-time */
+            createdAt?: string;
+        };
+        "Notrelix.Application.Features.Workspaces.Teams.Queries.GetTeamMembers.TeamMemberDto": {
+            /** Format: uuid */
+            userId?: string;
+            displayName?: string | null;
+            email?: string | null;
+            role?: string | null;
+            status?: string | null;
         };
         /**
          * Format: int32
@@ -4916,7 +5727,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Documents.DTOs.PageDto"][];
                 };
             };
         };
@@ -4964,7 +5775,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Documents.DTOs.PageTreeItemDto"][];
                 };
             };
         };
@@ -4988,7 +5799,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Documents.DTOs.PageDto"][];
                 };
             };
         };
@@ -5010,7 +5821,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Documents.DTOs.PageDto"];
                 };
             };
         };
@@ -5117,6 +5928,32 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Documents.Pages.MoveToSpace": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pageId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Documents.Pages.Requests.MovePageToSpaceRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -6648,7 +7485,7 @@ export interface operations {
             };
         };
     };
-    "WorkManagement.BoardFields.Reorder": {
+    "WorkManagement.BoardFields.Move": {
         parameters: {
             query?: never;
             header: {
@@ -6657,12 +7494,13 @@ export interface operations {
             };
             path: {
                 boardId: string;
+                fieldId: string;
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardFields.Commands.ReorderBoardFields.ReorderBoardFieldsCommand"];
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.BoardFields.Requests.MoveBoardFieldRequest"];
             };
         };
         responses: {
@@ -6741,7 +7579,9 @@ export interface operations {
     };
     "WorkManagement.BoardFields.RemoveFieldOption": {
         parameters: {
-            query?: never;
+            query: {
+                expectedVersion: number;
+            };
             header: {
                 /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
                 "Idempotency-Key": string;
@@ -6829,7 +7669,7 @@ export interface operations {
             };
         };
     };
-    "WorkManagement.BoardFields.ReorderFieldOptions": {
+    "WorkManagement.BoardFields.MoveFieldOption": {
         parameters: {
             query?: never;
             header: {
@@ -6839,12 +7679,13 @@ export interface operations {
             path: {
                 boardId: string;
                 fieldId: string;
+                optionId: string;
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["Notrelix.API.Endpoints.WorkManagement.BoardFields.ReorderFieldOptionsRequest"];
+                "application/json": components["schemas"]["Notrelix.API.Endpoints.WorkManagement.BoardFields.MoveFieldOptionRequest"];
             };
         };
         responses: {
@@ -6892,7 +7733,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardSchemaDto"];
                 };
             };
         };
@@ -6942,54 +7783,11 @@ export interface operations {
             };
         };
     };
-    "WorkManagement.BoardGroups.Reorder": {
-        parameters: {
-            query?: never;
-            header: {
-                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
-                "Idempotency-Key": string;
-            };
-            path: {
-                boardId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.ReorderBoardGroups.ReorderBoardGroupsCommand"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    /** @description true when this response is a replay of a stored result */
-                    "Idempotency-Replayed"?: boolean;
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["System.Void"];
-                };
-            };
-            /** @description Idempotency key reused with a different payload */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Operation still being processed; retry after the indicated delay */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
     "WorkManagement.BoardGroups.Delete": {
         parameters: {
-            query?: never;
+            query: {
+                expectedVersion: number;
+            };
             header: {
                 /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
                 "Idempotency-Key": string;
@@ -7086,6 +7884,51 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "WorkManagement.BoardGroups.Move": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                groupId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.BoardGroups.Requests.MoveBoardGroupRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -7213,7 +8056,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemSlimDto"][];
                 };
             };
         };
@@ -7244,7 +8087,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemSlimDto"];
                 };
             };
             /** @description Idempotency key reused with a different payload */
@@ -7280,7 +8123,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemDto"];
                 };
             };
         };
@@ -7337,7 +8180,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItem.UpdateBoardItemCommand"];
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.UpdateBoardItemRequest"];
             };
         };
         responses: {
@@ -7501,7 +8344,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemSlimDto"];
                 };
             };
             /** @description Idempotency key reused with a different payload */
@@ -7827,7 +8670,9 @@ export interface operations {
     };
     "WorkManagement.BoardItems.ClearFieldValue": {
         parameters: {
-            query?: never;
+            query: {
+                expectedVersion: number;
+            };
             header: {
                 /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
                 "Idempotency-Key": string;
@@ -7894,7 +8739,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemSlimDto"];
                 };
             };
             /** @description Idempotency key reused with a different payload */
@@ -8111,6 +8956,31 @@ export interface operations {
             };
         };
     };
+    "WorkManagement.BoardItems.ListMyWork": {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Common.Models.CursorPageOfMyWorkItemDto"];
+                };
+            };
+        };
+    };
     "WorkManagement.BoardPreferences.Get": {
         parameters: {
             query?: never;
@@ -8259,7 +9129,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardDto"][];
                 };
             };
         };
@@ -8326,7 +9196,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardDto"];
                 };
             };
         };
@@ -8386,7 +9256,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Boards.Commands.UpdateBoard.UpdateBoardCommand"];
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.Boards.Requests.UpdateBoardRequest"];
             };
         };
         responses: {
@@ -8434,7 +9304,29 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.FullBoardDto"];
+                };
+            };
+        };
+    };
+    "WorkManagement.Boards.GetAccess": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                boardId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardAccessDto"];
                 };
             };
         };
@@ -8577,6 +9469,51 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.Boards.Requests.UpdateBoardVisibilityRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "WorkManagement.Boards.MoveToSpace": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                boardId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.Boards.Requests.MoveBoardToSpaceRequest"];
             };
         };
         responses: {
@@ -9193,7 +10130,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.ChecklistDto"][];
                 };
             };
         };
@@ -9374,9 +10311,56 @@ export interface operations {
             };
         };
     };
-    "WorkManagement.Checklists.DeleteItem": {
+    "WorkManagement.Checklists.Move": {
         parameters: {
             query?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                checklistId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.Checklists.Requests.MoveChecklistRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "WorkManagement.Checklists.DeleteItem": {
+        parameters: {
+            query: {
+                expectedVersion: number;
+            };
             header: {
                 /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
                 "Idempotency-Key": string;
@@ -9462,7 +10446,9 @@ export interface operations {
     };
     "WorkManagement.Checklists.ToggleItem": {
         parameters: {
-            query?: never;
+            query: {
+                expectedVersion: number;
+            };
             header: {
                 /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
                 "Idempotency-Key": string;
@@ -9473,6 +10459,51 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "WorkManagement.Checklists.MoveItem": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                itemId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.Checklists.Requests.MoveChecklistItemRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -11053,7 +12084,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.DTOs.WorkspaceInvitationDto"][];
                 };
             };
         };
@@ -11099,7 +12130,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": string;
                 };
             };
         };
@@ -11146,7 +12177,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.Invitations.Queries.GetUserPendingInvitations.UserPendingInvitationDto"][];
                 };
             };
         };
@@ -11170,7 +12201,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.Invitations.Commands.AcceptInvitation.AcceptInvitationResultDto"];
                 };
             };
         };
@@ -11216,7 +12247,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.Invitations.Queries.GetInvitationByToken.WorkspaceInvitationDto"];
                 };
             };
         };
@@ -11238,7 +12269,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.DTOs.WorkspaceMemberDto"][];
                 };
             };
         };
@@ -11258,13 +12289,13 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK */
-            200: {
+            /** @description Created */
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": string;
                 };
             };
         };
@@ -11391,6 +12422,137 @@ export interface operations {
             };
         };
     };
+    "Workspaces.Navigation.ListRecents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.Navigation.Queries.GetRecentResources.RecentResourceDto"][];
+                };
+            };
+        };
+    };
+    "Workspaces.Navigation.RecordRecent": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Workspaces.Navigation.Requests.RecordRecentResourceRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "Workspaces.Navigation.ListPins": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.Navigation.Queries.GetPinnedResources.PinnedResourceDto"][];
+                };
+            };
+        };
+    };
+    "Workspaces.Navigation.Pin": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                kind: string;
+                resourceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "Workspaces.Navigation.Unpin": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                kind: string;
+                resourceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     "Workspaces.Settings.GetWorkspaceSettings": {
         parameters: {
             query?: never;
@@ -11408,7 +12570,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.Settings.Queries.GetWorkspaceSettings.WorkspaceSettingsDto"];
                 };
             };
         };
@@ -11456,7 +12618,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpace.SpaceDto"][];
                 };
             };
         };
@@ -11476,13 +12638,35 @@ export interface operations {
             };
         };
         responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
+                };
+            };
+        };
+    };
+    "Workspaces.Spaces.GetSpaceTree": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
             /** @description OK */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceTree.SpaceTreeNodeDto"][];
                 };
             };
         };
@@ -11505,7 +12689,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpace.SpaceDto"];
                 };
             };
         };
@@ -11710,6 +12894,139 @@ export interface operations {
             };
         };
     };
+    "Workspaces.Spaces.MoveSpace": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                spaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Workspaces.Spaces.Requests.MoveSpaceRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Workspaces.Spaces.GetSpaceMembers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                spaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceMembers.SpaceMemberDto"][];
+                };
+            };
+        };
+    };
+    "Workspaces.Spaces.AddSpaceMember": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                spaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Workspaces.Spaces.Requests.AddSpaceMemberRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Workspaces.Spaces.RemoveSpaceMember": {
+        parameters: {
+            query: {
+                expectedVersion: number;
+            };
+            header?: never;
+            path: {
+                workspaceId: string;
+                spaceId: string;
+                subjectType: string;
+                subjectId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Workspaces.Spaces.ChangeSpaceMemberRole": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                spaceId: string;
+                subjectType: string;
+                subjectId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Workspaces.Spaces.Requests.ChangeSpaceMemberRoleRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
     "Workspaces.Teams.GetWorkspaceTeams": {
         parameters: {
             query?: never;
@@ -11727,7 +13044,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.Teams.Queries.GetTeam.TeamDto"][];
                 };
             };
         };
@@ -11747,13 +13064,13 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK */
-            200: {
+            /** @description Created */
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": string;
                 };
             };
         };
@@ -11776,7 +13093,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.Teams.Queries.GetTeam.TeamDto"];
                 };
             };
         };
@@ -11797,20 +13114,20 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK */
-            200: {
+            /** @description No Content */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["System.Void"];
-                };
+                content?: never;
             };
         };
     };
     "Workspaces.Teams.DeleteTeam": {
         parameters: {
-            query?: never;
+            query: {
+                expectedVersion: number;
+            };
             header?: never;
             path: {
                 workspaceId: string;
@@ -11820,14 +13137,12 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description OK */
-            200: {
+            /** @description No Content */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["System.Void"];
-                };
+                content?: never;
             };
         };
     };
@@ -11847,14 +13162,12 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK */
-            200: {
+            /** @description No Content */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["System.Void"];
-                };
+                content?: never;
             };
         };
     };
@@ -11868,16 +13181,18 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Workspaces.Teams.Requests.ArchiveTeamRequest"];
+            };
+        };
         responses: {
-            /** @description OK */
-            200: {
+            /** @description No Content */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["System.Void"];
-                };
+                content?: never;
             };
         };
     };
@@ -11891,16 +13206,18 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Workspaces.Teams.Requests.ArchiveTeamRequest"];
+            };
+        };
         responses: {
-            /** @description OK */
-            200: {
+            /** @description No Content */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["System.Void"];
-                };
+                content?: never;
             };
         };
     };
@@ -11927,6 +13244,29 @@ export interface operations {
             };
         };
     };
+    "Workspaces.Teams.GetTeamMembers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                teamId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.Teams.Queries.GetTeamMembers.TeamMemberDto"][];
+                };
+            };
+        };
+    };
     "Workspaces.Teams.AddTeamMember": {
         parameters: {
             query?: never;
@@ -11943,20 +13283,20 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK */
-            200: {
+            /** @description No Content */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["System.Void"];
-                };
+                content?: never;
             };
         };
     };
     "Workspaces.Teams.RemoveTeamMember": {
         parameters: {
-            query?: never;
+            query: {
+                expectedVersion: number;
+            };
             header?: never;
             path: {
                 workspaceId: string;
@@ -11967,14 +13307,12 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description OK */
-            200: {
+            /** @description No Content */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["System.Void"];
-                };
+                content?: never;
             };
         };
     };
@@ -11995,14 +13333,12 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK */
-            200: {
+            /** @description No Content */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["System.Void"];
-                };
+                content?: never;
             };
         };
     };
@@ -12021,7 +13357,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.DTOs.WorkspaceDto"][];
                 };
             };
         };
@@ -12043,14 +13379,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.DTOs.WorkspaceDto"];
                 };
             };
         };
     };
     "Workspaces.Workspaces.DeleteWorkspace": {
         parameters: {
-            query?: never;
+            query: {
+                expectedVersion: number;
+            };
             header?: never;
             path: {
                 workspaceId: string;
@@ -12215,7 +13553,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.DTOs.WorkspaceDto"][];
                 };
             };
         };
@@ -12235,13 +13573,13 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK */
-            200: {
+            /** @description Created */
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": string;
                 };
             };
         };
@@ -12264,7 +13602,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.DTOs.WorkspaceDto"];
+                };
             };
         };
     };

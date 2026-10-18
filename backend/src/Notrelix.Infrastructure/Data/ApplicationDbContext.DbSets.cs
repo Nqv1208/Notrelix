@@ -32,6 +32,9 @@ using Notrelix.Domain.Documents.ResourceLinks;
 using Notrelix.Domain.Documents.Templates;
 using Notrelix.Domain.Documents.Versions;
 
+// Workspaces navigation
+using Notrelix.Domain.Workspaces.Navigation;
+
 // WorkManagement
 using Notrelix.Domain.WorkManagement.Approvals;
 using Notrelix.Domain.WorkManagement.BoardGroups;
@@ -135,8 +138,12 @@ public partial class ApplicationDbContext
     public DbSet<WorkspaceMember> WorkspaceMembers => Set<WorkspaceMember>();
     public DbSet<WorkspaceInvitation> WorkspaceInvitations => Set<WorkspaceInvitation>();
     public DbSet<Space> Spaces => Set<Space>();
+    public DbSet<SpaceMember> SpaceMembers => Set<SpaceMember>();
+    public DbSet<Notrelix.Infrastructure.Data.Workspaces.SpacePathRecord> SpacePaths => Set<Notrelix.Infrastructure.Data.Workspaces.SpacePathRecord>();
     public DbSet<Team> Teams => Set<Team>();
     public DbSet<TeamMember> TeamMembers => Set<TeamMember>();
+    public DbSet<RecentResource> RecentResources => Set<RecentResource>();
+    public DbSet<PinnedResource> PinnedResources => Set<PinnedResource>();
 
     // Document
     public DbSet<Page> Pages => Set<Page>();

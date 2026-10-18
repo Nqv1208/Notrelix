@@ -109,8 +109,36 @@ public static class PersistenceRegistration
         services.AddScoped<global::Notrelix.Application.Features.Collaboration.Public.ResourceSummary.ICollaborationResourceSummary,
             global::Notrelix.Infrastructure.CrossContext.Collaboration.ResourceSummary.PostgresCollaborationResourceSummary>();
         services.AddScoped<IWorkspaceGrantProjectionService, WorkspaceGrantProjectionServiceAdapter>();
+        services.AddScoped<Notrelix.Application.Features.Workspaces.Members.Services.IWorkspaceOwnerUpdateLocker,
+            Notrelix.Infrastructure.Workspaces.Members.WorkspaceOwnerUpdateLocker>();
+        services.AddScoped<Notrelix.Application.Features.Workspaces.Navigation.Services.IWorkspaceNavigationStore,
+            Notrelix.Infrastructure.Workspaces.Navigation.WorkspaceNavigationStore>();
+        services.AddScoped<Notrelix.Application.Features.Workspaces.Spaces.Services.ISpaceStore,
+            Notrelix.Infrastructure.Workspaces.Spaces.SpaceStore>();
+        services.AddScoped<global::Notrelix.Application.Features.Workspaces.Public.SpacePlacement.ISpacePlacementTargets,
+            Notrelix.Infrastructure.Workspaces.Spaces.SpacePlacementTargets>();
+        services.AddScoped<global::Notrelix.Application.Features.Documents.Pages.Services.IPageSubtreeStore,
+            global::Notrelix.Infrastructure.Documents.Pages.PageSubtreeStore>();
+        services.AddScoped<global::Notrelix.Application.Features.WorkManagement.Public.SpacePlacement.IBoardSpacePlacementFacts,
+            global::Notrelix.Infrastructure.CrossContext.Workspaces.WorkManagement.BoardSpacePlacementFactsAdapter>();
+        services.AddScoped<global::Notrelix.Application.Features.Documents.Public.SpacePlacement.IPageSpacePlacementFacts,
+            global::Notrelix.Infrastructure.CrossContext.Workspaces.Documents.PageSpacePlacementFactsAdapter>();
+        services.AddScoped<Notrelix.Application.Features.WorkManagement.Ordering.IWorkOrderingScopeLock,
+            Notrelix.Infrastructure.Data.WorkManagement.PostgresWorkOrderingScopeLock>();
+        services.AddScoped<Notrelix.Application.Features.WorkManagement.BoardItems.Services.IBoardItemKeyAllocator,
+            Notrelix.Infrastructure.Data.WorkManagement.PostgresBoardItemKeyAllocator>();
+        services.AddSingleton<Notrelix.Application.Common.Data.IOrderingConflictClassifier,
+            Notrelix.Infrastructure.Data.WorkManagement.PostgresOrderingConflictClassifier>();
         services.AddScoped<IResourceLocator, ResourceLocator>();
         services.AddScoped<IAccessFactsProvider, Notrelix.Infrastructure.Data.Authz.PostgresAccessFactsProvider>();
+        services.AddScoped<global::Notrelix.Application.Features.Governance.Public.Visibility.IResourceVisibility,
+            Notrelix.Infrastructure.Data.Authz.PostgresResourceVisibility>();
+        services.AddScoped<global::Notrelix.Application.Features.Governance.Abstractions.IResourceAccessEntriesReader,
+            Notrelix.Infrastructure.Data.Authz.PostgresResourceAccessEntriesReader>();
+        services.AddScoped<global::Notrelix.Application.Features.WorkManagement.Public.BoardAccess.IBoardAccessSubjectFacts,
+            global::Notrelix.Infrastructure.CrossContext.Governance.WorkManagement.BoardAccessSubjectFactsAdapter>();
+        services.AddScoped<global::Notrelix.Application.Features.WorkManagement.Public.Authorization.IBoardChildAuthorizationFacts,
+            global::Notrelix.Infrastructure.CrossContext.Governance.WorkManagement.BoardChildAuthorizationFactsAdapter>();
         services.AddScoped<IActorLookupService, ActorLookupService>();
         services.AddScoped<ApplicationDbContextInitialiser>();
         services.AddScoped<RlsPolicyApplier>();

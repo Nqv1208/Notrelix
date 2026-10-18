@@ -10,7 +10,8 @@ public static class GetTeamEndpoint
         group.MapWorkspaceGet("/", HandleAsync)
             .WithName("Workspaces.Teams.GetTeam")
             .WithTags("Workspaces.Teams")
-            .WithSummary("Get a team by ID");
+            .WithSummary("Get a team by ID")
+            .Produces<TeamDto>(StatusCodes.Status200OK, "application/json");
         return group;
     }
 

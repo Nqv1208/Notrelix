@@ -29,7 +29,10 @@ FROM ${NGINX_BASE_IMAGE} AS production
 # newer upstream digest is available yet. The floor constraint rolls forward with
 # the repository instead of hard-breaking the build on the next point release;
 # remove this layer once the base-image lock advances past libexpat 2.8.5-r0.
-RUN apk add --no-cache "libexpat>=2.8.5"
+# CVE-2026-103111 (pcre2, HIGH) and CVE-2026-4775 (tiff, HIGH): the same locked
+# digest still bakes pcre2 10.48-r0 and tiff 4.7.1-r0; the repository publishes
+# the fixed 10.49-r0 and 4.7.2-r0. Same floor approach, same removal condition.
+RUN apk add --no-cache "libexpat>=2.8.5" "pcre2>=10.49-r0" "tiff>=4.7.2-r0"
 # Full nginx configuration authority: pid and all writable temp paths live in
 # tmpfs-backed /tmp, so the image can run entirely as the unprivileged nginx
 # user without relying on upstream internal directory ownership.

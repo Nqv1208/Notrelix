@@ -11,6 +11,8 @@ import { SignUpPage } from "../../routes/sign-up";
 import { ForgotPasswordPage } from "../../routes/forgot-password";
 import { HomePage } from "../../routes/home";
 import { InvitePage } from "../../routes/invite/$token";
+import { OnboardingPage } from "../../routes/onboarding/onboarding-page";
+import { WelcomePage } from "../../routes/onboarding/welcome-page";
 import { WorkspaceLayout } from "../../routes/workspaces/$workspaceId/route";
 
 export const rootRoute = createRootRouteWithContext<AppRouterContext>()({
@@ -51,6 +53,18 @@ export const inviteRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/invite/$token",
   component: InvitePage,
+});
+
+export const onboardingRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/onboarding",
+  component: OnboardingPage,
+});
+
+export const welcomeRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/welcome/$workspaceId",
+  component: WelcomePage,
 });
 
 export const workspaceRoute = createRoute({

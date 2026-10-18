@@ -11,7 +11,8 @@ public static class InviteMemberEndpoint
         group.MapWorkspacePost("/", HandleAsync)
             .WithName("Workspaces.Members.InviteMember")
             .WithTags("Workspaces.Members")
-            .WithSummary("Invite a member to workspace");
+            .WithSummary("Invite a member to workspace")
+            .Produces<Guid>(StatusCodes.Status201Created, "application/json");
         return group;
     }
 

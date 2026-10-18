@@ -36,7 +36,7 @@ public class GetAccountWorkspacesQueryHandler : IRequestHandler<GetAccountWorksp
             ? new Dictionary<Guid, int>()
             : await _context.WorkspaceMembers
                 .AsNoTracking()
-                .Where(m => workspaceIds.Contains(m.WorkspaceId))
+                .Where(m => workspaceIds.Contains(m.WorkspaceId) && m.Status != WorkspaceMemberStatus.Removed)
                 .GroupBy(m => m.WorkspaceId)
                 .Select(g => new { WorkspaceId = g.Key, Count = g.Count() })
                 .ToDictionaryAsync(x => x.WorkspaceId, x => x.Count, ct);
@@ -47,7 +47,8 @@ public class GetAccountWorkspacesQueryHandler : IRequestHandler<GetAccountWorksp
             null, w.Status == WorkspaceStatus.Archived,
             memberCounts.GetValueOrDefault(w.Id),
             w.CreatedAt.DateTime,
-            null
+            null,
+            w.Version
         )).ToList();
 
         return Result<List<WorkspaceDto>>.Success(result);

@@ -15,7 +15,14 @@ public abstract class SoftDeletableAggregateRoot : AggregateRoot
         Guid? ActorId,
         DateTimeOffset OccurredAt);
 
-    public bool IsDeleted { get; private set; }
+    // DeletedAt is the single persisted soft-delete fact; IsDeleted is derived so
+    // lifecycle guards hold after EF reloads an entity. _isDeleted mirrors it only
+    // for mappings that still store an is_deleted column (EF binds it by name).
+#pragma warning disable CS0414 // read by EF through its backing-field convention, not by code
+    private bool _isDeleted;
+#pragma warning restore CS0414
+
+    public bool IsDeleted => DeletedAt is not null;
     public DateTimeOffset? DeletedAt { get; private set; }
     public Guid? DeletedBy { get; private set; }
     public string? DeleteReason { get; private set; }
@@ -41,7 +48,7 @@ public abstract class SoftDeletableAggregateRoot : AggregateRoot
         DeletedAt = deletion.OccurredAt;
         DeletedBy = deletion.ActorId;
         DeleteReason = deletion.Reason;
-        IsDeleted = true;
+        _isDeleted = true;
         ApplyAuditUpdate(deletion.Audit);
     }
 
@@ -61,7 +68,7 @@ public abstract class SoftDeletableAggregateRoot : AggregateRoot
         DeletedAt = null;
         DeletedBy = null;
         DeleteReason = null;
-        IsDeleted = false;
+        _isDeleted = false;
         ApplyAuditUpdate(restore.Audit);
     }
 

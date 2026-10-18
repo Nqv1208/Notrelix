@@ -1,64 +1,79 @@
-import { useEffect } from "react";
-import { Sheet, SheetContent } from "@notrelix/ui-web";
+import { useState } from "react";
 import type { Board, CardDetail } from "@notrelix/work-management-core";
 import { TaskDetailPanelSurface } from "../../card-detail/task-detail-panel-surface";
-import { defaultTaskDetailCapabilities } from "../../card-detail/task-detail-types";
+import type { ItemSheetCopy } from "../../card-detail/item-sheet.copy";
+import { withBoardPriority } from "../../shared/item-priority";
+import { useItemSheetCopy } from "../../card-detail/use-item-sheet-copy";
+import type {
+  ItemSheetGroup,
+  ItemSheetMark,
+  TaskDetailCallbacks,
+  TaskDetailCapabilities,
+  TaskDetailData,
+} from "../../card-detail/task-detail-types";
 
 interface KanbanCardDetailPanelProps {
   board: Board;
+  /** The selected card; the sheet stays closed while this is null. */
   card: CardDetail | null;
-  workspaceId: string;
-  onClose: () => void;
+  detailData: TaskDetailData;
+  callbacks: TaskDetailCallbacks;
+  /**
+   * Called as the sheet closes (unmounts). `preventDefault()` skips the
+   * default focus return so the container can put focus on the opener.
+   */
+  onCloseAutoFocus?: (event: Event) => void;
+  /**
+   * The viewer's capabilities on this board. Required: the container decides
+   * (a commenter gets read-only properties and keeps the composer).
+   */
+  capabilities: TaskDetailCapabilities;
+  /** Copy for the active locale; resolved from the host locale when omitted. */
+  copy?: ItemSheetCopy;
+  /** Injected clock; read once on open when omitted. */
+  now?: Date;
+  departmentMark?: ItemSheetMark;
+  groups?: readonly ItemSheetGroup[];
 }
 
+/**
+ * Non-modal 560 px item sheet over the right edge of the board: no scrim, no
+ * focus trap, the board behind stays interactive. Below the desktop width it
+ * is absolutely placed over the board, so the Kanban view root must be the
+ * positioned ancestor; from the desktop width it spans the full height of the
+ * window edge, over the board header, as in the mockup.
+ */
 export function KanbanCardDetailPanel({
   board,
   card,
-  workspaceId: _workspaceId,
-  onClose,
+  detailData,
+  callbacks,
+  onCloseAutoFocus,
+  capabilities,
+  copy,
+  now,
+  departmentMark,
+  groups,
 }: KanbanCardDetailPanelProps) {
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", handleEscape);
-    return () => document.removeEventListener("keydown", handleEscape);
-  }, [onClose]);
-
+  const localeCopy = useItemSheetCopy();
+  const [openedAt] = useState(() => new Date());
   if (!card) return null;
 
   return (
-    <Sheet open={!!card} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
-        <TaskDetailPanelSurface
-          status="ready"
-          board={board}
-          card={card}
-          capabilities={defaultTaskDetailCapabilities}
-          detailData={{
-            updates: card.updates,
-            updatesLoading: false,
-            files: card.files,
-            filesLoading: false,
-            activity: card.activity,
-            activityLoading: false,
-            activityFetching: false,
-          }}
-          callbacks={{
-            onClose,
-            onRenameTitle: () => undefined,
-            onToggleWatch: () => undefined,
-            onDuplicate: () => undefined,
-            onArchive: () => undefined,
-            onUpdateFieldValue: () => undefined,
-            onRefreshActivity: () => undefined,
-            onCreateUpdate: (_input, options) => options?.onSuccess?.(),
-            onUpdateUpdate: () => undefined,
-            onDeleteUpdate: () => undefined,
-            onSelectTab: () => undefined,
-          }}
-        />
-      </SheetContent>
-    </Sheet>
+    <div className="absolute inset-y-0 right-0 z-20 flex w-full max-w-full border-l border-line bg-popover shadow-sheet sm:w-140.25 lg:fixed">
+      <TaskDetailPanelSurface
+        status="ready"
+        board={board}
+        card={withBoardPriority(card, board)}
+        capabilities={capabilities}
+        detailData={detailData}
+        callbacks={callbacks}
+        copy={copy ?? localeCopy}
+        now={now ?? openedAt}
+        departmentMark={departmentMark}
+        groups={groups}
+        onReturnFocus={onCloseAutoFocus}
+      />
+    </div>
   );
 }

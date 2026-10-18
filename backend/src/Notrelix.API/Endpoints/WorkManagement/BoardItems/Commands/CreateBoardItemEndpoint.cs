@@ -1,3 +1,4 @@
+using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 using Notrelix.API.Contracts.WorkManagement.BoardItems.Requests;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.CreateBoardItem;
 
@@ -10,6 +11,7 @@ public static class CreateBoardItemEndpoint
         group.MapResourcePost("/", HandleAsync)
             .WithIdempotencyKey()
             .WithName("WorkManagement.BoardItems.Create")
+            .Produces<BoardItemSlimDto>(StatusCodes.Status200OK, "application/json")
             .WithTags("WorkManagement.BoardItems")
             .WithSummary("Create a new item in a board group");
         return group;
@@ -25,7 +27,8 @@ public static class CreateBoardItemEndpoint
             boardId,
             body.GroupId,
             body.Title,
-            body.Position), cancellationToken);
+            body.PreviousSiblingId,
+            body.NextSiblingId), cancellationToken);
         return Results.Ok(result);
     }
 }

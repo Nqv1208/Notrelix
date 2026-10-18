@@ -4,9 +4,9 @@ public class UpdateBoardFieldCommandValidator : AbstractValidator<UpdateBoardFie
 {
     public UpdateBoardFieldCommandValidator()
     {
+        RuleFor(x => x.ExpectedVersion).MustBeAnAuthoritativeVersion();
         RuleFor(x => x.BoardId).NotEmpty();
         RuleFor(x => x.ColumnId).NotEmpty();
-        RuleFor(x => x.Name).MaximumLength(200);
-        RuleFor(x => x.FieldType).MaximumLength(50);
+        RuleFor(x => x.Name).NotEmpty().MaximumLength(100).When(x => x.Name is not null);
     }
 }

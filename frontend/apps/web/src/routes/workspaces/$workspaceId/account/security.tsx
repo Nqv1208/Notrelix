@@ -1,95 +1,122 @@
-import { useMemo } from "react";
-import { createUseSecuritySettings } from "@notrelix/features-account";
+import { useCallback, useMemo, useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  AccountSecuritySurface,
+  useAccountSecurityCopy,
+  type AccountSecurityData,
+  type AccountSection,
+} from "@notrelix/features-account";
 import { useAppRuntime } from "@notrelix/runtime-web";
-import { Button } from "@notrelix/ui-web";
-import { Shield, Key, Smartphone } from "lucide-react";
+import {
+  accountPagesKeys,
+  useAccountPagesApi,
+  useToast,
+} from "./use-account-pages";
 
 export function AccountSecurityPage() {
   const { api: runtimeClient } = useAppRuntime();
+  const copy = useAccountSecurityCopy();
+  const api = useAccountPagesApi();
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const [busy, setBusy] = useState(false);
+  const [actionError, setActionError] = useState(false);
+  const [notice, showNotice] = useToast();
 
-  const useSecuritySettings = useMemo(
+  const security = useQuery({
+    queryKey: accountPagesKeys.security,
+    queryFn: () => api.getSecurity(),
+    retry: false,
+  });
+  const details = useQuery({
+    queryKey: accountPagesKeys.details,
+    queryFn: () => api.getDetails(),
+    retry: false,
+  });
+
+  const section = useMemo<AccountSection<AccountSecurityData>>(
     () =>
-      createUseSecuritySettings({
-        api: runtimeClient.api,
-        endpoints: runtimeClient.endpoints,
-      }),
-    [runtimeClient],
+      security.data
+        ? {
+            status: "ready",
+            data: {
+              ssoProvider: security.data.sso?.provider ?? null,
+              email: security.data.sso?.email ?? "",
+              workspaceName: details.data?.workspaceName ?? "",
+              twoFactorEnabled: security.data.twoFactorEnabled,
+              backupCodesLeft: security.data.backupCodesLeft,
+              sessions: security.data.sessions,
+              now: security.data.serverTime,
+            },
+          }
+        : security.isError
+          ? { status: "error" }
+          : { status: "loading" },
+    [security.data, security.isError, details.data?.workspaceName],
   );
 
-  const { data: security, isLoading } = useSecuritySettings();
+  const run = useCallback(
+    async (action: () => Promise<unknown>, message: string) => {
+      setBusy(true);
+      setActionError(false);
+      try {
+        await action();
+        await queryClient.invalidateQueries({
+          queryKey: accountPagesKeys.security,
+        });
+        showNotice(message);
+      } catch {
+        setActionError(true);
+      } finally {
+        setBusy(false);
+      }
+    },
+    [queryClient, showNotice],
+  );
 
-  if (isLoading) {
-    return (
-      <div className="space-y-4">
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="h-16 bg-muted rounded-lg animate-pulse" />
-        ))}
-      </div>
-    );
-  }
+  const signOut = useCallback(
+    async (sessionId: string) => {
+      const session = security.data?.sessions.find((s) => s.id === sessionId);
+      if (session?.lastActiveAt === null) {
+        // This device: the sign-out of the app itself.
+        setBusy(true);
+        try {
+          await runtimeClient.api.post(runtimeClient.endpoints.auth.logout, {});
+          await navigate({ to: "/sign-in", replace: true });
+        } catch {
+          setActionError(true);
+          setBusy(false);
+        }
+        return;
+      }
+      await run(() => api.revokeSession(sessionId), copy.sessions.signedOut);
+    },
+    [api, copy.sessions.signedOut, navigate, run, runtimeClient, security.data],
+  );
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="font-semibold text-sm mb-1">Security</h2>
-        <p className="text-xs text-muted-foreground">
-          Manage your password and security settings.
-        </p>
-      </div>
-
-      {/* Password */}
-      <div className="rounded-lg border border-border p-4">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="flex size-9 items-center justify-center rounded-lg bg-muted">
-            <Key className="size-4 text-muted-foreground" />
-          </div>
-          <div>
-            <p className="font-medium text-sm">Password</p>
-            <p className="text-xs text-muted-foreground">
-              Last changed{" "}
-              {security?.lastPasswordChange
-                ? new Date(security.lastPasswordChange).toLocaleDateString()
-                : "unknown"}
-            </p>
-          </div>
-        </div>
-        <Button variant="outline" size="sm" disabled>
-          Change password
-        </Button>
-      </div>
-
-      {/* Two-Factor Authentication */}
-      <div className="rounded-lg border border-border p-4">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="flex size-9 items-center justify-center rounded-lg bg-muted">
-            <Smartphone className="size-4 text-muted-foreground" />
-          </div>
-          <div>
-            <p className="font-medium text-sm">Two-Factor Authentication</p>
-            <p className="text-xs text-muted-foreground">
-              {security?.twoFactorEnabled ? "Enabled" : "Not enabled"}
-            </p>
-          </div>
-        </div>
-        <Button variant="outline" size="sm" disabled>
-          {security?.twoFactorEnabled ? "Disable 2FA" : "Enable 2FA"}
-        </Button>
-      </div>
-
-      {/* Active Sessions */}
-      <div className="rounded-lg border border-border p-4">
-        <div className="flex items-center gap-3">
-          <div className="flex size-9 items-center justify-center rounded-lg bg-muted">
-            <Shield className="size-4 text-muted-foreground" />
-          </div>
-          <div>
-            <p className="font-medium text-sm">Active Sessions</p>
-            <p className="text-xs text-muted-foreground">
-              {security?.activeSessions ?? 1} session(s) currently active
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
+    <AccountSecuritySurface
+      copy={copy}
+      security={section}
+      busy={busy}
+      actionError={actionError}
+      notice={notice}
+      passwordHref="/forgot-password"
+      onSetTwoFactor={(enabled) =>
+        void run(
+          () => api.setTwoFactor(enabled),
+          enabled ? copy.twoFactor.turnedOn : copy.twoFactor.turnedOff,
+        )
+      }
+      onRenewBackupCodes={() =>
+        void run(() => api.renewBackupCodes(), copy.twoFactor.renewed)
+      }
+      onSignOut={(id) => void signOut(id)}
+      onSignOutOthers={() =>
+        void run(() => api.revokeOtherSessions(), copy.others.done)
+      }
+      onRetry={() => void security.refetch()}
+    />
   );
 }

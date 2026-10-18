@@ -11,7 +11,8 @@ public class CreateBoardGroupTests : WorkManagementHandlerTestBase
         _handler = new CreateBoardGroupCommandHandler(
             DbContextMock.Object,
             RequestContextMock.Object,
-            DateTimeProviderMock.Object);
+            DateTimeProviderMock.Object,
+            Placement);
     }
 
     [Fact]
@@ -20,7 +21,7 @@ public class CreateBoardGroupTests : WorkManagementHandlerTestBase
         var board = CreateBoard();
         SetupBoards(board);
 
-        var command = new CreateBoardGroupCommand(board.Id, "New Group", "a0", "#FF0000");
+        var command = new CreateBoardGroupCommand(board.Id, "New Group", "#FF0000");
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -31,7 +32,7 @@ public class CreateBoardGroupTests : WorkManagementHandlerTestBase
     [Fact]
     public async Task Handle_BoardNotFound_ThrowsNotFoundException()
     {
-        var command = new CreateBoardGroupCommand(Guid.CreateVersion7(), "New Group", "a0", "#FF0000");
+        var command = new CreateBoardGroupCommand(Guid.CreateVersion7(), "New Group", "#FF0000");
 
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<NotFoundException>();
@@ -44,19 +45,19 @@ public class CreateBoardGroupTests : WorkManagementHandlerTestBase
         board.Archive(TestUserId, TestNow);
         SetupBoards(board);
 
-        var command = new CreateBoardGroupCommand(board.Id, "New Group", "a0", "#FF0000");
+        var command = new CreateBoardGroupCommand(board.Id, "New Group", "#FF0000");
 
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<NotFoundException>();
     }
 
     [Fact]
-    public async Task Handle_NullPosition_UsesInitialPosition()
+    public async Task Handle_WithoutNeighbors_AppendsTheGroup()
     {
         var board = CreateBoard();
         SetupBoards(board);
 
-        var command = new CreateBoardGroupCommand(board.Id, "New Group", null, "#FF0000");
+        var command = new CreateBoardGroupCommand(board.Id, "New Group", "#FF0000");
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -69,7 +70,7 @@ public class CreateBoardGroupTests : WorkManagementHandlerTestBase
         var board = CreateBoard();
         SetupBoards(board);
 
-        var command = new CreateBoardGroupCommand(board.Id, "New Group", "a0", null);
+        var command = new CreateBoardGroupCommand(board.Id, "New Group", null);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 

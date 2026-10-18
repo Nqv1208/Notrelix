@@ -125,6 +125,11 @@ Notrelix.Domain.Workspaces.Members.WorkspaceRole|System.Int32|Guest|0
 Notrelix.Domain.Workspaces.Members.WorkspaceRole|System.Int32|Member|1
 Notrelix.Domain.Workspaces.Members.WorkspaceRole|System.Int32|Admin|2
 Notrelix.Domain.Workspaces.Members.WorkspaceRole|System.Int32|Owner|3
+Notrelix.Domain.Workspaces.Spaces.SpaceMemberSubjectType|System.Int32|User|0
+Notrelix.Domain.Workspaces.Spaces.SpaceMemberSubjectType|System.Int32|Team|1
+Notrelix.Domain.Workspaces.Spaces.SpaceRole|System.Int32|Viewer|0
+Notrelix.Domain.Workspaces.Spaces.SpaceRole|System.Int32|Member|1
+Notrelix.Domain.Workspaces.Spaces.SpaceRole|System.Int32|Admin|2
 Notrelix.Domain.Workspaces.Spaces.SpaceStatus|System.Int32|Active|0
 Notrelix.Domain.Workspaces.Spaces.SpaceStatus|System.Int32|Archived|1
 Notrelix.Domain.Workspaces.Spaces.SpaceType|System.Int32|Folder|0

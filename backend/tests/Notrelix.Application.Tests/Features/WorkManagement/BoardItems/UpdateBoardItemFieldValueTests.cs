@@ -30,7 +30,7 @@ public class UpdateBoardItemFieldValueTests : WorkManagementHandlerTestBase
         SetupBoardItems(item);
         SetupBoardFields(field);
 
-        var command = new UpdateBoardItemFieldValueCommand(item.Id, field.Id, "new value");
+        var command = new UpdateBoardItemFieldValueCommand(item.Id, field.Id, "new value", 1);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -41,7 +41,7 @@ public class UpdateBoardItemFieldValueTests : WorkManagementHandlerTestBase
     [Fact]
     public async Task Handle_ItemNotFound_ThrowsNotFoundException()
     {
-        var command = new UpdateBoardItemFieldValueCommand(Guid.CreateVersion7(), Guid.CreateVersion7(), "value");
+        var command = new UpdateBoardItemFieldValueCommand(Guid.CreateVersion7(), Guid.CreateVersion7(), "value", 1);
 
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<NotFoundException>();
@@ -53,7 +53,7 @@ public class UpdateBoardItemFieldValueTests : WorkManagementHandlerTestBase
         var item = CreateBoardItem();
         SetupBoardItems(item);
 
-        var command = new UpdateBoardItemFieldValueCommand(item.Id, Guid.CreateVersion7(), "value");
+        var command = new UpdateBoardItemFieldValueCommand(item.Id, Guid.CreateVersion7(), "value", 1);
 
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<NotFoundException>();
@@ -73,7 +73,7 @@ public class UpdateBoardItemFieldValueTests : WorkManagementHandlerTestBase
         SetupBoardItems(item);
         SetupBoardFields(field);
 
-        var command = new UpdateBoardItemFieldValueCommand(item.Id, field.Id, "value");
+        var command = new UpdateBoardItemFieldValueCommand(item.Id, field.Id, "value", 1);
 
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<NotFoundException>();

@@ -11,7 +11,8 @@ public class CreateChecklistTests : WorkManagementHandlerTestBase
         _handler = new CreateChecklistCommandHandler(
             DbContextMock.Object,
             RequestContextMock.Object,
-            DateTimeProviderMock.Object);
+            DateTimeProviderMock.Object,
+            Placement);
     }
 
     [Fact]

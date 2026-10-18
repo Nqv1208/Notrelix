@@ -10,6 +10,7 @@ public class CreateBoardInWorkspaceTests : WorkManagementHandlerTestBase
     {
         _handler = new CreateBoardInWorkspaceCommandHandler(
             DbContextMock.Object,
+            Mock.Of<Notrelix.Application.Features.WorkManagement.Boards.Services.IBoardSpacePlacement>(),
             RequestContextMock.Object,
             DateTimeProviderMock.Object);
     }
@@ -24,6 +25,26 @@ public class CreateBoardInWorkspaceTests : WorkManagementHandlerTestBase
 
         result.Succeeded.Should().BeTrue();
         result.Data.Should().NotBeEmpty();
+    }
+
+    [Fact]
+    public async Task Handle_SeedsTheStatusFieldWithTheDefaultWorkStatuses()
+    {
+        var fields = new List<BoardField>();
+        var fieldSet = new Mock<Microsoft.EntityFrameworkCore.DbSet<BoardField>>();
+        fieldSet.Setup(s => s.AddRange(It.IsAny<BoardField[]>())).Callback<BoardField[]>(fields.AddRange);
+        DbContextMock.Setup(c => c.BoardFields).Returns(fieldSet.Object);
+        var command = new CreateBoardInWorkspaceCommand(TestWorkspaceId, "New Board", null, null, null);
+
+        await _handler.Handle(command, CancellationToken.None);
+
+        var status = fields.Should().ContainSingle(f => f.Type == FieldType.Status).Subject;
+        status.Options.OrderBy(o => o.Position).Select(o => (o.Name, o.Category)).Should().Equal(
+            ("Cần làm", WorkStatusCategory.Todo),
+            ("Đang làm", WorkStatusCategory.InProgress),
+            ("Chờ duyệt", WorkStatusCategory.Review),
+            ("Hoàn thành", WorkStatusCategory.Done));
+        fields.Where(f => f.Type != FieldType.Status).SelectMany(f => f.Options).Should().BeEmpty();
     }
 
     [Fact]

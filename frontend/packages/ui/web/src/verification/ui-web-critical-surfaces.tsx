@@ -10,6 +10,8 @@ import { MockDisabledState } from "../components/feedback/mock-disabled-state";
 import { NotFoundState } from "../components/feedback/not-found-state";
 import { UpgradeRequiredState } from "../components/feedback/upgrade-required-state";
 import { SubmitState } from "../components/forms/submit-state";
+import { ThemePicker, type ThemePickerLabels } from "../theme/theme-picker";
+import { ThemeProvider } from "../theme/theme-provider";
 import {
   Accordion,
   AccordionContent,
@@ -294,6 +296,31 @@ export function UiWebSubmitStateSurface() {
   );
 }
 
+const THEME_PICKER_FIXTURE_LABELS: ThemePickerLabels = {
+  mode: {
+    legend: "Mode",
+    options: {
+      light: { label: "Light", description: "Light surfaces" },
+      dark: { label: "Dark", description: "Dark surfaces" },
+      system: { label: "System", description: "Follows the device" },
+      "high-contrast": {
+        label: "High contrast",
+        description: "Maximum legibility",
+      },
+    },
+  },
+  accent: {
+    legend: "Accent color",
+    options: {
+      blue: { label: "Notrelix Blue", description: "Default brand color" },
+      coral: { label: "Coral", description: "Warm orange" },
+      ember: { label: "Ember", description: "Deep rose red" },
+      sage: { label: "Sage", description: "Muted green" },
+      amber: { label: "Amber", description: "Warm yellow" },
+    },
+  },
+};
+
 export function UiWebFormControlsSurface() {
   return (
     <SurfaceFrame title="Form controls">
@@ -359,6 +386,12 @@ export function UiWebFormControlsSurface() {
           </FieldError>
         </Field>
       </FieldGroup>
+      <ThemeProvider target={null}>
+        <ThemePicker
+          labels={THEME_PICKER_FIXTURE_LABELS}
+          className="max-w-xl"
+        />
+      </ThemeProvider>
     </SurfaceFrame>
   );
 }

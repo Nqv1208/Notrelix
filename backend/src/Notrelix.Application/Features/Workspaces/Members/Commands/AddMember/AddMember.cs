@@ -32,7 +32,7 @@ public class AddMemberCommandHandler : IRequestHandler<AddMemberCommand, Result>
     public async Task<Result> Handle(AddMemberCommand request, CancellationToken ct)
     {
         var workspace = await _context.Workspaces
-            .FirstOrDefaultAsync(w => w.Id == request.WorkspaceId && w.Status == WorkspaceStatus.Active && !w.IsDeleted, ct);
+            .FirstOrDefaultAsync(w => w.Id == request.WorkspaceId && w.Status == WorkspaceStatus.Active && w.DeletedAt == null, ct);
 
         if (workspace is null)
             throw new NotFoundException(nameof(Workspace), request.WorkspaceId);

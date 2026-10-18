@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Notrelix.Application.Common.Diagnostics;
 using Notrelix.Application.Events.Automation;
 using Notrelix.Application.Features.Automation.Executions.Services;
+using Notrelix.Application.Features.Automation.Ports.WorkManagement;
 using Notrelix.Application.Features.WorkManagement.Public.ItemMovement;
 using Notrelix.Domain.Automation.Executions;
 using Notrelix.Domain.Automation.Rules;
@@ -86,7 +87,7 @@ public sealed class AutomationMoveItemExecutorCompositionIntegrationTests : IAsy
         var deniedMember = WorkspaceMember.Create(accountId, workspace.Id, deniedUser.Id, WorkspaceRole.Member, ownerId, Now);
         var board = Board.Create(accountId, workspace.Id, ownerId, "Board", null, Now);
         var sourceGroup = BoardGroup.Create(accountId, workspace.Id, board.Id, "Todo", Color.Create("#808080"), FractionalIndex.Initial(), ownerId, Now);
-        var targetGroup = BoardGroup.Create(accountId, workspace.Id, board.Id, "Done", Color.Create("#00FF00"), FractionalIndex.Initial(), ownerId, Now);
+        var targetGroup = BoardGroup.Create(accountId, workspace.Id, board.Id, "Done", Color.Create("#00FF00"), FractionalIndex.Create("a1"), ownerId, Now);
         var item = BoardItem.CreateRoot(accountId, workspace.Id, board.Id, sourceGroup.Id, "Task", FractionalIndex.Initial(), ownerId, Now);
 
         var foreignWs = Workspace.Create(accountId, ownerId, "Composition Foreign WS", $"cmp-f-{Guid.NewGuid():N}", Now);
@@ -142,7 +143,7 @@ public sealed class AutomationMoveItemExecutorCompositionIntegrationTests : IAsy
     /// as DI composes them.
     /// </summary>
     private (AutomationMoveItemUseCase UseCase, ApplicationDbContext Context, AutomationMoveItemDispatchConsumer Consumer)
-        CreateComposition(CompositionGraph graph)
+        CreateComposition(CompositionGraph graph, Func<ApplicationDbContext, IWorkActionPort, IWorkActionPort>? wrapPort = null)
     {
         var tenant = WorkspaceTenant(graph.AccountId, graph.WorkspaceId, graph.OwnerUserId);
         var context = _db.CreateContext(tenant);
@@ -150,7 +151,9 @@ public sealed class AutomationMoveItemExecutorCompositionIntegrationTests : IAsy
         clockMock.Setup(c => c.UtcNow).Returns(Now);
 
         var moveUseCase = new Application.Features.WorkManagement.BoardItems.Services.MoveBoardItemUseCase(
-            context, clockMock.Object);
+            context, clockMock.Object,
+            new Application.Features.WorkManagement.Ordering.WorkPlacementResolver(
+                new Notrelix.Infrastructure.Data.WorkManagement.PostgresWorkOrderingScopeLock(context)));
         var idempotencyStore = new EfIdempotencyStore(
             context,
             System.TimeProvider.System,
@@ -172,8 +175,9 @@ public sealed class AutomationMoveItemExecutorCompositionIntegrationTests : IAsy
             context,
             authorizer,
             idempotencyStore);
-        var port = new WorkItemActionAdapter(actions);
-        var useCase = new AutomationMoveItemUseCase(context, port, clockMock.Object);
+        IWorkActionPort port = new WorkItemActionAdapter(actions);
+        if (wrapPort is not null) port = wrapPort(context, port);
+        var useCase = new AutomationMoveItemUseCase(context, port, clockMock.Object, new Notrelix.Infrastructure.Data.WorkManagement.PostgresOrderingConflictClassifier());
         var consumer = new AutomationMoveItemDispatchConsumer(
             useCase,
             NullLogger<AutomationMoveItemDispatchConsumer>.Instance,
@@ -264,6 +268,19 @@ public sealed class AutomationMoveItemExecutorCompositionIntegrationTests : IAsy
     {
         var graph = await SeedGraphAsync();
         var execution = await SeedExecutionAsync(graph);
+        // Board children are decided on their Board (GOV-033): an ordinary
+        // member of a Workspace-visible Board is now an Editor and may move
+        // items. The denied principal is therefore made a board Observer
+        // (Viewer) on a Private Board; the protected property is unchanged —
+        // the canonical decision denies and nothing else may bypass it.
+
+        await using (var restrict = _db.CreateContext(SystemTenant()))
+        {
+            var restricted = await restrict.Boards.SingleAsync(b => b.Id == graph.BoardId);
+            restricted.ChangeVisibility(BoardVisibility.Private, restricted.CreatedBy!.Value, DateTimeOffset.UtcNow);
+            restrict.BoardMembers.Add(BoardMember.Create(graph.BoardId, graph.DeniedUserId, BoardRole.Observer, DateTimeOffset.UtcNow));
+            await restrict.SaveChangesAsync();
+        }
 
         var outcome = await RunCompositionAsync(graph, graph.DeniedUserId, execution.Id);
 
@@ -350,6 +367,64 @@ public sealed class AutomationMoveItemExecutorCompositionIntegrationTests : IAsy
         retryOutcome.ItemGroupId.Should().Be(graph.TargetGroupId);
         retryOutcome.ItemVersion.Should().Be(2,
             "the retried delivery performs exactly one logical move");
+    }
+
+    [Fact]
+    public async Task MoveItemComposition_OrderingCollisionAtCommit_PropagatesTheStableConflict_AndRedeliveryReResolves()
+    {
+        // WM-V3-ORDER-005: a concurrent writer that bypasses the scope lock commits a
+        // root item with the exact key the automation resolved. The unique ordering
+        // index rejects the automation commit; the executor must surface
+        // work.ordering.conflict without a second write inside the aborted
+        // transaction, so the consumer transaction rolls back cleanly.
+        var graph = await SeedGraphAsync();
+        var execution = await SeedExecutionAsync(graph);
+        var (_, context, consumer) = CreateComposition(graph, (ctx, inner) => new CollidingWorkActionPort(inner, ctx, _db, graph));
+        var message = NewMoveItemMessage(execution.Id, graph.RuleId, graph.AccountId, graph.WorkspaceId, graph.OwnerUserId);
+        var consumeContext = new Moq.Mock<ConsumeContext<AutomationMoveItemRequestedV1>>();
+        consumeContext.SetupGet(c => c.Message).Returns(message);
+        consumeContext.SetupGet(c => c.CancellationToken).Returns(CancellationToken.None);
+
+        await using (var tx = await context.Database.BeginTransactionAsync())
+        {
+            var act = () => consumer.Consume(consumeContext.Object);
+
+            (await act.Should().ThrowAsync<ConflictException>(
+                "a second SaveChanges in the aborted transaction would surface 25P02 instead"))
+                .Which.ErrorCode.Should().Be("work.ordering.conflict");
+            await tx.RollbackAsync();
+        }
+
+        var afterConflict = await ReadOutcomeAsync(graph, execution.Id);
+        afterConflict.Status.Should().Be(AutomationExecutionStatus.Queued, "the rolled-back delivery records nothing");
+        afterConflict.ItemGroupId.Should().Be(graph.SourceGroupId);
+        afterConflict.ItemVersion.Should().Be(1);
+
+        var redelivered = await RunCompositionAsync(graph, graph.OwnerUserId, execution.Id);
+        redelivered.Status.Should().Be(AutomationExecutionStatus.Succeeded, "redelivery re-resolves placement after the colliding item");
+        redelivered.ItemGroupId.Should().Be(graph.TargetGroupId);
+    }
+
+    /// <summary>
+    /// After the real move resolved and tracked its new key, commits a root item
+    /// with the same key in the target group from a separate connection that does
+    /// not take the ordering lock.
+    /// </summary>
+    private sealed class CollidingWorkActionPort(
+        IWorkActionPort inner, ApplicationDbContext context, PostgresTestContainer db, CompositionGraph graph) : IWorkActionPort
+    {
+        public async Task<WorkActionResult> MoveItemAsync(
+            Guid itemId, Guid targetGroupId, Guid executionId, AutomationPrincipal automationPrincipal, CancellationToken cancellationToken)
+        {
+            var result = await inner.MoveItemAsync(itemId, targetGroupId, executionId, automationPrincipal, cancellationToken);
+            var resolved = context.ChangeTracker.Entries<BoardItem>().Single(e => e.Entity.Id == itemId).Entity.Position;
+
+            await using var other = db.CreateContext(SystemTenant());
+            other.BoardItems.Add(BoardItem.CreateRoot(
+                graph.AccountId, graph.WorkspaceId, graph.BoardId, targetGroupId, "Concurrent", resolved, graph.OwnerUserId, Now));
+            await other.SaveChangesAsync(cancellationToken);
+            return result;
+        }
     }
 
     // --- helpers --------------------------------------------------------------

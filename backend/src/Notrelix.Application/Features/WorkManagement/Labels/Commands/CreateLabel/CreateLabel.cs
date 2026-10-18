@@ -7,7 +7,8 @@ namespace Notrelix.Application.Features.WorkManagement.Labels.Commands.CreateLab
 public record CreateLabelCommand(Guid BoardId, string Color, string? Name)
     : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
-    public PermissionAction Action => PermissionAction.ManageBoard;
+    // A label is part of the Board schema: an Editor change, not Board management.
+    public PermissionAction Action => PermissionAction.CreateField;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);
 }
 

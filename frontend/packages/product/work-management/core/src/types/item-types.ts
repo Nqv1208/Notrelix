@@ -33,6 +33,25 @@ export interface Card {
   _count: { comments: number; attachments: number; checklistItems: number };
   createdAt: string;
   updatedAt?: string;
+  /**
+   * The item aggregate version from the board read; a move sends it as
+   * `expectedVersion`. Absent on reads that do not carry it.
+   */
+  version?: number | null;
+  /** Board item key such as "ERP-142", or a plain number on a board without a prefix. */
+  itemKey?: string | null;
+  /** Parent item id when this item is a child item; child items are not top-level cards. */
+  parentItemId?: string | null;
+  /** Selected option of the board's Status field. */
+  statusOptionId?: string | null;
+  /** Selected option of the board's priority field, when the read carries it. */
+  priorityOptionId?: string | null;
+  /** Work status category of the selected Status option. */
+  statusCategory?: "todo" | "in_progress" | "review" | "done" | null;
+  /** Due date and time as an ISO 8601 string. */
+  dueAt?: string | null;
+  /** Child item progress; a card shows it only when `total > 0`. */
+  childProgress?: { done: number; total: number } | null;
 }
 
 export type CardDetailTab =
@@ -57,6 +76,40 @@ export interface CardUpdate {
   updatedAt?: string;
 }
 
+/**
+ * What a history line changed beyond its sentence (gap
+ * `CTR-GAP-WM-ITEM-DETAIL`): a before and after, a link, a file or an edited
+ * description.
+ */
+export type ActivityDetail =
+  | {
+      readonly kind: "diff";
+      readonly label?: string;
+      readonly from: string;
+      readonly to: string;
+      readonly note?: string;
+    }
+  | {
+      readonly kind: "link";
+      readonly relation: string;
+      readonly key: string;
+      readonly title: string;
+    }
+  | { readonly kind: "file"; readonly name: string }
+  | {
+      readonly kind: "description";
+      readonly label: string;
+      readonly added: string;
+    };
+
+/** How the "Tất cả" tab words a history line when it differs from the history tab's. */
+export interface ActivityCompact {
+  readonly verb: string;
+  readonly target?: string;
+  /** The line shows no before/after on that tab. */
+  readonly hideDetail?: boolean;
+}
+
 export interface CardActivity {
   id: string;
   cardId: string;
@@ -65,6 +118,16 @@ export interface CardActivity {
   type?: "created" | "updated" | "commented" | "file" | "automation" | "system";
   metadata?: Record<string, unknown>;
   createdAt: string;
+  /** The rule's name when an automation made the change. */
+  automationName?: string;
+  /** The short verb ("đổi Hạn chót"); absent: `action` is the whole sentence. */
+  verb?: string;
+  /** What the verb names, drawn in the accent ("ERP-142.3"). */
+  target?: string;
+  /** Text after the verb on the "Tất cả" tab only ("và nhắc Trần Minh Quân"). */
+  notified?: string;
+  detail?: ActivityDetail;
+  compact?: ActivityCompact;
 }
 
 export interface CardFile {
@@ -155,6 +218,8 @@ export interface CommentDtoApi {
   isEdited: boolean;
   resolvedAt?: string | null;
   createdAt: string;
+  /** Files that came with the comment (gap `CTR-GAP-WM-ITEM-DETAIL`). */
+  attachmentIds?: string[];
 }
 
 export interface ActivityLogDtoApi {
@@ -166,6 +231,14 @@ export interface ActivityLogDtoApi {
   resourceId: string;
   resourceTitle?: string | null;
   createdAt: string;
+  /** Gap fields (`CTR-GAP-WM-ITEM-DETAIL`). */
+  kind?: "created" | null;
+  automationName?: string | null;
+  verb?: string | null;
+  target?: string | null;
+  notified?: string | null;
+  detail?: ActivityDetail | null;
+  compact?: ActivityCompact | null;
 }
 
 export interface ActivityLogResponseApi {

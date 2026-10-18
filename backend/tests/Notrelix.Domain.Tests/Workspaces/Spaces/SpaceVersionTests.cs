@@ -29,7 +29,7 @@ public class SpaceVersionTests
         ((IHasDomainEvents)space).ClearDomainEvents();
         var version = space.Version;
 
-        space.Archive(_actorId, _now);
+        space.Archive(_actorId, _now, SpaceContentFact.Empty);
 
         space.Version.Should().Be(version + 1);
         space.DomainEvents.Should().Contain(e => e is SpaceArchivedDomainEvent);
@@ -42,7 +42,7 @@ public class SpaceVersionTests
         ((IHasDomainEvents)space).ClearDomainEvents();
         var version = space.Version;
 
-        space.Delete(_actorId, _now);
+        space.Delete(_actorId, _now, SpaceContentFact.Empty);
 
         space.Version.Should().Be(version + 1);
         space.IsDeleted.Should().BeTrue();
@@ -53,11 +53,11 @@ public class SpaceVersionTests
     public void Restore_ShouldIncrementVersion()
     {
         var space = Space.Create(_accountId, _workspaceId, "Space", SpaceVisibility.Private, _actorId, _now);
-        space.Delete(_actorId, _now);
+        space.Delete(_actorId, _now, SpaceContentFact.Empty);
         ((IHasDomainEvents)space).ClearDomainEvents();
         var version = space.Version;
 
-        space.Restore(_actorId, _now);
+        space.Restore(_actorId, _now, SpacePlacement.Root(space.Position, []));
 
         space.Version.Should().Be(version + 1);
         space.IsDeleted.Should().BeFalse();

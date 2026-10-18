@@ -40,7 +40,8 @@ public class GetBoardSchemaQueryHandler : IRequestHandler<GetBoardSchemaQuery, B
                 f.Settings.Data.Value,
                 f.DefaultValue == null ? null : f.DefaultValue.Data.Value,
                 f.Position.Value,
-                f.IsSystem
+                f.IsSystem,
+                f.Version
             )).ToListAsync(cancellationToken);
 
         var groups = await _context.BoardGroups
@@ -52,7 +53,8 @@ public class GetBoardSchemaQueryHandler : IRequestHandler<GetBoardSchemaQuery, B
                 g.Title,
                 g.Color.ToString(),
                 g.Position.Value,
-                g.IsCollapsed
+                g.IsCollapsed,
+                g.Version
             )).ToListAsync(cancellationToken);
 
         return new BoardSchemaDto(
@@ -60,7 +62,8 @@ public class GetBoardSchemaQueryHandler : IRequestHandler<GetBoardSchemaQuery, B
             board.Title,
             board.Description,
             fields,
-            groups
+            groups,
+            board.Version
         );
     }
 }

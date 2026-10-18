@@ -10,7 +10,8 @@ public static class GetSpaceEndpoint
         group.MapWorkspaceGet("/", HandleAsync)
             .WithName("Workspaces.Spaces.GetSpace")
             .WithTags("Workspaces.Spaces")
-            .WithSummary("Get a space by ID");
+            .WithSummary("Get a space by ID")
+            .Produces<SpaceDto>(StatusCodes.Status200OK, "application/json");
         return group;
     }
 

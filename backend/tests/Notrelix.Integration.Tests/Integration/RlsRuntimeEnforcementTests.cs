@@ -3,15 +3,21 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Logging.Abstractions;
 using Npgsql;
 using Testcontainers.PostgreSql;
+using Notrelix.Application.Features.Workspaces.Members.Commands.AddMember;
+using Notrelix.Application.Features.Workspaces.Members.Commands.RemoveMember;
+using Notrelix.Application.Features.Workspaces.Members.Commands.SuspendMember;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.CreateWorkspace;
 using Notrelix.Domain.Collaboration.Comments;
 using Notrelix.Domain.Documents.Pages;
 using Notrelix.Domain.Identity.Tokens;
 using Notrelix.Domain.SharedKernel;
+using Notrelix.Domain.Workspaces.Members;
+using Notrelix.Domain.Workspaces.Navigation;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Authz;
 using Notrelix.Infrastructure.Data.Notifications;
 using Notrelix.Infrastructure.Data.Rls;
+using Notrelix.Infrastructure.Workspaces.Members;
 using Notrelix.Testing.Application.Fakes;
 using Notrelix.Testing.Domain.Builders;
 using Notrelix.Testing.Integration;
@@ -405,6 +411,149 @@ public sealed class RlsRuntimeEnforcementTests : IAsyncLifetime
             "a user without a runtime-written grant must see nothing under the enforced app role");
     }
 
+    /// <summary>
+    /// Drives the production membership chain (CreateWorkspace -> AddMember ->
+    /// Board) so the revocation tests prove the real handler + grant-projection
+    /// path rather than a hand-seeded grant. Returns the workspace the member
+    /// was added to and the member's user id.
+    /// </summary>
+    private async Task<(Guid WorkspaceId, Guid MemberId)> SeedWorkspaceWithMemberAndBoardAsync()
+    {
+        var creatorId = Guid.Parse("00000000-0000-0000-0000-000000000D01");
+        var memberId = Guid.Parse("00000000-0000-0000-0000-000000000D02");
+
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = CreateContext(tenant);
+
+        var requestContext = new Mock<ICurrentRequestContext>();
+        requestContext.Setup(r => r.UserId).Returns(creatorId);
+        requestContext.Setup(r => r.RequireAccountId()).Returns(AccountA);
+        var clock = new Mock<IDateTimeProvider>();
+        clock.Setup(c => c.UtcNow).Returns(FixedTime);
+
+        var projection = new WorkspaceGrantProjectionServiceAdapter(new AccessGrantProjectionService(context));
+
+        var createHandler = new CreateWorkspaceCommandHandler(
+            context, requestContext.Object, clock.Object, projection);
+        var created = await createHandler.Handle(new CreateWorkspaceCommand("Runtime Revocation Workspace", null, false), default);
+        created.Succeeded.Should().BeTrue();
+        await context.SaveChangesAsync();
+        var workspaceId = created.Data;
+
+        var addHandler = new AddMemberCommandHandler(
+            context, requestContext.Object, clock.Object, projection);
+        var added = await addHandler.Handle(new AddMemberCommand(workspaceId, memberId, WorkspaceRole.Member), default);
+        added.Succeeded.Should().BeTrue();
+        await context.SaveChangesAsync();
+
+        context.Boards.Add(new BoardBuilder()
+            .WithAccountId(AccountA)
+            .WithWorkspaceId(workspaceId)
+            .WithCreatedBy(creatorId)
+            .WithTitle("Revocation Board")
+            .WithCreatedAt(FixedTime)
+            .Build());
+        await context.SaveChangesAsync();
+
+        var memberGrant = await context.AccessGrants.SingleAsync(
+            g => g.AccountId == AccountA && g.WorkspaceId == workspaceId && g.UserId == memberId);
+        memberGrant.MembershipStatus.Should().Be("Active");
+        memberGrant.RevokedAt.Should().BeNull();
+
+        var memberTitles = await QueryBoardTitlesAsAppRoleAsync(userId: memberId);
+        memberTitles.Should().BeEquivalentTo(["Revocation Board"],
+            "the member grant written by AddMember must be usable under the enforced app role");
+
+        return (workspaceId, memberId);
+    }
+
+    /// <summary>
+    /// WG-TST-MEM-INT-001 / WG-TEST-GAP-003: suspending a member through the
+    /// production SuspendMember handler must revoke the workspace access grant,
+    /// and the RLS predicate must deny the previously visible row immediately.
+    /// </summary>
+    [Fact]
+    public async Task RuntimeMembershipSuspend_RevokesGrant_AndDeniesUnderAppRole()
+    {
+        var creatorId = Guid.Parse("00000000-0000-0000-0000-000000000D01");
+        var (workspaceId, memberId) = await SeedWorkspaceWithMemberAndBoardAsync();
+
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = CreateContext(tenant);
+
+        var requestContext = new Mock<ICurrentRequestContext>();
+        requestContext.Setup(r => r.UserId).Returns(creatorId);
+        requestContext.Setup(r => r.RequireAccountId()).Returns(AccountA);
+        var clock = new Mock<IDateTimeProvider>();
+        clock.Setup(c => c.UtcNow).Returns(FixedTime);
+
+        var handler = new SuspendMemberCommandHandler(
+            context, requestContext.Object, clock.Object,
+            new WorkspaceGrantProjectionServiceAdapter(new AccessGrantProjectionService(context)),
+            new WorkspaceOwnerUpdateLocker(context));
+
+        var result = await handler.Handle(new SuspendMemberCommand(workspaceId, memberId), default);
+        result.Succeeded.Should().BeTrue();
+        await context.SaveChangesAsync();
+
+        var member = await context.WorkspaceMembers.SingleAsync(
+            m => m.WorkspaceId == workspaceId && m.UserId == memberId);
+        member.Status.Should().Be(WorkspaceMemberStatus.Suspended, "the production handler must suspend the member");
+
+        var grant = await context.AccessGrants.SingleAsync(
+            g => g.AccountId == AccountA && g.WorkspaceId == workspaceId && g.UserId == memberId);
+        grant.RevokedAt.Should().NotBeNull("suspension must revoke the workspace access grant");
+
+        var memberTitles = await QueryBoardTitlesAsAppRoleAsync(userId: memberId);
+        memberTitles.Should().BeEmpty(
+            "a suspended member's revoked grant must not preserve RLS visibility");
+    }
+
+    /// <summary>
+    /// WG-TST-MEM-INT-001 / WG-TEST-GAP-003: removing a member through the
+    /// production RemoveMember handler must revoke the workspace access grant
+    /// and deny the previously visible row under the app role.
+    /// </summary>
+    [Fact]
+    public async Task RuntimeMembershipRemoval_RevokesGrant_AndDeniesUnderAppRole()
+    {
+        var creatorId = Guid.Parse("00000000-0000-0000-0000-000000000D01");
+        var (workspaceId, memberId) = await SeedWorkspaceWithMemberAndBoardAsync();
+
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = CreateContext(tenant);
+
+        var requestContext = new Mock<ICurrentRequestContext>();
+        requestContext.Setup(r => r.UserId).Returns(creatorId);
+        requestContext.Setup(r => r.RequireAccountId()).Returns(AccountA);
+        var clock = new Mock<IDateTimeProvider>();
+        clock.Setup(c => c.UtcNow).Returns(FixedTime);
+
+        var handler = new RemoveMemberCommandHandler(
+            context, requestContext.Object, clock.Object,
+            new WorkspaceGrantProjectionServiceAdapter(new AccessGrantProjectionService(context)),
+            new WorkspaceOwnerUpdateLocker(context));
+
+        var result = await handler.Handle(new RemoveMemberCommand(workspaceId, memberId), default);
+        result.Succeeded.Should().BeTrue();
+        await context.SaveChangesAsync();
+
+        var member = await context.WorkspaceMembers.SingleAsync(
+            m => m.WorkspaceId == workspaceId && m.UserId == memberId);
+        member.Status.Should().Be(WorkspaceMemberStatus.Removed, "the production handler must remove the member");
+
+        var grant = await context.AccessGrants.SingleAsync(
+            g => g.AccountId == AccountA && g.WorkspaceId == workspaceId && g.UserId == memberId);
+        grant.RevokedAt.Should().NotBeNull("removal must revoke the workspace access grant");
+
+        var memberTitles = await QueryBoardTitlesAsAppRoleAsync(userId: memberId);
+        memberTitles.Should().BeEmpty(
+            "a removed member's revoked grant must not preserve RLS visibility");
+    }
+
     [Fact]
     public async Task DocsPagesAndCollabComments_CrossAccount_GrantInOneAccount()
     {
@@ -418,6 +567,102 @@ public sealed class RlsRuntimeEnforcementTests : IAsyncLifetime
         var contents = await QueryScalarsAsAppRoleAsync("SELECT content #>> '{}' FROM collab.comments ORDER BY content #>> '{}'", userId: UserId);
         contents.Should().BeEquivalentTo(["Comment A1"],
             "collab.comments must be workspace-scoped by account/workspace");
+    }
+
+    /// <summary>
+    /// WX-BE-001 / WX-BE-002 (WX-DEC-011): personal navigation rows are scoped by
+    /// workspace access AND row ownership. Inside a workspace both users can
+    /// access, each sees only their own recents and pins; a row in a workspace
+    /// the user has no grant for stays hidden; and the app role cannot insert a
+    /// row on behalf of another user (WITH CHECK).
+    /// </summary>
+    [Fact]
+    public async Task AppRole_NavigationState_IsVisibleOnlyToItsOwnerInsideGrantedWorkspaces()
+    {
+        var otherUser = Guid.Parse("00000000-0000-0000-0000-0000000000BB");
+        var mineRecent = Guid.Parse("A0000000-0000-0000-0000-0000000E0001");
+        var theirsRecent = Guid.Parse("A0000000-0000-0000-0000-0000000E0002");
+        var mineUngranted = Guid.Parse("A0000000-0000-0000-0000-0000000E0003");
+        var minePin = Guid.Parse("A0000000-0000-0000-0000-0000000E0004");
+        var theirsPin = Guid.Parse("A0000000-0000-0000-0000-0000000E0005");
+
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using (var context = CreateContext(tenant))
+        {
+            context.RecentResources.AddRange(
+                RecentResource.Create(AccountA, WsA1, UserId, NavigationResourceKinds.Board, mineRecent, FixedTime),
+                RecentResource.Create(AccountA, WsA1, otherUser, NavigationResourceKinds.Board, theirsRecent, FixedTime),
+                RecentResource.Create(AccountA, WsA2, UserId, NavigationResourceKinds.Page, mineUngranted, FixedTime));
+            context.PinnedResources.AddRange(
+                PinnedResource.Create(AccountA, WsA1, UserId, NavigationResourceKinds.Board, minePin, 0, FixedTime),
+                PinnedResource.Create(AccountA, WsA1, otherUser, NavigationResourceKinds.Page, theirsPin, 0, FixedTime));
+            await context.SaveChangesAsync();
+        }
+
+        await SeedGrantAsync(AccountA, WsA1, UserId);
+        await SeedGrantAsync(AccountA, WsA1, otherUser);
+
+        (await QueryScalarsAsAppRoleAsync("SELECT resource_id::text FROM workspace.recent_resources ORDER BY 1", userId: UserId))
+            .Should().Equal([mineRecent.ToString()],
+                "a member sees only their own recents, and none in a workspace without a grant");
+        (await QueryScalarsAsAppRoleAsync("SELECT resource_id::text FROM workspace.recent_resources ORDER BY 1", userId: otherUser))
+            .Should().Equal([theirsRecent.ToString()]);
+        (await QueryScalarsAsAppRoleAsync("SELECT resource_id::text FROM workspace.pinned_resources ORDER BY 1", userId: UserId))
+            .Should().Equal([minePin.ToString()]);
+        (await QueryScalarsAsAppRoleAsync("SELECT resource_id::text FROM workspace.pinned_resources ORDER BY 1", userId: otherUser))
+            .Should().Equal([theirsPin.ToString()]);
+        (await QueryScalarsAsAppRoleAsync("SELECT resource_id::text FROM workspace.pinned_resources ORDER BY 1"))
+            .Should().BeEmpty("a request without user context must see no navigation state");
+
+        var forgedInsert = () => QueryScalarsAsAppRoleAsync($"""
+            INSERT INTO workspace.pinned_resources (id, account_id, workspace_id, user_id, resource_kind, resource_id, pinned_at)
+            VALUES ('{Guid.NewGuid()}', '{AccountA}', '{WsA1}', '{otherUser}', 'work-management.board', '{Guid.NewGuid()}', now())
+            RETURNING id::text
+            """, userId: UserId);
+        (await forgedInsert.Should().ThrowAsync<PostgresException>())
+            .Which.SqlState.Should().Be("42501", "the app role cannot write a pin owned by another user");
+    }
+
+    /// <summary>
+    /// ADR-009: Space membership entries and the Space closure index are
+    /// tenant-scoped. A user with a grant only in workspace A1 sees A1's entries
+    /// and closure rows, never those of a workspace without a grant, and the app
+    /// role cannot write a closure row into a workspace it has no access to.
+    /// </summary>
+    [Fact]
+    public async Task AppRole_SpaceMembersAndClosure_AreWorkspaceScoped()
+    {
+        var spaceA1 = Notrelix.Domain.Workspaces.Spaces.Space.Create(AccountA, WsA1, "Space A1", Notrelix.Domain.Workspaces.Spaces.SpaceVisibility.Private, UserId, FixedTime);
+        var spaceB1 = Notrelix.Domain.Workspaces.Spaces.Space.Create(AccountB, WsB1, "Space B1", Notrelix.Domain.Workspaces.Spaces.SpaceVisibility.Private, UserId, FixedTime);
+
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using (var context = CreateContext(tenant))
+        {
+            context.Spaces.AddRange(spaceA1, spaceB1);
+            context.SpacePaths.AddRange(
+                new Notrelix.Infrastructure.Data.Workspaces.SpacePathRecord(AccountA, WsA1, spaceA1.Id, spaceA1.Id, 0),
+                new Notrelix.Infrastructure.Data.Workspaces.SpacePathRecord(AccountB, WsB1, spaceB1.Id, spaceB1.Id, 0));
+            await context.SaveChangesAsync();
+        }
+
+        await SeedGrantAsync(AccountA, WsA1, UserId);
+
+        (await QueryScalarsAsAppRoleAsync("SELECT space_id::text FROM workspace.space_members ORDER BY 1", userId: UserId))
+            .Should().Equal([spaceA1.Id.ToString()], "space members of a workspace without a grant stay hidden");
+        (await QueryScalarsAsAppRoleAsync("SELECT descendant_id::text FROM workspace.space_paths ORDER BY 1", userId: UserId))
+            .Should().Equal([spaceA1.Id.ToString()], "closure rows of a workspace without a grant stay hidden");
+        (await QueryScalarsAsAppRoleAsync("SELECT descendant_id::text FROM workspace.space_paths ORDER BY 1"))
+            .Should().BeEmpty("a request without user context sees no closure rows");
+
+        var forgedInsert = () => QueryScalarsAsAppRoleAsync($"""
+            INSERT INTO workspace.space_paths (ancestor_id, descendant_id, account_id, workspace_id, depth)
+            VALUES ('{spaceB1.Id}', '{spaceA1.Id}', '{AccountB}', '{WsB1}', 1)
+            RETURNING descendant_id::text
+            """, userId: UserId);
+        (await forgedInsert.Should().ThrowAsync<PostgresException>())
+            .Which.SqlState.Should().Be("42501", "the app role cannot write closure rows into a workspace it cannot access");
     }
 
     [Fact]

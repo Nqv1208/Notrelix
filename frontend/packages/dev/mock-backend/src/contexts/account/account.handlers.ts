@@ -12,8 +12,10 @@
 
 import { defineMockOperation } from "../../operations/types";
 import { ok } from "../../transport/create-response";
+import { accountPagesOperations } from "./account-pages.handlers";
 
 export const accountOperations = [
+  ...accountPagesOperations,
   defineMockOperation({
     id: "account.preferences.get",
     contract: { kind: "gap", gapId: "CTR-GAP-ACC-PREFERENCES" } as any,

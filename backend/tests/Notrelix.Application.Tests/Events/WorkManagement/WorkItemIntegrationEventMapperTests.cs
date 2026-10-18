@@ -37,6 +37,8 @@ public class WorkItemIntegrationEventMapperTests
         mapped.Revision.Should().Be(domainEvent.Version,
             "the producer aggregate version is the semantic ordering authority carried by the v2 contract");
         mapped.OccurredAt.Should().Be(domainEvent.OccurredAt);
+        mapped.NewPosition.Should().Be("a5",
+            "a move fact carries its authoritative final scope, key and revision (WM-V3-EVT-001)");
     }
 
     [Fact]

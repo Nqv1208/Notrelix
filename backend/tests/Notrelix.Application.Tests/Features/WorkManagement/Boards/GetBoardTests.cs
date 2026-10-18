@@ -9,7 +9,7 @@ public class GetBoardTests : WorkManagementHandlerTestBase
 
     public GetBoardTests()
     {
-        _handler = new GetBoardQueryHandler(DbContextMock.Object);
+        _handler = new GetBoardQueryHandler(DbContextMock.Object, new Notrelix.Testing.Application.Fakes.FakeResourceVisibility(), RequestContextMock.Object);
     }
 
     [Fact]

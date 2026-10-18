@@ -1,3 +1,4 @@
+using Notrelix.Application.Features.Workspaces.Spaces.Services;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 
@@ -8,19 +9,23 @@ public record UnarchiveSpaceCommand(
     Guid SpaceId
 ) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission
 {
-    public PermissionAction Action => PermissionAction.ManageWorkspace;
-    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);
+    // GOV-028: ManageSpaces on the Space itself (workspace Owner/Admin, or an
+    // effective Space Admin of the Space or one of its ancestors).
+    public PermissionAction Action => PermissionAction.ManageSpaces;
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("workspaces.space"), SpaceId, WorkspaceId);
 }
 
 public class UnarchiveSpaceCommandHandler : IRequestHandler<UnarchiveSpaceCommand, Result>
 {
     private readonly IWorkspaceDbContext _context;
+    private readonly ISpaceStore _spaces;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
 
-    public UnarchiveSpaceCommandHandler(IWorkspaceDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider)
+    public UnarchiveSpaceCommandHandler(IWorkspaceDbContext context, ISpaceStore spaces, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider)
     {
         _context = context;
+        _spaces = spaces;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
     }
@@ -33,7 +38,12 @@ public class UnarchiveSpaceCommandHandler : IRequestHandler<UnarchiveSpaceComman
         if (space is null)
             throw new NotFoundException(nameof(Space), request.SpaceId);
 
-        space.Unarchive(_requestContext.UserId, _dateTimeProvider.UtcNow);
+        // WSP-022: a Space cannot become active again under an inactive parent.
+        var parentIsActive = true;
+        if (space.ParentSpaceId is { } parentId)
+            parentIsActive = (await _spaces.FindParentFactAsync(parentId, ct))?.IsActive ?? false;
+
+        space.Unarchive(_requestContext.UserId, _dateTimeProvider.UtcNow, parentIsActive);
         return Result.Success();
     }
 }

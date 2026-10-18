@@ -8,7 +8,10 @@
  *
  * Operations with COMPATIBILITY-GAP (temporary legacy behavior):
  *   workspace.views.list   — GET /workspaces/:id/views   [CTR-GAP-WS-VIEWS]
- *   workspace.members.list — GET /workspaces/:id/members [CTR-GAP-WS-MEMBERS]
+ *
+ * Members, invitations, activity, settings and the versioned profile,
+ * defaults and archive writes mirror the producer shapes
+ * (Workspaces.Members.*, Workspaces.Invitations.*, WX-MEM-001/WX-SET-001).
  *
  * Plan: 01-FREEZE-SPEC.md §FZ-S06, §FZ-S07, §FZ-S10, §FZ-S11
  *       02-IMPLEMENTATION-PLAN.md §MFB-FZ-03, §MFB-FZ-05
@@ -16,13 +19,190 @@
 
 import type {
   WorkspaceSummary,
-  WorkspaceMember,
   WorkspaceView,
 } from "@notrelix/features-workspace";
 import { defineMockOperation } from "../../operations/types";
-import { ok, created, notFound } from "../../transport/create-response";
+import { spacesOperations } from "./spaces.handlers";
+import { onboardingOperations } from "./onboarding.handlers";
+import {
+  ok,
+  created,
+  noContent,
+  notFound,
+  forbidden,
+  validationError,
+  type MockHttpResult,
+} from "../../transport/create-response";
+import type {
+  MockMemberChange,
+  MockStore,
+  MockVersionedWrite,
+  MockWorkspaceSettingsRecord,
+} from "../../state/mock-store";
+
+const NAVIGATION_KINDS = new Set(["work-management.board", "documents.page"]);
+
+/** `WorkspaceInvitationStatus` enum names. */
+const INVITATION_STATUS = {
+  pending: "Pending",
+  accepted: "Accepted",
+  revoked: "Revoked",
+} as const;
+
+type MemberRole = "owner" | "admin" | "member" | "guest";
+
+/** The producer serializes roles as enum names (JsonStringEnumConverter). */
+const ROLE_NAME: Readonly<Record<MemberRole, string>> = {
+  owner: "Owner",
+  admin: "Admin",
+  member: "Member",
+  guest: "Guest",
+};
+
+/** Accepts the enum name or value, like the producer's role binding. */
+function parseRole(value: unknown): MemberRole | null {
+  if (typeof value === "number") {
+    return (["guest", "member", "admin", "owner"] as const)[value] ?? null;
+  }
+  if (typeof value !== "string") return null;
+  const lower = value.toLowerCase();
+  return lower === "owner" ||
+    lower === "admin" ||
+    lower === "member" ||
+    lower === "guest"
+    ? lower
+    : null;
+}
+
+/** `ManageMembers` is held by owners and admins. */
+function canManageMembers(store: MockStore, workspaceId: string): boolean {
+  const role = store.getCurrentMemberRole(workspaceId);
+  return role === "owner" || role === "admin";
+}
+
+/** A business-rule failure as the producer's ProblemDetails. */
+function ruleViolation(detail: string): MockHttpResult<unknown> {
+  return {
+    status: 400,
+    body: {
+      type: "https://docs.notrelix.com/problems/business_rule-violation",
+      title: "Business rule violation",
+      status: 400,
+      detail,
+      errorCode: "business_rule.violation",
+    },
+  };
+}
+
+/** The producer's 412 for a stale `expectedVersion` (common.precondition-failed). */
+function preconditionFailed(): MockHttpResult<never> {
+  const result: MockHttpResult<unknown> = {
+    status: 412,
+    body: {
+      type: "https://docs.notrelix.com/problems/common-precondition-failed",
+      title: "Precondition failed",
+      status: 412,
+      detail: "The resource was modified by another request. Reload and retry.",
+      errorCode: "common.precondition-failed",
+    },
+  };
+  return result as MockHttpResult<never>;
+}
+
+function versionedWriteResult(
+  write: MockVersionedWrite,
+): MockHttpResult<never> {
+  switch (write) {
+    case "ok":
+      return noContent();
+    case "not-found":
+      return notFound() as MockHttpResult<never>;
+    case "stale":
+      return preconditionFailed();
+  }
+}
+
+/** Gap field `color` (CTR-GAP-WS-COLOR): the mockups' workspace mark colours. */
+function workspaceColor(id: string): string | null {
+  return id === "mock-workspace-primary"
+    ? "blue"
+    : id === "mock-workspace-secondary"
+      ? "sage"
+      : id === "ws-0002" || id.endsWith("0002")
+        ? "gold"
+        : null;
+}
+
+/** `WorkspaceDto` as the producer serializes it (version included). */
+function workspaceDto(store: MockStore, workspaceId: string) {
+  const w = store.getWorkspace(workspaceId)!;
+  return {
+    id: w.id,
+    name: w.name,
+    slug: w.slug,
+    description: store.getWorkspaceDescription(w.id),
+    plan: w.plan,
+    icon: w.icon,
+    memberCount: store.getWorkspaceMemberCount(w.id),
+    color: workspaceColor(w.id),
+    // Gap field `departmentCount` (CTR-GAP-WS-COLOR family): the workspace's
+    // departments, whether or not the caller can see each of them.
+    departmentCount: store.spaces
+      .spacesOf(w.id)
+      .filter(
+        (space) =>
+          space.type === "Department" && !space.parentId && !space.archived,
+      ).length,
+    isPersonal: w.isPersonal,
+    isArchived: false,
+    version: store.getWorkspaceVersion(w.id),
+  };
+}
+
+const SETTINGS_ROLE: Readonly<
+  Record<string, MockWorkspaceSettingsRecord["defaultMemberRole"]>
+> = { admin: "Admin", member: "Member", guest: "Guest" };
+
+function memberChangeResult(change: MockMemberChange): MockHttpResult<never> {
+  switch (change) {
+    case "ok":
+      return noContent();
+    case "not-found":
+      return notFound() as MockHttpResult<never>;
+    case "last-owner":
+      return ruleViolation(
+        "Cannot downgrade the last owner of the workspace.",
+      ) as MockHttpResult<never>;
+    case "owner-direct":
+      return ruleViolation(
+        "Ownership must be transferred through the ownership transfer workflow.",
+      ) as MockHttpResult<never>;
+    case "inactive":
+      return ruleViolation(
+        "Cannot change role of an inactive or suspended member.",
+      ) as MockHttpResult<never>;
+  }
+}
+
+/** Mirrors the producer: the resource must live in the caller's workspace. */
+function navigationResourceExists(
+  store: MockStore,
+  workspaceId: string,
+  kind: string,
+  resourceId: string,
+): boolean {
+  if (kind === "work-management.board") {
+    return store.getBoard(resourceId)?.workspaceId === workspaceId;
+  }
+  if (kind === "documents.page") {
+    return store.getPage(resourceId)?.workspaceId === workspaceId;
+  }
+  return false;
+}
 
 export const workspaceOperations = [
+  ...spacesOperations,
+  ...onboardingOperations,
   // ─── GET /workspaces ──────────────────────────────────────────────────────
 
   defineMockOperation<Record<string, never>, never, WorkspaceSummary[]>({
@@ -32,15 +212,10 @@ export const workspaceOperations = [
     route: "/workspaces",
     async handle({ store }) {
       return ok(
-        store.getWorkspaces().map((w) => ({
-          id: w.id,
-          name: w.name,
-          slug: w.slug,
-          plan: w.plan,
-          icon: w.icon,
-          memberCount: store.getWorkspaceMembers(w.id).length,
-          isPersonal: w.isPersonal,
-        })),
+        store
+          .getWorkspaces()
+          .filter((w) => !store.isWorkspaceArchived(w.id))
+          .map((w) => workspaceDto(store, w.id)),
       );
     },
   }),
@@ -88,16 +263,9 @@ export const workspaceOperations = [
     route: "/workspaces/:id",
     async handle({ params, store }) {
       const w = store.getWorkspace(params.id);
-      if (!w) return notFound(`Workspace "${params.id}" not found`);
-      return ok<WorkspaceSummary>({
-        id: w.id,
-        name: w.name,
-        slug: w.slug,
-        plan: w.plan,
-        icon: w.icon,
-        memberCount: store.getWorkspaceMembers(w.id).length,
-        isPersonal: w.isPersonal,
-      });
+      if (!w || store.isWorkspaceArchived(w.id))
+        return notFound(`Workspace "${params.id}" not found`);
+      return ok(workspaceDto(store, w.id) as WorkspaceSummary);
     },
   }),
 
@@ -131,41 +299,138 @@ export const workspaceOperations = [
     },
   }),
 
-  // ─── GET /workspaces/:id/members ──────────────────────────────────────────
-  // COMPATIBILITY-GAP: CTR-GAP-WS-MEMBERS
-  // Temporary legacy handler — resolves actual user records for memberships.
+  // ─── Profile, defaults and archive (WX-SET-001) ────────────────────────────
+  // Versioned like the producer: each write carries `expectedVersion`; a stale
+  // one is a 412 and changes nothing; success advances the workspace version.
 
-  defineMockOperation<{ id: string }, never, WorkspaceMember[]>({
+  defineMockOperation<
+    { workspaceId: string },
+    {
+      name?: string | null;
+      description?: string | null;
+      expectedVersion?: number;
+    },
+    void
+  >({
+    id: "workspace.profile.update",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Workspaces.UpdateWorkspaceProfile",
+    },
+    method: "PATCH",
+    route: "/workspaces/:workspaceId/profile",
+    async handle({ params, body, store }) {
+      if (!canManageMembers(store, params.workspaceId)) return forbidden();
+      const name = body?.name;
+      if (typeof name === "string" && !name.trim()) {
+        return validationError({ Name: ["Name must not be empty."] });
+      }
+      return versionedWriteResult(
+        store.updateWorkspaceProfile(
+          params.workspaceId,
+          body?.expectedVersion,
+          {
+            name: typeof name === "string" ? name.trim() : null,
+            description: body?.description ?? null,
+          },
+        ),
+      );
+    },
+  }),
+
+  defineMockOperation<
+    { workspaceId: string },
+    {
+      allowPublicSharing?: boolean;
+      enforceMfa?: boolean;
+      allowGuestInvites?: boolean;
+      defaultMemberRole?: string;
+      invitationExpiryDays?: number;
+      expectedVersion?: number;
+    },
+    void
+  >({
+    id: "workspace.settings.update",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Settings.UpdateWorkspaceSettings",
+    },
+    method: "PUT",
+    route: "/workspaces/:workspaceId/settings",
+    async handle({ params, body, store }) {
+      if (!canManageMembers(store, params.workspaceId)) return forbidden();
+      const role =
+        SETTINGS_ROLE[String(body?.defaultMemberRole ?? "").toLowerCase()];
+      const days = body?.invitationExpiryDays;
+      if (!role) {
+        return validationError({ DefaultMemberRole: ["Unknown role."] });
+      }
+      if (typeof days !== "number" || days < 1 || days > 30) {
+        return validationError({
+          InvitationExpiryDays: ["Must be between 1 and 30 days."],
+        });
+      }
+      return versionedWriteResult(
+        store.updateWorkspaceSettings(
+          params.workspaceId,
+          body?.expectedVersion,
+          {
+            allowPublicSharing: body?.allowPublicSharing === true,
+            enforceMfa: body?.enforceMfa === true,
+            allowGuestInvites: body?.allowGuestInvites === true,
+            defaultMemberRole: role,
+            invitationExpiryDays: days,
+          },
+        ),
+      );
+    },
+  }),
+
+  defineMockOperation<
+    { workspaceId: string },
+    { expectedVersion?: number },
+    void
+  >({
+    id: "workspace.archive",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Workspaces.ArchiveWorkspace",
+    },
+    method: "POST",
+    route: "/workspaces/:workspaceId/archive",
+    async handle({ params, body, store }) {
+      if (!canManageMembers(store, params.workspaceId)) return forbidden();
+      return versionedWriteResult(
+        store.archiveWorkspace(params.workspaceId, body?.expectedVersion),
+      );
+    },
+  }),
+
+  // ─── Members (Workspaces.Members.*, WX-MEM-001) ────────────────────────────
+  // Shapes mirror the producer: `WorkspaceMemberDto` (userId, name, avatar,
+  // role and status as enum names, joinedAt; removed members are not listed)
+  // and ProblemDetails failures.
+
+  defineMockOperation<{ id: string }, never, unknown>({
     id: "workspace.members.list",
     contract: {
       kind: "openapi",
       operationId: "Workspaces.Members.ListMembers",
-    } as any,
+    },
     method: "GET",
     route: "/workspaces/:id/members",
     async handle({ params, store }) {
-      const memberRecords = store.getWorkspaceMembers(params.id);
-      return ok<WorkspaceMember[]>(
-        memberRecords.map((m) => {
+      if (!store.isCurrentMemberOf(params.id)) return notFound();
+      return ok(
+        store.getWorkspaceMembers(params.id).map((m) => {
           const user = store.getUser(m.userId);
-          const name = user ? user.name : `User ${m.userId}`;
-          const initials = name
-            .split(" ")
-            .map((part) => part[0])
-            .join("")
-            .slice(0, 2)
-            .toUpperCase();
-
           return {
-            id: m.id,
             userId: m.userId,
-            name,
-            initials: initials || "U",
-            role: m.role,
-            status: m.status,
-            workload: m.workload,
-            color: m.color,
-            avatarUrl: user?.avatarUrl ?? undefined,
+            name: user ? user.name : "Unknown",
+            avatar: user?.avatarUrl ?? null,
+            role: ROLE_NAME[m.role],
+            joinedAt: m.joinedAt,
+            status: store.isMembershipSuspended(m.id) ? "Suspended" : "Active",
           };
         }),
       );
@@ -177,28 +442,318 @@ export const workspaceOperations = [
     contract: {
       kind: "openapi",
       operationId: "Workspaces.Members.RemoveMember",
-    } as any,
+    },
     method: "DELETE",
     route: "/workspaces/:workspaceId/members/:userId",
-    async handle({ store: _store }) {
-      return ok<void>(undefined);
+    async handle({ params, store }) {
+      if (!canManageMembers(store, params.workspaceId)) return forbidden();
+      return memberChangeResult(
+        store.removeMember(params.workspaceId, params.userId),
+      );
     },
   }),
 
   defineMockOperation<
     { workspaceId: string; userId: string },
-    { role: string },
+    { role?: unknown },
     void
   >({
     id: "workspace.members.update",
     contract: {
       kind: "openapi",
       operationId: "Workspaces.Members.UpdateMemberRole",
-    } as any,
-    method: "PATCH", // the OpenAPI is PATCH for UpdateMemberRole, but the client does PUT? Wait, I will use PATCH as per OpenAPI
+    },
+    method: "PATCH",
     route: "/workspaces/:workspaceId/members/:userId",
-    async handle({ store: _store }) {
-      return ok<void>(undefined);
+    async handle({ params, body, store }) {
+      if (!canManageMembers(store, params.workspaceId)) return forbidden();
+      const role = parseRole(body?.role);
+      if (!role) return validationError({ role: ["Unknown role."] });
+      return memberChangeResult(
+        store.changeMemberRole(params.workspaceId, params.userId, role),
+      );
+    },
+  }),
+
+  defineMockOperation<{ workspaceId: string; userId: string }, never, void>({
+    id: "workspace.members.suspend",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Members.SuspendMember",
+    },
+    method: "POST",
+    route: "/workspaces/:workspaceId/members/:userId/suspend",
+    async handle({ params, store }) {
+      if (!canManageMembers(store, params.workspaceId)) return forbidden();
+      return memberChangeResult(
+        store.setMemberSuspended(params.workspaceId, params.userId, true),
+      );
+    },
+  }),
+
+  defineMockOperation<{ workspaceId: string; userId: string }, never, void>({
+    id: "workspace.members.activate",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Members.ActivateMember",
+    },
+    method: "POST",
+    route: "/workspaces/:workspaceId/members/:userId/activate",
+    async handle({ params, store }) {
+      if (!canManageMembers(store, params.workspaceId)) return forbidden();
+      return memberChangeResult(
+        store.setMemberSuspended(params.workspaceId, params.userId, false),
+      );
+    },
+  }),
+
+  // ─── Invitations (Workspaces.Invitations.*, WX-MEM-001) ──────────────────
+
+  defineMockOperation<
+    { workspaceId: string },
+    { email?: string; role?: string },
+    unknown
+  >({
+    id: "workspace.members.invite",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Members.InviteMember",
+    },
+    method: "POST",
+    route: "/workspaces/:workspaceId/members",
+    async handle({ params, body, store }) {
+      if (!canManageMembers(store, params.workspaceId)) return forbidden();
+      const email = (body?.email ?? "").trim();
+      const role = parseRole(body?.role);
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return validationError({ Email: ["Email is not a valid address."] });
+      }
+      if (!role || role === "owner") {
+        return validationError({ Role: ["Unknown role."] });
+      }
+      const id = store.createInvitation(params.workspaceId, email, role);
+      if (!id) {
+        return validationError({
+          "": ["A pending invitation already exists for this email address."],
+        });
+      }
+      return created(id);
+    },
+  }),
+
+  defineMockOperation<{ workspaceId: string }, never, unknown>({
+    id: "workspace.invitations.list",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Invitations.ListWorkspaceInvitations",
+    },
+    method: "GET",
+    route: "/workspaces/:workspaceId/invitations",
+    async handle({ params, store }) {
+      if (!store.isCurrentMemberOf(params.workspaceId)) return notFound();
+      // Like the producer's DTO, each invitation carries its status.
+      return ok(
+        store.getInvitations(params.workspaceId).map((invitation) => ({
+          id: invitation.id,
+          email: invitation.email,
+          role: ROLE_NAME[invitation.role],
+          expiresAt: invitation.expiresAt,
+          isAccepted: invitation.status === "accepted",
+          createdAt: invitation.createdAt,
+          status: INVITATION_STATUS[invitation.status],
+        })),
+      );
+    },
+  }),
+
+  defineMockOperation<
+    { workspaceId: string; invitationId: string },
+    never,
+    void
+  >({
+    id: "workspace.invitations.cancel",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Invitations.CancelInvitation",
+    },
+    method: "DELETE",
+    route: "/workspaces/:workspaceId/invitations/:invitationId",
+    async handle({ params, store }) {
+      if (!canManageMembers(store, params.workspaceId)) return forbidden();
+      return store.revokeInvitation(params.workspaceId, params.invitationId)
+        ? noContent()
+        : notFound();
+    },
+  }),
+
+  // ─── Activity and settings ────────────────────────────────────────────────
+
+  defineMockOperation<{ workspaceId: string }, never, unknown>({
+    id: "workspace.activity.list",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Activity.GetWorkspaceActivity",
+    },
+    method: "GET",
+    route: "/workspaces/:workspaceId/activity",
+    async handle({ params, store, request }) {
+      if (!store.isCurrentMemberOf(params.workspaceId)) return notFound();
+      const query = request.searchParams;
+      // The producer records no activity entries yet; mirror its envelope.
+      return ok({
+        data: [],
+        total: 0,
+        page: Number(query.get("page") ?? 1),
+        pageSize: Number(query.get("pageSize") ?? 20),
+      });
+    },
+  }),
+
+  defineMockOperation<{ workspaceId: string }, never, unknown>({
+    id: "workspace.settings.get",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Settings.GetWorkspaceSettings",
+    },
+    method: "GET",
+    route: "/workspaces/:workspaceId/settings",
+    async handle({ params, store }) {
+      if (!store.isCurrentMemberOf(params.workspaceId)) return notFound();
+      return ok({ ...store.getWorkspaceSettings(params.workspaceId) });
+    },
+  }),
+
+  // ─── Navigation state (WX-BE-001/002) ─────────────────────────────────────
+
+  defineMockOperation<{ workspaceId: string }, never, unknown>({
+    id: "workspace.navigation.recents.list",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Navigation.ListRecents",
+    },
+    method: "GET",
+    route: "/workspaces/:workspaceId/recents",
+    async handle({ params, store }) {
+      if (!store.isCurrentMemberOf(params.workspaceId)) return notFound();
+      return ok(
+        store.getRecentResources(params.workspaceId).map((entry) => ({
+          kind: entry.kind,
+          resourceId: entry.resourceId,
+          lastOpenedAt: entry.at,
+        })),
+      );
+    },
+  }),
+
+  defineMockOperation<
+    { workspaceId: string },
+    { kind?: string; resourceId?: string },
+    void
+  >({
+    id: "workspace.navigation.recents.record",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Navigation.RecordRecent",
+    },
+    method: "POST",
+    route: "/workspaces/:workspaceId/recents",
+    async handle({ params, body, store, request }) {
+      if (!request.headers.get("Idempotency-Key")) {
+        return validationError({
+          "Idempotency-Key": ["The header is required."],
+        });
+      }
+      const kind = body?.kind ?? "";
+      const resourceId = body?.resourceId ?? "";
+      if (!NAVIGATION_KINDS.has(kind)) {
+        return validationError({ kind: ["Unsupported resource kind."] });
+      }
+      if (
+        !store.isCurrentMemberOf(params.workspaceId) ||
+        !navigationResourceExists(store, params.workspaceId, kind, resourceId)
+      ) {
+        return notFound();
+      }
+      store.recordRecentResource(params.workspaceId, kind, resourceId);
+      return noContent();
+    },
+  }),
+
+  defineMockOperation<{ workspaceId: string }, never, unknown>({
+    id: "workspace.navigation.pins.list",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Navigation.ListPins",
+    },
+    method: "GET",
+    route: "/workspaces/:workspaceId/pins",
+    async handle({ params, store }) {
+      if (!store.isCurrentMemberOf(params.workspaceId)) return notFound();
+      return ok(
+        store.getPinnedResources(params.workspaceId).map((entry) => ({
+          kind: entry.kind,
+          resourceId: entry.resourceId,
+          pinnedAt: entry.at,
+        })),
+      );
+    },
+  }),
+
+  defineMockOperation<
+    { workspaceId: string; kind: string; resourceId: string },
+    never,
+    void
+  >({
+    id: "workspace.navigation.pins.pin",
+    contract: { kind: "openapi", operationId: "Workspaces.Navigation.Pin" },
+    method: "PUT",
+    route: "/workspaces/:workspaceId/pins/:kind/:resourceId",
+    async handle({ params, store }) {
+      const kind = decodeURIComponent(params.kind);
+      if (!NAVIGATION_KINDS.has(kind)) {
+        return validationError({ kind: ["Unsupported resource kind."] });
+      }
+      if (
+        !store.isCurrentMemberOf(params.workspaceId) ||
+        !navigationResourceExists(
+          store,
+          params.workspaceId,
+          kind,
+          params.resourceId,
+        )
+      ) {
+        return notFound();
+      }
+      if (!store.pinResource(params.workspaceId, kind, params.resourceId)) {
+        return {
+          status: 422,
+          body: {
+            message: "Pin limit reached",
+            code: "Workspaces_Navigation_PinLimitReached",
+          },
+        };
+      }
+      return noContent();
+    },
+  }),
+
+  defineMockOperation<
+    { workspaceId: string; kind: string; resourceId: string },
+    never,
+    void
+  >({
+    id: "workspace.navigation.pins.unpin",
+    contract: { kind: "openapi", operationId: "Workspaces.Navigation.Unpin" },
+    method: "DELETE",
+    route: "/workspaces/:workspaceId/pins/:kind/:resourceId",
+    async handle({ params, store }) {
+      if (!store.isCurrentMemberOf(params.workspaceId)) return notFound();
+      store.unpinResource(
+        params.workspaceId,
+        decodeURIComponent(params.kind),
+        params.resourceId,
+      );
+      return noContent();
     },
   }),
 ];

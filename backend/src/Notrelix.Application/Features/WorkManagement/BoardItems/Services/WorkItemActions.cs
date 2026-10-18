@@ -1,3 +1,4 @@
+using Notrelix.Application.Features.WorkManagement.Ordering;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -80,6 +81,7 @@ public sealed class WorkItemActions : IWorkItemActions
         var outcome = await _useCase.MoveAsync(
             request.ItemId,
             request.NewGroupId,
+            WorkPlacementIntent.Append,
             execution.ExecutorUserId,
             cancellationToken);
 

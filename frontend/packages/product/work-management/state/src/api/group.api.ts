@@ -16,8 +16,8 @@ type UpdateGroupBody = OperationRequestBody<UpdateGroupOp>;
 type DuplicateGroupOp = "WorkManagement.BoardGroups.Duplicate";
 type DuplicateGroupResponse = OperationResponse<DuplicateGroupOp, 200>;
 
-type ReorderGroupsOp = "WorkManagement.BoardGroups.Reorder";
-type ReorderGroupsBody = OperationRequestBody<ReorderGroupsOp>;
+type MoveGroupsOp = "WorkManagement.BoardGroups.Move";
+type MoveGroupsBody = OperationRequestBody<MoveGroupsOp>;
 
 export type CreateGroupInput = {
   boardId: string;
@@ -38,7 +38,8 @@ export function createGroupApi(client: NotrelixClient) {
     async createGroup(input: CreateGroupInput): Promise<void> {
       const body: CreateGroupBody = {
         title: input.title,
-        position: input.position,
+        // Backend-first cut-over (SPEC WM-V3-DEC-017): the server owns placement and
+        // expects neighbor ids; until WM-V3-FE-001 maps them, omitting both appends.
         color: input.color,
       };
       await api.post<CreateGroupResponse>(
@@ -73,13 +74,16 @@ export function createGroupApi(client: NotrelixClient) {
       boardId: string,
       groups: Pick<BoardGroup, "id" | "position">[],
     ): Promise<void> {
-      const body: ReorderGroupsBody = {
-        items: groups.map((group) => ({
-          id: group.id,
-          newPosition: group.position,
-        })),
-      };
-      await api.post<void>(endpoints.boardGroups.reorder(boardId), body);
+      // Transitional (WM-V3-FE-001 sends one neighbor-relative move per drag):
+      // the full-list reorder route is retired, so the desired order is applied
+      // by appending each group in turn; appending the current last group is a
+      // server-side no-op.
+      void boardId;
+      const body: MoveGroupsBody = {};
+      const ordered = [...groups].sort((a, b) => a.position - b.position);
+      for (const group of ordered) {
+        await api.post<void>(endpoints.boardGroups.move(group.id), body);
+      }
     },
   };
 }

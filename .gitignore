@@ -34,3 +34,6 @@ __pycache__/
 
 # Runtime artifacts (DataProtection keys, local exports)
 **/App_Data/
+
+# Local planning notes (superpowers plans), never committed
+docs/superpowers/

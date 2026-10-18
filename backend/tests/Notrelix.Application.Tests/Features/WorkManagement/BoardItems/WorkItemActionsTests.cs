@@ -30,7 +30,7 @@ public class WorkItemActionsTests : WorkManagementHandlerTestBase
             .ReturnsAsync(new IdempotencyBeginResult(IdempotencyBeginStatus.Started, null, null));
 
         _sut = new WorkItemActions(
-            new MoveBoardItemUseCase(DbContextMock.Object, DateTimeProviderMock.Object),
+            new MoveBoardItemUseCase(DbContextMock.Object, DateTimeProviderMock.Object, Placement),
             DbContextMock.Object,
             AuthorizerMock.Object,
             IdempotencyStoreMock.Object);

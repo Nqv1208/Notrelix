@@ -14,7 +14,10 @@ public sealed record BoardItemMovedIntegrationEventV2(
     Guid CorrelationId,
     Guid? ActorUserId = null,
     Guid? CausationId = null,
-    DateTimeOffset OccurredAt = default
+    DateTimeOffset OccurredAt = default,
+    // WM-V3-EVT-001: the authoritative final ordering key in NewGroupId (additive,
+    // nullable; messages produced before it was added deserialize with null).
+    string? NewPosition = null
 ) : IntegrationEvent(
     eventId: EventId,
     messageName: "board_item.moved",

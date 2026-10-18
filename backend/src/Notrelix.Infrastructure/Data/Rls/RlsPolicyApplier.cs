@@ -91,5 +91,54 @@ public sealed class RlsPolicyApplier
         }
 
         _logger.LogInformation("Applied {Count} RLS scripts successfully.", appliedCount);
+
+        await VerifyEnforcedSchemasAsync(connection, ct);
+    }
+
+    /// <summary>
+    /// Schemas whose RLS coverage is certified and therefore fails closed: every
+    /// base table must have RLS enabled and at least one policy, or the apply fails.
+    /// A schema is added here once its owning context has classified every table
+    /// (work: WM-V3-DATA-003). Other target schemas are still reported by
+    /// 011_verification.sql without failing the apply.
+    /// </summary>
+    private static readonly string[] EnforcedSchemas = ["work"];
+
+    private async Task VerifyEnforcedSchemasAsync(NpgsqlConnection connection, CancellationToken ct)
+    {
+        const string sql = """
+            SELECT n.nspname || '.' || c.relname || ': ' ||
+                   CASE WHEN c.relrowsecurity THEN 'NO_POLICY' ELSE 'RLS_DISABLED' END
+            FROM pg_class c
+            JOIN pg_namespace n ON n.oid = c.relnamespace
+            WHERE c.relkind = 'r'
+              AND n.nspname = ANY(@schemas)
+              AND (c.relrowsecurity = false
+                   OR NOT EXISTS (
+                       SELECT 1 FROM pg_policies p
+                       WHERE p.schemaname = n.nspname AND p.tablename = c.relname))
+            ORDER BY 1
+            """;
+
+        await using var cmd = new NpgsqlCommand(sql, connection);
+        cmd.Parameters.AddWithValue("schemas", EnforcedSchemas);
+
+        var issues = new List<string>();
+        await using (var reader = await cmd.ExecuteReaderAsync(ct))
+        {
+            while (await reader.ReadAsync(ct))
+            {
+                issues.Add(reader.GetString(0));
+            }
+        }
+
+        if (issues.Count > 0)
+        {
+            throw new InvalidOperationException(
+                "RLS verification failed for enforced schemas; every table must have RLS enabled and a policy: " +
+                string.Join(", ", issues));
+        }
+
+        _logger.LogInformation("RLS verification passed for enforced schemas: {Schemas}", string.Join(", ", EnforcedSchemas));
     }
 }

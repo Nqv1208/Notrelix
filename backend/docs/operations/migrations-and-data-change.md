@@ -613,6 +613,12 @@ prove it.
 
 Do not rely on “should be done”.
 
+## Current example: Work ordering cut-over
+
+Migration `20261010065641_CanonicalizeWorkOrdering` (Work Management P3, `WM-V3-MIG-ORDER-001`/`DATA-001`/`DATA-002`) runs `WorkOrderingPreflight.Sql` before any DDL. The preflight scans the six ordering scopes for grammar-invalid keys (all rows) and duplicate active keys, and aborts the migration transaction with `WM_ORDERING_PREFLIGHT_FAILED` naming each failing table; it never rewrites or reorders data. Only after it passes does the migration change the position columns to `text COLLATE "C"` and install the six `ux_work_*` unique indexes.
+
+Operator path: pre-production databases are reset before this migration (`WM-V3-DEC-006`; no production database existed at cut-over). If the preflight fails, reset the database; do not hand-edit keys. If a production database exists when this migration is planned, stop and restore the normalization units instead.
+
 ---
 
 # 35. Constraints

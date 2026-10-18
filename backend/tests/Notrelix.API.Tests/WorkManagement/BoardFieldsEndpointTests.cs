@@ -43,11 +43,15 @@ public class BoardFieldsEndpointTests : IClassFixture<NotrelixApiFactory>
     }
 
     [Fact]
-    public async Task ReorderFields_WithValidData_ReturnsNoContent()
+    public async Task RetiredFullListReorderRoutes_AreNotMapped()
     {
-        var body = new { BoardId = BoardId.ToString(), Items = new[] { new { Id = FieldId.ToString(), NewPosition = 2.0 } } };
-        var response = await _client.PostAsync($"/api/v1/boards/{BoardId}/fields/reorder", JsonContent(body));
-        response.StatusCode.Should().BeOneOf(HttpStatusCode.NoContent, HttpStatusCode.NotFound);
+        // WM-V3-APP-FIELD-001 / APP-OPTION-001: drag is a single relative move.
+        var fields = await _client.PostAsync($"/api/v1/boards/{BoardId}/fields/reorder", JsonContent(new { Items = Array.Empty<object>() }));
+        var options = await _client.PostAsync($"/api/v1/boards/{BoardId}/fields/{FieldId}/options/reorder", JsonContent(new { OrderedOptionIds = Array.Empty<Guid>() }));
+
+        // 405 means the path matches another verb's route; either way no POST handler exists.
+        fields.StatusCode.Should().BeOneOf(HttpStatusCode.NotFound, HttpStatusCode.MethodNotAllowed);
+        options.StatusCode.Should().BeOneOf(HttpStatusCode.NotFound, HttpStatusCode.MethodNotAllowed);
     }
 
     [Fact]
@@ -60,7 +64,7 @@ public class BoardFieldsEndpointTests : IClassFixture<NotrelixApiFactory>
     [Fact]
     public async Task AddFieldOption_WithValidData_ReturnsCreated()
     {
-        var body = new { Name = "High Priority", Color = "#FF0000", Position = "a0" };
+        var body = new { Name = "High Priority", Color = "#FF0000", ExpectedVersion = 1, PreviousSiblingId = (Guid?)null, NextSiblingId = (Guid?)null };
         var response = await _client.PostAsync($"/api/v1/boards/{BoardId}/fields/{FieldId}/options", JsonContent(body));
         response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.Created, HttpStatusCode.NotFound);
     }
@@ -69,7 +73,7 @@ public class BoardFieldsEndpointTests : IClassFixture<NotrelixApiFactory>
     public async Task RemoveFieldOption_ReturnsNoContent()
     {
         var optionId = Guid.NewGuid();
-        var response = await _client.DeleteAsync($"/api/v1/boards/{BoardId}/fields/{FieldId}/options/{optionId}");
+        var response = await _client.DeleteAsync($"/api/v1/boards/{BoardId}/fields/{FieldId}/options/{optionId}?expectedVersion=1");
         response.StatusCode.Should().BeOneOf(HttpStatusCode.NoContent, HttpStatusCode.NotFound);
     }
 
@@ -77,7 +81,7 @@ public class BoardFieldsEndpointTests : IClassFixture<NotrelixApiFactory>
     public async Task UpdateFieldOption_WithValidData_ReturnsOk()
     {
         var optionId = Guid.NewGuid();
-        var body = new { Name = "Updated Option", Color = "#00FF00" };
+        var body = new { Name = "Updated Option", Color = "#00FF00", ExpectedVersion = 1 };
         var response = await _client.SendAsync(new HttpRequestMessage(new HttpMethod("PATCH"), $"/api/v1/boards/{BoardId}/fields/{FieldId}/options/{optionId}")
         {
             Content = JsonContent(body)
@@ -86,10 +90,10 @@ public class BoardFieldsEndpointTests : IClassFixture<NotrelixApiFactory>
     }
 
     [Fact]
-    public async Task ReorderFieldOptions_WithValidData_ReturnsNoContent()
+    public async Task MoveFieldOption_WithNeighborIntent_IsRouted()
     {
-        var body = new { OrderedOptionIds = new[] { Guid.NewGuid().ToString(), Guid.NewGuid().ToString() } };
-        var response = await _client.PostAsync($"/api/v1/boards/{BoardId}/fields/{FieldId}/options/reorder", JsonContent(body));
+        var body = new { ExpectedVersion = 1, PreviousSiblingId = Guid.NewGuid(), NextSiblingId = (Guid?)null };
+        var response = await _client.PostAsync($"/api/v1/boards/{BoardId}/fields/{FieldId}/options/{Guid.NewGuid()}/move", JsonContent(body));
         response.StatusCode.Should().BeOneOf(HttpStatusCode.NoContent, HttpStatusCode.NotFound);
     }
 

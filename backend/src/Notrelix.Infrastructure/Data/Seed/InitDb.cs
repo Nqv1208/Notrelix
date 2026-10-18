@@ -335,7 +335,8 @@ internal static class InitDb
                             var (optName, optColor) = fOptions[o];
                             var option = FieldOption.Create(
                                 field.Id, optName, Color.Create(optColor),
-                                FractionalIndex.Create($"a{o}"));
+                                FractionalIndex.Create($"a{o}"),
+                                fType == FieldType.Status ? SeedStatusCategory(optName) : null);
                             context.FieldOptions.Add(option);
                         }
                     }
@@ -441,10 +442,17 @@ internal static class InitDb
                         _ => $"Task {itemIndex + 1}"
                     };
 
+                    // The board's audit clock never runs backwards, so the key is
+                    // stamped no earlier than the board's last update.
+                    var keyStamp = Epoch.AddDays(itemIndex);
+                    var boardStamp = bs.Board.UpdatedAt ?? bs.Board.CreatedAt;
+                    var (itemSequence, itemKey) = bs.Board.GenerateNextItemIdentity(
+                        creator.Id, keyStamp > boardStamp ? keyStamp : boardStamp);
                     var item = BoardItem.CreateRoot(
                         account.Id, bs.Board.WorkspaceId, bs.Board.Id, group.Id,
                         itemName, order,
-                        creator.Id, Epoch.AddDays(itemIndex));
+                        creator.Id, Epoch.AddDays(itemIndex),
+                        itemKey: itemKey, itemSequence: itemSequence);
 
                     context.BoardItems.Add(item);
 
@@ -495,6 +503,13 @@ internal static class InitDb
         await ClearAndSaveAsync(context, ct);
         return itemIndex;
     }
+
+    private static WorkStatusCategory SeedStatusCategory(string statusName) => statusName switch
+    {
+        "Backlog" or "To Do" => WorkStatusCategory.Todo,
+        "Done" => WorkStatusCategory.Done,
+        _ => WorkStatusCategory.InProgress,
+    };
 
     private static FieldValue CreateOptionFieldValue(
         Guid fieldId, Dictionary<Guid, List<FieldOption>> optionsByBoard, Guid boardId)
