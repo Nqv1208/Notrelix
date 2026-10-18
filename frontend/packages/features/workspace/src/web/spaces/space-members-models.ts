@@ -325,7 +325,7 @@ export type TypedToken =
   | { readonly kind: "outsider"; readonly email: string };
 
 export function isEmailLike(value: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+  return /^[^\s@]{1,64}@[^\s@]{1,255}\.[^\s@]{1,63}$/.test(value.trim());
 }
 
 /** The people and teams a typed text could mean (never an existing entry). */

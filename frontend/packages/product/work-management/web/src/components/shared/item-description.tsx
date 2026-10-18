@@ -17,7 +17,8 @@ function descriptionBlocks(text: string) {
     });
 }
 
-const DOC_LINK = /\[([^\]]+)\]\(doc:([\w-]+)\)|\*\*([^*]+)\*\*/g;
+const DOC_LINK =
+  /\[([^\]]{1,200})\]\(doc:([\w-]{1,100})\)|\*\*([^*]{1,200})\*\*/g;
 
 /**
  * Text with the `[title](doc:id)` links of the description drawn as document

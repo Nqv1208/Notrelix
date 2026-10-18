@@ -246,7 +246,7 @@ export function rememberMarkTone(id: string, value: unknown): void {
  */
 export function initialsFor(name: string): string {
   const words = name
-    .replace(/\s*\([^)]*\)\s*$/, "")
+    .replace(/\s{0,16}\([^)]{0,64}\)\s{0,16}$/, "")
     .trim()
     .split(/\s+/)
     .filter(Boolean);

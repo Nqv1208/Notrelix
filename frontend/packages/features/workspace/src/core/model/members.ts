@@ -180,5 +180,5 @@ export function pendingInvitationFor(
 
 /** A permissive e-mail shape check for the invite form (the producer decides). */
 export function isPlausibleEmail(value: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+  return /^[^\s@]{1,64}@[^\s@]{1,255}\.[^\s@]{1,63}$/.test(value.trim());
 }

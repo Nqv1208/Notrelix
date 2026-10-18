@@ -91,7 +91,7 @@ export function OnboardingJoinSurface(props: OnboardingJoinSurfaceProps) {
   const open = spaces.filter((space) => space.open && !space.member);
   const firstName =
     props.displayName
-      .replace(/\s*\(.*\)\s*$/, "")
+      .replace(/\s{0,16}\([^)]{0,64}\)\s{0,16}$/, "")
       .trim()
       .split(/\s+/)
       .at(-1) ?? "";

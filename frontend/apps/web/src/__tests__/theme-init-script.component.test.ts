@@ -13,7 +13,7 @@ import { themeInitScript } from "@notrelix/ui-web/theme-init-script";
 const indexHtml = readFileSync(resolve(__dirname, "../../index.html"), "utf8");
 
 function inlineThemeScript(): string {
-  const scripts = [...indexHtml.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(
+  const scripts = [...indexHtml.matchAll(/<script>([\s\S]*?)<\/script>/gi)].map(
     (match) => match[1]!,
   );
   const theme = scripts.filter((body) => body.includes("data-accent"));

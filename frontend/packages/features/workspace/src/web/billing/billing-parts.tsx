@@ -190,7 +190,7 @@ export function InfoNote({
 
 /** Renders `<b>…</b>` runs of a copy string as bold. */
 export function Rich({ text }: { text: string }) {
-  const parts = text.split(/(<b>.*?<\/b>)/g);
+  const parts = text.split(/(<b>[^<]{0,300}<\/b>)/g);
   return (
     <>
       {parts.map((part, index) =>
