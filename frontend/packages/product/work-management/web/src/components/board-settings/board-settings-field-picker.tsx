@@ -59,7 +59,7 @@ export function FieldTypePicker({
 
   return (
     <div
-      role="dialog"
+      role="group"
       aria-label={copy.picker.label}
       onKeyDown={(event) => {
         if (event.key === "ArrowDown" || event.key === "ArrowRight") {

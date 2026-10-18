@@ -107,6 +107,7 @@ export function FieldsSection({
                 </button>
               </PopoverAnchor>
               <PopoverContent
+                aria-label={copy.picker.label}
                 align="end"
                 side="bottom"
                 sideOffset={15}
@@ -136,7 +137,7 @@ export function FieldsSection({
             <span>{t.columns.usage}</span>
           </div>
           {liveCount === 0 ? (
-            <div className="px-4 py-6 text-center">
+            <div role="listitem" className="px-4 py-6 text-center">
               <p className="m-0 text-item-small font-semibold">
                 {t.empty.title}
               </p>

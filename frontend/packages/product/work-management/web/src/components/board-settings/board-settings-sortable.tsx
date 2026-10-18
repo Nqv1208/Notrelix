@@ -61,6 +61,11 @@ export function SortableList({
       sensors={disabled ? [] : sensors}
       collisionDetection={closestCenter}
       modifiers={[restrictToVerticalAxis]}
+      // The live region and the hidden instructions render outside the list, so
+      // the list owns only its rows.
+      accessibility={{
+        container: typeof document === "undefined" ? undefined : document.body,
+      }}
       onDragEnd={handleDragEnd}
     >
       <SortableContext

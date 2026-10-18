@@ -427,8 +427,11 @@ function ShareBody({
           ) : (
             <div
               data-f="pl"
+              role="group"
+              tabIndex={0}
+              aria-label={fill(copy.people.label, { count: view.rows.length })}
               className={cn(
-                "-mx-2 flex flex-col px-2 [@media(max-height:820px)]:overflow-y-auto",
+                "-mx-2 flex flex-col px-2 outline-none focus-visible:ring-2 focus-visible:ring-focus-ring [@media(max-height:820px)]:overflow-y-auto",
                 expandedRows || view.rows.length <= VISIBLE_ROWS
                   ? "max-h-[min(248px,max(120px,calc(100vh-573px)))]"
                   : "max-h-[min(250px,max(120px,calc(100vh-573px)))]",
