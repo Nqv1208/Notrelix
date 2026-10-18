@@ -34,8 +34,8 @@ stateful = true
 
 [images.redis]
 class = "runtime"
-source = "redis:7-alpine"
-ref = "redis@sha256:ca0acbb137c1dc3339c8b147a58fd6f42775d4599327b50e7b116c23de501af2"
+source = "redis:7-bookworm"
+ref = "redis@sha256:4fa24486b8bcca8eec45ee0eb166edc674795e53a2b53d1a9ef263eecebaac85"
 compose_service = "redis"
 deploy_env_var = "NOTRELIX_REDIS_IMAGE"
 stateful = true

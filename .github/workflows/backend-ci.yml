@@ -16,7 +16,7 @@ env:
   DOTNET_CONFIGURATION: Release
   DOTNET_CLI_TELEMETRY_OPTOUT: "true"
   DOTNET_NOLOGO: "true"
-  FALLBACK_REDIS_REF: redis@sha256:ca0acbb137c1dc3339c8b147a58fd6f42775d4599327b50e7b116c23de501af2
+  FALLBACK_REDIS_REF: redis@sha256:4fa24486b8bcca8eec45ee0eb166edc674795e53a2b53d1a9ef263eecebaac85
   PROOF_REGISTRY: ${{ github.workspace }}/backend/tests/ci-proofs.json
 
 jobs:
