@@ -345,48 +345,56 @@ function CalendarWeek({
         })}
 
         {layout.placements.map((placement) => (
-          <CalendarEvent
+          <div
             key={`${placement.entry.id}:${placement.col}`}
-            entry={placement.entry}
-            copy={copy}
-            col={placement.col}
-            span={placement.span}
-            row={placement.row}
-            wrap={wrap}
-            lifting={drag?.source === "entry" && drag.id === placement.entry.id}
-            canDrag={canEdit}
-            onOpen={onOpenItem}
-            onDragStart={onDragStartEntry}
-            onDragEnd={onDragEnd}
-            onShift={onShift}
-          />
+            role="gridcell"
+            className="contents"
+          >
+            <CalendarEvent
+              entry={placement.entry}
+              copy={copy}
+              col={placement.col}
+              span={placement.span}
+              row={placement.row}
+              wrap={wrap}
+              lifting={
+                drag?.source === "entry" && drag.id === placement.entry.id
+              }
+              canDrag={canEdit}
+              onOpen={onOpenItem}
+              onDragStart={onDragStartEntry}
+              onDragEnd={onDragEnd}
+              onShift={onShift}
+            />
+          </div>
         ))}
 
         {layout.more.map((more) => (
-          <button
-            key={`more-${more.col}`}
-            type="button"
-            className="mx-1 flex h-6 min-w-0 cursor-pointer items-center rounded-[6px] border-0 bg-transparent px-1.5 text-xs leading-[1.45] font-semibold text-brand-ink hover:shadow-[inset_0_0_0_1px_var(--line-strong)] focus-visible:outline-2 focus-visible:outline-ring"
-            style={{
-              gridColumn: `${more.col} / span 1`,
-              gridRow: (maxRows ?? 3) + 1,
-            }}
-            aria-label={fill(copy.more.open, {
-              count: more.count,
-              date: formatDayMonth(more.day),
-            })}
-            onClick={(event) => {
-              event.stopPropagation();
-              onOpenDay(more.day);
-            }}
-          >
-            {fill(
-              more.count === 1 ? copy.more.label_one : copy.more.label_other,
-              {
+          <div key={`more-${more.col}`} role="gridcell" className="contents">
+            <button
+              type="button"
+              className="mx-1 flex h-6 min-w-0 cursor-pointer items-center rounded-[6px] border-0 bg-transparent px-1.5 text-xs leading-[1.45] font-semibold text-brand-ink hover:shadow-[inset_0_0_0_1px_var(--line-strong)] focus-visible:outline-2 focus-visible:outline-ring"
+              style={{
+                gridColumn: `${more.col} / span 1`,
+                gridRow: (maxRows ?? 3) + 1,
+              }}
+              aria-label={fill(copy.more.open, {
                 count: more.count,
-              },
-            )}
-          </button>
+                date: formatDayMonth(more.day),
+              })}
+              onClick={(event) => {
+                event.stopPropagation();
+                onOpenDay(more.day);
+              }}
+            >
+              {fill(
+                more.count === 1 ? copy.more.label_one : copy.more.label_other,
+                {
+                  count: more.count,
+                },
+              )}
+            </button>
+          </div>
         ))}
 
         {showGhost && overDay && drag ? (
