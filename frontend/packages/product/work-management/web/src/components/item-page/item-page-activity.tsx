@@ -748,7 +748,6 @@ function PageComposer({
             disabled={disabled}
             aria-label={t.label}
             aria-controls={listOpen ? "item-page-mention-list" : undefined}
-            aria-expanded={listOpen}
             placeholder={t.placeholder}
             onChange={(event) => {
               draft.changeBody(event.target.value);

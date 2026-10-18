@@ -232,6 +232,7 @@ export function ItemPageChildItems({
         <div className="-mt-0.5 mb-2 flex items-center gap-2.5 text-crumb text-meta-foreground tabular-nums">
           <span
             role="progressbar"
+            aria-label={t.heading}
             aria-valuemin={0}
             aria-valuemax={100}
             aria-valuenow={percent}
@@ -258,24 +259,23 @@ export function ItemPageChildItems({
           </button>
         </div>
       ) : rows.length > 0 || showAdd ? (
-        <div
-          role="list"
-          className="overflow-hidden rounded-[10px] border border-line bg-popover"
-        >
-          {visibleRows.map((row) => (
-            <ChildRow
-              key={row.id}
-              row={row}
-              copy={copy}
-              now={now}
-              timeZone={timeZone}
-              onToggle={
-                capabilities.canEditFields
-                  ? callbacks.onToggleChildItem
-                  : undefined
-              }
-            />
-          ))}
+        <div className="overflow-hidden rounded-[10px] border border-line bg-popover">
+          <div role="list">
+            {visibleRows.map((row) => (
+              <ChildRow
+                key={row.id}
+                row={row}
+                copy={copy}
+                now={now}
+                timeZone={timeZone}
+                onToggle={
+                  capabilities.canEditFields
+                    ? callbacks.onToggleChildItem
+                    : undefined
+                }
+              />
+            ))}
+          </div>
           {hiddenRows > 0 || (showAll && rows.length > CHILD_ROWS_SHOWN + 2) ? (
             <button
               type="button"
