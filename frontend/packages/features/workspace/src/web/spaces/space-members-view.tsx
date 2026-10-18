@@ -430,7 +430,11 @@ function InviteRow({
         "relative box-content min-h-[56px] border-t border-line",
       )}
     >
-      <span data-f="who" className="flex min-w-0 items-center gap-[11px]">
+      <span
+        data-f="who"
+        role="cell"
+        className="flex min-w-0 items-center gap-[11px]"
+      >
         <span
           data-f="av"
           aria-hidden="true"
@@ -453,19 +457,22 @@ function InviteRow({
           </small>
         </span>
       </span>
-      <button
-        data-f="rsel"
-        type="button"
-        aria-disabled="true"
-        title={m.inviteUnavailable}
-        className="inline-flex h-[30px] cursor-default items-center gap-1.5 justify-self-start rounded-[7px] border border-transparent bg-transparent px-[9px] text-compact leading-[1.45] font-medium text-foreground"
-      >
-        <RoleTag role={invite.role} />
-        {m.roleMenu[invite.role]}
-        <Chevron className="text-meta-foreground" />
-      </button>
+      <div role="cell" className="contents">
+        <button
+          data-f="rsel"
+          type="button"
+          aria-disabled="true"
+          title={m.inviteUnavailable}
+          className="inline-flex h-[30px] cursor-default items-center gap-1.5 justify-self-start rounded-[7px] border border-transparent bg-transparent px-[9px] text-compact leading-[1.45] font-medium text-foreground"
+        >
+          <RoleTag role={invite.role} />
+          {m.roleMenu[invite.role]}
+          <Chevron className="text-meta-foreground" />
+        </button>
+      </div>
       <span
         data-f="src"
+        role="cell"
         className="flex flex-wrap gap-1 text-xs text-muted-foreground"
       >
         <span
@@ -477,6 +484,7 @@ function InviteRow({
       </span>
       <span
         data-f="act"
+        role="cell"
         className="flex gap-2.5 text-xs leading-[1.45] text-meta-foreground"
       >
         <button
@@ -496,7 +504,7 @@ function InviteRow({
           {m.inviteRevoke}
         </button>
       </span>
-      <span aria-hidden="true" />
+      <span role="cell" aria-hidden="true" />
     </div>
   );
 }
@@ -575,7 +583,11 @@ function MemberRow({
           menuOpen && "bg-state-selected hover:bg-state-selected",
         )}
       >
-        <span data-f="who" className="flex min-w-0 items-center gap-[11px]">
+        <span
+          data-f="who"
+          role="cell"
+          className="flex min-w-0 items-center gap-[11px]"
+        >
           {row.kind === "team" ? (
             <button
               data-f="tw"
@@ -635,31 +647,34 @@ function MemberRow({
             ) : null}
           </span>
         </span>
-        <button
-          ref={rsel}
-          data-f="rsel"
-          type="button"
-          aria-haspopup="menu"
-          aria-expanded={menuOpen}
-          aria-disabled={canManage ? undefined : true}
-          title={canManage ? undefined : m.readOnly}
-          onClick={canManage ? () => onOpenMenu(rsel.current) : undefined}
-          className={cn(
-            "inline-flex h-[30px] items-center gap-1.5 justify-self-start rounded-[7px] border border-transparent bg-transparent px-[9px] text-compact leading-[1.45] font-medium text-foreground",
-            canManage
-              ? "hover:border-line-strong hover:bg-popover dark:hover:bg-card"
-              : "cursor-default",
-            menuOpen &&
-              "border-primary bg-popover ring-2 ring-state-selected dark:bg-card",
-            FOCUS,
-          )}
-        >
-          <RoleTag role={row.entry.role} />
-          {label}
-          {canManage ? <Chevron className="text-meta-foreground" /> : null}
-        </button>
+        <div role="cell" className="contents">
+          <button
+            ref={rsel}
+            data-f="rsel"
+            type="button"
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
+            aria-disabled={canManage ? undefined : true}
+            title={canManage ? undefined : m.readOnly}
+            onClick={canManage ? () => onOpenMenu(rsel.current) : undefined}
+            className={cn(
+              "inline-flex h-[30px] items-center gap-1.5 justify-self-start rounded-[7px] border border-transparent bg-transparent px-[9px] text-compact leading-[1.45] font-medium text-foreground",
+              canManage
+                ? "hover:border-line-strong hover:bg-popover dark:hover:bg-card"
+                : "cursor-default",
+              menuOpen &&
+                "border-primary bg-popover ring-2 ring-state-selected dark:bg-card",
+              FOCUS,
+            )}
+          >
+            <RoleTag role={row.entry.role} />
+            {label}
+            {canManage ? <Chevron className="text-meta-foreground" /> : null}
+          </button>
+        </div>
         <span
           data-f="src"
+          role="cell"
           className="flex flex-wrap gap-1 text-xs leading-[1.45] text-muted-foreground"
         >
           {row.sources.map((source) => (
@@ -675,40 +690,43 @@ function MemberRow({
         </span>
         <span
           data-f="act"
+          role="cell"
           className="text-xs leading-[1.45] text-meta-foreground"
         >
           {row.pending ? m.pending : row.activity}
         </span>
-        {canManage ? (
-          <button
-            data-f="ib"
-            type="button"
-            aria-haspopup="menu"
-            aria-label={formatCopy(m.rowActions, { name: row.name })}
-            onClick={() => onOpenMenu(rsel.current)}
-            className={cn(
-              "grid size-8 shrink-0 place-items-center rounded-[7px] border-0 bg-transparent text-meta-foreground hover:bg-state-hover-strong hover:text-foreground",
-              FOCUS,
-            )}
-          >
-            <Glyph name="more" />
-          </button>
-        ) : (
-          <span aria-hidden="true" />
-        )}
-        {menuOpen ? (
-          <RoleMenu
-            copy={copy}
-            row={row}
-            placement={placement}
-            onPick={onPick}
-            onRemove={onAskRemove}
-            onClose={(back) => {
-              onCloseMenu(back);
-              if (back) rsel.current?.focus();
-            }}
-          />
-        ) : null}
+        <div role="cell" className="contents">
+          {canManage ? (
+            <button
+              data-f="ib"
+              type="button"
+              aria-haspopup="menu"
+              aria-label={formatCopy(m.rowActions, { name: row.name })}
+              onClick={() => onOpenMenu(rsel.current)}
+              className={cn(
+                "grid size-8 shrink-0 place-items-center rounded-[7px] border-0 bg-transparent text-meta-foreground hover:bg-state-hover-strong hover:text-foreground",
+                FOCUS,
+              )}
+            >
+              <Glyph name="more" />
+            </button>
+          ) : (
+            <span aria-hidden="true" />
+          )}
+          {menuOpen ? (
+            <RoleMenu
+              copy={copy}
+              row={row}
+              placement={placement}
+              onPick={onPick}
+              onRemove={onAskRemove}
+              onClose={(back) => {
+                onCloseMenu(back);
+                if (back) rsel.current?.focus();
+              }}
+            />
+          ) : null}
+        </div>
       </div>
       {row.kind === "team" && expanded ? (
         <div
@@ -716,58 +734,61 @@ function MemberRow({
           role="row"
           className="border-t border-line bg-background pt-1.5 pr-3.5 pb-2.5 pl-14"
         >
-          {teamPeople === null || teamPeople.status === "loading" ? (
-            <p
-              className="m-0 py-1.5 text-xs text-meta-foreground"
-              role="status"
-            >
-              {m.teamLoading}
-            </p>
-          ) : teamPeople.status === "error" ? (
-            <p className="m-0 py-1.5 text-xs text-danger-text" role="alert">
-              {m.teamError}
-            </p>
-          ) : teamPeople.data.length === 0 ? (
-            <p className="m-0 py-1.5 text-xs text-meta-foreground">
-              {m.teamEmpty}
-            </p>
-          ) : (
-            teamPeople.data.map((person) => (
-              <PersonLine
-                key={person.id}
-                person={person}
-                extra={
-                  directIds.has(person.id) || person.note ? (
-                    <small
-                      data-f="spn"
-                      className="text-xs leading-[1.45] text-meta-foreground"
-                    >
-                      · {directIds.has(person.id) ? m.alsoDirect : person.note}
-                    </small>
-                  ) : null
-                }
-              />
-            ))
-          )}
-          {showHint ? (
-            <div
-              data-f="hint"
-              className="mt-1 text-xs leading-[1.45] text-meta-foreground"
-            >
-              {m.teamHint}
-              <ShellLink
-                destination={teams}
-                navigation={navigation}
-                className={cn(
-                  "font-medium text-state-selected-foreground hover:underline",
-                  FOCUS,
-                )}
+          <div role="cell" className="contents">
+            {teamPeople === null || teamPeople.status === "loading" ? (
+              <p
+                className="m-0 py-1.5 text-xs text-meta-foreground"
+                role="status"
               >
-                {m.teamHintLink}
-              </ShellLink>
-              {m.teamHintEnd}
-            </div>
-          ) : null}
+                {m.teamLoading}
+              </p>
+            ) : teamPeople.status === "error" ? (
+              <p className="m-0 py-1.5 text-xs text-danger-text" role="alert">
+                {m.teamError}
+              </p>
+            ) : teamPeople.data.length === 0 ? (
+              <p className="m-0 py-1.5 text-xs text-meta-foreground">
+                {m.teamEmpty}
+              </p>
+            ) : (
+              teamPeople.data.map((person) => (
+                <PersonLine
+                  key={person.id}
+                  person={person}
+                  extra={
+                    directIds.has(person.id) || person.note ? (
+                      <small
+                        data-f="spn"
+                        className="text-xs leading-[1.45] text-meta-foreground"
+                      >
+                        ·{" "}
+                        {directIds.has(person.id) ? m.alsoDirect : person.note}
+                      </small>
+                    ) : null
+                  }
+                />
+              ))
+            )}
+            {showHint ? (
+              <div
+                data-f="hint"
+                className="mt-1 text-xs leading-[1.45] text-meta-foreground"
+              >
+                {m.teamHint}
+                <ShellLink
+                  destination={teams}
+                  navigation={navigation}
+                  className={cn(
+                    "font-medium text-state-selected-foreground hover:underline",
+                    FOCUS,
+                  )}
+                >
+                  {m.teamHintLink}
+                </ShellLink>
+                {m.teamHintEnd}
+              </div>
+            ) : null}
+          </div>
         </div>
       ) : null}
     </>
@@ -1188,12 +1209,15 @@ export function SpaceMembersView(props: SpaceMembersViewProps) {
               <span />
             </div>
             {visible.length === 0 && visibleInvites.length === 0 ? (
-              <p
-                data-f="empty"
-                className="m-0 px-4 py-6 text-center text-compact leading-[1.45] text-meta-foreground"
-              >
-                {rows.length === 0 ? m.empty : m.noMatches}
-              </p>
+              <div role="row" className="contents">
+                <p
+                  data-f="empty"
+                  role="cell"
+                  className="m-0 px-4 py-6 text-center text-compact leading-[1.45] text-meta-foreground"
+                >
+                  {rows.length === 0 ? m.empty : m.noMatches}
+                </p>
+              </div>
             ) : (
               visible.map((row, index) => (
                 <MemberRow
@@ -1228,17 +1252,21 @@ export function SpaceMembersView(props: SpaceMembersViewProps) {
               <InviteRow key={invite.id} copy={copy} invite={invite} />
             ))}
             {filtered.length > shown ? (
-              <button
-                data-f="more-row"
-                type="button"
-                onClick={() => setShown(filtered.length)}
-                className={cn(
-                  "flex h-11 w-full items-center justify-center rounded-b-[12px] border-0 border-t border-line bg-transparent text-compact leading-[1.45] font-normal text-state-selected-foreground hover:bg-background",
-                  FOCUS,
-                )}
-              >
-                {formatCopy(m.moreRows, { count: filtered.length - shown })}
-              </button>
+              <div role="row" className="contents">
+                <div role="cell" className="contents">
+                  <button
+                    data-f="more-row"
+                    type="button"
+                    onClick={() => setShown(filtered.length)}
+                    className={cn(
+                      "flex h-11 w-full items-center justify-center rounded-b-[12px] border-0 border-t border-line bg-transparent text-compact leading-[1.45] font-normal text-state-selected-foreground hover:bg-background",
+                      FOCUS,
+                    )}
+                  >
+                    {formatCopy(m.moreRows, { count: filtered.length - shown })}
+                  </button>
+                </div>
+              </div>
             ) : null}
           </div>
         )}

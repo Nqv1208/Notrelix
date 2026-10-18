@@ -942,7 +942,7 @@ function StatusPop({
     <div
       data-f="statuspop"
       onKeyDown={onKeyDown}
-      role="listbox"
+      role="group"
       aria-label={formatCopy(copy.list.statusPopLabel, {
         name: item.key ?? item.name,
       })}
@@ -957,36 +957,43 @@ function StatusPop({
         aria-label={copy.list.statusSearch}
         className="mb-1 box-border h-[30px] w-full rounded-[7px] border border-line-strong bg-background px-[9px] text-compact leading-[1.45] text-foreground outline-none"
       />
-      {shown.map((option, index) => {
-        const current = option.bucket === item.status?.bucket;
-        return (
-          <div
-            key={option.bucket}
-            role="option"
-            aria-selected={current}
-            onClick={() => onPick(option.bucket)}
-            onMouseEnter={() => setActive(index)}
-            className={cn(
-              "flex h-8 cursor-pointer items-center gap-2 rounded-[7px] px-2 text-compact leading-[1.45]",
-              index === activeIndex && "bg-state-hover-strong font-semibold",
-            )}
-          >
-            <StatusDot bucket={option.bucket} />
-            {option.label}
-            {current ? (
-              <Check
-                aria-hidden="true"
-                className="ml-auto size-3.5 text-state-selected-foreground"
-                strokeWidth={1.8}
-              />
-            ) : (
-              <span className="ml-auto rounded-[4px] border border-line-strong bg-keycap px-[5px] font-mono text-key leading-[18px] text-muted-foreground">
-                {index + 1}
-              </span>
-            )}
-          </div>
-        );
-      })}
+      <div
+        role="listbox"
+        aria-label={formatCopy(copy.list.statusPopLabel, {
+          name: item.key ?? item.name,
+        })}
+      >
+        {shown.map((option, index) => {
+          const current = option.bucket === item.status?.bucket;
+          return (
+            <div
+              key={option.bucket}
+              role="option"
+              aria-selected={current}
+              onClick={() => onPick(option.bucket)}
+              onMouseEnter={() => setActive(index)}
+              className={cn(
+                "flex h-8 cursor-pointer items-center gap-2 rounded-[7px] px-2 text-compact leading-[1.45]",
+                index === activeIndex && "bg-state-hover-strong font-semibold",
+              )}
+            >
+              <StatusDot bucket={option.bucket} />
+              {option.label}
+              {current ? (
+                <Check
+                  aria-hidden="true"
+                  className="ml-auto size-3.5 text-state-selected-foreground"
+                  strokeWidth={1.8}
+                />
+              ) : (
+                <span className="ml-auto rounded-[4px] border border-line-strong bg-keycap px-[5px] font-mono text-key leading-[18px] text-muted-foreground">
+                  {index + 1}
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

@@ -331,18 +331,18 @@ function TeamRow({
             <Glyph name="more" />
           </button>
         ) : null}
+        {menuOpen ? (
+          <RowMenu
+            copy={copy}
+            row={row}
+            onOpen={() =>
+              navigation.onNavigate({ section: "teams", teamId: row.id })
+            }
+            onArchive={onArchive}
+            onClose={onCloseMenu}
+          />
+        ) : null}
       </span>
-      {menuOpen ? (
-        <RowMenu
-          copy={copy}
-          row={row}
-          onOpen={() =>
-            navigation.onNavigate({ section: "teams", teamId: row.id })
-          }
-          onArchive={onArchive}
-          onClose={onCloseMenu}
-        />
-      ) : null}
     </div>
   );
 }
