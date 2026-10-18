@@ -79,164 +79,168 @@ export function TimelineChart({
   return (
     <div
       data-tl="right"
+      role="rowgroup"
       className="relative shrink-0"
       style={{ width: header.chartWidth }}
     >
       <div
         data-tl="rh"
+        role="row"
         className="sticky top-0 z-[5] box-content h-14 border-b border-line-strong bg-table-header"
       >
-        <div
-          data-tl="months"
-          className="flex h-6 text-xs leading-[1.45] font-semibold text-muted-foreground"
-        >
-          {header.months.map((month, index) => {
-            const x = header.months
-              .slice(0, index)
-              .reduce((sum, previous) => sum + previous.width, 0);
-            const fit = fitHeaderText(
-              x,
-              month.width,
-              month.label,
-              MONTH_CHAR,
-              8,
-              visible,
-            );
-            return (
-              <span
-                key={index}
-                data-tl="month"
-                className={cn(
-                  "box-border px-2 py-1",
-                  month.separator && "border-l border-border",
-                )}
-                style={{ width: month.width }}
-              >
-                {fit === null ? null : fit.whole ? (
-                  month.label
-                ) : (
-                  <span
-                    className="block truncate"
-                    style={{ marginLeft: fit.shift, maxWidth: fit.max }}
-                  >
-                    {month.label}
-                  </span>
-                )}
-              </span>
-            );
-          })}
-        </div>
-        {scale === "day" ? (
-          <div data-tl="days" className="flex h-8">
-            {header.days.map((day, index) => (
-              <span
-                key={index}
-                data-tl="day"
-                className={cn(
-                  "flex w-[26px] flex-none flex-col items-center justify-center text-rail-label leading-[1.15] font-normal text-meta-foreground tabular-nums",
-                  !cellInView(index * 26, 26, visible) && "invisible",
-                )}
-              >
-                <b
-                  data-tl="dayb"
-                  className={cn(
-                    "text-xs leading-[1.15] font-semibold text-foreground",
-                    day.weekend && "font-medium text-meta-foreground",
-                    day.today &&
-                      "min-w-5 rounded-full bg-primary text-center font-semibold text-primary-foreground",
-                  )}
-                >
-                  {day.n}
-                </b>
-                {day.weekday}
-              </span>
-            ))}
-          </div>
-        ) : null}
-        {scale === "week" ? (
-          <div data-tl="weeks" className="relative flex h-8">
-            {header.weeks.map((week, index) => {
-              const x = header.weeks
+        <div role="columnheader" className="contents">
+          <div
+            data-tl="months"
+            className="flex h-6 text-xs leading-[1.45] font-semibold text-muted-foreground"
+          >
+            {header.months.map((month, index) => {
+              const x = header.months
                 .slice(0, index)
                 .reduce((sum, previous) => sum + previous.width, 0);
               const fit = fitHeaderText(
                 x,
-                week.width,
-                week.label,
-                WEEK_CHAR,
-                4,
+                month.width,
+                month.label,
+                MONTH_CHAR,
+                8,
                 visible,
               );
               return (
                 <span
                   key={index}
-                  data-tl="wk"
-                  title={week.full}
+                  data-tl="month"
                   className={cn(
-                    "box-border block h-8 flex-none overflow-hidden px-1 text-rail-label leading-[27px] font-medium text-ellipsis whitespace-nowrap text-meta-foreground tabular-nums",
-                    week.separator && "border-l border-border",
-                    week.current &&
-                      "font-semibold text-state-selected-foreground",
+                    "box-border px-2 py-1",
+                    month.separator && "border-l border-border",
                   )}
-                  style={{
-                    width: week.width,
-                    backgroundImage:
-                      "linear-gradient(to right, var(--line-strong) 1px, transparent 1px)",
-                    backgroundRepeat: "repeat-x",
-                    backgroundPosition: "left bottom",
-                    backgroundOrigin: "border-box",
-                    backgroundSize: `${ppd}px 5px`,
-                  }}
+                  style={{ width: month.width }}
                 >
                   {fit === null ? null : fit.whole ? (
-                    week.label
+                    month.label
                   ) : (
                     <span
                       className="block truncate"
                       style={{ marginLeft: fit.shift, maxWidth: fit.max }}
                     >
-                      {week.label}
+                      {month.label}
                     </span>
                   )}
                 </span>
               );
             })}
           </div>
-        ) : null}
-        {scale === "month" ? (
-          <div data-tl="weeks" className="relative flex h-8">
-            {header.ticks.map((tick, index) => (
-              <span
-                key={index}
-                data-tl="mt"
-                title={tick.full}
-                className={cn(
-                  "absolute inset-y-0 flex items-center border-l border-border pl-1 text-rail-label leading-[1.45] font-normal text-meta-foreground tabular-nums",
-                  !cellInView(tick.x, 24, visible) && "invisible",
-                )}
-                style={{ left: tick.x }}
-              >
-                <b
+          {scale === "day" ? (
+            <div data-tl="days" className="flex h-8">
+              {header.days.map((day, index) => (
+                <span
+                  key={index}
+                  data-tl="day"
                   className={cn(
-                    "font-medium",
-                    tick.today &&
-                      "rounded-full bg-primary px-[5px] font-semibold text-primary-foreground",
+                    "flex w-[26px] flex-none flex-col items-center justify-center text-rail-label leading-[1.15] font-normal text-meta-foreground tabular-nums",
+                    !cellInView(index * 26, 26, visible) && "invisible",
                   )}
                 >
-                  {tick.n}
-                </b>
-              </span>
-            ))}
-          </div>
-        ) : null}
-        {scale !== "day" ? (
-          <span
-            data-tl="hnow"
-            aria-hidden="true"
-            className="absolute bottom-0 h-2 w-0.5 bg-primary"
-            style={{ left: header.todayX }}
-          />
-        ) : null}
+                  <b
+                    data-tl="dayb"
+                    className={cn(
+                      "text-xs leading-[1.15] font-semibold text-foreground",
+                      day.weekend && "font-medium text-meta-foreground",
+                      day.today &&
+                        "min-w-5 rounded-full bg-primary text-center font-semibold text-primary-foreground",
+                    )}
+                  >
+                    {day.n}
+                  </b>
+                  {day.weekday}
+                </span>
+              ))}
+            </div>
+          ) : null}
+          {scale === "week" ? (
+            <div data-tl="weeks" className="relative flex h-8">
+              {header.weeks.map((week, index) => {
+                const x = header.weeks
+                  .slice(0, index)
+                  .reduce((sum, previous) => sum + previous.width, 0);
+                const fit = fitHeaderText(
+                  x,
+                  week.width,
+                  week.label,
+                  WEEK_CHAR,
+                  4,
+                  visible,
+                );
+                return (
+                  <span
+                    key={index}
+                    data-tl="wk"
+                    title={week.full}
+                    className={cn(
+                      "box-border block h-8 flex-none overflow-hidden px-1 text-rail-label leading-[27px] font-medium text-ellipsis whitespace-nowrap text-meta-foreground tabular-nums",
+                      week.separator && "border-l border-border",
+                      week.current &&
+                        "font-semibold text-state-selected-foreground",
+                    )}
+                    style={{
+                      width: week.width,
+                      backgroundImage:
+                        "linear-gradient(to right, var(--line-strong) 1px, transparent 1px)",
+                      backgroundRepeat: "repeat-x",
+                      backgroundPosition: "left bottom",
+                      backgroundOrigin: "border-box",
+                      backgroundSize: `${ppd}px 5px`,
+                    }}
+                  >
+                    {fit === null ? null : fit.whole ? (
+                      week.label
+                    ) : (
+                      <span
+                        className="block truncate"
+                        style={{ marginLeft: fit.shift, maxWidth: fit.max }}
+                      >
+                        {week.label}
+                      </span>
+                    )}
+                  </span>
+                );
+              })}
+            </div>
+          ) : null}
+          {scale === "month" ? (
+            <div data-tl="weeks" className="relative flex h-8">
+              {header.ticks.map((tick, index) => (
+                <span
+                  key={index}
+                  data-tl="mt"
+                  title={tick.full}
+                  className={cn(
+                    "absolute inset-y-0 flex items-center border-l border-border pl-1 text-rail-label leading-[1.45] font-normal text-meta-foreground tabular-nums",
+                    !cellInView(tick.x, 24, visible) && "invisible",
+                  )}
+                  style={{ left: tick.x }}
+                >
+                  <b
+                    className={cn(
+                      "font-medium",
+                      tick.today &&
+                        "rounded-full bg-primary px-[5px] font-semibold text-primary-foreground",
+                    )}
+                  >
+                    {tick.n}
+                  </b>
+                </span>
+              ))}
+            </div>
+          ) : null}
+          {scale !== "day" ? (
+            <span
+              data-tl="hnow"
+              aria-hidden="true"
+              className="absolute bottom-0 h-2 w-0.5 bg-primary"
+              style={{ left: header.todayX }}
+            />
+          ) : null}
+        </div>
       </div>
 
       <div data-tl="body" className="relative">
@@ -375,145 +379,148 @@ function TaskTrack({
   return (
     <div
       data-tl="trow"
+      role="row"
       data-row-id={row.id}
       className="relative box-border border-b border-border"
       style={{ height: TASK_ROW_HEIGHT }}
       onPointerEnter={() => onHoverChange(row.id)}
       onPointerLeave={() => onHoverChange(null)}
     >
-      {bar ? (
-        <Bar
-          row={row}
-          bar={bar}
-          compact={compact}
-          barBox={barBox}
-          draggable={draggable}
-          onOpenItem={onOpenItem}
-          onBarPointerDown={onBarPointerDown}
-          onBarPointerMove={onBarPointerMove}
-          onBarPointerUp={onBarPointerUp}
-          onBarPointerCancel={onBarPointerCancel}
-        />
-      ) : null}
-      {fin ? (
-        <span
-          data-tl="fin"
-          role="img"
-          aria-label={row.aria}
-          title={row.aria}
-          className={cn(
-            "absolute top-[13px] z-[4] size-2.5 rounded-full bg-timeline-progress-done",
-            fin.fade && "opacity-35",
-            fin.critical && "ring-2 ring-danger-text",
-          )}
-          style={{ left: fin.x }}
-        />
-      ) : null}
-      {label ? (
-        <span
-          data-tl="lab"
-          className="absolute top-[9px] z-[4] truncate text-xs leading-[1.45] font-medium whitespace-nowrap text-muted-foreground"
-          style={labelStyle(label)}
-        >
-          {label.text}
-        </span>
-      ) : null}
-      {late ? (
-        <>
+      <div role="gridcell" className="contents">
+        {bar ? (
+          <Bar
+            row={row}
+            bar={bar}
+            compact={compact}
+            barBox={barBox}
+            draggable={draggable}
+            onOpenItem={onOpenItem}
+            onBarPointerDown={onBarPointerDown}
+            onBarPointerMove={onBarPointerMove}
+            onBarPointerUp={onBarPointerUp}
+            onBarPointerCancel={onBarPointerCancel}
+          />
+        ) : null}
+        {fin ? (
           <span
-            data-tl="late"
+            data-tl="fin"
+            role="img"
+            aria-label={row.aria}
+            title={row.aria}
+            className={cn(
+              "absolute top-[13px] z-[4] size-2.5 rounded-full bg-timeline-progress-done",
+              fin.fade && "opacity-35",
+              fin.critical && "ring-2 ring-danger-text",
+            )}
+            style={{ left: fin.x }}
+          />
+        ) : null}
+        {label ? (
+          <span
+            data-tl="lab"
+            className="absolute top-[9px] z-[4] truncate text-xs leading-[1.45] font-medium whitespace-nowrap text-muted-foreground"
+            style={labelStyle(label)}
+          >
+            {label.text}
+          </span>
+        ) : null}
+        {late ? (
+          <>
+            <span
+              data-tl="late"
+              aria-hidden="true"
+              className={cn(
+                "absolute z-[4] box-border border border-dashed border-danger-text",
+                compact
+                  ? "top-2.5 h-4 rounded-r-[4px]"
+                  : "top-2 h-5 rounded-r-[6px]",
+              )}
+              style={{
+                left: late.x,
+                width: late.width,
+                backgroundImage: LATE_HATCH,
+              }}
+            />
+            {late.textMax > 0 ? (
+              <span
+                data-tl="latel"
+                aria-hidden="true"
+                className="absolute top-[9px] z-[4] truncate text-xs leading-[1.45] font-bold whitespace-nowrap text-danger-text"
+                style={{ left: late.textLeft, maxWidth: late.textMax }}
+              >
+                {late.text}
+              </span>
+            ) : null}
+          </>
+        ) : null}
+        {milestone ? (
+          <>
+            <span
+              data-tl="ms"
+              role="img"
+              aria-label={milestone.aria}
+              title={milestone.title}
+              className="absolute top-[11px] z-[4] size-3.5 rotate-45 rounded-[2px] bg-timeline-milestone"
+              style={{ left: milestone.x }}
+            />
+            {milestone.labelMax > 0 ? (
+              <span
+                data-tl="lab"
+                className="absolute top-[9px] z-[4] truncate text-xs leading-[1.45] font-bold whitespace-nowrap text-foreground"
+                style={{
+                  ...(milestone.labelRight !== undefined
+                    ? { right: milestone.labelRight }
+                    : { left: milestone.labelLeft }),
+                  maxWidth: milestone.labelMax,
+                }}
+              >
+                {row.title}
+              </span>
+            ) : null}
+          </>
+        ) : null}
+        {ghost ? (
+          <span
+            data-tl="ghost"
             aria-hidden="true"
             className={cn(
-              "absolute z-[4] box-border border border-dashed border-danger-text",
-              compact
-                ? "top-2.5 h-4 rounded-r-[4px]"
-                : "top-2 h-5 rounded-r-[6px]",
+              "absolute z-[4] box-border border-[1.5px] border-dashed border-primary bg-state-selected",
+              compact ? "top-2.5 h-4 rounded-[4px]" : "top-2 h-5 rounded-[6px]",
             )}
-            style={{
-              left: late.x,
-              width: late.width,
-              backgroundImage: LATE_HATCH,
-            }}
+            style={{ left: ghost.x, width: ghost.width }}
           />
-          {late.textMax > 0 ? (
-            <span
-              data-tl="latel"
-              aria-hidden="true"
-              className="absolute top-[9px] z-[4] truncate text-xs leading-[1.45] font-bold whitespace-nowrap text-danger-text"
-              style={{ left: late.textLeft, maxWidth: late.textMax }}
-            >
-              {late.text}
-            </span>
-          ) : null}
-        </>
-      ) : null}
-      {milestone ? (
-        <>
+        ) : null}
+        {shownHandle ? (
           <span
-            data-tl="ms"
-            role="img"
-            aria-label={milestone.aria}
-            title={milestone.title}
-            className="absolute top-[11px] z-[4] size-3.5 rotate-45 rounded-[2px] bg-timeline-milestone"
-            style={{ left: milestone.x }}
+            data-tl="handle"
+            aria-hidden="true"
+            className={cn(
+              "absolute z-[6] w-1.5 cursor-ew-resize rounded-[3px] bg-primary",
+              compact ? "top-2 h-5" : "top-1.5 h-6",
+            )}
+            style={{ left: shownHandle.x, touchAction: "none" }}
+            onPointerDown={(event) => onBarPointerDown(row, "resize", event)}
+            onPointerMove={onBarPointerMove}
+            onPointerUp={onBarPointerUp}
+            onPointerCancel={onBarPointerCancel}
           />
-          {milestone.labelMax > 0 ? (
-            <span
-              data-tl="lab"
-              className="absolute top-[9px] z-[4] truncate text-xs leading-[1.45] font-bold whitespace-nowrap text-foreground"
-              style={{
-                ...(milestone.labelRight !== undefined
-                  ? { right: milestone.labelRight }
-                  : { left: milestone.labelLeft }),
-                maxWidth: milestone.labelMax,
-              }}
-            >
-              {row.title}
-            </span>
-          ) : null}
-        </>
-      ) : null}
-      {ghost ? (
-        <span
-          data-tl="ghost"
-          aria-hidden="true"
-          className={cn(
-            "absolute z-[4] box-border border-[1.5px] border-dashed border-primary bg-state-selected",
-            compact ? "top-2.5 h-4 rounded-[4px]" : "top-2 h-5 rounded-[6px]",
-          )}
-          style={{ left: ghost.x, width: ghost.width }}
-        />
-      ) : null}
-      {shownHandle ? (
-        <span
-          data-tl="handle"
-          aria-hidden="true"
-          className={cn(
-            "absolute z-[6] w-1.5 cursor-ew-resize rounded-[3px] bg-primary",
-            compact ? "top-2 h-5" : "top-1.5 h-6",
-          )}
-          style={{ left: shownHandle.x, touchAction: "none" }}
-          onPointerDown={(event) => onBarPointerDown(row, "resize", event)}
-          onPointerMove={onBarPointerMove}
-          onPointerUp={onBarPointerUp}
-          onPointerCancel={onBarPointerCancel}
-        />
-      ) : null}
-      {tip ? (
-        <span
-          data-tl="tip"
-          role="status"
-          className="absolute -top-12 z-[7] rounded-[8px] bg-calendar-tip px-2.5 py-1.5 text-xs leading-[1.45] font-semibold whitespace-nowrap text-calendar-tip-foreground shadow-popover"
-          style={{ left: Math.max(4, Math.min(tip.x, chartWidth - 220)) }}
-        >
-          {tip.text}
-          {tip.note ? (
-            <small className="block text-mark-sm leading-[1.45] font-medium text-timeline-tip-note">
-              {tip.note}
-            </small>
-          ) : null}
-        </span>
-      ) : null}
+        ) : null}
+        {tip ? (
+          <span
+            data-tl="tip"
+            role="status"
+            className="absolute -top-12 z-[7] rounded-[8px] bg-calendar-tip px-2.5 py-1.5 text-xs leading-[1.45] font-semibold whitespace-nowrap text-calendar-tip-foreground shadow-popover"
+            style={{ left: Math.max(4, Math.min(tip.x, chartWidth - 220)) }}
+          >
+            {tip.text}
+            {tip.note ? (
+              <small className="block text-mark-sm leading-[1.45] font-medium text-timeline-tip-note">
+                {tip.note}
+              </small>
+            ) : null}
+          </span>
+        ) : null}
+      </div>
     </div>
   );
 }

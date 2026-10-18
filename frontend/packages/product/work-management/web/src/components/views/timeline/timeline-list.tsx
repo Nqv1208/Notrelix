@@ -37,6 +37,7 @@ export function TimelineList({
   return (
     <div
       data-tl="left"
+      role="rowgroup"
       className={cn(
         "z-[6] box-content w-72 shrink-0 border-r border-line-strong lg:sticky lg:left-0 lg:w-95",
         timelinePanelClass,
@@ -44,11 +45,16 @@ export function TimelineList({
     >
       <div
         data-tl="lh"
+        role="row"
         className="sticky top-0 z-[2] box-border flex h-14 items-end gap-1.5 border-b border-line-strong bg-table-header px-3 pb-2 text-xs leading-[1.45] font-semibold text-meta-foreground"
       >
-        <span className="w-[62px]">{copy.head.key}</span>
-        <span className="flex-1">{copy.head.title}</span>
-        <span>{copy.head.due}</span>
+        <span role="columnheader" className="w-[62px]">
+          {copy.head.key}
+        </span>
+        <span role="columnheader" className="flex-1">
+          {copy.head.title}
+        </span>
+        <span role="columnheader">{copy.head.due}</span>
       </div>
       {rows.map((row) =>
         row.type === "group" ? (
@@ -58,10 +64,12 @@ export function TimelineList({
             data-tl="lgrp"
             className="box-border flex h-8 items-center gap-2 border-b border-border bg-table-group px-3 text-compact leading-[1.45] font-semibold"
           >
-            {row.title}
-            <span className="font-medium text-meta-foreground">
-              {row.count}
-            </span>
+            <div role="gridcell" className="contents">
+              {row.title}
+              <span className="font-medium text-meta-foreground">
+                {row.count}
+              </span>
+            </div>
           </div>
         ) : (
           <TaskRow
