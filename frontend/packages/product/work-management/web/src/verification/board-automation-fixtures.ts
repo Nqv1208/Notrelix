@@ -26,7 +26,7 @@ const person = (
   color: string,
 ): AutomationPersonDto => ({ id, name, initials, color });
 
-export const ha = person("p-ha", "Nguyễn Thu Hà", "HA", "#4E8574");
+export const ha = person("p-ha", "Nguyễn Thu Hà", "HA", "#487F6E");
 export const phuc = person("p-phuc", "Lê Hoàng Phúc", "HP", "#B4500B");
 const quan = person("p-quan", "Trần Minh Quân", "TQ", "#1E6FD0");
 const minh = person("p-minh", "Hồ Quang Minh", "HM", "#57534E");

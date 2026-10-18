@@ -119,7 +119,7 @@ function ScopeChip({
       <span className="inline-flex min-h-[22px] items-center gap-[5px] rounded-[5px] bg-state-hover-strong px-[7px] whitespace-nowrap">
         {row.scope.kind === "workspace" ? (
           <>
-            <span className="grid size-3.5 place-items-center rounded-[4px] bg-brand-mark text-mark-2xs font-bold text-brand-solid-foreground">
+            <span className="grid size-3.5 place-items-center rounded-[4px] bg-brand-solid text-mark-2xs font-bold text-brand-solid-foreground">
               MA
             </span>
             {copy.scopeWorkspace}
