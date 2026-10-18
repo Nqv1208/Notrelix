@@ -43,15 +43,15 @@ stateful = true
 [images.rabbitmq]
 class = "runtime"
 source = "rabbitmq:4.3-management"
-ref = "rabbitmq@sha256:57bddb6fbc3498b5d8b5a14dc6f4506073ebcf94c66ba2a7678c335faa8dd631"
+ref = "rabbitmq@sha256:54cb013d76cd1fd6c0a0708f34062ad61c452bb6f016b434c6c33f1a765d2b58"
 compose_service = "rabbitmq"
 deploy_env_var = "NOTRELIX_RABBITMQ_IMAGE"
 stateful = true
 
 [images.nginx]
 class = "runtime"
-source = "nginx:1.29-alpine-slim"
-ref = "nginx@sha256:c9366b8c560169b101ca0e5422ed063b20779e6454c2326b9c9704225c9b0c08"
+source = "nginx:1.30-alpine-slim"
+ref = "nginx@sha256:3028fc1419f99b95c1c69f844bbaf49dc1b881750c51b497fc721ac4f02a14e6"
 compose_service = "nginx"
 deploy_env_var = "NOTRELIX_NGINX_IMAGE"
 stateful = false
