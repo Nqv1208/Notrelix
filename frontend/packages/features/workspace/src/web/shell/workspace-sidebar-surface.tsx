@@ -428,8 +428,8 @@ function WorkspaceSetup({
   }
 
   return (
-    <Collapsible defaultOpen={inSetup} className="group/setup">
-      <SidebarMenuItem>
+    <Collapsible asChild defaultOpen={inSetup}>
+      <SidebarMenuItem className="group/setup">
         <CollapsibleTrigger asChild>
           <SidebarMenuButton
             className={cn(
