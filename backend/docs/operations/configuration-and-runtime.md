@@ -213,19 +213,32 @@ Development:
 - SeedData enabled/run-on-startup
 - Messaging RabbitMQ
 - HTTPS redirect disabled
+- Security:Csrf:Enabled = false (documented exception)
+
+Testing:
+- Security:Csrf:Enabled = false (documented exception; CSRF suites opt in per host)
 
 Staging:
 - MigrateOnStartup = false
 - Seed enabled but not run-on-startup
 - HTTPS redirect enabled
 - RabbitMQ transport
+- Security:Csrf:Enabled = true (compose-pinned, not env-overridable)
 
 Production:
 - MigrateOnStartup = false
 - Seed disabled
 - HTTPS redirect enabled
 - RabbitMQ transport
+- Security:Csrf:Enabled = true (compose-pinned, not env-overridable)
 ```
+
+Browser CSRF enforcement (ADR-005) is fail-safe: the base `appsettings.json` and the
+`CsrfOptions.Enabled` code default are `true`. Only the Development and Testing appsettings
+turn it off. `CsrfOptionsValidator` (`ValidateOnStart`) fails startup when enforcement is
+disabled in any other environment, and, when enforced, when `Cors:AllowedOrigins` is empty,
+contains `*`, or contains a non-absolute-http(s) origin. The cookie and header names
+(`csrf_token`, `X-CSRF-Token`) are protocol constants, not configuration.
 
 These values are current executable evidence.
 

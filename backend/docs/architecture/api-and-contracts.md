@@ -418,6 +418,12 @@ CsrfValidationMiddleware
 
 with Infrastructure token/protection mechanics according to the ADR.
 
+Enforcement is fail-safe: `Security:Csrf:Enabled` defaults to `true` (base configuration and
+`CsrfOptions`), is turned off only by the Development/Testing appsettings, and startup validation
+rejects disablement in every other environment. The realtime WebSocket handshake is a safe-verb
+upgrade that cannot carry `X-CSRF-Token`; when a gateway exists it must authenticate the
+connection and allow-list the `Origin` (it is not covered by this middleware).
+
 ---
 
 # 22. BE-API-010 — CSRF is a host boundary separate from Application authorization

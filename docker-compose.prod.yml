@@ -47,6 +47,9 @@ services:
       Email__FromEmail: ${EMAIL_FROM:-noreply@notrelix.app}
       Email__FromName: ${EMAIL_FROM_NAME:-Notrelix}
       Cors__AllowedOrigins__0: ${CORS_ORIGIN:?CORS_ORIGIN is required}
+      # Browser CSRF enforcement is mandatory outside Development/Testing (ADR-005);
+      # not env-overridable, and startup fails if it is disabled here.
+      Security__Csrf__Enabled: "true"
       Messaging__Transport: RabbitMQ
       Messaging__RabbitMQ__Host: rabbitmq
       Messaging__RabbitMQ__Port: "5672"
