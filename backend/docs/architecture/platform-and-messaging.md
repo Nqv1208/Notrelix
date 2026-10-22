@@ -544,6 +544,26 @@ another recovery mechanism owns it
 
 Do not leave durable work permanently invisible.
 
+Consumer dedup claims (`messaging.processed_events`) follow the same rule for the command-owned consumer path
+(`DeduplicationConsumeFilter`):
+
+```text
+Processing claim older than Messaging:Deduplication:ProcessingClaimLeaseSeconds (default 300, validated 30..86400 on start)
+→ presumed dead; exactly one redelivery wins an atomic compare-and-swap on (Status = Processing, ClaimedAt < now - lease),
+  which renews the lease, and re-runs the command
+Processing claim inside the lease
+→ not stolen and not acknowledged as a duplicate; the delivery is deferred (MessageClaimInFlightException, transient retry)
+Succeeded claim
+→ ignored as a duplicate, regardless of age
+```
+
+Exactly-once effect on takeover is carried by the command, not by the claim row: the command's data-session transaction
+commits the business write and its message-keyed idempotency record (IdempotencyBehavior, key = event id) atomically, so a
+re-run after a crash either replays the stored result (first run committed) or finds nothing to duplicate (it did not).
+The Succeeded marker is advanced only after the protected command returned (NRX-010). The lease MUST exceed the longest
+expected consumer execution; the idempotency result retention (`Idempotency:ResultExpiry`) bounds how long replay is
+guaranteed, after which the consumer's own domain idempotency (for example an existing personal Workspace) applies.
+
 ---
 
 # 30. At-least-once posture

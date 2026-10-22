@@ -66,6 +66,26 @@ public sealed class MessageDeduplicationStore : IMessageDeduplicationStore, IPro
         }
     }
 
+    public async Task<bool> TryReclaimStaleProcessingAsync(
+        Guid messageId,
+        string consumerName,
+        DateTimeOffset staleBefore,
+        DateTimeOffset reclaimedAt,
+        CancellationToken ct)
+    {
+        // Single-statement compare-and-swap: of N concurrent redeliveries exactly one
+        // observes the stale ClaimedAt and renews it; the rest affect 0 rows.
+        var reclaimed = await _context.Set<MessagingProcessedEvent>()
+            .Where(e => e.EventId == messageId
+                && e.ConsumerName == consumerName
+                && e.Status == "Processing"
+                && e.ClaimedAt < staleBefore)
+            .ExecuteUpdateAsync(
+                s => s.SetProperty(e => e.ClaimedAt, reclaimedAt),
+                ct);
+        return reclaimed > 0;
+    }
+
     public void MarkSucceeded(
         Guid messageId,
         string consumerName,

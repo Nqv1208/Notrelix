@@ -1,5 +1,6 @@
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Messaging;
+using Notrelix.Infrastructure.Messaging.Options;
 
 namespace Notrelix.Infrastructure.Messaging;
 
@@ -11,14 +12,17 @@ public sealed class DeduplicationConsumeFilter<T> : IFilter<ConsumeContext<T>>
     private readonly IRlsSessionContext _rls;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ILogger<DeduplicationConsumeFilter<T>> _logger;
+    private readonly MessageDeduplicationOptions _options;
 
     public DeduplicationConsumeFilter(
         IMessageDeduplicationStore dedupStore,
         ApplicationDbContext db,
         IRlsSessionContext rls,
         IDateTimeProvider dateTimeProvider,
-        ILogger<DeduplicationConsumeFilter<T>> logger)
+        ILogger<DeduplicationConsumeFilter<T>> logger,
+        IOptions<MessageDeduplicationOptions>? options = null)
     {
+        _options = options?.Value ?? new MessageDeduplicationOptions();
         _dedupStore = dedupStore;
         _db = db;
         _rls = rls;
@@ -151,6 +155,9 @@ public sealed class DeduplicationConsumeFilter<T> : IFilter<ConsumeContext<T>>
     /// wrapping transaction here. The claim and success marker are persisted as
     /// independent autocommit writes; on failure the "Processing" claim is removed
     /// so the message can be retried (unique-constraint dedup otherwise blocks it).
+    /// If the process dies between claim and completion the claim stays "Processing"
+    /// until its lease (<see cref="MessageDeduplicationOptions.ProcessingClaimLeaseSeconds"/>)
+    /// expires, after which a redelivery takes it over (see TryTakeOverStaleClaimAsync).
     /// The effect itself is idempotent for such consumers (e.g. an existing personal
     /// Workspace is reported as already-existed), bounding retry side effects.
     /// </summary>
@@ -169,11 +176,8 @@ public sealed class DeduplicationConsumeFilter<T> : IFilter<ConsumeContext<T>>
             workspaceId: integrationEvent.WorkspaceId,
             cancellationToken: context.CancellationToken);
 
-        if (!claimed)
+        if (!claimed && !await TryTakeOverStaleClaimAsync(context, integrationEvent, consumerName))
         {
-            _logger.LogDebug(
-                "Event {EventId} ({MessageName}) already claimed/processed by {ConsumerName}, skipping",
-                integrationEvent.EventId, integrationEvent.MessageName, consumerName);
             return;
         }
 
@@ -209,6 +213,58 @@ public sealed class DeduplicationConsumeFilter<T> : IFilter<ConsumeContext<T>>
             }
             throw;
         }
+    }
+
+    /// <summary>
+    /// Called when the claim insert lost to an existing (message, consumer) row.
+    /// <list type="bullet">
+    /// <item>Succeeded: genuine duplicate, ignored (returns false).</item>
+    /// <item>Processing older than the lease: the owning attempt is presumed dead
+    /// (crash between claim commit and completion). Exactly one redelivery wins the
+    /// compare-and-swap and re-runs the command (returns true).</item>
+    /// <item>Processing inside the lease (or row vanished mid-race): NOT acknowledged;
+    /// <see cref="MessageClaimInFlightException"/> defers the delivery so a crashed
+    /// owner is recovered once its lease expires instead of the message being lost.</item>
+    /// </list>
+    /// Exactly-once effect on takeover: the command's data-session transaction commits
+    /// the business write and its message-keyed idempotency record atomically
+    /// (IdempotencyBehavior, key = EventId). If the first attempt committed, the re-run
+    /// replays the stored result without executing the handler; if it did not commit,
+    /// there is no effect to duplicate. Only the success marker is advanced after
+    /// <c>next</c> succeeded (NRX-010).
+    /// </summary>
+    private async Task<bool> TryTakeOverStaleClaimAsync(
+        ConsumeContext<T> context,
+        IIntegrationEvent integrationEvent,
+        string consumerName)
+    {
+        var ct = context.CancellationToken;
+
+        if (await _dedupStore.IsProcessedAsync(integrationEvent.EventId, consumerName, ct))
+        {
+            _logger.LogDebug(
+                "Event {EventId} ({MessageName}) already claimed/processed by {ConsumerName}, skipping",
+                integrationEvent.EventId, integrationEvent.MessageName, consumerName);
+            return false;
+        }
+
+        var now = _dateTimeProvider.UtcNow;
+        var reclaimed = await _dedupStore.TryReclaimStaleProcessingAsync(
+            integrationEvent.EventId,
+            consumerName,
+            staleBefore: now - TimeSpan.FromSeconds(_options.ProcessingClaimLeaseSeconds),
+            reclaimedAt: now,
+            ct);
+
+        if (reclaimed)
+        {
+            _logger.LogWarning(
+                "Event {EventId} ({MessageName}) had a stale Processing claim for {ConsumerName}; reclaimed after lease expiry",
+                integrationEvent.EventId, integrationEvent.MessageName, consumerName);
+            return true;
+        }
+
+        throw new MessageClaimInFlightException(integrationEvent.EventId, consumerName);
     }
 
     private static void DetachAllTrackedEntries(DbContext db)
