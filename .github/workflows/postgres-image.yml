@@ -58,7 +58,8 @@ jobs:
           inventory "$base" > base.inventory
           inventory "$IMAGE" > derived.inventory
           [[ "$(wc -l < base.inventory)" -gt 1000 ]] || { echo "::error::file inventory is implausibly small"; exit 1; }
-          changed="$(diff base.inventory derived.inventory | grep '^[<>]' | awk '{print $3}' | sort -u)"
+          # diff exits 1 when the inventories differ, which they must (gosu); only exit 2 is an error.
+          changed="$( { diff base.inventory derived.inventory || [[ $? -eq 1 ]]; } | { grep '^[<>]' || true; } | awk '{print $3}' | sort -u)"
           echo "files differing from base: $changed"
           [[ "$changed" == "/usr/local/bin/gosu" ]] || { echo "::error::derived image differs from base beyond gosu"; exit 1; }
       - name: Run Trivy vulnerability scan (no ignore file)
