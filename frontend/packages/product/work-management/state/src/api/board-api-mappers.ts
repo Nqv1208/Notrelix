@@ -332,14 +332,18 @@ export function mapAttachmentDtoToCardFile(
   cardId: string,
 ): CardFile {
   const name = dto.uploadedByName ?? "Unknown";
+  // A stored file has no public address: its `url` is empty and it is
+  // downloaded through the authorised content route.
+  const isFile = dto.kind?.trim().toLowerCase() === "file";
   return {
     id: dto.id,
     cardId,
     name: dto.filename,
     size: dto.sizeBytes,
     contentType: dto.contentType,
-    url: dto.url,
-    source: normalizeFileSource(dto.source),
+    url: isFile ? "" : (dto.url ?? ""),
+    source: isFile ? "upload" : normalizeFileSource(dto.source ?? ""),
+    kind: isFile ? "file" : "link",
     createdBy: {
       id: `cm-${dto.uploadedBy}`,
       userId: dto.uploadedBy,

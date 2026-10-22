@@ -1,6 +1,8 @@
 export {
   createNotrelixClient,
   type ApiRequestOptions,
+  type ApiUploadOptions,
+  type UploadProgress,
   type NotrelixClient,
   type NotrelixClientConfig,
   type SessionExpiredEvent,

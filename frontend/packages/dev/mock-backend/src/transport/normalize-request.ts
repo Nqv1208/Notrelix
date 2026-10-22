@@ -14,6 +14,8 @@ export interface NormalizedMockRequest {
   readonly headers: Headers;
   readonly bodyText: string | null;
   readonly jsonBody: unknown;
+  /** The parts of a multipart/form-data upload; null for any other body. */
+  readonly formData: FormData | null;
   readonly signal: AbortSignal | null;
 }
 
@@ -47,9 +49,12 @@ export function normalizeMockRequest(
 
   let bodyText: string | null = null;
   let jsonBody: unknown = null;
+  let formData: FormData | null = null;
 
   if (init?.body != null) {
-    if (typeof init.body === "string") {
+    if (typeof FormData !== "undefined" && init.body instanceof FormData) {
+      formData = init.body;
+    } else if (typeof init.body === "string") {
       bodyText = init.body;
     } else if (init.body instanceof URLSearchParams) {
       bodyText = init.body.toString();
@@ -82,6 +87,7 @@ export function normalizeMockRequest(
     headers,
     bodyText,
     jsonBody,
+    formData,
     signal,
   };
 }

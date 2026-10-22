@@ -3,6 +3,24 @@ import { AppError } from "@notrelix/kernel";
 import { mapStatusToKind } from "@notrelix/kernel";
 import { createCsrfProvider, type CsrfProvider, CSRF_HEADER } from "./csrf";
 import { generateCorrelationId } from "@notrelix/kernel";
+import {
+  createFetchUploadTransport,
+  createXhrUploadTransport,
+  type UploadProgress,
+  type UploadTransport,
+} from "./upload-transport";
+
+export type { UploadProgress } from "./upload-transport";
+
+/** A multipart upload: one idempotency key per user action, reused only to retry it. */
+export type ApiUploadOptions = {
+  /** Required: the same key replays the stored result of the same action. */
+  idempotencyKey: string;
+  signal?: AbortSignal;
+  skipAuthRefresh?: boolean;
+  correlationId?: string;
+  onProgress?: (progress: UploadProgress) => void;
+};
 
 export type ApiRequestOptions = {
   signal?: AbortSignal;
@@ -27,6 +45,12 @@ export interface NotrelixClientConfig {
   createCorrelationId?: () => string;
   clock?: { now(): Date };
   onSessionExpired?: (event: SessionExpiredEvent) => void;
+  /**
+   * Builds the XMLHttpRequest an upload reports progress over. Without it the
+   * browser's XMLHttpRequest is used, unless `fetchImpl` is injected (mock
+   * backend): then uploads go through that fetch and report no progress.
+   */
+  createXhr?: () => XMLHttpRequest;
 }
 
 const UNSAFE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
@@ -94,6 +118,14 @@ export function createNotrelixClient(config: NotrelixClientConfig) {
       headers,
     });
   }
+
+  const uploadTransport: UploadTransport = (() => {
+    if (config.createXhr) return createXhrUploadTransport(config.createXhr);
+    if (!config.fetchImpl && typeof XMLHttpRequest !== "undefined") {
+      return createXhrUploadTransport(() => new XMLHttpRequest());
+    }
+    return createFetchUploadTransport(fetchImpl);
+  })();
 
   // Instance-scoped single-flight refresh promise closure
   let refreshPromise: Promise<void> | null = null;
@@ -281,8 +313,157 @@ export function createNotrelixClient(config: NotrelixClientConfig) {
     return (data ?? null) as TResponse;
   }
 
+  function parseProblem(bodyText: string): unknown {
+    if (!bodyText) return null;
+    try {
+      return JSON.parse(bodyText);
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * POST multipart/form-data. Same CSRF, auth-refresh and correlation rules as
+   * `apiFetch`; the body is a FormData so no JSON Content-Type is sent (the
+   * transport adds the multipart boundary). Retries re-send the same FormData.
+   */
+  async function apiUpload<TResponse>(
+    url: string,
+    form: FormData,
+    options: ApiUploadOptions,
+    retryAfterRefresh = true,
+    retryAfterCsrfRecovery = true,
+  ): Promise<TResponse> {
+    const correlationId = options.correlationId || createCorrelationId();
+    const token = await csrf.ensureCsrfToken();
+    const headers: Record<string, string> = {
+      "X-Correlation-ID": correlationId,
+      "Idempotency-Key": options.idempotencyKey,
+      [CSRF_HEADER]: token,
+    };
+
+    let raw;
+    try {
+      raw = await uploadTransport({
+        url: `${customBaseUrl}${url}`,
+        form,
+        headers,
+        signal: options.signal,
+        onProgress: options.onProgress,
+      });
+    } catch (error) {
+      const isAbort = (error as { name?: string }).name === "AbortError";
+      throw new AppError({
+        kind: isAbort ? "aborted" : "network",
+        message: isAbort
+          ? "Request was aborted."
+          : "Network error. Please check your internet connection.",
+        correlationId,
+        cause: error,
+      });
+    }
+
+    if (raw.status === 401 && retryAfterRefresh && !options.skipAuthRefresh) {
+      await refreshOnce();
+      return apiUpload<TResponse>(
+        url,
+        form,
+        { ...options, skipAuthRefresh: true },
+        false,
+        retryAfterCsrfRecovery,
+      );
+    }
+
+    const data = parseProblem(raw.bodyText);
+
+    if (isCsrfRejection(raw.status, data) && retryAfterCsrfRecovery) {
+      csrf.clearToken();
+      await csrf.ensureCsrfToken();
+      return apiUpload<TResponse>(url, form, options, retryAfterRefresh, false);
+    }
+
+    if (raw.status < 200 || raw.status >= 300) {
+      const problem = (data ?? {}) as Record<string, unknown>;
+      throw new AppError({
+        kind: mapStatusToKind(raw.status),
+        status: raw.status,
+        ...(typeof problem.errorCode === "string"
+          ? { code: problem.errorCode }
+          : {}),
+        message: extractErrorMessage(data),
+        details: data,
+        correlationId,
+      });
+    }
+
+    return (data ?? null) as TResponse;
+  }
+
+  /** GET a binary body (a file) with the session; the caller saves the Blob. */
+  async function apiGetBlob(
+    url: string,
+    options: ApiRequestOptions = {},
+    retryAfterRefresh = true,
+  ): Promise<Blob> {
+    const correlationId = options.correlationId || createCorrelationId();
+    let response: Response;
+    try {
+      response = await csrfAwareFetch(
+        `${customBaseUrl}${url}`,
+        {
+          method: "GET",
+          ...(options.signal ? { signal: options.signal } : {}),
+        },
+        correlationId,
+      );
+    } catch (error) {
+      const isAbort = (error as { name?: string }).name === "AbortError";
+      throw new AppError({
+        kind: isAbort ? "aborted" : "network",
+        message: isAbort
+          ? "Request was aborted."
+          : "Network error. Please check your internet connection.",
+        correlationId,
+        cause: error,
+      });
+    }
+    if (
+      response.status === 401 &&
+      retryAfterRefresh &&
+      !options.skipAuthRefresh
+    ) {
+      await refreshOnce();
+      return apiGetBlob(url, { ...options, skipAuthRefresh: true }, false);
+    }
+    if (!response.ok) {
+      const data = parseProblem(await response.text());
+      const problem = (data ?? {}) as Record<string, unknown>;
+      throw new AppError({
+        kind: mapStatusToKind(response.status),
+        status: response.status,
+        ...(typeof problem.errorCode === "string"
+          ? { code: problem.errorCode }
+          : {}),
+        message: extractErrorMessage(data),
+        details: data,
+        correlationId,
+      });
+    }
+    return response.blob();
+  }
+
   return {
     api: {
+      upload<TResponse>(
+        url: string,
+        form: FormData,
+        options: ApiUploadOptions,
+      ): Promise<TResponse> {
+        return apiUpload<TResponse>(url, form, options);
+      },
+      getBlob(url: string, options?: ApiRequestOptions): Promise<Blob> {
+        return apiGetBlob(url, options);
+      },
       get<TResponse>(
         url: string,
         options?: ApiRequestOptions,

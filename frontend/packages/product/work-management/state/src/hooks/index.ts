@@ -30,7 +30,7 @@ export * from "../mutations/use-delete-card-update";
 export * from "../mutations/use-move-card";
 export * from "../mutations/use-duplicate-card";
 export * from "../mutations/use-update-field-value";
-export * from "../mutations/use-upload-card-file";
+export * from "../mutations/use-item-file-uploads";
 
 export * from "../mutations/use-create-column";
 export * from "../mutations/use-update-column";

@@ -158,6 +158,10 @@ export const endpoints = {
       `/board-items/${itemId}/field-values/${fieldId}`,
     comments: (itemId: string) => `/board-items/${itemId}/comments`,
     attachments: (itemId: string) => `/board-items/${itemId}/attachments`,
+    attachmentFiles: (itemId: string) =>
+      `/board-items/${itemId}/attachments/files`,
+    attachmentContent: (itemId: string, attachmentId: string) =>
+      `/board-items/${itemId}/attachments/${attachmentId}/content`,
     activity: (itemId: string) => `/board-items/${itemId}/activity`,
     checklists: (itemId: string) => `/board-items/${itemId}/checklists`,
     labels: (itemId: string) => `/board-items/${itemId}/labels`,

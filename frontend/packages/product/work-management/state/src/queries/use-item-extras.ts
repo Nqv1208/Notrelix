@@ -149,27 +149,6 @@ export function useItemLinks(
   };
 }
 
-/** Registers a file on an item (gap `CTR-GAP-WM-ITEM-DETAIL`). */
-export function useAddItemFile(itemId: string, workspaceId: string) {
-  const { itemExtras } = useWorkManagementServices();
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (file: {
-      filename: string;
-      sizeBytes: number;
-      contentType: string;
-    }) => itemExtras.addFile(itemId, file),
-    onSettled: () => {
-      void queryClient.invalidateQueries({
-        queryKey: wmQueryKeys.cardFiles(workspaceId, itemId),
-      });
-      void queryClient.invalidateQueries({
-        queryKey: wmQueryKeys.cardActivity(workspaceId, itemId),
-      });
-    },
-  });
-}
-
 const lifecycleKey = (workspaceId: string, itemId: string) =>
   workspaceQueryKey(workspaceId, "work-management", "item-lifecycle", itemId);
 

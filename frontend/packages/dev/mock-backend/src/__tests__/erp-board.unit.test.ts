@@ -552,11 +552,11 @@ describe("ERP board in the mock world", () => {
         verb: "đánh dấu xong việc con",
         target: "ERP-142.4",
       });
-      await extras.addFile(id, {
-        filename: "ghi-chu.pdf",
-        sizeBytes: 12,
-        contentType: "application/pdf",
-      });
+      await createCardApi(client).uploadCardFile(
+        id,
+        new File(["ghi chu"], "ghi-chu.pdf", { type: "application/pdf" }),
+        { idempotencyKey: "erp-board-upload-1" },
+      );
       expect(store.getAttachments(id)).toHaveLength(4);
       const commenter = clientFor("commenter");
       await expect(

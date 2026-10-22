@@ -1,4 +1,8 @@
-import type { ApiRequestOptions, NotrelixClient } from "@notrelix/contracts";
+import type {
+  ApiRequestOptions,
+  NotrelixClient,
+  UploadProgress,
+} from "@notrelix/contracts";
 import { endpoints } from "@notrelix/contracts";
 import type {
   OperationRequestBody,
@@ -9,18 +13,25 @@ import type {
   AttachmentDtoApi,
   CardDetail,
   CardDtoApi,
+  CardFile,
 } from "@notrelix/work-management-core";
 import type {
   CreateCardInput,
   UpdateCardInput,
   UpdateFieldValueInput,
-  UploadCardFileInput,
 } from "@notrelix/work-management-core";
 import {
   mapActivityResponse,
   mapAttachmentDtoToCardFile,
   mapCardDto,
 } from "./board-api-mappers";
+
+/** How one user action sends a file (see `uploadCardFile`). */
+export interface UploadCardFileOptions {
+  readonly idempotencyKey: string;
+  readonly signal?: AbortSignal;
+  readonly onProgress?: (progress: UploadProgress) => void;
+}
 
 type CreateItemOp = "WorkManagement.BoardItems.Create";
 type CreateItemBody = OperationRequestBody<CreateItemOp>;
@@ -164,10 +175,39 @@ export function createCardApi(client: NotrelixClient) {
       return mapActivityResponse(activity, cardId);
     },
 
-    async uploadCardFile(input: UploadCardFileInput) {
-      void input;
-      throw new Error(
-        "Card file upload requires a storage presign URL before attachment metadata can be registered.",
+    /**
+     * Sends a file to an item: `POST /board-items/{id}/attachments/files`
+     * (multipart, part `file`). `idempotencyKey` belongs to one user action:
+     * a fresh key per action, the same one only to retry that action.
+     */
+    async uploadCardFile(
+      cardId: string,
+      file: File,
+      options: UploadCardFileOptions,
+    ): Promise<CardFile> {
+      const form = new FormData();
+      form.append("file", file, file.name);
+      const dto = await api.upload<AttachmentDtoApi>(
+        endpoints.boardItems.attachmentFiles(cardId),
+        form,
+        {
+          idempotencyKey: options.idempotencyKey,
+          ...(options.signal ? { signal: options.signal } : {}),
+          ...(options.onProgress ? { onProgress: options.onProgress } : {}),
+        },
+      );
+      return mapAttachmentDtoToCardFile(dto, cardId);
+    },
+
+    /** The bytes of a stored file, read with the session (never a URL token). */
+    downloadCardFile(
+      cardId: string,
+      attachmentId: string,
+      options?: ApiRequestOptions,
+    ): Promise<Blob> {
+      return api.getBlob(
+        endpoints.boardItems.attachmentContent(cardId, attachmentId),
+        options,
       );
     },
   };

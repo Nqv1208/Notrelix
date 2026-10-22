@@ -159,16 +159,6 @@ export function createItemExtrasApi(client: NotrelixClient) {
         { idempotencyKey: key(), ...quiet },
       );
     },
-    /** Registers a file on an item (metadata only: the mock keeps no bytes). */
-    async addFile(
-      itemId: string,
-      file: { filename: string; sizeBytes: number; contentType: string },
-    ): Promise<void> {
-      await api.post<void>(`/board-items/${itemId}/attachments`, file, {
-        idempotencyKey: key(),
-        ...quiet,
-      });
-    },
     async getLifecycle(itemId: string): Promise<ItemLifecycleDto> {
       const dto = await api.get<Partial<ItemLifecycleDto> | null>(
         `/board-items/${itemId}/lifecycle`,
