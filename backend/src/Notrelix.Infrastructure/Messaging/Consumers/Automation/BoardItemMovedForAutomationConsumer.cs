@@ -8,6 +8,7 @@ namespace Notrelix.Infrastructure.Messaging.Consumers.Automation;
 /// the authoritative facts and delegates to the Automation rule evaluator;
 /// no rule/execution semantics live here.
 /// </summary>
+[OrderingNotApplicable("Each move fact independently triggers rule evaluation; evaluation is per message and deduplicated by the Platform dedup filter, with no later-supersedes-earlier state.")]
 public sealed class BoardItemMovedAutomationConsumer
     : IConsumer<BoardItemMovedIntegrationEventV2>
 {
@@ -27,6 +28,7 @@ public sealed class BoardItemMovedAutomationConsumer
 /// the authoritative facts and delegates to the Automation rule evaluator; no
 /// rule/execution semantics live here.
 /// </summary>
+[OrderingNotApplicable("Each created fact independently triggers rule evaluation; evaluation is per message and deduplicated by the Platform dedup filter, with no later-supersedes-earlier state.")]
 public sealed class BoardItemCreatedAutomationConsumer
     : IConsumer<BoardItemCreatedIntegrationEventV2>
 {

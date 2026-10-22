@@ -31,6 +31,7 @@ namespace Notrelix.Infrastructure.Messaging.Consumers.Integrations;
 /// no-op: the wrapping dedup claim is the exact-once identity and the receipt
 /// state is the reconciliation truth. The consumer owns no business rules.
 /// </summary>
+[OrderingNotApplicable("Each message processes one durably claimed webhook receipt whose terminal state is the reconciliation truth; receipts are independent units.")]
 public sealed class CalendarWebhookProcessingRequestedConsumer
     : IConsumer<CalendarWebhookProcessingRequestedV1>
 {

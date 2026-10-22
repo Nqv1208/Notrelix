@@ -8,6 +8,7 @@ namespace Notrelix.Infrastructure.Messaging.Consumers.Automation;
 /// Automation subscribes to the producer-owned contract; the fact's ownership
 /// never depended on this consumer's existence.
 /// </summary>
+[OrderingNotApplicable("Each assignment fact independently triggers rule evaluation; evaluation is per message and deduplicated by the Platform dedup filter, with no later-supersedes-earlier state.")]
 public sealed class BoardItemMemberAssignedAutomationConsumer
     : IConsumer<BoardItemMemberAssignedIntegrationEvent>
 {

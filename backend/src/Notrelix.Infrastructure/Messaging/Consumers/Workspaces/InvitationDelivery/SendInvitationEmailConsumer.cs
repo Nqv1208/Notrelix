@@ -2,6 +2,7 @@ using Notrelix.Application.Events.Workspaces;
 
 namespace Notrelix.Infrastructure.Messaging.Consumers.Workspaces.InvitationDelivery;
 
+[OrderingNotApplicable("Queues one invitation email per delivery request through its own deduplication key; requests are independent and nothing supersedes an earlier one.")]
 public sealed class SendInvitationEmailConsumer : IConsumer<WorkspaceInvitationDeliveryRequestedIntegrationEventV1>
 {
     private readonly IEmailOutboxWriter _emailOutboxWriter;

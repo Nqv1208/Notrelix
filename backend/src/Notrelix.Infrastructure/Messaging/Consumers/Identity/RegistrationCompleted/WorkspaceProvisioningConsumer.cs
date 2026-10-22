@@ -3,6 +3,7 @@ using Notrelix.Application.Features.Workspaces.Provisioning.Commands.ProvisionPe
 
 namespace Notrelix.Infrastructure.Messaging.Consumers.Identity.RegistrationCompleted;
 
+[OrderingNotApplicable("Handles the single registration-completed fact per user through the idempotent ProvisionPersonalWorkspace command keyed by message id; no sibling message to order against.")]
 public sealed class WorkspaceProvisioningConsumer : IConsumer<IdentityRegistrationCompletedIntegrationEventV1>
 {
     private readonly ISender _sender;

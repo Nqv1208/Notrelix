@@ -980,6 +980,20 @@ observe
 
 Business decision remains in handler/Application.
 
+### Production consumer ordering declaration (PF-08)
+
+`ConsumerHost`, `OrderingEnforcer` and `PoisonDetector` are reusable mechanisms proven by `Notrelix.Platform.Tests`. They are **not** in the production delivery graph: production consumers are MassTransit `IConsumer<T>` endpoints behind the tenant and deduplication filters, with MassTransit retry and error-queue handling as the actual retry/dead-letter owner. No integration event carries a contiguous per-stream sequence that `OrderingEnforcer` could enforce, and `ConsumerDefinition.OrderingRequired` is inert metadata that no runtime reads.
+
+Therefore:
+
+```text
+every production IConsumer<T> carries [OrderingNotApplicable(reason)]
+→ states why delivery order cannot change the outcome
+→ enforced by Architecture test ConsumerOrderingDeclarationTests
+```
+
+A consumer whose invariant depends on delivery order (later supersedes earlier, add/remove pairs) has **no valid declaration yet**. Introducing one is an architecture change that must first decide the ordering owner (MassTransit endpoint partitioning versus bridging into Platform), the ordering stream identity, and the producer of a contiguous per-stream sequence, then migrate the consumer, its tests and this section. Do not set `ConsumerDefinition.OrderingRequired` or fabricate a sequence to satisfy the rule. Re-declare a log-only consumer when it gains a real effect.
+
 ---
 
 # 57. BE-PLT-026 — Consumer host is not a business service layer

@@ -6,6 +6,7 @@ using Notrelix.Infrastructure.Data.Projections.Activity;
 
 namespace Notrelix.Infrastructure.Messaging.Consumers.Collaboration;
 
+[OrderingNotApplicable("Append-only activity log row keyed by the source event id with its own OccurredAt; rows do not supersede one another and readers sort by occurrence time.")]
 public sealed class BoardCreatedActivityConsumer : IConsumer<BoardCreatedIntegrationEvent>
 {
     private readonly IActivityProjectionDbContext _context;
@@ -41,6 +42,7 @@ public sealed class BoardCreatedActivityConsumer : IConsumer<BoardCreatedIntegra
     }
 }
 
+[OrderingNotApplicable("Append-only activity log row keyed by the source event id with its own OccurredAt; rows do not supersede one another and readers sort by occurrence time.")]
 public sealed class CommentCreatedActivityConsumer : IConsumer<CommentCreatedIntegrationEvent>
 {
     private readonly IActivityProjectionDbContext _context;
@@ -77,6 +79,7 @@ public sealed class CommentCreatedActivityConsumer : IConsumer<CommentCreatedInt
     }
 }
 
+[OrderingNotApplicable("Append-only activity log row keyed by the source event id with its own OccurredAt; rows do not supersede one another and readers sort by occurrence time.")]
 public sealed class MentionCreatedActivityConsumer : IConsumer<MentionCreatedIntegrationEvent>
 {
     private readonly IActivityProjectionDbContext _context;
@@ -113,6 +116,7 @@ public sealed class MentionCreatedActivityConsumer : IConsumer<MentionCreatedInt
     }
 }
 
+[OrderingNotApplicable("Append-only activity log row keyed by the source event id with its own OccurredAt; rows do not supersede one another and readers sort by occurrence time.")]
 public sealed class WorkspaceMemberAddedActivityConsumer : IConsumer<WorkspaceMemberAddedIntegrationEvent>
 {
     private readonly IActivityProjectionDbContext _context;

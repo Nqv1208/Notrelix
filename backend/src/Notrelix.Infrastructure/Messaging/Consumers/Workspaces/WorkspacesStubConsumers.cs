@@ -2,6 +2,7 @@ using Notrelix.Application.Events.Workspaces;
 
 namespace Notrelix.Infrastructure.Messaging.Consumers.Workspaces;
 
+[OrderingNotApplicable(OrderingReasons.LogOnly)]
 public sealed class WorkspaceArchivedConsumer : IConsumer<WorkspaceArchivedIntegrationEvent>
 {
     private readonly ILogger<WorkspaceArchivedConsumer> _logger;
@@ -20,6 +21,7 @@ public sealed class WorkspaceArchivedConsumer : IConsumer<WorkspaceArchivedInteg
     }
 }
 
+[OrderingNotApplicable(OrderingReasons.LogOnly)]
 public sealed class WorkspaceUnarchivedConsumer : IConsumer<WorkspaceUnarchivedIntegrationEvent>
 {
     private readonly ILogger<WorkspaceUnarchivedConsumer> _logger;
@@ -38,6 +40,7 @@ public sealed class WorkspaceUnarchivedConsumer : IConsumer<WorkspaceUnarchivedI
     }
 }
 
+[OrderingNotApplicable(OrderingReasons.LogOnly)]
 public sealed class TeamCreatedConsumer : IConsumer<TeamCreatedIntegrationEvent>
 {
     private readonly ILogger<TeamCreatedConsumer> _logger;
@@ -58,6 +61,7 @@ public sealed class TeamCreatedConsumer : IConsumer<TeamCreatedIntegrationEvent>
     }
 }
 
+[OrderingNotApplicable(OrderingReasons.LogOnly)]
 public sealed class SpaceCreatedConsumer : IConsumer<SpaceCreatedIntegrationEvent>
 {
     private readonly ILogger<SpaceCreatedConsumer> _logger;

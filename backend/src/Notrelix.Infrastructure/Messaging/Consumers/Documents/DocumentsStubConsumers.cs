@@ -2,6 +2,7 @@ using Notrelix.Application.Events.Documents;
 
 namespace Notrelix.Infrastructure.Messaging.Consumers.Documents;
 
+[OrderingNotApplicable(OrderingReasons.LogOnly)]
 public sealed class PageCreatedConsumer : IConsumer<PageCreatedIntegrationEvent>
 {
     private readonly ILogger<PageCreatedConsumer> _logger;
@@ -22,6 +23,7 @@ public sealed class PageCreatedConsumer : IConsumer<PageCreatedIntegrationEvent>
     }
 }
 
+[OrderingNotApplicable(OrderingReasons.LogOnly)]
 public sealed class PageArchivedConsumer : IConsumer<PageArchivedIntegrationEvent>
 {
     private readonly ILogger<PageArchivedConsumer> _logger;

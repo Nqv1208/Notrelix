@@ -2,6 +2,7 @@ using Notrelix.Application.Events.WorkManagement;
 
 namespace Notrelix.Infrastructure.Messaging.Consumers.WorkManagement;
 
+[OrderingNotApplicable(OrderingReasons.LogOnly)]
 public sealed class BoardItemCreatedConsumer : IConsumer<BoardItemCreatedIntegrationEventV2>
 {
     private readonly ILogger<BoardItemCreatedConsumer> _logger;

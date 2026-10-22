@@ -2,6 +2,7 @@ using Notrelix.Application.Events.Identity;
 
 namespace Notrelix.Infrastructure.Messaging.Consumers.Identity.EmailVerificationDelivery;
 
+[OrderingNotApplicable("Queues one email per verification token through a per-token deduplication key; the messages are independent and nothing supersedes an earlier one.")]
 public sealed class SendEmailVerificationEmailConsumer : IConsumer<EmailVerificationDeliveryRequestedIntegrationEventV1>
 {
     private readonly IEmailOutboxWriter _emailOutboxWriter;

@@ -2,6 +2,7 @@ using Notrelix.Application.Events.Identity;
 
 namespace Notrelix.Infrastructure.Messaging.Consumers.Identity.UserCreated;
 
+[OrderingNotApplicable(OrderingReasons.LogOnly)]
 public sealed class UserRegisteredConsumer : IConsumer<UserRegisteredIntegrationEvent>
 {
     private readonly ILogger<UserRegisteredConsumer> _logger;

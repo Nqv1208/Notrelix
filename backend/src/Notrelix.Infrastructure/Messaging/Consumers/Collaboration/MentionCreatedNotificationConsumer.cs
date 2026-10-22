@@ -4,6 +4,7 @@ using Notrelix.Infrastructure.Data.Notifications;
 
 namespace Notrelix.Infrastructure.Messaging.Consumers.Collaboration;
 
+[OrderingNotApplicable("Each mention creates one notification guarded by a per-mention-and-user deduplication key; notifications are independent and never supersede each other.")]
 public sealed class MentionCreatedNotificationConsumer : IConsumer<MentionCreatedIntegrationEvent>
 {
     private readonly INotificationDbContext _context;

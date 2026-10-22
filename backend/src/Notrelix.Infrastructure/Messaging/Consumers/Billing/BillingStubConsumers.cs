@@ -2,6 +2,7 @@ using Notrelix.Application.Events.Billing;
 
 namespace Notrelix.Infrastructure.Messaging.Consumers.Billing;
 
+[OrderingNotApplicable(OrderingReasons.LogOnly)]
 public sealed class SubscriptionCanceledConsumer : IConsumer<SubscriptionCanceledIntegrationEvent>
 {
     private readonly ILogger<SubscriptionCanceledConsumer> _logger;

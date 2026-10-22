@@ -3,6 +3,7 @@ using Notrelix.Application.Events.Identity;
 
 namespace Notrelix.Infrastructure.Messaging.Consumers.Identity.RegistrationCompleted;
 
+[OrderingNotApplicable("Queues one welcome email per user through a per-user deduplication key from a single registration fact; there is no sibling message to order against.")]
 public sealed class SendWelcomeEmailConsumer : IConsumer<IdentityRegistrationCompletedIntegrationEventV1>
 {
     private readonly IEmailOutboxWriter _emailOutboxWriter;

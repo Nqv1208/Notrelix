@@ -10,6 +10,7 @@ namespace Notrelix.Infrastructure.Messaging.Consumers.Integrations;
 /// separate provider-neutral effect with broker-owned retry and dead-letter
 /// handling; it never participates in the local aggregate transaction.
 /// </summary>
+[OrderingNotApplicable("Revocation is a single terminal fact per connection; cleanup of the connection's secrets is idempotent and nothing supersedes it.")]
 public sealed class IntegrationConnectionRevokedConsumer
     : IConsumer<IntegrationConnectionRevokedIntegrationEvent>
 {
