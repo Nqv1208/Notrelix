@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.Extensions.Options;
 using Notrelix.API.ErrorHandling;
 using Notrelix.API.Middleware;
 using Notrelix.API.OpenApi;
@@ -46,8 +47,21 @@ public static class DependencyInjection
         services.Configure<OAuthRedirectOptions>(
             configuration.GetSection("OAuth"));
 
-        services.Configure<CsrfOptions>(
-            configuration.GetSection("Security:Csrf"));
+        services.AddApiCsrf(configuration);
+
+        return services;
+    }
+
+    /// <summary>
+    /// Browser CSRF enforcement (ADR-005). Options default to enforced and are
+    /// validated on host start (see <see cref="CsrfOptionsValidator"/>).
+    /// </summary>
+    public static IServiceCollection AddApiCsrf(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddOptions<CsrfOptions>()
+            .Bind(configuration.GetSection("Security:Csrf"))
+            .ValidateOnStart();
+        services.AddSingleton<IValidateOptions<CsrfOptions>, CsrfOptionsValidator>();
         services.AddSingleton<CsrfProtector>();
         services.AddSingleton<ICsrfApplicabilityClassifier, CsrfApplicabilityClassifier>();
 

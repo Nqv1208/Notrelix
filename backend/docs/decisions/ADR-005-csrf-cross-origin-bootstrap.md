@@ -190,7 +190,9 @@ API-token and other explicit-header credentials are never subject to browser CSR
 
 ## Feature-flag rollout
 
-Enablement remains controlled by `Security:Csrf:Enabled`, default-safe disabled during implementation. Production enablement occurs only after cross-stack integration proof passes. Disabling the flag is an operational rollout mechanism, not evidence that unprotected mutation is safe.
+Enablement remains controlled by `Security:Csrf:Enabled`. Production enablement occurs only after cross-stack integration proof passes. Disabling the flag is an operational rollout mechanism, not evidence that unprotected mutation is safe.
+
+Amendment (PF-01, post-rollout): the compatible frontend transport is merged, so the flag now defaults to `true` in base configuration and in `CsrfOptions`. It is `false` only in the Development and Testing appsettings, and `CsrfOptionsValidator` fails startup if it is disabled in any other environment. The staging and production compose overlays pin it to `true`. Operational rollback by flag is therefore no longer available outside Development/Testing; a rollback now requires a deliberate source/config change reviewed under this ADR.
 
 ---
 
