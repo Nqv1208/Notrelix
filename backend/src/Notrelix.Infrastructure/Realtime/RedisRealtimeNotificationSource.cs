@@ -10,16 +10,27 @@ namespace Notrelix.Infrastructure.Realtime;
 /// </summary>
 public sealed class RedisRealtimeNotificationSource : IRealtimeNotificationSource
 {
-    private readonly IConnectionMultiplexer _redis;
     private readonly ILogger<RedisRealtimeNotificationSource> _logger;
+    private readonly Func<string, Action<string>, Task<IAsyncDisposable>> _openChannel;
     private readonly RealtimeNotificationFanout _fanout;
 
     public RedisRealtimeNotificationSource(
         IConnectionMultiplexer redis,
         ILogger<RedisRealtimeNotificationSource> logger)
+        : this(logger, (channel, onMessage) => OpenQueueAsync(redis, channel, onMessage))
     {
-        _redis = redis;
+    }
+
+    /// <summary>
+    /// Seam for tests: <paramref name="openChannel"/> opens the transport channel and calls
+    /// the given callback once per message, one at a time and in arrival order.
+    /// </summary>
+    public RedisRealtimeNotificationSource(
+        ILogger<RedisRealtimeNotificationSource> logger,
+        Func<string, Action<string>, Task<IAsyncDisposable>> openChannel)
+    {
         _logger = logger;
+        _openChannel = openChannel;
         _fanout = new RealtimeNotificationFanout(OpenAsync, logger);
     }
 
@@ -29,31 +40,42 @@ public sealed class RedisRealtimeNotificationSource : IRealtimeNotificationSourc
         CancellationToken cancellationToken)
         => _fanout.SubscribeAsync(RealtimeChannelResolver.ForScope(scope), onNotification, cancellationToken);
 
-    private async Task<IAsyncDisposable> OpenAsync(
+    private Task<IAsyncDisposable> OpenAsync(
         string channel,
         Func<RealtimeNotification, ValueTask> dispatch,
         CancellationToken cancellationToken)
-    {
-        var redisChannel = RedisChannel.Literal(RealtimeChannelResolver.RedisChannel(channel));
-        var subscriber = _redis.GetSubscriber();
-        await subscriber.SubscribeAsync(redisChannel, (_channel, value) =>
+        => _openChannel(RealtimeChannelResolver.RedisChannel(channel), json =>
         {
-            if (!RealtimeNotificationJson.TryDeserialize(value.ToString(), out var notification))
+            if (!RealtimeNotificationJson.TryDeserialize(json, out var notification))
             {
                 _logger.LogWarning("Dropped malformed realtime message on channel {Channel}", channel);
                 return;
             }
 
-            // Fire-and-forget from the Redis callback: handlers enqueue and never block.
+            // Handlers enqueue and never block the transport callback.
             _ = dispatch(notification);
-        }).ConfigureAwait(false);
+        });
 
-        return new Unsubscriber(subscriber, redisChannel);
+    /// <summary>
+    /// Opens a Redis channel as a <see cref="ChannelMessageQueue"/>. The handler overload of
+    /// Subscribe runs callbacks concurrently on the thread pool, which reorders the versions of
+    /// one stream; the queue hands messages to <c>OnMessage</c> one at a time in arrival order,
+    /// which the client's per-stream version check relies on.
+    /// </summary>
+    private static async Task<IAsyncDisposable> OpenQueueAsync(
+        IConnectionMultiplexer redis,
+        string channel,
+        Action<string> onMessage)
+    {
+        var queue = await redis.GetSubscriber()
+            .SubscribeAsync(RedisChannel.Literal(channel)).ConfigureAwait(false);
+        queue.OnMessage(message => onMessage(message.Message.ToString()));
+        return new QueueSubscription(queue);
     }
 
-    private sealed class Unsubscriber(ISubscriber subscriber, RedisChannel channel) : IAsyncDisposable
+    private sealed class QueueSubscription(ChannelMessageQueue queue) : IAsyncDisposable
     {
-        public async ValueTask DisposeAsync() => await subscriber.UnsubscribeAsync(channel).ConfigureAwait(false);
+        public async ValueTask DisposeAsync() => await queue.UnsubscribeAsync().ConfigureAwait(false);
     }
 }
 

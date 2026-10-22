@@ -158,24 +158,39 @@ public sealed class RedisRealtimeNotificationSourceTests
 {
     private static readonly RealtimeScope Scope = new(RealtimeScopeKind.Board, Guid.Parse("44444444-4444-4444-4444-444444444444"));
 
-    private static (RedisRealtimeNotificationSource Source, Mock<ISubscriber> Subscriber, Func<string, Task> Deliver) Create()
+    private sealed class FakeChannels
     {
-        Action<RedisChannel, RedisValue>? handler = null;
-        var subscriber = new Mock<ISubscriber>();
-        subscriber.Setup(s => s.SubscribeAsync(It.IsAny<RedisChannel>(), It.IsAny<Action<RedisChannel, RedisValue>>(), It.IsAny<CommandFlags>()))
-            .Callback<RedisChannel, Action<RedisChannel, RedisValue>, CommandFlags>((_, h, _) => handler = h)
-            .Returns(Task.CompletedTask);
-        subscriber.Setup(s => s.UnsubscribeAsync(It.IsAny<RedisChannel>(), It.IsAny<Action<RedisChannel, RedisValue>?>(), It.IsAny<CommandFlags>()))
-            .Returns(Task.CompletedTask);
-        var redis = new Mock<IConnectionMultiplexer>();
-        redis.Setup(r => r.GetSubscriber(It.IsAny<object>())).Returns(subscriber.Object);
-        var source = new RedisRealtimeNotificationSource(redis.Object, NullLogger<RedisRealtimeNotificationSource>.Instance);
-        return (source, subscriber, json =>
+        public int Opened;
+        public int Closed;
+        public Action<string>? OnMessage;
+    }
+
+    private static (RedisRealtimeNotificationSource Source, FakeChannels Channels, Func<string, Task> Deliver) Create()
+    {
+        var channels = new FakeChannels();
+        var source = new RedisRealtimeNotificationSource(
+            NullLogger<RedisRealtimeNotificationSource>.Instance,
+            (_, onMessage) =>
+            {
+                channels.Opened++;
+                channels.OnMessage = onMessage;
+                return Task.FromResult<IAsyncDisposable>(new Closer(channels));
+            });
+        return (source, channels, json =>
         {
-            handler!(default, json);
+            channels.OnMessage!(json);
             return Task.CompletedTask;
         }
         );
+    }
+
+    private sealed class Closer(FakeChannels channels) : IAsyncDisposable
+    {
+        public ValueTask DisposeAsync()
+        {
+            channels.Closed++;
+            return ValueTask.CompletedTask;
+        }
     }
 
     private static string Message(long version) => RealtimeNotificationJson.Serialize(new RealtimeNotification(
@@ -185,14 +200,14 @@ public sealed class RedisRealtimeNotificationSourceTests
     [Fact]
     public async Task Handlers_share_one_redis_subscription_and_it_closes_with_the_last_handler()
     {
-        var (source, subscriber, deliver) = Create();
+        var (source, channels, deliver) = Create();
         var first = new List<long>();
         var second = new List<long>();
 
         var a = await source.SubscribeAsync(Scope, n => { first.Add(n.StreamVersion); return ValueTask.CompletedTask; }, CancellationToken.None);
         var b = await source.SubscribeAsync(Scope, n => { second.Add(n.StreamVersion); return ValueTask.CompletedTask; }, CancellationToken.None);
 
-        subscriber.Verify(s => s.SubscribeAsync(It.IsAny<RedisChannel>(), It.IsAny<Action<RedisChannel, RedisValue>>(), It.IsAny<CommandFlags>()), Times.Once);
+        channels.Opened.Should().Be(1);
 
         await deliver(Message(1));
         await deliver(Message(2));
@@ -200,13 +215,13 @@ public sealed class RedisRealtimeNotificationSourceTests
         second.Should().Equal(1, 2);
 
         await a.DisposeAsync();
-        subscriber.Verify(s => s.UnsubscribeAsync(It.IsAny<RedisChannel>(), It.IsAny<Action<RedisChannel, RedisValue>?>(), It.IsAny<CommandFlags>()), Times.Never);
+        channels.Closed.Should().Be(0);
         await deliver(Message(3));
         first.Should().Equal(1, 2);
         second.Should().Equal(1, 2, 3);
 
         await b.DisposeAsync();
-        subscriber.Verify(s => s.UnsubscribeAsync(It.IsAny<RedisChannel>(), It.IsAny<Action<RedisChannel, RedisValue>?>(), It.IsAny<CommandFlags>()), Times.Once);
+        channels.Closed.Should().Be(1);
     }
 
     [Fact]
