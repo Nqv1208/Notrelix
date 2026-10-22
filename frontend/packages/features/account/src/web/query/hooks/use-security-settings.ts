@@ -1,3 +1,4 @@
+import { useAccountId } from "@notrelix/query";
 import { useQuery } from "@tanstack/react-query";
 import {
   createAccountService,
@@ -18,8 +19,9 @@ export function createUseSecuritySettings({
   const service = createAccountService(api, endpoints);
 
   return function useSecuritySettings() {
+    const accountId = useAccountId();
     return useQuery({
-      queryKey: accountQueryKeys.security,
+      queryKey: accountQueryKeys.security(accountId),
       queryFn: () => service.getSecuritySettings(),
     });
   };

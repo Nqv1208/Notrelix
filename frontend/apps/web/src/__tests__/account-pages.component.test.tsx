@@ -2,6 +2,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { AccountScopeProvider } from "@notrelix/query";
 import { I18nProvider, type Locale } from "@notrelix/i18n";
 import { ThemeProvider } from "@notrelix/ui-web";
 import { webCatalogs } from "../i18n/catalogs";
@@ -79,9 +80,11 @@ async function mount(page: React.ReactElement, locale: Locale) {
   await act(async () => {
     root?.render(
       <QueryClientProvider client={queryClient}>
-        <I18nProvider catalogs={webCatalogs} initialLocale={locale}>
-          <ThemeProvider target={null}>{page}</ThemeProvider>
-        </I18nProvider>
+        <AccountScopeProvider accountId="acc-test">
+          <I18nProvider catalogs={webCatalogs} initialLocale={locale}>
+            <ThemeProvider target={null}>{page}</ThemeProvider>
+          </I18nProvider>
+        </AccountScopeProvider>
       </QueryClientProvider>,
     );
   });

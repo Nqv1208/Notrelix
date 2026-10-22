@@ -7,7 +7,7 @@ describe("workspaceQueryKeys Q7 purity tests", () => {
     const wsId = "ws-555";
 
     const keys = [
-      workspaceQueryKeys.all,
+      workspaceQueryKeys.all("acc-1"),
       workspaceQueryKeys.detail(wsId),
       workspaceQueryKeys.snapshot(wsId),
       workspaceQueryKeys.members(wsId),
@@ -15,7 +15,7 @@ describe("workspaceQueryKeys Q7 purity tests", () => {
       workspaceQueryKeys.activeView(wsId, "v1"),
       workspaceQueryKeys.invitations(wsId),
       workspaceQueryKeys.invitationByToken("tok-123"),
-      workspaceQueryKeys.pendingInvitations,
+      workspaceQueryKeys.pendingInvitations("acc-1"),
       workspaceQueryKeys.activity(wsId),
       workspaceQueryKeys.navigation(wsId),
       workspaceQueryKeys.recents(wsId),

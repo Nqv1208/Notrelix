@@ -1,3 +1,4 @@
+import { useAccountId } from "@notrelix/query";
 import { useQuery } from "@tanstack/react-query";
 import {
   createInvitationsService,
@@ -18,8 +19,9 @@ export function createUsePendingInvitations({
   const service = createInvitationsService(api, endpoints);
 
   return function usePendingInvitations() {
+    const accountId = useAccountId();
     return useQuery({
-      queryKey: workspaceQueryKeys.pendingInvitations,
+      queryKey: workspaceQueryKeys.pendingInvitations(accountId),
       queryFn: () => service.getPending(),
     });
   };

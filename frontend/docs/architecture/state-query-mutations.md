@@ -382,9 +382,15 @@ Do not depend on accidental tuple ordering.
 
 # 21. Account scope
 
-Current foundation `accountQueryKey(resource, ...segments)` uses an `account` root but does not encode an explicit `accountId` parameter.
+Foundation `accountQueryKey(accountId, resource, ...segments)` builds:
 
-That helper alone does not prove cross-account isolation.
+```text
+["account", accountId, resource, ...segments]
+```
+
+and throws when `accountId` is missing or empty. `assertNotrelixQueryKey` rejects account keys without a non-empty Account ID.
+
+Account-scoped hooks read the active Account with `useAccountId()` from `@notrelix/query`, which fails loudly when no Account is active. The host feeds `AccountScopeProvider` from the authenticated principal.
 
 ---
 
@@ -398,39 +404,29 @@ MUST NOT
 be reusable as Account B data
 ```
 
-This can be achieved by:
+The client satisfies this with both mechanisms:
 
 ```text
 account ID in key
-or
-a proven hard cache boundary/recreation on account change
+and
+a hard cache reset on principal transition
 ```
 
-but the behavior must be explicit and tested.
+The web host runs `prepareAccountTransition` (application lifecycle), which cancels in-flight queries and clears the QueryClient when the principal changes. Late responses from the previous principal are discarded because their queries were removed, and their keys are disjoint from the new Account's keys.
 
 ---
 
-# 23. Current account-scope alignment risk
+# 23. Current account-scope model (temporary)
 
-Because the current generic account helper is not ID-bearing:
-
-```text
-["account", resource, ...]
-```
-
-its safe use depends on an explicit Account-transition cache lifecycle.
-
-Current helper shape alone is insufficient evidence of that lifecycle.
-
-Classification until proven by the owning transition implementation/tests:
+Until the backend exposes a distinct Account ID and an account-switch signal, the client defines:
 
 ```text
-UNRESOLVED
+Account == authenticated principal (User.id)
 ```
 
-for account-switch isolation when account-rooted queries are used.
+Switching to a real multi-account model is a separate cross-boundary contract change (Class E). The key shape and `useAccountId()` seam are the only places that change when it lands.
 
-Do not silently assume safety.
+Evidence: `account-scope.unit.test.tsx`, `query-key-scope.unit.test.ts`, `account-isolation.integration.test.ts`.
 
 ---
 
@@ -1079,7 +1075,7 @@ The cache strategy must be explicit.
 
 # 76. FE-STATE-038 — Account transition is a cache-security boundary
 
-If account-rooted keys do not encode Account ID, the transition MUST clear/recreate all account-scoped cache before rendering the new Account.
+Account-rooted keys encode the Account ID and the transition ALSO clears/recreates the cache before the new Account's queries subscribe (layout effect in the web host).
 
 This behavior requires tests.
 

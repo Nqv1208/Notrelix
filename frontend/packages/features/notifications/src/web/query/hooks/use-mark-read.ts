@@ -1,3 +1,4 @@
+import { useAccountId } from "@notrelix/query";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   createNotificationsService,
@@ -15,14 +16,17 @@ export function createUseMarkRead({ api, endpoints }: UseMarkReadDeps) {
   const service = createNotificationsService(api, endpoints);
 
   return function useMarkRead() {
+    const accountId = useAccountId();
     const queryClient = useQueryClient();
 
     const markReadMutation = useMutation({
       mutationFn: (id: string) => service.markAsRead(id),
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: notificationsQueryKeys.all });
         queryClient.invalidateQueries({
-          queryKey: notificationsQueryKeys.unreadCount,
+          queryKey: notificationsQueryKeys.all(accountId),
+        });
+        queryClient.invalidateQueries({
+          queryKey: notificationsQueryKeys.unreadCount(accountId),
         });
       },
     });
@@ -30,9 +34,11 @@ export function createUseMarkRead({ api, endpoints }: UseMarkReadDeps) {
     const markAllReadMutation = useMutation({
       mutationFn: () => service.markAllAsRead(),
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: notificationsQueryKeys.all });
         queryClient.invalidateQueries({
-          queryKey: notificationsQueryKeys.unreadCount,
+          queryKey: notificationsQueryKeys.all(accountId),
+        });
+        queryClient.invalidateQueries({
+          queryKey: notificationsQueryKeys.unreadCount(accountId),
         });
       },
     });

@@ -13,12 +13,13 @@ import { useLocale } from "@notrelix/i18n";
 import { useAppRuntime } from "@notrelix/runtime-web";
 import { useTheme, type ThemeMode } from "@notrelix/ui-web";
 import {
-  accountPagesKeys,
+  useAccountPagesKeys,
   useAccountPagesApi,
   useToast,
 } from "./use-account-pages";
 
 export function AccountAppearancePage() {
+  const accountPagesKeys = useAccountPagesKeys();
   const { api: runtimeClient } = useAppRuntime();
   const copy = useAccountAppearanceCopy();
   const theme = useTheme();

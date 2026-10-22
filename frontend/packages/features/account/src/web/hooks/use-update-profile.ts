@@ -1,3 +1,4 @@
+import { useAccountId } from "@notrelix/query";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   createAccountService,
@@ -19,13 +20,16 @@ export function createUseUpdateProfile({
   const service = createAccountService(api, endpoints);
 
   return function useUpdateProfile() {
+    const accountId = useAccountId();
     const queryClient = useQueryClient();
 
     return useMutation({
       mutationFn: (profile: Partial<UserProfile>) =>
         service.updateProfile(profile),
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: accountQueryKeys.profile });
+        queryClient.invalidateQueries({
+          queryKey: accountQueryKeys.profile(accountId),
+        });
       },
     });
   };

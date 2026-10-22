@@ -1,3 +1,4 @@
+import { useAccountId } from "@notrelix/query";
 import { useQuery } from "@tanstack/react-query";
 import {
   createNotificationsService,
@@ -14,8 +15,9 @@ interface UseUnreadCountDeps {
 export function createUseUnreadCount({ api, endpoints }: UseUnreadCountDeps) {
   const service = createNotificationsService(api, endpoints);
   return function useUnreadCount() {
+    const accountId = useAccountId();
     return useQuery({
-      queryKey: notificationsQueryKeys.unreadCount,
+      queryKey: notificationsQueryKeys.unreadCount(accountId),
       queryFn: () => service.getUnreadCount(),
       refetchInterval: 15000, // Poll count every 15s as fallback when realtime is disconnected
     });

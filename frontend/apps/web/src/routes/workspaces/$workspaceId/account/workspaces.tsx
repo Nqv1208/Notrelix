@@ -9,7 +9,7 @@ import {
   type AccountWorkspaceView,
 } from "@notrelix/features-account";
 import {
-  accountPagesKeys,
+  useAccountPagesKeys,
   useAccountPagesApi,
   useToast,
 } from "./use-account-pages";
@@ -33,6 +33,7 @@ function initialsOf(name: string): string {
 }
 
 export function AccountWorkspacesPage() {
+  const accountPagesKeys = useAccountPagesKeys();
   const copy = useAccountWorkspacesCopy();
   const api = useAccountPagesApi();
   const router = useRouter();

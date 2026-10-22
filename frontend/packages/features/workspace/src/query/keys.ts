@@ -5,7 +5,7 @@ import {
 } from "@notrelix/query";
 
 export const workspaceQueryKeys = {
-  all: accountQueryKey("workspaces"),
+  all: (accountId: string) => accountQueryKey(accountId, "workspaces"),
   detail: (workspaceId: string) =>
     workspaceQueryKey(workspaceId, "workspace", "detail"),
   snapshot: (workspaceId: string) =>
@@ -20,7 +20,8 @@ export const workspaceQueryKeys = {
     workspaceQueryKey(workspaceId, "workspace", "invitations"),
   invitationByToken: (token: string) =>
     globalQueryKey("workspace-invitation", "token", token),
-  pendingInvitations: accountQueryKey("workspace-invitations", "pending"),
+  pendingInvitations: (accountId: string) =>
+    accountQueryKey(accountId, "workspace-invitations", "pending"),
   activity: (workspaceId: string) =>
     workspaceQueryKey(workspaceId, "workspace", "activity"),
   settings: (workspaceId: string) =>

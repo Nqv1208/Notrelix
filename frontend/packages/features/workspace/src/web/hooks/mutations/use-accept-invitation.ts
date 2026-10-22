@@ -1,3 +1,4 @@
+import { useAccountId } from "@notrelix/query";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   createInvitationsService,
@@ -18,15 +19,18 @@ export function createUseAcceptInvitation({
   const service = createInvitationsService(api, endpoints);
 
   return function useAcceptInvitation() {
+    const accountId = useAccountId();
     const queryClient = useQueryClient();
 
     return useMutation({
       mutationFn: service.accept,
       onSuccess: () => {
         // Accept invitation changes all workspaces, so clear/invalidate workspaces
-        queryClient.invalidateQueries({ queryKey: workspaceQueryKeys.all });
         queryClient.invalidateQueries({
-          queryKey: workspaceQueryKeys.pendingInvitations,
+          queryKey: workspaceQueryKeys.all(accountId),
+        });
+        queryClient.invalidateQueries({
+          queryKey: workspaceQueryKeys.pendingInvitations(accountId),
         });
       },
     });

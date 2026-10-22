@@ -1,3 +1,4 @@
+import { useAccountId } from "@notrelix/query";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   createNotificationsService,
@@ -18,14 +19,17 @@ export function createUseArchiveNotification({
   const service = createNotificationsService(api, endpoints);
 
   return function useArchiveNotification() {
+    const accountId = useAccountId();
     const queryClient = useQueryClient();
 
     return useMutation({
       mutationFn: (id: string) => service.archive(id),
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: notificationsQueryKeys.all });
         queryClient.invalidateQueries({
-          queryKey: notificationsQueryKeys.unreadCount,
+          queryKey: notificationsQueryKeys.all(accountId),
+        });
+        queryClient.invalidateQueries({
+          queryKey: notificationsQueryKeys.unreadCount(accountId),
         });
       },
     });
