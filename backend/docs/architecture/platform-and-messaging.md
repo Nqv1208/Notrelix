@@ -1940,6 +1940,30 @@ Do not use websocket delivery ack as source transaction commit.
 
 ---
 
+# 125A. Realtime gateway
+
+The API host exposes one WebSocket endpoint (`Realtime:Gateway:Path`, default `/api/v1/realtime`) that bridges the Redis realtime channels to authorized clients. Realtime only notifies: frames carry stream identity and ordering metadata, never resource data, and clients refetch authoritative state over REST.
+
+```text
+RealtimeResourceChangedV1 (outbox, post-commit)
+→ RedisRealtimePublisher (atomic per-stream counter + publish)
+→ Redis channel per stream
+→ RedisRealtimeNotificationSource (one Redis subscription per channel per process)
+→ RealtimeConnection (authorized subscriptions only)
+→ client
+```
+
+Contract:
+
+- Transport is raw WebSocket (JSON text frames, `RealtimeProtocol`, schema version 1), authenticated by the same bearer cookie as REST; the upgrade requires an allow-listed `Origin` (`Realtime:Gateway:AllowedOrigins`, falling back to `Cors:AllowedOrigins`), rejects API-token credentials, and bounds connections per user.
+- A subscription names a closed scope (`workspace` or `board`). It is authorized by a Application query run through the normal pipeline (`AuthorizeWorkspaceRealtimeSubscriptionQuery` = `ViewWorkspace`, `AuthorizeBoardRealtimeSubscriptionQuery` = `ViewBoard`), so realtime access equals the matching REST read. Forbidden and not-found are indistinguishable (`subscription_denied`); authorization-system failure fails closed.
+- Every notification is re-checked against the authorized workspace and stream key before it is queued. Credentials and every subscription are re-authorized each `ReauthorizationInterval`; revoked access ends within that bound.
+- `streamKey` identifies one stream (`{namespace}:{kind}:{id:N}`). `streamVersion` is a per-stream counter allocated atomically with publication, so a client that sees anything other than previous + 1 (gap, duplicate, counter reset after Redis loss) must refetch. The producer's resource version is carried separately as `resourceVersion` and is informational.
+- There is no replay buffer. A slow consumer, heartbeat timeout, expiry or revocation closes the socket; the client reconnects, resubscribes and refetches.
+- Streams not yet routable by scope (item-level and view-level topics that carry no board identity) are not delivered by the gateway until their producers publish on a board or workspace stream.
+
+---
+
 # 126. Notifications relationship
 
 Notification generation/delivery may consume committed facts.

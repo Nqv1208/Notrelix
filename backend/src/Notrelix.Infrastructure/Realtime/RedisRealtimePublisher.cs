@@ -1,29 +1,41 @@
 using System.Diagnostics;
-using System.Text.Json;
 
+using Notrelix.Application.Common.Realtime.Gateway;
 using Notrelix.Infrastructure.Observability.Metrics;
 
 namespace Notrelix.Infrastructure.Realtime;
 
 /// <summary>
-/// Redis-backed realtime publisher (FZ-INF-06). Publishes a JSON envelope to a
-/// Redis channel per <see cref="RealtimeChannelResolver"/>. The envelope follows
-/// the frontend realtime contract (eventId/eventType/workspaceId/correlationId/
-/// timestamp), so a future WebSocket bridge can forward it without re-mapping.
+/// Redis-backed realtime publisher (FZ-INF-06). Publishes a notify-only
+/// <see cref="RealtimeNotification"/> to the channel resolved by
+/// <see cref="RealtimeChannelResolver"/>. The resource payload is deliberately not
+/// published: realtime only notifies, clients refetch authoritative state over REST.
+///
+/// The per-stream <c>streamVersion</c> is allocated by a Redis counter in the same
+/// atomic script that publishes the message, so for one stream the messages are
+/// published in strictly consecutive version order. A missing version at a
+/// subscriber therefore means a lost message, which is what gap recovery detects.
 ///
 /// This is the production implementation of <see cref="IRealtimePublisher"/>.
 /// It runs in the broker-consumer realtime path after durable commit; failures
 /// are logged and retried by the outbox/inbox delivery, never thrown into the
-/// committed request result.
+/// committed request result. A retry after an ambiguous failure may publish the
+/// same event again with the next stream version; notifications are idempotent
+/// (clients dedupe by event id and refetch).
 /// </summary>
 public sealed class RedisRealtimePublisher : IRealtimePublisher
 {
-    private const string ChannelPrefix = "notrelix:realtime:";
+    /// <summary>Counter retention; an expired counter restarts at 1 and clients refetch.</summary>
+    private static readonly long CounterRetentionMilliseconds = (long)TimeSpan.FromDays(30).TotalMilliseconds;
 
-    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-    };
+    // KEYS[1] = stream counter key, KEYS[2] = channel
+    // ARGV[1] = message prefix up to the stream version, ARGV[2] = suffix, ARGV[3] = counter ttl (ms)
+    private const string PublishScript = """
+        local version = redis.call('INCR', KEYS[1])
+        redis.call('PEXPIRE', KEYS[1], ARGV[3])
+        redis.call('PUBLISH', KEYS[2], ARGV[1] .. version .. ARGV[2])
+        return version
+        """;
 
     private readonly IConnectionMultiplexer _redis;
     private readonly ILogger<RedisRealtimePublisher> _logger;
@@ -41,51 +53,46 @@ public sealed class RedisRealtimePublisher : IRealtimePublisher
 
     public async Task PublishAsync(RealtimeResourceChangedV1 change, CancellationToken cancellationToken)
     {
+        if (change.WorkspaceId is not { } workspaceId || workspaceId == Guid.Empty)
+        {
+            // A notification without a tenant binding can never be delivered to an
+            // authorized subscriber; do not publish tenant-less realtime facts.
+            _logger.LogWarning(
+                "Skipping realtime event {EventType} for stream {StreamKey}: no workspace binding",
+                change.MessageName, change.StreamKey);
+            return;
+        }
+
         var topic = new RealtimeTopic(change.TopicNamespace, change.ResourceKind, change.ResourceId);
-        var channel = ResolveChannel(topic);
-        var envelope = new RealtimeEnvelopeDto(
+        var channel = RealtimeChannelResolver.RedisChannel(RealtimeChannelResolver.ForTopic(topic));
+        var draft = new RealtimeNotification(
             EventId: change.EventId.ToString("N"),
             EventType: $"{topic.Namespace}.{topic.ResourceKind}".ToLowerInvariant(),
-            WorkspaceId: change.WorkspaceId?.ToString() ?? string.Empty,
-            CorrelationId: change.CorrelationId.ToString("N"),
-            Timestamp: change.OccurredAt.ToString("O"),
-            SchemaVersion: 1,
+            ChangeKind: change.ChangeKind,
+            StreamKey: change.StreamKey,
+            StreamVersion: 0,
+            ResourceKind: topic.ResourceKind,
             ResourceId: change.ResourceId,
-            StreamVersion: change.StreamVersion,
-            PayloadContract: change.PayloadContract,
-            Payload: change.Payload);
+            WorkspaceId: workspaceId,
+            CorrelationId: change.CorrelationId.ToString("N"),
+            OccurredAt: change.OccurredAt,
+            ResourceVersion: change.StreamVersion,
+            SchemaVersion: 1,
+            PayloadContract: change.PayloadContract);
 
-        var json = JsonSerializer.Serialize(envelope, JsonOptions);
+        var (prefix, suffix) = RealtimeNotificationJson.SerializeForVersionSplice(draft);
 
         _logger.LogTrace(
             "Publishing realtime event {EventType} to channel {Channel}",
-            envelope.EventType, ChannelPrefix + channel);
+            draft.EventType, channel);
 
         var stopwatch = Stopwatch.StartNew();
-        await _redis.GetDatabase().PublishAsync(RedisChannel.Literal(ChannelPrefix + channel), json);
+        await _redis.GetDatabase().ScriptEvaluateAsync(
+            PublishScript,
+            [RealtimeChannelResolver.StreamCounterKey(change.StreamKey), channel],
+            [prefix, suffix, CounterRetentionMilliseconds]);
         stopwatch.Stop();
 
         _metrics.RealtimePublishDuration.Record(stopwatch.Elapsed.TotalMilliseconds);
     }
-
-    /// <summary>
-    /// Channel resolution: workspace-namespace topics map to the tenant-qualified
-    /// workspace channel; all other topics map to a resource-qualified channel.
-    /// </summary>
-    internal static string ResolveChannel(RealtimeTopic topic)
-        => topic.Namespace == "workspace"
-            ? RealtimeChannelResolver.Workspace(topic.ResourceId)
-            : $"resource:{topic.Namespace}:{topic.ResourceKind}:{topic.ResourceId}";
-
-    private sealed record RealtimeEnvelopeDto(
-        string EventId,
-        string EventType,
-        string WorkspaceId,
-        string CorrelationId,
-        string Timestamp,
-        int SchemaVersion,
-        Guid ResourceId,
-        long StreamVersion,
-        string PayloadContract,
-        object Payload);
 }
