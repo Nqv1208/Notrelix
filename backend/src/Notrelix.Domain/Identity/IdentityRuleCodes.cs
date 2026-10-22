@@ -48,4 +48,6 @@ public static class IdentityRuleCodes
     // ── Profiles ──────────────────────────────────────────────────────────
     public const string Identity_Profile_InvalidPreferencesJson = "Identity_Profile_InvalidPreferencesJson";
     public const string Identity_Profile_InvalidTheme = "Identity_Profile_InvalidTheme";
+    public const string Identity_Profile_InvalidLocale = "Identity_Profile_InvalidLocale";
+    public const string Identity_Profile_InvalidTimezone = "Identity_Profile_InvalidTimezone";
 }

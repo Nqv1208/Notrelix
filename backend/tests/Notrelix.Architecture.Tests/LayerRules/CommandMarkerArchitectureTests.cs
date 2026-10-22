@@ -118,6 +118,8 @@ public class CommandMarkerArchitectureTests
     {
         ["UpdateProfileCommand"] = new("UpdateProfileCommand", AllowlistClassification.Intentional,
             "User updates own profile — permission is identity-based, not resource-based", "Keep as-is"),
+        ["UpdateAccountPreferencesCommand"] = new("UpdateAccountPreferencesCommand", AllowlistClassification.Intentional,
+            "User updates own account preferences — permission is identity-based (the subject is always the principal), not resource-based", "Keep as-is"),
         ["UpdateEmailCommand"] = new("UpdateEmailCommand", AllowlistClassification.Intentional,
             "User updates own email — permission is identity-based, not resource-based", "Keep as-is"),
         ["ArchiveWorkspaceBySlugCommand"] = new("ArchiveWorkspaceBySlugCommand", AllowlistClassification.Intentional,

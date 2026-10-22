@@ -847,7 +847,7 @@ public sealed class MfaFlowTests : IAsyncLifetime
         private ISecurityStepUpService StepUp(ApplicationDbContext context) =>
             new SecurityStepUpService(
                 context, _challengeStore, _proofStore, new MfaCodeVerifier(context, _totp, _recoveryGenerator),
-                new Mock<IPasswordHasher>().Object, _time.Object);
+                new Mock<IPasswordHasher>().Object, _time.Object, Mock.Of<ILoginThrottle>());
 
         private IAuthSessionIssuer SessionIssuer(ApplicationDbContext context) =>
             new AuthSessionIssuer(_jwt.Object, context, _time.Object, new Mock<IClientMetadata>().Object);
@@ -941,7 +941,7 @@ public sealed class MfaFlowTests : IAsyncLifetime
             var handler = new ChangePasswordCommandHandler(
                 context, Actor(userId, sessionId).Object, passwordHasher.Object, _jwtBlacklist.Object,
                 new Mock<IEmailService>().Object, _time.Object,
-                NullLogger<ChangePasswordCommandHandler>.Instance, StepUp(context));
+                NullLogger<ChangePasswordCommandHandler>.Instance, StepUp(context), Mock.Of<ILoginThrottle>());
             var result = await handler.Handle(new ChangePasswordCommand
             {
                 CurrentPassword = currentPassword,

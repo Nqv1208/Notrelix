@@ -1,4 +1,5 @@
 using Notrelix.Domain.Identity.Mfa;
+using Notrelix.Domain.Identity.Profiles;
 using Notrelix.Domain.Identity.Security;
 using Notrelix.Domain.Identity.Tokens;
 
@@ -14,4 +15,5 @@ public interface IIdentityDbContext
     DbSet<UserSecuritySettings> UserSecuritySettings { get; }
     DbSet<MfaRecoveryBatch> MfaRecoveryBatches { get; }
     DbSet<ApiToken> ApiTokens { get; }
+    DbSet<UserProfile> UserProfiles { get; }
 }

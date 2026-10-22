@@ -51,7 +51,8 @@ public class UnlinkOAuthCommandHandlerTests : IAsyncLifetime
             new InMemoryStepUpProofStore(clock),
             new Mock<IMfaCodeVerifier>().Object,
             passwordHasher.Object,
-            clock);
+            clock,
+            Mock.Of<Notrelix.Application.Features.Identity.Auth.Throttling.ILoginThrottle>());
         return new StepUpHarness(service, passwordHasher, Guid.CreateVersion7());
     }
 

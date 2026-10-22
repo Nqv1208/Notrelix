@@ -13,16 +13,6 @@ public sealed class SecurityAuditMiddleware
 {
     private readonly RequestDelegate _next;
 
-    private static readonly HashSet<string> SecuritySensitivePaths = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "/api/auth/login",
-        "/api/auth/register",
-        "/api/auth/refresh-token",
-        "/api/auth/forgot-password",
-        "/api/auth/reset-password",
-        "/api/auth/complete-oauth",
-    };
-
     public SecurityAuditMiddleware(RequestDelegate next)
     {
         _next = next;
@@ -65,7 +55,7 @@ public sealed class SecurityAuditMiddleware
                 resourceType: context.Request.Method,
                 resourceId: null,
                 correlationId: context.TraceIdentifier,
-                metadataJson: CreateMetadata(statusCode, context.Request.Path),
+                metadataJson: CreateMetadata(statusCode, context.Request.Path, context.Request.Method),
                 occurredAt: DateTimeOffset.UtcNow);
 
             auditContext.EnterpriseSecurityEvents.Add(securityEvent);
@@ -78,11 +68,11 @@ public sealed class SecurityAuditMiddleware
 
     private static bool IsSecurityRelevant(int statusCode, PathString path) =>
         statusCode is 401 or 403 or 429
-        || (statusCode >= 400 && SecuritySensitivePaths.Contains(path));
+        || (statusCode >= 400 && SecuritySensitiveRoutes.IsSensitive(path));
 
     private static string ResolveEventType(int statusCode, PathString path) => statusCode switch
     {
-        401 when SecuritySensitivePaths.Contains(path) => "LoginFailed",
+        401 when SecuritySensitiveRoutes.IsSignInRoute(path) => "LoginFailed",
         401 => "UnauthorizedAccess",
         403 => "ForbiddenAccess",
         429 => "RateLimitExceeded",
@@ -111,14 +101,87 @@ public sealed class SecurityAuditMiddleware
         return Guid.TryParse(sub, out var userId) ? userId : null;
     }
 
-    private static JsonDocument CreateMetadata(int statusCode, PathString path)
+    private static JsonDocument CreateMetadata(int statusCode, PathString path, string method)
     {
         var metadata = new
         {
             statusCode,
             path = path.Value,
-            method = ""
+            method = method
         };
         return JsonSerializer.SerializeToDocument(metadata);
+    }
+}
+
+/// <summary>
+/// The credential and security-sensitive routes whose failed (4xx) answers are audited even when
+/// the status is not 401/403/429. Matches the versioned public route (<c>/api/v1/auth/...</c>);
+/// the unversioned <c>/api/auth/...</c> spelling this list originally used never existed, so
+/// real login failures were never classified.
+/// </summary>
+public static class SecuritySensitiveRoutes
+{
+    // Anonymous steps that establish a session: a 401 here is a failed sign-in.
+    private static readonly HashSet<string> SignInRoutes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "login",
+        "register",
+        "refresh",
+        "forgot-password",
+        "reset-password",
+        "mfa/verify",
+    };
+
+    // Authenticated credential re-verification and credential changes.
+    private static readonly HashSet<string> CredentialRoutes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "change-password",
+        "mfa/enrollment/verify",
+        "mfa/disable",
+        "mfa/recovery-codes/regenerate",
+        "security/step-up/complete-mfa",
+        "security/step-up/complete-password",
+    };
+
+    public static bool IsSensitive(PathString path) =>
+        TryGetAuthRoute(path, out var route)
+        && (SignInRoutes.Contains(route) || CredentialRoutes.Contains(route) || IsAnyOAuthCallback(route));
+
+    public static bool IsSignInRoute(PathString path) =>
+        TryGetAuthRoute(path, out var route) && (SignInRoutes.Contains(route) || IsSignInOAuthCallback(route));
+
+    // "oauth/{provider}/callback" signs a user in; the link and step-up callbacks are credential
+    // operations of an already signed-in user.
+    private static bool IsSignInOAuthCallback(string route)
+    {
+        var segments = route.Split('/');
+        return segments is ["oauth", _, var last] && last.Equals("callback", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsAnyOAuthCallback(string route) =>
+        route.StartsWith("oauth/", StringComparison.OrdinalIgnoreCase)
+        && route.EndsWith("/callback", StringComparison.OrdinalIgnoreCase);
+
+    // "/api/v1/auth/login" -> "login". Accepts any "/api/v{n}" version segment and a trailing slash.
+    private static bool TryGetAuthRoute(PathString path, out string route)
+    {
+        route = string.Empty;
+        var value = path.Value;
+        if (string.IsNullOrEmpty(value)) return false;
+
+        var span = value.AsSpan().TrimEnd('/');
+        const string api = "/api/v";
+        if (!span.StartsWith(api, StringComparison.OrdinalIgnoreCase)) return false;
+
+        span = span[api.Length..];
+        var slash = span.IndexOf('/');
+        if (slash <= 0 || !span[..slash].ToString().All(char.IsAsciiDigit)) return false;
+
+        span = span[slash..];
+        const string auth = "/auth/";
+        if (!span.StartsWith(auth, StringComparison.OrdinalIgnoreCase)) return false;
+
+        route = span[auth.Length..].ToString();
+        return route.Length > 0;
     }
 }

@@ -31,6 +31,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -57,6 +60,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -94,6 +100,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -131,6 +140,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -168,6 +180,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -224,6 +239,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -262,6 +280,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -334,6 +355,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -382,6 +406,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -438,6 +465,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -476,6 +506,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -522,6 +555,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -642,6 +678,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -699,6 +738,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -737,6 +779,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -775,6 +820,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -821,6 +869,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -859,6 +910,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -905,6 +959,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -953,6 +1010,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -989,6 +1049,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -1027,6 +1090,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -1065,6 +1131,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -1111,6 +1180,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -1159,6 +1231,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -1207,6 +1282,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -1243,6 +1321,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -1280,6 +1361,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -1321,6 +1405,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -1367,6 +1454,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -1408,6 +1498,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -1457,6 +1550,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -1495,6 +1591,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -1541,6 +1640,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -1577,6 +1679,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -1615,6 +1720,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -1653,6 +1761,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -1691,6 +1802,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -1739,6 +1853,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -1785,6 +1902,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -1839,6 +1959,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -1894,6 +2017,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -1950,6 +2076,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -2005,6 +2134,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -2031,6 +2163,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -2071,6 +2206,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -2142,6 +2280,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -2238,6 +2379,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -2308,6 +2452,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -2850,6 +2997,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -2880,6 +3030,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -2950,6 +3103,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -2987,6 +3143,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -3024,6 +3183,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -3115,6 +3277,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -3200,6 +3365,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -3291,6 +3459,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -3376,6 +3547,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -3467,6 +3641,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -3586,6 +3763,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -3653,6 +3833,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -3690,6 +3873,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -3758,6 +3944,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -3819,6 +4008,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -3876,6 +4068,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -3943,6 +4138,170 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/profile/preferences": {
+      "get": {
+        "tags": [
+          "Identity.Profile",
+          "Identity.Profile"
+        ],
+        "summary": "Get the current user's account preferences",
+        "description": "Locale, time zone and theme the user chose as account-level defaults. Returns the defaults with version 0 until the first save.",
+        "operationId": "Identity.Profile.GetPreferences",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Identity.Profiles.DTOs.AccountPreferencesDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "Identity.Profile",
+          "Identity.Profile"
+        ],
+        "summary": "Update the current user's account preferences",
+        "description": "Partial update; omitted members keep their value. Answers 412 when expectedVersion is stale.",
+        "operationId": "Identity.Profile.UpdatePreferences",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Endpoints.Identity.Profile.Commands.UpdateAccountPreferencesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Identity.Profiles.DTOs.AccountPreferencesDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Precondition Failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/auth/security/summary": {
+      "get": {
+        "tags": [
+          "Identity.Auth",
+          "Identity.Security"
+        ],
+        "summary": "Get the current user's sign-in security summary",
+        "description": "Password, MFA, active-session and linked-provider facts for the account security page. Contains no secret.",
+        "operationId": "Identity.Security.GetSummary",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Identity.Security.DTOs.AccountSecuritySummaryDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -4021,6 +4380,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -4099,6 +4461,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -4177,6 +4542,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -4227,6 +4595,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -4288,6 +4659,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -4329,6 +4703,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -4377,6 +4754,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -4407,6 +4787,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -4519,6 +4902,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -4555,6 +4941,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -4628,6 +5017,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -4701,6 +5093,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -4764,6 +5159,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -4827,6 +5225,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -4890,6 +5291,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -4962,6 +5366,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -5043,6 +5450,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -5112,6 +5522,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -5193,6 +5606,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -5274,6 +5690,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -5363,6 +5782,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -5451,6 +5873,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -5541,6 +5966,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -5578,6 +6006,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -5651,6 +6082,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -5724,6 +6158,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -5794,6 +6231,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -5857,6 +6297,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -5930,6 +6373,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -5993,6 +6439,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -6056,6 +6505,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -6129,6 +6581,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -6168,6 +6623,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -6206,6 +6664,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -6252,6 +6713,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -6313,6 +6777,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -6376,6 +6843,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -6439,6 +6909,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -6502,6 +6975,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -6575,6 +7051,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -6648,6 +7127,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -6721,6 +7203,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -6782,6 +7267,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -6855,6 +7343,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -6927,6 +7418,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -7000,6 +7494,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -7072,6 +7569,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -7154,6 +7654,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -7233,6 +7736,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -7296,6 +7802,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -7369,6 +7878,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -7442,6 +7954,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -7515,6 +8030,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -7553,6 +8071,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -7607,6 +8128,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -7654,6 +8178,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -7709,6 +8236,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -7766,6 +8296,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -7823,6 +8356,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -7880,6 +8416,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -7921,6 +8460,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -7992,6 +8534,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -8030,6 +8575,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -8101,6 +8649,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -8160,6 +8711,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -8198,6 +8752,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -8236,6 +8793,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -8297,6 +8857,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -8358,6 +8921,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -8421,6 +8987,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -8494,6 +9063,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -8567,6 +9139,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -8603,6 +9178,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -8672,6 +9250,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -8742,6 +9323,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -8822,6 +9406,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -8860,6 +9447,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -8931,6 +9521,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -9002,6 +9595,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -9084,6 +9680,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -9154,6 +9753,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -9226,6 +9828,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -9298,6 +9903,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -9370,6 +9978,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -9452,6 +10063,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -9524,6 +10138,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -9565,6 +10182,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -9636,6 +10256,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -9709,6 +10332,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -9770,6 +10396,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -9842,6 +10471,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -9914,6 +10546,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -9987,6 +10622,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -10057,6 +10695,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -10129,6 +10770,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -10201,6 +10845,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -10274,6 +10921,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -10310,6 +10960,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -10383,6 +11036,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -10444,6 +11100,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -10480,6 +11139,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -10543,6 +11205,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -10606,6 +11271,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -10669,6 +11337,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -10742,6 +11413,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -10815,6 +11489,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -10888,6 +11565,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -10951,6 +11631,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -11014,6 +11697,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -11077,6 +11763,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -11150,6 +11839,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -11186,6 +11878,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -11259,6 +11954,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -11320,6 +12018,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -11393,6 +12094,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -11429,6 +12133,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -11492,6 +12199,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -11555,6 +12265,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -11618,6 +12331,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -11691,6 +12407,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -11727,6 +12446,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -11800,6 +12522,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -11873,6 +12598,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -11946,6 +12674,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -12019,6 +12750,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -12092,6 +12826,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -12164,6 +12901,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -12227,6 +12967,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -12300,6 +13043,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -12363,6 +13109,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -12426,6 +13175,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -12489,6 +13241,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -12562,6 +13317,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -12600,6 +13358,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -12656,6 +13417,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -12697,6 +13461,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -12744,6 +13511,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -12792,6 +13562,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -12849,6 +13622,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -12879,6 +13655,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -12916,6 +13695,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -12954,6 +13736,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -13043,6 +13828,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -13084,6 +13872,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -13131,6 +13922,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -13179,6 +13973,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -13236,6 +14033,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -13281,6 +14081,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -13328,6 +14131,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -13375,6 +14181,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -13417,6 +14226,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -13482,6 +14294,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -13524,6 +14339,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -13573,6 +14391,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -13620,6 +14441,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -13658,6 +14482,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -13704,6 +14531,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -13745,6 +14575,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -13792,6 +14625,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -13833,6 +14669,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -13880,6 +14719,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -13935,6 +14777,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -13980,6 +14825,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -14037,6 +14885,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -14094,6 +14945,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -14151,6 +15005,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -14198,6 +15055,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -14245,6 +15105,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -14292,6 +15155,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -14349,6 +15215,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -14399,6 +15268,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -14454,6 +15326,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -14528,6 +15403,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -14599,6 +15477,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -14640,6 +15521,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -14687,6 +15571,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -14734,6 +15621,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -14782,6 +15672,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -14829,6 +15722,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -14879,6 +15775,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -14929,6 +15828,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -14979,6 +15881,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -15026,6 +15931,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -15076,6 +15984,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -15124,6 +16035,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -15182,6 +16096,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -15241,6 +16158,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -15310,6 +16230,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -15348,6 +16271,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -15393,6 +16319,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -15441,6 +16370,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -15489,6 +16421,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -15537,6 +16472,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -15585,6 +16523,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -15633,6 +16574,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -15682,6 +16626,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -15710,6 +16657,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -17694,6 +18644,29 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.API.Endpoints.Identity.Profile.Commands.UpdateAccountPreferencesRequest": {
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          },
+          "locale": {
+            "type": "string",
+            "nullable": true
+          },
+          "timezone": {
+            "type": "string",
+            "nullable": true
+          },
+          "theme": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.API.Endpoints.WorkManagement.BoardFields.AddFieldOptionRequest": {
         "type": "object",
         "properties": {
@@ -18216,6 +19189,60 @@
           },
           "avatar": {
             "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Identity.Profiles.DTOs.AccountPreferencesDto": {
+        "type": "object",
+        "properties": {
+          "locale": {
+            "type": "string",
+            "nullable": true
+          },
+          "timezone": {
+            "type": "string",
+            "nullable": true
+          },
+          "theme": {
+            "type": "string",
+            "nullable": true
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Identity.Security.DTOs.AccountSecuritySummaryDto": {
+        "type": "object",
+        "properties": {
+          "serverTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "hasPasswordCredential": {
+            "type": "boolean"
+          },
+          "passwordChangedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "mfa": {
+            "$ref": "#/components/schemas/Notrelix.Application.Features.Identity.Mfa.DTOs.MfaStatusDto"
+          },
+          "activeSessionCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "linkedProviders": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
             "nullable": true
           }
         },
@@ -19787,6 +20814,12 @@
         "description": "JWT Authorization header. Example: \"Bearer {token}\"",
         "scheme": "bearer",
         "bearerFormat": "JWT"
+      },
+      "Cookie": {
+        "type": "apiKey",
+        "description": "httpOnly access-token cookie set by the sign-in operations. Browser requests also send the CSRF token header on unsafe methods.",
+        "name": "accessToken",
+        "in": "cookie"
       }
     }
   }

@@ -3,6 +3,7 @@ using Notrelix.API.RateLimiting;
 using Notrelix.Application.Features.Identity.Security.Commands.CompleteStepUpMfa;
 using Notrelix.Application.Features.Identity.Security.Commands.CompleteStepUpPassword;
 using Notrelix.Application.Features.Identity.Security.DTOs;
+using Notrelix.Application.Features.Identity.Security.Queries.GetAccountSecuritySummary;
 using Notrelix.Application.Features.Identity.Security.Queries.GetStepUpRequirement;
 
 namespace Notrelix.API.Endpoints.Identity.Auth.Commands;
@@ -11,6 +12,15 @@ public static class SecurityStepUpEndpoints
 {
     public static IEndpointRouteBuilder MapSecurityStepUp(this IEndpointRouteBuilder group)
     {
+        group.MapAuthenticatedGet("/security/summary", GetSummaryAsync)
+            .WithName("Identity.Security.GetSummary")
+            .Produces<AccountSecuritySummaryDto>(StatusCodes.Status200OK, "application/json")
+            .ProducesProblems(StatusCodes.Status401Unauthorized, StatusCodes.Status429TooManyRequests)
+            .WithTags("Identity.Security")
+            .WithSummary("Get the current user's sign-in security summary")
+            .WithDescription("Password, MFA, active-session and linked-provider facts for the account security page. Contains no secret.")
+            .WithMetadata(new RateLimitPolicyAttribute("AuthStrictByIp"));
+
         group.MapAuthenticatedPost("/security/step-up/requirement", GetRequirementAsync)
             .WithName("Identity.Security.StepUpRequirement")
             .Produces<StepUpRequirementResult>(StatusCodes.Status200OK, "application/json")
@@ -40,6 +50,9 @@ public static class SecurityStepUpEndpoints
 
         return group;
     }
+
+    private static async Task<IResult> GetSummaryAsync(ISender sender)
+        => (await sender.Send(new GetAccountSecuritySummaryQuery())).ToApiResult();
 
     private static async Task<IResult> GetRequirementAsync(
         GetStepUpRequirementRequest request,

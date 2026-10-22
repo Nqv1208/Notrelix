@@ -129,6 +129,12 @@ Profile/presentation data may include name/avatar/preferences where product-appr
 
 Profile state is not credential state.
 
+Account preferences owned by Identity are the signed-in person's locale, time zone and theme. They are
+the person's own, apply across every workspace, are changed only by that person, and are read and saved
+with a version so two devices cannot silently overwrite each other. Job title, phone, date format, the
+notification matrix, the default view and the sidebar default are NOT Identity preferences: their owner
+is undecided (D15) or belongs to Work Management or Collaboration.
+
 Changing display profile must not silently change security identity.
 
 # 8. User lifecycle
@@ -703,6 +709,10 @@ User-visible consequences of credential lockout (accepted D10):
 - the answer is generic and identical for known and unknown accounts (no account-existence disclosure);
 - a locked attempt is not verified, even with the correct credential, until the lock ends;
 - the numeric limits and the lock duration are product values that are not decided yet; the system ships interim placeholders.
+
+The same lockout applies to a signed-in person re-verifying with a second-factor code or the current password (security step-up and password change): a locked attempt is not verified until the lock ends.
+
+Account security page facts (the person's own, never another person's): whether a password exists and when it last changed (only changes made since this was recorded are known), whether a second factor is enabled and how many recovery codes remain, how many sessions are active, and which sign-in providers are linked. Revoking a session signs that device out; revoking another person's session is not possible and is indistinguishable from an unknown session. A durable "recent security activity" history is not offered: no Identity-owned record of it exists yet.
 
 # 68. Account suspension relationship
 

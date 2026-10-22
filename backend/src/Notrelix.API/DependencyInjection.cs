@@ -173,7 +173,17 @@ public static class DependencyInjection
                 BearerFormat = "JWT",
             });
 
-            // Per-operation security: Bearer applied only to non-anonymous operations
+            // Browser sessions authenticate with the httpOnly access-token cookie that login sets
+            // (the JWT bearer handler reads it when no Authorization header is present).
+            options.AddSecurityDefinition("Cookie", new OpenApiSecurityScheme
+            {
+                Description = "httpOnly access-token cookie set by the sign-in operations. Browser requests also send the CSRF token header on unsafe methods.",
+                Name = "accessToken",
+                In = ParameterLocation.Cookie,
+                Type = SecuritySchemeType.ApiKey,
+            });
+
+            // Per-operation security: Bearer or Cookie, applied only to non-anonymous operations
             options.OperationFilter<SecurityRequirementsOperationFilter>();
 
             // Idempotency contract: required header, 409/503 responses and the

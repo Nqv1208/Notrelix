@@ -298,6 +298,25 @@ a throttled credential step answers 429 identity.auth.too-many-attempts with Ret
 `IdentityOpenApiShapeTests` asserts this on the checked-in contract. Other contexts keep the generic
 category `errorCode` until they adopt their own dotted codes.
 
+Identity account surface (user-scoped: `IGlobalRequest` + `IAuthenticatedRequest`, the subject is always the principal):
+
+```text
+GET   /api/v1/profile/preferences       Identity.Profile.GetPreferences    -> { locale, timezone, theme, version }
+PATCH /api/v1/profile/preferences       Identity.Profile.UpdatePreferences -> same; body { expectedVersion (required), locale?, timezone?, theme? }
+GET   /api/v1/auth/security/summary     Identity.Security.GetSummary       -> { serverTime, hasPasswordCredential, passwordChangedAt?, mfa, activeSessionCount, linkedProviders[] }
+```
+
+Preferences concurrency: `version` is the profile aggregate version (0 = never saved, values are the
+defaults, a read creates no row). The update is partial and atomic (all supplied values valid or none
+applied), `expectedVersion` must equal the stored version (0 for the first save) or the answer is 412
+`identity.preferences.version-conflict`; the version concurrency token closes a lost race at the database.
+The pipeline's `IExpectedVersionRequest` is Resource/Workspace-scoped only, so this user-scoped request
+compares the version in its handler; a no-op update does not advance the version. The summary and
+the session list carry no secret, hash, token or provider subject id. Sessions and devices stay on
+`Identity.Sessions.*`; a client derives device label and kind from `userAgent` and does not get a place
+(no geolocation exists). Browser requests authenticate with the `Cookie` OpenAPI scheme (`accessToken`
+httpOnly cookie) or `Bearer`; every protected operation lists both as alternatives.
+
 ---
 
 # 12. BE-API-005 — Authentication precedes protected Application request
@@ -541,6 +560,14 @@ Changes belong to API/security architecture and tests.
 Current API includes `SecurityAuditMiddleware`.
 
 Host audit can record security-relevant transport/auth events.
+
+Sensitive-route matching uses the real versioned route (`/api/v{n}/auth/...`, see
+`SecuritySensitiveRoutes`); `SecurityAuditMiddlewareTests` pins it to the checked-in contract so the
+list cannot drift from the routes again. A 401 on a sign-in route is a `LoginFailed` event; a 401 on a
+credential change by a signed-in user is a plain unauthorized access. The middleware adds the event to
+the scoped audit context and does not itself commit it: it runs after the endpoint's data session has
+committed, and no code path saves the context afterwards, so persistence of these events is unproven and
+must be settled before anything reads them (for example as an account "recent security activity" feed).
 
 It does not automatically replace Governance/business audit or Activity history.
 

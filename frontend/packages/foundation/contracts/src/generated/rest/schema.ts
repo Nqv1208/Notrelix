@@ -1177,6 +1177,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/profile/preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the current user's account preferences
+         * @description Locale, time zone and theme the user chose as account-level defaults. Returns the defaults with version 0 until the first save.
+         */
+        get: operations["Identity.Profile.GetPreferences"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update the current user's account preferences
+         * @description Partial update; omitted members keep their value. Answers 412 when expectedVersion is stale.
+         */
+        patch: operations["Identity.Profile.UpdatePreferences"];
+        trace?: never;
+    };
+    "/api/v1/auth/security/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the current user's sign-in security summary
+         * @description Password, MFA, active-session and linked-provider facts for the account security page. Contains no secret.
+         */
+        get: operations["Identity.Security.GetSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/security/step-up/requirement": {
         parameters: {
             query?: never;
@@ -4567,6 +4611,13 @@ export interface components {
             mfaMethodId?: string;
             code?: string | null;
         };
+        "Notrelix.API.Endpoints.Identity.Profile.Commands.UpdateAccountPreferencesRequest": {
+            /** Format: int64 */
+            expectedVersion?: number | null;
+            locale?: string | null;
+            timezone?: string | null;
+            theme?: string | null;
+        };
         "Notrelix.API.Endpoints.WorkManagement.BoardFields.AddFieldOptionRequest": {
             name?: string | null;
             color?: string | null;
@@ -4734,6 +4785,24 @@ export interface components {
         "Notrelix.Application.Features.Identity.Profiles.Commands.UpdateProfile.UpdateProfileCommand": {
             name: string | null;
             avatar?: string | null;
+        };
+        "Notrelix.Application.Features.Identity.Profiles.DTOs.AccountPreferencesDto": {
+            locale?: string | null;
+            timezone?: string | null;
+            theme?: string | null;
+            /** Format: int64 */
+            version?: number;
+        };
+        "Notrelix.Application.Features.Identity.Security.DTOs.AccountSecuritySummaryDto": {
+            /** Format: date-time */
+            serverTime?: string;
+            hasPasswordCredential?: boolean;
+            /** Format: date-time */
+            passwordChangedAt?: string | null;
+            mfa?: components["schemas"]["Notrelix.Application.Features.Identity.Mfa.DTOs.MfaStatusDto"];
+            /** Format: int32 */
+            activeSessionCount?: number;
+            linkedProviders?: string[] | null;
         };
         "Notrelix.Application.Features.Identity.Security.DTOs.StepUpProofResult": {
             proofToken?: string | null;
@@ -7905,6 +7974,124 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "Identity.Profile.GetPreferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Identity.Profiles.DTOs.AccountPreferencesDto"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "Identity.Profile.UpdatePreferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Endpoints.Identity.Profile.Commands.UpdateAccountPreferencesRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Identity.Profiles.DTOs.AccountPreferencesDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Precondition Failed */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "Identity.Security.GetSummary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Identity.Security.DTOs.AccountSecuritySummaryDto"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -1,6 +1,7 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Requests.Scoping;
 using Notrelix.Application.Features.Identity.Abstractions;
+using Notrelix.Application.Features.Identity.Security.Services;
 
 namespace Notrelix.Application.Features.Identity.Auth.Commands.ResetPassword;
 
@@ -63,6 +64,7 @@ public class ResetPasswordCommandHandler : IRequestHandler<ResetPasswordCommand,
         var now = _dateTimeProvider.UtcNow;
         var hash = _passwordHasher.HashPassword(request.NewPassword);
         user.UpdatePassword(hash, user.Id, now);
+        await PasswordChangeRecorder.RecordAsync(_context, user.Id, now, cancellationToken);
 
         var activeSessions = await _context.Sessions
             .Where(s => s.UserId == user.Id && s.Status == SessionStatus.Active)

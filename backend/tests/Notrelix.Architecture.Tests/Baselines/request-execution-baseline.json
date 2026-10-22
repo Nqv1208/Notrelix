@@ -1700,6 +1700,31 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.Identity.Profiles.Commands.UpdateAccountPreferences.UpdateAccountPreferencesCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IGlobalRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": false,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Identity.Profiles.Commands.UpdateAccountPreferences.UpdateAccountPreferencesCommandHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.Identity.Profiles.Commands.UpdateEmail.UpdateEmailCommand",
     "kind": "Command",
     "principalMarkers": [
@@ -1747,6 +1772,31 @@
     "publicCache": false,
     "handlerTypes": [
       "Notrelix.Application.Features.Identity.Profiles.Commands.UpdateProfile.UpdateProfileCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Identity.Profiles.Queries.GetAccountPreferences.GetAccountPreferencesQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IGlobalRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": false,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Identity.Profiles.Queries.GetAccountPreferences.GetAccountPreferencesQueryHandler"
     ]
   },
   {
@@ -1847,6 +1897,31 @@
     "publicCache": false,
     "handlerTypes": [
       "Notrelix.Application.Features.Identity.Security.Commands.CompleteStepUpPassword.CompleteStepUpPasswordCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Identity.Security.Queries.GetAccountSecuritySummary.GetAccountSecuritySummaryQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IGlobalRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": false,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Identity.Security.Queries.GetAccountSecuritySummary.GetAccountSecuritySummaryQueryHandler"
     ]
   },
   {

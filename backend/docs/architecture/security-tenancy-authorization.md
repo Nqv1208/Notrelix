@@ -1336,6 +1336,10 @@ Current Identity implementation (`ILoginThrottle`, Redis, `Security:LoginThrottl
 ```text
 scope PasswordLogin: counter keyed by the SUBMITTED email (SHA-256), whether or not the account exists
 scope MfaChallenge:  counter keyed by the user bound to a valid challenge token
+scope StepUpMfa:     step-up MFA completion by a signed-in user, keyed by user id (own budget)
+scope PasswordReverification: step-up password completion AND change-password's current-password
+                     check, keyed by user id (one shared budget, so the guess allowance cannot be
+                     multiplied across the two surfaces)
 per-IP counter:      failures across every account from one client IP; a success never resets it
 attempt reservation: the account attempt is reserved atomically (Lua) BEFORE the credential is verified,
                      so parallel guesses cannot exceed the limit; success clears the account counter
@@ -1347,7 +1351,11 @@ storage:             hashed keys only, no email/IP/secret in Redis or logs; Redi
 
 The limits and the lock duration are product values that the owner has not decided; the shipped
 defaults (5 failures/15 min per account, 20/15 min per IP, 15 min lock) are conservative placeholders.
-Step-up completion (`complete-mfa`, `complete-password`) and admin unlock are not yet covered.
+Step-up completion (`complete-mfa`, `complete-password`) and the current-password check of
+change-password are covered by the scopes above and use the same limits. Admin unlock is not covered.
+A signed-in session does not make code or password guessing free: those steps reserve an attempt
+before verifying, and a locked answer is the same 429 `identity.auth.too-many-attempts`. Failures also
+count against the per-IP counter shared with sign-in.
 
 ---
 

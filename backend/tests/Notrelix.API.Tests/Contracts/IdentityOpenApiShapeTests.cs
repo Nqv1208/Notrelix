@@ -82,6 +82,9 @@ public class IdentityOpenApiShapeTests
     [InlineData("Identity.Mfa.Status", "MfaStatusDto")]
     [InlineData("Identity.Sessions.List", "SessionInfoDto[]")]
     [InlineData("Identity.Profile.UpdateProfile", "UserDto")]
+    [InlineData("Identity.Profile.GetPreferences", "AccountPreferencesDto")]
+    [InlineData("Identity.Profile.UpdatePreferences", "AccountPreferencesDto")]
+    [InlineData("Identity.Security.GetSummary", "AccountSecuritySummaryDto")]
     public void BodyReturningOperation_DeclaresItsResponseType(string operationId, string expected)
     {
         var schema = Operation(operationId).GetProperty("responses").GetProperty("200")
@@ -123,6 +126,48 @@ public class IdentityOpenApiShapeTests
     {
         var responses = Operation(operationId).GetProperty("responses");
         (responses.TryGetProperty("401", out _) || responses.TryGetProperty("400", out _)).Should().BeTrue(operationId);
+    }
+
+    [Fact]
+    public void UpdatePreferences_DeclaresTheVersionConflictProblem()
+    {
+        var responses = Operation("Identity.Profile.UpdatePreferences").GetProperty("responses");
+        responses.TryGetProperty("412", out _).Should().BeTrue("a stale expectedVersion answers 412");
+        responses.TryGetProperty("400", out _).Should().BeTrue();
+    }
+
+    [Fact]
+    public void SecuritySummary_NeverCarriesASecretField()
+    {
+        var properties = Document.GetProperty("components").GetProperty("schemas")
+            .GetProperty("Notrelix.Application.Features.Identity.Security.DTOs.AccountSecuritySummaryDto")
+            .GetProperty("properties").EnumerateObject().Select(p => p.Name.ToLowerInvariant()).ToArray();
+
+        properties.Should().NotContain(n => n.Contains("hash") || n.Contains("secret") || n.Contains("token") || n.Contains("password") && n != "haspasswordcredential" && n != "passwordchangedat");
+    }
+
+    [Fact]
+    public void SessionAuthenticationIsDeclaredAsBearerOrCookie_OnEveryProtectedOperation()
+    {
+        var schemes = Document.GetProperty("components").GetProperty("securitySchemes");
+        schemes.GetProperty("Cookie").GetProperty("in").GetString().Should().Be("cookie");
+        schemes.GetProperty("Cookie").GetProperty("type").GetString().Should().Be("apiKey");
+        schemes.GetProperty("Cookie").GetProperty("name").GetString().Should().Be("accessToken");
+
+        var offenders = IdentityOperations()
+            .Where(o => o.Operation.TryGetProperty("security", out var security) && security.GetArrayLength() > 0)
+            .Where(o =>
+            {
+                var names = o.Operation.GetProperty("security").EnumerateArray()
+                    .SelectMany(requirement => requirement.EnumerateObject().Select(p => p.Name)).ToArray();
+                return !(names.Contains("Bearer") && names.Contains("Cookie"));
+            })
+            .Select(o => $"{o.Method.ToUpperInvariant()} {o.Path}")
+            .ToArray();
+
+        offenders.Should().BeEmpty();
+        IdentityOperations().Count(o => o.Operation.TryGetProperty("security", out var s) && s.GetArrayLength() > 0)
+            .Should().BeGreaterThan(15, "a zero-operation sweep proves nothing (NRX-016)");
     }
 
     [Fact]

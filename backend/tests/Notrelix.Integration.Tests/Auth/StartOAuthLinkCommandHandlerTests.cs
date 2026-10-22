@@ -34,7 +34,8 @@ public class StartOAuthLinkCommandHandlerTests
             new InMemoryStepUpProofStore(clock),
             new Mock<IMfaCodeVerifier>().Object,
             new Mock<IPasswordHasher>().Object,
-            clock);
+            clock,
+            Mock.Of<Notrelix.Application.Features.Identity.Auth.Throttling.ILoginThrottle>());
     }
 
     private static async Task<string> IssueStepUpProof(ISecurityStepUpService stepUp)

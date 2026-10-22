@@ -9,7 +9,21 @@ public enum LoginThrottleScope
     PasswordLogin,
 
     /// <summary>MFA challenge completion. The subject is the user id bound to a valid challenge.</summary>
-    MfaChallenge
+    MfaChallenge,
+
+    /// <summary>
+    /// Step-up verification with an MFA code by an already authenticated user. The subject is the
+    /// user id; the budget is separate from <see cref="MfaChallenge"/> so a login lockout cannot be
+    /// triggered or cleared through the step-up surface.
+    /// </summary>
+    StepUpMfa,
+
+    /// <summary>
+    /// Re-verification of the current password by an already authenticated user (step-up and
+    /// change-password share one budget so the guess allowance cannot be multiplied across surfaces).
+    /// The subject is the user id.
+    /// </summary>
+    PasswordReverification
 }
 
 /// <summary>

@@ -4,9 +4,9 @@ using Swashbuckle.AspNetCore.SwaggerGen;
 namespace Notrelix.API.OpenApi;
 
 /// <summary>
-/// Applies Bearer security requirement per-operation based on endpoint metadata.
+/// Applies the Bearer-or-Cookie security requirement per-operation based on endpoint metadata.
 /// Anonymous operations (with [AllowAnonymous] or IAnonymousRequest metadata) get no security.
-/// All other operations require Bearer authentication.
+/// All other operations require a bearer token or the session cookie.
 /// </summary>
 public sealed class SecurityRequirementsOperationFilter : IOperationFilter
 {
@@ -27,22 +27,27 @@ public sealed class SecurityRequirementsOperationFilter : IOperationFilter
             return;
         }
 
+        // Two requirements are alternatives: the credential is either the Authorization bearer
+        // header or the browser session cookie.
         operation.Security =
         [
-            new OpenApiSecurityRequirement
-            {
-                {
-                    new OpenApiSecurityScheme
-                    {
-                        Reference = new OpenApiReference
-                        {
-                            Type = ReferenceType.SecurityScheme,
-                            Id = "Bearer",
-                        },
-                    },
-                    Array.Empty<string>()
-                },
-            }
+            Requirement("Bearer"),
+            Requirement("Cookie"),
         ];
     }
+
+    private static OpenApiSecurityRequirement Requirement(string scheme) => new()
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = scheme,
+                },
+            },
+            Array.Empty<string>()
+        },
+    };
 }
