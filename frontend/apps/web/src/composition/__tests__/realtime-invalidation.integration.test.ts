@@ -82,6 +82,7 @@ describe("integration: realtime recovery reaches the query cache", () => {
     client.subscribeRecovery((signal) => {
       void handleWorkspaceRecovery({
         workspaceId: signal.workspaceId,
+        accountId: "user-1",
         invalidateQueries: async (keys) => {
           await Promise.all(
             keys.map((queryKey) => queryClient.invalidateQueries({ queryKey })),

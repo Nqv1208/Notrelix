@@ -25,6 +25,7 @@ vi.mock("@notrelix/features-auth", () => ({
   useAuth: () => ({
     isAuthenticated: state.isAuthenticated,
     sessionGeneration: state.sessionGeneration,
+    user: state.isAuthenticated ? { id: "1" } : null,
   }),
 }));
 vi.mock("@notrelix/features-workspace", () => ({

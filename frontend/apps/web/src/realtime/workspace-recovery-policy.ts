@@ -2,6 +2,8 @@ import { notificationsQueryKeys } from "@notrelix/features-notifications";
 
 export interface WorkspaceRecoveryPolicyOptions {
   readonly workspaceId: string;
+  /** The signed-in principal's account scope (see `accountQueryKey`). */
+  readonly accountId: string;
   readonly invalidateQueries: (
     keys: readonly unknown[][],
   ) => Promise<void> | void;
@@ -19,11 +21,12 @@ export interface WorkspaceRecoveryPolicyOptions {
  */
 export async function handleWorkspaceRecovery({
   workspaceId,
+  accountId,
   invalidateQueries,
 }: WorkspaceRecoveryPolicyOptions): Promise<void> {
   await invalidateQueries([
     // Root of `workspaceQueryKey(workspaceId, ...)` from @notrelix/query.
     ["workspace", workspaceId],
-    [...notificationsQueryKeys.unreadCount],
+    [...notificationsQueryKeys.unreadCount(accountId)],
   ]);
 }

@@ -12,7 +12,9 @@ export function RealtimeLifecycle({ children }: { children: React.ReactNode }) {
   const runtime = useAppRuntime();
   const queryClient = useQueryClient();
   const location = useLocation();
-  const { isAuthenticated, sessionGeneration } = useAuth();
+  const { isAuthenticated, sessionGeneration, user } = useAuth();
+  // Account = the signed-in principal (same source as the AccountScopeBridge).
+  const accountId = user?.id ?? null;
   const workspaceId = getActiveWorkspaceIdFromPathname(location.pathname);
 
   const registry = useMemo(() => {
@@ -73,7 +75,7 @@ export function RealtimeLifecycle({ children }: { children: React.ReactNode }) {
     // over REST (FE-RT-024/025). Permission loss is not retried; the refetch
     // surfaces the forbidden state through the normal query error pathway.
     const unsubscribeRecovery = runtime.realtime.subscribeRecovery((signal) => {
-      if (!active || signal.workspaceId !== workspaceId) return;
+      if (!active || !accountId || signal.workspaceId !== workspaceId) return;
       if (signal.reason === "permission-lost") {
         runtime.telemetry.track("realtime.permission_lost", {
           workspaceId,
@@ -82,6 +84,7 @@ export function RealtimeLifecycle({ children }: { children: React.ReactNode }) {
       }
       void handleWorkspaceRecovery({
         workspaceId,
+        accountId,
         invalidateQueries,
       }).catch((error) => {
         runtime.telemetry.reportError(error, {
@@ -100,6 +103,7 @@ export function RealtimeLifecycle({ children }: { children: React.ReactNode }) {
       unsubscribeRecovery();
     };
   }, [
+    accountId,
     isAuthenticated,
     queryClient,
     registry,
