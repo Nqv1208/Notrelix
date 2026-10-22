@@ -61,13 +61,13 @@ public sealed class AttachmentObjectLifecycleIntegrationTests : IAsyncLifetime
         }
 
         // A non-superuser login that runs as the application role: FORCE ROW LEVEL SECURITY applies to it.
-        await ExecuteAsync("""
-            CREATE ROLE reaper_login LOGIN PASSWORD 'reaper_pw' IN ROLE notrelix_app;
-            """);
+        // The password is generated per run so no credential literal lives in source.
+        var reaperLoginSecret = Guid.NewGuid().ToString("N");
+        await ExecuteAsync($"CREATE ROLE reaper_login LOGIN PASSWORD '{reaperLoginSecret}' IN ROLE notrelix_app;");
         var builder = new NpgsqlConnectionStringBuilder(_container.GetConnectionString())
         {
             Username = "reaper_login",
-            Password = "reaper_pw",
+            Password = reaperLoginSecret,
             Options = "-c role=notrelix_app",
         };
         _reaperConnectionString = builder.ConnectionString;
