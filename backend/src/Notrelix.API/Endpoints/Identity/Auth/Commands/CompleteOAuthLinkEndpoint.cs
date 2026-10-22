@@ -1,3 +1,4 @@
+using Notrelix.API.Extensions;
 using Microsoft.Extensions.Options;
 using Notrelix.API.Options;
 using Notrelix.API.RateLimiting;
@@ -11,6 +12,8 @@ public static class CompleteOAuthLinkEndpoint
     {
         group.MapAuthenticatedGet("/oauth/{provider}/link/callback", HandleAsync)
             .WithName("Identity.Auth.OAuth.LinkCallback")
+            .Produces(StatusCodes.Status302Found)
+            .ProducesProblems(StatusCodes.Status401Unauthorized, StatusCodes.Status429TooManyRequests)
             .WithTags("Identity.Auth")
             .WithSummary("Complete OAuth link callback")
             .WithDescription("Handles the OAuth provider callback for an authenticated link flow, validates state, and links the provider identity to the current user.")

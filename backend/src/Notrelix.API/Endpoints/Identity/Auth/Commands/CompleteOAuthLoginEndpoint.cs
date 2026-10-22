@@ -1,3 +1,4 @@
+using Notrelix.API.Extensions;
 using Microsoft.Extensions.Options;
 using Notrelix.API.Options;
 using Notrelix.API.RateLimiting;
@@ -13,6 +14,8 @@ public static class CompleteOAuthLoginEndpoint
     {
         group.MapPublicGet("/oauth/{provider}/callback", HandleAsync)
             .WithName("Identity.Auth.OAuth.Callback")
+            .Produces(StatusCodes.Status302Found)
+            .ProducesProblems(StatusCodes.Status429TooManyRequests)
             .WithTags("Identity.Auth")
             .WithSummary("Complete OAuth login callback")
             .WithDescription("Handles the OAuth provider callback, validates state, exchanges code, and sets auth cookies.")

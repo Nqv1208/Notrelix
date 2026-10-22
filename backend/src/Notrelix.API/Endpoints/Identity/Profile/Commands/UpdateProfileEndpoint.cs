@@ -9,6 +9,8 @@ public static class UpdateProfileEndpoint
     {
         group.MapAuthenticatedPatch("/", HandleAsync)
             .WithName("Identity.Profile.UpdateProfile")
+            .Produces<UserDto>(StatusCodes.Status200OK, "application/json")
+            .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status401Unauthorized)
             .WithTags("Identity.Profile")
             .WithSummary("Update current user profile");
         return group;

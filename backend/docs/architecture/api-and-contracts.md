@@ -285,6 +285,19 @@ claims/context
 
 It does not establish resource authorization by itself.
 
+Identity browser contract (D10):
+
+```text
+session tokens exist only as httpOnly cookies (AuthSessionResponse never carries accessToken/refreshToken)
+credential steps answer AuthSessionResponse (mfaRequired / mfaChallengeToken when a second factor is pending)
+every Identity operation declares typed success and application/problem+json responses (no System.Void)
+Identity errors surface their dotted code (identity.auth.invalid-credentials, identity.mfa.invalid-code, ...) as problem errorCode
+a throttled credential step answers 429 identity.auth.too-many-attempts with Retry-After and retryAfterSeconds
+```
+
+`IdentityOpenApiShapeTests` asserts this on the checked-in contract. Other contexts keep the generic
+category `errorCode` until they adopt their own dotted codes.
+
 ---
 
 # 12. BE-API-005 — Authentication precedes protected Application request

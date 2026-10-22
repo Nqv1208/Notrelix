@@ -10,6 +10,8 @@ public static class UnlinkOAuthEndpoint
     {
         group.MapAuthenticatedPost("/oauth/{provider}/unlink", HandleAsync)
             .WithName("Identity.Auth.OAuth.Unlink")
+            .Produces(StatusCodes.Status200OK)
+            .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status401Unauthorized, StatusCodes.Status404NotFound, StatusCodes.Status412PreconditionFailed, StatusCodes.Status429TooManyRequests)
             .WithTags("Identity.Auth")
             .WithSummary("Unlink an OAuth provider identity")
             .WithDescription("Removes a linked provider identity from the current user, protected by the last-primary-auth-method invariant and step-up verification.")

@@ -1,4 +1,5 @@
 using Notrelix.Application.Features.Identity.Auth.Commands.Login;
+using Notrelix.Application.Features.Identity.Auth.Throttling;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Security.Auth;
 using Notrelix.Application.Features.Identity.Mfa.DTOs;
@@ -14,6 +15,7 @@ public class LoginTests : IdentityHandlerTestBase
         PasswordHasherMock.Object,
         SessionIssuerMock.Object,
         ChallengeStoreMock.Object,
+        Mock.Of<ILoginThrottle>(),
         DateTimeProviderMock.Object,
         LoginLoggerMock.Object);
 

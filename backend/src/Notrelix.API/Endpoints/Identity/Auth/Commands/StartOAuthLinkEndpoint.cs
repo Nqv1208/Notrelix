@@ -10,6 +10,8 @@ public static class StartOAuthLinkEndpoint
     {
         group.MapAuthenticatedGet("/oauth/{provider}/link/start", HandleAsync)
             .WithName("Identity.Auth.OAuth.LinkStart")
+            .Produces(StatusCodes.Status302Found)
+            .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status401Unauthorized, StatusCodes.Status412PreconditionFailed, StatusCodes.Status429TooManyRequests)
             .WithTags("Identity.Auth")
             .WithSummary("Start OAuth link flow")
             .WithDescription("Redirects an authenticated user to the OAuth provider's authorization endpoint to link a provider identity, protected by step-up verification.")

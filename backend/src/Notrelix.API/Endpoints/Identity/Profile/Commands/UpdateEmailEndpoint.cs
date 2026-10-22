@@ -9,6 +9,8 @@ public static class UpdateEmailEndpoint
     {
         group.MapAuthenticatedPost("/email", HandleAsync)
             .WithName("Identity.Profile.UpdateEmail")
+            .Produces<UpdateEmailResultDto>(StatusCodes.Status200OK, "application/json")
+            .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status401Unauthorized, StatusCodes.Status409Conflict)
             .WithTags("Identity.Profile")
             .WithSummary("Update the current user's email address");
         return group;

@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using Notrelix.Application.Features.Identity.Auth.Commands.Login;
+using Notrelix.Application.Features.Identity.Auth.Throttling;
 using Notrelix.Application.Features.Identity.Mfa.Abstractions;
 using Notrelix.Domain.Identity.Users;
 using Notrelix.Integration.Tests.Containers;
@@ -35,7 +36,7 @@ public class LoginCommandHandlerTests : IAsyncLifetime
         var dateTimeProvider = new Mock<IDateTimeProvider>();
         dateTimeProvider.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);
 
-        var handler = new LoginCommandHandler(context, passwordHasher.Object, sessionIssuer.Object, Mock.Of<IMfaChallengeStore>(), dateTimeProvider.Object, NullLogger<LoginCommandHandler>.Instance);
+        var handler = new LoginCommandHandler(context, passwordHasher.Object, sessionIssuer.Object, Mock.Of<IMfaChallengeStore>(), Mock.Of<ILoginThrottle>(), dateTimeProvider.Object, NullLogger<LoginCommandHandler>.Instance);
 
         var result = await handler.Handle(new LoginCommand
         {
@@ -68,7 +69,7 @@ public class LoginCommandHandlerTests : IAsyncLifetime
         dateTimeProvider.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);
 
         var sessionIssuer = new AuthSessionIssuer(jwtService.Object, context, dateTimeProvider.Object, new Mock<IClientMetadata>().Object);
-        var handler = new LoginCommandHandler(context, passwordHasher.Object, sessionIssuer, Mock.Of<IMfaChallengeStore>(), dateTimeProvider.Object, NullLogger<LoginCommandHandler>.Instance);
+        var handler = new LoginCommandHandler(context, passwordHasher.Object, sessionIssuer, Mock.Of<IMfaChallengeStore>(), Mock.Of<ILoginThrottle>(), dateTimeProvider.Object, NullLogger<LoginCommandHandler>.Instance);
 
         var before = DateTimeOffset.UtcNow;
         var result = await handler.Handle(new LoginCommand

@@ -1,6 +1,7 @@
 using Notrelix.Application.Common.Requests.Scoping;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Identity.Abstractions;
+using Notrelix.Application.Features.Identity.Auth.Throttling;
 using Notrelix.Application.Features.Identity.Mfa;
 using Notrelix.Application.Features.Identity.Mfa.Abstractions;
 using Notrelix.Application.Features.Identity.Mfa.DTOs;
@@ -24,6 +25,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResu
     private readonly IPasswordHasher _passwordHasher;
     private readonly IAuthSessionIssuer _sessionIssuer;
     private readonly IMfaChallengeStore _challengeStore;
+    private readonly ILoginThrottle _throttle;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ILogger<LoginCommandHandler> _logger;
 
@@ -32,6 +34,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResu
         IPasswordHasher passwordHasher,
         IAuthSessionIssuer sessionIssuer,
         IMfaChallengeStore challengeStore,
+        ILoginThrottle throttle,
         IDateTimeProvider dateTimeProvider,
         ILogger<LoginCommandHandler> logger)
     {
@@ -39,6 +42,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResu
         _passwordHasher = passwordHasher;
         _sessionIssuer = sessionIssuer;
         _challengeStore = challengeStore;
+        _throttle = throttle;
         _dateTimeProvider = dateTimeProvider;
         _logger = logger;
     }
@@ -46,6 +50,17 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResu
     public async Task<Result<AuthResult>> Handle(LoginCommand request, CancellationToken cancellationToken)
     {
         var normalizedEmail = request.Email.Trim().ToLowerInvariant();
+
+        // Keyed by the submitted email, not by the account: an unknown email
+        // locks and answers exactly like a known one (no enumeration).
+        var attempt = await _throttle.BeginAttemptAsync(
+            LoginThrottleScope.PasswordLogin, normalizedEmail, cancellationToken);
+        if (attempt.IsLocked)
+        {
+            _logger.LogWarning("Login rejected: attempt limit reached (retry in {RetryAfterSeconds}s)",
+                (int)attempt.RetryAfter.TotalSeconds);
+            return Result<AuthResult>.Failure(LoginThrottleErrors.TooManyAttempts(attempt.RetryAfter));
+        }
 
         var user = await _context.Users
             .FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedEmail, cancellationToken);
@@ -55,15 +70,19 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResu
 
         if (user is null || !passwordValid)
         {
-            _logger.LogInformation("Login failed: invalid credentials for {NormalizedEmail}", normalizedEmail);
+            await _throttle.RecordFailureAsync(LoginThrottleScope.PasswordLogin, normalizedEmail, cancellationToken);
+            _logger.LogInformation("Login failed: invalid credentials");
             return Result<AuthResult>.Failure(InvalidCredentialsError);
         }
 
         if (user.Status is not UserStatus.Active)
         {
+            await _throttle.RecordFailureAsync(LoginThrottleScope.PasswordLogin, normalizedEmail, cancellationToken);
             _logger.LogWarning("Login blocked: non-active account {UserId} (status {UserStatus})", user.Id, user.Status);
             return Result<AuthResult>.Failure(InvalidCredentialsError);
         }
+
+        await _throttle.RecordSuccessAsync(LoginThrottleScope.PasswordLogin, normalizedEmail, cancellationToken);
 
         var now = _dateTimeProvider.UtcNow;
 
@@ -75,8 +94,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResu
             var (token, payload) = await MfaChallengeFactory.CreateAsync(
                 _challengeStore, user.Id, MfaChallengePurpose.PasswordLogin, now, cancellationToken);
 
-            _logger.LogInformation("Login requires MFA challenge for {UserId} ({NormalizedEmail})",
-                user.Id, normalizedEmail);
+            _logger.LogInformation("Login requires MFA challenge for {UserId}", user.Id);
 
             return Result<AuthResult>.Success(new AuthResult
             {
@@ -89,7 +107,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResu
 
         user.RecordLogin(now);
 
-        _logger.LogInformation("Login succeeded for {UserId} ({NormalizedEmail})", user.Id, normalizedEmail);
+        _logger.LogInformation("Login succeeded for {UserId}", user.Id);
 
         var authResult = await _sessionIssuer.IssueAsync(user, now, cancellationToken);
         return Result<AuthResult>.Success(authResult);

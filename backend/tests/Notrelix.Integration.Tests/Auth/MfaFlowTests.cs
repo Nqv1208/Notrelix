@@ -1,3 +1,4 @@
+using Notrelix.Application.Features.Identity.Auth.Throttling;
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
@@ -924,7 +925,7 @@ public sealed class MfaFlowTests : IAsyncLifetime
             var passwordHasher = new Mock<IPasswordHasher>();
             passwordHasher.Setup(x => x.VerifyPassword(It.IsAny<string>(), It.IsAny<string>())).Returns(true);
             var handler = new LoginCommandHandler(
-                context, passwordHasher.Object, SessionIssuer(context), _challengeStore, _time.Object,
+                context, passwordHasher.Object, SessionIssuer(context), _challengeStore, Mock.Of<ILoginThrottle>(), _time.Object,
                 NullLogger<LoginCommandHandler>.Instance);
             var result = await handler.Handle(new LoginCommand { Email = email, Password = "Password1!" }, CancellationToken.None);
             await context.SaveChangesAsync();
@@ -956,7 +957,7 @@ public sealed class MfaFlowTests : IAsyncLifetime
             await using var context = _fixture.CreatePostgresContext();
             var handler = new CompleteMfaChallengeCommandHandler(
                 context, _challengeStore, new MfaCodeVerifier(context, _totp, _recoveryGenerator),
-                SessionIssuer(context), _time.Object,
+                Mock.Of<ILoginThrottle>(), SessionIssuer(context), _time.Object,
                 NullLogger<CompleteMfaChallengeCommandHandler>.Instance);
             var result = await handler.Handle(new CompleteMfaChallengeCommand { ChallengeToken = token, Code = code }, CancellationToken.None);
             await context.SaveChangesAsync();

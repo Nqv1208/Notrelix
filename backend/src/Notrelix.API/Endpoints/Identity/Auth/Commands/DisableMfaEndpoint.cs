@@ -9,6 +9,8 @@ public static class DisableMfaEndpoint
     {
         group.MapAuthenticatedPost("/mfa/disable", HandleAsync)
             .WithName("Identity.Mfa.Disable")
+            .Produces(StatusCodes.Status200OK)
+            .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status401Unauthorized, StatusCodes.Status412PreconditionFailed)
             .WithTags("Identity.Mfa")
             .WithSummary("Disable MFA and revoke all active sessions")
             .WithDescription("Requires a single-use step-up proof for the DisableMfa purpose.");

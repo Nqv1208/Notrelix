@@ -1,3 +1,4 @@
+using Notrelix.Application.Features.Identity.Auth.GetBootstrap;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Identity.Auth.Queries.GetBootstrap;
 
@@ -9,6 +10,8 @@ public static class GetBootstrapEndpoint
     {
         group.MapAuthenticatedGet("/bootstrap", HandleAsync)
             .WithName("Identity.Auth.GetBootstrap")
+            .Produces<BootstrapResult>(StatusCodes.Status200OK, "application/json")
+            .ProducesProblems(StatusCodes.Status401Unauthorized)
             .WithTags("Identity.Auth")
             .WithSummary("Get current user bootstrap state");
         return group;

@@ -1,3 +1,4 @@
+using Notrelix.Application.Features.Identity.Mfa.DTOs;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Identity.Mfa.Commands.StartMfaEnrollment;
 
@@ -9,6 +10,8 @@ public static class StartMfaEnrollmentEndpoint
     {
         group.MapAuthenticatedPost("/mfa/enrollment/start", HandleAsync)
             .WithName("Identity.Mfa.StartEnrollment")
+            .Produces<MfaEnrollmentStartResult>(StatusCodes.Status200OK, "application/json")
+            .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status401Unauthorized, StatusCodes.Status409Conflict)
             .WithTags("Identity.Mfa")
             .WithSummary("Start MFA authenticator app enrollment");
         return group;

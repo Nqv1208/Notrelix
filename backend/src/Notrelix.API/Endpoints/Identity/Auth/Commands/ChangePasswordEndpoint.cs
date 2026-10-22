@@ -10,6 +10,8 @@ public static class ChangePasswordEndpoint
     {
         group.MapAuthenticatedPost("/change-password", HandleAsync)
             .WithName("Identity.Auth.ChangePassword")
+            .Produces(StatusCodes.Status200OK)
+            .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status401Unauthorized, StatusCodes.Status412PreconditionFailed, StatusCodes.Status429TooManyRequests)
             .WithTags("Identity.Auth")
             .WithSummary("Change the authenticated user's password")
             .WithMetadata(new RateLimitPolicyAttribute("AuthStrictByIp"));

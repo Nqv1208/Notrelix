@@ -10,6 +10,8 @@ public static class ForgotPasswordEndpoint
     {
         group.MapPublicPost("/forgot-password", HandleAsync)
             .WithName("Identity.Auth.ForgotPassword")
+            .Produces(StatusCodes.Status200OK)
+            .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status429TooManyRequests)
             .WithTags("Identity.Auth")
             .WithSummary("Request a password reset email")
             .WithMetadata(new RateLimitPolicyAttribute("AuthStrictByIp"));

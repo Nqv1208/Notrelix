@@ -32,6 +32,7 @@ public static class DependencyInjection
 
         services.AddOAuthInfrastructure(configuration);
         services.AddMfaInfrastructure();
+        services.AddLoginThrottleInfrastructure(configuration);
 
         return services;
     }

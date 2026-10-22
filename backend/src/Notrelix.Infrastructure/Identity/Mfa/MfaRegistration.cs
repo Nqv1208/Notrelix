@@ -1,4 +1,6 @@
 using Notrelix.Application.Features.Identity.Mfa.Abstractions;
+using Notrelix.Application.Features.Identity.Auth.Throttling;
+using Notrelix.Infrastructure.Identity.Auth;
 using Notrelix.Infrastructure.Identity.Mfa;
 
 namespace Notrelix.Infrastructure;
@@ -11,6 +13,23 @@ public static class MfaRegistration
         services.AddScoped<IMfaChallengeStore, MfaChallengeStore>();
         services.AddScoped<IMfaTotpService, MfaTotpService>();
         services.AddScoped<IMfaRecoveryCodeGenerator, MfaRecoveryCodeGenerator>();
+
+        return services;
+    }
+}
+
+public static class LoginThrottleRegistration
+{
+    public static IServiceCollection AddLoginThrottleInfrastructure(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        services.AddOptions<LoginThrottleOptions>()
+            .Bind(configuration.GetSection(LoginThrottleOptions.SectionName))
+            .ValidateOnStart();
+
+        services.AddSingleton<IValidateOptions<LoginThrottleOptions>, LoginThrottleOptionsValidator>();
+        services.AddScoped<ILoginThrottle, RedisLoginThrottle>();
 
         return services;
     }

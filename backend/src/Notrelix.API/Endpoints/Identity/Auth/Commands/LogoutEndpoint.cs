@@ -9,6 +9,8 @@ public static class LogoutEndpoint
     {
         group.MapAuthenticatedPost("/logout", HandleAsync)
             .WithName("Identity.Auth.Logout")
+            .Produces(StatusCodes.Status200OK)
+            .ProducesProblems(StatusCodes.Status401Unauthorized)
             .WithTags("Identity.Auth")
             .WithSummary("Logout and revoke refresh token");
         return group;

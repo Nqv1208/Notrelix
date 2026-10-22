@@ -11,6 +11,8 @@ public static class StartOAuthStepUpEndpoint
     {
         group.MapAuthenticatedGet("/oauth/{provider}/step-up/start", HandleAsync)
             .WithName("Identity.Auth.OAuth.StepUpStart")
+            .Produces(StatusCodes.Status302Found)
+            .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status401Unauthorized, StatusCodes.Status412PreconditionFailed, StatusCodes.Status429TooManyRequests)
             .WithTags("Identity.Auth")
             .WithSummary("Start OAuth step-up (re-authentication) flow")
             .WithDescription("Redirects the authenticated user to the OAuth provider to re-authenticate for a security purpose. Completion grants a purpose-bound step-up proof; no new session is issued.")

@@ -10,6 +10,8 @@ public static class StartOAuthLoginEndpoint
     {
         group.MapPublicGet("/oauth/{provider}/start", HandleAsync)
             .WithName("Identity.Auth.OAuth.Start")
+            .Produces(StatusCodes.Status302Found)
+            .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status429TooManyRequests)
             .WithTags("Identity.Auth")
             .WithSummary("Start OAuth login flow")
             .WithDescription("Redirects user to the OAuth provider's authorization endpoint.")

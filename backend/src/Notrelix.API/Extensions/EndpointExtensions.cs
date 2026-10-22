@@ -73,7 +73,7 @@ public static class EndpointExtensions
         return TypedResults.Problem(pd);
     }
 
-    private static ProblemHttpResult ResultToProblemDetails(Result result)
+    private static IResult ResultToProblemDetails(Result result)
     {
         if (result.TypedErrors.Count > 0)
         {
@@ -83,7 +83,15 @@ public static class EndpointExtensions
         return ValidationFailure(result.Errors);
     }
 
-    private static ProblemHttpResult TypedFailure(IReadOnlyList<ApplicationError> errors)
+    /// <summary>
+    /// Identity owns its dotted error codes (for example
+    /// <c>identity.auth.invalid-credentials</c>): they are part of the public
+    /// contract (D10) and are surfaced as the problem <c>errorCode</c> instead of
+    /// the generic category code. Other contexts keep the generic category codes.
+    /// </summary>
+    private const string IdentityErrorCodePrefix = "identity.";
+
+    private static IResult TypedFailure(IReadOnlyList<ApplicationError> errors)
     {
         var primary = errors[0];
 
@@ -114,6 +122,11 @@ public static class EndpointExtensions
                 ErrorCodes.Conflict,
                 "Conflict",
                 primary.Message),
+            ApplicationErrorType.TooManyRequests => (
+                StatusCodes.Status429TooManyRequests,
+                ErrorCodes.TooManyRequests,
+                "Too many requests",
+                primary.Message),
             ApplicationErrorType.PreconditionFailed => (
                 StatusCodes.Status412PreconditionFailed,
                 primary.Code,
@@ -126,6 +139,11 @@ public static class EndpointExtensions
                 "One or more validation errors occurred.")
         };
 
+        if (primary.Code.StartsWith(IdentityErrorCodePrefix, StringComparison.Ordinal))
+        {
+            errorCode = primary.Code;
+        }
+
         var pd = new ProblemDetails
         {
             Type = $"https://docs.notrelix.com/problems/{errorCode.Replace('.', '-')}",
@@ -136,6 +154,13 @@ public static class EndpointExtensions
 
         pd.Extensions["errorCode"] = errorCode;
         pd.Extensions["traceId"] = Activity.Current?.Id ?? "unknown";
+
+        if (primary.RetryAfter is { } retryAfter)
+        {
+            var seconds = Math.Max(1, (int)Math.Ceiling(retryAfter.TotalSeconds));
+            pd.Extensions["retryAfterSeconds"] = seconds;
+            return new RetryAfterProblemResult(TypedResults.Problem(pd), seconds);
+        }
 
         if (primary.Type == ApplicationErrorType.Validation && errors.Count > 0)
         {
@@ -165,5 +190,15 @@ public static class EndpointExtensions
         }
 
         return TypedResults.Problem(pd);
+    }
+}
+
+/// <summary>Problem response that also carries the standard Retry-After header (seconds).</summary>
+internal sealed class RetryAfterProblemResult(IResult inner, int retryAfterSeconds) : IResult
+{
+    public Task ExecuteAsync(HttpContext httpContext)
+    {
+        httpContext.Response.Headers.RetryAfter = retryAfterSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        return inner.ExecuteAsync(httpContext);
     }
 }

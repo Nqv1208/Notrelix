@@ -11,7 +11,8 @@ public static class RevokeApiTokenEndpoint
             .WithName("Identity.ApiTokens.Revoke")
             .WithSummary("Revoke an API token")
             .WithDescription("Revocation is effective immediately: a revoked token can no longer authenticate.")
-            .Produces(StatusCodes.Status204NoContent);
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesProblems(StatusCodes.Status401Unauthorized, StatusCodes.Status403Forbidden, StatusCodes.Status404NotFound);
         return group;
     }
 

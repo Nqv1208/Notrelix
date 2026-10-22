@@ -13,6 +13,8 @@ public static class SecurityStepUpEndpoints
     {
         group.MapAuthenticatedPost("/security/step-up/requirement", GetRequirementAsync)
             .WithName("Identity.Security.StepUpRequirement")
+            .Produces<StepUpRequirementResult>(StatusCodes.Status200OK, "application/json")
+            .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status401Unauthorized, StatusCodes.Status412PreconditionFailed, StatusCodes.Status429TooManyRequests)
             .WithTags("Identity.Security")
             .WithSummary("Get the step-up factor required for a security operation")
             .WithDescription("Returns the factor (MFA challenge, password or OAuth re-authentication) the current user must satisfy before a security-sensitive operation.")
@@ -20,6 +22,8 @@ public static class SecurityStepUpEndpoints
 
         group.MapAuthenticatedPost("/security/step-up/complete-mfa", CompleteMfaAsync)
             .WithName("Identity.Security.StepUpCompleteMfa")
+            .Produces<StepUpProofResult>(StatusCodes.Status200OK, "application/json")
+            .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status401Unauthorized, StatusCodes.Status412PreconditionFailed, StatusCodes.Status429TooManyRequests)
             .WithTags("Identity.Security")
             .WithSummary("Complete step-up verification with a TOTP or recovery code")
             .WithDescription("Verifies the MFA challenge bound to the current session and issues a single-use step-up proof.")
@@ -27,6 +31,8 @@ public static class SecurityStepUpEndpoints
 
         group.MapAuthenticatedPost("/security/step-up/complete-password", CompletePasswordAsync)
             .WithName("Identity.Security.StepUpCompletePassword")
+            .Produces<StepUpProofResult>(StatusCodes.Status200OK, "application/json")
+            .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status401Unauthorized, StatusCodes.Status412PreconditionFailed, StatusCodes.Status429TooManyRequests)
             .WithTags("Identity.Security")
             .WithSummary("Complete step-up verification with the current password")
             .WithDescription("Verifies the current password and issues a single-use step-up proof.")

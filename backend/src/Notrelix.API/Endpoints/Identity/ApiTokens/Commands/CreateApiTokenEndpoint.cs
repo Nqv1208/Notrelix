@@ -12,7 +12,8 @@ public static class CreateApiTokenEndpoint
             .WithName("Identity.ApiTokens.Create")
             .WithSummary("Issue a new API token for a workspace")
             .WithDescription("Requires a single-use step-up proof for the IssueApiToken purpose. The raw secret is returned exactly once in this response.")
-            .Produces<CreatedApiTokenDto>(StatusCodes.Status201Created, "application/json");
+            .Produces<CreatedApiTokenDto>(StatusCodes.Status201Created, "application/json")
+            .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status401Unauthorized, StatusCodes.Status403Forbidden, StatusCodes.Status404NotFound, StatusCodes.Status412PreconditionFailed);
         return group;
     }
 

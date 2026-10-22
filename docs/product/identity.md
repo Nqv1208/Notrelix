@@ -697,6 +697,13 @@ Rate limiting, brute-force protection, lockout, and anomaly controls are securit
 
 Identity product semantics define user-visible consequences where applicable.
 
+User-visible consequences of credential lockout (accepted D10):
+
+- repeated wrong credentials temporarily lock further attempts per account and per client address;
+- the answer is generic and identical for known and unknown accounts (no account-existence disclosure);
+- a locked attempt is not verified, even with the correct credential, until the lock ends;
+- the numeric limits and the lock duration are product values that are not decided yet; the system ships interim placeholders.
+
 # 68. Account suspension relationship
 
 Account suspension may cause Identity/session restrictions according to explicit cross-context policy.

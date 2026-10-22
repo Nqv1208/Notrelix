@@ -19,6 +19,14 @@ public class ResultErrorMappingTests
         var http = MapFailure(new ApplicationError("identity.auth.weak-password", "Password too weak", ApplicationErrorType.Validation));
 
         http.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
+        http.ProblemDetails.Extensions["errorCode"].Should().Be("identity.auth.weak-password");
+    }
+
+    [Fact]
+    public void TypedNonIdentityFailure_KeepsTheGenericCategoryErrorCode()
+    {
+        var http = MapFailure(new ApplicationError("work.board.name-taken", "Name taken.", ApplicationErrorType.Validation));
+
         http.ProblemDetails.Extensions["errorCode"].Should().Be("validation.failed");
     }
 
@@ -28,7 +36,7 @@ public class ResultErrorMappingTests
         var http = MapFailure(new ApplicationError("identity.auth.rate-limited", "Too many requests.", ApplicationErrorType.BusinessRule));
 
         http.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
-        http.ProblemDetails.Extensions["errorCode"].Should().Be("business_rule.violation");
+        http.ProblemDetails.Extensions["errorCode"].Should().Be("identity.auth.rate-limited");
         http.ProblemDetails.Detail.Should().Be("Too many requests.");
     }
 
@@ -38,7 +46,7 @@ public class ResultErrorMappingTests
         var http = MapFailure(new ApplicationError("identity.auth.invalid-credentials", "Invalid email or password", ApplicationErrorType.Authentication));
 
         http.StatusCode.Should().Be(StatusCodes.Status401Unauthorized);
-        http.ProblemDetails.Extensions["errorCode"].Should().Be("auth.unauthorized");
+        http.ProblemDetails.Extensions["errorCode"].Should().Be("identity.auth.invalid-credentials");
         http.ProblemDetails.Detail.Should().Be("Invalid email or password");
     }
 
@@ -48,7 +56,7 @@ public class ResultErrorMappingTests
         var http = MapFailure(new ApplicationError("identity.auth.user-not-found", "User not found.", ApplicationErrorType.NotFound));
 
         http.StatusCode.Should().Be(StatusCodes.Status404NotFound);
-        http.ProblemDetails.Extensions["errorCode"].Should().Be("resource.not_found");
+        http.ProblemDetails.Extensions["errorCode"].Should().Be("identity.auth.user-not-found");
     }
 
     [Fact]
@@ -57,7 +65,7 @@ public class ResultErrorMappingTests
         var http = MapFailure(new ApplicationError("identity.auth.state-conflict", "Conflicting state.", ApplicationErrorType.Conflict));
 
         http.StatusCode.Should().Be(StatusCodes.Status409Conflict);
-        http.ProblemDetails.Extensions["errorCode"].Should().Be("concurrency.conflict");
+        http.ProblemDetails.Extensions["errorCode"].Should().Be("identity.auth.state-conflict");
     }
 
     [Fact]
@@ -90,6 +98,6 @@ public class ResultErrorMappingTests
         var http = (ProblemHttpResult)result.ToApiResult();
 
         http.StatusCode.Should().Be(StatusCodes.Status401Unauthorized);
-        http.ProblemDetails.Extensions["errorCode"].Should().Be("auth.unauthorized");
+        http.ProblemDetails.Extensions["errorCode"].Should().Be("identity.auth.invalid-refresh-token");
     }
 }

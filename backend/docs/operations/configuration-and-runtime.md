@@ -240,6 +240,11 @@ disabled in any other environment, and, when enforced, when `Cors:AllowedOrigins
 contains `*`, or contains a non-absolute-http(s) origin. The cookie and header names
 (`csrf_token`, `X-CSRF-Token`) are protocol constants, not configuration.
 
+Anonymous credential lockout (`Security:LoginThrottle`, validated at startup by
+`LoginThrottleOptionsValidator`): `MaxFailuresPerAccount` (5), `AccountWindow` (00:15:00),
+`MaxFailuresPerIp` (20), `IpWindow` (00:15:00), `LockDuration` (00:15:00). The defaults are
+interim placeholders pending a product decision; every value is overridable per environment.
+
 These values are current executable evidence.
 
 They are not timeless architecture constants.

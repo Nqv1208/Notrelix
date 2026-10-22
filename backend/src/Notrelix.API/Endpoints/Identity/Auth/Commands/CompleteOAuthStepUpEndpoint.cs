@@ -1,3 +1,4 @@
+using Notrelix.API.Extensions;
 using Microsoft.Extensions.Options;
 using Notrelix.API.Options;
 using Notrelix.API.RateLimiting;
@@ -11,6 +12,8 @@ public static class CompleteOAuthStepUpEndpoint
     {
         group.MapAuthenticatedGet("/oauth/{provider}/step-up/callback", HandleAsync)
             .WithName("Identity.Auth.OAuth.StepUpCallback")
+            .Produces(StatusCodes.Status302Found)
+            .ProducesProblems(StatusCodes.Status401Unauthorized, StatusCodes.Status429TooManyRequests)
             .WithTags("Identity.Auth")
             .WithSummary("Complete OAuth step-up callback")
             .WithDescription("Handles the OAuth provider callback for an authenticated step-up (re-authentication) flow and grants a purpose-bound step-up proof.")

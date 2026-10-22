@@ -1331,6 +1331,24 @@ Exact policy is security/product/risk owned.
 
 Do not apply ordinary read limits blindly.
 
+Current Identity implementation (`ILoginThrottle`, Redis, `Security:LoginThrottle:*`):
+
+```text
+scope PasswordLogin: counter keyed by the SUBMITTED email (SHA-256), whether or not the account exists
+scope MfaChallenge:  counter keyed by the user bound to a valid challenge token
+per-IP counter:      failures across every account from one client IP; a success never resets it
+attempt reservation: the account attempt is reserved atomically (Lua) BEFORE the credential is verified,
+                     so parallel guesses cannot exceed the limit; success clears the account counter
+lock:                reaching the limit sets a TTL lock; while locked the credential is not verified
+                     (even a correct password) and the answer is 429 identity.auth.too-many-attempts
+response:            identical code/message for known and unknown subjects (no enumeration oracle)
+storage:             hashed keys only, no email/IP/secret in Redis or logs; Redis failure fails closed
+```
+
+The limits and the lock duration are product values that the owner has not decided; the shipped
+defaults (5 failures/15 min per account, 20/15 min per IP, 15 min lock) are conservative placeholders.
+Step-up completion (`complete-mfa`, `complete-password`) and admin unlock are not yet covered.
+
 ---
 
 # 84. BE-SEC-041 — Abuse-sensitive path has a stable partition without leaking account existence
