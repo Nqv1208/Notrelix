@@ -1,4 +1,5 @@
 using Notrelix.Domain.Collaboration.Attachments.Events;
+using Notrelix.Domain.Collaboration.Rules;
 namespace Notrelix.Domain.Collaboration.Attachments;
 
 public class Attachment : SoftDeletableAggregateRoot, IWorkspaceScoped
@@ -9,7 +10,48 @@ public class Attachment : SoftDeletableAggregateRoot, IWorkspaceScoped
     public AttachmentType Type { get; private set; }
     public FileMetadata Metadata { get; private set; } = null!;
 
+    /// <summary>
+    /// True when the attachment owns an object in storage (uploaded file), false for a
+    /// link attachment that only references an external URL.
+    /// </summary>
+    public bool IsStoredFile => Metadata.StorageKey is not null;
+
     private Attachment() : base() { }
+
+    /// <summary>
+    /// Creates an attachment for a file whose bytes were already written to object storage.
+    /// External facts (size cap, current attachment count and its cap) are supplied by the
+    /// caller; the file rules are enforced here before any state is created, so a rejected
+    /// call raises no event and creates no aggregate. The size must be the number of bytes
+    /// actually stored, never a client-declared value.
+    /// </summary>
+    public static Attachment CreateStoredFile(
+        Guid accountId,
+        Guid workspaceId,
+        ResourceRef target,
+        AttachmentType type,
+        string fileName,
+        long sizeBytes,
+        string contentType,
+        string storageKey,
+        long maxFileSizeBytes,
+        int currentAttachmentCount,
+        int maxAttachments,
+        Guid createdBy,
+        DateTimeOffset createdAt)
+    {
+        if (type == AttachmentType.Link)
+            throw new ArgumentException("A stored file cannot be a link attachment.", nameof(type));
+
+        Guard.NotNullOrWhiteSpace(fileName);
+        Guard.NotNullOrWhiteSpace(contentType);
+        Guard.NotNullOrWhiteSpace(storageKey);
+        AttachmentRules.EnsureValidFileSize(sizeBytes, maxFileSizeBytes);
+        AttachmentRules.EnsureMaxAttachments(currentAttachmentCount, maxAttachments);
+
+        var metadata = FileMetadata.Create(fileName, sizeBytes, contentType, storageKey: storageKey);
+        return Create(accountId, workspaceId, target, type, metadata, createdBy, createdAt);
+    }
 
     public static Attachment Create(Guid accountId, Guid workspaceId, ResourceRef target, AttachmentType type, FileMetadata metadata, Guid createdBy, DateTimeOffset createdAt)
     {

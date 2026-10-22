@@ -1233,6 +1233,10 @@ define pending/final/orphan semantics.
 
 Do not report final success if the durable object or metadata did not complete according to the contract.
 
+## Attachment upload (slice 1) pending/final/orphan semantics
+
+The object is written inside the request before the metadata row is saved; no pending row exists. The handler registers a compensation (`IRequestRollbackCompensations`) before the write. `EfRequestDataSession` runs it when the request fails before the commit starts (stream error, size cap, Domain rejection, SaveChanges failure, client abort), so no row and no object remain. If the commit itself fails the outcome is unknown and the object is deliberately left (an object without a row is unreachable because downloads require the row; the reverse is not acceptable). A reconciliation sweep for such orphans and purge of objects of soft-deleted attachments are not implemented; object retention equals metadata retention until that decision is made. The storage port is key-centric (`IStorageService`: write, open, delete); a presigned flow is an additional capability, not a replacement.
+
 ---
 
 # 77. Search

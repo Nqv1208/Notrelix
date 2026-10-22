@@ -7,8 +7,10 @@ public static class StorageRegistration
     public static IServiceCollection AddStorage(
         this IServiceCollection services, IConfiguration configuration)
     {
-        services.Configure<Storage.StorageOptions>(
-            configuration.GetSection(StorageOptions.SectionName));
+        services.AddOptions<StorageOptions>()
+            .Bind(configuration.GetSection(StorageOptions.SectionName))
+            .ValidateOnStart();
+        services.AddSingleton<IValidateOptions<StorageOptions>, StorageOptionsValidator>();
         services.AddScoped<IStorageService,
             Storage.Providers.LocalStorageProvider>();
         return services;

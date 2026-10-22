@@ -72,6 +72,18 @@ public static class DependencyInjection
         services.AddSingleton<IIdempotencyReplayPolicy, DefaultIdempotencyReplayPolicy>();
         services.AddScoped<IdempotencyPartitionFactory>();
 
+        // Per-request compensation for external effects (object storage) that cannot join the DB transaction.
+        services.AddScoped<IRequestRollbackCompensations, RequestRollbackCompensations>();
+
+        // Attachment upload policy (size cap, per-item cap, blocked types): validated at startup.
+        services.AddOptions<Notrelix.Application.Features.Collaboration.Attachments.AttachmentUploadOptions>()
+            .Bind(builder.Configuration.GetSection(
+                Notrelix.Application.Features.Collaboration.Attachments.AttachmentUploadOptions.SectionName))
+            .ValidateOnStart();
+        services.AddSingleton<
+            IValidateOptions<Notrelix.Application.Features.Collaboration.Attachments.AttachmentUploadOptions>,
+            Notrelix.Application.Features.Collaboration.Attachments.AttachmentUploadOptionsValidator>();
+
         // Scoped execution context: one instance is exposed as both the read and
         // the write contract so the transport can bind the key and the pipeline
         // can require it.

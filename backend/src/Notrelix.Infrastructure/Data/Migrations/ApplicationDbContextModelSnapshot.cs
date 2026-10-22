@@ -11437,6 +11437,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                             b1.HasKey("AttachmentId");
 
+                            b1.HasIndex("StorageKey")
+                                .IsUnique()
+                                .HasDatabaseName("ux_attachments_storage_key")
+                                .HasFilter("storage_key IS NOT NULL");
+
                             b1.ToTable("attachments", "collab");
 
                             b1.WithOwner()

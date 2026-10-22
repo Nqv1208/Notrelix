@@ -32,6 +32,13 @@ public class AttachmentConfiguration : IEntityTypeConfiguration<Attachment>
             metadata.Property(m => m.ContentType).HasColumnName("mime_type").HasMaxLength(128);
             metadata.Property(m => m.StorageKey).HasColumnName("storage_key").HasMaxLength(1024);
             metadata.Property(m => m.Url).HasColumnName("url").HasMaxLength(2048);
+
+            // A stored object is referenced by exactly one attachment row. Existing rows are link
+            // attachments with a null key, so the partial unique index is additive and always valid.
+            metadata.HasIndex(m => m.StorageKey)
+                .IsUnique()
+                .HasFilter("storage_key IS NOT NULL")
+                .HasDatabaseName("ux_attachments_storage_key");
         });
 
         builder.Ignore(x => x.IsDeleted);

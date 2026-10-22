@@ -14,6 +14,8 @@ public static class MapAttachmentEndpoints
 
         group.MapGetAttachments();
         group.MapCreateAttachment();
+        group.MapUploadAttachmentFile();
+        group.MapGetAttachmentContent();
         group.MapDeleteAttachment();
 
         return app;

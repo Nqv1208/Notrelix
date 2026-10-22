@@ -1658,3 +1658,23 @@ no tooling dummy config serving traffic
 ```
 
 The objective is a runtime whose technical variability is explicit and replaceable while the product/security/data contracts remain stable.
+
+---
+
+# 23B. Storage and attachment upload options
+
+`Storage` (Infrastructure, `StorageOptions`, validated on start):
+
+| Key | Default | Meaning |
+|---|---|---|
+| `Storage:BasePath` | `storage` | Local-filesystem root of `LocalStorageProvider`. Objects are never served by a static route; they are read only through authorised API operations. |
+
+`Collaboration:Attachments` (Application, `AttachmentUploadOptions`, validated on start by `AttachmentUploadOptionsValidator`):
+
+| Key | Default | Meaning |
+|---|---|---|
+| `MaxFileSizeBytes` | 104857600 (100 MB) | Hard per-file cap, enforced while the body is streamed. Allowed range 1024 to 1 GiB. The API raises the request-body limit for the upload route only, to this value plus 1 MiB of multipart framing. |
+| `MaxAttachmentsPerItem` | 50 | Maximum non-deleted attachments (links included) per board item. Range 1 to 1000. |
+| `BlockedExtensions` | executable and script extensions (exe, msi, dll, bat, cmd, com, scr, ps1, vbs, sh, jar, apk, js, mjs, html, htm) | Lower case, no dot. Executable content signatures are refused independently of the extension. |
+
+Known gap (slice 1): no malware scanning. Mitigations: server-derived content type, forced `Content-Disposition: attachment` and `nosniff` for everything except sniffed raster images, executable refusal. A scan hook needs its own decision.

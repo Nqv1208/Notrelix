@@ -37,17 +37,6 @@ public class CreateBoardItemAttachmentCommandHandler : IRequestHandler<CreateBoa
 
         _context.Attachments.Add(attachment);
 
-        return Result<AttachmentDto>.Success(new AttachmentDto(
-            attachment.Id,
-            attachment.Target.ResourceId,
-            attachment.Metadata.FileName,
-            attachment.Metadata.Url ?? "",
-            attachment.Metadata.Size,
-            attachment.Metadata.ContentType,
-            attachment.Type.ToString(),
-            attachment.CreatedBy!.Value,
-            null,
-            attachment.CreatedAt.DateTime
-        ));
+        return Result<AttachmentDto>.Success(AttachmentDto.From(attachment));
     }
 }

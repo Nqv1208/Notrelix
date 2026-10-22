@@ -37,18 +37,7 @@ public class GetBoardItemAttachmentsQueryHandler : IRequestHandler<GetBoardItemA
         var result = attachments.Select(item =>
         {
             actorMap.TryGetValue(item.CreatedBy ?? Guid.Empty, out var actor);
-            return new AttachmentDto(
-                item.Id,
-                item.Target.ResourceId,
-                item.Metadata.FileName,
-                item.Metadata.Url ?? "",
-                item.Metadata.Size,
-                item.Metadata.ContentType,
-                item.Type.ToString(),
-                item.CreatedBy!.Value,
-                actor?.Name,
-                item.CreatedAt.DateTime
-            );
+            return AttachmentDto.From(item, actor?.Name);
         }).ToList();
 
         return Result<List<AttachmentDto>>.Success(result);

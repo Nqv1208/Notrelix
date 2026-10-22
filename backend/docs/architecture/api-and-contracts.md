@@ -2347,3 +2347,24 @@ global CSRF bypass
 tenant rate limit before tenant context
 hand-edited generated consumer
 ```
+
+---
+
+# 24A. Attachment file upload and download contract
+
+Owner: Collaboration (attachment fact). Transport only in API; behavior in `UploadBoardItemAttachmentCommand` / `GetBoardItemAttachmentContentQuery`.
+
+```text
+POST /api/v1/board-items/{boardItemId}/attachments/files
+  multipart/form-data, part "file" (filename required); Idempotency-Key required; X-CSRF-Token as for every unsafe call
+  201 AttachmentDto (Kind = "File", Url empty)  + Location of the content route
+  400 malformed multipart / missing file part / empty file
+  404 item unknown or not visible (existence is not leaked)   403 visible but not editable
+  409 attachment.limit_exceeded   413 attachment.payload_too_large   415 attachment.unsupported_media_type
+GET  /api/v1/board-items/{boardItemId}/attachments/{attachmentId}/content
+  200 stream; Content-Type = server-derived; X-Content-Type-Options: nosniff; Cache-Control: private, no-store
+  Content-Disposition: inline only for sniffed png/jpeg/gif/webp, attachment otherwise
+  404 unknown, not on this item, link attachment, or not visible
+```
+
+Rules: the body is streamed (no buffering, no temp file beyond provider write); the part Content-Type is ignored; the stored name is sanitised; the storage key is server-generated `{accountId}/{workspaceId}/attachments/{objectId}`; authorization equals link registration (UpdateItem) and attachment list (ViewBoard) on the board item. The existing JSON `POST .../attachments` (link) is unchanged. `AttachmentDto` gains `Kind` ("File" or "Link"); for files `Url` is empty and the content operation is the download address. Idempotent replay returns the stored result without re-running the handler, so no second object or row; the fingerprint excludes the byte stream (same key with different bytes replays the first result).
