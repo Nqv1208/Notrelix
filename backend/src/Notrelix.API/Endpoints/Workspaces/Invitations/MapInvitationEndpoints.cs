@@ -27,6 +27,13 @@ public static class MapInvitationEndpoints
         invitationsGroup.MapDeclineInvitation();
         invitationsGroup.MapGetInvitationByToken();
 
+        var resourceGroup = app
+            .MapGroup("/api/v1/resources/{resourceType}/{resourceId:guid}/invitations")
+            .WithTags("Workspaces.Invitations")
+            .WithOpenApi();
+
+        resourceGroup.MapInviteGuestToResource();
+
         return app;
     }
 }

@@ -19,6 +19,14 @@ public static class WorkspaceRuleCodes
     public const string Workspaces_Invitation_PendingAlreadyExists = "Workspaces_Invitation_PendingAlreadyExists";
     public const string Workspaces_Invitation_CannotInviteAsOwner = "Workspaces_Invitation_CannotInviteAsOwner";
     public const string Workspaces_Invitation_CannotResendNonPendingExpired = "Workspaces_Invitation_CannotResendNonPendingExpired";
+    public const string Workspaces_Invitation_InitialEntriesRequireMemberOrGuest = "Workspaces_Invitation_InitialEntriesRequireMemberOrGuest";
+    public const string Workspaces_Invitation_InitialEntryInvalid = "Workspaces_Invitation_InitialEntryInvalid";
+    public const string Workspaces_Invitation_GuestEntryRoleTooPrivileged = "Workspaces_Invitation_GuestEntryRoleTooPrivileged";
+    public const string Workspaces_Invitation_InitialEntryDuplicate = "Workspaces_Invitation_InitialEntryDuplicate";
+    public const string Workspaces_Invitation_TooManyInitialEntries = "Workspaces_Invitation_TooManyInitialEntries";
+    public const string Workspaces_Invitation_ResourceKindNotInvitable = "Workspaces_Invitation_ResourceKindNotInvitable";
+    public const string Workspaces_Invitation_ResourceLevelAboveEditor = "Workspaces_Invitation_ResourceLevelAboveEditor";
+    public const string Workspaces_Invitation_ResourceInvitationMustBeGuest = "Workspaces_Invitation_ResourceInvitationMustBeGuest";
 
     // ── Member ────────────────────────────────────────────────────────────
     public const string Workspaces_Member_CannotChangeRoleOfInactive = "Workspaces_Member_CannotChangeRoleOfInactive";

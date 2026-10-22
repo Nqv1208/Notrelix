@@ -1,6 +1,7 @@
 using Notrelix.API.Contracts.Workspaces.Members.Requests;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Workspaces.Invitations.Commands.InviteMember;
+using Notrelix.Application.Features.Workspaces.Invitations.Services;
 
 namespace Notrelix.API.Endpoints.Workspaces.Members.Commands;
 
@@ -21,7 +22,11 @@ public static class InviteMemberEndpoint
         InviteMemberRequest body,
         ISender sender)
     {
-        var result = await sender.Send(new InviteMemberCommand(workspaceId, body.Email, Enum.Parse<WorkspaceRole>(body.Role, ignoreCase: true)));
+        var result = await sender.Send(new InviteMemberCommand(
+            workspaceId,
+            body.Email,
+            Enum.Parse<WorkspaceRole>(body.Role, ignoreCase: true),
+            body.InitialEntries?.Select(e => new InvitationInitialEntryInput(e.Kind, e.TargetId, e.Role)).ToList()));
         return result.ToCreatedResult();
     }
 }

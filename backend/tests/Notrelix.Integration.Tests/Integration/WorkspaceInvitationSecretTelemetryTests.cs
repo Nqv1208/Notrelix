@@ -89,7 +89,9 @@ public sealed class WorkspaceInvitationSecretTelemetryTests : IAsyncLifetime
             clock.Object,
             issuer,
             encryptor,
-            events);
+            events,
+            new Notrelix.Application.Features.Workspaces.Invitations.Services.InvitationInitialEntries(
+                context, new Notrelix.Infrastructure.Workspaces.Spaces.SpaceStore(context)));
 
         var command = new InviteMemberCommand(workspaceId, "invitee@example.com", WorkspaceRole.Member);
         var result = await handler.Handle(command, CancellationToken.None);

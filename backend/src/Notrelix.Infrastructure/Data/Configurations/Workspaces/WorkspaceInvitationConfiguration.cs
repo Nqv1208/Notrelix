@@ -1,12 +1,28 @@
+using System.Text.Json;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Notrelix.Domain.Workspaces.Invitations;
 
 namespace Notrelix.Infrastructure.Data.Configurations.Workspaces;
 
 public class WorkspaceInvitationConfiguration : IEntityTypeConfiguration<WorkspaceInvitation>
 {
+    private static readonly JsonSerializerOptions EntryJson = new(JsonSerializerDefaults.Web)
+    {
+        Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() }
+    };
+
     public void Configure(EntityTypeBuilder<WorkspaceInvitation> builder)
     {
-        builder.ToTable("workspace_invitations", DbSchemas.Workspace);
+        builder.ToTable("workspace_invitations", DbSchemas.Workspace, t =>
+        {
+            // GOV-030 defence in depth: a Guest resource entry never exceeds Editor,
+            // and the three resource columns are set together or not at all.
+            t.HasCheckConstraint(
+                "ck_workspace_invitations_resource_grant",
+                "(resource_kind IS NULL AND resource_id IS NULL AND resource_level IS NULL) OR " +
+                "(resource_kind IN ('work-management.board', 'documents.page') AND resource_id IS NOT NULL " +
+                "AND resource_level IN ('Viewer', 'Commenter', 'Editor') AND role = 'Guest')");
+        });
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");
@@ -28,6 +44,31 @@ public class WorkspaceInvitationConfiguration : IEntityTypeConfiguration<Workspa
                 .HasColumnType($"character varying({InvitationTokenHash.HashLength})")
                 .IsRequired();
         });
+
+        // WSP-026: initial Team/Space entries applied on acceptance (jsonb, owned by
+        // the invitation, never queried by content).
+        var entriesComparer = new ValueComparer<IReadOnlyList<WorkspaceInvitationInitialEntry>>(
+            (a, b) => JsonSerializer.Serialize(a, EntryJson) == JsonSerializer.Serialize(b, EntryJson),
+            v => JsonSerializer.Serialize(v, EntryJson).GetHashCode(),
+            v => (IReadOnlyList<WorkspaceInvitationInitialEntry>)v.ToArray());
+        builder.Property(x => x.InitialEntries)
+            .HasColumnName("initial_entries")
+            .HasColumnType("jsonb")
+            .HasConversion(
+                v => JsonSerializer.Serialize(v, EntryJson),
+                v => (IReadOnlyList<WorkspaceInvitationInitialEntry>)(JsonSerializer.Deserialize<List<WorkspaceInvitationInitialEntry>>(v, EntryJson) ?? new List<WorkspaceInvitationInitialEntry>()),
+                entriesComparer)
+            .HasDefaultValueSql("'[]'::jsonb")
+            .IsRequired();
+
+        // WSP-026 / GOV-030: the single explicit resource entry of a resource invitation.
+        builder.OwnsOne(x => x.ResourceGrant, grant =>
+        {
+            grant.Property(g => g.ResourceKind).HasColumnName("resource_kind").HasMaxLength(128);
+            grant.Property(g => g.ResourceId).HasColumnName("resource_id");
+            grant.Property(g => g.Level).HasColumnName("resource_level").HasMaxLength(32);
+        });
+        builder.Navigation(x => x.ResourceGrant);
 
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");

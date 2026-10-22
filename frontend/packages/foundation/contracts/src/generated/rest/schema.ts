@@ -3201,6 +3201,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/resources/{resourceType}/{resourceId}/invitations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Invite an outsider by email to one Board or Page as a Guest */
+        post: operations["Workspaces.Invitations.InviteGuestToResource"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/members": {
         parameters: {
             query?: never;
@@ -4343,14 +4360,25 @@ export interface components {
         "Notrelix.API.Contracts.Workspaces.Invitations.Requests.ChangeInvitationRoleRequest": {
             newRole?: components["schemas"]["Notrelix.Domain.Workspaces.Members.WorkspaceRole"];
         };
+        "Notrelix.API.Contracts.Workspaces.Invitations.Requests.InviteGuestToResourceRequest": {
+            email?: string | null;
+            level?: string | null;
+        };
         "Notrelix.API.Contracts.Workspaces.Members.Requests.AddMemberRequest": {
             /** Format: uuid */
             userId?: string;
             role?: components["schemas"]["Notrelix.Domain.Workspaces.Members.WorkspaceRole"];
         };
+        "Notrelix.API.Contracts.Workspaces.Members.Requests.InvitationInitialEntryRequest": {
+            kind?: string | null;
+            /** Format: uuid */
+            targetId?: string;
+            role?: string | null;
+        };
         "Notrelix.API.Contracts.Workspaces.Members.Requests.InviteMemberRequest": {
             email?: string | null;
             role?: string | null;
+            initialEntries?: components["schemas"]["Notrelix.API.Contracts.Workspaces.Members.Requests.InvitationInitialEntryRequest"][] | null;
         };
         "Notrelix.API.Contracts.Workspaces.Members.Requests.UpdateMemberRoleRequest": {
             role?: components["schemas"]["Notrelix.Domain.Workspaces.Members.WorkspaceRole"];
@@ -4969,6 +4997,17 @@ export interface components {
             /** Format: date-time */
             createdAt?: string;
             status?: string | null;
+            resourceKind?: string | null;
+            /** Format: uuid */
+            resourceId?: string | null;
+            resourceLevel?: string | null;
+            initialEntries?: components["schemas"]["Notrelix.Application.Features.Workspaces.DTOs.WorkspaceInvitationEntryDto"][] | null;
+        };
+        "Notrelix.Application.Features.Workspaces.DTOs.WorkspaceInvitationEntryDto": {
+            kind?: string | null;
+            /** Format: uuid */
+            targetId?: string;
+            role?: string | null;
         };
         "Notrelix.Application.Features.Workspaces.DTOs.WorkspaceMemberDto": {
             /** Format: uuid */
@@ -4994,6 +5033,10 @@ export interface components {
             role?: string | null;
             isExpired?: boolean;
             isAccepted?: boolean;
+            resourceKind?: string | null;
+            resourceLevel?: string | null;
+            /** Format: int32 */
+            initialEntryCount?: number;
         };
         "Notrelix.Application.Features.Workspaces.Invitations.Queries.GetUserPendingInvitations.UserPendingInvitationDto": {
             /** Format: uuid */
@@ -12429,6 +12472,33 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.Invitations.Queries.GetInvitationByToken.WorkspaceInvitationDto"];
+                };
+            };
+        };
+    };
+    "Workspaces.Invitations.InviteGuestToResource": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                resourceType: string;
+                resourceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Workspaces.Invitations.Requests.InviteGuestToResourceRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
                 };
             };
         };

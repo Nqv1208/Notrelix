@@ -123,6 +123,8 @@ public static class DependencyInjection
         // Producer-owned public target actions (Accounts membership mutation)
         services.AddScoped<IAccountMembershipActions, AccountMembershipActions>();
 
+        services.AddScoped<Notrelix.Application.Features.Workspaces.Invitations.Services.InvitationInitialEntries>();
+
         // Producer-owned public target actions (WorkManagement item mutations)
         services.AddScoped<MoveBoardItemUseCase>();
         services.AddScoped<IWorkItemActions, WorkItemActions>();

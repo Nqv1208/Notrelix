@@ -7647,6 +7647,13 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasDefaultValue(1)
                         .HasColumnName("hash_version");
 
+                    b.Property<string>("InitialEntries")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("initial_entries")
+                        .HasDefaultValueSql("'[]'::jsonb");
+
                     b.Property<Guid>("InvitedBy")
                         .HasColumnType("uuid")
                         .HasColumnName("invited_by");
@@ -7697,7 +7704,10 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.HasIndex("WorkspaceId")
                         .HasDatabaseName("idx_workspace_invitations_workspace_id");
 
-                    b.ToTable("workspace_invitations", "workspace");
+                    b.ToTable("workspace_invitations", "workspace", t =>
+                        {
+                            t.HasCheckConstraint("ck_workspace_invitations_resource_grant", "(resource_kind IS NULL AND resource_id IS NULL AND resource_level IS NULL) OR (resource_kind IN ('work-management.board', 'documents.page') AND resource_id IS NOT NULL AND resource_level IN ('Viewer', 'Commenter', 'Editor') AND role = 'Guest')");
+                        });
                 });
 
             modelBuilder.Entity("Notrelix.Domain.Workspaces.Members.WorkspaceMember", b =>
@@ -12879,6 +12889,39 @@ namespace Notrelix.Infrastructure.Data.Migrations
                                 .HasForeignKey("WorkspaceInvitationId")
                                 .HasConstraintName("fk_workspace_invitations_workspace_invitations_id");
                         });
+
+                    b.OwnsOne("Notrelix.Domain.Workspaces.Invitations.WorkspaceInvitationResourceGrant", "ResourceGrant", b1 =>
+                        {
+                            b1.Property<Guid>("WorkspaceInvitationId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<string>("Level")
+                                .IsRequired()
+                                .HasMaxLength(32)
+                                .HasColumnType("character varying(32)")
+                                .HasColumnName("resource_level");
+
+                            b1.Property<Guid>("ResourceId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("resource_id");
+
+                            b1.Property<string>("ResourceKind")
+                                .IsRequired()
+                                .HasMaxLength(128)
+                                .HasColumnType("character varying(128)")
+                                .HasColumnName("resource_kind");
+
+                            b1.HasKey("WorkspaceInvitationId");
+
+                            b1.ToTable("workspace_invitations", "workspace");
+
+                            b1.WithOwner()
+                                .HasForeignKey("WorkspaceInvitationId")
+                                .HasConstraintName("fk_workspace_invitations_workspace_invitations_id");
+                        });
+
+                    b.Navigation("ResourceGrant");
 
                     b.Navigation("Token")
                         .IsRequired();

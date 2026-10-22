@@ -12096,6 +12096,63 @@
         }
       }
     },
+    "/api/v1/resources/{resourceType}/{resourceId}/invitations": {
+      "post": {
+        "tags": [
+          "Workspaces.Invitations",
+          "Workspaces.Invitations"
+        ],
+        "summary": "Invite an outsider by email to one Board or Page as a Guest",
+        "operationId": "Workspaces.Invitations.InviteGuestToResource",
+        "parameters": [
+          {
+            "name": "resourceType",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "resourceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Contracts.Workspaces.Invitations.Requests.InviteGuestToResourceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
     "/api/v1/workspaces/{workspaceId}/members": {
       "get": {
         "tags": [
@@ -16113,6 +16170,20 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.API.Contracts.Workspaces.Invitations.Requests.InviteGuestToResourceRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "level": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.API.Contracts.Workspaces.Members.Requests.AddMemberRequest": {
         "type": "object",
         "properties": {
@@ -16126,6 +16197,24 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.API.Contracts.Workspaces.Members.Requests.InvitationInitialEntryRequest": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "nullable": true
+          },
+          "targetId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "role": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.API.Contracts.Workspaces.Members.Requests.InviteMemberRequest": {
         "type": "object",
         "properties": {
@@ -16135,6 +16224,13 @@
           },
           "role": {
             "type": "string",
+            "nullable": true
+          },
+          "initialEntries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.API.Contracts.Workspaces.Members.Requests.InvitationInitialEntryRequest"
+            },
             "nullable": true
           }
         },
@@ -17966,6 +18062,44 @@
           "status": {
             "type": "string",
             "nullable": true
+          },
+          "resourceKind": {
+            "type": "string",
+            "nullable": true
+          },
+          "resourceId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "resourceLevel": {
+            "type": "string",
+            "nullable": true
+          },
+          "initialEntries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.DTOs.WorkspaceInvitationEntryDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Workspaces.DTOs.WorkspaceInvitationEntryDto": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "nullable": true
+          },
+          "targetId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "role": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -18042,6 +18176,18 @@
           },
           "isAccepted": {
             "type": "boolean"
+          },
+          "resourceKind": {
+            "type": "string",
+            "nullable": true
+          },
+          "resourceLevel": {
+            "type": "string",
+            "nullable": true
+          },
+          "initialEntryCount": {
+            "type": "integer",
+            "format": "int32"
           }
         },
         "additionalProperties": false

@@ -29,6 +29,10 @@ public record WorkspaceMemberDto(
     string Status
 );
 
+/// <param name="ResourceKind">Set for a resource invitation (WSP-026): <c>work-management.board</c> or <c>documents.page</c>; null for a Workspace invitation.</param>
+/// <param name="ResourceId">The one resource a resource invitation shares.</param>
+/// <param name="ResourceLevel">The explicit entry level created on acceptance: <c>Viewer</c>, <c>Commenter</c> or <c>Editor</c> (capped, GOV-030).</param>
+/// <param name="InitialEntries">The Team/Space entries applied atomically on acceptance (Workspace invitation only).</param>
 /// <param name="Status">The invitation status enum name (<c>Pending</c>, <c>Accepted</c>, <c>Revoked</c>, <c>Expired</c> or <c>Declined</c>), as stored. A <c>Pending</c> invitation whose <c>ExpiresAt</c> has passed can no longer be accepted.</param>
 public record WorkspaceInvitationDto(
     Guid Id,
@@ -37,5 +41,12 @@ public record WorkspaceInvitationDto(
     DateTime ExpiresAt,
     bool IsAccepted,
     DateTime CreatedAt,
-    string Status
+    string Status,
+    string? ResourceKind = null,
+    Guid? ResourceId = null,
+    string? ResourceLevel = null,
+    IReadOnlyList<WorkspaceInvitationEntryDto>? InitialEntries = null
 );
+
+/// <param name="Kind"><c>Team</c> or <c>Space</c>.</param>
+public record WorkspaceInvitationEntryDto(string Kind, Guid TargetId, string Role);

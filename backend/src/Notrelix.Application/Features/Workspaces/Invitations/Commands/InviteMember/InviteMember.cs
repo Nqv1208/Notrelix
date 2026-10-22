@@ -2,16 +2,30 @@ using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Tokens;
 using Notrelix.Application.Events.Workspaces;
 using Notrelix.Application.Features.Workspaces.Abstractions;
+using Notrelix.Application.Features.Workspaces.Invitations.Services;
 
 namespace Notrelix.Application.Features.Workspaces.Invitations.Commands.InviteMember;
 
+/// <summary>
+/// Workspace invitation (WSP-026): role Member or Guest (Admin stays accepted for
+/// existing callers), optional initial Team/Space entries. Naming entries is
+/// authorized by the pipeline as ManageTeams (Team entries) or ManageSpaces
+/// (Space-only) on the Workspace, because Team composition and Space members
+/// are managed by Workspace Owner/Admin (GOV-028); there is no handler role check.
+/// </summary>
 public record InviteMemberCommand(
     Guid WorkspaceId,
     string Email,
-    WorkspaceRole Role
+    WorkspaceRole Role,
+    IReadOnlyList<InvitationInitialEntryInput>? InitialEntries = null
 ) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IRequireVerifiedEmail
 {
-    PermissionAction IRequirePermission.Action => PermissionAction.InviteMember;
+    PermissionAction IRequirePermission.Action =>
+        InitialEntries is not { Count: > 0 }
+            ? PermissionAction.InviteMember
+            : InitialEntries.Any(e => string.Equals(e.Kind, nameof(WorkspaceInvitationEntryKind.Team), StringComparison.OrdinalIgnoreCase))
+                ? PermissionAction.ManageTeams
+                : PermissionAction.ManageSpaces;
     ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);
 }
 
@@ -24,6 +38,7 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
     private readonly IOneTimeTokenService _oneTimeTokenService;
     private readonly ISecretEncryptor _secretEncryptor;
     private readonly IIntegrationEventCollector _integrationEventCollector;
+    private readonly InvitationInitialEntries _initialEntries;
 
     public InviteMemberCommandHandler(
         IWorkspaceDbContext workspaceContext,
@@ -32,8 +47,10 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
         IDateTimeProvider dateTimeProvider,
         IOneTimeTokenService oneTimeTokenService,
         ISecretEncryptor secretEncryptor,
-        IIntegrationEventCollector integrationEventCollector)
+        IIntegrationEventCollector integrationEventCollector,
+        InvitationInitialEntries initialEntries)
     {
+        _initialEntries = initialEntries;
         _workspaceContext = workspaceContext;
         _actorLookup = actorLookup;
         _requestContext = requestContext;
@@ -55,10 +72,18 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
         var cleanEmail = request.Email.Trim().ToLowerInvariant();
         var now = _dateTimeProvider.UtcNow;
 
+        var entries = ToDomainEntries(request.InitialEntries);
+        if (entries.Count > 0)
+        {
+            if (!await _initialEntries.AllTargetsEligibleAsync(request.WorkspaceId, entries, ct))
+                return Result<Guid>.Failure("Every initial team or space must be an active team or space of this workspace.");
+        }
+
         var hasActiveInvitation = await _workspaceContext.WorkspaceInvitations
             .AnyAsync(i => i.WorkspaceId == request.WorkspaceId
                            && i.Email == cleanEmail
                            && i.Status == WorkspaceInvitationStatus.Pending
+                           && i.ResourceGrant == null
                            && i.ExpiresAt > now, ct);
 
         if (hasActiveInvitation)
@@ -75,7 +100,8 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
             invitationTokenHash,
             issuedToken.HashVersion,
             _requestContext.UserId,
-            now);
+            now,
+            initialEntries: entries);
 
         _workspaceContext.WorkspaceInvitations.Add(invitation);
 
@@ -100,5 +126,13 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
                 OccurredAt: now));
 
         return Result<Guid>.Success(invitation.Id);
+    }
+
+    private static IReadOnlyList<WorkspaceInvitationInitialEntry> ToDomainEntries(
+        IReadOnlyList<InvitationInitialEntryInput>? inputs)
+    {
+        if (inputs is null || inputs.Count == 0) return [];
+
+        return inputs.Select(i => WorkspaceInvitationInitialEntry.Parse(i.Kind, i.TargetId, i.Role)).ToArray();
     }
 }

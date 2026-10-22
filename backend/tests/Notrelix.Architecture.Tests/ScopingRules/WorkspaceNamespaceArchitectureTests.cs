@@ -172,6 +172,8 @@ public class WorkspaceNamespaceArchitectureTests
             "Token-scoped invitation command — auth required, no resource scope", "Keep as-is"),
         ["DeclineInvitationCommand"] = new("DeclineInvitationCommand", AllowlistClassification.PublicCommand,
             "Token-scoped invitation command — auth required, no resource scope", "Keep as-is"),
+        ["InviteGuestToResourceCommand"] = new("InviteGuestToResourceCommand", AllowlistClassification.Intentional,
+            "Resource invitation (WSP-026): scoped by IResourceScopedRequest to one Board/Page and authorized by IRequirePermission (ManageBoardPermission/ManagePagePermission), not by a Workspace id", "Keep as-is"),
         ["ProvisionPersonalWorkspaceCommand"] = new("ProvisionPersonalWorkspaceCommand", AllowlistClassification.SystemCommand,
             "System-internal background command — no user request path", "Keep as-is"),
     };

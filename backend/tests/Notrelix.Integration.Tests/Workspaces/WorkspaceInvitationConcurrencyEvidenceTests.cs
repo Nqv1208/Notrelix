@@ -149,7 +149,10 @@ public sealed class WorkspaceInvitationConcurrencyEvidenceTests : IAsyncLifetime
             new OneTimeTokenService(),
             requestContext.Object,
             dateTime.Object,
-            grantProjection);
+            grantProjection,
+            new Notrelix.Application.Features.Workspaces.Invitations.Services.InvitationInitialEntries(context, new Notrelix.Infrastructure.Workspaces.Spaces.SpaceStore(context)),
+            new Notrelix.Infrastructure.Data.Authz.GuestResourceAccessActionsAdapter(context),
+            new Mock<Notrelix.Application.Common.Auditing.IAuditService>().Object);
 
         return (context, handler);
     }

@@ -11,7 +11,10 @@ public record WorkspaceInvitationDto(
     string Email,
     string Role,
     bool IsExpired,
-    bool IsAccepted
+    bool IsAccepted,
+    string? ResourceKind = null,
+    string? ResourceLevel = null,
+    int InitialEntryCount = 0
 );
 
 public record GetInvitationByTokenQuery(string Token)
@@ -81,7 +84,10 @@ public class GetInvitationByTokenQueryHandler : IRequestHandler<GetInvitationByT
             invitation.Email,
             invitation.Role.ToString(),
             now >= invitation.ExpiresAt,
-            invitation.Status == WorkspaceInvitationStatus.Accepted
+            invitation.Status == WorkspaceInvitationStatus.Accepted,
+            invitation.ResourceGrant?.ResourceKind,
+            invitation.ResourceGrant?.Level,
+            invitation.InitialEntries.Count
         );
 
         return Result<WorkspaceInvitationDto>.Success(dto);

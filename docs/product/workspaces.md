@@ -280,6 +280,9 @@ Principal with ManageBoardPermission / ManagePagePermission on a resource
 - until accepted, an invitation grants nothing (WSP-006) and is shown as pending with resend/revoke actions to whoever issued it;
 - the stored subject of the resulting grant is the guest's User identity, so Governance keeps evaluating only User and Team subjects (GOV §16); an `ExternalEmail` subject is never created by this flow;
 - guest or member is a fact of the membership, never inferred from the email domain (§22).
+- the resource invitation is `POST /api/v1/resources/{resourceType}/{resourceId}/invitations` (Board or Page only); it is authorized as `ManageBoardPermission` / `ManagePagePermission` on the resource and the requested level may not exceed the inviter's own level; a level above Editor is rejected when the invitation is created;
+- naming initial Team or Space entries on a Workspace invitation is authorized as `ManageTeams` (Team entries) or `ManageSpaces` (Space-only), which are Workspace Owner/Admin by default (GOV-028); a Guest invitation cannot name a Team lead or a Space admin entry;
+- acceptance applies the membership, the entries and the resource entry in one transaction; if a named Team or Space is no longer active, or the resource is gone, acceptance fails closed and changes nothing, and the issuer must invite again; accepting reuses an existing membership and an existing entry (an entry is raised to the invited level, never lowered); a removed or suspended member cannot accept an invitation that carries entries or a resource entry.
 
 ---
 
