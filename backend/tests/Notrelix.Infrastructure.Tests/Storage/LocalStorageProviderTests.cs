@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Options;
 using Notrelix.Application.Common.Exceptions;
 using Notrelix.Application.Common.Storage;
 using Notrelix.Infrastructure.Storage;

@@ -2,7 +2,6 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Notrelix.API.ErrorHandling;
-using Notrelix.Application.Common.Exceptions;
 using Notrelix.Domain.Collaboration;
 using DomainBusinessRuleException = Notrelix.Domain.Common.Exceptions.BusinessRuleException;
 

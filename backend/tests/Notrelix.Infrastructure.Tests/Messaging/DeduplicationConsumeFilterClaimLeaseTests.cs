@@ -2,8 +2,6 @@ using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Options;
-using Notrelix.Application.Common.Events;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Projections.Search;
 using Notrelix.Infrastructure.Messaging;

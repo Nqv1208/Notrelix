@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Net.WebSockets;
 using System.Threading.Channels;
 

@@ -3,7 +3,6 @@ using Microsoft.Extensions.Options;
 using Notrelix.API.Endpoints;
 
 using Notrelix.Application.Common.Realtime.Gateway;
-using Notrelix.Infrastructure.Auth.Credentials;
 
 namespace Notrelix.API.Realtime;
 

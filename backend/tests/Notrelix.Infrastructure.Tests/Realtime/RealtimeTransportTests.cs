@@ -174,7 +174,8 @@ public sealed class RedisRealtimeNotificationSourceTests
         {
             handler!(default, json);
             return Task.CompletedTask;
-        });
+        }
+        );
     }
 
     private static string Message(long version) => RealtimeNotificationJson.Serialize(new RealtimeNotification(

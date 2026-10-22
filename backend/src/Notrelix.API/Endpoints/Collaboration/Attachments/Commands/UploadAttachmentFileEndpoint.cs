@@ -5,7 +5,6 @@ using Microsoft.Net.Http.Headers;
 using Notrelix.API.Contracts.Collaboration.Attachments.Requests;
 using Notrelix.API.ErrorHandling;
 using Notrelix.API.Extensions;
-using Notrelix.API.Idempotency;
 using Notrelix.Application.Features.Collaboration.Attachments;
 using Notrelix.Application.Features.Collaboration.Attachments.Commands.UploadBoardItemAttachment;
 using Notrelix.Application.Features.Collaboration.Attachments.DTOs;

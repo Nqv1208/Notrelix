@@ -4,10 +4,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.DependencyInjection;
-using Notrelix.API;
 using Notrelix.API.Middleware;
 using Notrelix.API.Tests.Contracts;
-using Notrelix.Infrastructure.Auth.Csrf;
 
 namespace Notrelix.API.Tests.Identity.Auth;
 

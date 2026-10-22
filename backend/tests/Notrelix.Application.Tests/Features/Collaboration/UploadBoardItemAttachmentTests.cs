@@ -300,10 +300,10 @@ public sealed class UploadBoardItemAttachmentTests
     {
         var stream = new SizeLimitedReadStream(new MemoryStream(new byte[100]), 10);
         var buffer = new byte[4];
-        stream.Read(buffer, 0, 4);
-        stream.Read(buffer, 0, 4);
+        stream.ReadExactly(buffer, 0, 4);
+        stream.ReadExactly(buffer, 0, 4);
 
-        var act = () => stream.Read(buffer, 0, 4);
+        var act = () => stream.ReadExactly(buffer, 0, 4);
 
         act.Should().Throw<PayloadTooLargeException>();
     }

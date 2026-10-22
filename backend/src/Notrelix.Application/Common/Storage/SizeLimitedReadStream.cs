@@ -1,5 +1,3 @@
-using Notrelix.Application.Common.Exceptions;
-
 namespace Notrelix.Application.Common.Storage;
 
 /// <summary>

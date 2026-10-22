@@ -1,7 +1,6 @@
 using Notrelix.Application.Common.Diagnostics;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Realtime.Gateway;
-using Notrelix.Application.Features.Governance.Authorization;
 using Notrelix.Domain.Governance.Permissions;
 using Notrelix.Application.Features.WorkManagement.Boards.Queries.AuthorizeBoardRealtimeSubscription;
 using Notrelix.Application.Features.Workspaces.Workspaces.Queries.AuthorizeWorkspaceRealtimeSubscription;

@@ -1,7 +1,6 @@
 using FluentAssertions;
 using Notrelix.Domain.Collaboration;
 using Notrelix.Domain.Collaboration.Attachments;
-using Notrelix.Domain.Collaboration.Attachments.Events;
 
 namespace Notrelix.Domain.Tests.Collaboration;
 

@@ -1,9 +1,6 @@
 using System.Security.Claims;
 
-using MediatR;
-
 using Notrelix.Application.Common.Realtime.Gateway;
-using Notrelix.Application.Common.Security.Auth;
 using Notrelix.Application.Features.WorkManagement.Boards.Queries.AuthorizeBoardRealtimeSubscription;
 using Notrelix.Application.Features.Workspaces.Workspaces.Queries.AuthorizeWorkspaceRealtimeSubscription;
 using Notrelix.Infrastructure.Auth.Jwt;

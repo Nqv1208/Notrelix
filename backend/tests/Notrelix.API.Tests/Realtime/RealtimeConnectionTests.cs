@@ -1,5 +1,4 @@
 using System.Net.WebSockets;
-using System.Text.Json;
 
 using Notrelix.API.Realtime;
 using Notrelix.Application.Common.Realtime.Gateway;
