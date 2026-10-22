@@ -18,13 +18,10 @@ describe("automation testing fixtures", () => {
   });
 
   it("builds automation execution realtime envelopes", () => {
-    expect(buildAutomationExecutionEvent({ sequence: 5 })).toMatchObject({
+    expect(buildAutomationExecutionEvent({ streamVersion: 5 })).toMatchObject({
       eventType: "automation.execution.started",
-      sequence: 5,
-      payload: {
-        executionId: "execution-1",
-        ruleId: "rule-1",
-      },
+      streamVersion: 5,
+      resourceId: "execution-1",
     });
   });
 });

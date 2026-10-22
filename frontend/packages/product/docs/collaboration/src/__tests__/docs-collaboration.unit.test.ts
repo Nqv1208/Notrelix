@@ -35,18 +35,17 @@ describe("createDocsCollaborationAdapter", () => {
     });
 
     expect(mockRealtime.subscribe).toHaveBeenCalledWith(
-      {
-        workspaceId: "ws-1",
-        subscriptionId: "doc-1",
-      },
+      { workspaceId: "ws-1" },
       expect.any(Function),
     );
 
-    getHandler()?.({ payload: { type: "user-joined", userId: "u-1" } });
-    expect(onEvent).toHaveBeenCalledWith({
-      type: "user-joined",
-      userId: "u-1",
-    });
+    const forDocument = { eventId: "evt-1", resourceId: "doc-1" };
+    getHandler()?.(forDocument);
+    expect(onEvent).toHaveBeenCalledWith(forDocument);
+
+    // Frames about other resources of the Workspace stream are not delivered.
+    getHandler()?.({ eventId: "evt-2", resourceId: "doc-other" });
+    expect(onEvent).toHaveBeenCalledTimes(1);
 
     sub.dispose();
     expect(unsubscribeMock).toHaveBeenCalled();

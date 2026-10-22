@@ -7,11 +7,15 @@ export interface ModuleRealtimeContext {
   ) => Promise<void> | void;
 }
 
+/**
+ * Product/feature adapters interpret an event frame as an invalidation signal
+ * only: frames carry no payload, so adapters must not patch caches.
+ */
 export interface ModuleRealtimeAdapter {
   readonly id: string;
-  supports(envelope: RealtimeEnvelope<unknown>): boolean;
+  supports(envelope: RealtimeEnvelope): boolean;
   validateAndHandle(
-    envelope: RealtimeEnvelope<unknown>,
+    envelope: RealtimeEnvelope,
     context: ModuleRealtimeContext,
   ): Promise<void> | void;
 }

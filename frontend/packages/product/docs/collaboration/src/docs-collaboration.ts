@@ -34,15 +34,13 @@ export function createDocsCollaborationAdapter(
         activeSubscriptions.delete(key);
       }
 
-      const unsubscribe = realtime.subscribe(
-        {
-          workspaceId,
-          subscriptionId: documentId,
-        },
-        (envelope) => {
-          onEvent(envelope.payload);
-        },
-      );
+      // The gateway has no document scope: listen on the Workspace stream and
+      // keep only frames about this document. Frames carry no payload, so the
+      // consumer receives the envelope as a change notification.
+      const unsubscribe = realtime.subscribe({ workspaceId }, (envelope) => {
+        if (envelope.resourceId !== documentId) return;
+        onEvent(envelope);
+      });
 
       const subscription: DocsCollaborationSubscription = {
         dispose() {

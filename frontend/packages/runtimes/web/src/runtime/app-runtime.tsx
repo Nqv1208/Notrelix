@@ -1,6 +1,7 @@
 import React, { createContext, useContext, type ReactNode } from "react";
 import {
   createNotrelixClient,
+  endpoints,
   type NotrelixClient,
   type NotrelixClientConfig,
   type SessionExpiredEvent,
@@ -111,6 +112,13 @@ export function createAppRuntime(
     : new RealtimeClient(resolvedEnv.realtimeUrl, {
         socketFactory: createBrowserWebSocketFactory(),
         telemetry,
+        // Close code 4401 (credentials expired/revoked): refresh through the
+        // API client's single-flight auth refresh, which a 401 on this
+        // authenticated request triggers. A rejected refresh publishes the
+        // normal session-expired event.
+        refreshSession: async () => {
+          await client.api.get(endpoints.auth.profile);
+        },
       });
 
   const featureFlags: FeatureFlagsPort = factories.featureFlags ?? {

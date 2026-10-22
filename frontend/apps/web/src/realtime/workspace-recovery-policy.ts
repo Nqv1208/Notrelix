@@ -1,3 +1,5 @@
+import { notificationsQueryKeys } from "@notrelix/features-notifications";
+
 export interface WorkspaceRecoveryPolicyOptions {
   readonly workspaceId: string;
   readonly invalidateQueries: (
@@ -5,14 +7,23 @@ export interface WorkspaceRecoveryPolicyOptions {
   ) => Promise<void> | void;
 }
 
+/**
+ * Re-establishes authoritative state for one Workspace over REST after a
+ * realtime recovery signal (subscription ack, stream gap/reset, permission
+ * loss).
+ *
+ * The gateway sends no payload, so the whole Workspace scope is revalidated:
+ * the `["workspace", workspaceId]` prefix covers every Workspace-scoped query
+ * of every product owner (FE-RT-027). A revoked permission surfaces here as a
+ * forbidden REST response, which the existing query error pathway renders.
+ */
 export async function handleWorkspaceRecovery({
   workspaceId,
   invalidateQueries,
 }: WorkspaceRecoveryPolicyOptions): Promise<void> {
   await invalidateQueries([
-    ["workspaces", workspaceId],
-    ["workspaces", workspaceId, "members"],
-    ["workspaces", workspaceId, "abilities"],
-    ["notifications", "unread-count"],
+    // Root of `workspaceQueryKey(workspaceId, ...)` from @notrelix/query.
+    ["workspace", workspaceId],
+    [...notificationsQueryKeys.unreadCount],
   ]);
 }
