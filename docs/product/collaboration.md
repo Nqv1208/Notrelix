@@ -247,6 +247,17 @@ A committed Mention may cause Notification, Activity, and realtime attention.
 
 Downstream delivery follows the committed fact.
 
+# 23.1. COL-030 — Mentioning someone who cannot view the source notifies nobody and grants nothing
+
+Decided 2026-10-12 (UI mockup review).
+
+- a Mention of a User who cannot view the source resource is stored with its stable identity (COL-007) but produces no Notification, email or push for that User, and grants no access;
+- a Team mention notifies only the Team's members who can view the source;
+- access is checked at delivery time, so a principal who gains access later is not notified retroactively and one who lost access is not notified;
+- the composer marks such people in the suggestion list before sending and states that they will not be notified.
+
+---
+
 # 24. COL-008 — Mention delivery is idempotent
 
 Retrying the same logical Mention must not create duplicate Notification/email/push effects.

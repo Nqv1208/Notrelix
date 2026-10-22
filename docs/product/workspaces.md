@@ -262,6 +262,27 @@ Guest/external membership may have constrained Workspace/resource access.
 
 Do not infer guest semantics only from email domain.
 
+# 22.1. WSP-026 — Outsiders join through an invitation, never through a grant to a raw email
+
+Decided 2026-10-12 (UI mockup review). A person who is not yet a Workspace member can be brought in only this way:
+
+```text
+Workspace Owner/Admin
+  → Workspace invitation, role member or guest; it may name initial Teams and Space
+    entries, applied atomically when the invitation is accepted
+Principal with ManageBoardPermission / ManagePagePermission on a resource
+  → resource invitation by email; accepting it creates (or reuses) a guest Workspace
+    membership plus the explicit resource entry on that one resource, capped by GOV-030
+```
+
+- a resource invitation never creates a `member` membership and never adds Space or Team entries;
+- Space member management adds only active Workspace members and Teams (WSP-024); it cannot invite an outsider, and the UI offers a request to a workspace admin or a guest invitation on a specific Board instead;
+- until accepted, an invitation grants nothing (WSP-006) and is shown as pending with resend/revoke actions to whoever issued it;
+- the stored subject of the resulting grant is the guest's User identity, so Governance keeps evaluating only User and Team subjects (GOV §16); an `ExternalEmail` subject is never created by this flow;
+- guest or member is a fact of the membership, never inferred from the email domain (§22).
+
+---
+
 # 23. Workspace invitation
 
 Invitation represents proposed Workspace participation.
