@@ -7,6 +7,11 @@
         "path": "src/theme/theme-provider.tsx",
         "category": "provider",
         "reason": "Provides the Web theme context (mode × accent) and applies it to the document root; renders no standalone visual surface."
+      },
+      {
+        "path": "src/components/ui/tablet-slot.tsx",
+        "category": "nonvisual-composition",
+        "reason": "TabletSlot is an empty mount point and TabletPortal moves a page's own controls into it (768-1279 px only); it draws nothing itself, and the controls it carries are covered by the surfaces that own them."
       }
     ]
   },
