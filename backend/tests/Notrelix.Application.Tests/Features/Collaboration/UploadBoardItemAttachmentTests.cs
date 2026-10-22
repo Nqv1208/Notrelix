@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Notrelix.Application.Common.Storage;
@@ -49,8 +50,22 @@ public sealed class UploadBoardItemAttachmentTests
 
         public Task DeleteAsync(string key, CancellationToken ct)
         {
-            Objects.Remove(key);
+            lock (Objects)
+            {
+                Objects.Remove(key);
+            }
+
             return Task.CompletedTask;
+        }
+
+        public async IAsyncEnumerable<StorageObjectInfo> ListAsync(
+            string prefix, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct)
+        {
+            await Task.CompletedTask;
+            foreach (var key in Objects.Keys.Where(k => k.StartsWith(prefix, StringComparison.Ordinal)).ToArray())
+            {
+                yield return new StorageObjectInfo(key, DateTimeOffset.UtcNow);
+            }
         }
     }
 
@@ -61,20 +76,31 @@ public sealed class UploadBoardItemAttachmentTests
 
         public Task<Stream?> OpenReadAsync(string key, CancellationToken ct) => Task.FromResult<Stream?>(null);
         public Task DeleteAsync(string key, CancellationToken ct) => Task.CompletedTask;
+
+        public async IAsyncEnumerable<StorageObjectInfo> ListAsync(
+            string prefix, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct)
+        {
+            await Task.CompletedTask;
+            yield break;
+        }
     }
 
     private readonly List<Attachment> _rows = [];
     private readonly RequestRollbackCompensations _compensations = new(NullLogger<RequestRollbackCompensations>.Instance);
 
     private (UploadBoardItemAttachmentCommandHandler Handler, IStorageService Storage) CreateHandler(
-        IStorageService storage, AttachmentUploadOptions? options = null)
+        IStorageService storage,
+        AttachmentUploadOptions? options = null,
+        IAttachmentTargetLock? targetLock = null,
+        IRequestRollbackCompensations? compensations = null)
     {
         var db = new Mock<ICollaborationDbContext>();
         db.Setup(c => c.Attachments).Returns(TestDbSet.Create(_rows).Object);
         var request = new FakeCurrentRequestContext { UserId = Guid.NewGuid() };
         request.Tenant.SetWorkspace(AccountId, WorkspaceId, request.UserId);
         var handler = new UploadBoardItemAttachmentCommandHandler(
-            db.Object, request, new SystemDateTimeProvider(), storage, _compensations,
+            db.Object, request, new SystemDateTimeProvider(), storage, compensations ?? _compensations,
+            targetLock ?? new InMemoryAttachmentTargetLock(),
             Options.Create(options ?? new AttachmentUploadOptions()));
         return (handler, storage);
     }
@@ -166,6 +192,183 @@ public sealed class UploadBoardItemAttachmentTests
             .Which.RuleCode.Should().Be(Notrelix.Domain.Collaboration.CollaborationRuleCodes.Collaboration_Attachment_MaxAttachmentsExceeded);
         storage.Objects.Count.Should().Be(objectsBefore);
         _rows.Should().HaveCount(1);
+    }
+
+    // ── Cap race: the authoritative recount happens under the target lock, after the stream ──
+
+    /// <summary>Stores the bytes, but only after every concurrent upload has also been admitted by the early check.</summary>
+    private sealed class GatedStorage(int expectedWriters) : IStorageService
+    {
+        private readonly TaskCompletionSource _open = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private int _arrived;
+        public ConcurrentDictionary<string, byte[]> Objects { get; } = new();
+        public List<string> Events { get; } = [];
+
+        public async Task WriteAsync(string key, Stream content, string contentType, CancellationToken ct)
+        {
+            using var buffer = new MemoryStream();
+            await content.CopyToAsync(buffer, ct);
+            lock (Events)
+            {
+                Events.Add("write");
+            }
+
+            if (Interlocked.Increment(ref _arrived) >= expectedWriters)
+            {
+                _open.TrySetResult();
+            }
+
+            await _open.Task; // models a long stream: nobody finishes before everybody started
+            Objects[key] = buffer.ToArray();
+        }
+
+        public Task<Stream?> OpenReadAsync(string key, CancellationToken ct) => Task.FromResult<Stream?>(null);
+
+        public Task DeleteAsync(string key, CancellationToken ct)
+        {
+            Objects.TryRemove(key, out _);
+            return Task.CompletedTask;
+        }
+
+        public async IAsyncEnumerable<StorageObjectInfo> ListAsync(
+            string prefix, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct)
+        {
+            await Task.CompletedTask;
+            yield break;
+        }
+    }
+
+    [Fact]
+    public async Task Upload_ConcurrentUploadsOverTheCap_ExactlyCapSucceed_AndTheRestAreCompensated()
+    {
+        const int cap = 3;
+        const int uploads = 8;
+        var storage = new GatedStorage(uploads);
+        var locks = new InMemoryAttachmentTargetLocks();
+        var options = new AttachmentUploadOptions { MaxAttachmentsPerItem = cap };
+
+        // Every request is its own "transaction": own lock session and own compensations, shared rows.
+        var tasks = Enumerable.Range(0, uploads).Select(async i =>
+        {
+            var requestLock = new InMemoryAttachmentTargetLock(locks);
+            var compensations = new RequestRollbackCompensations(NullLogger<RequestRollbackCompensations>.Instance);
+            var (handler, _) = CreateHandler(storage, options, requestLock, compensations);
+            try
+            {
+                await handler.Handle(
+                    new UploadBoardItemAttachmentCommand(ItemId, $"f{i}.png", new MemoryStream(Png)), default);
+                return true;
+            }
+            catch (Notrelix.Domain.Common.Exceptions.BusinessRuleException ex)
+            {
+                ex.RuleCode.Should().Be(Notrelix.Domain.Collaboration.CollaborationRuleCodes.Collaboration_Attachment_MaxAttachmentsExceeded);
+                await compensations.RunAsync(default); // what the data session does on a pre-commit failure
+                return false;
+            }
+            finally
+            {
+                requestLock.EndTransaction();
+            }
+        }).ToArray();
+
+        var outcomes = await Task.WhenAll(tasks);
+
+        outcomes.Count(o => o).Should().Be(cap);
+        outcomes.Count(o => !o).Should().Be(uploads - cap);
+        _rows.Should().HaveCount(cap);
+        storage.Objects.Keys.Should().BeEquivalentTo(_rows.Select(r => r.Metadata.StorageKey!));
+    }
+
+    [Fact]
+    public async Task Upload_RowAppearingWhileStreaming_IsCaughtByTheRecount_AndRemovesTheObject()
+    {
+        var storage = new MemoryStorage();
+        var compensations = new RequestRollbackCompensations(NullLogger<RequestRollbackCompensations>.Instance);
+        var (handler, _) = CreateHandler(
+            new RaceStorage(storage, () => _rows.Add(LinkRow())),
+            new AttachmentUploadOptions { MaxAttachmentsPerItem = 1 },
+            compensations: compensations);
+
+        var act = () => handler.Handle(new UploadBoardItemAttachmentCommand(ItemId, "a.png", new MemoryStream(Png)), default);
+
+        // The early check (0 rows) passed; the recount under the lock sees the row added meanwhile.
+        (await act.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>())
+            .Which.RuleCode.Should().Be(Notrelix.Domain.Collaboration.CollaborationRuleCodes.Collaboration_Attachment_MaxAttachmentsExceeded);
+        storage.Objects.Should().HaveCount(1); // written, then removed by the registered compensation
+        await compensations.RunAsync(default);
+        storage.Objects.Should().BeEmpty();
+        _rows.Should().HaveCount(1);
+    }
+
+    [Fact]
+    public async Task Upload_TakesTheTargetLock_OnlyAfterTheBodyIsStored()
+    {
+        var events = new List<string>();
+        var storage = new RaceStorage(new MemoryStorage(), () => events.Add("stored"));
+        var recordingLock = new RecordingLock(events);
+        var (handler, _) = CreateHandler(storage, targetLock: recordingLock);
+
+        await handler.Handle(new UploadBoardItemAttachmentCommand(ItemId, "a.png", new MemoryStream(Png)), default);
+
+        events.Should().Equal("stored", "lock");
+    }
+
+    [Fact]
+    public async Task CreateLink_TakesTheSameLock_AndRecountsSoLinksAndFilesCannotJointlyExceedTheCap()
+    {
+        var requestLock = new InMemoryAttachmentTargetLock();
+        var options = new AttachmentUploadOptions { MaxAttachmentsPerItem = 2 };
+        var (upload, _) = CreateHandler(new MemoryStorage(), options, requestLock);
+        await upload.Handle(new UploadBoardItemAttachmentCommand(ItemId, "a.png", new MemoryStream(Png)), default);
+        var link = CreateLinkHandler(options, requestLock);
+
+        await link.Handle(new Notrelix.Application.Features.Collaboration.Attachments.Commands.CreateBoardItemAttachment.CreateBoardItemAttachmentCommand(
+            ItemId, "doc", "https://x.test/doc", null, null, null), default);
+        var act = () => link.Handle(new Notrelix.Application.Features.Collaboration.Attachments.Commands.CreateBoardItemAttachment.CreateBoardItemAttachmentCommand(
+            ItemId, "doc2", "https://x.test/doc2", null, null, null), default);
+
+        (await act.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>())
+            .Which.RuleCode.Should().Be(Notrelix.Domain.Collaboration.CollaborationRuleCodes.Collaboration_Attachment_MaxAttachmentsExceeded);
+        _rows.Should().HaveCount(2);
+        requestLock.Acquired.Should().HaveCount(3).And.OnlyContain(t => t.ResourceId == ItemId);
+    }
+
+    private Notrelix.Application.Features.Collaboration.Attachments.Commands.CreateBoardItemAttachment.CreateBoardItemAttachmentCommandHandler CreateLinkHandler(
+        AttachmentUploadOptions options, IAttachmentTargetLock targetLock)
+    {
+        var db = new Mock<ICollaborationDbContext>();
+        db.Setup(c => c.Attachments).Returns(TestDbSet.Create(_rows).Object);
+        var request = new FakeCurrentRequestContext { UserId = Guid.NewGuid() };
+        request.Tenant.SetWorkspace(AccountId, WorkspaceId, request.UserId);
+        return new(db.Object, request, new SystemDateTimeProvider(), targetLock, Options.Create(options));
+    }
+
+    private static Attachment LinkRow() => Attachment.Create(
+        AccountId, WorkspaceId,
+        ResourceRef.Create(ResourceKind.Create("work-management.board-item"), ItemId, WorkspaceId),
+        AttachmentType.Link, FileMetadata.Create("x", 0, "text/plain", url: "https://x.test/x"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+    /// <summary>Runs a side effect while the body is "streaming", i.e. between the early check and the recount.</summary>
+    private sealed class RaceStorage(IStorageService inner, Action duringWrite) : IStorageService
+    {
+        public async Task WriteAsync(string key, Stream content, string contentType, CancellationToken ct)
+        {
+            await inner.WriteAsync(key, content, contentType, ct);
+            duringWrite();
+        }
+
+        public Task<Stream?> OpenReadAsync(string key, CancellationToken ct) => inner.OpenReadAsync(key, ct);
+        public Task DeleteAsync(string key, CancellationToken ct) => inner.DeleteAsync(key, ct);
+        public IAsyncEnumerable<StorageObjectInfo> ListAsync(string prefix, CancellationToken ct) => inner.ListAsync(prefix, ct);
+    }
+
+    private sealed class RecordingLock(List<string> events) : IAttachmentTargetLock
+    {
+        public Task AcquireAsync(ResourceRef target, CancellationToken cancellationToken)
+        {
+            events.Add("lock");
+            return Task.CompletedTask;
+        }
     }
 
     [Theory]

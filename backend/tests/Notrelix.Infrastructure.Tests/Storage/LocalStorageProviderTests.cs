@@ -98,4 +98,58 @@ public sealed class LocalStorageProviderTests : IDisposable
         await FluentActions.Awaiting(() => _provider.DeleteAsync(key, default))
             .Should().ThrowAsync<ArgumentException>();
     }
+
+    [Fact]
+    public async Task List_ReturnsKeysUnderPrefix_WithLastModified_AndEmptyPrefixListsEverything()
+    {
+        await _provider.WriteAsync("acc/ws/attachments/o1", new MemoryStream([1]), "application/octet-stream", default);
+        await _provider.WriteAsync("acc/ws/attachments/o2", new MemoryStream([2]), "application/octet-stream", default);
+        await _provider.WriteAsync("other/ws/attachments/o3", new MemoryStream([3]), "application/octet-stream", default);
+        var old = DateTime.UtcNow.AddDays(-3);
+        File.SetLastWriteTimeUtc(Path.Combine(_root, "acc", "ws", "attachments", "o1"), old);
+
+        var underAcc = await ToListAsync(_provider.ListAsync("acc", default));
+        var all = await ToListAsync(_provider.ListAsync(string.Empty, default));
+
+        underAcc.Select(o => o.Key).Should().BeEquivalentTo("acc/ws/attachments/o1", "acc/ws/attachments/o2");
+        underAcc.Single(o => o.Key.EndsWith("o1")).LastModified.Should().BeCloseTo(old, TimeSpan.FromSeconds(2));
+        underAcc.Single(o => o.Key.EndsWith("o2")).LastModified.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
+        all.Should().HaveCount(3);
+        (await ToListAsync(_provider.ListAsync("missing/prefix", default))).Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task List_ReportsAPartialWriteUnderItsFinalKey_AndSkipsForeignFiles()
+    {
+        Directory.CreateDirectory(Path.Combine(_root, "acc", "ws", "attachments"));
+        await File.WriteAllBytesAsync(Path.Combine(_root, "acc", "ws", "attachments", "o9.part"), [1]);
+        await File.WriteAllBytesAsync(Path.Combine(_root, "acc", "ws", "attachments", "bad name!"), [1]);
+
+        var listed = await ToListAsync(_provider.ListAsync("acc", default));
+
+        listed.Select(o => o.Key).Should().Equal("acc/ws/attachments/o9");
+    }
+
+    [Theory]
+    [InlineData("../outside")]
+    [InlineData("acc/../../outside")]
+    [InlineData("/etc")]
+    [InlineData("acc//ws")]
+    public async Task List_RejectsTraversalAndMalformedPrefixes(string prefix)
+    {
+        var act = async () => await ToListAsync(_provider.ListAsync(prefix, default));
+
+        await act.Should().ThrowAsync<ArgumentException>();
+    }
+
+    private static async Task<List<StorageObjectInfo>> ToListAsync(IAsyncEnumerable<StorageObjectInfo> source)
+    {
+        var list = new List<StorageObjectInfo>();
+        await foreach (var item in source)
+        {
+            list.Add(item);
+        }
+
+        return list;
+    }
 }

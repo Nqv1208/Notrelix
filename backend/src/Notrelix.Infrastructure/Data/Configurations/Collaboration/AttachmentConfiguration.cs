@@ -45,6 +45,12 @@ public class AttachmentConfiguration : IEntityTypeConfiguration<Attachment>
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
         builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");
+        builder.Property(x => x.PurgedAt).HasColumnName("purged_at");
+
+        // Reaper candidates: soft-deleted stored files whose object was not purged yet.
+        builder.HasIndex(x => x.DeletedAt)
+            .HasDatabaseName("ix_attachments_purge_pending")
+            .HasFilter("deleted_at IS NOT NULL AND purged_at IS NULL AND storage_key IS NOT NULL");
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");

@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+
 namespace Notrelix.Infrastructure.Storage.Providers;
 
 /// <summary>
@@ -75,23 +77,72 @@ public sealed class LocalStorageProvider : IStorageService
         return Task.CompletedTask;
     }
 
-    private string ResolvePath(string key)
+    public async IAsyncEnumerable<StorageObjectInfo> ListAsync(
+        string prefix, [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(prefix);
+        var start = prefix.Length == 0 ? _root : ResolvePath(prefix);
+        if (!Directory.Exists(start))
+        {
+            yield break;
+        }
+
+        var options = new EnumerationOptions { RecurseSubdirectories = true, IgnoreInaccessible = true };
+        foreach (var path in Directory.EnumerateFiles(start, "*", options))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var relative = Path.GetRelativePath(_root, path).Replace(Path.DirectorySeparatorChar, '/');
+            var key = relative.EndsWith(PartialSuffix, StringComparison.Ordinal)
+                ? relative[..^PartialSuffix.Length]
+                : relative;
+            if (!IsValidKey(key))
+            {
+                continue; // foreign file that no provider operation could have produced
+            }
+
+            DateTimeOffset modified;
+            try
+            {
+                modified = new DateTimeOffset(File.GetLastWriteTimeUtc(path), TimeSpan.Zero);
+            }
+            catch (IOException)
+            {
+                continue; // deleted while listing
+            }
+
+            yield return new StorageObjectInfo(key, modified);
+            await Task.Yield();
+        }
+    }
+
+    private static bool IsValidKey(string key)
     {
         if (string.IsNullOrWhiteSpace(key) || key.Length > MaxKeyLength)
+        {
+            return false;
+        }
+
+        foreach (var segment in key.Split('/'))
+        {
+            if (segment.Length == 0 || segment is "." or ".."
+                || !segment.All(static c => char.IsAsciiLetterOrDigit(c) || c is '-' or '_' or '.'))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private string ResolvePath(string key)
+    {
+        if (!IsValidKey(key))
         {
             throw new ArgumentException("Invalid storage key.", nameof(key));
         }
 
         var segments = key.Split('/');
-        foreach (var segment in segments)
-        {
-            if (segment.Length == 0 || segment is "." or ".."
-                || !segment.All(static c => char.IsAsciiLetterOrDigit(c) || c is '-' or '_' or '.'))
-            {
-                throw new ArgumentException("Invalid storage key.", nameof(key));
-            }
-        }
-
         var full = Path.GetFullPath(Path.Combine(_root, Path.Combine(segments)));
         if (!full.StartsWith(_root + Path.DirectorySeparatorChar, StringComparison.Ordinal))
         {

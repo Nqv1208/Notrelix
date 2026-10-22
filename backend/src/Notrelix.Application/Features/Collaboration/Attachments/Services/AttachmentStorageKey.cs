@@ -10,6 +10,16 @@ public static class AttachmentStorageKey
 {
     private const string Segment = "attachments";
 
+    private static readonly System.Text.RegularExpressions.Regex KeyPattern = new(
+        "^[0-9a-f]{32}/[0-9a-f]{32}/" + Segment + "/[0-9a-f]{32}$",
+        System.Text.RegularExpressions.RegexOptions.CultureInvariant | System.Text.RegularExpressions.RegexOptions.NonBacktracking);
+
+    /// <summary>
+    /// True when <paramref name="key"/> has exactly the shape <see cref="Create"/> produces. Lets a
+    /// storage sweep recognise attachment objects without touching other objects in the same store.
+    /// </summary>
+    public static bool IsAttachmentKey(string key) => KeyPattern.IsMatch(key);
+
     public static string Create(Guid accountId, Guid workspaceId) =>
         $"{accountId:N}/{workspaceId:N}/{Segment}/{Guid.CreateVersion7():N}";
 

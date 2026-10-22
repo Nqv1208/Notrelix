@@ -45,6 +45,7 @@ public class UploadBoardItemAttachmentCommandHandler : IRequestHandler<UploadBoa
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IStorageService _storage;
     private readonly IRequestRollbackCompensations _compensations;
+    private readonly IAttachmentTargetLock _targetLock;
     private readonly AttachmentUploadOptions _options;
 
     public UploadBoardItemAttachmentCommandHandler(
@@ -53,6 +54,7 @@ public class UploadBoardItemAttachmentCommandHandler : IRequestHandler<UploadBoa
         IDateTimeProvider dateTimeProvider,
         IStorageService storage,
         IRequestRollbackCompensations compensations,
+        IAttachmentTargetLock targetLock,
         IOptions<AttachmentUploadOptions> options)
     {
         _context = context;
@@ -60,6 +62,7 @@ public class UploadBoardItemAttachmentCommandHandler : IRequestHandler<UploadBoa
         _dateTimeProvider = dateTimeProvider;
         _storage = storage;
         _compensations = compensations;
+        _targetLock = targetLock;
         _options = options.Value;
     }
 
@@ -76,7 +79,9 @@ public class UploadBoardItemAttachmentCommandHandler : IRequestHandler<UploadBoa
             throw new UnsupportedMediaTypeException("Files of this type cannot be attached.");
         }
 
-        // Fail fast, before any byte is written. The Domain factory re-checks with the same rule.
+        // Fail fast, before any byte is written. This early check is advisory only: concurrent
+        // uploads can all pass it, so the authoritative check is repeated under the target lock
+        // right before the row is added (see below).
         var currentCount = await _context.Attachments
             .CountAsync(a => a.Target.Kind == BoardItemKind && a.Target.ResourceId == request.BoardItemId, ct);
         AttachmentRules.EnsureMaxAttachments(currentCount, _options.MaxAttachmentsPerItem);
@@ -110,6 +115,17 @@ public class UploadBoardItemAttachmentCommandHandler : IRequestHandler<UploadBoa
 
         var now = _dateTimeProvider.UtcNow;
         var target = ResourceRef.Create(BoardItemKind, request.BoardItemId, workspaceId);
+
+        // Authoritative cap check at the commit point. The lock is taken only now, after the
+        // (possibly minutes long) stream, and is held until the request transaction ends, so
+        // concurrent uploads and links to this item serialize only over this short window.
+        // The recount sees every row committed by earlier lock holders. When the cap is exceeded
+        // the Domain factory throws; the compensation registered above then deletes the object
+        // and no row remains.
+        await _targetLock.AcquireAsync(target, ct);
+        currentCount = await _context.Attachments
+            .CountAsync(a => a.Target.Kind == BoardItemKind && a.Target.ResourceId == request.BoardItemId, ct);
+
         var attachment = Attachment.CreateStoredFile(
             accountId,
             workspaceId,

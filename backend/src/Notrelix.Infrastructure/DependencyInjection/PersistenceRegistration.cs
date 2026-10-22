@@ -125,6 +125,8 @@ public static class PersistenceRegistration
             global::Notrelix.Infrastructure.CrossContext.Workspaces.Documents.PageSpacePlacementFactsAdapter>();
         services.AddScoped<Notrelix.Application.Features.WorkManagement.Ordering.IWorkOrderingScopeLock,
             Notrelix.Infrastructure.Data.WorkManagement.PostgresWorkOrderingScopeLock>();
+        services.AddScoped<Notrelix.Application.Features.Collaboration.Abstractions.IAttachmentTargetLock,
+            Notrelix.Infrastructure.Data.Collaboration.PostgresAttachmentTargetLock>();
         services.AddScoped<Notrelix.Application.Features.WorkManagement.BoardItems.Services.IBoardItemKeyAllocator,
             Notrelix.Infrastructure.Data.WorkManagement.PostgresBoardItemKeyAllocator>();
         services.AddSingleton<Notrelix.Application.Common.Data.IOrderingConflictClassifier,

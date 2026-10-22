@@ -2495,6 +2495,10 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("deleted_by");
 
+                    b.Property<DateTimeOffset?>("PurgedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("purged_at");
+
                     b.Property<string>("Type")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -2522,6 +2526,10 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_attachments");
+
+                    b.HasIndex("DeletedAt")
+                        .HasDatabaseName("ix_attachments_purge_pending")
+                        .HasFilter("deleted_at IS NOT NULL AND purged_at IS NULL AND storage_key IS NOT NULL");
 
                     b.ToTable("attachments", "collab");
                 });

@@ -68,4 +68,53 @@ public class AttachmentStoredFileTests
             Guid.NewGuid(), WorkspaceId, Target, AttachmentType.Link, "x", 1, "text/plain", "k", 10, 0, 1, Guid.NewGuid(), DateTimeOffset.UtcNow);
         asLink.Should().Throw<ArgumentException>();
     }
+
+    private static Attachment CreateOldDeleted()
+    {
+        var attachment = Attachment.CreateStoredFile(
+            Guid.NewGuid(), WorkspaceId, Target, AttachmentType.Document, "doc.pdf", 1024, "application/pdf", "a/b/attachments/c",
+            4096, 0, 50, Guid.NewGuid(), DateTimeOffset.UtcNow.AddDays(-60));
+        attachment.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow.AddDays(-31));
+        return attachment;
+    }
+
+    [Fact]
+    public void MarkObjectPurged_OnDeletedStoredFile_RecordsPurgeOnce_AndBumpsVersionOnce()
+    {
+        var attachment = CreateOldDeleted();
+        var purgedAt = DateTimeOffset.UtcNow;
+        var versionBefore = attachment.Version;
+
+        attachment.MarkObjectPurged(purgedAt);
+        attachment.MarkObjectPurged(purgedAt.AddHours(1)); // idempotent: first purge time and version are kept
+
+        attachment.PurgedAt.Should().Be(purgedAt);
+        attachment.Version.Should().Be(versionBefore + 1);
+    }
+
+    [Fact]
+    public void MarkObjectPurged_RequiresADeletedStoredFile()
+    {
+        var live = Create();
+        var link = Attachment.Create(Guid.NewGuid(), WorkspaceId, Target, AttachmentType.Link,
+            FileMetadata.Create("site", 0, "application/octet-stream", url: "https://example.test"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        link.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        live.Invoking(a => a.MarkObjectPurged(DateTimeOffset.UtcNow)).Should().Throw<InvalidOperationException>();
+        link.Invoking(a => a.MarkObjectPurged(DateTimeOffset.UtcNow)).Should().Throw<InvalidOperationException>();
+        live.PurgedAt.Should().BeNull();
+    }
+
+    [Fact]
+    public void Restore_OfAPurgedAttachment_IsRejected_BecauseTheObjectIsGone()
+    {
+        var attachment = CreateOldDeleted();
+        attachment.MarkObjectPurged(DateTimeOffset.UtcNow);
+
+        var act = () => attachment.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        act.Should().Throw<BusinessRuleException>()
+            .Which.RuleCode.Should().Be(CollaborationRuleCodes.Collaboration_Attachment_ObjectPurged);
+        attachment.IsDeleted.Should().BeTrue();
+    }
 }

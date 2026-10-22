@@ -16,6 +16,13 @@ public class Attachment : SoftDeletableAggregateRoot, IWorkspaceScoped
     /// </summary>
     public bool IsStoredFile => Metadata.StorageKey is not null;
 
+    /// <summary>
+    /// When the stored object of this soft-deleted attachment was removed from storage after the
+    /// retention period. Null while the object may still exist (and always null for links). A purged
+    /// attachment cannot be restored. Rows that are not purged keep counting toward storage usage.
+    /// </summary>
+    public DateTimeOffset? PurgedAt { get; private set; }
+
     private Attachment() : base() { }
 
     /// <summary>
@@ -87,10 +94,31 @@ public class Attachment : SoftDeletableAggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new AttachmentDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedAt));
     }
 
+    /// <summary>
+    /// Records that the stored object of this soft-deleted file attachment is gone from storage.
+    /// Idempotent: a repeated call keeps the first purge time. Only a deleted stored file can be
+    /// purged; the retention period is a Collaboration policy decided by the caller, not here.
+    /// </summary>
+    public void MarkObjectPurged(DateTimeOffset purgedAt)
+    {
+        if (purgedAt == default)
+            throw new ArgumentException("Purge time must be a valid date.", nameof(purgedAt));
+        if (!IsStoredFile)
+            throw new InvalidOperationException("Only a stored file attachment has an object to purge.");
+        if (!IsDeleted)
+            throw new InvalidOperationException("Only a deleted attachment can have its object purged.");
+        if (PurgedAt is not null) return;
+
+        PurgedAt = purgedAt;
+        IncrementVersion();
+    }
+
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
+        if (PurgedAt is not null)
+            throw new BusinessRuleException(CollaborationRuleCodes.Collaboration_Attachment_ObjectPurged, "The stored file of this attachment was purged and cannot be restored.");
         var pendingRestore = PrepareRestore(restoredBy, restoredAt);
         ApplyRestore(pendingRestore);
         IncrementVersion();

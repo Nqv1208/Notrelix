@@ -31,6 +31,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="Notrelix.Infrastructure.Tests" />
+    <InternalsVisibleTo Include="Notrelix.Integration.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <EmbeddedResource Include="Data\Rls\RlsSqlScripts\*.sql" />
   </ItemGroup>
 

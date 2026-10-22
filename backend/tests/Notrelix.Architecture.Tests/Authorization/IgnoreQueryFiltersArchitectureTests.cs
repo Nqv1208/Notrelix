@@ -130,6 +130,9 @@ public class IgnoreQueryFiltersArchitectureTests
         ["WorkspaceOwnerUpdateLocker.cs"] = new("WorkspaceOwnerUpdateLocker.cs", AllowlistClassification.Intentional,
             "Workspace locker bypasses EF query filter and status filter is encoded in raw SQL to take SELECT ... FOR UPDATE on the active workspace row; the row lock is held for the owning request transaction to serialize owner-affecting membership operations",
             "Keep as Intentional — PostgreSQL row-lock serialization for last-owner invariants"),
+        ["PostgresAttachmentReaperStore.cs"] = new("PostgresAttachmentReaperStore.cs", AllowlistClassification.Intentional,
+            "The attachment object reaper must see soft-deleted attachments (the purge target) and runs under the explicit system/worker context with the RLS worker scope; it reads and updates only collab.attachments and never serves a request",
+            "Keep as Intentional — retention purge of soft-deleted attachment objects needs the soft-delete filter bypassed"),
     };
 
     [Fact]

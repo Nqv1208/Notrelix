@@ -564,6 +564,16 @@ public sealed class AttachmentFileEndpointTests : IClassFixture<AttachmentFileEn
             Objects.Remove(key);
             return Task.CompletedTask;
         }
+
+        public async IAsyncEnumerable<StorageObjectInfo> ListAsync(
+            string prefix, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
+        {
+            await Task.CompletedTask;
+            foreach (var key in Objects.Keys.Where(k => k.StartsWith(prefix, StringComparison.Ordinal)).ToArray())
+            {
+                yield return new StorageObjectInfo(key, DateTimeOffset.UtcNow);
+            }
+        }
     }
 
     /// <summary>Behaves like the real store from the caller's view: a key completes once, a failed run leaves it free.</summary>
@@ -589,6 +599,11 @@ public sealed class AttachmentFileEndpointTests : IClassFixture<AttachmentFileEn
             _completed[(identity.Operation, identity.Scope, identity.KeyHash)] = (identity.RequestHash, serializedResult, resultContract);
             return Task.CompletedTask;
         }
+    }
+
+    private sealed class NoopAttachmentTargetLock : Notrelix.Application.Features.Collaboration.Abstractions.IAttachmentTargetLock
+    {
+        public Task AcquireAsync(ResourceRef target, CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
     private sealed class FakeResourceLocator : IResourceLocator
@@ -652,6 +667,11 @@ public sealed class AttachmentFileEndpointTests : IClassFixture<AttachmentFileEn
                 {
                     services.RemoveAll<IStorageService>();
                     services.AddSingleton<IStorageService>(storage);
+
+                    // The commit-point cap lock needs a PostgreSQL transaction; the serialisation itself is
+                    // proven against real PostgreSQL in the integration tests, so this host uses a no-op lock.
+                    services.RemoveAll<Notrelix.Application.Features.Collaboration.Abstractions.IAttachmentTargetLock>();
+                    services.AddScoped<Notrelix.Application.Features.Collaboration.Abstractions.IAttachmentTargetLock, NoopAttachmentTargetLock>();
 
                     services.RemoveAll<IIdempotencyStore>();
                     services.AddSingleton<IIdempotencyStore>(idempotency);

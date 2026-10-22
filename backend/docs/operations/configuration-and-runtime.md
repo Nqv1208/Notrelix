@@ -1674,7 +1674,19 @@ The objective is a runtime whose technical variability is explicit and replaceab
 | Key | Default | Meaning |
 |---|---|---|
 | `MaxFileSizeBytes` | 104857600 (100 MB) | Hard per-file cap, enforced while the body is streamed. Allowed range 1024 to 1 GiB. The API raises the request-body limit for the upload route only, to this value plus 1 MiB of multipart framing. |
-| `MaxAttachmentsPerItem` | 50 | Maximum non-deleted attachments (links included) per board item. Range 1 to 1000. |
+| `MaxAttachmentsPerItem` | 50 | Maximum non-deleted attachments (links included) per board item. Range 1 to 1000. Checked early (fail fast) and authoritatively under a short advisory lock right before the row is added, for files and links alike. |
 | `BlockedExtensions` | executable and script extensions (exe, msi, dll, bat, cmd, com, scr, ps1, vbs, sh, jar, apk, js, mjs, html, htm) | Lower case, no dot. Executable content signatures are refused independently of the extension. |
+
+`Collaboration:Attachments:Retention` (Infrastructure, `AttachmentRetentionOptions`, validated on start by `AttachmentRetentionOptionsValidator`) configures the attachment object reaper (`AttachmentObjectReaperService`, a hosted service):
+
+| Key | Default | Meaning |
+|---|---|---|
+| `Enabled` | `true` | When false the reaper deletes nothing. |
+| `DeletedFileRetention` | `30.00:00:00` (30 days) | How long the object of a soft-deleted stored-file attachment is kept, counted from the deletion time, before it is purged and the row marked purged. Minimum 1 hour. |
+| `OrphanGracePeriod` | `1.00:00:00` (24 hours) | Minimum age (provider last-modified time) of an object with no referencing row before it is removed as an orphan. Must be longer than the longest upload; minimum 1 hour. |
+| `Interval` | `01:00:00` (1 hour) | Time between passes. Range 10 seconds to 1 day. |
+| `BatchSize` | 100 | Rows/objects handled per claim transaction. Range 1 to 1000. |
+
+Several API instances may run the reaper at the same time: purge rows are claimed with `FOR UPDATE SKIP LOCKED` and the orphan sweep is elected with a transaction-scoped try-advisory lock. The reaper runs under the explicit system (worker) tenant context and RLS worker scope; it touches only `collab.attachments`.
 
 Known gap (slice 1): no malware scanning. Mitigations: server-derived content type, forced `Content-Disposition: attachment` and `nosniff` for everything except sniffed raster images, executable refusal. A scan hook needs its own decision.

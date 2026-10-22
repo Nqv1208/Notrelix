@@ -39,6 +39,7 @@ public class SystemContextUsageTests
         "EmailVerificationTokenIssuer.cs",
         "ActiveVerificationTokenLocker.cs",
         "WorkspaceOwnerUpdateLocker.cs",
+        "PostgresAttachmentReaperStore.cs",
         "CalendarWebhookBindingResolver.cs",
     ];
 

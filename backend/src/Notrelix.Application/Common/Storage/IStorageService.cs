@@ -26,4 +26,17 @@ public interface IStorageService
 
     /// <summary>Deletes the object. Deleting a missing object succeeds (idempotent).</summary>
     Task DeleteAsync(string key, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Enumerates the objects whose key lies under <paramref name="prefix"/> (a slash-separated
+    /// key path; empty means the whole store) with their last-modified time. The listing is
+    /// key-centric and carries no content or URL. It may be enumerated while objects are written
+    /// or deleted, so a caller must treat it as a best-effort snapshot, and must base any
+    /// age-driven decision on <see cref="StorageObjectInfo.LastModified"/>, never on request state.
+    /// A partially written object (a write in flight) is reported with its latest modification time.
+    /// </summary>
+    IAsyncEnumerable<StorageObjectInfo> ListAsync(string prefix, CancellationToken cancellationToken);
 }
+
+/// <summary>An object key and when the provider last modified it (UTC).</summary>
+public sealed record StorageObjectInfo(string Key, DateTimeOffset LastModified);

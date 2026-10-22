@@ -37,6 +37,13 @@ public class RawSqlArchitectureTests
         // WM-V3-ORDER-001: transaction-scoped advisory lock (pg_advisory_xact_lock)
         // serializing one Work ordering scope inside the request transaction.
         "src/Notrelix.Infrastructure/Data/WorkManagement/PostgresWorkOrderingScopeLock.cs",
+        // Attachment cap: transaction-scoped advisory lock (pg_advisory_xact_lock)
+        // taken only at the commit point of an attachment upload/link, serializing
+        // the per-item cap recount with the row insert inside the request transaction.
+        "src/Notrelix.Infrastructure/Data/Collaboration/PostgresAttachmentTargetLock.cs",
+        // Attachment object reaper: FOR UPDATE SKIP LOCKED claim of purge-due
+        // soft-deleted rows and a try-advisory sweep claim, under the system context.
+        "src/Notrelix.Infrastructure/BackgroundJobs/PostgresAttachmentReaperStore.cs",
         // Reserves a Board's Item keys with one row-locking UPDATE ... RETURNING
         // on work.boards inside the request transaction (EF cannot express it
         // without loading and versioning the Board aggregate).
