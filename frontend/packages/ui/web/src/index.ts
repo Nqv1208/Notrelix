@@ -67,6 +67,12 @@ export * from "./components/ui/select";
 export * from "./components/ui/separator";
 export * from "./components/ui/sheet";
 export * from "./components/ui/sidebar";
+export {
+  TABLET_SLOT,
+  TabletPortal,
+  TabletSlot,
+  type TabletSlotId,
+} from "./components/ui/tablet-slot";
 export * from "./components/ui/skeleton";
 export * from "./components/ui/slider";
 export * from "./components/ui/sonner";

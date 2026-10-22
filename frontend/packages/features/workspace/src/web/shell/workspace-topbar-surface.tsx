@@ -10,6 +10,8 @@ import {
   Button,
   Kbd,
   Skeleton,
+  TABLET_SLOT,
+  TabletSlot,
   useSidebar,
 } from "@notrelix/ui-web";
 import type { WorkspaceBreadcrumbItem } from "../../core/model/breadcrumb";
@@ -139,9 +141,6 @@ export function WorkspaceTopbarSurface({
   );
 }
 
-/** Id of the element pages portal their tablet toolbar content into. */
-export const TABLET_TOPBAR_SLOT_ID = "tablet-topbar-slot";
-
 /**
  * The tablet top bar (768-1279 px, Final-T-*): a 56 px row that owns the
  * sidebar toggle (248 px open / 64 px icon column) and a slot a page fills
@@ -176,8 +175,8 @@ export function WorkspaceTabletTopbar({
       >
         <PanelLeft aria-hidden="true" className="size-5 stroke-[1.8]" />
       </button>
-      <div
-        id={TABLET_TOPBAR_SLOT_ID}
+      <TabletSlot
+        slot={TABLET_SLOT.topbarMain}
         className="flex min-w-0 flex-1 items-center gap-1.5"
       />
       <button
@@ -192,6 +191,10 @@ export function WorkspaceTabletTopbar({
           {commandShortcut}
         </kbd>
       </button>
+      <TabletSlot
+        slot={TABLET_SLOT.topbarActions}
+        className="flex shrink-0 items-center gap-1.5"
+      />
     </header>
   );
 }

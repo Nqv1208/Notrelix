@@ -56,7 +56,6 @@ export {
 } from "./shell/workspace-sidebar-surface";
 export {
   WorkspaceTabletTopbar,
-  TABLET_TOPBAR_SLOT_ID,
   WorkspaceTopbarSurface,
   type WorkspaceTopbarSurfaceProps,
 } from "./shell/workspace-topbar-surface";
