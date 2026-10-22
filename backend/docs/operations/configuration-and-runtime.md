@@ -488,6 +488,12 @@ This keeps the root thin.
 
 ---
 
+# 23A. Realtime gateway options
+
+`Realtime:Gateway` (`RealtimeGatewayOptions`, validated on start): `Enabled`, `Path`, `AllowedOrigins` (defaults to `Cors:AllowedOrigins`; wildcard only in Development/Testing), `MaxSubscriptionsPerConnection`, `MaxConnectionsPerUser`, `MaxInboundMessageBytes`, `MaxInboundMessagesPerSecond`, `SendQueueCapacity`, `PingInterval`, `IdleTimeout` (must exceed `PingInterval`), `ReauthorizationInterval`, `MaxConnectionLifetime`, `SendTimeout`. Development/Testing compose an in-process notification source; other environments use Redis.
+
+---
+
 # 24. BE-OPS-CFG-012 — Composition binds implementations, not product policy
 
 Dependency registration MAY select:

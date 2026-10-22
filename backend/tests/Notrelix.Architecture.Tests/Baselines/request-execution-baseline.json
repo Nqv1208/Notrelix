@@ -3850,6 +3850,31 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.WorkManagement.Boards.Queries.AuthorizeBoardRealtimeSubscription.AuthorizeBoardRealtimeSubscriptionQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IResourceScopedRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.WorkManagement.Boards.Queries.AuthorizeBoardRealtimeSubscription.AuthorizeBoardRealtimeSubscriptionQueryHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoard.GetBoardQuery",
     "kind": "Query",
     "principalMarkers": [
@@ -6847,6 +6872,31 @@
     "publicCache": false,
     "handlerTypes": [
       "Notrelix.Application.Features.Workspaces.Workspaces.Commands.UpdateWorkspaceProfile.UpdateWorkspaceProfileCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Workspaces.Workspaces.Queries.AuthorizeWorkspaceRealtimeSubscription.AuthorizeWorkspaceRealtimeSubscriptionQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Workspaces.Workspaces.Queries.AuthorizeWorkspaceRealtimeSubscription.AuthorizeWorkspaceRealtimeSubscriptionQueryHandler"
     ]
   },
   {

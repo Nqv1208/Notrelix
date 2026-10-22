@@ -1,3 +1,4 @@
+using Notrelix.Application.Common.Realtime.Gateway;
 using Notrelix.Infrastructure.Messaging;
 using Notrelix.Infrastructure.Realtime;
 
@@ -12,6 +13,9 @@ public static class RealtimeRegistration
         {
             // Dev fallback: no transport side effects in development/testing.
             services.AddScoped<IRealtimePublisher, DevNullRealtimePublisher>();
+            services.AddSingleton<InMemoryRealtimeNotificationSource>();
+            services.AddSingleton<IRealtimeNotificationSource>(
+                provider => provider.GetRequiredService<InMemoryRealtimeNotificationSource>());
         }
         else
         {
@@ -19,6 +23,7 @@ public static class RealtimeRegistration
             // RedisRealtimePublisher). Requires the Redis connection registered
             // by AddCaching; construction never connects (lazy multiplexer).
             services.AddScoped<IRealtimePublisher, RedisRealtimePublisher>();
+            services.AddSingleton<IRealtimeNotificationSource, RedisRealtimeNotificationSource>();
         }
 
         return services;

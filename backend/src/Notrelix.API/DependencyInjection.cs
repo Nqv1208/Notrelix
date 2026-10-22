@@ -5,6 +5,7 @@ using Notrelix.API.Middleware;
 using Notrelix.API.OpenApi;
 using Notrelix.API.Options;
 using Notrelix.API.RateLimiting;
+using Notrelix.API.Realtime;
 using Notrelix.Infrastructure.Auth.Csrf;
 using Notrelix.Infrastructure.Observability.HealthChecks;
 
@@ -30,6 +31,7 @@ public static class DependencyInjection
         services.AddApiSwagger();
         services.AddApiRouting();
         services.AddApiForwardedHeaders(configuration, environment);
+        services.AddRealtimeGateway(configuration, environment);
 
         services.ConfigureHttpJsonOptions(options =>
         {
