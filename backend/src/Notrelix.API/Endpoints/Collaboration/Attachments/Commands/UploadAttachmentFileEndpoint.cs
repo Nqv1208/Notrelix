@@ -82,7 +82,7 @@ public static class UploadAttachmentFileEndpoint
             }
             while (section is not null && !IsFilePart(section, out _));
         }
-        catch (InvalidDataException)
+        catch (Exception ex) when (IsMalformedBody(ex))
         {
             return EndpointExtensions.InvalidInput("The multipart body is malformed.");
         }
@@ -93,7 +93,7 @@ public static class UploadAttachmentFileEndpoint
         }
 
         var result = await sender.Send(
-            new UploadBoardItemAttachmentCommand(boardItemId, fileName, section.Body), cancellationToken);
+            new UploadBoardItemAttachmentCommand(boardItemId, fileName, new MalformedBodyAsInvalidDataStream(section.Body)), cancellationToken);
 
         if (!result.Succeeded)
         {
@@ -102,6 +102,74 @@ public static class UploadAttachmentFileEndpoint
 
         return Results.Created(
             $"/api/v1/board-items/{boardItemId}/attachments/{result.Data!.Id}/content", result.Data);
+    }
+
+    /// <summary>
+    /// A multipart body that ends before its closing boundary surfaces as a plain
+    /// <see cref="IOException"/> from the reader; transport failures (including the Kestrel body
+    /// limit) are <see cref="BadHttpRequestException"/> and keep their own mapping.
+    /// </summary>
+    private static bool IsMalformedBody(Exception ex) =>
+        ex is InvalidDataException || (ex is IOException && ex is not BadHttpRequestException);
+
+    /// <summary>
+    /// Forward-only wrapper over the file part that reports a truncated multipart body as
+    /// <see cref="InvalidDataException"/> (400). Only reads of the request body are translated;
+    /// failures of the storage write itself are not touched and stay server errors.
+    /// </summary>
+    private sealed class MalformedBodyAsInvalidDataStream(Stream inner) : Stream
+    {
+        public override bool CanRead => true;
+        public override bool CanSeek => false;
+        public override bool CanWrite => false;
+        public override long Length => throw new NotSupportedException();
+        public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+
+        public override int Read(byte[] buffer, int offset, int count) => Translate(() => inner.Read(buffer, offset, count));
+
+        public override int Read(Span<byte> buffer)
+        {
+            try
+            {
+                return inner.Read(buffer);
+            }
+            catch (Exception ex) when (IsMalformedBody(ex) && ex is not InvalidDataException)
+            {
+                throw new InvalidDataException("The multipart body ended unexpectedly.", ex);
+            }
+        }
+
+        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
+            await ReadAsync(buffer.AsMemory(offset, count), cancellationToken);
+
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                return await inner.ReadAsync(buffer, cancellationToken);
+            }
+            catch (Exception ex) when (IsMalformedBody(ex) && ex is not InvalidDataException)
+            {
+                throw new InvalidDataException("The multipart body ended unexpectedly.", ex);
+            }
+        }
+
+        private static int Translate(Func<int> read)
+        {
+            try
+            {
+                return read();
+            }
+            catch (Exception ex) when (IsMalformedBody(ex) && ex is not InvalidDataException)
+            {
+                throw new InvalidDataException("The multipart body ended unexpectedly.", ex);
+            }
+        }
+
+        public override void Flush() { }
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
     }
 
     private static bool IsFilePart(MultipartSection section, out string fileName)
