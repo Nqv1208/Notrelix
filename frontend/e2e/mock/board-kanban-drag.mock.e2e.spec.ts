@@ -206,7 +206,9 @@ test.describe("Kanban drag", () => {
           copyX: copy ? copy.x + copy.width / 2 : null,
         });
         const settled =
-          probe.__frames.length >= 30 && where !== undefined && copy === undefined;
+          probe.__frames.length >= 30 &&
+          where !== undefined &&
+          copy === undefined;
         if (settled || performance.now() - startedAt > 4000) {
           probe.__framesDone = true;
           return;
