@@ -1631,7 +1631,7 @@ Rule count: 2689
 | `FE-RT-023` | `FE-RT` | Stale sequence is not applied to product state | [`frontend/docs/architecture/realtime.md`](../../frontend/docs/architecture/realtime.md) |
 | `FE-RT-024` | `FE-RT` | Gap means local incremental history is incomplete | [`frontend/docs/architecture/realtime.md`](../../frontend/docs/architecture/realtime.md) |
 | `FE-RT-025` | `FE-RT` | Recovery re-establishes both data truth and sequence continuity | [`frontend/docs/architecture/realtime.md`](../../frontend/docs/architecture/realtime.md) |
-| `FE-RT-026` | `FE-RT` | Current recovery continuation is UNRESOLVED until proven | [`frontend/docs/architecture/realtime.md`](../../frontend/docs/architecture/realtime.md) |
+| `FE-RT-026` | `FE-RT` | Recovery continuation is proven by a continuation test | [`frontend/docs/architecture/realtime.md`](../../frontend/docs/architecture/realtime.md) |
 | `FE-RT-027` | `FE-RT` | Recovery scope follows subscription/event ownership | [`frontend/docs/architecture/realtime.md`](../../frontend/docs/architecture/realtime.md) |
 | `FE-RT-028` | `FE-RT` | Workspace subscription is explicitly scoped | [`frontend/docs/architecture/realtime.md`](../../frontend/docs/architecture/realtime.md) |
 | `FE-RT-029` | `FE-RT` | Subscription identity is not UI component identity | [`frontend/docs/architecture/realtime.md`](../../frontend/docs/architecture/realtime.md) |
