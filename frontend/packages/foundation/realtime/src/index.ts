@@ -1,7 +1,10 @@
 /**
  * @notrelix/realtime - WebSocket client, protocol, and event contracts
  *
- * Provides realtime communication infrastructure with typed events.
+ * Provides the realtime transport for the backend realtime gateway protocol
+ * v1: connection lifecycle, subscribe/ack, heartbeat, reconnect, per-stream
+ * checkpoints and recovery signals. Frames carry no payload; consumers
+ * invalidate/refetch authoritative state.
  *
  * USAGE: Instantiate RealtimeClient via the AppRuntime composition root,
  * not as a module-level singleton.
@@ -14,12 +17,14 @@ export {
 } from "./connection/reconnect-policy";
 export {
   RealtimeClient,
+  REALTIME_ENDPOINT_PATH,
+  resolveRealtimeEndpointUrl,
   type RealtimeConnectionState,
   type RealtimeConnectContext,
   type RealtimeConnectionDescriptor,
   type RealtimeConnectionDescriptorProvider,
-  type RealtimeSubscriptionFilter,
-  type RealtimeSequenceGap,
+  type RealtimeRecoveryReason,
+  type RealtimeRecoverySignal,
   type RealtimeEventListener,
   type RealtimeStateListener,
   type RealtimeRecoveryListener,

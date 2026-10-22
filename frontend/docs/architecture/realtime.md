@@ -112,13 +112,35 @@ It does not make the client more authoritative than the backend resource contrac
 
 Realtime wire shape is producer-owned.
 
-Current generated contract input includes:
+The backend realtime gateway (`GET /api/v1/realtime`, upgraded to WebSocket,
+session-cookie authenticated) speaks protocol v1:
 
 ```text
-artifacts/contracts/realtime.v1.json
+client → server: subscribe | unsubscribe | ping | pong
+server → client: ready | subscribed | unsubscribed | subscription-error
+                 | ping | pong | event (no payload)
 ```
 
-through the frontend codegen pipeline.
+`streamVersion` is a per-`streamKey` gap-free counter allocated by the server.
+`resourceVersion` is informational only. Close codes 1001/1006/1013/4408
+reconnect, 4401 refreshes the session first, 1003/1008/1009 are client
+protocol faults.
+
+The client types for this protocol are written by hand in
+`frontend/packages/foundation/realtime/src/protocol/` (TRANSITION): the
+contract artifact below is a hand-written stub with no backend producer and
+does not describe this protocol. Its generated types
+(`GeneratedRealtimeMessage`, `RealtimeEventMessage` in `@notrelix/contracts`)
+have no consumer. Replacing the hand-written types with a generated producer
+is an open contract-owner decision.
+
+```text
+artifacts/contracts/realtime.v1.json   (stub, not the gateway contract)
+```
+
+The gateway does not yet deliver item-level events (field value changed, member
+assigned, item moved). Board state therefore stays REST-driven; nothing here
+may assume those events exist.
 
 ---
 
@@ -384,11 +406,13 @@ and emit enough diagnostics for operational analysis.
 
 # 23. Deterministic reconnect
 
-Current client intentionally uses deterministic exponential backoff without jitter in its freeze-v1 implementation.
+Current client uses exponential backoff (1s, 2s, 4s, ... capped at 30s) with equal jitter: the delay is drawn from `[base/2, base]`.
 
-That supports deterministic tests.
+The random source is injected (`random`), so tests pin it for deterministic delays.
 
-Production jitter policy is a mechanism decision, not product semantics.
+Close code policy: 1000/1001/1006/1013/4408 and other codes reconnect with backoff; 4401 calls the injected `refreshSession` (runtime-owned auth refresh) and reconnects, failing after two consecutive 4401 closes that never reached `ready`; 1003/1008/1009 are client protocol faults and end in `failed` without retry.
+
+Jitter policy is a mechanism decision, not product semantics.
 
 ---
 
@@ -454,7 +478,7 @@ that can affect a future independently created runtime.
 
 # 29. Heartbeat
 
-Current transport uses ping/pong heartbeat and closes after configured missed-pong threshold.
+Current transport sends a `ping` every 25s (bounded to a third of the server `idleTimeoutMs` from `ready`; the gateway closes a connection after 75s without inbound frames), answers server `ping` with `pong`, and closes after the configured missed-pong threshold.
 
 ---
 
@@ -605,15 +629,15 @@ according to contract.
 
 # 43. Sequence tracking
 
-Current transport tracks sequence per:
+Current transport tracks the server `streamVersion` per:
 
 ```text
-workspaceId
+wire subscriptionId
 +
-subscriptionId/default
+streamKey
 ```
 
-when the envelope has a sequence.
+There is no global sequence and no `aggregateVersion`/`sequence` field.
 
 ---
 
@@ -632,13 +656,7 @@ unless producer contract says they share one sequence domain.
 
 # 45. Stale sequence
 
-Current client ignores envelopes with sequence:
-
-```text
-<= previous sequence
-```
-
-and emits telemetry.
+Current client does not apply a frame whose `streamVersion` is not `last + 1`. A repeated frame with the same `eventId` is ignored silently; a different frame with `streamVersion <= last` (duplicate version or stream reset) triggers recovery, and the checkpoint is rebased to the received version.
 
 ---
 
@@ -656,7 +674,7 @@ Current client reports a gap when:
 received > previous + 1
 ```
 
-and calls recovery listeners instead of dispatching the gap event.
+The first event after a (re)subscribe ack sets the checkpoint. Recovery listeners receive a `RealtimeRecoverySignal` (`subscribed`, `gap`, `duplicate`, `reset`, `permission-lost`, `subscription-failed`) instead of the gap event being dispatched.
 
 ---
 
@@ -700,43 +718,32 @@ Invalidating queries alone is insufficient proof if the sequence tracker remains
 
 # 51. Current web gap recovery
 
-Current web lifecycle subscribes to transport recovery and calls `handleWorkspaceRecovery()`.
+Current web lifecycle subscribes to transport recovery and calls `handleWorkspaceRecovery()` for every signal of the active Workspace.
 
-Current policy invalidates selected Workspace-related queries.
+Current policy invalidates the canonical `["workspace", workspaceId]` query prefix (every Workspace-scoped query of every owner) and the account unread-notification count, so active queries refetch over REST.
 
-Current `RealtimeClient` source does not visibly reset/rebase the sequence tracker from that recovery callback.
+The client rebases the checkpoint itself when a gap is detected, and clears checkpoints on every subscribe ack and socket close.
 
 ---
 
-# 52. FE-RT-026 — Current recovery continuation is UNRESOLVED until proven
+# 52. FE-RT-026 — Recovery continuation is proven by a continuation test
 
 Current evidence proves:
 
 ```text
 gap detected
-→ recovery callback
-→ selected query invalidation
+→ recovery signal
+→ Workspace-scope query invalidation (REST refetch)
+→ checkpoint rebased to the received version
+→ next +1 event dispatched exactly once
 ```
 
-It does **not** by itself prove:
+(`realtime-gateway.unit.test.ts`, `realtime-invalidation.integration.test.ts`,
+`realtime-lifecycle.component.test.tsx`.) The gateway has no replay: recovery
+is always an authoritative REST refetch.
 
-```text
-sequence watermark rebased
-or
-missing sequence replayed
-or
-subscription re-established at a new checkpoint
-```
-
-Classification:
-
-```text
-UNRESOLVED
-```
-
-until an integration/unit test or additional source contract proves live continuation after a gap.
-
-Do not certify gap recovery merely because invalidation executes.
+Do not certify gap recovery merely because invalidation executes; keep the
+continuation assertion.
 
 ---
 
@@ -771,9 +778,11 @@ Current transport subscription filter includes:
 
 ```text
 workspaceId
+boardId?
 eventTypes?
-subscriptionId?
 ```
+
+`boardId` selects the board stream scope; otherwise the Workspace stream is subscribed. The client sends `subscribe` after `ready`, shares one wire subscription (`workspace:<id>` / `board:<id>`) per scope across listeners, re-sends all active subscriptions after every reconnect, and treats events as valid only after the `subscribed` ack. `subscription_revoked`/`subscription_denied` mark the scope permission-lost (no retry; the host revalidates over REST so the forbidden state surfaces normally); `authorization_unavailable` retries with backoff up to five times; other codes fail the subscription without retry.
 
 ---
 
@@ -787,9 +796,7 @@ Workspace filtering is a correctness and tenant-safety property.
 
 # 57. Subscription ID
 
-A subscription/channel ID can further distinguish ordering/filter scope.
-
-Use it according to producer contract.
+The wire `subscriptionId` is client-chosen (<= 64 chars of `[A-Za-z0-9-_.:]`) and ordering/checkpoint scope. The client derives it from the scope (`workspace:<id>`, `board:<id>`); it is not a listener filter.
 
 ---
 

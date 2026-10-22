@@ -2,89 +2,16 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { RealtimeClient, transitionState } from "../transport/realtime-client";
 import {
-  RealtimeClient,
-  transitionState,
-  type WebSocketLike,
-} from "../transport/realtime-client";
-
-const TEST_URL = "ws://realtime.test/realtime";
-
-function createMockSocket() {
-  const socket: WebSocketLike = {
-    readyState: 1,
-    send: vi.fn(),
-    close: vi.fn(function (this: WebSocketLike) {
-      if (this.onclose) this.onclose({ code: 1000, reason: "Closed" });
-    }),
-    onopen: null,
-    onmessage: null,
-    onclose: null,
-    onerror: null,
-  };
-  return socket;
-}
-
-interface FakeTimer {
-  callback: () => void;
-  delay: number;
-  cancelled: boolean;
-}
-
-function lastDelay(timers: FakeTimer[]): number {
-  const timer = timers[timers.length - 1];
-  if (!timer) throw new Error("Expected an active timer");
-  return timer.delay;
-}
-
-function createFakeScheduler() {
-  const timeouts: FakeTimer[] = [];
-  const intervals: FakeTimer[] = [];
-  const scheduler = {
-    setTimeout(callback: () => void, delay: number) {
-      const timer: FakeTimer = { callback, delay, cancelled: false };
-      timeouts.push(timer);
-      return timer;
-    },
-    clearTimeout(handle: unknown) {
-      (handle as FakeTimer).cancelled = true;
-    },
-    setInterval(callback: () => void, delay: number) {
-      const timer: FakeTimer = { callback, delay, cancelled: false };
-      intervals.push(timer);
-      return timer;
-    },
-    clearInterval(handle: unknown) {
-      (handle as FakeTimer).cancelled = true;
-    },
-  };
-  return {
-    timeouts,
-    intervals,
-    scheduler,
-    activeTimeouts: () => timeouts.filter((t) => !t.cancelled),
-    fireLastTimeout: () => {
-      const active = timeouts.filter((t) => !t.cancelled);
-      const timer = active[active.length - 1];
-      if (!timer) throw new Error("No active timer to fire");
-      timer.cancelled = true;
-      timer.callback();
-    },
-  };
-}
-
-function validEnvelope(overrides: Record<string, unknown> = {}): string {
-  return JSON.stringify({
-    schemaVersion: 1,
-    eventId: "evt-1",
-    eventType: "board.updated",
-    workspaceId: "ws-1",
-    correlationId: "corr-1",
-    timestamp: new Date().toISOString(),
-    payload: {},
-    ...overrides,
-  });
-}
+  TEST_URL,
+  ackSubscriptions,
+  connectAndReady,
+  createFakeScheduler,
+  createSocketFactory,
+  eventFrame,
+  readyFrame,
+} from "./realtime-test-kit";
 
 describe("RealtimeStateTransition Machine", () => {
   it("transitions idle -> connecting on CONNECT_REQUESTED", () => {
@@ -106,102 +33,92 @@ describe("RealtimeStateTransition Machine", () => {
 });
 
 describe("RealtimeClient foundation contract", () => {
-  let sockets: WebSocketLike[];
-  let factory: ReturnType<typeof vi.fn>;
+  let kit: ReturnType<typeof createSocketFactory>;
 
   beforeEach(() => {
-    sockets = [];
-    factory = vi.fn(() => {
-      const socket = createMockSocket();
-      sockets.push(socket);
-      return socket;
-    });
+    kit = createSocketFactory();
   });
 
   afterEach(() => {
     vi.unstubAllGlobals();
   });
 
-  function socketAt(index: number): WebSocketLike {
-    const socket = sockets[index];
-    if (!socket) throw new Error(`Expected a socket at index ${index}`);
-    return socket;
-  }
-
-  function lastSocket(): WebSocketLike {
-    return socketAt(sockets.length - 1);
-  }
-
-  async function connectAndOpen(
-    client: RealtimeClient,
-  ): Promise<WebSocketLike> {
-    const connectPromise = client.connect({ sessionGeneration: "gen-1" });
-    await Promise.resolve();
-    const socket = lastSocket();
-    socket.onopen?.({});
-    await connectPromise;
+  /** Opens, delivers `ready` and acknowledges every subscribe frame. */
+  async function connectAndOpen(client: RealtimeClient) {
+    const socket = await connectAndReady(client, () => kit.last());
+    ackSubscriptions(socket);
     return socket;
   }
 
   it("RT-001 constructor does not access global WebSocket", async () => {
     vi.stubGlobal("WebSocket", undefined);
 
-    const client = new RealtimeClient(TEST_URL, { socketFactory: factory });
+    const client = new RealtimeClient(TEST_URL, {
+      socketFactory: kit.factory,
+    });
     await connectAndOpen(client);
 
     expect(client.getState()).toBe("connected");
-    expect(factory).toHaveBeenCalledTimes(1);
+    expect(kit.factory).toHaveBeenCalledTimes(1);
   });
 
   it("RT-002 connect() creates exactly one socket with the configured URL", async () => {
-    const client = new RealtimeClient(TEST_URL, { socketFactory: factory });
+    const client = new RealtimeClient(TEST_URL, {
+      socketFactory: kit.factory,
+    });
 
     await connectAndOpen(client);
 
-    expect(factory).toHaveBeenCalledTimes(1);
-    expect(factory.mock.calls[0]?.[0]).toMatchObject({ url: TEST_URL });
+    expect(kit.factory).toHaveBeenCalledTimes(1);
+    expect(kit.factory.mock.calls[0]?.[0]).toMatchObject({ url: TEST_URL });
   });
 
-  it("RT-003 second connect() while connecting/open does not create another socket", async () => {
-    const client = new RealtimeClient(TEST_URL, { socketFactory: factory });
+  it("RT-003 second connect() of the same session while connecting/open does not create another socket", async () => {
+    const client = new RealtimeClient(TEST_URL, {
+      socketFactory: kit.factory,
+    });
 
     const first = client.connect({ sessionGeneration: "gen-1" });
-    await client.connect({ sessionGeneration: "gen-2" });
+    await client.connect({ sessionGeneration: "gen-1" });
     await Promise.resolve();
-    socketAt(0).onopen?.({});
+    kit.at(0).onopen?.({});
     await first;
-    await client.connect({ sessionGeneration: "gen-3" });
+    await client.connect({ sessionGeneration: "gen-1" });
 
-    expect(factory).toHaveBeenCalledTimes(1);
+    expect(kit.factory).toHaveBeenCalledTimes(1);
   });
 
   it("RT-004 valid incoming message is parsed and dispatched through the subscription API", async () => {
-    const client = new RealtimeClient(TEST_URL, { socketFactory: factory });
+    const client = new RealtimeClient(TEST_URL, {
+      socketFactory: kit.factory,
+    });
     const listener = vi.fn();
     client.subscribe({ workspaceId: "ws-1" }, listener);
 
     await connectAndOpen(client);
-    socketAt(0).onmessage?.({ data: validEnvelope() });
+    kit.at(0).onmessage?.({ data: eventFrame() });
 
     expect(listener).toHaveBeenCalledTimes(1);
     expect(listener.mock.calls[0]?.[0]).toMatchObject({
       eventId: "evt-1",
       workspaceId: "ws-1",
+      timestamp: "2026-01-01T00:00:00.000Z",
+      aggregateId: "ws-1",
     });
   });
 
   it("RT-005 malformed message calls the error port and does not crash the message loop", async () => {
     const telemetry = { track: vi.fn(), reportError: vi.fn() };
     const client = new RealtimeClient(TEST_URL, {
-      socketFactory: factory,
+      socketFactory: kit.factory,
       telemetry,
     });
     const listener = vi.fn();
     client.subscribe({ workspaceId: "ws-1" }, listener);
 
     await connectAndOpen(client);
-    socketAt(0).onmessage?.({ data: "{not-valid-json" });
-    socketAt(0).onmessage?.({ data: validEnvelope() });
+    kit.at(0).onmessage?.({ data: "{not-valid-json" });
+    kit.at(0).onmessage?.({ data: eventFrame() });
 
     expect(telemetry.reportError).toHaveBeenCalledTimes(1);
     expect(listener).toHaveBeenCalledTimes(1);
@@ -210,33 +127,32 @@ describe("RealtimeClient foundation contract", () => {
   it("RT-006 network close schedules exactly one reconnect", async () => {
     const { scheduler, activeTimeouts } = createFakeScheduler();
     const client = new RealtimeClient(TEST_URL, {
-      socketFactory: factory,
+      socketFactory: kit.factory,
       scheduler,
     });
 
     await connectAndOpen(client);
     const timersBefore = activeTimeouts().length;
-    socketAt(0).onclose?.({ code: 1006, reason: "network" });
+    kit.at(0).onclose?.({ code: 1006, reason: "network" });
 
     expect(activeTimeouts().length).toBe(timersBefore + 1);
     expect(client.getState()).toBe("reconnecting");
   });
 
-  it("RT-007 reconnect delay follows deterministic 1s,2s,4s,... capped at 30s", async () => {
-    const { scheduler, activeTimeouts, fireLastTimeout } =
-      createFakeScheduler();
+  it("RT-007 reconnect delay doubles from 1s and is capped at 30s (jitter pinned to its upper bound)", async () => {
+    const { scheduler, lastDelay, fireLastTimeout } = createFakeScheduler();
     const client = new RealtimeClient(TEST_URL, {
-      socketFactory: factory,
+      socketFactory: kit.factory,
       scheduler,
+      random: () => 1,
     });
 
     await connectAndOpen(client);
 
     const reconnectDelays: number[] = [];
     for (let attempt = 0; attempt < 7; attempt++) {
-      const current = lastSocket();
-      current.onclose?.({ code: 1006, reason: "network" });
-      reconnectDelays.push(lastDelay(activeTimeouts()));
+      kit.last().onclose?.({ code: 1006, reason: "network" });
+      reconnectDelays.push(lastDelay());
       fireLastTimeout();
       await Promise.resolve();
       await Promise.resolve();
@@ -247,38 +163,39 @@ describe("RealtimeClient foundation contract", () => {
     ]);
   });
 
-  it("RT-008 successful open resets the reconnect attempt counter", async () => {
-    const { scheduler, activeTimeouts, fireLastTimeout } =
-      createFakeScheduler();
+  it("RT-008 gateway ready resets the reconnect attempt counter", async () => {
+    const { scheduler, lastDelay, fireLastTimeout } = createFakeScheduler();
     const client = new RealtimeClient(TEST_URL, {
-      socketFactory: factory,
+      socketFactory: kit.factory,
       scheduler,
+      random: () => 1,
     });
 
     await connectAndOpen(client);
 
-    socketAt(0).onclose?.({ code: 1006, reason: "network" });
-    expect(lastDelay(activeTimeouts())).toBe(1000);
+    kit.at(0).onclose?.({ code: 1006, reason: "network" });
+    expect(lastDelay()).toBe(1000);
 
     fireLastTimeout();
     await Promise.resolve();
     await Promise.resolve();
-    socketAt(1).onopen?.({});
+    kit.at(1).onopen?.({});
     expect(client.getState()).toBe("connected");
+    kit.at(1).onmessage?.({ data: readyFrame() });
 
-    socketAt(1).onclose?.({ code: 1006, reason: "network" });
-    expect(lastDelay(activeTimeouts())).toBe(1000);
+    kit.at(1).onclose?.({ code: 1006, reason: "network" });
+    expect(lastDelay()).toBe(1000);
   });
 
   it("RT-009 manual disconnect() cancels a pending reconnect", async () => {
     const { scheduler, activeTimeouts } = createFakeScheduler();
     const client = new RealtimeClient(TEST_URL, {
-      socketFactory: factory,
+      socketFactory: kit.factory,
       scheduler,
     });
 
     await connectAndOpen(client);
-    socketAt(0).onclose?.({ code: 1006, reason: "network" });
+    kit.at(0).onclose?.({ code: 1006, reason: "network" });
     expect(activeTimeouts().length).toBeGreaterThan(0);
 
     client.disconnect();
@@ -287,20 +204,22 @@ describe("RealtimeClient foundation contract", () => {
   });
 
   it("RT-010 manual disconnect() closes the socket exactly once", async () => {
-    const client = new RealtimeClient(TEST_URL, { socketFactory: factory });
+    const client = new RealtimeClient(TEST_URL, {
+      socketFactory: kit.factory,
+    });
 
     await connectAndOpen(client);
     client.disconnect();
     client.disconnect();
 
-    expect(socketAt(0).close).toHaveBeenCalledTimes(1);
+    expect(kit.at(0).close).toHaveBeenCalledTimes(1);
     expect(client.getState()).toBe("closed");
   });
 
   it("RT-011 dispose() cancels timers, closes the socket and is idempotent", async () => {
     const { scheduler, activeTimeouts } = createFakeScheduler();
     const client = new RealtimeClient(TEST_URL, {
-      socketFactory: factory,
+      socketFactory: kit.factory,
       scheduler,
     });
 
@@ -308,57 +227,57 @@ describe("RealtimeClient foundation contract", () => {
     client.dispose();
     client.dispose();
 
-    expect(socketAt(0).close).toHaveBeenCalledTimes(1);
+    expect(kit.at(0).close).toHaveBeenCalledTimes(1);
     expect(activeTimeouts().length).toBe(0);
     expect(client.getState()).toBe("closed");
   });
 
   it("RT-012 no reconnect happens after dispose", async () => {
-    const {
-      scheduler,
-      activeTimeouts,
-      fireLastTimeout: _fireLastTimeout,
-    } = createFakeScheduler();
+    const { scheduler, activeTimeouts } = createFakeScheduler();
     const client = new RealtimeClient(TEST_URL, {
-      socketFactory: factory,
+      socketFactory: kit.factory,
       scheduler,
     });
 
     await connectAndOpen(client);
-    socketAt(0).onclose?.({ code: 1006, reason: "network" });
+    kit.at(0).onclose?.({ code: 1006, reason: "network" });
     client.dispose();
 
     expect(activeTimeouts().length).toBe(0);
     await client.connect({ sessionGeneration: "gen-2" });
     await Promise.resolve();
-    expect(factory).toHaveBeenCalledTimes(1);
+    expect(kit.factory).toHaveBeenCalledTimes(1);
   });
 
-  it("RT-013 subscriptions survive network reconnect", async () => {
+  it("RT-013 subscriptions survive network reconnect and are re-established", async () => {
     const { scheduler, fireLastTimeout } = createFakeScheduler();
     const client = new RealtimeClient(TEST_URL, {
-      socketFactory: factory,
+      socketFactory: kit.factory,
       scheduler,
     });
     const listener = vi.fn();
     client.subscribe({ workspaceId: "ws-1" }, listener);
 
     await connectAndOpen(client);
-    socketAt(0).onclose?.({ code: 1006, reason: "network" });
+    kit.at(0).onclose?.({ code: 1006, reason: "network" });
     fireLastTimeout();
     await Promise.resolve();
     await Promise.resolve();
-    socketAt(1).onopen?.({});
+    kit.at(1).onopen?.({});
+    kit.at(1).onmessage?.({ data: readyFrame() });
+    ackSubscriptions(kit.at(1));
 
-    socketAt(1).onmessage?.({
-      data: validEnvelope({ eventId: "evt-after-reconnect" }),
+    kit.at(1).onmessage?.({
+      data: eventFrame({ eventId: "evt-after-reconnect" }),
     });
     expect(listener).toHaveBeenCalledTimes(1);
-    expect(factory).toHaveBeenCalledTimes(2);
+    expect(kit.factory).toHaveBeenCalledTimes(2);
   });
 
   it("FND-045 unsubscribe detaches the listener without affecting other subscribers", async () => {
-    const client = new RealtimeClient(TEST_URL, { socketFactory: factory });
+    const client = new RealtimeClient(TEST_URL, {
+      socketFactory: kit.factory,
+    });
     const listenerA = vi.fn();
     const listenerB = vi.fn();
     const unsubscribe = client.subscribe({ workspaceId: "ws-1" }, listenerA);
@@ -366,29 +285,39 @@ describe("RealtimeClient foundation contract", () => {
 
     await connectAndOpen(client);
 
-    socketAt(0).onmessage?.({ data: validEnvelope({ eventId: "evt-1" }) });
+    kit.at(0).onmessage?.({
+      data: eventFrame({ eventId: "evt-1", streamVersion: 1 }),
+    });
     expect(listenerA).toHaveBeenCalledTimes(1);
     expect(listenerB).toHaveBeenCalledTimes(1);
 
     unsubscribe();
-    socketAt(0).onmessage?.({ data: validEnvelope({ eventId: "evt-2" }) });
+    kit.at(0).onmessage?.({
+      data: eventFrame({ eventId: "evt-2", streamVersion: 2 }),
+    });
 
     expect(listenerA).toHaveBeenCalledTimes(1);
     expect(listenerB).toHaveBeenCalledTimes(2);
   });
 
   it("FND-045 dispose detaches all subscribers so no listener fires afterwards", async () => {
-    const client = new RealtimeClient(TEST_URL, { socketFactory: factory });
+    const client = new RealtimeClient(TEST_URL, {
+      socketFactory: kit.factory,
+    });
     const listener = vi.fn();
     client.subscribe({ workspaceId: "ws-1" }, listener);
 
     await connectAndOpen(client);
-    socketAt(0).onmessage?.({ data: validEnvelope({ eventId: "evt-1" }) });
+    kit.at(0).onmessage?.({
+      data: eventFrame({ eventId: "evt-1", streamVersion: 1 }),
+    });
     expect(listener).toHaveBeenCalledTimes(1);
 
     client.dispose();
 
-    socketAt(0).onmessage?.({ data: validEnvelope({ eventId: "evt-2" }) });
+    kit.at(0).onmessage?.({
+      data: eventFrame({ eventId: "evt-2", streamVersion: 2 }),
+    });
     expect(listener).toHaveBeenCalledTimes(1);
   });
 

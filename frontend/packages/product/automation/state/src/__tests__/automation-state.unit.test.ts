@@ -32,40 +32,31 @@ describe("automation state", () => {
     });
   });
 
-  it("reconciles execution detail from realtime events and ignores stale sequence", async () => {
-    const queryClient = new QueryClient();
+  it("treats execution events as invalidation signals for the workspace automation scope", async () => {
+    const adapter = createAutomationExecutionRealtimeAdapter();
     const invalidateQueries = vi.fn();
-    const adapter = createAutomationExecutionRealtimeAdapter(queryClient);
     const context = { workspaceId: "workspace-1", invalidateQueries };
 
+    const event = buildAutomationExecutionEvent({
+      eventType: "automation.execution.completed",
+    });
+    expect(adapter.supports(event)).toBe(true);
+    await adapter.validateAndHandle(event, context);
+
+    expect(invalidateQueries).toHaveBeenCalledWith([
+      [...automationQueryKeys.all("workspace-1")],
+    ]);
+  });
+
+  it("ignores execution events of another workspace", async () => {
+    const adapter = createAutomationExecutionRealtimeAdapter();
+    const invalidateQueries = vi.fn();
+
     await adapter.validateAndHandle(
-      buildAutomationExecutionEvent({
-        eventType: "automation.execution.started",
-        sequence: 2,
-        payload: { status: "running", sequence: 2 },
-      }),
-      context,
-    );
-    await adapter.validateAndHandle(
-      buildAutomationExecutionEvent({
-        eventType: "automation.execution.completed",
-        sequence: 1,
-        payload: { status: "succeeded", sequence: 1 },
-      }),
-      context,
+      buildAutomationExecutionEvent({ workspaceId: "workspace-2" }),
+      { workspaceId: "workspace-1", invalidateQueries },
     );
 
-    expect(
-      queryClient.getQueryData(
-        automationQueryKeys.executionDetail("workspace-1", "execution-1"),
-      ),
-    ).toMatchObject({
-      id: "execution-1",
-      status: "running",
-      sequence: 2,
-    });
-    expect(invalidateQueries).toHaveBeenCalledWith([
-      automationQueryKeys.executionHistory("workspace-1", "rule-1"),
-    ]);
+    expect(invalidateQueries).not.toHaveBeenCalled();
   });
 });

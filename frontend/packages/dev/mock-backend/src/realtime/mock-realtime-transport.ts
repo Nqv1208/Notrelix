@@ -9,8 +9,10 @@
 import type {
   RealtimeTransport,
   RealtimeConnectContext,
+  RealtimeEnvelope,
   RealtimeSubscriptionFilter,
   RealtimeEventListener,
+  RealtimeRecoverySignal,
   RealtimeStateListener,
   RealtimeRecoveryListener,
   RealtimeConnectionState,
@@ -64,6 +66,40 @@ export class MockRealtimeTransport implements RealtimeTransport {
 
   getState(): RealtimeConnectionState {
     return this.state;
+  }
+
+  /**
+   * Test/dev helper: deliver a gateway-shaped event frame (no payload) to the
+   * listeners subscribed for its Workspace, like the real client does after
+   * checkpoint validation.
+   */
+  deliverEvent(envelope: RealtimeEnvelope): void {
+    for (const { filter, listener } of this.subscriptions.values()) {
+      if (filter.workspaceId !== envelope.workspaceId) continue;
+      if (
+        filter.eventTypes &&
+        filter.eventTypes.length > 0 &&
+        !filter.eventTypes.includes(envelope.eventType)
+      ) {
+        continue;
+      }
+      try {
+        listener(envelope);
+      } catch {
+        // Safe dispatch: errors in listeners don't crash transport
+      }
+    }
+  }
+
+  /** Test/dev helper: simulate a stream gap/reset or subscription ack. */
+  deliverRecovery(signal: RealtimeRecoverySignal): void {
+    for (const listener of this.recoveryListeners) {
+      try {
+        listener(signal);
+      } catch {
+        // Safe dispatch: errors in listeners don't crash transport
+      }
+    }
   }
 
   dispose(): void {

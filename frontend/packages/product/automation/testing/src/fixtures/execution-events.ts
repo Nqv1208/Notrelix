@@ -1,34 +1,29 @@
 import type { RealtimeEnvelope } from "@notrelix/realtime";
-import type {
-  AutomationExecutionEventPayload,
-  AutomationExecutionEventType,
-} from "@notrelix/automation-state";
+import type { AutomationExecutionEventType } from "@notrelix/automation-state";
 
 export function buildAutomationExecutionEvent(
   overrides: {
     eventType?: AutomationExecutionEventType;
     workspaceId?: string;
-    sequence?: number;
-    payload?: Partial<AutomationExecutionEventPayload>;
+    streamVersion?: number;
   } = {},
-): RealtimeEnvelope<AutomationExecutionEventPayload> {
+): RealtimeEnvelope {
   const eventType = overrides.eventType ?? "automation.execution.started";
-  const sequence = overrides.sequence ?? 1;
+  const streamVersion = overrides.streamVersion ?? 1;
+  const workspaceId = overrides.workspaceId ?? "workspace-1";
   return {
     schemaVersion: 1,
-    eventId: `event-${sequence}`,
+    eventId: `event-${streamVersion}`,
     eventType,
-    workspaceId: overrides.workspaceId ?? "workspace-1",
-    correlationId: `correlation-${sequence}`,
+    changeKind: "updated",
+    subscriptionId: `workspace:${workspaceId}`,
+    streamKey: `workspace:Workspace:${workspaceId}`,
+    streamVersion,
+    resourceKind: "AutomationExecution",
+    resourceId: "execution-1",
+    aggregateId: "execution-1",
+    workspaceId,
+    correlationId: `correlation-${streamVersion}`,
     timestamp: "2026-01-01T00:00:00.000Z",
-    sequence,
-    payload: {
-      executionId: "execution-1",
-      ruleId: "rule-1",
-      status:
-        eventType === "automation.execution.failed" ? "failed" : "running",
-      sequence,
-      ...overrides.payload,
-    },
   };
 }
