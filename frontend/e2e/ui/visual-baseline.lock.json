@@ -9,9 +9,9 @@
   "renderer_version": "1.61.1",
   "snapshots": "frontend/e2e/ui/ui-foundation.visual.spec.ts-snapshots",
   "storybook": {
-    "@storybook/addon-a11y": "8.6.17",
-    "@storybook/react": "8.6.17",
-    "@storybook/react-vite": "8.6.17",
-    "storybook": "8.6.17"
+    "@storybook/addon-a11y": "8.6.19",
+    "@storybook/react": "8.6.19",
+    "@storybook/react-vite": "8.6.19",
+    "storybook": "8.6.19"
   }
 }
