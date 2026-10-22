@@ -23,7 +23,7 @@
   "devDependencies": {
     "@notrelix/automation-testing": "workspace:*",
     "@notrelix/testing": "workspace:*",
-    "@storybook/react": "8.6.17",
+    "@storybook/react": "8.6.19",
     "typescript": "^5.0.0",
     "@types/react": "^19.0.0",
     "@notrelix/eslint-config": "workspace:*"

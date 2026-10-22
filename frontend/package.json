@@ -101,7 +101,9 @@
       "proxy-addr@2": "^2.0.8",
       "shell-quote": "^1.11.0",
       "@modelcontextprotocol/sdk": "^1.31.0",
-      "tinypool": "^2.1.2"
+      "tinypool": "^2.1.2",
+      "vite@7": "^7.3.7",
+      "vite@8": "~8.2.4"
     },
     "auditConfig": {
       "ignoreGhsas": [

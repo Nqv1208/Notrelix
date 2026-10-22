@@ -32,7 +32,7 @@
     "react": "catalog:",
     "react-dom": "catalog:",
     "@notrelix/testing": "workspace:*",
-    "@storybook/react": "8.6.17",
+    "@storybook/react": "8.6.19",
     "@notrelix/eslint-config": "workspace:*"
   }
 }
