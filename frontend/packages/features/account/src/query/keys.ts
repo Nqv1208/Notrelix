@@ -1,8 +1,11 @@
 import { accountQueryKey } from "@notrelix/query";
 
 export const accountQueryKeys = {
-  all: accountQueryKey("account"),
-  profile: accountQueryKey("account", "profile"),
-  preferences: accountQueryKey("account", "preferences"),
-  security: accountQueryKey("account", "security"),
+  all: (accountId: string) => accountQueryKey(accountId, "account"),
+  profile: (accountId: string) =>
+    accountQueryKey(accountId, "account", "profile"),
+  preferences: (accountId: string) =>
+    accountQueryKey(accountId, "account", "preferences"),
+  security: (accountId: string) =>
+    accountQueryKey(accountId, "account", "security"),
 } as const;

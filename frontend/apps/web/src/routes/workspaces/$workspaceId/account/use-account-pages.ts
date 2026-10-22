@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useRouter } from "@tanstack/react-router";
-import { accountQueryKey } from "@notrelix/query";
+import { accountQueryKey, useAccountId } from "@notrelix/query";
 import { useAppRuntime } from "@notrelix/runtime-web";
 import type { AccountFrameLink, AccountTab } from "@notrelix/features-account";
 import {
@@ -21,12 +21,20 @@ export function useAccountPagesApi() {
 }
 
 /** Account-scoped query keys of the pages (no workspace dimension). */
-export const accountPagesKeys = {
-  details: accountQueryKey("account-pages", "details"),
-  security: accountQueryKey("account-pages", "security"),
-  notifications: accountQueryKey("account-pages", "notifications"),
-  workspaces: accountQueryKey("account-pages", "workspaces"),
-} as const;
+export function accountPagesKeys(accountId: string) {
+  return {
+    details: accountQueryKey(accountId, "account-pages", "details"),
+    security: accountQueryKey(accountId, "account-pages", "security"),
+    notifications: accountQueryKey(accountId, "account-pages", "notifications"),
+    workspaces: accountQueryKey(accountId, "account-pages", "workspaces"),
+  } as const;
+}
+
+/** The pages' keys for the active Account (fails loudly without one). */
+export function useAccountPagesKeys() {
+  const accountId = useAccountId();
+  return useMemo(() => accountPagesKeys(accountId), [accountId]);
+}
 
 const PATHS: Record<AccountTab, string> = {
   profile: "profile",

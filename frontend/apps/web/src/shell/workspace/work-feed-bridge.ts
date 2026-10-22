@@ -21,7 +21,11 @@ import {
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
-import { accountQueryKey, workspaceQueryKey } from "@notrelix/query";
+import {
+  accountQueryKey,
+  useAccountId,
+  workspaceQueryKey,
+} from "@notrelix/query";
 import { useAppRuntime } from "@notrelix/runtime-web";
 import { wmQueryKeys } from "@notrelix/work-management-state";
 import { myWorkQueryKey } from "./work-management-bridge";
@@ -296,8 +300,9 @@ export function useHomeFeed(workspaceId: string) {
 /** Unread inbox entries per workspace and in total (rail and sidebar badges). */
 export function useInboxSummary() {
   const { api: client } = useAppRuntime();
+  const accountId = useAccountId();
   return useQuery({
-    queryKey: accountQueryKey("workspace-feed", "inbox-summary"),
+    queryKey: accountQueryKey(accountId, "workspace-feed", "inbox-summary"),
     staleTime: 15_000,
     queryFn: async () =>
       (await client.api.get<InboxSummaryDto | null>("/inbox/summary")) ?? {
@@ -339,6 +344,7 @@ export function useWorkspaceInbox(workspaceId: string) {
 
 function invalidateFeed(
   queryClient: QueryClient,
+  accountId: string,
   workspaceId: string,
   boardIds: readonly string[] = [],
 ) {
@@ -351,7 +357,7 @@ function invalidateFeed(
   });
   void queryClient.invalidateQueries({ queryKey: inboxQueryKey(workspaceId) });
   void queryClient.invalidateQueries({
-    queryKey: accountQueryKey("workspace-feed"),
+    queryKey: accountQueryKey(accountId, "workspace-feed"),
   });
   for (const boardId of new Set(boardIds)) {
     void queryClient.invalidateQueries({
@@ -411,6 +417,7 @@ export interface WorkFeedWrites {
 export function useWorkFeedWrites(workspaceId: string): WorkFeedWrites {
   const { api: client } = useAppRuntime();
   const queryClient = useQueryClient();
+  const accountId = useAccountId();
   const api = client.api;
 
   const run = useMutation({
@@ -419,7 +426,7 @@ export function useWorkFeedWrites(workspaceId: string): WorkFeedWrites {
       boardIds?: readonly string[];
     }) => ({ value: await job.send(), boardIds: job.boardIds ?? [] }),
     onSettled: (_data, _error, job) =>
-      invalidateFeed(queryClient, workspaceId, job.boardIds ?? []),
+      invalidateFeed(queryClient, accountId, workspaceId, job.boardIds ?? []),
   });
   const perform = useCallback(
     async <T>(send: () => Promise<T>, boardIds: readonly string[] = []) =>

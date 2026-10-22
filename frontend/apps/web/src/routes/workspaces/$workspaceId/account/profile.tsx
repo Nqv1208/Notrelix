@@ -12,7 +12,7 @@ import {
 } from "@notrelix/features-account";
 import { useFormatters } from "@notrelix/i18n";
 import { useAppRuntime } from "@notrelix/runtime-web";
-import { accountPagesKeys, useAccountPagesApi } from "./use-account-pages";
+import { useAccountPagesKeys, useAccountPagesApi } from "./use-account-pages";
 
 /** A photo is sent as a data URL; anything bigger is refused here. */
 const MAX_PHOTO_BYTES = 1_500_000;
@@ -28,6 +28,7 @@ function readAsDataUrl(file: File): Promise<string> {
 }
 
 export function AccountProfilePage() {
+  const accountPagesKeys = useAccountPagesKeys();
   const { api: runtimeClient } = useAppRuntime();
   const copy = useAccountProfileCopy();
   const formatters = useFormatters();

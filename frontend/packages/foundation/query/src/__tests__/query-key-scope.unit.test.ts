@@ -25,17 +25,35 @@ describe("QRY-001 global helper shape", () => {
 });
 
 describe("QRY-002 account helper shape", () => {
-  it('constructs ["account", resource, ...segments]', () => {
-    expect(accountQueryKey("workspaces", "list")).toEqual([
+  it('constructs ["account", accountId, resource, ...segments]', () => {
+    expect(accountQueryKey("acc-1", "workspaces", "list")).toEqual([
       "account",
+      "acc-1",
       "workspaces",
       "list",
     ]);
-    expect(accountQueryKey("notifications", "unread-count")).toEqual([
+    expect(accountQueryKey("acc-1", "notifications", "unread-count")).toEqual([
       "account",
+      "acc-1",
       "notifications",
       "unread-count",
     ]);
+  });
+
+  it("QRY-006 gives different Accounts disjoint keys", () => {
+    expect(accountQueryKey("acc-a", "profile")).not.toEqual(
+      accountQueryKey("acc-b", "profile"),
+    );
+  });
+
+  it("QRY-007 throws on a missing or empty account ID", () => {
+    expect(() => accountQueryKey("", "profile")).toThrow(/account ID/);
+    expect(() =>
+      accountQueryKey(undefined as unknown as string, "profile"),
+    ).toThrow(/account ID/);
+    expect(() => accountQueryKey(null as unknown as string, "x")).toThrow(
+      /account ID/,
+    );
   });
 });
 
@@ -55,9 +73,21 @@ describe("QRY-003 workspace helper shape", () => {
 });
 
 describe("assertNotrelixQueryKey validation", () => {
+  it("QRY-008 rejects an account key without a non-empty account ID", () => {
+    expect(() => assertNotrelixQueryKey(["account"])).toThrow(/account ID/);
+    expect(() => assertNotrelixQueryKey(["account", "", "x"])).toThrow(
+      /account ID/,
+    );
+    expect(() => assertNotrelixQueryKey(["account", "workspaces"])).toThrow(
+      /requires a resource/,
+    );
+  });
+
   it("accepts valid global/account/workspace keys", () => {
     expect(() => assertNotrelixQueryKey(globalQueryKey("x"))).not.toThrow();
-    expect(() => assertNotrelixQueryKey(accountQueryKey("x", 1))).not.toThrow();
+    expect(() =>
+      assertNotrelixQueryKey(accountQueryKey("acc-1", "x", 1)),
+    ).not.toThrow();
     expect(() =>
       assertNotrelixQueryKey(workspaceQueryKey("ws-1", "x", "segment")),
     ).not.toThrow();
@@ -80,7 +110,7 @@ describe("assertNotrelixQueryKey validation", () => {
     expect(() => assertNotrelixQueryKey(["global"])).toThrow(
       /requires a resource/,
     );
-    expect(() => assertNotrelixQueryKey(["account"])).toThrow(
+    expect(() => assertNotrelixQueryKey(["account", "acc-1"])).toThrow(
       /requires a resource/,
     );
     expect(() => assertNotrelixQueryKey(["workspace", "ws-1"])).toThrow(

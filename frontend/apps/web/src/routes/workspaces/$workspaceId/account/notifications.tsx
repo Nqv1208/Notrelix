@@ -9,7 +9,7 @@ import {
   type AccountSaveStatus,
 } from "@notrelix/features-account";
 import { useAppRuntime } from "@notrelix/runtime-web";
-import { accountPagesKeys, useAccountPagesApi } from "./use-account-pages";
+import { useAccountPagesKeys, useAccountPagesApi } from "./use-account-pages";
 
 const GMT: Record<string, string> = {
   UTC: "GMT",
@@ -19,6 +19,7 @@ const GMT: Record<string, string> = {
 };
 
 export function AccountNotificationsPage() {
+  const accountPagesKeys = useAccountPagesKeys();
   const { api: runtimeClient } = useAppRuntime();
   const copy = useAccountNotificationsCopy();
   const api = useAccountPagesApi();

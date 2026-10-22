@@ -1,3 +1,4 @@
+import { useAccountId } from "@notrelix/query";
 import { useQuery } from "@tanstack/react-query";
 import {
   createNotificationsService,
@@ -17,8 +18,9 @@ export function createUseNotifications({
 }: UseNotificationsDeps) {
   const service = createNotificationsService(api, endpoints);
   return function useNotifications() {
+    const accountId = useAccountId();
     return useQuery({
-      queryKey: notificationsQueryKeys.all,
+      queryKey: notificationsQueryKeys.all(accountId),
       queryFn: () => service.getList(),
     });
   };

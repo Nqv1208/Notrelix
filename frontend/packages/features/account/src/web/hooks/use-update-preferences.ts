@@ -1,3 +1,4 @@
+import { useAccountId } from "@notrelix/query";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   createAccountService,
@@ -19,6 +20,7 @@ export function createUseUpdatePreferences({
   const service = createAccountService(api, endpoints);
 
   return function useUpdatePreferences() {
+    const accountId = useAccountId();
     const queryClient = useQueryClient();
 
     return useMutation({
@@ -26,7 +28,7 @@ export function createUseUpdatePreferences({
         service.updatePreferences(prefs),
       onSuccess: () => {
         queryClient.invalidateQueries({
-          queryKey: accountQueryKeys.preferences,
+          queryKey: accountQueryKeys.preferences(accountId),
         });
       },
     });

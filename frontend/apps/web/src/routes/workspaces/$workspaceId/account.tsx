@@ -9,7 +9,7 @@ import {
 } from "@notrelix/features-account";
 import { useAppRuntime } from "@notrelix/runtime-web";
 import {
-  accountPagesKeys,
+  useAccountPagesKeys,
   useAccountLinks,
   useAccountPagesApi,
 } from "./account/use-account-pages";
@@ -29,6 +29,7 @@ function activeTab(pathname: string): AccountTab {
 }
 
 export function AccountLayout() {
+  const accountPagesKeys = useAccountPagesKeys();
   const { workspaceId } = useParams({
     from: "/workspaces/$workspaceId/account",
   });
