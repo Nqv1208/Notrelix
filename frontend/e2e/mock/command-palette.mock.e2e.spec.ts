@@ -251,7 +251,9 @@ test.describe("Command palette (owner)", () => {
     const create = options(page).filter({ hasText: "Tạo công việc" });
     await expect(create).toHaveAttribute("aria-disabled", "true");
     await expect(create).toHaveAttribute("title", /chưa khả dụng/);
-    await create.click({ force: true });
+    // Dispatch on the element itself: the list re-renders when the feed's search
+    // results arrive, so a pointer click by position can land on another row.
+    await create.dispatchEvent("click");
     await expect(dialog(page)).toBeVisible();
     await expect(page).toHaveURL(/\/home/);
     // The scope chip is inert as well.
