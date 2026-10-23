@@ -1,6 +1,7 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Application.Features.Workspaces.Members.Services;
+using Notrelix.Domain.Workspaces.Rules;
 
 namespace Notrelix.Application.Features.Workspaces.Members.Commands.RemoveMember;
 
@@ -47,6 +48,10 @@ public class RemoveMemberCommandHandler : IRequestHandler<RemoveMemberCommand, R
 
         if (member is null)
             throw new NotFoundException("WorkspaceMember", request.UserId);
+
+        var actorRole = await WorkspaceActorRoleLookup.GetActiveActorRoleAsync(
+            _context, workspace.Id, _requestContext.UserId, ct);
+        WorkspaceMemberRules.EnsureActorCanActOnMember(actorRole, member.Role);
 
         var activeOwnerCount = await _context.WorkspaceMembers
             .CountAsync(m => m.WorkspaceId == workspace.Id && m.Role == WorkspaceRole.Owner && m.Status == WorkspaceMemberStatus.Active, ct);

@@ -878,9 +878,42 @@ Guest
     constrained/external access
 ```
 
-Exact matrices may evolve.
-
 High-risk owner semantics remain fail-closed.
+
+## 44.1. Workspace role baseline (final matrix, 2026-10-23)
+
+The default decision of a workspace role for every `PermissionAction`, before explicit permission rules, resource permissions and Space evaluation compose on top of it (GOV-025 order, unchanged). Source of truth in code: the typed table `WorkspaceRoleBaseline` (Application Governance); an exhaustive test classifies every action, so a new action fails until it is classified. Account-scoped actions (`CreateWorkspace`, `ManageAccount`) are decided on the Account role (`AccountRoleBaseline`): Owner and Admin allowed, Member denied; `ViewWorkspace` is open to every Account member.
+
+`A` = allow, `D` = deny, `L` = decided on the resource level (Board, Page or Space: Owner → Owner level, Admin and Member on an unplaced Workspace-visible resource → Editor, Admin on a resource placed in a Space → Manager, Guest → explicit access only, capped at Editor; GOV-025/027/030).
+
+| Actions | Owner | Admin | Member | Guest | Note |
+|---|---|---|---|---|---|
+| `ViewWorkspace` | A | A | A | A | Every active member reaches the shell. |
+| `ViewMembers` | A | A | A | A | Guest stays allowed while the web shell reads the member list for the viewer's role and names (see 44.3). |
+| `InviteMember` (add member, invitations) | A | A | D | D | Changed from Owner-only. Role cap in 44.2. |
+| `RemoveMember` (remove, suspend, activate) | A | A | D | D | Changed from Owner-only. Actor-versus-target guard in 44.2. |
+| `ManageWorkspaceSettings` | A | A | D | D | Changed from Owner-only. API-token management stays here for now; a later split to Owner-only is a separate decision (GOV-013, security configuration). |
+| `ChangeMemberRole` | A | D | D | D | Minting Admin or Owner stays Owner. |
+| `ManageWorkspace`, `ArchiveWorkspace`, `RestoreWorkspace`, `DeleteWorkspace` | A | D | D | D | Lifecycle and security stay Owner (GOV-013). |
+| `ManageSpaces`, `ManageTeams`, `ManageMemberProfile`, `ManageIntegrations` | A | A | D | D | GOV-028, D15, M8. In a Space the Space level decides. |
+| `CreateBoard` at the workspace root | A | A | A | D | Changed: Admin and Member may create unplaced Boards (usage right, Guests excluded, same as `CreatePage`). In a Space the Space level decides (Editor). |
+| `CreatePage` | A | A | A | D | Usage right. |
+| Board actions (`ViewBoard`, `ManageBoard`, `ManageBoardPermission`, board view, field and item actions, `ShareBoardView`) | A | L | L | L | GOV-027 thresholds. Public share needs Editor (unchanged). |
+| Page actions (`ViewPage`, `UpdatePage`, `DeletePage`, `ArchivePage`, `SharePage`, `ManagePagePermission`) | A | L | L | L | GOV-027. `SharePage` needs Editor (unchanged). |
+| `CreateComment` | A | L | L | L | Decided on the target resource; a Guest needs explicit access on it. |
+
+An Allow cell applies to the workspace resource itself (and, for `ManageWorkspaceSettings`, to the Automation, Analytics and Integrations resources it targets, and for `ManageIntegrations` also the calendar integration); it never widens to another resource kind.
+
+## 44.2. Guards the changed rows depend on
+
+Without these the changed rows would be an escalation. Both are Domain rules fed explicit facts (the actor's active workspace role, the target's role) by Application; they run before any state changes and use stable rule codes.
+
+- **Role cap** (`Workspaces_Member_ActorCannotAssignRole`): adding a member directly assigns Member or Guest only unless the actor is an Owner. Invitations already offer Member or Guest only (`Workspaces_Invitation_CannotInviteAsAdmin`). Re-adding a returning member whose existing row is an Owner or Admin is refused for a non-Owner (`Workspaces_Member_ActorCannotActOnMember`).
+- **Actor-versus-target** (`Workspaces_Member_ActorCannotActOnMember`): remove, suspend and activate act on any target only for an Owner; an Admin acts only on Member and Guest targets, never on an Owner or another Admin. The last-owner invariant and the owner row lock are unchanged.
+
+## 44.3. Open: ViewMembers for a Guest
+
+GOV-009 says a Guest does not enumerate the workspace, so `ViewMembers` for a Guest is intended to be denied. It is not yet denied: the web shell reads the workspace member list for every role (viewer role detection, sidebar, document host), so a Guest would lose the shell. Backend reads that show people on a shared resource (full board, board item, comments, board members) already resolve names through the actor lookup and do not need the member list. Denying the cell is blocked on a guest-safe read of the viewer's own membership in the shell; tracked as WG-DEBT-002 item 6 in the Workspace and Governance certification record.
 
 ---
 

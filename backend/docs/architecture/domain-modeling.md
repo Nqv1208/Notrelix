@@ -2695,7 +2695,7 @@ replace the source implementation as executable evidence.
 - **Must not own:** User profile data, invitation lifecycle, or board-level access rules.
 - **Source evidence:** `backend/src/Notrelix.Domain/Workspaces/Members/WorkspaceMember.cs`
 - **Lifecycle:** `Active` ↔ `Suspended` → `Removed`. Removal is a terminal status transition — not a soft delete. `AggregateRoot` (no `DeletedAt`).
-- **Key invariants:** Owner role can only be assigned through `PromoteToOwner` (not `ChangeRole`); last active owner cannot be suspended or removed (`WorkspaceOwnerRules.EnsureCanSuspendOwner/RemoveOwner`).
+- **Key invariants:** Owner role can only be assigned through `PromoteToOwner` (not `ChangeRole`); last active owner cannot be suspended or removed (`WorkspaceOwnerRules.EnsureCanSuspendOwner/RemoveOwner`); a non-Owner actor adds only Member or Guest (`WorkspaceMemberRules.EnsureActorCanAssignRole`, rule `Workspaces_Member_ActorCannotAssignRole`) and removes, suspends or activates only Member or Guest targets (`WorkspaceMemberRules.EnsureActorCanActOnMember`, rule `Workspaces_Member_ActorCannotActOnMember`); Application supplies the actor and target roles as explicit facts.
 - **Boundary status:** reviewed.
 
 ## Aggregate: WorkspaceInvitation

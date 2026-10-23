@@ -1,6 +1,7 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Application.Features.Workspaces.Members.Services;
+using Notrelix.Domain.Workspaces.Rules;
 
 namespace Notrelix.Application.Features.Workspaces.Members.Commands.ActivateMember;
 
@@ -41,6 +42,10 @@ public class ActivateMemberCommandHandler : IRequestHandler<ActivateMemberComman
 
         if (member is null)
             throw new NotFoundException("WorkspaceMember", request.UserId);
+
+        var actorRole = await WorkspaceActorRoleLookup.GetActiveActorRoleAsync(
+            _context, request.WorkspaceId, _requestContext.UserId, ct);
+        WorkspaceMemberRules.EnsureActorCanActOnMember(actorRole, member.Role);
 
         member.Activate(_requestContext.UserId, _dateTimeProvider.UtcNow);
 

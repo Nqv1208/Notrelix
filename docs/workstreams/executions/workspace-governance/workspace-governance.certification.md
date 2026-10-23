@@ -4206,7 +4206,8 @@ They do not constitute final certification.
 
 This section records executed evidence and the disposition of the preparation-time debt register
 (section 76 and PR-WG-00 section 67). It is a record of one candidate, not a Milestone B certification:
-`WG-DEBT-002` (built-in role baseline) is still open and blocks the P2 Protected Slice.
+`WG-DEBT-002` (built-in role baseline) is closed for the accepted rows by the 2026-10-23 role baseline change recorded
+below ("WG-DEBT-002 closure"); one item (ViewMembers for a Guest) stays open and is named there.
 
 ### Candidate and evidence
 
@@ -4257,7 +4258,7 @@ contract change, no frontend codegen). `dotnet format --verify-no-changes` exit 
 | ID | Disposition at 2026-10-23 | Evidence |
 |---|---|---|
 | WG-DEBT-001 | CLOSED | Evaluator is pure `AccessPolicyEngine` over `AccessFacts`; facts through `PostgresAccessFactsProvider`; `PermissionService` no longer exists. |
-| WG-DEBT-002 | OPEN, decision-gated | No typed Owner/Admin/Member/Guest baseline. A decision-ready proposal (current behaviour per `PermissionAction` x role, 5 proposed changes, 6 open questions) exists as a local working note; the decision and the typed baseline are still to be made in this workstream. Blocks Milestone B. |
+| WG-DEBT-002 | CLOSED for 37 of 38 actions; ViewMembers for a Guest OPEN, blocked | Typed `WorkspaceRoleBaseline` replaces the string branches; accepted decisions applied for InviteMember, RemoveMember, ManageWorkspaceSettings and CreateBoard (root); guards in Domain. See "WG-DEBT-002 closure" below. |
 | WG-DEBT-003 | CLOSED by bounding | Certified core of a resource entry is User or Team subject, Allow-only, no expiry or condition (product `governance.md` section 16). The `ResourcePermission` factory refuses other subject types and has no effect, condition or priority input; the grant validator rejects other subjects and any expiry. `ResourcePermissionTests` (Domain), `GrantResourcePermissionCommandValidatorTests` (Application). Pre-existing rows with another subject type stay stored and fail closed (access facts match User and Team only); no migration. |
 | WG-DEBT-004 | OPEN, secondary (non-core) | `WorkspacePolicy` is not in the evaluator. Carried to P3 handoff as non-core. |
 | WG-DEBT-005 | CLOSED by bounding | Certified subject set is User and Team for resource entries (same change as 003); permission rules keep SQL-level subject filtering. No command creates `PermissionRule` rows (seed-only), so no rule-side validator is needed yet. |
@@ -4271,6 +4272,60 @@ contract change, no frontend codegen). `dotnet format --verify-no-changes` exit 
 | WG-DEBT-013 | OPEN, secondary (non-core) | ShareLink create and disable exist; no token consumption path. Certify released depth only. |
 | WG-DEBT-014 | OPEN, secondary (non-core) | `PermissionTemplate` has no apply use case. |
 | WG-DEBT-015 | CLOSED | Legacy names replaced in `backend/docs/architecture/security-tenancy-authorization.md` (current contract list, `AccessControlBehavior`, permission-versioning section); terminology notes added to ADR-001, ADR-006 and PR-WG-00 without rewriting accepted decisions; stale comments in `PermissionRules.cs` and `ApiTokenHttpFlowTests.cs` corrected. Remaining mentions in workstream execution records and architecture-test fixtures are historical or intentional negative fixtures. |
+
+### WG-DEBT-002 closure (role baseline, 2026-10-23)
+
+Decision: the user accepted every recommendation of the role baseline proposal on 2026-10-23. Final matrix and
+guards: product `governance.md` sections 44.1 to 44.3. Classification: Class B/C/H (product semantic change to
+role defaults, authorization). Rules: NRX-003, NRX-004, NRX-012. No schema, API shape, OpenAPI or event change
+(defaults are code, not rows); a Guest-facing behaviour is unchanged.
+
+```text
+Base SHA: 2e0c5032c3ac65ab4d1c0cd216a533cb52b2a11c (develop, clean tree at start), plus the uncommitted change set.
+Typed table: Application/Features/Governance/Authorization/WorkspaceRoleBaseline.cs (+ AccountRoleBaseline);
+  AccessPolicyEngine.EvaluatePermission reads it for every request not decided by a Board/Page/Space level.
+Rows changed (4 of the 5 proposed): InviteMember Admin D to A; RemoveMember Admin D to A; ManageWorkspaceSettings
+  Admin D to A; CreateBoard at the workspace root Admin and Member D to A (Guest stays D).
+Row NOT changed: ViewMembers for Guest stays A (item 6, below).
+Guards (Domain rules, explicit facts from Application, stable codes):
+  Workspaces_Member_ActorCannotAssignRole (non-Owner adds only Member or Guest)
+  Workspaces_Member_ActorCannotActOnMember (non-Owner removes, suspends, activates only Member or Guest targets)
+```
+
+Differential proof of "the other rows keep behaviour": the previous engine and the new engine were run side by
+side over 19152 scenarios (38 actions x 7 resource kinds x 4 roles x 6 fact shapes x 3 rule shapes). The only
+differences were the accepted ones (InviteMember, RemoveMember, ManageWorkspaceSettings for Admin; CreateBoard
+for Admin and Member on the workspace resource). The temporary comparison harness was removed afterwards.
+
+Characterization tests changed because of the accepted change:
+`WorkspaceMembershipConcurrencyEvidenceTests.ConcurrentTransferOwnershipAndRemoveOfNewOwner_NeverLeavesZeroActiveOwners`
+now expects `Workspaces_Member_ActorCannotActOnMember` (the former owner is an Admin after the transfer and may not
+remove the new Owner) instead of `Workspaces_Owner_CannotRemoveLastOwner`; the "exactly one active Owner" assertion
+is unchanged. `AddMemberCommandHandlerTests` fixtures now seed the acting member and a matching workspace id (the
+old fixtures passed through the create path by accident). Domain `RuleCodes.approved.txt` gained the two codes.
+
+Open item 6, not implemented (stop condition, AGENTS.md section 13): denying ViewMembers for a Guest. The web shell
+reads the workspace member list for every role (`use-workspace-viewer.ts` derives the viewer's own role from it;
+`sidebar.tsx`, `workspace-shell.tsx`, `use-doc-page-host.ts` read it for names), so a Guest would lose the shell.
+Backend reads that show people on a shared resource (`GetFullBoard`, `GetBoardItem`, `GetComments`,
+`GetBoardMembers`) already resolve names through `IActorLookupService`, not through `GetWorkspaceMembers`. Needed
+before the cell can flip: a guest-safe read of the viewer's own membership for the shell (a frontend and contract
+decision) and then the cell change plus a test that a Guest still sees names on a shared Board. Current behaviour is
+pinned by `WorkspaceRoleBaselineIntegrationTests.ViewMembers_GuestRemainsAllowed_UntilAGuestSafeNameReadExists`.
+
+Full local run after the last code change (backend.slnx Release build 0 errors; `dotnet format --verify-no-changes` exit 0;
+`make docs-check` PASS): Domain 2812, Application 1302, Infrastructure 263, Platform 153, API 591, Architecture 644,
+Integration 885 (Docker, PostgreSQL via Testcontainers, 5 m 45 s, includes the 17 `WorkspaceRoleBaselineIntegrationTests`
+for the changed rows and guards); every suite Failed 0, Skipped 0. OpenAPI and generated frontend contracts are
+unchanged (no API shape change; API drift tests pass), so no codegen was run.
+
+Frontend mock-backend gaps (not changed, listed only; `frontend/packages/dev/mock-backend/src`):
+`workspace.members.remove`, `.suspend` and `.activate` allow Owner and Admin (matches the baseline) but have no
+actor-versus-target guard, so a mock Admin can act on an Owner or another Admin (the producer rejects it with
+`Workspaces_Member_ActorCannotActOnMember`); `boards.create` (`POST /workspaces/:workspaceId/boards`) denies nobody at
+the workspace root, so a mock Guest can create a root Board (the producer denies a Guest, 403); the mock has no direct
+add-member handler (invitations only), so the role cap has no mock counterpart; `canManageMembers` already treats
+Owner and Admin as the settings and invitation managers, which matches the new rows.
 
 ### WG-DEBT-CERT-001..014
 
@@ -4337,5 +4392,5 @@ Secondary, non-core, deferred: WG-DEBT-004 and 011 (WorkspacePolicy), 012 (Custo
   consumption), 014 (PermissionTemplate apply). P3 must not depend on them.
 
 Invalidating changes: any change to AccessFacts fields used by Work, to ResourceKind/PermissionAction
-  semantics, to the Board level mapping, or to the built-in role baseline (WG-DEBT-002) re-opens this handoff.
+  semantics, to the Board level mapping, or to the built-in role baseline (WG-DEBT-002, now typed as `WorkspaceRoleBaseline`) re-opens this handoff.
 ```

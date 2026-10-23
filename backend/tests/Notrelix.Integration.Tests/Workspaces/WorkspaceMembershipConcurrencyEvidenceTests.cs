@@ -237,8 +237,9 @@ public sealed class WorkspaceMembershipConcurrencyEvidenceTests : IAsyncLifetime
     /// <summary>
     /// TransferOwnership takes the same workspace row lock as Suspend/Remove: a
     /// concurrent removal of the incoming owner is serialized behind the transfer,
-    /// re-reads the owner count after it commits, and fails closed because the
-    /// incoming owner is then the only active owner.
+    /// re-reads the actor's role after it commits, and fails closed: the former owner
+    /// is then an Admin, who may not remove an Owner (WG-DEBT-002 actor-versus-target
+    /// guard). The incoming owner stays the one active owner either way.
     /// </summary>
     [Fact]
     public async Task ConcurrentTransferOwnershipAndRemoveOfNewOwner_NeverLeavesZeroActiveOwners()
@@ -280,7 +281,7 @@ public sealed class WorkspaceMembershipConcurrencyEvidenceTests : IAsyncLifetime
 
         var removing = async () => await removeTask;
         (await removing.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>())
-            .Which.RuleCode.Should().Be(WorkspaceRuleCodes.Workspaces_Owner_CannotRemoveLastOwner);
+            .Which.RuleCode.Should().Be(WorkspaceRuleCodes.Workspaces_Member_ActorCannotActOnMember);
 
         await using var verify = _db.CreateContext(SystemTenant());
         (await verify.WorkspaceMembers.CountAsync(m =>

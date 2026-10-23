@@ -313,6 +313,13 @@ seam (`ADR-007`). Permission semantics (actions, role ladder, rank ceilings, res
 policy) are Governance-owned; `Application/Common` retains pipeline mechanics only
 (`AccessControlBehavior`, facts/decision/descriptor types).
 
+The workspace-role default of every `PermissionAction` is one typed table, `WorkspaceRoleBaseline`
+(`Allow` / `Deny` / `LevelBased` per Owner, Admin, Member, Guest; Account-scoped requests use
+`AccountRoleBaseline`). `AccessPolicyEngine` reads it where no Board, Page or Space level decides, so no
+action reaches a default by fall-through; an Application test classifies every `PermissionAction` and
+checks the engine against every cell. The final matrix and its guards are in
+`docs/product/governance.md` section 44.1 to 44.3 (WG-DEBT-002).
+
 Commercial gates arrive as neutral facts, not Governance policy. The subscription requirement
 reaches the evaluator as `AccessFacts.SubscriptionRequirementSatisfied`, composed by the
 access-facts provider from the Billing-owned `IBillingSubscriptionFacts` decision seam.

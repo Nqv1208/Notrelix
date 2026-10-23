@@ -1,6 +1,7 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Application.Features.Workspaces.Members.Services;
+using Notrelix.Domain.Workspaces.Rules;
 
 namespace Notrelix.Application.Features.Workspaces.Members.Commands.AddMember;
 
@@ -37,6 +38,10 @@ public class AddMemberCommandHandler : IRequestHandler<AddMemberCommand, Result>
         if (workspace is null)
             throw new NotFoundException(nameof(Workspace), request.WorkspaceId);
 
+        var actorRole = await WorkspaceActorRoleLookup.GetActiveActorRoleAsync(
+            _context, request.WorkspaceId, _requestContext.UserId, ct);
+        WorkspaceMemberRules.EnsureActorCanAssignRole(actorRole, request.Role);
+
         var existingMember = await _context.WorkspaceMembers
             .FirstOrDefaultAsync(m => m.WorkspaceId == request.WorkspaceId && m.UserId == request.UserId, ct);
 
@@ -44,6 +49,9 @@ public class AddMemberCommandHandler : IRequestHandler<AddMemberCommand, Result>
         {
             if (existingMember.Status == WorkspaceMemberStatus.Active)
                 throw new BusinessRuleException("User is already a member of this workspace.");
+
+            // Re-adding a returning member also acts on that member's existing row.
+            WorkspaceMemberRules.EnsureActorCanActOnMember(actorRole, existingMember.Role);
 
             existingMember.Activate(_requestContext.UserId, _dateTimeProvider.UtcNow);
             existingMember.ChangeRole(request.Role, _requestContext.UserId, 1, _dateTimeProvider.UtcNow);
