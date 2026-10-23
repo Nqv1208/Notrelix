@@ -892,7 +892,8 @@ The default decision of a workspace role for every `PermissionAction`, before ex
 | `ViewMembers` | A | A | A | A | Guest stays allowed while the web shell reads the member list for the viewer's role and names (see 44.3). |
 | `InviteMember` (add member, invitations) | A | A | D | D | Changed from Owner-only. Role cap in 44.2. |
 | `RemoveMember` (remove, suspend, activate) | A | A | D | D | Changed from Owner-only. Actor-versus-target guard in 44.2. |
-| `ManageWorkspaceSettings` | A | A | D | D | Changed from Owner-only. API-token management stays here for now; a later split to Owner-only is a separate decision (GOV-013, security configuration). |
+| `ManageWorkspaceSettings` | A | A | D | D | Changed from Owner-only. Targets Automation rules, Analytics placement rebuild and the calendar-sync trigger; it never covers credentials or security configuration (see `ManageApiTokens`). |
+| `ManageApiTokens` (create, list, revoke API tokens) | A | D | D | D | Credential issuance is security configuration and stays Owner (GOV-013). Split out of `ManageWorkspaceSettings` so Admin cannot mint a credential or read or revoke the Owner's tokens. |
 | `ChangeMemberRole` | A | D | D | D | Minting Admin or Owner stays Owner. |
 | `ManageWorkspace`, `ArchiveWorkspace`, `RestoreWorkspace`, `DeleteWorkspace` | A | D | D | D | Lifecycle and security stay Owner (GOV-013). |
 | `ManageSpaces`, `ManageTeams`, `ManageMemberProfile`, `ManageIntegrations` | A | A | D | D | GOV-028, D15, M8. In a Space the Space level decides. |
@@ -909,6 +910,7 @@ An Allow cell applies to the workspace resource itself (and, for `ManageWorkspac
 Without these the changed rows would be an escalation. Both are Domain rules fed explicit facts (the actor's active workspace role, the target's role) by Application; they run before any state changes and use stable rule codes.
 
 - **Role cap** (`Workspaces_Member_ActorCannotAssignRole`): adding a member directly assigns Member or Guest only unless the actor is an Owner. Invitations already offer Member or Guest only (`Workspaces_Invitation_CannotInviteAsAdmin`). Re-adding a returning member whose existing row is an Owner or Admin is refused for a non-Owner (`Workspaces_Member_ActorCannotActOnMember`).
+- **Resend** (`Workspaces_Member_ActorCannotAssignRole`): resending an invitation re-issues the token that grants the invited role, so it applies the same role cap to the invitation's role. A non-Owner cannot re-arm a legacy Admin invitation (created before Admin stopped being invitable); an Admin still resends Member and Guest invitations. Cancelling and changing an invitation role cannot create an Admin or Owner membership (the Domain refuses an Admin or Owner role on create and on change), so they need no extra guard.
 - **Actor-versus-target** (`Workspaces_Member_ActorCannotActOnMember`): remove, suspend and activate act on any target only for an Owner; an Admin acts only on Member and Guest targets, never on an Owner or another Admin. The last-owner invariant and the owner row lock are unchanged.
 
 ## 44.3. Open: ViewMembers for a Guest

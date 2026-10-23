@@ -11,7 +11,7 @@ namespace Notrelix.Application.Features.Identity.ApiTokens.Queries.ListApiTokens
 public sealed record ListApiTokensQuery(Guid WorkspaceId)
     : IQuery<Result<IReadOnlyList<ApiTokenSummaryDto>>>, IReadRequest, IWorkspaceRequest, IAuthenticatedRequest, IRequirePermission
 {
-    public PermissionAction Action => PermissionAction.ManageWorkspaceSettings;
+    public PermissionAction Action => PermissionAction.ManageApiTokens;
     public ResourceRef? Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);
 }
 

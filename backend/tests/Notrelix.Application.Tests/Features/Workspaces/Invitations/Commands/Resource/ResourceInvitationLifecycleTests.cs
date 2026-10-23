@@ -226,6 +226,7 @@ public class ResourceInvitationLifecycleTests : WorkspaceHandlerTestBase
     {
         var invitation = ResourceInvitation(invitedBy: TestUserId);
         SetupInvitations(invitation);
+        SetupMembers(CreateMember(WorkspaceRole.Admin));
         var handler = new ResendInvitationCommandHandler(
             DbContextMock.Object, RequestContextMock.Object, _tokens.Object, _encryptor.Object,
             _events.Object, DateTimeProviderMock.Object, _actors.Object, _facts.Object);
@@ -245,6 +246,7 @@ public class ResourceInvitationLifecycleTests : WorkspaceHandlerTestBase
             TestAccountId, TestWorkspaceId, "m@example.com", WorkspaceRole.Member,
             InvitationTokenHash.Create(Hash), 1, TestUserId, TestNow.AddDays(-1));
         SetupInvitations(invitation);
+        SetupMembers(CreateMember(WorkspaceRole.Admin));
         var handler = new ResendInvitationCommandHandler(
             DbContextMock.Object, RequestContextMock.Object, _tokens.Object, _encryptor.Object,
             _events.Object, DateTimeProviderMock.Object, _actors.Object, _facts.Object);

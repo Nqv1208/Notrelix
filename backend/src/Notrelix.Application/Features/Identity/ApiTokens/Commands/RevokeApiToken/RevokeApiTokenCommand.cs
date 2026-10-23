@@ -17,7 +17,7 @@ public sealed record RevokeApiTokenCommand(
       IAuthenticatedRequest,
       IRequirePermission
 {
-    public PermissionAction Action => PermissionAction.ManageWorkspaceSettings;
+    public PermissionAction Action => PermissionAction.ManageApiTokens;
     public ResourceRef? Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);
 }
 

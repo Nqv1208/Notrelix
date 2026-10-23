@@ -3,6 +3,8 @@ using Notrelix.Application.Common.Tokens;
 using Notrelix.Application.Events.Workspaces;
 using Notrelix.Application.Features.Governance.Public.Access;
 using Notrelix.Application.Features.Workspaces.Abstractions;
+using Notrelix.Application.Features.Workspaces.Members.Services;
+using Notrelix.Domain.Workspaces.Rules;
 
 namespace Notrelix.Application.Features.Workspaces.Invitations.Commands.ResendInvitation;
 
@@ -62,6 +64,12 @@ public sealed class ResendInvitationCommandHandler
                 cancellationToken);
         if (invitation is null)
             throw new NotFoundException(nameof(WorkspaceInvitation), request.InvitationId);
+
+        // A resend re-issues the token that grants the invited role. A legacy Admin invitation
+        // (created before Admin stopped being invitable) must not be re-armed by a non-Owner actor.
+        var actorRole = await WorkspaceActorRoleLookup.GetActiveActorRoleAsync(
+            _workspaceContext, request.WorkspaceId, _requestContext.UserId, cancellationToken);
+        WorkspaceMemberRules.EnsureActorCanAssignRole(actorRole, invitation.Role);
 
         var workspace = await _workspaceContext.Workspaces
             .AsNoTracking()

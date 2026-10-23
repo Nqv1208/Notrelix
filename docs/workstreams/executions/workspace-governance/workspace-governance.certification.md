@@ -4258,7 +4258,7 @@ contract change, no frontend codegen). `dotnet format --verify-no-changes` exit 
 | ID | Disposition at 2026-10-23 | Evidence |
 |---|---|---|
 | WG-DEBT-001 | CLOSED | Evaluator is pure `AccessPolicyEngine` over `AccessFacts`; facts through `PostgresAccessFactsProvider`; `PermissionService` no longer exists. |
-| WG-DEBT-002 | CLOSED for 37 of 38 actions; ViewMembers for a Guest OPEN, blocked | Typed `WorkspaceRoleBaseline` replaces the string branches; accepted decisions applied for InviteMember, RemoveMember, ManageWorkspaceSettings and CreateBoard (root); guards in Domain. See "WG-DEBT-002 closure" below. |
+| WG-DEBT-002 | CLOSED for 38 of 39 actions; ViewMembers for a Guest OPEN, blocked | Typed `WorkspaceRoleBaseline` replaces the string branches; accepted decisions applied for InviteMember, RemoveMember, ManageWorkspaceSettings and CreateBoard (root); guards in Domain. See "WG-DEBT-002 closure" below. |
 | WG-DEBT-003 | CLOSED by bounding | Certified core of a resource entry is User or Team subject, Allow-only, no expiry or condition (product `governance.md` section 16). The `ResourcePermission` factory refuses other subject types and has no effect, condition or priority input; the grant validator rejects other subjects and any expiry. `ResourcePermissionTests` (Domain), `GrantResourcePermissionCommandValidatorTests` (Application). Pre-existing rows with another subject type stay stored and fail closed (access facts match User and Team only); no migration. |
 | WG-DEBT-004 | OPEN, secondary (non-core) | `WorkspacePolicy` is not in the evaluator. Carried to P3 handoff as non-core. |
 | WG-DEBT-005 | CLOSED by bounding | Certified subject set is User and Team for resource entries (same change as 003); permission rules keep SQL-level subject filtering. No command creates `PermissionRule` rows (seed-only), so no rule-side validator is needed yet. |
@@ -4326,6 +4326,48 @@ actor-versus-target guard, so a mock Admin can act on an Owner or another Admin 
 the workspace root, so a mock Guest can create a root Board (the producer denies a Guest, 403); the mock has no direct
 add-member handler (invitations only), so the role cap has no mock counterpart; `canManageMembers` already treats
 Owner and Admin as the settings and invitation managers, which matches the new rows.
+
+### Security follow-up: credential split and invitation resend parity (2026-10-23)
+
+Class H (authorization, security configuration), rules NRX-003, NRX-004, NRX-012; GOV-013. A security review found
+two escalation paths opened by granting Admin the `ManageWorkspaceSettings` and `InviteMember` rows. No schema,
+API shape, OpenAPI or event change (`PermissionAction` is not part of the OpenAPI contract; API drift tests pass).
+
+```text
+1. API tokens. CreateApiToken, ListApiTokens and RevokeApiToken were authorized by ManageWorkspaceSettings, so an
+   Admin could mint a credential and list or revoke the Owner's tokens. New action PermissionAction.ManageApiTokens
+   (appended last in the enum), baseline Owner A, Admin D, Member D, Guest D, used by all three. A created token
+   carries scopes = null and is bound to the creating user and workspace; nothing in the repository enforces token
+   scopes, so a token acts with the creating user's own Governance permissions (an Owner token holds Owner rights).
+   Issuance still requires a session and a purpose-bound step-up proof.
+   Other ManageWorkspaceSettings users, all safe for Admin (none issues a credential or changes security
+   configuration): CreateAutomationRule and SetAutomationRuleEnabled (workspace automation rules, billing capacity
+   checked), RebuildWorkspacePlacements (analytics projection rebuild, no data authority), TriggerCalendarSync
+   (not implemented, throws). None moved.
+2. ResendInvitation. A non-Owner could resend a legacy Admin invitation (Admin is no longer invitable, but older rows
+   exist) and so re-issue a token that makes the invitee an Admin. The handler now reads the actor's active role
+   (WorkspaceActorRoleLookup) and applies WorkspaceMemberRules.EnsureActorCanAssignRole to the invitation's role
+   before the token is rotated: Workspaces_Member_ActorCannotAssignRole, token and generation unchanged, no event.
+   Parity check: CancelInvitation only revokes (cannot create a membership); ChangeInvitationRole and Create refuse
+   Admin and Owner in the Domain (Workspaces_Invitation_CannotInviteAsAdmin / CannotInviteAsOwner);
+   Resend/RevokeResourceInvitation concern Guest-only resource invitations by their issuer; AcceptInvitation carries
+   no actor. No other path needed the guard.
+```
+
+Tests: `WorkspaceRoleBaselineTests` (ManageApiTokens rows, 39 actions classified);
+`ResendInvitationActorGuardTests` (Application: Admin rejected on a legacy Admin invitation with the rule code and
+nothing changed, Owner allowed, Admin allowed on Member and Guest, actor without membership forbidden);
+`WorkspaceCredentialAndInvitationEscalationTests` (Integration, real pipeline on PostgreSQL: Admin gets 403 on
+create, list and revoke with no row written and the Owner's token still active, Owner creates, lists and revokes,
+Admin rejected and Owner allowed on a legacy Admin resend with the persisted token and generation checked, Admin
+resends Member and Guest). `ApiTokenHttpFlowTests` comments updated to the new action. The seed of
+`WorkspaceInvitationConcurrencyEvidenceTests` now creates the resending Owner as an active member (the guard reads
+the actor's role).
+
+Full local run after the last code change (backend.slnx Release build 0 errors; `dotnet format --verify-no-changes`
+exit 0; `make docs-check` PASS): Domain 2812, Application 1313, Infrastructure 263, Platform 153, API 591,
+Architecture 644, Integration 891 (Docker, 6 m 55 s); every suite Failed 0, Skipped 0. OpenAPI and generated
+frontend contracts unchanged, so no codegen was run.
 
 ### WG-DEBT-CERT-001..014
 

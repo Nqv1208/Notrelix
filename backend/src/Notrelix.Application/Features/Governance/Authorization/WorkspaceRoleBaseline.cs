@@ -55,6 +55,9 @@ public static class WorkspaceRoleBaseline
         [PermissionAction.ChangeMemberRole] = new(A, D, D, D),
         [PermissionAction.RemoveMember] = new(A, A, D, D),
         [PermissionAction.ManageWorkspaceSettings] = new(A, A, D, D),
+        // API tokens are credentials: issuing, listing and revoking them is security
+        // configuration and stays Owner (GOV-013), never inherited from workspace settings.
+        [PermissionAction.ManageApiTokens] = new(A, D, D, D),
 
         // Lifecycle and security stay Owner (GOV-013).
         [PermissionAction.ManageWorkspace] = new(A, D, D, D),

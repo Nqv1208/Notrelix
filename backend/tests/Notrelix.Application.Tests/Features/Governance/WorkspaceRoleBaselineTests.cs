@@ -48,7 +48,7 @@ public sealed class WorkspaceRoleBaselineTests
         var all = Enum.GetValues<PermissionAction>();
 
         WorkspaceRoleBaseline.ClassifiedActions.Should().BeEquivalentTo(all, "a new PermissionAction must be classified in the baseline table");
-        all.Should().HaveCount(38);
+        all.Should().HaveCount(39);
     }
 
     [Theory]
@@ -119,6 +119,10 @@ public sealed class WorkspaceRoleBaselineTests
     [InlineData(PermissionAction.RemoveMember, "Member", false)]
     [InlineData(PermissionAction.ManageWorkspaceSettings, "Admin", true)]
     [InlineData(PermissionAction.ManageWorkspaceSettings, "Member", false)]
+    [InlineData(PermissionAction.ManageApiTokens, "Owner", true)]
+    [InlineData(PermissionAction.ManageApiTokens, "Admin", false)]
+    [InlineData(PermissionAction.ManageApiTokens, "Member", false)]
+    [InlineData(PermissionAction.ManageApiTokens, "Guest", false)]
     [InlineData(PermissionAction.CreateBoard, "Admin", true)]
     [InlineData(PermissionAction.CreateBoard, "Member", true)]
     [InlineData(PermissionAction.CreateBoard, "Guest", false)]
