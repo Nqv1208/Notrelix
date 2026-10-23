@@ -99,7 +99,7 @@ public class RegisterDuplicateRaceTests : IAsyncLifetime
         var jwtService = new Mock<IJwtService>();
         jwtService.Setup(x => x.GenerateAccessToken(It.IsAny<User>(), It.IsAny<Guid?>())).Returns("access-token");
         jwtService.Setup(x => x.GenerateRefreshToken()).Returns("refresh-token");
-        var sessionIssuer = new AuthSessionIssuer(jwtService.Object, context, dateTimeProvider, new Mock<IClientMetadata>().Object);
+        var sessionIssuer = new AuthSessionIssuer(jwtService.Object, context, dateTimeProvider, new Mock<IClientMetadata>().Object, Mock.Of<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityActivityRecorder>());
         var integrationEventCollector = new Mock<IIntegrationEventCollector>();
 
         return new RegisterCommandHandler(

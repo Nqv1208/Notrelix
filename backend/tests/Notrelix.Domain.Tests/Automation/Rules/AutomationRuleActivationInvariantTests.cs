@@ -13,7 +13,7 @@ public class AutomationRuleActivationInvariantTests
     private static AutomationConfiguration CreateValidConfig()
     {
         var trigger = AutomationTriggerDefinition.Create("ItemCreated");
-        var action = AutomationActionDefinition.Create("Webhook", """{"url":"https://example.com/webhook"}""");
+        var action = AutomationActionDefinition.Create("Webhook", """{"webhookPath":"example/hook"}""");
         return AutomationConfiguration.Create(trigger, action);
     }
 
@@ -31,7 +31,7 @@ public class AutomationRuleActivationInvariantTests
     {
         // ScheduleTrigger requires cron or interval config
         var invalidTrigger = AutomationTriggerDefinition.Create("ScheduleTrigger");
-        var validAction = AutomationActionDefinition.Create("Webhook", """{"url":"https://example.com"}""");
+        var validAction = AutomationActionDefinition.Create("Webhook", """{"webhookPath":"example/hook"}""");
         var config = AutomationConfiguration.Create(invalidTrigger, validAction);
         var rule = AutomationRule.Create(Guid.NewGuid(), Guid.NewGuid(), "Rule", config, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -60,7 +60,7 @@ public class AutomationRuleActivationInvariantTests
     public void Enable_WhenRejected_ShouldBeFailureAtomic()
     {
         var invalidTrigger = AutomationTriggerDefinition.Create("ScheduleTrigger");
-        var validAction = AutomationActionDefinition.Create("Webhook", """{"url":"https://example.com"}""");
+        var validAction = AutomationActionDefinition.Create("Webhook", """{"webhookPath":"example/hook"}""");
         var config = AutomationConfiguration.Create(invalidTrigger, validAction);
         var rule = AutomationRule.Create(Guid.NewGuid(), Guid.NewGuid(), "Rule", config, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -105,7 +105,7 @@ public class AutomationRuleActivationInvariantTests
         rule.Enable(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         var invalidTrigger = AutomationTriggerDefinition.Create("ScheduleTrigger");
-        var validAction = AutomationActionDefinition.Create("Webhook", """{"url":"https://example.com"}""");
+        var validAction = AutomationActionDefinition.Create("Webhook", """{"webhookPath":"example/hook"}""");
         var invalidConfig = AutomationConfiguration.Create(invalidTrigger, validAction);
 
         var act = () => rule.UpdateConfiguration(invalidConfig, Guid.NewGuid(), DateTimeOffset.UtcNow);
@@ -144,7 +144,7 @@ public class AutomationRuleActivationInvariantTests
         var eventsBefore = rule.DomainEvents.Count;
 
         var invalidTrigger = AutomationTriggerDefinition.Create("ScheduleTrigger");
-        var validAction = AutomationActionDefinition.Create("Webhook", """{"url":"https://example.com"}""");
+        var validAction = AutomationActionDefinition.Create("Webhook", """{"webhookPath":"example/hook"}""");
         var invalidConfig = AutomationConfiguration.Create(invalidTrigger, validAction);
 
         var act = () => rule.UpdateConfiguration(invalidConfig, Guid.NewGuid(), DateTimeOffset.UtcNow);
@@ -183,7 +183,7 @@ public class AutomationRuleActivationInvariantTests
         var rule = CreateDraftRule();
 
         var invalidTrigger = AutomationTriggerDefinition.Create("ScheduleTrigger");
-        var validAction = AutomationActionDefinition.Create("Webhook", """{"url":"https://example.com"}""");
+        var validAction = AutomationActionDefinition.Create("Webhook", """{"webhookPath":"example/hook"}""");
         var invalidConfig = AutomationConfiguration.Create(invalidTrigger, validAction);
 
         var act = () => rule.UpdateConfiguration(invalidConfig, Guid.NewGuid(), DateTimeOffset.UtcNow);

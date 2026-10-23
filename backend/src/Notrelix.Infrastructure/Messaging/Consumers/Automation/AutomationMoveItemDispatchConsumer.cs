@@ -11,6 +11,7 @@ namespace Notrelix.Infrastructure.Messaging.Consumers.Automation;
 /// outcome onto the delivery mechanism's retry contract (at-least-once). The
 /// consumer owns no Automation state and no business rules.
 /// </summary>
+[OrderingNotApplicable("Each delivery is an independent automation execution deduplicated by its stable ExecutionId; no cross-message state supersedes another, and the use case converges per execution.")]
 public sealed class AutomationMoveItemDispatchConsumer : IConsumer<AutomationMoveItemRequestedV1>
 {
     private readonly AutomationMoveItemUseCase _useCase;

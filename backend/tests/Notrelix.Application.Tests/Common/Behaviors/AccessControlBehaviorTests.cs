@@ -49,6 +49,32 @@ public sealed class AccessControlBehaviorTests
             It.IsAny<object>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
+    // WG-DEBT-CERT-007: an authorization dependency fault must fail closed. The
+    // facts provider throwing is never converted into an allow or a skipped check,
+    // and the protected handler does not run.
+    [Fact]
+    public async Task Facts_provider_fault_fails_closed_and_never_runs_the_handler()
+    {
+        var fixture = CreateFixture<VerifiedRequest>();
+        fixture.Provider.Setup(provider => provider.ResolveAsync(
+                It.IsAny<RequestDescriptor>(), It.IsAny<ExecutionContextSnapshot>(),
+                It.IsAny<object>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("facts store unavailable"));
+        var handlerRan = false;
+
+        var act = () => fixture.Behavior.Handle(
+            new VerifiedRequest(),
+            _ =>
+            {
+                handlerRan = true;
+                return Task.FromResult("ok");
+            },
+            CancellationToken.None);
+
+        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*facts store unavailable*");
+        handlerRan.Should().BeFalse("a request whose access facts could not be resolved must be denied");
+    }
+
     [Fact]
     public void Policy_evaluator_is_pure_by_constructor_contract()
     {

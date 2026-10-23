@@ -1,3 +1,4 @@
+using Notrelix.Application.Features.Identity.Mfa.DTOs;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Identity.Mfa.Commands.RegenerateRecoveryCodes;
 
@@ -9,6 +10,8 @@ public static class RegenerateRecoveryCodesEndpoint
     {
         group.MapAuthenticatedPost("/mfa/recovery-codes/regenerate", HandleAsync)
             .WithName("Identity.Mfa.RegenerateRecoveryCodes")
+            .Produces<MfaEnrollmentVerifyResult>(StatusCodes.Status200OK, "application/json")
+            .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status401Unauthorized, StatusCodes.Status412PreconditionFailed)
             .WithTags("Identity.Mfa")
             .WithSummary("Invalidate existing recovery codes and issue a fresh batch")
             .WithDescription("Requires a single-use step-up proof for the RegenerateRecoveryCodes purpose.");

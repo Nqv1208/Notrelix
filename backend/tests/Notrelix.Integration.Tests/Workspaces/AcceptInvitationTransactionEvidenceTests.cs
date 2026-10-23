@@ -1,3 +1,4 @@
+using Notrelix.Application.Features.Workspaces.Invitations.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -131,7 +132,10 @@ public sealed class AcceptInvitationTransactionEvidenceTests : IAsyncLifetime
             new OneTimeTokenService(),
             requestContext.Object,
             dateTime.Object,
-            grantProjection);
+            grantProjection,
+            new InvitationInitialEntries(context, new Notrelix.Infrastructure.Workspaces.Spaces.SpaceStore(context)),
+            new Notrelix.Infrastructure.Data.Authz.GuestResourceAccessActionsAdapter(context),
+            new Mock<Notrelix.Application.Common.Auditing.IAuditService>().Object);
 
         return (session, context, handler, requestContext);
     }
@@ -213,7 +217,10 @@ public sealed class AcceptInvitationTransactionEvidenceTests : IAsyncLifetime
             new OneTimeTokenService(),
             requestContext.Object,
             dateTime.Object,
-            grantProjection);
+            grantProjection,
+            new InvitationInitialEntries(context, new Notrelix.Infrastructure.Workspaces.Spaces.SpaceStore(context)),
+            new Notrelix.Infrastructure.Data.Authz.GuestResourceAccessActionsAdapter(context),
+            new Mock<Notrelix.Application.Common.Auditing.IAuditService>().Object);
 
         var result = await RunInTransactionAsync(session, handler, graph.RawToken);
 
@@ -298,7 +305,10 @@ public sealed class AcceptInvitationTransactionEvidenceTests : IAsyncLifetime
             new OneTimeTokenService(),
             requestContext.Object,
             dateTime.Object,
-            grantProjection);
+            grantProjection,
+            new InvitationInitialEntries(context, new Notrelix.Infrastructure.Workspaces.Spaces.SpaceStore(context)),
+            new Notrelix.Infrastructure.Data.Authz.GuestResourceAccessActionsAdapter(context),
+            new Mock<Notrelix.Application.Common.Auditing.IAuditService>().Object);
 
         var result = await handler.Handle(new AcceptInvitationCommand(graph.RawToken), CancellationToken.None);
         await context.SaveChangesAsync();

@@ -8,7 +8,7 @@ public class AutomationRuleTests
 {
     private static string? GetActionConfig(string actionType) => actionType switch
     {
-        "Webhook" => """{"url":"https://example.com/webhook"}""",
+        "Webhook" => """{"webhookPath":"example/hook"}""",
         "SendEmail" => """{"templateId":"tpl_1"}""",
         "SlackMessage" => """{"channelId":"C123","text":"test"}""",
         _ => null

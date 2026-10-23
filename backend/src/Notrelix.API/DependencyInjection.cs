@@ -1,10 +1,12 @@
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.Extensions.Options;
 using Notrelix.API.ErrorHandling;
 using Notrelix.API.Middleware;
 using Notrelix.API.OpenApi;
 using Notrelix.API.Options;
 using Notrelix.API.RateLimiting;
+using Notrelix.API.Realtime;
 using Notrelix.Infrastructure.Auth.Csrf;
 using Notrelix.Infrastructure.Observability.HealthChecks;
 
@@ -30,6 +32,7 @@ public static class DependencyInjection
         services.AddApiSwagger();
         services.AddApiRouting();
         services.AddApiForwardedHeaders(configuration, environment);
+        services.AddRealtimeGateway(configuration, environment);
 
         services.ConfigureHttpJsonOptions(options =>
         {
@@ -46,8 +49,21 @@ public static class DependencyInjection
         services.Configure<OAuthRedirectOptions>(
             configuration.GetSection("OAuth"));
 
-        services.Configure<CsrfOptions>(
-            configuration.GetSection("Security:Csrf"));
+        services.AddApiCsrf(configuration);
+
+        return services;
+    }
+
+    /// <summary>
+    /// Browser CSRF enforcement (ADR-005). Options default to enforced and are
+    /// validated on host start (see <see cref="CsrfOptionsValidator"/>).
+    /// </summary>
+    public static IServiceCollection AddApiCsrf(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddOptions<CsrfOptions>()
+            .Bind(configuration.GetSection("Security:Csrf"))
+            .ValidateOnStart();
+        services.AddSingleton<IValidateOptions<CsrfOptions>, CsrfOptionsValidator>();
         services.AddSingleton<CsrfProtector>();
         services.AddSingleton<ICsrfApplicabilityClassifier, CsrfApplicabilityClassifier>();
 
@@ -157,12 +173,25 @@ public static class DependencyInjection
                 BearerFormat = "JWT",
             });
 
-            // Per-operation security: Bearer applied only to non-anonymous operations
+            // Browser sessions authenticate with the httpOnly access-token cookie that login sets
+            // (the JWT bearer handler reads it when no Authorization header is present).
+            options.AddSecurityDefinition("Cookie", new OpenApiSecurityScheme
+            {
+                Description = "httpOnly access-token cookie set by the sign-in operations. Browser requests also send the CSRF token header on unsafe methods.",
+                Name = "accessToken",
+                In = ParameterLocation.Cookie,
+                Type = SecuritySchemeType.ApiKey,
+            });
+
+            // Per-operation security: Bearer or Cookie, applied only to non-anonymous operations
             options.OperationFilter<SecurityRequirementsOperationFilter>();
 
             // Idempotency contract: required header, 409/503 responses and the
             // replay header, only for endpoints marked with WithIdempotencyKey()
             options.OperationFilter<IdempotencyOperationFilter>();
+
+            // Enums the HTTP pipeline serializes as names but the generator would export as integers.
+            options.SchemaFilter<StringEnumSchemaFilter>();
 
             // Endpoints declaring their canonical success code (201/204) must
             // not also export the default inferred 200 response.

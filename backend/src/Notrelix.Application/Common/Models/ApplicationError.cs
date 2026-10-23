@@ -7,11 +7,13 @@ public enum ApplicationErrorType
     NotFound,
     Conflict,
     PreconditionFailed,
-    BusinessRule
+    BusinessRule,
+    TooManyRequests
 }
 
 public sealed record ApplicationError(
     string Code,
     string Message,
     ApplicationErrorType Type,
-    string? Target = null);
+    string? Target = null,
+    TimeSpan? RetryAfter = null);

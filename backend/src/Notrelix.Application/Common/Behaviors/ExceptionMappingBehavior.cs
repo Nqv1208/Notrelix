@@ -42,6 +42,14 @@ public class ExceptionMappingBehavior<TRequest, TResponse> : IPipelineBehavior<T
         {
             throw;
         }
+        catch (Exceptions.PayloadTooLargeException)
+        {
+            throw;
+        }
+        catch (Exceptions.UnsupportedMediaTypeException)
+        {
+            throw;
+        }
         catch (DbUpdateConcurrencyException ex)
         {
             _logger.LogWarning(

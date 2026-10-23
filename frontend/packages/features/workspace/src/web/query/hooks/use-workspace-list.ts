@@ -1,3 +1,4 @@
+import { useAccountId } from "@notrelix/query";
 import { useQuery } from "@tanstack/react-query";
 import {
   createWorkspaceService,
@@ -18,8 +19,9 @@ export function createUseWorkspaceList({
   const service = createWorkspaceService(api, endpoints);
 
   return function useWorkspaceList() {
+    const accountId = useAccountId();
     return useQuery({
-      queryKey: workspaceQueryKeys.all,
+      queryKey: workspaceQueryKeys.all(accountId),
       queryFn: () => service.getList(),
     });
   };

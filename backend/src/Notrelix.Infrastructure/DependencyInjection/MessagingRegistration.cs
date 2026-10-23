@@ -34,6 +34,12 @@ public static class MessagingRegistration
         services.AddSingleton<IConsumerRegistry>(
         new ConsumerRegistry(ConsumerRegistrySetup.GetConsumerDefinitions()));
 
+        services
+            .AddOptions<MessageDeduplicationOptions>()
+            .Bind(configuration.GetSection(MessageDeduplicationOptions.SectionName))
+            .ValidateOnStart();
+        services.AddSingleton<IValidateOptions<MessageDeduplicationOptions>, MessageDeduplicationOptionsValidator>();
+
         var transport = configuration["Messaging:Transport"] ?? "InMemory";
         var endpointPrefix = configuration["Messaging:EndpointPrefix"] ?? "notrelix";
 

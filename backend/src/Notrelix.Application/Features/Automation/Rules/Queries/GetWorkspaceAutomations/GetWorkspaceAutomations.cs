@@ -5,10 +5,15 @@ using Notrelix.Application.Features.Automation.DTOs;
 
 namespace Notrelix.Application.Features.Automation.Rules.Queries.GetWorkspaceAutomations;
 
+/// <summary>
+/// AUT-020/AUT-029: a Rule's configuration (webhook path, targets) is automation
+/// management data, so listing Rules needs the same permission that manages them
+/// (ManageWorkspaceSettings), not workspace-wide ViewWorkspace.
+/// </summary>
 public record GetWorkspaceAutomationsQuery(Guid WorkspaceId)
     : IQuery<Result<IReadOnlyList<AutomationRuleDto>>>, IAuthenticatedRequest, IReadRequest, IWorkspaceRequest, IRequirePermission
 {
-    public PermissionAction Action => PermissionAction.ViewWorkspace;
+    public PermissionAction Action => PermissionAction.ManageWorkspaceSettings;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("automation.rule"), WorkspaceId, WorkspaceId);
 }
 

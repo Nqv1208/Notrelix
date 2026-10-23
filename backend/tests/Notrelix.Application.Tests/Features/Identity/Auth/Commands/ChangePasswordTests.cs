@@ -1,5 +1,6 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Identity.Auth.Commands.ChangePassword;
+using Notrelix.Application.Features.Identity.Auth.Throttling;
 using Notrelix.Application.Features.Identity.Security.DTOs;
 using Notrelix.Domain.Identity.Mfa;
 using Notrelix.Domain.Identity.Sessions;
@@ -18,7 +19,9 @@ public class ChangePasswordTests : IdentityHandlerTestBase
         EmailServiceMock.Object,
         DateTimeProviderMock.Object,
         ChangePasswordLoggerMock.Object,
-        StepUpServiceMock.Object);
+        StepUpServiceMock.Object,
+        ThrottleMock.Object,
+        ActivityMock.Object);
 
     private void SetupActiveMfa()
     {
@@ -34,6 +37,70 @@ public class ChangePasswordTests : IdentityHandlerTestBase
         StepUpServiceMock
             .Setup(s => s.ConsumeAsync(ValidProof, TestUserId, TestSessionId, StepUpPurpose.ChangePassword, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success());
+    }
+
+    [Fact]
+    public async Task Handle_WhenPasswordGuessBudgetIsExhausted_RejectsWithoutCheckingThePassword()
+    {
+        SetupUsers(CreateUser());
+        ThrottleMock
+            .Setup(t => t.BeginAttemptAsync(LoginThrottleScope.PasswordReverification, TestUserId.ToString("N"), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(LoginThrottleDecision.Locked(TimeSpan.FromMinutes(7)));
+
+        var result = await CreateSut().Handle(new ChangePasswordCommand
+        {
+            CurrentPassword = TestPassword,
+            NewPassword = "NewPassword123!"
+        }, CancellationToken.None);
+
+        result.Succeeded.Should().BeFalse();
+        result.TypedErrors.Should().ContainSingle(e =>
+            e.Code == LoginThrottleErrors.Code && e.Type == ApplicationErrorType.TooManyRequests && e.RetryAfter == TimeSpan.FromMinutes(7));
+        PasswordHasherMock.Verify(h => h.VerifyPassword(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        PasswordHasherMock.Verify(h => h.HashPassword(It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Handle_WhenCurrentPasswordWrong_CountsTheFailureAgainstTheUser()
+    {
+        SetupUsers(CreateUser());
+        PasswordHasherMock.Setup(h => h.VerifyPassword("wrong-password", TestHashedPassword)).Returns(false);
+
+        await CreateSut().Handle(new ChangePasswordCommand
+        {
+            CurrentPassword = "wrong-password",
+            NewPassword = "NewPassword123!"
+        }, CancellationToken.None);
+
+        ThrottleMock.Verify(
+            t => t.RecordFailureAsync(LoginThrottleScope.PasswordReverification, TestUserId.ToString("N"), It.IsAny<CancellationToken>()),
+            Times.Once);
+        ThrottleMock.Verify(
+            t => t.RecordSuccessAsync(It.IsAny<LoginThrottleScope>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task Handle_WhenPasswordChanges_RecordsTheChangeTimeAndClearsTheBudget()
+    {
+        SetupUsers(CreateUser());
+        PasswordHasherMock.Setup(h => h.VerifyPassword(TestPassword, TestHashedPassword)).Returns(true);
+        PasswordHasherMock.Setup(h => h.HashPassword("NewPassword123!")).Returns("new-hashed-password");
+
+        var result = await CreateSut().Handle(new ChangePasswordCommand
+        {
+            CurrentPassword = TestPassword,
+            NewPassword = "NewPassword123!"
+        }, CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        IdentityContextMock.Verify(
+            c => c.UserSecuritySettings.Add(It.Is<Notrelix.Domain.Identity.Security.UserSecuritySettings>(
+                s => s.UserId == TestUserId && s.PasswordChangedAt == TestNow)),
+            Times.Once);
+        ThrottleMock.Verify(
+            t => t.RecordSuccessAsync(LoginThrottleScope.PasswordReverification, TestUserId.ToString("N"), It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 
     [Fact]

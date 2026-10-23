@@ -49,8 +49,12 @@ public sealed class SecurityHeadersMiddleware
             headers["Cross-Origin-Embedder-Policy"] = "require-corp";
             headers["Cross-Origin-Opener-Policy"] = "same-origin";
 
-            // Content Security Policy (if enabled)
-            if (securityHeaders.EnableCsp && !string.IsNullOrWhiteSpace(securityHeaders.ContentSecurityPolicy))
+            // Content Security Policy (if enabled). A policy already chosen by the endpoint wins:
+            // user-uploaded content is served with a stricter, sandboxed policy that this
+            // application-wide default must not replace.
+            if (securityHeaders.EnableCsp
+                && !string.IsNullOrWhiteSpace(securityHeaders.ContentSecurityPolicy)
+                && !headers.ContainsKey("Content-Security-Policy"))
             {
                 headers["Content-Security-Policy"] = securityHeaders.ContentSecurityPolicy;
             }

@@ -1,7 +1,10 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Tokens;
 using Notrelix.Application.Events.Workspaces;
+using Notrelix.Application.Features.Governance.Public.Access;
 using Notrelix.Application.Features.Workspaces.Abstractions;
+using Notrelix.Application.Features.Workspaces.Members.Services;
+using Notrelix.Domain.Workspaces.Rules;
 
 namespace Notrelix.Application.Features.Workspaces.Invitations.Commands.ResendInvitation;
 
@@ -27,6 +30,8 @@ public sealed class ResendInvitationCommandHandler
     private readonly ISecretEncryptor _secretEncryptor;
     private readonly IIntegrationEventCollector _integrationEventCollector;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IActorLookupService _actorLookup;
+    private readonly IGuestResourceInvitationFacts _resourceFacts;
 
     public ResendInvitationCommandHandler(
         IWorkspaceDbContext workspaceContext,
@@ -34,8 +39,12 @@ public sealed class ResendInvitationCommandHandler
         IOneTimeTokenService tokenService,
         ISecretEncryptor secretEncryptor,
         IIntegrationEventCollector integrationEventCollector,
-        IDateTimeProvider dateTimeProvider)
+        IDateTimeProvider dateTimeProvider,
+        IActorLookupService actorLookup,
+        IGuestResourceInvitationFacts resourceFacts)
     {
+        _actorLookup = actorLookup;
+        _resourceFacts = resourceFacts;
         _workspaceContext = workspaceContext;
         _requestContext = requestContext;
         _tokenService = tokenService;
@@ -56,6 +65,12 @@ public sealed class ResendInvitationCommandHandler
         if (invitation is null)
             throw new NotFoundException(nameof(WorkspaceInvitation), request.InvitationId);
 
+        // A resend re-issues the token that grants the invited role. A legacy Admin invitation
+        // (created before Admin stopped being invitable) must not be re-armed by a non-Owner actor.
+        var actorRole = await WorkspaceActorRoleLookup.GetActiveActorRoleAsync(
+            _workspaceContext, request.WorkspaceId, _requestContext.UserId, cancellationToken);
+        WorkspaceMemberRules.EnsureActorCanAssignRole(actorRole, invitation.Role);
+
         var workspace = await _workspaceContext.Workspaces
             .AsNoTracking()
             .FirstOrDefaultAsync(x => x.Id == request.WorkspaceId, cancellationToken);
@@ -70,6 +85,20 @@ public sealed class ResendInvitationCommandHandler
             now,
             TimeSpan.FromDays(7),
             _requestContext.UserId);
+
+        // A resource invitation keeps its resource-invitation email when a workspace
+        // Owner/Admin resends it: the event carries the resource and inviter names.
+        string? resourceName = null;
+        string? inviterName = null;
+        var grant = invitation.ResourceGrant;
+        if (grant is not null)
+        {
+            resourceName = await _resourceFacts.ResolveTitleAsync(
+                grant.ResourceKind, grant.ResourceId, request.WorkspaceId, cancellationToken);
+            if (resourceName is null)
+                throw new NotFoundException(grant.ResourceKind, grant.ResourceId);
+            inviterName = (await _actorLookup.FindAsync(invitation.InvitedBy, cancellationToken))?.Name;
+        }
 
         var eventId = Guid.CreateVersion7();
         _integrationEventCollector.Add(
@@ -88,7 +117,11 @@ public sealed class ResendInvitationCommandHandler
                 InvitedBy: invitation.InvitedBy,
                 CorrelationId: eventId,
                 ActorUserId: _requestContext.UserId,
-                OccurredAt: now));
+                OccurredAt: now,
+                ResourceKind: grant?.ResourceKind,
+                ResourceId: grant?.ResourceId,
+                ResourceName: resourceName,
+                InviterName: inviterName));
 
         return Result<Guid>.Success(invitation.Id);
     }

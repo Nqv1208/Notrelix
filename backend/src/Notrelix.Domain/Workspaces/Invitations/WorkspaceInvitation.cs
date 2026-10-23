@@ -15,6 +15,17 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
     public DateTimeOffset ExpiresAt { get; private set; }
     public Guid InvitedBy { get; private set; }
 
+    /// <summary>Initial Team/Space entries applied atomically on acceptance (WSP-026).</summary>
+    public IReadOnlyList<WorkspaceInvitationInitialEntry> InitialEntries { get; private set; } = [];
+
+    /// <summary>
+    /// Set for a resource invitation (WSP-026 / GOV-030): acceptance creates or
+    /// reuses a Guest membership plus this explicit entry on that one resource.
+    /// </summary>
+    public WorkspaceInvitationResourceGrant? ResourceGrant { get; private set; }
+
+    public bool IsResourceInvitation => ResourceGrant is not null;
+
     private WorkspaceInvitation() : base() { }
 
     public static WorkspaceInvitation Create(
@@ -26,7 +37,8 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
         int hashVersion,
         Guid invitedBy,
         DateTimeOffset createdAt,
-        TimeSpan? expiry = null)
+        TimeSpan? expiry = null,
+        IReadOnlyList<WorkspaceInvitationInitialEntry>? initialEntries = null)
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(accountId);
@@ -41,8 +53,12 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
                 WorkspaceRuleCodes.Workspaces_Invitation_CannotInviteAsOwner,
                 "Cannot invite a user as workspace owner.");
 
+        EnsureNotAdmin(role);
+
         if (expiry is not null && expiry <= TimeSpan.Zero)
             throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Invitation_ExpiryMustBePositive, "Invitation expiry must be greater than zero.");
+
+        var entries = NormalizeEntries(role, initialEntries);
 
         var invitation = new WorkspaceInvitation
         {
@@ -55,7 +71,8 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
             TokenGeneration = 1,
             Status = WorkspaceInvitationStatus.Pending,
             ExpiresAt = createdAt.Add(expiry ?? TimeSpan.FromDays(7)),
-            InvitedBy = invitedBy
+            InvitedBy = invitedBy,
+            InitialEntries = entries
         };
 
         invitation.SetAuditOnCreate(invitedBy, createdAt);
@@ -63,6 +80,78 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
             accountId, invitation.Id, workspaceId, invitation.Email, role, invitedBy, createdAt));
 
         return invitation;
+    }
+
+    /// <summary>
+    /// A resource invitation by email (WSP-026): always a Guest invitation, never
+    /// carries Team/Space entries, and names the one resource entry created on
+    /// acceptance.
+    /// </summary>
+    public static WorkspaceInvitation CreateForResource(
+        Guid accountId,
+        Guid workspaceId,
+        string email,
+        WorkspaceInvitationResourceGrant grant,
+        InvitationTokenHash token,
+        int hashVersion,
+        Guid invitedBy,
+        DateTimeOffset createdAt,
+        TimeSpan? expiry = null)
+    {
+        Guard.NotNull(grant);
+        var invitation = Create(accountId, workspaceId, email, WorkspaceRole.Guest, token, hashVersion, invitedBy, createdAt, expiry);
+        invitation.ResourceGrant = grant;
+        return invitation;
+    }
+
+    // WSP-026: a workspace invitation offers Member or Guest only. The rule guards
+    // every new or changed role; an Admin invitation issued before the rule stays
+    // acceptable as stored (Accept never re-checks the role), so no data migration
+    // is needed and no outstanding invitation is invalidated.
+    private static void EnsureNotAdmin(WorkspaceRole role)
+    {
+        if (role == WorkspaceRole.Admin)
+            throw new BusinessRuleException(
+                WorkspaceRuleCodes.Workspaces_Invitation_CannotInviteAsAdmin,
+                "A workspace invitation offers Member or Guest only; promote the member after they join.");
+    }
+
+    private static IReadOnlyList<WorkspaceInvitationInitialEntry> NormalizeEntries(
+        WorkspaceRole role,
+        IReadOnlyList<WorkspaceInvitationInitialEntry>? entries)
+    {
+        if (entries is null || entries.Count == 0) return [];
+
+        if (role is not (WorkspaceRole.Member or WorkspaceRole.Guest))
+            throw new BusinessRuleException(
+                WorkspaceRuleCodes.Workspaces_Invitation_InitialEntriesRequireMemberOrGuest,
+                "Initial Team and Space entries can be named only for a Member or Guest invitation.");
+
+        if (entries.Count > WorkspaceInvitationInitialEntry.MaxEntries)
+            throw new BusinessRuleException(
+                WorkspaceRuleCodes.Workspaces_Invitation_TooManyInitialEntries,
+                $"An invitation can name at most {WorkspaceInvitationInitialEntry.MaxEntries} initial entries.");
+
+        if (entries.Select(e => (e.Kind, e.TargetId)).Distinct().Count() != entries.Count)
+            throw new BusinessRuleException(
+                WorkspaceRuleCodes.Workspaces_Invitation_InitialEntryDuplicate,
+                "An initial entry names a Team or Space only once.");
+
+        EnsureGuestEntryRoles(role, entries);
+
+        return entries.ToArray();
+    }
+
+    // A Guest never manages: no Team lead and no Space admin entry for a Guest
+    // invitation (GOV-030 keeps a Guest from managing access).
+    private static void EnsureGuestEntryRoles(WorkspaceRole role, IReadOnlyList<WorkspaceInvitationInitialEntry> entries)
+    {
+        if (role != WorkspaceRole.Guest) return;
+
+        if (entries.Any(e => e.Role is nameof(Teams.TeamMemberRole.Lead) or nameof(Spaces.SpaceRole.Admin)))
+            throw new BusinessRuleException(
+                WorkspaceRuleCodes.Workspaces_Invitation_GuestEntryRoleTooPrivileged,
+                "A Guest invitation cannot name a Team lead or Space admin entry.");
     }
 
     public void Accept(Guid acceptedUserId, DateTimeOffset acceptedAt)
@@ -117,6 +206,20 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
             throw new BusinessRuleException(
                 WorkspaceRuleCodes.Workspaces_Invitation_CannotInviteAsOwner,
                 "Cannot invite a user as workspace owner.");
+
+        EnsureNotAdmin(newRole);
+
+        if (ResourceGrant is not null && newRole != WorkspaceRole.Guest)
+            throw new BusinessRuleException(
+                WorkspaceRuleCodes.Workspaces_Invitation_ResourceInvitationMustBeGuest,
+                "A resource invitation never creates a member: its role stays Guest.");
+
+        if (InitialEntries.Count > 0 && newRole is not (WorkspaceRole.Member or WorkspaceRole.Guest))
+            throw new BusinessRuleException(
+                WorkspaceRuleCodes.Workspaces_Invitation_InitialEntriesRequireMemberOrGuest,
+                "Initial Team and Space entries can be named only for a Member or Guest invitation.");
+
+        EnsureGuestEntryRoles(newRole, InitialEntries);
 
         if (Role == newRole) return;
 

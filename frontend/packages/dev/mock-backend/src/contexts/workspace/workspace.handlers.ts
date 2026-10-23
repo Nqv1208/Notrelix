@@ -39,6 +39,7 @@ import type {
   MockVersionedWrite,
   MockWorkspaceSettingsRecord,
 } from "../../state/mock-store";
+import type { MockMembershipRecord } from "../../state/records";
 
 const NAVIGATION_KINDS = new Set(["work-management.board", "documents.page"]);
 
@@ -72,6 +73,19 @@ function parseRole(value: unknown): MemberRole | null {
     lower === "guest"
     ? lower
     : null;
+}
+
+/** One `WorkspaceMemberDto` row. */
+function memberWire(store: MockStore, m: MockMembershipRecord) {
+  const user = store.getUser(m.userId);
+  return {
+    userId: m.userId,
+    name: user ? user.name : "Unknown",
+    avatar: user?.avatarUrl ?? null,
+    role: ROLE_NAME[m.role],
+    joinedAt: m.joinedAt,
+    status: store.isMembershipSuspended(m.id) ? "Suspended" : "Active",
+  };
 }
 
 /** `ManageMembers` is held by owners and admins. */
@@ -421,19 +435,31 @@ export const workspaceOperations = [
     route: "/workspaces/:id/members",
     async handle({ params, store }) {
       if (!store.isCurrentMemberOf(params.id)) return notFound();
+      // `ViewMembers` is denied to a Guest (WG-DEBT-002): the Guest reads only
+      // their own row through `members/me`.
+      if (store.getCurrentMemberRole(params.id) === "guest") return forbidden();
       return ok(
-        store.getWorkspaceMembers(params.id).map((m) => {
-          const user = store.getUser(m.userId);
-          return {
-            userId: m.userId,
-            name: user ? user.name : "Unknown",
-            avatar: user?.avatarUrl ?? null,
-            role: ROLE_NAME[m.role],
-            joinedAt: m.joinedAt,
-            status: store.isMembershipSuspended(m.id) ? "Suspended" : "Active",
-          };
-        }),
+        store.getWorkspaceMembers(params.id).map((m) => memberWire(store, m)),
       );
+    },
+  }),
+
+  defineMockOperation<{ id: string }, never, unknown>({
+    id: "workspace.members.me",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Members.GetMyMembership",
+    },
+    method: "GET",
+    route: "/workspaces/:id/members/me",
+    async handle({ params, store }) {
+      // Any member, a Guest included, reads exactly their own row.
+      const userId = store.getCurrentUser().id;
+      const mine = store
+        .getWorkspaceMembers(params.id)
+        .find((m) => m.userId === userId);
+      if (!mine) return notFound();
+      return ok(memberWire(store, mine));
     },
   }),
 
@@ -530,6 +556,13 @@ export const workspaceOperations = [
       }
       if (!role || role === "owner") {
         return validationError({ Role: ["Unknown role."] });
+      }
+      // WSP-026: an invitation offers Member or Guest only; the producer rejects
+      // Admin with Workspaces_Invitation_CannotInviteAsAdmin.
+      if (role === "admin") {
+        return ruleViolation(
+          "A workspace invitation offers Member or Guest only; promote the member after they join.",
+        );
       }
       const id = store.createInvitation(params.workspaceId, email, role);
       if (!id) {

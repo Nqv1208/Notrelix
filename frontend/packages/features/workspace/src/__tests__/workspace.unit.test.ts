@@ -57,7 +57,11 @@ describe("workspaceQueryKeys", () => {
   });
 
   it("formats workspace all and members key correctly", () => {
-    expect(workspaceQueryKeys.all).toEqual(["account", "workspaces"]);
+    expect(workspaceQueryKeys.all("acc-1")).toEqual([
+      "account",
+      "acc-1",
+      "workspaces",
+    ]);
     expect(workspaceQueryKeys.members("ws-100")).toEqual([
       "workspace",
       "ws-100",

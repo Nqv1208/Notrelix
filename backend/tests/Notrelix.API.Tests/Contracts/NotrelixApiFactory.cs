@@ -14,7 +14,12 @@ using Notrelix.Application.Features.Identity.Auth.Queries.GetCurrentUser;
 using Notrelix.Application.Features.Identity.OAuth.Commands.CompleteOAuthLogin;
 using Notrelix.Application.Features.Identity.OAuth.Commands.StartOAuthLogin;
 using Notrelix.Application.Features.Identity.OAuth.DTOs;
+using Notrelix.Application.Features.Identity.Profiles.Commands.UpdateAccountPreferences;
 using Notrelix.Application.Features.Identity.Profiles.Commands.UpdateProfile;
+using Notrelix.Application.Features.Identity.Profiles.DTOs;
+using Notrelix.Application.Features.Identity.Profiles.Queries.GetAccountPreferences;
+using Notrelix.Application.Features.Identity.Security.DTOs;
+using Notrelix.Application.Features.Identity.Security.Queries.GetAccountSecuritySummary;
 using Notrelix.Application.Features.Identity.Registration.Commands.Register;
 using Notrelix.Application.Features.Identity.Auth.GetBootstrap;
 using Notrelix.Application.Features.Workspaces.Invitations.Commands.AcceptInvitation;
@@ -393,6 +398,14 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
                 Result<AuthResult>.Success(CreateAuthResult()));
             MockWorkspaceHandler<UpdateProfileCommand, Result<UserDto>>(services,
                 Result<UserDto>.Success(CreateUserDto()));
+            MockWorkspaceHandler<GetAccountPreferencesQuery, Result<AccountPreferencesDto>>(services,
+                Result<AccountPreferencesDto>.Success(new AccountPreferencesDto("en", "Asia/Tokyo", "dark", 2)));
+            MockWorkspaceHandler<UpdateAccountPreferencesCommand, Result<AccountPreferencesDto>>(services,
+                Result<AccountPreferencesDto>.Success(new AccountPreferencesDto("en", "Asia/Tokyo", "light", 3)));
+            MockWorkspaceHandler<GetAccountSecuritySummaryQuery, Result<AccountSecuritySummaryDto>>(services,
+                Result<AccountSecuritySummaryDto>.Success(new AccountSecuritySummaryDto(
+                    DateTimeOffset.UnixEpoch, true, null,
+                    new Notrelix.Application.Features.Identity.Mfa.DTOs.MfaStatusDto(false, null, false, 0), 1, ["Google"])));
             MockWorkspaceHandler<StartOAuthLoginCommand, Result<OAuthLoginStartResult>>(services,
                 Result<OAuthLoginStartResult>.Success(new OAuthLoginStartResult("https://accounts.google.com/o/oauth2/auth?test=true")));
             MockWorkspaceHandler<CompleteOAuthLoginCommand, Result<AuthResult>>(services,

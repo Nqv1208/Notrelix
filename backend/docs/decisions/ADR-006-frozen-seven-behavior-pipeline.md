@@ -67,6 +67,11 @@ machine-gated, and observable end to end. This ADR records the final accepted
 shape so the behavior count and ownership boundaries are durable decisions, not
 incidental source state.
 
+> Terminology note (2026-10-23, WG-DEBT-015): `AuthorizationBehavior` in the historical list above is the
+> pre-freeze name. The current authorization behavior is `AccessControlBehavior`; `PermissionService`,
+> `IPermissionService` and `IWorkspacePermissionService` no longer exist (ADR-007). The decision recorded
+> here is unchanged.
+
 ## Decision
 
 The Application request pipeline consists of **exactly seven behaviors**,

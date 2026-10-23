@@ -806,7 +806,7 @@ function UploadRow({
           {failed
             ? upload.error === "tooBig"
               ? fillSheetCopy(t.tooBig, { limit: upload.limit ?? "" })
-              : t.failed
+              : t[upload.error ?? "failed"]
             : upload.status === "done"
               ? fillSheetCopy(t.uploaded, { size })
               : percent === null
@@ -841,7 +841,7 @@ function UploadRow({
       </span>
       {failed ? (
         <>
-          {onRetry ? (
+          {onRetry && upload.retryable !== false ? (
             <button
               type="button"
               className={BUTTON_SM_VARIANT_CLASS.outline}
@@ -898,7 +898,7 @@ export function ItemPageFiles({
   /** The comments, to tell which file came with one. */
   updates: readonly CardUpdate[];
   capabilities: TaskDetailCapabilities;
-  callbacks: Pick<TaskDetailCallbacks, "onAddFile">;
+  callbacks: Pick<TaskDetailCallbacks, "onAddFile" | "onDownloadFile">;
   copy: ItemPageCopy;
   locale: string;
   now: Date;
@@ -1020,7 +1020,16 @@ export function ItemPageFiles({
                 )}
               </small>
             </span>
-            {file.url ? (
+            {file.kind === "file" && callbacks.onDownloadFile ? (
+              <button
+                type="button"
+                aria-label={fillSheetCopy(t.download, { name: file.name })}
+                onClick={() => callbacks.onDownloadFile?.(file)}
+                className={cn(ICON_BUTTON_CLASS, "ml-auto size-7")}
+              >
+                <Download aria-hidden="true" />
+              </button>
+            ) : file.url ? (
               <a
                 href={file.url}
                 download={file.name}

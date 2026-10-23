@@ -179,4 +179,79 @@ public class DeduplicationConsumeFilterIntegrationTests : IAsyncLifetime
             .ToList();
         records.Count.Should().Be(1);
     }
+
+    // PF-07: stale Processing claim reclaim (compare-and-swap on Status + ClaimedAt).
+    // Written against PostgreSQL (ExecuteUpdate); NOT executed in the authoring
+    // environment (no Docker) - must run in CI.
+
+    [Fact]
+    public async Task TryReclaimStaleProcessing_StaleClaim_IsTakenOverAndLeaseRenewed()
+    {
+        var (context, store) = CreateFixture();
+        var eventId = Guid.NewGuid();
+        await store.TryClaimProcessingAsync(eventId, "test-consumer", "TestEvent", 1, null, null, default);
+
+        var now = DateTimeOffset.UtcNow.AddMinutes(10);
+        var reclaimed = await store.TryReclaimStaleProcessingAsync(
+            eventId, "test-consumer", staleBefore: now.AddMinutes(-5), reclaimedAt: now, default);
+
+        reclaimed.Should().BeTrue();
+        var (verify, _) = CreateFixture();
+        var row = verify.Set<MessagingProcessedEvent>().Single(e => e.EventId == eventId);
+        row.Status.Should().Be("Processing");
+        row.ClaimedAt.Should().BeCloseTo(now, TimeSpan.FromMilliseconds(5));
+    }
+
+    [Fact]
+    public async Task TryReclaimStaleProcessing_LiveClaim_IsNotStolen()
+    {
+        var (_, store) = CreateFixture();
+        var eventId = Guid.NewGuid();
+        await store.TryClaimProcessingAsync(eventId, "test-consumer", "TestEvent", 1, null, null, default);
+
+        var reclaimed = await store.TryReclaimStaleProcessingAsync(
+            eventId, "test-consumer",
+            staleBefore: DateTimeOffset.UtcNow.AddMinutes(-5),
+            reclaimedAt: DateTimeOffset.UtcNow, default);
+
+        reclaimed.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task TryReclaimStaleProcessing_SucceededClaim_IsNeverReclaimed()
+    {
+        var (context, store) = CreateFixture();
+        var eventId = Guid.NewGuid();
+        await store.TryClaimProcessingAsync(eventId, "test-consumer", "TestEvent", 1, null, null, default);
+        store.MarkSucceeded(eventId, "test-consumer", DateTimeOffset.UtcNow);
+        await context.SaveChangesAsync();
+
+        var reclaimed = await store.TryReclaimStaleProcessingAsync(
+            eventId, "test-consumer",
+            staleBefore: DateTimeOffset.UtcNow.AddDays(1),
+            reclaimedAt: DateTimeOffset.UtcNow.AddDays(1), default);
+
+        reclaimed.Should().BeFalse();
+        (await store.IsProcessedAsync(eventId, "test-consumer", default)).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task TryReclaimStaleProcessing_ConcurrentReclaims_ExactlyOneWins()
+    {
+        var eventId = Guid.NewGuid();
+        var (_, seed) = CreateFixture();
+        await seed.TryClaimProcessingAsync(eventId, "test-consumer", "TestEvent", 1, null, null, default);
+
+        var now = DateTimeOffset.UtcNow.AddMinutes(10);
+        var attempts = Enumerable.Range(0, 4).Select(_ =>
+        {
+            var (_, store) = CreateFixture();
+            return store.TryReclaimStaleProcessingAsync(
+                eventId, "test-consumer", staleBefore: now.AddMinutes(-5), reclaimedAt: now, default);
+        });
+
+        var results = await Task.WhenAll(attempts);
+
+        results.Count(r => r).Should().Be(1);
+    }
 }

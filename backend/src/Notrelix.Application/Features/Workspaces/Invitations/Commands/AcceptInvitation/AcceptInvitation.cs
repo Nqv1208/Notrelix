@@ -1,7 +1,9 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Tokens;
 using Notrelix.Application.Features.Accounts.Public.Membership;
+using Notrelix.Application.Features.Governance.Public.Access;
 using Notrelix.Application.Features.Identity.Public.Queries;
+using Notrelix.Application.Features.Workspaces.Invitations.Services;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Application.Features.Workspaces.Members.Services;
 
@@ -30,6 +32,9 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IWorkspaceGrantProjectionService _grantProjection;
+    private readonly InvitationInitialEntries _initialEntries;
+    private readonly IGuestResourceAccessActions _guestResourceAccess;
+    private readonly IAuditService _auditService;
 
     public AcceptInvitationCommandHandler(
         IWorkspaceDbContext workspaceContext,
@@ -39,8 +44,14 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
         IOneTimeTokenService oneTimeTokenService,
         ICurrentRequestContext requestContext,
         IDateTimeProvider dateTimeProvider,
-        IWorkspaceGrantProjectionService grantProjection)
+        IWorkspaceGrantProjectionService grantProjection,
+        InvitationInitialEntries initialEntries,
+        IGuestResourceAccessActions guestResourceAccess,
+        IAuditService auditService)
     {
+        _initialEntries = initialEntries;
+        _guestResourceAccess = guestResourceAccess;
+        _auditService = auditService;
         _workspaceContext = workspaceContext;
         _identityUserFacts = identityUserFacts;
         _accountMembershipActions = accountMembershipActions;
@@ -133,14 +144,65 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
             return Result<AcceptInvitationResultDto>.Failure(
                 "Cannot accept invitation for an inactive account.");
 
-        var isAlreadyMember = await _workspaceContext.WorkspaceMembers
-            .AnyAsync(m =>
+        var existingMember = await _workspaceContext.WorkspaceMembers
+            .FirstOrDefaultAsync(m =>
                 m.WorkspaceId == invitation.WorkspaceId &&
                 m.UserId == currentUserId, ct);
 
-        if (isAlreadyMember)
+        var hasExtras = invitation.IsResourceInvitation || invitation.InitialEntries.Count > 0;
+
+        // WSP-009 / WSP-026: every check that can reject runs BEFORE the first
+        // mutation. A Failure result is still committed by the data session, so
+        // only an exception (or an earlier return) leaves state unchanged.
+        if (hasExtras && existingMember is not null && existingMember.Status != WorkspaceMemberStatus.Active)
+            return Result<AcceptInvitationResultDto>.Failure(
+                "Your membership in this workspace is not active.");
+
+        if (invitation.InitialEntries.Count > 0
+            && !await _initialEntries.AllTargetsEligibleAsync(invitation.WorkspaceId, invitation.InitialEntries, ct))
+        {
+            return Result<AcceptInvitationResultDto>.Failure(
+                "A team or space named by this invitation is no longer available. Ask for a new invitation.");
+        }
+
+        if (invitation.ResourceGrant is { } grant)
+        {
+            // Governance creates the explicit entry for the guest's User identity,
+            // capped at Editor (GOV-030); an existing entry is reused, never lowered.
+            var outcome = await _guestResourceAccess.EnsureGuestEntryAsync(
+                new GuestResourceEntryRequest(
+                    workspace.AccountId,
+                    invitation.WorkspaceId,
+                    grant.ResourceKind,
+                    grant.ResourceId,
+                    currentUserId,
+                    grant.Level,
+                    invitation.InvitedBy,
+                    now),
+                ct);
+
+            if (outcome == GuestResourceEntryOutcome.ResourceUnavailable)
+                return Result<AcceptInvitationResultDto>.Failure(
+                    "The shared resource is no longer available.");
+
+            await _auditService.RecordAsync(
+                invitation.WorkspaceId,
+                currentUserId,
+                "AcceptResourceInvitation",
+                ResourceRef.Create(ResourceKind.Create(grant.ResourceKind), grant.ResourceId, invitation.WorkspaceId),
+                AuditMetadata.Create(),
+                AuditSeverity.Info,
+                cancellationToken: ct);
+        }
+
+        if (existingMember is not null)
         {
             invitation.Accept(currentUserId, now);
+            if (invitation.InitialEntries.Count > 0)
+                await _initialEntries.ApplyAsync(
+                    invitation.WorkspaceId, currentUserId, existingMember.Id, invitation.InvitedBy,
+                    invitation.InitialEntries, now, ct);
+
             return Result<AcceptInvitationResultDto>.Success(
                 new AcceptInvitationResultDto(workspace.Slug, invitation.WorkspaceId));
         }
@@ -172,6 +234,11 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
             invitation.Role,
             now,
             ct);
+
+        if (invitation.InitialEntries.Count > 0)
+            await _initialEntries.ApplyAsync(
+                invitation.WorkspaceId, currentUserId, member.Id, invitation.InvitedBy,
+                invitation.InitialEntries, now, ct);
 
         return Result<AcceptInvitationResultDto>.Success(
             new AcceptInvitationResultDto(workspace.Slug, invitation.WorkspaceId));

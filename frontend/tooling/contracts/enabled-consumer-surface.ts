@@ -557,6 +557,16 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     consumerSymbol: "createMembersService",
     consumerFile:
       "frontend/packages/features/workspace/src/core/api/members.service.ts",
+    capability: "Workspaces.Members.GetMyMembership",
+    operationId: "Workspaces.Members.GetMyMembership",
+    mutation: false,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createMembersService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/members.service.ts",
     capability: "Workspaces.Members.UpdateMemberRole",
     operationId: "Workspaces.Members.UpdateMemberRole",
     mutation: true,
@@ -1083,15 +1093,23 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
   },
   {
     context: "WorkManagement",
-    classification: "COMPATIBILITY_GAP_MOCKED",
-    consumerSymbol: "useAddItemFile",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "useItemFileUploads",
     consumerFile:
-      "frontend/packages/product/work-management/state/src/api/item-extras.api.ts",
-    capability: "Register a file on an item",
-    gapId: "CTR-GAP-WM-ITEM-DETAIL",
-    method: "POST",
-    pathTemplate: "/board-items/{id}/attachments",
+      "frontend/packages/product/work-management/state/src/api/item.api.ts",
+    capability: "Collaboration.Attachments.UploadFile",
+    operationId: "Collaboration.Attachments.UploadFile",
     mutation: true,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createCardApi",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/item.api.ts",
+    capability: "Collaboration.Attachments.GetContent",
+    operationId: "Collaboration.Attachments.GetContent",
+    mutation: false,
   },
   {
     context: "WorkManagement",

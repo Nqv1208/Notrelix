@@ -1,9 +1,12 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Requests.Scoping;
 using Notrelix.Application.Features.Identity.Abstractions;
+using Notrelix.Application.Features.Identity.Auth.Throttling;
 using Notrelix.Application.Features.Identity.Security.Abstractions;
 using Notrelix.Application.Features.Identity.Security.DTOs;
+using Notrelix.Application.Features.Identity.Security.Services;
 using Notrelix.Domain.Identity.Mfa;
+using Notrelix.Domain.Identity.Security;
 
 namespace Notrelix.Application.Features.Identity.Auth.Commands.ChangePassword;
 
@@ -28,6 +31,8 @@ public class ChangePasswordCommandHandler : IRequestHandler<ChangePasswordComman
     private readonly IEmailService _emailService;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ISecurityStepUpService _stepUpService;
+    private readonly ILoginThrottle _throttle;
+    private readonly ISecurityActivityRecorder _activity;
     private readonly ILogger<ChangePasswordCommandHandler> _logger;
 
     private const string DummyPasswordHash = "$2b$12$l21rZMRnrPl/Lfm2kVzYOuxlKgQzbwMzEvK7cOBZI40eJ42/FIuh2";
@@ -41,7 +46,9 @@ public class ChangePasswordCommandHandler : IRequestHandler<ChangePasswordComman
         IEmailService emailService,
         IDateTimeProvider dateTimeProvider,
         ILogger<ChangePasswordCommandHandler> logger,
-        ISecurityStepUpService stepUpService)
+        ISecurityStepUpService stepUpService,
+        ILoginThrottle throttle,
+        ISecurityActivityRecorder activity)
     {
         _context = context;
         _currentUser = currentUser;
@@ -51,6 +58,8 @@ public class ChangePasswordCommandHandler : IRequestHandler<ChangePasswordComman
         _dateTimeProvider = dateTimeProvider;
         _logger = logger;
         _stepUpService = stepUpService;
+        _throttle = throttle;
+        _activity = activity;
     }
 
     public async Task<Result> Handle(ChangePasswordCommand request, CancellationToken cancellationToken)
@@ -66,12 +75,22 @@ public class ChangePasswordCommandHandler : IRequestHandler<ChangePasswordComman
                 ApplicationErrorType.NotFound));
         }
 
+        // The current-password check is a password oracle for anyone holding a session:
+        // it shares the step-up password budget so guesses cannot be multiplied across surfaces.
+        var subject = user.Id.ToString("N");
+        var gate = await _throttle.BeginAttemptAsync(LoginThrottleScope.PasswordReverification, subject, cancellationToken);
+        if (gate.IsLocked)
+        {
+            return Result.Failure(LoginThrottleErrors.TooManyAttempts(gate.RetryAfter));
+        }
+
         var currentPasswordValid = _passwordHasher.VerifyPassword(
             request.CurrentPassword,
             user.PasswordHash ?? DummyPasswordHash);
 
         if (!currentPasswordValid)
         {
+            await _throttle.RecordFailureAsync(LoginThrottleScope.PasswordReverification, subject, cancellationToken);
             return Result.Failure(new ApplicationError(
                 "identity.auth.invalid-current-password",
                 "Current password is incorrect.",
@@ -90,9 +109,13 @@ public class ChangePasswordCommandHandler : IRequestHandler<ChangePasswordComman
             }
         }
 
+        await _throttle.RecordSuccessAsync(LoginThrottleScope.PasswordReverification, subject, cancellationToken);
+
         var now = _dateTimeProvider.UtcNow;
         var hash = _passwordHasher.HashPassword(request.NewPassword);
         user.UpdatePassword(hash, user.Id, now);
+        await PasswordChangeRecorder.RecordAsync(_context, user.Id, now, cancellationToken);
+        _activity.Record(user.Id, SecurityActivityType.PasswordChanged, now, _currentUser.SessionId);
 
         var activeSessions = await _context.Sessions
             .Where(s => s.UserId == user.Id && s.Status == SessionStatus.Active)

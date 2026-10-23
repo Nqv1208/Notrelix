@@ -9,7 +9,9 @@ namespace Notrelix.API.Middleware;
 /// Validates the Double Submit pair (csrf_token cookie + X-CSRF-Token header)
 /// on unsafe requests that rely on ambient browser credentials. Token issuance
 /// happens only through the bootstrap endpoint, never implicitly here.
-/// Feature-flagged via Security:Csrf:Enabled.
+/// Enforcement is fail-safe: Security:Csrf:Enabled defaults to true and may be
+/// turned off only in Development/Testing (enforced at startup by
+/// <see cref="CsrfOptionsValidator"/>).
 /// </summary>
 public sealed class CsrfValidationMiddleware
 {
@@ -71,5 +73,10 @@ public sealed class SignatureAuthenticatedWebhookAttribute : Attribute
 
 public sealed class CsrfOptions
 {
-    public bool Enabled { get; init; }
+    /// <summary>
+    /// Fail-safe default: enforcement is ON unless configuration explicitly
+    /// disables it, and explicit disablement is rejected outside
+    /// Development/Testing by <see cref="CsrfOptionsValidator"/>.
+    /// </summary>
+    public bool Enabled { get; init; } = true;
 }

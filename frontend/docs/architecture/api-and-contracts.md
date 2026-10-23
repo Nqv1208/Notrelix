@@ -1371,6 +1371,22 @@ Binary/multipart/streaming contracts may require transport handling different fr
 
 Do not force every operation through JSON assumptions.
 
+Current multipart/binary transport on the shared client (`createNotrelixClient`):
+
+```text
+api.upload(url, FormData, { idempotencyKey, signal, onProgress })
+→ XMLHttpRequest (upload progress, abort) in a browser; the injected fetch (no progress) when fetchImpl is injected, as the mock backend does
+→ no JSON Content-Type (the multipart boundary is the transport's)
+→ same X-CSRF-Token, 401 refresh and one CSRF re-bootstrap as every unsafe call
+→ non-2xx → AppError carrying status and the problem `errorCode`
+
+api.getBlob(url)
+→ credentialed GET of a protected file (item attachment content); the caller saves the Blob
+→ no token in a URL; the content route has no public address
+```
+
+The item attachment upload (`POST /board-items/{id}/attachments/files`) takes one `Idempotency-Key` per user action and reuses it only to retry that action. The size and blocked-extension checks in `@notrelix/work-management-core` only spare a doomed upload; the server decides.
+
 ---
 
 # 100. FE-API-050 — Transport codec follows endpoint contract

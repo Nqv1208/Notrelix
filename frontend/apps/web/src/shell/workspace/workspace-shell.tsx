@@ -30,7 +30,6 @@ import {
   createUseRecordRecent,
   createUseTogglePin,
   createUseWorkspaceList,
-  createUseWorkspaceMembers,
   createUseWorkspacePins,
   useShellShortcuts,
   useSpaceTreeExpansion,
@@ -76,6 +75,7 @@ import { useWorkFeedWrites } from "./work-feed-bridge";
 import { useCreateResource } from "./use-create-resource";
 import { useCreateSpace } from "./use-create-space";
 import { useWorkspaceResources } from "./use-workspace-resources";
+import { useWorkspaceViewer } from "./use-workspace-viewer";
 import { useSpaceHooks } from "./use-workspace-spaces";
 import {
   destinationHref,
@@ -103,7 +103,6 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
     const deps = { api: runtimeClient.api, endpoints: runtimeClient.endpoints };
     return {
       useWorkspaceList: createUseWorkspaceList(deps),
-      useMembers: createUseWorkspaceMembers({ api: runtimeClient.api }),
       useRecordRecent: createUseRecordRecent(deps),
       usePins: createUseWorkspacePins(deps),
       useTogglePin: createUseTogglePin(deps),
@@ -120,7 +119,8 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
   }, [runtimeClient, featureDeps, navigate]);
 
   const workspaces = hooks.useWorkspaceList();
-  const members = hooks.useMembers(workspaceId);
+  const viewer = useWorkspaceViewer(workspaceId);
+  const members = viewer.members;
   const boards = useWorkspaceBoards(workspaceId);
   const placements = useBoardPlacements(workspaceId);
   const myWork = useMyWorkItems(workspaceId);
@@ -364,8 +364,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
       : null;
 
   // ── Identity ────────────────────────────────────────────────────
-  const role =
-    members.data?.find((member) => member.userId === user?.id)?.role ?? null;
+  const role = viewer.role;
   const currentWorkspace = workspace
     ? {
         id: workspace.id,
@@ -384,7 +383,8 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
                   !node.isArchived,
               ).length
             : null),
-        // `WorkspaceDto.memberCount` is the total; the member list may be shorter.
+        // `WorkspaceDto.memberCount` is the total; the member list may be shorter
+        // (and a Guest does not read it at all).
         roleLabel:
           role === "member"
             ? (() => {

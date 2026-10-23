@@ -42,7 +42,15 @@ public class GetWorkspaceInvitationsQueryHandler : IRequestHandler<GetWorkspaceI
             invitation.ExpiresAt.DateTime,
             invitation.Status == WorkspaceInvitationStatus.Accepted,
             invitation.CreatedAt.DateTime,
-            invitation.Status.ToString()
+            invitation.Status.ToString(),
+            invitation.ResourceGrant?.ResourceKind,
+            invitation.ResourceGrant?.ResourceId,
+            invitation.ResourceGrant?.Level,
+            invitation.InitialEntries.Count == 0
+                ? null
+                : invitation.InitialEntries
+                    .Select(e => new WorkspaceInvitationEntryDto(e.Kind.ToString(), e.TargetId, e.Role))
+                    .ToList()
         )).ToList();
 
         return Result<List<WorkspaceInvitationDto>>.Success(result);

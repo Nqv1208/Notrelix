@@ -1,3 +1,4 @@
+using Notrelix.Application.Features.Identity.Sessions.DTOs;
 using Notrelix.API.Extensions;
 using Notrelix.API.RateLimiting;
 using Notrelix.Application.Features.Identity.Sessions.Commands.RevokeOtherSessions;
@@ -12,18 +13,24 @@ public static class SessionEndpoints
     {
         group.MapAuthenticatedGet("/sessions", GetSessionsAsync)
             .WithName("Identity.Sessions.List")
+            .Produces<SessionInfoDto[]>(StatusCodes.Status200OK, "application/json")
+            .ProducesProblems(StatusCodes.Status401Unauthorized, StatusCodes.Status429TooManyRequests)
             .WithTags("Identity.Sessions")
             .WithSummary("List active sessions for the authenticated user")
             .WithMetadata(new RateLimitPolicyAttribute("AuthStrictByIp"));
 
         group.MapAuthenticatedPost("/sessions/{sessionId:guid}/revoke", RevokeSessionAsync)
             .WithName("Identity.Sessions.Revoke")
+            .Produces(StatusCodes.Status200OK)
+            .ProducesProblems(StatusCodes.Status401Unauthorized, StatusCodes.Status404NotFound, StatusCodes.Status429TooManyRequests)
             .WithTags("Identity.Sessions")
             .WithSummary("Revoke a session")
             .WithMetadata(new RateLimitPolicyAttribute("AuthStrictByIp"));
 
         group.MapAuthenticatedPost("/sessions/revoke-others", RevokeOtherSessionsAsync)
             .WithName("Identity.Sessions.RevokeOthers")
+            .Produces(StatusCodes.Status200OK)
+            .ProducesProblems(StatusCodes.Status401Unauthorized, StatusCodes.Status429TooManyRequests)
             .WithTags("Identity.Sessions")
             .WithSummary("Revoke all other sessions")
             .WithDescription("Revokes every active session of the current user except the session that issued the request.")

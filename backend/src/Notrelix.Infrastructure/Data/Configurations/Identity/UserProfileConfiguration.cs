@@ -21,6 +21,8 @@ public class UserProfileConfiguration : IEntityTypeConfiguration<UserProfile>
         builder.Property(x => x.Locale).HasColumnName("locale").IsRequired().HasMaxLength(10).HasDefaultValue("vi");
         builder.Property(x => x.Theme).HasColumnName("theme").IsRequired().HasMaxLength(20).HasDefaultValue("system");
         builder.Property(x => x.Preferences).HasColumnName("preferences_json").HasColumnType("jsonb").IsRequired().HasDefaultValue("{}");
+        builder.Property(x => x.Phone).HasColumnName("phone").HasMaxLength(20);
+        builder.Property(x => x.PhoneVisibleToWorkspaceMembers).HasColumnName("phone_visible_to_workspace_members").IsRequired().HasDefaultValue(false);
         builder.Property(x => x.CreatedAt).HasColumnName("created_at").IsRequired();
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
 

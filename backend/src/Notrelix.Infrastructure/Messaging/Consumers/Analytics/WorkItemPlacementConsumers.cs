@@ -14,6 +14,7 @@ namespace Notrelix.Infrastructure.Messaging.Consumers.Analytics;
 /// snapshot contract — never through foreign persistence. Ordering uses the
 /// single producer revision (aggregate version at fact raise).
 /// </summary>
+[OrderingNotApplicable("Order-insensitive by construction: the placement projection applies a fact only when its producer revision is newer and rejects stale or duplicate revisions.")]
 public sealed class BoardItemMovedPlacementConsumer
     : IConsumer<BoardItemMovedIntegrationEventV2>
 {
@@ -58,6 +59,7 @@ public sealed class BoardItemMovedPlacementConsumer
     }
 }
 
+[OrderingNotApplicable("Order-insensitive by construction: the placement projection applies the producer snapshot only when its revision is newer and rejects stale or duplicate revisions.")]
 public sealed class BoardItemCreatedPlacementConsumer
     : IConsumer<BoardItemCreatedIntegrationEventV2>
 {
@@ -108,6 +110,7 @@ public sealed class BoardItemCreatedPlacementConsumer
     }
 }
 
+[OrderingNotApplicable("Order-insensitive by construction: the placement projection applies a fact only when its producer revision is newer and rejects stale or duplicate revisions.")]
 public sealed class BoardItemArchivedPlacementConsumer
     : IConsumer<BoardItemArchivedIntegrationEventV2>
 {

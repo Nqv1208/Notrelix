@@ -13,6 +13,7 @@ public static class MapProfileEndpoints
 
         group.MapUpdateProfile();
         group.MapUpdateEmail();
+        group.MapAccountPreferences();
 
         return app;
     }

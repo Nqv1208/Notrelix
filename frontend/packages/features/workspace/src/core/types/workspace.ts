@@ -192,5 +192,6 @@ export interface WorkspaceSettings {
 
 export interface CreateWorkspaceInvitationInput {
   email: string;
-  role: Exclude<WorkspaceRole, "owner">;
+  /** Member or Guest only (WSP-026); Admin is granted after joining. */
+  role: Extract<WorkspaceRole, "member" | "guest">;
 }

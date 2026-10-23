@@ -79,12 +79,27 @@ export function parseMembers(payload: unknown): WorkspaceMember[] {
 type UpdateRoleBody =
   OperationRequestBody<"Workspaces.Members.UpdateMemberRole">;
 
+/**
+ * `Workspaces.Members.GetMyMembership` returns one `WorkspaceMemberDto`: the
+ * caller's own row, readable by every member including a Guest.
+ */
+export function parseMyMembership(payload: unknown): WorkspaceMember | null {
+  return parseMembers([payload])[0] ?? null;
+}
+
 /** Adapter for `Workspaces.Members.*` (paths follow the producer). */
 export function createMembersService(api: WorkspaceApiClient) {
   const base = (workspaceId: string) => `/workspaces/${workspaceId}/members`;
   return {
     async getList(workspaceId: string): Promise<WorkspaceMember[]> {
       return parseMembers(await api.get<unknown>(base(workspaceId)));
+    },
+
+    /** GET …/members/me: the caller's own row; the only member read a Guest may make. */
+    async getMine(workspaceId: string): Promise<WorkspaceMember | null> {
+      return parseMyMembership(
+        await api.get<unknown>(`${base(workspaceId)}/me`),
+      );
     },
 
     /** PATCH …/members/{userId} with the producer's role enum value. */

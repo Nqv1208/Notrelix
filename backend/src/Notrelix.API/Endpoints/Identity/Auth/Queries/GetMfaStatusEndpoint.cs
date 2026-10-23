@@ -1,3 +1,4 @@
+using Notrelix.Application.Features.Identity.Mfa.DTOs;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Identity.Mfa.Queries.GetMfaStatus;
 
@@ -9,6 +10,8 @@ public static class GetMfaStatusEndpoint
     {
         group.MapAuthenticatedGet("/mfa/status", HandleAsync)
             .WithName("Identity.Mfa.Status")
+            .Produces<MfaStatusDto>(StatusCodes.Status200OK, "application/json")
+            .ProducesProblems(StatusCodes.Status401Unauthorized)
             .WithTags("Identity.Mfa")
             .WithSummary("Get MFA status for the authenticated user");
         return group;

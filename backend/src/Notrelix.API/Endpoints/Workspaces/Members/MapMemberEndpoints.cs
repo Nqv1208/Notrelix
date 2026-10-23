@@ -13,9 +13,11 @@ public static class MapMemberEndpoints
             .WithOpenApi();
 
         group.MapListMembers();
+        group.MapGetMyMembership();
         group.MapInviteMember();
         group.MapAddMember();
         group.MapUpdateMemberRole();
+        group.MapUpdateMemberJobTitle();
         group.MapRemoveMember();
         group.MapSuspendMember();
         group.MapActivateMember();

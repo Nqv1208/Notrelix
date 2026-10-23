@@ -13,15 +13,21 @@ public static class EmailVerificationEndpoints
     {
         group.MapPublicPost("/email-verification/confirm", ConfirmAsync)
             .WithName("Identity.Auth.ConfirmEmail")
+            .Produces<ConfirmEmailResultDto>(StatusCodes.Status200OK, "application/json")
+            .ProducesProblems(StatusCodes.Status400BadRequest)
             .WithSummary("Confirm an email address with a one-time token");
 
         group.MapPublicPost("/email-verification/resend", ResendAsync)
             .WithName("Identity.Auth.ResendEmailVerification")
+            .Produces(StatusCodes.Status200OK)
+            .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status429TooManyRequests)
             .WithSummary("Request a new email verification message")
             .WithMetadata(new RateLimitPolicyAttribute("AuthStrictByIp"));
 
         group.MapAuthenticatedPost("/email-verification/request", RequestAsync)
             .WithName("Identity.Auth.RequestEmailVerification")
+            .Produces(StatusCodes.Status200OK)
+            .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status401Unauthorized)
             .WithSummary("Request an email verification message for the current user");
 
         return group;

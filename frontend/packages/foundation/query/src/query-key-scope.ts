@@ -14,11 +14,33 @@ export function globalQueryKey<
   return ["global", resource, ...segments] as readonly ["global", R, ...S];
 }
 
+/**
+ * Account-scoped key: `["account", accountId, resource, ...segments]`.
+ *
+ * Until the backend exposes a distinct Account identity, the client defines
+ * Account as the authenticated principal (`User.id`). The ID is mandatory so
+ * Account A data can never be addressed by Account B.
+ */
 export function accountQueryKey<
+  const A extends string,
   const R extends string,
   const S extends readonly unknown[],
->(resource: R, ...segments: S): readonly ["account", R, ...S] {
-  return ["account", resource, ...segments] as readonly ["account", R, ...S];
+>(accountId: A, resource: R, ...segments: S): readonly ["account", A, R, ...S] {
+  assertAccountId(accountId);
+  return ["account", accountId, resource, ...segments] as readonly [
+    "account",
+    A,
+    R,
+    ...S,
+  ];
+}
+
+export function assertAccountId(
+  accountId: unknown,
+): asserts accountId is string {
+  if (typeof accountId !== "string" || accountId.length === 0) {
+    throw new Error("account-scoped query key requires a non-empty account ID");
+  }
 }
 
 export function workspaceQueryKey<
@@ -44,7 +66,8 @@ export function workspaceQueryKey<
  * - empty keys;
  * - a root other than `global|account|workspace`;
  * - a missing resource;
- * - a workspace root with an empty or missing workspace ID.
+ * - a workspace root with an empty or missing workspace ID;
+ * - an account root with an empty or missing account ID or resource.
  *
  * This is test/tooling validation, not a runtime global key registry.
  */
@@ -67,6 +90,19 @@ export function assertNotrelixQueryKey(key: readonly unknown[]): void {
       throw new Error(
         "workspace-scoped query key requires a non-empty workspace ID",
       );
+    }
+    return;
+  }
+
+  if (root === "account") {
+    const accountId = key[1];
+    if (typeof accountId !== "string" || accountId.length === 0) {
+      throw new Error(
+        "account-scoped query key requires a non-empty account ID",
+      );
+    }
+    if (key.length < 3) {
+      throw new Error("account-scoped query key requires a resource segment");
     }
     return;
   }

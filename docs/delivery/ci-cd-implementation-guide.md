@@ -124,6 +124,14 @@ If a schema-changing migration has begun, automatic application downgrade is dis
 
 Do not create another committed lock/env file as a parallel authority.
 
+### Derived postgres runtime image
+
+`[images.postgres]` is the derived image published by `.github/workflows/postgres-image.yml` (see `infra/postgres/Dockerfile`), not an official tag, once it is pinned to a `ghcr.io/<owner>/notrelix-postgres@sha256:...` digest. The Dockerfile pins its base (`POSTGRES_BASE`), the Go toolchain (`GO_IMAGE`) and the gosu source commit by digest/commit; there are no floating tags.
+
+Rebuild obligation until upstream ships a patched gosu: every time the official postgres digest is bumped, update `POSTGRES_BASE` in the Dockerfile, let the workflow rebuild and publish on `main` (or run it with `workflow_dispatch`), then re-pin `[images.postgres].ref` (and the single `FALLBACK_*` copies in `container-ci.yml` and `infra-ci.yml`) to the new derived digest in a reviewed commit. A stateful image change is never deployed automatically; the target environment needs `DEPLOY_ALLOW_STATEFUL_IMAGE_CHANGE=true` for that release.
+
+Reassessment condition: drop the derived image and pin the official digest again when an official postgres digest ships `gosu` built with Go >= 1.26.10 / 1.27.3 and passes the runtime-image gate without any ignore file.
+
 ## 9. Production operations
 
 Development builds remain available through Make. Staging/production build/deploy targets intentionally fail; operators use Release Candidate / Promote Staging-Verified Release workflows so production bytes always come from a sealed manifest.

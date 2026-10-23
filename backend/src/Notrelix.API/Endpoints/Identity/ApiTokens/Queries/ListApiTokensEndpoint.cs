@@ -12,7 +12,8 @@ public static class ListApiTokensEndpoint
             .WithName("Identity.ApiTokens.List")
             .WithSummary("List API token metadata for a workspace")
             .WithDescription("Returns token metadata only. The raw secret is never returned by any read operation.")
-            .Produces<IReadOnlyList<ApiTokenSummaryDto>>(StatusCodes.Status200OK, "application/json");
+            .Produces<IReadOnlyList<ApiTokenSummaryDto>>(StatusCodes.Status200OK, "application/json")
+            .ProducesProblems(StatusCodes.Status401Unauthorized, StatusCodes.Status403Forbidden, StatusCodes.Status404NotFound);
         return group;
     }
 

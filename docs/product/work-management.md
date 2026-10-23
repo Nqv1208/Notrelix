@@ -508,6 +508,27 @@ Views map to the Item.
 
 ---
 
+# 27.1. WM-043 — Item key
+
+Decided 2026-10-12 (UI mockup review). Every Item has a stable key unique within its Board, assigned at creation from the Board prefix and sequence; the key never changes and is never reused.
+
+- the key is `{prefix}-{n}`, or plain `n` when the Board has no prefix;
+- root and child Items draw from the same Board sequence; moving or regrouping an Item keeps its key;
+- the key is a human reference, not the durable technical ID.
+
+---
+
+# 27.2. What the Board read shows
+
+Decided 2026-10-13 (matches the mockup). The full Board read (`GET /boards/{id}/full`) lists, inside each group, the active top-level Items only:
+
+- archived Items are not listed;
+- child Items are not listed as Items of a group; they appear in their parent's derived progress (WM-041) and in the parent's Item detail.
+
+Known gap: there is no read for a Board's archived Items yet, so archived Items cannot be listed or restored from the Board read; a separate archived-Items read is needed before an "archived" view can be offered.
+
+---
+
 # 28. Item title/name
 
 If an Item has a primary name/title, its semantics should be stable enough for cross-view identity and user recognition.
@@ -981,6 +1002,32 @@ Define semantics explicitly rather than treating every relation as dependency.
 
 ---
 
+# 68.1. WM-039 — Item links are typed; waits-on links are acyclic
+
+Decided 2026-10-12 (UI mockup review). An Item link has one of three kinds:
+
+```text
+waits on   A cannot finish before B; B shows the inverse "blocks A"
+related    undirected, no workflow meaning
+```
+
+- one link per unordered pair of Items; changing its kind is an explicit update, not a second link;
+- self-links are rejected;
+- waits-on links form an acyclic graph across the Workspace: a link that would close a cycle, directly or transitively, is rejected and the rejection names the existing path; pickers disable such targets with that reason;
+- target validation and visibility follow §65 and §66: the target must exist and be viewable by the actor when linking; a viewer who cannot read the target sees the link without the target's title or fields.
+
+---
+
+# 68.2. WM-040 — Assignment requires access at the time it is made
+
+Decided 2026-10-12 (UI mockup review).
+
+- assigning a User who cannot `ViewBoard` on the Item's Board is rejected on every write path (UI, API, Automation, Import, WM-030); assignee pickers show such people as unavailable, with an invite action for principals who may grant access;
+- losing access later (Board made Private, Space role removed, entry expired) does not unassign: the Item keeps its value and the assignee simply cannot open it;
+- access-changing flows warn about open Items assigned to people who will lose access and offer to grant them access first (GOV-025).
+
+---
+
 # 69. Formulas
 
 Current Domain contains `FormulaExpression` and `FormulaReturnType`.
@@ -1075,6 +1122,18 @@ Progress may derive from:
 - explicit field semantics.
 
 Do not create ambiguous competing progress truths.
+
+---
+
+# 77.1. WM-041 — Progress of an Item with child Items is derived
+
+Decided 2026-10-12 (UI mockup review). When an Item has non-archived child Items, its progress is derived as
+
+```text
+child Items whose Work Status is in the done category / non-archived child Items
+```
+
+shown as a count ("3/5") and a percentage. It is read-only, recomputed when a child changes status or is added, archived or removed, and never stored as an independently editable value. An Item without child Items has no derived progress.
 
 ---
 
@@ -1871,6 +1930,17 @@ A Work Management Status value is not:
 - Integration status.
 
 No shared global Status enum.
+
+---
+
+# 148.1. WM-042 — Status options carry a work-status category
+
+Decided 2026-10-12 (UI mockup review). A Status field's options each carry a category (todo, in progress, review, done). Exactly the done category marks an Item as done for progress and completion; categories are editable by those who may edit the Board's fields (Editor and above); a Status field must keep at least one Todo and one Done option.
+
+- moving an Item into a status of the done category completes it (sets its completion time); moving it out of the done category, or clearing its status, reopens it (clears the completion time); every status write path behaves the same;
+- a new Board's Status field starts with Cần làm (todo), Đang làm (in progress), Chờ duyệt (review), Hoàn thành (done);
+- removing an option, or moving it to another category, is rejected when it would take away the field's last Todo or last Done option;
+- options of other field types carry no category.
 
 ---
 

@@ -218,7 +218,7 @@ writeFileSync(
 import { accountQueryKey } from '@notrelix/query';
 
 export const ${camelName}QueryKeys = {
-  all: accountQueryKey('${featureName}'),
+  all: (accountId: string) => accountQueryKey(accountId, '${featureName}'),
 } as const;
 `,
 );
@@ -231,7 +231,11 @@ import { ${camelName}QueryKeys } from './keys';
 
 describe('${camelName}QueryKeys', () => {
   it('exposes a stable all-keys entry', () => {
-    expect(${camelName}QueryKeys.all).toEqual(['account', '${featureName}']);
+    expect(${camelName}QueryKeys.all('acc-1')).toEqual([
+      'account',
+      'acc-1',
+      '${featureName}',
+    ]);
   });
 });
 `,

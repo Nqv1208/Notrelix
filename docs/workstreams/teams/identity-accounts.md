@@ -382,9 +382,11 @@ Resolution status (final Identity & Accounts closure, 2026-08-29):
   `security.csrf_validation_failed`) are merged and covered by tests:
   API Csrf suites 15/15 (enforcement + rollout-compat + cross-stack flow) and
   frontend csrf-transport unit tests. No `XSRF-TOKEN`/meta/localStorage
-  mechanism exists in source. `Security:Csrf:Enabled` defaults false; enabling
-  in staging/production is a staged deployment action (P14-MIG-003 in the
-  Identity & Accounts execution package), not an unresolved source mismatch.
+  mechanism exists in source. `Security:Csrf:Enabled` now defaults true and is
+  false only in Development/Testing appsettings (startup rejects disablement
+  elsewhere); the staging/production deployment smoke (P14-MIG-003 in the
+  Identity & Accounts execution package) remains an exact-candidate proof
+  action, not an unresolved source mismatch.
   Slices previously held `BLOCKED` by this item are no longer blocked at
   source level.
 

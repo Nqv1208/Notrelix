@@ -31,7 +31,7 @@ review_on:
 > This file is generated discovery evidence.
 > Rule meaning remains owned by the canonical source document in which the rule is declared.
 
-Rule count: 2678
+Rule count: 2689
 
 ## Namespace summary
 
@@ -51,7 +51,7 @@ Rule count: 2678
 | `BE-SEC` | 59 |
 | `BE-TST` | 67 |
 | `BIL` | 33 |
-| `COL` | 29 |
+| `COL` | 30 |
 | `DCT` | 31 |
 | `DEC` | 26 |
 | `DEL-CHG` | 40 |
@@ -72,7 +72,7 @@ Rule count: 2678
 | `FE-STATE` | 82 |
 | `FE-TST` | 79 |
 | `FE-UI` | 81 |
-| `GOV` | 29 |
+| `GOV` | 33 |
 | `ID` | 18 |
 | `INFRA-CTR` | 70 |
 | `INFRA-ENV` | 40 |
@@ -101,8 +101,8 @@ Rule count: 2678
 | `SYS-NOTIF` | 1 |
 | `SYS-OBS` | 1 |
 | `SYS-RT` | 4 |
-| `WM` | 38 |
-| `WSP` | 25 |
+| `WM` | 43 |
+| `WSP` | 26 |
 
 ## Rule inventory
 
@@ -837,6 +837,7 @@ Rule count: 2678
 | `COL-027` | `COL` | Historical Collaboration can outlive active Identity | [`docs/product/collaboration.md`](../product/collaboration.md) |
 | `COL-028` | `COL` | Collaboration histories are purpose-specific | [`docs/product/collaboration.md`](../product/collaboration.md) |
 | `COL-029` | `COL` | Collaboration content is safe to render by contract | [`docs/product/collaboration.md`](../product/collaboration.md) |
+| `COL-030` | `COL` | Mentioning someone who cannot view the source notifies nobody and grants nothing | [`docs/product/collaboration.md`](../product/collaboration.md) |
 | `DCT-001` | `DCT` | Documents is Page + typed Block content, not opaque HTML | [`docs/product/documents.md`](../product/documents.md) |
 | `DCT-002` | `DCT` | A Page belongs to one Workspace | [`docs/product/documents.md`](../product/documents.md) |
 | `DCT-003` | `DCT` | Archive and delete are different lifecycle operations | [`docs/product/documents.md`](../product/documents.md) |
@@ -1630,7 +1631,7 @@ Rule count: 2678
 | `FE-RT-023` | `FE-RT` | Stale sequence is not applied to product state | [`frontend/docs/architecture/realtime.md`](../../frontend/docs/architecture/realtime.md) |
 | `FE-RT-024` | `FE-RT` | Gap means local incremental history is incomplete | [`frontend/docs/architecture/realtime.md`](../../frontend/docs/architecture/realtime.md) |
 | `FE-RT-025` | `FE-RT` | Recovery re-establishes both data truth and sequence continuity | [`frontend/docs/architecture/realtime.md`](../../frontend/docs/architecture/realtime.md) |
-| `FE-RT-026` | `FE-RT` | Current recovery continuation is UNRESOLVED until proven | [`frontend/docs/architecture/realtime.md`](../../frontend/docs/architecture/realtime.md) |
+| `FE-RT-026` | `FE-RT` | Recovery continuation is proven by a continuation test | [`frontend/docs/architecture/realtime.md`](../../frontend/docs/architecture/realtime.md) |
 | `FE-RT-027` | `FE-RT` | Recovery scope follows subscription/event ownership | [`frontend/docs/architecture/realtime.md`](../../frontend/docs/architecture/realtime.md) |
 | `FE-RT-028` | `FE-RT` | Workspace subscription is explicitly scoped | [`frontend/docs/architecture/realtime.md`](../../frontend/docs/architecture/realtime.md) |
 | `FE-RT-029` | `FE-RT` | Subscription identity is not UI component identity | [`frontend/docs/architecture/realtime.md`](../../frontend/docs/architecture/realtime.md) |
@@ -1944,6 +1945,10 @@ Rule count: 2678
 | `GOV-027` | `GOV` | Space roles map to permission levels deterministically | [`docs/product/governance.md`](../product/governance.md) |
 | `GOV-028` | `GOV` | Space and Team management authority | [`docs/product/governance.md`](../product/governance.md) |
 | `GOV-029` | `GOV` | Collections apply the single-read decision in the datastore | [`docs/product/governance.md`](../product/governance.md) |
+| `GOV-030` | `GOV` | A Guest's resource level is capped at Editor | [`docs/product/governance.md`](../product/governance.md) |
+| `GOV-031` | `GOV` | An explicit resource entry may expire | [`docs/product/governance.md`](../product/governance.md) |
+| `GOV-032` | `GOV` | The Workspace sharing policy can turn share links off | [`docs/product/governance.md`](../product/governance.md) |
+| `GOV-033` | `GOV` | Board child resources are authorized through their Board | [`docs/product/governance.md`](../product/governance.md) |
 | `ID-001` | `ID` | Authentication and authorization are separate | [`docs/product/identity.md`](../product/identity.md) |
 | `ID-002` | `ID` | Mutable email is not universal identity | [`docs/product/identity.md`](../product/identity.md) |
 | `ID-003` | `ID` | Identity deletion does not cascade business history | [`docs/product/identity.md`](../product/identity.md) |
@@ -2761,6 +2766,11 @@ Rule count: 2678
 | `WM-036` | `WM` | External-reference validation uses supplied facts/contracts | [`docs/product/work-management.md`](../product/work-management.md) |
 | `WM-037` | `WM` | Option identity survives rename | [`docs/product/work-management.md`](../product/work-management.md) |
 | `WM-038` | `WM` | Work Status is context-local field semantics | [`docs/product/work-management.md`](../product/work-management.md) |
+| `WM-039` | `WM` | Item links are typed; waits-on links are acyclic | [`docs/product/work-management.md`](../product/work-management.md) |
+| `WM-040` | `WM` | Assignment requires access at the time it is made | [`docs/product/work-management.md`](../product/work-management.md) |
+| `WM-041` | `WM` | Progress of an Item with child Items is derived | [`docs/product/work-management.md`](../product/work-management.md) |
+| `WM-042` | `WM` | Status options carry a work-status category | [`docs/product/work-management.md`](../product/work-management.md) |
+| `WM-043` | `WM` | Item key | [`docs/product/work-management.md`](../product/work-management.md) |
 | `WSP-001` | `WSP` | Workspace is a collaboration tenant, not a generic global scope | [`docs/product/workspaces.md`](../product/workspaces.md) |
 | `WSP-002` | `WSP` | Workspace scope is explicit | [`docs/product/workspaces.md`](../product/workspaces.md) |
 | `WSP-003` | `WSP` | Workspace lifecycle is not Account lifecycle | [`docs/product/workspaces.md`](../product/workspaces.md) |
@@ -2786,6 +2796,7 @@ Rule count: 2678
 | `WSP-023` | `WSP` | Space visibility controls who inherits access, Governance defines what access means | [`docs/product/workspaces.md`](../product/workspaces.md) |
 | `WSP-024` | `WSP` | Space membership is Users and Teams with a Space role | [`docs/product/workspaces.md`](../product/workspaces.md) |
 | `WSP-025` | `WSP` | A Team is a membership group that Governance may evaluate as a subject | [`docs/product/workspaces.md`](../product/workspaces.md) |
+| `WSP-026` | `WSP` | Outsiders join through an invitation, never through a grant to a raw email | [`docs/product/workspaces.md`](../product/workspaces.md) |
 
 ## Generation contract
 

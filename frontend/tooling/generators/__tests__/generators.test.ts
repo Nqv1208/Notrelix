@@ -312,7 +312,7 @@ describe("create-feature generator", () => {
 
     const keys = readFileSync(join(featureDir, "src/query/keys.ts"), "utf8");
     expect(keys).toContain("billingQueryKeys");
-    expect(keys).toContain("accountQueryKey('billing')");
+    expect(keys).toContain("accountQueryKey(accountId, 'billing')");
     expect(existsSync(join(featureDir, "src/query/keys.unit.test.ts"))).toBe(
       true,
     );

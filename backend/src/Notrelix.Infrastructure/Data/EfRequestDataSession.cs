@@ -20,6 +20,7 @@ public sealed class EfRequestDataSession : IRequestDataSession
     private readonly PipelineMetrics _metrics;
 
     private readonly Notrelix.Application.Features.WorkManagement.Ordering.WorkOrderingMetrics? _orderingMetrics;
+    private readonly IRequestRollbackCompensations? _compensations;
 
     public EfRequestDataSession(
         ApplicationDbContext dbContext,
@@ -28,8 +29,10 @@ public sealed class EfRequestDataSession : IRequestDataSession
         IOutboxWakeSignal? outboxWakeSignal = null,
         ExpectedVersionTargetMap? expectedVersionTargets = null,
         PipelineMetrics? metrics = null,
-        Notrelix.Application.Features.WorkManagement.Ordering.WorkOrderingMetrics? orderingMetrics = null)
+        Notrelix.Application.Features.WorkManagement.Ordering.WorkOrderingMetrics? orderingMetrics = null,
+        IRequestRollbackCompensations? compensations = null)
     {
+        _compensations = compensations;
         _orderingMetrics = orderingMetrics;
         _dbContext = dbContext;
         _rls = rls;
@@ -51,6 +54,7 @@ public sealed class EfRequestDataSession : IRequestDataSession
         await using var transaction =
             await _dbContext.Database.BeginTransactionAsync(cancellationToken);
 
+        var commitStarted = false;
         try
         {
             if (options.Access == RequestDataAccess.ReadOnly)
@@ -98,6 +102,7 @@ public sealed class EfRequestDataSession : IRequestDataSession
             }
 
             using var transactionCommit = PipelineActivitySource.Instance.StartActivity("data_session.commit");
+            commitStarted = true;
             await transaction.CommitAsync(cancellationToken);
             if (options.Access == RequestDataAccess.Transactional)
                 _outboxWakeSignal?.TrySignal();
@@ -108,9 +113,33 @@ public sealed class EfRequestDataSession : IRequestDataSession
         catch
         {
             _logger.LogWarning("Rolling back data session");
+            await RunCompensationsAsync(commitStarted);
             await transaction.RollbackAsync(cancellationToken);
             throw;
         }
+    }
+
+    /// <summary>
+    /// Runs the registered external-effect compensations (for example deleting an uploaded
+    /// object) when the failure happened before the commit started, i.e. the database state is
+    /// definitely rolled back. When the commit itself failed the outcome is unknown, so nothing
+    /// is compensated: an unreachable object is safe, a deleted object behind a committed row is not.
+    /// The caller's cancellation token is deliberately not used: a client abort is the most
+    /// common reason for the failure and must not prevent the cleanup.
+    /// </summary>
+    private async Task RunCompensationsAsync(bool commitStarted)
+    {
+        if (_compensations is null)
+            return;
+
+        if (commitStarted)
+        {
+            _logger.LogWarning("Commit outcome unknown; rollback compensations skipped");
+            return;
+        }
+
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        await _compensations.RunAsync(timeout.Token);
     }
 
     private void ApplyExpectedVersion(ExpectedVersionConstraint? constraint)

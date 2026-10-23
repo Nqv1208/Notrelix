@@ -1,0 +1,75 @@
+using global::Notrelix.Application.Common.Models;
+using global::Notrelix.Application.Common.Storage;
+using global::Notrelix.Application.Features.Collaboration.Attachments.DTOs;
+using global::Notrelix.Application.Features.Collaboration.Attachments.Services;
+using Notrelix.Application.Features.Collaboration.Abstractions;
+
+namespace Notrelix.Application.Features.Collaboration.Attachments.Queries.GetBoardItemAttachmentContent;
+
+/// <summary>
+/// Opens the stored bytes of an uploaded attachment. Authorization is identical to reading the
+/// attachment list of the item (ViewBoard on the board item): an item the caller cannot see is
+/// not found, and the attachment must belong to that item.
+/// </summary>
+public record GetBoardItemAttachmentContentQuery(Guid BoardItemId, Guid AttachmentId)
+    : IQuery<Result<AttachmentContentDto>>, IAuthenticatedRequest, IReadRequest, IResourceScopedRequest, IRequirePermission
+{
+    public PermissionAction Action => PermissionAction.ViewBoard;
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-item"), BoardItemId);
+}
+
+public class GetBoardItemAttachmentContentQueryHandler : IRequestHandler<GetBoardItemAttachmentContentQuery, Result<AttachmentContentDto>>
+{
+    private static readonly ResourceKind BoardItemKind = ResourceKind.Create("work-management.board-item");
+
+    private readonly ICollaborationDbContext _context;
+    private readonly ICurrentRequestContext _requestContext;
+    private readonly IStorageService _storage;
+    private readonly ILogger<GetBoardItemAttachmentContentQueryHandler> _logger;
+
+    public GetBoardItemAttachmentContentQueryHandler(
+        ICollaborationDbContext context,
+        ICurrentRequestContext requestContext,
+        IStorageService storage,
+        ILogger<GetBoardItemAttachmentContentQueryHandler> logger)
+    {
+        _context = context;
+        _requestContext = requestContext;
+        _storage = storage;
+        _logger = logger;
+    }
+
+    public async Task<Result<AttachmentContentDto>> Handle(GetBoardItemAttachmentContentQuery request, CancellationToken ct)
+    {
+        var attachment = await _context.Attachments.AsNoTracking()
+            .FirstOrDefaultAsync(a => a.Id == request.AttachmentId
+                && a.Target.Kind == BoardItemKind
+                && a.Target.ResourceId == request.BoardItemId, ct);
+
+        // A link has no stored content; both cases are reported exactly like an unknown attachment.
+        if (attachment is null || !attachment.IsStoredFile)
+        {
+            throw new NotFoundException(nameof(Attachment), request.AttachmentId);
+        }
+
+        var key = attachment.Metadata.StorageKey!;
+        if (!AttachmentStorageKey.BelongsTo(key, _requestContext.RequireAccountId(), _requestContext.RequireWorkspaceId()))
+        {
+            _logger.LogError("Attachment {AttachmentId} has a storage key outside its tenant prefix; refusing to open it.", attachment.Id);
+            throw new NotFoundException(nameof(Attachment), request.AttachmentId);
+        }
+
+        var content = await _storage.OpenReadAsync(key, ct);
+        if (content is null)
+        {
+            _logger.LogError("Attachment {AttachmentId} row exists but its stored object is missing.", attachment.Id);
+            throw new NotFoundException(nameof(Attachment), request.AttachmentId);
+        }
+
+        return Result<AttachmentContentDto>.Success(new AttachmentContentDto(
+            content,
+            attachment.Metadata.FileName,
+            attachment.Metadata.ContentType,
+            attachment.Metadata.Size));
+    }
+}

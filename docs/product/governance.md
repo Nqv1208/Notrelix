@@ -341,6 +341,18 @@ Subject identity and subject type must be explicit.
 
 Evaluated subjects today (2026-10-11): `User`, and `Team` (GOV-026). Other stored subject types (`WorkspaceRole`, `PublicLink`, `ExternalEmail`) are not evaluated by the access engine and grant nothing until a product decision defines them.
 
+Certified core of a `ResourcePermission` entry (2026-10-23):
+
+```text
+subject    User or Team only
+effect     Allow only (stored priority 100, no condition)
+expiry     none
+```
+
+The `ResourcePermission` Domain factory refuses any other subject type, and the grant command rejects `WorkspaceRole`, `PublicLink`, `ExternalEmail`, an expiry, and any Deny, condition or priority input (the command has no field for them). Deny, condition, priority and expiry semantics belong to `PermissionRule` (time window and priority are evaluated there; a rule's condition JSON is not evaluated today), not to a resource entry; a product decision is required before a resource entry may carry them.
+
+Rows written before this bound that hold another subject type stay in place and fail closed: the access-facts query matches only `User` and `Team` subjects, so those rows grant nothing. No destructive migration is applied; they remain visible to revoke.
+
 ---
 
 # 17. Current Permission source
@@ -501,16 +513,20 @@ Space Member → Editor
 Space Viewer → Viewer
 ```
 
-Action thresholds when access comes only from a Space role:
+Every source of access to a Board or Page gives a level (Space role as above; explicit grant; board membership role, GOV-033; the Workspace default of an unplaced Workspace-visible Board/Page = Editor for non-Guest members). The effective level is the highest of them (a Guest is capped at Editor, GOV-030), and the action thresholds apply to that effective level whatever the source:
 
 ```text
 Viewer    : ViewBoard, ViewPage, ViewWorkspace, ViewMembers
 Commenter : + CreateComment
-Editor    : every other Board/Page/Item action (create, update, move, assign, ManageBoard, ...)
-Manager   : + ManageBoardPermission, ManagePagePermission, ArchivePage
+Editor    : + content: create, update, move, assign and delete Items; Fields, Views,
+            Groups, Labels, saved filters, forms, templates and relations;
+            every other Page action
+Manager   : + Board management (ManageBoard on a Board: settings and title, visibility,
+            move to a Space, archive/unarchive, delete/restore, board members),
+            ManageBoardPermission, ManagePagePermission, ArchivePage
 ```
 
-When the principal also holds board membership or an explicit resource permission, the effective resource-permission rank is the higher of the explicit rank and the Space level; board-member semantics (for example Observer cannot update items) still apply.
+Board content commands declare the content action they perform (groups: CreateItem/UpdateItem; labels, forms, templates, relations: CreateField/UpdateField/DeleteField; default view and saved filters: UpdateBoardView/CreateBoardView); `ManageBoard` on a Board is Board management only. Board-member semantics still apply on top of the level (for example an Observer cannot update items).
 
 # 23.4. GOV-028 — Space and Team management authority
 
@@ -524,6 +540,8 @@ restore a deleted Space                               → workspace Owner, Admin
 move a Space                                          → ManageSpaces on the Space and on the target parent
                                                         (or on the Workspace for the root)
 ManageTeams (create/rename/archive/delete Teams, manage Team members) → workspace Owner, Admin
+ManageMemberProfile (edit another member's Workspace job title; D15)  → workspace Owner, Admin
+                                                                        (a member edits their own title as a plain member)
 create a Board/Page in a Space (CreateBoard/CreatePage on the Space)  → Editor level on the Space
 move a Board/Page to another Space or out of a Space                  → ManageBoard on the resource
                                                                         and the create right on the target
@@ -531,12 +549,25 @@ move a Board/Page to another Space or out of a Space                  → Manage
 
 A principal who cannot see a Space receives NotFound for it, not Forbidden.
 
-Scope of Space inheritance today: the Space level is evaluated where the decision is made on the Board or Page itself (and on the Space). Board-child resources (items, groups, fields, views, …) keep their current resource-kind policy, which does not inherit Board audience either; extending inheritance to them is a separate Governance decision. Workspace Admin capability over Spaces and Teams does not extend to Owner-only actions (GOV-013) nor to Private Boards/Pages (GOV-025 step 4).
+Scope of Space inheritance today: the Space level is evaluated where the decision is made on the Board or Page itself (and on the Space). Board-child resources (items, groups, fields, views, …) are decided on their Board (GOV-033). Workspace Admin capability over Spaces and Teams does not extend to Owner-only actions (GOV-013) nor to Private Boards/Pages (GOV-025 step 4).
 
 # 23.5. GOV-029 — Collections apply the single-read decision in the datastore
 
 Board lists (by Workspace and by slug), Space lists/tree, Page lists/tree/search and My Work return exactly the resources a single read of each would allow (`ViewBoard`/`ViewPage`/Space visibility), computed in the server query (GOV-019), never by loading everything and hiding it in memory. A parity test pins the list decision to the single-read engine.
 
+
+# 23.6. GOV-033 — Board child resources are authorized through their Board
+
+Decided 2026-10-13. Every resource that lives inside a Board — Items (and their comments, activity, attachments, links and checklists), Checklist items, Groups, Fields, Views and Labels — is authorized by evaluating the requested action against its parent Board:
+
+- the same visibility: a principal who cannot see the Board receives NotFound for any of its children (GOV-025), and a child of an archived or deleted Board, or one whose Board cannot be resolved, is NotFound;
+- the same order as the Board itself: explicit permission rules scoped to the Board (or to the child) apply to its children, then the level and action thresholds (GOV-027) and the Guest cap (GOV-030): reading needs Viewer, commenting on an Item needs Commenter, every other change needs Editor;
+- an explicit grant on the child itself still counts as a source of access in addition to the Board's sources;
+- a child accepts only Board-child actions (read, comment, item, field and view changes, Board management); any other action on a child is refused.
+
+Board membership roles carry a level: Owner and Admin → Manager, Member → Editor, Observer and Guest → Viewer. Managing board members (adding, removing, changing a role) is Board management and needs Manager; a Manager assigns, changes or removes roles up to their own level (the target's level is the higher of its board role and any explicit grant). Below Manager no one manages board members, a Guest never does (GOV-030). Saving the Board's shared view is an Editor change.
+
+Not yet wired (their requests are unreachable today): Saved filters, Forms and form submissions, Board relations and approval requests.
 ---
 
 # 24. Field-level permissions
@@ -627,6 +658,36 @@ discover every private resource
 ```
 
 unless an explicit policy intentionally grants such capability.
+
+---
+
+# 30.1. GOV-030 — A Guest's resource level is capped at Editor
+
+Decided 2026-10-12 (UI mockup review). A Guest (Workspace role `guest`, WSP-026) can hold on a Board or Page:
+
+```text
+Viewer | Commenter | Editor   → effective
+Manager                      → never effective: the level is capped at Editor when evaluated
+```
+
+- the cap applies whatever the source of the level (direct entry, Team grant, board membership role, Space role): the effective level of a Guest is the lower of the computed level and Editor;
+- a Guest therefore never manages a Board (settings, visibility, moving, archiving, deleting, board members — also on an unplaced Workspace-visible Board), never holds `ManageBoardPermission` / `ManagePagePermission`, cannot change who has access, and cannot share the resource further;
+- a Manager-level entry given to a Guest is stored but has no effect beyond Editor; rejecting it when it is granted is not enforced yet;
+- resource access UIs show the Manager option disabled for a Guest with the reason, instead of hiding it.
+
+---
+
+# 30.2. GOV-031 — An explicit resource entry may expire
+
+Decided 2026-10-12 (UI mockup review). A board membership or explicit resource permission may carry an expiry instant.
+
+- expiry is evaluated server-side at decision time, like share-link expiry (§39); from that instant the entry grants nothing, and a principal left without any other source of access receives the same NotFound as any principal without access (GOV-025);
+- collections apply the same check in the datastore query (GOV-029), so an expired entry never makes a resource appear in a list;
+- setting, changing or clearing an expiry is a `ManageBoardPermission` / `ManagePagePermission` mutation and is audited;
+- an expired entry stays visible to the resource's managers, marked expired, until it is removed or renewed; renewing is an explicit change, never automatic;
+- an expiry only ends that entry; other sources (Space role, Team grant) are evaluated independently.
+
+The UI proposes an expiry when the subject is a Guest and allows one on any entry. Workspace Owner/Admin may set a default guest expiry in the Workspace sharing policy (GOV-032); it only pre-fills new guest entries and never changes existing ones.
 
 ---
 
@@ -734,6 +795,17 @@ Client clocks/UI labels do not decide validity.
 
 ---
 
+# 39.1. GOV-032 — The Workspace sharing policy can turn share links off
+
+Decided 2026-10-12 (UI mockup review). Workspace Owner/Admin set the Workspace sharing policy `shareLinks = Enabled | Disabled`.
+
+- while Disabled, no share link of any resource in the Workspace authorizes access, and creating or activating one is rejected; existing links are kept, not deleted, so re-enabling the policy lets links that are neither revoked nor expired work again;
+- the policy is evaluated server-side at access time; turning it off converges like a revocation (GOV-011, GOV-018);
+- resource sharing UIs show the policy state in place of the share-link control, naming the workspace admins as the people who can change it;
+- the resource address copied from the app ("copy link") is a locator, not a share link: it opens the resource only for principals who already have access (GOV-010).
+
+---
+
 # 40. Linked-resource access
 
 Example:
@@ -806,9 +878,49 @@ Guest
     constrained/external access
 ```
 
-Exact matrices may evolve.
-
 High-risk owner semantics remain fail-closed.
+
+## 44.1. Workspace role baseline (final matrix, 2026-10-23)
+
+The default decision of a workspace role for every `PermissionAction`, before explicit permission rules, resource permissions and Space evaluation compose on top of it (GOV-025 order, unchanged). Source of truth in code: the typed table `WorkspaceRoleBaseline` (Application Governance); an exhaustive test classifies every action, so a new action fails until it is classified. Account-scoped actions (`CreateWorkspace`, `ManageAccount`) are decided on the Account role (`AccountRoleBaseline`): Owner and Admin allowed, Member denied; `ViewWorkspace` is open to every Account member.
+
+`A` = allow, `D` = deny, `L` = decided on the resource level (Board, Page or Space: Owner → Owner level, Admin and Member on an unplaced Workspace-visible resource → Editor, Admin on a resource placed in a Space → Manager, Guest → explicit access only, capped at Editor; GOV-025/027/030).
+
+| Actions | Owner | Admin | Member | Guest | Note |
+|---|---|---|---|---|---|
+| `ViewWorkspace` | A | A | A | A | Every active member reaches the shell. |
+| `ViewMembers` | A | A | A | D | Changed: a Guest does not enumerate the workspace (GOV-009). A Guest reads only their own row through `GET /workspaces/{workspaceId}/members/me` (`ViewWorkspace`), and the names of people on a shared resource through that resource's own reads (see 44.3). |
+| `InviteMember` (add member, invitations) | A | A | D | D | Changed from Owner-only. Role cap in 44.2. |
+| `RemoveMember` (remove, suspend, activate) | A | A | D | D | Changed from Owner-only. Actor-versus-target guard in 44.2. |
+| `ManageWorkspaceSettings` | A | A | D | D | Changed from Owner-only. Targets Automation rules, Analytics placement rebuild and the calendar-sync trigger; it never covers credentials or security configuration (see `ManageApiTokens`). |
+| `ManageApiTokens` (create, list, revoke API tokens) | A | D | D | D | Credential issuance is security configuration and stays Owner (GOV-013). Split out of `ManageWorkspaceSettings` so Admin cannot mint a credential or read or revoke the Owner's tokens. |
+| `ChangeMemberRole` | A | D | D | D | Minting Admin or Owner stays Owner. |
+| `ManageWorkspace`, `ArchiveWorkspace`, `RestoreWorkspace`, `DeleteWorkspace` | A | D | D | D | Lifecycle and security stay Owner (GOV-013). |
+| `ManageSpaces`, `ManageTeams`, `ManageMemberProfile`, `ManageIntegrations` | A | A | D | D | GOV-028, D15, M8. In a Space the Space level decides. |
+| `CreateBoard` at the workspace root | A | A | A | D | Changed: Admin and Member may create unplaced Boards (usage right, Guests excluded, same as `CreatePage`). In a Space the Space level decides (Editor). |
+| `CreatePage` | A | A | A | D | Usage right. |
+| Board actions (`ViewBoard`, `ManageBoard`, `ManageBoardPermission`, board view, field and item actions, `ShareBoardView`) | A | L | L | L | GOV-027 thresholds. Public share needs Editor (unchanged). |
+| Page actions (`ViewPage`, `UpdatePage`, `DeletePage`, `ArchivePage`, `SharePage`, `ManagePagePermission`) | A | L | L | L | GOV-027. `SharePage` needs Editor (unchanged). |
+| `CreateComment` | A | L | L | L | Decided on the target resource; a Guest needs explicit access on it. |
+
+An Allow cell applies to the workspace resource itself (and, for `ManageWorkspaceSettings`, to the Automation, Analytics and Integrations resources it targets, and for `ManageIntegrations` also the calendar integration); it never widens to another resource kind.
+
+## 44.2. Guards the changed rows depend on
+
+Without these the changed rows would be an escalation. Both are Domain rules fed explicit facts (the actor's active workspace role, the target's role) by Application; they run before any state changes and use stable rule codes.
+
+- **Role cap** (`Workspaces_Member_ActorCannotAssignRole`): adding a member directly assigns Member or Guest only unless the actor is an Owner. Invitations already offer Member or Guest only (`Workspaces_Invitation_CannotInviteAsAdmin`). Re-adding a returning member whose existing row is an Owner or Admin is refused for a non-Owner (`Workspaces_Member_ActorCannotActOnMember`).
+- **Resend** (`Workspaces_Member_ActorCannotAssignRole`): resending an invitation re-issues the token that grants the invited role, so it applies the same role cap to the invitation's role. A non-Owner cannot re-arm a legacy Admin invitation (created before Admin stopped being invitable); an Admin still resends Member and Guest invitations. Cancelling and changing an invitation role cannot create an Admin or Owner membership (the Domain refuses an Admin or Owner role on create and on change), so they need no extra guard.
+- **Actor-versus-target** (`Workspaces_Member_ActorCannotActOnMember`): remove, suspend and activate act on any target only for an Owner; an Admin acts only on Member and Guest targets, never on an Owner or another Admin. The last-owner invariant and the owner row lock are unchanged.
+
+## 44.3. ViewMembers for a Guest (closed 2026-10-23)
+
+GOV-009 says a Guest does not enumerate the workspace, so `ViewMembers` is denied for a Guest: `GET /workspaces/{workspaceId}/members` answers 403. Two guest-safe reads replace the list:
+
+- **Own membership.** `GET /workspaces/{workspaceId}/members/me` (`Workspaces.Members.GetMyMembership`, `ViewWorkspace`) returns the caller's own `WorkspaceMemberDto` (role, status, job title, version) to any active member, a Guest included. It never returns another person. The web shell derives the viewer's role from it and requests the member list only for a role that may list people.
+- **Names on a shared resource.** Reads that show people on a resource (full board, board item, comments, board members, document page people) resolve names through the actor lookup and are authorized on the resource (a `ViewMembers` request against a Board is decided by the Board level, GOV-027, not by the workspace baseline cell), so they do not need the workspace member list. A Guest with access to a Board still sees assignee and comment author names.
+
+Members page for a Guest: shows only the Guest's own row, read-only.
 
 ---
 

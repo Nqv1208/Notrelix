@@ -8,6 +8,7 @@ using Notrelix.Application.Common.Messaging;
 using Notrelix.Application.Common.RateLimiting;
 using Notrelix.Application.Common.Security.Auth;
 using Notrelix.Application.Features.Identity.Auth.Sessions;
+using Notrelix.Application.Features.Identity.Auth.Throttling;
 using Notrelix.Application.Common.Tokens;
 using Notrelix.Application.Features.Accounts.Abstractions;
 using Notrelix.Application.Features.Accounts.Members;
@@ -28,6 +29,7 @@ using Notrelix.Application.Features.Identity.Auth.Commands.ResetPassword;
 using Notrelix.Application.Features.Identity.Auth.Commands.ChangePassword;
 using Notrelix.Application.Features.Identity.Mfa.Abstractions;
 using Notrelix.Application.Features.Identity.Security.Abstractions;
+using Notrelix.Domain.Identity.Profiles;
 using Notrelix.Domain.Identity.Security;
 
 namespace Notrelix.Application.Tests.Features.Identity;
@@ -43,6 +45,8 @@ public abstract class IdentityHandlerTestBase
     protected readonly Mock<IJwtBlacklistService> JwtBlacklistMock = new();
     protected readonly Mock<IMfaChallengeStore> ChallengeStoreMock = new();
     protected readonly Mock<ISecurityStepUpService> StepUpServiceMock = new();
+    protected readonly Mock<ILoginThrottle> ThrottleMock = new();
+    protected readonly Mock<ISecurityActivityRecorder> ActivityMock = new();
     protected readonly Mock<IOtpService> OtpServiceMock = new();
     protected readonly Mock<IRateLimitService> RateLimitServiceMock = new();
     protected readonly Mock<IEmailService> EmailServiceMock = new();
@@ -84,6 +88,7 @@ public abstract class IdentityHandlerTestBase
         IdentityContextMock.Setup(c => c.UserSecuritySettings).Returns(CreateAsyncDbSet(new List<UserSecuritySettings>()));
         IdentityContextMock.Setup(c => c.MfaRecoveryBatches).Returns(CreateAsyncDbSet(new List<MfaRecoveryBatch>()));
         IdentityContextMock.Setup(c => c.ApiTokens).Returns(CreateAsyncDbSet(new List<ApiToken>()));
+        IdentityContextMock.Setup(c => c.UserProfiles).Returns(CreateAsyncDbSet(new List<UserProfile>()));
 
         AccountContextMock.Setup(c => c.Accounts).Returns(CreateAsyncDbSet(new List<Account>()));
         AccountContextMock.Setup(c => c.AccountMembers).Returns(CreateAsyncDbSet(new List<AccountMember>()));
@@ -109,6 +114,9 @@ public abstract class IdentityHandlerTestBase
 
     protected void SetupMfaRecoveryBatches(params MfaRecoveryBatch[] batches) =>
         IdentityContextMock.Setup(c => c.MfaRecoveryBatches).Returns(CreateAsyncDbSet(batches.ToList()));
+
+    protected void SetupUserProfiles(params UserProfile[] profiles) =>
+        IdentityContextMock.Setup(c => c.UserProfiles).Returns(CreateAsyncDbSet(profiles.ToList()));
 
     protected void SetupApiTokens(params ApiToken[] tokens) =>
         IdentityContextMock.Setup(c => c.ApiTokens).Returns(CreateAsyncDbSet(tokens.ToList()));

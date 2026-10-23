@@ -67,6 +67,9 @@ using Notrelix.Application.Features.Workspaces.Teams.Commands.AddTeamMember;
 using Notrelix.Application.Features.Workspaces.Teams.Commands.RemoveTeamMember;
 using Notrelix.Application.Features.Workspaces.Teams.Commands.ChangeTeamMemberRole;
 using Notrelix.Domain.Workspaces.Teams;
+using Notrelix.Domain.Workspaces.Members;
+using Notrelix.Application.Features.Workspaces.Members.Commands.UpdateMemberJobTitle;
+using Notrelix.Application.Features.Workspaces.Members.Commands.UpdateMyJobTitle;
 
 namespace Notrelix.Infrastructure.Data.Concurrency;
 
@@ -140,6 +143,14 @@ public sealed class ExpectedVersionTargetMap
     private const string WorkspaceKind = "workspaces.workspace";
     private const string SpaceKind = "workspaces.space";
     private const string TeamKind = "workspaces.team";
+    private const string WorkspaceMemberKind = "workspaces.workspace-member";
+
+    // The member write loads exactly one WorkspaceMember: another member is addressed by user id,
+    // the caller's own by its Workspace id (the caller's user id is not part of the request).
+    private static bool IsMemberOfUser(AggregateRoot aggregate, Guid userId) =>
+        aggregate is WorkspaceMember member && member.UserId == userId;
+    private static bool IsMemberOfWorkspace(AggregateRoot aggregate, Guid workspaceId) =>
+        aggregate is WorkspaceMember member && member.WorkspaceId == workspaceId;
 
     private static Dictionary<Type, TargetDefinition> BuildDefault() => new(new Dictionary<Type, TargetDefinition>
     {
@@ -207,6 +218,10 @@ public sealed class ExpectedVersionTargetMap
         [typeof(AddSpaceMemberCommand)] = new(SpaceKind, typeof(Space)),
         [typeof(RemoveSpaceMemberCommand)] = new(SpaceKind, typeof(Space)),
         [typeof(ChangeSpaceMemberRoleCommand)] = new(SpaceKind, typeof(Space)),
+
+        // Workspaces — member profile (job title, D15)
+        [typeof(UpdateMemberJobTitleCommand)] = new(WorkspaceMemberKind, typeof(WorkspaceMember), IsMemberOfUser),
+        [typeof(UpdateMyJobTitleCommand)] = new(WorkspaceMemberKind, typeof(WorkspaceMember), IsMemberOfWorkspace),
 
         // Workspaces — Team writes (RestoreTeam addresses a deleted Team and stays version-less)
         [typeof(RenameTeamCommand)] = new(TeamKind, typeof(Team)),

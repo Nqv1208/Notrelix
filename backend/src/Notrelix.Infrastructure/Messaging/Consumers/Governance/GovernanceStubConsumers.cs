@@ -2,6 +2,7 @@ using Notrelix.Application.Events.Governance;
 
 namespace Notrelix.Infrastructure.Messaging.Consumers.Governance;
 
+[OrderingNotApplicable(OrderingReasons.LogOnly)]
 public sealed class CustomRoleAssignedConsumer : IConsumer<CustomRoleAssignedIntegrationEvent>
 {
     private readonly ILogger<CustomRoleAssignedConsumer> _logger;
@@ -23,6 +24,7 @@ public sealed class CustomRoleAssignedConsumer : IConsumer<CustomRoleAssignedInt
     }
 }
 
+[OrderingNotApplicable(OrderingReasons.LogOnly)]
 public sealed class ResourcePermissionGrantedConsumer : IConsumer<ResourcePermissionGrantedIntegrationEvent>
 {
     private readonly ILogger<ResourcePermissionGrantedConsumer> _logger;
@@ -47,6 +49,7 @@ public sealed class ResourcePermissionGrantedConsumer : IConsumer<ResourcePermis
     }
 }
 
+[OrderingNotApplicable(OrderingReasons.LogOnly)]
 public sealed class ResourcePermissionRevokedConsumer : IConsumer<ResourcePermissionRevokedIntegrationEvent>
 {
     private readonly ILogger<ResourcePermissionRevokedConsumer> _logger;

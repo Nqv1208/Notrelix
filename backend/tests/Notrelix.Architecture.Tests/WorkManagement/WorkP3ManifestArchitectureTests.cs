@@ -49,6 +49,9 @@ public sealed class WorkP3ManifestArchitectureTests
         "BoardItems.ListBoardItemLinksQuery",
         "BoardItems.LinkPageToBoardItemCommand",
         "BoardItems.UnlinkPageFromBoardItemCommand",
+        // Platform realtime gateway (PF-09): authorizes a Board stream subscription with the
+        // ViewBoard decision of GetBoardQuery; owned by the gateway, not by a P3 capability.
+        "Boards.AuthorizeBoardRealtimeSubscriptionQuery",
     };
 
     /// <summary>

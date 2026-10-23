@@ -143,6 +143,21 @@ This is current evidence, not a permanent complete section registry.
 
 ---
 
+# 3.1. Automation runaway guards
+
+Section `Automation:Guards` (validated on start; all optional, conservative defaults):
+
+```text
+MaxChainDepth            3    maximum depth of Automation-caused execution chains (1..10)
+MaxExecutionsPerWindow   60   executions one Rule may start per window (1..10000)
+RateWindowSeconds        60   length of that window (1..3600)
+ConsecutiveFailureLimit  5    most recent finished executions that must all fail to auto-disable a Rule (1..100)
+```
+
+These are technical safety limits owned by Automation (AUT-022); they never change what a Rule means.
+
+---
+
 # 4. BE-OPS-CFG-002 — Base defaults are safe, not production credentials
 
 Committed base configuration MAY contain:
@@ -213,19 +228,58 @@ Development:
 - SeedData enabled/run-on-startup
 - Messaging RabbitMQ
 - HTTPS redirect disabled
+- Security:Csrf:Enabled = false (documented exception)
+
+Testing:
+- Security:Csrf:Enabled = false (documented exception; CSRF suites opt in per host)
 
 Staging:
 - MigrateOnStartup = false
 - Seed enabled but not run-on-startup
 - HTTPS redirect enabled
 - RabbitMQ transport
+- Security:Csrf:Enabled = true (compose-pinned, not env-overridable)
 
 Production:
 - MigrateOnStartup = false
 - Seed disabled
 - HTTPS redirect enabled
 - RabbitMQ transport
+- Security:Csrf:Enabled = true (compose-pinned, not env-overridable)
 ```
+
+Browser CSRF enforcement (ADR-005) is fail-safe: the base `appsettings.json` and the
+`CsrfOptions.Enabled` code default are `true`. Only the Development and Testing appsettings
+turn it off. `CsrfOptionsValidator` (`ValidateOnStart`) fails startup when enforcement is
+disabled in any other environment, and, when enforced, when `Cors:AllowedOrigins` is empty,
+contains `*`, or contains a non-absolute-http(s) origin. The cookie and header names
+(`csrf_token`, `X-CSRF-Token`) are protocol constants, not configuration.
+
+Anonymous credential lockout (`Security:LoginThrottle`, validated at startup by
+`LoginThrottleOptionsValidator`): `MaxFailuresPerAccount` (10), `AccountWindow` (00:15:00),
+`MaxFailuresPerIp` (50), `IpWindow` (00:15:00), `LockDuration` (00:15:00). The defaults are the
+product policy accepted on 2026-10-23 and are also set in `appsettings.json`; every value is
+overridable per environment. The MFA wrong-code budget per challenge (5) is a code constant.
+
+`Security:Activity:Retention` (Infrastructure, `SecurityActivityRetentionOptions`, validated on start by
+`SecurityActivityRetentionOptionsValidator`) configures the sweep of the user security activity feed
+(`SecurityActivityRetentionService`, a hosted service):
+
+| Key | Default | Meaning |
+|---|---|---|
+| `Enabled` | `true` | When false nothing is deleted. |
+| `Retention` | `90.00:00:00` (90 days) | Age after which an entry is deleted. Minimum 1 day. |
+| `Interval` | `01:00:00` (1 hour) | Time between sweeps. Range 10 seconds to 1 day. |
+| `BatchSize` | 1000 | Rows deleted per transaction. Range 1 to 10000. |
+
+Several API instances may sweep at once (rows are claimed with `FOR UPDATE SKIP LOCKED`). The sweep runs
+under the explicit system (worker) tenant context and RLS worker scope and touches only
+`identity.user_security_activity`.
+
+Session cookies: `CookieService` marks the access and refresh cookies `Secure` (and `SameSite=None`)
+only when the environment is `Production`. The staging Compose overlay in this repository serves plain
+HTTP behind its own nginx (default origins `http://localhost`), so staging cookies are intentionally not
+`Secure`; if staging is published over HTTPS the cookie condition must be changed in the same step.
 
 These values are current executable evidence.
 
@@ -485,6 +539,12 @@ OAuth
 ```
 
 This keeps the root thin.
+
+---
+
+# 23A. Realtime gateway options
+
+`Realtime:Gateway` (`RealtimeGatewayOptions`, validated on start): `Enabled`, `Path`, `AllowedOrigins` (defaults to `Cors:AllowedOrigins`; wildcard only in Development/Testing), `MaxSubscriptionsPerConnection`, `MaxConnectionsPerUser`, `MaxInboundMessageBytes`, `MaxInboundMessagesPerSecond`, `SendQueueCapacity`, `PingInterval`, `IdleTimeout` (must exceed `PingInterval`), `ReauthorizationInterval`, `MaxConnectionLifetime`, `SendTimeout`. Development/Testing compose an in-process notification source; other environments use Redis.
 
 ---
 
@@ -1639,3 +1699,35 @@ no tooling dummy config serving traffic
 ```
 
 The objective is a runtime whose technical variability is explicit and replaceable while the product/security/data contracts remain stable.
+
+---
+
+# 23B. Storage and attachment upload options
+
+`Storage` (Infrastructure, `StorageOptions`, validated on start):
+
+| Key | Default | Meaning |
+|---|---|---|
+| `Storage:BasePath` | `storage` | Local-filesystem root of `LocalStorageProvider`. Objects are never served by a static route; they are read only through authorised API operations. |
+
+`Collaboration:Attachments` (Application, `AttachmentUploadOptions`, validated on start by `AttachmentUploadOptionsValidator`):
+
+| Key | Default | Meaning |
+|---|---|---|
+| `MaxFileSizeBytes` | 104857600 (100 MB) | Hard per-file cap, enforced while the body is streamed. Allowed range 1024 to 1 GiB. The API raises the request-body limit for the upload route only, to this value plus 1 MiB of multipart framing. |
+| `MaxAttachmentsPerItem` | 50 | Maximum non-deleted attachments (links included) per board item. Range 1 to 1000. Checked early (fail fast) and authoritatively under a short advisory lock right before the row is added, for files and links alike. |
+| `BlockedExtensions` | executable and script extensions (exe, msi, dll, bat, cmd, com, scr, ps1, vbs, sh, jar, apk, js, mjs, html, htm) | Lower case, no dot. Executable content signatures are refused independently of the extension. |
+
+`Collaboration:Attachments:Retention` (Infrastructure, `AttachmentRetentionOptions`, validated on start by `AttachmentRetentionOptionsValidator`) configures the attachment object reaper (`AttachmentObjectReaperService`, a hosted service):
+
+| Key | Default | Meaning |
+|---|---|---|
+| `Enabled` | `true` | When false the reaper deletes nothing. |
+| `DeletedFileRetention` | `30.00:00:00` (30 days) | How long the object of a soft-deleted stored-file attachment is kept, counted from the deletion time, before it is purged and the row marked purged. Minimum 1 hour. |
+| `OrphanGracePeriod` | `1.00:00:00` (24 hours) | Minimum age (provider last-modified time) of an object with no referencing row before it is removed as an orphan. Must be longer than the longest upload; minimum 1 hour. |
+| `Interval` | `01:00:00` (1 hour) | Time between passes. Range 10 seconds to 1 day. |
+| `BatchSize` | 100 | Rows/objects handled per claim transaction. Range 1 to 1000. |
+
+Several API instances may run the reaper at the same time: purge rows are claimed with `FOR UPDATE SKIP LOCKED` and the orphan sweep is elected with a transaction-scoped try-advisory lock. The reaper runs under the explicit system (worker) tenant context and RLS worker scope; it touches only `collab.attachments`.
+
+Known gap (slice 1): no malware scanning. Mitigations: server-derived content type, forced `Content-Disposition: attachment` and `nosniff` for everything except sniffed raster images, executable refusal. A scan hook needs its own decision.

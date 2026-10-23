@@ -8,6 +8,13 @@ namespace Notrelix.Application.Events.Workspaces;
 [EventSensitiveField("ProtectedToken",
     Classification = "protected-single-use-invitation-token",
     Justification = "Encrypted single-use token required to construct the invitation URL inside the delivered email; it is not a raw credential, is versioned via TokenGeneration, and must never be logged by outbox/retry/DLQ diagnostics.")]
+/// <remarks>
+/// The trailing <c>ResourceKind</c>, <c>ResourceId</c>, <c>ResourceName</c> and
+/// <c>InviterName</c> were added additively (NRX-007/008) for a resource invitation
+/// (WSP-026): they are null for a workspace invitation, so a consumer that ignores
+/// them keeps working and a message queued before they existed still reads. A
+/// non-null <c>ResourceKind</c> selects the resource-invitation email template.
+/// </remarks>
 public sealed record WorkspaceInvitationDeliveryRequestedIntegrationEventV1(
     Guid EventId,
     Guid InvitationId,
@@ -23,7 +30,11 @@ public sealed record WorkspaceInvitationDeliveryRequestedIntegrationEventV1(
     Guid? ActorUserId = null,
     Guid? SourceEventId = null,
     Guid? CausationId = null,
-    DateTimeOffset OccurredAt = default
+    DateTimeOffset OccurredAt = default,
+    string? ResourceKind = null,
+    Guid? ResourceId = null,
+    string? ResourceName = null,
+    string? InviterName = null
 ) : IntegrationEvent(
     eventId: EventId,
     messageName: "workspaces.invitation-delivery-requested",

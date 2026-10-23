@@ -1,7 +1,12 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using Npgsql;
+using Notrelix.Application.Common.Behaviors;
+using Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.Workspaces.Members.Commands.AddMember;
 using Notrelix.Application.Features.Workspaces.Members.Commands.RemoveMember;
 using Notrelix.Application.Features.Workspaces.Members.Commands.UpdateMemberRole;
 using Notrelix.Application.Features.Workspaces.Members.Services;
+using Notrelix.Application.Features.Workspaces.Workspaces.Commands.TransferOwnership;
 using Notrelix.Domain.Identity.Users;
 using Notrelix.Domain.Workspaces;
 using Notrelix.Domain.Workspaces.Members;
@@ -90,6 +95,16 @@ public sealed class WorkspaceMembershipConcurrencyEvidenceTests : IAsyncLifetime
         var secondCommit = async () => await contextB.SaveChangesAsync();
         var thrown = await secondCommit.Should().ThrowAsync<DbUpdateException>(
             "PostgreSQL must reject the stale concurrent duplicate");
+
+        // DEBT-010 residual: the real PostgreSQL unique violation must surface to the
+        // caller as a Conflict (HTTP 409), not as an unhandled persistence error.
+        var mapping = new ExceptionMappingBehavior<AddMemberCommand, Result>(
+            NullLogger<ExceptionMappingBehavior<AddMemberCommand, Result>>.Instance,
+            new Mock<IExecutionContextReader>().Object);
+        var mapped = async () => await mapping.Handle(
+            default!, _ => throw thrown.Which, CancellationToken.None);
+        await mapped.Should().ThrowAsync<ConflictException>(
+            "a concurrent duplicate membership is a conflict, not a server error");
 
         var pg = thrown.Which.InnerException as PostgresException;
         pg.Should().NotBeNull(
@@ -217,6 +232,61 @@ public sealed class WorkspaceMembershipConcurrencyEvidenceTests : IAsyncLifetime
             "the workspace must never end with zero active owners: the losing " +
             "last-owner operation must fail predictably, not commit and silently " +
             "orphan the workspace");
+    }
+
+    /// <summary>
+    /// TransferOwnership takes the same workspace row lock as Suspend/Remove: a
+    /// concurrent removal of the incoming owner is serialized behind the transfer,
+    /// re-reads the actor's role after it commits, and fails closed: the former owner
+    /// is then an Admin, who may not remove an Owner (WG-DEBT-002 actor-versus-target
+    /// guard). The incoming owner stays the one active owner either way.
+    /// </summary>
+    [Fact]
+    public async Task ConcurrentTransferOwnershipAndRemoveOfNewOwner_NeverLeavesZeroActiveOwners()
+    {
+        var accountId = Guid.CreateVersion7();
+        var ownerId = Guid.CreateVersion7();
+        var newOwnerId = Guid.CreateVersion7();
+        var workspace = Workspace.Create(accountId, ownerId, "WG Transfer Race", $"wg-transfer-{Guid.NewGuid():N}", Now);
+        var owner = User.Create($"wg-tr-a-{Guid.NewGuid():N}@example.com", "Owner", "hashed", Now, true);
+        var incoming = User.Create($"wg-tr-b-{Guid.NewGuid():N}@example.com", "Incoming", "hashed", Now, true);
+
+        await using (var seed = _db.CreateContext(SystemTenant()))
+        {
+            seed.Users.AddRange(owner, incoming);
+            seed.Workspaces.Add(workspace);
+            seed.WorkspaceMembers.AddRange(
+                WorkspaceMember.Create(accountId, workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, Now),
+                WorkspaceMember.Create(accountId, workspace.Id, newOwnerId, WorkspaceRole.Member, ownerId, Now));
+            await seed.SaveChangesAsync();
+        }
+
+        await using var contextA = _db.CreateContext(SystemTenant());
+        await using var contextB = _db.CreateContext(SystemTenant());
+        await using var txA = await contextA.Database.BeginTransactionAsync();
+        await using var txB = await contextB.Database.BeginTransactionAsync();
+
+        var transfer = new TransferOwnershipCommandHandler(
+            contextA, RequestContext(ownerId), Clock(), GrantProjection(contextA), new WorkspaceOwnerUpdateLocker(contextA));
+        var remove = new RemoveMemberCommandHandler(
+            contextB, RequestContext(ownerId), Clock(), GrantProjection(contextB), new WorkspaceOwnerUpdateLocker(contextB));
+
+        (await transfer.Handle(new TransferOwnershipCommand(workspace.Id, newOwnerId, 1), CancellationToken.None))
+            .Succeeded.Should().BeTrue();
+
+        var removeTask = remove.Handle(new RemoveMemberCommand(workspace.Id, newOwnerId), CancellationToken.None);
+
+        await contextA.SaveChangesAsync();
+        await txA.CommitAsync();
+
+        var removing = async () => await removeTask;
+        (await removing.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>())
+            .Which.RuleCode.Should().Be(WorkspaceRuleCodes.Workspaces_Member_ActorCannotActOnMember);
+
+        await using var verify = _db.CreateContext(SystemTenant());
+        (await verify.WorkspaceMembers.CountAsync(m =>
+            m.WorkspaceId == workspace.Id && m.Role == WorkspaceRole.Owner && m.Status == WorkspaceMemberStatus.Active))
+            .Should().Be(1);
     }
 
     private static ICurrentRequestContext RequestContext(Guid userId)

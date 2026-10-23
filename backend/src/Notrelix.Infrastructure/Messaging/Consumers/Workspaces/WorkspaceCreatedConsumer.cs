@@ -2,6 +2,7 @@ using Notrelix.Application.Events.Workspaces;
 
 namespace Notrelix.Infrastructure.Messaging.Consumers.Workspaces;
 
+[OrderingNotApplicable(OrderingReasons.LogOnly)]
 public sealed class WorkspaceCreatedConsumer : IConsumer<WorkspaceCreatedIntegrationEvent>
 {
     private readonly ILogger<WorkspaceCreatedConsumer> _logger;

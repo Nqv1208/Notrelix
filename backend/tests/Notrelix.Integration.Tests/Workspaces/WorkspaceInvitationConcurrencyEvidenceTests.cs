@@ -85,15 +85,15 @@ public sealed class WorkspaceInvitationConcurrencyEvidenceTests : IAsyncLifetime
     private async Task<InvitationGraph> SeedPendingInvitationAsync()
     {
         var accountId = Guid.CreateVersion7();
-        var ownerId = Guid.CreateVersion7();
         var userId = Guid.CreateVersion7();
+        var owner = User.Create($"owner-{Guid.NewGuid():N}@example.com", "Owner", "hashed", FixedTime, true);
+        var ownerId = owner.Id;
         var account = Account.Create(
             "Invitation Concurrency Account",
             $"inv-conc-{Guid.CreateVersion7():N}",
             AccountType.Team,
             ownerId,
             FixedTime);
-        var owner = User.Create($"owner-{Guid.NewGuid():N}@example.com", "Owner", "hashed", FixedTime, true);
         var user = User.Create("invitee@example.com", "Invitee", "hashed", FixedTime, true);
         user.ConfirmEmail(user.Id, FixedTime);
         var workspace = Workspace.Create(
@@ -115,6 +115,9 @@ public sealed class WorkspaceInvitationConcurrencyEvidenceTests : IAsyncLifetime
         seed.Users.Add(owner);
         seed.Users.Add(user);
         seed.Workspaces.Add(workspace);
+        // The resending actor must be an active member: ResendInvitation reads the actor's role.
+        seed.WorkspaceMembers.Add(WorkspaceMember.Create(
+            account.Id, workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, FixedTime));
         seed.WorkspaceInvitations.Add(invitation);
         await seed.SaveChangesAsync();
 
@@ -149,7 +152,10 @@ public sealed class WorkspaceInvitationConcurrencyEvidenceTests : IAsyncLifetime
             new OneTimeTokenService(),
             requestContext.Object,
             dateTime.Object,
-            grantProjection);
+            grantProjection,
+            new Notrelix.Application.Features.Workspaces.Invitations.Services.InvitationInitialEntries(context, new Notrelix.Infrastructure.Workspaces.Spaces.SpaceStore(context)),
+            new Notrelix.Infrastructure.Data.Authz.GuestResourceAccessActionsAdapter(context),
+            new Mock<Notrelix.Application.Common.Auditing.IAuditService>().Object);
 
         return (context, handler);
     }
@@ -275,7 +281,9 @@ public sealed class WorkspaceInvitationConcurrencyEvidenceTests : IAsyncLifetime
             capturingTokens,
             new SecretEncryptor(new EphemeralDataProtectionProvider()),
             new IntegrationEventCollector(),
-            resendClock.Object);
+            resendClock.Object,
+            new Mock<Notrelix.Application.Common.Tenancy.IActorLookupService>().Object,
+            new Mock<Notrelix.Application.Features.Governance.Public.Access.IGuestResourceInvitationFacts>().Object);
 
         var resent = await resendHandler.Handle(
             new ResendInvitationCommand(graph.WorkspaceId, graph.InvitationId),

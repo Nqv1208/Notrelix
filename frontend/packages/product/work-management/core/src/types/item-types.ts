@@ -138,6 +138,11 @@ export interface CardFile {
   contentType: string;
   url: string;
   source: "upload" | "r2" | "s3" | "link";
+  /**
+   * "file": bytes held by the API, downloaded through the content route (`url`
+   * is empty); "link": opens its `url`. Absent on records that predate it.
+   */
+  kind?: "file" | "link";
   createdBy: CardMember;
   createdAt: string;
 }
@@ -256,6 +261,8 @@ export interface AttachmentDtoApi {
   sizeBytes: number;
   contentType: string;
   source: string;
+  /** "File" or "Link". */
+  kind?: string | null;
   uploadedBy: string;
   uploadedByName?: string | null;
   createdAt: string;

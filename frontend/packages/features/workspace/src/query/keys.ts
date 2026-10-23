@@ -5,13 +5,16 @@ import {
 } from "@notrelix/query";
 
 export const workspaceQueryKeys = {
-  all: accountQueryKey("workspaces"),
+  all: (accountId: string) => accountQueryKey(accountId, "workspaces"),
   detail: (workspaceId: string) =>
     workspaceQueryKey(workspaceId, "workspace", "detail"),
   snapshot: (workspaceId: string) =>
     workspaceQueryKey(workspaceId, "workspace", "snapshot"),
   members: (workspaceId: string) =>
     workspaceQueryKey(workspaceId, "workspace", "members"),
+  /** The caller's own membership row (guest-safe `members/me`); under `members` so a member write refreshes it. */
+  myMembership: (workspaceId: string) =>
+    workspaceQueryKey(workspaceId, "workspace", "members", "me"),
   views: (workspaceId: string) =>
     workspaceQueryKey(workspaceId, "workspace", "views"),
   activeView: (workspaceId: string, view: string) =>
@@ -20,7 +23,8 @@ export const workspaceQueryKeys = {
     workspaceQueryKey(workspaceId, "workspace", "invitations"),
   invitationByToken: (token: string) =>
     globalQueryKey("workspace-invitation", "token", token),
-  pendingInvitations: accountQueryKey("workspace-invitations", "pending"),
+  pendingInvitations: (accountId: string) =>
+    accountQueryKey(accountId, "workspace-invitations", "pending"),
   activity: (workspaceId: string) =>
     workspaceQueryKey(workspaceId, "workspace", "activity"),
   settings: (workspaceId: string) =>

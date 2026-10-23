@@ -95,6 +95,10 @@ public abstract class AcceptInvitationHandlerTestBase : WorkspaceHandlerTestBase
             OneTimeTokenServiceMock.Object,
             RequestContextMock.Object,
             DateTimeProviderMock.Object,
-            GrantProjectionMock.Object);
+            GrantProjectionMock.Object,
+            new Notrelix.Application.Features.Workspaces.Invitations.Services.InvitationInitialEntries(
+                DbContextMock.Object, new Mock<Notrelix.Application.Features.Workspaces.Spaces.Services.ISpaceStore>().Object),
+            new Mock<Notrelix.Application.Features.Governance.Public.Access.IGuestResourceAccessActions>().Object,
+            new Mock<Notrelix.Application.Common.Auditing.IAuditService>().Object);
     }
 }

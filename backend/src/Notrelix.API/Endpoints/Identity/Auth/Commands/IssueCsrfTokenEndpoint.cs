@@ -1,3 +1,4 @@
+using Notrelix.API.Extensions;
 using Notrelix.API.RateLimiting;
 using Notrelix.Infrastructure.Auth.Csrf;
 
@@ -9,6 +10,8 @@ public static class IssueCsrfTokenEndpoint
     {
         group.MapPublicGet("/csrf", HandleAsync)
             .WithName("Identity.Auth.IssueCsrfToken")
+            .Produces<IssueCsrfTokenEndpoint.CsrfTokenResponse>(StatusCodes.Status200OK, "application/json")
+            .ProducesProblems(StatusCodes.Status429TooManyRequests)
             .WithTags("Identity.Auth")
             .WithSummary("Issue a CSRF token for browser clients")
             .WithDescription(

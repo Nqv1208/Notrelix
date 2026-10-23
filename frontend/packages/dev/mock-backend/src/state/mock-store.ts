@@ -282,6 +282,8 @@ export class MockStore {
   private activityByCardId = new Map<string, MockActivityRecord[]>();
   /** Files attached to an item, by card. */
   private attachmentsByCardId = new Map<string, MockAttachmentRecord[]>();
+  /** Stored results of file uploads by Idempotency-Key (a replay adds no second file). */
+  private uploadsByIdempotencyKey = new Map<string, MockAttachmentRecord>();
   /** Links between the items of a board (dependencies and relations). */
   private itemLinks: MockItemLinkRecord[] = [];
   /** People who follow an item besides the member, by card. */
@@ -1744,6 +1746,7 @@ export class MockStore {
     this.completedCardIds.clear();
     this.activityByCardId.clear();
     this.attachmentsByCardId.clear();
+    this.uploadsByIdempotencyKey.clear();
     this.itemLinks = [];
     this.followersByCardId.clear();
     this.planByBoardId.clear();
@@ -3766,6 +3769,30 @@ export class MockStore {
 
   getAttachments(cardId: string): MockAttachmentRecord[] {
     return [...(this.attachmentsByCardId.get(cardId) ?? [])];
+  }
+
+  getUploadByKey(
+    cardId: string,
+    key: string,
+  ): MockAttachmentRecord | undefined {
+    return this.uploadsByIdempotencyKey.get(`${cardId}:${key}`);
+  }
+
+  rememberUpload(
+    cardId: string,
+    key: string,
+    record: MockAttachmentRecord,
+  ): void {
+    this.uploadsByIdempotencyKey.set(`${cardId}:${key}`, record);
+  }
+
+  getAttachment(
+    cardId: string,
+    attachmentId: string,
+  ): MockAttachmentRecord | undefined {
+    return this.attachmentsByCardId
+      .get(cardId)
+      ?.find((file) => file.id === attachmentId);
   }
 
   addAttachment(

@@ -1,6 +1,8 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Requests.Scoping;
 using Notrelix.Application.Features.Identity.Abstractions;
+using Notrelix.Application.Features.Identity.Security.Abstractions;
+using Notrelix.Domain.Identity.Security;
 
 namespace Notrelix.Application.Features.Identity.Sessions.Commands.RevokeOtherSessions;
 
@@ -22,6 +24,7 @@ public sealed class RevokeOtherSessionsCommandHandler
     private readonly ICurrentRequestContext _currentUser;
     private readonly IJwtBlacklistService _jwtBlacklist;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly ISecurityActivityRecorder _activity;
     private readonly ILogger<RevokeOtherSessionsCommandHandler> _logger;
 
     private static readonly TimeSpan SessionRevocationMarkerTtl = TimeSpan.FromHours(24);
@@ -31,12 +34,14 @@ public sealed class RevokeOtherSessionsCommandHandler
         ICurrentRequestContext currentUser,
         IJwtBlacklistService jwtBlacklist,
         IDateTimeProvider dateTimeProvider,
+        ISecurityActivityRecorder activity,
         ILogger<RevokeOtherSessionsCommandHandler> logger)
     {
         _context = context;
         _currentUser = currentUser;
         _jwtBlacklist = jwtBlacklist;
         _dateTimeProvider = dateTimeProvider;
+        _activity = activity;
         _logger = logger;
     }
 
@@ -65,6 +70,11 @@ public sealed class RevokeOtherSessionsCommandHandler
         {
             session.Revoke(now, SessionRevocationReasons.UserRevokedOtherSessions);
             await _jwtBlacklist.RevokeSessionBeforeAsync(session.Id, now, SessionRevocationMarkerTtl);
+        }
+
+        if (sessions.Count > 0)
+        {
+            _activity.Record(userId, SecurityActivityType.OtherSessionsRevoked, now, currentSessionId);
         }
 
         _logger.LogInformation("Revoked {Count} other sessions for user {UserId}", sessions.Count, userId);

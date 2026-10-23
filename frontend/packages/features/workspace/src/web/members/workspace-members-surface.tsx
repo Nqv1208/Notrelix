@@ -41,7 +41,7 @@ import {
   cn,
 } from "@notrelix/ui-web";
 import {
-  ASSIGNABLE_ROLES,
+  INVITABLE_ROLES,
   countOwners,
   invitationState,
   isPlausibleEmail,
@@ -400,7 +400,7 @@ function InviteForm({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {ASSIGNABLE_ROLES.map((option) => (
+              {INVITABLE_ROLES.map((option) => (
                 <SelectItem key={option} value={option}>
                   {copy.roles[option]}
                 </SelectItem>

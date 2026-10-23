@@ -10,7 +10,11 @@ using Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Requests.Execution;
 using Notrelix.Application.Features.Accounts.Abstractions;
 using Notrelix.Application.Features.Automation.Abstractions;
+using Notrelix.Application.Features.Automation.Executions.Queries.GetAutomationExecutions;
 using Notrelix.Application.Features.Automation.Rules.Commands.CreateAutomationRule;
+using Notrelix.Application.Features.Automation.Rules.Commands.SetAutomationRuleEnabled;
+using Notrelix.Application.Features.Automation.Rules.Queries.GetWorkspaceAutomations;
+using Notrelix.Application.Features.Automation.DTOs;
 using Notrelix.Application.Features.Billing.Public.Capacity;
 using Notrelix.Application.Features.Billing.Public.Facts;
 using Notrelix.Application.Features.Collaboration.Abstractions;
@@ -132,6 +136,138 @@ public sealed class CreateAutomationRulePipelineTests : IAsyncLifetime
             .Should().Be(2);
     }
 
+    [Fact]
+    public async Task Admin_CanCreateWebhookRule_ThroughBothRequiredPermissions_AndEnableIt()
+    {
+        var (accountId, ownerId, workspaceId) = await SeedWorkspaceStackAsync();
+        var admin = await SeedMemberAsync(accountId, workspaceId, WorkspaceRole.Admin);
+        using var provider = CreateProvider(accountId, admin);
+
+        Guid ruleId;
+        using (var scope = provider.CreateScope())
+        {
+            BindKey(scope, "automation-admin-create");
+            var created = await scope.ServiceProvider.GetRequiredService<ISender>().Send(
+                new CreateAutomationRuleCommand(workspaceId, "Admin hook", "ItemCreated", "Webhook", """{"webhookPath":"admin/hook"}"""));
+            created.Succeeded.Should().BeTrue("ManageWorkspaceSettings and ManageIntegrations are both allowed for an Admin");
+            ruleId = created.Data;
+        }
+
+        using (var scope = provider.CreateScope())
+        {
+            var enabled = await scope.ServiceProvider.GetRequiredService<ISender>()
+                .Send(new SetAutomationRuleEnabledCommand(ruleId, true));
+            enabled.Succeeded.Should().BeTrue();
+        }
+    }
+
+    [Theory]
+    [InlineData(WorkspaceRole.Member)]
+    [InlineData(WorkspaceRole.Guest)]
+    public async Task MemberAndGuest_CannotCreateEnableListOrReadExecutions(WorkspaceRole role)
+    {
+        var (accountId, ownerId, workspaceId) = await SeedWorkspaceStackAsync();
+        Guid ruleId;
+        using (var ownerProvider = CreateProvider(accountId, ownerId))
+        using (var scope = ownerProvider.CreateScope())
+        {
+            BindKey(scope, "automation-owner-create");
+            ruleId = (await scope.ServiceProvider.GetRequiredService<ISender>().Send(
+                new CreateAutomationRuleCommand(workspaceId, "Owner hook", "ItemCreated", "Webhook", """{"webhookPath":"owner/hook"}"""))).Data;
+        }
+
+        var user = await SeedMemberAsync(accountId, workspaceId, role);
+        using var provider = CreateProvider(accountId, user);
+
+        async Task DeniedAsync<T>(Func<ISender, Task<T>> send, string key)
+        {
+            using var scope = provider.CreateScope();
+            BindKey(scope, key);
+            var sender = scope.ServiceProvider.GetRequiredService<ISender>();
+            await FluentActions.Awaiting(() => send(sender)).Should().ThrowAsync<Exception>();
+        }
+
+        await DeniedAsync(s => s.Send(new CreateAutomationRuleCommand(
+            workspaceId, "Denied", "ItemCreated", "Webhook", """{"webhookPath":"denied/hook"}""")), "denied-create");
+        await DeniedAsync(s => s.Send(new SetAutomationRuleEnabledCommand(ruleId, true)), "denied-enable");
+        await DeniedAsync(s => s.Send(new GetWorkspaceAutomationsQuery(workspaceId)), "denied-list");
+        await DeniedAsync(s => s.Send(new GetAutomationExecutionsQuery(ruleId)), "denied-executions");
+    }
+
+    [Fact]
+    public async Task Owner_CanListRulesAndExecutions()
+    {
+        var (accountId, ownerId, workspaceId) = await SeedWorkspaceStackAsync();
+        using var provider = CreateProvider(accountId, ownerId);
+        Guid ruleId;
+        using (var scope = provider.CreateScope())
+        {
+            BindKey(scope, "automation-owner-list");
+            ruleId = (await scope.ServiceProvider.GetRequiredService<ISender>().Send(new CreateAutomationRuleCommand(
+                workspaceId, "Listed", "ItemCreated", "Webhook", """{"webhookPath":"listed/hook"}"""))).Data;
+        }
+
+        using (var scope = provider.CreateScope())
+        {
+            var rules = await scope.ServiceProvider.GetRequiredService<ISender>().Send(new GetWorkspaceAutomationsQuery(workspaceId));
+            rules.Succeeded.Should().BeTrue();
+            rules.Data.Should().ContainSingle(r => r.Id == ruleId);
+        }
+
+        using (var scope = provider.CreateScope())
+        {
+            (await scope.ServiceProvider.GetRequiredService<ISender>().Send(new GetAutomationExecutionsQuery(ruleId)))
+                .Succeeded.Should().BeTrue();
+        }
+    }
+
+    [Theory]
+    [InlineData("../../rest/api")]
+    [InlineData("a/%2e%2e/b")]
+    [InlineData("hook?x=1")]
+    [InlineData("hook#f")]
+    [InlineData("a\\b")]
+    public async Task Create_WebhookRuleWithUnsafePath_IsRejected_AndNothingIsPersisted(string path)
+    {
+        var (accountId, ownerId, workspaceId) = await SeedWorkspaceStackAsync();
+        using var provider = CreateProvider(accountId, ownerId);
+        using var scope = provider.CreateScope();
+        BindKey(scope, "automation-traversal-" + Guid.NewGuid().ToString("N"));
+        var configuration = System.Text.Json.JsonSerializer.Serialize(new { webhookPath = path });
+
+        Func<Task> act = async () =>
+        {
+            var result = await scope.ServiceProvider.GetRequiredService<ISender>().Send(
+                new CreateAutomationRuleCommand(workspaceId, "Traversal", "ItemCreated", "Webhook", configuration));
+            if (result.Succeeded) return;
+            throw new InvalidOperationException("rejected");
+        };
+
+        await act.Should().ThrowAsync<Exception>();
+        await using var verify = _db.CreateContext(SystemTenant());
+        (await verify.AutomationRules.IgnoreQueryFilters().CountAsync(r => r.WorkspaceId == workspaceId && r.Name == "Traversal"))
+            .Should().Be(0);
+    }
+
+    private async Task<Guid> SeedMemberAsync(Guid accountId, Guid workspaceId, WorkspaceRole role)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var user = User.Create($"auto-{Guid.NewGuid():N}@example.com", "Auto Member", "hashed", now, true);
+        user.ConfirmEmail(user.Id, now);
+
+        await using var seed = _db.CreateContext(SystemTenant());
+        seed.Users.Add(user);
+        seed.AccountMembers.Add(AccountMember.Create(accountId, user.Id, AccountRole.Member, user.Id, now));
+        seed.WorkspaceMembers.Add(WorkspaceMember.Create(accountId, workspaceId, user.Id, role, user.Id, now));
+        await seed.SaveChangesAsync();
+
+        await using var grant = _db.CreateContext(SystemTenant());
+        var projection = new AccessGrantProjectionService(grant);
+        await projection.SyncWorkspaceMemberGrantAsync(accountId, workspaceId, user.Id, role, now, CancellationToken.None);
+        await grant.SaveChangesAsync();
+        return user.Id;
+    }
+
     private static void BindKey(IServiceScope scope, string key) =>
         scope.ServiceProvider.GetRequiredService<IIdempotencyExecutionContextWriter>()
             .Set(key, IdempotencyExecutionSource.Internal);
@@ -245,6 +381,18 @@ public sealed class CreateAutomationRulePipelineTests : IAsyncLifetime
         services.AddScoped<
             IRequestHandler<CreateAutomationRuleCommand, Result<Guid>>,
             CreateAutomationRuleCommandHandler>();
+        var currentUser = new Mock<ICurrentUser>();
+        currentUser.Setup(u => u.UserId).Returns(userId);
+        services.AddSingleton(currentUser.Object);
+        services.AddScoped<
+            IRequestHandler<SetAutomationRuleEnabledCommand, Result>,
+            SetAutomationRuleEnabledCommandHandler>();
+        services.AddScoped<
+            IRequestHandler<GetWorkspaceAutomationsQuery, Result<IReadOnlyList<AutomationRuleDto>>>,
+            GetWorkspaceAutomationsQueryHandler>();
+        services.AddScoped<
+            IRequestHandler<GetAutomationExecutionsQuery, Result<IReadOnlyList<AutomationExecutionDto>>>,
+            GetAutomationExecutionsQueryHandler>();
 
         return services.BuildServiceProvider();
     }

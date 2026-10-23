@@ -37,3 +37,8 @@ __pycache__/
 
 # Local planning notes (superpowers plans), never committed
 docs/superpowers/
+
+# Local tool caches and browser-automation output
+.turbo/
+.playwright-mcp/
+.impeccable/

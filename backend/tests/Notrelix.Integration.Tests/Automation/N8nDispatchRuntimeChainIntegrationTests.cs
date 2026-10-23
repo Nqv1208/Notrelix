@@ -66,14 +66,21 @@ public sealed class N8nDispatchRuntimeChainIntegrationTests : IAsyncLifetime
             Domain.Accounts.Accounts.AccountType.Team, ownerId, now);
         var workspace = Workspace.Create(account.Id, ownerId, "Runtime WS", $"runtime-{Guid.NewGuid():N}", now);
 
-        var actionConfiguration = urlOnlyConfiguration
-            ? """{"url":"https://example.com/hooks/generic"}"""
-            : """{"webhookPath":"notrelix-card-assigned"}""";
         var config = AutomationConfiguration.Create(
             AutomationTriggerDefinition.Create("ItemAssigned"),
-            AutomationActionDefinition.Create("Webhook", actionConfiguration));
+            AutomationActionDefinition.Create("Webhook", """{"webhookPath":"notrelix-card-assigned"}"""));
         var rule = AutomationRule.Create(account.Id, workspace.Id, "Runtime alert", config, ownerId, now);
         rule.Enable(ownerId, now);
+        if (urlOnlyConfiguration)
+        {
+            // A legacy url-only row (created before the allow-list) loads as-is; the
+            // Domain no longer lets one be enabled, so the stored shape is set directly.
+            typeof(AutomationRule).GetProperty(nameof(AutomationRule.Configuration))!.SetValue(
+                rule,
+                AutomationConfiguration.Create(
+                    AutomationTriggerDefinition.Create("ItemAssigned"),
+                    AutomationActionDefinition.Create("Webhook", """{"url":"https://example.com/hooks/generic"}""")));
+        }
         var execution = AutomationExecution.Create(account.Id, workspace.Id, rule.Id, Guid.NewGuid(), now);
 
         await using var seed = _db.CreateContext(SystemTenant());
@@ -493,6 +500,14 @@ public sealed class N8nDispatchRuntimeChainIntegrationTests : IAsyncLifetime
             return await inner.TryClaimProcessingAsync(
                 messageId, consumerName, messageName, messageVersion, sourceEventId, workspaceId, cancellationToken);
         }
+
+        public Task<bool> TryReclaimStaleProcessingAsync(
+            Guid messageId,
+            string consumerName,
+            DateTimeOffset staleBefore,
+            DateTimeOffset reclaimedAt,
+            CancellationToken cancellationToken) =>
+            inner.TryReclaimStaleProcessingAsync(messageId, consumerName, staleBefore, reclaimedAt, cancellationToken);
 
         public void MarkSucceeded(Guid messageId, string consumerName, DateTimeOffset processedAt) =>
             inner.MarkSucceeded(messageId, consumerName, processedAt);

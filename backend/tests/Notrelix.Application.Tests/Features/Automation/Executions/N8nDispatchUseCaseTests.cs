@@ -36,13 +36,21 @@ public class N8nDispatchUseCaseTests
             .Options;
         var context = new TestAutomationDbContext(options);
 
+        // A rule persisted before the allow-list (url-only, traversal path) cannot be
+        // built through the Domain any more; seed it valid, then store the legacy
+        // configuration directly, exactly as an old row would load.
         var rule = AutomationRule.Create(
             AccountId, WorkspaceId, "N8N rule",
             AutomationConfiguration.Create(
                 AutomationTriggerDefinition.Create("ItemAssigned"),
-                AutomationActionDefinition.Create("Webhook", actionConfiguration)),
+                AutomationActionDefinition.Create("Webhook", """{"webhookPath":"seed"}""")),
             OwnerId, TestNow);
         rule.Enable(OwnerId, TestNow);
+        typeof(AutomationRule).GetProperty(nameof(AutomationRule.Configuration))!.SetValue(
+            rule,
+            AutomationConfiguration.Create(
+                AutomationTriggerDefinition.Create("ItemAssigned"),
+                AutomationActionDefinition.Create("Webhook", actionConfiguration)));
         var execution = AutomationExecution.Create(AccountId, WorkspaceId, rule.Id, Guid.NewGuid(), TestNow);
 
         context.AutomationRules.Add(rule);
@@ -80,6 +88,44 @@ public class N8nDispatchUseCaseTests
             "the error names the missing configuration member");
         provider.CallCount.Should().Be(0,
             "the provider port must never be invoked for an invalid configuration");
+    }
+
+    [Theory]
+    [InlineData("""{"webhookPath":"../admin"}""")]
+    [InlineData("""{"webhookPath":"a/%2e%2e/b"}""")]
+    [InlineData("""{"webhookPath":"hook?x=1"}""")]
+    [InlineData("""{"webhookPath":"hook#f"}""")]
+    [InlineData("""{"webhookPath":"a\\b"}""")]
+    [InlineData("""{"webhookPath":"/leading"}""")]
+    [InlineData("""{"webhook_path":"hook"}""")]
+    public async Task Prepare_UnsafeStoredPath_FailsClosed_WithStableError_AndNoProviderCall(string configuration)
+    {
+        var (context, execution, ruleId) = await SeedAsync(actionConfiguration: configuration);
+        var provider = new RecordingProvider();
+        var useCase = CreateUseCase(context, provider);
+
+        var preparation = await useCase.PrepareAttemptAsync(NewMessage(execution.Id, ruleId), CancellationToken.None);
+        await context.SaveChangesAsync();
+
+        preparation.Outcome.Should().Be(N8nDispatchPrepareOutcome.PrerequisiteSettled);
+        preparation.WebhookPath.Should().BeNull();
+        context.ChangeTracker.Clear();
+        var stored = await context.AutomationExecutions.SingleAsync(e => e.Id == execution.Id);
+        stored.Status.Should().Be(AutomationExecutionStatus.Failed);
+        stored.Error.Should().Be("Automation rule has a missing or invalid configuration.webhookPath.");
+        provider.CallCount.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task Prepare_ValidNestedPath_IsReadyForDispatch()
+    {
+        var (context, execution, ruleId) = await SeedAsync(actionConfiguration: """{"webhookPath":"team/hooks/a-1"}""");
+        var useCase = CreateUseCase(context, new RecordingProvider());
+
+        var preparation = await useCase.PrepareAttemptAsync(NewMessage(execution.Id, ruleId), CancellationToken.None);
+
+        preparation.Outcome.Should().Be(N8nDispatchPrepareOutcome.ReadyForDispatch);
+        preparation.WebhookPath.Should().Be("team/hooks/a-1");
     }
 
     private sealed class RecordingProvider : IN8nWebhookActions

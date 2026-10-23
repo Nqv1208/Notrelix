@@ -2,6 +2,7 @@ using Notrelix.Application.Events.Workspaces;
 
 namespace Notrelix.Infrastructure.Messaging.Consumers.Workspaces.InvitationDelivery;
 
+[OrderingNotApplicable("Queues one invitation email per delivery request through its own deduplication key; requests are independent and nothing supersedes an earlier one.")]
 public sealed class SendInvitationEmailConsumer : IConsumer<WorkspaceInvitationDeliveryRequestedIntegrationEventV1>
 {
     private readonly IEmailOutboxWriter _emailOutboxWriter;
@@ -20,25 +21,56 @@ public sealed class SendInvitationEmailConsumer : IConsumer<WorkspaceInvitationD
     {
         var msg = context.Message;
 
-        await _emailOutboxWriter.QueueTemplatedEmailAsync(
-            new QueueTemplatedEmailRequest<WorkspaceInvitationEmailPayload>(
-                DeduplicationKey: $"workspace-invitation:{msg.InvitationId}:generation:{msg.TokenGeneration}",
-                RecipientEmail: msg.RecipientEmail,
-                RecipientName: null,
-                WorkspaceId: msg.WorkspaceId,
-                RecipientUserId: null,
-                SourceContext: "workspaces",
-                TemplateKey: "workspace-invitation",
-                TemplateVersion: 1,
-                Payload: new WorkspaceInvitationEmailPayload(
-                    msg.InvitationId,
-                    msg.TokenGeneration,
-                    new ProtectedSecretEnvelope(msg.ProtectedToken),
-                    msg.ExpiresAt),
-                SourceEventId: msg.EventId,
-                SourceMessageId: context.MessageId,
-                SensitivePayloadExpiresAt: msg.ExpiresAt),
-            context.CancellationToken);
+        // A non-null ResourceKind marks a resource invitation (WSP-026): it is
+        // delivered with its own template, which names the Board or Page and the
+        // inviter. A message without the field is a workspace invitation.
+        if (msg.ResourceKind is not null)
+        {
+            await _emailOutboxWriter.QueueTemplatedEmailAsync(
+                new QueueTemplatedEmailRequest<ResourceInvitationEmailPayload>(
+                    DeduplicationKey: $"resource-invitation:{msg.InvitationId}:generation:{msg.TokenGeneration}",
+                    RecipientEmail: msg.RecipientEmail,
+                    RecipientName: null,
+                    WorkspaceId: msg.WorkspaceId,
+                    RecipientUserId: null,
+                    SourceContext: "workspaces",
+                    TemplateKey: "resource-invitation",
+                    TemplateVersion: 1,
+                    Payload: new ResourceInvitationEmailPayload(
+                        msg.InvitationId,
+                        msg.TokenGeneration,
+                        new ProtectedSecretEnvelope(msg.ProtectedToken),
+                        msg.ExpiresAt,
+                        msg.ResourceKind,
+                        msg.ResourceName ?? string.Empty,
+                        msg.InviterName ?? string.Empty),
+                    SourceEventId: msg.EventId,
+                    SourceMessageId: context.MessageId,
+                    SensitivePayloadExpiresAt: msg.ExpiresAt),
+                context.CancellationToken);
+        }
+        else
+        {
+            await _emailOutboxWriter.QueueTemplatedEmailAsync(
+                new QueueTemplatedEmailRequest<WorkspaceInvitationEmailPayload>(
+                    DeduplicationKey: $"workspace-invitation:{msg.InvitationId}:generation:{msg.TokenGeneration}",
+                    RecipientEmail: msg.RecipientEmail,
+                    RecipientName: null,
+                    WorkspaceId: msg.WorkspaceId,
+                    RecipientUserId: null,
+                    SourceContext: "workspaces",
+                    TemplateKey: "workspace-invitation",
+                    TemplateVersion: 1,
+                    Payload: new WorkspaceInvitationEmailPayload(
+                        msg.InvitationId,
+                        msg.TokenGeneration,
+                        new ProtectedSecretEnvelope(msg.ProtectedToken),
+                        msg.ExpiresAt),
+                    SourceEventId: msg.EventId,
+                    SourceMessageId: context.MessageId,
+                    SensitivePayloadExpiresAt: msg.ExpiresAt),
+                context.CancellationToken);
+        }
 
         _logger.LogInformation(
             "Workspace invitation delivery queued. InvitationId={InvitationId}",

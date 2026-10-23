@@ -63,6 +63,7 @@ public static class EmailRegistration
         services.AddScoped<IWorkspaceInvitationLinkBuilder, WorkspaceInvitationLinkBuilder>();
         services.AddScoped<IEmailVerificationLinkBuilder, EmailVerificationLinkBuilder>();
         services.AddScoped<IEmailTemplateMaterializer, WorkspaceInvitationEmailMaterializer>();
+        services.AddScoped<IEmailTemplateMaterializer, ResourceInvitationEmailMaterializer>();
         services.AddScoped<IEmailTemplateMaterializer, EmailVerificationEmailMaterializer>();
         services.AddScoped<IEmailTemplateMaterializerRegistry, EmailTemplateMaterializerRegistry>();
 

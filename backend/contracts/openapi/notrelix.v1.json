@@ -31,6 +31,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -57,6 +60,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -94,6 +100,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -131,6 +140,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -168,6 +180,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -224,6 +239,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -262,6 +280,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -334,6 +355,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -382,6 +406,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -438,6 +465,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -476,6 +506,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -522,6 +555,192 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/board-items/{boardItemId}/attachments/files": {
+      "post": {
+        "tags": [
+          "Collaboration.Attachments",
+          "Collaboration.Attachments"
+        ],
+        "summary": "Upload a file as a board item attachment (multipart/form-data, streamed)",
+        "operationId": "Collaboration.Attachments.UploadFile",
+        "parameters": [
+          {
+            "name": "boardItemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409.",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Contracts.Collaboration.Attachments.Requests.UploadBoardItemAttachmentForm"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "headers": {
+              "Idempotency-Replayed": {
+                "description": "true when this response is a replay of a stored result",
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Collaboration.Attachments.DTOs.AttachmentDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload Too Large",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Operation still being processed; retry after the indicated delay"
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/board-items/{boardItemId}/attachments/{attachmentId}/content": {
+      "get": {
+        "tags": [
+          "Collaboration.Attachments",
+          "Collaboration.Attachments"
+        ],
+        "summary": "Download the stored file of an uploaded attachment (authorised, streamed)",
+        "operationId": "Collaboration.Attachments.GetContent",
+        "parameters": [
+          {
+            "name": "boardItemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "attachmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -560,6 +779,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -598,6 +820,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -644,6 +869,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -682,6 +910,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -728,6 +959,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -776,6 +1010,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -812,6 +1049,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -850,6 +1090,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -888,6 +1131,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -934,6 +1180,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -982,6 +1231,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -1030,6 +1282,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -1066,6 +1321,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -1103,6 +1361,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -1144,6 +1405,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -1190,6 +1454,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -1231,6 +1498,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -1280,6 +1550,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -1318,6 +1591,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -1364,6 +1640,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -1400,6 +1679,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -1438,6 +1720,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -1476,6 +1761,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -1514,6 +1802,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -1562,6 +1853,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -1608,6 +1902,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -1662,6 +1959,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -1717,6 +2017,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -1773,6 +2076,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -1828,6 +2134,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -1854,6 +2163,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -1894,6 +2206,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -1930,11 +2245,44 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
           }
         },
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -1976,11 +2324,64 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Precondition Failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
           }
         },
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -2016,11 +2417,44 @@
         "responses": {
           "204": {
             "description": "No Content"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
           }
         },
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -2049,7 +2483,37 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "$ref": "#/components/schemas/Notrelix.API.Contracts.Identity.AuthSessionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
                 }
               }
             }
@@ -2081,7 +2545,37 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "$ref": "#/components/schemas/Notrelix.API.Contracts.Identity.AuthSessionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
                 }
               }
             }
@@ -2100,7 +2594,24 @@
         "operationId": "Identity.Auth.IssueCsrfToken",
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.API.Endpoints.Identity.Auth.Commands.IssueCsrfTokenEndpoint.CsrfTokenResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -2125,11 +2636,24 @@
         },
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
                 }
               }
             }
@@ -2157,11 +2681,24 @@
         },
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
                 }
               }
             }
@@ -2183,7 +2720,27 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "$ref": "#/components/schemas/Notrelix.API.Contracts.Identity.AuthSessionResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
                 }
               }
             }
@@ -2221,9 +2778,28 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": {
+              "application/json": { }
+            }
+          },
+          "302": {
+            "description": "Found"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
                 }
               }
             }
@@ -2282,9 +2858,18 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": {
+              "application/json": { }
+            }
+          },
+          "302": {
+            "description": "Found"
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
                 }
               }
             }
@@ -2315,7 +2900,17 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Identity.Verification.Commands.ConfirmEmail.ConfirmEmailResultDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
                 }
               }
             }
@@ -2342,11 +2937,24 @@
         },
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
                 }
               }
             }
@@ -2363,11 +2971,24 @@
         "operationId": "Identity.Auth.RequestEmailVerification",
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
                 }
               }
             }
@@ -2376,6 +2997,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -2390,11 +3014,14 @@
         "operationId": "Identity.Auth.Logout",
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
                 }
               }
             }
@@ -2403,6 +3030,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -2427,11 +3057,44 @@
         },
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Precondition Failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
                 }
               }
             }
@@ -2440,6 +3103,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -2458,7 +3124,17 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "$ref": "#/components/schemas/Notrelix.Application.Common.Security.Auth.UserDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
                 }
               }
             }
@@ -2467,6 +3143,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -2485,7 +3164,17 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Identity.Auth.GetBootstrap.BootstrapResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
                 }
               }
             }
@@ -2494,6 +3183,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -2535,9 +3227,48 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": {
+              "application/json": { }
+            }
+          },
+          "302": {
+            "description": "Found"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Precondition Failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
                 }
               }
             }
@@ -2546,6 +3277,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -2601,9 +3335,28 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": {
+              "application/json": { }
+            }
+          },
+          "302": {
+            "description": "Found"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
                 }
               }
             }
@@ -2612,6 +3365,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -2653,9 +3409,48 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": {
+              "application/json": { }
+            }
+          },
+          "302": {
+            "description": "Found"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Precondition Failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
                 }
               }
             }
@@ -2664,6 +3459,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -2719,9 +3517,28 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": {
+              "application/json": { }
+            }
+          },
+          "302": {
+            "description": "Found"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
                 }
               }
             }
@@ -2730,6 +3547,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -2765,11 +3585,54 @@
         },
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Precondition Failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
                 }
               }
             }
@@ -2778,6 +3641,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -2806,7 +3672,37 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "$ref": "#/components/schemas/Notrelix.API.Contracts.Identity.AuthSessionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
                 }
               }
             }
@@ -2828,7 +3724,37 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Identity.Mfa.DTOs.MfaEnrollmentStartResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
                 }
               }
             }
@@ -2837,6 +3763,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -2865,7 +3794,37 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Identity.Mfa.DTOs.MfaEnrollmentVerifyResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
                 }
               }
             }
@@ -2874,6 +3833,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -2892,7 +3854,17 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Identity.Mfa.DTOs.MfaStatusDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
                 }
               }
             }
@@ -2901,6 +3873,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -2930,7 +3905,37 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Identity.Mfa.DTOs.MfaEnrollmentVerifyResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Precondition Failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
                 }
               }
             }
@@ -2939,6 +3944,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -2964,11 +3972,34 @@
         },
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Precondition Failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
                 }
               }
             }
@@ -2977,6 +4008,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -3005,7 +4039,27 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "$ref": "#/components/schemas/Notrelix.Application.Common.Security.Auth.UserDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
                 }
               }
             }
@@ -3014,6 +4068,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -3042,7 +4099,37 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Identity.Profiles.Commands.UpdateEmail.UpdateEmailResultDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
                 }
               }
             }
@@ -3051,6 +4138,248 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/profile/preferences": {
+      "get": {
+        "tags": [
+          "Identity.Profile",
+          "Identity.Profile"
+        ],
+        "summary": "Get the current user's account preferences",
+        "description": "Locale, time zone and theme the user chose as account-level defaults, plus their own phone (E.164) and whether Workspace members may see it (default false). Returns the defaults with version 0 until the first save.",
+        "operationId": "Identity.Profile.GetPreferences",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Identity.Profiles.DTOs.AccountPreferencesDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "Identity.Profile",
+          "Identity.Profile"
+        ],
+        "summary": "Update the current user's account preferences",
+        "description": "Partial update; omitted members keep their value; a blank phone clears it. Answers 412 when expectedVersion is stale.",
+        "operationId": "Identity.Profile.UpdatePreferences",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Endpoints.Identity.Profile.Commands.UpdateAccountPreferencesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Identity.Profiles.DTOs.AccountPreferencesDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Precondition Failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/auth/security/summary": {
+      "get": {
+        "tags": [
+          "Identity.Auth",
+          "Identity.Security"
+        ],
+        "summary": "Get the current user's sign-in security summary",
+        "description": "Password, MFA, active-session and linked-provider facts for the account security page. Contains no secret.",
+        "operationId": "Identity.Security.GetSummary",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Identity.Security.DTOs.AccountSecuritySummaryDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/auth/security/activity": {
+      "get": {
+        "tags": [
+          "Identity.Auth",
+          "Identity.Security"
+        ],
+        "summary": "List the current user's security activity",
+        "description": "Sign-in successes and failures, password changes and resets, MFA enabled or disabled and session revocations, newest first, for the authenticated user only and kept for 90 days. Cursor-paginated (default 20, max 100): pass nextCursor back as cursor for the next page. Contains no secret.",
+        "operationId": "Identity.Security.ListActivity",
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Common.Models.CursorPageOfSecurityActivityDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -3080,7 +4409,47 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Identity.Security.DTOs.StepUpRequirementResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Precondition Failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
                 }
               }
             }
@@ -3089,6 +4458,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -3118,7 +4490,47 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Identity.Security.DTOs.StepUpProofResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Precondition Failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
                 }
               }
             }
@@ -3127,6 +4539,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -3156,7 +4571,47 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Identity.Security.DTOs.StepUpProofResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Precondition Failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
                 }
               }
             }
@@ -3165,6 +4620,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -3183,7 +4641,30 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Notrelix.Application.Features.Identity.Sessions.DTOs.SessionInfoDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
                 }
               }
             }
@@ -3192,6 +4673,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -3217,11 +4701,34 @@
         ],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
                 }
               }
             }
@@ -3230,6 +4737,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -3245,11 +4755,24 @@
         "operationId": "Identity.Sessions.RevokeOthers",
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
                 }
               }
             }
@@ -3258,6 +4781,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -3306,6 +4832,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -3336,6 +4865,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -3448,6 +4980,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -3484,6 +5019,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -3557,6 +5095,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -3630,6 +5171,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -3693,6 +5237,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -3756,6 +5303,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -3819,6 +5369,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -3891,6 +5444,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -3972,6 +5528,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -4041,6 +5600,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -4122,6 +5684,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -4203,6 +5768,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -4292,6 +5860,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -4380,6 +5951,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -4470,6 +6044,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -4507,6 +6084,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -4580,6 +6160,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -4653,6 +6236,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -4723,6 +6309,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -4786,6 +6375,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -4859,6 +6451,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -4922,6 +6517,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -4985,6 +6583,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -5058,6 +6659,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -5097,6 +6701,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -5135,6 +6742,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -5181,6 +6791,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -5242,6 +6855,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -5305,6 +6921,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -5368,6 +6987,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -5431,6 +7053,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -5504,6 +7129,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -5577,6 +7205,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -5650,6 +7281,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -5711,6 +7345,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -5784,6 +7421,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -5856,6 +7496,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -5929,6 +7572,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -6001,6 +7647,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -6083,6 +7732,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -6162,6 +7814,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -6225,6 +7880,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -6298,6 +7956,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -6371,6 +8032,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -6444,6 +8108,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -6482,6 +8149,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -6536,6 +8206,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -6583,6 +8256,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -6638,6 +8314,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -6695,6 +8374,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -6752,6 +8434,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -6809,6 +8494,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -6850,6 +8538,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -6921,6 +8612,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -6959,6 +8653,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -7030,6 +8727,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -7089,6 +8789,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -7127,6 +8830,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -7165,6 +8871,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -7226,6 +8935,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -7287,6 +8999,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -7350,6 +9065,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -7423,6 +9141,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -7496,6 +9217,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -7532,6 +9256,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -7601,6 +9328,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -7671,6 +9401,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -7751,6 +9484,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -7789,6 +9525,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -7860,6 +9599,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -7931,6 +9673,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -8013,6 +9758,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -8083,6 +9831,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -8155,6 +9906,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -8227,6 +9981,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -8299,6 +10056,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -8381,6 +10141,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -8453,6 +10216,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -8494,6 +10260,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -8565,6 +10334,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -8638,6 +10410,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -8699,6 +10474,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -8771,6 +10549,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -8843,6 +10624,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -8916,6 +10700,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -8986,6 +10773,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -9058,6 +10848,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -9130,6 +10923,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -9203,6 +10999,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -9239,6 +11038,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -9312,6 +11114,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -9373,6 +11178,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -9409,6 +11217,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -9472,6 +11283,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -9535,6 +11349,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -9598,6 +11415,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -9671,6 +11491,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -9744,6 +11567,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -9817,6 +11643,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -9880,6 +11709,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -9943,6 +11775,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -10006,6 +11841,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -10079,6 +11917,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -10115,6 +11956,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -10188,6 +12032,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -10249,6 +12096,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -10322,6 +12172,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -10358,6 +12211,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -10421,6 +12277,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -10484,6 +12343,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -10547,6 +12409,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -10620,6 +12485,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -10656,6 +12524,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -10729,6 +12600,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -10802,6 +12676,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -10875,6 +12752,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -10948,6 +12828,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -11021,6 +12904,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -11093,6 +12979,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -11156,6 +13045,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -11229,6 +13121,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -11292,6 +13187,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -11355,6 +13253,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -11418,6 +13319,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -11491,6 +13395,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -11529,6 +13436,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -11585,6 +13495,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -11626,6 +13539,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -11673,6 +13589,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -11721,6 +13640,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -11778,6 +13700,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -11808,6 +13733,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -11845,6 +13773,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -11883,6 +13814,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -11917,6 +13851,183 @@
             }
           }
         }
+      }
+    },
+    "/api/v1/resources/{resourceType}/{resourceId}/invitations": {
+      "post": {
+        "tags": [
+          "Workspaces.Invitations",
+          "Workspaces.Invitations"
+        ],
+        "summary": "Invite an outsider by email to one Board or Page as a Guest",
+        "operationId": "Workspaces.Invitations.InviteGuestToResource",
+        "parameters": [
+          {
+            "name": "resourceType",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "resourceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Contracts.Workspaces.Invitations.Requests.InviteGuestToResourceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/resources/{resourceType}/{resourceId}/invitations/{invitationId}/resend": {
+      "post": {
+        "tags": [
+          "Workspaces.Invitations",
+          "Workspaces.Invitations"
+        ],
+        "summary": "Resend a resource invitation the caller issued",
+        "operationId": "Workspaces.Invitations.ResendResourceInvitation",
+        "parameters": [
+          {
+            "name": "resourceType",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "resourceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "invitationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/resources/{resourceType}/{resourceId}/invitations/{invitationId}": {
+      "delete": {
+        "tags": [
+          "Workspaces.Invitations",
+          "Workspaces.Invitations"
+        ],
+        "summary": "Revoke a resource invitation the caller issued",
+        "operationId": "Workspaces.Invitations.RevokeResourceInvitation",
+        "parameters": [
+          {
+            "name": "resourceType",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "resourceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "invitationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
       }
     },
     "/api/v1/workspaces/{workspaceId}/members": {
@@ -11956,6 +14067,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -12003,6 +14117,51 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspaceId}/members/me": {
+      "get": {
+        "tags": [
+          "Workspaces.Members",
+          "Workspaces.Members"
+        ],
+        "summary": "Get your own membership in this workspace",
+        "description": "Any member of the workspace, a Guest included, reads exactly their own row (role, status, job title, version). It never returns other people; the member list is closed to a Guest.",
+        "operationId": "Workspaces.Members.GetMyMembership",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.DTOs.WorkspaceMemberDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -12051,6 +14210,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -12108,6 +14270,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -12153,6 +14318,122 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspaceId}/members/me/job-title": {
+      "put": {
+        "tags": [
+          "Workspaces.Members",
+          "Workspaces.Members"
+        ],
+        "summary": "Set or clear your own job title in this workspace",
+        "description": "Any member of the workspace may change their own title. A blank title clears it. Answers 412 when expectedVersion is stale.",
+        "operationId": "Workspaces.Members.UpdateMyJobTitle",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Contracts.Workspaces.Members.Requests.UpdateMemberJobTitleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.DTOs.WorkspaceMemberProfileDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspaceId}/members/{userId}/job-title": {
+      "put": {
+        "tags": [
+          "Workspaces.Members",
+          "Workspaces.Members"
+        ],
+        "summary": "Set or clear another member's job title",
+        "description": "Workspace Owner and Admin only. A blank title clears it. Answers 412 when expectedVersion is stale.",
+        "operationId": "Workspaces.Members.UpdateMemberJobTitle",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Contracts.Workspaces.Members.Requests.UpdateMemberJobTitleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.DTOs.WorkspaceMemberProfileDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -12200,6 +14481,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -12247,6 +14531,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -12289,6 +14576,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -12354,6 +14644,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -12396,6 +14689,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -12445,6 +14741,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -12492,6 +14791,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -12530,6 +14832,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -12576,6 +14881,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -12617,6 +14925,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -12664,6 +14975,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -12705,6 +15019,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -12752,6 +15069,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -12807,6 +15127,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -12852,6 +15175,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -12909,6 +15235,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -12966,6 +15295,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -13023,6 +15355,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -13070,6 +15405,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -13117,6 +15455,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -13164,6 +15505,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -13221,6 +15565,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -13271,6 +15618,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -13326,6 +15676,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -13400,6 +15753,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -13471,6 +15827,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -13512,6 +15871,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -13559,6 +15921,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -13606,6 +15971,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -13654,6 +16022,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -13701,6 +16072,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -13751,6 +16125,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -13801,6 +16178,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -13851,6 +16231,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -13898,6 +16281,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -13948,6 +16334,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -13996,6 +16385,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -14054,6 +16446,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -14113,8 +16508,50 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
+      }
+    },
+    "/api/v1/accounts/{accountId}/resolve": {
+      "get": {
+        "tags": [
+          "Workspaces.Workspaces"
+        ],
+        "summary": "Resolve a workspace by account ID and slug",
+        "operationId": "Workspaces.Workspaces.ResolveSlug",
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "slug",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.DTOs.WorkspaceDto"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/workspaces": {
@@ -14143,6 +16580,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -14181,6 +16621,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -14226,6 +16669,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -14274,6 +16720,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -14322,6 +16771,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -14370,6 +16822,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -14418,6 +16873,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -14466,6 +16924,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       }
@@ -14515,6 +16976,9 @@
         "security": [
           {
             "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
           }
         ]
       },
@@ -14543,52 +17007,43 @@
         "security": [
           {
             "Bearer": [ ]
-          }
-        ]
-      }
-    },
-    "/api/v1/accounts/{accountId}/resolve": {
-      "get": {
-        "tags": [
-          "Workspaces.Workspaces"
-        ],
-        "summary": "Resolve a workspace by account ID and slug",
-        "operationId": "Workspaces.Workspaces.ResolveSlug",
-        "parameters": [
-          {
-            "name": "accountId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
           },
           {
-            "name": "slug",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
+            "Cookie": [ ]
           }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.DTOs.WorkspaceDto"
-                }
-              }
-            }
-          }
-        }
+        ]
       }
     }
   },
   "components": {
     "schemas": {
+      "Microsoft.AspNetCore.Mvc.ProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "detail": {
+            "type": "string",
+            "nullable": true
+          },
+          "instance": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": { }
+      },
       "Notrelix.API.Contracts.Accounts.Requests.RenameAccountRequest": {
         "type": "object",
         "properties": {
@@ -14652,6 +17107,20 @@
           },
           "source": {
             "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.API.Contracts.Collaboration.Attachments.Requests.UploadBoardItemAttachmentForm": {
+        "required": [
+          "file"
+        ],
+        "type": "object",
+        "properties": {
+          "file": {
+            "type": "string",
+            "format": "binary",
             "nullable": true
           }
         },
@@ -14893,6 +17362,40 @@
             "nullable": true
           },
           "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.API.Contracts.Identity.AuthSessionResponse": {
+        "type": "object",
+        "properties": {
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "user": {
+            "$ref": "#/components/schemas/Notrelix.Application.Common.Security.Auth.UserDto"
+          },
+          "workspaceProvisioning": {
+            "type": "string",
+            "nullable": true
+          },
+          "mfaRequired": {
+            "type": "boolean"
+          },
+          "mfaChallengeToken": {
+            "type": "string",
+            "nullable": true
+          },
+          "mfaMethod": {
+            "type": "string",
+            "nullable": true
+          },
+          "mfaExpiresAt": {
             "type": "string",
             "format": "date-time",
             "nullable": true
@@ -15895,6 +18398,20 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.API.Contracts.Workspaces.Invitations.Requests.InviteGuestToResourceRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "level": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.API.Contracts.Workspaces.Members.Requests.AddMemberRequest": {
         "type": "object",
         "properties": {
@@ -15904,6 +18421,24 @@
           },
           "role": {
             "$ref": "#/components/schemas/Notrelix.Domain.Workspaces.Members.WorkspaceRole"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.API.Contracts.Workspaces.Members.Requests.InvitationInitialEntryRequest": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "nullable": true
+          },
+          "targetId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "role": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -15918,6 +18453,27 @@
           "role": {
             "type": "string",
             "nullable": true
+          },
+          "initialEntries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.API.Contracts.Workspaces.Members.Requests.InvitationInitialEntryRequest"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.API.Contracts.Workspaces.Members.Requests.UpdateMemberJobTitleRequest": {
+        "type": "object",
+        "properties": {
+          "jobTitle": {
+            "type": "string",
+            "nullable": true
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64"
           }
         },
         "additionalProperties": false
@@ -16376,6 +18932,16 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.API.Endpoints.Identity.Auth.Commands.IssueCsrfTokenEndpoint.CsrfTokenResponse": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.API.Endpoints.Identity.Auth.Commands.LoginRequest": {
         "type": "object",
         "properties": {
@@ -16437,6 +19003,37 @@
           },
           "code": {
             "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.API.Endpoints.Identity.Profile.Commands.UpdateAccountPreferencesRequest": {
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          },
+          "locale": {
+            "type": "string",
+            "nullable": true
+          },
+          "timezone": {
+            "type": "string",
+            "nullable": true
+          },
+          "theme": {
+            "type": "string",
+            "nullable": true
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "phoneVisibleToWorkspaceMembers": {
+            "type": "boolean",
             "nullable": true
           }
         },
@@ -16533,6 +19130,107 @@
           "hasNextPage": {
             "type": "boolean",
             "readOnly": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Common.Models.CursorPageOfSecurityActivityDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.Identity.Security.Abstractions.SecurityActivityDto"
+            },
+            "nullable": true
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          },
+          "hasNextPage": {
+            "type": "boolean",
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Common.Security.Auth.UserDto": {
+        "required": [
+          "email",
+          "id",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "avatarUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "emailConfirmed": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Collaboration.Attachments.DTOs.AttachmentDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "resourceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "filename": {
+            "type": "string",
+            "nullable": true
+          },
+          "url": {
+            "type": "string",
+            "nullable": true
+          },
+          "sizeBytes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "contentType": {
+            "type": "string",
+            "nullable": true
+          },
+          "source": {
+            "type": "string",
+            "nullable": true
+          },
+          "uploadedBy": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "uploadedByName": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "kind": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -16725,12 +19423,149 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.Application.Features.Identity.Auth.GetBootstrap.BootstrapResult": {
+        "required": [
+          "personalWorkspace",
+          "user",
+          "workspaces"
+        ],
+        "type": "object",
+        "properties": {
+          "user": {
+            "$ref": "#/components/schemas/Notrelix.Application.Common.Security.Auth.UserDto"
+          },
+          "workspaces": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.Identity.Auth.GetBootstrap.WorkspaceInfo"
+            },
+            "nullable": true
+          },
+          "personalWorkspace": {
+            "$ref": "#/components/schemas/Notrelix.Application.Features.Identity.Auth.GetBootstrap.PersonalWorkspaceStatus"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Identity.Auth.GetBootstrap.PersonalWorkspaceStatus": {
+        "required": [
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "nullable": true
+          },
+          "workspaceId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Identity.Auth.GetBootstrap.WorkspaceInfo": {
+        "required": [
+          "id",
+          "name",
+          "role",
+          "slug"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "slug": {
+            "type": "string",
+            "nullable": true
+          },
+          "role": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Identity.Mfa.DTOs.MfaEnrollmentStartResult": {
+        "type": "object",
+        "properties": {
+          "mfaMethodId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "secret": {
+            "type": "string",
+            "nullable": true
+          },
+          "otpAuthUri": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Identity.Mfa.DTOs.MfaEnrollmentVerifyResult": {
+        "type": "object",
+        "properties": {
+          "mfaMethodId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "recoveryCodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Identity.Mfa.DTOs.MfaStatusDto": {
+        "type": "object",
+        "properties": {
+          "isEnabled": {
+            "type": "boolean"
+          },
+          "primaryMethod": {
+            "type": "string",
+            "nullable": true
+          },
+          "hasRecoveryCodes": {
+            "type": "boolean"
+          },
+          "recoveryCodesRemaining": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.Application.Features.Identity.Profiles.Commands.UpdateEmail.UpdateEmailCommand": {
         "type": "object",
         "properties": {
           "email": {
             "type": "string",
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Identity.Profiles.Commands.UpdateEmail.UpdateEmailResultDto": {
+        "type": "object",
+        "properties": {
+          "emailConfirmed": {
+            "type": "boolean"
+          },
+          "sessionRefreshRequired": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -16748,6 +19583,187 @@
           "avatar": {
             "type": "string",
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Identity.Profiles.DTOs.AccountPreferencesDto": {
+        "type": "object",
+        "properties": {
+          "locale": {
+            "type": "string",
+            "nullable": true
+          },
+          "timezone": {
+            "type": "string",
+            "nullable": true
+          },
+          "theme": {
+            "type": "string",
+            "nullable": true
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "phoneVisibleToWorkspaceMembers": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Identity.Security.Abstractions.SecurityActivityDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "$ref": "#/components/schemas/Notrelix.Domain.Identity.Security.SecurityActivityType"
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "ipAddress": {
+            "type": "string",
+            "nullable": true
+          },
+          "userAgent": {
+            "type": "string",
+            "nullable": true
+          },
+          "sessionId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Identity.Security.DTOs.AccountSecuritySummaryDto": {
+        "type": "object",
+        "properties": {
+          "serverTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "hasPasswordCredential": {
+            "type": "boolean"
+          },
+          "passwordChangedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "mfa": {
+            "$ref": "#/components/schemas/Notrelix.Application.Features.Identity.Mfa.DTOs.MfaStatusDto"
+          },
+          "activeSessionCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "linkedProviders": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Identity.Security.DTOs.StepUpProofResult": {
+        "type": "object",
+        "properties": {
+          "proofToken": {
+            "type": "string",
+            "nullable": true
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Identity.Security.DTOs.StepUpRequiredFactor": {
+        "enum": [
+          0,
+          1,
+          2
+        ],
+        "type": "integer",
+        "format": "int32"
+      },
+      "Notrelix.Application.Features.Identity.Security.DTOs.StepUpRequirementResult": {
+        "type": "object",
+        "properties": {
+          "requiredFactor": {
+            "$ref": "#/components/schemas/Notrelix.Application.Features.Identity.Security.DTOs.StepUpRequiredFactor"
+          },
+          "challengeToken": {
+            "type": "string",
+            "nullable": true
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Identity.Sessions.DTOs.SessionInfoDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "$ref": "#/components/schemas/Notrelix.Domain.Identity.Sessions.SessionStatus"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "revokedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "ipAddress": {
+            "type": "string",
+            "nullable": true
+          },
+          "userAgent": {
+            "type": "string",
+            "nullable": true
+          },
+          "isCurrent": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Identity.Verification.Commands.ConfirmEmail.ConfirmEmailResultDto": {
+        "type": "object",
+        "properties": {
+          "emailConfirmed": {
+            "type": "boolean"
+          },
+          "sessionRefreshRequired": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -17698,6 +20714,44 @@
           "status": {
             "type": "string",
             "nullable": true
+          },
+          "resourceKind": {
+            "type": "string",
+            "nullable": true
+          },
+          "resourceId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "resourceLevel": {
+            "type": "string",
+            "nullable": true
+          },
+          "initialEntries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.DTOs.WorkspaceInvitationEntryDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Workspaces.DTOs.WorkspaceInvitationEntryDto": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "nullable": true
+          },
+          "targetId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "role": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -17728,6 +20782,36 @@
           "status": {
             "type": "string",
             "nullable": true
+          },
+          "jobTitle": {
+            "type": "string",
+            "nullable": true
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Workspaces.DTOs.WorkspaceMemberProfileDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "jobTitle": {
+            "type": "string",
+            "nullable": true
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64"
           }
         },
         "additionalProperties": false
@@ -17774,6 +20858,18 @@
           },
           "isAccepted": {
             "type": "boolean"
+          },
+          "resourceKind": {
+            "type": "string",
+            "nullable": true
+          },
+          "resourceLevel": {
+            "type": "string",
+            "nullable": true
+          },
+          "initialEntryCount": {
+            "type": "integer",
+            "format": "int32"
           }
         },
         "additionalProperties": false
@@ -18044,9 +21140,35 @@
           "status": {
             "type": "string",
             "nullable": true
+          },
+          "jobTitle": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
+      },
+      "Notrelix.Domain.Identity.Security.SecurityActivityType": {
+        "enum": [
+          "SignInSucceeded",
+          "SignInFailed",
+          "PasswordChanged",
+          "PasswordReset",
+          "MfaEnabled",
+          "MfaDisabled",
+          "SessionRevoked",
+          "OtherSessionsRevoked"
+        ],
+        "type": "string"
+      },
+      "Notrelix.Domain.Identity.Sessions.SessionStatus": {
+        "enum": [
+          0,
+          1,
+          2
+        ],
+        "type": "integer",
+        "format": "int32"
       },
       "Notrelix.Domain.WorkManagement.Boards.BoardVisibility": {
         "enum": [
@@ -18169,6 +21291,12 @@
         "description": "JWT Authorization header. Example: \"Bearer {token}\"",
         "scheme": "bearer",
         "bearerFormat": "JWT"
+      },
+      "Cookie": {
+        "type": "apiKey",
+        "description": "httpOnly access-token cookie set by the sign-in operations. Browser requests also send the CSRF token header on unsafe methods.",
+        "name": "accessToken",
+        "in": "cookie"
       }
     }
   }

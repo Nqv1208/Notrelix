@@ -58,6 +58,14 @@ public static class DependencyInjection
         services.AddSingleton<IAccessPolicyEvaluator, AccessPolicyEngine>();
         services.AddSingleton<IN8nSignatureService, N8nSignatureService>();
         services.AddScoped<Notrelix.Application.Features.Automation.Events.N8nAutomationRuleEvaluator>();
+        services.AddOptions<Notrelix.Application.Features.Automation.AutomationGuardOptions>()
+            .Bind(builder.Configuration.GetSection(
+                Notrelix.Application.Features.Automation.AutomationGuardOptions.SectionName))
+            .ValidateOnStart();
+        services.AddSingleton<
+            IValidateOptions<Notrelix.Application.Features.Automation.AutomationGuardOptions>,
+            Notrelix.Application.Features.Automation.AutomationGuardOptionsValidator>();
+
 
         // Execution context (scoped per request)
         services.AddScoped<IExecutionContextAccessor, Notrelix.Application.Common.Context.ExecutionContext>();
@@ -71,6 +79,18 @@ public static class DependencyInjection
         services.AddSingleton<IIdempotencyRequestFingerprint, JsonIdempotencyRequestFingerprint>();
         services.AddSingleton<IIdempotencyReplayPolicy, DefaultIdempotencyReplayPolicy>();
         services.AddScoped<IdempotencyPartitionFactory>();
+
+        // Per-request compensation for external effects (object storage) that cannot join the DB transaction.
+        services.AddScoped<IRequestRollbackCompensations, RequestRollbackCompensations>();
+
+        // Attachment upload policy (size cap, per-item cap, blocked types): validated at startup.
+        services.AddOptions<Notrelix.Application.Features.Collaboration.Attachments.AttachmentUploadOptions>()
+            .Bind(builder.Configuration.GetSection(
+                Notrelix.Application.Features.Collaboration.Attachments.AttachmentUploadOptions.SectionName))
+            .ValidateOnStart();
+        services.AddSingleton<
+            IValidateOptions<Notrelix.Application.Features.Collaboration.Attachments.AttachmentUploadOptions>,
+            Notrelix.Application.Features.Collaboration.Attachments.AttachmentUploadOptionsValidator>();
 
         // Scoped execution context: one instance is exposed as both the read and
         // the write contract so the transport can bind the key and the pipeline
@@ -110,6 +130,8 @@ public static class DependencyInjection
 
         // Producer-owned public target actions (Accounts membership mutation)
         services.AddScoped<IAccountMembershipActions, AccountMembershipActions>();
+
+        services.AddScoped<Notrelix.Application.Features.Workspaces.Invitations.Services.InvitationInitialEntries>();
 
         // Producer-owned public target actions (WorkManagement item mutations)
         services.AddScoped<MoveBoardItemUseCase>();

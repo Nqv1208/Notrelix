@@ -122,6 +122,9 @@ if (app.Configuration.GetValue<bool>("HttpsRedirection:Enabled"))
     app.UseHttpsRedirection();
 }
 
+// 9b. WebSockets (realtime gateway upgrade; origin policy is enforced by the gateway endpoint)
+app.UseWebSockets();
+
 // 10. Authentication
 app.UseAuthentication();
 

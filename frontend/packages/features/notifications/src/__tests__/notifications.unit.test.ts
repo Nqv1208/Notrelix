@@ -3,20 +3,26 @@ import { notificationsQueryKeys } from "../query/keys";
 
 describe("notificationsQueryKeys", () => {
   it("should generate notifications root query key", () => {
-    expect(notificationsQueryKeys.all).toEqual(["account", "notifications"]);
+    expect(notificationsQueryKeys.all("acc-1")).toEqual([
+      "account",
+      "acc-1",
+      "notifications",
+    ]);
   });
 
   it("should generate unread count query key", () => {
-    expect(notificationsQueryKeys.unreadCount).toEqual([
+    expect(notificationsQueryKeys.unreadCount("acc-1")).toEqual([
       "account",
+      "acc-1",
       "notifications",
       "unread-count",
     ]);
   });
 
   it("should generate preferences query key", () => {
-    expect(notificationsQueryKeys.preferences).toEqual([
+    expect(notificationsQueryKeys.preferences("acc-1")).toEqual([
       "account",
+      "acc-1",
       "notifications",
       "preferences",
     ]);

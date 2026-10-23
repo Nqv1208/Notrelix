@@ -2,7 +2,7 @@ namespace Notrelix.Domain.Governance.Permissions;
 
 /// <summary>
 /// Domain-level invariants for permission grants. Pure functions; no side effects.
-/// The Application layer hosts the PermissionService that orchestrates these rules.
+/// The Application layer's grant commands and the AccessPolicyEngine apply these rules.
 /// </summary>
 public static class PermissionRules
 {

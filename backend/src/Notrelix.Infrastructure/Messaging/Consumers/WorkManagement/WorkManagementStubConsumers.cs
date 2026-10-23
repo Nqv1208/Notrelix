@@ -2,6 +2,7 @@ using Notrelix.Application.Events.WorkManagement;
 
 namespace Notrelix.Infrastructure.Messaging.Consumers.WorkManagement;
 
+[OrderingNotApplicable(OrderingReasons.LogOnly)]
 public sealed class BoardRenamedConsumer : IConsumer<BoardRenamedIntegrationEvent>
 {
     private readonly ILogger<BoardRenamedConsumer> _logger;
@@ -23,6 +24,7 @@ public sealed class BoardRenamedConsumer : IConsumer<BoardRenamedIntegrationEven
     }
 }
 
+[OrderingNotApplicable(OrderingReasons.LogOnly)]
 public sealed class BoardArchivedConsumer : IConsumer<BoardArchivedIntegrationEvent>
 {
     private readonly ILogger<BoardArchivedConsumer> _logger;
@@ -42,6 +44,7 @@ public sealed class BoardArchivedConsumer : IConsumer<BoardArchivedIntegrationEv
     }
 }
 
+[OrderingNotApplicable(OrderingReasons.LogOnly)]
 public sealed class BoardUnarchivedConsumer : IConsumer<BoardUnarchivedIntegrationEvent>
 {
     private readonly ILogger<BoardUnarchivedConsumer> _logger;
@@ -61,6 +64,7 @@ public sealed class BoardUnarchivedConsumer : IConsumer<BoardUnarchivedIntegrati
     }
 }
 
+[OrderingNotApplicable(OrderingReasons.LogOnly)]
 public sealed class BoardItemRenamedConsumer : IConsumer<BoardItemRenamedIntegrationEvent>
 {
     private readonly ILogger<BoardItemRenamedConsumer> _logger;
@@ -83,6 +87,7 @@ public sealed class BoardItemRenamedConsumer : IConsumer<BoardItemRenamedIntegra
     }
 }
 
+[OrderingNotApplicable(OrderingReasons.LogOnly)]
 public sealed class BoardItemMovedConsumer : IConsumer<BoardItemMovedIntegrationEventV2>
 {
     private readonly ILogger<BoardItemMovedConsumer> _logger;
@@ -106,6 +111,7 @@ public sealed class BoardItemMovedConsumer : IConsumer<BoardItemMovedIntegration
     }
 }
 
+[OrderingNotApplicable(OrderingReasons.LogOnly)]
 public sealed class BoardItemArchivedConsumer : IConsumer<BoardItemArchivedIntegrationEventV2>
 {
     private readonly ILogger<BoardItemArchivedConsumer> _logger;
@@ -127,6 +133,7 @@ public sealed class BoardItemArchivedConsumer : IConsumer<BoardItemArchivedInteg
     }
 }
 
+[OrderingNotApplicable(OrderingReasons.LogOnly)]
 public sealed class BoardFieldCreatedConsumer : IConsumer<BoardFieldCreatedIntegrationEvent>
 {
     private readonly ILogger<BoardFieldCreatedConsumer> _logger;
@@ -149,6 +156,7 @@ public sealed class BoardFieldCreatedConsumer : IConsumer<BoardFieldCreatedInteg
     }
 }
 
+[OrderingNotApplicable(OrderingReasons.LogOnly)]
 public sealed class BoardFieldUpdatedConsumer : IConsumer<BoardFieldUpdatedIntegrationEvent>
 {
     private readonly ILogger<BoardFieldUpdatedConsumer> _logger;
@@ -169,6 +177,7 @@ public sealed class BoardFieldUpdatedConsumer : IConsumer<BoardFieldUpdatedInteg
     }
 }
 
+[OrderingNotApplicable(OrderingReasons.LogOnly)]
 public sealed class BoardFieldDeletedConsumer : IConsumer<BoardFieldDeletedIntegrationEvent>
 {
     private readonly ILogger<BoardFieldDeletedConsumer> _logger;
@@ -189,6 +198,7 @@ public sealed class BoardFieldDeletedConsumer : IConsumer<BoardFieldDeletedInteg
     }
 }
 
+[OrderingNotApplicable(OrderingReasons.LogOnly)]
 public sealed class BoardViewCreatedConsumer : IConsumer<BoardViewCreatedIntegrationEvent>
 {
     private readonly ILogger<BoardViewCreatedConsumer> _logger;
@@ -210,6 +220,7 @@ public sealed class BoardViewCreatedConsumer : IConsumer<BoardViewCreatedIntegra
     }
 }
 
+[OrderingNotApplicable(OrderingReasons.LogOnly)]
 public sealed class BoardViewDeletedConsumer : IConsumer<BoardViewDeletedIntegrationEvent>
 {
     private readonly ILogger<BoardViewDeletedConsumer> _logger;
@@ -230,6 +241,7 @@ public sealed class BoardViewDeletedConsumer : IConsumer<BoardViewDeletedIntegra
     }
 }
 
+[OrderingNotApplicable(OrderingReasons.LogOnly)]
 public sealed class LabelCreatedConsumer : IConsumer<LabelCreatedIntegrationEvent>
 {
     private readonly ILogger<LabelCreatedConsumer> _logger;
@@ -251,6 +263,7 @@ public sealed class LabelCreatedConsumer : IConsumer<LabelCreatedIntegrationEven
     }
 }
 
+[OrderingNotApplicable(OrderingReasons.LogOnly)]
 public sealed class LabelUpdatedConsumer : IConsumer<LabelUpdatedIntegrationEvent>
 {
     private readonly ILogger<LabelUpdatedConsumer> _logger;
@@ -271,6 +284,7 @@ public sealed class LabelUpdatedConsumer : IConsumer<LabelUpdatedIntegrationEven
     }
 }
 
+[OrderingNotApplicable(OrderingReasons.LogOnly)]
 public sealed class ChecklistCreatedConsumer : IConsumer<ChecklistCreatedIntegrationEvent>
 {
     private readonly ILogger<ChecklistCreatedConsumer> _logger;
@@ -293,6 +307,7 @@ public sealed class ChecklistCreatedConsumer : IConsumer<ChecklistCreatedIntegra
     }
 }
 
+[OrderingNotApplicable(OrderingReasons.LogOnly)]
 public sealed class ChecklistItemToggledConsumer : IConsumer<ChecklistItemToggledIntegrationEvent>
 {
     private readonly ILogger<ChecklistItemToggledConsumer> _logger;

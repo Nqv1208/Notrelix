@@ -25,4 +25,10 @@ export {
   accountQueryKey,
   workspaceQueryKey,
   assertNotrelixQueryKey,
+  assertAccountId,
 } from "./query-key-scope";
+export {
+  AccountScopeProvider,
+  useAccountId,
+  resetCacheForAccountTransition,
+} from "./account-scope";

@@ -152,15 +152,9 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
 
         if (isAccount)
         {
-            var isAdmin = string.Equals(role, "Admin", StringComparison.Ordinal);
-            if (permission.Action == PermissionAction.ViewWorkspace
-                || (isAdmin && permission.Action == PermissionAction.CreateWorkspace)
-                || (isAdmin && permission.Action == PermissionAction.ManageAccount))
-            {
-                return AccessDecision.Allow();
-            }
-
-            return AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
+            return AccountRoleBaseline.Decide(role, permission.Action) == BaselineDecision.Allow
+                ? AccessDecision.Allow()
+                : AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
         }
 
         // GOV-028: Spaces are managed by workspace Owners/Admins anywhere, and by
@@ -171,17 +165,8 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
             return EvaluateSpace(permission, facts, role);
         }
 
-        // GOV-028: root Space creation and Team composition are workspace Owner/Admin
-        // capabilities by default (Owners passed the fast path above). Explicit
-        // permission rules were evaluated first.
-        if (permission.Resource?.Kind.Value == "workspaces.workspace"
-            && permission.Action is PermissionAction.ManageSpaces or PermissionAction.ManageTeams)
-        {
-            return string.Equals(role, "Admin", StringComparison.Ordinal)
-                ? AccessDecision.Allow()
-                : AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
-        }
-
+        // Workspace deletion is never decided by a Board/Page/Space level: it is
+        // Owner-only (GOV-013), checked before any resource-kind path.
         if (permission.Action == PermissionAction.DeleteWorkspace)
         {
             return AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
@@ -249,38 +234,6 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
             return ManageAwareAllow(permission, request, facts, role, access.EffectiveRank, actorId);
         }
 
-        // M8 intended policy: connecting/revoking external provider
-        // integrations is a dedicated workspace capability — not workspace
-        // settings, and not any Board/Page vocabulary. Owner and Admin hold
-        // it by default; ordinary members and guests do not. The capability
-        // applies to both addressing surfaces: the workspace (Connect) and
-        // the integration-owned resource (Disconnect). Applicable explicit
-        // permission rules still evaluate first above.
-        if (permission.Action == PermissionAction.ManageIntegrations
-            && permission.Resource?.Kind.Value
-                is "workspaces.workspace" or "integrations.calendar-integration")
-        {
-            var privileged = string.Equals(role, "Owner", StringComparison.Ordinal)
-                || string.Equals(role, "Admin", StringComparison.Ordinal);
-            return privileged
-                ? AccessDecision.Allow()
-                : AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
-        }
-
-        // M2G intended policy: page creation is a workspace usage right —
-        // the DC-FLOW-01 actor is the authenticated workspace member, not
-        // workspace management. Guests are excluded; explicit permission
-        // rules still deny-first above. Other workspace-scoped actions keep
-        // the fall-through contract.
-        if (permission.Resource?.Kind.Value == "workspaces.workspace"
-            && permission.Action == PermissionAction.CreatePage)
-        {
-            var guest = string.Equals(role, "Guest", StringComparison.Ordinal);
-            return guest
-                ? AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.")
-                : AccessDecision.Allow();
-        }
-
         // M2G intended policy: commenting on a board item is a usage right
         // decided by the target resource kind, not a mechanical copy of the
         // ManageBoard authority mapping. Board items carry no per-item
@@ -303,9 +256,18 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
             return GrantAwareAllow(request, facts, role, actorId);
         }
 
-        return permission.Action is PermissionAction.ViewWorkspace or PermissionAction.ViewBoard or PermissionAction.ViewMembers
-            ? AccessDecision.Allow()
-            : AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
+        // Workspace-role baseline (GOV-013/028, M2G, M8, WG-DEBT-002): every request not decided
+        // by a Board/Page/Space level reads its default from the typed table. Explicit permission
+        // rules were evaluated first. A level-based cell has no level to read on another resource
+        // kind and is denied, except that ViewBoard on a non-Board resource keeps its existing
+        // member-wide read.
+        return WorkspaceRoleBaseline.Decide(role, permission.Action) switch
+        {
+            BaselineDecision.Allow when WorkspaceRoleBaseline.AppliesToResourceKind(
+                permission.Action, permission.Resource?.Kind.Value) => AccessDecision.Allow(),
+            BaselineDecision.LevelBased when permission.Action == PermissionAction.ViewBoard => AccessDecision.Allow(),
+            _ => AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action."),
+        };
     }
 
     /// <summary>

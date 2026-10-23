@@ -1,4 +1,5 @@
 using Notrelix.Application.Features.Integrations.N8n.Providers;
+using Notrelix.Application.Features.Integrations.N8n.Configuration;
 using Notrelix.Application.Features.Integrations.Public.Commands;
 
 namespace Notrelix.Application.Features.Integrations.N8n.Services;
@@ -20,6 +21,17 @@ public sealed class N8nWebhookActions : IN8nWebhookActions
     public Task<N8nWebhookDispatchResult> TriggerWebhookAsync(
         string webhookPath,
         string payload,
-        CancellationToken cancellationToken) =>
-        _client.TriggerWebhookAsync(webhookPath, payload, cancellationToken);
+        CancellationToken cancellationToken)
+    {
+        // Fail closed before the provider port: a path outside the allow-list
+        // never reaches the provider adapter.
+        if (!N8nWebhookPath.IsValid(webhookPath))
+        {
+            return Task.FromResult(new N8nWebhookDispatchResult(
+                N8nWebhookOutcome.TerminalFailure,
+                "n8n webhook path rejected: it is outside the allowed form."));
+        }
+
+        return _client.TriggerWebhookAsync(webhookPath, payload, cancellationToken);
+    }
 }

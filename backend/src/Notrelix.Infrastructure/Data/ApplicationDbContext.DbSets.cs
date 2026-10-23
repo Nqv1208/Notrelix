@@ -129,6 +129,7 @@ public partial class ApplicationDbContext
     public DbSet<UserMfaMethod> UserMfaMethods => Set<UserMfaMethod>();
     public DbSet<MfaRecoveryBatch> MfaRecoveryBatches => Set<MfaRecoveryBatch>();
     public DbSet<UserLoginAttempt> UserLoginAttempts => Set<UserLoginAttempt>();
+    public DbSet<SecurityActivityEntry> SecurityActivity => Set<SecurityActivityEntry>();
     public DbSet<EmailVerificationToken> EmailVerificationTokens => Set<EmailVerificationToken>();
     public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
     public DbSet<ApiToken> ApiTokens => Set<ApiToken>();

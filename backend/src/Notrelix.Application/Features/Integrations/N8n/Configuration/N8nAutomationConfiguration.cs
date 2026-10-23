@@ -2,6 +2,10 @@ using System.Text.Json;
 
 namespace Notrelix.Application.Features.Integrations.N8n.Configuration;
 
+/// <summary>
+/// Reads the n8n webhook path from a Webhook action configuration. Only a path
+/// inside the <see cref="N8nWebhookPath"/> allow-list is returned.
+/// </summary>
 public static class N8nAutomationConfiguration
 {
     public static bool TryGetWebhookPath(string configuration, out string webhookPath)
@@ -18,13 +22,18 @@ public static class N8nAutomationConfiguration
             using var document = JsonDocument.Parse(configuration);
             var root = document.RootElement;
 
-            if (TryReadString(root, "webhookPath", out webhookPath) ||
-                TryReadString(root, "webhook_path", out webhookPath))
+            if (root.ValueKind == JsonValueKind.Object &&
+                TryReadString(root, "webhookPath", out var candidate) &&
+                N8nWebhookPath.IsValid(candidate))
             {
-                webhookPath = webhookPath.Trim().TrimStart('/');
-                return webhookPath.Length > 0;
+                webhookPath = candidate;
+                return true;
             }
 
+            // AUT-028: the stored path is not trusted even though creation
+            // validates it (rules created before the allow-list, or edited out
+            // of band, fail closed here). It is never trimmed or normalised
+            // into validity.
             return false;
         }
         catch (JsonException)

@@ -1,0 +1,157 @@
+name: Postgres Runtime Image
+
+# Builds the derived, security-patched postgres runtime image (infra/postgres/Dockerfile), proves it
+# is the official base plus a rebuilt gosu, gates it with Trivy WITHOUT any ignore file, and on trusted
+# main publishes + attests it to GHCR. The published digest is then pinned in delivery/images.lock.toml
+# ([images.postgres].ref), which keeps the runtime-image gate, the release candidate and the deployment
+# on one digest-pinned authority. This workflow never edits the lock; a reviewed commit does.
+
+on:
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - infra/postgres/Dockerfile
+      - .github/workflows/postgres-image.yml
+  push:
+    branches: [main]
+    paths:
+      - infra/postgres/Dockerfile
+      - .github/workflows/postgres-image.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: notrelix-postgres-image-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  TRIVY_SEVERITY: CRITICAL,HIGH
+  IMAGE_NAME: notrelix-postgres
+
+jobs:
+  build:
+    name: Build, prove and scan derived postgres image
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      IMAGE: notrelix-ci/postgres:${{ github.sha }}
+      TRIVY_SECRET_CONFIG: .github/security/trivy-secret.yaml
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Build derived image from the pinned Dockerfile
+        run: docker build -f infra/postgres/Dockerfile -t "$IMAGE" infra/postgres
+      - name: Prove gosu is rebuilt and the runtime contract equals the base image
+        run: |
+          set -euo pipefail
+          base="$(sed -n 's/^ARG POSTGRES_BASE=//p' infra/postgres/Dockerfile)"
+          [[ "$base" =~ ^postgres@sha256:[0-9a-f]{64}$ ]] || { echo "::error::POSTGRES_BASE is not a pinned official digest: $base"; exit 1; }
+          docker pull --quiet "$base" >/dev/null
+          gosu_version="$(docker run --rm --entrypoint gosu "$IMAGE" --version)"
+          echo "derived gosu: $gosu_version"
+          [[ "$gosu_version" =~ go1\.(2[6-9]|[3-9][0-9])\. ]] || { echo "::error::gosu is not built with Go >= 1.26"; exit 1; }
+          contract='{entrypoint:.Config.Entrypoint,cmd:.Config.Cmd,user:.Config.User,workdir:.Config.WorkingDir,ports:.Config.ExposedPorts,volumes:.Config.Volumes,stopsignal:.Config.StopSignal,env:.Config.Env}'
+          diff <(docker image inspect "$base" | jq -S ".[0]|$contract") <(docker image inspect "$IMAGE" | jq -S ".[0]|$contract")
+          # Only /usr/local/bin/gosu may differ in regular-file content between base and derived image.
+          inventory(){ docker run --rm --entrypoint sh "$1" -c 'find / -xdev -type f -print0 | xargs -0 sha256sum 2>/dev/null' | grep -v -E '  /etc/(hostname|hosts|resolv\.conf)$' | sort -k2; }
+          inventory "$base" > base.inventory
+          inventory "$IMAGE" > derived.inventory
+          [[ "$(wc -l < base.inventory)" -gt 1000 ]] || { echo "::error::file inventory is implausibly small"; exit 1; }
+          # diff exits 1 when the inventories differ, which they must (gosu); only exit 2 is an error.
+          changed="$( { diff base.inventory derived.inventory || [[ $? -eq 1 ]]; } | { grep '^[<>]' || true; } | awk '{print $3}' | sort -u)"
+          echo "files differing from base: $changed"
+          [[ "$changed" == "/usr/local/bin/gosu" ]] || { echo "::error::derived image differs from base beyond gosu"; exit 1; }
+      - name: Run Trivy vulnerability scan (no ignore file)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: notrelix-ci/postgres:${{ github.sha }}
+          severity: ${{ env.TRIVY_SEVERITY }}
+          ignore-unfixed: "true"
+          exit-code: "1"
+      - name: Export SBOM
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: notrelix-ci/postgres:${{ github.sha }}
+          format: spdx-json
+          output: postgres.sbom.spdx.json
+      - name: Upload SBOM
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: postgres-image-sbom
+          path: postgres.sbom.spdx.json
+          if-no-files-found: error
+          retention-days: 14
+      - name: Verify the database initializes and serves
+        run: |
+          set -euo pipefail
+          trap 'docker logs notrelix-ci-postgres || true; docker rm -f notrelix-ci-postgres >/dev/null 2>&1 || true' EXIT
+          docker run -d --name notrelix-ci-postgres -e POSTGRES_PASSWORD=ci -e POSTGRES_DB=notrelix "$IMAGE" >/dev/null
+          ready=false
+          for _ in $(seq 1 60); do
+            docker exec notrelix-ci-postgres pg_isready -U postgres -d notrelix >/dev/null 2>&1 && { ready=true; break; }
+            sleep 1
+          done
+          [[ "$ready" == true ]]
+          version="$(docker exec notrelix-ci-postgres psql -U postgres -d notrelix -Atc 'show server_version')"
+          echo "server_version=$version"
+          [[ "$version" == 16.15* ]]
+      - name: Save validated image for trusted publish
+        if: github.event_name != 'pull_request'
+        run: docker save -o "$GITHUB_WORKSPACE/release-image-postgres.tar" "$IMAGE"
+      - name: Upload validated image
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-image-postgres
+          path: release-image-postgres.tar
+          if-no-files-found: error
+          retention-days: 1
+
+  publish:
+    name: Trusted-main publication of the derived postgres image
+    needs: build
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    steps:
+      - name: Download validated image
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with: {name: release-image-postgres, path: images}
+      - name: Authenticate to GHCR
+        env: {GHCR_TOKEN: '${{ github.token }}'}
+        run: printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+      - name: Publish exact validated bytes
+        id: publish
+        run: |
+          set -euo pipefail
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          docker load -i images/release-image-postgres.tar
+          tag="ghcr.io/${owner}/${IMAGE_NAME}:${GITHUB_SHA}"
+          docker tag "notrelix-ci/postgres:${GITHUB_SHA}" "$tag"
+          docker push "$tag" >/dev/null
+          digest="$(docker image inspect "$tag" --format '{{range .RepoDigests}}{{println .}}{{end}}' | grep -o 'sha256:[a-f0-9]*' | head -1)"
+          [[ -n "$digest" ]]
+          printf 'subject_name=%s\n' "ghcr.io/${owner}/${IMAGE_NAME}" >> "$GITHUB_OUTPUT"
+          printf 'subject_digest=%s\n' "$digest" >> "$GITHUB_OUTPUT"
+          {
+            echo '### Derived postgres image published'
+            echo
+            echo "Pin this in delivery/images.lock.toml, section images.postgres, field ref (reviewed commit, lowercase):"
+            echo
+            echo '```'
+            echo "ghcr.io/${owner}/${IMAGE_NAME}@${digest}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Attest derived postgres image provenance
+        uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4.2.0
+        with:
+          subject-name: ${{ steps.publish.outputs.subject_name }}
+          subject-digest: ${{ steps.publish.outputs.subject_digest }}
+          push-to-registry: true
+          create-storage-record: false

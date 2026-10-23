@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { AccountScopeProvider } from "@notrelix/query";
 import { I18nProvider, type Locale } from "@notrelix/i18n";
 import { fireEvent, render, screen, waitFor } from "@notrelix/testing";
 import type { NotificationsApiClient } from "../../../core/api/notifications.service";
@@ -41,9 +42,14 @@ function mount(locale: Locale, items: Notification[], count: number) {
   });
   const wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>
-      <I18nProvider catalogs={[notificationBellCatalog]} initialLocale={locale}>
-        {children}
-      </I18nProvider>
+      <AccountScopeProvider accountId="acc-test">
+        <I18nProvider
+          catalogs={[notificationBellCatalog]}
+          initialLocale={locale}
+        >
+          {children}
+        </I18nProvider>
+      </AccountScopeProvider>
     </QueryClientProvider>
   );
   render(<NotificationBell />, { wrapper });

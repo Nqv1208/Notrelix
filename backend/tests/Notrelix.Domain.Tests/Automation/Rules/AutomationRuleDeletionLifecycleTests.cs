@@ -13,7 +13,7 @@ public class AutomationRuleDeletionLifecycleTests
     private static AutomationConfiguration CreateValidConfig()
     {
         var trigger = AutomationTriggerDefinition.Create("ItemCreated");
-        var action = AutomationActionDefinition.Create("Webhook", """{"url":"https://example.com/webhook"}""");
+        var action = AutomationActionDefinition.Create("Webhook", """{"webhookPath":"example/hook"}""");
         return AutomationConfiguration.Create(trigger, action);
     }
 

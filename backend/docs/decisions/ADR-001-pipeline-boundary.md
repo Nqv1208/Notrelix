@@ -455,6 +455,12 @@ survives as frozen invariants of the seven-behavior set.
 
 ## Notes
 
+### Terminology note (2026-10-23, WG-DEBT-015)
+
+`AuthorizationBehavior` in this record is the pre-freeze name of the authorization zone. The current behavior
+is `AccessControlBehavior` (ADR-006, ADR-007); `PermissionService`, `IPermissionService` and
+`IWorkspacePermissionService` no longer exist. The historical decision text is intentionally unchanged.
+
 ### Historical normalization note
 
 This file has been normalized to the current ADR schema while preserving the accepted historical decision.

@@ -181,9 +181,17 @@ test.describe("Kanban drag", () => {
     // One sample per animation frame, from the drop until the board is
     // settled: the lane the card itself is in and where the lifted copy is
     // while it settles (it must head for the new place, never the old one).
+    // Sampling ends once the card sits in a lane with no lifted copy left, so
+    // a slow runner cannot cut the record short in the middle of the settle.
     await page.evaluate((title) => {
-      const samples: { lane: string; copyX: number | null }[] = [];
-      (window as unknown as { __frames: typeof samples }).__frames = samples;
+      type Probe = {
+        __frames: { lane: string; copyX: number | null }[];
+        __framesDone: boolean;
+      };
+      const probe = window as unknown as Probe;
+      probe.__frames = [];
+      probe.__framesDone = false;
+      const startedAt = performance.now();
       const tick = () => {
         const where = Array.from(document.querySelectorAll("article"))
           .filter((node) => !node.closest("[data-kanban-drag-overlay]"))
@@ -193,16 +201,30 @@ test.describe("Kanban drag", () => {
         const copy = document
           .querySelector("[data-kanban-drag-overlay]")
           ?.getBoundingClientRect();
-        samples.push({
+        probe.__frames.push({
           lane: where ?? "none",
           copyX: copy ? copy.x + copy.width / 2 : null,
         });
-        if (samples.length < 90) requestAnimationFrame(tick);
+        const settled =
+          probe.__frames.length >= 30 &&
+          where !== undefined &&
+          copy === undefined;
+        if (settled || performance.now() - startedAt > 4000) {
+          probe.__framesDone = true;
+          return;
+        }
+        requestAnimationFrame(tick);
       };
       requestAnimationFrame(tick);
     }, ERP_149);
     await page.mouse.up();
-    await page.waitForTimeout(1600);
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () => (window as unknown as { __framesDone: boolean }).__framesDone,
+        ),
+      )
+      .toBe(true);
     const frames = await page.evaluate(
       () =>
         (

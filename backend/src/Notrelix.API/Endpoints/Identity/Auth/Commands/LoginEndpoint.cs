@@ -1,3 +1,4 @@
+using Notrelix.API.Contracts.Identity;
 using Notrelix.API.Extensions;
 using Notrelix.API.RateLimiting;
 using Notrelix.Application.Features.Identity.Auth.Commands.Login;
@@ -10,6 +11,8 @@ public static class LoginEndpoint
     {
         group.MapPublicPost("/login", HandleAsync)
             .WithName("Identity.Auth.Login")
+            .Produces<AuthSessionResponse>(StatusCodes.Status200OK, "application/json")
+            .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status401Unauthorized, StatusCodes.Status429TooManyRequests)
             .WithTags("Identity.Auth")
             .WithSummary("Login with email and password")
             .WithMetadata(new RateLimitPolicyAttribute("AuthStrictByIp"));
@@ -34,6 +37,6 @@ public static class LoginEndpoint
             cookieService.SetTokenCookie(auth.AccessToken, auth.RefreshToken!);
         }
 
-        return result.ToApiResult();
+        return result.ToSessionApiResult();
     }
 }

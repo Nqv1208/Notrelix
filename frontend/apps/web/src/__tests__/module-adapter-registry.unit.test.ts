@@ -2,15 +2,21 @@ import { describe, expect, it, vi } from "vitest";
 import type { RealtimeEnvelope } from "@notrelix/realtime";
 import { ModuleAdapterRegistry } from "../realtime/module-adapter-registry";
 
-function envelope(eventType: string): RealtimeEnvelope<unknown> {
+function envelope(eventType: string): RealtimeEnvelope {
   return {
     schemaVersion: 1,
     eventId: "evt-1",
     eventType,
+    changeKind: "updated",
+    subscriptionId: "workspace:ws-1",
+    streamKey: "workspace:Workspace:ws1",
+    streamVersion: 1,
+    resourceKind: "Workspace",
+    resourceId: "res-1",
+    aggregateId: "res-1",
     workspaceId: "ws-1",
     correlationId: "corr-1",
     timestamp: new Date("2026-01-01T00:00:00Z").toISOString(),
-    payload: {},
   };
 }
 

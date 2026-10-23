@@ -397,12 +397,12 @@ export interface BillingSeatInviteDialogProps {
   readonly workspaceName: string;
   readonly seats: BillingSeatSummaryDto | null;
   readonly emails: readonly string[];
-  readonly role: "member" | "admin";
+  readonly role: "member" | "guest";
   readonly sending: boolean;
   readonly error: string | null;
   readonly buyLink: BillingLink | null;
   readonly onEmails: (emails: readonly string[]) => void;
-  readonly onRole: (role: "member" | "admin") => void;
+  readonly onRole: (role: "member" | "guest") => void;
   readonly onSend: () => void;
   readonly onClose: () => void;
 }
@@ -513,13 +513,13 @@ export function BillingSeatInviteDialog(props: BillingSeatInviteDialogProps) {
               value={props.role}
               onChange={(event) =>
                 props.onRole(
-                  event.target.value === "admin" ? "admin" : "member",
+                  event.target.value === "guest" ? "guest" : "member",
                 )
               }
               className="box-border h-9 w-full rounded-[8px] border border-line-strong bg-popover px-2.5 text-nav leading-[1.45] text-foreground dark:bg-card"
             >
               <option value="member">{c.roles.member}</option>
-              <option value="admin">{c.roles.admin}</option>
+              <option value="guest">{c.roles.guest}</option>
             </select>
           </div>
           {over && seats ? (

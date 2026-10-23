@@ -292,25 +292,33 @@ current policy facts
 Current Application Security contracts include concepts such as:
 
 ```text
-IPermissionEvaluator
-IPermissionService
-IWorkspacePermissionService
-IResourceReferenceResolver
-IResourceScopeResolver
-IPermissionVersionProvider
-IAuthorizationDecisionStore
-PermissionContext
-PermissionDecision
-PermissionScope
+IAccessPolicyEvaluator
+IAccessFactsProvider
+AccessFacts
+AccessDecision
+IRequirePermission
+ResourceRef
+IResourceLocator
+IResourceVisibility
 ```
 
-These are current source evidence of centralized permission/resource evaluation.
+These are current source evidence of centralized permission/resource evaluation. The earlier
+`IPermissionService`, `IWorkspacePermissionService`, `IPermissionEvaluator`, `IAuthorizationDecisionStore`,
+`IPermissionVersionProvider`, `IResourceReferenceResolver`, `IResourceScopeResolver`, `PermissionContext`
+and `PermissionDecision` no longer exist (WG-DEBT-015); do not reintroduce them.
 
 The single canonical evaluator is `AccessPolicyEngine`, owned by the Governance Application
 module and reached from the Common pipeline only through the neutral `IAccessPolicyEvaluator`
 seam (`ADR-007`). Permission semantics (actions, role ladder, rank ceilings, resource-kind
 policy) are Governance-owned; `Application/Common` retains pipeline mechanics only
 (`AccessControlBehavior`, facts/decision/descriptor types).
+
+The workspace-role default of every `PermissionAction` is one typed table, `WorkspaceRoleBaseline`
+(`Allow` / `Deny` / `LevelBased` per Owner, Admin, Member, Guest; Account-scoped requests use
+`AccountRoleBaseline`). `AccessPolicyEngine` reads it where no Board, Page or Space level decides, so no
+action reaches a default by fall-through; an Application test classifies every `PermissionAction` and
+checks the engine against every cell. The final matrix and its guards are in
+`docs/product/governance.md` section 44.1 to 44.3 (WG-DEBT-002).
 
 Commercial gates arrive as neutral facts, not Governance policy. The subscription requirement
 reaches the evaluator as `AccessFacts.SubscriptionRequirementSatisfied`, composed by the
@@ -340,6 +348,37 @@ when product policy is resource-scoped.
 Role may be one input to the decision.
 
 Role is not the whole authorization architecture.
+
+A use case that needs more than one action on the same resource (a Workspace
+invitation naming both Team and Space entries needs `ManageTeams` and
+`ManageSpaces`) declares the extra actions with the request marker
+`IRequireAdditionalPermission` (names of the actions, no Governance types in
+Common). `AccessControlBehavior` resolves the facts and evaluates the engine once
+per action, each over its own permission rules, and allows the request only when
+every action is allowed; the handler never repeats or replaces that check.
+
+---
+
+# 12.1. Colleague contact facts (phone visibility, D15)
+
+A person's phone is an Identity fact that is private by default. The Workspace member read exposes it only
+when all of these hold: the person set `phoneVisibleToWorkspaceMembers`; the reader is an active, non-guest
+member of that Workspace (decided by the pipeline for `ViewMembers` plus the Domain predicate
+`WorkspaceMember.IsInternalParticipant`, never by an in-handler role comparison); and the person is an active,
+non-guest member of the same Workspace. The Identity-side port `IMemberPhoneLookup` answers only the opt-in
+half; the Workspaces handler owns the shared-Workspace half and must not call the port for a guest reader.
+A phone never appears in a guest, share-link, public, search, export or realtime view. Editing another
+member's Workspace job title is the Governance action `ManageMemberProfile` (workspace Owner/Admin by default).
+
+# 12.2. Automation management reads and Webhook rules
+
+Listing Automation Rules and reading a Rule's Executions are gated by `ManageWorkspaceSettings` on the
+`automation.rule` resource, not `ViewWorkspace`/`ViewBoard`: configuration (webhook path) and execution
+payload/errors are management data. A Webhook Rule reaches the n8n integration, so creating one and
+enabling any Rule also name `ManageIntegrations` through `IRequireAdditionalPermission` (pipeline-only).
+For that, the workspace-role baseline lets `ManageIntegrations` apply to the `automation.rule` resource
+kind next to `workspaces.workspace` and `integrations.calendar-integration`; it never widens to other kinds.
+Rule/executor identity (who a rule acts as) remains an open product decision.
 
 ---
 
@@ -536,7 +575,7 @@ Infrastructure RLS is defense-in-depth but does not replace Application policy.
 Avoid:
 
 ```text
-some handlers use AuthorizationBehavior
+some handlers use AccessControlBehavior
 some handlers check role manually
 some rely on RLS only
 ```
@@ -870,17 +909,12 @@ Design key/invalidation from actual visibility semantics.
 
 # 48. Permission versioning
 
-Current Application includes:
+Current Application decides authorization per request from `AccessFacts`; it keeps no authorization
+decision store and no permission-version provider (both were removed, WG-DEBT-015). Resource versions are
+read for optimistic concurrency, not for invalidating cached decisions.
 
-```text
-IPermissionVersionProvider
-IResourceVersionReader
-IAuthorizationDecisionStore
-```
-
-which can support invalidating cached decisions/results when policy/resource state changes.
-
-Do not assume current concrete version strategy is the only implementation.
+A future permission-sensitive cache must name its own invalidation owner and key dimensions (see the
+cache scope rules above); do not assume a global permission version exists.
 
 ---
 
@@ -1330,6 +1364,66 @@ Authentication/token/reset/public-share endpoints can require stronger rate/abus
 Exact policy is security/product/risk owned.
 
 Do not apply ordinary read limits blindly.
+
+Current Identity implementation (`ILoginThrottle`, Redis, `Security:LoginThrottle:*`):
+
+```text
+scope PasswordLogin: counter keyed by the SUBMITTED email (SHA-256), whether or not the account exists
+scope MfaChallenge:  counter keyed by the user bound to a valid challenge token
+scope StepUpMfa:     step-up MFA completion by a signed-in user, keyed by user id (own budget)
+scope PasswordReverification: step-up password completion AND change-password's current-password
+                     check, keyed by user id (one shared budget, so the guess allowance cannot be
+                     multiplied across the two surfaces)
+per-IP counter:      failures across every account from one client IP; a success never resets it
+attempt reservation: the account attempt is reserved atomically (Lua) BEFORE the credential is verified,
+                     so parallel guesses cannot exceed the limit; success clears the account counter
+lock:                reaching the limit sets a TTL lock; while locked the credential is not verified
+                     (even a correct password) and the answer is 429 identity.auth.too-many-attempts
+response:            identical code/message for known and unknown subjects (no enumeration oracle)
+storage:             hashed keys only, no email/IP/secret in Redis or logs; Redis failure fails closed
+```
+
+The limits and the lock duration are product values accepted on 2026-10-23 (identity product
+context); the shipped defaults are 10 failures/15 min per account, 50/15 min per IP and a 15 min lock,
+overridable per environment. A wrong-code budget of 5 per MFA challenge is separate and cumulative
+for the challenge lifetime (`MfaPolicy.ChallengeMaxAttempts`): the sixth attempt, even with the right
+code, finds the challenge removed. No response carries a remaining-attempts number.
+`ILoginThrottle.ClearSubjectAsync` removes the counter AND the lock of one subject; the password reset
+calls it for the `PasswordLogin` subject (the normalized email) only, never for the IP keys.
+Step-up completion (`complete-mfa`, `complete-password`) and the current-password check of
+change-password are covered by the scopes above and use the same limits. Admin unlock is not covered.
+A signed-in session does not make code or password guessing free: those steps reserve an attempt
+before verifying, and a locked answer is the same 429 `identity.auth.too-many-attempts`. Failures also
+count against the per-IP counter shared with sign-in.
+
+# 83A. Security audit persistence and the user security activity feed
+
+Two different records exist and must stay separate (section 85):
+
+```text
+operator security audit  audit.security_events   written by SecurityAuditMiddleware, operator-only read
+user security activity   identity.user_security_activity   Identity-owned, the user's own feed
+```
+
+Audit persistence. The middleware only knows the status code after the use case returned, when the
+request's data session has already committed, so staging an entity on the request context is never
+saved. The middleware therefore calls `ISecurityAuditSink` (Infrastructure, `SecurityAuditSink`), which
+opens its own DI scope and short transaction under an explicit, logged system (worker) context with the
+RLS worker scope of `audit.security_events`, saves and commits, and swallows (but logs) failure so
+auditing can neither fail a request nor be silent. The request's own transaction model is untouched;
+the sink writes only that table and is not a use-case port.
+
+Activity feed. Use cases record a line through `ISecurityActivityRecorder`, which only stages a
+`SecurityActivityEntry` on the request context, so the line commits or rolls back atomically with the
+state change it describes (sign-in success in `AuthSessionIssuer`, sign-in failure in the login and
+MFA-completion handlers, password change/reset, MFA enable/disable, session revoke). Sign-in failure is
+recorded only for an existing account: an unknown email leaves no row, and no email, password or other
+secret is stored. Reads go through `ISecurityActivityReader` with the current user id as the only
+filter (no user id input exists), `GET /api/v1/auth/security/activity`, keyset cursor
+(`occurredAt` desc, `id` desc). The table has user-owned RLS (`apply_user_owned_policies`: the
+owner for app access, the auth role for anonymous sign-in steps, the worker role for retention).
+`SecurityActivityRetentionService` (hosted, `Security:Activity:Retention`) deletes rows older than
+90 days in bounded `SKIP LOCKED` batches under the worker scope.
 
 ---
 

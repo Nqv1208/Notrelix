@@ -58,6 +58,27 @@ public class NewInvitationEndpointTests : IClassFixture<NotrelixApiFactory>
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
+    private const string BoardKind = "work-management.board";
+    private static readonly Guid BoardId = Guid.Parse("66666666-6666-6666-6666-666666666666");
+
+    [Fact]
+    public async Task ResendResourceInvitation_Unauthenticated_ReturnsUnauthorized()
+    {
+        var factory = new NotrelixApiFactory();
+        using var client = factory.CreateClient();
+        var response = await client.PostAsync($"/api/v1/resources/{BoardKind}/{BoardId}/invitations/{InvitationId}/resend", null);
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task RevokeResourceInvitation_Unauthenticated_ReturnsUnauthorized()
+    {
+        var factory = new NotrelixApiFactory();
+        using var client = factory.CreateClient();
+        var response = await client.DeleteAsync($"/api/v1/resources/{BoardKind}/{BoardId}/invitations/{InvitationId}");
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
     private static StringContent JsonContent(object body)
     {
         var json = JsonSerializer.Serialize(body, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });

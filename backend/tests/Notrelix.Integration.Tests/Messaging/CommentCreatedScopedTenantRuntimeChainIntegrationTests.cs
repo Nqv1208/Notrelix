@@ -658,6 +658,14 @@ internal sealed class RecordingDeduplicationStore(IMessageDeduplicationStore inn
             messageId, consumerName, messageName, messageVersion, sourceEventId, workspaceId, cancellationToken);
     }
 
+    public Task<bool> TryReclaimStaleProcessingAsync(
+        Guid messageId,
+        string consumerName,
+        DateTimeOffset staleBefore,
+        DateTimeOffset reclaimedAt,
+        CancellationToken cancellationToken) =>
+        inner.TryReclaimStaleProcessingAsync(messageId, consumerName, staleBefore, reclaimedAt, cancellationToken);
+
     public void MarkSucceeded(Guid messageId, string consumerName, DateTimeOffset processedAt) =>
         inner.MarkSucceeded(messageId, consumerName, processedAt);
 }

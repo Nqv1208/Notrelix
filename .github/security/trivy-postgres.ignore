@@ -22,6 +22,11 @@
 #   Trivy 0.70.0). The gosu waiver is unchanged in kind: same gosu (Go 1.24.6); three
 #   newer stdlib findings (CVE-2026-78667, CVE-2026-78669, CVE-2026-97031) are added
 #   under the same import-set reachability reasoning. The expiry date is NOT extended.
+# renewal-4: 2026-10-22 — explicit instruction from the repository owner to add one newer
+#   stdlib finding to this waiver (CVE-2026-111943) so the runtime-image gate stays usable
+#   until the expiry below. Same gosu (Go 1.24.6), same import-set reachability reasoning.
+#   The expiry date is NOT extended; a security-patched postgres runtime image (gosu built
+#   with Go >= 1.26.10 / 1.27.3) is the follow-up that must land before 2026-10-27.
 #
 # ============================================================================
 # Waiver block 1 of 1 — gosu / embedded Go stdlib 1.24.6 (usr/local/bin/gosu)
@@ -56,6 +61,7 @@
 # CVE-2026-78667 net/http Range header DoS - gosu imports no net/http
 # CVE-2026-78669 net/http HTTP/2 SETTINGS frames DoS - gosu imports no net/http
 # CVE-2026-97031 crypto/tls ECH outer extension DoS - gosu imports no crypto/tls
+# CVE-2026-111943 crypto/x509 man-in-the-middle certificate validation - gosu imports no crypto/x509
 #
 # Only these CVEs are suppressed. Anything else must fail the scan.
 CVE-2025-68121
@@ -83,3 +89,4 @@ CVE-2026-56862
 CVE-2026-78667
 CVE-2026-78669
 CVE-2026-97031
+CVE-2026-111943

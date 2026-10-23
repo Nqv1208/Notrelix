@@ -251,7 +251,7 @@ public sealed class RegistrationWorkspaceRuntimeChainIntegrationTests : IAsyncLi
         var dateTimeProvider = new Mock<IDateTimeProvider>();
         dateTimeProvider.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);
         var sessionIssuer = new AuthSessionIssuer(
-            jwtService.Object, context, dateTimeProvider.Object, new Mock<IClientMetadata>().Object);
+            jwtService.Object, context, dateTimeProvider.Object, new Mock<IClientMetadata>().Object, Mock.Of<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityActivityRecorder>());
 
         var provisioning = new AccountProvisioningService(
             context,

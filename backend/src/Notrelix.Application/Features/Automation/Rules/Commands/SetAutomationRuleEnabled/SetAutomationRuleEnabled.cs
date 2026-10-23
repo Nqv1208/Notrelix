@@ -3,10 +3,20 @@ using Notrelix.Application.Features.Automation.Abstractions;
 
 namespace Notrelix.Application.Features.Automation.Rules.Commands.SetAutomationRuleEnabled;
 
-public record SetAutomationRuleEnabledCommand(Guid AutomationRuleId, bool IsEnabled) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission
+public record SetAutomationRuleEnabledCommand(Guid AutomationRuleId, bool IsEnabled) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IRequireAdditionalPermission
 {
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("automation.rule"), AutomationRuleId);
     public PermissionAction Action => PermissionAction.ManageWorkspaceSettings;
+
+    /// <summary>
+    /// AUT-020: enabling makes a Rule executable, and the request cannot know the
+    /// Rule's action before the pipeline runs, so enabling also needs
+    /// ManageIntegrations (a Webhook Rule reaches the n8n integration). Disabling
+    /// stays a kill switch under ManageWorkspaceSettings alone. Pipeline
+    /// authorization only; there is no handler role check.
+    /// </summary>
+    public IReadOnlyList<string> AdditionalActionNames =>
+        IsEnabled ? [nameof(PermissionAction.ManageIntegrations)] : [];
 }
 
 public class SetAutomationRuleEnabledCommandHandler : IRequestHandler<SetAutomationRuleEnabledCommand, Result>

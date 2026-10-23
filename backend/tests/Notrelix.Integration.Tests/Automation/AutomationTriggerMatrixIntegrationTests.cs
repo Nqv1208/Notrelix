@@ -159,6 +159,56 @@ public sealed class AutomationTriggerMatrixIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task FactCausedByTheRulesOwnExecution_DoesNotRetrigger_OnRealPostgres()
+    {
+        var graph = await SeedRuleAsync("ItemCreated", "Webhook", """{"webhookPath":"loop-hook"}""");
+        var first = new AutomationTriggerContext(
+            graph.AccountId, graph.WorkspaceId, "ItemCreated",
+            Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), null, Now);
+        (await EvaluateAsync(graph, first)).Should().Be(1);
+        Guid executionId;
+        await using (var probe = _db.CreateContext(SystemTenant()))
+            executionId = (await probe.AutomationExecutions.IgnoreQueryFilters().SingleAsync(e => e.RuleId == graph.RuleId)).Id;
+
+        // The fact produced by that execution carries it as causation.
+        var caused = new AutomationTriggerContext(
+            graph.AccountId, graph.WorkspaceId, "ItemCreated",
+            Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), executionId, Now);
+
+        (await EvaluateAsync(graph, caused)).Should().Be(0, "the self-trigger loop stops");
+        (await CountExecutionsForRuleAsync(graph.RuleId)).Should().Be(1);
+    }
+
+    [Fact]
+    public async Task RuleWithRepeatedFailures_IsAutoDisabled_OnRealPostgres()
+    {
+        var graph = await SeedRuleAsync("ItemCreated", "Webhook", """{"webhookPath":"failing-hook"}""");
+        var failedAt = DateTimeOffset.UtcNow.AddMinutes(1);
+        await using (var seed = _db.CreateContext(SystemTenant()))
+        {
+            for (var i = 0; i < 5; i++)
+            {
+                var execution = AutomationExecution.Create(
+                    graph.AccountId, graph.WorkspaceId, graph.RuleId, Guid.NewGuid(), failedAt.AddSeconds(i));
+                execution.Start(failedAt.AddSeconds(i));
+                execution.Fail("n8n returned HTTP 500 (provider server error).", failedAt.AddSeconds(i));
+                seed.AutomationExecutions.Add(execution);
+            }
+            await seed.SaveChangesAsync();
+        }
+
+        var trigger = new AutomationTriggerContext(
+            graph.AccountId, graph.WorkspaceId, "ItemCreated",
+            Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), null, failedAt.AddMinutes(5));
+
+        (await EvaluateAsync(graph, trigger)).Should().Be(0, "a tripped rule starts nothing");
+        await using var verify = _db.CreateContext(SystemTenant());
+        (await verify.AutomationRules.IgnoreQueryFilters().SingleAsync(r => r.Id == graph.RuleId))
+            .Status.Should().Be(AutomationRuleStatus.Disabled);
+        (await CountExecutionsForRuleAsync(graph.RuleId)).Should().Be(5);
+    }
+
+    [Fact]
     public async Task ItemMovedTrigger_StagesMoveItemIntent()
     {
         var graph = await SeedRuleAsync(

@@ -9,12 +9,13 @@ import {
 } from "@notrelix/features-account";
 import { useAppRuntime } from "@notrelix/runtime-web";
 import {
-  accountPagesKeys,
+  useAccountPagesKeys,
   useAccountPagesApi,
   useToast,
 } from "./use-account-pages";
 
 export function AccountSecurityPage() {
+  const accountPagesKeys = useAccountPagesKeys();
   const { api: runtimeClient } = useAppRuntime();
   const copy = useAccountSecurityCopy();
   const api = useAccountPagesApi();

@@ -12,6 +12,19 @@ public sealed record WorkspaceInvitationEmailPayload(
     ProtectedSecretEnvelope ProtectedToken,
     DateTimeOffset ExpiresAt) : IEmailTemplatePayload;
 
+/// <summary>
+/// Payload of the resource-invitation template (WSP-026): the invitation names one
+/// Board or Page and the inviter, so the email says so instead of "a workspace".
+/// </summary>
+public sealed record ResourceInvitationEmailPayload(
+    Guid InvitationId,
+    int TokenGeneration,
+    ProtectedSecretEnvelope ProtectedToken,
+    DateTimeOffset ExpiresAt,
+    string ResourceKind,
+    string ResourceName,
+    string InviterName) : IEmailTemplatePayload;
+
 public sealed record EmailVerificationEmailPayload(
     Guid VerificationTokenId,
     Guid UserId,

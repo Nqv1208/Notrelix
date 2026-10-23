@@ -84,6 +84,9 @@ public class CommonSemanticNoGrowthArchitectureTests
             "Notrelix.Application.Common.Requests.Security.IRequireGrantPermission",
             "Notrelix.Application.Common.Requests.Security.IRequireRevokePermission",
             "Notrelix.Application.Common.Requests.Security.IRequirePermissionTarget",
+            // WSP-026 mixed Team+Space invitation: names the extra Governance actions a
+            // use case needs as plain strings; the pipeline evaluates each one.
+            "Notrelix.Application.Common.Requests.Security.IRequireAdditionalPermission",
         };
 
     /// <summary>

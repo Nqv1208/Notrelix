@@ -1224,6 +1224,16 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("attempt_count");
 
+                    b.Property<Guid?>("CausationExecutionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("causation_execution_id");
+
+                    b.Property<int>("ChainDepth")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("chain_depth");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -2495,6 +2505,10 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("deleted_by");
 
+                    b.Property<DateTimeOffset?>("PurgedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("purged_at");
+
                     b.Property<string>("Type")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -2522,6 +2536,10 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_attachments");
+
+                    b.HasIndex("DeletedAt")
+                        .HasDatabaseName("ix_attachments_purge_pending")
+                        .HasFilter("deleted_at IS NOT NULL AND purged_at IS NULL AND storage_key IS NOT NULL");
 
                     b.ToTable("attachments", "collab");
                 });
@@ -4154,6 +4172,17 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasDefaultValue("vi")
                         .HasColumnName("locale");
 
+                    b.Property<string>("Phone")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("phone");
+
+                    b.Property<bool>("PhoneVisibleToWorkspaceMembers")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("phone_visible_to_workspace_members");
+
                     b.Property<string>("Preferences")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -4204,6 +4233,53 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasDatabaseName("idx_user_profiles_user_id");
 
                     b.ToTable("user_profiles", "identity");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Identity.Security.SecurityActivityEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("IpAddress")
+                        .HasMaxLength(45)
+                        .HasColumnType("character varying(45)")
+                        .HasColumnName("ip_address");
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at");
+
+                    b.Property<Guid?>("SessionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("session_id");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("event_type");
+
+                    b.Property<string>("UserAgent")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("user_agent");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_user_security_activity");
+
+                    b.HasIndex("OccurredAt")
+                        .HasDatabaseName("idx_user_security_activity_occurred_at");
+
+                    b.HasIndex("UserId", "OccurredAt", "Id")
+                        .IsDescending(false, true, true)
+                        .HasDatabaseName("idx_user_security_activity_user_feed");
+
+                    b.ToTable("user_security_activity", "identity");
                 });
 
             modelBuilder.Entity("Notrelix.Domain.Identity.Security.UserLoginAttempt", b =>
@@ -7639,6 +7715,13 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasDefaultValue(1)
                         .HasColumnName("hash_version");
 
+                    b.Property<string>("InitialEntries")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("initial_entries")
+                        .HasDefaultValueSql("'[]'::jsonb");
+
                     b.Property<Guid>("InvitedBy")
                         .HasColumnType("uuid")
                         .HasColumnName("invited_by");
@@ -7689,7 +7772,10 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.HasIndex("WorkspaceId")
                         .HasDatabaseName("idx_workspace_invitations_workspace_id");
 
-                    b.ToTable("workspace_invitations", "workspace");
+                    b.ToTable("workspace_invitations", "workspace", t =>
+                        {
+                            t.HasCheckConstraint("ck_workspace_invitations_resource_grant", "(resource_kind IS NULL AND resource_id IS NULL AND resource_level IS NULL) OR (resource_kind IN ('work-management.board', 'documents.page') AND resource_id IS NOT NULL AND resource_level IN ('Viewer', 'Commenter', 'Editor') AND role = 'Guest')");
+                        });
                 });
 
             modelBuilder.Entity("Notrelix.Domain.Workspaces.Members.WorkspaceMember", b =>
@@ -7709,6 +7795,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.Property<Guid?>("CreatedBy")
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
+
+                    b.Property<string>("JobTitle")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("job_title");
 
                     b.Property<string>("Role")
                         .IsRequired()
@@ -11437,6 +11528,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                             b1.HasKey("AttachmentId");
 
+                            b1.HasIndex("StorageKey")
+                                .IsUnique()
+                                .HasDatabaseName("ux_attachments_storage_key")
+                                .HasFilter("storage_key IS NOT NULL");
+
                             b1.ToTable("attachments", "collab");
 
                             b1.WithOwner()
@@ -12866,6 +12962,39 @@ namespace Notrelix.Infrastructure.Data.Migrations
                                 .HasForeignKey("WorkspaceInvitationId")
                                 .HasConstraintName("fk_workspace_invitations_workspace_invitations_id");
                         });
+
+                    b.OwnsOne("Notrelix.Domain.Workspaces.Invitations.WorkspaceInvitationResourceGrant", "ResourceGrant", b1 =>
+                        {
+                            b1.Property<Guid>("WorkspaceInvitationId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<string>("Level")
+                                .IsRequired()
+                                .HasMaxLength(32)
+                                .HasColumnType("character varying(32)")
+                                .HasColumnName("resource_level");
+
+                            b1.Property<Guid>("ResourceId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("resource_id");
+
+                            b1.Property<string>("ResourceKind")
+                                .IsRequired()
+                                .HasMaxLength(128)
+                                .HasColumnType("character varying(128)")
+                                .HasColumnName("resource_kind");
+
+                            b1.HasKey("WorkspaceInvitationId");
+
+                            b1.ToTable("workspace_invitations", "workspace");
+
+                            b1.WithOwner()
+                                .HasForeignKey("WorkspaceInvitationId")
+                                .HasConstraintName("fk_workspace_invitations_workspace_invitations_id");
+                        });
+
+                    b.Navigation("ResourceGrant");
 
                     b.Navigation("Token")
                         .IsRequired();

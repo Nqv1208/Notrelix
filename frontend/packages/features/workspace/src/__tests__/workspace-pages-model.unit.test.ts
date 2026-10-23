@@ -10,6 +10,7 @@ import {
 import {
   createMembersService,
   parseMembers,
+  parseMyMembership,
 } from "../core/api/members.service";
 import {
   createWorkspaceService,
@@ -313,11 +314,11 @@ describe("Invitations", () => {
       },
     });
     await expect(
-      service.create("ws", { email: " a@x.io ", role: "admin" }),
+      service.create("ws", { email: " a@x.io ", role: "guest" }),
     ).resolves.toBe("inv-9");
     expect(api.post).toHaveBeenCalledWith("/workspaces/ws/members", {
       email: "a@x.io",
-      role: "Admin",
+      role: "Guest",
     });
     await service.revoke("ws", "inv-9");
     expect(api.delete).toHaveBeenCalledWith("/workspaces/ws/invitations/inv-9");
@@ -325,6 +326,22 @@ describe("Invitations", () => {
 });
 
 describe("Producer adapters", () => {
+  it("parses the caller's own membership row (members/me) and nothing else", () => {
+    const me = parseMyMembership({
+      userId: "g1",
+      name: "Gia",
+      role: "Guest",
+      status: "Active",
+    });
+    expect(me).toMatchObject({
+      userId: "g1",
+      role: "guest",
+      membership: "active",
+    });
+    expect(parseMyMembership({ userId: "g1", role: "Root" })).toBeNull();
+    expect(parseMyMembership(null)).toBeNull();
+  });
+
   it("parses members, normalizing role case and dropping invalid or removed rows", () => {
     const members = parseMembers([
       {

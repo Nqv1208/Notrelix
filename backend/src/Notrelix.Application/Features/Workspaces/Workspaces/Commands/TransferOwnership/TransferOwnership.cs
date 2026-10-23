@@ -22,9 +22,16 @@ public class TransferOwnershipCommandHandler : IRequestHandler<TransferOwnership
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IWorkspaceGrantProjectionService _grantProjection;
+    private readonly IWorkspaceOwnerUpdateLocker _locker;
 
-    public TransferOwnershipCommandHandler(IWorkspaceDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider, IWorkspaceGrantProjectionService grantProjection)
+    public TransferOwnershipCommandHandler(
+        IWorkspaceDbContext context,
+        ICurrentRequestContext requestContext,
+        IDateTimeProvider dateTimeProvider,
+        IWorkspaceGrantProjectionService grantProjection,
+        IWorkspaceOwnerUpdateLocker locker)
     {
+        _locker = locker;
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
@@ -37,6 +44,12 @@ public class TransferOwnershipCommandHandler : IRequestHandler<TransferOwnership
 
         if (currentOwnerId == request.NewOwnerId)
             throw new BusinessRuleException("Cannot transfer ownership to yourself.");
+
+        // Serialize with Suspend/Remove/UpdateMemberRole on the workspace row so a
+        // concurrent removal of the incoming owner cannot interleave with the transfer.
+        var workspace = await _locker.LockWorkspaceAsync(request.WorkspaceId, ct);
+        if (workspace is null)
+            throw new NotFoundException(nameof(Workspace), request.WorkspaceId);
 
         var currentOwner = await _context.WorkspaceMembers
             .FirstOrDefaultAsync(

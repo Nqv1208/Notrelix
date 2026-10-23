@@ -2695,7 +2695,7 @@ replace the source implementation as executable evidence.
 - **Must not own:** User profile data, invitation lifecycle, or board-level access rules.
 - **Source evidence:** `backend/src/Notrelix.Domain/Workspaces/Members/WorkspaceMember.cs`
 - **Lifecycle:** `Active` ↔ `Suspended` → `Removed`. Removal is a terminal status transition — not a soft delete. `AggregateRoot` (no `DeletedAt`).
-- **Key invariants:** Owner role can only be assigned through `PromoteToOwner` (not `ChangeRole`); last active owner cannot be suspended or removed (`WorkspaceOwnerRules.EnsureCanSuspendOwner/RemoveOwner`).
+- **Key invariants:** Owner role can only be assigned through `PromoteToOwner` (not `ChangeRole`); last active owner cannot be suspended or removed (`WorkspaceOwnerRules.EnsureCanSuspendOwner/RemoveOwner`); a non-Owner actor adds only Member or Guest (`WorkspaceMemberRules.EnsureActorCanAssignRole`, rule `Workspaces_Member_ActorCannotAssignRole`) and removes, suspends or activates only Member or Guest targets (`WorkspaceMemberRules.EnsureActorCanActOnMember`, rule `Workspaces_Member_ActorCannotActOnMember`); Application supplies the actor and target roles as explicit facts.
 - **Boundary status:** reviewed.
 
 ## Aggregate: WorkspaceInvitation
@@ -2704,11 +2704,11 @@ replace the source implementation as executable evidence.
 - **Aggregate root:** `WorkspaceInvitation` (`Notrelix.Domain.Workspaces.Invitations`)
 - **Base class:** `AggregateRoot`, `IWorkspaceScoped`
 - **Scope:** Workspace-scoped. Represents one invitation to one email address for one Workspace.
-- **Owns:** Invitation lifecycle: token, expiry, role intent, and status transitions.
-- **Must not own:** User creation, membership creation, or permission grants (all Application concerns on `Accept`).
+- **Owns:** Invitation lifecycle: token, expiry, role intent, and status transitions; the optional initial Team/Space entries it names (`InitialEntries`, at most 20, Member or Guest invitations only, no Team lead or Space admin for a Guest); and, for a resource invitation, the single `ResourceGrant` (Board or Page, level Viewer/Commenter/Editor) that WSP-026 / GOV-030 apply on acceptance.
+- **Must not own:** User creation, membership creation, or permission grants (all Application concerns on `Accept`: the entries and the resource entry are applied by AcceptInvitation in the request transaction; the resource entry is created by Governance through `IGuestResourceAccessActions`).
 - **Source evidence:** `backend/src/Notrelix.Domain/Workspaces/Invitations/WorkspaceInvitation.cs`
 - **Lifecycle:** `Pending` → `Accepted` / `Declined` / `Expired` / `Revoked`. All terminal. `Resend` re-opens `Expired` or `Pending` to `Pending` with a new token. `AggregateRoot` (no `DeletedAt`).
-- **Key invariants:** Cannot invite as `Owner` role; expiry must be positive; `TokenGeneration` increments monotonically on resend; expiry is enforced at `Accept` call time, not by background job alone.
+- **Key invariants:** Cannot invite as `Owner` role; cannot create or change an invitation to `Admin` (rule `Workspaces_Invitation_CannotInviteAsAdmin`; an Admin invitation stored before the rule stays acceptable); expiry must be positive; `TokenGeneration` increments monotonically on resend; expiry is enforced at `Accept` call time, not by background job alone. A resource invitation is always role `Guest`, carries no Team/Space entries, can never change role away from `Guest`, and a level above Editor is rejected when it is created (never stored with no effect). Persistence: `initial_entries` jsonb and `resource_kind/resource_id/resource_level` columns with a check constraint mirroring the cap.
 - **Boundary status:** reviewed.
 
 ## Aggregate: Board

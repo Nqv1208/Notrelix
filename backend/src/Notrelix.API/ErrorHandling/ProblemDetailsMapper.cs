@@ -26,6 +26,48 @@ public static class ProblemDetailsMapper
                 "One or more validation errors occurred.",
                 (IReadOnlyDictionary<string, string[]>)ex.Errors
             ),
+            Notrelix.Application.Common.Exceptions.PayloadTooLargeException => (
+                StatusCodes.Status413PayloadTooLarge,
+                ErrorCodes.AttachmentPayloadTooLarge,
+                "Payload too large",
+                exception.Message,
+                null
+            ),
+            Microsoft.AspNetCore.Http.BadHttpRequestException { StatusCode: StatusCodes.Status413PayloadTooLarge } => (
+                StatusCodes.Status413PayloadTooLarge,
+                ErrorCodes.AttachmentPayloadTooLarge,
+                "Payload too large",
+                "The request body exceeds the maximum allowed size.",
+                null
+            ),
+            Microsoft.AspNetCore.Http.BadHttpRequestException or System.IO.InvalidDataException => (
+                StatusCodes.Status400BadRequest,
+                ErrorCodes.ValidationFailed,
+                "Validation failed",
+                "The request body is malformed or was interrupted.",
+                null
+            ),
+            Notrelix.Application.Common.Exceptions.UnsupportedMediaTypeException => (
+                StatusCodes.Status415UnsupportedMediaType,
+                ErrorCodes.AttachmentUnsupportedMediaType,
+                "Unsupported media type",
+                exception.Message,
+                null
+            ),
+            Notrelix.Domain.Common.Exceptions.BusinessRuleException { RuleCode: Notrelix.Domain.Collaboration.CollaborationRuleCodes.Collaboration_Attachment_MaxAttachmentsExceeded } ex => (
+                StatusCodes.Status409Conflict,
+                ErrorCodes.AttachmentLimitExceeded,
+                "Attachment limit reached",
+                ex.Message,
+                null
+            ),
+            Notrelix.Domain.Common.Exceptions.BusinessRuleException { RuleCode: Notrelix.Domain.Collaboration.CollaborationRuleCodes.Collaboration_Attachment_FileSizeExceeded } ex => (
+                StatusCodes.Status413PayloadTooLarge,
+                ErrorCodes.AttachmentPayloadTooLarge,
+                "Payload too large",
+                ex.Message,
+                null
+            ),
             AppBusinessRuleException ex => (
                 StatusCodes.Status400BadRequest,
                 ErrorCodes.BusinessRuleViolation,

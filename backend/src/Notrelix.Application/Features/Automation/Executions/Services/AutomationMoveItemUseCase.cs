@@ -21,13 +21,16 @@ public sealed class AutomationMoveItemUseCase
     private readonly IWorkActionPort _workActions;
     private readonly IDateTimeProvider _clock;
     private readonly IOrderingConflictClassifier _orderingConflicts;
+    private readonly ICorrelationContext? _correlation;
 
     public AutomationMoveItemUseCase(
         IAutomationDbContext context,
         IWorkActionPort workActions,
         IDateTimeProvider clock,
-        IOrderingConflictClassifier orderingConflicts)
+        IOrderingConflictClassifier orderingConflicts,
+        ICorrelationContext? correlation = null)
     {
+        _correlation = correlation;
         _context = context;
         _workActions = workActions;
         _clock = clock;
@@ -86,6 +89,12 @@ public sealed class AutomationMoveItemUseCase
 
         execution.Start(_clock.UtcNow);
         await _context.SaveChangesAsync(cancellationToken);
+
+        // AUT-022: every fact the target action commits carries this execution as
+        // its causation, so the rule evaluator can recognise Automation-caused
+        // facts and bound chains/self-triggers. The context is scoped to this
+        // delivery.
+        _correlation?.Set(message.CorrelationId, execution.Id);
 
         try
         {

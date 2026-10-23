@@ -14,7 +14,7 @@ export class ModuleAdapterRegistry {
   }
 
   public async dispatch(
-    envelope: RealtimeEnvelope<unknown>,
+    envelope: RealtimeEnvelope,
     context: ModuleRealtimeContext,
   ): Promise<{ handled: boolean; adapterIds: readonly string[] }> {
     const supportingAdapters = this.adapters.filter((a) =>

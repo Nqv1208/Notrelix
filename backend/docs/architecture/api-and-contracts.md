@@ -285,6 +285,52 @@ claims/context
 
 It does not establish resource authorization by itself.
 
+Identity browser contract (D10):
+
+```text
+session tokens exist only as httpOnly cookies (AuthSessionResponse never carries accessToken/refreshToken)
+credential steps answer AuthSessionResponse (mfaRequired / mfaChallengeToken when a second factor is pending)
+every Identity operation declares typed success and application/problem+json responses (no System.Void)
+Identity errors surface their dotted code (identity.auth.invalid-credentials, identity.mfa.invalid-code, ...) as problem errorCode
+a throttled credential step answers 429 identity.auth.too-many-attempts with Retry-After and retryAfterSeconds
+```
+
+`IdentityOpenApiShapeTests` asserts this on the checked-in contract. Other contexts keep the generic
+category `errorCode` until they adopt their own dotted codes.
+
+Workspace member profile (D15; workspace-scoped, expected-version guarded on the WorkspaceMember aggregate):
+
+```text
+GET /api/v1/workspaces/{workspaceId}/members                       Workspaces.Members.ListMembers          -> WorkspaceMemberDto[] (+ jobTitle?, version, phone?)
+PUT /api/v1/workspaces/{workspaceId}/members/me/job-title          Workspaces.Members.UpdateMyJobTitle     -> { userId, jobTitle?, version }; body { jobTitle?, expectedVersion }
+PUT /api/v1/workspaces/{workspaceId}/members/{userId}/job-title    Workspaces.Members.UpdateMemberJobTitle -> same; Owner/Admin only (ManageMemberProfile)
+```
+
+A stale `expectedVersion` answers 412 `common.precondition-failed`; an unchanged title is a no-op that keeps
+the version; a blank title clears it. The Team member list also carries `jobTitle`.
+
+Identity account surface (user-scoped: `IGlobalRequest` + `IAuthenticatedRequest`, the subject is always the principal):
+
+```text
+GET   /api/v1/profile/preferences       Identity.Profile.GetPreferences    -> { locale, timezone, theme, version, phone?, phoneVisibleToWorkspaceMembers }
+PATCH /api/v1/profile/preferences       Identity.Profile.UpdatePreferences -> same; body { expectedVersion (required), locale?, timezone?, theme?, phone?, phoneVisibleToWorkspaceMembers? }
+GET   /api/v1/auth/security/summary     Identity.Security.GetSummary       -> { serverTime, hasPasswordCredential, passwordChangedAt?, mfa, activeSessionCount, linkedProviders[] }
+```
+
+Preferences concurrency: `version` is the profile aggregate version (0 = never saved, values are the
+defaults, a read creates no row). The update is partial and atomic (all supplied values valid or none
+applied), `expectedVersion` must equal the stored version (0 for the first save) or the answer is 412
+`identity.preferences.version-conflict`; the version concurrency token closes a lost race at the database.
+The pipeline's `IExpectedVersionRequest` is Resource/Workspace-scoped only, so this user-scoped request
+compares the version in its handler; a no-op update does not advance the version. `phone` is E.164 (`+` and
+8 to 15 digits, separators stripped, blank clears; see `docs/product/identity.md` section 7) and is returned
+to its owner only: other people receive it solely through the Workspace member list under the visibility rule
+in `security-tenancy-authorization.md`. The summary and
+the session list carry no secret, hash, token or provider subject id. Sessions and devices stay on
+`Identity.Sessions.*`; a client derives device label and kind from `userAgent` and does not get a place
+(no geolocation exists). Browser requests authenticate with the `Cookie` OpenAPI scheme (`accessToken`
+httpOnly cookie) or `Bearer`; every protected operation lists both as alternatives.
+
 ---
 
 # 12. BE-API-005 — Authentication precedes protected Application request
@@ -418,6 +464,12 @@ CsrfValidationMiddleware
 
 with Infrastructure token/protection mechanics according to the ADR.
 
+Enforcement is fail-safe: `Security:Csrf:Enabled` defaults to `true` (base configuration and
+`CsrfOptions`), is turned off only by the Development/Testing appsettings, and startup validation
+rejects disablement in every other environment. The realtime WebSocket handshake is a safe-verb
+upgrade that cannot carry `X-CSRF-Token`; when a gateway exists it must authenticate the
+connection and allow-list the `Origin` (it is not covered by this middleware).
+
 ---
 
 # 22. BE-API-010 — CSRF is a host boundary separate from Application authorization
@@ -522,6 +574,15 @@ Changes belong to API/security architecture and tests.
 Current API includes `SecurityAuditMiddleware`.
 
 Host audit can record security-relevant transport/auth events.
+
+Sensitive-route matching uses the real versioned route (`/api/v{n}/auth/...`, see
+`SecuritySensitiveRoutes`); `SecurityAuditMiddlewareTests` pins it to the checked-in contract so the
+list cannot drift from the routes again. A 401 on a sign-in route is a `LoginFailed` event; a 401 on a
+credential change by a signed-in user is a plain unauthorized access. The event is persisted through
+`ISecurityAuditSink`, an independent short transaction under the system (worker) RLS scope: the status
+code is only known after the endpoint's data session committed, so staging on the request context would
+never be saved (see `security-tenancy-authorization.md` section 83A). The user-visible security activity
+feed is a different record, written by use cases (`GET /api/v1/auth/security/activity`).
 
 It does not automatically replace Governance/business audit or Activity history.
 
@@ -2341,3 +2402,24 @@ global CSRF bypass
 tenant rate limit before tenant context
 hand-edited generated consumer
 ```
+
+---
+
+# 24A. Attachment file upload and download contract
+
+Owner: Collaboration (attachment fact). Transport only in API; behavior in `UploadBoardItemAttachmentCommand` / `GetBoardItemAttachmentContentQuery`.
+
+```text
+POST /api/v1/board-items/{boardItemId}/attachments/files
+  multipart/form-data, part "file" (filename required); Idempotency-Key required; X-CSRF-Token as for every unsafe call
+  201 AttachmentDto (Kind = "File", Url empty)  + Location of the content route
+  400 malformed multipart / missing file part / empty file
+  404 item unknown or not visible (existence is not leaked)   403 visible but not editable
+  409 attachment.limit_exceeded   413 attachment.payload_too_large   415 attachment.unsupported_media_type
+GET  /api/v1/board-items/{boardItemId}/attachments/{attachmentId}/content
+  200 stream; Content-Type = server-derived; X-Content-Type-Options: nosniff; Cache-Control: private, no-store
+  Content-Disposition: inline only for sniffed png/jpeg/gif/webp, attachment otherwise
+  404 unknown, not on this item, link attachment, or not visible
+```
+
+Rules: the body is streamed (no buffering, no temp file beyond provider write); the part Content-Type is ignored; the stored name is sanitised; the storage key is server-generated `{accountId}/{workspaceId}/attachments/{objectId}`; authorization equals link registration (UpdateItem) and attachment list (ViewBoard) on the board item. The existing JSON `POST .../attachments` (link) keeps its shape; links count toward the same per-item cap as files, so it can also return 409 `attachment.limit_exceeded`, decided atomically with file uploads under the commit-point lock. `AttachmentDto` gains `Kind` ("File" or "Link"); for files `Url` is empty and the content operation is the download address. Idempotent replay returns the stored result without re-running the handler, so no second object or row; the fingerprint excludes the byte stream (same key with different bytes replays the first result).

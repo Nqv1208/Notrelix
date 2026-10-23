@@ -1233,6 +1233,27 @@ define pending/final/orphan semantics.
 
 Do not report final success if the durable object or metadata did not complete according to the contract.
 
+## Attachment upload (slice 1) pending/final/orphan semantics
+
+The object is written inside the request before the metadata row is saved; no pending row exists. The handler registers a compensation (`IRequestRollbackCompensations`) before the write. `EfRequestDataSession` runs it when the request fails before the commit starts (stream error, size cap, Domain rejection, cap exceeded at the commit point, SaveChanges failure, client abort), so no row and no object remain. If the commit itself fails the outcome is unknown and the object is deliberately left (an object without a row is unreachable because downloads require the row; the reverse is not acceptable). The orphan reaper below reconciles those objects. The storage port is key-centric (`IStorageService`: write, open, delete, list); a presigned flow is an additional capability, not a replacement.
+
+### Per-item cap at the commit point
+
+The early count before streaming is advisory (fail fast). The authoritative check runs after the bytes are stored and right before the row is added: the handler takes `IAttachmentTargetLock` (PostgreSQL `pg_advisory_xact_lock` over a SHA-256 hash of the board item resource, same pattern as `PostgresWorkOrderingScopeLock`), recounts the item's non-deleted attachments and lets the Domain factory reject when the cap is reached. The lock lives inside the request transaction, is released at its commit or rollback, and is never taken before or during the body stream, so a minutes-long upload does not serialise or block other writers of the item. Link creation takes the same lock and recounts, so links and files share one cap atomically. A rejected upload is compensated like any other pre-commit failure (409 `attachment.limit_exceeded`, object deleted, no row).
+
+### Retention, purge and orphan reconciliation
+
+`AttachmentObjectReaperService` (Infrastructure hosted service, options `Collaboration:Attachments:Retention`, see `operations/configuration-and-runtime.md`) runs two idempotent steps per pass under the explicit system (worker) tenant context with the RLS worker scope (`SystemContextScope` + `IRlsSessionContext`; no RLS bypass, it only reads and updates `collab.attachments`):
+
+1. Purge: stored-file rows soft-deleted strictly longer than `DeletedFileRetention` (default 30 days) and not yet purged are claimed with `FOR UPDATE SKIP LOCKED`; per row the object is deleted first, then `purged_at` is set in the claim transaction. A crash between the two repeats an idempotent delete. A purged attachment cannot be restored (`Attachment.Restore` is rejected). A failure on one object is logged and does not stop the batch; the row is retried by the next pass.
+2. Orphan sweep: attachment objects (`{account}/{workspace}/attachments/{object}`) older than `OrphanGracePeriod` (default 24 h, by the provider's last-modified time, never by request state, and longer than the longest upload so an in-flight upload is never reaped) that no non-purged row references are deleted. One instance sweeps at a time (transaction-scoped try-advisory lock).
+
+The additive column `collab.attachments.purged_at` (migration `AddAttachmentObjectPurge`, nullable, plus the partial index `ix_attachments_purge_pending`) is covered by the existing table RLS policies; no policy change was needed.
+
+Storage usage: soft-deleted rows keep their object (and therefore count toward storage usage) until purged; a future Billing quota must count non-purged stored files, deleted ones included, until `purged_at` is set. No quota is implemented.
+
+Not covered: the reaper does not cascade-delete attachments of a deleted board item or workspace; it only handles rows that are soft-deleted for any reason.
+
 ---
 
 # 77. Search

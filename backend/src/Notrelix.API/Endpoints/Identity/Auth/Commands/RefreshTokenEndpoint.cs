@@ -1,3 +1,4 @@
+using Notrelix.API.Contracts.Identity;
 using Notrelix.API.Extensions;
 using Notrelix.API.RateLimiting;
 using Notrelix.Application.Features.Identity.Auth.Commands.RefreshToken;
@@ -10,6 +11,8 @@ public static class RefreshTokenEndpoint
     {
         group.MapPublicPost("/refresh", HandleAsync)
             .WithName("Identity.Auth.RefreshToken")
+            .Produces<AuthSessionResponse>(StatusCodes.Status200OK, "application/json")
+            .ProducesProblems(StatusCodes.Status401Unauthorized, StatusCodes.Status429TooManyRequests)
             .WithTags("Identity.Auth")
             .WithSummary("Refresh the access token")
             .WithMetadata(new RateLimitPolicyAttribute("AuthStrictByIp"));
@@ -34,6 +37,6 @@ public static class RefreshTokenEndpoint
             cookieService.SetTokenCookie(result.Data.AccessToken, result.Data.RefreshToken);
         }
 
-        return result.ToApiResult();
+        return result.ToSessionApiResult();
     }
 }

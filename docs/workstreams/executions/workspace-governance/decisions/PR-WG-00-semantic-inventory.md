@@ -9,6 +9,12 @@ Solution: backend/backend.slnx
 Migration head: 20260702093805_SchemaBaseline
 ```
 
+> Terminology note (2026-10-23, WG-DEBT-015 / WG-DEBT-CERT-001): this record is a historical snapshot at the
+> baseline above. `AuthorizationBehavior`, `PermissionService`, `IPermissionService`,
+> `IWorkspacePermissionService` and the decision store it names no longer exist. The current authority is
+> `AccessControlBehavior` over `IAccessPolicyEvaluator`, implemented by the Governance-owned
+> `AccessPolicyEngine` (ADR-006, ADR-007). Read the older names below as history, not as current architecture.
+
 This record implements PLAN Phases 0-2. It records source facts and semantic
 classification only. It does not certify P2 and does not authorize a schema or
 public-contract change.

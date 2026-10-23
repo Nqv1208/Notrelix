@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Identity.Abstractions;
+using Notrelix.Application.Features.Identity.Auth.Throttling;
 using Notrelix.Application.Features.Identity.Mfa;
 using Notrelix.Application.Features.Identity.Mfa.Abstractions;
 using Notrelix.Application.Features.Identity.Mfa.DTOs;
@@ -24,6 +25,7 @@ public sealed class SecurityStepUpService : ISecurityStepUpService
     private readonly IMfaCodeVerifier _codeVerifier;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly ILoginThrottle _throttle;
 
     private const string DummyPasswordHash = "$2b$12$l21rZMRnrPl/Lfm2kVzYOuxlKgQzbwMzEvK7cOBZI40eJ42/FIuh2";
 
@@ -33,7 +35,8 @@ public sealed class SecurityStepUpService : ISecurityStepUpService
         IStepUpProofStore proofStore,
         IMfaCodeVerifier codeVerifier,
         IPasswordHasher passwordHasher,
-        IDateTimeProvider dateTimeProvider)
+        IDateTimeProvider dateTimeProvider,
+        ILoginThrottle throttle)
     {
         _context = context;
         _challengeStore = challengeStore;
@@ -41,6 +44,7 @@ public sealed class SecurityStepUpService : ISecurityStepUpService
         _codeVerifier = codeVerifier;
         _passwordHasher = passwordHasher;
         _dateTimeProvider = dateTimeProvider;
+        _throttle = throttle;
     }
 
     public async Task<Result<StepUpRequirementResult>> GetRequirementAsync(
@@ -76,11 +80,21 @@ public sealed class SecurityStepUpService : ISecurityStepUpService
     public async Task<Result<StepUpProofResult>> CompleteMfaAsync(
         Guid userId, Guid sessionId, StepUpPurpose purpose, string challengeToken, string code, CancellationToken ct)
     {
+        // A signed-in session does not make code guessing free: reserve an attempt for the
+        // user (atomic, so parallel guesses cannot overshoot) before any code is checked.
+        var subject = userId.ToString("N");
+        var gate = await _throttle.BeginAttemptAsync(LoginThrottleScope.StepUpMfa, subject, ct);
+        if (gate.IsLocked)
+        {
+            return Result<StepUpProofResult>.Failure(LoginThrottleErrors.TooManyAttempts(gate.RetryAfter));
+        }
+
         var now = _dateTimeProvider.UtcNow;
 
         var challenge = await _challengeStore.PeekAsync(challengeToken, ct);
         if (challenge is null || challenge.ExpiresAt < now || !Matches(challenge, userId, sessionId, purpose))
         {
+            await _throttle.RecordFailureAsync(LoginThrottleScope.StepUpMfa, subject, ct);
             return InvalidProofResult();
         }
 
@@ -89,12 +103,14 @@ public sealed class SecurityStepUpService : ISecurityStepUpService
 
         if (attempt.Exceeded)
         {
+            await _throttle.RecordFailureAsync(LoginThrottleScope.StepUpMfa, subject, ct);
             return InvalidProofResult();
         }
 
         var verified = await _codeVerifier.VerifyAsync(userId, code, now, ct);
         if (!verified)
         {
+            await _throttle.RecordFailureAsync(LoginThrottleScope.StepUpMfa, subject, ct);
             return Result<StepUpProofResult>.Failure(new ApplicationError(
                 "identity.security.step-up-invalid-code",
                 "Invalid step-up verification code.",
@@ -107,15 +123,24 @@ public sealed class SecurityStepUpService : ISecurityStepUpService
             || consumed.ExpiresAt < now
             || !Matches(consumed, userId, sessionId, purpose))
         {
+            await _throttle.RecordFailureAsync(LoginThrottleScope.StepUpMfa, subject, ct);
             return InvalidProofResult();
         }
 
+        await _throttle.RecordSuccessAsync(LoginThrottleScope.StepUpMfa, subject, ct);
         return await IssueProofAsync(userId, sessionId, purpose, now, ct);
     }
 
     public async Task<Result<StepUpProofResult>> CompletePasswordAsync(
         Guid userId, Guid sessionId, StepUpPurpose purpose, string password, CancellationToken ct)
     {
+        var subject = userId.ToString("N");
+        var gate = await _throttle.BeginAttemptAsync(LoginThrottleScope.PasswordReverification, subject, ct);
+        if (gate.IsLocked)
+        {
+            return Result<StepUpProofResult>.Failure(LoginThrottleErrors.TooManyAttempts(gate.RetryAfter));
+        }
+
         var user = await _context.Users
             .FirstOrDefaultAsync(u => u.Id == userId, ct);
 
@@ -127,12 +152,14 @@ public sealed class SecurityStepUpService : ISecurityStepUpService
         var passwordValid = _passwordHasher.VerifyPassword(password, user.PasswordHash ?? DummyPasswordHash);
         if (!passwordValid)
         {
+            await _throttle.RecordFailureAsync(LoginThrottleScope.PasswordReverification, subject, ct);
             return Result<StepUpProofResult>.Failure(new ApplicationError(
                 "identity.security.step-up-invalid-password",
                 "Invalid step-up password.",
                 ApplicationErrorType.Validation));
         }
 
+        await _throttle.RecordSuccessAsync(LoginThrottleScope.PasswordReverification, subject, ct);
         return await IssueProofAsync(userId, sessionId, purpose, _dateTimeProvider.UtcNow, ct);
     }
 

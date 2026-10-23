@@ -163,6 +163,15 @@ A Workspace Member represents the relationship between a stable Identity and one
 
 It owns Workspace participation lifecycle.
 
+A Workspace Member also carries a small member profile that belongs to the Workspace, not to the person's
+account: the **job title** (D15, accepted 2026-10-23). It is optional text of at most 100 characters,
+trimmed with inner whitespace collapsed, without control characters or line breaks; a blank value clears it.
+The member may set their own title, and workspace Owner and Admin may set any member's title in that
+Workspace (Governance action `ManageMemberProfile`, default Owner/Admin). It carries the member's version for
+optimistic concurrency, an unchanged title is a no-op, a removed member's profile is not editable, and the
+title is never visible outside the Workspace. It does not change role, status or any permission. The member
+list and the Team member list expose it.
+
 # 12. WSP-005 — Workspace membership is a security boundary
 
 A principal must not read/write a Workspace-scoped resource merely because:
@@ -261,6 +270,34 @@ Suspension can temporarily block Workspace participation while retaining the rel
 Guest/external membership may have constrained Workspace/resource access.
 
 Do not infer guest semantics only from email domain.
+
+# 22.1. WSP-026 — Outsiders join through an invitation, never through a grant to a raw email
+
+Decided 2026-10-12 (UI mockup review). A person who is not yet a Workspace member can be brought in only this way:
+
+```text
+Workspace Owner/Admin
+  → Workspace invitation, role member or guest; it may name initial Teams and Space
+    entries, applied atomically when the invitation is accepted
+Principal with ManageBoardPermission / ManagePagePermission on a resource
+  → resource invitation by email; accepting it creates (or reuses) a guest Workspace
+    membership plus the explicit resource entry on that one resource, capped by GOV-030
+```
+
+- a resource invitation never creates a `member` membership and never adds Space or Team entries;
+- Space member management adds only active Workspace members and Teams (WSP-024); it cannot invite an outsider, and the UI offers a request to a workspace admin or a guest invitation on a specific Board instead;
+- until accepted, an invitation grants nothing (WSP-006) and is shown as pending with resend/revoke actions to whoever issued it;
+- the stored subject of the resulting grant is the guest's User identity, so Governance keeps evaluating only User and Team subjects (GOV §16); an `ExternalEmail` subject is never created by this flow;
+- guest or member is a fact of the membership, never inferred from the email domain (§22).
+- the resource invitation is `POST /api/v1/resources/{resourceType}/{resourceId}/invitations` (Board or Page only); it is authorized as `ManageBoardPermission` / `ManagePagePermission` on the resource and the requested level may not exceed the inviter's own level; a level above Editor is rejected when the invitation is created;
+- naming initial Team or Space entries on a Workspace invitation is authorized as `ManageTeams` (Team entries) and `ManageSpaces` (Space entries), which are Workspace Owner/Admin by default (GOV-028); an invitation naming both kinds needs both actions, so a custom rule granting only one of them does not authorize it; a Guest invitation cannot name a Team lead or a Space admin entry;
+- issuing an invitation, adding a member directly, and removing, suspending or activating a member are Workspace Owner and Admin actions (decided 2026-10-23); an Admin adds only a member or guest and acts only on member and guest targets, never on an Owner or another Admin (rule codes `Workspaces_Member_ActorCannotAssignRole`, `Workspaces_Member_ActorCannotActOnMember`; matrix in `governance.md` section 44.1);
+- a Workspace invitation offers `member` or `guest` only (decided 2026-10-23): `admin` is granted by changing the role of an existing member after they join, never by an invitation. Creating an invitation or changing a pending invitation's role to `admin` is rejected with rule code `Workspaces_Invitation_CannotInviteAsAdmin`. An Admin invitation issued before this rule stays as stored: it can still be accepted, resent or revoked, and its role can be lowered to member or guest, but never kept or raised to admin through a role change; no data migration is needed;
+- the issuer of a resource invitation may resend and revoke their own: `POST /api/v1/resources/{resourceType}/{resourceId}/invitations/{invitationId}/resend` and `DELETE /api/v1/resources/{resourceType}/{resourceId}/invitations/{invitationId}`. They are authorized as `ManageBoardPermission` / `ManagePagePermission` on the resource, so an issuer who lost that permission is denied, and they act only on an invitation they issued for that exact resource (another member's invitation, or one for another resource, is not found). A Workspace Owner/Admin resends or revokes any invitation through the workspace endpoints. A resend replaces the token (the old link stops working) and a revoked invitation can no longer be accepted or resent;
+- a resource invitation is delivered with its own email template (`resource-invitation`) that names the Board or Page and the inviter instead of "a workspace"; the delivery event carries the resource fields additively (`ResourceKind`, `ResourceId`, `ResourceName`, `InviterName`), absent for a Workspace invitation, so the workspace template and existing consumers are unchanged;
+- acceptance applies the membership, the entries and the resource entry in one transaction; if a named Team or Space is no longer active, or the resource is gone, acceptance fails closed and changes nothing, and the issuer must invite again; accepting reuses an existing membership and an existing entry (an entry is raised to the invited level, never lowered); a removed or suspended member cannot accept an invitation that carries entries or a resource entry.
+
+---
 
 # 23. Workspace invitation
 

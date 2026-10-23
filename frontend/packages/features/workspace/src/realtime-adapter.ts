@@ -20,7 +20,9 @@ export const workspaceRealtimeAdapter = {
     context: ModuleRealtimeContextLike,
   ): Promise<void> {
     if (envelope.workspaceId === context.workspaceId) {
-      await context.invalidateQueries([["workspaces", context.workspaceId]]);
+      // Frames carry no payload: revalidate the Workspace-scoped queries
+      // (root of `workspaceQueryKey(workspaceId, ...)`) instead of patching.
+      await context.invalidateQueries([["workspace", context.workspaceId]]);
     }
   },
 };

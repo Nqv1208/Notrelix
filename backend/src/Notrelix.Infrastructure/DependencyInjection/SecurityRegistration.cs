@@ -18,6 +18,9 @@ public static class SecurityRegistration
         services.AddSingleton<ISecretEncryptor, SecretEncryptor>();
         services.AddScoped<IOneTimeTokenService, OneTimeTokenService>();
         services.AddScoped<IStepUpProofStore, StepUpProofStore>();
+        services.AddScoped<SecurityActivityStore>();
+        services.AddScoped<ISecurityActivityRecorder>(sp => sp.GetRequiredService<SecurityActivityStore>());
+        services.AddScoped<ISecurityActivityReader>(sp => sp.GetRequiredService<SecurityActivityStore>());
 
         return services;
     }

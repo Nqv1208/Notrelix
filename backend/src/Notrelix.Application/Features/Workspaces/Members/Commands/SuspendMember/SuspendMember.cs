@@ -1,6 +1,7 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Application.Features.Workspaces.Members.Services;
+using Notrelix.Domain.Workspaces.Rules;
 
 namespace Notrelix.Application.Features.Workspaces.Members.Commands.SuspendMember;
 
@@ -42,6 +43,10 @@ public class SuspendMemberCommandHandler : IRequestHandler<SuspendMemberCommand,
 
         if (member is null)
             throw new NotFoundException("WorkspaceMember", request.UserId);
+
+        var actorRole = await WorkspaceActorRoleLookup.GetActiveActorRoleAsync(
+            _context, request.WorkspaceId, _requestContext.UserId, ct);
+        WorkspaceMemberRules.EnsureActorCanActOnMember(actorRole, member.Role);
 
         var activeOwnerCount = await _context.WorkspaceMembers
             .CountAsync(m => m.WorkspaceId == request.WorkspaceId && m.Role == WorkspaceRole.Owner && m.Status == WorkspaceMemberStatus.Active, ct);

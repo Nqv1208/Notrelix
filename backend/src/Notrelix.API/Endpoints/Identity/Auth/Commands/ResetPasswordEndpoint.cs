@@ -10,6 +10,8 @@ public static class ResetPasswordEndpoint
     {
         group.MapPublicPost("/reset-password", HandleAsync)
             .WithName("Identity.Auth.ResetPassword")
+            .Produces(StatusCodes.Status200OK)
+            .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status429TooManyRequests)
             .WithTags("Identity.Auth")
             .WithSummary("Reset password with token")
             .WithMetadata(new RateLimitPolicyAttribute("AuthStrictByIp"));

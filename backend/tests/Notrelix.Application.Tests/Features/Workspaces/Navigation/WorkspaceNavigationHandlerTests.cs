@@ -1,3 +1,4 @@
+using Notrelix.Application.Features.Governance.Public.Visibility;
 using Notrelix.Application.Features.Workspaces.Navigation.Commands.PinResource;
 using Notrelix.Application.Features.Workspaces.Navigation.Commands.RecordRecentResource;
 using Notrelix.Application.Features.Workspaces.Navigation.Commands.UnpinResource;
@@ -26,6 +27,7 @@ public class WorkspaceNavigationHandlerTests
     private readonly Mock<IResourceLocator> _locator = new();
     private readonly Mock<ICurrentRequestContext> _requestContext = new();
     private readonly Mock<IDateTimeProvider> _clock = new();
+    private readonly Mock<IResourceVisibility> _visibility = new();
     private DateTimeOffset _now = Now;
 
     public WorkspaceNavigationHandlerTests()
@@ -33,6 +35,14 @@ public class WorkspaceNavigationHandlerTests
         _requestContext.Setup(c => c.UserId).Returns(UserId);
         _requestContext.Setup(c => c.RequireAccountId()).Returns(AccountId);
         _clock.Setup(c => c.UtcNow).Returns(() => _now);
+    }
+
+    private void CallerCanSee(IEnumerable<Guid> boards, IEnumerable<Guid> pages)
+    {
+        _visibility.Setup(v => v.VisibleBoardIdsAsync(WorkspaceId, UserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(boards.ToList());
+        _visibility.Setup(v => v.VisiblePageIdsAsync(WorkspaceId, UserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(pages.ToList());
     }
 
     private void ResourceExistsIn(Guid resourceId, Guid accountId, Guid workspaceId, string kind = NavigationResourceKinds.Board)
@@ -145,13 +155,43 @@ public class WorkspaceNavigationHandlerTests
         var otherMember = RecentResource.Create(AccountId, WorkspaceId, Guid.CreateVersion7(), NavigationResourceKinds.Board, Guid.CreateVersion7(), Now.AddHours(2));
         var otherWorkspace = RecentResource.Create(AccountId, Guid.CreateVersion7(), UserId, NavigationResourceKinds.Board, Guid.CreateVersion7(), Now.AddHours(3));
         _store.Recents.AddRange([older, newer, otherMember, otherWorkspace]);
+        CallerCanSee([older.ResourceId], [newer.ResourceId]);
 
-        var result = await new GetRecentResourcesQueryHandler(_store, _requestContext.Object)
+        var result = await new GetRecentResourcesQueryHandler(_store, _requestContext.Object, _visibility.Object)
             .Handle(new GetRecentResourcesQuery(WorkspaceId), default);
 
         result.Data!.Select(d => d.ResourceId).Should().Equal(newer.ResourceId, older.ResourceId);
         result.Data![0].Kind.Should().Be(NavigationResourceKinds.Page);
         result.Data![0].LastOpenedAt.Should().Be(Now.AddHours(1));
+    }
+
+    [Fact]
+    public async Task GetRecents_OmitsReferencesTheCallerCanNoLongerSee()
+    {
+        var visibleBoard = RecentResource.Create(AccountId, WorkspaceId, UserId, NavigationResourceKinds.Board, Guid.CreateVersion7(), Now);
+        var hiddenBoard = RecentResource.Create(AccountId, WorkspaceId, UserId, NavigationResourceKinds.Board, Guid.CreateVersion7(), Now.AddMinutes(1));
+        var hiddenPage = RecentResource.Create(AccountId, WorkspaceId, UserId, NavigationResourceKinds.Page, Guid.CreateVersion7(), Now.AddMinutes(2));
+        _store.Recents.AddRange([visibleBoard, hiddenBoard, hiddenPage]);
+        CallerCanSee([visibleBoard.ResourceId], []);
+
+        var result = await new GetRecentResourcesQueryHandler(_store, _requestContext.Object, _visibility.Object)
+            .Handle(new GetRecentResourcesQuery(WorkspaceId), default);
+
+        result.Data!.Select(d => d.ResourceId).Should().Equal(visibleBoard.ResourceId);
+    }
+
+    [Fact]
+    public async Task GetPins_OmitsReferencesTheCallerCanNoLongerSee()
+    {
+        var visiblePage = PinnedResource.Create(AccountId, WorkspaceId, UserId, NavigationResourceKinds.Page, Guid.CreateVersion7(), 0, Now);
+        var hiddenBoard = PinnedResource.Create(AccountId, WorkspaceId, UserId, NavigationResourceKinds.Board, Guid.CreateVersion7(), 1, Now.AddMinutes(1));
+        _store.Pins.AddRange([visiblePage, hiddenBoard]);
+        CallerCanSee([], [visiblePage.ResourceId]);
+
+        var result = await new GetPinnedResourcesQueryHandler(_store, _requestContext.Object, _visibility.Object)
+            .Handle(new GetPinnedResourcesQuery(WorkspaceId), default);
+
+        result.Data!.Select(d => d.ResourceId).Should().Equal(visiblePage.ResourceId);
     }
 
     [Theory]
@@ -273,8 +313,9 @@ public class WorkspaceNavigationHandlerTests
         var second = PinnedResource.Create(AccountId, WorkspaceId, UserId, NavigationResourceKinds.Page, Guid.CreateVersion7(), 1, Now.AddMinutes(1));
         var other = PinnedResource.Create(AccountId, WorkspaceId, Guid.CreateVersion7(), NavigationResourceKinds.Board, Guid.CreateVersion7(), 0, Now.AddMinutes(2));
         _store.Pins.AddRange([first, second, other]);
+        CallerCanSee([first.ResourceId], [second.ResourceId]);
 
-        var result = await new GetPinnedResourcesQueryHandler(_store, _requestContext.Object)
+        var result = await new GetPinnedResourcesQueryHandler(_store, _requestContext.Object, _visibility.Object)
             .Handle(new GetPinnedResourcesQuery(WorkspaceId), default);
 
         result.Data!.Select(d => d.ResourceId).Should().Equal(second.ResourceId, first.ResourceId);

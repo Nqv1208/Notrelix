@@ -33,11 +33,7 @@ import {
   markToneFor,
   spaceAncestors,
 } from "@notrelix/features-workspace/core";
-import { createUseWorkspaceMembers } from "@notrelix/features-workspace/web";
-import {
-  useAppRuntime,
-  useFeatureRuntimeDependencies,
-} from "@notrelix/runtime-web";
+import { useFeatureRuntimeDependencies } from "@notrelix/runtime-web";
 import {
   useFullBoard,
   useWorkManagementServices,
@@ -47,6 +43,7 @@ import {
 import type { CardDetail } from "@notrelix/work-management-core";
 import { destinationHref } from "../workspace/workspace-destinations";
 import { useSpaceHooks } from "../workspace/use-workspace-spaces";
+import { useWorkspaceViewer } from "../workspace/use-workspace-viewer";
 
 function startOfDay(date: Date): number {
   return new Date(
@@ -114,14 +111,9 @@ export const useDocPageHost: UseDocPageHost = (
   const { workspaceId, pageId, page, taskIds, boardIds, mentionQuery } = input;
   const navigate = useNavigate();
   const user = useCurrentUser();
-  const { api: runtimeClient } = useAppRuntime();
   const featureDeps = useFeatureRuntimeDependencies();
   const services = useWorkManagementServices();
   const spaceHooks = useSpaceHooks();
-  const useMembers = useMemo(
-    () => createUseWorkspaceMembers({ api: runtimeClient.api }),
-    [runtimeClient],
-  );
   const usePageHistory = useMemo(
     () => createUsePageHistory(featureDeps.api, featureDeps.endpoints),
     [featureDeps],
@@ -132,21 +124,22 @@ export const useDocPageHost: UseDocPageHost = (
     [featureDeps],
   );
 
-  const members = useMembers(workspaceId);
+  const viewer = useWorkspaceViewer(workspaceId);
+  const members = viewer.members;
   const spaceTree = spaceHooks.useSpaceTree(workspaceId);
   const boards = useWorkspaceBoards(workspaceId);
   const history = usePageHistory(workspaceId, pageId);
   const permissions = usePagePermissions(workspaceId, pageId);
 
   const now = useMemo(() => new Date(), []);
-  const role =
-    members.data?.find((member) => member.userId === user?.id)?.role ?? null;
+  const role = viewer.role;
 
   const personFor = useCallback(
     (userId: string): DocPerson => {
       const member = members.data?.find((entry) => entry.userId === userId);
-      // A person who is not in the member list (another department's guest or
-      // a colleague of the page) is named by the page's own people read.
+      // A Guest does not read the member list, and a person outside it (another
+      // department's guest or a colleague of the page) is named by the page's
+      // own people read.
       const name =
         member?.name ??
         (page as Page | null)?.people?.find((entry) => entry.id === userId)

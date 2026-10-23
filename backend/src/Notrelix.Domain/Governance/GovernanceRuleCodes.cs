@@ -11,6 +11,9 @@ public static class GovernanceRuleCodes
     public const string Governance_Role_PermissionAlreadyAssigned = "Governance_Role_PermissionAlreadyAssigned";
     public const string Governance_ShareLink_PublicMustHaveExpiry = "Governance_ShareLink_PublicMustHaveExpiry";
 
+    // ── ResourcePermission ─────────────────────────────────────────────
+    public const string Governance_ResourcePermission_SubjectTypeNotSupported = "Governance_ResourcePermission_SubjectTypeNotSupported";
+
     // ── PermissionTemplate ─────────────────────────────────────────────
     public const string Governance_PermissionTemplate_EntriesRequired = "Governance_PermissionTemplate_EntriesRequired";
     public const string Governance_PermissionTemplate_DuplicateEntry = "Governance_PermissionTemplate_DuplicateEntry";

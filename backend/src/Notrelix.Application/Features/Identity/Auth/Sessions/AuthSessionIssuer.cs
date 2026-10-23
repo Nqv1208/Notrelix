@@ -1,4 +1,6 @@
 using Notrelix.Application.Features.Identity.Abstractions;
+using Notrelix.Application.Features.Identity.Security.Abstractions;
+using Notrelix.Domain.Identity.Security;
 
 namespace Notrelix.Application.Features.Identity.Auth.Sessions;
 
@@ -8,17 +10,20 @@ public sealed class AuthSessionIssuer : IAuthSessionIssuer
     private readonly IIdentityDbContext _identityContext;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IClientMetadata _clientMetadata;
+    private readonly ISecurityActivityRecorder _activity;
 
     public AuthSessionIssuer(
         IJwtService jwtService,
         IIdentityDbContext identityContext,
         IDateTimeProvider dateTimeProvider,
-        IClientMetadata clientMetadata)
+        IClientMetadata clientMetadata,
+        ISecurityActivityRecorder activity)
     {
         _jwtService = jwtService;
         _identityContext = identityContext;
         _dateTimeProvider = dateTimeProvider;
         _clientMetadata = clientMetadata;
+        _activity = activity;
     }
 
     public Task<AuthResult> IssueAsync(User user, DateTimeOffset now, CancellationToken ct)
@@ -29,6 +34,7 @@ public sealed class AuthSessionIssuer : IAuthSessionIssuer
         var session = UserSession.Create(user.Id, tokenHash, now.AddDays(30), now,
             _clientMetadata.IpAddress, _clientMetadata.UserAgent);
         _identityContext.Sessions.Add(session);
+        _activity.Record(user.Id, SecurityActivityType.SignInSucceeded, now, session.Id);
 
         var accessToken = _jwtService.GenerateAccessToken(user, session.Id);
 

@@ -5,28 +5,63 @@ namespace Notrelix.Domain.Tests.Automation;
 
 public class AutomationActionValidatorTests
 {
+    private static Action ValidateWebhook(string configuration) =>
+        () => AutomationActionValidator.Validate(AutomationActionDefinition.Create("Webhook", configuration));
+
+    [Theory]
+    [InlineData("""{"webhookPath":"hook"}""")]
+    [InlineData("""{"webhookPath":"notrelix-card_assigned"}""")]
+    [InlineData("""{"webhookPath":"team/hooks/abc-1"}""")]
+    public void Validate_Webhook_WithValidWebhookPath_ShouldNotThrow(string configuration) =>
+        ValidateWebhook(configuration).Should().NotThrow();
+
     [Fact]
-    public void Validate_Webhook_WithUrl_ShouldNotThrow()
+    public void Validate_Webhook_UrlOnly_ShouldThrow() =>
+        ValidateWebhook("""{"url":"https://example.com/hook"}""")
+            .Should().Throw<BusinessRuleException>().Which.RuleCode.Should().Be("Automation_ActionValidator_InvalidWebhookJson");
+
+    [Fact]
+    public void Validate_Webhook_UrlWithValidPath_ShouldThrow() =>
+        ValidateWebhook("""{"url":"https://example.com/hook","webhookPath":"hook"}""")
+            .Should().Throw<BusinessRuleException>().Which.RuleCode.Should().Be("Automation_ActionValidator_InvalidWebhookJson");
+
+    [Fact]
+    public void Validate_Webhook_WithoutWebhookPath_ShouldThrow() =>
+        ValidateWebhook("""{"foo":"bar"}""")
+            .Should().Throw<BusinessRuleException>().Which.RuleCode.Should().Be("Automation_ActionValidator_InvalidWebhookJson");
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("/hook")]
+    [InlineData("hook/")]
+    [InlineData("a//b")]
+    [InlineData("../admin")]
+    [InlineData("a/../b")]
+    [InlineData("a/./b")]
+    [InlineData("%2e%2e/admin")]
+    [InlineData("a%2fb")]
+    [InlineData("hook?x=1")]
+    [InlineData("hook#frag")]
+    [InlineData("a\\b")]
+    [InlineData("http://evil/hook")]
+    [InlineData("host:5678/hook")]
+    [InlineData("hook name")]
+    public void Validate_Webhook_WithUnsafePath_ShouldThrow(string path)
     {
-        var action = AutomationActionDefinition.Create("Webhook", "{\"url\":\"https://example.com\"}");
-        var act = () => AutomationActionValidator.Validate(action);
-        act.Should().NotThrow();
+        var configuration = System.Text.Json.JsonSerializer.Serialize(new { webhookPath = path });
+        ValidateWebhook(configuration).Should().Throw<BusinessRuleException>();
     }
 
     [Fact]
-    public void Validate_Webhook_WithWebhookPath_ShouldNotThrow()
-    {
-        var action = AutomationActionDefinition.Create("Webhook", "{\"webhookPath\":\"/hooks/abc\"}");
-        var act = () => AutomationActionValidator.Validate(action);
-        act.Should().NotThrow();
-    }
+    public void Validate_Webhook_WithNonStringPath_ShouldThrow() =>
+        ValidateWebhook("""{"webhookPath":5}""").Should().Throw<BusinessRuleException>();
 
     [Fact]
-    public void Validate_Webhook_WithoutUrlOrWebhookPath_ShouldThrow()
+    public void WebhookPath_EnforcesSegmentAndTotalLength()
     {
-        var action = AutomationActionDefinition.Create("Webhook", "{\"foo\":\"bar\"}");
-        var act = () => AutomationActionValidator.Validate(action);
-        act.Should().Throw<BusinessRuleException>().WithMessage("*'url'*'webhookPath'*");
+        AutomationWebhookPath.IsValid(new string('a', 64)).Should().BeTrue();
+        AutomationWebhookPath.IsValid(new string('a', 65)).Should().BeFalse();
+        AutomationWebhookPath.IsValid(string.Join('/', Enumerable.Repeat(new string('a', 64), 8))).Should().BeFalse("over the total length cap");
     }
 
     [Fact]

@@ -9,6 +9,8 @@ public static class GetCurrentUserEndpoint
     {
         group.MapAuthenticatedGet("/me", HandleAsync)
             .WithName("Identity.Auth.GetCurrentUser")
+            .Produces<UserDto>(StatusCodes.Status200OK, "application/json")
+            .ProducesProblems(StatusCodes.Status401Unauthorized)
             .WithTags("Identity.Auth")
             .WithSummary("Get current authenticated user");
         return group;

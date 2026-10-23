@@ -30,6 +30,7 @@ namespace Notrelix.Infrastructure.Messaging.Consumers.Automation;
 /// → skip, stale Queued → operator sweep). The consumer owns no Automation
 /// business state.
 /// </summary>
+[OrderingNotApplicable("Each delivery is an independent durable execution guarded by the consumer-owned prepare/effect/settle claim keyed by execution identity; no cross-message ordering invariant exists.")]
 public sealed class N8nDispatchConsumer : IConsumer<N8nDispatchRequestedV1>
 {
     private readonly N8nDispatchUseCase _useCase;

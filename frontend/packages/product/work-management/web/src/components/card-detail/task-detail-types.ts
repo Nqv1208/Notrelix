@@ -130,6 +130,8 @@ export interface TaskDetailCallbacks {
   readonly onRemoveLink?: (linkId: string) => void;
   /** Registers a file chosen or dropped on the page; the drop zone stays inert without it. */
   readonly onAddFile?: (file: File) => void;
+  /** Saves a stored file; a file without a public address has no download without it. */
+  readonly onDownloadFile?: (file: CardFile) => void;
   readonly onDuplicate: (cardId: string) => void;
   readonly onArchive: (cardId: string) => void;
   readonly onUpdateFieldValue: (payload: UpdateFieldValueInput) => void;

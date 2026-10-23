@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using FluentValidation;
 using Microsoft.Extensions.Hosting;
@@ -274,27 +275,42 @@ public sealed class PipelineObservabilityTests
     private static AccessFacts Facts(bool userExists = false, bool emailVerified = false) => new(
         userExists, emailVerified, false, null, false, null, false, null, null, false, [], false, false, null, null);
 
+    // Activity listeners are process-wide and other test classes emit on the same source in
+    // parallel, so the recorder opens its own trace and keeps only activities that belong to it.
     private sealed class ActivityRecorder : IDisposable
     {
         private readonly ActivityListener _listener;
+        private readonly Activity _trace;
+        private readonly ConcurrentQueue<Activity> _started = new();
 
         public ActivityRecorder()
         {
-            Started = [];
+            _trace = new Activity("pipeline-observability-test").Start();
+            var traceId = _trace.TraceId;
             _listener = new ActivityListener
             {
                 ShouldListenTo = source => source.Name == SourceName,
                 Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllData,
-                ActivityStarted = activity => Started.Add(activity),
+                ActivityStarted = activity =>
+                {
+                    if (activity.TraceId == traceId)
+                    {
+                        _started.Enqueue(activity);
+                    }
+                },
             };
             ActivitySource.AddActivityListener(_listener);
         }
 
-        public List<Activity> Started { get; }
+        public IReadOnlyList<Activity> Started => [.. _started];
 
         public IEnumerable<string> Names =>
             Started.Select(activity => activity.OperationName);
 
-        public void Dispose() => _listener.Dispose();
+        public void Dispose()
+        {
+            _listener.Dispose();
+            _trace.Stop();
+        }
     }
 }

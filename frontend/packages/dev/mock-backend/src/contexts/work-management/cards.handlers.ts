@@ -13,7 +13,8 @@
 
  *   cards.links             — GET/POST /board-items/:id/links, DELETE .../links/:linkId (gap)
  *   cards.childItems.add    — POST /board-items/:id/child-items (gap)
- *   cards.attachments.add   — POST /board-items/:id/attachments (gap)
+ *   cards.attachments.uploadFile — POST /board-items/:id/attachments/files (Collaboration.Attachments.UploadFile)
+ *   cards.attachments.content    — GET /board-items/:id/attachments/:attachmentId/content (Collaboration.Attachments.GetContent)
  *   cards.moveToBoard       — POST /board-items/:id/move-to-board (gap)
  *   cards.fieldValues       — PATCH /board-items/:id/field-values
  *   cards.status            — PATCH /board-items/:id/status
@@ -43,6 +44,7 @@ import type {
   CommentDtoApi,
 } from "@notrelix/work-management-core";
 import { defineMockOperation } from "../../operations/types";
+import type { MockHttpResult } from "../../transport/create-response";
 import {
   forbidden,
   noContent,
@@ -51,8 +53,9 @@ import {
 } from "../../transport/create-response";
 import { preconditionFailed } from "../workspace/space-target";
 import type { MockStore } from "../../state/mock-store";
-import type { MockCardRecord } from "../../state/records";
+import type { MockAttachmentRecord, MockCardRecord } from "../../state/records";
 import {
+  canReadBoard,
   canWriteBoardItems,
   projectItemMembers,
   projectItemReadValues,
@@ -63,6 +66,73 @@ function badRequest(errors: Record<string, string[]>) {
   return {
     status: 400,
     body: { message: "Validation failed", code: "VALIDATION_ERROR", errors },
+  };
+}
+
+/** The limits and blocked types of `POST .../attachments/files`. */
+export const MOCK_MAX_ATTACHMENT_BYTES = 100 * 1024 * 1024;
+export const MOCK_MAX_ATTACHMENTS = 50;
+const BLOCKED_ATTACHMENT_EXTENSIONS = new Set([
+  "exe",
+  "msi",
+  "dll",
+  "bat",
+  "cmd",
+  "com",
+  "scr",
+  "ps1",
+  "vbs",
+  "sh",
+  "jar",
+  "apk",
+  "js",
+  "mjs",
+  "html",
+  "htm",
+]);
+
+function isBlockedAttachmentName(name: string): boolean {
+  const dot = name.lastIndexOf(".");
+  return (
+    dot >= 0 &&
+    BLOCKED_ATTACHMENT_EXTENSIONS.has(
+      name
+        .slice(dot + 1)
+        .trim()
+        .toLowerCase(),
+    )
+  );
+}
+
+/** A problem+json answer of the attachment endpoints (`errorCode` names the reason). */
+function attachmentProblem(status: number, errorCode: string, detail: string) {
+  return {
+    status,
+    body: {
+      status,
+      title: detail,
+      detail,
+      message: detail,
+      errorCode,
+      code: errorCode,
+    },
+  };
+}
+
+/** The AttachmentDto of a stored file (`Kind` "File", no public `Url`). */
+function attachmentDto(file: MockAttachmentRecord, store: MockStore) {
+  return {
+    id: file.id,
+    resourceId: file.cardId,
+    filename: file.filename,
+    url: "",
+    kind: "File",
+    sizeBytes: file.sizeBytes,
+    contentType: file.contentType,
+    source: "upload",
+    uploadedBy: file.uploadedBy,
+    uploadedByName: store.getUser(file.uploadedBy)?.name ?? null,
+    createdAt: file.createdAt,
   };
 }
 
@@ -479,10 +549,10 @@ export const cardsOperations = [
           id: file.id,
           resourceId: file.cardId,
           filename: file.filename,
-          // A stand-in the browser can save: the mock keeps no file bytes.
-          url: `data:text/plain;charset=utf-8,${encodeURIComponent(
-            `Tệp mẫu của mock: ${file.filename}`,
-          )}`,
+          // A stored file has no public address: it downloads through the
+          // content route (`GET .../attachments/:attachmentId/content`).
+          url: "",
+          kind: "File",
           sizeBytes: file.sizeBytes,
           contentType: file.contentType,
           source: "upload",
@@ -494,33 +564,111 @@ export const cardsOperations = [
     },
   }),
 
-  // ─── POST /board-items/:id/attachments ──────────────────────────────────────────
-  // Gap CTR-GAP-WM-ITEM-DETAIL: registers a file's metadata (no bytes in the mock).
+  // ─── POST /board-items/:id/attachments/files ────────────────────────────────────
+  // Collaboration.Attachments.UploadFile: multipart, part `file`. The mock keeps
+  // no bytes, only the metadata and the limits of the real endpoint.
 
-  defineMockOperation<
-    { id: string },
-    { filename?: string; sizeBytes?: number; contentType?: string },
-    void
-  >({
-    id: "cards.attachments.add",
-    contract: { kind: "gap", gapId: "CTR-GAP-WM-ITEM-DETAIL" },
+  defineMockOperation<{ id: string }, never, unknown>({
+    id: "cards.attachments.uploadFile",
+    contract: {
+      kind: "openapi",
+      operationId: "Collaboration.Attachments.UploadFile",
+    },
     method: "POST",
-    route: "/board-items/:id/attachments",
-    async handle({ params, body, store, request }) {
-      const missingKey = missingIdempotencyKey(request);
-      if (missingKey) return missingKey;
+    route: "/board-items/:id/attachments/files",
+    async handle({ params, store, request }): Promise<MockHttpResult<unknown>> {
+      const key = request.headers.get("Idempotency-Key");
+      if (!key)
+        return attachmentProblem(
+          400,
+          "validation.failed",
+          "Idempotency-Key is required.",
+        );
       const item = store.getCard(params.id);
       if (!item) return notFound("Card not found");
       if (!canWriteBoardItems(item.boardId, store)) return forbidden();
-      const filename = body?.filename?.trim();
-      if (!filename)
-        return badRequest({ filename: ["The file name is required."] });
-      store.addAttachment(params.id, {
-        filename,
-        sizeBytes: Math.max(0, Math.round(body?.sizeBytes ?? 0)),
-        contentType: body?.contentType || "application/octet-stream",
+      const replay = store.getUploadByKey(params.id, key);
+      if (replay)
+        return {
+          status: 201,
+          headers: { "Idempotency-Replayed": "true" },
+          body: attachmentDto(replay, store),
+        };
+      const part = request.formData?.get("file");
+      if (!part || typeof part === "string" || !part.name)
+        return attachmentProblem(
+          400,
+          "validation.failed",
+          "A file part with a file name is required.",
+        );
+      if (part.size === 0)
+        return attachmentProblem(
+          400,
+          "validation.failed",
+          "The file is empty.",
+        );
+      if (part.size > MOCK_MAX_ATTACHMENT_BYTES)
+        return attachmentProblem(
+          413,
+          "attachment.payload_too_large",
+          "The file is over the size limit.",
+        );
+      if (isBlockedAttachmentName(part.name))
+        return attachmentProblem(
+          415,
+          "attachment.unsupported_media_type",
+          "This type of file is not allowed.",
+        );
+      if (store.getAttachments(params.id).length >= MOCK_MAX_ATTACHMENTS)
+        return attachmentProblem(
+          409,
+          "attachment.limit_exceeded",
+          "The item has the most attachments it can hold.",
+        );
+      const record = store.addAttachment(params.id, {
+        filename: part.name,
+        sizeBytes: part.size,
+        contentType: part.type || "application/octet-stream",
       });
-      return noContent();
+      if (!record) return notFound("Card not found");
+      store.rememberUpload(params.id, key, record);
+      return {
+        status: 201,
+        headers: {
+          Location: `/api/v1/board-items/${params.id}/attachments/${record.id}/content`,
+        },
+        body: attachmentDto(record, store),
+      };
+    },
+  }),
+
+  // ─── GET /board-items/:id/attachments/:attachmentId/content ─────────────────────
+  // Collaboration.Attachments.GetContent: a small stub body (no stored bytes).
+
+  defineMockOperation<{ id: string; attachmentId: string }, never, unknown>({
+    id: "cards.attachments.content",
+    contract: {
+      kind: "openapi",
+      operationId: "Collaboration.Attachments.GetContent",
+    },
+    method: "GET",
+    route: "/board-items/:id/attachments/:attachmentId/content",
+    async handle({ params, store }) {
+      const item = store.getCard(params.id);
+      if (!item || !canReadBoard(item.boardId, store))
+        return notFound("Attachment not found");
+      const file = store.getAttachment(params.id, params.attachmentId);
+      if (!file) return notFound("Attachment not found");
+      return {
+        status: 200,
+        headers: {
+          "Content-Type": "text/plain; charset=utf-8",
+          "Content-Disposition": "attachment",
+          "X-Content-Type-Options": "nosniff",
+          "Cache-Control": "private, no-store",
+        },
+        rawBody: `Tệp mẫu của mock: ${file.filename}`,
+      };
     },
   }),
 

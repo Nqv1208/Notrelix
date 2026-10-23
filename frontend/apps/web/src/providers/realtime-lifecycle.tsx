@@ -12,7 +12,9 @@ export function RealtimeLifecycle({ children }: { children: React.ReactNode }) {
   const runtime = useAppRuntime();
   const queryClient = useQueryClient();
   const location = useLocation();
-  const { isAuthenticated, sessionGeneration } = useAuth();
+  const { isAuthenticated, sessionGeneration, user } = useAuth();
+  // Account = the signed-in principal (same source as the AccountScopeBridge).
+  const accountId = user?.id ?? null;
   const workspaceId = getActiveWorkspaceIdFromPathname(location.pathname);
 
   const registry = useMemo(() => {
@@ -31,22 +33,25 @@ export function RealtimeLifecycle({ children }: { children: React.ReactNode }) {
   }, [isAuthenticated, runtime.realtime, sessionGeneration, workspaceId]);
 
   useEffect(() => {
-    if (!isAuthenticated || !workspaceId) return;
+    if (!isAuthenticated || !sessionGeneration || !workspaceId) return;
+
+    // Set to false on cleanup (Workspace/principal transition). Late async
+    // work of the previous scope must not touch the new one (NRX-014).
+    let active = true;
+
+    const invalidateQueries = async (keys: readonly unknown[][]) => {
+      if (!active) return;
+      await Promise.all(
+        keys.map((queryKey) => queryClient.invalidateQueries({ queryKey })),
+      );
+    };
 
     const unsubscribeEvents = runtime.realtime.subscribe(
       { workspaceId },
       (envelope) => {
+        if (!active) return;
         void registry
-          .dispatch(envelope, {
-            workspaceId,
-            invalidateQueries: async (keys) => {
-              await Promise.all(
-                keys.map((queryKey) =>
-                  queryClient.invalidateQueries({ queryKey }),
-                ),
-              );
-            },
-          })
+          .dispatch(envelope, { workspaceId, invalidateQueries })
           .then((result) => {
             if (!result.handled) {
               runtime.telemetry.track("realtime.unknown_event_type", {
@@ -65,35 +70,46 @@ export function RealtimeLifecycle({ children }: { children: React.ReactNode }) {
       },
     );
 
-    const unsubscribeRecovery = runtime.realtime.subscribeRecovery((gap) => {
-      if (gap.workspaceId !== workspaceId) return;
+    // Subscription ack, stream gap/duplicate/reset and permission loss all
+    // mean "incremental history is unreliable": refetch authoritative state
+    // over REST (FE-RT-024/025). Permission loss is not retried; the refetch
+    // surfaces the forbidden state through the normal query error pathway.
+    const unsubscribeRecovery = runtime.realtime.subscribeRecovery((signal) => {
+      if (!active || !accountId || signal.workspaceId !== workspaceId) return;
+      if (signal.reason === "permission-lost") {
+        runtime.telemetry.track("realtime.permission_lost", {
+          workspaceId,
+          code: signal.code,
+        });
+      }
       void handleWorkspaceRecovery({
         workspaceId,
-        invalidateQueries: async (keys) => {
-          await Promise.all(
-            keys.map((queryKey) => queryClient.invalidateQueries({ queryKey })),
-          );
-        },
+        accountId,
+        invalidateQueries,
       }).catch((error) => {
         runtime.telemetry.reportError(error, {
           context: "realtime.workspace_recovery",
           workspaceId,
-          expected: gap.expected,
-          received: gap.received,
+          reason: signal.reason,
+          expected: signal.expected,
+          received: signal.received,
         });
       });
     });
 
     return () => {
+      active = false;
       unsubscribeEvents();
       unsubscribeRecovery();
     };
   }, [
+    accountId,
     isAuthenticated,
     queryClient,
     registry,
     runtime.realtime,
     runtime.telemetry,
+    sessionGeneration,
     workspaceId,
   ]);
 

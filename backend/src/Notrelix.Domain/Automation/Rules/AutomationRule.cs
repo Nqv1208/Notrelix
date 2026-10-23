@@ -74,6 +74,23 @@ public class AutomationRule : SoftDeletableAggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new AutomationRuleDisabledDomainEvent(AccountId, WorkspaceId, Id, updatedBy, updatedAt));
     }
 
+    /// <summary>
+    /// Circuit-breaker disable: the platform (not a user) stops the rule after
+    /// repeated execution failures. Same state transition as <see cref="Disable"/>
+    /// with no human actor; the Disabled fact carries an empty actor.
+    /// </summary>
+    public void DisableAutomatically(DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        if (Status != AutomationRuleStatus.Active) return;
+
+        var pending = PrepareAuditUpdate(null, updatedAt);
+        Status = AutomationRuleStatus.Disabled;
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+        RaiseDomainEvent(new AutomationRuleDisabledDomainEvent(AccountId, WorkspaceId, Id, Guid.Empty, updatedAt));
+    }
+
     public void UpdateConfiguration(AutomationConfiguration configuration, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();

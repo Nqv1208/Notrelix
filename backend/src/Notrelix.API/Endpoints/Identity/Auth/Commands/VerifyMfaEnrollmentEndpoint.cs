@@ -1,3 +1,4 @@
+using Notrelix.Application.Features.Identity.Mfa.DTOs;
 using Notrelix.API.Extensions;
 using Notrelix.API.RateLimiting;
 using Notrelix.Application.Features.Identity.Mfa.Commands.VerifyMfaEnrollment;
@@ -10,6 +11,8 @@ public static class VerifyMfaEnrollmentEndpoint
     {
         group.MapAuthenticatedPost("/mfa/enrollment/verify", HandleAsync)
             .WithName("Identity.Mfa.VerifyEnrollment")
+            .Produces<MfaEnrollmentVerifyResult>(StatusCodes.Status200OK, "application/json")
+            .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status401Unauthorized, StatusCodes.Status429TooManyRequests)
             .WithTags("Identity.Mfa")
             .WithSummary("Verify MFA enrollment code and activate the authenticator")
             .WithMetadata(new RateLimitPolicyAttribute("AuthStrictByIp"));

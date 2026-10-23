@@ -1,3 +1,4 @@
+using Notrelix.API.Contracts.Identity;
 using Notrelix.API.Extensions;
 using Notrelix.API.RateLimiting;
 using Notrelix.Application.Features.Identity.Mfa.Commands.CompleteMfaChallenge;
@@ -10,6 +11,8 @@ public static class CompleteMfaChallengeEndpoint
     {
         group.MapPublicPost("/mfa/verify", HandleAsync)
             .WithName("Identity.Mfa.VerifyChallenge")
+            .Produces<AuthSessionResponse>(StatusCodes.Status200OK, "application/json")
+            .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status409Conflict, StatusCodes.Status429TooManyRequests)
             .WithTags("Identity.Mfa")
             .WithSummary("Complete an MFA challenge with a TOTP or recovery code")
             .WithMetadata(new RateLimitPolicyAttribute("AuthStrictByIp"));
@@ -34,6 +37,6 @@ public static class CompleteMfaChallengeEndpoint
             cookieService.SetTokenCookie(result.Data.AccessToken!, result.Data.RefreshToken!);
         }
 
-        return result.ToApiResult();
+        return result.ToSessionApiResult();
     }
 }

@@ -11,7 +11,12 @@ public sealed class StorageOptions
 
     /// <summary>Local filesystem root used by <c>LocalStorageProvider</c>.</summary>
     public string BasePath { get; init; } = "storage";
+}
 
-    /// <summary>Public base URL prepended to returned object keys.</summary>
-    public string PublicBaseUrl { get; init; } = "/files";
+public sealed class StorageOptionsValidator : IValidateOptions<StorageOptions>
+{
+    public ValidateOptionsResult Validate(string? name, StorageOptions options) =>
+        string.IsNullOrWhiteSpace(options.BasePath)
+            ? ValidateOptionsResult.Fail($"{StorageOptions.SectionName}:BasePath must not be empty.")
+            : ValidateOptionsResult.Success;
 }

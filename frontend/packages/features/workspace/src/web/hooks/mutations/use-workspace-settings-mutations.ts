@@ -1,3 +1,4 @@
+import { useAccountId } from "@notrelix/query";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   createWorkspaceSettingsService,
@@ -27,13 +28,14 @@ export function createUseWorkspaceSettingsMutations({
   const service = createWorkspaceSettingsService(api, endpoints);
 
   return function useWorkspaceSettingsMutations(workspaceId: string) {
+    const accountId = useAccountId();
     const queryClient = useQueryClient();
     const refreshWorkspace = async () => {
       await queryClient.invalidateQueries({
         queryKey: workspaceQueryKeys.detail(workspaceId),
       });
       await queryClient.invalidateQueries({
-        queryKey: workspaceQueryKeys.all,
+        queryKey: workspaceQueryKeys.all(accountId),
       });
     };
 
@@ -66,7 +68,9 @@ export function createUseWorkspaceSettingsMutations({
         service.archive(workspaceId, expectedVersion),
       retry: false,
       onSettled: () =>
-        queryClient.invalidateQueries({ queryKey: workspaceQueryKeys.all }),
+        queryClient.invalidateQueries({
+          queryKey: workspaceQueryKeys.all(accountId),
+        }),
     });
 
     return { updateProfile, updateSettings, archive };

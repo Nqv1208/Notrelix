@@ -544,6 +544,26 @@ another recovery mechanism owns it
 
 Do not leave durable work permanently invisible.
 
+Consumer dedup claims (`messaging.processed_events`) follow the same rule for the command-owned consumer path
+(`DeduplicationConsumeFilter`):
+
+```text
+Processing claim older than Messaging:Deduplication:ProcessingClaimLeaseSeconds (default 300, validated 30..86400 on start)
+→ presumed dead; exactly one redelivery wins an atomic compare-and-swap on (Status = Processing, ClaimedAt < now - lease),
+  which renews the lease, and re-runs the command
+Processing claim inside the lease
+→ not stolen and not acknowledged as a duplicate; the delivery is deferred (MessageClaimInFlightException, transient retry)
+Succeeded claim
+→ ignored as a duplicate, regardless of age
+```
+
+Exactly-once effect on takeover is carried by the command, not by the claim row: the command's data-session transaction
+commits the business write and its message-keyed idempotency record (IdempotencyBehavior, key = event id) atomically, so a
+re-run after a crash either replays the stored result (first run committed) or finds nothing to duplicate (it did not).
+The Succeeded marker is advanced only after the protected command returned (NRX-010). The lease MUST exceed the longest
+expected consumer execution; the idempotency result retention (`Idempotency:ResultExpiry`) bounds how long replay is
+guaranteed, after which the consumer's own domain idempotency (for example an existing personal Workspace) applies.
+
 ---
 
 # 30. At-least-once posture
@@ -959,6 +979,20 @@ observe
 ```
 
 Business decision remains in handler/Application.
+
+### Production consumer ordering declaration (PF-08)
+
+`ConsumerHost`, `OrderingEnforcer` and `PoisonDetector` are reusable mechanisms proven by `Notrelix.Platform.Tests`. They are **not** in the production delivery graph: production consumers are MassTransit `IConsumer<T>` endpoints behind the tenant and deduplication filters, with MassTransit retry and error-queue handling as the actual retry/dead-letter owner. No integration event carries a contiguous per-stream sequence that `OrderingEnforcer` could enforce, and `ConsumerDefinition.OrderingRequired` is inert metadata that no runtime reads.
+
+Therefore:
+
+```text
+every production IConsumer<T> carries [OrderingNotApplicable(reason)]
+→ states why delivery order cannot change the outcome
+→ enforced by Architecture test ConsumerOrderingDeclarationTests
+```
+
+A consumer whose invariant depends on delivery order (later supersedes earlier, add/remove pairs) has **no valid declaration yet**. Introducing one is an architecture change that must first decide the ordering owner (MassTransit endpoint partitioning versus bridging into Platform), the ordering stream identity, and the producer of a contiguous per-stream sequence, then migrate the consumer, its tests and this section. Do not set `ConsumerDefinition.OrderingRequired` or fabricate a sequence to satisfy the rule. Re-declare a log-only consumer when it gains a real effect.
 
 ---
 
@@ -1917,6 +1951,30 @@ Both should describe the same committed business fact where they represent the s
 Clients reconcile from authoritative API/state.
 
 Do not use websocket delivery ack as source transaction commit.
+
+---
+
+# 125A. Realtime gateway
+
+The API host exposes one WebSocket endpoint (`Realtime:Gateway:Path`, default `/api/v1/realtime`) that bridges the Redis realtime channels to authorized clients. Realtime only notifies: frames carry stream identity and ordering metadata, never resource data, and clients refetch authoritative state over REST.
+
+```text
+RealtimeResourceChangedV1 (outbox, post-commit)
+→ RedisRealtimePublisher (atomic per-stream counter + publish)
+→ Redis channel per stream
+→ RedisRealtimeNotificationSource (one Redis subscription per channel per process)
+→ RealtimeConnection (authorized subscriptions only)
+→ client
+```
+
+Contract:
+
+- Transport is raw WebSocket (JSON text frames, `RealtimeProtocol`, schema version 1), authenticated by the same bearer cookie as REST; the upgrade requires an allow-listed `Origin` (`Realtime:Gateway:AllowedOrigins`, falling back to `Cors:AllowedOrigins`), rejects API-token credentials, and bounds connections per user.
+- A subscription names a closed scope (`workspace` or `board`). It is authorized by a Application query run through the normal pipeline (`AuthorizeWorkspaceRealtimeSubscriptionQuery` = `ViewWorkspace`, `AuthorizeBoardRealtimeSubscriptionQuery` = `ViewBoard`), so realtime access equals the matching REST read. Forbidden and not-found are indistinguishable (`subscription_denied`); authorization-system failure fails closed.
+- Every notification is re-checked against the authorized workspace and stream key before it is queued. Credentials and every subscription are re-authorized each `ReauthorizationInterval`; revoked access ends within that bound.
+- `streamKey` identifies one stream (`{namespace}:{kind}:{id:N}`). `streamVersion` is a per-stream counter allocated atomically with publication, so a client that sees anything other than previous + 1 (gap, duplicate, counter reset after Redis loss) must refetch. The producer's resource version is carried separately as `resourceVersion` and is informational.
+- There is no replay buffer. A slow consumer, heartbeat timeout, expiry or revocation closes the socket; the client reconnects, resubscribes and refetches.
+- Streams not yet routable by scope (item-level and view-level topics that carry no board identity) are not delivered by the gateway until their producers publish on a board or workspace stream.
 
 ---
 

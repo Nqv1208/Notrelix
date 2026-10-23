@@ -14,6 +14,7 @@ public class IgnoreQueryFiltersArchitectureTests
         "src/Notrelix.Application/Features/Identity/Verification/Services/EmailVerificationTokenIssuer.cs",
         "src/Notrelix.Infrastructure/Identity/Services/ActiveVerificationTokenLocker.cs",
         "src/Notrelix.Infrastructure/Workspaces/Members/WorkspaceOwnerUpdateLocker.cs",
+        "src/Notrelix.Infrastructure/BackgroundJobs/PostgresAttachmentReaperStore.cs",
         "src/Notrelix.Infrastructure/Integrations/Webhooks/CalendarWebhookBindingResolver.cs",
     };
 

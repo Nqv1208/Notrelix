@@ -37,15 +37,25 @@ public static class AutomationActionValidator
     private static void ValidateWebhookConfig(string? configuration)
     {
         if (string.IsNullOrWhiteSpace(configuration))
-            throw new BusinessRuleException(AutomationRuleCodes.Automation_ActionValidator_InvalidWebhookJson, "Webhook action requires a configuration with 'url' or 'webhookPath' property.");
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_ActionValidator_InvalidWebhookJson, "Webhook action requires a configuration with a 'webhookPath' property.");
 
         try
         {
             using var doc = JsonDocument.Parse(configuration);
             var root = doc.RootElement;
 
-            if (!root.TryGetProperty("url", out _) && !root.TryGetProperty("webhookPath", out _))
-                throw new BusinessRuleException(AutomationRuleCodes.Automation_ActionValidator_InvalidWebhookJson, "Webhook action configuration must contain 'url' or 'webhookPath'.");
+            // AUT-028: the Webhook action is an allow-listed n8n capability. Only a
+            // relative 'webhookPath' is executable; 'url' is never used at execution
+            // and absolute URLs are not supported, so it is rejected, not ignored.
+            if (root.ValueKind != JsonValueKind.Object || root.TryGetProperty("url", out _))
+                throw new BusinessRuleException(AutomationRuleCodes.Automation_ActionValidator_InvalidWebhookJson, "Webhook action configuration must not contain 'url'; use 'webhookPath'.");
+
+            // The path is appended to the internal n8n address, so traversal,
+            // query/fragment, encoding and scheme/host characters are rejected.
+            if (!root.TryGetProperty("webhookPath", out var path)
+                || path.ValueKind != JsonValueKind.String
+                || !AutomationWebhookPath.IsValid(path.GetString()))
+                throw new BusinessRuleException(AutomationRuleCodes.Automation_ActionValidator_InvalidWebhookJson, "Webhook action configuration must contain a 'webhookPath' of one or more segments of letters, digits, '_' or '-' (max 64 characters each) separated by '/'.");
         }
         catch (JsonException ex)
         {

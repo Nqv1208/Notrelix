@@ -1,3 +1,4 @@
+import { useAccountId } from "@notrelix/query";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   createNotificationsService,
@@ -19,10 +20,11 @@ export function createUseNotificationPreferences({
   const service = createNotificationsService(api, endpoints);
 
   return function useNotificationPreferences() {
+    const accountId = useAccountId();
     const queryClient = useQueryClient();
 
     const query = useQuery({
-      queryKey: notificationsQueryKeys.preferences,
+      queryKey: notificationsQueryKeys.preferences(accountId),
       queryFn: () => service.getPreferences(),
     });
 
@@ -31,7 +33,7 @@ export function createUseNotificationPreferences({
         service.updatePreferences(prefs),
       onSuccess: () => {
         queryClient.invalidateQueries({
-          queryKey: notificationsQueryKeys.preferences,
+          queryKey: notificationsQueryKeys.preferences(accountId),
         });
       },
     });

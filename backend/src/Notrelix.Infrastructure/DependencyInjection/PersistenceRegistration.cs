@@ -1,6 +1,8 @@
 using Notrelix.Application.Features.Accounts.Abstractions;
+using Notrelix.Infrastructure.Identity.Profiles;
 using Notrelix.Application.Features.Accounts.Members;
 using Notrelix.Application.Features.Identity.Abstractions;
+using Notrelix.Infrastructure.Data.Audit;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.Documents.Abstractions;
 using Notrelix.Application.Features.Collaboration.Abstractions;
@@ -96,6 +98,7 @@ public static class PersistenceRegistration
         // Infrastructure
         services.AddScoped<IMessagingDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IAuditDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
+        services.AddSingleton<ISecurityAuditSink, SecurityAuditSink>();
         services.AddScoped<IOpsDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
 
         services.AddScoped<IWorkspaceAccessChecker, WorkspaceAccessChecker>();
@@ -125,6 +128,8 @@ public static class PersistenceRegistration
             global::Notrelix.Infrastructure.CrossContext.Workspaces.Documents.PageSpacePlacementFactsAdapter>();
         services.AddScoped<Notrelix.Application.Features.WorkManagement.Ordering.IWorkOrderingScopeLock,
             Notrelix.Infrastructure.Data.WorkManagement.PostgresWorkOrderingScopeLock>();
+        services.AddScoped<Notrelix.Application.Features.Collaboration.Abstractions.IAttachmentTargetLock,
+            Notrelix.Infrastructure.Data.Collaboration.PostgresAttachmentTargetLock>();
         services.AddScoped<Notrelix.Application.Features.WorkManagement.BoardItems.Services.IBoardItemKeyAllocator,
             Notrelix.Infrastructure.Data.WorkManagement.PostgresBoardItemKeyAllocator>();
         services.AddSingleton<Notrelix.Application.Common.Data.IOrderingConflictClassifier,
@@ -133,6 +138,10 @@ public static class PersistenceRegistration
         services.AddScoped<IAccessFactsProvider, Notrelix.Infrastructure.Data.Authz.PostgresAccessFactsProvider>();
         services.AddScoped<global::Notrelix.Application.Features.Governance.Public.Visibility.IResourceVisibility,
             Notrelix.Infrastructure.Data.Authz.PostgresResourceVisibility>();
+        services.AddScoped<global::Notrelix.Application.Features.Governance.Public.Access.IGuestResourceAccessActions,
+            Notrelix.Infrastructure.Data.Authz.GuestResourceAccessActionsAdapter>();
+        services.AddScoped<global::Notrelix.Application.Features.Governance.Public.Access.IGuestResourceInvitationFacts,
+            Notrelix.Infrastructure.Data.Authz.GuestResourceInvitationFactsAdapter>();
         services.AddScoped<global::Notrelix.Application.Features.Governance.Abstractions.IResourceAccessEntriesReader,
             Notrelix.Infrastructure.Data.Authz.PostgresResourceAccessEntriesReader>();
         services.AddScoped<global::Notrelix.Application.Features.WorkManagement.Public.BoardAccess.IBoardAccessSubjectFacts,
@@ -140,6 +149,7 @@ public static class PersistenceRegistration
         services.AddScoped<global::Notrelix.Application.Features.WorkManagement.Public.Authorization.IBoardChildAuthorizationFacts,
             global::Notrelix.Infrastructure.CrossContext.Governance.WorkManagement.BoardChildAuthorizationFactsAdapter>();
         services.AddScoped<IActorLookupService, ActorLookupService>();
+        services.AddScoped<IMemberPhoneLookup, MemberPhoneLookup>();
         services.AddScoped<ApplicationDbContextInitialiser>();
         services.AddScoped<RlsPolicyApplier>();
         services.AddScoped<RlsSessionContext>();

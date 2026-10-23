@@ -26,6 +26,7 @@ export * from "./utils/fractional-index";
 export * from "./utils/board-cache-updaters";
 export * from "./utils/table-projection";
 export * from "./utils/person-initials";
+export * from "./utils/item-file-rules";
 
 // Kanban types
 export * from "./types/kanban-types";

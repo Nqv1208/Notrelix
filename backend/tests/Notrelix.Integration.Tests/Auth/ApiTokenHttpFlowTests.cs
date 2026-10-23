@@ -24,9 +24,9 @@ namespace Notrelix.Integration.Tests.Auth;
 /// Bogus tokens must never fall through to the JWT handler; valid tokens must
 /// authenticate; a token bound to workspace A must never operate workspace B
 /// even when the same user has governance access to both. Governance runs
-/// real (PermissionService over the production graph): a member-scoped token
+/// real (AccessPolicyEngine over the production graph): a member-scoped token
 /// that passes TenantBootstrap and ViewWorkspace is still denied
-/// ManageWorkspaceSettings — proving API Token scope ∩ Governance permission.
+/// ManageApiTokens — proving API Token scope ∩ Governance permission.
 /// </summary>
 [Collection("Cache")]
 public sealed class ApiTokenHttpFlowTests : IAsyncLifetime
@@ -317,7 +317,7 @@ public sealed class ApiTokenHttpFlowTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task MemberApiToken_SameWorkspace_PassesBootstrap_ButGovernanceDeniesManageWorkspaceSettings()
+    public async Task MemberApiToken_SameWorkspace_PassesBootstrap_ButGovernanceDeniesManageApiTokens()
     {
         using var factory = CreateFactory();
         using var client = factory.CreateClient();
@@ -337,7 +337,7 @@ public sealed class ApiTokenHttpFlowTests : IAsyncLifetime
             $"member token must have valid workspace access before testing " +
             $"Governance denial. Body: {viewBody}");
 
-        // ListApiTokens requires ManageWorkspaceSettings. The Member has valid
+        // ListApiTokens requires ManageApiTokens. The Member has valid
         // workspace access but not this Governance permission.
         var manageResponse = await client.GetAsync(ListTokensUrl(_workspaceA));
         var manageBody = await manageResponse.Content.ReadAsStringAsync();
@@ -345,7 +345,7 @@ public sealed class ApiTokenHttpFlowTests : IAsyncLifetime
         manageResponse.StatusCode.Should().Be(
             System.Net.HttpStatusCode.Forbidden,
             $"the credential is valid and workspace-bound, but Governance must " +
-            $"deny ManageWorkspaceSettings for a normal Member. Body: {manageBody}");
+            $"deny ManageApiTokens for a normal Member. Body: {manageBody}");
     }
 
     [Fact]

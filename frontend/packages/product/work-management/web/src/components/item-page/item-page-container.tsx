@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   useArchiveCard,
   useBoardAccess,
@@ -9,9 +9,11 @@ import {
   useCreateCardUpdate,
   useDeleteCardUpdate,
   useDuplicateCard,
-  useAddItemFile,
   useFullBoard,
   useItemChildItems,
+  useItemFileUploads,
+  canRetryItemFileUpload,
+  useWorkManagementServices,
   useItemFollowing,
   useItemLifecycle,
   usePeopleDirectory,
@@ -24,9 +26,11 @@ import {
 } from "@notrelix/work-management-state";
 import {
   groupCardsByStatus,
+  MAX_ITEM_FILE_BYTES,
   personInitials,
   type Board,
   type CardDetail,
+  type CardFile,
   type UpdateCardInput,
 } from "@notrelix/work-management-core";
 import { boardCapabilities } from "../shared/board-capabilities";
@@ -39,6 +43,7 @@ import { withBoardPriority } from "../shared/item-priority";
 import type { TaskDetailCallbacks } from "../card-detail/task-detail-types";
 import { useItemPageCopy } from "./use-item-page-copy";
 import { formatFileSize } from "./item-page-format";
+import { saveBlobAs } from "./save-blob";
 import { ItemPageSurface } from "./item-page-surface";
 import type {
   ItemPageConflict,
@@ -126,11 +131,6 @@ function keyOfLink(itemId: string): string | null {
     ? itemId.toUpperCase()
     : null;
 }
-
-/** The most a single file can be: "Vượt giới hạn 100 MB mỗi tệp". */
-const MAX_UPLOAD_BYTES = 100 * 1024 * 1024;
-/** How long a finished upload row stays before the saved file replaces it. */
-const UPLOAD_DONE_MS = 2_500;
 
 /** Waiting on the network: loading has taken longer than expected. */
 const SLOW_LOADING_MS = 8_000;
@@ -268,8 +268,8 @@ function ItemPageReady({
   navigation: (position: ItemPagePosition | undefined) => ItemPageNavigation;
 }) {
   // Files on their way: one row each, kept until sent, skipped or dismissed.
-  const [uploads, setUploads] = useState<ItemPageUpload[]>([]);
-  const queued = useRef(new Map<string, File>());
+  const fileUploads = useItemFileUploads(card.id, card.workspaceId);
+  const { cards: cardServices } = useWorkManagementServices();
   const files = useCardFiles(card.id, card.workspaceId);
   const activity = useCardActivity(card.id, card.workspaceId);
   const updates = useCardComments(card.id, card.workspaceId);
@@ -282,48 +282,25 @@ function ItemPageReady({
   const children = useItemChildItems(card.id, card.workspaceId, card.boardId);
   const follow = useItemFollowing(card.id, card.workspaceId);
   const links = useItemLinks(card.id, card.workspaceId, card.boardId);
-  const addFile = useAddItemFile(card.id, card.workspaceId);
-  const patchUpload = (id: string, patch: Partial<ItemPageUpload>) =>
-    setUploads((list) =>
-      list.map((entry) => (entry.id === id ? { ...entry, ...patch } : entry)),
-    );
-  const sendFile = (file: File, id: string) => {
-    queued.current.set(id, file);
-    patchUpload(id, { status: "uploading", error: null, progress: null });
-    addFile
-      .mutateAsync({
-        filename: file.name,
-        sizeBytes: file.size,
-        contentType: file.type || "application/octet-stream",
-      })
-      .then(() => {
-        queued.current.delete(id);
-        patchUpload(id, { status: "done" });
-        setTimeout(
-          () => setUploads((list) => list.filter((entry) => entry.id !== id)),
-          UPLOAD_DONE_MS,
-        );
-      })
-      .catch(() => patchUpload(id, { status: "error", error: "failed" }));
-  };
-  const startUpload = (file: File) => {
-    const id = crypto.randomUUID();
-    const row = { id, name: file.name, size: file.size };
-    if (file.size > MAX_UPLOAD_BYTES) {
-      queued.current.set(id, file);
-      setUploads((list) => [
-        ...list,
-        {
-          ...row,
-          status: "error",
-          error: "tooBig",
-          limit: formatFileSize(MAX_UPLOAD_BYTES, sheetCopy.locale),
-        },
-      ]);
-      return;
-    }
-    setUploads((list) => [...list, { ...row, status: "uploading" }]);
-    sendFile(file, id);
+  const uploads: ItemPageUpload[] = fileUploads.uploads.map((upload) => ({
+    ...upload,
+    ...(upload.error === "tooBig"
+      ? { limit: formatFileSize(MAX_ITEM_FILE_BYTES, sheetCopy.locale) }
+      : {}),
+    retryable: canRetryItemFileUpload(upload),
+  }));
+  /** Saves a stored file with the session: the content route takes no URL token. */
+  const downloadFile = (file: CardFile) => {
+    cardServices
+      .downloadCardFile(card.id, file.id)
+      .then((blob) => saveBlobAs(blob, file.name))
+      .catch(() =>
+        onToast?.({
+          kind: "error",
+          dismissLabel: copy.toasts.dismiss,
+          title: fillSheetCopy(copy.files.downloadFailed, { name: file.name }),
+        }),
+      );
   };
   const { lifecycle, restore, reopen } = useItemLifecycle(
     card.id,
@@ -524,7 +501,8 @@ function ItemPageReady({
     onAddChildItem: (title) => children.addChild(title),
     onAddLink: (itemId, relation) => links.addLink({ itemId, relation }),
     onRemoveLink: (linkId) => links.removeLink(linkId),
-    onAddFile: startUpload,
+    onAddFile: fileUploads.start,
+    onDownloadFile: downloadFile,
     onDuplicate: (cardId) => duplicateCard.mutate(cardId),
     // "Lưu trữ" archives the item (it can be restored); it is not a delete.
     onArchive: (cardId) => {
@@ -594,15 +572,8 @@ function ItemPageReady({
       conflict={conflict}
       offline={offline}
       uploads={uploads}
-      onRetryUpload={(id) => {
-        const file = queued.current.get(id);
-        // A file over the limit stays refused; a broken transfer is sent again.
-        if (file && file.size <= MAX_UPLOAD_BYTES) sendFile(file, id);
-      }}
-      onDismissUpload={(id) => {
-        queued.current.delete(id);
-        setUploads((list) => list.filter((entry) => entry.id !== id));
-      }}
+      onRetryUpload={fileUploads.retry}
+      onDismissUpload={fileUploads.dismiss}
       people={{
         people: directory?.people ?? [],
         teams: directory?.teams ?? [],

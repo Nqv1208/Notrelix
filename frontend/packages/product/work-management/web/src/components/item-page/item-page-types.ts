@@ -126,8 +126,22 @@ export interface ItemPageUpload {
   readonly status: "uploading" | "done" | "error";
   /** 0 to 100 while uploading; absent when the transfer reports none. */
   readonly progress?: number | null;
-  /** Why it failed: too big for the limit, or the transfer broke. */
-  readonly error?: "tooBig" | "failed" | null;
+  /**
+   * Why it failed: refused before sending (too big, blocked type), refused by
+   * the server, or the transfer broke.
+   */
+  readonly error?:
+    | "tooBig"
+    | "blockedType"
+    | "serverTooLarge"
+    | "unsupportedType"
+    | "limitReached"
+    | "forbidden"
+    | "notFound"
+    | "failed"
+    | null;
+  /** False when sending again cannot change the answer; the retry button is absent. */
+  readonly retryable?: boolean;
   /** The limit it broke, as shown. */
   readonly limit?: string;
 }

@@ -3517,7 +3517,7 @@ interpreted as independent or competing debt catalogs.
 | Semantic debt | Current disposition | Certification/evidence relationship | Milestone effect |
 |---|---|---|---|
 | `WG-DEBT-001` | SUPERSEDED / PARTIALLY CLOSED | `P2A-CERT-004`, `P2B-CERT-007`; old evaluator→`IWorkManagementDbContext` dependency is gone | no direct blocker if current boundary evidence passes |
-| `WG-DEBT-002` | PARTIALLY CLOSED | `P2B-CERT-005` | blocks role D5 if built-in baseline remains ambiguous |
+| `WG-DEBT-002` | CLOSED (39/39 actions) | `P2B-CERT-005` | closed 2026-10-23, section 108 |
 | `WG-DEBT-003` | PARTIALLY CLOSED | `P2B-CERT-010`, `FULL-CERT-RPERM-001` | blocks ResourcePermission claims beyond proven rank/ceiling semantics |
 | `WG-DEBT-004` | OPEN SECONDARY | `WG-DEBT-CERT-012`, `FULL-CERT-POL-001` | does not block Milestone B unless protected slice starts consuming WorkspacePolicy |
 | `WG-DEBT-005` | OPEN / BOUNDED CORE SUBSET | `P2B-CERT-004` | unsupported subject kinds remain outside certified core |
@@ -3610,7 +3610,7 @@ Status:
 | WG-DEBT-CERT-013 | PermissionTemplate application use case not confirmed. | Does not block Milestone B; blocks template-apply claim. |
 | WG-DEBT-CERT-014 | Audit/SecurityEvent product authority requires current-source classification. | Does not block Milestone B unless required by security/audit release contract. |
 
-All rows above are preparation observations, not final debt dispositions.
+All rows above are preparation observations, not final debt dispositions. Dispositions recorded on 2026-10-23 are in section 108.
 
 # Stop conditions during certification
 ## 77. WG-CERT-STOP-001 — candidate SHA changes
@@ -4201,3 +4201,271 @@ Full Workspace/Governance:   NOT_EVALUATED
 Preparation source and CI observations are recorded only to guide execution.
 
 They do not constitute final certification.
+
+## 108. Stage 3 evidence and debt disposition record (2026-10-23)
+
+This section records executed evidence and the disposition of the preparation-time debt register
+(section 76 and PR-WG-00 section 67). It is a record of one candidate, not a Milestone B certification:
+`WG-DEBT-002` (built-in role baseline) is closed for the accepted rows by the 2026-10-23 role baseline change recorded
+below ("WG-DEBT-002 closure"); the last item (ViewMembers for a Guest) was closed the same day by the guest-safe
+own-membership read, recorded in the same subsection ("Item 6 closure").
+
+### Candidate and evidence
+
+```text
+Branch: develop
+Base SHA: ecdb6a6e9b0fc6398d74b8b5010d5dfe9713f71c   (clean tree at start; pushed; PR 174)
+Working tree: base SHA plus the uncommitted Stage 3 change set (no commit made)
+Date: 2026-10-23
+```
+
+GitHub CI at the base SHA (`Notrelix CI` run 39897738696, created 2026-10-23T03:57Z, conclusion success):
+
+```text
+Backend CI / API, platform and integration tests   job 120232967751   success
+  Platform 153/153, API 591/591, Integration 861/861 (Passed:861, Failed:0, Skipped:0)
+Backend CI / Architecture and core tests           job 120232967825   success
+  Architecture 644/644, Domain 2791/2791, Application 1168/1168, Infrastructure 263/263
+Aggregate CI gate / Backend CI gate                success
+External: one GitGuardian incident reported on PR 174, not a repository job.
+```
+
+Local Docker run (PostgreSQL via Testcontainers) of the section E.1 suites at the base SHA with a clean tree
+(`dotnet test tests/Notrelix.Integration.Tests -c Release`, 103 selected, 103 passed, 0 failed, 0 skipped):
+
+| Suite | Passed |
+|---|---|
+| `WorkspaceMembershipConcurrencyEvidenceTests` | 2 |
+| `WorkspaceInvitationConcurrencyEvidenceTests` | 3 |
+| `RlsRuntimeEnforcementTests` (includes `RuntimeMembershipCreation/Suspend/Removal`, 3) | 23 |
+| `AccessGrantProjectionTests` | 7 |
+| `CollectionVisibilityIntegrationTests` | 6 |
+| `SpaceAccessMatrixIntegrationTests` | 5 |
+| `GovernanceResourcePermissionFlowTests` | 52 |
+| `PostgresAccessFactsProviderTests` | 5 |
+
+Local full run on the working tree (base SHA plus Stage 3 changes), after the last code change:
+
+```text
+Domain 2795, Application 1174, Infrastructure 263, Platform 153, API 591, Architecture 644,
+Integration 868 (Docker, 6 m 33 s); every suite Failed 0, Skipped 0.
+Net change against the CI counts at the base SHA: Domain +4 (2791 to 2795), Application +6 (1168 to 1174),
+Integration +7 (861 to 868). OpenAPI export is byte-identical to backend/contracts/openapi/notrelix.v1.json (no
+contract change, no frontend codegen). `dotnet format --verify-no-changes` exit 0; `make docs-check` PASS.
+```
+
+### WG-DEBT-001..015
+
+| ID | Disposition at 2026-10-23 | Evidence |
+|---|---|---|
+| WG-DEBT-001 | CLOSED | Evaluator is pure `AccessPolicyEngine` over `AccessFacts`; facts through `PostgresAccessFactsProvider`; `PermissionService` no longer exists. |
+| WG-DEBT-002 | CLOSED for 39 of 39 actions (ViewMembers for a Guest closed by item 6) | Typed `WorkspaceRoleBaseline` replaces the string branches; accepted decisions applied for InviteMember, RemoveMember, ManageWorkspaceSettings and CreateBoard (root); guards in Domain. See "WG-DEBT-002 closure" below. |
+| WG-DEBT-003 | CLOSED by bounding | Certified core of a resource entry is User or Team subject, Allow-only, no expiry or condition (product `governance.md` section 16). The `ResourcePermission` factory refuses other subject types and has no effect, condition or priority input; the grant validator rejects other subjects and any expiry. `ResourcePermissionTests` (Domain), `GrantResourcePermissionCommandValidatorTests` (Application). Pre-existing rows with another subject type stay stored and fail closed (access facts match User and Team only); no migration. |
+| WG-DEBT-004 | OPEN, secondary (non-core) | `WorkspacePolicy` is not in the evaluator. Carried to P3 handoff as non-core. |
+| WG-DEBT-005 | CLOSED by bounding | Certified subject set is User and Team for resource entries (same change as 003); permission rules keep SQL-level subject filtering. No command creates `PermissionRule` rows (seed-only), so no rule-side validator is needed yet. |
+| WG-DEBT-006 | OPEN, carried to P3 | `AccessFactsQuery` and `ResourceVisibilityQuery` read `work.boards` and `work.board_members`. See P3 handoff below. |
+| WG-DEBT-007 | OPEN, carried to P3 | Generic `ManageBoard` is requested by 47 commands. See P3 handoff below. |
+| WG-DEBT-008 | CLOSED | Executed: `RlsRuntimeEnforcementTests.RuntimeMembershipSuspend_RevokesGrant_AndDeniesUnderAppRole` and `RuntimeMembershipRemoval_RevokesGrant_AndDeniesUnderAppRole` (23/23 in class), `AccessGrantProjectionTests` 7/7; unit `SuspendMemberCommandHandlerTests`. SHA and counts above. |
+| WG-DEBT-009 | CLOSED | Executed: `WorkspaceMembershipConcurrencyEvidenceTests.ConcurrentDemoteAndRemoveOwners_NeverLeavesZeroActiveOwners`. Residual closed: `TransferOwnership` now takes the same workspace row lock (`IWorkspaceOwnerUpdateLocker`); `ConcurrentTransferOwnershipAndRemoveOfNewOwner_NeverLeavesZeroActiveOwners` proves the concurrent case. |
+| WG-DEBT-010 | CLOSED | Executed: `ConcurrentDuplicateMembershipAdds_DatabaseAllowsOnlyOneMember` and `ConcurrentAcceptsOfSameInvitation_DatabaseAllowsExactlyOneMember`. Residual closed: the same test now maps the real PostgreSQL unique violation through `ExceptionMappingBehavior` to `ConflictException` (HTTP 409). |
+| WG-DEBT-011 | OPEN, secondary (non-core) | `WorkspacePolicy` delivery depth; P3 handoff as non-core. |
+| WG-DEBT-012 | OPEN, secondary (non-core) | `CustomRole` is Domain-only; no Application feature. |
+| WG-DEBT-013 | OPEN, secondary (non-core) | ShareLink create and disable exist; no token consumption path. Certify released depth only. |
+| WG-DEBT-014 | OPEN, secondary (non-core) | `PermissionTemplate` has no apply use case. |
+| WG-DEBT-015 | CLOSED | Legacy names replaced in `backend/docs/architecture/security-tenancy-authorization.md` (current contract list, `AccessControlBehavior`, permission-versioning section); terminology notes added to ADR-001, ADR-006 and PR-WG-00 without rewriting accepted decisions; stale comments in `PermissionRules.cs` and `ApiTokenHttpFlowTests.cs` corrected. Remaining mentions in workstream execution records and architecture-test fixtures are historical or intentional negative fixtures. |
+
+### WG-DEBT-002 closure (role baseline, 2026-10-23)
+
+Decision: the user accepted every recommendation of the role baseline proposal on 2026-10-23. Final matrix and
+guards: product `governance.md` sections 44.1 to 44.3. Classification: Class B/C/H (product semantic change to
+role defaults, authorization). Rules: NRX-003, NRX-004, NRX-012. No schema, API shape, OpenAPI or event change
+(defaults are code, not rows); a Guest-facing behaviour is unchanged.
+
+```text
+Base SHA: 2e0c5032c3ac65ab4d1c0cd216a533cb52b2a11c (develop, clean tree at start), plus the uncommitted change set.
+Typed table: Application/Features/Governance/Authorization/WorkspaceRoleBaseline.cs (+ AccountRoleBaseline);
+  AccessPolicyEngine.EvaluatePermission reads it for every request not decided by a Board/Page/Space level.
+Rows changed (4 of the 5 proposed): InviteMember Admin D to A; RemoveMember Admin D to A; ManageWorkspaceSettings
+  Admin D to A; CreateBoard at the workspace root Admin and Member D to A (Guest stays D).
+Row ViewMembers for Guest: changed from A to D by item 6 ("Item 6 closure", below).
+Guards (Domain rules, explicit facts from Application, stable codes):
+  Workspaces_Member_ActorCannotAssignRole (non-Owner adds only Member or Guest)
+  Workspaces_Member_ActorCannotActOnMember (non-Owner removes, suspends, activates only Member or Guest targets)
+```
+
+Differential proof of "the other rows keep behaviour": the previous engine and the new engine were run side by
+side over 19152 scenarios (38 actions x 7 resource kinds x 4 roles x 6 fact shapes x 3 rule shapes). The only
+differences were the accepted ones (InviteMember, RemoveMember, ManageWorkspaceSettings for Admin; CreateBoard
+for Admin and Member on the workspace resource). The temporary comparison harness was removed afterwards.
+
+Characterization tests changed because of the accepted change:
+`WorkspaceMembershipConcurrencyEvidenceTests.ConcurrentTransferOwnershipAndRemoveOfNewOwner_NeverLeavesZeroActiveOwners`
+now expects `Workspaces_Member_ActorCannotActOnMember` (the former owner is an Admin after the transfer and may not
+remove the new Owner) instead of `Workspaces_Owner_CannotRemoveLastOwner`; the "exactly one active Owner" assertion
+is unchanged. `AddMemberCommandHandlerTests` fixtures now seed the acting member and a matching workspace id (the
+old fixtures passed through the create path by accident). Domain `RuleCodes.approved.txt` gained the two codes.
+
+Item 6 was first left open (stop condition, AGENTS.md section 13): the web shell read the workspace member list for
+every role (`use-workspace-viewer.ts` derived the viewer's role from it; `sidebar.tsx`, `workspace-shell.tsx`,
+`use-doc-page-host.ts` read it for names). It is closed below ("Item 6 closure").
+
+Full local run after the last code change (backend.slnx Release build 0 errors; `dotnet format --verify-no-changes` exit 0;
+`make docs-check` PASS): Domain 2812, Application 1302, Infrastructure 263, Platform 153, API 591, Architecture 644,
+Integration 885 (Docker, PostgreSQL via Testcontainers, 5 m 45 s, includes the 17 `WorkspaceRoleBaselineIntegrationTests`
+for the changed rows and guards); every suite Failed 0, Skipped 0. OpenAPI and generated frontend contracts are
+unchanged (no API shape change; API drift tests pass), so no codegen was run.
+
+Frontend mock-backend gaps (not changed, listed only; `frontend/packages/dev/mock-backend/src`):
+`workspace.members.remove`, `.suspend` and `.activate` allow Owner and Admin (matches the baseline) but have no
+actor-versus-target guard, so a mock Admin can act on an Owner or another Admin (the producer rejects it with
+`Workspaces_Member_ActorCannotActOnMember`); `boards.create` (`POST /workspaces/:workspaceId/boards`) denies nobody at
+the workspace root, so a mock Guest can create a root Board (the producer denies a Guest, 403); the mock has no direct
+add-member handler (invitations only), so the role cap has no mock counterpart; `canManageMembers` already treats
+Owner and Admin as the settings and invitation managers, which matches the new rows.
+
+### Item 6 closure: ViewMembers denied for a Guest (2026-10-23)
+
+Class B/C/E/H (role default, authorization, additive public contract, web shell). Rules: NRX-003, NRX-004, NRX-007,
+NRX-008, NRX-012. Decision: accepted by the user on 2026-10-23 with the other five role baseline items, on the
+condition that a guest-safe read exists first. Product text: `governance.md` sections 44.1 and 44.3.
+
+```text
+Contract (additive, no break): GET /api/v1/workspaces/{workspaceId}/members/me  (Workspaces.Members.GetMyMembership)
+  returns the caller's own WorkspaceMemberDto (role, status, jobTitle, version, name, avatar; phone only for a
+  non-guest who opted in); ViewWorkspace, so any active member including a Guest; never another person.
+  Application: GetMyWorkspaceMembershipQuery. Producer: backend/contracts/openapi/notrelix.v1.json, regenerated by
+  `dotnet run -- --export-openapi <abs path>`; consumer schema regenerated by `pnpm codegen` (idempotent).
+Cell: WorkspaceRoleBaseline ViewMembers Guest A to D. GET members now answers 403 for a Guest.
+Consumers: apps/web is the only consumer of the list. use-workspace-viewer.ts reads members/me for the role and
+  requests the list only for a role that may list people; workspace-shell.tsx and sidebar.tsx use the viewer;
+  use-doc-page-host.ts takes names from the page's own people read; the Space add-member picker is empty for a
+  Guest; the Members page shows a Guest only their own row. Query key `members/me` sits under the workspace-scoped
+  `members` key. Mobile and marketing do not read the list.
+Mock backend: GET members/me for any member; GET members answers 403 for a Guest persona (same as producer).
+```
+
+Evidence (local, after the last code change; base SHA a91ad921a plus the uncommitted change set):
+
+```text
+backend.slnx Release build: 0 errors. dotnet format --verify-no-changes --no-restore: exit 0.
+Domain 2812, Application 1314, Infrastructure 263, Platform 153, API 592, Architecture 644 (request-execution
+baseline gained the new query), Integration 894 (Docker, PostgreSQL): every suite Failed 0, Skipped 0.
+Pinning test ViewMembers_GuestRemainsAllowed_UntilAGuestSafeNameReadExists replaced by, in
+WorkspaceRoleBaselineIntegrationTests: ViewMembers_GuestIsForbidden_WhileMemberAndAdminStillListMembers,
+GetMyMembership_GuestReadsOnlyTheirOwnRow, GetMyMembership_ANonMemberIsRefused,
+GuestOnASharedBoard_StillSeesAssigneeAndCommentAuthorNames_WithoutTheMemberList.
+MemberProfileIntegrationTests: the guest phone test now asserts the list is forbidden and the own row has no phone.
+make docs-check PASS.
+```
+
+WG-DEBT-002 is now closed for 39 of 39 actions.
+
+### Security follow-up: credential split and invitation resend parity (2026-10-23)
+
+Class H (authorization, security configuration), rules NRX-003, NRX-004, NRX-012; GOV-013. A security review found
+two escalation paths opened by granting Admin the `ManageWorkspaceSettings` and `InviteMember` rows. No schema,
+API shape, OpenAPI or event change (`PermissionAction` is not part of the OpenAPI contract; API drift tests pass).
+
+```text
+1. API tokens. CreateApiToken, ListApiTokens and RevokeApiToken were authorized by ManageWorkspaceSettings, so an
+   Admin could mint a credential and list or revoke the Owner's tokens. New action PermissionAction.ManageApiTokens
+   (appended last in the enum), baseline Owner A, Admin D, Member D, Guest D, used by all three. A created token
+   carries scopes = null and is bound to the creating user and workspace; nothing in the repository enforces token
+   scopes, so a token acts with the creating user's own Governance permissions (an Owner token holds Owner rights).
+   Issuance still requires a session and a purpose-bound step-up proof.
+   Other ManageWorkspaceSettings users, all safe for Admin (none issues a credential or changes security
+   configuration): CreateAutomationRule and SetAutomationRuleEnabled (workspace automation rules, billing capacity
+   checked), RebuildWorkspacePlacements (analytics projection rebuild, no data authority), TriggerCalendarSync
+   (not implemented, throws). None moved.
+2. ResendInvitation. A non-Owner could resend a legacy Admin invitation (Admin is no longer invitable, but older rows
+   exist) and so re-issue a token that makes the invitee an Admin. The handler now reads the actor's active role
+   (WorkspaceActorRoleLookup) and applies WorkspaceMemberRules.EnsureActorCanAssignRole to the invitation's role
+   before the token is rotated: Workspaces_Member_ActorCannotAssignRole, token and generation unchanged, no event.
+   Parity check: CancelInvitation only revokes (cannot create a membership); ChangeInvitationRole and Create refuse
+   Admin and Owner in the Domain (Workspaces_Invitation_CannotInviteAsAdmin / CannotInviteAsOwner);
+   Resend/RevokeResourceInvitation concern Guest-only resource invitations by their issuer; AcceptInvitation carries
+   no actor. No other path needed the guard.
+```
+
+Tests: `WorkspaceRoleBaselineTests` (ManageApiTokens rows, 39 actions classified);
+`ResendInvitationActorGuardTests` (Application: Admin rejected on a legacy Admin invitation with the rule code and
+nothing changed, Owner allowed, Admin allowed on Member and Guest, actor without membership forbidden);
+`WorkspaceCredentialAndInvitationEscalationTests` (Integration, real pipeline on PostgreSQL: Admin gets 403 on
+create, list and revoke with no row written and the Owner's token still active, Owner creates, lists and revokes,
+Admin rejected and Owner allowed on a legacy Admin resend with the persisted token and generation checked, Admin
+resends Member and Guest). `ApiTokenHttpFlowTests` comments updated to the new action. The seed of
+`WorkspaceInvitationConcurrencyEvidenceTests` now creates the resending Owner as an active member (the guard reads
+the actor's role).
+
+Full local run after the last code change (backend.slnx Release build 0 errors; `dotnet format --verify-no-changes`
+exit 0; `make docs-check` PASS): Domain 2812, Application 1313, Infrastructure 263, Platform 153, API 591,
+Architecture 644, Integration 891 (Docker, 6 m 55 s); every suite Failed 0, Skipped 0. OpenAPI and generated
+frontend contracts unchanged, so no codegen was run.
+
+### WG-DEBT-CERT-001..014
+
+| ID | Disposition at 2026-10-23 | Evidence |
+|---|---|---|
+| CERT-001 | CLOSED | Same change as WG-DEBT-015; PR-WG-00 carries a terminology note. |
+| CERT-002 | CLOSED | Executed, see WG-DEBT-010. |
+| CERT-003 | CLOSED | Executed, see WG-DEBT-009. |
+| CERT-004 | CLOSED | Executed, see WG-DEBT-008. |
+| CERT-005 | CLOSED | `GovernanceResourcePermissionFlowTests`: `ArchivePage_ExpiredAllowRule_IsIgnored_AndRequestIsForbidden`, `ArchivePage_NotYetActiveAllowRule_IsIgnored_AndRequestIsForbidden`, `ArchivePage_ExpiredDenyRule_IsIgnored_ManagerStillAllowed`, `ArchivePage_SamePriorityDenyAndAllowRules_DenyWins`, on real PostgreSQL. A rule's `ConditionJson` is not evaluated by the facts query; that is outside the certified core (rules carry no condition command). |
+| CERT-006 | CLOSED | Added `Grant_OnBoardOfAnotherAccount_IsNotFound_AndWritesNothing` (board of account B addressed by the owner of account A: NotFound, no entry written). |
+| CERT-007 | CLOSED | Added `AccessControlBehaviorTests.Facts_provider_fault_fails_closed_and_never_runs_the_handler`: a throwing facts provider denies the request and the handler never runs. |
+| CERT-008 | PARTIAL, scoped | Repository and image secret scan runs in `security-ci.yml` (Trivy with `.github/security/trivy-secret.yaml`). No log or telemetry redaction test; claim limited to the repository scan. |
+| CERT-009 | CLASSIFIED, no new fixture | P2 migrations since the baseline are additive except `20261011025035_AddSpaceHierarchyAndMembership`, whose SQL backfills (positions, closure, creator Admin) are executed against legacy-shaped rows and re-run for idempotence by `SpaceHierarchyIntegrationTests.MigrationBackfill_*` on real PostgreSQL. No supported-upgrade chain exists for the greenfield baseline, so a full-chain fixture is not required for Milestone B; it becomes required with the first production upgrade (`backend/docs/operations/migrations-and-data-change.md`, BE-OPS-DATA-005). |
+| CERT-010..013 | OPEN, secondary | ShareLink consumption, CustomRole, WorkspacePolicy, PermissionTemplate (see 011 to 014). |
+| CERT-014 | CLOSED | `SecurityAuditMiddleware` persists through `ISecurityAuditSink` in its own short transaction (commit 0fa43eeda); `SecurityActivityHttpFlowTests.SecurityAudit_IsDurablyPersisted_ForAFailedSignIn` asserts the committed `SecurityEvent` row. |
+
+### Optional hardening recorded
+
+```text
+TransferOwnership owner row lock: done (see WG-DEBT-009).
+GetRecentResources / GetPinnedResources: entries the caller can no longer see are omitted, decided by
+  IResourceVisibility. Tests: WorkspaceNavigationHandlerTests (2 added),
+  WorkspaceNavigationIntegrationTests.RecentsAndPins_DropReferencesToABoardTheMemberCanNoLongerSee.
+```
+
+### P3 handoff (WG-DEBT-006, WG-DEBT-007 and secondary debt)
+
+```text
+Resource contracts: ResourceKind and ResourceRef (SharedKernel); Board facts through AccessFacts, plus the
+  Work-published IBoardChildAuthorizationFacts and IPageAuthorizationFacts seams.
+Actions P3 may rely on for Boards: ViewBoard, ManageBoardPermission, CreateBoardView, UpdateBoardView,
+  CreateField, UpdateField, DeleteField, CreateItem, UpdateItem, MoveItem, AssignItem, CreateComment
+  (thresholds GOV-027; Guest cap GOV-030; Board child decided on its parent Board, GOV-033).
+Security assumptions: Application authorization first, RLS as defense in depth; Owner passes after the
+  resource-exists check; Admin has no default on Private Boards or Pages (GOV-013).
+
+WG-DEBT-006 (carried): AccessFactsQuery.cs and ResourceVisibilityQuery.cs read work.boards and
+  work.board_members directly. It is not a public producer contract. No new Work code may widen that read.
+  Closure options for P3: a Work-published fact seam (like IBoardChildAuthorizationFacts) or an accepted ADR
+  exception with an owner.
+
+WG-DEBT-007 (carried): PermissionAction.ManageBoard is requested by 47 commands. On a Board (the Board or a
+  child) it means Board management and needs the Manager level; on a Page it keeps the Editor threshold.
+  Current per-use list (command folders under backend/src/Notrelix.Application/Features):
+    Board lifecycle and members (10): AddBoardMember, ArchiveBoard, DeleteBoard, MoveBoardToSpace,
+      RemoveBoardMember, RestoreBoard, UnarchiveBoard, UpdateBoard, UpdateBoardMemberRole, UpdateBoardVisibility
+    Forms (11): AddFormQuestion, CloseForm, DeleteForm, DeleteFormSubmission, MarkFormSubmissionAsSpam,
+      ProcessFormSubmission, PublishForm, RejectFormSubmission, RestoreForm, UpdateFormDetails, UpdateFormQuestion
+    Approvals (5): ApproveApprovalRequest, CancelApprovalRequest, DeleteApprovalRequest,
+      RejectApprovalRequest, RestoreApprovalRequest
+    Relations (3): DeleteBoardRelation, PauseBoardRelation, ResumeBoardRelation
+    Templates (3): ArchiveBoardTemplate, DeleteBoardTemplate, PublishBoardTemplate
+    Saved filters / Views (7): DeleteSavedFilter, RenameSavedFilter, RestoreSavedFilter,
+      UpdateSavedFilterFilters, UpdateSavedFilterGroup, UpdateSavedFilterSorts, UpdateSavedFilterVisibility
+    Documents (8, Page-decided, Editor threshold): CreateBlock, DeleteBlock, UpdateBlock, DeletePage, MovePage,
+      PublishPage, SetPageDeadline, UpdatePage
+  Open for P3: classify each use as Board management (Manager), content (Editor, with the specific content
+  action) or approval participation, and split or record the per-use level matrix. Forms, Approvals and
+  Templates are the likely over-broad uses. A new Work command must not take ManageBoard merely because it is
+  the broadest available action.
+
+Secondary, non-core, deferred: WG-DEBT-004 and 011 (WorkspacePolicy), 012 (CustomRole), 013 (ShareLink
+  consumption), 014 (PermissionTemplate apply). P3 must not depend on them.
+
+Invalidating changes: any change to AccessFacts fields used by Work, to ResourceKind/PermissionAction
+  semantics, to the Board level mapping, or to the built-in role baseline (WG-DEBT-002, now typed as `WorkspaceRoleBaseline`) re-opens this handoff.
+```

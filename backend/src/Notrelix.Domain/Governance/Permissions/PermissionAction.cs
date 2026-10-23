@@ -38,5 +38,7 @@ public enum PermissionAction
     ArchivePage,
     ManagePagePermission,
     CreateComment,
-    ManageIntegrations
+    ManageIntegrations,
+    ManageMemberProfile,
+    ManageApiTokens
 }

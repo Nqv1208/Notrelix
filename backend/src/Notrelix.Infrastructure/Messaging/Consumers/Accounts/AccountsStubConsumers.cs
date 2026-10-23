@@ -2,6 +2,7 @@ using Notrelix.Application.Events.Accounts;
 
 namespace Notrelix.Infrastructure.Messaging.Consumers.Accounts;
 
+[OrderingNotApplicable(OrderingReasons.LogOnly)]
 public sealed class AccountCreatedConsumer : IConsumer<AccountCreatedIntegrationEvent>
 {
     private readonly ILogger<AccountCreatedConsumer> _logger;

@@ -1,3 +1,4 @@
+import { useAccountId } from "@notrelix/query";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   createWorkspaceService,
@@ -18,12 +19,15 @@ export function createUseCreateWorkspace({
   const service = createWorkspaceService(api, endpoints);
 
   return function useCreateWorkspace() {
+    const accountId = useAccountId();
     const queryClient = useQueryClient();
 
     return useMutation({
       mutationFn: service.create,
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: workspaceQueryKeys.all });
+        queryClient.invalidateQueries({
+          queryKey: workspaceQueryKeys.all(accountId),
+        });
       },
     });
   };

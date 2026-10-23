@@ -157,6 +157,7 @@ It does not claim that every test project proves every behavior in the reference
 | Project | `InternalsVisibleTo` |
 |---|---|
 | `Notrelix.Domain` | `Notrelix.Domain.Tests` |
+| `Notrelix.Infrastructure` | `Notrelix.Infrastructure.Tests`<br>`Notrelix.Integration.Tests` |
 | `Notrelix.Platform` | `Notrelix.Platform.Tests` |
 
 ## Source inputs

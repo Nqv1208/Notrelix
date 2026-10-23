@@ -1,4 +1,5 @@
 using Notrelix.API.Endpoints.Admin;
+using Notrelix.API.Realtime;
 using Notrelix.API.Endpoints.Automation.Executions;
 using Notrelix.API.Endpoints.Automation.Rules;
 using Notrelix.API.Endpoints.Collaboration.Activity;
@@ -47,6 +48,9 @@ public static class EndpointRouteBuilderExtensions
         app.RegisterProfileEndpoints();
         app.RegisterApiTokenEndpoints();
         app.MapHealthEndpoints();
+
+        // Realtime gateway (WebSocket)
+        app.MapRealtimeGateway();
 
         // Accounts
         app.RegisterAccountEndpoints();
