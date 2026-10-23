@@ -298,6 +298,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/notification-preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the caller's notification preferences in a workspace
+         * @description One row per notification type (assigned, mention, approval, overdue, watching, invitation, digest) with its in-app and email value; a cell the caller never changed has its default. Version is 0 until the first change is saved.
+         */
+        get: operations["Collaboration.Preferences.GetNotificationPreferences"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Change the caller's notification preferences in a workspace
+         * @description Partial and all-or-nothing: only the named channels of the named types change. Answers the full matrix, 412 when expectedVersion is stale, 400 or 422 for an unknown type or no change requested. Setting values that already hold changes nothing and keeps the version.
+         */
+        patch: operations["Collaboration.Preferences.UpdateNotificationPreferences"];
+        trace?: never;
+    };
     "/api/v1/pages/{pageId}/blocks": {
         parameters: {
             query?: never;
@@ -4325,6 +4349,16 @@ export interface components {
         "Notrelix.API.Contracts.Collaboration.Comments.Requests.UpdateCommentRequest": {
             contentMd?: string | null;
         };
+        "Notrelix.API.Contracts.Collaboration.Preferences.Requests.NotificationPreferenceRowRequest": {
+            type?: string | null;
+            inApp?: boolean | null;
+            email?: boolean | null;
+        };
+        "Notrelix.API.Contracts.Collaboration.Preferences.Requests.UpdateNotificationPreferencesRequest": {
+            /** Format: int64 */
+            expectedVersion?: number | null;
+            rows?: components["schemas"]["Notrelix.API.Contracts.Collaboration.Preferences.Requests.NotificationPreferenceRowRequest"][] | null;
+        };
         "Notrelix.API.Contracts.Documents.Blocks.Requests.BatchUpdateBlockItemRequest": {
             /** Format: uuid */
             id?: string;
@@ -5019,6 +5053,16 @@ export interface components {
             /** Format: date-time */
             createdAt?: string;
             kind?: string | null;
+        };
+        "Notrelix.Application.Features.Collaboration.Preferences.DTOs.NotificationPreferenceRowDto": {
+            type?: string | null;
+            inApp?: boolean;
+            email?: boolean;
+        };
+        "Notrelix.Application.Features.Collaboration.Preferences.DTOs.NotificationPreferencesDto": {
+            /** Format: int64 */
+            version?: number;
+            rows?: components["schemas"]["Notrelix.Application.Features.Collaboration.Preferences.DTOs.NotificationPreferenceRowDto"][] | null;
         };
         "Notrelix.Application.Features.Documents.DTOs.PageDto": {
             /** Format: uuid */
@@ -6649,6 +6693,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Collaboration.Preferences.GetNotificationPreferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Collaboration.Preferences.DTOs.NotificationPreferencesDto"];
+                };
+            };
+        };
+    };
+    "Collaboration.Preferences.UpdateNotificationPreferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Collaboration.Preferences.Requests.UpdateNotificationPreferencesRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Collaboration.Preferences.DTOs.NotificationPreferencesDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Precondition Failed */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
                 };
             };
         };

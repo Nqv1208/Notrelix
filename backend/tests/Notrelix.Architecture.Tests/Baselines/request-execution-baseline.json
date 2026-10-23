@@ -475,6 +475,56 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.Collaboration.Preferences.Commands.UpdateNotificationPreferences.UpdateNotificationPreferencesCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Collaboration.Preferences.Commands.UpdateNotificationPreferences.UpdateNotificationPreferencesCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Collaboration.Preferences.Queries.GetNotificationPreferences.GetNotificationPreferencesQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Collaboration.Preferences.Queries.GetNotificationPreferences.GetNotificationPreferencesQueryHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.Documents.Blocks.Commands.BatchUpdateBlocks.BatchUpdateBlocksCommand",
     "kind": "Command",
     "principalMarkers": [

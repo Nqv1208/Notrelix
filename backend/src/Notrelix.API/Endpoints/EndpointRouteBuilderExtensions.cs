@@ -5,6 +5,7 @@ using Notrelix.API.Endpoints.Automation.Rules;
 using Notrelix.API.Endpoints.Collaboration.Activity;
 using Notrelix.API.Endpoints.Collaboration.Attachments;
 using Notrelix.API.Endpoints.Collaboration.Comments;
+using Notrelix.API.Endpoints.Collaboration.Preferences;
 using Notrelix.API.Endpoints.Accounts;
 using Notrelix.API.Endpoints.Documents.Blocks;
 using Notrelix.API.Endpoints.Documents.Pages;
@@ -117,6 +118,7 @@ public static class EndpointRouteBuilderExtensions
         app.RegisterBoardItemActivityEndpoints();
         app.MapAttachmentsEndpoints();
         app.MapCommentsEndpoints();
+        app.RegisterNotificationPreferenceEndpoints();
 
         // Governance
         app.MapResourcePermissionsEndpoints();

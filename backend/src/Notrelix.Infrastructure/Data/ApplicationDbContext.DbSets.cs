@@ -53,6 +53,7 @@ using Notrelix.Domain.WorkManagement.Workload;
 using Notrelix.Domain.Collaboration.Attachments;
 using Notrelix.Domain.Collaboration.Comments;
 using Notrelix.Domain.Collaboration.Mentions;
+using Notrelix.Domain.Collaboration.Preferences;
 using Notrelix.Domain.Collaboration.Presence;
 using Notrelix.Domain.Collaboration.Reactions;
 using Notrelix.Domain.Collaboration.ReadStates;
@@ -283,7 +284,7 @@ public partial class ApplicationDbContext
     // Canonical notifications
     public DbSet<NotificationItemRecord> NotificationItems => Set<NotificationItemRecord>();
     public DbSet<NotificationRecipientRecord> NotificationRecipients => Set<NotificationRecipientRecord>();
-    public DbSet<NotificationPreferenceRecord> CanonicalNotificationPreferences => Set<NotificationPreferenceRecord>();
+    public DbSet<NotificationPreferenceSet> NotificationPreferenceSets => Set<NotificationPreferenceSet>();
     public DbSet<NotificationCounterRecord> NotificationCounters => Set<NotificationCounterRecord>();
 
     // Collaboration read states

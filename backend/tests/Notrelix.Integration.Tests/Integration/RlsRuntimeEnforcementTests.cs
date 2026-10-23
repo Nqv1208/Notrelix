@@ -15,6 +15,7 @@ using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Domain.Workspaces.Navigation;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Authz;
+using Notrelix.Domain.Collaboration.Preferences;
 using Notrelix.Infrastructure.Data.Notifications;
 using Notrelix.Infrastructure.Data.Rls;
 using Notrelix.Infrastructure.Workspaces.Members;
@@ -319,6 +320,42 @@ public sealed class RlsRuntimeEnforcementTests : IAsyncLifetime
 
         seenByA.Should().BeEquivalentTo(["Mention notification A1"],
             "a granted workspace-A member observes the workspace notification");
+    }
+
+    /// <summary>
+    /// The notification preference matrix is personal state: under the application role a person sees only
+    /// their own set and explicit choices, never another person's in the same workspace.
+    /// </summary>
+    [Fact]
+    public async Task NotificationPreferences_AreVisibleOnlyToTheirOwner()
+    {
+        var userB = Guid.Parse("00000000-0000-0000-0000-00000000BB04");
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using (var context = CreateContext(tenant))
+        {
+            foreach (var user in new[] { UserId, userB })
+            {
+                context.NotificationPreferenceSets.Add(NotificationPreferenceSet.Create(
+                    AccountA, WsA1, user,
+                    [new NotificationPreferenceChange(NotificationTypes.Mention, NotificationChannels.InApp, false)],
+                    FixedTime)!);
+            }
+
+            await context.SaveChangesAsync();
+        }
+
+        var setsSeenByA = await QueryScalarsAsAppRoleAsync(
+            "SELECT user_id::text FROM notifications.notification_preference_sets", userId: UserId);
+        var entriesSeenByB = await QueryScalarsAsAppRoleAsync(
+            "SELECT user_id::text FROM notifications.notification_preferences", userId: userB);
+        var setsSeenByStranger = await QueryScalarsAsAppRoleAsync(
+            "SELECT user_id::text FROM notifications.notification_preference_sets",
+            userId: Guid.Parse("00000000-0000-0000-0000-00000000BB05"));
+
+        setsSeenByA.Should().BeEquivalentTo([UserId.ToString()]);
+        entriesSeenByB.Should().BeEquivalentTo([userB.ToString()]);
+        setsSeenByStranger.Should().BeEmpty("a person never sees another person's preferences");
     }
 
     private static readonly Guid NotificationSourceEventId =
