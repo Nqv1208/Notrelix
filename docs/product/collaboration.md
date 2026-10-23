@@ -480,6 +480,11 @@ Channel delivery state is separate from Notification read state.
 
 Notification preferences may depend on User, Account policy, type, and urgency.
 
+Owner decision (D15, accepted 2026-10-23): the notification preference matrix (per person and Workspace,
+notification type by channel) is Collaboration-owned. Its storage and API wait for a stable notification type
+vocabulary: today only `mention.created` is produced by a consumer, so the set of types, the default per type
+and channel, and the channels (in-app and email) are product decisions still to be recorded here.
+
 Provider preferences cannot weaken mandatory security delivery when policy says otherwise.
 
 # 59. Notification read/dismiss

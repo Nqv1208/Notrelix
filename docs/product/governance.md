@@ -528,6 +528,8 @@ restore a deleted Space                               → workspace Owner, Admin
 move a Space                                          → ManageSpaces on the Space and on the target parent
                                                         (or on the Workspace for the root)
 ManageTeams (create/rename/archive/delete Teams, manage Team members) → workspace Owner, Admin
+ManageMemberProfile (edit another member's Workspace job title; D15)  → workspace Owner, Admin
+                                                                        (a member edits their own title as a plain member)
 create a Board/Page in a Space (CreateBoard/CreatePage on the Space)  → Editor level on the Space
 move a Board/Page to another Space or out of a Space                  → ManageBoard on the resource
                                                                         and the create right on the target

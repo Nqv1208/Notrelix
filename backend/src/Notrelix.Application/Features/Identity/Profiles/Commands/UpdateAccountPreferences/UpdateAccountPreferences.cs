@@ -22,6 +22,11 @@ public sealed record UpdateAccountPreferencesCommand
     public string? Locale { get; init; }
     public string? Timezone { get; init; }
     public string? Theme { get; init; }
+
+    /// <summary>E.164-ish phone (see <c>UserPhone</c>); a blank value clears it; omitted keeps it.</summary>
+    public string? Phone { get; init; }
+
+    public bool? PhoneVisibleToWorkspaceMembers { get; init; }
 }
 
 public sealed class UpdateAccountPreferencesCommandHandler
@@ -73,10 +78,11 @@ public sealed class UpdateAccountPreferencesCommandHandler
             throw StaleVersion(request.ExpectedVersion, profile.Version);
         }
 
-        profile.ApplyAccountPreferences(request.Locale, request.Timezone, request.Theme, now);
+        profile.ApplyAccountPreferences(
+            request.Locale, request.Timezone, request.Theme, now, request.Phone, request.PhoneVisibleToWorkspaceMembers);
 
         return Result<AccountPreferencesDto>.Success(
-            new AccountPreferencesDto(profile.Locale, profile.Timezone, profile.Theme, profile.Version));
+            new AccountPreferencesDto(profile.Locale, profile.Timezone, profile.Theme, profile.Version, profile.Phone, profile.PhoneVisibleToWorkspaceMembers));
     }
 
     private static PreconditionFailedException StaleVersion(long expected, long current) => new(

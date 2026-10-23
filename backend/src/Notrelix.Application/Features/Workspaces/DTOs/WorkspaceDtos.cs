@@ -20,14 +20,23 @@ public record WorkspaceDto(
 );
 
 /// <param name="Status">The membership status enum name (<c>Active</c> or <c>Suspended</c>). Removed members are not listed: removal ends the participation (docs/product/workspaces.md §13, §20).</param>
+/// <param name="JobTitle">The member's Workspace job title (Workspaces-owned member profile); null when none is set.</param>
+/// <param name="Version">The WorkspaceMember aggregate version, sent back as <c>expectedVersion</c> by the job-title writes.</param>
+/// <param name="Phone">The person's account phone in E.164 form. Present only when the person turned on <c>phoneVisibleToWorkspaceMembers</c> and the reader is a non-guest member of this Workspace; never present for guests, share links or public views.</param>
 public record WorkspaceMemberDto(
     Guid UserId,
     string Name,
     string? Avatar,
     string Role,
     DateTime JoinedAt,
-    string Status
+    string Status,
+    string? JobTitle = null,
+    long Version = 0,
+    string? Phone = null
 );
+
+/// <summary>The Workspace member profile fields a job-title write returns; <see cref="Version"/> is the next <c>expectedVersion</c>.</summary>
+public record WorkspaceMemberProfileDto(Guid UserId, string? JobTitle, long Version);
 
 /// <param name="ResourceKind">Set for a resource invitation (WSP-026): <c>work-management.board</c> or <c>documents.page</c>; null for a Workspace invitation.</param>
 /// <param name="ResourceId">The one resource a resource invitation shares.</param>

@@ -172,4 +172,43 @@ public sealed class AccountPreferencesPersistenceTests : IAsyncLifetime
         again.Version.Should().Be(first.Version);
         (await ReadAsync(_alice)).Version.Should().Be(first.Version);
     }
+    [Fact]
+    public async Task Phone_DefaultsToSelfOnly_IsStoredNormalized_AndVisibilityIsAnExplicitOptIn()
+    {
+        (await ReadAsync(_alice)).Should().Match<AccountPreferencesDto>(d => d.Phone == null && !d.PhoneVisibleToWorkspaceMembers);
+
+        var first = (await UpdateAsync(_alice, new UpdateAccountPreferencesCommand { ExpectedVersion = 0, Phone = " +84 90-123.4567 " })).Data!;
+        first.Phone.Should().Be("+84901234567");
+        first.PhoneVisibleToWorkspaceMembers.Should().BeFalse("saving a phone does not share it");
+
+        var shared = (await UpdateAsync(_alice, new UpdateAccountPreferencesCommand { ExpectedVersion = first.Version, PhoneVisibleToWorkspaceMembers = true })).Data!;
+        shared.Phone.Should().Be("+84901234567", "toggling the flag keeps the phone");
+        (await ReadAsync(_alice)).Should().Be(shared);
+
+        var cleared = (await UpdateAsync(_alice, new UpdateAccountPreferencesCommand { ExpectedVersion = shared.Version, Phone = "" })).Data!;
+        cleared.Phone.Should().BeNull();
+        cleared.PhoneVisibleToWorkspaceMembers.Should().BeTrue("clearing the phone does not touch the flag");
+    }
+
+    [Fact]
+    public async Task InvalidPhone_IsRejected_AndLeavesTheStoredPreferencesUnchanged()
+    {
+        var first = (await UpdateAsync(_alice, new UpdateAccountPreferencesCommand { ExpectedVersion = 0, Phone = "+84901234567" })).Data!;
+
+        var bad = async () => await UpdateAsync(_alice, new UpdateAccountPreferencesCommand { ExpectedVersion = first.Version, Theme = "dark", Phone = "0901234567" });
+
+        await bad.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>();
+        (await ReadAsync(_alice)).Should().Be(first, "an invalid phone rejects the whole write");
+    }
+
+    [Fact]
+    public async Task OneUsersPhone_IsNeverReadableByAnotherUser_ThroughTheProfileRead()
+    {
+        await UpdateAsync(_alice, new UpdateAccountPreferencesCommand { ExpectedVersion = 0, Phone = "+84901234567", PhoneVisibleToWorkspaceMembers = true });
+
+        var bobView = await ReadAsync(_bob);
+
+        bobView.Phone.Should().BeNull("the profile read is always the principal's own, even when the phone is shared with workspace members");
+        bobView.PhoneVisibleToWorkspaceMembers.Should().BeFalse();
+    }
 }

@@ -35,6 +35,6 @@ public sealed class GetAccountPreferencesQueryHandler
         // A profile row is created by the first save; until then the defaults apply.
         return Result<AccountPreferencesDto>.Success(profile is null
             ? AccountPreferencesDto.Defaults
-            : new AccountPreferencesDto(profile.Locale, profile.Timezone, profile.Theme, profile.Version));
+            : new AccountPreferencesDto(profile.Locale, profile.Timezone, profile.Theme, profile.Version, profile.Phone, profile.PhoneVisibleToWorkspaceMembers));
     }
 }

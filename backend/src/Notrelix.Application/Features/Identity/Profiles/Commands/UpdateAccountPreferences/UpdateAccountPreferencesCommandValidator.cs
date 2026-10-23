@@ -11,9 +11,10 @@ public sealed class UpdateAccountPreferencesCommandValidator : AbstractValidator
             .WithMessage("ExpectedVersion must be the version from the last read (0 when preferences were never saved).");
 
         RuleFor(x => x)
-            .Must(x => x.Locale is not null || x.Timezone is not null || x.Theme is not null)
+            .Must(x => x.Locale is not null || x.Timezone is not null || x.Theme is not null
+                || x.Phone is not null || x.PhoneVisibleToWorkspaceMembers is not null)
             .WithName("Preferences")
-            .WithMessage("Provide at least one of locale, timezone or theme.");
+            .WithMessage("Provide at least one of locale, timezone, theme, phone or phoneVisibleToWorkspaceMembers.");
 
         RuleFor(x => x.Locale!)
             .NotEmpty().MaximumLength(UserProfile.MaxLocaleLength)
@@ -28,6 +29,13 @@ public sealed class UpdateAccountPreferencesCommandValidator : AbstractValidator
             .WithMessage("Unknown time zone.")
             .When(x => x.Timezone is not null)
             .OverridePropertyName(nameof(UpdateAccountPreferencesCommand.Timezone));
+
+        // A blank phone clears it; anything else must be '+' and 8 to 15 digits (separators allowed).
+        RuleFor(x => x.Phone!)
+            .Must(phone => string.IsNullOrWhiteSpace(phone) || UserPhone.TryNormalize(phone.Trim(), out _))
+            .WithMessage("Phone must be in international format: '+' followed by 8 to 15 digits.")
+            .When(x => x.Phone is not null)
+            .OverridePropertyName(nameof(UpdateAccountPreferencesCommand.Phone));
 
         RuleFor(x => x.Theme!)
             .Must(theme => UserProfileTheme.IsValid(theme))

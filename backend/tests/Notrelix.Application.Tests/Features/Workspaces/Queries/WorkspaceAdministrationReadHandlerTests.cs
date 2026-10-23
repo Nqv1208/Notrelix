@@ -15,9 +15,12 @@ namespace Notrelix.Application.Tests.Features.Workspaces.Queries;
 public sealed class WorkspaceAdministrationReadHandlerTests : WorkspaceHandlerTestBase
 {
     private readonly Mock<IActorLookupService> _actors = new();
+    private readonly Mock<IMemberPhoneLookup> _phones = new();
 
     public WorkspaceAdministrationReadHandlerTests()
     {
+        _phones.Setup(p => p.FindSharedPhonesAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<Guid, string>());
         _actors.Setup(a => a.FindManyAsync(It.IsAny<IReadOnlyList<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((IReadOnlyList<Guid> ids, CancellationToken _) =>
                 ids.Select(id => new ActorSnapshot(id, $"User {id:N}", null)).ToList());
@@ -47,7 +50,7 @@ public sealed class WorkspaceAdministrationReadHandlerTests : WorkspaceHandlerTe
         var removed = Removed();
         SetupMembers(active, suspended, removed);
 
-        var result = await new GetWorkspaceMembersQueryHandler(DbContextMock.Object, _actors.Object)
+        var result = await new GetWorkspaceMembersQueryHandler(DbContextMock.Object, _actors.Object, _phones.Object, RequestContextMock.Object)
             .Handle(new GetWorkspaceMembersQuery(TestWorkspaceId), CancellationToken.None);
 
         result.Data!.Select(m => (m.UserId, m.Status)).Should().BeEquivalentTo(new[]

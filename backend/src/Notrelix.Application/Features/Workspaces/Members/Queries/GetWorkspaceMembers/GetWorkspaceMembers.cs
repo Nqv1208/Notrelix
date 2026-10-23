@@ -15,11 +15,19 @@ public class GetWorkspaceMembersQueryHandler : IRequestHandler<GetWorkspaceMembe
 {
     private readonly IWorkspaceDbContext _context;
     private readonly IActorLookupService _actorLookup;
+    private readonly IMemberPhoneLookup _phoneLookup;
+    private readonly ICurrentRequestContext _requestContext;
 
-    public GetWorkspaceMembersQueryHandler(IWorkspaceDbContext context, IActorLookupService actorLookup)
+    public GetWorkspaceMembersQueryHandler(
+        IWorkspaceDbContext context,
+        IActorLookupService actorLookup,
+        IMemberPhoneLookup phoneLookup,
+        ICurrentRequestContext requestContext)
     {
         _context = context;
         _actorLookup = actorLookup;
+        _phoneLookup = phoneLookup;
+        _requestContext = requestContext;
     }
 
     public async Task<Result<List<WorkspaceMemberDto>>> Handle(GetWorkspaceMembersQuery request, CancellationToken ct)
@@ -40,16 +48,28 @@ public class GetWorkspaceMembersQueryHandler : IRequestHandler<GetWorkspaceMembe
         var actors = await _actorLookup.FindManyAsync(userIds, ct);
         var actorMap = actors.ToDictionary(a => a.UserId);
 
+        // A phone is visible only to a non-guest member of this Workspace and only for people who
+        // opted in (D15). A guest reader gets none; a guest subject's phone is not shared either.
+        var reader = members.FirstOrDefault(m => m.UserId == _requestContext.UserId);
+        var phoneCandidates = reader is { IsInternalParticipant: true }
+            ? members.Where(m => m.IsInternalParticipant).Select(m => m.UserId).ToList()
+            : [];
+        var phones = await _phoneLookup.FindSharedPhonesAsync(phoneCandidates, ct);
+
         var result = members.Select(m =>
         {
             actorMap.TryGetValue(m.UserId, out var actor);
+            phones.TryGetValue(m.UserId, out var phone);
             return new WorkspaceMemberDto(
                 m.UserId,
                 actor?.Name ?? "Unknown",
                 actor?.AvatarUrl,
                 m.Role.ToString(),
                 m.CreatedAt.DateTime,
-                m.Status.ToString()
+                m.Status.ToString(),
+                m.JobTitle,
+                m.Version,
+                phone
             );
         }).ToList();
 

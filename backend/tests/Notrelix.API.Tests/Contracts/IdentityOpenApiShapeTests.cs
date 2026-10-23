@@ -128,6 +128,18 @@ public class IdentityOpenApiShapeTests
         (responses.TryGetProperty("401", out _) || responses.TryGetProperty("400", out _)).Should().BeTrue(operationId);
     }
 
+    [Theory]
+    [InlineData("phone")]
+    [InlineData("phoneVisibleToWorkspaceMembers")]
+    public void AccountPreferences_ExposeThePhoneFieldsOnReadAndWrite(string field)
+    {
+        var schemas = Document.GetProperty("components").GetProperty("schemas");
+        schemas.GetProperty("Notrelix.Application.Features.Identity.Profiles.DTOs.AccountPreferencesDto")
+            .GetProperty("properties").TryGetProperty(field, out _).Should().BeTrue();
+        var request = schemas.EnumerateObject().Single(s => s.Name.EndsWith("UpdateAccountPreferencesRequest", StringComparison.Ordinal)).Value;
+        request.GetProperty("properties").TryGetProperty(field, out _).Should().BeTrue();
+    }
+
     [Fact]
     public void UpdatePreferences_DeclaresTheVersionConflictProblem()
     {

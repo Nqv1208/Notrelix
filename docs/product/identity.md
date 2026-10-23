@@ -131,9 +131,20 @@ Profile state is not credential state.
 
 Account preferences owned by Identity are the signed-in person's locale, time zone and theme. They are
 the person's own, apply across every workspace, are changed only by that person, and are read and saved
-with a version so two devices cannot silently overwrite each other. Job title, phone, date format, the
-notification matrix, the default view and the sidebar default are NOT Identity preferences: their owner
-is undecided (D15) or belongs to Work Management or Collaboration.
+with a version so two devices cannot silently overwrite each other.
+
+The person's phone number is an Identity account fact (D15, accepted 2026-10-23), saved with the same
+preferences write and version. It is stored in normalized E.164 form: `+` then 8 to 15 digits, first digit
+non-zero; spaces, hyphens, dots and parentheses typed by the person are removed, any other character is
+rejected, and a blank value clears the phone. It is private to the person by default. The flag
+`phoneVisibleToWorkspaceMembers` (default false) is the person's opt-in to let the members of Workspaces
+they share see it. The phone is shown to another person only when the flag is true AND the reader is an
+active, non-guest member of a Workspace the person is also an active, non-guest member of; it is never
+shown to a guest, never on a share link or public view, and never used as a login or recovery identifier.
+
+Job title is NOT an Identity fact: it is a per-Workspace member profile owned by Workspaces
+(`docs/product/workspaces.md`). Date format, the default view and the sidebar default are client-side
+presentation, not Identity preferences. The notification preference matrix is owned by Collaboration.
 
 Changing display profile must not silently change security identity.
 

@@ -163,6 +163,15 @@ A Workspace Member represents the relationship between a stable Identity and one
 
 It owns Workspace participation lifecycle.
 
+A Workspace Member also carries a small member profile that belongs to the Workspace, not to the person's
+account: the **job title** (D15, accepted 2026-10-23). It is optional text of at most 100 characters,
+trimmed with inner whitespace collapsed, without control characters or line breaks; a blank value clears it.
+The member may set their own title, and workspace Owner and Admin may set any member's title in that
+Workspace (Governance action `ManageMemberProfile`, default Owner/Admin). It carries the member's version for
+optimistic concurrency, an unchanged title is a no-op, a removed member's profile is not editable, and the
+title is never visible outside the Workspace. It does not change role, status or any permission. The member
+list and the Team member list expose it.
+
 # 12. WSP-005 — Workspace membership is a security boundary
 
 A principal must not read/write a Workspace-scoped resource merely because:

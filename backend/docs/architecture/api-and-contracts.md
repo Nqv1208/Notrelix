@@ -298,11 +298,22 @@ a throttled credential step answers 429 identity.auth.too-many-attempts with Ret
 `IdentityOpenApiShapeTests` asserts this on the checked-in contract. Other contexts keep the generic
 category `errorCode` until they adopt their own dotted codes.
 
+Workspace member profile (D15; workspace-scoped, expected-version guarded on the WorkspaceMember aggregate):
+
+```text
+GET /api/v1/workspaces/{workspaceId}/members                       Workspaces.Members.ListMembers          -> WorkspaceMemberDto[] (+ jobTitle?, version, phone?)
+PUT /api/v1/workspaces/{workspaceId}/members/me/job-title          Workspaces.Members.UpdateMyJobTitle     -> { userId, jobTitle?, version }; body { jobTitle?, expectedVersion }
+PUT /api/v1/workspaces/{workspaceId}/members/{userId}/job-title    Workspaces.Members.UpdateMemberJobTitle -> same; Owner/Admin only (ManageMemberProfile)
+```
+
+A stale `expectedVersion` answers 412 `common.precondition-failed`; an unchanged title is a no-op that keeps
+the version; a blank title clears it. The Team member list also carries `jobTitle`.
+
 Identity account surface (user-scoped: `IGlobalRequest` + `IAuthenticatedRequest`, the subject is always the principal):
 
 ```text
-GET   /api/v1/profile/preferences       Identity.Profile.GetPreferences    -> { locale, timezone, theme, version }
-PATCH /api/v1/profile/preferences       Identity.Profile.UpdatePreferences -> same; body { expectedVersion (required), locale?, timezone?, theme? }
+GET   /api/v1/profile/preferences       Identity.Profile.GetPreferences    -> { locale, timezone, theme, version, phone?, phoneVisibleToWorkspaceMembers }
+PATCH /api/v1/profile/preferences       Identity.Profile.UpdatePreferences -> same; body { expectedVersion (required), locale?, timezone?, theme?, phone?, phoneVisibleToWorkspaceMembers? }
 GET   /api/v1/auth/security/summary     Identity.Security.GetSummary       -> { serverTime, hasPasswordCredential, passwordChangedAt?, mfa, activeSessionCount, linkedProviders[] }
 ```
 
@@ -311,7 +322,10 @@ defaults, a read creates no row). The update is partial and atomic (all supplied
 applied), `expectedVersion` must equal the stored version (0 for the first save) or the answer is 412
 `identity.preferences.version-conflict`; the version concurrency token closes a lost race at the database.
 The pipeline's `IExpectedVersionRequest` is Resource/Workspace-scoped only, so this user-scoped request
-compares the version in its handler; a no-op update does not advance the version. The summary and
+compares the version in its handler; a no-op update does not advance the version. `phone` is E.164 (`+` and
+8 to 15 digits, separators stripped, blank clears; see `docs/product/identity.md` section 7) and is returned
+to its owner only: other people receive it solely through the Workspace member list under the visibility rule
+in `security-tenancy-authorization.md`. The summary and
 the session list carry no secret, hash, token or provider subject id. Sessions and devices stay on
 `Identity.Sessions.*`; a client derives device label and kind from `userAgent` and does not get a place
 (no geolocation exists). Browser requests authenticate with the `Cookie` OpenAPI scheme (`accessToken`

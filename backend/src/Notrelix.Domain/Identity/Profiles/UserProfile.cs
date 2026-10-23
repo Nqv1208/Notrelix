@@ -10,6 +10,20 @@ public sealed class UserProfile : SoftDeletableAggregateRoot
     public string Theme { get; private set; } = "system";
     public string Preferences { get; private set; } = "{}";
 
+    /// <summary>
+    /// The person's own phone number in normalized E.164 form (<c>+</c> then 8 to 15 digits), or
+    /// null when none is set. Private to the person by default: see
+    /// <see cref="PhoneVisibleToWorkspaceMembers"/>.
+    /// </summary>
+    public string? Phone { get; private set; }
+
+    /// <summary>
+    /// True when the person lets the members of Workspaces they share with the reader see
+    /// <see cref="Phone"/>. Defaults to false (self-only). Never makes the phone visible to guests,
+    /// share links or public views.
+    /// </summary>
+    public bool PhoneVisibleToWorkspaceMembers { get; private set; }
+
     private UserProfile() : base() { }
 
     public static UserProfile Create(Guid userId, DateTimeOffset createdAt)
@@ -34,7 +48,13 @@ public sealed class UserProfile : SoftDeletableAggregateRoot
     /// Returns true when state changed. Whether a time zone id exists in the tz database is an
     /// external fact checked by Application; here only the stored shape is guarded.
     /// </summary>
-    public bool ApplyAccountPreferences(string? locale, string? timezone, string? theme, DateTimeOffset updatedAt)
+    public bool ApplyAccountPreferences(
+        string? locale,
+        string? timezone,
+        string? theme,
+        DateTimeOffset updatedAt,
+        string? phone = null,
+        bool? phoneVisibleToWorkspaceMembers = null)
     {
         EnsureNotDeleted();
 
@@ -71,9 +91,15 @@ public sealed class UserProfile : SoftDeletableAggregateRoot
             nextTheme = theme.Trim().ToLowerInvariant();
         }
 
+        // null leaves the phone alone; a blank value clears it; anything else must be E.164-ish.
+        var nextPhone = phone is null ? Phone : UserPhone.Normalize(phone);
+        var nextPhoneVisible = phoneVisibleToWorkspaceMembers ?? PhoneVisibleToWorkspaceMembers;
+
         if (string.Equals(nextLocale, Locale, StringComparison.Ordinal)
             && string.Equals(nextTimezone, Timezone, StringComparison.Ordinal)
-            && string.Equals(nextTheme, Theme, StringComparison.Ordinal))
+            && string.Equals(nextTheme, Theme, StringComparison.Ordinal)
+            && string.Equals(nextPhone, Phone, StringComparison.Ordinal)
+            && nextPhoneVisible == PhoneVisibleToWorkspaceMembers)
         {
             return false;
         }
@@ -82,6 +108,8 @@ public sealed class UserProfile : SoftDeletableAggregateRoot
         Locale = nextLocale;
         Timezone = nextTimezone;
         Theme = nextTheme;
+        Phone = nextPhone;
+        PhoneVisibleToWorkspaceMembers = nextPhoneVisible;
         ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new UserProfileUpdatedDomainEvent(UserId, UserId, updatedAt));

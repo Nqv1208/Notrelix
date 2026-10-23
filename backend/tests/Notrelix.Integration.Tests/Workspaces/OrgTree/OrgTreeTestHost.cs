@@ -168,6 +168,7 @@ internal sealed class OrgTreeTestHost
 
         services.AddScoped<IResourceLocator, ResourceLocator>();
         services.AddScoped<IActorLookupService, ActorLookupService>();
+        services.AddScoped<IMemberPhoneLookup, Notrelix.Infrastructure.Identity.Profiles.MemberPhoneLookup>();
         services.AddScoped<IWorkspaceAccessResolver, WorkspaceAccessResolver>();
         services.AddScoped<global::Notrelix.Application.Common.Tenancy.ITenantBootstrapStore, TenantBootstrapStore>();
 

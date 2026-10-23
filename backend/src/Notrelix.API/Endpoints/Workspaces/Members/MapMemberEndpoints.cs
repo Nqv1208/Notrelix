@@ -16,6 +16,7 @@ public static class MapMemberEndpoints
         group.MapInviteMember();
         group.MapAddMember();
         group.MapUpdateMemberRole();
+        group.MapUpdateMemberJobTitle();
         group.MapRemoveMember();
         group.MapSuspendMember();
         group.MapActivateMember();

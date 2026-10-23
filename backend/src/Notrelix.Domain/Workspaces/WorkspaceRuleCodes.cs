@@ -36,6 +36,9 @@ public static class WorkspaceRuleCodes
     public const string Workspaces_Member_CannotActOnLastOwner = "Workspaces_Member_CannotActOnLastOwner";
     public const string Workspaces_Member_CannotDirectlyAssignOwner = "Workspaces_Member_CannotDirectlyAssignOwner";
     public const string Workspaces_Member_CannotSuspendRemoved = "Workspaces_Member_CannotSuspendRemoved";
+    public const string Workspaces_Member_CannotEditRemovedProfile = "Workspaces_Member_CannotEditRemovedProfile";
+    public const string Workspaces_Member_InvalidJobTitle = "Workspaces_Member_InvalidJobTitle";
+    public const string Workspaces_Member_JobTitleTooLong = "Workspaces_Member_JobTitleTooLong";
 
     // ── OwnerRules ────────────────────────────────────────────────────────
     public const string Workspaces_Owner_CannotDowngradeLastOwner = "Workspaces_Owner_CannotDowngradeLastOwner";

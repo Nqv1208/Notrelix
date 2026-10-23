@@ -803,4 +803,105 @@ public sealed class RlsRuntimeEnforcementTests : IAsyncLifetime
 
         await context.SaveChangesAsync();
     }
+    // ── D15 member profile: job title (workspace-scoped) and phone (user-owned) ─────────────
+
+    private async Task SeedMemberJobTitlesAsync()
+    {
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = CreateContext(tenant);
+
+        var memberA1 = WorkspaceMember.Create(AccountA, WsA1, Guid.Parse("00000000-0000-0000-0000-0000000000A1"), WorkspaceRole.Member, UserId, FixedTime);
+        var memberA2 = WorkspaceMember.Create(AccountA, WsA2, Guid.Parse("00000000-0000-0000-0000-0000000000A2"), WorkspaceRole.Member, UserId, FixedTime);
+        var memberB1 = WorkspaceMember.Create(AccountB, WsB1, Guid.Parse("00000000-0000-0000-0000-0000000000B1"), WorkspaceRole.Member, UserId, FixedTime);
+        memberA1.ChangeJobTitle("Title A1", UserId, FixedTime.AddMinutes(1));
+        memberA2.ChangeJobTitle("Title A2", UserId, FixedTime.AddMinutes(1));
+        memberB1.ChangeJobTitle("Title B1", UserId, FixedTime.AddMinutes(1));
+        context.WorkspaceMembers.AddRange(memberA1, memberA2, memberB1);
+        await context.SaveChangesAsync();
+    }
+
+    private async Task<int> ExecuteAsAppRoleAsync(string sql, Guid userId)
+    {
+        await using var connection = new NpgsqlConnection(_container.GetConnectionString());
+        await connection.OpenAsync();
+        await using var transaction = await connection.BeginTransactionAsync();
+        await using (var setup = connection.CreateCommand())
+        {
+            setup.Transaction = transaction;
+            setup.CommandText = $"""
+                SET LOCAL ROLE notrelix_app;
+                SELECT set_config('app.current_user_id', '{userId}', true);
+                SELECT set_config('app.request_scope', 'app', true);
+                """;
+            await setup.ExecuteNonQueryAsync();
+        }
+
+        await using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = sql;
+        var affected = await command.ExecuteNonQueryAsync();
+        await transaction.CommitAsync();
+        return affected;
+    }
+
+    [Fact]
+    public async Task WorkspaceMembers_JobTitle_IsTenantIsolated_ByWorkspaceGrant()
+    {
+        await SeedMemberJobTitlesAsync();
+        var userA = Guid.Parse("00000000-0000-0000-0000-0000000000A1");
+        var userB = Guid.Parse("00000000-0000-0000-0000-0000000000B1");
+        await SeedGrantAsync(AccountA, WsA1, userA);
+        await SeedGrantAsync(AccountB, WsB1, userB);
+        const string select = "SELECT job_title FROM workspace.workspace_members ORDER BY job_title";
+
+        (await QueryScalarsAsAppRoleAsync(select, userId: UserId)).Should().BeEmpty("a user without a grant sees no member profile");
+        (await QueryScalarsAsAppRoleAsync(select, userId: userA)).Should().BeEquivalentTo(["Title A1"],
+            "a grant in WsA1 reaches neither WsA2 of the same account nor account B");
+        (await QueryScalarsAsAppRoleAsync(select, userId: userB)).Should().BeEquivalentTo(["Title B1"]);
+    }
+
+    [Fact]
+    public async Task WorkspaceMembers_JobTitle_CannotBeUpdatedAcrossWorkspaces()
+    {
+        await SeedMemberJobTitlesAsync();
+        var userA = Guid.Parse("00000000-0000-0000-0000-0000000000A1");
+        await SeedGrantAsync(AccountA, WsA1, userA);
+
+        var intoOtherWorkspaces = await ExecuteAsAppRoleAsync(
+            $"UPDATE workspace.workspace_members SET job_title = 'Hijacked' WHERE workspace_id <> '{WsA1}'", userA);
+        var intoOwnWorkspace = await ExecuteAsAppRoleAsync(
+            $"UPDATE workspace.workspace_members SET job_title = 'Own' WHERE workspace_id = '{WsA1}'", userA);
+
+        intoOtherWorkspaces.Should().Be(0, "the policy hides every other workspace's rows from the update");
+        intoOwnWorkspace.Should().Be(1);
+        var titles = await QueryScalarsAsAppRoleAsync(
+            "SELECT job_title FROM workspace.workspace_members ORDER BY job_title", requestScope: "system");
+        titles.Should().BeEquivalentTo(["Own", "Title A2", "Title B1"]);
+    }
+
+    [Fact]
+    public async Task UserProfiles_Phone_IsReadableOnlyByItsOwner_AtTheDatabase()
+    {
+        var alice = Notrelix.Domain.Identity.Users.User.Create("alice-rls@example.com", "Alice", "hashed", FixedTime, hasPasswordCredential: true);
+        var bob = Notrelix.Domain.Identity.Users.User.Create("bob-rls@example.com", "Bob", "hashed", FixedTime, hasPasswordCredential: true);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using (var context = CreateContext(tenant))
+        {
+            var aliceProfile = Notrelix.Domain.Identity.Profiles.UserProfile.Create(alice.Id, FixedTime);
+            aliceProfile.ApplyAccountPreferences(null, null, null, FixedTime.AddMinutes(1), "+84901234567", true);
+            var bobProfile = Notrelix.Domain.Identity.Profiles.UserProfile.Create(bob.Id, FixedTime);
+            bobProfile.ApplyAccountPreferences(null, null, null, FixedTime.AddMinutes(1), "+84907654321", false);
+            context.Users.AddRange(alice, bob);
+            context.UserProfiles.AddRange(aliceProfile, bobProfile);
+            await context.SaveChangesAsync();
+        }
+        const string select = "SELECT phone FROM identity.user_profiles ORDER BY phone";
+
+        (await QueryScalarsAsAppRoleAsync(select, userId: alice.Id)).Should().BeEquivalentTo(["+84901234567"],
+            "the table policy is own-row only (defence in depth); sharing an opted-in phone is decided by the Workspaces member read model");
+        (await QueryScalarsAsAppRoleAsync(select, userId: bob.Id)).Should().BeEquivalentTo(["+84907654321"]);
+        (await QueryScalarsAsAppRoleAsync(select, userId: UserId)).Should().BeEmpty();
+    }
 }

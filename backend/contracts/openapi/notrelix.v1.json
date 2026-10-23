@@ -4152,7 +4152,7 @@
           "Identity.Profile"
         ],
         "summary": "Get the current user's account preferences",
-        "description": "Locale, time zone and theme the user chose as account-level defaults. Returns the defaults with version 0 until the first save.",
+        "description": "Locale, time zone and theme the user chose as account-level defaults, plus their own phone (E.164) and whether Workspace members may see it (default false). Returns the defaults with version 0 until the first save.",
         "operationId": "Identity.Profile.GetPreferences",
         "responses": {
           "200": {
@@ -4191,7 +4191,7 @@
           "Identity.Profile"
         ],
         "summary": "Update the current user's account preferences",
-        "description": "Partial update; omitted members keep their value. Answers 412 when expectedVersion is stale.",
+        "description": "Partial update; omitted members keep their value; a blank phone clears it. Answers 412 when expectedVersion is stale.",
         "operationId": "Identity.Profile.UpdatePreferences",
         "requestBody": {
           "content": {
@@ -14283,6 +14283,119 @@
         ]
       }
     },
+    "/api/v1/workspaces/{workspaceId}/members/me/job-title": {
+      "put": {
+        "tags": [
+          "Workspaces.Members",
+          "Workspaces.Members"
+        ],
+        "summary": "Set or clear your own job title in this workspace",
+        "description": "Any member of the workspace may change their own title. A blank title clears it. Answers 412 when expectedVersion is stale.",
+        "operationId": "Workspaces.Members.UpdateMyJobTitle",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Contracts.Workspaces.Members.Requests.UpdateMemberJobTitleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.DTOs.WorkspaceMemberProfileDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspaceId}/members/{userId}/job-title": {
+      "put": {
+        "tags": [
+          "Workspaces.Members",
+          "Workspaces.Members"
+        ],
+        "summary": "Set or clear another member's job title",
+        "description": "Workspace Owner and Admin only. A blank title clears it. Answers 412 when expectedVersion is stale.",
+        "operationId": "Workspaces.Members.UpdateMemberJobTitle",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Contracts.Workspaces.Members.Requests.UpdateMemberJobTitleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.DTOs.WorkspaceMemberProfileDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
     "/api/v1/workspaces/{workspaceId}/members/{userId}/suspend": {
       "post": {
         "tags": [
@@ -18309,6 +18422,20 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.API.Contracts.Workspaces.Members.Requests.UpdateMemberJobTitleRequest": {
+        "type": "object",
+        "properties": {
+          "jobTitle": {
+            "type": "string",
+            "nullable": true
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.API.Contracts.Workspaces.Members.Requests.UpdateMemberRoleRequest": {
         "type": "object",
         "properties": {
@@ -18857,6 +18984,14 @@
           },
           "theme": {
             "type": "string",
+            "nullable": true
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "phoneVisibleToWorkspaceMembers": {
+            "type": "boolean",
             "nullable": true
           }
         },
@@ -19428,6 +19563,13 @@
           "version": {
             "type": "integer",
             "format": "int64"
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "phoneVisibleToWorkspaceMembers": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -20598,6 +20740,36 @@
           "status": {
             "type": "string",
             "nullable": true
+          },
+          "jobTitle": {
+            "type": "string",
+            "nullable": true
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Workspaces.DTOs.WorkspaceMemberProfileDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "jobTitle": {
+            "type": "string",
+            "nullable": true
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64"
           }
         },
         "additionalProperties": false
@@ -20924,6 +21096,10 @@
             "nullable": true
           },
           "status": {
+            "type": "string",
+            "nullable": true
+          },
+          "jobTitle": {
             "type": "string",
             "nullable": true
           }

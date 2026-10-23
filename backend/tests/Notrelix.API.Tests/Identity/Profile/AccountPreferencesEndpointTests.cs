@@ -65,6 +65,9 @@ public class AccountPreferencesEndpointTests : IClassFixture<NotrelixApiFactory>
     [InlineData("{\"expectedVersion\":1,\"theme\":\"neon\"}")]
     [InlineData("{\"expectedVersion\":1,\"timezone\":\"Not/AZone\"}")]
     [InlineData("{\"expectedVersion\":1,\"locale\":\"english\"}")]
+    [InlineData("{\"expectedVersion\":1,\"phone\":\"0901234567\"}")]
+    [InlineData("{\"expectedVersion\":1,\"phone\":\"+1234567\"}")]
+    [InlineData("{\"expectedVersion\":1,\"phone\":\"+84 90x123 4567\"}")]
     [InlineData("{\"expectedVersion\":1}")]
     [InlineData("{\"expectedVersion\":-1,\"theme\":\"dark\"}")]
     public async Task Patch_WithInvalidValues_IsRejectedAsBadRequest(string body)

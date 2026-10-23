@@ -13,7 +13,9 @@ public sealed record UpdateAccountPreferencesRequest(
     long? ExpectedVersion,
     string? Locale = null,
     string? Timezone = null,
-    string? Theme = null);
+    string? Theme = null,
+    string? Phone = null,
+    bool? PhoneVisibleToWorkspaceMembers = null);
 
 public static class AccountPreferencesEndpoints
 {
@@ -25,7 +27,7 @@ public static class AccountPreferencesEndpoints
             .ProducesProblems(StatusCodes.Status401Unauthorized)
             .WithTags("Identity.Profile")
             .WithSummary("Get the current user's account preferences")
-            .WithDescription("Locale, time zone and theme the user chose as account-level defaults. Returns the defaults with version 0 until the first save.");
+            .WithDescription("Locale, time zone and theme the user chose as account-level defaults, plus their own phone (E.164) and whether Workspace members may see it (default false). Returns the defaults with version 0 until the first save.");
 
         group.MapAuthenticatedPatch("/preferences", UpdateAsync)
             .WithName("Identity.Profile.UpdatePreferences")
@@ -33,7 +35,7 @@ public static class AccountPreferencesEndpoints
             .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status401Unauthorized, StatusCodes.Status412PreconditionFailed)
             .WithTags("Identity.Profile")
             .WithSummary("Update the current user's account preferences")
-            .WithDescription("Partial update; omitted members keep their value. Answers 412 when expectedVersion is stale.");
+            .WithDescription("Partial update; omitted members keep their value; a blank phone clears it. Answers 412 when expectedVersion is stale.");
 
         return group;
     }
@@ -53,7 +55,9 @@ public static class AccountPreferencesEndpoints
             ExpectedVersion = expectedVersion,
             Locale = request.Locale,
             Timezone = request.Timezone,
-            Theme = request.Theme
+            Theme = request.Theme,
+            Phone = request.Phone,
+            PhoneVisibleToWorkspaceMembers = request.PhoneVisibleToWorkspaceMembers
         });
         return result.ToApiResult();
     }

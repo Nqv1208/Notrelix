@@ -1186,7 +1186,7 @@ export interface paths {
         };
         /**
          * Get the current user's account preferences
-         * @description Locale, time zone and theme the user chose as account-level defaults. Returns the defaults with version 0 until the first save.
+         * @description Locale, time zone and theme the user chose as account-level defaults, plus their own phone (E.164) and whether Workspace members may see it (default false). Returns the defaults with version 0 until the first save.
          */
         get: operations["Identity.Profile.GetPreferences"];
         put?: never;
@@ -1196,7 +1196,7 @@ export interface paths {
         head?: never;
         /**
          * Update the current user's account preferences
-         * @description Partial update; omitted members keep their value. Answers 412 when expectedVersion is stale.
+         * @description Partial update; omitted members keep their value; a blank phone clears it. Answers 412 when expectedVersion is stale.
          */
         patch: operations["Identity.Profile.UpdatePreferences"];
         trace?: never;
@@ -3369,6 +3369,46 @@ export interface paths {
         patch: operations["Workspaces.Members.UpdateMemberRole"];
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/members/me/job-title": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set or clear your own job title in this workspace
+         * @description Any member of the workspace may change their own title. A blank title clears it. Answers 412 when expectedVersion is stale.
+         */
+        put: operations["Workspaces.Members.UpdateMyJobTitle"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/members/{userId}/job-title": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set or clear another member's job title
+         * @description Workspace Owner and Admin only. A blank title clears it. Answers 412 when expectedVersion is stale.
+         */
+        put: operations["Workspaces.Members.UpdateMemberJobTitle"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/members/{userId}/suspend": {
         parameters: {
             query?: never;
@@ -4489,6 +4529,11 @@ export interface components {
             role?: string | null;
             initialEntries?: components["schemas"]["Notrelix.API.Contracts.Workspaces.Members.Requests.InvitationInitialEntryRequest"][] | null;
         };
+        "Notrelix.API.Contracts.Workspaces.Members.Requests.UpdateMemberJobTitleRequest": {
+            jobTitle?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
+        };
         "Notrelix.API.Contracts.Workspaces.Members.Requests.UpdateMemberRoleRequest": {
             role?: components["schemas"]["Notrelix.Domain.Workspaces.Members.WorkspaceRole"];
         };
@@ -4671,6 +4716,8 @@ export interface components {
             locale?: string | null;
             timezone?: string | null;
             theme?: string | null;
+            phone?: string | null;
+            phoneVisibleToWorkspaceMembers?: boolean | null;
         };
         "Notrelix.API.Endpoints.WorkManagement.BoardFields.AddFieldOptionRequest": {
             name?: string | null;
@@ -4851,6 +4898,8 @@ export interface components {
             theme?: string | null;
             /** Format: int64 */
             version?: number;
+            phone?: string | null;
+            phoneVisibleToWorkspaceMembers?: boolean;
         };
         "Notrelix.Application.Features.Identity.Security.Abstractions.SecurityActivityDto": {
             /** Format: uuid */
@@ -5252,6 +5301,17 @@ export interface components {
             /** Format: date-time */
             joinedAt?: string;
             status?: string | null;
+            jobTitle?: string | null;
+            /** Format: int64 */
+            version?: number;
+            phone?: string | null;
+        };
+        "Notrelix.Application.Features.Workspaces.DTOs.WorkspaceMemberProfileDto": {
+            /** Format: uuid */
+            userId?: string;
+            jobTitle?: string | null;
+            /** Format: int64 */
+            version?: number;
         };
         "Notrelix.Application.Features.Workspaces.Invitations.Commands.AcceptInvitation.AcceptInvitationResultDto": {
             workspaceSlug?: string | null;
@@ -5364,6 +5424,7 @@ export interface components {
             email?: string | null;
             role?: string | null;
             status?: string | null;
+            jobTitle?: string | null;
         };
         /** @enum {string} */
         "Notrelix.Domain.Identity.Security.SecurityActivityType": "SignInSucceeded" | "SignInFailed" | "PasswordChanged" | "PasswordReset" | "MfaEnabled" | "MfaDisabled" | "SessionRevoked" | "OtherSessionsRevoked";
@@ -13968,6 +14029,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Workspaces.Members.UpdateMyJobTitle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Workspaces.Members.Requests.UpdateMemberJobTitleRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.DTOs.WorkspaceMemberProfileDto"];
+                };
+            };
+        };
+    };
+    "Workspaces.Members.UpdateMemberJobTitle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Workspaces.Members.Requests.UpdateMemberJobTitleRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.DTOs.WorkspaceMemberProfileDto"];
                 };
             };
         };

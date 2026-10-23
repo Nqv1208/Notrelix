@@ -23,6 +23,8 @@ public class WorkspacesOpenApiShapeTests
     [InlineData("Workspaces.Workspaces.CreateWorkspace", "201", "uuid")]
     [InlineData("Workspaces.Members.ListMembers", "200", "WorkspaceMemberDto[]")]
     [InlineData("Workspaces.Members.InviteMember", "201", "uuid")]
+    [InlineData("Workspaces.Members.UpdateMyJobTitle", "200", "WorkspaceMemberProfileDto")]
+    [InlineData("Workspaces.Members.UpdateMemberJobTitle", "200", "WorkspaceMemberProfileDto")]
     [InlineData("Workspaces.Invitations.ListWorkspaceInvitations", "200", "WorkspaceInvitationDto[]")]
     [InlineData("Workspaces.Invitations.GetUserPendingInvitations", "200", "UserPendingInvitationDto[]")]
     [InlineData("Workspaces.Invitations.AcceptInvitation", "200", "AcceptInvitationResultDto")]
@@ -48,9 +50,20 @@ public class WorkspacesOpenApiShapeTests
         Describe(schema).Should().Be(expected, operationId);
     }
 
+    [Fact]
+    public void TeamMemberDto_ExposesTheWorkspaceJobTitle()
+    {
+        var schemas = Document.GetProperty("components").GetProperty("schemas");
+        var team = schemas.EnumerateObject().Single(s => s.Name.EndsWith(".TeamMemberDto", StringComparison.Ordinal)).Value;
+        team.GetProperty("properties").TryGetProperty("jobTitle", out _).Should().BeTrue();
+    }
+
     [Theory]
     [InlineData("WorkspaceDto", "version")]
     [InlineData("WorkspaceMemberDto", "status")]
+    [InlineData("WorkspaceMemberDto", "jobTitle")]
+    [InlineData("WorkspaceMemberDto", "version")]
+    [InlineData("WorkspaceMemberDto", "phone")]
     [InlineData("WorkspaceInvitationDto", "status")]
     public void WorkspaceReadDto_ExposesField(string dto, string field)
     {

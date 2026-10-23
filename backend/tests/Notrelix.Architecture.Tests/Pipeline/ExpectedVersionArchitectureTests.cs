@@ -74,6 +74,8 @@ public static class ExpectedVersionInventory
             ["AddTeamMemberCommand"] = "workspaces.team",
             ["RemoveTeamMemberCommand"] = "workspaces.team",
             ["ChangeTeamMemberRoleCommand"] = "workspaces.team",
+            ["UpdateMemberJobTitleCommand"] = "workspaces.workspace-member",
+            ["UpdateMyJobTitleCommand"] = "workspaces.workspace-member",
         };
 
     public static IReadOnlyCollection<Type> DiscoverConcreteVersionedRequests() =>

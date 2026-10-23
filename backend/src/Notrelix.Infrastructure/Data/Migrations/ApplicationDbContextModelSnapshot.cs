@@ -4162,6 +4162,17 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasDefaultValue("vi")
                         .HasColumnName("locale");
 
+                    b.Property<string>("Phone")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("phone");
+
+                    b.Property<bool>("PhoneVisibleToWorkspaceMembers")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("phone_visible_to_workspace_members");
+
                     b.Property<string>("Preferences")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -7774,6 +7785,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.Property<Guid?>("CreatedBy")
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
+
+                    b.Property<string>("JobTitle")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("job_title");
 
                     b.Property<string>("Role")
                         .IsRequired()

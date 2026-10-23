@@ -173,9 +173,10 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
 
         // GOV-028: root Space creation and Team composition are workspace Owner/Admin
         // capabilities by default (Owners passed the fast path above). Explicit
-        // permission rules were evaluated first.
+        // permission rules were evaluated first. Editing another member's Workspace
+        // profile (job title, D15) is the same Owner/Admin capability.
         if (permission.Resource?.Kind.Value == "workspaces.workspace"
-            && permission.Action is PermissionAction.ManageSpaces or PermissionAction.ManageTeams)
+            && permission.Action is PermissionAction.ManageSpaces or PermissionAction.ManageTeams or PermissionAction.ManageMemberProfile)
         {
             return string.Equals(role, "Admin", StringComparison.Ordinal)
                 ? AccessDecision.Allow()

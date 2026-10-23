@@ -380,6 +380,7 @@ public sealed class WorkspaceAdministrationReadIntegrationTests : IAsyncLifetime
 
         services.AddScoped<IResourceLocator, ResourceLocator>();
         services.AddScoped<IActorLookupService, ActorLookupService>();
+        services.AddScoped<IMemberPhoneLookup, Notrelix.Infrastructure.Identity.Profiles.MemberPhoneLookup>();
         services.AddScoped<global::Notrelix.Application.Common.Tenancy.ITenantBootstrapStore, TenantBootstrapStore>();
 
         services.AddScoped<Notrelix.Application.Common.Context.ExecutionContext>();

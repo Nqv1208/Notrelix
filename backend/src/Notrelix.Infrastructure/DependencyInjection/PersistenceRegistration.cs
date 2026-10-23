@@ -1,4 +1,5 @@
 using Notrelix.Application.Features.Accounts.Abstractions;
+using Notrelix.Infrastructure.Identity.Profiles;
 using Notrelix.Application.Features.Accounts.Members;
 using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Infrastructure.Data.Audit;
@@ -148,6 +149,7 @@ public static class PersistenceRegistration
         services.AddScoped<global::Notrelix.Application.Features.WorkManagement.Public.Authorization.IBoardChildAuthorizationFacts,
             global::Notrelix.Infrastructure.CrossContext.Governance.WorkManagement.BoardChildAuthorizationFactsAdapter>();
         services.AddScoped<IActorLookupService, ActorLookupService>();
+        services.AddScoped<IMemberPhoneLookup, MemberPhoneLookup>();
         services.AddScoped<ApplicationDbContextInitialiser>();
         services.AddScoped<RlsPolicyApplier>();
         services.AddScoped<RlsSessionContext>();

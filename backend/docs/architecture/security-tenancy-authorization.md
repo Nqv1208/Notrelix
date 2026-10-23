@@ -351,6 +351,17 @@ every action is allowed; the handler never repeats or replaces that check.
 
 ---
 
+# 12.1. Colleague contact facts (phone visibility, D15)
+
+A person's phone is an Identity fact that is private by default. The Workspace member read exposes it only
+when all of these hold: the person set `phoneVisibleToWorkspaceMembers`; the reader is an active, non-guest
+member of that Workspace (decided by the pipeline for `ViewMembers` plus the Domain predicate
+`WorkspaceMember.IsInternalParticipant`, never by an in-handler role comparison); and the person is an active,
+non-guest member of the same Workspace. The Identity-side port `IMemberPhoneLookup` answers only the opt-in
+half; the Workspaces handler owns the shared-Workspace half and must not call the port for a guest reader.
+A phone never appears in a guest, share-link, public, search, export or realtime view. Editing another
+member's Workspace job title is the Governance action `ManageMemberProfile` (workspace Owner/Admin by default).
+
 # 13. Role semantics
 
 Roles belong to Governance/Workspace product semantics.
