@@ -57,6 +57,15 @@ public static class AccessLevels
     public const string Commenter = "commenter";
     public const string Editor = "editor";
     public const string Manager = "manager";
+
+    /// <summary>The level token of a Governance rank (Viewer=1, Commenter=2, Editor=3, Manager and above=4+); 0 or less reads as viewer.</summary>
+    public static string OfRank(int rank) => rank switch
+    {
+        >= 4 => Manager,
+        3 => Editor,
+        2 => Commenter,
+        _ => Viewer,
+    };
 }
 
 public static class AccessSourceKinds

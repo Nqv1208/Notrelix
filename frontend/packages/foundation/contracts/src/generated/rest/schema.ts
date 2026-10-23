@@ -2203,6 +2203,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/boards/{boardId}/sharing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get who holds access on a board, its sharing log and who would lose it on Private
+         * @description Entries (people and Teams, level, how it is held) are returned only to a board manager or a board member; any other reader of the board gets the counts only. The log and the Private impact are for board managers. An entry id is the person's user id or the Team's id. Email is shown only to a workspace Owner or Admin and only for non-Guest people.
+         */
+        get: operations["WorkManagement.Boards.GetSharing"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/boards/{boardId}/sharing/private": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add people to a board, then make it Private, in one step
+         * @description Adds the given people as board members who can edit (people already on the board keep their role), then sets the visibility to Private, in one transaction. If any person cannot be added the board is unchanged.
+         */
+        post: operations["WorkManagement.Boards.MakePrivate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/boards/{boardId}/archive": {
         parameters: {
             query?: never;
@@ -3825,7 +3865,7 @@ export interface paths {
         };
         /**
          * Get what the Teams pages add to the team list
-         * @description Per Team: people, who created and archived it and the Spaces where it holds a role; plus the workspace admins and the people a Team may take. Needs the right to see the member list, so a Guest is refused. Email is not exposed yet.
+         * @description Per Team: people, who created and archived it and the Spaces where it holds a role; plus the workspace admins and the people a Team may take. Needs the right to see the member list, so a Guest is refused. Email is shown only to a workspace Owner or Admin and only for non-Guest people.
          */
         get: operations["Workspaces.Teams.GetWorkspaceTeamsExt"];
         put?: never;
@@ -4445,6 +4485,9 @@ export interface components {
             visibility?: string | null;
             /** Format: uuid */
             spaceId?: string | null;
+        };
+        "Notrelix.API.Contracts.WorkManagement.Boards.Requests.MakeBoardPrivateRequest": {
+            addUserIds?: string[] | null;
         };
         "Notrelix.API.Contracts.WorkManagement.Boards.Requests.MoveBoardToSpaceRequest": {
             /** Format: uuid */
@@ -5283,6 +5326,21 @@ export interface components {
             /** Format: date-time */
             joinedAt?: string;
         };
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardPrivateImpactDto": {
+            /** Format: int32 */
+            lose?: number;
+            people?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardPrivateImpactPersonDto"][] | null;
+            keep?: string[] | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardPrivateImpactPersonDto": {
+            /** Format: uuid */
+            userId?: string;
+            name?: string | null;
+            /** Format: int32 */
+            items?: number;
+            /** Format: int32 */
+            overdue?: number;
+        };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardSchemaDto": {
             /** Format: uuid */
             id?: string;
@@ -5292,6 +5350,62 @@ export interface components {
             groups?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardGroupSchemaDto"][] | null;
             /** Format: int64 */
             version?: number;
+        };
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardSharingDto": {
+            /** Format: uuid */
+            boardId?: string;
+            canManage?: boolean;
+            entriesDisclosed?: boolean;
+            visibility?: string | null;
+            /** Format: uuid */
+            spaceId?: string | null;
+            spaceName?: string | null;
+            /** Format: int32 */
+            spacePeople?: number | null;
+            /** Format: int32 */
+            peopleCount?: number;
+            /** Format: int32 */
+            guestCount?: number;
+            peopleCountComplete?: boolean;
+            entries?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardSharingEntryDto"][] | null;
+            log?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardSharingLogEntryDto"][] | null;
+            privateImpact?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardPrivateImpactDto"];
+        };
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardSharingEntryDto": {
+            /** Format: uuid */
+            id?: string;
+            kind?: string | null;
+            name?: string | null;
+            email?: string | null;
+            you?: boolean;
+            owner?: boolean;
+            level?: string | null;
+            levelCapped?: boolean;
+            source?: string | null;
+            /** Format: uuid */
+            permissionId?: string | null;
+            memberRole?: string | null;
+            spaceRole?: string | null;
+            outsideSpace?: boolean;
+            /** Format: int32 */
+            teamPeople?: number | null;
+            /** Format: date-time */
+            expiresAt?: string | null;
+            /** Format: date-time */
+            addedAt?: string;
+            grantedBy?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardAccessGrantorDto"];
+        };
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardSharingLogEntryDto": {
+            /** Format: uuid */
+            id?: string;
+            kind?: string | null;
+            actor?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardAccessGrantorDto"];
+            target?: string | null;
+            from?: string | null;
+            to?: string | null;
+            guest?: boolean;
+            /** Format: date-time */
+            at?: string;
         };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.ChecklistDto": {
             /** Format: uuid */
@@ -11114,6 +11228,73 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardAccessDto"];
                 };
+            };
+        };
+    };
+    "WorkManagement.Boards.GetSharing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                boardId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardSharingDto"];
+                };
+            };
+        };
+    };
+    "WorkManagement.Boards.MakePrivate": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                boardId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.Boards.Requests.MakeBoardPrivateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

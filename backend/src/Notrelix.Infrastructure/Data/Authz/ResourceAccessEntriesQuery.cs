@@ -17,7 +17,7 @@ public static class ResourceAccessEntriesQuery
         """;
 
     private const string ActiveGrants = """
-        SELECT rp.subject_type, rp.subject_id, rp.permission_level, rp.created_by, t.name AS team_name
+        SELECT rp.id, rp.subject_type, rp.subject_id, rp.permission_level, rp.created_by, rp.created_at, t.name AS team_name
           FROM governance.resource_permissions rp
           LEFT JOIN workspace.teams t
             ON rp.subject_type = 'Team' AND t.id = rp.subject_id
@@ -28,11 +28,18 @@ public static class ResourceAccessEntriesQuery
            AND (rp.subject_type = 'User' OR (rp.subject_type = 'Team' AND t.id IS NOT NULL))
         """;
 
-    /// <summary>Columns: subject_type, subject_id, rank, created_by (nullable), team_name (nullable).</summary>
+    /// <summary>
+    /// Columns: subject_type, subject_id, rank, created_by (nullable), team_name (nullable), permission id,
+    /// created_at, team_people (active members of a Team subject; null for a User).
+    /// </summary>
     public const string GrantsSql = """
         SELECT rp.subject_type, rp.subject_id,
         """ + LevelRank + """
-         AS rank, rp.created_by, rp.team_name
+         AS rank, rp.created_by, rp.team_name, rp.id, rp.created_at,
+               CASE WHEN rp.subject_type = 'Team' THEN
+                 (SELECT count(*)::int FROM workspace.team_members tm
+                   WHERE tm.workspace_id = @workspace_id AND tm.team_id = rp.subject_id AND tm.status = 'Active')
+               END AS team_people
           FROM (
         """ + ActiveGrants + """
           ) rp
@@ -107,5 +114,29 @@ public static class ResourceAccessEntriesQuery
     public const string SpaceNameSql = """
         SELECT s.name FROM workspace.spaces s
          WHERE s.id = @space_id AND s.workspace_id = @workspace_id AND s.deleted_at IS NULL
+        """;
+
+    /// <summary>
+    /// Columns: user_id, role_rank (Viewer=1, Member=2, Admin=3): the highest role of any direct or Team
+    /// entry of <c>@space_id</c> that reaches the person.
+    /// </summary>
+    public const string SpaceRolesSql = """
+        WITH entries AS (
+          SELECT sm.subject_id AS user_id,
+                 CASE sm.role WHEN 'Admin' THEN 3 WHEN 'Member' THEN 2 ELSE 1 END AS role_rank
+            FROM workspace.space_members sm
+           WHERE @space_id IS NOT NULL AND sm.workspace_id = @workspace_id
+             AND sm.space_id = @space_id AND sm.subject_type = 'User'
+          UNION ALL
+          SELECT tm.user_id,
+                 CASE sm.role WHEN 'Admin' THEN 3 WHEN 'Member' THEN 2 ELSE 1 END
+            FROM workspace.space_members sm
+            JOIN workspace.team_members tm
+              ON tm.team_id = sm.subject_id AND tm.workspace_id = @workspace_id AND tm.status = 'Active'
+            JOIN workspace.teams t
+              ON t.id = tm.team_id AND t.workspace_id = @workspace_id AND t.deleted_at IS NULL AND t.status = 'Active'
+           WHERE @space_id IS NOT NULL AND sm.workspace_id = @workspace_id
+             AND sm.space_id = @space_id AND sm.subject_type = 'Team')
+        SELECT user_id, max(role_rank) FROM entries GROUP BY user_id
         """;
 }

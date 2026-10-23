@@ -3297,6 +3297,80 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.ToTable("document_versions", "docs");
                 });
 
+            modelBuilder.Entity("Notrelix.Domain.Governance.AccessChanges.ResourceAccessChange", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<Guid>("ActorUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("actor_user_id");
+
+                    b.Property<string>("FromLevel")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("from_level");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("change_kind");
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at");
+
+                    b.Property<Guid>("ResourceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("resource_id");
+
+                    b.Property<string>("ResourceKind")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("resource_type");
+
+                    b.Property<DateTimeOffset>("RetentionUntil")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("retention_until");
+
+                    b.Property<Guid?>("SubjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subject_id");
+
+                    b.Property<string>("SubjectType")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("subject_type");
+
+                    b.Property<string>("ToLevel")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("to_level");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_resource_access_changes");
+
+                    b.HasIndex("RetentionUntil")
+                        .HasDatabaseName("idx_resource_access_changes_retention");
+
+                    b.HasIndex("WorkspaceId", "ResourceKind", "ResourceId", "OccurredAt")
+                        .IsDescending(false, false, false, true)
+                        .HasDatabaseName("idx_resource_access_changes_resource");
+
+                    b.ToTable("resource_access_changes", "governance");
+                });
+
             modelBuilder.Entity("Notrelix.Domain.Governance.Permissions.FieldPermission", b =>
                 {
                     b.Property<Guid>("Id")

@@ -1,6 +1,7 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Governance.Public.Visibility;
 using Notrelix.Application.Features.Workspaces.Abstractions;
+using Notrelix.Application.Features.Workspaces.Public.Members;
 using Notrelix.Application.Features.Workspaces.Spaces.Services;
 using Notrelix.Domain.Workspaces.Rules;
 
@@ -10,7 +11,7 @@ namespace Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceMember
 /// <param name="Invites">Pending, unexpired Workspace invitations that name the Space.</param>
 public record SpaceMembersExtraSummaryDto(int Admins, int Members, int Viewers, int Invites);
 
-/// <param name="Email">Always null: no member-visibility policy for email exists yet.</param>
+/// <param name="Email">Shown only to a Workspace Owner or Admin and only for non-Guest members; null for every other reader.</param>
 /// <param name="Title">The person's Workspace job title.</param>
 /// <param name="LastActiveAt">Always null: no activity source exists yet.</param>
 /// <param name="ActiveNow">Always false: no activity source exists yet.</param>
@@ -67,14 +68,17 @@ public class GetSpaceMembersExtraQueryHandler : IRequestHandler<GetSpaceMembersE
     private readonly IResourceVisibility _visibility;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _clock;
+    private readonly IMemberEmailDisclosure _emails;
 
     public GetSpaceMembersExtraQueryHandler(
         IWorkspaceDbContext context,
         ISpaceStore spaces,
         IResourceVisibility visibility,
         ICurrentRequestContext requestContext,
-        IDateTimeProvider clock)
+        IDateTimeProvider clock,
+        IMemberEmailDisclosure emails)
     {
+        _emails = emails;
         _context = context;
         _spaces = spaces;
         _visibility = visibility;
@@ -138,13 +142,14 @@ public class GetSpaceMembersExtraQueryHandler : IRequestHandler<GetSpaceMembersE
                 .Select(m => new { m.UserId, m.JobTitle })
                 .ToListAsync(ct);
 
+        var emails = await _emails.ResolveAsync(workspaceId, reachedIds, ct);
         var people = members
             .Select(m => (m.UserId, m.JobTitle, Reached: reach[m.UserId]))
             .OrderByDescending(p => p.Reached.Role)
             .ThenBy(p => p.UserId)
             .Select(p => new SpaceMembersExtraPersonDto(
                 p.UserId,
-                null,
+                emails.GetValueOrDefault(p.UserId),
                 p.JobTitle,
                 null,
                 false,

@@ -1,3 +1,6 @@
+using Notrelix.Application.Common.Auditing;
+using Notrelix.Application.Features.Governance.Public.Access;
+using Notrelix.Application.Features.WorkManagement.Boards.Services;
 using Notrelix.Application.Features.WorkManagement.Boards.Commands.UpdateBoardMemberRole;
 using BoardEntity = Notrelix.Domain.WorkManagement.Boards.Board;
 using BoardMemberEntity = Notrelix.Domain.WorkManagement.Boards.BoardMember;
@@ -17,7 +20,8 @@ public class UpdateBoardMemberRoleTests : WorkManagementHandlerTestBase
         _handler = new UpdateBoardMemberRoleCommandHandler(
             DbContextMock.Object,
             _currentUserMock.Object,
-            DateTimeProviderMock.Object);
+            DateTimeProviderMock.Object,
+            new BoardAccessChangeLog(new Mock<IResourceAccessChangeRecorder>().Object, new Mock<IAuditService>().Object, new Mock<ICurrentRequestContext>().Object));
     }
 
     [Fact]

@@ -1,3 +1,6 @@
+using Notrelix.Application.Common.Auditing;
+using Notrelix.Application.Features.Governance.Public.Access;
+using Notrelix.Application.Features.WorkManagement.Boards.Services;
 using Notrelix.Application.Features.WorkManagement.Boards.Commands.AddBoardMember;
 
 namespace Notrelix.Application.Tests.Features.WorkManagement.Boards;
@@ -23,7 +26,8 @@ public class AddBoardMemberTests : WorkManagementHandlerTestBase
             DbContextMock.Object,
             _currentUserMock.Object,
             DateTimeProviderMock.Object,
-            _workspaceAccessMock.Object);
+            _workspaceAccessMock.Object,
+            new BoardAccessChangeLog(new Mock<IResourceAccessChangeRecorder>().Object, new Mock<IAuditService>().Object, new Mock<ICurrentRequestContext>().Object));
     }
 
     [Fact]

@@ -23,7 +23,7 @@ public sealed class BoardAccessSubjectFactsAdapter : IBoardAccessSubjectFacts
         var board = await _context.Boards
             .AsNoTracking()
             .Where(b => b.Id == boardId && b.WorkspaceId == workspaceId && !b.IsArchived && b.DeletedAt == null)
-            .Select(b => new { b.Id, b.Version })
+            .Select(b => new { b.Id, b.Version, b.Visibility })
             .FirstOrDefaultAsync(cancellationToken);
         if (board is null)
         {
@@ -33,10 +33,20 @@ public sealed class BoardAccessSubjectFactsAdapter : IBoardAccessSubjectFacts
         var members = await _context.BoardMembers
             .AsNoTracking()
             .Where(m => m.BoardId == boardId)
-            .Select(m => m.UserId)
-            .Distinct()
+            .Select(m => new { m.UserId, m.Role, m.JoinedAt })
             .ToListAsync(cancellationToken);
 
-        return new BoardAccessSubject(board.Id, board.Version, members);
+        var facts = members
+            .GroupBy(m => m.UserId)
+            .Select(g => g.OrderByDescending(m => m.Role).First())
+            .Select(m => new BoardMemberFact(m.UserId, m.Role.ToString(), m.JoinedAt))
+            .ToList();
+
+        return new BoardAccessSubject(
+            board.Id,
+            board.Version,
+            facts.Select(m => m.UserId).ToList(),
+            facts,
+            board.Visibility.ToString());
     }
 }

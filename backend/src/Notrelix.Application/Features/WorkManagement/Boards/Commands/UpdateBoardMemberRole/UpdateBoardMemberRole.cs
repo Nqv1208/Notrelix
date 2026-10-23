@@ -3,6 +3,7 @@ using BoardMemberEntity = global::Notrelix.Domain.WorkManagement.Boards.BoardMem
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Governance.Public.Access;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Features.WorkManagement.Boards.Services;
 
 namespace Notrelix.Application.Features.WorkManagement.Boards.Commands.UpdateBoardMemberRole;
 
@@ -26,12 +27,15 @@ public class UpdateBoardMemberRoleCommandHandler : IRequestHandler<UpdateBoardMe
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly BoardAccessChangeLog _changeLog;
 
     public UpdateBoardMemberRoleCommandHandler(
         IWorkManagementDbContext context,
         ICurrentUser currentUser,
-        IDateTimeProvider dateTimeProvider)
+        IDateTimeProvider dateTimeProvider,
+        BoardAccessChangeLog changeLog)
     {
+        _changeLog = changeLog;
         _context = context;
         _currentUser = currentUser;
         _dateTimeProvider = dateTimeProvider;
@@ -47,7 +51,9 @@ public class UpdateBoardMemberRoleCommandHandler : IRequestHandler<UpdateBoardMe
             .FirstOrDefaultAsync(m => m.BoardId == request.BoardId && m.UserId == request.UserId, ct);
         if (member is null) throw new NotFoundException(nameof(BoardMemberEntity), request.UserId);
 
+        var previous = member.Role;
         member.UpdateRole(request.Role);
+        await _changeLog.MemberRoleChangedAsync(request.BoardId, request.UserId, previous, request.Role, ct);
         return Result.Success();
     }
 }

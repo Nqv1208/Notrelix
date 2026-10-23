@@ -922,6 +922,8 @@ GOV-009 says a Guest does not enumerate the workspace, so `ViewMembers` is denie
 
 Members page for a Guest: shows only the Guest's own row, read-only.
 
+Board sharing read (CTR-GAP-WM-BOARD-SHARING). Governance publishes the Board's sharing view (`IBoardSharingSummary`) and Work Management serves it as `GET /boards/{boardId}/sharing`. Entries, names and levels are shown only to a caller who may manage the Board's permissions or is a Board member; every other caller who can read the Board gets the counts only; a caller who cannot read it gets the same NotFound as a missing Board (GOV-025). One entry per person (id = user id) at the higher of the explicit grant and the Board-member level, and one per granted Team (id = team id). A Guest is identified by the Workspace role, never by email domain, is shown at most at Editor with `levelCapped` (GOV-030 stored and capped, no 422), and has no email. The log and the Private impact are for managers only. Governance records every Board access change (explicit grant added, changed, removed; Board member added, role changed, removed; visibility changed or made Private) in `governance.resource_access_changes` inside the request transaction, retained 90 days; it is a workspace-scoped read source, separate from the admin-only enterprise audit log, which also receives the Board member and visibility actions. There is no `expired` kind: access given on a Board has no end date.
+
 The Space members extras, Teams extras and security extras reads (docs/product/workspaces.md section 48.2) are `ViewMembers` reads too: a Guest receives 403, and Team usage and Space people list only Spaces the caller can see (GOV-029). `guestDefaultExpiryDays` in the sharing policy only pre-fills new Guest entries (GOV-031).
 
 ---

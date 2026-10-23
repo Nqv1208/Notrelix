@@ -1,4 +1,5 @@
 using global::Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.Accounts.Public.Domains;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Domain.Workspaces.Rules;
 
@@ -21,8 +22,8 @@ public record GetWorkspaceSecurityExtQuery(
 /// <param name="GuestCount">Active members whose Workspace role is Guest.</param>
 /// <param name="GuestExpiryDays">Default Guest expiry in days (30, 90 or 180), or null for none.</param>
 /// <param name="CompanyDomain">
-/// Always null for now: the verified company domain is owned by Accounts (ACC-010) and no Workspace fact
-/// exists yet (open decision), so the page hides the row.
+/// The Account's primary verified domain (Accounts public fact, ACC-010); null when none is verified, so
+/// the page hides the row.
 /// </param>
 /// <param name="LinksOffSince">When share links are off, the instant the policy turned them off (the
 /// Workspace creation instant if it never changed); null while links are on.</param>
@@ -36,10 +37,12 @@ public record WorkspaceSecurityExtDto(
 public class GetWorkspaceSecurityExtQueryHandler : IRequestHandler<GetWorkspaceSecurityExtQuery, Result<WorkspaceSecurityExtDto>>
 {
     private readonly IWorkspaceDbContext _context;
+    private readonly IAccountDomainFacts _domains;
 
-    public GetWorkspaceSecurityExtQueryHandler(IWorkspaceDbContext context)
+    public GetWorkspaceSecurityExtQueryHandler(IWorkspaceDbContext context, IAccountDomainFacts domains)
     {
         _context = context;
+        _domains = domains;
     }
 
     public async Task<Result<WorkspaceSecurityExtDto>> Handle(GetWorkspaceSecurityExtQuery request, CancellationToken ct)
@@ -55,6 +58,8 @@ public class GetWorkspaceSecurityExtQueryHandler : IRequestHandler<GetWorkspaceS
             .Where(WorkspaceMemberRules.ActiveGuest)
             .CountAsync(ct);
 
+        var companyDomain = await _domains.GetPrimaryVerifiedDomainAsync(workspace.AccountId, ct);
+
         var settings = workspace.Settings;
         DateTimeOffset? linksOffSince = settings.AllowPublicSharing
             ? null
@@ -63,7 +68,7 @@ public class GetWorkspaceSecurityExtQueryHandler : IRequestHandler<GetWorkspaceS
         return Result<WorkspaceSecurityExtDto>.Success(new WorkspaceSecurityExtDto(
             guestCount,
             settings.GuestDefaultExpiryDays,
-            null,
+            companyDomain,
             linksOffSince));
     }
 }

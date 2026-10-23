@@ -573,10 +573,10 @@ All three need `ViewMembers`, so a Guest is refused (GOV-009).
 
 Intentionally empty fields, not defects. The web client hides them until the named decision exists:
 
-- `email` (people, admins, directory): null until a member-visibility policy for email exists.
+- `email` (people, admins, directory, Team members): shown only to a Workspace Owner or Admin and only for active non-Guest members of the same Workspace; every other reader gets null and a Guest's address is never shown. The address comes from the Identity public facts port (`IIdentityUserFacts.FindEmailsAsync`); Workspaces holds the visibility rule (`IMemberEmailDisclosure`) and reads no Identity table.
 - `lastActiveAt` null and `activeNow` false: no activity source exists.
-- Space `guests`: always empty; Board guests are read through Board sharing, which is undecided. `invitations[].name` is null.
-- `companyDomain`: null; the verified company domain belongs to Accounts (ACC-010) and no Workspace fact exists.
+- Space `guests`: always empty; Board guests of a Space are read through the Board sharing read (`GET /boards/{boardId}/sharing`, Work Management), where a guest is the Workspace role Guest. `invitations[].name` is null.
+- `companyDomain`: the Account's primary verified domain, read from the Accounts public fact (`IAccountDomainFacts`, ACC-010); null when the Account has none, and the page hides the row.
 - Team usage lists Space entries only; Board grants of a Team are not listed yet.
 
 The Workspace sharing policy also stores `guestDefaultExpiryDays` (30, 90, 180 or none). It only pre-fills new Guest entries and never changes existing ones (GOV-031); it is written with the Workspace settings by an Owner or Admin.

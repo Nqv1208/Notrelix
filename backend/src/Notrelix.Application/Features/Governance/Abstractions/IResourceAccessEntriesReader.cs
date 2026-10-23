@@ -34,11 +34,27 @@ public sealed record ResourceAccessEntries(
     IReadOnlyList<ResourceGrantEntry> Grants,
     IReadOnlyList<AccessReachEntry> Reach,
     string? SpaceName,
-    bool HasReadRules = false);
+    bool HasReadRules = false,
+    IReadOnlyList<SpaceRoleEntry>? SpaceRoles = null);
+
+/// <summary>The highest role of any direct or Team entry of the resource's Space that reaches a person.</summary>
+/// <param name="RoleRank">Viewer=1, Member=2, Admin=3.</param>
+public sealed record SpaceRoleEntry(Guid UserId, int RoleRank);
 
 /// <param name="SubjectType"><c>User</c> or <c>Team</c> (only active Teams are returned).</param>
 /// <param name="Rank">Viewer=1, Commenter=2, Editor=3, Manager=4, Owner=5, None=0.</param>
-public sealed record ResourceGrantEntry(string SubjectType, Guid SubjectId, int Rank, Guid? GrantedBy, string? TeamName);
+/// <param name="PermissionId">The resource permission row, for a write by id.</param>
+/// <param name="GrantedAt">When the entry was created.</param>
+/// <param name="TeamPeople">Active members of a Team subject; null for a User.</param>
+public sealed record ResourceGrantEntry(
+    string SubjectType,
+    Guid SubjectId,
+    int Rank,
+    Guid? GrantedBy,
+    string? TeamName,
+    Guid? PermissionId = null,
+    DateTimeOffset? GrantedAt = null,
+    int? TeamPeople = null);
 
 /// <summary>One active Workspace member reached by one explicit source.</summary>
 /// <param name="Source">One of <see cref="AccessReachSources"/>.</param>

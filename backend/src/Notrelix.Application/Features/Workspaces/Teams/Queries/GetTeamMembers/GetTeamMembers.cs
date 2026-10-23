@@ -1,11 +1,12 @@
 using Notrelix.Application.Features.Workspaces.Abstractions;
+using Notrelix.Application.Features.Workspaces.Public.Members;
 
 namespace Notrelix.Application.Features.Workspaces.Teams.Queries.GetTeamMembers;
 
 /// <param name="Role">The <see cref="TeamMemberRole"/> name: <c>Member</c> or <c>Lead</c>.</param>
 /// <param name="Status">The <see cref="TeamMemberStatus"/> name; only <c>Active</c> members are listed.</param>
 /// <param name="JobTitle">The member's Workspace job title (Workspaces member profile); null when none is set.</param>
-/// <param name="Email">Not exposed by the actor lookup port; always null until a member-visibility policy for email exists.</param>
+/// <param name="Email">Shown only to a Workspace Owner or Admin and only for non-Guest members; null for every other reader.</param>
 public record TeamMemberDto(
     Guid UserId,
     string DisplayName,
@@ -32,11 +33,13 @@ public class GetTeamMembersQueryHandler : IRequestHandler<GetTeamMembersQuery, I
 {
     private readonly IWorkspaceDbContext _context;
     private readonly IActorLookupService _actorLookup;
+    private readonly IMemberEmailDisclosure _emails;
 
-    public GetTeamMembersQueryHandler(IWorkspaceDbContext context, IActorLookupService actorLookup)
+    public GetTeamMembersQueryHandler(IWorkspaceDbContext context, IActorLookupService actorLookup, IMemberEmailDisclosure emails)
     {
         _context = context;
         _actorLookup = actorLookup;
+        _emails = emails;
     }
 
     public async Task<IReadOnlyList<TeamMemberDto>> Handle(GetTeamMembersQuery request, CancellationToken ct)
@@ -62,6 +65,8 @@ public class GetTeamMembersQueryHandler : IRequestHandler<GetTeamMembersQuery, I
             .Where(w => w.WorkspaceId == request.WorkspaceId && w.JobTitle != null && userIds.Contains(w.UserId))
             .ToDictionaryAsync(w => w.UserId, w => w.JobTitle!, ct);
 
+        var emails = await _emails.ResolveAsync(request.WorkspaceId, userIds, ct);
+
         return members
             .OrderByDescending(m => m.Role)
             .ThenBy(m => m.CreatedAt)
@@ -71,7 +76,7 @@ public class GetTeamMembersQueryHandler : IRequestHandler<GetTeamMembersQuery, I
                 return new TeamMemberDto(
                     m.UserId,
                     actor?.Name ?? "Unknown",
-                    null,
+                    emails.GetValueOrDefault(m.UserId),
                     m.Role.ToString(),
                     m.Status.ToString(),
                     jobTitles.GetValueOrDefault(m.UserId));

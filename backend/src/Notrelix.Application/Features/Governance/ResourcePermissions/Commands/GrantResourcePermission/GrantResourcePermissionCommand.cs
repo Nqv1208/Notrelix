@@ -1,6 +1,7 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Governance.Abstractions;
 using Notrelix.Application.Features.Governance.DTOs;
+using Notrelix.Application.Features.Governance.Public.Access;
 
 namespace Notrelix.Application.Features.Governance.ResourcePermissions.Commands.GrantResourcePermission;
 
@@ -46,13 +47,16 @@ public class GrantResourcePermissionCommandHandler : IRequestHandler<GrantResour
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IAuditService _auditService;
+    private readonly IResourceAccessChangeRecorder _changes;
 
     public GrantResourcePermissionCommandHandler(
         IGovernanceDbContext context,
         ICurrentRequestContext requestContext,
         IDateTimeProvider dateTimeProvider,
-        IAuditService auditService)
+        IAuditService auditService,
+        IResourceAccessChangeRecorder changes)
     {
+        _changes = changes;
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
@@ -83,6 +87,7 @@ public class GrantResourcePermissionCommandHandler : IRequestHandler<GrantResour
                                       p.SubjectId == request.SubjectId, cancellationToken);
 
         ResourcePermission permission;
+        var isBoard = kind.Value == BoardResourceKind;
         if (existingPermission != null)
         {
             if (existingPermission.Level == level)
@@ -91,8 +96,15 @@ public class GrantResourcePermissionCommandHandler : IRequestHandler<GrantResour
             }
             else
             {
+                var previous = existingPermission.Level;
                 existingPermission.ChangeLevel(level, actorId, now);
                 permission = existingPermission;
+                if (isBoard)
+                {
+                    await _changes.RecordAsync(
+                        new ResourceAccessChangeRecord(kind.Value, request.ResourceId, AccessChangeKinds.Changed, subjectType.ToString(), request.SubjectId, LevelToken(previous), LevelToken(level)),
+                        cancellationToken);
+                }
             }
         }
         else
@@ -109,6 +121,12 @@ public class GrantResourcePermissionCommandHandler : IRequestHandler<GrantResour
                 now);
 
             _context.ResourcePermissions.Add(permission);
+            if (isBoard)
+            {
+                await _changes.RecordAsync(
+                    new ResourceAccessChangeRecord(kind.Value, request.ResourceId, AccessChangeKinds.Added, subjectType.ToString(), request.SubjectId, null, LevelToken(level)),
+                    cancellationToken);
+            }
         }
 
         await _auditService.RecordAsync(
@@ -134,4 +152,8 @@ public class GrantResourcePermissionCommandHandler : IRequestHandler<GrantResour
 
         return Result<ResourcePermissionDto>.Success(dto);
     }
+
+    private const string BoardResourceKind = "work-management.board";
+
+    private static string LevelToken(PermissionLevel level) => AccessLevels.OfRank((int)level);
 }

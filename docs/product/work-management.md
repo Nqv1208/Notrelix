@@ -1125,6 +1125,10 @@ Do not create ambiguous competing progress truths.
 
 ---
 
+## Board sharing and make-private (CTR-GAP-WM-BOARD-SHARING)
+
+Work Management owns the Board, its members, its visibility and its Items, and serves the sharing view. `GET /boards/{boardId}/sharing` needs the single-Board read (`ViewBoard`); it composes the Governance sharing fact (who holds access given on the Board, and the log) with Work Management's own figures. The same disclosure rule as the access summary applies (entries only to Board managers and Board members, counts to other readers). `privateImpact` (managers only) is the people who reach the Board only through its Space (Governance's fact) with their unfinished and overdue Items on this Board, which Work Management counts from its own tables: an Item is unfinished when it is not completed, not archived and not deleted, and overdue when its due instant has passed. `POST /boards/{boardId}/sharing/private` (`ManageBoard`, idempotent) adds the given people as Board members who can edit (people already on the Board keep their role) and sets the visibility to Private in one transaction owned by Work Management; if any person is not a participant of the Workspace nothing changes. Board member and visibility changes are reported to Governance for the sharing log through `IResourceAccessChangeRecorder`.
+
 # 77.1. WM-041 — Progress of an Item with child Items is derived
 
 Decided 2026-10-12 (UI mockup review). When an Item has non-archived child Items, its progress is derived as

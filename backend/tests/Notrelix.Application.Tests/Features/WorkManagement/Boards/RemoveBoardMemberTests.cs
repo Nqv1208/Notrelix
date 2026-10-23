@@ -1,3 +1,6 @@
+using Notrelix.Application.Common.Auditing;
+using Notrelix.Application.Features.Governance.Public.Access;
+using Notrelix.Application.Features.WorkManagement.Boards.Services;
 using Notrelix.Application.Features.WorkManagement.Boards.Commands.RemoveBoardMember;
 
 namespace Notrelix.Application.Tests.Features.WorkManagement.Boards;
@@ -14,7 +17,8 @@ public class RemoveBoardMemberTests : WorkManagementHandlerTestBase
 
         _handler = new RemoveBoardMemberCommandHandler(
             DbContextMock.Object,
-            _currentUserMock.Object);
+            _currentUserMock.Object,
+            new BoardAccessChangeLog(new Mock<IResourceAccessChangeRecorder>().Object, new Mock<IAuditService>().Object, new Mock<ICurrentRequestContext>().Object));
     }
 
     [Fact]

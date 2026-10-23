@@ -127,5 +127,12 @@ public sealed class GetTeamMembersQueryHandlerTests : WorkspaceHandlerTestBase
         await act.Should().ThrowAsync<NotFoundException>();
     }
 
-    private GetTeamMembersQueryHandler CreateMembersSut() => new(DbContextMock.Object, _actors.Object);
+    private GetTeamMembersQueryHandler CreateMembersSut()
+    {
+        var emails = new Mock<Notrelix.Application.Features.Workspaces.Public.Members.IMemberEmailDisclosure>();
+        emails
+            .Setup(e => e.ResolveAsync(It.IsAny<Guid>(), It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<Guid, string>());
+        return new(DbContextMock.Object, _actors.Object, emails.Object);
+    }
 }

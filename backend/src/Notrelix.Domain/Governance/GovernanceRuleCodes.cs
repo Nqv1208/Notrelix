@@ -14,6 +14,9 @@ public static class GovernanceRuleCodes
     // ── ResourcePermission ─────────────────────────────────────────────
     public const string Governance_ResourcePermission_SubjectTypeNotSupported = "Governance_ResourcePermission_SubjectTypeNotSupported";
 
+    // ── ResourceAccessChange ───────────────────────────────────────────
+    public const string Governance_AccessChange_SubjectRequired = "Governance_AccessChange_SubjectRequired";
+
     // ── PermissionTemplate ─────────────────────────────────────────────
     public const string Governance_PermissionTemplate_EntriesRequired = "Governance_PermissionTemplate_EntriesRequired";
     public const string Governance_PermissionTemplate_DuplicateEntry = "Governance_PermissionTemplate_DuplicateEntry";

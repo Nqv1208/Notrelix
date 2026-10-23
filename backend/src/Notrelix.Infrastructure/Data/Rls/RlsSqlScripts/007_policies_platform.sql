@@ -47,6 +47,7 @@ SELECT ops.apply_scoped_business_policies('governance', 'custom_roles', true);
 SELECT ops.apply_scoped_business_policies('governance', 'custom_role_permissions', true);
 SELECT ops.apply_scoped_business_policies('governance', 'workspace_member_role_assignments', true);
 SELECT ops.apply_scoped_business_policies('governance', 'resource_permissions', true);
+SELECT ops.apply_scoped_business_policies('governance', 'resource_access_changes', true);
 SELECT ops.apply_scoped_business_policies('governance', 'field_permissions', true);
 SELECT ops.apply_scoped_business_policies('governance', 'permission_rules', true);
 SELECT ops.apply_scoped_business_policies('governance', 'permission_templates', true);

@@ -1364,6 +1364,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
                 sp.GetRequiredService<global::Notrelix.Application.Features.Documents.Public.PageAuthorization.IPageAuthorizationFacts>(),
                 new FakeBillingSubscriptionFacts()));
         services.AddGovernanceInfrastructure(new ConfigurationBuilder().Build());
+        services.AddScoped<Notrelix.Application.Features.Governance.Public.Access.IResourceAccessChangeRecorder, Notrelix.Application.Features.Governance.AccessChanges.ResourceAccessChangeRecorder>();
 
         services.AddScoped<IResourceLocator, ResourceLocator>();
         // ADR-009 placement: the create handlers resolve Space placement targets

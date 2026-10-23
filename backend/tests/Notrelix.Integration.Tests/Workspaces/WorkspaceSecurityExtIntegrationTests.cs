@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Notrelix.Application.Features.Workspaces.Settings.Commands.UpdateWorkspaceSettings;
 using Notrelix.Application.Features.Workspaces.Settings.Queries.GetWorkspaceSecurityExt;
 using Notrelix.Application.Features.Workspaces.Settings.Queries.GetWorkspaceSettings;
+using Notrelix.Domain.Accounts.Domains;
 using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Integration.Tests.Workspaces.OrgTree;
@@ -56,6 +57,38 @@ public sealed class WorkspaceSecurityExtIntegrationTests : IAsyncLifetime
         ext.GuestCount.Should().Be(2, "only active Guest memberships of this Workspace count");
         ext.CompanyDomain.Should().BeNull();
         ext.GuestExpiryDays.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task CompanyDomain_IsTheAccountsFirstVerifiedDomain_NullWhenNoneAndNeverAnotherAccounts()
+    {
+        var stack = await _host.SeedWorkspaceAsync();
+        var other = await _host.SeedWorkspaceAsync();
+        using var asOwner = _host.CreateProvider(stack.AccountId, stack.OwnerId);
+        (await OrgTreeTestHost.QueryAsync(asOwner, new GetWorkspaceSecurityExtQuery(stack.WorkspaceId)))
+            .CompanyDomain.Should().BeNull("no domain exists yet");
+
+        var pending = AccountDomain.Create(stack.AccountId, "pending.example", stack.OwnerId, OrgTreeTestHost.BaseTime);
+        var rejected = AccountDomain.Create(stack.AccountId, "rejected.example", stack.OwnerId, OrgTreeTestHost.BaseTime);
+        rejected.Reject(stack.OwnerId, OrgTreeTestHost.BaseTime);
+        var later = AccountDomain.Create(stack.AccountId, "zeta.example", stack.OwnerId, OrgTreeTestHost.BaseTime);
+        later.Verify(OrgTreeTestHost.BaseTime.AddDays(2), stack.OwnerId);
+        var foreign = AccountDomain.Create(other.AccountId, "foreign.example", other.OwnerId, OrgTreeTestHost.BaseTime.AddDays(-10));
+        foreign.Verify(OrgTreeTestHost.BaseTime.AddDays(-5), other.OwnerId);
+        await _host.WithSystemContextAsync(c => { c.AccountDomains.AddRange(pending, rejected, later, foreign); return Task.CompletedTask; });
+        (await OrgTreeTestHost.QueryAsync(asOwner, new GetWorkspaceSecurityExtQuery(stack.WorkspaceId)))
+            .CompanyDomain.Should().Be("zeta.example", "a pending, rejected or foreign domain never qualifies");
+
+        var first = AccountDomain.Create(stack.AccountId, "acme.example", stack.OwnerId, OrgTreeTestHost.BaseTime);
+        first.Verify(OrgTreeTestHost.BaseTime.AddDays(1), stack.OwnerId);
+        await _host.WithSystemContextAsync(c => { c.AccountDomains.Add(first); return Task.CompletedTask; });
+        (await OrgTreeTestHost.QueryAsync(asOwner, new GetWorkspaceSecurityExtQuery(stack.WorkspaceId)))
+            .CompanyDomain.Should().Be("acme.example", "the earliest verified domain is the primary one");
+
+        var member = await _host.AddMemberAsync(stack, WorkspaceRole.Member, "Member");
+        using var asMember = _host.CreateProvider(stack.AccountId, member);
+        (await OrgTreeTestHost.QueryAsync(asMember, new GetWorkspaceSecurityExtQuery(stack.WorkspaceId)))
+            .CompanyDomain.Should().Be("acme.example");
     }
 
     [Fact]

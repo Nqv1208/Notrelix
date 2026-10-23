@@ -394,7 +394,9 @@ public sealed class ResourceAccessSummaryServiceTests
             _boards,
             _entries,
             _visibility,
-            actors.Object);
+            actors.Object,
+            new Mock<IResourceAccessChangeReader>().Object,
+            new Mock<IDateTimeProvider>().Object);
     }
 
     private static AccessReachEntry Reach(string source, Guid userId, Guid? teamId = null, bool isGuest = false) =>

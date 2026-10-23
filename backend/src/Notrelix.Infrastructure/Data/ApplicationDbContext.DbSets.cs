@@ -211,6 +211,7 @@ public partial class ApplicationDbContext
 
     // Governance
     public DbSet<ResourcePermission> ResourcePermissions => Set<ResourcePermission>();
+    public DbSet<Notrelix.Domain.Governance.AccessChanges.ResourceAccessChange> ResourceAccessChanges => Set<Notrelix.Domain.Governance.AccessChanges.ResourceAccessChange>();
     public DbSet<FieldPermission> FieldPermissions => Set<FieldPermission>();
     public DbSet<PermissionRule> PermissionRules => Set<PermissionRule>();
     public DbSet<CustomRole> CustomRoles => Set<CustomRole>();

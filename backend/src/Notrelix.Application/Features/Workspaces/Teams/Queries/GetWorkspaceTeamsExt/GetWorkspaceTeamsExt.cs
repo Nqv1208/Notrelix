@@ -1,6 +1,7 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Governance.Public.Visibility;
 using Notrelix.Application.Features.Workspaces.Abstractions;
+using Notrelix.Application.Features.Workspaces.Public.Members;
 using Notrelix.Domain.Workspaces.Rules;
 
 namespace Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt;
@@ -10,7 +11,7 @@ namespace Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTea
 public record TeamsExtPersonDto(Guid Id, string Name);
 
 /// <param name="Role"><c>Lead</c> or <c>Member</c>.</param>
-/// <param name="Email">Always null: no member-visibility policy for email exists yet.</param>
+/// <param name="Email">Shown only to a Workspace Owner or Admin and only for non-Guest members; null for every other reader.</param>
 /// <param name="Since">When the person joined the Team.</param>
 public record TeamsExtTeamPersonDto(Guid UserId, string Name, string? Email, string? Title, string Role, DateTimeOffset Since);
 
@@ -71,13 +72,16 @@ public class GetWorkspaceTeamsExtQueryHandler : IRequestHandler<GetWorkspaceTeam
     private readonly IActorLookupService _actors;
     private readonly IResourceVisibility _visibility;
     private readonly ICurrentRequestContext _requestContext;
+    private readonly IMemberEmailDisclosure _emails;
 
     public GetWorkspaceTeamsExtQueryHandler(
         IWorkspaceDbContext context,
         IActorLookupService actors,
         IResourceVisibility visibility,
-        ICurrentRequestContext requestContext)
+        ICurrentRequestContext requestContext,
+        IMemberEmailDisclosure emails)
     {
+        _emails = emails;
         _context = context;
         _actors = actors;
         _visibility = visibility;
@@ -137,6 +141,8 @@ public class GetWorkspaceTeamsExtQueryHandler : IRequestHandler<GetWorkspaceTeam
         userIds.UnionWith(teams.Where(t => t.Status == TeamStatus.Archived && t.UpdatedBy.HasValue).Select(t => t.UpdatedBy!.Value));
         var names = (await _actors.FindManyAsync(userIds.ToList(), ct)).ToDictionary(a => a.UserId, a => a.Name);
 
+        var emails = await _emails.ResolveAsync(workspaceId, userIds, ct);
+
         TeamsExtPersonDto? Person(Guid? id) => id is { } value ? new TeamsExtPersonDto(value, names.GetValueOrDefault(value) ?? "Unknown") : null;
 
         var peopleByTeam = teamMembers.ToLookup(m => m.TeamId);
@@ -148,7 +154,7 @@ public class GetWorkspaceTeamsExtQueryHandler : IRequestHandler<GetWorkspaceTeam
                 .Select(m => new TeamsExtTeamPersonDto(
                     m.UserId,
                     names.GetValueOrDefault(m.UserId) ?? "Unknown",
-                    null,
+                    emails.GetValueOrDefault(m.UserId),
                     titles.GetValueOrDefault(m.UserId),
                     m.Role.ToString(),
                     m.CreatedAt))
@@ -188,12 +194,12 @@ public class GetWorkspaceTeamsExtQueryHandler : IRequestHandler<GetWorkspaceTeam
             .Select(m => new TeamsExtAdminDto(
                 m.UserId,
                 names.GetValueOrDefault(m.UserId) ?? "Unknown",
-                null,
+                emails.GetValueOrDefault(m.UserId),
                 m.Role.ToString().ToLowerInvariant()))
             .ToList();
 
         var directory = colleagues
-            .Select(m => new TeamsExtDirectoryDto(m.UserId, names.GetValueOrDefault(m.UserId) ?? "Unknown", null, m.JobTitle))
+            .Select(m => new TeamsExtDirectoryDto(m.UserId, names.GetValueOrDefault(m.UserId) ?? "Unknown", emails.GetValueOrDefault(m.UserId), m.JobTitle))
             .OrderBy(d => d.Name)
             .ToList();
 

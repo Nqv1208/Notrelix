@@ -45,4 +45,20 @@ public sealed class IdentityUserFactsProvider : IIdentityUserFacts
             snapshot.EmailConfirmed,
             canParticipate);
     }
+
+    public async Task<IReadOnlyDictionary<Guid, string>> FindEmailsAsync(
+        IReadOnlyCollection<Guid> userIds,
+        CancellationToken cancellationToken)
+    {
+        if (userIds.Count == 0)
+            return new Dictionary<Guid, string>();
+
+        var rows = await _context.Users
+            .AsNoTracking()
+            .Where(u => userIds.Contains(u.Id))
+            .Select(u => new { u.Id, u.NormalizedEmail })
+            .ToListAsync(cancellationToken);
+
+        return rows.ToDictionary(r => r.Id, r => r.NormalizedEmail);
+    }
 }
