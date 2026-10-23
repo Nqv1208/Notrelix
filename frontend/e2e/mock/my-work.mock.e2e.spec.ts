@@ -25,7 +25,14 @@ async function openMyWork(page: Page, query = "") {
   await expect(
     page.getByRole("heading", { level: 1, name: "Việc của tôi" }),
   ).toBeVisible();
-  await expect(page.locator('[data-f="row"]').first()).toBeVisible();
+  // The loading skeleton draws `data-f="row"` placeholders too: wait for a
+  // row that carries an item, or a test reads the skeleton, not the list.
+  await expect(
+    page.locator('[data-f="row"][data-item-id]').first(),
+  ).toBeVisible();
+  await expect(page.locator('[data-f="row"]:not([data-item-id])')).toHaveCount(
+    0,
+  );
 }
 
 const groupHeadings = (page: Page) => page.locator('[data-f="gh"]');
