@@ -62,17 +62,35 @@ public class AutomationExecution : AggregateRoot, IWorkspaceScoped
     public int AttemptCount { get; private set; }
     public string? LastResponse { get; private set; }
 
+    /// <summary>
+    /// AUT-022: the Automation execution whose action produced the fact that
+    /// triggered this one (null for a fact not caused by Automation).
+    /// </summary>
+    public Guid? CausationExecutionId { get; private set; }
+
+    /// <summary>Recursion depth: 0 for a fact not caused by Automation, parent depth + 1 otherwise.</summary>
+    public int ChainDepth { get; private set; }
+
     private readonly List<AutomationExecutionStep> _steps = new();
     public IReadOnlyCollection<AutomationExecutionStep> Steps => _steps.AsReadOnly();
 
     private AutomationExecution() : base() { }
 
-    public static AutomationExecution Create(Guid accountId, Guid workspaceId, Guid ruleId, Guid triggerId, DateTimeOffset startedAt)
+    public static AutomationExecution Create(
+        Guid accountId,
+        Guid workspaceId,
+        Guid ruleId,
+        Guid triggerId,
+        DateTimeOffset startedAt,
+        Guid? causationExecutionId = null,
+        int chainDepth = 0)
     {
         Guard.NotEmpty(accountId);
         Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(ruleId);
         Guard.NotEmpty(triggerId);
+        if (chainDepth < 0 || (causationExecutionId is null) != (chainDepth == 0))
+            throw new ArgumentException("A caused execution needs a causation id and a depth of at least 1; an uncaused one has depth 0.", nameof(chainDepth));
 
         var execution = new AutomationExecution
         {
@@ -82,7 +100,9 @@ public class AutomationExecution : AggregateRoot, IWorkspaceScoped
             TriggerId = triggerId,
             Status = AutomationExecutionStatus.Queued,
             StartedAt = startedAt,
-            AttemptCount = 0
+            AttemptCount = 0,
+            CausationExecutionId = causationExecutionId,
+            ChainDepth = chainDepth
         };
 
         execution.SetAuditOnCreate(null, startedAt);

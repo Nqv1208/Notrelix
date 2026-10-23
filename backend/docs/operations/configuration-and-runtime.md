@@ -143,6 +143,21 @@ This is current evidence, not a permanent complete section registry.
 
 ---
 
+# 3.1. Automation runaway guards
+
+Section `Automation:Guards` (validated on start; all optional, conservative defaults):
+
+```text
+MaxChainDepth            3    maximum depth of Automation-caused execution chains (1..10)
+MaxExecutionsPerWindow   60   executions one Rule may start per window (1..10000)
+RateWindowSeconds        60   length of that window (1..3600)
+ConsecutiveFailureLimit  5    most recent finished executions that must all fail to auto-disable a Rule (1..100)
+```
+
+These are technical safety limits owned by Automation (AUT-022); they never change what a Rule means.
+
+---
+
 # 4. BE-OPS-CFG-002 — Base defaults are safe, not production credentials
 
 Committed base configuration MAY contain:

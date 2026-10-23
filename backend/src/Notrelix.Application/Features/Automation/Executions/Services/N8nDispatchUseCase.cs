@@ -128,7 +128,7 @@ public sealed class N8nDispatchUseCase
         if (string.IsNullOrWhiteSpace(rule.Configuration.Action.Configuration) ||
             !N8nAutomationConfiguration.TryGetWebhookPath(rule.Configuration.Action.Configuration, out var webhookPath))
         {
-            execution.Fail("Automation rule is missing configuration.webhookPath.", _clock.UtcNow);
+            execution.Fail("Automation rule has a missing or invalid configuration.webhookPath.", _clock.UtcNow);
             return new N8nDispatchPreparation(N8nDispatchPrepareOutcome.PrerequisiteSettled);
         }
 

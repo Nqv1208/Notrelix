@@ -12,10 +12,19 @@ public record CreateAutomationRuleCommand(
     string Name,
     string TriggerEvent,
     string ActionType,
-    string Configuration) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IIdempotentRequest
+    string Configuration) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IRequireAdditionalPermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageWorkspaceSettings;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("automation.rule"), WorkspaceId, WorkspaceId);
+
+    /// <summary>
+    /// AUT-020: a Webhook action reaches the n8n integration, so creating such a
+    /// Rule also needs ManageIntegrations. Pipeline authorization only.
+    /// </summary>
+    public IReadOnlyList<string> AdditionalActionNames =>
+        string.Equals(ActionType, "Webhook", StringComparison.Ordinal)
+            ? [nameof(PermissionAction.ManageIntegrations)]
+            : [];
 }
 
 public class CreateAutomationRuleCommandHandler : IRequestHandler<CreateAutomationRuleCommand, Result<Guid>>
@@ -57,6 +66,14 @@ public class CreateAutomationRuleCommandHandler : IRequestHandler<CreateAutomati
 
         var trigger = AutomationTriggerDefinition.Create(request.TriggerEvent, request.Configuration);
         var action = AutomationActionDefinition.Create(request.ActionType, request.Configuration);
+
+        // AUT-028: a Webhook rule's path is allow-listed when the rule is created,
+        // not only when it is enabled (the Domain rejects url and unsafe paths).
+        if (string.Equals(action.Type, "Webhook", StringComparison.OrdinalIgnoreCase))
+        {
+            AutomationActionValidator.Validate(action);
+        }
+
         var config = AutomationConfiguration.Create(trigger, action);
 
         var rule = AutomationRule.Create(

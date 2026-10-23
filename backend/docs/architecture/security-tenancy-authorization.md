@@ -370,6 +370,18 @@ half; the Workspaces handler owns the shared-Workspace half and must not call th
 A phone never appears in a guest, share-link, public, search, export or realtime view. Editing another
 member's Workspace job title is the Governance action `ManageMemberProfile` (workspace Owner/Admin by default).
 
+# 12.2. Automation management reads and Webhook rules
+
+Listing Automation Rules and reading a Rule's Executions are gated by `ManageWorkspaceSettings` on the
+`automation.rule` resource, not `ViewWorkspace`/`ViewBoard`: configuration (webhook path) and execution
+payload/errors are management data. A Webhook Rule reaches the n8n integration, so creating one and
+enabling any Rule also name `ManageIntegrations` through `IRequireAdditionalPermission` (pipeline-only).
+For that, the workspace-role baseline lets `ManageIntegrations` apply to the `automation.rule` resource
+kind next to `workspaces.workspace` and `integrations.calendar-integration`; it never widens to other kinds.
+Rule/executor identity (who a rule acts as) remains an open product decision.
+
+---
+
 # 13. Role semantics
 
 Roles belong to Governance/Workspace product semantics.

@@ -23,6 +23,8 @@ public class AutomationExecutionConfiguration : IEntityTypeConfiguration<Automat
         builder.Property(x => x.Payload).HasColumnName("payload").HasColumnType("jsonb");
         builder.Property(x => x.AttemptCount).HasColumnName("attempt_count");
         builder.Property(x => x.LastResponse).HasColumnName("last_response");
+        builder.Property(x => x.CausationExecutionId).HasColumnName("causation_execution_id");
+        builder.Property(x => x.ChainDepth).HasColumnName("chain_depth").HasDefaultValue(0).IsRequired();
 
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");

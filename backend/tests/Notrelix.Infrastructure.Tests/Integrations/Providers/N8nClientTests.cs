@@ -207,6 +207,76 @@ public class N8nClientTests
             "the deliverer's own cancellation must propagate, not be disguised as an unknown provider outcome");
     }
 
+    [Theory]
+    [InlineData("../../rest/api")]
+    [InlineData("a/../b")]
+    [InlineData("..")]
+    [InlineData("%2e%2e/x")]
+    [InlineData("hook?x=1")]
+    [InlineData("hook#f")]
+    [InlineData("a\\b")]
+    [InlineData("/leading")]
+    [InlineData("http://evil.test/x")]
+    [InlineData("host:5678/x")]
+    [InlineData("")]
+    public async Task UnsafeWebhookPath_FailsClosed_WithoutAnyHttpCall(string path)
+    {
+        var attempts = 0;
+        var client = ClientWith((_, _) =>
+        {
+            attempts++;
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK));
+        });
+
+        var result = await client.TriggerWebhookAsync(path, "{}");
+
+        result.Outcome.Should().Be(N8nWebhookOutcome.TerminalFailure);
+        attempts.Should().Be(0, "a path outside the allow-list must never produce a request");
+    }
+
+    [Fact]
+    public async Task ValidNestedPath_IsAppendedVerbatimToTheBase()
+    {
+        Uri? seen = null;
+        var client = ClientWith((request, _) =>
+        {
+            seen = request.RequestUri;
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK));
+        });
+
+        await client.TriggerWebhookAsync("team/hooks/a-1", "{}");
+
+        seen!.AbsoluteUri.Should().Be("https://n8n.test/webhook/team/hooks/a-1");
+    }
+
+    [Theory]
+    [InlineData(HttpStatusCode.BadRequest)]
+    [InlineData(HttpStatusCode.Forbidden)]
+    [InlineData(HttpStatusCode.InternalServerError)]
+    public async Task ProviderResponseBody_IsNeverReturnedInTheError(HttpStatusCode status)
+    {
+        const string secret = "SECRET-INTERNAL-STACK-TRACE db-password=hunter2 at n8n.internal:5678";
+        var client = ClientWith((_, _) => Task.FromResult(
+            new HttpResponseMessage(status) { Content = new StringContent(secret) }));
+
+        var result = await client.TriggerWebhookAsync("card-assigned", "{}");
+
+        result.Error.Should().NotBeNull().And.Contain(((int)status).ToString());
+        result.Error.Should().NotContain("SECRET").And.NotContain("hunter2").And.NotContain("n8n.internal");
+    }
+
+    [Fact]
+    public async Task TransportException_MessageIsNeverReturnedInTheError()
+    {
+        var client = ClientWith((_, _) => throw new HttpRequestException(
+            "Connection refused (n8n.internal:5678)",
+            new SocketException((int)SocketError.ConnectionRefused)));
+
+        var result = await client.TriggerWebhookAsync("card-assigned", "{}");
+
+        result.Error.Should().NotContain("n8n.internal");
+    }
+
     private sealed class StubHandler(
         Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> send) : HttpMessageHandler
     {

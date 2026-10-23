@@ -135,14 +135,14 @@ public static class WorkspaceRoleBaseline
     /// Whether an Allow cell applies to a request against this resource kind. A default granted on
     /// the workspace never silently widens to another kind: the reads (ViewWorkspace, ViewMembers)
     /// and workspace settings (which target Automation, Analytics and Integrations resources) apply
-    /// to any kind, ManageIntegrations also to the calendar integration, every other Allow cell
-    /// only to the workspace resource itself. Outside that, the request is denied.
+    /// to any kind, ManageIntegrations also to the calendar integration and to Automation rules
+    /// (a Webhook rule reaches the n8n integration), every other Allow cell only to the workspace resource itself. Outside that, the request is denied.
     /// </summary>
     public static bool AppliesToResourceKind(PermissionAction action, string? resourceKind) => action switch
     {
         PermissionAction.ViewWorkspace or PermissionAction.ViewMembers or PermissionAction.ManageWorkspaceSettings => true,
         PermissionAction.ManageIntegrations =>
-            resourceKind is "workspaces.workspace" or "integrations.calendar-integration",
+            resourceKind is "workspaces.workspace" or "integrations.calendar-integration" or "automation.rule",
         _ => resourceKind == "workspaces.workspace",
     };
 }

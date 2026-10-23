@@ -19,6 +19,10 @@ public class CreateAutomationRuleCommandValidator : AbstractValidator<CreateAuto
                     var trigger = AutomationTriggerDefinition.Create(x.TriggerEvent, x.Configuration);
                     var action = AutomationActionDefinition.Create(x.ActionType, x.Configuration);
                     AutomationConfiguration.Create(trigger, action);
+                    if (string.Equals(action.Type, "Webhook", StringComparison.OrdinalIgnoreCase))
+                    {
+                        AutomationActionValidator.Validate(action);
+                    }
                     return true;
                 }
                 catch

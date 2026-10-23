@@ -26,6 +26,21 @@ public sealed class BoardEventMapper :
     IIntegrationEventMapper<ChecklistCreatedDomainEvent, ChecklistCreatedIntegrationEvent>,
     IIntegrationEventMapper<ChecklistItemToggledDomainEvent, ChecklistItemToggledIntegrationEvent>
 {
+    private readonly ICorrelationContext? _correlation;
+
+    public BoardEventMapper(ICorrelationContext? correlation = null)
+    {
+        _correlation = correlation;
+    }
+
+    /// <summary>
+    /// AUT-022: facts committed while an Automation execution acts (the executor
+    /// sets the scoped correlation context's causation to the execution id) carry
+    /// that execution as their causation, so Automation recognises its own
+    /// effects. HTTP requests never set a causation, so user facts stay null.
+    /// </summary>
+    private Guid? AutomationCausation => _correlation?.CausationId;
+
     public override BoardCreatedIntegrationEvent? Map(BoardCreatedDomainEvent domainEvent)
     {
         return new BoardCreatedIntegrationEvent(
@@ -150,7 +165,7 @@ public sealed class BoardEventMapper :
             Revision: domainEvent.Version,
             CorrelationId: domainEvent.EventId,
             ActorUserId: domainEvent.UpdatedBy,
-            CausationId: null,
+            CausationId: AutomationCausation,
             OccurredAt: domainEvent.OccurredAt,
             NewPosition: domainEvent.NewPosition
         );

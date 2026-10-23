@@ -977,6 +977,17 @@ Integrations owns Connection/provider operation.
 
 ---
 
+# 77.1. n8n webhook dispatch boundary
+
+Integrations owns the n8n provider adapter. It accepts only a relative webhook path inside the allow-list
+`^[A-Za-z0-9_-]{1,64}(/[A-Za-z0-9_-]{1,64})*$` and fails closed (terminal outcome, no HTTP request)
+otherwise, independently of what Automation validated. It never reads, stores or returns the provider
+response body or transport exception text: the outcome error is the status code plus a fixed category.
+Creating or enabling an Automation Rule with a Webhook Action needs `ManageIntegrations` (see
+automation.md 61.1).
+
+---
+
 # 78. INT-027 — Automation retries do not replace Integration idempotency
 
 If Automation retries a provider Action, Integrations still owns provider operation identity/reconciliation.

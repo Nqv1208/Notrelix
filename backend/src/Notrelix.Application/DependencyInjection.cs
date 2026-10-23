@@ -58,6 +58,14 @@ public static class DependencyInjection
         services.AddSingleton<IAccessPolicyEvaluator, AccessPolicyEngine>();
         services.AddSingleton<IN8nSignatureService, N8nSignatureService>();
         services.AddScoped<Notrelix.Application.Features.Automation.Events.N8nAutomationRuleEvaluator>();
+        services.AddOptions<Notrelix.Application.Features.Automation.AutomationGuardOptions>()
+            .Bind(builder.Configuration.GetSection(
+                Notrelix.Application.Features.Automation.AutomationGuardOptions.SectionName))
+            .ValidateOnStart();
+        services.AddSingleton<
+            IValidateOptions<Notrelix.Application.Features.Automation.AutomationGuardOptions>,
+            Notrelix.Application.Features.Automation.AutomationGuardOptionsValidator>();
+
 
         // Execution context (scoped per request)
         services.AddScoped<IExecutionContextAccessor, Notrelix.Application.Common.Context.ExecutionContext>();

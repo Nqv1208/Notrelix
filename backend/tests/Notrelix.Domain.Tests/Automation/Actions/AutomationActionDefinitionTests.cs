@@ -34,9 +34,9 @@ public class AutomationActionDefinitionTests
     [Fact]
     public void Create_WithValidConfiguration_ShouldSucceed()
     {
-        var action = AutomationActionDefinition.Create("Webhook", "{\"url\":\"https://example.com\"}");
+        var action = AutomationActionDefinition.Create("Webhook", "{\"webhookPath\":\"example/hook\"}");
 
-        action.Configuration.Should().Be("{\"url\":\"https://example.com\"}");
+        action.Configuration.Should().Be("{\"webhookPath\":\"example/hook\"}");
     }
 
     [Fact]

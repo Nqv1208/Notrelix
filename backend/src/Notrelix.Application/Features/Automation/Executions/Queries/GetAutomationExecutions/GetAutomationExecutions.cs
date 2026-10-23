@@ -4,10 +4,15 @@ using Notrelix.Application.Features.Automation.DTOs;
 
 namespace Notrelix.Application.Features.Automation.Executions.Queries.GetAutomationExecutions;
 
+/// <summary>
+/// AUT-019: execution history (payload, failure evidence) is automation
+/// management data and needs the permission that manages the Rule
+/// (ManageWorkspaceSettings), never a board-view permission on the rule resource.
+/// </summary>
 public record GetAutomationExecutionsQuery(Guid AutomationRuleId, int Page = 1, int PageSize = 20)
     : IQuery<Result<IReadOnlyList<AutomationExecutionDto>>>, IAuthenticatedRequest, IReadRequest, IResourceScopedRequest, IRequirePermission
 {
-    public PermissionAction Action => PermissionAction.ViewBoard;
+    public PermissionAction Action => PermissionAction.ManageWorkspaceSettings;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("automation.rule"), AutomationRuleId);
 }
 

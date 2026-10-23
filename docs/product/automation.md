@@ -843,6 +843,23 @@ Permission/membership/resource changes can make later execution fail.
 
 ---
 
+# 61.1. Management permissions (current runtime)
+
+Listing Rules (which exposes each Rule's configuration, for example the n8n `webhookPath`) and reading a
+Rule's Executions (payload and failure evidence) are automation management reads. They need the permission
+that manages Automation (`ManageWorkspaceSettings`: workspace Owner/Admin by default), not workspace-wide
+`ViewWorkspace` or a board-view permission on the Rule resource. Members and Guests do not read Rule
+configuration or Execution history. (The Work board automation UI reads `/boards/{id}/automations`, not
+these endpoints, so no frontend surface depends on the broader read.)
+
+Creating a Rule whose Action is `Webhook` additionally needs `ManageIntegrations`, because the Action
+reaches the n8n Integration; enabling a Rule needs `ManageIntegrations` as well (the request cannot know
+the Action before the pipeline runs), while disabling stays a kill switch under `ManageWorkspaceSettings`.
+The pipeline decides this (`IRequireAdditionalPermission`); there is no handler role check. By default
+Owner/Admin hold both permissions, so the difference matters only where Governance rules split them.
+
+---
+
 # 62. Permission revocation
 
 If Action permission is revoked:
@@ -898,6 +915,25 @@ Rule A changes Status
 ```
 
 must terminate or be rejected by policy.
+
+---
+
+# 67.1. Current runtime guards (AUT-022)
+
+- Causation: while an Automation execution acts (MoveItem), the Work facts it commits carry the
+  execution id as `CausationId`. The rule evaluator resolves that execution (same Workspace only) and
+  records `CausationExecutionId` and `ChainDepth` on each execution it starts.
+- Self-trigger and loops: a Rule never starts from a fact its own chain caused; a Rule that already
+  appears anywhere upstream in the causation chain does not start again (A -> B -> A stops).
+- Depth: a chain deeper than `Automation:Guards:MaxChainDepth` (default 3) does not start.
+- Rate: a Rule starts at most `MaxExecutionsPerWindow` (default 60) executions per `RateWindowSeconds`
+  (default 60); further facts in the window do not start an execution (logged, not queued).
+- Circuit breaker: when the `ConsecutiveFailureLimit` (default 5) most recent finished executions since
+  the Rule was last enabled or edited all failed, the Rule is disabled (`AutomationRuleDisabled` fact with
+  an empty actor) and starts nothing. Re-enabling resets the count.
+- Facts without causation information behave as before. Only facts produced by Automation actions carry
+  an Automation causation; user requests never set one. Suppressed starts are operational (logged), not
+  product history.
 
 ---
 
@@ -1079,6 +1115,18 @@ A future scripting capability would require a separate security/sandbox architec
 The Rule engine executes known typed Actions.
 
 It does not evaluate arbitrary server-side code from user config.
+
+---
+
+# 84.1. Webhook action path (current runtime)
+
+A `Webhook` Action reaches only the internal n8n webhook base. Its configuration MUST contain a string
+`webhookPath` matching `^[A-Za-z0-9_-]{1,64}(/[A-Za-z0-9_-]{1,64})*$` (no `.`, `%`, `?`, `#`, `\`, `:`,
+leading/trailing/double `/`) and MUST NOT contain `url` (absolute URLs are not supported and not used).
+The rule is checked when the Rule is created, when it is enabled, at dispatch, and again in the n8n
+provider adapter; a Rule stored with an unsafe path or a `url` fails closed at dispatch with a stable
+terminal error and no provider request (no data migration). Execution history stores the provider status
+code and a fixed category, never the provider response body or transport exception text (AUT-019).
 
 ---
 

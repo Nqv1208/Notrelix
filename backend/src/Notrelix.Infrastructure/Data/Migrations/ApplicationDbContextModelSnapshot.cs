@@ -1224,6 +1224,16 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("attempt_count");
 
+                    b.Property<Guid?>("CausationExecutionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("causation_execution_id");
+
+                    b.Property<int>("ChainDepth")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("chain_depth");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");

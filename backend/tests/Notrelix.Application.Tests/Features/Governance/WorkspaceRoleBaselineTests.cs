@@ -164,6 +164,18 @@ public sealed class WorkspaceRoleBaselineTests
     }
 
     [Fact]
+    public void ManageIntegrations_AppliesToAutomationRules_ForAdminOnly()
+    {
+        var workspaceId = Guid.NewGuid();
+        var request = new BaselineProbe(
+            workspaceId, PermissionAction.ManageIntegrations, ResourceRef.Create(ResourceKind.Create("automation.rule"), workspaceId, workspaceId));
+
+        Evaluate(request, "Admin").Kind.Should().Be(AccessDecisionKind.Allowed);
+        Evaluate(request, "Member").Kind.Should().Be(AccessDecisionKind.Forbidden);
+        Evaluate(request, "Guest").Kind.Should().Be(AccessDecisionKind.Forbidden);
+    }
+
+    [Fact]
     public void FirstPriorityDenyRule_StillBeatsTheBaseline()
     {
         Evaluate(PermissionAction.CreateBoard, "Member", rules: [new AccessPermissionRule(0, "Deny")])

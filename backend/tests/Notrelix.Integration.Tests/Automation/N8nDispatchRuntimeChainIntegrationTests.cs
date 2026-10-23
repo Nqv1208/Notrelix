@@ -66,14 +66,21 @@ public sealed class N8nDispatchRuntimeChainIntegrationTests : IAsyncLifetime
             Domain.Accounts.Accounts.AccountType.Team, ownerId, now);
         var workspace = Workspace.Create(account.Id, ownerId, "Runtime WS", $"runtime-{Guid.NewGuid():N}", now);
 
-        var actionConfiguration = urlOnlyConfiguration
-            ? """{"url":"https://example.com/hooks/generic"}"""
-            : """{"webhookPath":"notrelix-card-assigned"}""";
         var config = AutomationConfiguration.Create(
             AutomationTriggerDefinition.Create("ItemAssigned"),
-            AutomationActionDefinition.Create("Webhook", actionConfiguration));
+            AutomationActionDefinition.Create("Webhook", """{"webhookPath":"notrelix-card-assigned"}"""));
         var rule = AutomationRule.Create(account.Id, workspace.Id, "Runtime alert", config, ownerId, now);
         rule.Enable(ownerId, now);
+        if (urlOnlyConfiguration)
+        {
+            // A legacy url-only row (created before the allow-list) loads as-is; the
+            // Domain no longer lets one be enabled, so the stored shape is set directly.
+            typeof(AutomationRule).GetProperty(nameof(AutomationRule.Configuration))!.SetValue(
+                rule,
+                AutomationConfiguration.Create(
+                    AutomationTriggerDefinition.Create("ItemAssigned"),
+                    AutomationActionDefinition.Create("Webhook", """{"url":"https://example.com/hooks/generic"}""")));
+        }
         var execution = AutomationExecution.Create(account.Id, workspace.Id, rule.Id, Guid.NewGuid(), now);
 
         await using var seed = _db.CreateContext(SystemTenant());

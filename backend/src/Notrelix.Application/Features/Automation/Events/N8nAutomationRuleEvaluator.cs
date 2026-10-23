@@ -1,5 +1,7 @@
 using Notrelix.Application.Features.Automation.Abstractions;
 using Notrelix.Application.Events.Automation;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Notrelix.Application.Events.WorkManagement;
 
 namespace Notrelix.Application.Features.Automation.Events;
@@ -22,15 +24,21 @@ public sealed class N8nAutomationRuleEvaluator
     private readonly IAutomationDbContext _context;
     private readonly IIntegrationEventCollector _events;
     private readonly IDateTimeProvider _clock;
+    private readonly AutomationGuardOptions _guards;
+    private readonly ILogger<N8nAutomationRuleEvaluator> _logger;
 
     public N8nAutomationRuleEvaluator(
         IAutomationDbContext context,
         IIntegrationEventCollector events,
-        IDateTimeProvider clock)
+        IDateTimeProvider clock,
+        IOptions<AutomationGuardOptions>? guards = null,
+        ILogger<N8nAutomationRuleEvaluator>? logger = null)
     {
         _context = context;
         _events = events;
         _clock = clock;
+        _guards = guards?.Value ?? new AutomationGuardOptions();
+        _logger = logger ?? NullLogger<N8nAutomationRuleEvaluator>.Instance;
     }
 
     public async Task ExecuteAsync(
@@ -49,6 +57,12 @@ public sealed class N8nAutomationRuleEvaluator
                 rule.Status == AutomationRuleStatus.Active)
             .ToListAsync(cancellationToken);
 
+        // AUT-022: when the fact was caused by an Automation execution, resolve
+        // that execution's ancestry (rule ids + depth). A fact without causation
+        // information, or one whose causation is not an execution of this
+        // workspace, is not Automation-caused and behaves as before.
+        var ancestry = await ResolveAncestryAsync(trigger, cancellationToken);
+
         foreach (var rule in rules)
         {
             if (rule.Configuration.Trigger.Type != trigger.TriggerType)
@@ -65,12 +79,24 @@ public sealed class N8nAutomationRuleEvaluator
 
             if (exists) continue;
 
+            if (ancestry is not null && IsSuppressedByAncestry(rule, ancestry))
+            {
+                continue;
+            }
+
+            if (await IsThrottledOrTrippedAsync(rule, trigger, cancellationToken))
+            {
+                continue;
+            }
+
             var execution = AutomationExecution.Create(
                 accountId,
                 workspaceId,
                 rule.Id,
                 trigger.SourceEventId,
-                trigger.OccurredAt);
+                trigger.OccurredAt,
+                ancestry?.ParentExecutionId,
+                ancestry is null ? 0 : ancestry.ParentDepth + 1);
 
             _context.AutomationExecutions.Add(execution);
 
@@ -117,6 +143,128 @@ public sealed class N8nAutomationRuleEvaluator
                     break;
             }
         }
+    }
+
+    /// <summary>The chain of Automation executions that caused the trigger fact.</summary>
+    private sealed record ExecutionAncestry(
+        Guid ParentExecutionId,
+        int ParentDepth,
+        IReadOnlySet<Guid> RuleIds);
+
+    private async Task<ExecutionAncestry?> ResolveAncestryAsync(
+        AutomationTriggerContext trigger,
+        CancellationToken cancellationToken)
+    {
+        if (trigger.CausationId is not { } causationId)
+        {
+            return null;
+        }
+
+        var parent = await _context.AutomationExecutions
+            .AsNoTracking()
+            .Where(e => e.Id == causationId && e.WorkspaceId == trigger.WorkspaceId)
+            .Select(e => new { e.Id, e.RuleId, e.ChainDepth, e.CausationExecutionId })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (parent is null)
+        {
+            return null;
+        }
+
+        // Walk the causation chain (bounded by the depth cap) so a rule that
+        // already appears anywhere upstream is recognised, not only the
+        // immediate parent: A -> B -> A is a loop even though B != A.
+        var ruleIds = new HashSet<Guid> { parent.RuleId };
+        var next = parent.CausationExecutionId;
+        for (var hop = 0; next is { } id && hop < _guards.MaxChainDepth; hop++)
+        {
+            var ancestor = await _context.AutomationExecutions
+                .AsNoTracking()
+                .Where(e => e.Id == id && e.WorkspaceId == trigger.WorkspaceId)
+                .Select(e => new { e.RuleId, e.CausationExecutionId })
+                .FirstOrDefaultAsync(cancellationToken);
+            if (ancestor is null)
+            {
+                break;
+            }
+
+            ruleIds.Add(ancestor.RuleId);
+            next = ancestor.CausationExecutionId;
+        }
+
+        return new ExecutionAncestry(parent.Id, parent.ChainDepth, ruleIds);
+    }
+
+    private bool IsSuppressedByAncestry(AutomationRule rule, ExecutionAncestry ancestry)
+    {
+        if (ancestry.RuleIds.Contains(rule.Id))
+        {
+            _logger.LogWarning(
+                "Automation rule {RuleId} was not triggered by a fact its own chain caused (execution {ParentExecutionId}).",
+                rule.Id, ancestry.ParentExecutionId);
+            return true;
+        }
+
+        if (ancestry.ParentDepth + 1 > _guards.MaxChainDepth)
+        {
+            _logger.LogWarning(
+                "Automation rule {RuleId} was not triggered: the chain from execution {ParentExecutionId} reached depth {MaxChainDepth}.",
+                rule.Id, ancestry.ParentExecutionId, _guards.MaxChainDepth);
+            return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Per-rule runaway protection: true when the rule must not start another
+    /// execution for this fact. A rule whose most recent finished executions
+    /// (since it was last enabled or edited) all failed is disabled; a rule
+    /// that already started its allowance of executions in the window is
+    /// throttled for this fact.
+    /// </summary>
+    private async Task<bool> IsThrottledOrTrippedAsync(
+        AutomationRule rule,
+        AutomationTriggerContext trigger,
+        CancellationToken cancellationToken)
+    {
+        var since = rule.UpdatedAt ?? rule.CreatedAt;
+        var recent = await _context.AutomationExecutions
+            .AsNoTracking()
+            .Where(e => e.RuleId == rule.Id
+                && e.CreatedAt > since
+                && (e.Status == AutomationExecutionStatus.Succeeded
+                    || e.Status == AutomationExecutionStatus.Failed
+                    || e.Status == AutomationExecutionStatus.Cancelled))
+            .OrderByDescending(e => e.CreatedAt)
+            .Take(_guards.ConsecutiveFailureLimit)
+            .Select(e => e.Status)
+            .ToListAsync(cancellationToken);
+
+        if (recent.Count >= _guards.ConsecutiveFailureLimit
+            && recent.All(status => status == AutomationExecutionStatus.Failed))
+        {
+            rule.DisableAutomatically(_clock.UtcNow);
+            _logger.LogWarning(
+                "Automation rule {RuleId} was disabled after {Failures} consecutive failed executions.",
+                rule.Id, _guards.ConsecutiveFailureLimit);
+            return true;
+        }
+
+        var windowStart = trigger.OccurredAt - TimeSpan.FromSeconds(_guards.RateWindowSeconds);
+        var started = await _context.AutomationExecutions
+            .AsNoTracking()
+            .CountAsync(e => e.RuleId == rule.Id && e.CreatedAt > windowStart, cancellationToken);
+
+        if (started >= _guards.MaxExecutionsPerWindow)
+        {
+            _logger.LogWarning(
+                "Automation rule {RuleId} was throttled: {Started} executions within {WindowSeconds}s.",
+                rule.Id, started, _guards.RateWindowSeconds);
+            return true;
+        }
+
+        return false;
     }
 
     public Task ExecuteAsync(
