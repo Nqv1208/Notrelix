@@ -356,6 +356,63 @@ public sealed class BoardSharingIntegrationTests : IAsyncLifetime
         state.Should().Be(BoardVisibility.Workspace);
     }
 
+    [Fact]
+    public async Task NonManagerBoardMember_SeesEntries_WithoutPermissionIdOrGrantor_ManagerStillGetsBoth()
+    {
+        var stack = await _host.SeedWorkspaceAsync();
+        var member = await _host.AddMemberAsync(stack, WorkspaceRole.Member, "Member");
+        var grantee = await _host.AddMemberAsync(stack, WorkspaceRole.Member, "Grantee");
+        var linh = await _host.AddMemberAsync(stack, WorkspaceRole.Member, "Linh");
+        var team = Team.Create(stack.AccountId, stack.WorkspaceId, "Accounting", stack.OwnerId, OrgTreeTestHost.BaseTime);
+        team.AddMember(linh, TeamMemberRole.Member, stack.OwnerId, OrgTreeTestHost.BaseTime);
+        await _host.WithSystemContextAsync(c => { c.Teams.Add(team); return Task.CompletedTask; });
+        var board = await _host.SeedBoardAsync(stack, "Roadmap", BoardVisibility.Private);
+        await _host.SeedBoardMemberAsync(board, member, BoardRole.Member);
+        await _host.SeedResourcePermissionAsync(stack, "work-management.board", board, PermissionSubjectType.User, grantee, PermissionLevel.Editor);
+        await _host.SeedResourcePermissionAsync(stack, "work-management.board", board, PermissionSubjectType.Team, team.Id, PermissionLevel.Viewer);
+
+        var asMember = await GetAsync(stack, member, board);
+
+        asMember.CanManage.Should().BeFalse();
+        asMember.EntriesDisclosed.Should().BeTrue();
+        asMember.Entries.Select(e => e.Id).Should().BeEquivalentTo([member, grantee, team.Id]);
+        asMember.Entries.Should().OnlyContain(e => e.PermissionId == null && e.GrantedBy == null, "grant ids and grantors are management data");
+        asMember.Entries.Single(e => e.Id == grantee).Level.Should().Be("editor");
+
+        var asOwner = await GetAsync(stack, stack.OwnerId, board);
+        asOwner.CanManage.Should().BeTrue();
+        asOwner.Entries.Single(e => e.Id == grantee).PermissionId.Should().NotBeNull();
+        asOwner.Entries.Single(e => e.Id == grantee).GrantedBy.Should().NotBeNull();
+        asOwner.Entries.Single(e => e.Id == team.Id).PermissionId.Should().NotBeNull();
+        asOwner.Entries.Single(e => e.Id == team.Id).GrantedBy.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task CallerWhoCannotSeeTheSpace_GetsNoSpaceRoleOutsideFlagOrSpaceId_ManagerWhoCanStillGetsThem()
+    {
+        var stack = await _host.SeedWorkspaceAsync();
+        var member = await _host.AddMemberAsync(stack, WorkspaceRole.Member, "Member");
+        var inSpace = await _host.AddMemberAsync(stack, WorkspaceRole.Member, "InSpace");
+        var space = await _host.SeedSpaceAsync(stack, "Hidden", SpaceVisibility.Private, stack.OwnerId, transition: s =>
+            s.AddMember(SpaceMemberSubjectType.User, inSpace, SpaceRole.Member, stack.OwnerId, OrgTreeTestHost.BaseTime));
+        var board = await _host.SeedBoardAsync(stack, "Roadmap", spaceId: space);
+        await _host.SeedBoardMemberAsync(board, member, BoardRole.Member);
+        await _host.SeedBoardMemberAsync(board, inSpace, BoardRole.Member);
+
+        var blind = await GetAsync(stack, member, board);
+
+        blind.EntriesDisclosed.Should().BeTrue();
+        blind.SpaceId.Should().BeNull();
+        blind.SpaceName.Should().BeNull();
+        blind.SpacePeople.Should().BeNull();
+        blind.Entries.Should().OnlyContain(e => e.SpaceRole == null && !e.OutsideSpace);
+
+        var sighted = await GetAsync(stack, stack.OwnerId, board);
+        sighted.SpaceId.Should().Be(space);
+        sighted.Entries.Single(e => e.Id == inSpace).SpaceRole.Should().Be("Member");
+        sighted.Entries.Single(e => e.Id == member).OutsideSpace.Should().BeTrue();
+    }
+
     private async Task<BoardSharingDto> GetAsync(OrgStack stack, Guid userId, Guid boardId)
     {
         using var provider = CreateProvider(stack, userId);

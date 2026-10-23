@@ -38,7 +38,8 @@ public sealed partial class ResourceAccessSummaryService
         {
             lookupIds.UnionWith(members.Select(m => m.UserId));
             lookupIds.UnionWith(entries.Grants.Where(g => g.SubjectType == "User").Select(g => g.SubjectId));
-            lookupIds.UnionWith(entries.Grants.Where(g => g.GrantedBy.HasValue).Select(g => g.GrantedBy!.Value));
+            if (canManage)
+                lookupIds.UnionWith(entries.Grants.Where(g => g.GrantedBy.HasValue).Select(g => g.GrantedBy!.Value));
         }
 
         lookupIds.UnionWith(logRows.Select(r => r.ActorUserId));
@@ -50,8 +51,11 @@ public sealed partial class ResourceAccessSummaryService
         string NameOf(Guid id) => names.GetValueOrDefault(id) ?? "Unknown";
         AccessGrantor? GrantorOf(Guid? id) => id is { } value ? new AccessGrantor(value, NameOf(value)) : null;
 
-        var spaceRoles = (entries.SpaceRoles ?? []).ToDictionary(r => r.UserId, r => r.RoleRank);
-        var placed = spaceId is not null;
+        // Space-derived per-entry data (role, outside flag) is disclosed only to a caller who can see the Space.
+        var spaceRoles = spaceVisible
+            ? (entries.SpaceRoles ?? []).ToDictionary(r => r.UserId, r => r.RoleRank)
+            : [];
+        var placed = spaceVisible && spaceId is not null;
         var result = new List<BoardSharingEntry>();
         if (disclosed)
         {
@@ -77,7 +81,7 @@ public sealed partial class ResourceAccessSummaryService
                     AccessLevels.OfRank(shownRank),
                     capped,
                     source,
-                    grant?.PermissionId,
+                    canManage ? grant?.PermissionId : null,
                     member?.Role,
                     string.Equals(member?.Role, "Owner", StringComparison.Ordinal),
                     personId == userId,
@@ -85,7 +89,7 @@ public sealed partial class ResourceAccessSummaryService
                     placed && !hasSpaceRole,
                     null,
                     addedAt,
-                    GrantorOf(grant?.GrantedBy)));
+                    canManage ? GrantorOf(grant?.GrantedBy) : null));
             }
 
             foreach (var grant in entries.Grants.Where(g => g.SubjectType == "Team"))
@@ -97,7 +101,7 @@ public sealed partial class ResourceAccessSummaryService
                     AccessLevels.OfRank(grant.Rank),
                     false,
                     BoardSharingEntrySources.Grant,
-                    grant.PermissionId,
+                    canManage ? grant.PermissionId : null,
                     null,
                     false,
                     false,
@@ -105,7 +109,7 @@ public sealed partial class ResourceAccessSummaryService
                     placed,
                     grant.TeamPeople,
                     grant.GrantedAt ?? DateTimeOffset.MinValue,
-                    GrantorOf(grant.GrantedBy)));
+                    canManage ? GrantorOf(grant.GrantedBy) : null));
             }
         }
 
@@ -145,7 +149,7 @@ public sealed partial class ResourceAccessSummaryService
             canManage,
             disclosed,
             board.Visibility ?? facts.ResourceAudience ?? "Workspace",
-            spaceId,
+            spaceVisible ? spaceId : null,
             spaceVisible ? entries.SpaceName : null,
             spaceVisible && placed ? spaceReached.Count : null,
             people.Count,
