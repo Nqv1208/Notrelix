@@ -3,7 +3,6 @@ using Notrelix.Application.Features.Governance.Public.Visibility;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Application.Features.Workspaces.Public.Members;
 using Notrelix.Application.Features.Workspaces.Spaces.Services;
-using Notrelix.Domain.Workspaces.Rules;
 
 namespace Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceMembersExtra;
 
@@ -64,7 +63,7 @@ public record GetSpaceMembersExtraQuery(Guid WorkspaceId, Guid SpaceId)
 public class GetSpaceMembersExtraQueryHandler : IRequestHandler<GetSpaceMembersExtraQuery, Result<SpaceMembersExtraDto>>
 {
     private readonly IWorkspaceDbContext _context;
-    private readonly ISpaceStore _spaces;
+    private readonly ISpaceReachReader _reach;
     private readonly IResourceVisibility _visibility;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _clock;
@@ -72,7 +71,7 @@ public class GetSpaceMembersExtraQueryHandler : IRequestHandler<GetSpaceMembersE
 
     public GetSpaceMembersExtraQueryHandler(
         IWorkspaceDbContext context,
-        ISpaceStore spaces,
+        ISpaceReachReader reach,
         IResourceVisibility visibility,
         ICurrentRequestContext requestContext,
         IDateTimeProvider clock,
@@ -80,7 +79,7 @@ public class GetSpaceMembersExtraQueryHandler : IRequestHandler<GetSpaceMembersE
     {
         _emails = emails;
         _context = context;
-        _spaces = spaces;
+        _reach = reach;
         _visibility = visibility;
         _requestContext = requestContext;
         _clock = clock;
@@ -100,60 +99,17 @@ public class GetSpaceMembersExtraQueryHandler : IRequestHandler<GetSpaceMembersE
             .FirstOrDefaultAsync(ct)
             ?? throw new NotFoundException(nameof(Space), request.SpaceId);
 
-        var entries = await _spaces.ListMembersAsync(workspaceId, request.SpaceId, ct);
-        var teamEntries = entries.Where(e => e.SubjectType == SpaceMemberSubjectType.Team).ToList();
-        var teamIds = teamEntries.Select(e => e.SubjectId).ToList();
-
-        var teamPeople = teamIds.Count == 0
-            ? []
-            : await _context.TeamMembers
-                .AsNoTracking()
-                .Where(m => m.WorkspaceId == workspaceId && teamIds.Contains(m.TeamId) && m.Status == TeamMemberStatus.Active)
-                .Select(m => new { m.TeamId, m.UserId })
-                .ToListAsync(ct);
-
-        // Each reached person once, at the highest role of any entry that reaches them.
-        var reach = new Dictionary<Guid, (SpaceRole Role, List<string> Teams)>();
-        void Reach(Guid userId, SpaceRole role, string? teamName)
-        {
-            if (!reach.TryGetValue(userId, out var current))
-                current = (role, []);
-            if (role > current.Role)
-                current.Role = role;
-            if (teamName is not null && !current.Teams.Contains(teamName))
-                current.Teams.Add(teamName);
-            reach[userId] = current;
-        }
-
-        foreach (var entry in entries.Where(e => e.SubjectType == SpaceMemberSubjectType.User))
-            Reach(entry.SubjectId, entry.Role, null);
-        foreach (var entry in teamEntries)
-            foreach (var person in teamPeople.Where(p => p.TeamId == entry.SubjectId))
-                Reach(person.UserId, entry.Role, entry.TeamName ?? "Unknown team");
-
-        // Only active, non-Guest Workspace members count as people of the Space (a Guest is a Board-level grantee).
-        var reachedIds = reach.Keys.ToList();
-        var members = reachedIds.Count == 0
-            ? []
-            : await _context.WorkspaceMembers
-                .AsNoTracking()
-                .Where(m => m.WorkspaceId == workspaceId && reachedIds.Contains(m.UserId))
-                .Where(WorkspaceMemberRules.ActiveColleague)
-                .Select(m => new { m.UserId, m.JobTitle })
-                .ToListAsync(ct);
-
-        var emails = await _emails.ResolveAsync(workspaceId, reachedIds, ct);
-        var people = members
-            .Select(m => (m.UserId, m.JobTitle, Reached: reach[m.UserId]))
-            .OrderByDescending(p => p.Reached.Role)
-            .ThenBy(p => p.UserId)
+        var reach = (await _reach.ReadAsync(workspaceId, [request.SpaceId], ct))[request.SpaceId];
+        var reachedPeople = reach.People;
+        var emails = await _emails.ResolveAsync(workspaceId, reachedPeople.Select(p => p.UserId).ToList(), ct);
+        var people = reachedPeople
             .Select(p => new SpaceMembersExtraPersonDto(
                 p.UserId,
                 emails.GetValueOrDefault(p.UserId),
                 p.JobTitle,
                 null,
                 false,
-                p.Reached.Teams.OrderBy(n => n, StringComparer.Ordinal).ToList(),
+                p.ViaTeams,
                 space.CreatedBy == p.UserId))
             .ToList();
 
@@ -178,7 +134,7 @@ public class GetSpaceMembersExtraQueryHandler : IRequestHandler<GetSpaceMembersE
                 x.Entry!.Role))
             .ToList();
 
-        var peopleRoles = members.Select(m => reach[m.UserId].Role).ToList();
+        var peopleRoles = reachedPeople.Select(p => p.Role).ToList();
         var summary = new SpaceMembersExtraSummaryDto(
             peopleRoles.Count(role => role is SpaceRole.Admin),
             peopleRoles.Count(role => role is SpaceRole.Member),

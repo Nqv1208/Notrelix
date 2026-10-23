@@ -157,6 +157,10 @@ internal sealed class OrgTreeTestHost
         services.AddScoped<ISpaceContentReader, SpaceContentReader>();
         services.AddScoped<IBoardSpacePlacementFacts, BoardSpacePlacementFactsAdapter>();
         services.AddScoped<IPageSpacePlacementFacts, PageSpacePlacementFactsAdapter>();
+        services.AddScoped<ISpaceReachReader, SpaceReachReader>();
+        services.AddScoped<Notrelix.Application.Features.WorkManagement.Public.GettingStarted.IFirstWorkItemFacts, Notrelix.Infrastructure.CrossContext.Workspaces.WorkManagement.FirstWorkItemFactsAdapter>();
+        services.AddScoped<Notrelix.Application.Features.WorkManagement.Public.BoardWork.IBoardWorkSummaryFacts, Notrelix.Infrastructure.CrossContext.Workspaces.WorkManagement.BoardWorkSummaryFactsAdapter>();
+        services.AddScoped<Notrelix.Application.Features.Documents.Public.SpaceOverview.IPageSpaceOverviewFacts, Notrelix.Infrastructure.CrossContext.Workspaces.Documents.PageSpaceOverviewFactsAdapter>();
         services.AddScoped<Notrelix.Application.Features.Workspaces.Public.SpacePlacement.ISpacePlacementTargets,
             Notrelix.Infrastructure.Workspaces.Spaces.SpacePlacementTargets>();
         services.AddScoped<Notrelix.Application.Features.WorkManagement.Boards.Services.IBoardSpacePlacement,

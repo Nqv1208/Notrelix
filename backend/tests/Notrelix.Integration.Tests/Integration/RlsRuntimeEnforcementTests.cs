@@ -625,6 +625,49 @@ public sealed class RlsRuntimeEnforcementTests : IAsyncLifetime
     }
 
     /// <summary>
+    /// Onboarding state: a draft is visible only to its owner (no tenant needed); the getting-started
+    /// dismissal is visible only to its owner inside a workspace the user has a grant in, and the app
+    /// role cannot write a row owned by another user.
+    /// </summary>
+    [Fact]
+    public async Task AppRole_OnboardingState_IsVisibleOnlyToItsOwner()
+    {
+        var otherUser = Guid.Parse("00000000-0000-0000-0000-0000000000BC");
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using (var context = CreateContext(tenant))
+        {
+            context.OnboardingDrafts.AddRange(
+                Notrelix.Domain.Workspaces.Onboarding.OnboardingDraft.Create(UserId, "mine", null, "{}", FixedTime),
+                Notrelix.Domain.Workspaces.Onboarding.OnboardingDraft.Create(otherUser, "theirs", null, "{}", FixedTime));
+            context.GettingStartedDismissals.AddRange(
+                Notrelix.Domain.Workspaces.Onboarding.GettingStartedDismissal.Create(AccountA, WsA1, UserId, FixedTime),
+                Notrelix.Domain.Workspaces.Onboarding.GettingStartedDismissal.Create(AccountA, WsA1, otherUser, FixedTime),
+                Notrelix.Domain.Workspaces.Onboarding.GettingStartedDismissal.Create(AccountA, WsA2, UserId, FixedTime));
+            await context.SaveChangesAsync();
+        }
+
+        await SeedGrantAsync(AccountA, WsA1, UserId);
+        await SeedGrantAsync(AccountA, WsA1, otherUser);
+
+        (await QueryScalarsAsAppRoleAsync("SELECT step FROM workspace.onboarding_drafts ORDER BY 1", userId: UserId))
+            .Should().Equal(["mine"]);
+        (await QueryScalarsAsAppRoleAsync("SELECT step FROM workspace.onboarding_drafts ORDER BY 1", userId: otherUser))
+            .Should().Equal(["theirs"]);
+        (await QueryScalarsAsAppRoleAsync("SELECT step FROM workspace.onboarding_drafts"))
+            .Should().BeEmpty("a request without user context must see no draft");
+        (await QueryScalarsAsAppRoleAsync("SELECT workspace_id::text FROM workspace.getting_started_dismissals ORDER BY 1", userId: UserId))
+            .Should().Equal([WsA1.ToString()], "only the member's own dismissal in a workspace they have a grant in");
+
+        var forgedDraft = () => QueryScalarsAsAppRoleAsync($"""
+            INSERT INTO workspace.onboarding_drafts (id, user_id, step, data, created_at, updated_at, expires_at)
+            VALUES ('{Guid.NewGuid()}', '{otherUser}', 'forged', '[]'::jsonb, now(), now(), now())
+            RETURNING id::text
+            """, userId: UserId);
+        (await forgedDraft.Should().ThrowAsync<PostgresException>()).Which.SqlState.Should().Be("42501");
+    }
+
+    /// <summary>
     /// ADR-009: Space membership entries and the Space closure index are
     /// tenant-scoped. A user with a grant only in workspace A1 sees A1's entries
     /// and closure rows, never those of a workspace without a grant, and the app

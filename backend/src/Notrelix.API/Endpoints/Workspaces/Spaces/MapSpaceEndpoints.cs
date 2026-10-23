@@ -33,6 +33,7 @@ public static class MapSpaceEndpoints
         byIdGroup.MapMoveSpace();
         byIdGroup.MapGetSpaceMembers();
         byIdGroup.MapGetSpaceMembersExtra();
+        byIdGroup.MapGetSpaceOverview();
         byIdGroup.MapAddSpaceMember();
         byIdGroup.MapChangeSpaceMemberRole();
         byIdGroup.MapRemoveSpaceMember();

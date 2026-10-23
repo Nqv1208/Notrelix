@@ -145,6 +145,8 @@ public static class DependencyInjection
             Notrelix.Application.Features.Workspaces.Spaces.Services.SpaceTargetAuthorizer>();
         services.AddScoped<Notrelix.Application.Features.Workspaces.Spaces.Services.ISpaceContentReader,
             Notrelix.Application.Features.Workspaces.Spaces.Services.SpaceContentReader>();
+        services.AddScoped<Notrelix.Application.Features.Workspaces.Spaces.Services.ISpaceReachReader,
+            Notrelix.Application.Features.Workspaces.Spaces.Services.SpaceReachReader>();
         services.AddScoped<Notrelix.Application.Features.WorkManagement.Boards.Services.BoardAccessChangeLog>();
         services.AddScoped<Notrelix.Application.Features.WorkManagement.Boards.Services.IBoardSpacePlacement,
             Notrelix.Application.Features.WorkManagement.Boards.Services.BoardSpacePlacement>();

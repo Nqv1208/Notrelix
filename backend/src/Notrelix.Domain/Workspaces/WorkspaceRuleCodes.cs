@@ -95,4 +95,9 @@ public static class WorkspaceRuleCodes
     // ── Navigation (recents and pins, WX-DEC-011) ─────────────────────────
     public const string Workspaces_Navigation_UnsupportedResourceKind = "Workspaces_Navigation_UnsupportedResourceKind";
     public const string Workspaces_Navigation_PinLimitReached = "Workspaces_Navigation_PinLimitReached";
+
+    // ── Onboarding (draft and getting started) ────────────────────────────
+    public const string Workspaces_Onboarding_DraftStepInvalid = "Workspaces_Onboarding_DraftStepInvalid";
+    public const string Workspaces_Onboarding_DraftDataInvalid = "Workspaces_Onboarding_DraftDataInvalid";
+    public const string Workspaces_Onboarding_DraftDataTooLarge = "Workspaces_Onboarding_DraftDataTooLarge";
 }

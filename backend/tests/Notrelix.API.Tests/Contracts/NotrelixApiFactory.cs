@@ -42,6 +42,13 @@ using Notrelix.Application.Features.Workspaces.Workspaces.Queries.GetAccountWork
 using Notrelix.Application.Features.Workspaces.Workspaces.Queries.ResolveSlug;
 using Notrelix.Application.Features.Workspaces.Settings.Queries.GetWorkspaceSecurityExt;
 using Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceMembersExtra;
+using Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceOverview;
+using Notrelix.Application.Features.Workspaces.Onboarding.Commands.ClearOnboardingDraft;
+using Notrelix.Application.Features.Workspaces.Onboarding.Commands.DismissGettingStarted;
+using Notrelix.Application.Features.Workspaces.Onboarding.Commands.SaveOnboardingDraft;
+using Notrelix.Application.Features.Workspaces.Onboarding.Queries.CheckWorkspaceSlug;
+using Notrelix.Application.Features.Workspaces.Onboarding.Queries.GetGettingStarted;
+using Notrelix.Application.Features.Workspaces.Onboarding.Queries.GetOnboardingDraft;
 using Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt;
 using Notrelix.Application.Features.Workspaces.Settings.Queries.GetWorkspaceSettings;
 using Notrelix.Application.Features.Workspaces.Settings.Commands.UpdateWorkspaceSettings;
@@ -436,6 +443,18 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
                 Result<WorkspaceTeamsExtDto>.Success(new WorkspaceTeamsExtDto([], [], [])));
             MockWorkspaceHandler<GetSpaceMembersExtraQuery, Result<SpaceMembersExtraDto>>(services,
                 Result<SpaceMembersExtraDto>.Success(new SpaceMembersExtraDto(new SpaceMembersExtraSummaryDto(0, 0, 0, 0), [], [], [])));
+            MockWorkspaceHandler<GetSpaceOverviewQuery, Result<SpaceOverviewDto>>(services,
+                Result<SpaceOverviewDto>.Success(new SpaceOverviewDto(0, [], 0, [], 0, [], [], [], [],
+                    new SpaceOverviewAccessDto([], new SpaceOverviewRoleDto(0, []), new SpaceOverviewRoleDto(0, []), []))));
+            MockWorkspaceHandler<CheckWorkspaceSlugQuery, Result<WorkspaceSlugCheckDto>>(services,
+                Result<WorkspaceSlugCheckDto>.Success(new WorkspaceSlugCheckDto("free", null)));
+            MockWorkspaceHandler<GetOnboardingDraftQuery, Result<OnboardingDraftResponseDto>>(services,
+                Result<OnboardingDraftResponseDto>.Success(new OnboardingDraftResponseDto(null)));
+            MockWorkspaceHandler<SaveOnboardingDraftCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<ClearOnboardingDraftCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<GetGettingStartedQuery, Result<GettingStartedDto>>(services,
+                Result<GettingStartedDto>.Success(new GettingStartedDto(false, [])));
+            MockWorkspaceHandler<DismissGettingStartedCommand, Result>(services, Result.Success());
             MockWorkspaceHandler<GetWorkspaceSecurityExtQuery, Result<WorkspaceSecurityExtDto>>(services,
                 Result<WorkspaceSecurityExtDto>.Success(new WorkspaceSecurityExtDto(0, null, null, null)));
             MockWorkspaceHandler<UpdateWorkspaceSettingsCommand, Result>(services, Result.Success());

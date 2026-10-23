@@ -145,6 +145,8 @@ public partial class ApplicationDbContext
     public DbSet<TeamMember> TeamMembers => Set<TeamMember>();
     public DbSet<RecentResource> RecentResources => Set<RecentResource>();
     public DbSet<PinnedResource> PinnedResources => Set<PinnedResource>();
+    public DbSet<Notrelix.Domain.Workspaces.Onboarding.OnboardingDraft> OnboardingDrafts => Set<Notrelix.Domain.Workspaces.Onboarding.OnboardingDraft>();
+    public DbSet<Notrelix.Domain.Workspaces.Onboarding.GettingStartedDismissal> GettingStartedDismissals => Set<Notrelix.Domain.Workspaces.Onboarding.GettingStartedDismissal>();
 
     // Document
     public DbSet<Page> Pages => Set<Page>();
