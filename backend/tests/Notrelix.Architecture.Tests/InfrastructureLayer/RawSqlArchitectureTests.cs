@@ -44,6 +44,9 @@ public class RawSqlArchitectureTests
         // Attachment object reaper: FOR UPDATE SKIP LOCKED claim of purge-due
         // soft-deleted rows and a try-advisory sweep claim, under the system context.
         "src/Notrelix.Infrastructure/BackgroundJobs/PostgresAttachmentReaperStore.cs",
+        // Security activity retention: bounded DELETE ... FOR UPDATE SKIP LOCKED sweep of
+        // identity.user_security_activity under the system context.
+        "src/Notrelix.Infrastructure/BackgroundJobs/SecurityActivityRetention.cs",
         // Reserves a Board's Item keys with one row-locking UPDATE ... RETURNING
         // on work.boards inside the request transaction (EF cannot express it
         // without loading and versioning the Board aggregate).

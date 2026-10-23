@@ -20,7 +20,8 @@ public class ChangePasswordTests : IdentityHandlerTestBase
         DateTimeProviderMock.Object,
         ChangePasswordLoggerMock.Object,
         StepUpServiceMock.Object,
-        ThrottleMock.Object);
+        ThrottleMock.Object,
+        ActivityMock.Object);
 
     private void SetupActiveMfa()
     {

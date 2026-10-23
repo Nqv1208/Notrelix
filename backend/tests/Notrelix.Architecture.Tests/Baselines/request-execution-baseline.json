@@ -1925,6 +1925,31 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.Identity.Security.Queries.GetSecurityActivity.GetSecurityActivityQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IGlobalRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": false,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Identity.Security.Queries.GetSecurityActivity.GetSecurityActivityQueryHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.Identity.Security.Queries.GetStepUpRequirement.GetStepUpRequirementQuery",
     "kind": "Query",
     "principalMarkers": [

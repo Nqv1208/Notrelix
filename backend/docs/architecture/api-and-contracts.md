@@ -564,10 +564,11 @@ Host audit can record security-relevant transport/auth events.
 Sensitive-route matching uses the real versioned route (`/api/v{n}/auth/...`, see
 `SecuritySensitiveRoutes`); `SecurityAuditMiddlewareTests` pins it to the checked-in contract so the
 list cannot drift from the routes again. A 401 on a sign-in route is a `LoginFailed` event; a 401 on a
-credential change by a signed-in user is a plain unauthorized access. The middleware adds the event to
-the scoped audit context and does not itself commit it: it runs after the endpoint's data session has
-committed, and no code path saves the context afterwards, so persistence of these events is unproven and
-must be settled before anything reads them (for example as an account "recent security activity" feed).
+credential change by a signed-in user is a plain unauthorized access. The event is persisted through
+`ISecurityAuditSink`, an independent short transaction under the system (worker) RLS scope: the status
+code is only known after the endpoint's data session committed, so staging on the request context would
+never be saved (see `security-tenancy-authorization.md` section 83A). The user-visible security activity
+feed is a different record, written by use cases (`GET /api/v1/auth/security/activity`).
 
 It does not automatically replace Governance/business audit or Activity history.
 

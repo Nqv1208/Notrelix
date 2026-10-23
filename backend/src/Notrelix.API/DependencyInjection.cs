@@ -190,6 +190,9 @@ public static class DependencyInjection
             // replay header, only for endpoints marked with WithIdempotencyKey()
             options.OperationFilter<IdempotencyOperationFilter>();
 
+            // Enums the HTTP pipeline serializes as names but the generator would export as integers.
+            options.SchemaFilter<StringEnumSchemaFilter>();
+
             // Endpoints declaring their canonical success code (201/204) must
             // not also export the default inferred 200 response.
             options.OperationFilter<CanonicalSuccessOperationFilter>();

@@ -4306,6 +4306,84 @@
         ]
       }
     },
+    "/api/v1/auth/security/activity": {
+      "get": {
+        "tags": [
+          "Identity.Auth",
+          "Identity.Security"
+        ],
+        "summary": "List the current user's security activity",
+        "description": "Sign-in successes and failures, password changes and resets, MFA enabled or disabled and session revocations, newest first, for the authenticated user only and kept for 90 days. Cursor-paginated (default 20, max 100): pass nextCursor back as cursor for the next page. Contains no secret.",
+        "operationId": "Identity.Security.ListActivity",
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Common.Models.CursorPageOfSecurityActivityDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
     "/api/v1/auth/security/step-up/requirement": {
       "post": {
         "tags": [
@@ -18762,6 +18840,27 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.Application.Common.Models.CursorPageOfSecurityActivityDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.Identity.Security.Abstractions.SecurityActivityDto"
+            },
+            "nullable": true
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          },
+          "hasNextPage": {
+            "type": "boolean",
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.Application.Common.Security.Auth.UserDto": {
         "required": [
           "email",
@@ -19212,6 +19311,36 @@
           "version": {
             "type": "integer",
             "format": "int64"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Identity.Security.Abstractions.SecurityActivityDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "$ref": "#/components/schemas/Notrelix.Domain.Identity.Security.SecurityActivityType"
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "ipAddress": {
+            "type": "string",
+            "nullable": true
+          },
+          "userAgent": {
+            "type": "string",
+            "nullable": true
+          },
+          "sessionId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -20683,6 +20812,19 @@
           }
         },
         "additionalProperties": false
+      },
+      "Notrelix.Domain.Identity.Security.SecurityActivityType": {
+        "enum": [
+          "SignInSucceeded",
+          "SignInFailed",
+          "PasswordChanged",
+          "PasswordReset",
+          "MfaEnabled",
+          "MfaDisabled",
+          "SessionRevoked",
+          "OtherSessionsRevoked"
+        ],
+        "type": "string"
       },
       "Notrelix.Domain.Identity.Sessions.SessionStatus": {
         "enum": [

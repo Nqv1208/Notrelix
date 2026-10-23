@@ -2,23 +2,24 @@ namespace Notrelix.Application.Features.Identity.Auth.Throttling;
 
 /// <summary>
 /// Brute-force limits for the anonymous credential steps (password login and
-/// MFA challenge completion). The values are PRODUCT policy that is not yet
-/// decided by the owner (docs/product/contexts/identity.md): the defaults are
-/// deliberately conservative placeholders and every value is overridable
-/// through configuration (<see cref="SectionName"/>). They are validated at
-/// startup so a misconfiguration cannot silently disable the protection.
+/// MFA challenge completion). The defaults are the product policy accepted on
+/// 2026-10-23 (docs/product/contexts/identity.md): 10 failures per account and 50
+/// per IP in 15 minutes, each lock lasting 15 minutes. Every value is overridable
+/// through configuration (<see cref="SectionName"/>) and validated at startup so a
+/// misconfiguration cannot silently disable the protection. The wrong-code budget of
+/// one MFA challenge is separate and fixed (<c>MfaPolicy.ChallengeMaxAttempts</c>).
 /// </summary>
 public sealed class LoginThrottleOptions
 {
     public const string SectionName = "Security:LoginThrottle";
 
     /// <summary>Failed attempts allowed per account (login email, or user for the MFA step) inside <see cref="AccountWindow"/>.</summary>
-    public int MaxFailuresPerAccount { get; set; } = 5;
+    public int MaxFailuresPerAccount { get; set; } = 10;
 
     public TimeSpan AccountWindow { get; set; } = TimeSpan.FromMinutes(15);
 
     /// <summary>Failed attempts allowed per client IP inside <see cref="IpWindow"/>, across all accounts.</summary>
-    public int MaxFailuresPerIp { get; set; } = 20;
+    public int MaxFailuresPerIp { get; set; } = 50;
 
     public TimeSpan IpWindow { get; set; } = TimeSpan.FromMinutes(15);
 

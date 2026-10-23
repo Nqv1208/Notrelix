@@ -1221,6 +1221,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/security/activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the current user's security activity
+         * @description Sign-in successes and failures, password changes and resets, MFA enabled or disabled and session revocations, newest first, for the authenticated user only and kept for 90 days. Cursor-paginated (default 20, max 100): pass nextCursor back as cursor for the next page. Contains no secret.
+         */
+        get: operations["Identity.Security.ListActivity"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/security/step-up/requirement": {
         parameters: {
             query?: never;
@@ -4649,6 +4669,11 @@ export interface components {
             nextCursor?: string | null;
             readonly hasNextPage?: boolean;
         };
+        "Notrelix.Application.Common.Models.CursorPageOfSecurityActivityDto": {
+            items?: components["schemas"]["Notrelix.Application.Features.Identity.Security.Abstractions.SecurityActivityDto"][] | null;
+            nextCursor?: string | null;
+            readonly hasNextPage?: boolean;
+        };
         "Notrelix.Application.Common.Security.Auth.UserDto": {
             /** Format: uuid */
             id: string;
@@ -4792,6 +4817,17 @@ export interface components {
             theme?: string | null;
             /** Format: int64 */
             version?: number;
+        };
+        "Notrelix.Application.Features.Identity.Security.Abstractions.SecurityActivityDto": {
+            /** Format: uuid */
+            id?: string;
+            type?: components["schemas"]["Notrelix.Domain.Identity.Security.SecurityActivityType"];
+            /** Format: date-time */
+            occurredAt?: string;
+            ipAddress?: string | null;
+            userAgent?: string | null;
+            /** Format: uuid */
+            sessionId?: string | null;
         };
         "Notrelix.Application.Features.Identity.Security.DTOs.AccountSecuritySummaryDto": {
             /** Format: date-time */
@@ -5295,6 +5331,8 @@ export interface components {
             role?: string | null;
             status?: string | null;
         };
+        /** @enum {string} */
+        "Notrelix.Domain.Identity.Security.SecurityActivityType": "SignInSucceeded" | "SignInFailed" | "PasswordChanged" | "PasswordReset" | "MfaEnabled" | "MfaDisabled" | "SessionRevoked" | "OtherSessionsRevoked";
         /**
          * Format: int32
          * @enum {integer}
@@ -8079,6 +8117,56 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Notrelix.Application.Features.Identity.Security.DTOs.AccountSecuritySummaryDto"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "Identity.Security.ListActivity": {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Common.Models.CursorPageOfSecurityActivityDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
                 };
             };
             /** @description Unauthorized */

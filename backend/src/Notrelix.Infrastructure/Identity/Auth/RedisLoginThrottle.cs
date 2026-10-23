@@ -108,6 +108,16 @@ public sealed class RedisLoginThrottle : ILoginThrottle
         await _redis.GetDatabase().KeyDeleteAsync(SubjectKey(scope, subject, "count"));
     }
 
+    public async Task ClearSubjectAsync(
+        LoginThrottleScope scope, string subject, CancellationToken cancellationToken = default)
+    {
+        await _redis.GetDatabase().KeyDeleteAsync(new RedisKey[]
+        {
+            SubjectKey(scope, subject, "count"),
+            SubjectKey(scope, subject, "lock")
+        });
+    }
+
     private Task<RedisResult> RecordIpFailureAsync(IDatabase db)
         => db.ScriptEvaluateAsync(
             IpFailureScript,

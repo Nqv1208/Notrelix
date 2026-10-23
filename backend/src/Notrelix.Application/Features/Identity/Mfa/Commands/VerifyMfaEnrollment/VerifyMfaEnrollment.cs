@@ -2,6 +2,7 @@ using Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Requests.Scoping;
 using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.Identity.Mfa.Abstractions;
+using Notrelix.Application.Features.Identity.Security.Abstractions;
 using Notrelix.Domain.Identity.Mfa;
 using Notrelix.Application.Features.Identity.Mfa.DTOs;
 using Notrelix.Domain.Identity.Security;
@@ -26,6 +27,7 @@ public sealed class VerifyMfaEnrollmentCommandHandler
     private readonly IMfaTotpService _totp;
     private readonly IMfaRecoveryCodeGenerator _recoveryGenerator;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly ISecurityActivityRecorder _activity;
     private readonly ILogger<VerifyMfaEnrollmentCommandHandler> _logger;
 
     public VerifyMfaEnrollmentCommandHandler(
@@ -34,6 +36,7 @@ public sealed class VerifyMfaEnrollmentCommandHandler
         IMfaTotpService totp,
         IMfaRecoveryCodeGenerator recoveryGenerator,
         IDateTimeProvider dateTimeProvider,
+        ISecurityActivityRecorder activity,
         ILogger<VerifyMfaEnrollmentCommandHandler> logger)
     {
         _context = context;
@@ -41,6 +44,7 @@ public sealed class VerifyMfaEnrollmentCommandHandler
         _totp = totp;
         _recoveryGenerator = recoveryGenerator;
         _dateTimeProvider = dateTimeProvider;
+        _activity = activity;
         _logger = logger;
     }
 
@@ -97,6 +101,7 @@ public sealed class VerifyMfaEnrollmentCommandHandler
         }
 
         settings.EnableMfa(MfaMethodType.AuthenticatorApp, now);
+        _activity.Record(userId, SecurityActivityType.MfaEnabled, now, _currentUser.SessionId);
 
         await InvalidateExistingBatchesAsync(userId, now, cancellationToken);
 

@@ -1,7 +1,10 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Requests.Scoping;
 using Notrelix.Application.Features.Identity.Abstractions;
+using Notrelix.Application.Features.Identity.Auth.Throttling;
+using Notrelix.Application.Features.Identity.Security.Abstractions;
 using Notrelix.Application.Features.Identity.Security.Services;
+using Notrelix.Domain.Identity.Security;
 
 namespace Notrelix.Application.Features.Identity.Auth.Commands.ResetPassword;
 
@@ -19,7 +22,13 @@ public class ResetPasswordCommandHandler : IRequestHandler<ResetPasswordCommand,
     private readonly IPasswordHasher _passwordHasher;
     private readonly IEmailService _emailService;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IJwtBlacklistService _jwtBlacklist;
+    private readonly ILoginThrottle _throttle;
+    private readonly ISecurityActivityRecorder _activity;
     private readonly ILogger<ResetPasswordCommandHandler> _logger;
+
+    // Same watermark lifetime as change-password: longer than any access token.
+    private static readonly TimeSpan RevocationWatermarkTtl = TimeSpan.FromHours(24);
 
     public ResetPasswordCommandHandler(
         IIdentityDbContext context,
@@ -27,6 +36,9 @@ public class ResetPasswordCommandHandler : IRequestHandler<ResetPasswordCommand,
         IPasswordHasher passwordHasher,
         IEmailService emailService,
         IDateTimeProvider dateTimeProvider,
+        IJwtBlacklistService jwtBlacklist,
+        ILoginThrottle throttle,
+        ISecurityActivityRecorder activity,
         ILogger<ResetPasswordCommandHandler> logger)
     {
         _context = context;
@@ -34,6 +46,9 @@ public class ResetPasswordCommandHandler : IRequestHandler<ResetPasswordCommand,
         _passwordHasher = passwordHasher;
         _emailService = emailService;
         _dateTimeProvider = dateTimeProvider;
+        _jwtBlacklist = jwtBlacklist;
+        _throttle = throttle;
+        _activity = activity;
         _logger = logger;
     }
 
@@ -65,6 +80,7 @@ public class ResetPasswordCommandHandler : IRequestHandler<ResetPasswordCommand,
         var hash = _passwordHasher.HashPassword(request.NewPassword);
         user.UpdatePassword(hash, user.Id, now);
         await PasswordChangeRecorder.RecordAsync(_context, user.Id, now, cancellationToken);
+        _activity.Record(user.Id, SecurityActivityType.PasswordReset, now);
 
         var activeSessions = await _context.Sessions
             .Where(s => s.UserId == user.Id && s.Status == SessionStatus.Active)
@@ -74,6 +90,15 @@ public class ResetPasswordCommandHandler : IRequestHandler<ResetPasswordCommand,
         {
             session.Revoke(now, SessionRevocationReasons.PasswordReset);
         }
+
+        // Access tokens already issued stay valid until they expire unless the user watermark rejects
+        // them, exactly as after a password change.
+        await _jwtBlacklist.RevokeUserBeforeAsync(user.Id, now, RevocationWatermarkTtl);
+
+        // Resetting through the emailed code proves control of the account: lift its sign-in lockout.
+        // Only the account counter is cleared; the per-IP counter and IP lock stay (they protect
+        // other accounts from the same client).
+        await _throttle.ClearSubjectAsync(LoginThrottleScope.PasswordLogin, email, cancellationToken);
 
         try
         {

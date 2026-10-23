@@ -179,7 +179,7 @@ public sealed class AccountSecurityIntegrationTests : IAsyncLifetime
         var handler = new ChangePasswordCommandHandler(
             context, new FakeCurrentRequestContext().AsUser(user.Id), Hasher().Object, Mock.Of<IJwtBlacklistService>(),
             Mock.Of<IEmailService>(), Clock().Object, NullLogger<ChangePasswordCommandHandler>.Instance,
-            StepUp(context, throttle), throttle);
+            StepUp(context, throttle), throttle, Mock.Of<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityActivityRecorder>());
         var result = await handler.Handle(
             new ChangePasswordCommand { CurrentPassword = current, NewPassword = "NewPassword123!" }, CancellationToken.None);
         await context.SaveChangesAsync();
@@ -243,7 +243,7 @@ public sealed class AccountSecurityIntegrationTests : IAsyncLifetime
         var current = new FakeCurrentRequestContext().AsUser(actor.Id);
         current.SessionId = currentSessionId;
         var handler = new RevokeSessionCommandHandler(
-            context, current, Mock.Of<IJwtBlacklistService>(), Clock().Object, NullLogger<RevokeSessionCommandHandler>.Instance);
+            context, current, Mock.Of<IJwtBlacklistService>(), Clock().Object, Mock.Of<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityActivityRecorder>(), NullLogger<RevokeSessionCommandHandler>.Instance);
         var result = await handler.Handle(new RevokeSessionCommand { SessionId = sessionId }, CancellationToken.None);
         await context.SaveChangesAsync();
         return result;

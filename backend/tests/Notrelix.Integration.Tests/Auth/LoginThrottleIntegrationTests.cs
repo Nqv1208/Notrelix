@@ -94,7 +94,7 @@ public sealed class LoginThrottleIntegrationTests : IAsyncLifetime
         time.Setup(t => t.UtcNow).Returns(() => DateTimeOffset.UtcNow);
 
         var handler = new LoginCommandHandler(
-            context, hasher.Object, issuer.Object, Mock.Of<IMfaChallengeStore>(), CreateThrottle(), time.Object,
+            context, hasher.Object, issuer.Object, Mock.Of<IMfaChallengeStore>(), CreateThrottle(), Mock.Of<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityActivityRecorder>(), time.Object,
             NullLogger<LoginCommandHandler>.Instance);
         var result = await handler.Handle(new LoginCommand { Email = email, Password = password }, CancellationToken.None);
         await context.SaveChangesAsync();
@@ -198,6 +198,45 @@ public sealed class LoginThrottleIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task ClearSubject_LiftsTheAccountLockAndCounter()
+    {
+        for (var i = 0; i < AccountMax; i++)
+            await LoginAsync("known@example.com", "wrong");
+        Code(await LoginAsync("known@example.com", GoodPassword)).Should().Be(LoginThrottleErrors.Code);
+
+        await CreateThrottle().ClearSubjectAsync(LoginThrottleScope.PasswordLogin, "known@example.com");
+
+        (await LoginAsync("known@example.com", GoodPassword)).Succeeded.Should().BeTrue(
+            "a password reset lifts the account lockout");
+    }
+
+    [Fact]
+    public async Task ClearSubject_DoesNotLiftTheIpLock_OrOtherAccounts()
+    {
+        _ipMax = IpMax;
+        // Lock the account (AccountMax failures) and then the IP (IpMax failures in total).
+        for (var i = 0; i < AccountMax; i++)
+            await LoginAsync("known@example.com", "wrong");
+        for (var i = 0; i < IpMax - AccountMax; i++)
+            await LoginAsync($"spray{i}@example.com", "wrong");
+        Code(await LoginAsync("other@example.com", GoodPassword)).Should().Be(LoginThrottleErrors.Code);
+
+        await CreateThrottle().ClearSubjectAsync(LoginThrottleScope.PasswordLogin, "known@example.com");
+
+        var db = _redis.GetDatabase();
+        var ipLockKeys = _redis.GetServer(_redis.GetEndPoints().Single())
+            .Keys(pattern: "*identity:throttle:ip:*:lock").ToArray();
+        ipLockKeys.Should().ContainSingle("the per-IP lock must survive a password reset");
+        (await db.KeyTimeToLiveAsync(ipLockKeys[0])).Should().NotBeNull();
+        var accountKeys = _redis.GetServer(_redis.GetEndPoints().Single())
+            .Keys(pattern: "*identity:throttle:passwordlogin:*").ToArray();
+        accountKeys.Should().NotBeEmpty("other accounts' counters are untouched");
+
+        Code(await LoginAsync("known@example.com", GoodPassword)).Should().Be(
+            LoginThrottleErrors.Code, "the IP is still locked, so the cleared account cannot sign in from it");
+    }
+
+    [Fact]
     public async Task Login_LockExpires()
     {
         _lock = TimeSpan.FromSeconds(2);
@@ -263,7 +302,7 @@ public sealed class LoginThrottleIntegrationTests : IAsyncLifetime
 
         var handler = new CompleteMfaChallengeCommandHandler(
             context, new MfaChallengeStore(new RedisCacheService(_distributedCache, _redis)), verifier.Object,
-            CreateThrottle(), issuer.Object, time.Object, NullLogger<CompleteMfaChallengeCommandHandler>.Instance);
+            CreateThrottle(), Mock.Of<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityActivityRecorder>(), issuer.Object, time.Object, NullLogger<CompleteMfaChallengeCommandHandler>.Instance);
         var result = await handler.Handle(new CompleteMfaChallengeCommand { ChallengeToken = token, Code = code }, CancellationToken.None);
         await context.SaveChangesAsync();
         return result;

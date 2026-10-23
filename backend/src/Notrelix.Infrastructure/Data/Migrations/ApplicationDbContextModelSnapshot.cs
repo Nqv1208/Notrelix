@@ -4214,6 +4214,53 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.ToTable("user_profiles", "identity");
                 });
 
+            modelBuilder.Entity("Notrelix.Domain.Identity.Security.SecurityActivityEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("IpAddress")
+                        .HasMaxLength(45)
+                        .HasColumnType("character varying(45)")
+                        .HasColumnName("ip_address");
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at");
+
+                    b.Property<Guid?>("SessionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("session_id");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("event_type");
+
+                    b.Property<string>("UserAgent")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("user_agent");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_user_security_activity");
+
+                    b.HasIndex("OccurredAt")
+                        .HasDatabaseName("idx_user_security_activity_occurred_at");
+
+                    b.HasIndex("UserId", "OccurredAt", "Id")
+                        .IsDescending(false, true, true)
+                        .HasDatabaseName("idx_user_security_activity_user_feed");
+
+                    b.ToTable("user_security_activity", "identity");
+                });
+
             modelBuilder.Entity("Notrelix.Domain.Identity.Security.UserLoginAttempt", b =>
                 {
                     b.Property<Guid>("Id")

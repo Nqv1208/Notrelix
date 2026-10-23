@@ -3,9 +3,11 @@ using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.Identity.Auth.Throttling;
 using Notrelix.Application.Features.Identity.Mfa;
+using Notrelix.Application.Features.Identity.Security.Abstractions;
 using Notrelix.Application.Features.Identity.Mfa.Abstractions;
 using Notrelix.Application.Features.Identity.Mfa.DTOs;
 using Notrelix.Domain.Identity.Mfa;
+using Notrelix.Domain.Identity.Security;
 
 namespace Notrelix.Application.Features.Identity.Auth.Commands.Login;
 
@@ -26,6 +28,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResu
     private readonly IAuthSessionIssuer _sessionIssuer;
     private readonly IMfaChallengeStore _challengeStore;
     private readonly ILoginThrottle _throttle;
+    private readonly ISecurityActivityRecorder _activity;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ILogger<LoginCommandHandler> _logger;
 
@@ -35,6 +38,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResu
         IAuthSessionIssuer sessionIssuer,
         IMfaChallengeStore challengeStore,
         ILoginThrottle throttle,
+        ISecurityActivityRecorder activity,
         IDateTimeProvider dateTimeProvider,
         ILogger<LoginCommandHandler> logger)
     {
@@ -43,6 +47,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResu
         _sessionIssuer = sessionIssuer;
         _challengeStore = challengeStore;
         _throttle = throttle;
+        _activity = activity;
         _dateTimeProvider = dateTimeProvider;
         _logger = logger;
     }
@@ -71,6 +76,12 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResu
         if (user is null || !passwordValid)
         {
             await _throttle.RecordFailureAsync(LoginThrottleScope.PasswordLogin, normalizedEmail, cancellationToken);
+            // Only an existing account has an owner who may see the attempt: an unknown email leaves no row
+            // (no enumeration, and no attacker-supplied email is ever stored).
+            if (user is not null)
+            {
+                _activity.Record(user.Id, SecurityActivityType.SignInFailed, _dateTimeProvider.UtcNow);
+            }
             _logger.LogInformation("Login failed: invalid credentials");
             return Result<AuthResult>.Failure(InvalidCredentialsError);
         }
@@ -78,6 +89,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResu
         if (user.Status is not UserStatus.Active)
         {
             await _throttle.RecordFailureAsync(LoginThrottleScope.PasswordLogin, normalizedEmail, cancellationToken);
+            _activity.Record(user.Id, SecurityActivityType.SignInFailed, _dateTimeProvider.UtcNow);
             _logger.LogWarning("Login blocked: non-active account {UserId} (status {UserStatus})", user.Id, user.Status);
             return Result<AuthResult>.Failure(InvalidCredentialsError);
         }

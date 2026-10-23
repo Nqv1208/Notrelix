@@ -4,6 +4,7 @@ using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.Identity.Security.Abstractions;
 using Notrelix.Application.Features.Identity.Security.DTOs;
 using Notrelix.Domain.Identity.Mfa;
+using Notrelix.Domain.Identity.Security;
 
 namespace Notrelix.Application.Features.Identity.Mfa.Commands.DisableMfa;
 
@@ -24,6 +25,7 @@ public sealed class DisableMfaCommandHandler : IRequestHandler<DisableMfaCommand
     private readonly IJwtBlacklistService _jwtBlacklist;
     private readonly ISecurityStepUpService _stepUpService;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly ISecurityActivityRecorder _activity;
     private readonly ILogger<DisableMfaCommandHandler> _logger;
 
     private static readonly TimeSpan RevocationWatermarkTtl = TimeSpan.FromHours(24);
@@ -34,6 +36,7 @@ public sealed class DisableMfaCommandHandler : IRequestHandler<DisableMfaCommand
         IJwtBlacklistService jwtBlacklist,
         ISecurityStepUpService stepUpService,
         IDateTimeProvider dateTimeProvider,
+        ISecurityActivityRecorder activity,
         ILogger<DisableMfaCommandHandler> logger)
     {
         _context = context;
@@ -41,6 +44,7 @@ public sealed class DisableMfaCommandHandler : IRequestHandler<DisableMfaCommand
         _jwtBlacklist = jwtBlacklist;
         _stepUpService = stepUpService;
         _dateTimeProvider = dateTimeProvider;
+        _activity = activity;
         _logger = logger;
     }
 
@@ -83,6 +87,7 @@ public sealed class DisableMfaCommandHandler : IRequestHandler<DisableMfaCommand
             .FirstOrDefaultAsync(s => s.UserId == userId, cancellationToken);
 
         settings?.DisableMfa(now);
+        _activity.Record(userId, SecurityActivityType.MfaDisabled, now, _currentUser.SessionId);
 
         var activeSessions = await _context.Sessions
             .Where(s => s.UserId == userId && s.Status == SessionStatus.Active)

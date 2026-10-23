@@ -6,6 +6,7 @@ using Notrelix.Application.Features.Identity.Security.Abstractions;
 using Notrelix.Application.Features.Identity.Security.DTOs;
 using Notrelix.Application.Features.Identity.Security.Services;
 using Notrelix.Domain.Identity.Mfa;
+using Notrelix.Domain.Identity.Security;
 
 namespace Notrelix.Application.Features.Identity.Auth.Commands.ChangePassword;
 
@@ -31,6 +32,7 @@ public class ChangePasswordCommandHandler : IRequestHandler<ChangePasswordComman
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ISecurityStepUpService _stepUpService;
     private readonly ILoginThrottle _throttle;
+    private readonly ISecurityActivityRecorder _activity;
     private readonly ILogger<ChangePasswordCommandHandler> _logger;
 
     private const string DummyPasswordHash = "$2b$12$l21rZMRnrPl/Lfm2kVzYOuxlKgQzbwMzEvK7cOBZI40eJ42/FIuh2";
@@ -45,7 +47,8 @@ public class ChangePasswordCommandHandler : IRequestHandler<ChangePasswordComman
         IDateTimeProvider dateTimeProvider,
         ILogger<ChangePasswordCommandHandler> logger,
         ISecurityStepUpService stepUpService,
-        ILoginThrottle throttle)
+        ILoginThrottle throttle,
+        ISecurityActivityRecorder activity)
     {
         _context = context;
         _currentUser = currentUser;
@@ -56,6 +59,7 @@ public class ChangePasswordCommandHandler : IRequestHandler<ChangePasswordComman
         _logger = logger;
         _stepUpService = stepUpService;
         _throttle = throttle;
+        _activity = activity;
     }
 
     public async Task<Result> Handle(ChangePasswordCommand request, CancellationToken cancellationToken)
@@ -111,6 +115,7 @@ public class ChangePasswordCommandHandler : IRequestHandler<ChangePasswordComman
         var hash = _passwordHasher.HashPassword(request.NewPassword);
         user.UpdatePassword(hash, user.Id, now);
         await PasswordChangeRecorder.RecordAsync(_context, user.Id, now, cancellationToken);
+        _activity.Record(user.Id, SecurityActivityType.PasswordChanged, now, _currentUser.SessionId);
 
         var activeSessions = await _context.Sessions
             .Where(s => s.UserId == user.Id && s.Status == SessionStatus.Active)

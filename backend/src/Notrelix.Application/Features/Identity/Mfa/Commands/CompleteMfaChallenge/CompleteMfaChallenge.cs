@@ -4,6 +4,8 @@ using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.Identity.Auth.Throttling;
 using Notrelix.Application.Features.Identity.Mfa.Abstractions;
 using Notrelix.Application.Features.Identity.Mfa.DTOs;
+using Notrelix.Application.Features.Identity.Security.Abstractions;
+using Notrelix.Domain.Identity.Security;
 
 namespace Notrelix.Application.Features.Identity.Mfa.Commands.CompleteMfaChallenge;
 
@@ -24,6 +26,7 @@ public sealed class CompleteMfaChallengeCommandHandler
     private readonly IMfaChallengeStore _challengeStore;
     private readonly IMfaCodeVerifier _codeVerifier;
     private readonly ILoginThrottle _throttle;
+    private readonly ISecurityActivityRecorder _activity;
     private readonly IAuthSessionIssuer _sessionIssuer;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ILogger<CompleteMfaChallengeCommandHandler> _logger;
@@ -33,6 +36,7 @@ public sealed class CompleteMfaChallengeCommandHandler
         IMfaChallengeStore challengeStore,
         IMfaCodeVerifier codeVerifier,
         ILoginThrottle throttle,
+        ISecurityActivityRecorder activity,
         IAuthSessionIssuer sessionIssuer,
         IDateTimeProvider dateTimeProvider,
         ILogger<CompleteMfaChallengeCommandHandler> logger)
@@ -41,6 +45,7 @@ public sealed class CompleteMfaChallengeCommandHandler
         _challengeStore = challengeStore;
         _codeVerifier = codeVerifier;
         _throttle = throttle;
+        _activity = activity;
         _sessionIssuer = sessionIssuer;
         _dateTimeProvider = dateTimeProvider;
         _logger = logger;
@@ -84,7 +89,9 @@ public sealed class CompleteMfaChallengeCommandHandler
 
         if (attempt.Exceeded)
         {
+            // The challenge was removed by the attempt budget: it can never be completed again.
             await _throttle.RecordFailureAsync(LoginThrottleScope.MfaChallenge, subject, cancellationToken);
+            _activity.Record(challenge.UserId, SecurityActivityType.SignInFailed, now);
             return InvalidChallenge();
         }
 
@@ -104,6 +111,7 @@ public sealed class CompleteMfaChallengeCommandHandler
         if (!verified)
         {
             await _throttle.RecordFailureAsync(LoginThrottleScope.MfaChallenge, subject, cancellationToken);
+            _activity.Record(user.Id, SecurityActivityType.SignInFailed, now);
             _logger.LogWarning("MFA challenge failed verification for {UserId} (purpose {Purpose})",
                 user.Id, challenge.Purpose);
 

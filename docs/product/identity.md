@@ -219,6 +219,8 @@ It must define:
 - replay rejection;
 - resulting session/credential invalidation policy.
 
+Accepted policy (2026-10-23): a successful reset proves control of the account, so it (a) revokes every active session and every access token issued before it, exactly as a password change does, and (b) lifts the account's sign-in lockout. It does not lift the lockout of the client address, which also protects other accounts. A reset is recorded in the person's security activity.
+
 # 14. Email verification
 
 Email verification token lifecycle is separate from User identity lifecycle.
@@ -708,11 +710,26 @@ User-visible consequences of credential lockout (accepted D10):
 - repeated wrong credentials temporarily lock further attempts per account and per client address;
 - the answer is generic and identical for known and unknown accounts (no account-existence disclosure);
 - a locked attempt is not verified, even with the correct credential, until the lock ends;
-- the numeric limits and the lock duration are product values that are not decided yet; the system ships interim placeholders.
+- the limits are product values accepted on 2026-10-23: an account allows 10 wrong credentials in 15 minutes and is then locked for 15 minutes; a client address allows 50 in 15 minutes and is then locked for 15 minutes (configurable, see backend configuration);
+- a second-factor challenge allows 5 wrong codes; after that the challenge is dead and the person signs in again from the password step (the account and address counters still apply);
+- no response tells the person how many attempts are left;
+- a successful password reset lifts the account's lock but never the client address's lock. An administrator unlock is not offered.
 
 The same lockout applies to a signed-in person re-verifying with a second-factor code or the current password (security step-up and password change): a locked attempt is not verified until the lock ends.
 
-Account security page facts (the person's own, never another person's): whether a password exists and when it last changed (only changes made since this was recorded are known), whether a second factor is enabled and how many recovery codes remain, how many sessions are active, and which sign-in providers are linked. Revoking a session signs that device out; revoking another person's session is not possible and is indistinguishable from an unknown session. A durable "recent security activity" history is not offered: no Identity-owned record of it exists yet.
+Account security page facts (the person's own, never another person's): whether a password exists and when it last changed (only changes made since this was recorded are known), whether a second factor is enabled and how many recovery codes remain, how many sessions are active, and which sign-in providers are linked. Revoking a session signs that device out; revoking another person's session is not possible and is indistinguishable from an unknown session.
+
+# 67A. Security activity
+
+The person can see their own recent security activity (accepted 2026-10-23). It is Identity-owned, user-visible history and is separate from the operator security audit: it never exposes audit details, and audit does not replace it.
+
+- Recorded facts: sign-in succeeded, sign-in failed, password changed, password reset, second factor enabled, second factor disabled, one session revoked, other sessions revoked. A wrong second-factor code during sign-in counts as a failed sign-in.
+- A failed sign-in is recorded only for an existing account, so the owner can see someone guessing. An unknown email leaves no record, so the feed cannot be used to learn which emails exist and an attempted email or password is never stored.
+- Each line carries its type, the time, the client address and user agent when known, and the session when the event concerns one.
+- Only the person sees their own lines, newest first; there is no way to read another person's activity.
+- Lines are kept for 90 days and then removed.
+- No client address geolocation is offered.
+- Registration creates a session and therefore records a sign-in.
 
 # 68. Account suspension relationship
 

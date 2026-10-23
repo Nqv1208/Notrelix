@@ -75,7 +75,7 @@ public class RegisterCommandHandlerTests : IAsyncLifetime
 
         var dateTimeProvider = new Mock<IDateTimeProvider>();
         dateTimeProvider.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);
-        var sessionIssuer = new AuthSessionIssuer(jwtService.Object, context, dateTimeProvider.Object, new Mock<IClientMetadata>().Object);
+        var sessionIssuer = new AuthSessionIssuer(jwtService.Object, context, dateTimeProvider.Object, new Mock<IClientMetadata>().Object, Mock.Of<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityActivityRecorder>());
         var integrationEventCollector = new Mock<IIntegrationEventCollector>();
         var handler = new RegisterCommandHandler(context, new AccountProvisioningService(context, new AccountGrantProjectionServiceAdapter(new AccessGrantProjectionService(context))), passwordHasher.Object, sessionIssuer, dateTimeProvider.Object, integrationEventCollector.Object);
 
@@ -132,7 +132,7 @@ public class RegisterCommandHandlerTests : IAsyncLifetime
         jwtService.Setup(x => x.GenerateAccessToken(It.IsAny<User>(), It.IsAny<Guid?>())).Returns("access-token");
         jwtService.Setup(x => x.GenerateRefreshToken()).Returns("refresh-token");
 
-        var sessionIssuer = new AuthSessionIssuer(jwtService.Object, context, dateTimeProvider.Object, new Mock<IClientMetadata>().Object);
+        var sessionIssuer = new AuthSessionIssuer(jwtService.Object, context, dateTimeProvider.Object, new Mock<IClientMetadata>().Object, Mock.Of<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityActivityRecorder>());
         dateTimeProvider.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);
         var handler = new RegisterCommandHandler(context, new AccountProvisioningService(context, new AccountGrantProjectionServiceAdapter(new AccessGrantProjectionService(context))), passwordHasher.Object, sessionIssuer, dateTimeProvider.Object, integrationEventCollector.Object);
 
@@ -168,7 +168,7 @@ public class RegisterCommandHandlerTests : IAsyncLifetime
 
         var dateTimeProvider = new Mock<IDateTimeProvider>();
         dateTimeProvider.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);
-        var sessionIssuer = new AuthSessionIssuer(jwtService.Object, context, dateTimeProvider.Object, new Mock<IClientMetadata>().Object);
+        var sessionIssuer = new AuthSessionIssuer(jwtService.Object, context, dateTimeProvider.Object, new Mock<IClientMetadata>().Object, Mock.Of<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityActivityRecorder>());
         var integrationEventCollector = new Mock<IIntegrationEventCollector>();
         var handler = new RegisterCommandHandler(context, new AccountProvisioningService(context, new AccountGrantProjectionServiceAdapter(new AccessGrantProjectionService(context))), passwordHasher.Object, sessionIssuer, dateTimeProvider.Object, integrationEventCollector.Object);
 

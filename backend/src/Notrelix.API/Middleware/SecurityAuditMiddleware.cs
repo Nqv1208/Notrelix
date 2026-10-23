@@ -1,16 +1,18 @@
 using System.Text.Json;
-using Notrelix.Infrastructure.Data.Abstractions;
 using Notrelix.Infrastructure.Data.Audit;
 
 namespace Notrelix.API.Middleware;
 
 /// <summary>
 /// Logs security-relevant events: auth failures, rate limits, CSRF rejects.
-/// Writes to SecurityEvent table. Persisted by the request data session's
-/// SaveChangesAsync when the pipeline opens a transactional session.
+/// Writes to the SecurityEvent table through <see cref="ISecurityAuditSink"/>: the response status is
+/// only known after the use case returned, when the request's data session has already committed, so
+/// the event is persisted by its own short transaction instead of the (closed) request session.
 /// </summary>
 public sealed class SecurityAuditMiddleware
 {
+    private static readonly TimeSpan PersistTimeout = TimeSpan.FromSeconds(5);
+
     private readonly RequestDelegate _next;
 
     public SecurityAuditMiddleware(RequestDelegate next)
@@ -29,7 +31,7 @@ public sealed class SecurityAuditMiddleware
 
         try
         {
-            var auditContext = context.RequestServices.GetRequiredService<IAuditDbContext>();
+            var sink = context.RequestServices.GetRequiredService<ISecurityAuditSink>();
 
             var eventType = ResolveEventType(statusCode, context.Request.Path);
             var severity = ResolveSeverity(statusCode);
@@ -58,11 +60,15 @@ public sealed class SecurityAuditMiddleware
                 metadataJson: CreateMetadata(statusCode, context.Request.Path, context.Request.Method),
                 occurredAt: DateTimeOffset.UtcNow);
 
-            auditContext.EnterpriseSecurityEvents.Add(securityEvent);
+            // Bounded wait: auditing must neither hang nor crash the request. The sink logs its own failures.
+            using var timeout = new CancellationTokenSource(PersistTimeout);
+            await sink.WriteAsync(securityEvent, timeout.Token);
         }
-        catch
+        catch (Exception ex)
         {
             // Security audit must never crash the request pipeline
+            context.RequestServices.GetService<ILogger<SecurityAuditMiddleware>>()
+                ?.LogError(ex, "Security audit event could not be recorded");
         }
     }
 

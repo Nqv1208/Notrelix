@@ -1349,13 +1349,47 @@ response:            identical code/message for known and unknown subjects (no e
 storage:             hashed keys only, no email/IP/secret in Redis or logs; Redis failure fails closed
 ```
 
-The limits and the lock duration are product values that the owner has not decided; the shipped
-defaults (5 failures/15 min per account, 20/15 min per IP, 15 min lock) are conservative placeholders.
+The limits and the lock duration are product values accepted on 2026-10-23 (identity product
+context); the shipped defaults are 10 failures/15 min per account, 50/15 min per IP and a 15 min lock,
+overridable per environment. A wrong-code budget of 5 per MFA challenge is separate and cumulative
+for the challenge lifetime (`MfaPolicy.ChallengeMaxAttempts`): the sixth attempt, even with the right
+code, finds the challenge removed. No response carries a remaining-attempts number.
+`ILoginThrottle.ClearSubjectAsync` removes the counter AND the lock of one subject; the password reset
+calls it for the `PasswordLogin` subject (the normalized email) only, never for the IP keys.
 Step-up completion (`complete-mfa`, `complete-password`) and the current-password check of
 change-password are covered by the scopes above and use the same limits. Admin unlock is not covered.
 A signed-in session does not make code or password guessing free: those steps reserve an attempt
 before verifying, and a locked answer is the same 429 `identity.auth.too-many-attempts`. Failures also
 count against the per-IP counter shared with sign-in.
+
+# 83A. Security audit persistence and the user security activity feed
+
+Two different records exist and must stay separate (section 85):
+
+```text
+operator security audit  audit.security_events   written by SecurityAuditMiddleware, operator-only read
+user security activity   identity.user_security_activity   Identity-owned, the user's own feed
+```
+
+Audit persistence. The middleware only knows the status code after the use case returned, when the
+request's data session has already committed, so staging an entity on the request context is never
+saved. The middleware therefore calls `ISecurityAuditSink` (Infrastructure, `SecurityAuditSink`), which
+opens its own DI scope and short transaction under an explicit, logged system (worker) context with the
+RLS worker scope of `audit.security_events`, saves and commits, and swallows (but logs) failure so
+auditing can neither fail a request nor be silent. The request's own transaction model is untouched;
+the sink writes only that table and is not a use-case port.
+
+Activity feed. Use cases record a line through `ISecurityActivityRecorder`, which only stages a
+`SecurityActivityEntry` on the request context, so the line commits or rolls back atomically with the
+state change it describes (sign-in success in `AuthSessionIssuer`, sign-in failure in the login and
+MFA-completion handlers, password change/reset, MFA enable/disable, session revoke). Sign-in failure is
+recorded only for an existing account: an unknown email leaves no row, and no email, password or other
+secret is stored. Reads go through `ISecurityActivityReader` with the current user id as the only
+filter (no user id input exists), `GET /api/v1/auth/security/activity`, keyset cursor
+(`occurredAt` desc, `id` desc). The table has user-owned RLS (`apply_user_owned_policies`: the
+owner for app access, the auth role for anonymous sign-in steps, the worker role for retention).
+`SecurityActivityRetentionService` (hosted, `Security:Activity:Retention`) deletes rows older than
+90 days in bounded `SKIP LOCKED` batches under the worker scope.
 
 ---
 

@@ -241,9 +241,30 @@ contains `*`, or contains a non-absolute-http(s) origin. The cookie and header n
 (`csrf_token`, `X-CSRF-Token`) are protocol constants, not configuration.
 
 Anonymous credential lockout (`Security:LoginThrottle`, validated at startup by
-`LoginThrottleOptionsValidator`): `MaxFailuresPerAccount` (5), `AccountWindow` (00:15:00),
-`MaxFailuresPerIp` (20), `IpWindow` (00:15:00), `LockDuration` (00:15:00). The defaults are
-interim placeholders pending a product decision; every value is overridable per environment.
+`LoginThrottleOptionsValidator`): `MaxFailuresPerAccount` (10), `AccountWindow` (00:15:00),
+`MaxFailuresPerIp` (50), `IpWindow` (00:15:00), `LockDuration` (00:15:00). The defaults are the
+product policy accepted on 2026-10-23 and are also set in `appsettings.json`; every value is
+overridable per environment. The MFA wrong-code budget per challenge (5) is a code constant.
+
+`Security:Activity:Retention` (Infrastructure, `SecurityActivityRetentionOptions`, validated on start by
+`SecurityActivityRetentionOptionsValidator`) configures the sweep of the user security activity feed
+(`SecurityActivityRetentionService`, a hosted service):
+
+| Key | Default | Meaning |
+|---|---|---|
+| `Enabled` | `true` | When false nothing is deleted. |
+| `Retention` | `90.00:00:00` (90 days) | Age after which an entry is deleted. Minimum 1 day. |
+| `Interval` | `01:00:00` (1 hour) | Time between sweeps. Range 10 seconds to 1 day. |
+| `BatchSize` | 1000 | Rows deleted per transaction. Range 1 to 10000. |
+
+Several API instances may sweep at once (rows are claimed with `FOR UPDATE SKIP LOCKED`). The sweep runs
+under the explicit system (worker) tenant context and RLS worker scope and touches only
+`identity.user_security_activity`.
+
+Session cookies: `CookieService` marks the access and refresh cookies `Secure` (and `SameSite=None`)
+only when the environment is `Production`. The staging Compose overlay in this repository serves plain
+HTTP behind its own nginx (default origins `http://localhost`), so staging cookies are intentionally not
+`Secure`; if staging is published over HTTPS the cookie condition must be changed in the same step.
 
 These values are current executable evidence.
 

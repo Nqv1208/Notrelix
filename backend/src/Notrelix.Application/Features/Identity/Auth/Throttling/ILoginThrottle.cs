@@ -64,6 +64,14 @@ public interface ILoginThrottle
     /// </summary>
     Task RecordAnonymousFailureAsync(CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Removes both the failure counter and any active lock of the subject, after the account owner
+    /// proved control of the account by a stronger route (a successful password reset). The IP counter
+    /// and the IP lock are intentionally untouched.
+    /// </summary>
+    Task ClearSubjectAsync(
+        LoginThrottleScope scope, string subject, CancellationToken cancellationToken = default);
+
     /// <summary>The credential was right: clears the subject counter. The IP counter is intentionally not reset.</summary>
     Task RecordSuccessAsync(
         LoginThrottleScope scope, string subject, CancellationToken cancellationToken = default);

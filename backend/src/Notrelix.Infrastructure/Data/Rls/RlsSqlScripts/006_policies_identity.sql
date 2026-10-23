@@ -25,5 +25,8 @@ SELECT ops.apply_user_owned_policies('identity', 'user_mfa_methods', 'user_id', 
 -- scope; every management/read path still flows through these policies.
 SELECT ops.apply_scoped_business_policies('identity', 'api_tokens', true);
 SELECT ops.apply_user_owned_policies('identity', 'user_login_attempts', 'user_id', true, false);
+-- User-visible security activity: each user reads/writes only their own rows; the
+-- auth role writes it during anonymous sign-in steps; the worker role runs the retention sweep.
+SELECT ops.apply_user_owned_policies('identity', 'user_security_activity', 'user_id', true, true);
 SELECT ops.apply_user_owned_policies('identity', 'email_verification_tokens', 'user_id', true, false);
 SELECT ops.apply_user_owned_policies('identity', 'password_reset_tokens', 'user_id', true, false);

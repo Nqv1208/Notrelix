@@ -4,6 +4,7 @@ using Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Security.Auth;
 using Notrelix.Application.Features.Identity.Mfa.DTOs;
 using Notrelix.Domain.Identity.Mfa;
+using Notrelix.Domain.Identity.Security;
 using Notrelix.Domain.Identity.Users;
 
 namespace Notrelix.Application.Tests.Features.Identity.Auth.Commands;
@@ -16,6 +17,7 @@ public class LoginTests : IdentityHandlerTestBase
         SessionIssuerMock.Object,
         ChallengeStoreMock.Object,
         Mock.Of<ILoginThrottle>(),
+        ActivityMock.Object,
         DateTimeProviderMock.Object,
         LoginLoggerMock.Object);
 
@@ -149,5 +151,42 @@ public class LoginTests : IdentityHandlerTestBase
         result.Succeeded.Should().BeTrue();
         result.Data!.MfaRequired.Should().BeFalse();
         ChallengeStoreMock.Verify(s => s.StoreAsync(It.IsAny<string>(), It.IsAny<MfaChallengePayload>(), It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Handle_WhenEmailUnknown_RecordsNoSecurityActivity()
+    {
+        SetupUsers();
+
+        var result = await CreateSut().Handle(
+            new LoginCommand { Email = "nobody@example.com", Password = TestPassword }, CancellationToken.None);
+
+        result.Succeeded.Should().BeFalse();
+        ActivityMock.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task Handle_WhenPasswordWrongForExistingAccount_RecordsSignInFailedForThatUser()
+    {
+        var user = CreateUser();
+        SetupUsers(user);
+        PasswordHasherMock.Setup(h => h.VerifyPassword(TestPassword, TestHashedPassword)).Returns(false);
+
+        await CreateSut().Handle(new LoginCommand { Email = TestEmail, Password = TestPassword }, CancellationToken.None);
+
+        ActivityMock.Verify(a => a.Record(user.Id, SecurityActivityType.SignInFailed, TestNow, null), Times.Once);
+        ActivityMock.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task Handle_WhenAccountInactive_RecordsSignInFailed()
+    {
+        var user = CreateUser(status: UserStatus.Inactive);
+        SetupUsers(user);
+        PasswordHasherMock.Setup(h => h.VerifyPassword(TestPassword, TestHashedPassword)).Returns(true);
+
+        await CreateSut().Handle(new LoginCommand { Email = TestEmail, Password = TestPassword }, CancellationToken.None);
+
+        ActivityMock.Verify(a => a.Record(user.Id, SecurityActivityType.SignInFailed, TestNow, null), Times.Once);
     }
 }

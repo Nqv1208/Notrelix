@@ -1,8 +1,6 @@
 using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Notrelix.API.Middleware;
-using Notrelix.Infrastructure.Data.Abstractions;
 using Notrelix.Infrastructure.Data.Audit;
 
 namespace Notrelix.API.Tests.Middleware;
@@ -112,15 +110,34 @@ public class SecurityAuditMiddlewareTests
         events.Should().BeEmpty();
     }
 
+    [Fact]
+    public async Task Middleware_WhenThePersistencePathFails_DoesNotFailTheRequest()
+    {
+        var sink = new Mock<ISecurityAuditSink>();
+        sink.Setup(a => a.WriteAsync(It.IsAny<SecurityEvent>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("database down"));
+        var context = new DefaultHttpContext
+        {
+            RequestServices = new ServiceCollection().AddSingleton(sink.Object).BuildServiceProvider()
+        };
+        context.Request.Path = "/api/v1/auth/login";
+        context.Response.StatusCode = 401;
+
+        var act = () => new SecurityAuditMiddleware(_ => Task.CompletedTask).InvokeAsync(context);
+
+        await act.Should().NotThrowAsync();
+        context.Response.StatusCode.Should().Be(401);
+    }
+
     private static (DefaultHttpContext Context, List<SecurityEvent> Events) CreateContext(string path, int status)
     {
         var events = new List<SecurityEvent>();
-        var set = new Mock<DbSet<SecurityEvent>>();
-        set.Setup(s => s.Add(It.IsAny<SecurityEvent>())).Callback<SecurityEvent>(events.Add);
-        var audit = new Mock<IAuditDbContext>();
-        audit.Setup(a => a.EnterpriseSecurityEvents).Returns(set.Object);
+        var sink = new Mock<ISecurityAuditSink>();
+        sink.Setup(a => a.WriteAsync(It.IsAny<SecurityEvent>(), It.IsAny<CancellationToken>()))
+            .Callback<SecurityEvent, CancellationToken>((e, _) => events.Add(e))
+            .Returns(Task.CompletedTask);
 
-        var services = new ServiceCollection().AddSingleton(audit.Object).BuildServiceProvider();
+        var services = new ServiceCollection().AddSingleton(sink.Object).BuildServiceProvider();
         var context = new DefaultHttpContext { RequestServices = services };
         context.Request.Path = path;
         context.Request.Method = "POST";

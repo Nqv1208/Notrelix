@@ -1,6 +1,7 @@
 using Notrelix.Application.Features.Accounts.Abstractions;
 using Notrelix.Application.Features.Accounts.Members;
 using Notrelix.Application.Features.Identity.Abstractions;
+using Notrelix.Infrastructure.Data.Audit;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.Documents.Abstractions;
 using Notrelix.Application.Features.Collaboration.Abstractions;
@@ -96,6 +97,7 @@ public static class PersistenceRegistration
         // Infrastructure
         services.AddScoped<IMessagingDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IAuditDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
+        services.AddSingleton<ISecurityAuditSink, SecurityAuditSink>();
         services.AddScoped<IOpsDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
 
         services.AddScoped<IWorkspaceAccessChecker, WorkspaceAccessChecker>();
