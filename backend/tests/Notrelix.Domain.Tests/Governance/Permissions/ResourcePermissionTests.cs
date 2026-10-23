@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Notrelix.Domain.Governance;
 using Notrelix.Domain.Governance.Permissions;
 
 namespace Notrelix.Domain.Tests.Governance;
@@ -61,5 +62,29 @@ public class ResourcePermissionTests
         permission.IsDeleted.Should().BeTrue();
         permission.DeletedBy.Should().Be(revokedBy);
         permission.DomainEvents.Should().ContainSingle(e => e is ResourcePermissionRevokedDomainEvent);
+    }
+
+    [Theory]
+    [InlineData(PermissionSubjectType.WorkspaceRole)]
+    [InlineData(PermissionSubjectType.PublicLink)]
+    [InlineData(PermissionSubjectType.ExternalEmail)]
+    public void Grant_ShouldReject_SubjectTypesOutsideTheCertifiedCore(PermissionSubjectType subjectType)
+    {
+        var act = () => ResourcePermission.Grant(Guid.NewGuid(),
+            Guid.NewGuid(), ResourceKind.Create("work-management.board"), Guid.NewGuid(), subjectType, Guid.NewGuid(), PermissionLevel.Viewer, Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        act.Should().Throw<BusinessRuleException>()
+            .Which.RuleCode.Should().Be(GovernanceRuleCodes.Governance_ResourcePermission_SubjectTypeNotSupported);
+    }
+
+    [Fact]
+    public void Grant_ShouldAlwaysProduceAllowOnlyEntryWithoutCondition()
+    {
+        var permission = ResourcePermission.Grant(Guid.NewGuid(),
+            Guid.NewGuid(), ResourceKind.Create("work-management.board"), Guid.NewGuid(), PermissionSubjectType.Team, Guid.NewGuid(), PermissionLevel.Viewer, Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        permission.Effect.Should().Be(PermissionEffect.Allow);
+        permission.ConditionJson.Should().Be("{}");
+        permission.Priority.Should().Be(100);
     }
 }

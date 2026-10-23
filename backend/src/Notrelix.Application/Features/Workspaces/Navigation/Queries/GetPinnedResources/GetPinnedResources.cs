@@ -1,5 +1,7 @@
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.Governance.Public.Visibility;
 using Notrelix.Application.Features.Workspaces.Navigation.Services;
+using Notrelix.Domain.Workspaces.Navigation;
 using Notrelix.Domain.Workspaces.Rules;
 
 namespace Notrelix.Application.Features.Workspaces.Navigation.Queries.GetPinnedResources;
@@ -22,9 +24,14 @@ public class GetPinnedResourcesQueryHandler : IRequestHandler<GetPinnedResources
 {
     private readonly IWorkspaceNavigationStore _store;
     private readonly ICurrentRequestContext _requestContext;
+    private readonly IResourceVisibility _visibility;
 
-    public GetPinnedResourcesQueryHandler(IWorkspaceNavigationStore store, ICurrentRequestContext requestContext)
+    public GetPinnedResourcesQueryHandler(
+        IWorkspaceNavigationStore store,
+        ICurrentRequestContext requestContext,
+        IResourceVisibility visibility)
     {
+        _visibility = visibility;
         _store = store;
         _requestContext = requestContext;
     }
@@ -37,7 +44,24 @@ public class GetPinnedResourcesQueryHandler : IRequestHandler<GetPinnedResources
             WorkspaceNavigationRules.PinLimit,
             ct);
 
+        // A stored reference can outlive the caller's access to the resource (access
+        // revoked, resource archived or deleted). Only references the caller can still
+        // see are returned, decided by the same collection visibility the lists use.
+        var userId = _requestContext.UserId;
+        var visibleBoards = entries.Any(e => e.Kind == NavigationResourceKinds.Board)
+            ? (await _visibility.VisibleBoardIdsAsync(request.WorkspaceId, userId, ct)).ToHashSet()
+            : [];
+        var visiblePages = entries.Any(e => e.Kind == NavigationResourceKinds.Page)
+            ? (await _visibility.VisiblePageIdsAsync(request.WorkspaceId, userId, ct)).ToHashSet()
+            : [];
+
         IReadOnlyList<PinnedResourceDto> result = entries
+            .Where(e => e.Kind switch
+            {
+                NavigationResourceKinds.Board => visibleBoards.Contains(e.ResourceId),
+                NavigationResourceKinds.Page => visiblePages.Contains(e.ResourceId),
+                _ => false
+            })
             .Select(e => new PinnedResourceDto(e.Kind, e.ResourceId, e.PinnedAt))
             .ToList();
 

@@ -114,6 +114,32 @@ public sealed class WorkspaceNavigationIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task RecentsAndPins_DropReferencesToABoardTheMemberCanNoLongerSee()
+    {
+        var stack = await SeedWorkspaceStackAsync();
+        var board = await SeedBoardAsync(stack.AccountId, stack.WorkspaceId, stack.OwnerId);
+        using var member = CreateProvider(stack.AccountId, stack.MemberId);
+
+        await SendWithKeyAsync(member, new RecordRecentResourceCommand(stack.WorkspaceId, NavigationResourceKinds.Board, board));
+        await SendAsync(member, new PinResourceCommand(stack.WorkspaceId, NavigationResourceKinds.Board, board));
+        (await ListRecentsAsync(member, stack.WorkspaceId)).Should().ContainSingle();
+        (await ListPinsAsync(member, stack.WorkspaceId)).Should().ContainSingle();
+
+        // The owner makes the board private; the member has no explicit access to it.
+        await using (var change = _db.CreateContext(SystemTenant()))
+        {
+            var stored = await change.Boards.SingleAsync(b => b.Id == board);
+            stored.ChangeVisibility(BoardVisibility.Private, stack.OwnerId, BaseTime);
+            await change.SaveChangesAsync();
+        }
+
+        (await ListRecentsAsync(member, stack.WorkspaceId)).Should().BeEmpty(
+            "a stored recent must not reveal a board the caller can no longer see");
+        (await ListPinsAsync(member, stack.WorkspaceId)).Should().BeEmpty(
+            "a stored pin must not reveal a board the caller can no longer see");
+    }
+
+    [Fact]
     public async Task NonMember_IsDeniedBeforeAnyNavigationStateIsTouched()
     {
         var stack = await SeedWorkspaceStackAsync();

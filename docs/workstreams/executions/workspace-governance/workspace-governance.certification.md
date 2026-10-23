@@ -3610,7 +3610,7 @@ Status:
 | WG-DEBT-CERT-013 | PermissionTemplate application use case not confirmed. | Does not block Milestone B; blocks template-apply claim. |
 | WG-DEBT-CERT-014 | Audit/SecurityEvent product authority requires current-source classification. | Does not block Milestone B unless required by security/audit release contract. |
 
-All rows above are preparation observations, not final debt dispositions.
+All rows above are preparation observations, not final debt dispositions. Dispositions recorded on 2026-10-23 are in section 108.
 
 # Stop conditions during certification
 ## 77. WG-CERT-STOP-001 — candidate SHA changes
@@ -4201,3 +4201,141 @@ Full Workspace/Governance:   NOT_EVALUATED
 Preparation source and CI observations are recorded only to guide execution.
 
 They do not constitute final certification.
+
+## 108. Stage 3 evidence and debt disposition record (2026-10-23)
+
+This section records executed evidence and the disposition of the preparation-time debt register
+(section 76 and PR-WG-00 section 67). It is a record of one candidate, not a Milestone B certification:
+`WG-DEBT-002` (built-in role baseline) is still open and blocks the P2 Protected Slice.
+
+### Candidate and evidence
+
+```text
+Branch: develop
+Base SHA: ecdb6a6e9b0fc6398d74b8b5010d5dfe9713f71c   (clean tree at start; pushed; PR 174)
+Working tree: base SHA plus the uncommitted Stage 3 change set (no commit made)
+Date: 2026-10-23
+```
+
+GitHub CI at the base SHA (`Notrelix CI` run 39897738696, created 2026-10-23T03:57Z, conclusion success):
+
+```text
+Backend CI / API, platform and integration tests   job 120232967751   success
+  Platform 153/153, API 591/591, Integration 861/861 (Passed:861, Failed:0, Skipped:0)
+Backend CI / Architecture and core tests           job 120232967825   success
+  Architecture 644/644, Domain 2791/2791, Application 1168/1168, Infrastructure 263/263
+Aggregate CI gate / Backend CI gate                success
+External: one GitGuardian incident reported on PR 174, not a repository job.
+```
+
+Local Docker run (PostgreSQL via Testcontainers) of the section E.1 suites at the base SHA with a clean tree
+(`dotnet test tests/Notrelix.Integration.Tests -c Release`, 103 selected, 103 passed, 0 failed, 0 skipped):
+
+| Suite | Passed |
+|---|---|
+| `WorkspaceMembershipConcurrencyEvidenceTests` | 2 |
+| `WorkspaceInvitationConcurrencyEvidenceTests` | 3 |
+| `RlsRuntimeEnforcementTests` (includes `RuntimeMembershipCreation/Suspend/Removal`, 3) | 23 |
+| `AccessGrantProjectionTests` | 7 |
+| `CollectionVisibilityIntegrationTests` | 6 |
+| `SpaceAccessMatrixIntegrationTests` | 5 |
+| `GovernanceResourcePermissionFlowTests` | 52 |
+| `PostgresAccessFactsProviderTests` | 5 |
+
+Local full run on the working tree (base SHA plus Stage 3 changes), after the last code change:
+
+```text
+Domain 2795, Application 1174, Infrastructure 263, Platform 153, API 591, Architecture 644,
+Integration 868 (Docker, 6 m 33 s); every suite Failed 0, Skipped 0.
+Net change against the CI counts at the base SHA: Domain +4 (2791 to 2795), Application +6 (1168 to 1174),
+Integration +7 (861 to 868). OpenAPI export is byte-identical to backend/contracts/openapi/notrelix.v1.json (no
+contract change, no frontend codegen). `dotnet format --verify-no-changes` exit 0; `make docs-check` PASS.
+```
+
+### WG-DEBT-001..015
+
+| ID | Disposition at 2026-10-23 | Evidence |
+|---|---|---|
+| WG-DEBT-001 | CLOSED | Evaluator is pure `AccessPolicyEngine` over `AccessFacts`; facts through `PostgresAccessFactsProvider`; `PermissionService` no longer exists. |
+| WG-DEBT-002 | OPEN, decision-gated | No typed Owner/Admin/Member/Guest baseline. A decision-ready proposal (current behaviour per `PermissionAction` x role, 5 proposed changes, 6 open questions) exists as a local working note; the decision and the typed baseline are still to be made in this workstream. Blocks Milestone B. |
+| WG-DEBT-003 | CLOSED by bounding | Certified core of a resource entry is User or Team subject, Allow-only, no expiry or condition (product `governance.md` section 16). The `ResourcePermission` factory refuses other subject types and has no effect, condition or priority input; the grant validator rejects other subjects and any expiry. `ResourcePermissionTests` (Domain), `GrantResourcePermissionCommandValidatorTests` (Application). Pre-existing rows with another subject type stay stored and fail closed (access facts match User and Team only); no migration. |
+| WG-DEBT-004 | OPEN, secondary (non-core) | `WorkspacePolicy` is not in the evaluator. Carried to P3 handoff as non-core. |
+| WG-DEBT-005 | CLOSED by bounding | Certified subject set is User and Team for resource entries (same change as 003); permission rules keep SQL-level subject filtering. No command creates `PermissionRule` rows (seed-only), so no rule-side validator is needed yet. |
+| WG-DEBT-006 | OPEN, carried to P3 | `AccessFactsQuery` and `ResourceVisibilityQuery` read `work.boards` and `work.board_members`. See P3 handoff below. |
+| WG-DEBT-007 | OPEN, carried to P3 | Generic `ManageBoard` is requested by 47 commands. See P3 handoff below. |
+| WG-DEBT-008 | CLOSED | Executed: `RlsRuntimeEnforcementTests.RuntimeMembershipSuspend_RevokesGrant_AndDeniesUnderAppRole` and `RuntimeMembershipRemoval_RevokesGrant_AndDeniesUnderAppRole` (23/23 in class), `AccessGrantProjectionTests` 7/7; unit `SuspendMemberCommandHandlerTests`. SHA and counts above. |
+| WG-DEBT-009 | CLOSED | Executed: `WorkspaceMembershipConcurrencyEvidenceTests.ConcurrentDemoteAndRemoveOwners_NeverLeavesZeroActiveOwners`. Residual closed: `TransferOwnership` now takes the same workspace row lock (`IWorkspaceOwnerUpdateLocker`); `ConcurrentTransferOwnershipAndRemoveOfNewOwner_NeverLeavesZeroActiveOwners` proves the concurrent case. |
+| WG-DEBT-010 | CLOSED | Executed: `ConcurrentDuplicateMembershipAdds_DatabaseAllowsOnlyOneMember` and `ConcurrentAcceptsOfSameInvitation_DatabaseAllowsExactlyOneMember`. Residual closed: the same test now maps the real PostgreSQL unique violation through `ExceptionMappingBehavior` to `ConflictException` (HTTP 409). |
+| WG-DEBT-011 | OPEN, secondary (non-core) | `WorkspacePolicy` delivery depth; P3 handoff as non-core. |
+| WG-DEBT-012 | OPEN, secondary (non-core) | `CustomRole` is Domain-only; no Application feature. |
+| WG-DEBT-013 | OPEN, secondary (non-core) | ShareLink create and disable exist; no token consumption path. Certify released depth only. |
+| WG-DEBT-014 | OPEN, secondary (non-core) | `PermissionTemplate` has no apply use case. |
+| WG-DEBT-015 | CLOSED | Legacy names replaced in `backend/docs/architecture/security-tenancy-authorization.md` (current contract list, `AccessControlBehavior`, permission-versioning section); terminology notes added to ADR-001, ADR-006 and PR-WG-00 without rewriting accepted decisions; stale comments in `PermissionRules.cs` and `ApiTokenHttpFlowTests.cs` corrected. Remaining mentions in workstream execution records and architecture-test fixtures are historical or intentional negative fixtures. |
+
+### WG-DEBT-CERT-001..014
+
+| ID | Disposition at 2026-10-23 | Evidence |
+|---|---|---|
+| CERT-001 | CLOSED | Same change as WG-DEBT-015; PR-WG-00 carries a terminology note. |
+| CERT-002 | CLOSED | Executed, see WG-DEBT-010. |
+| CERT-003 | CLOSED | Executed, see WG-DEBT-009. |
+| CERT-004 | CLOSED | Executed, see WG-DEBT-008. |
+| CERT-005 | CLOSED | `GovernanceResourcePermissionFlowTests`: `ArchivePage_ExpiredAllowRule_IsIgnored_AndRequestIsForbidden`, `ArchivePage_NotYetActiveAllowRule_IsIgnored_AndRequestIsForbidden`, `ArchivePage_ExpiredDenyRule_IsIgnored_ManagerStillAllowed`, `ArchivePage_SamePriorityDenyAndAllowRules_DenyWins`, on real PostgreSQL. A rule's `ConditionJson` is not evaluated by the facts query; that is outside the certified core (rules carry no condition command). |
+| CERT-006 | CLOSED | Added `Grant_OnBoardOfAnotherAccount_IsNotFound_AndWritesNothing` (board of account B addressed by the owner of account A: NotFound, no entry written). |
+| CERT-007 | CLOSED | Added `AccessControlBehaviorTests.Facts_provider_fault_fails_closed_and_never_runs_the_handler`: a throwing facts provider denies the request and the handler never runs. |
+| CERT-008 | PARTIAL, scoped | Repository and image secret scan runs in `security-ci.yml` (Trivy with `.github/security/trivy-secret.yaml`). No log or telemetry redaction test; claim limited to the repository scan. |
+| CERT-009 | CLASSIFIED, no new fixture | P2 migrations since the baseline are additive except `20261011025035_AddSpaceHierarchyAndMembership`, whose SQL backfills (positions, closure, creator Admin) are executed against legacy-shaped rows and re-run for idempotence by `SpaceHierarchyIntegrationTests.MigrationBackfill_*` on real PostgreSQL. No supported-upgrade chain exists for the greenfield baseline, so a full-chain fixture is not required for Milestone B; it becomes required with the first production upgrade (`backend/docs/operations/migrations-and-data-change.md`, BE-OPS-DATA-005). |
+| CERT-010..013 | OPEN, secondary | ShareLink consumption, CustomRole, WorkspacePolicy, PermissionTemplate (see 011 to 014). |
+| CERT-014 | CLOSED | `SecurityAuditMiddleware` persists through `ISecurityAuditSink` in its own short transaction (commit 0fa43eeda); `SecurityActivityHttpFlowTests.SecurityAudit_IsDurablyPersisted_ForAFailedSignIn` asserts the committed `SecurityEvent` row. |
+
+### Optional hardening recorded
+
+```text
+TransferOwnership owner row lock: done (see WG-DEBT-009).
+GetRecentResources / GetPinnedResources: entries the caller can no longer see are omitted, decided by
+  IResourceVisibility. Tests: WorkspaceNavigationHandlerTests (2 added),
+  WorkspaceNavigationIntegrationTests.RecentsAndPins_DropReferencesToABoardTheMemberCanNoLongerSee.
+```
+
+### P3 handoff (WG-DEBT-006, WG-DEBT-007 and secondary debt)
+
+```text
+Resource contracts: ResourceKind and ResourceRef (SharedKernel); Board facts through AccessFacts, plus the
+  Work-published IBoardChildAuthorizationFacts and IPageAuthorizationFacts seams.
+Actions P3 may rely on for Boards: ViewBoard, ManageBoardPermission, CreateBoardView, UpdateBoardView,
+  CreateField, UpdateField, DeleteField, CreateItem, UpdateItem, MoveItem, AssignItem, CreateComment
+  (thresholds GOV-027; Guest cap GOV-030; Board child decided on its parent Board, GOV-033).
+Security assumptions: Application authorization first, RLS as defense in depth; Owner passes after the
+  resource-exists check; Admin has no default on Private Boards or Pages (GOV-013).
+
+WG-DEBT-006 (carried): AccessFactsQuery.cs and ResourceVisibilityQuery.cs read work.boards and
+  work.board_members directly. It is not a public producer contract. No new Work code may widen that read.
+  Closure options for P3: a Work-published fact seam (like IBoardChildAuthorizationFacts) or an accepted ADR
+  exception with an owner.
+
+WG-DEBT-007 (carried): PermissionAction.ManageBoard is requested by 47 commands. On a Board (the Board or a
+  child) it means Board management and needs the Manager level; on a Page it keeps the Editor threshold.
+  Current per-use list (command folders under backend/src/Notrelix.Application/Features):
+    Board lifecycle and members (10): AddBoardMember, ArchiveBoard, DeleteBoard, MoveBoardToSpace,
+      RemoveBoardMember, RestoreBoard, UnarchiveBoard, UpdateBoard, UpdateBoardMemberRole, UpdateBoardVisibility
+    Forms (11): AddFormQuestion, CloseForm, DeleteForm, DeleteFormSubmission, MarkFormSubmissionAsSpam,
+      ProcessFormSubmission, PublishForm, RejectFormSubmission, RestoreForm, UpdateFormDetails, UpdateFormQuestion
+    Approvals (5): ApproveApprovalRequest, CancelApprovalRequest, DeleteApprovalRequest,
+      RejectApprovalRequest, RestoreApprovalRequest
+    Relations (3): DeleteBoardRelation, PauseBoardRelation, ResumeBoardRelation
+    Templates (3): ArchiveBoardTemplate, DeleteBoardTemplate, PublishBoardTemplate
+    Saved filters / Views (7): DeleteSavedFilter, RenameSavedFilter, RestoreSavedFilter,
+      UpdateSavedFilterFilters, UpdateSavedFilterGroup, UpdateSavedFilterSorts, UpdateSavedFilterVisibility
+    Documents (8, Page-decided, Editor threshold): CreateBlock, DeleteBlock, UpdateBlock, DeletePage, MovePage,
+      PublishPage, SetPageDeadline, UpdatePage
+  Open for P3: classify each use as Board management (Manager), content (Editor, with the specific content
+  action) or approval participation, and split or record the per-use level matrix. Forms, Approvals and
+  Templates are the likely over-broad uses. A new Work command must not take ManageBoard merely because it is
+  the broadest available action.
+
+Secondary, non-core, deferred: WG-DEBT-004 and 011 (WorkspacePolicy), 012 (CustomRole), 013 (ShareLink
+  consumption), 014 (PermissionTemplate apply). P3 must not depend on them.
+
+Invalidating changes: any change to AccessFacts fields used by Work, to ResourceKind/PermissionAction
+  semantics, to the Board level mapping, or to the built-in role baseline (WG-DEBT-002) re-opens this handoff.
+```

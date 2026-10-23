@@ -9,8 +9,10 @@ public sealed class GrantResourcePermissionCommandValidator : AbstractValidator<
             .WithMessage("'ResourceKind' must be a canonical resource kind (context.resource), e.g. 'work-management.board'.");
 
         RuleFor(x => x.SubjectType)
-            .Must(subjectType => Enum.TryParse<PermissionSubjectType>(subjectType, true, out _))
-            .WithMessage("'SubjectType' must be a canonical permission subject type, e.g. 'User'.");
+            .Must(subjectType =>
+                Enum.TryParse<PermissionSubjectType>(subjectType, true, out var parsed) &&
+                parsed is PermissionSubjectType.User or PermissionSubjectType.Team)
+            .WithMessage("'SubjectType' must be 'User' or 'Team'. Other subject kinds are not evaluated for resource permissions.");
 
         RuleFor(x => x.Level)
             .Must(level => Enum.TryParse<PermissionLevel>(level, true, out var parsed) && parsed > PermissionLevel.None)

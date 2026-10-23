@@ -38,11 +38,9 @@ public class GrantResourcePermissionCommandValidatorTests
 
     [Theory]
     [InlineData("User")]
-    [InlineData("WorkspaceRole")]
+    [InlineData("user")]
     [InlineData("Team")]
-    [InlineData("PublicLink")]
-    [InlineData("ExternalEmail")]
-    public void Grant_AcceptsKnownSubjectType(string subjectType)
+    public void Grant_AcceptsCertifiedSubjectType(string subjectType)
     {
         var validator = new GrantResourcePermissionCommandValidator();
         var command = new GrantResourcePermissionCommand("work-management.board", Guid.NewGuid(), subjectType, Guid.NewGuid(), "Viewer");
@@ -50,6 +48,23 @@ public class GrantResourcePermissionCommandValidatorTests
         var result = validator.Validate(command);
 
         result.IsValid.Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData("WorkspaceRole")]
+    [InlineData("PublicLink")]
+    [InlineData("ExternalEmail")]
+    [InlineData("3")]
+    [InlineData("99")]
+    public void Grant_RejectsSubjectTypesTheEvaluatorNeverHonours(string subjectType)
+    {
+        var validator = new GrantResourcePermissionCommandValidator();
+        var command = new GrantResourcePermissionCommand("work-management.board", Guid.NewGuid(), subjectType, Guid.NewGuid(), "Viewer");
+
+        var result = validator.Validate(command);
+
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.PropertyName == "SubjectType");
     }
 
     [Theory]

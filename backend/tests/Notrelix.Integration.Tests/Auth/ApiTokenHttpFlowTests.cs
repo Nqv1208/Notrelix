@@ -24,7 +24,7 @@ namespace Notrelix.Integration.Tests.Auth;
 /// Bogus tokens must never fall through to the JWT handler; valid tokens must
 /// authenticate; a token bound to workspace A must never operate workspace B
 /// even when the same user has governance access to both. Governance runs
-/// real (PermissionService over the production graph): a member-scoped token
+/// real (AccessPolicyEngine over the production graph): a member-scoped token
 /// that passes TenantBootstrap and ViewWorkspace is still denied
 /// ManageWorkspaceSettings — proving API Token scope ∩ Governance permission.
 /// </summary>

@@ -131,6 +131,30 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
             "a workspace member without explicit resource-level authority cannot grant permissions");
     }
 
+    // WG-DEBT-CERT-006: board-specific cross-account gate. A workspace owner of
+    // account A addressing a board that belongs to account B is told it does not
+    // exist and nothing is written to account B.
+    [Fact]
+    public async Task Grant_OnBoardOfAnotherAccount_IsNotFound_AndWritesNothing()
+    {
+        var (accountA, ownerA, workspaceA, _, _) = await SeedBoardStackAsync();
+        var (accountB, ownerB, workspaceB, boardB, _) = await SeedBoardStackAsync();
+        accountA.Should().NotBe(accountB);
+        workspaceA.Should().NotBe(workspaceB);
+
+        using var provider = CreateProvider(accountA, ownerA);
+        var act = () => SendAsync<Result<ResourcePermissionDto>>(provider,
+            new GrantResourcePermissionCommand("work-management.board", boardB, "User", ownerB, "Editor"));
+
+        await act.Should().ThrowAsync<AppNotFound>(
+            "a board of another account must be hidden, not reported as forbidden");
+
+        await using var verify = _db.CreateContext(SystemTenant());
+        (await verify.ResourcePermissions.IgnoreQueryFilters()
+            .AnyAsync(p => p.ResourceId == boardB && p.SubjectId == ownerB)).Should().BeFalse(
+            "the cross-account request must not create an entry on the foreign board");
+    }
+
     [Fact]
     public async Task Grant_OnBoard_CannotDowngrade_ExistingHigherTargetLevel()
     {
@@ -828,6 +852,87 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
             "an applicable explicit Allow rule grants the lifecycle authority");
     }
 
+    // WG-DEBT-CERT-005: rule time windows and same-priority tie-break on real Postgres.
+    [Fact]
+    public async Task ArchivePage_ExpiredAllowRule_IsIgnored_AndRequestIsForbidden()
+    {
+        var (accountId, _, workspaceId, _, _) = await SeedPageStackAsync();
+        var pageId = await ResolvePageIdAsync();
+        var member = Guid.NewGuid();
+        await SeedWorkspaceMemberAsync(accountId, workspaceId, member, WorkspaceRole.Member);
+        await SyncAccessGrantsAsync(accountId, workspaceId, (member, WorkspaceRole.Member));
+        await SeedPermissionRuleAsync(
+            accountId, workspaceId, member, PermissionAction.ArchivePage,
+            "documents.page", pageId, PermissionEffect.Allow,
+            startsAt: DateTimeOffset.UtcNow.AddDays(-10), expiresAt: DateTimeOffset.UtcNow.AddDays(-1));
+
+        using var provider = CreateProvider(accountId, member);
+        var act = () => SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+
+        await act.Should().ThrowAsync<AppForbidden>("an expired Allow rule must not grant authority");
+    }
+
+    [Fact]
+    public async Task ArchivePage_NotYetActiveAllowRule_IsIgnored_AndRequestIsForbidden()
+    {
+        var (accountId, _, workspaceId, _, _) = await SeedPageStackAsync();
+        var pageId = await ResolvePageIdAsync();
+        var member = Guid.NewGuid();
+        await SeedWorkspaceMemberAsync(accountId, workspaceId, member, WorkspaceRole.Member);
+        await SyncAccessGrantsAsync(accountId, workspaceId, (member, WorkspaceRole.Member));
+        await SeedPermissionRuleAsync(
+            accountId, workspaceId, member, PermissionAction.ArchivePage,
+            "documents.page", pageId, PermissionEffect.Allow,
+            startsAt: DateTimeOffset.UtcNow.AddDays(1));
+
+        using var provider = CreateProvider(accountId, member);
+        var act = () => SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+
+        await act.Should().ThrowAsync<AppForbidden>("a future-window Allow rule must not grant authority yet");
+    }
+
+    [Fact]
+    public async Task ArchivePage_ExpiredDenyRule_IsIgnored_ManagerStillAllowed()
+    {
+        var (accountId, _, workspaceId, _, _) = await SeedPageStackAsync();
+        var pageId = await ResolvePageIdAsync();
+        var manager = Guid.NewGuid();
+        await SeedWorkspaceMemberAsync(accountId, workspaceId, manager, WorkspaceRole.Member);
+        await SyncAccessGrantsAsync(accountId, workspaceId, (manager, WorkspaceRole.Member));
+        await SeedResourcePermissionAsync(
+            accountId, workspaceId, "documents.page", pageId, manager, PermissionLevel.Manager);
+        await SeedPermissionRuleAsync(
+            accountId, workspaceId, manager, PermissionAction.ArchivePage,
+            "documents.page", pageId, PermissionEffect.Deny,
+            startsAt: DateTimeOffset.UtcNow.AddDays(-10), expiresAt: DateTimeOffset.UtcNow.AddMinutes(-1));
+
+        using var provider = CreateProvider(accountId, manager);
+        var result = await SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+
+        result.Succeeded.Should().BeTrue("an expired Deny rule must not block the Manager-rank authority");
+    }
+
+    [Fact]
+    public async Task ArchivePage_SamePriorityDenyAndAllowRules_DenyWins()
+    {
+        var (accountId, _, workspaceId, _, _) = await SeedPageStackAsync();
+        var pageId = await ResolvePageIdAsync();
+        var member = Guid.NewGuid();
+        await SeedWorkspaceMemberAsync(accountId, workspaceId, member, WorkspaceRole.Member);
+        await SyncAccessGrantsAsync(accountId, workspaceId, (member, WorkspaceRole.Member));
+        await SeedPermissionRuleAsync(
+            accountId, workspaceId, member, PermissionAction.ArchivePage,
+            "documents.page", pageId, PermissionEffect.Allow, priority: 50);
+        await SeedPermissionRuleAsync(
+            accountId, workspaceId, member, PermissionAction.ArchivePage,
+            "documents.page", pageId, PermissionEffect.Deny, priority: 50);
+
+        using var provider = CreateProvider(accountId, member);
+        var act = () => SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+
+        await act.Should().ThrowAsync<AppForbidden>("at the same priority an active Deny beats an active Allow");
+    }
+
     [Fact]
     public async Task ArchivePage_ExplicitDenyRule_IsForbidden_EvenForManager()
     {
@@ -1421,7 +1526,10 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         PermissionAction action,
         string resourceKind,
         Guid resourceId,
-        PermissionEffect effect)
+        PermissionEffect effect,
+        int priority = 100,
+        DateTimeOffset? startsAt = null,
+        DateTimeOffset? expiresAt = null)
     {
         await using var seed = _db.CreateContext(SystemTenant());
         seed.PermissionRules.Add(PermissionRule.Create(
@@ -1436,7 +1544,10 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
             action,
             effect,
             subjectId,
-            DateTimeOffset.UtcNow));
+            DateTimeOffset.UtcNow,
+            priority: priority,
+            startsAt: startsAt,
+            expiresAt: expiresAt));
         await seed.SaveChangesAsync();
     }
 

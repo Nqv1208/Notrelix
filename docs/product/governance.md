@@ -341,6 +341,18 @@ Subject identity and subject type must be explicit.
 
 Evaluated subjects today (2026-10-11): `User`, and `Team` (GOV-026). Other stored subject types (`WorkspaceRole`, `PublicLink`, `ExternalEmail`) are not evaluated by the access engine and grant nothing until a product decision defines them.
 
+Certified core of a `ResourcePermission` entry (2026-10-23):
+
+```text
+subject    User or Team only
+effect     Allow only (stored priority 100, no condition)
+expiry     none
+```
+
+The `ResourcePermission` Domain factory refuses any other subject type, and the grant command rejects `WorkspaceRole`, `PublicLink`, `ExternalEmail`, an expiry, and any Deny, condition or priority input (the command has no field for them). Deny, condition, priority and expiry semantics belong to `PermissionRule` (time window and priority are evaluated there; a rule's condition JSON is not evaluated today), not to a resource entry; a product decision is required before a resource entry may carry them.
+
+Rows written before this bound that hold another subject type stay in place and fail closed: the access-facts query matches only `User` and `Team` subjects, so those rows grant nothing. No destructive migration is applied; they remain visible to revoke.
+
 ---
 
 # 17. Current Permission source

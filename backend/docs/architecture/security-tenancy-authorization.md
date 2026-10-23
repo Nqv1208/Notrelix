@@ -292,19 +292,20 @@ current policy facts
 Current Application Security contracts include concepts such as:
 
 ```text
-IPermissionEvaluator
-IPermissionService
-IWorkspacePermissionService
-IResourceReferenceResolver
-IResourceScopeResolver
-IPermissionVersionProvider
-IAuthorizationDecisionStore
-PermissionContext
-PermissionDecision
-PermissionScope
+IAccessPolicyEvaluator
+IAccessFactsProvider
+AccessFacts
+AccessDecision
+IRequirePermission
+ResourceRef
+IResourceLocator
+IResourceVisibility
 ```
 
-These are current source evidence of centralized permission/resource evaluation.
+These are current source evidence of centralized permission/resource evaluation. The earlier
+`IPermissionService`, `IWorkspacePermissionService`, `IPermissionEvaluator`, `IAuthorizationDecisionStore`,
+`IPermissionVersionProvider`, `IResourceReferenceResolver`, `IResourceScopeResolver`, `PermissionContext`
+and `PermissionDecision` no longer exist (WG-DEBT-015); do not reintroduce them.
 
 The single canonical evaluator is `AccessPolicyEngine`, owned by the Governance Application
 module and reached from the Common pipeline only through the neutral `IAccessPolicyEvaluator`
@@ -555,7 +556,7 @@ Infrastructure RLS is defense-in-depth but does not replace Application policy.
 Avoid:
 
 ```text
-some handlers use AuthorizationBehavior
+some handlers use AccessControlBehavior
 some handlers check role manually
 some rely on RLS only
 ```
@@ -889,17 +890,12 @@ Design key/invalidation from actual visibility semantics.
 
 # 48. Permission versioning
 
-Current Application includes:
+Current Application decides authorization per request from `AccessFacts`; it keeps no authorization
+decision store and no permission-version provider (both were removed, WG-DEBT-015). Resource versions are
+read for optimistic concurrency, not for invalidating cached decisions.
 
-```text
-IPermissionVersionProvider
-IResourceVersionReader
-IAuthorizationDecisionStore
-```
-
-which can support invalidating cached decisions/results when policy/resource state changes.
-
-Do not assume current concrete version strategy is the only implementation.
+A future permission-sensitive cache must name its own invalidation owner and key dimensions (see the
+cache scope rules above); do not assume a global permission version exists.
 
 ---
 

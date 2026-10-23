@@ -27,11 +27,16 @@ public class ResourcePermission : SoftDeletableAggregateRoot, IWorkspaceScoped
         Guid subjectId,
         PermissionLevel level,
         Guid grantedBy,
-        DateTimeOffset grantedAt,
-        PermissionEffect effect = PermissionEffect.Allow,
-        string? conditionJson = null,
-        int priority = 100)
+        DateTimeOffset grantedAt)
     {
+        // Certified core (WG-DEBT-003/005): a resource entry is Allow-only, has no expiry
+        // or condition, and is held by a User or a Team. Other subject kinds are never
+        // evaluated by the access-facts query, so refusing them here keeps dead rows out.
+        if (subjectType is not (PermissionSubjectType.User or PermissionSubjectType.Team))
+            throw new BusinessRuleException(
+                GovernanceRuleCodes.Governance_ResourcePermission_SubjectTypeNotSupported,
+                $"A resource permission can only be granted to a User or a Team, not '{subjectType}'.");
+
         Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(resourceId);
         Guard.NotEmpty(subjectId);
@@ -45,10 +50,7 @@ public class ResourcePermission : SoftDeletableAggregateRoot, IWorkspaceScoped
             ResourceId = resourceId,
             SubjectType = subjectType,
             SubjectId = subjectId,
-            Level = level,
-            Effect = effect,
-            ConditionJson = conditionJson ?? "{}",
-            Priority = priority
+            Level = level
         };
 
         permission.SetAuditOnCreate(grantedBy, grantedAt);
