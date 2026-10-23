@@ -159,6 +159,8 @@ public static class DependencyInjection
 
         // Automation-owned dispatch use cases (process progression)
         services.AddScoped<N8nDispatchUseCase>();
+        services.AddScoped<global::Notrelix.Application.Features.Automation.Rules.Services.AutomationExecutorAuthority>();
+        services.AddScoped<global::Notrelix.Application.Features.Automation.Rules.Services.AutomationExecutorLifecycle>();
         services.AddScoped<
             global::Notrelix.Application.Features.Automation.Executions.Services.AutomationMoveItemUseCase>();
 

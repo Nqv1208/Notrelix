@@ -17,7 +17,12 @@ public sealed record BoardItemMovedIntegrationEventV2(
     DateTimeOffset OccurredAt = default,
     // WM-V3-EVT-001: the authoritative final ordering key in NewGroupId (additive,
     // nullable; messages produced before it was added deserialize with null).
-    string? NewPosition = null
+    string? NewPosition = null,
+    // AUT-020 (additive, nullable): set only when an Automation rule moved the item.
+    // ActorUserId is then the rule's executor ("automation <rule> on behalf of
+    // <executor>"); older messages and user moves deserialize with null.
+    Guid? AutomationRuleId = null,
+    Guid? AutomationExecutionId = null
 ) : IntegrationEvent(
     eventId: EventId,
     messageName: "board_item.moved",

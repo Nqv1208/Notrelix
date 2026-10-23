@@ -6,6 +6,8 @@ public sealed class WorkspaceEventMapper :
     IntegrationEventMapperBase<WorkspaceCreatedDomainEvent, WorkspaceCreatedIntegrationEvent>,
     IIntegrationEventMapper<WorkspaceMemberAddedDomainEvent, WorkspaceMemberAddedIntegrationEvent>,
     IIntegrationEventMapper<WorkspaceMemberRemovedDomainEvent, WorkspaceMemberRemovedIntegrationEvent>,
+    IIntegrationEventMapper<WorkspaceMemberSuspendedDomainEvent, WorkspaceMemberSuspendedIntegrationEvent>,
+    IIntegrationEventMapper<WorkspaceMemberRoleChangedDomainEvent, WorkspaceMemberRoleChangedIntegrationEvent>,
     IIntegrationEventMapper<WorkspaceArchivedDomainEvent, WorkspaceArchivedIntegrationEvent>,
     IIntegrationEventMapper<WorkspaceUnarchivedDomainEvent, WorkspaceUnarchivedIntegrationEvent>,
     IIntegrationEventMapper<SpaceCreatedDomainEvent, SpaceCreatedIntegrationEvent>,
@@ -49,6 +51,38 @@ public sealed class WorkspaceEventMapper :
             AccountId: domainEvent.AccountId,
             WorkspaceId: domainEvent.WorkspaceId,
             UserId: domainEvent.UserId,
+            CorrelationId: domainEvent.EventId,
+            ActorUserId: domainEvent.ActorId,
+            CausationId: null,
+            OccurredAt: domainEvent.OccurredAt
+        );
+    }
+
+    public WorkspaceMemberSuspendedIntegrationEvent? Map(WorkspaceMemberSuspendedDomainEvent domainEvent)
+    {
+        return new WorkspaceMemberSuspendedIntegrationEvent(
+            EventId: Guid.CreateVersion7(),
+            AccountId: domainEvent.AccountId,
+            WorkspaceId: domainEvent.WorkspaceId,
+            UserId: domainEvent.UserId,
+            CorrelationId: domainEvent.EventId,
+            ActorUserId: domainEvent.ActorId,
+            CausationId: null,
+            OccurredAt: domainEvent.OccurredAt
+        );
+    }
+
+    public WorkspaceMemberRoleChangedIntegrationEvent? Map(WorkspaceMemberRoleChangedDomainEvent domainEvent)
+    {
+        return new WorkspaceMemberRoleChangedIntegrationEvent(
+            EventId: Guid.CreateVersion7(),
+            AccountId: domainEvent.AccountId,
+            WorkspaceId: domainEvent.WorkspaceId,
+            UserId: domainEvent.UserId,
+            OldRole: domainEvent.OldRole.ToString(),
+            NewRole: domainEvent.NewRole.ToString(),
+            // WorkspaceRole is declared in ascending standing: Guest < Member < Admin < Owner.
+            IsDemotion: domainEvent.NewRole < domainEvent.OldRole,
             CorrelationId: domainEvent.EventId,
             ActorUserId: domainEvent.ActorId,
             CausationId: null,
@@ -124,6 +158,16 @@ public sealed class WorkspaceEventMapper :
         if (domainEvent is WorkspaceMemberRemovedDomainEvent e3)
         {
             var mapped = Map(e3);
+            if (mapped is not null) return [new IntegrationEventMapping(mapped)];
+        }
+        if (domainEvent is WorkspaceMemberSuspendedDomainEvent e8)
+        {
+            var mapped = Map(e8);
+            if (mapped is not null) return [new IntegrationEventMapping(mapped)];
+        }
+        if (domainEvent is WorkspaceMemberRoleChangedDomainEvent e9)
+        {
+            var mapped = Map(e9);
             if (mapped is not null) return [new IntegrationEventMapping(mapped)];
         }
         if (domainEvent is WorkspaceArchivedDomainEvent e4)

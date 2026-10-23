@@ -858,6 +858,37 @@ the Action before the pipeline runs), while disabling stays a kill switch under 
 The pipeline decides this (`IRequireAdditionalPermission`); there is no handler role check. By default
 Owner/Admin hold both permissions, so the difference matters only where Governance rules split them.
 
+# 61.2. Executor identity (current runtime)
+
+Every Rule runs as one user, its **executor**, bound to the creator when the Rule is created
+(`automation_rules.executor_user_id`). The executor is never replaced silently; the trigger actor is not the
+executor, so a Rule never acts with the authority of whoever caused the trigger.
+
+- **Create and enable.** The executor must hold the Action's permission on its target now. For `MoveItem`
+  this is the canonical MoveItem decision on the item (the same decision the HTTP command uses, evaluated for
+  the executor through the Work Management public action, `IWorkItemActions.EnsureMoveItemAllowedAsync`), the
+  item must exist in the workspace and be visible to the executor, and the target group must be on the item's
+  board. A creator who cannot see or move the item (for example on a Private board they are not on) cannot
+  create or enable such a Rule. `Webhook` keeps the `ManageIntegrations` requirement of 61.1.
+- **Every execution** re-authorizes the executor against the target before anything is moved (it must still
+  hold the permission, which includes still being an active member), and still starts only from a trigger fact
+  inside the Rule's workspace. The move runs as the executor.
+- **Stop.** A Rule is disabled automatically, with a recorded reason (`automation_rules.disabled_reason`,
+  returned on the Rule list as `disabledReason`), when the executor lacks the permission or can no longer see
+  the target at execution, and proactively when the executor is removed, suspended or demoted in the
+  workspace. The proactive stop is Automation's own reaction to Workspaces-published facts
+  (`workspace.member.removed`, `workspace.member.suspended`, `workspace.member.role-changed`; the last one
+  carries Workspaces' own demotion ranking); Workspaces never touches Automation storage. A Rule that stopped
+  this way stays Disabled until someone with the right permissions enables it again; enabling re-checks the
+  executor and clears the reason. Re-activating a suspended executor does not re-enable their Rules.
+- **Legacy Rules.** Existing Rules were backfilled with their recorded creator as executor. A Rule with no
+  creator on record has no executor, is not executable, cannot be enabled, and is disabled (reason "no
+  executor") at its first evaluation or execution; it must be recreated.
+- **Attribution.** The moved fact (`board_item.moved` v2) names the executor as `actorUserId` and, additively,
+  the acting Rule and execution (`automationRuleId`, `automationExecutionId`; `causationId` stays the
+  execution id). The item's audit columns record the executor. So an automated move reads as "automation
+  <rule> on behalf of <executor>".
+
 ---
 
 # 62. Permission revocation

@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Notrelix.Domain.Automation;
 using Notrelix.Domain.Automation.Executions;
 using Notrelix.Domain.Automation.Rules;
 using Notrelix.Domain.Automation.RulesEngine;
@@ -47,12 +48,40 @@ public class AutomationRuleGuardTests
         var version = rule.Version;
         var events = rule.DomainEvents.Count;
 
-        rule.DisableAutomatically(Now.AddMinutes(1));
+        rule.DisableAutomatically("executor lost access", Now.AddMinutes(1));
 
         rule.IsEnabled.Should().BeFalse();
+        rule.DisabledReason.Should().Be("executor lost access");
         rule.Version.Should().Be(version + 1);
         rule.DomainEvents.Should().HaveCount(events + 1);
         rule.DomainEvents.Last().Should().BeOfType<AutomationRuleDisabledDomainEvent>();
+    }
+
+    [Fact]
+    public void Create_BindsTheCreatorAsExecutor_AndEnableAfterAutomaticDisableClearsTheReason()
+    {
+        var rule = ActiveRule();
+        rule.ExecutorUserId.Should().Be(User);
+
+        rule.DisableAutomatically("executor lost access", Now.AddMinutes(1));
+        rule.DisabledReason.Should().NotBeNull();
+
+        rule.Enable(User, Now.AddMinutes(2));
+        rule.DisabledReason.Should().BeNull();
+    }
+
+    [Fact]
+    public void Enable_WithoutAnExecutor_IsRejected_AndManualDisableClearsTheReason()
+    {
+        var rule = ActiveRule();
+        rule.DisableAutomatically("executor lost access", Now.AddMinutes(1));
+        typeof(AutomationRule).GetProperty(nameof(AutomationRule.ExecutorUserId))!.SetValue(rule, null);
+
+        var act = () => rule.Enable(User, Now.AddMinutes(2));
+
+        act.Should().Throw<BusinessRuleException>()
+            .Which.RuleCode.Should().Be(AutomationRuleCodes.Automation_Rule_MustHaveExecutor);
+        rule.IsEnabled.Should().BeFalse();
     }
 
     [Fact]
@@ -63,7 +92,7 @@ public class AutomationRuleGuardTests
         var version = rule.Version;
         var events = rule.DomainEvents.Count;
 
-        rule.DisableAutomatically(Now.AddMinutes(2));
+        rule.DisableAutomatically("executor lost access", Now.AddMinutes(2));
 
         rule.Version.Should().Be(version);
         rule.DomainEvents.Should().HaveCount(events);

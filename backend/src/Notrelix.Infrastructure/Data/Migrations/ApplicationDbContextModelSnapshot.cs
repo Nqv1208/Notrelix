@@ -1388,6 +1388,15 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(1024)")
                         .HasColumnName("description");
 
+                    b.Property<string>("DisabledReason")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("disabled_reason");
+
+                    b.Property<Guid?>("ExecutorUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("executor_user_id");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(256)
@@ -1424,6 +1433,9 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                     b.HasIndex("WorkspaceId")
                         .HasDatabaseName("idx_automation_rules_workspace_id");
+
+                    b.HasIndex("WorkspaceId", "ExecutorUserId")
+                        .HasDatabaseName("idx_automation_rules_workspace_executor");
 
                     b.ToTable("automation_rules", "automation");
                 });

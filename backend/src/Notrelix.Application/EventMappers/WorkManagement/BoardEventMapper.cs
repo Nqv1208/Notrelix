@@ -167,7 +167,9 @@ public sealed class BoardEventMapper :
             ActorUserId: domainEvent.UpdatedBy,
             CausationId: AutomationCausation,
             OccurredAt: domainEvent.OccurredAt,
-            NewPosition: domainEvent.NewPosition
+            NewPosition: domainEvent.NewPosition,
+            AutomationRuleId: AutomationCausation is null ? null : _correlation?.AutomationRuleId,
+            AutomationExecutionId: AutomationCausation
         );
     }
 

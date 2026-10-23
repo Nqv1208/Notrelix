@@ -99,6 +99,34 @@ public sealed class WorkItemActions : IWorkItemActions
         return result;
     }
 
+    public async Task EnsureMoveItemAllowedAsync(
+        WorkItemMoveRequest request,
+        CancellationToken cancellationToken)
+    {
+        var execution = request.Execution;
+
+        await _authorizer.AuthorizeMoveItemAsync(
+            execution, request.ItemId, request.NewGroupId, cancellationToken);
+
+        var item = await _context.BoardItems
+            .AsNoTracking()
+            .FirstOrDefaultAsync(i => i.Id == request.ItemId, cancellationToken)
+            ?? throw new NotFoundException("BoardItem", request.ItemId);
+
+        if (item.WorkspaceId != execution.WorkspaceId)
+        {
+            throw new ForbiddenException("The item does not belong to the declared workspace.");
+        }
+
+        var groupOnBoard = await _context.BoardGroups
+            .AsNoTracking()
+            .AnyAsync(g => g.Id == request.NewGroupId && g.BoardId == item.BoardId, cancellationToken);
+        if (!groupOnBoard)
+        {
+            throw new NotFoundException("BoardGroup", request.NewGroupId);
+        }
+    }
+
     private static string Sha256(string value) =>
         Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value)));
 }

@@ -1,3 +1,5 @@
+using Notrelix.Application.Features.Automation.Ports.WorkManagement;
+using Notrelix.Application.Features.Automation.Rules.Services;
 using Notrelix.Application.Features.Automation.Abstractions;
 using Notrelix.Application.Features.Automation.Rules.Commands.CreateAutomationRule;
 using Notrelix.Application.Features.Billing.Public.Capacity;
@@ -40,7 +42,8 @@ public class CreateAutomationRuleBillingGateTests
             _requestContextMock.Object,
             clockMock.Object,
             _billingMock.Object,
-            _billingCapacityMock.Object);
+            _billingCapacityMock.Object,
+            new AutomationExecutorAuthority(new Mock<IWorkActionPort>().Object));
     }
 
     private static CreateAutomationRuleCommand Command() =>

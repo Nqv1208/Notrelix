@@ -1,5 +1,6 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Automation.Abstractions;
+using Notrelix.Application.Features.Automation.Rules.Services;
 using Notrelix.Application.Features.Billing.Public.Capacity;
 using Notrelix.Application.Features.Billing.Public.Facts;
 using Notrelix.Domain.Automation.RulesEngine;
@@ -34,14 +35,17 @@ public class CreateAutomationRuleCommandHandler : IRequestHandler<CreateAutomati
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IBillingCapabilityFacts _billingCapabilityFacts;
     private readonly IBillingCapacityActions _billingCapacityActions;
+    private readonly AutomationExecutorAuthority _executorAuthority;
 
     public CreateAutomationRuleCommandHandler(
         IAutomationDbContext context,
         ICurrentRequestContext requestContext,
         IDateTimeProvider dateTimeProvider,
         IBillingCapabilityFacts billingCapabilityFacts,
-        IBillingCapacityActions billingCapacityActions)
+        IBillingCapacityActions billingCapacityActions,
+        AutomationExecutorAuthority executorAuthority)
     {
+        _executorAuthority = executorAuthority;
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
@@ -75,6 +79,16 @@ public class CreateAutomationRuleCommandHandler : IRequestHandler<CreateAutomati
         }
 
         var config = AutomationConfiguration.Create(trigger, action);
+
+        // AUT-020: the rule runs as its creator, so the creator must hold the
+        // action's permission on the target now (a Private board the creator
+        // cannot see is rejected here, never bound).
+        await _executorAuthority.EnsureCanExecuteAsync(
+            _requestContext.RequireAccountId(),
+            request.WorkspaceId,
+            _requestContext.UserId,
+            action,
+            cancellationToken);
 
         var rule = AutomationRule.Create(
             _requestContext.RequireAccountId(),

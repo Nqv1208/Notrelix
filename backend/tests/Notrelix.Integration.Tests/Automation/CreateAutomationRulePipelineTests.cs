@@ -313,6 +313,10 @@ public sealed class CreateAutomationRulePipelineTests : IAsyncLifetime
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton(billingMock.Object);
         services.AddSingleton(capacityMock.Object);
+        // AUT-020: Webhook rules never reach the Work port; the real MoveItem authority is proved in
+        // AutomationMoveItemExecutorCompositionIntegrationTests.
+        services.AddSingleton(new Mock<Notrelix.Application.Features.Automation.Ports.WorkManagement.IWorkActionPort>().Object);
+        services.AddScoped<Notrelix.Application.Features.Automation.Rules.Services.AutomationExecutorAuthority>();
 
         services.AddSingleton<IRequestDescriptorRegistry>(
             RequestDescriptorRegistry.Create(typeof(CreateAutomationRuleCommand).Assembly));

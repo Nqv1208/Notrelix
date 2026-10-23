@@ -28,4 +28,32 @@ public class BoardItemMovedCausationTests
         new BoardEventMapper(correlation.Object).Map(Moved())!.CausationId.Should().BeNull();
         new BoardEventMapper().Map(Moved())!.CausationId.Should().BeNull();
     }
+
+    [Fact]
+    public void MovedFact_NamesTheAutomationRuleAndExecution_WhenAnAutomationActs()
+    {
+        var executionId = Guid.NewGuid();
+        var ruleId = Guid.NewGuid();
+        var correlation = new Mock<ICorrelationContext>();
+        correlation.SetupGet(c => c.CausationId).Returns(executionId);
+        correlation.SetupGet(c => c.AutomationRuleId).Returns(ruleId);
+
+        var fact = new BoardEventMapper(correlation.Object).Map(Moved())!;
+
+        fact.AutomationRuleId.Should().Be(ruleId);
+        fact.AutomationExecutionId.Should().Be(executionId);
+    }
+
+    [Fact]
+    public void MovedFact_CarriesNoAutomationMetadata_ForUserRequests()
+    {
+        var correlation = new Mock<ICorrelationContext>();
+        correlation.SetupGet(c => c.CausationId).Returns((Guid?)null);
+        correlation.SetupGet(c => c.AutomationRuleId).Returns(Guid.NewGuid());
+
+        var fact = new BoardEventMapper(correlation.Object).Map(Moved())!;
+
+        fact.AutomationRuleId.Should().BeNull("a user move is never attributed to an automation");
+        fact.AutomationExecutionId.Should().BeNull();
+    }
 }

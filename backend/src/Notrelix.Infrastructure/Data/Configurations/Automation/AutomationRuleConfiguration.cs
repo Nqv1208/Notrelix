@@ -17,6 +17,10 @@ public class AutomationRuleConfiguration : IEntityTypeConfiguration<AutomationRu
         builder.Property(x => x.Description).HasColumnName("description").HasMaxLength(1024);
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<string>().IsRequired().HasMaxLength(50);
 
+        builder.Property(x => x.ExecutorUserId).HasColumnName("executor_user_id");
+        builder.Property(x => x.DisabledReason).HasColumnName("disabled_reason").HasMaxLength(512);
+        builder.Ignore(x => x.HasExecutor);
+
         builder.OwnsOne(x => x.Configuration, cfg =>
         {
             cfg.OwnsOne(c => c.Trigger);
@@ -35,5 +39,6 @@ public class AutomationRuleConfiguration : IEntityTypeConfiguration<AutomationRu
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
         builder.HasIndex(x => x.WorkspaceId).HasDatabaseName("idx_automation_rules_workspace_id");
+        builder.HasIndex(x => new { x.WorkspaceId, x.ExecutorUserId }).HasDatabaseName("idx_automation_rules_workspace_executor");
     }
 }

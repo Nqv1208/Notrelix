@@ -11,6 +11,21 @@ public class AutomationRule : SoftDeletableAggregateRoot, IWorkspaceScoped
     public AutomationRuleStatus Status { get; private set; }
     public AutomationConfiguration Configuration { get; private set; } = null!;
 
+    /// <summary>
+    /// AUT-020: the user the rule runs as. Bound to the creator at creation and
+    /// never silently replaced. Null only for rules that predate the binding and
+    /// had no creator on record: such a rule is not executable (fail closed).
+    /// </summary>
+    public Guid? ExecutorUserId { get; private set; }
+
+    /// <summary>
+    /// Why the rule was last disabled by the platform (executor lost standing,
+    /// circuit breaker). Null while enabled and after a manual disable.
+    /// </summary>
+    public string? DisabledReason { get; private set; }
+
+    public bool HasExecutor => ExecutorUserId is { } executor && executor != Guid.Empty;
+
     public bool IsEnabled => Status == AutomationRuleStatus.Active;
 
     private AutomationRule() : base() { }
@@ -35,6 +50,7 @@ public class AutomationRule : SoftDeletableAggregateRoot, IWorkspaceScoped
             WorkspaceId = workspaceId,
             Name = name.Trim(),
             Configuration = configuration,
+            ExecutorUserId = createdBy,
             Status = AutomationRuleStatus.Draft
         };
 
@@ -54,8 +70,15 @@ public class AutomationRule : SoftDeletableAggregateRoot, IWorkspaceScoped
 
         AutomationRuleValidator.ValidateForActivation(Name, Configuration);
 
+        // AUT-020: a rule without a bound executor can never run, so it cannot be enabled.
+        if (!HasExecutor)
+            throw new BusinessRuleException(
+                AutomationRuleCodes.Automation_Rule_MustHaveExecutor,
+                "Automation rule has no executor and cannot be enabled; recreate it.");
+
         var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Status = AutomationRuleStatus.Active;
+        DisabledReason = null;
         ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new AutomationRuleEnabledDomainEvent(AccountId, WorkspaceId, Id, updatedBy, updatedAt));
@@ -69,6 +92,7 @@ public class AutomationRule : SoftDeletableAggregateRoot, IWorkspaceScoped
 
         var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Status = AutomationRuleStatus.Disabled;
+        DisabledReason = null;
         ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new AutomationRuleDisabledDomainEvent(AccountId, WorkspaceId, Id, updatedBy, updatedAt));
@@ -77,15 +101,18 @@ public class AutomationRule : SoftDeletableAggregateRoot, IWorkspaceScoped
     /// <summary>
     /// Circuit-breaker disable: the platform (not a user) stops the rule after
     /// repeated execution failures. Same state transition as <see cref="Disable"/>
-    /// with no human actor; the Disabled fact carries an empty actor.
+    /// with no human actor; the Disabled fact carries an empty actor. The reason
+    /// is recorded on the rule so the stop is visible (AUT-020).
     /// </summary>
-    public void DisableAutomatically(DateTimeOffset updatedAt)
+    public void DisableAutomatically(string reason, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotNullOrWhiteSpace(reason);
         if (Status != AutomationRuleStatus.Active) return;
 
         var pending = PrepareAuditUpdate(null, updatedAt);
         Status = AutomationRuleStatus.Disabled;
+        DisabledReason = reason.Trim();
         ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new AutomationRuleDisabledDomainEvent(AccountId, WorkspaceId, Id, Guid.Empty, updatedAt));

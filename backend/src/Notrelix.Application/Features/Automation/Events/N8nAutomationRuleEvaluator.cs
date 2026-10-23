@@ -27,6 +27,8 @@ public sealed class N8nAutomationRuleEvaluator
     private readonly AutomationGuardOptions _guards;
     private readonly ILogger<N8nAutomationRuleEvaluator> _logger;
 
+    private const string NoExecutorReason = "The rule has no executor and cannot run; recreate it.";
+
     public N8nAutomationRuleEvaluator(
         IAutomationDbContext context,
         IIntegrationEventCollector events,
@@ -67,6 +69,17 @@ public sealed class N8nAutomationRuleEvaluator
         {
             if (rule.Configuration.Trigger.Type != trigger.TriggerType)
             {
+                continue;
+            }
+
+            // AUT-020: a rule with no bound executor (it predates the binding and
+            // had no creator on record) can never run. Fail closed and stop it at
+            // its first evaluation, visibly, instead of running as someone else.
+            if (!rule.HasExecutor)
+            {
+                rule.DisableAutomatically(NoExecutorReason, _clock.UtcNow);
+                _logger.LogWarning(
+                    "Automation rule {RuleId} was disabled: it has no executor.", rule.Id);
                 continue;
             }
 
@@ -244,7 +257,9 @@ public sealed class N8nAutomationRuleEvaluator
         if (recent.Count >= _guards.ConsecutiveFailureLimit
             && recent.All(status => status == AutomationExecutionStatus.Failed))
         {
-            rule.DisableAutomatically(_clock.UtcNow);
+            rule.DisableAutomatically(
+                $"Disabled after {_guards.ConsecutiveFailureLimit} consecutive failed executions.",
+                _clock.UtcNow);
             _logger.LogWarning(
                 "Automation rule {RuleId} was disabled after {Failures} consecutive failed executions.",
                 rule.Id, _guards.ConsecutiveFailureLimit);
