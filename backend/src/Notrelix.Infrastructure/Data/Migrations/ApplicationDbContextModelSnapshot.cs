@@ -13037,17 +13037,38 @@ namespace Notrelix.Infrastructure.Data.Migrations
                                 .HasColumnType("uuid")
                                 .HasColumnName("id");
 
+                            b1.Property<bool>("AllowGuestInvites")
+                                .HasColumnType("boolean")
+                                .HasDefaultValue(false)
+                                .HasColumnName("settings_allow_guest_invites");
+
                             b1.Property<bool>("AllowPublicSharing")
-                                .ValueGeneratedOnAdd()
                                 .HasColumnType("boolean")
                                 .HasDefaultValue(false)
                                 .HasColumnName("settings_allow_public_sharing");
 
+                            b1.Property<string>("DefaultMemberRole")
+                                .IsRequired()
+                                .HasMaxLength(50)
+                                .HasColumnType("character varying(50)")
+                                .HasColumnName("settings_default_member_role");
+
                             b1.Property<bool>("EnforceMfa")
-                                .ValueGeneratedOnAdd()
                                 .HasColumnType("boolean")
                                 .HasDefaultValue(false)
                                 .HasColumnName("settings_enforce_mfa");
+
+                            b1.Property<int?>("GuestDefaultExpiryDays")
+                                .HasColumnType("integer")
+                                .HasColumnName("settings_guest_default_expiry_days");
+
+                            b1.Property<int>("InvitationExpiryDays")
+                                .HasColumnType("integer")
+                                .HasColumnName("settings_invitation_expiry_days");
+
+                            b1.Property<DateTimeOffset?>("PublicSharingChangedAt")
+                                .HasColumnType("timestamp with time zone")
+                                .HasColumnName("settings_public_sharing_changed_at");
 
                             b1.HasKey("WorkspaceId");
 

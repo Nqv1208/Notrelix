@@ -3549,6 +3549,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/security-ext": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the read-only extras of the sharing and security page
+         * @description Active Guest count, the default Guest expiry for new entries and the instant share links were turned off. Needs the right to see the member list, so a Guest is refused.
+         */
+        get: operations["Workspaces.Settings.GetWorkspaceSecurityExt"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/spaces": {
         parameters: {
             query?: never;
@@ -3740,6 +3760,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/spaces/{spaceId}/members-extra": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get what the department members tab adds to the space member list
+         * @description People reached by the space's user and team entries once each at their highest role, with job title, the teams that reach them and who made the space, plus pending invitations that name the space. Email and activity are not exposed yet and board guests are listed through board sharing. A space the caller cannot see is 404.
+         */
+        get: operations["Workspaces.Spaces.GetSpaceMembersExtra"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/spaces/{spaceId}/members/{subjectType}/{subjectId}": {
         parameters: {
             query?: never;
@@ -3770,6 +3810,26 @@ export interface paths {
         put?: never;
         /** Create a new team in the workspace */
         post: operations["Workspaces.Teams.CreateTeam"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/teams-ext": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get what the Teams pages add to the team list
+         * @description Per Team: people, who created and archived it and the Spaces where it holds a role; plus the workspace admins and the people a Team may take. Needs the right to see the member list, so a Guest is refused. Email is not exposed yet.
+         */
+        get: operations["Workspaces.Teams.GetWorkspaceTeamsExt"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -4571,6 +4631,8 @@ export interface components {
             invitationExpiryDays?: number;
             /** Format: int64 */
             expectedVersion?: number;
+            /** Format: int32 */
+            guestDefaultExpiryDays?: number | null;
         };
         "Notrelix.API.Contracts.Workspaces.Spaces.Requests.AddSpaceMemberRequest": {
             subjectType?: string | null;
@@ -5378,6 +5440,15 @@ export interface components {
             /** Format: date-time */
             lastOpenedAt?: string;
         };
+        "Notrelix.Application.Features.Workspaces.Settings.Queries.GetWorkspaceSecurityExt.WorkspaceSecurityExtDto": {
+            /** Format: int32 */
+            guestCount?: number;
+            /** Format: int32 */
+            guestExpiryDays?: number | null;
+            companyDomain?: string | null;
+            /** Format: date-time */
+            linksOffSince?: string | null;
+        };
         "Notrelix.Application.Features.Workspaces.Settings.Queries.GetWorkspaceSettings.WorkspaceSettingsDto": {
             allowPublicSharing?: boolean;
             enforceMfa?: boolean;
@@ -5385,6 +5456,8 @@ export interface components {
             defaultMemberRole?: string | null;
             /** Format: int32 */
             invitationExpiryDays?: number;
+            /** Format: int32 */
+            guestDefaultExpiryDays?: number | null;
         };
         "Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpace.SpaceDto": {
             /** Format: uuid */
@@ -5406,6 +5479,55 @@ export interface components {
             avatarUrl?: string | null;
             /** Format: date-time */
             addedAt?: string;
+        };
+        "Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceMembersExtra.SpaceMembersExtraDto": {
+            summary?: components["schemas"]["Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceMembersExtra.SpaceMembersExtraSummaryDto"];
+            people?: components["schemas"]["Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceMembersExtra.SpaceMembersExtraPersonDto"][] | null;
+            invitations?: components["schemas"]["Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceMembersExtra.SpaceMembersExtraInvitationDto"][] | null;
+            guests?: components["schemas"]["Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceMembersExtra.SpaceMembersExtraGuestDto"][] | null;
+        };
+        "Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceMembersExtra.SpaceMembersExtraGuestDto": {
+            /** Format: uuid */
+            userId?: string;
+            name?: string | null;
+            email?: string | null;
+            outside?: boolean;
+            /** Format: uuid */
+            boardId?: string;
+            boardName?: string | null;
+            level?: string | null;
+            /** Format: date-time */
+            expiresAt?: string | null;
+        };
+        "Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceMembersExtra.SpaceMembersExtraInvitationDto": {
+            /** Format: uuid */
+            id?: string;
+            email?: string | null;
+            name?: string | null;
+            /** Format: date-time */
+            sentAt?: string;
+            role?: string | null;
+        };
+        "Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceMembersExtra.SpaceMembersExtraPersonDto": {
+            /** Format: uuid */
+            userId?: string;
+            email?: string | null;
+            title?: string | null;
+            /** Format: date-time */
+            lastActiveAt?: string | null;
+            activeNow?: boolean;
+            viaTeams?: string[] | null;
+            creator?: boolean;
+        };
+        "Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceMembersExtra.SpaceMembersExtraSummaryDto": {
+            /** Format: int32 */
+            admins?: number;
+            /** Format: int32 */
+            members?: number;
+            /** Format: int32 */
+            viewers?: number;
+            /** Format: int32 */
+            invites?: number;
         };
         "Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceTree.SpaceTreeNodeDto": {
             /** Format: uuid */
@@ -5445,6 +5567,68 @@ export interface components {
             role?: string | null;
             status?: string | null;
             jobTitle?: string | null;
+        };
+        "Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.TeamsExtAdminDto": {
+            /** Format: uuid */
+            id?: string;
+            name?: string | null;
+            email?: string | null;
+            role?: string | null;
+        };
+        "Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.TeamsExtDirectEntryDto": {
+            /** Format: uuid */
+            userId?: string;
+            role?: string | null;
+        };
+        "Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.TeamsExtDirectoryDto": {
+            /** Format: uuid */
+            id?: string;
+            name?: string | null;
+            email?: string | null;
+            title?: string | null;
+        };
+        "Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.TeamsExtPersonDto": {
+            /** Format: uuid */
+            id?: string;
+            name?: string | null;
+        };
+        "Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.TeamsExtTeamDto": {
+            /** Format: uuid */
+            id?: string;
+            /** Format: date-time */
+            createdAt?: string;
+            createdBy?: components["schemas"]["Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.TeamsExtPersonDto"];
+            /** Format: date-time */
+            archivedAt?: string | null;
+            archivedBy?: components["schemas"]["Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.TeamsExtPersonDto"];
+            people?: components["schemas"]["Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.TeamsExtTeamPersonDto"][] | null;
+            usage?: components["schemas"]["Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.TeamsExtUsageDto"][] | null;
+        };
+        "Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.TeamsExtTeamPersonDto": {
+            /** Format: uuid */
+            userId?: string;
+            name?: string | null;
+            email?: string | null;
+            title?: string | null;
+            role?: string | null;
+            /** Format: date-time */
+            since?: string;
+        };
+        "Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.TeamsExtUsageDto": {
+            kind?: string | null;
+            /** Format: uuid */
+            id?: string;
+            name?: string | null;
+            spaceType?: string | null;
+            grant?: string | null;
+            /** Format: date-time */
+            since?: string | null;
+            direct?: components["schemas"]["Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.TeamsExtDirectEntryDto"][] | null;
+        };
+        "Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.WorkspaceTeamsExtDto": {
+            teams?: components["schemas"]["Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.TeamsExtTeamDto"][] | null;
+            admins?: components["schemas"]["Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.TeamsExtAdminDto"][] | null;
+            directory?: components["schemas"]["Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.TeamsExtDirectoryDto"][] | null;
         };
         /** @enum {string} */
         "Notrelix.Domain.Identity.Security.SecurityActivityType": "SignInSucceeded" | "SignInFailed" | "PasswordChanged" | "PasswordReset" | "MfaEnabled" | "MfaDisabled" | "SessionRevoked" | "OtherSessionsRevoked";
@@ -14353,6 +14537,28 @@ export interface operations {
             };
         };
     };
+    "Workspaces.Settings.GetWorkspaceSecurityExt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.Settings.Queries.GetWorkspaceSecurityExt.WorkspaceSecurityExtDto"];
+                };
+            };
+        };
+    };
     "Workspaces.Spaces.GetWorkspaceSpaces": {
         parameters: {
             query?: never;
@@ -14723,6 +14929,29 @@ export interface operations {
             };
         };
     };
+    "Workspaces.Spaces.GetSpaceMembersExtra": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                spaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceMembersExtra.SpaceMembersExtraDto"];
+                };
+            };
+        };
+    };
     "Workspaces.Spaces.RemoveSpaceMember": {
         parameters: {
             query: {
@@ -14823,6 +15052,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": string;
+                };
+            };
+        };
+    };
+    "Workspaces.Teams.GetWorkspaceTeamsExt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.WorkspaceTeamsExtDto"];
                 };
             };
         };

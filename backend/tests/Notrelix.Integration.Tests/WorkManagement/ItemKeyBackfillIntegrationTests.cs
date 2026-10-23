@@ -71,7 +71,7 @@ public sealed class ItemKeyBackfillIntegrationTests : IAsyncLifetime
         tenant.SetSystem();
         await using (var seed = CreateContext(tenant))
         {
-            seed.Workspaces.Add(workspace);
+            await LegacySchemaWorkspaceSeed.InsertAsync(seed, workspace);
             seed.Boards.AddRange(prefixed, plain);
             seed.BoardGroups.AddRange(prefixedGroup, plainGroup);
             seed.BoardItems.AddRange(third, first, second, plainA, plainKeyed, plainB);

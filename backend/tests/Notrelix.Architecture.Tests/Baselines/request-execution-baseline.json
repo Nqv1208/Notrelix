@@ -6175,6 +6175,31 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.Workspaces.Settings.Queries.GetWorkspaceSecurityExt.GetWorkspaceSecurityExtQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Workspaces.Settings.Queries.GetWorkspaceSecurityExt.GetWorkspaceSecurityExtQueryHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.Workspaces.Settings.Queries.GetWorkspaceSettings.GetWorkspaceSettingsQuery",
     "kind": "Query",
     "principalMarkers": [
@@ -6575,6 +6600,31 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceMembersExtra.GetSpaceMembersExtraQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceMembersExtra.GetSpaceMembersExtraQueryHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceTree.GetSpaceTreeQuery",
     "kind": "Query",
     "principalMarkers": [
@@ -6947,6 +6997,31 @@
     "publicCache": false,
     "handlerTypes": [
       "Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeams.GetWorkspaceTeamsQueryHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.GetWorkspaceTeamsExtQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.GetWorkspaceTeamsExtQueryHandler"
     ]
   },
   {

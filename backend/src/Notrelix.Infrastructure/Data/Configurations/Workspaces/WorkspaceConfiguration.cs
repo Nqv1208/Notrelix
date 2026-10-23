@@ -20,8 +20,13 @@ public class WorkspaceConfiguration : IEntityTypeConfiguration<Workspace>
 
         builder.OwnsOne(x => x.Settings, settings =>
         {
-            settings.Property(s => s.AllowPublicSharing).HasColumnName("settings_allow_public_sharing").HasDefaultValue(false);
-            settings.Property(s => s.EnforceMfa).HasColumnName("settings_enforce_mfa").HasDefaultValue(false);
+            settings.Property(s => s.AllowPublicSharing).HasColumnName("settings_allow_public_sharing").HasDefaultValue(false).ValueGeneratedNever();
+            settings.Property(s => s.EnforceMfa).HasColumnName("settings_enforce_mfa").HasDefaultValue(false).ValueGeneratedNever();
+            settings.Property(s => s.AllowGuestInvites).HasColumnName("settings_allow_guest_invites").HasDefaultValue(false).ValueGeneratedNever();
+            settings.Property(s => s.DefaultMemberRole).HasColumnName("settings_default_member_role").HasConversion<string>().IsRequired().HasMaxLength(50);
+            settings.Property(s => s.InvitationExpiryDays).HasColumnName("settings_invitation_expiry_days");
+            settings.Property(s => s.GuestDefaultExpiryDays).HasColumnName("settings_guest_default_expiry_days");
+            settings.Property(s => s.PublicSharingChangedAt).HasColumnName("settings_public_sharing_changed_at");
         });
 
         builder.Ignore(x => x.IsDeleted);

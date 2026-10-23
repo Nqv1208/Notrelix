@@ -121,7 +121,7 @@ public sealed class StatusCompletionBackfillIntegrationTests : IAsyncLifetime
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
         await using var context = CreateContext(tenant);
-        context.Workspaces.Add(workspace);
+        await LegacySchemaWorkspaceSeed.InsertAsync(context, workspace);
         context.Boards.AddRange(legacy.Board, modern.Board, solo.Board);
         context.BoardGroups.AddRange(legacy.Group, modern.Group, solo.Group);
         context.BoardFields.AddRange(legacy.Field, modern.Field, solo.Field);

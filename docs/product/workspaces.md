@@ -560,6 +560,27 @@ Workspaces owns Team composition (members, lead, lifecycle).
 
 Governance owns what a Team grant means: a Team may be the subject of a Space membership entry, a resource permission or a permission rule (GOV-026). Managing Teams is a workspace Owner/Admin capability by default.
 
+
+# 48.2. Read extras for the Space, Team and security pages
+
+Three read-only queries serve the department Members tab, the Teams pages and the sharing and security page. They add no durable fact and no new owner: each is composed from Workspaces facts and filtered by Governance visibility.
+
+- `GET /workspaces/{workspaceId}/spaces/{spaceId}/members-extra`: people reached by the Space's User and Team entries, once each at their highest role (Teams expanded; Guests are Board-level grantees and are not counted), with job title, the Space's Teams that reach the person, and who made the Space; plus pending, unexpired invitations that name the Space (WSP-026). A Space the caller cannot see is NotFound.
+- `GET /workspaces/{workspaceId}/teams-ext`: per Team its people, who created and archived it (an archived Team accepts no change, so its last update is the archival), and the Spaces the caller can see where it holds a role, with the people who also hold a direct entry; plus Workspace Owners and Admins and the non-Guest active members a Team may take.
+- `GET /workspaces/{workspaceId}/security-ext`: active Guest count, the default Guest expiry for new entries, and when share links were turned off (the Workspace creation instant if the policy never changed; null while links are on).
+
+All three need `ViewMembers`, so a Guest is refused (GOV-009).
+
+Intentionally empty fields, not defects. The web client hides them until the named decision exists:
+
+- `email` (people, admins, directory): null until a member-visibility policy for email exists.
+- `lastActiveAt` null and `activeNow` false: no activity source exists.
+- Space `guests`: always empty; Board guests are read through Board sharing, which is undecided. `invitations[].name` is null.
+- `companyDomain`: null; the verified company domain belongs to Accounts (ACC-010) and no Workspace fact exists.
+- Team usage lists Space entries only; Board grants of a Team are not listed yet.
+
+The Workspace sharing policy also stores `guestDefaultExpiryDays` (30, 90, 180 or none). It only pre-fills new Guest entries and never changes existing ones (GOV-031); it is written with the Workspace settings by an Owner or Admin.
+
 # 49. Organizational containers
 
 Spaces and Teams exist because they provide real organization value (department org tree, people partitioning).

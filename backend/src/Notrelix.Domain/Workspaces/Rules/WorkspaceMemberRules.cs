@@ -4,6 +4,18 @@ namespace Notrelix.Domain.Workspaces.Rules;
 
 public static class WorkspaceMemberRules
 {
+    /// <summary>Active members who take part as a Guest (WSP-026): a membership fact, never an email domain.</summary>
+    public static readonly System.Linq.Expressions.Expression<Func<WorkspaceMember, bool>> ActiveGuest =
+        m => m.Status == WorkspaceMemberStatus.Active && m.Role == WorkspaceRole.Guest;
+
+    /// <summary>Active members who are not Guests: the colleagues a Team or Space may take.</summary>
+    public static readonly System.Linq.Expressions.Expression<Func<WorkspaceMember, bool>> ActiveColleague =
+        m => m.Status == WorkspaceMemberStatus.Active && m.Role != WorkspaceRole.Guest;
+
+    /// <summary>Active Workspace Owners and Admins: the people who administer the Workspace.</summary>
+    public static readonly System.Linq.Expressions.Expression<Func<WorkspaceMember, bool>> ActiveAdministrator =
+        m => m.Status == WorkspaceMemberStatus.Active && (m.Role == WorkspaceRole.Owner || m.Role == WorkspaceRole.Admin);
+
     public static void EnsureNotLastOwner(Guid workspaceId, Guid userId, int ownerCount)
     {
         if (ownerCount <= 1)

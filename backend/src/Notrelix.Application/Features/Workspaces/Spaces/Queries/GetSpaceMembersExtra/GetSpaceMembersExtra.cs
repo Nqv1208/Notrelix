@@ -1,0 +1,185 @@
+using global::Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.Governance.Public.Visibility;
+using Notrelix.Application.Features.Workspaces.Abstractions;
+using Notrelix.Application.Features.Workspaces.Spaces.Services;
+using Notrelix.Domain.Workspaces.Rules;
+
+namespace Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceMembersExtra;
+
+/// <param name="Admins">People whose highest role in the Space is Admin (Teams expanded, each person once).</param>
+/// <param name="Invites">Pending, unexpired Workspace invitations that name the Space.</param>
+public record SpaceMembersExtraSummaryDto(int Admins, int Members, int Viewers, int Invites);
+
+/// <param name="Email">Always null: no member-visibility policy for email exists yet.</param>
+/// <param name="Title">The person's Workspace job title.</param>
+/// <param name="LastActiveAt">Always null: no activity source exists yet.</param>
+/// <param name="ActiveNow">Always false: no activity source exists yet.</param>
+/// <param name="ViaTeams">Names of the Space's Team entries the person is also in.</param>
+/// <param name="Creator">The person made the Space.</param>
+public record SpaceMembersExtraPersonDto(
+    Guid UserId,
+    string? Email,
+    string? Title,
+    DateTimeOffset? LastActiveAt,
+    bool ActiveNow,
+    IReadOnlyList<string> ViaTeams,
+    bool Creator);
+
+/// <param name="Name">Always null: the invitee has no account name before accepting.</param>
+/// <param name="Role">The Space role the invitation applies on acceptance: <c>Admin</c>, <c>Member</c> or <c>Viewer</c>.</param>
+public record SpaceMembersExtraInvitationDto(Guid Id, string Email, string? Name, DateTimeOffset SentAt, string Role);
+
+/// <param name="Level"><c>viewer</c>, <c>commenter</c>, <c>editor</c> or <c>manager</c>.</param>
+public record SpaceMembersExtraGuestDto(
+    Guid UserId,
+    string Name,
+    string? Email,
+    bool Outside,
+    Guid BoardId,
+    string BoardName,
+    string Level,
+    DateTimeOffset? ExpiresAt);
+
+/// <param name="Guests">Always empty for now: Board guests of a Space are read through the Board sharing contract (open decision).</param>
+public record SpaceMembersExtraDto(
+    SpaceMembersExtraSummaryDto Summary,
+    IReadOnlyList<SpaceMembersExtraPersonDto> People,
+    IReadOnlyList<SpaceMembersExtraInvitationDto> Invitations,
+    IReadOnlyList<SpaceMembersExtraGuestDto> Guests);
+
+/// <summary>
+/// What the department "Members" tab adds to the Space member list (CTR-GAP-WS-MEMBERS-EXT): the people
+/// reached by the Space's User and Team entries once each at their highest role, and the pending
+/// invitations that name the Space (WSP-026). A Space the caller cannot see is NotFound (GOV-025,
+/// GOV-029); a Guest does not enumerate the Workspace, so the read needs <c>ViewMembers</c> (GOV-009).
+/// </summary>
+public record GetSpaceMembersExtraQuery(Guid WorkspaceId, Guid SpaceId)
+    : IQuery<Result<SpaceMembersExtraDto>>, IAuthenticatedRequest, IReadRequest, IWorkspaceRequest, IRequirePermission
+{
+    PermissionAction IRequirePermission.Action => PermissionAction.ViewMembers;
+    ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);
+}
+
+public class GetSpaceMembersExtraQueryHandler : IRequestHandler<GetSpaceMembersExtraQuery, Result<SpaceMembersExtraDto>>
+{
+    private readonly IWorkspaceDbContext _context;
+    private readonly ISpaceStore _spaces;
+    private readonly IResourceVisibility _visibility;
+    private readonly ICurrentRequestContext _requestContext;
+    private readonly IDateTimeProvider _clock;
+
+    public GetSpaceMembersExtraQueryHandler(
+        IWorkspaceDbContext context,
+        ISpaceStore spaces,
+        IResourceVisibility visibility,
+        ICurrentRequestContext requestContext,
+        IDateTimeProvider clock)
+    {
+        _context = context;
+        _spaces = spaces;
+        _visibility = visibility;
+        _requestContext = requestContext;
+        _clock = clock;
+    }
+
+    public async Task<Result<SpaceMembersExtraDto>> Handle(GetSpaceMembersExtraQuery request, CancellationToken ct)
+    {
+        var workspaceId = request.WorkspaceId;
+        var visible = await _visibility.VisibleSpaceIdsAsync(workspaceId, _requestContext.UserId, ct);
+        if (!visible.Contains(request.SpaceId))
+            throw new NotFoundException(nameof(Space), request.SpaceId);
+
+        var space = await _context.Spaces
+            .AsNoTracking()
+            .Where(s => s.WorkspaceId == workspaceId && s.Id == request.SpaceId && s.DeletedAt == null)
+            .Select(s => new { s.CreatedBy })
+            .FirstOrDefaultAsync(ct)
+            ?? throw new NotFoundException(nameof(Space), request.SpaceId);
+
+        var entries = await _spaces.ListMembersAsync(workspaceId, request.SpaceId, ct);
+        var teamEntries = entries.Where(e => e.SubjectType == SpaceMemberSubjectType.Team).ToList();
+        var teamIds = teamEntries.Select(e => e.SubjectId).ToList();
+
+        var teamPeople = teamIds.Count == 0
+            ? []
+            : await _context.TeamMembers
+                .AsNoTracking()
+                .Where(m => m.WorkspaceId == workspaceId && teamIds.Contains(m.TeamId) && m.Status == TeamMemberStatus.Active)
+                .Select(m => new { m.TeamId, m.UserId })
+                .ToListAsync(ct);
+
+        // Each reached person once, at the highest role of any entry that reaches them.
+        var reach = new Dictionary<Guid, (SpaceRole Role, List<string> Teams)>();
+        void Reach(Guid userId, SpaceRole role, string? teamName)
+        {
+            if (!reach.TryGetValue(userId, out var current))
+                current = (role, []);
+            if (role > current.Role)
+                current.Role = role;
+            if (teamName is not null && !current.Teams.Contains(teamName))
+                current.Teams.Add(teamName);
+            reach[userId] = current;
+        }
+
+        foreach (var entry in entries.Where(e => e.SubjectType == SpaceMemberSubjectType.User))
+            Reach(entry.SubjectId, entry.Role, null);
+        foreach (var entry in teamEntries)
+            foreach (var person in teamPeople.Where(p => p.TeamId == entry.SubjectId))
+                Reach(person.UserId, entry.Role, entry.TeamName ?? "Unknown team");
+
+        // Only active, non-Guest Workspace members count as people of the Space (a Guest is a Board-level grantee).
+        var reachedIds = reach.Keys.ToList();
+        var members = reachedIds.Count == 0
+            ? []
+            : await _context.WorkspaceMembers
+                .AsNoTracking()
+                .Where(m => m.WorkspaceId == workspaceId && reachedIds.Contains(m.UserId))
+                .Where(WorkspaceMemberRules.ActiveColleague)
+                .Select(m => new { m.UserId, m.JobTitle })
+                .ToListAsync(ct);
+
+        var people = members
+            .Select(m => (m.UserId, m.JobTitle, Reached: reach[m.UserId]))
+            .OrderByDescending(p => p.Reached.Role)
+            .ThenBy(p => p.UserId)
+            .Select(p => new SpaceMembersExtraPersonDto(
+                p.UserId,
+                null,
+                p.JobTitle,
+                null,
+                false,
+                p.Reached.Teams.OrderBy(n => n, StringComparer.Ordinal).ToList(),
+                space.CreatedBy == p.UserId))
+            .ToList();
+
+        var now = _clock.UtcNow;
+        var pending = await _context.WorkspaceInvitations
+            .AsNoTracking()
+            .Where(i => i.WorkspaceId == workspaceId
+                && i.Status == WorkspaceInvitationStatus.Pending
+                && i.ExpiresAt > now)
+            .ToListAsync(ct);
+        var invitations = pending
+            .Where(i => !i.IsResourceInvitation)
+            .Select(i => (Invitation: i, Entry: i.InitialEntries.FirstOrDefault(e =>
+                e.Kind == WorkspaceInvitationEntryKind.Space && e.TargetId == request.SpaceId)))
+            .Where(x => x.Entry is not null)
+            .OrderBy(x => x.Invitation.CreatedAt)
+            .Select(x => new SpaceMembersExtraInvitationDto(
+                x.Invitation.Id,
+                x.Invitation.Email,
+                null,
+                x.Invitation.CreatedAt,
+                x.Entry!.Role))
+            .ToList();
+
+        var peopleRoles = members.Select(m => reach[m.UserId].Role).ToList();
+        var summary = new SpaceMembersExtraSummaryDto(
+            peopleRoles.Count(role => role is SpaceRole.Admin),
+            peopleRoles.Count(role => role is SpaceRole.Member),
+            peopleRoles.Count(role => role is SpaceRole.Viewer),
+            invitations.Count);
+
+        return Result<SpaceMembersExtraDto>.Success(new SpaceMembersExtraDto(summary, people, invitations, []));
+    }
+}

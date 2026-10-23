@@ -6,5 +6,6 @@ public sealed record UpdateWorkspaceSettingsRequest(
     bool AllowGuestInvites,
     string DefaultMemberRole,
     int InvitationExpiryDays,
-    long ExpectedVersion
+    long ExpectedVersion,
+    int? GuestDefaultExpiryDays = null
 );

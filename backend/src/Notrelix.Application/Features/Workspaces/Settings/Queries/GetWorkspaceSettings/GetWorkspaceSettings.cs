@@ -16,7 +16,8 @@ public record WorkspaceSettingsDto(
     bool EnforceMfa,
     bool AllowGuestInvites,
     string DefaultMemberRole,
-    int InvitationExpiryDays
+    int InvitationExpiryDays,
+    int? GuestDefaultExpiryDays
 );
 
 public class GetWorkspaceSettingsQueryHandler : IRequestHandler<GetWorkspaceSettingsQuery, Result<WorkspaceSettingsDto>>
@@ -43,6 +44,7 @@ public class GetWorkspaceSettingsQueryHandler : IRequestHandler<GetWorkspaceSett
             s.EnforceMfa,
             s.AllowGuestInvites,
             s.DefaultMemberRole.ToString(),
-            s.InvitationExpiryDays));
+            s.InvitationExpiryDays,
+            s.GuestDefaultExpiryDays));
     }
 }

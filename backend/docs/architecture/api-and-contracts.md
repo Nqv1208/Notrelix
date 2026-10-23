@@ -853,6 +853,14 @@ OpenAPI is generated public contract evidence.
 
 ---
 
+## Workspace read extras (security-ext, teams-ext, members-extra)
+
+`Workspaces.Settings.GetWorkspaceSecurityExt` (`GET /workspaces/{id}/security-ext`), `Workspaces.Teams.GetWorkspaceTeamsExt` (`GET /workspaces/{id}/teams-ext`) and `Workspaces.Spaces.GetSpaceMembersExtra` (`GET /workspaces/{id}/spaces/{spaceId}/members-extra`) are typed read queries authorized by `ViewMembers`. Some fields are intentionally null, false or empty because their decision is open: `email`, `lastActiveAt`, `activeNow`, `companyDomain`, Space `guests`, and Board usage of a Team (see docs/product/workspaces.md section 48.2). They are additive and compatible; filling them later is also additive. `PUT settings` takes an optional `guestDefaultExpiryDays` (30, 90, 180 or null, null when omitted) and `GET settings` returns it.
+
+Persistence fix: `WorkspaceSettings` now persists `AllowGuestInvites`, `DefaultMemberRole` and `InvitationExpiryDays` (previously unmapped, so reads returned defaults) and can write `AllowPublicSharing` and `EnforceMfa` back to false. Migration `AddWorkspaceSecurityExtSettings` is additive with defaults false, Member and 7.
+
+---
+
 # 49. BE-API-021 — OpenAPI is generated from the API producer
 
 Do not maintain a handwritten endpoint/schema catalog as an equal authority.

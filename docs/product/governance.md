@@ -922,6 +922,8 @@ GOV-009 says a Guest does not enumerate the workspace, so `ViewMembers` is denie
 
 Members page for a Guest: shows only the Guest's own row, read-only.
 
+The Space members extras, Teams extras and security extras reads (docs/product/workspaces.md section 48.2) are `ViewMembers` reads too: a Guest receives 403, and Team usage and Space people list only Spaces the caller can see (GOV-029). `guestDefaultExpiryDays` in the sharing policy only pre-fills new Guest entries (GOV-031).
+
 ---
 
 # 45. GOV-013 — Admin does not silently become Owner

@@ -103,4 +103,36 @@ public class WorkspaceVersionTests
         workspace.IsDeleted.Should().BeFalse();
         workspace.DomainEvents.Should().Contain(e => e is WorkspaceRestoredDomainEvent);
     }
+
+    [Fact]
+    public void UpdateSettings_FlippingPublicSharing_RecordsTheInstantAndKeepsItAcrossOtherWrites()
+    {
+        var workspace = Workspace.Create(_accountId, _actorId, "Workspace", "workspace", _now);
+        workspace.Settings.PublicSharingChangedAt.Should().BeNull("a new Workspace starts with links off and no recorded flip");
+
+        var onAt = _now.AddHours(1);
+        workspace.UpdateSettings(WorkspaceSettings.Create(allowPublicSharing: true), _actorId, onAt);
+        workspace.Settings.PublicSharingChangedAt.Should().Be(onAt);
+
+        var otherAt = _now.AddHours(2);
+        workspace.UpdateSettings(WorkspaceSettings.Create(allowPublicSharing: true, enforceMfa: true), _actorId, otherAt);
+        workspace.Settings.PublicSharingChangedAt.Should().Be(onAt, "a write that does not flip the policy keeps the instant");
+
+        var offAt = _now.AddHours(3);
+        workspace.UpdateSettings(WorkspaceSettings.Create(allowPublicSharing: false, enforceMfa: true), _actorId, offAt);
+        workspace.Settings.PublicSharingChangedAt.Should().Be(offAt);
+    }
+
+    [Fact]
+    public void UpdateSettings_SemanticNoOp_KeepsVersionAndInstant()
+    {
+        var workspace = Workspace.Create(_accountId, _actorId, "Workspace", "workspace", _now);
+        workspace.UpdateSettings(WorkspaceSettings.Create(allowPublicSharing: true), _actorId, _now.AddHours(1));
+        var version = workspace.Version;
+
+        workspace.UpdateSettings(WorkspaceSettings.Create(allowPublicSharing: true), _actorId, _now.AddHours(2));
+
+        workspace.Version.Should().Be(version);
+        workspace.Settings.PublicSharingChangedAt.Should().Be(_now.AddHours(1));
+    }
 }
