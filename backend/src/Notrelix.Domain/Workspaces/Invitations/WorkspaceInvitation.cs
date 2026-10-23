@@ -53,6 +53,8 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
                 WorkspaceRuleCodes.Workspaces_Invitation_CannotInviteAsOwner,
                 "Cannot invite a user as workspace owner.");
 
+        EnsureNotAdmin(role);
+
         if (expiry is not null && expiry <= TimeSpan.Zero)
             throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Invitation_ExpiryMustBePositive, "Invitation expiry must be greater than zero.");
 
@@ -100,6 +102,18 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
         var invitation = Create(accountId, workspaceId, email, WorkspaceRole.Guest, token, hashVersion, invitedBy, createdAt, expiry);
         invitation.ResourceGrant = grant;
         return invitation;
+    }
+
+    // WSP-026: a workspace invitation offers Member or Guest only. The rule guards
+    // every new or changed role; an Admin invitation issued before the rule stays
+    // acceptable as stored (Accept never re-checks the role), so no data migration
+    // is needed and no outstanding invitation is invalidated.
+    private static void EnsureNotAdmin(WorkspaceRole role)
+    {
+        if (role == WorkspaceRole.Admin)
+            throw new BusinessRuleException(
+                WorkspaceRuleCodes.Workspaces_Invitation_CannotInviteAsAdmin,
+                "A workspace invitation offers Member or Guest only; promote the member after they join.");
     }
 
     private static IReadOnlyList<WorkspaceInvitationInitialEntry> NormalizeEntries(
@@ -192,6 +206,8 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
             throw new BusinessRuleException(
                 WorkspaceRuleCodes.Workspaces_Invitation_CannotInviteAsOwner,
                 "Cannot invite a user as workspace owner.");
+
+        EnsureNotAdmin(newRole);
 
         if (ResourceGrant is not null && newRole != WorkspaceRole.Guest)
             throw new BusinessRuleException(

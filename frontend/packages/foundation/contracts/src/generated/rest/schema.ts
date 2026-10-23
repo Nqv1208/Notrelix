@@ -3282,6 +3282,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/resources/{resourceType}/{resourceId}/invitations/{invitationId}/resend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resend a resource invitation the caller issued */
+        post: operations["Workspaces.Invitations.ResendResourceInvitation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/resources/{resourceType}/{resourceId}/invitations/{invitationId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Revoke a resource invitation the caller issued */
+        delete: operations["Workspaces.Invitations.RevokeResourceInvitation"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/members": {
         parameters: {
             query?: never;
@@ -13762,6 +13796,54 @@ export interface operations {
                 };
                 content: {
                     "application/json": string;
+                };
+            };
+        };
+    };
+    "Workspaces.Invitations.ResendResourceInvitation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                resourceType: string;
+                resourceId: string;
+                invitationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
+                };
+            };
+        };
+    };
+    "Workspaces.Invitations.RevokeResourceInvitation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                resourceType: string;
+                resourceId: string;
+                invitationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
                 };
             };
         };

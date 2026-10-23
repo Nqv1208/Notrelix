@@ -382,7 +382,9 @@ Validation executes inside `RequestContractBehavior` — there is no separate
 production validation stage. Transaction/RLS boundaries belong to the data
 session owned by `DataSessionBehavior` + Infrastructure `IRequestDataSession`.
 Authorization is `AccessFacts` + pure policy evaluation inside
-`AccessControlBehavior`. The one pure evaluator (`AccessPolicyEngine`) is owned
+`AccessControlBehavior`; a request marked `IRequireAdditionalPermission` is
+evaluated once for its primary action and once for each additional action, and
+runs only when all are allowed. The one pure evaluator (`AccessPolicyEngine`) is owned
 by the Governance Application module and bound to the Common pipeline only
 through the neutral `IAccessPolicyEvaluator` seam (`ADR-007`). Durable side
 effects flow through the transactional outbox and broker consumers after

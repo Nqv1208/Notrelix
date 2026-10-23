@@ -28,6 +28,7 @@ public class WorkspacesOpenApiShapeTests
     [InlineData("Workspaces.Invitations.AcceptInvitation", "200", "AcceptInvitationResultDto")]
     [InlineData("Workspaces.Invitations.GetInvitationByToken", "200", "WorkspaceInvitationDto")]
     [InlineData("Workspaces.Invitations.ResendInvitation", "200", "uuid")]
+    [InlineData("Workspaces.Invitations.ResendResourceInvitation", "200", "uuid")]
     [InlineData("Workspaces.Settings.GetWorkspaceSettings", "200", "WorkspaceSettingsDto")]
     [InlineData("Workspaces.Spaces.CreateSpace", "201", "uuid")]
     [InlineData("Workspaces.Spaces.GetSpace", "200", "SpaceDto")]

@@ -341,6 +341,14 @@ Role may be one input to the decision.
 
 Role is not the whole authorization architecture.
 
+A use case that needs more than one action on the same resource (a Workspace
+invitation naming both Team and Space entries needs `ManageTeams` and
+`ManageSpaces`) declares the extra actions with the request marker
+`IRequireAdditionalPermission` (names of the actions, no Governance types in
+Common). `AccessControlBehavior` resolves the facts and evaluates the engine once
+per action, each over its own permission rules, and allows the request only when
+every action is allowed; the handler never repeats or replaces that check.
+
 ---
 
 # 13. Role semantics

@@ -313,11 +313,11 @@ describe("Invitations", () => {
       },
     });
     await expect(
-      service.create("ws", { email: " a@x.io ", role: "admin" }),
+      service.create("ws", { email: " a@x.io ", role: "guest" }),
     ).resolves.toBe("inv-9");
     expect(api.post).toHaveBeenCalledWith("/workspaces/ws/members", {
       email: "a@x.io",
-      role: "Admin",
+      role: "Guest",
     });
     await service.revoke("ws", "inv-9");
     expect(api.delete).toHaveBeenCalledWith("/workspaces/ws/invitations/inv-9");

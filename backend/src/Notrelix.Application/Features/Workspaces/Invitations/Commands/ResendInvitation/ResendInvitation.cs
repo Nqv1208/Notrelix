@@ -1,6 +1,7 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Tokens;
 using Notrelix.Application.Events.Workspaces;
+using Notrelix.Application.Features.Governance.Public.Access;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 
 namespace Notrelix.Application.Features.Workspaces.Invitations.Commands.ResendInvitation;
@@ -27,6 +28,8 @@ public sealed class ResendInvitationCommandHandler
     private readonly ISecretEncryptor _secretEncryptor;
     private readonly IIntegrationEventCollector _integrationEventCollector;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IActorLookupService _actorLookup;
+    private readonly IGuestResourceInvitationFacts _resourceFacts;
 
     public ResendInvitationCommandHandler(
         IWorkspaceDbContext workspaceContext,
@@ -34,8 +37,12 @@ public sealed class ResendInvitationCommandHandler
         IOneTimeTokenService tokenService,
         ISecretEncryptor secretEncryptor,
         IIntegrationEventCollector integrationEventCollector,
-        IDateTimeProvider dateTimeProvider)
+        IDateTimeProvider dateTimeProvider,
+        IActorLookupService actorLookup,
+        IGuestResourceInvitationFacts resourceFacts)
     {
+        _actorLookup = actorLookup;
+        _resourceFacts = resourceFacts;
         _workspaceContext = workspaceContext;
         _requestContext = requestContext;
         _tokenService = tokenService;
@@ -71,6 +78,20 @@ public sealed class ResendInvitationCommandHandler
             TimeSpan.FromDays(7),
             _requestContext.UserId);
 
+        // A resource invitation keeps its resource-invitation email when a workspace
+        // Owner/Admin resends it: the event carries the resource and inviter names.
+        string? resourceName = null;
+        string? inviterName = null;
+        var grant = invitation.ResourceGrant;
+        if (grant is not null)
+        {
+            resourceName = await _resourceFacts.ResolveTitleAsync(
+                grant.ResourceKind, grant.ResourceId, request.WorkspaceId, cancellationToken);
+            if (resourceName is null)
+                throw new NotFoundException(grant.ResourceKind, grant.ResourceId);
+            inviterName = (await _actorLookup.FindAsync(invitation.InvitedBy, cancellationToken))?.Name;
+        }
+
         var eventId = Guid.CreateVersion7();
         _integrationEventCollector.Add(
             new WorkspaceInvitationDeliveryRequestedIntegrationEventV1(
@@ -88,7 +109,11 @@ public sealed class ResendInvitationCommandHandler
                 InvitedBy: invitation.InvitedBy,
                 CorrelationId: eventId,
                 ActorUserId: _requestContext.UserId,
-                OccurredAt: now));
+                OccurredAt: now,
+                ResourceKind: grant?.ResourceKind,
+                ResourceId: grant?.ResourceId,
+                ResourceName: resourceName,
+                InviterName: inviterName));
 
         return Result<Guid>.Success(invitation.Id);
     }

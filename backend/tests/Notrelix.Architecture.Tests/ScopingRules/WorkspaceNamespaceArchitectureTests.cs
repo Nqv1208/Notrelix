@@ -174,6 +174,10 @@ public class WorkspaceNamespaceArchitectureTests
             "Token-scoped invitation command — auth required, no resource scope", "Keep as-is"),
         ["InviteGuestToResourceCommand"] = new("InviteGuestToResourceCommand", AllowlistClassification.Intentional,
             "Resource invitation (WSP-026): scoped by IResourceScopedRequest to one Board/Page and authorized by IRequirePermission (ManageBoardPermission/ManagePagePermission), not by a Workspace id", "Keep as-is"),
+        ["ResendResourceInvitationCommand"] = new("ResendResourceInvitationCommand", AllowlistClassification.Intentional,
+            "Resource invitation resend (WSP-026): scoped by IResourceScopedRequest to one Board/Page and authorized by IRequirePermission (ManageBoardPermission/ManagePagePermission); the handler selects only the actor's own invitation", "Keep as-is"),
+        ["RevokeResourceInvitationCommand"] = new("RevokeResourceInvitationCommand", AllowlistClassification.Intentional,
+            "Resource invitation revoke (WSP-026): scoped by IResourceScopedRequest to one Board/Page and authorized by IRequirePermission (ManageBoardPermission/ManagePagePermission); the handler selects only the actor's own invitation", "Keep as-is"),
         ["ProvisionPersonalWorkspaceCommand"] = new("ProvisionPersonalWorkspaceCommand", AllowlistClassification.SystemCommand,
             "System-internal background command — no user request path", "Keep as-is"),
     };

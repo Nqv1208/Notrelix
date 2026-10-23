@@ -28,6 +28,16 @@ export const ASSIGNABLE_ROLES: readonly Exclude<WorkspaceRole, "owner">[] = [
   "guest",
 ];
 
+/**
+ * Roles a workspace invitation offers (WSP-026): Member or Guest. Admin is
+ * granted by changing the role of an existing member, never by an invitation;
+ * the producer rejects an Admin invitation.
+ */
+export const INVITABLE_ROLES: readonly Extract<
+  WorkspaceRole,
+  "member" | "guest"
+>[] = ["member", "guest"];
+
 /** The producer's role enum order (`Notrelix.Domain.Workspaces.Members.WorkspaceRole`). */
 const ROLE_WIRE_VALUE: Readonly<Record<WorkspaceRole, 0 | 1 | 2 | 3>> = {
   guest: 0,

@@ -9,7 +9,7 @@ import type { WorkspaceRole } from "@notrelix/features-workspace/core";
 import { useWorkspaceContext } from "@/providers/workspace-provider";
 import { billingKeys, useBillingApi, useBillingLinks } from "./use-billing";
 
-type InviteRole = Exclude<WorkspaceRole, "owner">;
+type InviteRole = Extract<WorkspaceRole, "member" | "guest">;
 
 /**
  * The invitation dialog that stops at the seats the account owns (Final-Billing
@@ -34,7 +34,7 @@ export function SeatInviteDialog({
   const api = useBillingApi();
   const links = useBillingLinks();
   const [emails, setEmails] = useState<readonly string[]>([]);
-  const [role, setRole] = useState<"member" | "admin">("member");
+  const [role, setRole] = useState<InviteRole>("member");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const seats = useQuery({
@@ -52,7 +52,7 @@ export function SeatInviteDialog({
       try {
         await createInvitation({
           email,
-          role: role === "admin" ? "admin" : "member",
+          role,
         });
       } catch {
         failed.push(email);

@@ -55,7 +55,7 @@ public class WorkspaceInvitationVersionTests
         ((IHasDomainEvents)invitation).ClearDomainEvents();
         var version = invitation.Version;
 
-        invitation.ChangeRole(WorkspaceRole.Admin, _actorId, _now);
+        invitation.ChangeRole(WorkspaceRole.Guest, _actorId, _now);
 
         invitation.Version.Should().Be(version + 1);
         invitation.DomainEvents.Should().Contain(e => e is WorkspaceInvitationRoleChangedDomainEvent);

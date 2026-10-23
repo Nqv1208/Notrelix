@@ -4473,6 +4473,26 @@
           "nullable": false
         },
         {
+          "name": "resourceKind",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "resourceId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "resourceName",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "inviterName",
+          "type": "string",
+          "nullable": true
+        },
+        {
           "name": "eventId",
           "type": "Guid",
           "nullable": false

@@ -178,9 +178,9 @@ public class WorkspaceInvitationTests
             DateTimeOffset.UtcNow);
         var actor = Guid.NewGuid();
 
-        invitation.ChangeRole(WorkspaceRole.Admin, actor, DateTimeOffset.UtcNow);
+        invitation.ChangeRole(WorkspaceRole.Guest, actor, DateTimeOffset.UtcNow);
 
-        invitation.Role.Should().Be(WorkspaceRole.Admin);
+        invitation.Role.Should().Be(WorkspaceRole.Guest);
         invitation.DomainEvents.Should().ContainSingle(e => e is WorkspaceInvitationRoleChangedDomainEvent);
     }
 

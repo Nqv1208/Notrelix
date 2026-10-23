@@ -7,25 +7,37 @@ using Notrelix.Application.Features.Workspaces.Invitations.Services;
 namespace Notrelix.Application.Features.Workspaces.Invitations.Commands.InviteMember;
 
 /// <summary>
-/// Workspace invitation (WSP-026): role Member or Guest (Admin stays accepted for
-/// existing callers), optional initial Team/Space entries. Naming entries is
-/// authorized by the pipeline as ManageTeams (Team entries) or ManageSpaces
-/// (Space-only) on the Workspace, because Team composition and Space members
-/// are managed by Workspace Owner/Admin (GOV-028); there is no handler role check.
+/// Workspace invitation (WSP-026): role Member or Guest, optional initial Team/Space
+/// entries. Admin is no longer invitable; the Domain rejects it with
+/// <c>Workspaces_Invitation_CannotInviteAsAdmin</c>, while an Admin invitation issued
+/// before that rule stays acceptable. Naming entries is authorized by the pipeline:
+/// ManageTeams for Team entries, ManageSpaces for Space entries, and both when the
+/// invitation names both kinds (<see cref="IRequireAdditionalPermission"/>), because
+/// Team composition and Space members are managed by Workspace Owner/Admin
+/// (GOV-028); there is no handler role check.
 /// </summary>
 public record InviteMemberCommand(
     Guid WorkspaceId,
     string Email,
     WorkspaceRole Role,
     IReadOnlyList<InvitationInitialEntryInput>? InitialEntries = null
-) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IRequireVerifiedEmail
+) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IRequireAdditionalPermission, IRequireVerifiedEmail
 {
+    private bool NamesKind(WorkspaceInvitationEntryKind kind) =>
+        InitialEntries?.Any(e => string.Equals(e.Kind, kind.ToString(), StringComparison.OrdinalIgnoreCase)) == true;
+
     PermissionAction IRequirePermission.Action =>
         InitialEntries is not { Count: > 0 }
             ? PermissionAction.InviteMember
-            : InitialEntries.Any(e => string.Equals(e.Kind, nameof(WorkspaceInvitationEntryKind.Team), StringComparison.OrdinalIgnoreCase))
+            : NamesKind(WorkspaceInvitationEntryKind.Team)
                 ? PermissionAction.ManageTeams
                 : PermissionAction.ManageSpaces;
+
+    IReadOnlyList<string> IRequireAdditionalPermission.AdditionalActionNames =>
+        NamesKind(WorkspaceInvitationEntryKind.Team) && NamesKind(WorkspaceInvitationEntryKind.Space)
+            ? [nameof(PermissionAction.ManageSpaces)]
+            : [];
+
     ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);
 }
 

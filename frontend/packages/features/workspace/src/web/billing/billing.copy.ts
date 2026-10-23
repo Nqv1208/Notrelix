@@ -309,7 +309,7 @@ export const en = {
     add: "Add email",
     remove: "Remove {{email}}",
     role: "Role in the workspace",
-    roles: { member: "Member", admin: "Workspace admin" },
+    roles: { member: "Member", guest: "Guest" },
     limit:
       "{{left}} seats left. Buy more seats or remove people from the invitation.",
     limitDetail:
@@ -661,7 +661,7 @@ export const vi: BillingCopy = {
     add: "Thêm email",
     remove: "Bỏ {{email}}",
     role: "Vai trò trong workspace",
-    roles: { member: "Thành viên", admin: "Quản trị workspace" },
+    roles: { member: "Thành viên", guest: "Khách" },
     limit: "Còn {{left}} chỗ. Mua thêm chỗ hoặc bớt 1 người trong lời mời.",
     limitDetail:
       "Mỗi thành viên dùng 1 chỗ; khách không tính chỗ. Chỗ dùng chung với {{others}}: đang dùng {{used}} / {{total}}.",

@@ -13913,6 +13913,123 @@
         ]
       }
     },
+    "/api/v1/resources/{resourceType}/{resourceId}/invitations/{invitationId}/resend": {
+      "post": {
+        "tags": [
+          "Workspaces.Invitations",
+          "Workspaces.Invitations"
+        ],
+        "summary": "Resend a resource invitation the caller issued",
+        "operationId": "Workspaces.Invitations.ResendResourceInvitation",
+        "parameters": [
+          {
+            "name": "resourceType",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "resourceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "invitationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/resources/{resourceType}/{resourceId}/invitations/{invitationId}": {
+      "delete": {
+        "tags": [
+          "Workspaces.Invitations",
+          "Workspaces.Invitations"
+        ],
+        "summary": "Revoke a resource invitation the caller issued",
+        "operationId": "Workspaces.Invitations.RevokeResourceInvitation",
+        "parameters": [
+          {
+            "name": "resourceType",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "resourceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "invitationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
     "/api/v1/workspaces/{workspaceId}/members": {
       "get": {
         "tags": [

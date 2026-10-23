@@ -52,6 +52,31 @@ public sealed class AccessControlBehavior<TRequest, TResponse> : IPipelineBehavi
 
         RecordDecision(descriptor, decision, request);
 
+        // A use case needing several permission actions (IRequireAdditionalPermission)
+        // is allowed only when every action is allowed over its own facts and rules.
+        if (decision.Kind == AccessDecisionKind.Allowed && request is IRequireAdditionalPermission additional)
+        {
+            var permissionOnly = descriptor with { Access = new AccessRequirements(true, false, false, false) };
+            foreach (var actionName in additional.AdditionalActionNames)
+            {
+                if (!Enum.TryParse<PermissionAction>(actionName, ignoreCase: false, out var action) || !Enum.IsDefined(action))
+                {
+                    throw new SecurityMisconfigurationException(
+                        $"{descriptor.RequestType.Name} names an unknown additional action '{actionName}'.");
+                }
+
+                var probe = new ExtraActionProbe(action, additional.Resource);
+                var probeFacts = await ResolveFactsAsync(permissionOnly, context, probe, cancellationToken);
+                var probeDecision = _policy.Evaluate(permissionOnly, context, probeFacts, probe);
+                RecordDecision(permissionOnly, probeDecision, probe);
+                if (probeDecision.Kind != AccessDecisionKind.Allowed)
+                {
+                    decision = probeDecision;
+                    break;
+                }
+            }
+        }
+
         switch (decision.Kind)
         {
             case AccessDecisionKind.Allowed:
@@ -73,7 +98,9 @@ public sealed class AccessControlBehavior<TRequest, TResponse> : IPipelineBehavi
         }
     }
 
-    private void RecordDecision(RequestDescriptor descriptor, AccessDecision decision, TRequest request)
+    private sealed record ExtraActionProbe(PermissionAction Action, ResourceRef? Resource) : IRequirePermission;
+
+    private void RecordDecision(RequestDescriptor descriptor, AccessDecision decision, object request)
     {
         _metrics.AuthorizationDecisions.Add(
             1,
@@ -102,7 +129,7 @@ public sealed class AccessControlBehavior<TRequest, TResponse> : IPipelineBehavi
     private async Task<AccessFacts> ResolveFactsAsync(
             RequestDescriptor descriptor,
             ExecutionContextSnapshot context,
-            TRequest request,
+            object request,
             CancellationToken cancellationToken)
     {
         using var stage = PipelineActivitySource.Instance.StartActivity("access_facts.query");

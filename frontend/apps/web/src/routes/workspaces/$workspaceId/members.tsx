@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import {
   isWorkspaceAdmin,
   pendingInvitationFor,
+  type CreateWorkspaceInvitationInput,
   type WorkspaceFailure,
   type WorkspaceInvitation,
   type WorkspaceMember,
@@ -129,7 +130,7 @@ export function MembersPage() {
   );
 
   const onInvite = useCallback(
-    (input: { email: string; role: Exclude<WorkspaceRole, "owner"> }) => {
+    (input: CreateWorkspaceInvitationInput) => {
       setInviteError(null);
       // One pending invitation per address (the producer's rule): say so in
       // the member's language before sending. The producer still decides.

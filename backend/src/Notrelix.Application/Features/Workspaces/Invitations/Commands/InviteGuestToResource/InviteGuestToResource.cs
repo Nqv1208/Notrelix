@@ -1,6 +1,7 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Tokens;
 using Notrelix.Application.Events.Workspaces;
+using Notrelix.Application.Features.Governance.Public.Access;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 
 namespace Notrelix.Application.Features.Workspaces.Invitations.Commands.InviteGuestToResource;
@@ -61,6 +62,8 @@ public class InviteGuestToResourceCommandHandler : IRequestHandler<InviteGuestTo
     private readonly ISecretEncryptor _secretEncryptor;
     private readonly IIntegrationEventCollector _integrationEventCollector;
     private readonly IAuditService _auditService;
+    private readonly IActorLookupService _actorLookup;
+    private readonly IGuestResourceInvitationFacts _resourceFacts;
 
     public InviteGuestToResourceCommandHandler(
         IWorkspaceDbContext workspaceContext,
@@ -69,8 +72,12 @@ public class InviteGuestToResourceCommandHandler : IRequestHandler<InviteGuestTo
         IOneTimeTokenService oneTimeTokenService,
         ISecretEncryptor secretEncryptor,
         IIntegrationEventCollector integrationEventCollector,
-        IAuditService auditService)
+        IAuditService auditService,
+        IActorLookupService actorLookup,
+        IGuestResourceInvitationFacts resourceFacts)
     {
+        _actorLookup = actorLookup;
+        _resourceFacts = resourceFacts;
         _workspaceContext = workspaceContext;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
@@ -95,6 +102,10 @@ public class InviteGuestToResourceCommandHandler : IRequestHandler<InviteGuestTo
         // GOV-030 + WSP-026 invariants live in the Domain value object: only a
         // Board or Page, level Viewer/Commenter/Editor.
         var grant = new WorkspaceInvitationResourceGrant(request.Kind.Value, request.ResourceId, request.Level);
+
+        var title = await _resourceFacts.ResolveTitleAsync(grant.ResourceKind, grant.ResourceId, workspaceId, ct);
+        if (title is null)
+            throw new NotFoundException(request.ResourceKind, request.ResourceId);
 
         var cleanEmail = request.Email.Trim().ToLowerInvariant();
         var now = _dateTimeProvider.UtcNow;
@@ -142,7 +153,11 @@ public class InviteGuestToResourceCommandHandler : IRequestHandler<InviteGuestTo
                 InvitedBy: actorId,
                 CorrelationId: Guid.CreateVersion7(),
                 ActorUserId: actorId,
-                OccurredAt: now));
+                OccurredAt: now,
+                ResourceKind: grant.ResourceKind,
+                ResourceId: grant.ResourceId,
+                ResourceName: title,
+                InviterName: (await _actorLookup.FindAsync(actorId, ct))?.Name));
 
         await _auditService.RecordAsync(
             workspaceId,

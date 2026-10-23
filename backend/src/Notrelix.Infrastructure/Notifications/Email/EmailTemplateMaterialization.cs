@@ -50,7 +50,13 @@ public sealed class EmailTemplateMaterializerRegistry : IEmailTemplateMaterializ
         => $"{templateKey}:{templateVersion}";
 }
 
-public sealed class WorkspaceInvitationEmailMaterializer : IEmailTemplateMaterializer
+/// <summary>
+/// Shared validation for the two invitation email templates: the message renders
+/// only while its invitation is still the pending one with the same token
+/// generation, expiry and token, so a revoked, accepted, resent or expired
+/// invitation never produces a usable link.
+/// </summary>
+public abstract class InvitationEmailMaterializerBase : IEmailTemplateMaterializer
 {
     private readonly ApplicationDbContext _context;
     private readonly ISecretEncryptor _secretEncryptor;
@@ -58,7 +64,7 @@ public sealed class WorkspaceInvitationEmailMaterializer : IEmailTemplateMateria
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IOneTimeTokenService _tokenService;
 
-    public WorkspaceInvitationEmailMaterializer(
+    protected InvitationEmailMaterializerBase(
         ApplicationDbContext context,
         ISecretEncryptor secretEncryptor,
         IWorkspaceInvitationLinkBuilder linkBuilder,
@@ -72,14 +78,28 @@ public sealed class WorkspaceInvitationEmailMaterializer : IEmailTemplateMateria
         _tokenService = tokenService;
     }
 
-    public string TemplateKey => "workspace-invitation";
+    public abstract string TemplateKey { get; }
     public int TemplateVersion => 1;
+
+    protected sealed record InvitationEnvelope(
+        Guid InvitationId,
+        int TokenGeneration,
+        ProtectedSecretEnvelope ProtectedToken,
+        DateTimeOffset ExpiresAt);
+
+    protected abstract InvitationEnvelope? ReadEnvelope(JsonDocument? templateData);
+
+    protected abstract RenderedEmail Render(
+        JsonDocument? templateData,
+        WorkspaceInvitation invitation,
+        string link,
+        string expires);
 
     public async Task<RenderedEmail?> MaterializeAsync(
         EmailOutboxMessage message,
         CancellationToken cancellationToken)
     {
-        var payload = Deserialize<WorkspaceInvitationEmailPayload>(message.TemplateDataJson);
+        var payload = ReadEnvelope(message.TemplateDataJson);
         if (payload is null)
             return null;
 
@@ -128,9 +148,55 @@ public sealed class WorkspaceInvitationEmailMaterializer : IEmailTemplateMateria
         }
 
         var link = _linkBuilder.Build(rawToken);
+        var expires = WebUtility.HtmlEncode(invitation.ExpiresAt.ToString("MMMM dd, yyyy"));
+        return Render(message.TemplateDataJson, invitation, link, expires);
+    }
+
+    protected static T? Deserialize<T>(JsonDocument? document)
+        => document is null
+            ? default
+            : document.Deserialize<T>();
+
+    private static bool SameDatabaseInstant(
+        DateTimeOffset left,
+        DateTimeOffset right)
+    {
+        const long ticksPerMicrosecond = TimeSpan.TicksPerMicrosecond;
+        return left.ToUniversalTime().Ticks / ticksPerMicrosecond
+            == right.ToUniversalTime().Ticks / ticksPerMicrosecond;
+    }
+}
+
+public sealed class WorkspaceInvitationEmailMaterializer : InvitationEmailMaterializerBase
+{
+    public WorkspaceInvitationEmailMaterializer(
+        ApplicationDbContext context,
+        ISecretEncryptor secretEncryptor,
+        IWorkspaceInvitationLinkBuilder linkBuilder,
+        IDateTimeProvider dateTimeProvider,
+        IOneTimeTokenService tokenService)
+        : base(context, secretEncryptor, linkBuilder, dateTimeProvider, tokenService)
+    {
+    }
+
+    public override string TemplateKey => "workspace-invitation";
+
+    protected override InvitationEnvelope? ReadEnvelope(JsonDocument? templateData)
+    {
+        var payload = Deserialize<WorkspaceInvitationEmailPayload>(templateData);
+        return payload is null
+            ? null
+            : new InvitationEnvelope(payload.InvitationId, payload.TokenGeneration, payload.ProtectedToken, payload.ExpiresAt);
+    }
+
+    protected override RenderedEmail Render(
+        JsonDocument? templateData,
+        WorkspaceInvitation invitation,
+        string link,
+        string expires)
+    {
         var safeEmail = WebUtility.HtmlEncode(invitation.Email);
         var safeLink = WebUtility.HtmlEncode(link);
-        var expires = WebUtility.HtmlEncode(invitation.ExpiresAt.ToString("MMMM dd, yyyy"));
 
         return new RenderedEmail(
             "You've been invited to join a workspace",
@@ -143,19 +209,72 @@ public sealed class WorkspaceInvitationEmailMaterializer : IEmailTemplateMateria
             """,
             $"You've been invited to join a workspace. Accept it here: {link}");
     }
+}
 
-    private static T? Deserialize<T>(JsonDocument? document)
-        => document is null
-            ? default
-            : document.Deserialize<T>();
+/// <summary>
+/// Template for a resource invitation (WSP-026): names the Board or Page and the
+/// person who invited the guest, instead of "a workspace".
+/// </summary>
+public sealed class ResourceInvitationEmailMaterializer : InvitationEmailMaterializerBase
+{
+    public const string Key = "resource-invitation";
 
-    private static bool SameDatabaseInstant(
-        DateTimeOffset left,
-        DateTimeOffset right)
+    public ResourceInvitationEmailMaterializer(
+        ApplicationDbContext context,
+        ISecretEncryptor secretEncryptor,
+        IWorkspaceInvitationLinkBuilder linkBuilder,
+        IDateTimeProvider dateTimeProvider,
+        IOneTimeTokenService tokenService)
+        : base(context, secretEncryptor, linkBuilder, dateTimeProvider, tokenService)
     {
-        const long ticksPerMicrosecond = TimeSpan.TicksPerMicrosecond;
-        return left.ToUniversalTime().Ticks / ticksPerMicrosecond
-            == right.ToUniversalTime().Ticks / ticksPerMicrosecond;
+    }
+
+    public override string TemplateKey => Key;
+
+    protected override InvitationEnvelope? ReadEnvelope(JsonDocument? templateData)
+    {
+        var payload = Deserialize<ResourceInvitationEmailPayload>(templateData);
+        return payload is null
+            ? null
+            : new InvitationEnvelope(payload.InvitationId, payload.TokenGeneration, payload.ProtectedToken, payload.ExpiresAt);
+    }
+
+    protected override RenderedEmail Render(
+        JsonDocument? templateData,
+        WorkspaceInvitation invitation,
+        string link,
+        string expires)
+    {
+        var payload = Deserialize<ResourceInvitationEmailPayload>(templateData)!;
+        return RenderContent(payload, invitation.Email, link, expires);
+    }
+
+    /// <summary>Renders the resource-invitation email; every inserted value is HTML-encoded.</summary>
+    public static RenderedEmail RenderContent(
+        ResourceInvitationEmailPayload payload,
+        string recipientEmail,
+        string link,
+        string expires)
+    {
+        var noun = payload.ResourceKind == WorkspaceInvitationResourceGrant.PageKind ? "page" : "board";
+        var inviter = string.IsNullOrWhiteSpace(payload.InviterName) ? "Someone" : payload.InviterName.Trim();
+        var resource = payload.ResourceName.Trim();
+
+        var safeEmail = WebUtility.HtmlEncode(recipientEmail);
+        var safeLink = WebUtility.HtmlEncode(link);
+        var safeInviter = WebUtility.HtmlEncode(inviter);
+        var safeResource = WebUtility.HtmlEncode(resource);
+
+        return new RenderedEmail(
+            $"{inviter} invited you to the {noun} \"{resource}\"",
+            $"""
+            <p>Hi {safeEmail},</p>
+            <p><strong>{safeInviter}</strong> invited you to the {noun} <strong>{safeResource}</strong> on Notrelix.</p>
+            <p>You will only see that {noun}. Click the link below to accept the invitation. This link expires on <strong>{expires}</strong>.</p>
+            <p><a href="{safeLink}">Accept Invitation</a></p>
+            <p>If you didn't expect this invitation, you can safely ignore this email.</p>
+            """,
+            $"{inviter} invited you to the {noun} \"{resource}\". Accept it here: {link}");
     }
 }
 

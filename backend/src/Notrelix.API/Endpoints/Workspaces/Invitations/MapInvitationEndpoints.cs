@@ -33,6 +33,8 @@ public static class MapInvitationEndpoints
             .WithOpenApi();
 
         resourceGroup.MapInviteGuestToResource();
+        resourceGroup.MapResendResourceInvitation();
+        resourceGroup.MapRevokeResourceInvitation();
 
         return app;
     }

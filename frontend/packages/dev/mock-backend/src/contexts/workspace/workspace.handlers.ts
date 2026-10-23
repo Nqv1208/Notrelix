@@ -531,6 +531,13 @@ export const workspaceOperations = [
       if (!role || role === "owner") {
         return validationError({ Role: ["Unknown role."] });
       }
+      // WSP-026: an invitation offers Member or Guest only; the producer rejects
+      // Admin with Workspaces_Invitation_CannotInviteAsAdmin.
+      if (role === "admin") {
+        return ruleViolation(
+          "A workspace invitation offers Member or Guest only; promote the member after they join.",
+        );
+      }
       const id = store.createInvitation(params.workspaceId, email, role);
       if (!id) {
         return validationError({

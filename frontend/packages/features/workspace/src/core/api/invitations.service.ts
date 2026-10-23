@@ -74,7 +74,6 @@ export function parseInvitations(payload: unknown): WorkspaceInvitation[] {
 type InviteBody = OperationRequestBody<"Workspaces.Members.InviteMember">;
 
 const ROLE_NAME = {
-  admin: "Admin",
   member: "Member",
   guest: "Guest",
 } as const;

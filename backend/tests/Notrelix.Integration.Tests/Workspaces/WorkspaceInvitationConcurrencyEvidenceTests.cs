@@ -278,7 +278,9 @@ public sealed class WorkspaceInvitationConcurrencyEvidenceTests : IAsyncLifetime
             capturingTokens,
             new SecretEncryptor(new EphemeralDataProtectionProvider()),
             new IntegrationEventCollector(),
-            resendClock.Object);
+            resendClock.Object,
+            new Mock<Notrelix.Application.Common.Tenancy.IActorLookupService>().Object,
+            new Mock<Notrelix.Application.Features.Governance.Public.Access.IGuestResourceInvitationFacts>().Object);
 
         var resent = await resendHandler.Handle(
             new ResendInvitationCommand(graph.WorkspaceId, graph.InvitationId),

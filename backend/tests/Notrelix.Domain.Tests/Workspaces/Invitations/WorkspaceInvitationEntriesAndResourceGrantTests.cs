@@ -37,10 +37,15 @@ public class WorkspaceInvitationEntriesAndResourceGrantTests
     }
 
     [Fact]
-    public void Create_RejectsEntries_ForAdminInvitation() =>
+    public void Create_RejectsAdminInvitation_WithOrWithoutEntries()
+    {
         FluentActions.Invoking(() => Workspace(WorkspaceRole.Admin, Team()))
             .Should().Throw<BusinessRuleException>()
-            .Where(e => e.RuleCode == WorkspaceRuleCodes.Workspaces_Invitation_InitialEntriesRequireMemberOrGuest);
+            .Where(e => e.RuleCode == WorkspaceRuleCodes.Workspaces_Invitation_CannotInviteAsAdmin);
+        FluentActions.Invoking(() => Workspace(WorkspaceRole.Admin))
+            .Should().Throw<BusinessRuleException>()
+            .Where(e => e.RuleCode == WorkspaceRuleCodes.Workspaces_Invitation_CannotInviteAsAdmin);
+    }
 
     [Theory]
     [InlineData("Lead", true)]
@@ -86,10 +91,58 @@ public class WorkspaceInvitationEntriesAndResourceGrantTests
         var version = invitation.Version;
 
         FluentActions.Invoking(() => invitation.ChangeRole(WorkspaceRole.Admin, Guid.NewGuid(), Now))
-            .Should().Throw<BusinessRuleException>();
+            .Should().Throw<BusinessRuleException>()
+            .Where(e => e.RuleCode == WorkspaceRuleCodes.Workspaces_Invitation_CannotInviteAsAdmin);
 
         invitation.Role.Should().Be(WorkspaceRole.Member);
         invitation.Version.Should().Be(version);
+    }
+
+    [Fact]
+    public void ChangeRole_ToAdmin_IsRejected_WhenThereAreNoEntries()
+    {
+        var invitation = Workspace(WorkspaceRole.Guest);
+
+        FluentActions.Invoking(() => invitation.ChangeRole(WorkspaceRole.Admin, Guid.NewGuid(), Now))
+            .Should().Throw<BusinessRuleException>()
+            .Where(e => e.RuleCode == WorkspaceRuleCodes.Workspaces_Invitation_CannotInviteAsAdmin);
+        invitation.Role.Should().Be(WorkspaceRole.Guest);
+    }
+
+    // WSP-026: an Admin invitation issued before the rule stays as stored. It is
+    // restored here through the private setter, as EF does when it reads the row.
+    private static WorkspaceInvitation LegacyAdminInvitation()
+    {
+        var invitation = Workspace(WorkspaceRole.Member);
+        typeof(WorkspaceInvitation).GetProperty(nameof(WorkspaceInvitation.Role))!
+            .SetValue(invitation, WorkspaceRole.Admin);
+        return invitation;
+    }
+
+    [Fact]
+    public void LegacyAdminInvitation_StillAccepts_AndResends()
+    {
+        var invitation = LegacyAdminInvitation();
+        var user = Guid.NewGuid();
+
+        invitation.Resend(InvitationTokenHash.Create(new string('b', 64)), 1, Now, TimeSpan.FromDays(7), Guid.NewGuid());
+        invitation.Accept(user, Now.AddDays(1));
+
+        invitation.Status.Should().Be(WorkspaceInvitationStatus.Accepted);
+        invitation.Role.Should().Be(WorkspaceRole.Admin);
+    }
+
+    [Fact]
+    public void LegacyAdminInvitation_CanBeLowered_ButNotKeptOrRaisedToAdmin()
+    {
+        var lowered = LegacyAdminInvitation();
+        lowered.ChangeRole(WorkspaceRole.Member, Guid.NewGuid(), Now);
+        lowered.Role.Should().Be(WorkspaceRole.Member);
+
+        var kept = LegacyAdminInvitation();
+        FluentActions.Invoking(() => kept.ChangeRole(WorkspaceRole.Admin, Guid.NewGuid(), Now))
+            .Should().Throw<BusinessRuleException>()
+            .Where(e => e.RuleCode == WorkspaceRuleCodes.Workspaces_Invitation_CannotInviteAsAdmin);
     }
 
     [Fact]
