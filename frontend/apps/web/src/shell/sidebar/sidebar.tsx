@@ -1,10 +1,7 @@
 import { useState, useMemo } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
 import { useWorkspaceContext } from "../../providers/workspace-provider";
-import {
-  createUseWorkspaceShellData,
-  createUseWorkspaceMembers,
-} from "@notrelix/features-workspace/web";
+import { createUseWorkspaceShellData } from "@notrelix/features-workspace/web";
 import { useAppRuntime } from "@notrelix/runtime-web";
 import {
   Avatar,
@@ -14,6 +11,7 @@ import {
   CollapsibleTrigger,
 } from "@notrelix/ui-web";
 import { ScrollArea } from "@notrelix/ui-web";
+import { useWorkspaceViewer } from "../workspace/use-workspace-viewer";
 import { GlobalSearch } from "../global-search";
 import { WorkspaceSwitcher } from "./workspace-switcher";
 import { ChevronDown, Search, Star } from "lucide-react";
@@ -70,13 +68,8 @@ export function WorkspaceSidebar() {
     [runtimeClient],
   );
 
-  const useMembers = useMemo(
-    () => createUseWorkspaceMembers({ api: runtimeClient.api }),
-    [runtimeClient],
-  );
-
   const { views = [] } = useShellData(workspaceId);
-  const { data: members = [] } = useMembers(workspaceId);
+  const { data: members = [] } = useWorkspaceViewer(workspaceId).members;
 
   const pathname = location.pathname;
 

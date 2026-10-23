@@ -553,6 +553,8 @@ export function SpacePage() {
   const candidateUsers = useMemo<
     SectionState<readonly SpaceMemberCandidate[]>
   >(() => {
+    // A Guest cannot list people (and cannot add any), so the picker is empty.
+    if (viewer.role === "guest") return { status: "ready", data: [] };
     const state = sectionState(viewer.members, viewer.members.data);
     if (state.status !== "ready") return state;
     return {
@@ -566,7 +568,7 @@ export function SpacePage() {
           email: null,
         })),
     };
-  }, [viewer.members]);
+  }, [viewer.members, viewer.role]);
 
   const setPending = useCallback((key: string, pending: boolean) => {
     setPendingMemberKeys((current) => {

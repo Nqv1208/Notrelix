@@ -889,7 +889,7 @@ The default decision of a workspace role for every `PermissionAction`, before ex
 | Actions | Owner | Admin | Member | Guest | Note |
 |---|---|---|---|---|---|
 | `ViewWorkspace` | A | A | A | A | Every active member reaches the shell. |
-| `ViewMembers` | A | A | A | A | Guest stays allowed while the web shell reads the member list for the viewer's role and names (see 44.3). |
+| `ViewMembers` | A | A | A | D | Changed: a Guest does not enumerate the workspace (GOV-009). A Guest reads only their own row through `GET /workspaces/{workspaceId}/members/me` (`ViewWorkspace`), and the names of people on a shared resource through that resource's own reads (see 44.3). |
 | `InviteMember` (add member, invitations) | A | A | D | D | Changed from Owner-only. Role cap in 44.2. |
 | `RemoveMember` (remove, suspend, activate) | A | A | D | D | Changed from Owner-only. Actor-versus-target guard in 44.2. |
 | `ManageWorkspaceSettings` | A | A | D | D | Changed from Owner-only. Targets Automation rules, Analytics placement rebuild and the calendar-sync trigger; it never covers credentials or security configuration (see `ManageApiTokens`). |
@@ -913,9 +913,14 @@ Without these the changed rows would be an escalation. Both are Domain rules fed
 - **Resend** (`Workspaces_Member_ActorCannotAssignRole`): resending an invitation re-issues the token that grants the invited role, so it applies the same role cap to the invitation's role. A non-Owner cannot re-arm a legacy Admin invitation (created before Admin stopped being invitable); an Admin still resends Member and Guest invitations. Cancelling and changing an invitation role cannot create an Admin or Owner membership (the Domain refuses an Admin or Owner role on create and on change), so they need no extra guard.
 - **Actor-versus-target** (`Workspaces_Member_ActorCannotActOnMember`): remove, suspend and activate act on any target only for an Owner; an Admin acts only on Member and Guest targets, never on an Owner or another Admin. The last-owner invariant and the owner row lock are unchanged.
 
-## 44.3. Open: ViewMembers for a Guest
+## 44.3. ViewMembers for a Guest (closed 2026-10-23)
 
-GOV-009 says a Guest does not enumerate the workspace, so `ViewMembers` for a Guest is intended to be denied. It is not yet denied: the web shell reads the workspace member list for every role (viewer role detection, sidebar, document host), so a Guest would lose the shell. Backend reads that show people on a shared resource (full board, board item, comments, board members) already resolve names through the actor lookup and do not need the member list. Denying the cell is blocked on a guest-safe read of the viewer's own membership in the shell; tracked as WG-DEBT-002 item 6 in the Workspace and Governance certification record.
+GOV-009 says a Guest does not enumerate the workspace, so `ViewMembers` is denied for a Guest: `GET /workspaces/{workspaceId}/members` answers 403. Two guest-safe reads replace the list:
+
+- **Own membership.** `GET /workspaces/{workspaceId}/members/me` (`Workspaces.Members.GetMyMembership`, `ViewWorkspace`) returns the caller's own `WorkspaceMemberDto` (role, status, job title, version) to any active member, a Guest included. It never returns another person. The web shell derives the viewer's role from it and requests the member list only for a role that may list people.
+- **Names on a shared resource.** Reads that show people on a resource (full board, board item, comments, board members, document page people) resolve names through the actor lookup and are authorized on the resource (a `ViewMembers` request against a Board is decided by the Board level, GOV-027, not by the workspace baseline cell), so they do not need the workspace member list. A Guest with access to a Board still sees assignee and comment author names.
+
+Members page for a Guest: shows only the Guest's own row, read-only.
 
 ---
 

@@ -1,5 +1,6 @@
 using Notrelix.Application.Features.Workspaces.Members.Commands.UpdateMemberJobTitle;
 using Notrelix.Application.Features.Workspaces.Members.Commands.UpdateMyJobTitle;
+using Notrelix.Application.Features.Workspaces.Members.Queries.GetMyWorkspaceMembership;
 using Notrelix.Application.Features.Workspaces.Members.Queries.GetWorkspaceMembers;
 using Notrelix.Domain.Identity.Profiles;
 using Notrelix.Domain.Workspaces;
@@ -213,7 +214,7 @@ public sealed class MemberProfileIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task MemberList_NeverShowsAPhone_ToAGuest_OrForAGuest()
+    public async Task MemberList_IsClosedToAGuest_AndNeverShowsAGuestsPhone()
     {
         var stack = await _host.SeedWorkspaceAsync();
         var sharer = await _host.AddMemberAsync(stack, WorkspaceRole.Member, "Sharer");
@@ -222,12 +223,18 @@ public sealed class MemberProfileIntegrationTests : IAsyncLifetime
         await SeedProfileAsync(sharer, Phone, visible: true);
         await SeedProfileAsync(guestSharer, "+84900000001", visible: true);
         using var asGuest = _host.CreateProvider(stack.AccountId, guest);
+        using var asGuestSharer = _host.CreateProvider(stack.AccountId, guestSharer);
         using var asOwner = _host.CreateProvider(stack.AccountId, stack.OwnerId);
 
-        var seenByGuest = await OrgTreeTestHost.QueryAsync(asGuest, new GetWorkspaceMembersQuery(stack.WorkspaceId));
+        // The list is closed to a Guest (ViewMembers denied), so no colleague's phone can reach one.
+        var listByGuest = () => OrgTreeTestHost.SendAsync(asGuest, new GetWorkspaceMembersQuery(stack.WorkspaceId));
+        await listByGuest.Should().ThrowAsync<AppForbidden>();
+        // A guest's own row never carries a phone, opted in or not.
+        var ownRow = await OrgTreeTestHost.QueryAsync(asGuestSharer, new GetMyWorkspaceMembershipQuery(stack.WorkspaceId));
+        ownRow.UserId.Should().Be(guestSharer);
+        ownRow.Phone.Should().BeNull("a guest's phone is not shared, not even back to them through the workspace read");
         var seenByOwner = await OrgTreeTestHost.QueryAsync(asOwner, new GetWorkspaceMembersQuery(stack.WorkspaceId));
 
-        seenByGuest.Should().OnlyContain(m => m.Phone == null, "a guest never sees a colleague's phone");
         seenByOwner.Single(m => m.UserId == sharer).Phone.Should().Be(Phone);
         seenByOwner.Single(m => m.UserId == guestSharer).Phone.Should().BeNull("a guest's phone is not shared with the workspace");
     }

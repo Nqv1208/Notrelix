@@ -3517,7 +3517,7 @@ interpreted as independent or competing debt catalogs.
 | Semantic debt | Current disposition | Certification/evidence relationship | Milestone effect |
 |---|---|---|---|
 | `WG-DEBT-001` | SUPERSEDED / PARTIALLY CLOSED | `P2A-CERT-004`, `P2B-CERT-007`; old evaluator→`IWorkManagementDbContext` dependency is gone | no direct blocker if current boundary evidence passes |
-| `WG-DEBT-002` | PARTIALLY CLOSED | `P2B-CERT-005` | blocks role D5 if built-in baseline remains ambiguous |
+| `WG-DEBT-002` | CLOSED (39/39 actions) | `P2B-CERT-005` | closed 2026-10-23, section 108 |
 | `WG-DEBT-003` | PARTIALLY CLOSED | `P2B-CERT-010`, `FULL-CERT-RPERM-001` | blocks ResourcePermission claims beyond proven rank/ceiling semantics |
 | `WG-DEBT-004` | OPEN SECONDARY | `WG-DEBT-CERT-012`, `FULL-CERT-POL-001` | does not block Milestone B unless protected slice starts consuming WorkspacePolicy |
 | `WG-DEBT-005` | OPEN / BOUNDED CORE SUBSET | `P2B-CERT-004` | unsupported subject kinds remain outside certified core |
@@ -4207,7 +4207,8 @@ They do not constitute final certification.
 This section records executed evidence and the disposition of the preparation-time debt register
 (section 76 and PR-WG-00 section 67). It is a record of one candidate, not a Milestone B certification:
 `WG-DEBT-002` (built-in role baseline) is closed for the accepted rows by the 2026-10-23 role baseline change recorded
-below ("WG-DEBT-002 closure"); one item (ViewMembers for a Guest) stays open and is named there.
+below ("WG-DEBT-002 closure"); the last item (ViewMembers for a Guest) was closed the same day by the guest-safe
+own-membership read, recorded in the same subsection ("Item 6 closure").
 
 ### Candidate and evidence
 
@@ -4258,7 +4259,7 @@ contract change, no frontend codegen). `dotnet format --verify-no-changes` exit 
 | ID | Disposition at 2026-10-23 | Evidence |
 |---|---|---|
 | WG-DEBT-001 | CLOSED | Evaluator is pure `AccessPolicyEngine` over `AccessFacts`; facts through `PostgresAccessFactsProvider`; `PermissionService` no longer exists. |
-| WG-DEBT-002 | CLOSED for 38 of 39 actions; ViewMembers for a Guest OPEN, blocked | Typed `WorkspaceRoleBaseline` replaces the string branches; accepted decisions applied for InviteMember, RemoveMember, ManageWorkspaceSettings and CreateBoard (root); guards in Domain. See "WG-DEBT-002 closure" below. |
+| WG-DEBT-002 | CLOSED for 39 of 39 actions (ViewMembers for a Guest closed by item 6) | Typed `WorkspaceRoleBaseline` replaces the string branches; accepted decisions applied for InviteMember, RemoveMember, ManageWorkspaceSettings and CreateBoard (root); guards in Domain. See "WG-DEBT-002 closure" below. |
 | WG-DEBT-003 | CLOSED by bounding | Certified core of a resource entry is User or Team subject, Allow-only, no expiry or condition (product `governance.md` section 16). The `ResourcePermission` factory refuses other subject types and has no effect, condition or priority input; the grant validator rejects other subjects and any expiry. `ResourcePermissionTests` (Domain), `GrantResourcePermissionCommandValidatorTests` (Application). Pre-existing rows with another subject type stay stored and fail closed (access facts match User and Team only); no migration. |
 | WG-DEBT-004 | OPEN, secondary (non-core) | `WorkspacePolicy` is not in the evaluator. Carried to P3 handoff as non-core. |
 | WG-DEBT-005 | CLOSED by bounding | Certified subject set is User and Team for resource entries (same change as 003); permission rules keep SQL-level subject filtering. No command creates `PermissionRule` rows (seed-only), so no rule-side validator is needed yet. |
@@ -4286,7 +4287,7 @@ Typed table: Application/Features/Governance/Authorization/WorkspaceRoleBaseline
   AccessPolicyEngine.EvaluatePermission reads it for every request not decided by a Board/Page/Space level.
 Rows changed (4 of the 5 proposed): InviteMember Admin D to A; RemoveMember Admin D to A; ManageWorkspaceSettings
   Admin D to A; CreateBoard at the workspace root Admin and Member D to A (Guest stays D).
-Row NOT changed: ViewMembers for Guest stays A (item 6, below).
+Row ViewMembers for Guest: changed from A to D by item 6 ("Item 6 closure", below).
 Guards (Domain rules, explicit facts from Application, stable codes):
   Workspaces_Member_ActorCannotAssignRole (non-Owner adds only Member or Guest)
   Workspaces_Member_ActorCannotActOnMember (non-Owner removes, suspends, activates only Member or Guest targets)
@@ -4304,14 +4305,9 @@ remove the new Owner) instead of `Workspaces_Owner_CannotRemoveLastOwner`; the "
 is unchanged. `AddMemberCommandHandlerTests` fixtures now seed the acting member and a matching workspace id (the
 old fixtures passed through the create path by accident). Domain `RuleCodes.approved.txt` gained the two codes.
 
-Open item 6, not implemented (stop condition, AGENTS.md section 13): denying ViewMembers for a Guest. The web shell
-reads the workspace member list for every role (`use-workspace-viewer.ts` derives the viewer's own role from it;
-`sidebar.tsx`, `workspace-shell.tsx`, `use-doc-page-host.ts` read it for names), so a Guest would lose the shell.
-Backend reads that show people on a shared resource (`GetFullBoard`, `GetBoardItem`, `GetComments`,
-`GetBoardMembers`) already resolve names through `IActorLookupService`, not through `GetWorkspaceMembers`. Needed
-before the cell can flip: a guest-safe read of the viewer's own membership for the shell (a frontend and contract
-decision) and then the cell change plus a test that a Guest still sees names on a shared Board. Current behaviour is
-pinned by `WorkspaceRoleBaselineIntegrationTests.ViewMembers_GuestRemainsAllowed_UntilAGuestSafeNameReadExists`.
+Item 6 was first left open (stop condition, AGENTS.md section 13): the web shell read the workspace member list for
+every role (`use-workspace-viewer.ts` derived the viewer's role from it; `sidebar.tsx`, `workspace-shell.tsx`,
+`use-doc-page-host.ts` read it for names). It is closed below ("Item 6 closure").
 
 Full local run after the last code change (backend.slnx Release build 0 errors; `dotnet format --verify-no-changes` exit 0;
 `make docs-check` PASS): Domain 2812, Application 1302, Infrastructure 263, Platform 153, API 591, Architecture 644,
@@ -4326,6 +4322,43 @@ actor-versus-target guard, so a mock Admin can act on an Owner or another Admin 
 the workspace root, so a mock Guest can create a root Board (the producer denies a Guest, 403); the mock has no direct
 add-member handler (invitations only), so the role cap has no mock counterpart; `canManageMembers` already treats
 Owner and Admin as the settings and invitation managers, which matches the new rows.
+
+### Item 6 closure: ViewMembers denied for a Guest (2026-10-23)
+
+Class B/C/E/H (role default, authorization, additive public contract, web shell). Rules: NRX-003, NRX-004, NRX-007,
+NRX-008, NRX-012. Decision: accepted by the user on 2026-10-23 with the other five role baseline items, on the
+condition that a guest-safe read exists first. Product text: `governance.md` sections 44.1 and 44.3.
+
+```text
+Contract (additive, no break): GET /api/v1/workspaces/{workspaceId}/members/me  (Workspaces.Members.GetMyMembership)
+  returns the caller's own WorkspaceMemberDto (role, status, jobTitle, version, name, avatar; phone only for a
+  non-guest who opted in); ViewWorkspace, so any active member including a Guest; never another person.
+  Application: GetMyWorkspaceMembershipQuery. Producer: backend/contracts/openapi/notrelix.v1.json, regenerated by
+  `dotnet run -- --export-openapi <abs path>`; consumer schema regenerated by `pnpm codegen` (idempotent).
+Cell: WorkspaceRoleBaseline ViewMembers Guest A to D. GET members now answers 403 for a Guest.
+Consumers: apps/web is the only consumer of the list. use-workspace-viewer.ts reads members/me for the role and
+  requests the list only for a role that may list people; workspace-shell.tsx and sidebar.tsx use the viewer;
+  use-doc-page-host.ts takes names from the page's own people read; the Space add-member picker is empty for a
+  Guest; the Members page shows a Guest only their own row. Query key `members/me` sits under the workspace-scoped
+  `members` key. Mobile and marketing do not read the list.
+Mock backend: GET members/me for any member; GET members answers 403 for a Guest persona (same as producer).
+```
+
+Evidence (local, after the last code change; base SHA a91ad921a plus the uncommitted change set):
+
+```text
+backend.slnx Release build: 0 errors. dotnet format --verify-no-changes --no-restore: exit 0.
+Domain 2812, Application 1314, Infrastructure 263, Platform 153, API 592, Architecture 644 (request-execution
+baseline gained the new query), Integration 894 (Docker, PostgreSQL): every suite Failed 0, Skipped 0.
+Pinning test ViewMembers_GuestRemainsAllowed_UntilAGuestSafeNameReadExists replaced by, in
+WorkspaceRoleBaselineIntegrationTests: ViewMembers_GuestIsForbidden_WhileMemberAndAdminStillListMembers,
+GetMyMembership_GuestReadsOnlyTheirOwnRow, GetMyMembership_ANonMemberIsRefused,
+GuestOnASharedBoard_StillSeesAssigneeAndCommentAuthorNames_WithoutTheMemberList.
+MemberProfileIntegrationTests: the guest phone test now asserts the list is forbidden and the own row has no phone.
+make docs-check PASS.
+```
+
+WG-DEBT-002 is now closed for 39 of 39 actions.
 
 ### Security follow-up: credential split and invitation resend parity (2026-10-23)
 

@@ -14124,6 +14124,48 @@
         ]
       }
     },
+    "/api/v1/workspaces/{workspaceId}/members/me": {
+      "get": {
+        "tags": [
+          "Workspaces.Members",
+          "Workspaces.Members"
+        ],
+        "summary": "Get your own membership in this workspace",
+        "description": "Any member of the workspace, a Guest included, reads exactly their own row (role, status, job title, version). It never returns other people; the member list is closed to a Guest.",
+        "operationId": "Workspaces.Members.GetMyMembership",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.DTOs.WorkspaceMemberDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
     "/api/v1/workspaces/{workspaceId}/members/add": {
       "post": {
         "tags": [

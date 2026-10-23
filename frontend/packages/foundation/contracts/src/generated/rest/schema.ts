@@ -3334,6 +3334,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/members/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get your own membership in this workspace
+         * @description Any member of the workspace, a Guest included, reads exactly their own row (role, status, job title, version). It never returns other people; the member list is closed to a Guest.
+         */
+        get: operations["Workspaces.Members.GetMyMembership"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/members/add": {
         parameters: {
             query?: never;
@@ -13953,6 +13973,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": string;
+                };
+            };
+        };
+    };
+    "Workspaces.Members.GetMyMembership": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.DTOs.WorkspaceMemberDto"];
                 };
             };
         };

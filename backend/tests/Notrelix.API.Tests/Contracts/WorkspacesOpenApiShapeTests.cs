@@ -22,6 +22,7 @@ public class WorkspacesOpenApiShapeTests
     [InlineData("Workspaces.Workspaces.ResolveSlug", "200", "WorkspaceDto")]
     [InlineData("Workspaces.Workspaces.CreateWorkspace", "201", "uuid")]
     [InlineData("Workspaces.Members.ListMembers", "200", "WorkspaceMemberDto[]")]
+    [InlineData("Workspaces.Members.GetMyMembership", "200", "WorkspaceMemberDto")]
     [InlineData("Workspaces.Members.InviteMember", "201", "uuid")]
     [InlineData("Workspaces.Members.UpdateMyJobTitle", "200", "WorkspaceMemberProfileDto")]
     [InlineData("Workspaces.Members.UpdateMemberJobTitle", "200", "WorkspaceMemberProfileDto")]

@@ -47,10 +47,9 @@ public static class WorkspaceRoleBaseline
 
         // Workspace shell and membership.
         [PermissionAction.ViewWorkspace] = new(A, A, A, A),
-        // Guest stays Allow: the web shell still reads the member list for the viewer's role and
-        // names (use-workspace-viewer, sidebar, document host). Denying it is the open WG-DEBT-002
-        // item 6, blocked until a guest-safe self/name read exists.
-        [PermissionAction.ViewMembers] = new(A, A, A, A),
+        // The member list is not guest-safe: a Guest reads only their own row (GET members/me,
+        // ViewWorkspace) and names from the resources shared with them (WG-DEBT-002 item 6).
+        [PermissionAction.ViewMembers] = new(A, A, A, D),
         [PermissionAction.InviteMember] = new(A, A, D, D),
         [PermissionAction.ChangeMemberRole] = new(A, D, D, D),
         [PermissionAction.RemoveMember] = new(A, A, D, D),

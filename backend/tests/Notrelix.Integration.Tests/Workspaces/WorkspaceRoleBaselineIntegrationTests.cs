@@ -12,7 +12,12 @@ using Notrelix.Application.Features.Workspaces.Members.Commands.ActivateMember;
 using Notrelix.Application.Features.Workspaces.Members.Commands.AddMember;
 using Notrelix.Application.Features.Workspaces.Members.Commands.RemoveMember;
 using Notrelix.Application.Features.Workspaces.Members.Commands.SuspendMember;
+using Notrelix.Application.Features.Collaboration.Comments.Commands.CreateComment;
+using Notrelix.Application.Features.Collaboration.Comments.Queries.GetComments;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetBoardItem;
+using Notrelix.Application.Features.Workspaces.Members.Queries.GetMyWorkspaceMembership;
 using Notrelix.Application.Features.Workspaces.Members.Queries.GetWorkspaceMembers;
+using Notrelix.Domain.Governance.Permissions;
 using Notrelix.Application.Features.Workspaces.Members.Services;
 using Notrelix.Domain.Workspaces;
 using Notrelix.Domain.Workspaces.Members;
@@ -30,8 +35,8 @@ namespace Notrelix.Integration.Tests.Workspaces;
 /// WG-DEBT-002 (accepted 2026-10-23) through the real pipeline on PostgreSQL: the five changed
 /// baseline rows (InviteMember, RemoveMember, ManageWorkspaceSettings, CreateBoard at the
 /// workspace root) and the guards they depend on (a non-Owner cannot assign Owner or Admin and
-/// cannot remove, suspend or activate an Owner or an Admin). ViewMembers for a Guest is the
-/// documented open item and is pinned at its current Allow.
+/// cannot remove, suspend or activate an Owner or an Admin), plus ViewMembers denied for a Guest
+/// with the guest-safe own-membership read and shared-resource names that replace the list.
 /// </summary>
 [Collection("Database")]
 [Trait("Category", "Integration")]
@@ -293,16 +298,77 @@ public sealed class WorkspaceRoleBaselineIntegrationTests : IAsyncLifetime
         (await _host.ReadAsync(c => c.Boards.CountAsync(b => b.WorkspaceId == stack.WorkspaceId))).Should().Be(0);
     }
 
-    // ── ViewMembers for a Guest: open item, pinned at the current Allow ──
+    // ── ViewMembers denied for a Guest: the guest-safe reads replace the member list ──
 
     [Fact]
-    public async Task ViewMembers_GuestRemainsAllowed_UntilAGuestSafeNameReadExists()
+    public async Task ViewMembers_GuestIsForbidden_WhileMemberAndAdminStillListMembers()
+    {
+        var (stack, admin, member, guest) = await SeedAsync();
+
+        using (var asGuest = As(stack, guest))
+        {
+            await FluentActions.Awaiting(() => OrgTreeTestHost.SendAsync(asGuest, new GetWorkspaceMembersQuery(stack.WorkspaceId)))
+                .Should().ThrowAsync<AppForbidden>("the member list is not guest-safe (WG-DEBT-002 item 6)");
+        }
+
+        foreach (var reader in new[] { admin, member })
+        {
+            using var provider = As(stack, reader);
+            (await OrgTreeTestHost.QueryAsync(provider, new GetWorkspaceMembersQuery(stack.WorkspaceId))).Should().HaveCount(4);
+        }
+    }
+
+    [Fact]
+    public async Task GetMyMembership_GuestReadsOnlyTheirOwnRow()
     {
         var (stack, _, _, guest) = await SeedAsync();
         using var asGuest = As(stack, guest);
 
-        var members = await OrgTreeTestHost.QueryAsync(asGuest, new GetWorkspaceMembersQuery(stack.WorkspaceId));
+        var me = await OrgTreeTestHost.QueryAsync(asGuest, new GetMyWorkspaceMembershipQuery(stack.WorkspaceId));
 
-        members.Should().NotBeEmpty();
+        me.UserId.Should().Be(guest);
+        me.Role.Should().Be("Guest");
+        me.Status.Should().Be("Active");
+        me.Name.Should().Be("Org Guest");
+        me.Phone.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetMyMembership_ANonMemberIsRefused()
+    {
+        var (stack, _, _, _) = await SeedAsync();
+        var outsider = await NewUserAsync(stack);
+        using var asOutsider = As(stack, outsider);
+
+        var act = () => OrgTreeTestHost.SendAsync(asOutsider, new GetMyWorkspaceMembershipQuery(stack.WorkspaceId));
+
+        await act.Should().ThrowAsync<Exception>();
+    }
+
+    [Fact]
+    public async Task GuestOnASharedBoard_StillSeesAssigneeAndCommentAuthorNames_WithoutTheMemberList()
+    {
+        var (stack, _, _, guest) = await SeedAsync();
+        var board = await _host.SeedBoardAsync(stack, "Shared");
+        var item = await _host.SeedAssignedItemAsync(stack, board, stack.OwnerId, "Deliverable");
+        await _host.SeedResourcePermissionAsync(stack, "work-management.board", board, PermissionSubjectType.User, guest, PermissionLevel.Commenter);
+
+        using var asGuest = _host.CreateProvider(stack.AccountId, guest, services =>
+        {
+            RegisterServices(services);
+            services.AddScoped<Notrelix.Application.Features.Collaboration.Public.ResourceSummary.ICollaborationResourceSummary,
+                Notrelix.Infrastructure.CrossContext.Collaboration.ResourceSummary.PostgresCollaborationResourceSummary>();
+            services.AddScoped<Notrelix.Application.Features.WorkManagement.Ports.Collaboration.IWorkManagementCollaborationReadPort,
+                Notrelix.Infrastructure.CrossContext.WorkManagement.Collaboration.WorkManagementCollaborationReadAdapter>();
+        });
+
+        await OrgTreeTestHost.SendAsync(asGuest, CreateCommentCommand.ForBoardItem(item, "Looks good", null));
+        var detail = await OrgTreeTestHost.QueryAsync(asGuest, new GetBoardItemQuery(item));
+        var comments = await OrgTreeTestHost.QueryAsync(asGuest, GetCommentsQuery.ForBoardItem(item));
+
+        detail.Members.Should().ContainSingle().Which.Name.Should().Be("Org Owner");
+        comments.Should().ContainSingle().Which.UserName.Should().Be("Org Guest");
+        await FluentActions.Awaiting(() => OrgTreeTestHost.SendAsync(asGuest, new GetWorkspaceMembersQuery(stack.WorkspaceId)))
+            .Should().ThrowAsync<AppForbidden>();
     }
 }

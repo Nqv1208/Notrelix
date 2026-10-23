@@ -202,7 +202,15 @@ export function MembersPage() {
         now={now}
         workspaceName={workspace?.name ?? null}
         viewer={{ userId: viewer.userId, role: viewer.role }}
-        members={sectionState(viewer.members, viewer.members.data)}
+        members={
+          // A Guest reads only their own row; the list is closed to them.
+          viewer.role === "guest"
+            ? sectionState(
+                viewer.mine,
+                viewer.mine.data ? [viewer.mine.data] : undefined,
+              )
+            : sectionState(viewer.members, viewer.members.data)
+        }
         invitations={admin ? sectionState(invitations, invitations.data) : null}
         tab={tab}
         onTabChange={(next) =>
@@ -239,7 +247,11 @@ export function MembersPage() {
         }
         onInvite={onInvite}
         onRevoke={onRevoke}
-        onRetryMembers={() => void viewer.members.refetch()}
+        onRetryMembers={() =>
+          void (
+            viewer.role === "guest" ? viewer.mine : viewer.members
+          ).refetch()
+        }
         onRetryInvitations={() => void invitations.refetch()}
       />
       <SeatInviteDialog

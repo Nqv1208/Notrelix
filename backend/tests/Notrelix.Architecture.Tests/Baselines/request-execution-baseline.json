@@ -5950,6 +5950,31 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.Workspaces.Members.Queries.GetMyWorkspaceMembership.GetMyWorkspaceMembershipQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Workspaces.Members.Queries.GetMyWorkspaceMembership.GetMyWorkspaceMembershipQueryHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.Workspaces.Members.Queries.GetWorkspaceMembers.GetWorkspaceMembersQuery",
     "kind": "Query",
     "principalMarkers": [

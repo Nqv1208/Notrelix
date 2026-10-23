@@ -14,7 +14,10 @@ export { createUseWorkspaceSettingsMutations } from "./hooks/mutations/use-works
 export { createUseAcceptInvitation } from "./hooks/mutations/use-accept-invitation";
 export { createUseWorkspaceList } from "./query/hooks/use-workspace-list";
 export { createUseWorkspace } from "./query/hooks/use-workspace";
-export { createUseWorkspaceMembers } from "./query/hooks/use-workspace-members";
+export {
+  createUseMyWorkspaceMembership,
+  createUseWorkspaceMembers,
+} from "./query/hooks/use-workspace-members";
 export { createUseWorkspaceInvitations } from "./query/hooks/use-workspace-invitations";
 export { createUseWorkspaceActivity } from "./query/hooks/use-workspace-activity";
 export { createUseWorkspaceSettings } from "./query/hooks/use-workspace-settings";

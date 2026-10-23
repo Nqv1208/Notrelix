@@ -12,6 +12,9 @@ export const workspaceQueryKeys = {
     workspaceQueryKey(workspaceId, "workspace", "snapshot"),
   members: (workspaceId: string) =>
     workspaceQueryKey(workspaceId, "workspace", "members"),
+  /** The caller's own membership row (guest-safe `members/me`); under `members` so a member write refreshes it. */
+  myMembership: (workspaceId: string) =>
+    workspaceQueryKey(workspaceId, "workspace", "members", "me"),
   views: (workspaceId: string) =>
     workspaceQueryKey(workspaceId, "workspace", "views"),
   activeView: (workspaceId: string, view: string) =>

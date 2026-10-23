@@ -129,7 +129,8 @@ public sealed class WorkspaceRoleBaselineTests
     [InlineData(PermissionAction.ChangeMemberRole, "Admin", false)]
     [InlineData(PermissionAction.ManageWorkspace, "Admin", false)]
     [InlineData(PermissionAction.DeleteWorkspace, "Admin", false)]
-    [InlineData(PermissionAction.ViewMembers, "Guest", true)]
+    [InlineData(PermissionAction.ViewMembers, "Guest", false)]
+    [InlineData(PermissionAction.ViewMembers, "Member", true)]
     public void WorkspaceRootRows_AfterTheRoleBaselineDecision(PermissionAction action, string role, bool allowed)
     {
         Evaluate(action, role).Kind.Should().Be(allowed ? AccessDecisionKind.Allowed : AccessDecisionKind.Forbidden);

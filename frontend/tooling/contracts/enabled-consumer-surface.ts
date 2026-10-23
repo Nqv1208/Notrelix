@@ -557,6 +557,16 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     consumerSymbol: "createMembersService",
     consumerFile:
       "frontend/packages/features/workspace/src/core/api/members.service.ts",
+    capability: "Workspaces.Members.GetMyMembership",
+    operationId: "Workspaces.Members.GetMyMembership",
+    mutation: false,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createMembersService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/members.service.ts",
     capability: "Workspaces.Members.UpdateMemberRole",
     operationId: "Workspaces.Members.UpdateMemberRole",
     mutation: true,
