@@ -1,3 +1,4 @@
+using Notrelix.Application.Common.SystemOperations;
 using Microsoft.EntityFrameworkCore.Storage;
 namespace Notrelix.Infrastructure.Data.Rls;
 
@@ -7,6 +8,7 @@ public sealed class RlsSessionContext : IRlsSessionContext
     private readonly IOptions<RlsOptions> _options;
     private readonly ICurrentTenantContext _tenant;
     private readonly ILogger<RlsSessionContext>? _logger;
+    private RlsBoundedScope _active;
 
     public RlsSessionContext(
         ApplicationDbContext dbContext,
@@ -20,8 +22,14 @@ public sealed class RlsSessionContext : IRlsSessionContext
         _logger = logger;
     }
 
+    public bool IsSessionContextEnabled => _options.Value.SetSessionContext;
+
+    public RlsBoundedScope ActiveBoundedScope => _active;
+
     public async Task ApplyAsync(CancellationToken cancellationToken)
     {
+        _active = RlsBoundedScope.None;
+
         if (!_options.Value.SetSessionContext)
         {
             if (!_tenant.IsSystemContext)
@@ -79,7 +87,10 @@ public sealed class RlsSessionContext : IRlsSessionContext
             SELECT set_config('app.current_workspace_id', '', true);
             SELECT set_config('app.request_scope', 'user', true);
             SELECT set_config('app.correlation_id', {correlationId}, true);
+            SELECT set_config('app.scope_invitee_id', '', true);
+            SELECT set_config('app.scope_token_hash', '', true);
         ", cancellationToken);
+        _active = RlsBoundedScope.User;
     }
 
     public async Task<TokenScopeBinding?> EnterTokenScopeAsync(
@@ -125,12 +136,60 @@ public sealed class RlsSessionContext : IRlsSessionContext
         }
         else
         {
+            _active = RlsBoundedScope.Token;
             _logger?.LogWarning(
                 "Token scope entered: {Purpose} | {Category}: {Description} | account {AccountId} workspace {WorkspaceId}",
                 purpose, request.Reason.Category, request.Reason.Description, binding.AccountId, binding.WorkspaceId);
         }
 
         return binding;
+    }
+
+    public async Task<bool> EnterInviteeScopeAsync(
+        Guid userId, SystemOperationReason reason, CancellationToken cancellationToken)
+    {
+        if (userId == Guid.Empty)
+            throw new ArgumentException("User id is required.", nameof(userId));
+        ArgumentNullException.ThrowIfNull(reason);
+        RequireTransaction("invitee");
+
+        var bound = await ScalarBoolAsync("SELECT ops.enter_invitee_scope(@user)", "user", userId, cancellationToken);
+        RlsScopeMetrics.Record("invitee", reason.Category, bound);
+        if (bound)
+            _active = RlsBoundedScope.Invitee;
+        _logger?.LogInformation(
+            bound ? "Invitee scope entered: {Category}: {Description} | user {UserId}"
+                  : "Invitee scope not entered: {Category}: {Description} | user {UserId}",
+            reason.Category, reason.Description, userId);
+        return bound;
+    }
+
+    public async Task<bool> EnterRegistrationScopeAsync(
+        Guid userId, SystemOperationReason reason, CancellationToken cancellationToken)
+    {
+        if (userId == Guid.Empty)
+            throw new ArgumentException("User id is required.", nameof(userId));
+        ArgumentNullException.ThrowIfNull(reason);
+        RequireTransaction("registration");
+
+        var bound = await ScalarBoolAsync("SELECT ops.enter_registration_scope(@user)", "user", userId, cancellationToken);
+        RlsScopeMetrics.Record("registration", reason.Category, bound);
+        if (bound)
+            _active = RlsBoundedScope.Registration;
+        _logger?.LogInformation(
+            bound ? "Registration scope entered: {Category}: {Description} | user {UserId}"
+                  : "Registration scope not entered: {Category}: {Description} | user {UserId}",
+            reason.Category, reason.Description, userId);
+        return bound;
+    }
+
+    private async Task<bool> ScalarBoolAsync(string sql, string parameter, object value, CancellationToken cancellationToken)
+    {
+        var connection = (NpgsqlConnection)_database.GetDbConnection();
+        var transaction = (NpgsqlTransaction)_database.CurrentTransaction!.GetDbTransaction();
+        await using var command = new NpgsqlCommand(sql, connection, transaction);
+        command.Parameters.AddWithValue(parameter, value);
+        return await command.ExecuteScalarAsync(cancellationToken) is true;
     }
 
     private void RequireTransaction(string scopeKind)

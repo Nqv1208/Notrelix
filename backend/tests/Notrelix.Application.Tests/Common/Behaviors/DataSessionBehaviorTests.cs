@@ -11,6 +11,16 @@ public sealed class DataSessionBehaviorTests
         : IRequest<string>, IAuthenticatedRequest, IGlobalRequest, IReadRequest;
     private sealed record GlobalAnonymousRead
         : IRequest<string>, IAnonymousRequest, IGlobalRequest, IReadRequest;
+    private sealed record TokenAuthenticatedWrite(string Token = "t")
+        : IRequest<string>, IAuthenticatedTokenScopedRequest, IWriteRequest
+    {
+        public TokenPurpose TokenPurpose => TokenPurpose.WorkspaceInvitation;
+    }
+    private sealed record TokenAnonymousRead(string Token = "t")
+        : IRequest<string>, IAnonymousTokenScopedRequest, IReadRequest
+    {
+        public TokenPurpose TokenPurpose => TokenPurpose.WorkspaceInvitation;
+    }
     private sealed record SecurityReadRequest(Guid WorkspaceId)
         : IRequest<string>, IAuthenticatedRequest, IWorkspaceRequest, INoDataRequest, IRequireVerifiedEmail;
 
@@ -49,6 +59,35 @@ public sealed class DataSessionBehaviorTests
                 options.Access == RequestDataAccess.ReadOnly
                 && !options.ApplyTenantScope
                 && options.UserScopeUserId != null && options.UserScopeUserId != Guid.Empty),
+            It.IsAny<Func<CancellationToken, Task<string>>>(),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Token_scoped_authenticated_request_starts_in_the_user_scope_before_its_handler_enters_the_token_scope()
+    {
+        var fixture = CreateFixture<TokenAuthenticatedWrite>(ApplicationScopeKind.Token);
+
+        await fixture.Behavior.Handle(new TokenAuthenticatedWrite(), _ => Task.FromResult("ok"), CancellationToken.None);
+
+        fixture.Session.Verify(session => session.ExecuteAsync(
+            It.Is<RequestDataSessionOptions>(options =>
+                options.Access == RequestDataAccess.Transactional
+                && !options.ApplyTenantScope
+                && options.UserScopeUserId != null && options.UserScopeUserId != Guid.Empty),
+            It.IsAny<Func<CancellationToken, Task<string>>>(),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Token_scoped_anonymous_request_applies_no_scope_so_its_handler_enters_its_own()
+    {
+        var fixture = CreateFixture<TokenAnonymousRead>(ApplicationScopeKind.Token);
+
+        await fixture.Behavior.Handle(new TokenAnonymousRead(), _ => Task.FromResult("ok"), CancellationToken.None);
+
+        fixture.Session.Verify(session => session.ExecuteAsync(
+            It.Is<RequestDataSessionOptions>(options => !options.ApplyTenantScope && options.UserScopeUserId == null),
             It.IsAny<Func<CancellationToken, Task<string>>>(),
             It.IsAny<CancellationToken>()), Times.Once);
     }

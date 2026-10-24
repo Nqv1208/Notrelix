@@ -97,9 +97,15 @@ public sealed class PrincipalScopePrimitivesTests : IAsyncLifetime
         (await ScalarAsync(c, tx, "SELECT ops.is_worker_scope()")).Should().Be("False");
         (await ScalarAsync(c, tx, "SELECT ops.has_workspace_access(@a, @w)", ("a", _a.AccountId), ("w", _a.WorkspaceId)))
             .Should().Be("False", "the grant-based helpers still need a user");
-        foreach (var table in new[] { "identity.users", "account.accounts", "workspace.workspaces", "workspace.workspace_invitations", "work.boards", "authz.access_grants" })
+        foreach (var table in new[] { "identity.users", "account.accounts", "work.boards", "authz.access_grants", "workspace.workspace_members" })
         {
             (await ScalarAsync(c, tx, $"SELECT count(*) FROM {table}")).Should().Be("0", $"{table} must stay invisible to a bare token scope");
+        }
+
+        // The only rows a bare token scope reads: its own invitation and the invited workspace (the preview).
+        foreach (var table in new[] { "workspace.workspaces", "workspace.workspace_invitations" })
+        {
+            (await ScalarAsync(c, tx, $"SELECT count(*) FROM {table}")).Should().Be("1", $"{table} exposes exactly the invitation's own row");
         }
     }
 

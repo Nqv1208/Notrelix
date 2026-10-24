@@ -183,7 +183,7 @@ public sealed class UserScopeIsolationTests : IAsyncLifetime
     {
         var stranger = new AppRoleTenant(
             Notrelix.Domain.Identity.Users.User.Create("stranger@example.com", "Stranger", "hash", DateTimeOffset.UtcNow, hasPasswordCredential: true),
-            Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "", "", 1);
+            Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "", "", "", 1);
         var visible = await InUserScopeAsync(stranger, async (c, tx) =>
             await CountAsync(c, tx, "SELECT (SELECT count(*) FROM work.boards) + (SELECT count(*) FROM workspace.workspaces) + (SELECT count(*) FROM identity.users)"));
         visible.Should().Be(0);

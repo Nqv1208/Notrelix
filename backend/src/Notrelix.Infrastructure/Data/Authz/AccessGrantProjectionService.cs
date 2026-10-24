@@ -15,10 +15,29 @@ public sealed class AccessGrantProjectionService
     private const string WorkspaceSourceContext = "Workspace";
 
     private readonly ApplicationDbContext _context;
+    private readonly IRlsSessionContext? _rls;
 
-    public AccessGrantProjectionService(ApplicationDbContext context)
+    public AccessGrantProjectionService(ApplicationDbContext context, IRlsSessionContext? rls = null)
     {
         _context = context;
+        _rls = rls;
+    }
+
+    /// <summary>
+    /// Inside a registration or invitee scope the grant is written immediately through the owner-defined
+    /// <c>ops.upsert_access_grant</c> function (the application role has no write policy on grants, and the
+    /// rest of the request needs the grant at once because its policies derive from it). The function
+    /// validates the write against the scope and derives the role codes and admin flags itself.
+    /// </summary>
+    private bool UsesBoundedGrantWrite =>
+        _rls?.ActiveBoundedScope is RlsBoundedScope.Registration or RlsBoundedScope.Invitee;
+
+    private async Task UpsertThroughFunctionAsync(
+        Guid accountId, Guid? workspaceId, Guid userId, string role, DateTimeOffset now, CancellationToken ct)
+    {
+        var grantedAt = now.ToUniversalTime();
+        await _context.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT ops.upsert_access_grant({accountId}, {workspaceId}::uuid, {userId}, {role}, {grantedAt})", ct);
     }
 
     public async Task SyncAccountMemberGrantAsync(
@@ -28,6 +47,12 @@ public sealed class AccessGrantProjectionService
         DateTimeOffset now,
         CancellationToken ct)
     {
+        if (UsesBoundedGrantWrite)
+        {
+            await UpsertThroughFunctionAsync(accountId, null, userId, role.ToString(), now, ct);
+            return;
+        }
+
         // Track pending Adds too: the sync must stay idempotent when invoked
         // more than once per transaction (already-active membership is a
         // contract-level no-op), and a DB query alone cannot see unsaved adds.
@@ -72,6 +97,12 @@ public sealed class AccessGrantProjectionService
         DateTimeOffset now,
         CancellationToken ct)
     {
+        if (UsesBoundedGrantWrite)
+        {
+            await UpsertThroughFunctionAsync(accountId, workspaceId, userId, role.ToString(), now, ct);
+            return;
+        }
+
         var grant = _context.AccessGrants.Local
             .FirstOrDefault(
                 g => g.AccountId == accountId && g.WorkspaceId == workspaceId && g.UserId == userId)

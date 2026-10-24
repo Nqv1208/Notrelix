@@ -74,6 +74,10 @@ BEGIN
     PERFORM set_config('app.scope_workspace_id', v_workspace::text, true);
     PERFORM set_config('app.scope_user_id', '', true);
     PERFORM set_config('app.scope_token_hash', p_token_hash, true);
+    PERFORM set_config('app.scope_invitee_id', '', true);
+    PERFORM set_config('app.scope_invitation_role', '', true);
+    PERFORM set_config('app.scope_invitation_email', '', true);
+    PERFORM set_config('app.scope_registration_account_id', '', true);
 
     RETURN QUERY SELECT v_account, v_workspace;
 END;

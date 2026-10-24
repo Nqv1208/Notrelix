@@ -15,6 +15,10 @@ public class RawSqlArchitectureTests
         // semantics that EF cannot express)
         "src/Notrelix.Infrastructure/Data/ApplicationDbContext.BillingCapacity.cs",
 
+        // Reason: inside a registration or invitee scope the access grant is written through the
+        // owner-defined ops.upsert_access_grant function (the application role has no grant write policy)
+        "src/Notrelix.Infrastructure/Data/Authz/AccessGrantProjectionService.cs",
+
         // Reason: claim outbox messages with SKIP LOCKED
         "src/Notrelix.Infrastructure/BackgroundJobs/OutboxDispatcher.cs",
         

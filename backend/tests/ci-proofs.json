@@ -57,7 +57,8 @@
       "backend.rls.owner-connection-split",
       "backend.rls.principal-scope-primitives",
       "backend.rls.user-scope-isolation",
-      "backend.rls.co-member-profile"
+      "backend.rls.co-member-profile",
+      "backend.rls.invitation-scope"
     ]
   },
   "proofs": {
@@ -269,6 +270,11 @@
     "backend.rls.co-member-profile": {
       "tests": [
         "Notrelix.Integration.Tests.Rls.CoMemberProfileTests"
+      ]
+    },
+    "backend.rls.invitation-scope": {
+      "tests": [
+        "Notrelix.Integration.Tests.Rls.InvitationScopeTests"
       ]
     },
     "backend.architecture.owner-connection-boundary": {

@@ -23,6 +23,41 @@ public interface IRlsSessionContext
     /// token value is never logged.
     /// </summary>
     Task<TokenScopeBinding?> EnterTokenScopeAsync(TokenScopeRequest request, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Whether this host sets database session context at all. Bounded scopes are entered only when it is
+    /// true; when it is false (an unconstrained connection, in-memory hosts) callers keep their unscoped
+    /// lookups.
+    /// </summary>
+    bool IsSessionContextEnabled { get; }
+
+    /// <summary>The bounded scope this request last entered through this context, or <see cref="RlsBoundedScope.None"/>.</summary>
+    RlsBoundedScope ActiveBoundedScope { get; }
+
+    /// <summary>
+    /// Binds the person an invitation is accepted by, inside the token scope already entered for that
+    /// invitation. Returns false (nothing is bound) when the invitation is not pending and unexpired or its
+    /// address is not the person's. Requires an open transaction.
+    /// </summary>
+    Task<bool> EnterInviteeScopeAsync(Guid userId, SystemOperationReason reason, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Enters the registration scope for one brand-new user (no user with this id exists). Inside a token
+    /// scope for a pending invitation the registration also carries the invitation binding. Returns false
+    /// when the scope cannot be entered. Requires an open transaction.
+    /// </summary>
+    Task<bool> EnterRegistrationScopeAsync(Guid userId, SystemOperationReason reason, CancellationToken cancellationToken);
+}
+
+/// <summary>The bounded database scopes a request can enter; each ends with its transaction.</summary>
+public enum RlsBoundedScope
+{
+    None,
+    User,
+    Token,
+    Invitee,
+    Registration,
+    Credential,
 }
 
 /// <summary>What a presented one-time token is for; selects the table the database looks the digest up in.</summary>

@@ -14,7 +14,10 @@
 --
 -- The caller is the user the session context names (app.current_user_id). A person always resolves
 -- themselves. The worker scope (already an unbounded background principal) resolves any requested id.
--- No other scope resolves anyone: a token or credential scope has no user relationship to share.
+-- The one other exception is the inviter: the holder of an invitation link may resolve the display
+-- facts of the person who sent THAT invitation (the invitation preview names its inviter), and nobody
+-- else. No other scope resolves anyone: a credential or registration scope has no user relationship
+-- to share.
 -- =============================================================================
 
 CREATE OR REPLACE FUNCTION ops.shares_workspace_with_caller(p_user uuid)
@@ -25,8 +28,7 @@ SECURITY DEFINER
 SET search_path = pg_catalog, ops, pg_temp
 AS $$
     SELECT p_user IS NOT NULL AND (
-        ops.is_worker_scope()
-        OR (
+        (
             ops.current_request_scope() IN ('app', 'user')
             AND ops.current_user_id() IS NOT NULL
             AND (
@@ -40,6 +42,16 @@ AS $$
                 )
             )
         )
+        OR (
+            ops.current_request_scope() = 'token'
+            AND p_user = (
+                SELECT i.invited_by
+                  FROM workspace.workspace_invitations i
+                 WHERE i.token_hash = ops.current_setting_text('app.scope_token_hash')
+                   AND i.account_id = ops.current_setting_uuid('app.scope_account_id')
+                   AND i.workspace_id = ops.current_setting_uuid('app.scope_workspace_id'))
+        )
+        OR ops.is_worker_scope()
     );
 $$;
 

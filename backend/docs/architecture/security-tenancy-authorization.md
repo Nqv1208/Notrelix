@@ -753,7 +753,8 @@ Current accepted ADR-011 defines the database identities (owner, `notrelix_app`,
 bounded `user`, `token`, `credential` and `registration` scopes that stand beside the `app` and `worker` scopes.
 The `user` scope (Global authenticated requests, resource location) and the `token` scope primitive exist;
 see `infrastructure-and-data.md` section 34B. Display name and avatar of co-members resolve through
-owner-defined functions (section 34C); no other identity column is exposed.
+owner-defined functions (section 34C); no other identity column is exposed. The anonymous invitation and
+registration flows use bounded token, invitee and registration scopes (section 34D).
 
 These are implementation evidence.
 

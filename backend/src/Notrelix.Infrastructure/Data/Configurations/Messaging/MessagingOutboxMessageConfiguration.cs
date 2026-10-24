@@ -31,7 +31,10 @@ public sealed class MessagingOutboxMessageConfiguration : IEntityTypeConfigurati
         builder.Property(x => x.HeadersJson).HasColumnType("jsonb").HasConversion<string>().IsRequired().HasDefaultValueSql("'{}'::jsonb");
         builder.Property(x => x.MetadataJson).HasColumnType("jsonb").HasConversion<string>().IsRequired().HasDefaultValueSql("'{}'::jsonb");
         builder.Property(x => x.Status).IsRequired().HasMaxLength(40).HasDefaultValue("Pending");
-        builder.Property(x => x.RetryCount).IsRequired().HasDefaultValue(0);
+        // The sentinel makes the initial 0 an explicit INSERT value, so EF does not read retry_count back with
+        // RETURNING: the application role may insert outbox rows but has no SELECT policy on the table, and
+        // a RETURNING clause is checked against the SELECT policies.
+        builder.Property(x => x.RetryCount).IsRequired().HasDefaultValue(0).HasSentinel(-1);
         builder.Property(x => x.MaxRetries).IsRequired().HasDefaultValue(5);
         builder.Property(x => x.NextAttemptAt).IsRequired();
         builder.Property(x => x.LockedBy).HasMaxLength(160);

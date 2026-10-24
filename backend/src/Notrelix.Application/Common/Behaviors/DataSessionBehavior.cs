@@ -46,8 +46,10 @@ public sealed class DataSessionBehavior<TRequest, TResponse> : IPipelineBehavior
             ApplicationScopeKind.Account or ApplicationScopeKind.Workspace or ApplicationScopeKind.Resource;
 
         // A Global authenticated request has no account or workspace to bind: it runs in the user scope,
-        // which carries the verified user and nothing else. Anonymous Global requests stay unscoped.
-        var userScopeUserId = snapshot.Scope == ApplicationScopeKind.Global
+        // which carries the verified user and nothing else. An authenticated token-scoped request (accepting
+        // an invitation while signed in) starts in the same user scope, before its handler enters the token
+        // scope. Anonymous requests stay unscoped here: their handlers enter their own bounded scope.
+        var userScopeUserId = snapshot.Scope is ApplicationScopeKind.Global or ApplicationScopeKind.Token
             && snapshot.Principal == ApplicationPrincipalKind.Authenticated
             && snapshot.UserId is { } authenticatedUser
             && authenticatedUser != Guid.Empty

@@ -133,12 +133,36 @@ public sealed class AppRoleConformanceTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Register_UnderTheAppRole_CurrentlyFailsWith500()
+    public async Task Register_UnderTheAppRole_Works()
     {
-        var (owner, app) = await BothAsync(c => c.PostAsJsonAsync("/api/v1/auth/register",
-            new { email = "new-rls@example.com", password = Password, name = "New" }));
+        var owner = await CallAsync(_fixture.OwnerConnectionString, c => c.PostAsJsonAsync("/api/v1/auth/register",
+            new { email = "new-owner-rls@example.com", password = Password, name = "NewOwner" }));
         owner.IsSuccessStatusCode.Should().BeTrue(await owner.Content.ReadAsStringAsync());
-        app.StatusCode.Should().Be(HttpStatusCode.InternalServerError, "no INSERT policy on users/accounts/access_grants for the app role");
+
+        var app = await CallAsync(_fixture.AppConnectionString, c => c.PostAsJsonAsync("/api/v1/auth/register",
+            new { email = "new-app-rls@example.com", password = Password, name = "NewApp" }));
+        app.StatusCode.Should().Be(owner.StatusCode, await app.Content.ReadAsStringAsync());
+
+        (await ScalarOwnerAsync(
+            "SELECT count(*) FROM authz.access_grants g JOIN identity.users u ON u.id = g.user_id " +
+            "WHERE u.normalized_email = 'new-app-rls@example.com' AND g.workspace_id IS NULL AND g.is_account_admin"))
+            .Should().Be("1", "the new account's owner grant was written through the bounded function");
+        (await ScalarOwnerAsync(
+            "SELECT count(*) FROM account.accounts a JOIN account.account_members m ON m.account_id = a.id " +
+            "JOIN identity.users u ON u.id = m.user_id WHERE u.normalized_email = 'new-app-rls@example.com'"))
+            .Should().Be("1");
+
+        var duplicate = await CallAsync(_fixture.AppConnectionString, c => c.PostAsJsonAsync("/api/v1/auth/register",
+            new { email = "new-app-rls@example.com", password = Password, name = "Again" }));
+        duplicate.StatusCode.Should().Be(HttpStatusCode.BadRequest, "an existing address is reported through the boolean probe, not a row read");
+    }
+
+    private async Task<string> ScalarOwnerAsync(string sql)
+    {
+        await using var connection = new NpgsqlConnection(_fixture.OwnerConnectionString);
+        await connection.OpenAsync();
+        await using var command = new NpgsqlCommand(sql, connection);
+        return Convert.ToString(await command.ExecuteScalarAsync()) ?? "";
     }
 
     [Fact]
@@ -151,11 +175,13 @@ public sealed class AppRoleConformanceTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task InvitationPreview_UnderTheAppRole_CurrentlyReportsAValidTokenAsNotFound()
+    public async Task InvitationPreview_UnderTheAppRole_Works()
     {
         var (owner, app) = await BothAsync(c => c.PostAsJsonAsync("/api/v1/invitations/preview", new { token = _invitationToken }));
         owner.StatusCode.Should().Be(HttpStatusCode.OK);
-        app.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        app.StatusCode.Should().Be(HttpStatusCode.OK, await app.Content.ReadAsStringAsync());
+        var body = await app.Content.ReadAsStringAsync();
+        body.Should().Contain("\"valid\"").And.Contain("Alice", "the inviter's display name resolves for the token holder").And.Contain("WS");
     }
 
     [Theory]

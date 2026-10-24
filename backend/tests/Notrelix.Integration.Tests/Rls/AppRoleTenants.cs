@@ -19,6 +19,7 @@ internal sealed record AppRoleTenant(
     Guid WorkspaceId,
     Guid BoardId,
     string InvitationToken,
+    string InvitationEmail,
     string InvitationTokenHash,
     int InvitationHashVersion);
 
@@ -49,12 +50,13 @@ internal static class AppRoleTenants
             accountId: account.Id, workspaceId: workspace.Id, userId: user.Id, sourceContext: "Workspace",
             membershipStatus: "Active", roleCodes: ["Owner"], permissionCodes: [], isAccountAdmin: false,
             isWorkspaceAdmin: true, grantedAt: now));
+        var inviteeEmail = $"invitee-{Guid.NewGuid():N}@example.com";
         ctx.WorkspaceInvitations.Add(WorkspaceInvitation.Create(
-            account.Id, workspace.Id, $"invitee-{Guid.NewGuid():N}@example.com", WorkspaceRole.Member,
+            account.Id, workspace.Id, inviteeEmail, WorkspaceRole.Member,
             InvitationTokenHash.Create(issued.TokenHash), issued.HashVersion, user.Id, now.AddMinutes(-5)));
         await ctx.SaveChangesAsync();
 
-        return new AppRoleTenant(user, account.Id, workspace.Id, board.Id, issued.RawToken, issued.TokenHash, issued.HashVersion);
+        return new AppRoleTenant(user, account.Id, workspace.Id, board.Id, issued.RawToken, inviteeEmail, issued.TokenHash, issued.HashVersion);
     }
 }
 
@@ -95,6 +97,23 @@ internal static class AppRoleMembers
         update.Parameters.AddWithValue("u", user.Id);
         update.Parameters.AddWithValue("a", $"/api/v1/users/{user.Id:D}/avatar?v=1");
         await update.ExecuteNonQueryAsync();
+        return user;
+    }
+}
+
+internal static class AppRoleUsers
+{
+    /// <summary>A confirmed user with no membership anywhere, seeded as the owner.</summary>
+    public static async Task<User> AddAsync(AppRoleTestContainer fixture, string email, string name, string passwordHash)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var user = User.Create(email, name, passwordHash, now, hasPasswordCredential: true);
+        user.ConfirmEmail(user.Id, now);
+        var system = new FakeCurrentTenantContext();
+        system.SetSystem();
+        await using var ctx = fixture.CreateOwnerContext(system);
+        ctx.Users.Add(user);
+        await ctx.SaveChangesAsync();
         return user;
     }
 }

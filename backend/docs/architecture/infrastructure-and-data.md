@@ -712,6 +712,48 @@ workspace) on top of the function's relationship.
 
 ---
 
+# 34D. Anonymous credential flows
+
+`RlsSqlScripts/014_anonymous_scopes.sql` gives the flows that run before the caller has a tenant their own
+bounded scopes. Each is entered through an owner-defined `SECURITY DEFINER` function (pinned `search_path`,
+revoked from PUBLIC, executable by the application role only), each derives its bound from a presented digest
+or from the rows it is about to create rather than from identifiers the application asserts, and each ends
+with its transaction. None is a member of `ops.is_worker_scope()`.
+
+```text
+token         one invitation: account + workspace + digest        enter_token_scope        (preview, decline)
+invitee       token + the person the invitation is addressed to   enter_invitee_scope       (accept while signed in)
+registration  one brand-new user and the one account it creates   enter_registration_scope  (register, register-and-accept)
+```
+
+How they work together:
+
+- `InvitationTokenScope.FindAsync` enters the token scope from the digest of the presented secret; the database
+  derives the invitation's own account and workspace. A bare token scope reads exactly the invitation row, the
+  invited workspace row and (for a resource invitation) the one named board or page, may update only that
+  invitation, may insert the internal event/outbox/audit rows the decline raises, and resolves only the inviter's
+  display name. Unknown, malformed, expired or used tokens enter nothing that can be written through.
+- `enter_invitee_scope(user)` binds the person accepting: the user must be the authenticated caller, the
+  invitation pending and unexpired, and the invited address the person's own. The person is then provisionally
+  inside the invited account/workspace for that request (`ops.has_workspace_access`/`has_account_access`
+  honour `ops.has_invitee_scope`, never as admin), so the acceptance can read what it validates and every
+  grant-derived policy applies unchanged.
+- `enter_registration_scope(user)` is refused for an id that already exists. A registration may insert exactly
+  that user (and, when it carries an invitation binding, only with the invited address) and exactly the one
+  account named by its first grant. Whether an address is already registered is answered by
+  `ops.email_registered`, a boolean, never a row.
+- Grants (Q7): inside a registration or invitee scope `AccessGrantProjectionService` writes the grant
+  immediately through `ops.upsert_access_grant`, which derives the role codes and admin flags itself and
+  accepts only the owner grant of the one new account (registration) or the invitee's account-level Member grant
+  and the invitation's own role in the invitation's own workspace (invitee). Outside those scopes the grant
+  projection is unchanged. Account and user rows are written with INSERT-only policies bound to the scope, not
+  broad policies.
+- Audit (Q3): entering a bounded scope writes a structured log line (scope kind, reason, derived ids, never a
+  token or password) and increments `rls_scope_entry`; durable `audit.security_events` rows of the flows are
+  unchanged.
+
+---
+
 # 35. Same physical connection
 
 ADR-002 relies on the same scoped DbContext/physical connection lifecycle between bootstrap and later full request scope.
