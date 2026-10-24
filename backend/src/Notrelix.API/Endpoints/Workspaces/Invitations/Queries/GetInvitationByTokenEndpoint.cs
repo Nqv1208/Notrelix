@@ -16,7 +16,7 @@ public static class GetInvitationByTokenEndpoint
             .WithDescription("Answers valid, expired or used with the inviter's display name, the Workspace name and, for a guest invitation, the resource title and level. The invited email and whether it has an account are returned only while the invitation is valid.")
             .Produces<InvitationPreviewDto>(StatusCodes.Status200OK, "application/json")
             .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status404NotFound, StatusCodes.Status429TooManyRequests)
-            .WithMetadata(new RateLimitPolicyAttribute("AuthStrictByIp"));
+            .WithMetadata(new RateLimitPolicyAttribute("AuthCredentialByIp"));
         return group;
     }
 

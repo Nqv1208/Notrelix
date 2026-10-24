@@ -1,3 +1,4 @@
+using Notrelix.Testing.Core;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -80,6 +81,11 @@ public sealed class AccountWorkspacesHttpFlowTests : IAsyncLifetime
                 logging.SetMinimumLevel(LogLevel.Warning);
             });
             builder.UseEnvironment("Testing");
+
+            foreach (var (rateLimitKey, rateLimitValue) in RateLimitTestSettings.Generous)
+            {
+                builder.UseSetting(rateLimitKey, rateLimitValue);
+            }
 
             var storage = Path.Combine(Path.GetTempPath(), "notrelix-account-http-storage", Guid.NewGuid().ToString("N"));
             var keysPath = Path.Combine(Path.GetTempPath(), "notrelix-account-http-keys", Guid.NewGuid().ToString("N"));

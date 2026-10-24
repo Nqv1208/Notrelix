@@ -1,3 +1,4 @@
+using Notrelix.Testing.Core;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -69,6 +70,11 @@ public sealed class SecurityActivityHttpFlowTests : IAsyncLifetime
                 logging.SetMinimumLevel(LogLevel.Warning);
             });
             builder.UseEnvironment("Testing");
+
+            foreach (var (rateLimitKey, rateLimitValue) in RateLimitTestSettings.Generous)
+            {
+                builder.UseSetting(rateLimitKey, rateLimitValue);
+            }
 
             var keysPath = Path.Combine(Path.GetTempPath(), "notrelix-activity-http-keys", Guid.NewGuid().ToString("N"));
             var settings = new Dictionary<string, string?>

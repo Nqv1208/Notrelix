@@ -16,7 +16,7 @@ public static class DeclineInvitationByTokenEndpoint
             .WithDescription("Declining is permanent. A repeat press on an already declined invitation answers the same 204.")
             .Produces(StatusCodes.Status204NoContent)
             .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status404NotFound, StatusCodes.Status429TooManyRequests)
-            .WithMetadata(new RateLimitPolicyAttribute("AuthStrictByIp"));
+            .WithMetadata(new RateLimitPolicyAttribute("AuthCredentialByIp"));
         return group;
     }
 

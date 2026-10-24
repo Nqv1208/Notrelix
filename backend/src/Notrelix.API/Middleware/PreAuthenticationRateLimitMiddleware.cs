@@ -1,4 +1,3 @@
-using Notrelix.API.ErrorHandling;
 using Notrelix.API.RateLimiting;
 
 namespace Notrelix.API.Middleware;
@@ -34,30 +33,8 @@ public sealed class PreAuthenticationRateLimitMiddleware
 
         var partitionKey = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
 
-        var rateLimitService = context.RequestServices.GetRequiredService<IRateLimitService>();
-
-        var algorithm = policy.Algorithm switch
-        {
-            "FixedWindow" => RateLimitAlgorithm.FixedWindow,
-            "TokenBucket" => RateLimitAlgorithm.TokenBucket,
-            _ => RateLimitAlgorithm.SlidingWindow,
-        };
-
-        var decision = await rateLimitService.CheckAsync(
-            attribute.PolicyName,
-            partitionKey,
-            policy.PermitLimit,
-            TimeSpan.FromSeconds(policy.WindowSeconds),
-            algorithm,
-            context.RequestAborted);
-
-        if (!decision.IsAllowed)
-        {
-            var retryAfter = (int)(decision.RetryAfter?.TotalSeconds ?? 60);
-            await ProblemDetailsWriter.WriteTooManyRequestsAsync(
-                context, retryAfter, decision.Limit, decision.Remaining, decision.ResetAt, context.RequestAborted);
+        if (!await RateLimitEnforcer.TryAcquireAsync(context, attribute.PolicyName, policy, partitionKey))
             return;
-        }
 
         await _next(context);
     }

@@ -152,6 +152,7 @@ using Notrelix.Domain.Governance.Roles;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Projections.Search;
 using Notrelix.Testing.Application.Fakes;
+using Notrelix.Testing.Core;
 using StackExchange.Redis;
 
 namespace Notrelix.API.Tests.Contracts;
@@ -218,6 +219,11 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
                 ["Cors:AllowedOrigins:0"] = "http://localhost:5173",
                 ["Cors:AllowedOrigins:1"] = "http://localhost:3000"
             };
+
+            // Suites call the auth endpoints from one loopback address, far past the shipped
+            // limits. RateLimitTiersTests proves the shipped limits on its own host.
+            foreach (var (key, value) in RateLimitTestSettings.Generous)
+                testSettings[key] = value;
 
             config.AddInMemoryCollection(testSettings);
         });
@@ -325,7 +331,7 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
 
             // Redis-dependent services used by middleware/application services.
             services.RemoveAll<IRateLimitService>();
-            services.AddSingleton<IRateLimitService>(_ => Mock.Of<IRateLimitService>());
+            services.AddSingleton<IRateLimitService, InMemoryRateLimitService>();
 
             services.RemoveAll<IOtpService>();
             services.AddSingleton<IOtpService>(_ => Mock.Of<IOtpService>());

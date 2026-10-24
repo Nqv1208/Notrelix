@@ -17,7 +17,7 @@ public static class CompleteOAuthStepUpEndpoint
             .WithTags("Identity.Auth")
             .WithSummary("Complete OAuth step-up callback")
             .WithDescription("Handles the OAuth provider callback for an authenticated step-up (re-authentication) flow and grants a purpose-bound step-up proof.")
-            .WithMetadata(new RateLimitPolicyAttribute("AuthStrictByIp"));
+            .WithMetadata(new RateLimitPolicyAttribute("AuthSensitiveByUser"));
 
         return group;
     }

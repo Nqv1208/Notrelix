@@ -22,7 +22,7 @@ public static class SecurityStepUpEndpoints
             .WithTags("Identity.Security")
             .WithSummary("Get the current user's sign-in security summary")
             .WithDescription("Password, MFA, active-session and linked-provider facts for the account security page. Contains no secret.")
-            .WithMetadata(new RateLimitPolicyAttribute("AuthStrictByIp"));
+            .WithMetadata(new RateLimitPolicyAttribute("GeneralAuthenticated"));
 
         group.MapAuthenticatedGet("/security/activity", GetActivityAsync)
             .WithName("Identity.Security.ListActivity")
@@ -34,7 +34,7 @@ public static class SecurityStepUpEndpoints
                 "Sign-in successes and failures, password changes and resets, MFA enabled or disabled and session revocations, " +
                 "newest first, for the authenticated user only and kept for 90 days. Cursor-paginated (default 20, max 100): " +
                 "pass nextCursor back as cursor for the next page. Contains no secret.")
-            .WithMetadata(new RateLimitPolicyAttribute("AuthStrictByIp"));
+            .WithMetadata(new RateLimitPolicyAttribute("GeneralAuthenticated"));
 
         group.MapAuthenticatedPost("/security/step-up/requirement", GetRequirementAsync)
             .WithName("Identity.Security.StepUpRequirement")
@@ -43,7 +43,7 @@ public static class SecurityStepUpEndpoints
             .WithTags("Identity.Security")
             .WithSummary("Get the step-up factor required for a security operation")
             .WithDescription("Returns the factor (MFA challenge, password or OAuth re-authentication) the current user must satisfy before a security-sensitive operation.")
-            .WithMetadata(new RateLimitPolicyAttribute("AuthStrictByIp"));
+            .WithMetadata(new RateLimitPolicyAttribute("AuthSensitiveByUser"));
 
         group.MapAuthenticatedPost("/security/step-up/complete-mfa", CompleteMfaAsync)
             .WithName("Identity.Security.StepUpCompleteMfa")
@@ -52,7 +52,7 @@ public static class SecurityStepUpEndpoints
             .WithTags("Identity.Security")
             .WithSummary("Complete step-up verification with a TOTP or recovery code")
             .WithDescription("Verifies the MFA challenge bound to the current session and issues a single-use step-up proof.")
-            .WithMetadata(new RateLimitPolicyAttribute("AuthStrictByIp"));
+            .WithMetadata(new RateLimitPolicyAttribute("AuthSensitiveByUser"));
 
         group.MapAuthenticatedPost("/security/step-up/complete-password", CompletePasswordAsync)
             .WithName("Identity.Security.StepUpCompletePassword")
@@ -61,7 +61,7 @@ public static class SecurityStepUpEndpoints
             .WithTags("Identity.Security")
             .WithSummary("Complete step-up verification with the current password")
             .WithDescription("Verifies the current password and issues a single-use step-up proof.")
-            .WithMetadata(new RateLimitPolicyAttribute("AuthStrictByIp"));
+            .WithMetadata(new RateLimitPolicyAttribute("AuthSensitiveByUser"));
 
         return group;
     }

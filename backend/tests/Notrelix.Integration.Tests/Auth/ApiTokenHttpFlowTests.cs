@@ -1,3 +1,4 @@
+using Notrelix.Testing.Core;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -168,6 +169,11 @@ public sealed class ApiTokenHttpFlowTests : IAsyncLifetime
                 });
 
                 builder.UseEnvironment("Production");
+
+                foreach (var (rateLimitKey, rateLimitValue) in RateLimitTestSettings.Generous)
+                {
+                    builder.UseSetting(rateLimitKey, rateLimitValue);
+                }
 
                 builder.ConfigureTestServices(services =>
                 {

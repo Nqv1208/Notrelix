@@ -637,6 +637,38 @@ PartitionKey
 
 Application owns tenant-aware behavior where Account/Workspace context exists.
 
+Configuration binding and tiers:
+
+```text
+RateLimitingOptions binds the RateLimiting section (the class owns the Policies dictionary).
+Binding RateLimiting:Policies would silently drop every policy.
+
+Startup validation:
+→ every policy needs PermitLimit > 0, WindowSeconds > 0, a known Algorithm and FailMode
+→ after endpoints are mapped, every RateLimitPolicyAttribute name used by an endpoint must resolve
+  to a configured policy, otherwise the host stops
+
+Auth tiers (appsettings.json is the numeric evidence):
+AuthCredentialByIp    30 / 60 s  by IP      Closed  login, register, forgot/reset password,
+                                                    MFA challenge verify, identify, OAuth start/complete,
+                                                    email verification resend, invitation preview/decline/
+                                                    accept-with-registration
+AuthRefreshByIp      300 / 60 s  by IP      Open    refresh token
+CsrfByIp             120 / 60 s  by IP      Open    csrf issue
+AuthSensitiveByUser   10 / 60 s  by UserId  Closed  change password, step-up completion, session revoke,
+                                                    MFA enrollment verify, OAuth link/unlink/step-up
+GeneralAuthenticated 300 / 60 s  by UserId  Open    authenticated reads such as session list and
+                                                    security summary/activity
+```
+
+Brute-force control for credentials is account lockout (10 failures in 15 minutes locks for 15 minutes; 50 per IP per 15 minutes; 5 wrong MFA codes per challenge), not these volume limits.
+
+FailMode is executed by the middleware: Open lets the request continue when the limiter store fails (logged as a warning); Closed rethrows so the request fails.
+
+A denied request answers 429 with the shared problem shape: `errorCode = rate_limit.exceeded`, `Retry-After` header (seconds) and the `X-RateLimit-*` headers.
+
+Test hosts lift every limit (`RateLimitTestSettings`); `RateLimitTiersTests` runs a host with the shipped limits and proves each tier returns 429 past its limit.
+
 ---
 
 # 32. BE-API-014 — API rate limit uses transport-visible partition only

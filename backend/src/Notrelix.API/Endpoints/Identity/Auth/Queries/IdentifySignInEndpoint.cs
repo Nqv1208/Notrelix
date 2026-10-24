@@ -17,7 +17,7 @@ public static class IdentifySignInEndpoint
             .WithTags("Identity.Auth")
             .WithSummary("Tell the sign-in page how an email signs in")
             .WithDescription("Answers password or single sign-on from the email's text alone; an unknown email and a known password email get the same answer. Rate limited per IP.")
-            .WithMetadata(new RateLimitPolicyAttribute("AuthStrictByIp"));
+            .WithMetadata(new RateLimitPolicyAttribute("AuthCredentialByIp"));
         return group;
     }
 
