@@ -14,25 +14,38 @@ public class DatabasePrincipalTests
             .AddInMemoryCollection(values.Select(v => new KeyValuePair<string, string?>(v.Key, v.Value)))
             .Build();
 
-    [Fact]
-    public void WithoutAWorkerString_TheWorkerFallsBackToTheApplicationString()
+    [Theory]
+    [InlineData("Off")]
+    [InlineData("Warn")]
+    public void WithoutAWorkerString_TheWorkerFallsBackToTheApplicationString_OnlyWhenEnforcementIsOptedOut(string mode)
     {
-        var strings = DatabaseConnectionStrings.FromConfiguration(Config(("ConnectionStrings:NotrelixDb", App)));
+        var strings = DatabaseConnectionStrings.FromConfiguration(
+            Config(("ConnectionStrings:NotrelixDb", App), ("Rls:RoleEnforcement", mode)));
 
         strings.Worker.Should().Be(App);
-        strings.WorkerUsesApplicationFallback.Should().BeTrue("single-login hosts keep working");
+        strings.WorkerUsesApplicationFallback.Should().BeTrue("hosts that opted out of enforcement keep working on one login");
     }
 
     [Theory]
-    [InlineData("")]
-    [InlineData("  ")]
-    public void ABlankWorkerString_FallsBackToo(string blank)
+    [InlineData(null, null)]
+    [InlineData("Enforce", null)]
+    [InlineData("Enforce", "")]
+    [InlineData(null, "  ")]
+    public void WithoutAWorkerString_TheHostIsRefused_WhenEnforced(string? mode, string? blank)
     {
-        var strings = DatabaseConnectionStrings.FromConfiguration(
-            Config(("ConnectionStrings:NotrelixDb", App), ("ConnectionStrings:NotrelixWorkerDb", blank)));
+        var act = () => DatabaseConnectionStrings.FromConfiguration(
+            Config(("ConnectionStrings:NotrelixDb", App), ("ConnectionStrings:NotrelixWorkerDb", blank), ("Rls:RoleEnforcement", mode)));
 
-        strings.Worker.Should().Be(App);
-        strings.WorkerUsesApplicationFallback.Should().BeTrue();
+        act.Should().Throw<InvalidOperationException>().WithMessage("*NotrelixWorkerDb is required*");
+    }
+
+    [Fact]
+    public void WithoutAnyConnectionString_NothingIsRequired()
+    {
+        var strings = DatabaseConnectionStrings.FromConfiguration(Config());
+
+        strings.Application.Should().BeNull();
+        strings.WorkerUsesApplicationFallback.Should().BeTrue("a host with no database (in-memory tests, spec export) has nothing to separate");
     }
 
     [Fact]

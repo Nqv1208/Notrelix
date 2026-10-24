@@ -19,25 +19,42 @@ public class OwnerDbContextProviderTests
             .AddInMemoryCollection(values.Select(v => new KeyValuePair<string, string?>(v.Key, v.Value)))
             .Build();
 
-    [Fact]
-    public void ResolveConnectionString_WithoutOwnerString_FallsBackToTheRuntimeString()
+    [Theory]
+    [InlineData("Off")]
+    [InlineData("Warn")]
+    public void ResolveConnectionString_WithoutOwnerString_FallsBackToTheRuntimeString_OnlyWhenEnforcementIsOptedOut(string mode)
     {
         var resolved = OwnerDbContextProvider.ResolveConnectionString(
-            Config(("ConnectionStrings:NotrelixDb", Runtime)), out var fallback);
+            Config(("ConnectionStrings:NotrelixDb", Runtime), ("Rls:RoleEnforcement", mode)), out var fallback);
 
         resolved.Should().Be(Runtime);
-        fallback.Should().BeTrue("every existing environment keeps its single connection string");
+        fallback.Should().BeTrue("a host that opted out of enforcement may run on one privileged login");
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("Enforce")]
+    public void ResolveConnectionString_WithoutOwnerString_IsRefused_WhenEnforced(string? mode)
+    {
+        var act = () => OwnerDbContextProvider.ResolveConnectionString(
+            Config(("ConnectionStrings:NotrelixDb", Runtime), ("Rls:RoleEnforcement", mode)), out _);
+
+        act.Should().Throw<InvalidOperationException>().WithMessage("*NotrelixMigrationDb is required*");
     }
 
     [Theory]
     [InlineData("")]
     [InlineData("   ")]
-    public void ResolveConnectionString_WithBlankOwnerString_FallsBackToTheRuntimeString(string blank)
+    public void ResolveConnectionString_WithBlankOwnerString_IsTreatedAsMissing(string blank)
     {
-        var resolved = OwnerDbContextProvider.ResolveConnectionString(
-            Config(("ConnectionStrings:NotrelixDb", Runtime), ("ConnectionStrings:NotrelixMigrationDb", blank)),
-            out var fallback);
+        var enforced = () => OwnerDbContextProvider.ResolveConnectionString(
+            Config(("ConnectionStrings:NotrelixDb", Runtime), ("ConnectionStrings:NotrelixMigrationDb", blank)), out _);
+        enforced.Should().Throw<InvalidOperationException>();
 
+        var resolved = OwnerDbContextProvider.ResolveConnectionString(
+            Config(("ConnectionStrings:NotrelixDb", Runtime), ("ConnectionStrings:NotrelixMigrationDb", blank), ("Rls:RoleEnforcement", "Off")),
+            out var fallback);
         resolved.Should().Be(Runtime);
         fallback.Should().BeTrue();
     }
@@ -60,7 +77,7 @@ public class OwnerDbContextProviderTests
     {
         var settings = ownerConfigured
             ? Config(("ConnectionStrings:NotrelixDb", Runtime), ("ConnectionStrings:NotrelixMigrationDb", Owner))
-            : Config(("ConnectionStrings:NotrelixDb", Runtime));
+            : Config(("ConnectionStrings:NotrelixDb", Runtime), ("Rls:RoleEnforcement", "Off"));
         using var services = new ServiceCollection()
             .AddSingleton<ICurrentTenantContext>(new FakeCurrentTenantContext())
             .AddSingleton(new AuditableEntityInterceptor(Mock.Of<ICurrentUser>(), Mock.Of<IDateTimeProvider>()))

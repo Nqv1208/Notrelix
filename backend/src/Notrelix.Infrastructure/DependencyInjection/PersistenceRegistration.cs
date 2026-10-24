@@ -183,6 +183,10 @@ public static class PersistenceRegistration
         services.AddScoped(sp => new RlsPolicyApplier(
             sp.GetRequiredService<OwnerDbContextProvider>().Context,
             sp.GetRequiredService<ILogger<RlsPolicyApplier>>()));
+        services.AddScoped(sp => new RlsLoginRoleProvisioningService(
+            sp.GetRequiredService<OwnerDbContextProvider>().Context,
+            configuration,
+            sp.GetRequiredService<ILogger<RlsLoginRoleProvisioningService>>()));
         services.AddScoped<RlsSessionContext>();
         services.AddScoped<IRlsSessionContext>(sp => sp.GetRequiredService<RlsSessionContext>());
 

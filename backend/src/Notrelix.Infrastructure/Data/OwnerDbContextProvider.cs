@@ -1,3 +1,4 @@
+using Notrelix.Infrastructure.Data.Rls;
 using Notrelix.Infrastructure.Data.Interceptors;
 
 namespace Notrelix.Infrastructure.Data;
@@ -8,9 +9,10 @@ namespace Notrelix.Infrastructure.Data;
 /// restricts its consumers).
 /// </summary>
 /// <remarks>
-/// The owner connection string is <c>ConnectionStrings:NotrelixMigrationDb</c>. While it is unset the
-/// runtime connection string <c>ConnectionStrings:NotrelixDb</c> is used for both, which keeps every
-/// existing environment on its current single connection.
+/// The owner connection string is <c>ConnectionStrings:NotrelixMigrationDb</c>. It is required while
+/// <c>Rls:RoleEnforcement</c> is <c>Enforce</c> (the default of every environment): the application login
+/// cannot migrate, apply policies or seed. Only a host that opted out of enforcement (<c>Warn</c> or <c>Off</c>:
+/// the test hosts that run on one privileged login) falls back to <c>ConnectionStrings:NotrelixDb</c>.
 /// </remarks>
 public sealed class OwnerDbContextProvider : IAsyncDisposable, IDisposable
 {
@@ -51,7 +53,16 @@ public sealed class OwnerDbContextProvider : IAsyncDisposable, IDisposable
         }
 
         usesRuntimeFallback = true;
-        return configuration.GetConnectionString(RuntimeConnectionStringName);
+        var runtime = configuration.GetConnectionString(RuntimeConnectionStringName);
+        if (!string.IsNullOrWhiteSpace(runtime) && RlsRoleEnforcement.IsEnforced(configuration))
+        {
+            throw new InvalidOperationException(
+                $"ConnectionStrings:{OwnerConnectionStringName} is required: migrations, policy application and " +
+                "seeding connect as the database owner and never as the application login. Only " +
+                "Rls:RoleEnforcement=Warn|Off hosts may omit it.");
+        }
+
+        return runtime;
     }
 
     private ApplicationDbContext Create()

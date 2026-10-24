@@ -36,6 +36,11 @@ public static class DatabaseStartupExtensions
             var applier = scope.ServiceProvider.GetRequiredService<RlsPolicyApplier>();
             await applier.ApplyAsync();
             app.Logger.LogInformation("RLS policies applied.");
+
+            // The runtime logins take their passwords from the connection strings that serve them, so the
+            // secret that opens the connection is the one the role holds. Idempotent; runs as the owner.
+            await scope.ServiceProvider.GetRequiredService<RlsLoginRoleProvisioningService>().ProvisionAsync();
+            app.Logger.LogInformation("Database logins provisioned.");
         }
 
         if (shouldSeed)
@@ -96,6 +101,13 @@ public static class DatabaseStartupExtensions
         {
             await initialiser.InitialiseAsync();
             app.Logger.LogInformation("Startup database migration completed (Development only).");
+
+            // The startup policy application is the development equivalent of --rls-apply, so it provisions the
+            // runtime logins the same way (idempotent, from the connection strings that serve them).
+            if (app.Configuration.GetValue<bool>("Rls:Enabled") && app.Configuration.GetValue<bool>("Rls:ApplyPoliciesOnStartup"))
+            {
+                await scope.ServiceProvider.GetRequiredService<RlsLoginRoleProvisioningService>().ProvisionAsync();
+            }
         }
 
         if (seedEnabled && seedRunOnStartup)

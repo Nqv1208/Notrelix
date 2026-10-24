@@ -1,3 +1,4 @@
+using Notrelix.Infrastructure.Data.Rls;
 namespace Notrelix.Infrastructure.Data;
 
 /// <summary>Which database login a dependency-injection scope's <see cref="ApplicationDbContext"/> uses.</summary>
@@ -16,8 +17,10 @@ public enum DatabasePrincipalKind
 
 /// <summary>
 /// Connection strings of the serving process. <c>ConnectionStrings:NotrelixDb</c> is the application login;
-/// <c>ConnectionStrings:NotrelixWorkerDb</c> is the background login and falls back to the application
-/// string while it is unset (development and test hosts that run on one login).
+/// <c>ConnectionStrings:NotrelixWorkerDb</c> is the background login. It is required while
+/// <c>Rls:RoleEnforcement</c> is <c>Enforce</c> (the default of every environment); only a host that opted out
+/// of enforcement (<c>Warn</c> or <c>Off</c>: the test hosts and the OpenAPI export) falls back to the
+/// application string.
 /// </summary>
 public sealed class DatabaseConnectionStrings
 {
@@ -42,9 +45,20 @@ public sealed class DatabaseConnectionStrings
     {
         var application = configuration.GetConnectionString(ApplicationConnectionStringName);
         var worker = configuration.GetConnectionString(WorkerConnectionStringName);
-        return string.IsNullOrWhiteSpace(worker)
-            ? new DatabaseConnectionStrings(application, application, true)
-            : new DatabaseConnectionStrings(application, worker, false);
+        if (!string.IsNullOrWhiteSpace(worker))
+        {
+            return new DatabaseConnectionStrings(application, worker, false);
+        }
+
+        if (!string.IsNullOrWhiteSpace(application) && RlsRoleEnforcement.IsEnforced(configuration))
+        {
+            throw new InvalidOperationException(
+                $"ConnectionStrings:{WorkerConnectionStringName} is required: background work connects as the " +
+                "notrelix_worker login and never as the application login. Only Rls:RoleEnforcement=Warn|Off hosts " +
+                "may omit it.");
+        }
+
+        return new DatabaseConnectionStrings(application, application, true);
     }
 }
 

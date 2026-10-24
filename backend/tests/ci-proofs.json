@@ -29,7 +29,8 @@
       "backend.data.domain-event-interceptor",
       "backend.data.runtime-role-guard",
       "backend.data.owner-connection",
-      "backend.data.database-principal"
+      "backend.data.database-principal",
+      "backend.data.login-role-provisioner"
     ],
     "platform": [
       "backend.messaging.ordering",
@@ -69,7 +70,8 @@
       "backend.rls.admin-grant-write",
       "backend.rls.member-disclosure",
       "backend.rls.policy-coverage",
-      "backend.rls.derived-scope-policy"
+      "backend.rls.derived-scope-policy",
+      "backend.rls.login-role-provisioning"
     ]
   },
   "proofs": {
@@ -371,6 +373,16 @@
     "backend.architecture.integration-fleet-roles": {
       "tests": [
         "Notrelix.Architecture.Tests.IntegrationFleetRoleBoundaryTests"
+      ]
+    },
+    "backend.data.login-role-provisioner": {
+      "tests": [
+        "Notrelix.Infrastructure.Tests.Data.Rls.RlsLoginRoleProvisionerTests"
+      ]
+    },
+    "backend.rls.login-role-provisioning": {
+      "tests": [
+        "Notrelix.Integration.Tests.Rls.LoginRoleProvisioningTests"
       ]
     }
   }
