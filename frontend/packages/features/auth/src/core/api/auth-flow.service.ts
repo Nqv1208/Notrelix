@@ -1,4 +1,5 @@
 import type { User } from "../types/auth";
+import { isSafeReturnPath } from "../utils/safe-return-path";
 
 /**
  * The calls behind the sign-in pages that go past the plain login: which way
@@ -258,21 +259,31 @@ export function createAuthFlowService(api: AuthFlowApiClient) {
         await api.post<AuthSessionWire>(AUTH_FLOW_PATHS.login, data, QUIET),
       );
     },
-    /** Answers the second step with the challenge the login gave and the code. */
-    async verifyMfa(data: { challengeToken: string; code: string }) {
+    /**
+     * Answers the second step with the code and the challenge the login gave.
+     * After a provider sign-in the challenge is the backend's httpOnly cookie:
+     * the page has none, sends the code alone and the API reads the cookie.
+     */
+    async verifyMfa(data: { challengeToken?: string | null; code: string }) {
+      const { challengeToken, code } = data;
       return toLoginResult(
-        await api.post<AuthSessionWire>(AUTH_FLOW_PATHS.mfaVerify, data, QUIET),
+        await api.post<AuthSessionWire>(
+          AUTH_FLOW_PATHS.mfaVerify,
+          challengeToken ? { challengeToken, code } : { code },
+          QUIET,
+        ),
       );
     },
     /**
      * Where the browser goes to sign in with Google or Microsoft (path under
      * the API base). The provider's page and the way back are the backend's:
-     * it sets the session cookies and redirects to the web `/auth/callback`,
-     * or to `/sign-in?error=<code>`.
+     * it sets the session cookies and redirects to the web `/auth/callback`
+     * (with `?returnTo=` when the path is safe), to `/sign-in?step=mfa` when a
+     * second step is due, or to `/sign-in?error=<code>`.
      */
     oauthStartPath(provider: string, returnUrl?: string | null): string {
       const path = AUTH_FLOW_PATHS.oauthStart(provider);
-      return returnUrl
+      return isSafeReturnPath(returnUrl)
         ? `${path}?returnUrl=${encodeURIComponent(returnUrl)}`
         : path;
     },

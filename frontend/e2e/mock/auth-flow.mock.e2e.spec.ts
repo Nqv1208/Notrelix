@@ -174,6 +174,92 @@ test.describe("Sign-in pages (owner)", () => {
     await expect(page).toHaveURL(/\/workspaces\/mock-workspace-primary/);
   });
 
+  test("a provider sign-in goes back to the page the person was on", async ({
+    page,
+  }) => {
+    await open(
+      page,
+      "/sign-in?redirect=%2Fworkspaces%2Fmock-workspace-primary%2Fboards%2Fmock-board-erp",
+    );
+    await page.getByRole("button", { name: "Tiếp tục với Google" }).click();
+    await expect(page).toHaveURL(
+      /\/workspaces\/mock-workspace-primary\/boards\/mock-board-erp/,
+    );
+  });
+
+  test("the callback returns to a safe internal path and ignores any other", async ({
+    page,
+  }) => {
+    await open(
+      page,
+      "/auth/callback?returnTo=%2Fworkspaces%2Fmock-workspace-primary%2Fboards%2Fmock-board-erp",
+    );
+    await expect(page).toHaveURL(
+      /\/workspaces\/mock-workspace-primary\/boards\/mock-board-erp/,
+    );
+    for (const unsafe of [
+      "//evil.com",
+      "/\\evil.com",
+      "https://evil.com",
+      "%2F%2Fevil.com",
+      "%2F%5Cevil.com",
+    ]) {
+      await open(page, `/auth/callback?returnTo=${unsafe}`);
+      await expect(page).toHaveURL(/\/workspaces\/mock-workspace-primary/);
+      expect(page.url()).not.toContain("evil.com");
+    }
+  });
+
+  test("a provider sign-in that needs a second step lands on the code step and signs in without a challenge in the URL", async ({
+    page,
+  }) => {
+    await open(page, "/sign-in");
+    await page
+      .getByRole("button", { name: "Tiếp tục với Microsoft", exact: true })
+      .click();
+    await expect(page).toHaveURL(/\/sign-in\?step=mfa/);
+    expect(page.url()).not.toContain("challenge");
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Xác minh hai bước" }),
+    ).toBeVisible();
+    for (const [index, digit] of MOCK_AUTH.otpCode.split("").entries())
+      await page.getByLabel(`Số ${index + 1} trên 6`).fill(digit);
+    await page.getByRole("button", { name: "Xác minh" }).click();
+    await expect(page).toHaveURL(/\/workspaces\/mock-workspace-primary/);
+  });
+
+  test("the second step after a provider sign-in keeps the return path", async ({
+    page,
+  }) => {
+    await open(
+      page,
+      "/sign-in?redirect=%2Fworkspaces%2Fmock-workspace-primary%2Fboards%2Fmock-board-erp",
+    );
+    await page
+      .getByRole("button", { name: "Tiếp tục với Microsoft", exact: true })
+      .click();
+    await expect(page).toHaveURL(/\/sign-in\?step=mfa&returnTo=/);
+    for (const [index, digit] of MOCK_AUTH.otpCode.split("").entries())
+      await page.getByLabel(`Số ${index + 1} trên 6`).fill(digit);
+    await page.getByRole("button", { name: "Xác minh" }).click();
+    await expect(page).toHaveURL(
+      /\/workspaces\/mock-workspace-primary\/boards\/mock-board-erp/,
+    );
+  });
+
+  test("the second step without the challenge cookie says the verification expired", async ({
+    page,
+  }) => {
+    await open(page, "/sign-in?step=mfa");
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Xác minh hai bước" }),
+    ).toBeVisible();
+    for (const [index, digit] of MOCK_AUTH.otpCode.split("").entries())
+      await page.getByLabel(`Số ${index + 1} trên 6`).fill(digit);
+    await page.getByRole("button", { name: "Xác minh" }).click();
+    await expect(page.getByRole("alert")).toContainText("hết hạn");
+  });
+
   test("the language switch changes the copy", async ({ page }) => {
     await open(page, "/sign-in");
     await page.getByRole("button", { name: "English" }).click();
@@ -223,7 +309,7 @@ test.describe("Sign-in pages (owner)", () => {
     await page
       .getByRole("button", { name: "Chấp nhận và tạo tài khoản" })
       .click();
-    await expect(page.getByText("Dùng ít nhất 12 ký tự.")).toBeVisible();
+    await expect(page.getByText("Dùng ít nhất 8 ký tự.")).toBeVisible();
     await page.getByLabel("Họ và tên").fill("Đặng Minh Tuấn");
     await page.getByLabel("Tạo mật khẩu").fill("mot-mat-khau-du-dai");
     await page

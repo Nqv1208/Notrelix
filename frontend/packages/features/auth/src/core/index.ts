@@ -28,6 +28,7 @@ export {
   forgotPasswordSchema,
   resetPasswordSchema,
   AUTH_ERROR_KEYS,
+  PASSWORD_MIN_LENGTH,
 } from "./schemas";
 export type { LoginRequest } from "./schemas/login.schema";
 export type { RegisterRequest } from "./schemas/register.schema";
@@ -55,6 +56,13 @@ export type {
 } from "./api/auth-flow.service";
 export {
   IDENTITY_ERROR,
+  RATE_LIMIT_ERROR_CODE,
+  isThrottled,
   readFlowError,
   type FlowError,
 } from "./utils/flow-error";
+export {
+  RETURN_PATH_MAX_LENGTH,
+  isSafeReturnPath,
+  safeReturnPath,
+} from "./utils/safe-return-path";

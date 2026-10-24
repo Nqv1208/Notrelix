@@ -29,6 +29,18 @@ export const IDENTITY_ERROR = {
   oauthMfaRequired: "identity.oauth.mfa-required",
 } as const;
 
+/** The API's volume limit (HTTP 429): the answer carries how long to wait. */
+export const RATE_LIMIT_ERROR_CODE = "rate_limit.exceeded";
+
+/** A refusal that says "wait": the account throttle or the API's volume limit. */
+export function isThrottled(failure: FlowError): boolean {
+  return (
+    failure.status === 429 ||
+    failure.code === IDENTITY_ERROR.tooManyAttempts ||
+    failure.code === RATE_LIMIT_ERROR_CODE
+  );
+}
+
 export function readFlowError(error: unknown): FlowError {
   const err = (error ?? {}) as {
     status?: number;
@@ -51,7 +63,8 @@ export function readFlowError(error: unknown): FlowError {
   return {
     status: typeof err.status === "number" ? err.status : null,
     code: errorCodeOf(details),
-    retryAfterSeconds: num(details.retryAfterSeconds),
+    retryAfterSeconds:
+      num(details.retryAfterSeconds) ?? num(details.retryAfter),
     fieldErrors,
     network: err.kind === "network",
   };

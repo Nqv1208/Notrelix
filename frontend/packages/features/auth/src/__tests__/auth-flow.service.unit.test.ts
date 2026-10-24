@@ -4,7 +4,11 @@ import {
   createAuthFlowService,
   type AuthFlowApiClient,
 } from "../core/api/auth-flow.service";
-import { IDENTITY_ERROR, readFlowError } from "../core/utils/flow-error";
+import {
+  IDENTITY_ERROR,
+  isThrottled,
+  readFlowError,
+} from "../core/utils/flow-error";
 
 function setup(answer: unknown = undefined) {
   const post = vi.fn(async () => answer);
@@ -58,6 +62,49 @@ describe("auth flow adapter: provider sign-in", () => {
     );
     expect(post).not.toHaveBeenCalled();
     expect(get).not.toHaveBeenCalled();
+  });
+
+  it("drops a return path that is not an internal one instead of handing it to the backend", () => {
+    const { service } = setup();
+    for (const unsafe of [
+      "//evil.com",
+      "/\\evil.com",
+      "https://evil.com",
+      "/%2F%2Fevil.com",
+    ])
+      expect(service.oauthStartPath("google", unsafe)).toBe(
+        "/auth/oauth/google/start",
+      );
+  });
+});
+
+describe("auth flow adapter: second step", () => {
+  const session = { expiresAt: null, user: { id: "u", email: "a@b.vn" } };
+
+  it("sends the challenge and the code when the sign-in gave a challenge", async () => {
+    const { post, service } = setup(session);
+    await service.verifyMfa({ challengeToken: "challenge-1", code: "123456" });
+    expect(post).toHaveBeenCalledWith(
+      AUTH_FLOW_PATHS.mfaVerify,
+      { challengeToken: "challenge-1", code: "123456" },
+      expect.objectContaining({ skipAuthRefresh: true }),
+    );
+  });
+
+  it("sends the code alone after a provider sign-in: the challenge is the backend's cookie", async () => {
+    const { post, service } = setup(session);
+    await service.verifyMfa({ challengeToken: null, code: "123456" });
+    expect(post).toHaveBeenCalledWith(
+      AUTH_FLOW_PATHS.mfaVerify,
+      { code: "123456" },
+      expect.anything(),
+    );
+    await service.verifyMfa({ code: "654321" });
+    expect(post).toHaveBeenLastCalledWith(
+      AUTH_FLOW_PATHS.mfaVerify,
+      { code: "654321" },
+      expect.anything(),
+    );
   });
 });
 
@@ -202,6 +249,23 @@ describe("flow errors", () => {
       name: "Required",
     });
     expect(failure.code).toBe("validation.failed");
+  });
+
+  it("reads the API's volume limit (429) as a wait with its seconds", () => {
+    const failure = readFlowError({
+      status: 429,
+      details: { errorCode: "rate_limit.exceeded", retryAfter: 42 },
+    });
+    expect(failure.retryAfterSeconds).toBe(42);
+    expect(isThrottled(failure)).toBe(true);
+    expect(
+      isThrottled(
+        readFlowError({
+          status: 400,
+          details: { errorCode: "identity.mfa.invalid-code" },
+        }),
+      ),
+    ).toBe(false);
   });
 
   it("names the provider sign-in stopped by a second factor", () => {

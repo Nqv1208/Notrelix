@@ -28,11 +28,24 @@ export function useAuthFlowDeps() {
       startProviderSignIn: (path) => {
         if (env.mockApi) {
           // No browser leaves in the mock world: the mock plays the provider
-          // round trip over the same route and the page lands where the
-          // backend's success redirect lands.
+          // round trip over the same route and says where the backend's
+          // redirect would land (`/auth/callback`, or `/sign-in?step=mfa`).
           void (runtimeClient.api as unknown as AuthFlowApiClient)
-            .get(path, { skipAuthRefresh: true, skipGlobalErrorToast: true })
-            .then(() => go({ to: "/auth/callback", replace: true }))
+            .get<{ redirectTo?: string }>(path, {
+              skipAuthRefresh: true,
+              skipGlobalErrorToast: true,
+            })
+            .then((answer) => {
+              const landing = new URL(
+                answer.redirectTo ?? "/auth/callback",
+                window.location.origin,
+              );
+              go({
+                to: landing.pathname,
+                search: Object.fromEntries(landing.searchParams),
+                replace: true,
+              });
+            })
             .catch(() => go({ to: "/sign-in", replace: true }));
           return;
         }

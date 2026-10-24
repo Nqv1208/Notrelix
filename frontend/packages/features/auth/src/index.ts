@@ -71,7 +71,12 @@ export type {
   AuthFlowNavigation,
   AuthCopy,
 } from "./web";
-export { createAuthFlowService, AUTH_FLOW_PATHS, readFlowError } from "./core";
+export {
+  createAuthFlowService,
+  AUTH_FLOW_PATHS,
+  readFlowError,
+  safeReturnPath,
+} from "./core";
 export type {
   AuthFlowApiClient,
   AuthFlowService,

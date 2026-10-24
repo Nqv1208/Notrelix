@@ -146,6 +146,8 @@ export class MockAuthDirectory {
   private attempts = new Map<string, number>();
   private lockedUntil = new Map<string, number>();
   private challenges = new Map<string, { email: string; triesLeft: number }>();
+  /** The backend's httpOnly MFA challenge cookie: set by a provider sign-in that needs a second step. */
+  private mfaChallengeCookie: string | null = null;
   private acceptedInvites = new Set<string>();
   private declinedInvites = new Set<string>();
   private sequence = 0;
@@ -160,6 +162,7 @@ export class MockAuthDirectory {
     this.attempts.clear();
     this.lockedUntil.clear();
     this.challenges.clear();
+    this.mfaChallengeCookie = null;
     this.acceptedInvites.clear();
     this.declinedInvites.clear();
     this.sequence = 0;
@@ -206,6 +209,28 @@ export class MockAuthDirectory {
       return { kind: "locked", retryAfterSeconds: MOCK_AUTH.lockSeconds };
     }
     return { kind: "invalid" };
+  }
+
+  /**
+   * A provider sign-in for the account that has an authenticator app: the backend keeps the
+   * challenge in an httpOnly cookie (never in a URL) and sends the browser to the second step.
+   */
+  startProviderMfa(): void {
+    const challengeToken = `challenge-${(this.sequence += 1)}`;
+    this.challenges.set(challengeToken, {
+      email: MOCK_AUTH.personalEmail,
+      triesLeft: OTP_ATTEMPTS,
+    });
+    this.mfaChallengeCookie = challengeToken;
+  }
+
+  /** What the browser would send back in the challenge cookie; null when there is none (expired or cleared). */
+  readMfaChallengeCookie(): string | null {
+    return this.mfaChallengeCookie;
+  }
+
+  clearMfaChallengeCookie(): void {
+    this.mfaChallengeCookie = null;
   }
 
   /** The second step: the app's six digits, or a backup code. */

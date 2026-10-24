@@ -48,6 +48,78 @@ describe("provider sign-in", () => {
     expect((await call("GET", "/auth/oauth/google/start")).status).toBe(200);
     expect((await call("GET", "/auth/me")).status).toBe(200);
   });
+
+  it("says where the backend's redirect lands, with a safe return path only", async () => {
+    const { call } = world();
+    const safe = await call(
+      "GET",
+      "/auth/oauth/google/start?returnUrl=%2Fworkspaces%2Fw1%2Fboards%2Fb1",
+    );
+    expect(safe.body?.redirectTo).toBe(
+      "/auth/callback?returnTo=%2Fworkspaces%2Fw1%2Fboards%2Fb1",
+    );
+    for (const unsafe of [
+      "//evil.com",
+      "%2F%5Cevil.com",
+      "https%3A%2F%2Fevil.com",
+      "%2F%252F%252Fevil.com",
+    ]) {
+      const refused = await call(
+        "GET",
+        `/auth/oauth/google/start?returnUrl=${unsafe}`,
+      );
+      expect(refused.body?.redirectTo).toBe("/auth/callback");
+    }
+  });
+
+  it("hands the second step to a cookie, not to the URL, for the provider whose account has an authenticator", async () => {
+    const { call, store } = world();
+    store.logoutCurrentUser();
+    const start = await call("GET", "/auth/oauth/microsoft/start");
+    expect(start.body?.redirectTo).toBe("/sign-in?step=mfa");
+    expect(JSON.stringify(start.body)).not.toContain("challenge");
+    // No session yet.
+    expect((await call("GET", "/auth/me")).status).toBe(401);
+    // The code alone opens it: the challenge is the cookie.
+    const wrong = await call("POST", "/auth/mfa/verify", { code: "000000" });
+    expect(wrong.body?.errorCode).toBe("identity.mfa.invalid-code");
+    const ok = await call("POST", "/auth/mfa/verify", { code: "482931" });
+    expect(ok.status).toBe(200);
+    expect((await call("GET", "/auth/me")).status).toBe(200);
+    // The cookie is cleared with the challenge: a second try has nothing to verify.
+    const again = await call("POST", "/auth/mfa/verify", { code: "482931" });
+    expect(again.body?.errorCode).toBe("identity.mfa.challenge-invalid");
+  });
+
+  it("keeps the return path through the second step and clears the cookie when the challenge is out of tries", async () => {
+    const { call } = world();
+    const start = await call(
+      "GET",
+      "/auth/oauth/microsoft/start?returnUrl=%2Fhome",
+    );
+    expect(start.body?.redirectTo).toBe("/sign-in?step=mfa&returnTo=%2Fhome");
+    for (let attempt = 1; attempt <= 4; attempt += 1)
+      expect(
+        (await call("POST", "/auth/mfa/verify", { code: "000000" })).body
+          ?.errorCode,
+      ).toBe("identity.mfa.invalid-code");
+    expect(
+      (await call("POST", "/auth/mfa/verify", { code: "000000" })).body
+        ?.errorCode,
+    ).toBe("identity.mfa.challenge-invalid");
+    expect(
+      (await call("POST", "/auth/mfa/verify", { code: "482931" })).body
+        ?.errorCode,
+    ).toBe("identity.mfa.challenge-invalid");
+  });
+
+  it("with no cookie and no challenge the second step answers an expired verification", async () => {
+    const { call } = world();
+    expect(
+      (await call("POST", "/auth/mfa/verify", { code: "482931" })).body
+        ?.errorCode,
+    ).toBe("identity.mfa.challenge-invalid");
+  });
 });
 
 describe("invitations", () => {

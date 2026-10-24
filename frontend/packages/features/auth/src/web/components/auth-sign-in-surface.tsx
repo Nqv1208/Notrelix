@@ -511,7 +511,11 @@ function OtpStep({
     <>
       <AuthHeading
         title={t.title}
-        lead={fillAuthCopy(t.lead, { email: step.email })}
+        lead={
+          step.email
+            ? fillAuthCopy(t.lead, { email: step.email })
+            : t.leadNoEmail
+        }
       />
       <form
         noValidate

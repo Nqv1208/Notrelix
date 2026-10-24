@@ -58,6 +58,24 @@ describe("sign-in flow: provider sign-in", () => {
     );
   });
 
+  it("never hands an unsafe return path to the provider round trip", () => {
+    const nav = navigation();
+    const service = {
+      oauthStartPath: vi.fn(() => "/auth/oauth/google/start"),
+    };
+    renderPureUi(
+      <Providers>
+        <SignInFlow
+          service={asService(service)}
+          navigation={nav}
+          redirect="https://evil.com"
+        />
+      </Providers>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: copy.email.google }));
+    expect(service.oauthStartPath).toHaveBeenCalledWith("google", null);
+  });
+
   it("says the account signs in with its password when the provider sign-in needed a second step", () => {
     renderPureUi(
       <Providers>
@@ -79,6 +97,114 @@ describe("sign-in flow: provider sign-in", () => {
         <SignInFlow
           service={asService({})}
           navigation={navigation()}
+          providerError="something.else"
+        />
+      </Providers>,
+    );
+    expect(screen.getByRole("alert").textContent).toContain(
+      copy.email.providerFailed,
+    );
+  });
+});
+
+describe("sign-in flow: second step after a provider sign-in", () => {
+  const code = "482931";
+  const enterCode = () => {
+    fireEvent.paste(screen.getByLabelText("Số 1 trên 6"), {
+      clipboardData: { getData: () => code },
+    });
+    fireEvent.click(screen.getByRole("button", { name: copy.otp.verify }));
+  };
+  const session = {
+    kind: "session" as const,
+    user: { id: "u", email: "a@b.vn", name: "A", avatarUrl: null },
+    expiresAt: null,
+  };
+
+  function renderSecondStep(service: object, redirect?: string | null) {
+    const nav = navigation();
+    renderPureUi(
+      <Providers>
+        <SignInFlow
+          service={asService(service)}
+          navigation={nav}
+          initialStep="mfa"
+          redirect={redirect}
+        />
+      </Providers>,
+    );
+    return nav;
+  }
+
+  it("shows the second step without an email and submits the code without a challenge", async () => {
+    const service = { verifyMfa: vi.fn(async () => session) };
+    const nav = renderSecondStep(service, "/workspaces/w1/boards/b1");
+    expect(
+      screen.getByRole("heading", { level: 1, name: copy.otp.title }),
+    ).toBeTruthy();
+    expect(document.body.textContent).toContain(copy.otp.leadNoEmail);
+    enterCode();
+    await waitFor(() =>
+      expect(nav.navigate).toHaveBeenCalledWith({
+        to: "/workspaces/w1/boards/b1",
+        replace: true,
+      }),
+    );
+    expect(service.verifyMfa).toHaveBeenCalledWith({
+      challengeToken: null,
+      code,
+    });
+  });
+
+  it("goes home when the return path is not an internal one", async () => {
+    const service = { verifyMfa: vi.fn(async () => session) };
+    const nav = renderSecondStep(service, "//evil.com");
+    enterCode();
+    await waitFor(() =>
+      expect(nav.navigate).toHaveBeenCalledWith({ to: "/home", replace: true }),
+    );
+  });
+
+  it("says the verification expired when the backend no longer has the challenge", async () => {
+    const service = {
+      verifyMfa: vi.fn(async () => {
+        throw {
+          status: 400,
+          details: { errorCode: "identity.mfa.challenge-invalid" },
+        };
+      }),
+    };
+    renderSecondStep(service);
+    enterCode();
+    await waitFor(() =>
+      expect(screen.getByRole("alert").textContent).toContain(copy.otp.expired),
+    );
+  });
+
+  it("shows the wait when the API's volume limit answers 429", async () => {
+    const service = {
+      verifyMfa: vi.fn(async () => {
+        throw {
+          status: 429,
+          details: { errorCode: "rate_limit.exceeded", retryAfter: 30 },
+        };
+      }),
+    };
+    renderSecondStep(service);
+    enterCode();
+    await waitFor(() =>
+      expect(screen.getByText(/Thử lại sau \d+ giây/)).toBeTruthy(),
+    );
+  });
+
+  it("an error on /sign-in wins over the second step", () => {
+    const nav = navigation();
+    renderPureUi(
+      <Providers>
+        <SignInFlow
+          service={asService({})}
+          navigation={nav}
+          initialStep="mfa"
           providerError="something.else"
         />
       </Providers>,

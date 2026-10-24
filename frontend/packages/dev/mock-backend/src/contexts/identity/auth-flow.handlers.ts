@@ -22,7 +22,41 @@ import {
 import type { MockStore } from "../../state/mock-store";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-/** The backend's minimum; the page asks for more. */
+/** The provider whose mock account has an authenticator app: its sign-in goes through the second step. */
+const MFA_PROVIDER = "microsoft";
+
+function hasControlCharacter(value: string): boolean {
+  for (let index = 0; index < value.length; index += 1) {
+    const code = value.charCodeAt(index);
+    if (code <= 0x1f || (code >= 0x7f && code <= 0x9f)) return true;
+  }
+  return false;
+}
+
+/**
+ * The backend's return-path rule: an internal path with a single leading slash, no backslash,
+ * no control character, nothing that decodes into one, at most 512 characters.
+ */
+function isInternalPath(path: string | undefined): path is string {
+  if (!path || path.length > 512) return false;
+  let current = path;
+  for (let pass = 0; pass < 3; pass += 1) {
+    if (current[0] !== "/" || current[1] === "/" || current[1] === "\\")
+      return false;
+    if (current.includes("\\") || hasControlCharacter(current)) return false;
+    let decoded: string;
+    try {
+      decoded = decodeURIComponent(current);
+    } catch {
+      return false;
+    }
+    if (decoded === current) return true;
+    current = decoded;
+  }
+  return false;
+}
+
+/** The backend's minimum; the page asks for the same. */
 const MIN_PASSWORD = 8;
 
 /**
@@ -139,16 +173,23 @@ export const authFlowOperations = [
     method: "POST",
     route: "/auth/mfa/verify",
     async handle({ body, store }) {
+      // After a provider sign-in the challenge is the cookie; a token in the body wins.
+      const fromCookie = !body?.challengeToken?.trim();
       const outcome = store.auth.verifyOtp(
-        body?.challengeToken ?? "",
+        fromCookie
+          ? (store.auth.readMfaChallengeCookie() ?? "")
+          : (body?.challengeToken ?? ""),
         body?.code ?? "",
       );
-      if (outcome.kind === "challenge-invalid")
+      if (outcome.kind === "signed-in") store.auth.clearMfaChallengeCookie();
+      if (outcome.kind === "challenge-invalid") {
+        if (fromCookie) store.auth.clearMfaChallengeCookie();
         return identityProblem(
           400,
           "identity.mfa.challenge-invalid",
           "The verification expired. Sign in again.",
         );
+      }
       if (outcome.kind === "invalid")
         return identityProblem(
           400,
@@ -165,12 +206,26 @@ export const authFlowOperations = [
     contract: { kind: "openapi", operationId: "Identity.Auth.OAuth.Start" },
     method: "GET",
     route: "/auth/oauth/:provider/start",
-    async handle({ store }) {
+    async handle({ params, query, store }) {
       // The real call redirects the browser to the provider and back to the
-      // web `/auth/callback` with the session cookies set. The mock plays the
-      // round trip: the session opens and the host goes to the callback.
+      // backend callback, which answers with a redirect. The mock plays the
+      // round trip and says where that redirect goes (`redirectTo`): the
+      // session opens and the host lands on `/auth/callback`, or, for the
+      // provider whose account has an authenticator app (Microsoft), the
+      // challenge goes into the mock's cookie and the host lands on the
+      // second step. A return path travels only when it is an internal one.
+      const returnTo = isInternalPath(query.returnUrl) ? query.returnUrl : null;
+      const suffix = returnTo ? `returnTo=${encodeURIComponent(returnTo)}` : "";
+      if (params.provider === MFA_PROVIDER) {
+        store.auth.startProviderMfa();
+        return ok({
+          redirectTo: `/sign-in?step=mfa${suffix ? `&${suffix}` : ""}`,
+        });
+      }
       store.loginCurrentUser();
-      return ok({});
+      return ok({
+        redirectTo: `/auth/callback${suffix ? `?${suffix}` : ""}`,
+      });
     },
   }),
 

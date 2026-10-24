@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   IDENTITY_ERROR,
+  isThrottled,
   readFlowError,
+  safeReturnPath,
   type AuthFlowService,
   type SessionResult,
 } from "../../core";
@@ -59,7 +61,8 @@ type Phase =
   | {
       kind: "otp";
       email: string;
-      challengeToken: string;
+      /** Null after a provider sign-in: the challenge is the backend's cookie and the page never holds it. */
+      challengeToken: string | null;
       error: "wrong" | "expired" | "inactive" | "locked" | "unreachable" | null;
       backup: boolean;
     };
@@ -75,6 +78,7 @@ export function SignInFlow({
   redirect,
   initialEmail = "",
   providerError = null,
+  initialStep = null,
 }: {
   service: AuthFlowService;
   navigation: AuthFlowNavigation;
@@ -83,17 +87,34 @@ export function SignInFlow({
   initialEmail?: string;
   /** The `error` code the backend put on `/sign-in` after a provider sign-in that did not open a session. */
   providerError?: string | null;
+  /**
+   * `"mfa"` when the backend sent the browser here after a provider sign-in that needs a second
+   * step: the challenge is in its httpOnly cookie, so the page asks for the code alone.
+   */
+  initialStep?: "mfa" | null;
 }) {
   const copy = useAuthCopy();
   const queryClient = useQueryClient();
-  const [phase, setPhase] = useState<Phase>({
-    kind: "email",
-    error: providerError
-      ? providerError === IDENTITY_ERROR.oauthMfaRequired
-        ? "mfa-required"
-        : "provider-failed"
-      : null,
-  });
+  // Only an internal path is ever navigated to or handed to the provider round trip.
+  const returnTo = safeReturnPath(redirect);
+  const [phase, setPhase] = useState<Phase>(() =>
+    !providerError && initialStep === "mfa"
+      ? {
+          kind: "otp",
+          email: "",
+          challengeToken: null,
+          error: null,
+          backup: false,
+        }
+      : {
+          kind: "email",
+          error: providerError
+            ? providerError === IDENTITY_ERROR.oauthMfaRequired
+              ? "mfa-required"
+              : "provider-failed"
+            : null,
+        },
+  );
   const [typedEmail, setTypedEmail] = useState(initialEmail);
   const [lockSeconds, setLockSeconds] = useState<number | null>(null);
   const lockedSeconds = useCountdown(lockSeconds);
@@ -101,9 +122,9 @@ export function SignInFlow({
   const signedIn = useMemo(
     () => (session: SessionResult) => {
       queryClient.setQueryData(authQueryKeys.profile, session.user);
-      navigation.navigate({ to: redirect || "/home", replace: true });
+      navigation.navigate({ to: returnTo ?? "/home", replace: true });
     },
-    [navigation, queryClient, redirect],
+    [navigation, queryClient, returnTo],
   );
 
   const identify = useMutation({
@@ -164,7 +185,7 @@ export function SignInFlow({
         });
         return;
       }
-      const throttled = failure.code === IDENTITY_ERROR.tooManyAttempts;
+      const throttled = isThrottled(failure);
       setLockSeconds(throttled ? failure.retryAfterSeconds : null);
       setPhase({
         kind: "password",
@@ -176,25 +197,21 @@ export function SignInFlow({
   });
 
   const verify = useMutation({
-    mutationFn: (input: { challengeToken: string; code: string }) =>
+    mutationFn: (input: { challengeToken: string | null; code: string }) =>
       service.verifyMfa(input),
     onSuccess: (result) => {
       if (result.kind === "session") signedIn(result);
     },
     onError: (error) => {
       const failure = readFlowError(error);
-      setLockSeconds(
-        failure.code === IDENTITY_ERROR.tooManyAttempts
-          ? failure.retryAfterSeconds
-          : null,
-      );
+      setLockSeconds(isThrottled(failure) ? failure.retryAfterSeconds : null);
       setPhase((current) =>
         current.kind === "otp"
           ? {
               ...current,
               error: failure.network
                 ? "unreachable"
-                : failure.code === IDENTITY_ERROR.tooManyAttempts
+                : isThrottled(failure)
                   ? "locked"
                   : failure.code === IDENTITY_ERROR.accountInactive
                     ? "inactive"
@@ -209,7 +226,7 @@ export function SignInFlow({
 
   /** The provider's page and the way back are the backend's: the browser leaves. */
   const startProvider = (name: string) =>
-    navigation.startProviderSignIn(service.oauthStartPath(name, redirect));
+    navigation.startProviderSignIn(service.oauthStartPath(name, returnTo));
 
   const pending = identify.isPending || login.isPending || verify.isPending;
 
