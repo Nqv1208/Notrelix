@@ -2,39 +2,30 @@ import { useCallback, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AccountProfileSurface,
+  checkAvatarFile,
   createAccountService,
   createUsePreferences,
   createUseProfile,
+  createUseProfilePhoto,
   createUseUpdateProfile,
+  photoFailureOf,
   useAccountProfileCopy,
   accountQueryKeys,
   type AccountProfileData,
+  type AccountPhotoFailure,
   type AccountProfileValues,
   type AccountSaveStatus,
   type AccountSection,
 } from "@notrelix/features-account";
+import { authQueryKeys, type User } from "@notrelix/features-auth";
 import { useFormatters } from "@notrelix/i18n";
 import { useAccountId } from "@notrelix/query";
 import { useAppRuntime } from "@notrelix/runtime-web";
 import {
-  useAccountPagesApi,
   useRouteWorkspaceId,
   useRouteWorkspaceName,
 } from "./use-account-pages";
 import { useClientPreference } from "./use-client-preference";
-
-/** A photo is sent as a data URL; anything bigger is refused here. */
-const MAX_PHOTO_BYTES = 1_500_000;
-const PHOTO_TYPES = ["image/png", "image/jpeg", "image/webp"];
-
-function readAsDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(file);
-  });
-}
 
 /**
  * The profile: the name and email are the account's (`/auth/me`, `/profile`),
@@ -49,7 +40,6 @@ export function AccountProfilePage() {
   const copy = useAccountProfileCopy();
   const formatters = useFormatters();
   const queryClient = useQueryClient();
-  const api = useAccountPagesApi();
   const deps = useMemo(
     () => ({ api: runtimeClient.api, endpoints: runtimeClient.endpoints }),
     [runtimeClient],
@@ -61,6 +51,7 @@ export function AccountProfilePage() {
   const useProfile = useMemo(() => createUseProfile(deps), [deps]);
   const useUpdateProfile = useMemo(() => createUseUpdateProfile(deps), [deps]);
   const usePreferences = useMemo(() => createUsePreferences(deps), [deps]);
+  const useProfilePhoto = useMemo(() => createUseProfilePhoto(deps), [deps]);
 
   const { profile, isError, refetch } = useProfile();
   const updateName = useUpdateProfile();
@@ -86,7 +77,16 @@ export function AccountProfilePage() {
     onSettled: () => queryClient.invalidateQueries({ queryKey: memberKey }),
   });
   const [save, setSave] = useState<AccountSaveStatus>({ state: "idle" });
-  const [photoError, setPhotoError] = useState(false);
+  const [photoError, setPhotoError] = useState<AccountPhotoFailure | null>(
+    null,
+  );
+  const photo = useProfilePhoto({
+    // The signed-in session shows the person too (rail, sidebar).
+    onChanged: (avatarUrl) =>
+      queryClient.setQueryData<User>(authQueryKeys.profile, (user) =>
+        user ? { ...user, avatarUrl } : user,
+      ),
+  });
 
   const section = useMemo<AccountSection<AccountProfileData>>(
     () =>
@@ -156,22 +156,29 @@ export function AccountProfilePage() {
 
   const handlePhoto = useCallback(
     async (file: File) => {
-      if (!PHOTO_TYPES.includes(file.type) || file.size > MAX_PHOTO_BYTES) {
-        setPhotoError(true);
+      const refused = checkAvatarFile(file);
+      if (refused) {
+        setPhotoError(refused);
         return;
       }
       try {
-        await api.setAvatar(await readAsDataUrl(file));
-        setPhotoError(false);
-        await queryClient.invalidateQueries({
-          queryKey: accountQueryKeys.profile(accountId),
-        });
-      } catch {
-        setPhotoError(true);
+        await photo.upload(file);
+        setPhotoError(null);
+      } catch (error) {
+        setPhotoError(photoFailureOf(error));
       }
     },
-    [api, queryClient, accountId],
+    [photo],
   );
+
+  const handlePhotoRemove = useCallback(async () => {
+    try {
+      await photo.remove();
+      setPhotoError(null);
+    } catch (error) {
+      setPhotoError(photoFailureOf(error));
+    }
+  }, [photo]);
 
   return (
     <AccountProfileSurface
@@ -187,6 +194,7 @@ export function AccountProfilePage() {
         void member.refetch();
       }}
       onPhotoChange={(file) => void handlePhoto(file)}
+      onPhotoRemove={() => void handlePhotoRemove()}
     />
   );
 }

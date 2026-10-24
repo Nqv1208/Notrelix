@@ -29,9 +29,6 @@ export function workspaceFixture(
     role: "admin",
     memberCount: 86,
     departmentCount: 5,
-    unreadCount: null,
-    guestBoard: null,
-    otherOwnerName: "Trịnh Quốc Hưng",
     isDefault: true,
     canLeave: true,
     open: { href: "/workspaces/workspace-primary", onNavigate: noop },
@@ -50,8 +47,6 @@ export function workspaceListFixture(): AccountWorkspaceView[] {
       role: "member",
       memberCount: 18,
       departmentCount: null,
-      unreadCount: 2,
-      otherOwnerName: null,
       isDefault: false,
       open: { href: "/workspaces/workspace-danang", onNavigate: noop },
     }),
@@ -61,10 +56,8 @@ export function workspaceListFixture(): AccountWorkspaceView[] {
       initials: "TL",
       tone: "gold",
       role: "guest",
-      memberCount: 40,
+      memberCount: null,
       departmentCount: null,
-      guestBoard: "Điều phối xe tháng 10",
-      otherOwnerName: null,
       isDefault: false,
       open: { href: "/workspaces/workspace-tanloc", onNavigate: noop },
     }),
@@ -83,7 +76,7 @@ export function workspacesDefaultScenario(
     copy: workspacesCopyFixture(locale),
     workspaces: { status: "ready", data: workspaceListFixture() },
     busy: false,
-    actionError: false,
+    actionError: null,
     notice: null,
     create: { href: "/onboarding", onNavigate: noop },
   };
@@ -121,7 +114,6 @@ export function workspacesSoleOwnerScenario(
           ...(first as AccountWorkspaceView),
           role: "owner",
           canLeave: false,
-          otherOwnerName: null,
         },
         ...rest,
       ],
@@ -146,7 +138,7 @@ export function workspacesEdgeDataScenario(): WorkspacesScenario {
   const [first, ...rest] = workspaceListFixture();
   return {
     ...workspacesDefaultScenario("vi"),
-    actionError: true,
+    actionError: "failed",
     workspaces: {
       status: "ready",
       data: [

@@ -506,6 +506,15 @@ export class MockStore {
         this.insertMembership(
           this.factories.membership(w * 10, id, owner.id, { role: "owner" }),
         );
+        // The third workspace has a second owner, so the persona may leave it
+        // while the others still show the last-owner rule.
+        if (w === 2) {
+          this.insertMembership(
+            this.factories.membership(w * 10 + 1, id, admin.id, {
+              role: "owner",
+            }),
+          );
+        }
       }
     }
 

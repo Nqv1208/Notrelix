@@ -9,6 +9,8 @@ export {
   isPreferencesConflict,
 } from "./query/hooks/use-preferences";
 export { createUseSecurity } from "./query/hooks/use-security";
+export { createUseAccountWorkspaces } from "./query/hooks/use-account-workspaces";
+export { createUseProfilePhoto } from "./query/hooks/use-profile-photo";
 
 export { accountProfileCatalog } from "./profile/account-profile.catalog";
 export {
@@ -86,7 +88,6 @@ export {
 export { useAccountWorkspacesCopy } from "./workspaces/use-account-workspaces-copy";
 export {
   AccountWorkspacesSurface,
-  type AccountWorkspaceRole,
   type AccountWorkspaceTone,
   type AccountWorkspaceView,
   type AccountWorkspacesSurfaceProps,

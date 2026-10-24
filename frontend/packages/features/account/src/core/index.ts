@@ -8,6 +8,10 @@ export type {
   AccountActivityEntry,
   AccountActivityPage,
   AccountActivityType,
+  AccountLeaveFailure,
+  AccountPhotoFailure,
+  AccountWorkspaceEntry,
+  AccountWorkspaceRole,
   AccountDeviceKind,
   AccountPreferences,
   AccountPreferencesPatch,
@@ -23,7 +27,12 @@ export type {
 } from "./types/account";
 
 export {
+  AVATAR_MAX_BYTES,
+  checkAvatarFile,
   createAccountService,
+  leaveFailureOf,
+  photoFailureOf,
+  toWorkspaceEntry,
   describeDevice,
   type AccountApiClient,
   type AccountEndpoints,

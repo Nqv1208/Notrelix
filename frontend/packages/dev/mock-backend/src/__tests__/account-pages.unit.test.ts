@@ -4,7 +4,7 @@ import { createMockFetch } from "../transport/create-mock-fetch";
 import { MockStore } from "../state/mock-store";
 import { MOCK_AUTH } from "../state/mock-auth-directory";
 
-/** The account pages in the mock world: the Identity, Workspaces and Collaboration contracts, and the pages that still have no producer (CTR-GAP-ACC-PAGES). */
+/** The account pages in the mock world: the Identity, Workspaces and Collaboration contracts. */
 function client() {
   const store = new MockStore();
   const { api } = createNotrelixClient({
@@ -230,36 +230,152 @@ describe("notification preferences", () => {
   });
 });
 
+interface MyWorkspace {
+  id: string;
+  name: string;
+  slug: string;
+  role: string;
+  memberCount: number | null;
+  departmentCount: number | null;
+  isDefault: boolean;
+  canLeave: boolean;
+}
+
 describe("workspaces of the member", () => {
-  it("makes another workspace the default and leaves one the member does not own alone", async () => {
+  it("lists only the shape the producer sends: a bare array with a capitalised role and no mock-only fields", async () => {
     const { api } = client();
-    const list = (await api.get("/account/workspaces")) as {
-      workspaces: {
-        id: string;
-        isDefault: boolean;
-        canLeave: boolean;
-        role: string;
-      }[];
-    };
-    expect(list.workspaces).toHaveLength(3);
-    expect(list.workspaces[0]).toMatchObject({
-      isDefault: true,
-      canLeave: false,
-    });
-    expect(list.workspaces[1]).toMatchObject({ role: "member" });
-    expect(list.workspaces[2]).toMatchObject({ role: "guest" });
-    const second = list.workspaces[1]?.id ?? "";
-    const after = (await api.put("/account/default-workspace", {
-      workspaceId: second,
-    })) as typeof list;
-    expect(after.workspaces.find((w) => w.isDefault)?.id).toBe(second);
-    // The only owner cannot leave the primary workspace.
+    const list = (await api.get("/account/workspaces")) as MyWorkspace[];
+    expect(Array.isArray(list)).toBe(true);
+    expect(list).toHaveLength(3);
+    for (const entry of list) {
+      expect(Object.keys(entry).sort()).toEqual([
+        "canLeave",
+        "departmentCount",
+        "id",
+        "isDefault",
+        "memberCount",
+        "name",
+        "role",
+        "slug",
+      ]);
+      expect(["Owner", "Admin", "Member", "Guest"]).toContain(entry.role);
+    }
+    expect(list.map((entry) => entry.name)).toEqual(
+      [...list.map((entry) => entry.name)].sort(),
+    );
+    expect(list.filter((entry) => entry.isDefault)).toHaveLength(1);
+    // An owner sees the department count; the last owner cannot leave.
+    expect(list[0]).toMatchObject({ role: "Owner", canLeave: false });
+    expect(list[0]?.departmentCount).not.toBeNull();
+  });
+
+  it("makes another workspace the default with a 204 and refuses a workspace the member does not belong to", async () => {
+    const { api } = client();
+    const list = (await api.get("/account/workspaces")) as MyWorkspace[];
+    const second = list.find((entry) => !entry.isDefault)?.id ?? "";
+    expect(
+      await api.put("/account/default-workspace", { workspaceId: second }),
+    ).toBeNull();
+    const after = (await api.get("/account/workspaces")) as MyWorkspace[];
+    expect(after.find((entry) => entry.isDefault)?.id).toBe(second);
     await expect(
-      api.delete(`/account/workspaces/${list.workspaces[0]?.id}`),
-    ).rejects.toBeDefined();
-    await api.delete(`/account/workspaces/${second}`);
-    const left = (await api.get("/account/workspaces")) as typeof list;
-    expect(left.workspaces).toHaveLength(2);
-    expect(left.workspaces.some((w) => w.id === second)).toBe(false);
+      api.put("/account/default-workspace", { workspaceId: "nope" }),
+    ).rejects.toMatchObject({ status: 404 });
+    await expect(
+      api.put("/account/default-workspace", { workspaceId: "" }),
+    ).rejects.toMatchObject({ status: 400 });
+  });
+
+  it("refuses the last owner with the dotted code and lets another owner leave, clearing a default that was left", async () => {
+    const { api } = client();
+    const list = (await api.get("/account/workspaces")) as MyWorkspace[];
+    const sole = list.find((entry) => !entry.canLeave);
+    const leavable = list.find((entry) => entry.canLeave);
+    expect(sole && leavable).toBeTruthy();
+    await expect(
+      api.delete(`/account/workspaces/${sole?.id}`),
+    ).rejects.toMatchObject({
+      status: 409,
+      code: "workspaces.member.last-owner-cannot-leave",
+    });
+    await api.put("/account/default-workspace", {
+      workspaceId: leavable?.id,
+    });
+    expect(await api.delete(`/account/workspaces/${leavable?.id}`)).toBeNull();
+    const left = (await api.get("/account/workspaces")) as MyWorkspace[];
+    expect(left.some((entry) => entry.id === leavable?.id)).toBe(false);
+    // Leaving twice: the member no longer belongs there.
+    await expect(
+      api.delete(`/account/workspaces/${leavable?.id}`),
+    ).rejects.toMatchObject({ status: 404 });
+  });
+});
+
+describe("profile photo", () => {
+  const PNG = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0];
+  const form = (bytes: ArrayLike<number> | Uint8Array, name = "me.png") => {
+    const data = new FormData();
+    data.append(
+      "file",
+      new File([Uint8Array.from(bytes)], name, { type: "text/plain" }),
+      name,
+    );
+    return data;
+  };
+
+  it("sends the file as a multipart part, answers a relative versioned address and shows it everywhere the person is read", async () => {
+    const { api } = client();
+    const first = (await api.upload("/profile/avatar", form(PNG), {
+      method: "PUT",
+    })) as { avatarUrl: string };
+    expect(first.avatarUrl).toMatch(/^\/api\/v1\/users\/[^/]+\/avatar\?v=.+/);
+    expect(await api.get("/auth/me")).toMatchObject({
+      avatarUrl: first.avatarUrl,
+    });
+    const second = (await api.upload("/profile/avatar", form(PNG), {
+      method: "PUT",
+    })) as { avatarUrl: string };
+    expect(second.avatarUrl).not.toBe(first.avatarUrl);
+  });
+
+  it("recognises the bytes, not the declared type or name", async () => {
+    const { api } = client();
+    await expect(
+      api.upload("/profile/avatar", form([0x47, 0x49, 0x46, 0x38], "me.png"), {
+        method: "PUT",
+      }),
+    ).rejects.toMatchObject({
+      status: 415,
+      code: "identity.avatar.unsupported-format",
+    });
+    const jpeg = await api.upload(
+      "/profile/avatar",
+      form([0xff, 0xd8, 0xff, 0xe0], "photo.gif"),
+      { method: "PUT" },
+    );
+    expect(jpeg).toMatchObject({ avatarUrl: expect.any(String) });
+  });
+
+  it("refuses a photo over 2,000,000 bytes and a request without the file part", async () => {
+    const { api } = client();
+    const big = new Uint8Array(2_000_001);
+    big.set(PNG);
+    await expect(
+      api.upload("/profile/avatar", form(big), { method: "PUT" }),
+    ).rejects.toMatchObject({
+      status: 413,
+      code: "identity.avatar.too-large",
+    });
+    await expect(
+      api.upload("/profile/avatar", new FormData(), { method: "PUT" }),
+    ).rejects.toMatchObject({ status: 400 });
+  });
+
+  it("removes the photo, also when there is none", async () => {
+    const { api } = client();
+    await api.upload("/profile/avatar", form(PNG), { method: "PUT" });
+    expect(await api.delete("/profile/avatar")).toEqual({ avatarUrl: null });
+    expect(await api.get("/auth/me")).toMatchObject({ avatarUrl: null });
+    expect(await api.delete("/profile/avatar")).toEqual({ avatarUrl: null });
   });
 });

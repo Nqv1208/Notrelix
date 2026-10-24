@@ -1,5 +1,6 @@
 import * as React from "react";
 import { Check, Info as InfoIcon } from "lucide-react";
+import { resolveApiAssetUrl } from "@notrelix/contracts";
 import { cn } from "@notrelix/ui-web";
 
 /**
@@ -219,6 +220,9 @@ export function Avatar({
   url?: string | null;
   className?: string;
 }) {
+  const src = resolveApiAssetUrl(url);
+  // A photo the producer will not serve (removed, not allowed) falls back to the initials.
+  const [failedSrc, setFailedSrc] = React.useState<string | null>(null);
   return (
     <span
       aria-hidden="true"
@@ -227,8 +231,13 @@ export function Avatar({
         className,
       )}
     >
-      {url ? (
-        <img src={url} alt="" className="size-full object-cover" />
+      {src && src !== failedSrc ? (
+        <img
+          src={src}
+          alt=""
+          className="size-full object-cover"
+          onError={() => setFailedSrc(src)}
+        />
       ) : (
         initialsOf(name)
       )}

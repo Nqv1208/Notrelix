@@ -1,4 +1,8 @@
 import type {
+  AccountLeaveFailure,
+  AccountPhotoFailure,
+  AccountWorkspaceEntry,
+  AccountWorkspaceRole,
   AccountActivityEntry,
   AccountActivityPage,
   AccountDeviceKind,
@@ -32,6 +36,16 @@ export interface AccountApiClient {
     body: unknown,
     options?: { skipGlobalErrorToast?: boolean },
   ): Promise<T>;
+  delete<T>(
+    url: string,
+    options?: { skipGlobalErrorToast?: boolean },
+  ): Promise<T>;
+  /** Multipart upload; `PUT` replaces a resource. */
+  upload<T>(
+    url: string,
+    form: FormData,
+    options: { method?: "POST" | "PUT"; idempotencyKey?: string },
+  ): Promise<T>;
 }
 
 export interface AccountEndpoints {
@@ -54,6 +68,12 @@ export interface AccountEndpoints {
   users: {
     updateProfile: string;
     preferences: string;
+    avatar: string;
+  };
+  account: {
+    workspaces: string;
+    defaultWorkspace: string;
+    leaveWorkspace: (workspaceId: string) => string;
   };
   workspaces: {
     myJobTitle: (workspaceId: string) => string;
@@ -62,6 +82,9 @@ export interface AccountEndpoints {
 }
 
 /** Quiet: the account pages say what went wrong themselves, and a refused step-up is not a lost session. */
+/** Quiet but session-refreshing: the pages report a refused call themselves. */
+const PAGE_QUIET = { skipGlobalErrorToast: true } as const;
+
 const QUIET = { skipGlobalErrorToast: true, skipAuthRefresh: true } as const;
 
 // ─── The one mapping owner: backend shapes into the pages' models ──────────
@@ -80,6 +103,71 @@ export function toUserProfile(wire: UserWire): UserProfile {
     name: wire.name ?? "",
     avatarUrl: wire.avatarUrl ?? null,
   };
+}
+
+interface WorkspaceEntryWire {
+  readonly id?: string;
+  readonly name?: string | null;
+  readonly role?: string | null;
+  readonly memberCount?: number | null;
+  readonly departmentCount?: number | null;
+  readonly isDefault?: boolean;
+  readonly canLeave?: boolean;
+}
+
+const WORKSPACE_ROLES: readonly AccountWorkspaceRole[] = [
+  "owner",
+  "admin",
+  "member",
+  "guest",
+];
+
+/** The one place the producer's capitalised role and nullable counts become the page's model. */
+export function toWorkspaceEntry(
+  wire: WorkspaceEntryWire,
+): AccountWorkspaceEntry {
+  const role = (wire.role ?? "").toLowerCase();
+  return {
+    id: wire.id ?? "",
+    name: wire.name ?? "",
+    role: WORKSPACE_ROLES.find((known) => known === role) ?? "member",
+    memberCount: wire.memberCount ?? null,
+    departmentCount: wire.departmentCount ?? null,
+    isDefault: wire.isDefault ?? false,
+    canLeave: wire.canLeave ?? false,
+  };
+}
+
+/** The error code of a refused call (`errorCode` of the problem answer), when there is one. */
+function errorCodeOf(error: unknown): string | null {
+  const code = (error as { code?: unknown } | null)?.code;
+  return typeof code === "string" ? code : null;
+}
+
+/** A photo the page refuses before sending: what the producer accepts, with a safety margin on the size. */
+export const AVATAR_MAX_BYTES = 1_500_000;
+const AVATAR_TYPES = ["image/png", "image/jpeg", "image/webp"];
+
+export function checkAvatarFile(file: {
+  readonly type: string;
+  readonly size: number;
+}): Extract<AccountPhotoFailure, "unsupported" | "too-large"> | null {
+  if (!AVATAR_TYPES.includes(file.type)) return "unsupported";
+  if (file.size > AVATAR_MAX_BYTES) return "too-large";
+  return null;
+}
+
+export function photoFailureOf(error: unknown): AccountPhotoFailure {
+  const code = errorCodeOf(error);
+  if (code === "identity.avatar.too-large") return "too-large";
+  if (code === "identity.avatar.unsupported-format") return "unsupported";
+  return "failed";
+}
+
+export function leaveFailureOf(error: unknown): AccountLeaveFailure {
+  return errorCodeOf(error) === "workspaces.member.last-owner-cannot-leave"
+    ? "last-owner"
+    : "failed";
 }
 
 interface PreferencesWire {
@@ -266,6 +354,48 @@ export function createAccountService(
     },
 
     /** The signed-in member's own row: job title, its version and when they joined. */
+    /** Only the person's own active memberships, ordered by name. */
+    async listMyWorkspaces(): Promise<AccountWorkspaceEntry[]> {
+      const wire = await api.get<WorkspaceEntryWire[]>(
+        endpoints.account.workspaces,
+        PAGE_QUIET,
+      );
+      return wire.map(toWorkspaceEntry);
+    },
+
+    /** Answers 204; a workspace the person does not belong to answers 404. */
+    async setDefaultWorkspace(workspaceId: string): Promise<void> {
+      await api.put<void>(
+        endpoints.account.defaultWorkspace,
+        { workspaceId },
+        PAGE_QUIET,
+      );
+    },
+
+    /** Answers 204; the last owner is refused with `workspaces.member.last-owner-cannot-leave`. */
+    async leaveWorkspace(workspaceId: string): Promise<void> {
+      await api.delete<void>(
+        endpoints.account.leaveWorkspace(workspaceId),
+        PAGE_QUIET,
+      );
+    },
+
+    /** Sends the file itself (multipart part `file`); answers the new photo address. */
+    async uploadAvatar(file: File): Promise<string | null> {
+      const form = new FormData();
+      form.append("file", file, file.name);
+      const wire = await api.upload<{ avatarUrl?: string | null }>(
+        endpoints.users.avatar,
+        form,
+        { method: "PUT" },
+      );
+      return wire.avatarUrl ?? null;
+    },
+
+    async removeAvatar(): Promise<void> {
+      await api.delete<unknown>(endpoints.users.avatar, PAGE_QUIET);
+    },
+
     async getMyMemberProfile(workspaceId: string): Promise<MyMemberProfile> {
       const wire = await api.get<{
         jobTitle?: string | null;

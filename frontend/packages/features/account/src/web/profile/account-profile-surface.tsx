@@ -7,6 +7,7 @@ import {
   BTN_PRIMARY,
   FOCUS,
   INPUT,
+  LINK_BUTTON_DANGER,
   LoadError,
   PageHead,
   Toast,
@@ -18,6 +19,7 @@ import {
   type AccountSaveStatus,
   type AccountSection,
 } from "../shared/account-surface-model";
+import type { AccountPhotoFailure } from "../../core/types/account";
 import type { AccountProfileCopy } from "./account-profile.copy";
 
 /** The fields the profile page edits. */
@@ -46,11 +48,13 @@ export interface AccountProfileSurfaceProps {
   readonly profile: AccountSection<AccountProfileData>;
   /** The outcome of the last save; the container owns the mutation. */
   readonly save: AccountSaveStatus;
-  /** The photo was refused (wrong type or too large). */
-  readonly photoError?: boolean;
+  /** Why the photo was not changed; `null` = nothing to say. */
+  readonly photoError?: AccountPhotoFailure | null;
   readonly onSave: (values: AccountProfileValues) => void;
   readonly onRetry: () => void;
   readonly onPhotoChange: (file: File) => void;
+  /** Takes the photo away; offered only while there is one. */
+  readonly onPhotoRemove?: () => void;
 }
 
 const TIMEZONES = ["UTC", "Asia/Ho_Chi_Minh", "Asia/Tokyo", "Europe/Paris"];
@@ -128,14 +132,16 @@ function ProfileBody({
   photoError,
   onSave,
   onPhotoChange,
+  onPhotoRemove,
 }: {
   copy: AccountProfileCopy;
   formatters: AccountFormatters;
   data: AccountProfileData;
   save: AccountSaveStatus;
-  photoError: boolean;
+  photoError: AccountPhotoFailure | null;
   onSave: (values: AccountProfileValues) => void;
   onPhotoChange: (file: File) => void;
+  onPhotoRemove: (() => void) | undefined;
 }) {
   const [values, setValues] = React.useState<AccountProfileValues>({
     name: data.name,
@@ -265,10 +271,24 @@ function ProfileBody({
         >
           {copy.changePhoto}
         </button>
+        {data.avatarUrl && onPhotoRemove ? (
+          <button
+            type="button"
+            aria-label={copy.removePhotoLabel}
+            onClick={onPhotoRemove}
+            className={cn(LINK_BUTTON_DANGER, FOCUS)}
+          >
+            {copy.removePhoto}
+          </button>
+        ) : null}
       </div>
       {photoError ? (
         <p role="alert" className="m-0 text-crumb text-danger-text">
-          {copy.photoError}
+          {photoError === "unsupported"
+            ? copy.photoUnsupported
+            : photoError === "too-large"
+              ? copy.photoTooLarge
+              : copy.photoFailed}
         </p>
       ) : null}
 
@@ -510,10 +530,11 @@ export function AccountProfileSurface({
   formatters,
   profile,
   save,
-  photoError = false,
+  photoError = null,
   onSave,
   onRetry,
   onPhotoChange,
+  onPhotoRemove,
 }: AccountProfileSurfaceProps) {
   return (
     <section
@@ -542,6 +563,7 @@ export function AccountProfileSurface({
           photoError={photoError}
           onSave={onSave}
           onPhotoChange={onPhotoChange}
+          onPhotoRemove={onPhotoRemove}
         />
       )}
     </section>

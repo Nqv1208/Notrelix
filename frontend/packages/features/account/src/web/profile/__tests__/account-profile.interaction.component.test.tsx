@@ -30,6 +30,7 @@ function renderProfile(
     onSave: vi.fn(),
     onRetry: vi.fn(),
     onPhotoChange: vi.fn(),
+    onPhotoRemove: vi.fn(),
     ...overrides,
   };
   const view = renderPureUi(<AccountProfileSurface {...props} />);
@@ -242,12 +243,47 @@ describe("AccountProfileSurface", () => {
     expect(props.onPhotoChange).toHaveBeenCalledWith(file);
     view.unmount();
 
-    const refused = renderProfile({
-      ...profileDefaultScenario("en"),
-      photoError: true,
+    for (const [failure, text] of [
+      ["unsupported", copy.photoUnsupported],
+      ["too-large", copy.photoTooLarge],
+      ["failed", copy.photoFailed],
+    ] as const) {
+      const refused = renderProfile({
+        ...profileDefaultScenario("en"),
+        photoError: failure,
+      });
+      expect(screen.getByRole("alert").textContent).toContain(text);
+      refused.view.unmount();
+    }
+  });
+
+  it("FUI[account.profile:photo] offers to remove the photo only while there is one", () => {
+    const copy = profileCopyFixture("en");
+    const without = renderProfile(profileDefaultScenario("en"));
+    expect(
+      screen.queryByRole("button", { name: copy.removePhotoLabel }),
+    ).toBeNull();
+    without.view.unmount();
+
+    const base = profileDefaultScenario("en");
+    const { props, view } = renderProfile({
+      ...base,
+      profile:
+        base.profile.status === "ready"
+          ? {
+              status: "ready",
+              data: {
+                ...base.profile.data,
+                avatarUrl: "/api/v1/users/u1/avatar?v=a1",
+              },
+            }
+          : base.profile,
     });
-    expect(screen.getByRole("alert").textContent).toContain(copy.photoError);
-    refused.view.unmount();
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.removePhotoLabel }),
+    );
+    expect(props.onPhotoRemove).toHaveBeenCalledTimes(1);
+    view.unmount();
   });
 
   it("FUI[account.profile:edge] keeps long Vietnamese data and unknown choices readable", () => {
@@ -266,7 +302,7 @@ describe("AccountProfileSurface", () => {
     ).toBe("Pacific/Auckland");
     const alerts = screen.getAllByRole("alert").map((a) => a.textContent);
     expect(alerts.join(" ")).toContain(copy.saveError);
-    expect(alerts.join(" ")).toContain(copy.photoError);
+    expect(alerts.join(" ")).toContain(copy.photoUnsupported);
     view.unmount();
   });
 

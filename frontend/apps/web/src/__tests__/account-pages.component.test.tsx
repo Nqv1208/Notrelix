@@ -15,6 +15,9 @@ const runtime = vi.hoisted(() => ({
   put: undefined as Handler | undefined,
   post: undefined as Handler | undefined,
   del: undefined as Handler | undefined,
+  upload: undefined as
+    ((url: string, form: FormData, options: unknown) => unknown) | undefined,
+  navigate: undefined as unknown as (options: { to: string }) => unknown,
 }));
 
 vi.mock("@notrelix/runtime-web", () => ({
@@ -26,6 +29,8 @@ vi.mock("@notrelix/runtime-web", () => ({
         put: async (url: string, body: unknown) => runtime.put?.(url, body),
         post: async (url: string, body: unknown) => runtime.post?.(url, body),
         delete: async (url: string) => runtime.del?.(url),
+        upload: async (url: string, form: FormData, options: unknown) =>
+          runtime.upload?.(url, form, options),
       },
       endpoints: {
         auth: {
@@ -47,6 +52,12 @@ vi.mock("@notrelix/runtime-web", () => ({
         users: {
           updateProfile: "/profile",
           preferences: "/profile/preferences",
+          avatar: "/profile/avatar",
+        },
+        account: {
+          workspaces: "/account/workspaces",
+          defaultWorkspace: "/account/default-workspace",
+          leaveWorkspace: (id: string) => `/account/workspaces/${id}`,
         },
         workspaces: {
           detail: (id: string) => `/workspaces/${id}`,
@@ -69,6 +80,9 @@ vi.mock("@tanstack/react-router", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@tanstack/react-router")>()),
   useParams: () => ({ workspaceId: "w-1" }),
   useNavigate: () => vi.fn(),
+  useRouter: () => ({
+    navigate: (options: { to: string }) => runtime.navigate(options),
+  }),
 }));
 
 import { AccountAppearancePage } from "../routes/workspaces/$workspaceId/account/appearance";
@@ -94,6 +108,8 @@ afterEach(() => {
   runtime.put = undefined;
   runtime.post = undefined;
   runtime.del = undefined;
+  runtime.upload = undefined;
+  runtime.navigate = vi.fn();
 });
 
 async function mount(page: React.ReactElement, locale: Locale) {
@@ -290,6 +306,116 @@ describe("AccountProfilePage container", () => {
     runtime.get = reads(base);
     await clickButton("Thử lại");
     await until(() => expect(text()).toContain("Múi giờ"));
+  });
+});
+
+describe("AccountProfilePage profile photo", () => {
+  const png = () =>
+    new File([new Uint8Array([0x89, 0x50])], "me.png", { type: "image/png" });
+
+  async function pick(file: File) {
+    const input = host?.querySelector<HTMLInputElement>("input[type=file]");
+    if (!input) throw new Error("No file input");
+    await act(async () => {
+      Object.defineProperty(input, "files", {
+        value: [file],
+        configurable: true,
+      });
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+  }
+
+  it("sends the File itself, shows the new photo and keeps the session user in step", async () => {
+    const upload = vi.fn(() => ({
+      avatarUrl: "/api/v1/users/u-1/avatar?v=a1",
+    }));
+    let current: unknown = profile;
+    runtime.get = (url) =>
+      url === "/auth/me" ? current : (base as Record<string, unknown>)[url];
+    runtime.upload = upload;
+    await mount(<AccountProfilePage />, "en");
+    await until(() => expect(text()).toContain("Time zone"));
+    const file = png();
+    current = { ...profile, avatarUrl: "/api/v1/users/u-1/avatar?v=a1" };
+    await pick(file);
+    await until(() => expect(upload).toHaveBeenCalledTimes(1));
+    const [url, form, options] = upload.mock.calls[0] as unknown as [
+      string,
+      FormData,
+      { method: string },
+    ];
+    expect(url).toBe("/profile/avatar");
+    expect(form.get("file")).toBeInstanceOf(File);
+    expect((form.get("file") as File).name).toBe("me.png");
+    expect(options).toMatchObject({ method: "PUT" });
+    await until(() => expect(host?.querySelector("img")).not.toBeNull());
+    expect(host?.querySelector("img")?.getAttribute("src")).toContain(
+      "/api/v1/users/u-1/avatar?v=a1",
+    );
+    expect(text()).not.toContain("We couldn't");
+  });
+
+  it("refuses a wrong type or a big file before sending, and says why", async () => {
+    const upload = vi.fn();
+    runtime.get = reads(base);
+    runtime.upload = upload;
+    await mount(<AccountProfilePage />, "en");
+    await until(() => expect(text()).toContain("Time zone"));
+    await pick(new File(["x"], "me.gif", { type: "image/gif" }));
+    await until(() => expect(text()).toContain("Choose a PNG, JPEG or WebP."));
+    await pick(
+      new File([new Uint8Array(1_500_001)], "big.png", { type: "image/png" }),
+    );
+    await until(() => expect(text()).toContain("That photo is too large."));
+    expect(upload).not.toHaveBeenCalled();
+  });
+
+  it("explains the producer's refusals: too large and unsupported format", async () => {
+    runtime.get = reads(base);
+    await mount(<AccountProfilePage />, "en");
+    await until(() => expect(text()).toContain("Time zone"));
+    runtime.upload = () => {
+      throw Object.assign(new Error("big"), {
+        status: 413,
+        code: "identity.avatar.too-large",
+      });
+    };
+    await pick(png());
+    await until(() => expect(text()).toContain("That photo is too large."));
+    runtime.upload = () => {
+      throw Object.assign(new Error("fmt"), {
+        status: 415,
+        code: "identity.avatar.unsupported-format",
+      });
+    };
+    await pick(png());
+    await until(() => expect(text()).toContain("Choose a PNG, JPEG or WebP."));
+    runtime.upload = () => {
+      throw new Error("down");
+    };
+    await pick(png());
+    await until(() =>
+      expect(text()).toContain("We couldn't change your photo."),
+    );
+  });
+
+  it("removes the photo and updates the profile", async () => {
+    let current: unknown = {
+      ...profile,
+      avatarUrl: "/api/v1/users/u-1/avatar?v=a1",
+    };
+    const del = vi.fn(() => {
+      current = { ...profile, avatarUrl: null };
+      return { avatarUrl: null };
+    });
+    runtime.get = (url) =>
+      url === "/auth/me" ? current : (base as Record<string, unknown>)[url];
+    runtime.del = del;
+    await mount(<AccountProfilePage />, "en");
+    await until(() => expect(text()).toContain("Remove photo"));
+    await clickButton("Remove photo");
+    await until(() => expect(del).toHaveBeenCalledWith("/profile/avatar"));
+    await until(() => expect(text()).not.toContain("Remove photo"));
   });
 });
 
@@ -552,43 +678,51 @@ describe("AccountNotificationsPage container", () => {
 });
 
 describe("AccountWorkspacesPage container", () => {
-  const list = {
-    workspaces: [
-      {
-        id: "w-1",
-        name: "Minh An Group",
-        role: "admin",
-        memberCount: 86,
-        departmentCount: 5,
-        unreadCount: null,
-        guestBoard: null,
-        otherOwnerName: "Trịnh Quốc Hưng",
-        isDefault: true,
-        canLeave: true,
-      },
-      {
-        id: "w-2",
-        name: "Minh An Đà Nẵng",
-        role: "member",
-        memberCount: 18,
-        departmentCount: null,
-        unreadCount: 2,
-        guestBoard: null,
-        otherOwnerName: null,
-        isDefault: false,
-        canLeave: true,
-      },
-    ],
-  };
+  /** The producer's shape: a bare array, a capitalised role, nullable counts. */
+  const list = [
+    {
+      id: "w-1",
+      name: "Minh An Group",
+      slug: "minh-an",
+      role: "Admin",
+      memberCount: 86,
+      departmentCount: 5,
+      isDefault: true,
+      canLeave: true,
+    },
+    {
+      id: "w-2",
+      name: "Minh An Đà Nẵng",
+      slug: "da-nang",
+      role: "Member",
+      memberCount: 18,
+      departmentCount: null,
+      isDefault: false,
+      canLeave: true,
+    },
+    {
+      id: "w-3",
+      name: "Tân Lộc Logistics",
+      slug: "tan-loc",
+      role: "Guest",
+      memberCount: null,
+      departmentCount: null,
+      isDefault: false,
+      canLeave: true,
+    },
+  ];
 
-  it("lists the workspaces in Vietnamese and makes another one the default", async () => {
-    const put = vi.fn(() => list);
+  it("lists the workspaces in Vietnamese from the producer's shape and makes another one the default", async () => {
+    const put = vi.fn(() => null);
     runtime.get = reads({ "/account/workspaces": list });
     runtime.put = put;
     await mount(<AccountWorkspacesPage />, "vi");
     await until(() => expect(text()).toContain("Mặc định khi mở ứng dụng"));
     expect(text()).toContain("Quản trị workspace · 86 người · 5 phòng ban");
-    expect(text()).toContain("Thành viên · 18 người · 2 thông báo chưa đọc");
+    expect(text()).toContain("Thành viên · 18 người");
+    // A guest sees no counts; nothing is invented for unread notifications.
+    expect(text()).toContain("Khách");
+    expect(text()).not.toContain("chưa đọc");
     await clickButton("Đặt làm mặc định");
     await until(() =>
       expect(text()).toContain("Minh An Đà Nẵng sẽ là nơi mở mặc định."),
@@ -596,5 +730,101 @@ describe("AccountWorkspacesPage container", () => {
     expect(put).toHaveBeenCalledWith("/account/default-workspace", {
       workspaceId: "w-2",
     });
+  });
+
+  it("explains a refused default in readable words", async () => {
+    runtime.get = reads({ "/account/workspaces": list });
+    runtime.put = () => {
+      throw Object.assign(new Error("gone"), { status: 404 });
+    };
+    await mount(<AccountWorkspacesPage />, "en");
+    await until(() => expect(text()).toContain("Opens by default"));
+    await clickButton("Make default");
+    await until(() => expect(text()).toContain("We couldn't do that."));
+  });
+
+  async function confirmLeave(name: string) {
+    const trigger = host?.querySelector<HTMLButtonElement>(
+      `button[aria-label="Leave the workspace ${name}…"]`,
+    );
+    if (!trigger) throw new Error(`No leave button for ${name}`);
+    await act(async () => trigger.click());
+    const confirm = Array.from(
+      document.querySelectorAll<HTMLButtonElement>(
+        '[role="alertdialog"] button',
+      ),
+    ).find((button) => button.textContent === "Leave workspace");
+    if (!confirm) throw new Error("No confirm button");
+    await act(async () => confirm.click());
+  }
+
+  it("leaves another workspace, says so and reads the list again", async () => {
+    let current = list;
+    const del = vi.fn(() => {
+      current = list.filter((entry) => entry.id !== "w-3");
+      return null;
+    });
+    runtime.get = (url) =>
+      url === "/account/workspaces" ? current : undefined;
+    runtime.del = del;
+    await mount(<AccountWorkspacesPage />, "en");
+    await until(() => expect(text()).toContain("Tân Lộc Logistics"));
+    await confirmLeave("Tân Lộc Logistics");
+    await until(() => expect(text()).toContain("You left Tân Lộc Logistics."));
+    expect(del).toHaveBeenCalledWith("/account/workspaces/w-3");
+    await until(() => expect(text()).not.toMatch(/Leave the workspace Tân/));
+    expect(runtime.navigate).not.toHaveBeenCalled();
+  });
+
+  it("leaves the workspace the page is shown in by going to the default one that remains", async () => {
+    let current = list;
+    runtime.get = (url) =>
+      url === "/account/workspaces" ? current : undefined;
+    runtime.del = () => {
+      current = list
+        .filter((entry) => entry.id !== "w-1")
+        .map((entry) => ({ ...entry, isDefault: entry.id === "w-2" }));
+      return null;
+    };
+    await mount(<AccountWorkspacesPage />, "en");
+    await until(() => expect(text()).toContain("Minh An Group"));
+    await confirmLeave("Minh An Group");
+    await until(() =>
+      expect(runtime.navigate).toHaveBeenCalledWith({ to: "/workspaces/w-2" }),
+    );
+  });
+
+  it("goes to onboarding when no workspace remains", async () => {
+    const only = [{ ...list[0]! }];
+    let current = only;
+    runtime.get = (url) =>
+      url === "/account/workspaces" ? current : undefined;
+    runtime.del = () => {
+      current = [];
+      return null;
+    };
+    await mount(<AccountWorkspacesPage />, "en");
+    await until(() => expect(text()).toContain("Minh An Group"));
+    await confirmLeave("Minh An Group");
+    await until(() =>
+      expect(runtime.navigate).toHaveBeenCalledWith({ to: "/onboarding" }),
+    );
+  });
+
+  it("says why the last owner cannot leave when the producer still refuses", async () => {
+    runtime.get = reads({ "/account/workspaces": list });
+    runtime.del = () => {
+      throw Object.assign(new Error("last"), {
+        status: 409,
+        code: "workspaces.member.last-owner-cannot-leave",
+      });
+    };
+    await mount(<AccountWorkspacesPage />, "en");
+    await until(() => expect(text()).toContain("Tân Lộc Logistics"));
+    await confirmLeave("Tân Lộc Logistics");
+    await until(() =>
+      expect(text()).toContain("You are the only owner of this workspace."),
+    );
+    expect(runtime.navigate).not.toHaveBeenCalled();
   });
 });

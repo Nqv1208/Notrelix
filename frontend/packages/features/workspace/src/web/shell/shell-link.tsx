@@ -1,5 +1,6 @@
 import * as React from "react";
 import { FileText, SquareKanban } from "lucide-react";
+import { resolveApiAssetUrl } from "@notrelix/contracts";
 import { cn } from "@notrelix/ui-web";
 import {
   identityToneFor,
@@ -80,13 +81,17 @@ export function IdentityMark({
     shape === "round" ? "rounded-full" : "rounded-md",
     className,
   );
-  if (imageUrl) {
+  const src = resolveApiAssetUrl(imageUrl);
+  // A photo the producer will not serve (removed, not allowed) falls back to the initials.
+  const [failedSrc, setFailedSrc] = React.useState<string | null>(null);
+  if (src && src !== failedSrc) {
     return (
       <img
-        src={imageUrl}
+        src={src}
         alt=""
         aria-hidden="true"
         className={cn(box, "object-cover")}
+        onError={() => setFailedSrc(src)}
       />
     );
   }

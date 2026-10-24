@@ -19,6 +19,7 @@ export type {
 } from "./core";
 
 export { createAuthService } from "./core";
+export { authQueryKeys } from "./core/query/keys";
 export type { AuthApiClient, AuthEndpoints } from "./core";
 
 export {

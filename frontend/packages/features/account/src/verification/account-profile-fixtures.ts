@@ -45,7 +45,7 @@ export function profileFixture(
 
 export type ProfileScenario = Omit<
   AccountProfileSurfaceProps,
-  "onSave" | "onRetry" | "onPhotoChange"
+  "onSave" | "onRetry" | "onPhotoChange" | "onPhotoRemove"
 >;
 
 export function profileDefaultScenario(
@@ -109,7 +109,7 @@ export function profileEdgeDataScenario(): ProfileScenario {
         managedBy: null,
       }),
     },
-    photoError: true,
+    photoError: "unsupported",
     save: { state: "error" },
   };
 }

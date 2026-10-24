@@ -1,29 +1,9 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import {
-  accountQueryKey,
-  useAccountId,
-  workspaceQueryKey,
-} from "@notrelix/query";
+import { workspaceQueryKey } from "@notrelix/query";
 import { useAppRuntime } from "@notrelix/runtime-web";
 import type { AccountFrameLink, AccountTab } from "@notrelix/features-account";
-import {
-  createAccountPagesApi,
-  type AccountPagesApiClient,
-} from "./account-pages-api";
-
-/** The account-page calls on the app's runtime client. */
-export function useAccountPagesApi() {
-  const { api: runtimeClient } = useAppRuntime();
-  return useMemo(
-    () =>
-      createAccountPagesApi(
-        runtimeClient.api as unknown as AccountPagesApiClient,
-      ),
-    [runtimeClient],
-  );
-}
 
 /** The workspace of the route the account pages are shown in. */
 export function useRouteWorkspaceId(): string {
@@ -49,19 +29,6 @@ export function useRouteWorkspaceName(): string {
     retry: false,
   });
   return query.data ?? "";
-}
-
-/** Account-scoped query keys of the pages (no workspace dimension). */
-export function accountPagesKeys(accountId: string) {
-  return {
-    workspaces: accountQueryKey(accountId, "account-pages", "workspaces"),
-  } as const;
-}
-
-/** The pages' keys for the active Account (fails loudly without one). */
-export function useAccountPagesKeys() {
-  const accountId = useAccountId();
-  return useMemo(() => accountPagesKeys(accountId), [accountId]);
 }
 
 const PATHS: Record<AccountTab, string> = {

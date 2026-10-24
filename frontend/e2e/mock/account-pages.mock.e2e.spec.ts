@@ -206,43 +206,79 @@ test("Notification cells are named by event and channel, toggle with Space and s
   ).toHaveAttribute("aria-checked", "true");
 });
 
-test("Workspaces sets the default and asks before leaving; the only owner cannot leave", async ({
+test("Workspaces sets the default and asks before leaving; a sole owner cannot leave", async ({
   page,
 }) => {
   await page.goto(`${account}/workspaces`);
-  const card = page.getByRole("region", { name: /Minh An Đà Nẵng/ });
+  const card = page.getByRole("region", { name: /Đà Nẵng/ });
   await expect(card).toBeVisible();
-  await page
-    .getByRole("button", { name: /Đặt Minh An Đà Nẵng làm mặc định/ })
-    .click();
-  await expect(
-    page.getByText("Minh An Đà Nẵng sẽ là nơi mở mặc định."),
-  ).toBeVisible();
+  // The producer sends no unread count, guest board or other owner.
+  await expect(page.getByText(/chưa đọc/)).toHaveCount(0);
+  await page.getByRole("button", { name: /Đặt Đà Nẵng làm mặc định/ }).click();
+  await expect(page.getByText("Đà Nẵng sẽ là nơi mở mặc định.")).toBeVisible();
   await expect(
     page.getByRole("button", { name: /Đặt Minh An Group làm mặc định/ }),
   ).toBeVisible();
-  // The only owner of the primary workspace cannot leave it.
+  // The only owner of a workspace cannot leave it.
   await expect(
     page.getByRole("button", { name: "Rời workspace Minh An Group…" }),
   ).toBeDisabled();
-
-  await page
-    .getByRole("button", { name: "Rời workspace Tân Lộc Logistics…" })
-    .click();
-  const dialog = page.getByRole("alertdialog");
-  await expect(dialog).toContainText("Rời Tân Lộc Logistics?");
-  await dialog.getByRole("button", { name: "Hủy" }).click();
   await expect(
-    page.getByRole("region", { name: /Tân Lộc Logistics/ }),
-  ).toBeVisible();
-  await page
-    .getByRole("button", { name: "Rời workspace Tân Lộc Logistics…" })
-    .click();
+    page.getByRole("button", { name: "Rời workspace Đà Nẵng…" }),
+  ).toBeDisabled();
+
+  await page.getByRole("button", { name: "Rời workspace Tân Lộc…" }).click();
+  const dialog = page.getByRole("alertdialog");
+  await expect(dialog).toContainText("Rời Tân Lộc?");
+  await dialog.getByRole("button", { name: "Hủy" }).click();
+  await expect(page.getByRole("region", { name: /Tân Lộc/ })).toBeVisible();
+  await page.getByRole("button", { name: "Rời workspace Tân Lộc…" }).click();
   await page
     .getByRole("alertdialog")
     .getByRole("button", { name: "Rời workspace" })
     .click();
+  await expect(page.getByText("Bạn đã rời Tân Lộc.")).toBeVisible();
+  await expect(page.getByRole("region", { name: /Tân Lộc/ })).toHaveCount(0);
+});
+
+const PNG_BYTES = Buffer.from([
+  0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0,
+]);
+
+test("Profile photo: a wrong type or a big file is refused with a reason, a photo is sent and can be removed", async ({
+  page,
+}) => {
+  await page.goto(`${account}/profile`);
+  await expect(page.getByLabel("Số điện thoại")).toBeVisible();
+  const input = page.locator("input[type=file]");
+
+  await input.setInputFiles({
+    name: "me.gif",
+    mimeType: "image/gif",
+    buffer: PNG_BYTES,
+  });
   await expect(
-    page.getByRole("region", { name: /Tân Lộc Logistics/ }),
-  ).toHaveCount(0);
+    page.getByText(
+      "Không dùng được ảnh này. Hãy chọn ảnh PNG, JPEG hoặc WebP.",
+    ),
+  ).toBeVisible();
+
+  await input.setInputFiles({
+    name: "big.png",
+    mimeType: "image/png",
+    buffer: Buffer.concat([PNG_BYTES, Buffer.alloc(1_600_000)]),
+  });
+  await expect(page.getByText("Ảnh quá lớn.")).toBeVisible();
+
+  await input.setInputFiles({
+    name: "me.png",
+    mimeType: "image/png",
+    buffer: PNG_BYTES,
+  });
+  const remove = page.getByRole("button", { name: "Gỡ ảnh đại diện" });
+  await expect(remove).toBeVisible();
+  await expect(page.getByText("Ảnh quá lớn.")).toHaveCount(0);
+
+  await remove.click();
+  await expect(remove).toHaveCount(0);
 });

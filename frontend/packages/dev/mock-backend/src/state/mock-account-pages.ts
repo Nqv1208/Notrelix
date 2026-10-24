@@ -1,11 +1,9 @@
 /**
  * What the account pages of the 2026-10 Account mockup need beyond the
- * profile and preference contracts (gap `CTR-GAP-ACC-PAGES`, see
- * docs/superpowers/be-blockers-2026-10.md, "BE requirement from FE:
- * Account"): the person's preferences, a member's job title in a workspace,
+ * profile contract: the person's preferences, a member's job title in a workspace,
  * the security facts (single sign-on, two-factor, backup codes,
- * signed-in devices), the notification preferences of a workspace, and the
- * member's workspaces with the default one. Small per-user state; the
+ * signed-in devices), the notification preferences of a workspace, the default
+ * workspace and the profile photo's address. Small per-user state; the
  * handlers compose the store with it.
  */
 
@@ -181,7 +179,7 @@ export class MockAccountPages {
   private security = new Map<string, SecurityDetails>();
   private notificationSets = new Map<string, NotificationPreferenceSet>();
   private defaultWorkspace = new Map<string, string>();
-  private left = new Map<string, Set<string>>();
+  private avatarVersions = new Map<string, number>();
 
   reset(): void {
     this.preferences.clear();
@@ -189,7 +187,7 @@ export class MockAccountPages {
     this.security.clear();
     this.notificationSets.clear();
     this.defaultWorkspace.clear();
-    this.left.clear();
+    this.avatarVersions.clear();
   }
 
   preferencesOf(userId: string): AccountPreferences {
@@ -256,15 +254,16 @@ export class MockAccountPages {
     this.defaultWorkspace.set(userId, workspaceId);
   }
 
-  leave(userId: string, workspaceId: string): void {
-    const set = this.left.get(userId) ?? new Set<string>();
-    set.add(workspaceId);
-    this.left.set(userId, set);
+  /** A leave clears the default when it was that workspace. */
+  forgetDefaultWorkspace(userId: string, workspaceId: string): void {
     if (this.defaultWorkspace.get(userId) === workspaceId)
       this.defaultWorkspace.delete(userId);
   }
 
-  hasLeft(userId: string, workspaceId: string): boolean {
-    return this.left.get(userId)?.has(workspaceId) ?? false;
+  /** The address of the person's new photo; a new upload changes `v`. */
+  nextAvatarUrl(userId: string): string {
+    const version = (this.avatarVersions.get(userId) ?? 0) + 1;
+    this.avatarVersions.set(userId, version);
+    return `/api/v1/users/${userId}/avatar?v=photo-${version}`;
   }
 }

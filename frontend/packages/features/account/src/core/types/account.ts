@@ -106,3 +106,27 @@ export interface StepUpRequirement {
   /** The challenge a second-factor answer quotes. */
   readonly challengeToken: string | null;
 }
+
+export type AccountWorkspaceRole = "owner" | "admin" | "member" | "guest";
+
+/**
+ * One workspace of the signed-in person (`Workspaces.Members.ListMyWorkspaces`).
+ * A count is `null` when the person may not see it (a guest sees no people
+ * count, only an owner or admin sees the department count).
+ */
+export interface AccountWorkspaceEntry {
+  readonly id: string;
+  readonly name: string;
+  readonly role: AccountWorkspaceRole;
+  readonly memberCount: number | null;
+  readonly departmentCount: number | null;
+  readonly isDefault: boolean;
+  /** `false` for the last owner, who has to hand the ownership over first. */
+  readonly canLeave: boolean;
+}
+
+/** Why a profile photo was not changed. */
+export type AccountPhotoFailure = "unsupported" | "too-large" | "failed";
+
+/** Why leaving a workspace did not happen. */
+export type AccountLeaveFailure = "last-owner" | "failed";
