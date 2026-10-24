@@ -1,3 +1,4 @@
+import { resolveApiAssetUrl } from "@notrelix/contracts";
 import type {
   AccountLeaveFailure,
   AccountPhotoFailure,
@@ -101,7 +102,7 @@ export function toUserProfile(wire: UserWire): UserProfile {
     id: wire.id ?? "",
     email: wire.email ?? "",
     name: wire.name ?? "",
-    avatarUrl: wire.avatarUrl ?? null,
+    avatarUrl: resolveApiAssetUrl(wire.avatarUrl),
   };
 }
 
@@ -389,7 +390,7 @@ export function createAccountService(
         form,
         { method: "PUT" },
       );
-      return wire.avatarUrl ?? null;
+      return resolveApiAssetUrl(wire.avatarUrl);
     },
 
     async removeAvatar(): Promise<void> {
