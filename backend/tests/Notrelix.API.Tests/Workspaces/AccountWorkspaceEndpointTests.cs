@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Notrelix.API.Tests.Contracts;
-using Notrelix.Application.Common.Exceptions;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Workspaces.DTOs;
 using Notrelix.Application.Features.Workspaces.Members.Commands.LeaveWorkspace;

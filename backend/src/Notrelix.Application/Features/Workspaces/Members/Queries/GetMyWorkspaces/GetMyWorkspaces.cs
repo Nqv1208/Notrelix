@@ -3,7 +3,6 @@ using global::Notrelix.Application.Features.Workspaces.DTOs;
 using Notrelix.Application.Common.Requests.Scoping;
 using Notrelix.Application.Features.Identity.Public.DefaultWorkspace;
 using Notrelix.Application.Features.Workspaces.Abstractions;
-using Notrelix.Domain.Workspaces.Spaces;
 
 namespace Notrelix.Application.Features.Workspaces.Members.Queries.GetMyWorkspaces;
 

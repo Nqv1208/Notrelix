@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Net.Http.Headers;
-using Notrelix.API.ErrorHandling;
 using Notrelix.API.Extensions;
 
 namespace Notrelix.API.Uploads;

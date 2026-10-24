@@ -1,5 +1,4 @@
 using Notrelix.API.Contracts.Identity.Profile;
-using Notrelix.API.ErrorHandling;
 using Notrelix.API.Extensions;
 using Notrelix.API.Uploads;
 using Notrelix.Application.Features.Identity.Profiles.Commands.RemoveAvatar;

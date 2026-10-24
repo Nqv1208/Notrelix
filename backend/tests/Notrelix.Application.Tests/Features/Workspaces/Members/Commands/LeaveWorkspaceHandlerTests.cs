@@ -1,7 +1,6 @@
 using Notrelix.Application.Features.Identity.Public.DefaultWorkspace;
 using Notrelix.Application.Features.Workspaces.Members.Commands.LeaveWorkspace;
 using Notrelix.Application.Features.Workspaces.Members.Commands.SetDefaultWorkspace;
-using Notrelix.Domain.Workspaces;
 
 namespace Notrelix.Application.Tests.Features.Workspaces.Members.Commands;
 

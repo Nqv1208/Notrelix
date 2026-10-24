@@ -3,7 +3,6 @@ using Notrelix.Application.Common.Storage;
 using Notrelix.Application.Features.Identity.Profiles.Commands.RemoveAvatar;
 using Notrelix.Application.Features.Identity.Profiles.Commands.UploadAvatar;
 using Notrelix.Application.Features.Identity.Profiles.Services;
-using Notrelix.Testing.Application.Fakes;
 
 namespace Notrelix.Application.Tests.Features.Identity.Profiles.Commands;
 

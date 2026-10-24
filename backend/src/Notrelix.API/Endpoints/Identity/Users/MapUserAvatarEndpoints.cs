@@ -1,5 +1,4 @@
 using Microsoft.Net.Http.Headers;
-using Notrelix.API.Endpoints;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Identity.Profiles.Queries.GetUserAvatar;
 
