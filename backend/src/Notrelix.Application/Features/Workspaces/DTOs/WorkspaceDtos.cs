@@ -63,3 +63,22 @@ public record WorkspaceInvitationDto(
 
 /// <param name="Kind"><c>Team</c> or <c>Space</c>.</param>
 public record WorkspaceInvitationEntryDto(string Kind, Guid TargetId, string Role);
+
+/// <summary>
+/// One Workspace the caller takes part in, as the account's "your workspaces" page needs it.
+/// <see cref="Role"/> is the caller's own role. <see cref="MemberCount"/> is the number of active
+/// members and is null for a Guest (a Guest may not see the member list, GOV-009).
+/// <see cref="DepartmentCount"/> is the number of active department Spaces and is null unless the
+/// caller is an Owner or Admin. <see cref="IsDefault"/> marks the Workspace that opens with the app.
+/// <see cref="CanLeave"/> is false only when the caller is the last active Owner.
+/// </summary>
+public record AccountWorkspaceDto(
+    Guid Id,
+    string Name,
+    string Slug,
+    string Role,
+    int? MemberCount,
+    int? DepartmentCount,
+    bool IsDefault,
+    bool CanLeave
+);

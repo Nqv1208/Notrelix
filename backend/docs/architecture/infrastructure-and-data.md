@@ -1254,6 +1254,13 @@ Storage usage: soft-deleted rows keep their object (and therefore count toward s
 
 Not covered: the reaper does not cascade-delete attachments of a deleted board item or workspace; it only handles rows that are soft-deleted for any reason.
 
+### Profile photo objects and the avatar sweep
+
+A profile photo object is stored under `users/{userId:N}/avatar/{objectId:N}.{png|jpg|webp}` and referenced by `identity.users.avatar_storage_key` (additive nullable column, migration `AddAvatarObjectAndDefaultWorkspace`, together with the nullable `identity.user_profiles.default_workspace_id`). A replaced or removed photo leaves an unreferenced object; `AvatarObjectReaperService` removes it. A pass lists `users/` objects older than `OrphanGracePeriod` (same options as the attachment sweep) and hands each batch to `PostgresAvatarReaperStore`, which runs under the explicit system (worker) tenant context with the RLS worker scope and the same transaction-scoped try-advisory lock as the attachment sweep. It FAILS CLOSED: an object is deleted only when its owner's `identity.users` row is visible to the sweep and names a different object; an owner row that cannot be read (missing policy, wrong scope, deleted owner) keeps its objects and logs a warning, and a query error deletes nothing. For the application role the sweep reads users through the worker-scope SELECT policy `p_app_select_worker_scope` (`006_policies_identity.sql`), which `ops.is_worker_scope()` gates; a request session never satisfies it. Policies are applied by the RLS script (`--rls-apply`), not by an EF migration.
+
+The application role also has one narrow write on `authz.access_grants` (`p_app_update_revoke_own`, `007_policies_platform.sql`): a person may end their OWN active grant (the row must be active before and revoked after). It exists for self-leave and cannot create, edit, reactivate or touch another person's grant. `LeaveWorkspace` flushes the membership change before revoking the grant (the leaver's grant is what lets them write the membership row), inside the request transaction.
+
+
 ---
 
 # 77. Search

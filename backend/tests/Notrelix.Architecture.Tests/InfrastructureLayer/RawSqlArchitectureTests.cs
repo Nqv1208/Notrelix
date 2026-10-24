@@ -44,6 +44,8 @@ public class RawSqlArchitectureTests
         // Attachment object reaper: FOR UPDATE SKIP LOCKED claim of purge-due
         // soft-deleted rows and a try-advisory sweep claim, under the system context.
         "src/Notrelix.Infrastructure/BackgroundJobs/PostgresAttachmentReaperStore.cs",
+        // Avatar object reaper: try-advisory sweep claim under the system context.
+        "src/Notrelix.Infrastructure/BackgroundJobs/PostgresAvatarReaperStore.cs",
         // Security activity retention: bounded DELETE ... FOR UPDATE SKIP LOCKED sweep of
         // identity.user_security_activity under the system context.
         "src/Notrelix.Infrastructure/BackgroundJobs/SecurityActivityRetention.cs",

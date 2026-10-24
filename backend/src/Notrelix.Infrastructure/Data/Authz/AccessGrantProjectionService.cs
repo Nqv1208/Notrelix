@@ -119,4 +119,20 @@ public sealed class AccessGrantProjectionService
 
         grant?.Revoke(now);
     }
+
+    /// <summary>
+    /// The leaver's own grant is the access that lets them update their membership row under RLS, so the
+    /// pending membership change is flushed first (same open request transaction; the pipeline still owns
+    /// the commit) and the grant is revoked afterwards. Failure of either statement rolls back both.
+    /// </summary>
+    public async Task RevokeLeavingMemberGrantAsync(
+        Guid accountId,
+        Guid workspaceId,
+        Guid userId,
+        DateTimeOffset now,
+        CancellationToken ct)
+    {
+        await _context.SaveChangesAsync(ct);
+        await RevokeWorkspaceMemberGrantAsync(accountId, workspaceId, userId, now, ct);
+    }
 }

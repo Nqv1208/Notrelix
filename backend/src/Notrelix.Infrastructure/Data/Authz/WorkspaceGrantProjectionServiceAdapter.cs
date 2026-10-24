@@ -28,4 +28,12 @@ public sealed class WorkspaceGrantProjectionServiceAdapter : IWorkspaceGrantProj
         DateTimeOffset now,
         CancellationToken ct)
         => _projection.RevokeWorkspaceMemberGrantAsync(accountId, workspaceId, userId, now, ct);
+
+    public Task RevokeLeavingMemberGrantAsync(
+        Guid accountId,
+        Guid workspaceId,
+        Guid userId,
+        DateTimeOffset now,
+        CancellationToken ct)
+        => _projection.RevokeLeavingMemberGrantAsync(accountId, workspaceId, userId, now, ct);
 }

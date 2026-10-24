@@ -136,6 +136,21 @@ public class IgnoreQueryFiltersArchitectureTests
         ["PostgresAttachmentReaperStore.cs"] = new("PostgresAttachmentReaperStore.cs", AllowlistClassification.Intentional,
             "The attachment object reaper must see soft-deleted attachments (the purge target) and runs under the explicit system/worker context with the RLS worker scope; it reads and updates only collab.attachments and never serves a request",
             "Keep as Intentional — retention purge of soft-deleted attachment objects needs the soft-delete filter bypassed"),
+        ["GetMyWorkspaces.cs"] = new("GetMyWorkspaces.cs", AllowlistClassification.Intentional,
+            "A global-scope read of the principal's own memberships: the EF tenant filter of the workspace-scoped sets keys on the request Workspace, which a global request does not have, so it would hide every row. The subject is fixed to the authenticated principal and the soft-delete conditions are stated explicitly",
+            "Keep as Intentional — account-level list across the caller's own Workspaces"),
+        ["GetUserWorkspaces.cs"] = new("GetUserWorkspaces.cs", AllowlistClassification.Intentional,
+            "A global-scope read of the principal's own memberships (no request Workspace, so the EF tenant filter would hide every row); the subject is the authenticated principal and the soft-delete condition is explicit",
+            "Keep as Intentional — account-level list across the caller's own Workspaces"),
+        ["IdentityBootstrapReadAdapter.cs"] = new("IdentityBootstrapReadAdapter.cs", AllowlistClassification.Intentional,
+            "The sign-in bootstrap is a global request (no request Workspace); the EF tenant filter would hide every membership. The subject is the authenticated user and the soft-delete condition is explicit",
+            "Keep as Intentional — bootstrap lists the caller's own Workspaces"),
+        ["AvatarAudienceReadAdapter.cs"] = new("AvatarAudienceReadAdapter.cs", AllowlistClassification.Intentional,
+            "A global-scope audience check for a profile photo: both sides are fixed to the authenticated viewer and the requested owner, only active memberships count, and the EF tenant filter (request Workspace) would otherwise hide every row",
+            "Keep as Intentional — shared-workspace fact across Workspaces for a global request"),
+        ["PostgresAvatarReaperStore.cs"] = new("PostgresAvatarReaperStore.cs", AllowlistClassification.Intentional,
+            "The avatar object reaper must count a soft-deleted user as still referencing its photo (a restored user keeps the photo) before it removes unreferenced objects; it runs under the explicit system/worker context with the RLS worker scope, reads only identity.users.avatar_storage_key and never serves a request",
+            "Keep as Intentional — orphan sweep must see soft-deleted user rows"),
     };
 
     [Fact]

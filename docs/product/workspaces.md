@@ -247,13 +247,38 @@ Do not hide repository callbacks inside Domain rules.
 
 Leaving is a membership transition, not Identity deletion.
 
-It should define:
+Rules in force:
 
-- last-owner restriction;
+- the person leaves their own participation only; the subject is always the signed-in person, never a
+  request input;
+- any active member may leave, including a Guest;
+- the last active Owner cannot leave: the Workspace would have no owner. The answer is a conflict with the
+  stable code `workspaces.member.last-owner-cannot-leave` and nothing changes. An Owner may leave when
+  another active Owner remains; the account workspace list reports this as `canLeave`;
+- the membership ends exactly like a removal (status Removed), the person's workspace access grant is
+  revoked in the same transaction, and a default Workspace choice (Identity, section 7 of the Identity
+  context) that points at the left Workspace is cleared;
+- work assigned to the person, historical attribution and the person's Identity are untouched.
+
+Still to define before it is a complete policy:
+
 - transfer requirements if any;
-- effect on assigned work;
-- historical attribution;
-- future notifications.
+- future notifications;
+- cleanup of Space and Team entries of the person (a removal does not clean them today).
+
+# 19.1. Account workspace list and default Workspace
+
+The signed-in person has an account-level list of the Workspaces they take part in:
+`GET /api/v1/account/workspaces`. It contains only the person's own active memberships of active
+Workspaces, one row each with the person's own role, whether it is their default, and whether they may
+leave. The member count is shown to every role except Guest; the department count (active Department
+Spaces) is shown only to an Owner or Admin. A Workspace the person left, was removed or suspended from, or
+that is archived or deleted, never appears.
+
+The default Workspace is the person's choice of the Workspace that opens with the app. Workspaces validates
+that the person is an active member before the choice is stored; Identity stores only the Workspace id on
+the person's profile and a reader treats a default the person cannot open as absent. Choosing the current
+default changes nothing.
 
 # 20. Remove Member
 

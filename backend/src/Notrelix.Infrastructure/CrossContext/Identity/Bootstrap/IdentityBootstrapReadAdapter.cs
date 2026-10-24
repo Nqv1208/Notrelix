@@ -2,6 +2,7 @@ using Notrelix.Application.Features.Accounts.Abstractions;
 using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.Identity.Ports.Bootstrap;
 using Notrelix.Application.Features.Workspaces.Abstractions;
+using Notrelix.Domain.Workspaces.Members;
 
 namespace Notrelix.Infrastructure.CrossContext.Identity.Bootstrap;
 
@@ -39,10 +40,14 @@ public sealed class IdentityBootstrapReadAdapter : IIdentityBootstrapReadPort
             return null;
         }
 
+        // The bootstrap is a global request: it has no Workspace, and the EF tenant filter of the
+        // workspace-scoped sets keys on the request Workspace, so it would hide every membership. The
+        // subject is fixed to the authenticated user; the soft-delete condition is stated explicitly.
         var workspaces = await _workspaceContext.WorkspaceMembers
+            .IgnoreQueryFilters()
             .AsNoTracking()
-            .Where(m => m.UserId == authenticatedUserId)
-            .Join(_workspaceContext.Workspaces,
+            .Where(m => m.UserId == authenticatedUserId && m.Status == WorkspaceMemberStatus.Active)
+            .Join(_workspaceContext.Workspaces.IgnoreQueryFilters().Where(w => w.DeletedAt == null),
                 member => member.WorkspaceId,
                 workspace => workspace.Id,
                 (member, workspace) => new BootstrapWorkspaceProjection(

@@ -2431,3 +2431,29 @@ GET  /api/v1/board-items/{boardItemId}/attachments/{attachmentId}/content
 ```
 
 Rules: the body is streamed (no buffering, no temp file beyond provider write); the part Content-Type is ignored; the stored name is sanitised; the storage key is server-generated `{accountId}/{workspaceId}/attachments/{objectId}`; authorization equals link registration (UpdateItem) and attachment list (ViewBoard) on the board item. The existing JSON `POST .../attachments` (link) keeps its shape; links count toward the same per-item cap as files, so it can also return 409 `attachment.limit_exceeded`, decided atomically with file uploads under the commit-point lock. `AttachmentDto` gains `Kind` ("File" or "Link"); for files `Url` is empty and the content operation is the download address. Idempotent replay returns the stored result without re-running the handler, so no second object or row; the fingerprint excludes the byte stream (same key with different bytes replays the first result).
+
+---
+
+# 24B. Account workspace and profile photo contract
+
+Owners: Workspaces (membership, list, leave, default choice validation) and Identity (profile photo, stored default Workspace id). Transport only in API; behavior in the Application use cases named by the operation ids.
+
+```text
+GET    /api/v1/account/workspaces                      Workspaces.Members.ListMyWorkspaces
+  200 [{ id, name, slug, role "Owner|Admin|Member|Guest", memberCount|null (null for Guest),
+         departmentCount|null (null unless Owner/Admin), isDefault, canLeave }]
+PUT    /api/v1/account/default-workspace  { workspaceId }   Workspaces.Members.SetDefaultWorkspace
+  204   404 not an active member of that workspace   400 empty id
+DELETE /api/v1/account/workspaces/{workspaceId}        Workspaces.Members.LeaveWorkspace
+  204   409 workspaces.member.last-owner-cannot-leave   404 not an active member
+PUT    /api/v1/profile/avatar     multipart/form-data, part "file"   Identity.Profile.UploadAvatar
+  200 { avatarUrl }   400 malformed / missing file part   413 identity.avatar.too-large (2,000,000 bytes)
+  415 identity.avatar.unsupported-format (PNG/JPEG/WebP by bytes; also a non-multipart body)
+DELETE /api/v1/profile/avatar                          Identity.Profile.RemoveAvatar
+  200 { avatarUrl: null }
+GET    /api/v1/users/{userId}/avatar                   Identity.Profile.GetUserAvatar
+  200 stream; nosniff; Cache-Control: private, max-age=86400, immutable; 404 for everyone not allowed and for no photo
+```
+
+Rules: the subject of every account route is the authenticated principal. The list, the avatar upload/remove and the avatar read are global requests (no workspace in the route); the reads that cross Workspaces lift the EF tenant filter explicitly with the principal fixed as the subject (classified in the IgnoreQueryFilters allowlist). `avatarUrl` is a path relative to the API origin of the form `/api/v1/users/{userId}/avatar?v={objectId}`; a new upload changes `v`, so a given address is cacheable as immutable. The upload shares the streamed multipart reader with the attachment upload (`API/Uploads/MultipartUpload`); it has no Idempotency-Key requirement (a repeat replaces the photo). Known limit: under the `notrelix_app` database role another person's `identity.users` row is not readable (same limit as the actor name lookup), so reading a co-member's photo answers 404 there; the database role in use today bypasses RLS. Closing that is part of the people-directory decision, not of this contract.
+

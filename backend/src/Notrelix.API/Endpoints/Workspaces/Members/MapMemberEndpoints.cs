@@ -21,6 +21,16 @@ public static class MapMemberEndpoints
         group.MapRemoveMember();
         group.MapSuspendMember();
         group.MapActivateMember();
+
+        // The signed-in person's own workspace memberships: what they belong to, the default, leaving.
+        var account = app
+            .MapGroup("/api/v1/account")
+            .WithTags("Workspaces.Members")
+            .WithOpenApi();
+
+        account.MapListMyWorkspaces();
+        account.MapSetDefaultWorkspace();
+        account.MapLeaveWorkspace();
         return app;
     }
 }

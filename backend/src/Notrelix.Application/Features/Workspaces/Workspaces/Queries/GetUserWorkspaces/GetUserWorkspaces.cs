@@ -26,10 +26,13 @@ public class GetUserWorkspacesQueryHandler : IRequestHandler<GetUserWorkspacesQu
         if (_requestContext.UserId == Guid.Empty)
             return Result<List<WorkspaceDto>>.Failure("User is not authenticated");
 
+        // Global request: no Workspace is selected, so the EF tenant filter of the workspace-scoped sets
+        // would hide every row. The subject is the principal; the soft-delete condition is explicit.
         var workspaces = await _context.WorkspaceMembers
+            .IgnoreQueryFilters()
             .AsNoTracking()
-            .Where(m => m.UserId == _requestContext.UserId)
-            .Join(_context.Workspaces.AsNoTracking(),
+            .Where(m => m.UserId == _requestContext.UserId && m.Status == WorkspaceMemberStatus.Active)
+            .Join(_context.Workspaces.IgnoreQueryFilters().AsNoTracking(),
                 member => member.WorkspaceId,
                 workspace => workspace.Id,
                 (_, workspace) => workspace)
@@ -41,6 +44,7 @@ public class GetUserWorkspacesQueryHandler : IRequestHandler<GetUserWorkspacesQu
         var memberCounts = workspaceIds.Count == 0
             ? new Dictionary<Guid, int>()
             : await _context.WorkspaceMembers
+                .IgnoreQueryFilters()
                 .AsNoTracking()
                 .Where(member => workspaceIds.Contains(member.WorkspaceId) && member.Status != WorkspaceMemberStatus.Removed)
                 .GroupBy(member => member.WorkspaceId)
