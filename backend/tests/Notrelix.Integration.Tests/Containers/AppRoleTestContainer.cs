@@ -22,10 +22,17 @@ public sealed class AppRoleTestContainer : IAsyncLifetime
 
     public string OwnerConnectionString => _postgres.OwnerConnectionString;
     public string AppConnectionString { get; private set; } = string.Empty;
+
+    /// <summary>A non-owner login running as <c>notrelix_worker</c> (the background principal's connection).</summary>
+    public string WorkerConnectionString { get; private set; } = string.Empty;
     public string RedisConnectionString { get; private set; } = string.Empty;
 
     public Notrelix.Infrastructure.Data.ApplicationDbContext CreateOwnerContext(ICurrentTenantContext? tenant = null) =>
         _postgres.CreateContext(tenant);
+
+    /// <summary>A context connected as the worker-role login (row-level security applies; the worker policies admit it).</summary>
+    public Notrelix.Infrastructure.Data.ApplicationDbContext CreateWorkerContext(ICurrentTenantContext? tenant = null) =>
+        PostgresTestContainer.CreateContextFor(WorkerConnectionString, tenant);
 
     /// <summary>A context connected as the application-role login (row-level security applies).</summary>
     public Notrelix.Infrastructure.Data.ApplicationDbContext CreateAppContext(ICurrentTenantContext? tenant = null) =>
@@ -35,9 +42,10 @@ public sealed class AppRoleTestContainer : IAsyncLifetime
     {
         await _postgres.InitializeAsync();
         AppConnectionString = await AppRoleLogin.CreateAsync(OwnerConnectionString, "notrelix_conformance_login");
+        WorkerConnectionString = await AppRoleLogin.CreateAsync(
+            OwnerConnectionString, "notrelix_conformance_worker_login", AppRoleLogin.WorkerRole);
 
-        _redis = new ContainerBuilder()
-            .WithImage("redis:7-alpine")
+        _redis = new ContainerBuilder("redis:7-alpine")
             .WithName($"notrelix-test-redis-{Guid.NewGuid():N}")
             .WithPortBinding(6379, true)
             .WithWaitStrategy(Wait.ForUnixContainer().UntilInternalTcpPortIsAvailable(6379))

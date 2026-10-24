@@ -8,10 +8,6 @@ BEGIN
         PERFORM ops.drop_all_policies_for_table('identity', 'users');
         PERFORM ops.enable_rls_for_table('identity', 'users');
         PERFORM ops.create_policy('identity', 'users', 'p_app_select_self', 'SELECT', 'notrelix_app', 'id = ops.current_user_id()', NULL);
-        -- Worker-scope read for background sweeps that run under the app role with the explicit worker
-        -- request scope (the profile photo object sweep decides "unreferenced" from users.avatar_storage_key).
-        -- SELECT only; a request-scoped session never satisfies is_worker_scope().
-        PERFORM ops.create_policy('identity', 'users', 'p_app_select_worker_scope', 'SELECT', 'notrelix_app', 'ops.is_worker_scope()', NULL);
         PERFORM ops.create_policy('identity', 'users', 'p_app_update_self', 'UPDATE', 'notrelix_app', 'id = ops.current_user_id()', 'id = ops.current_user_id()');
         PERFORM ops.create_policy('identity', 'users', 'p_auth_all', 'ALL', 'notrelix_auth', 'true', 'true');
         PERFORM ops.create_policy('identity', 'users', 'p_worker_all', 'ALL', 'notrelix_worker', 'true', 'true');

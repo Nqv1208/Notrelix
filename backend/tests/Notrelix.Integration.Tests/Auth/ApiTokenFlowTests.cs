@@ -136,7 +136,8 @@ public sealed class ApiTokenFlowTests : IAsyncLifetime
             new SystemClock(),
             interceptor is null ? CreateOptions() : CreateOptions(interceptor),
             new ApiTokenSecretService(),
-            time.Object);
+            time.Object,
+            Options.Create(new Notrelix.Application.Common.Data.Rls.RlsOptions()));
 
         var context = new DefaultHttpContext();
         context.Request.Headers.Authorization = $"Bearer {rawToken}";

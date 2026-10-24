@@ -91,6 +91,9 @@ public enum RlsBoundedScope
 public enum TokenScopePurpose
 {
     WorkspaceInvitation,
+
+    /// <summary>A workspace API token presented as a bearer credential; the scope is bound to that token's account and workspace.</summary>
+    ApiToken,
 }
 
 /// <summary>A token digest presented for a bounded scope. <paramref name="TokenHash"/> is the digest, never the raw token.</summary>

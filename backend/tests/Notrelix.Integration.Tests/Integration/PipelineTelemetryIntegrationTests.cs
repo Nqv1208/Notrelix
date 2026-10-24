@@ -253,6 +253,10 @@ public sealed class PipelineTelemetryIntegrationTests : IAsyncLifetime
         services.AddSingleton(clockMock.Object);
         services.AddScoped<ApplicationDbContext>(sp =>
             _db.CreateContext(sp.GetRequiredService<ICurrentTenantContext>()));
+        // The consume pipeline and the dispatcher choose the worker principal per scope; this host supplies
+        // its own context, so the principal only needs to exist.
+        services.AddSingleton(new Notrelix.Infrastructure.Data.DatabaseConnectionStrings(null, null, true));
+        services.AddScoped<Notrelix.Infrastructure.Data.DatabasePrincipal>();
 
         services.AddMessaging(configuration);
         services.AddObservability(configuration);

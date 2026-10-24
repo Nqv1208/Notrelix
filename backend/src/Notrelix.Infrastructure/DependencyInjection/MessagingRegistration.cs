@@ -60,6 +60,7 @@ public static class MessagingRegistration
 
                     cfg.UsingInMemory((ctx, mem) =>
                     {
+                        mem.UseConsumeFilter(typeof(WorkerPrincipalConsumeFilter<>), ctx);
                         mem.UseConsumeFilter(typeof(TenantContextConsumeFilter<>), ctx);
                         mem.UseConsumeFilter(typeof(DeduplicationConsumeFilter<>), ctx);
                         mem.ConfigureEndpoints(ctx);
@@ -118,6 +119,7 @@ public static class MessagingRegistration
                             cb.ResetInterval = TimeSpan.FromMinutes(opts.CircuitBreakerResetIntervalMinutes);
                         });
 
+                        rbt.UseConsumeFilter(typeof(WorkerPrincipalConsumeFilter<>), ctx);
                         rbt.UseConsumeFilter(typeof(TenantContextConsumeFilter<>), ctx);
                         rbt.UseConsumeFilter(typeof(DeduplicationConsumeFilter<>), ctx);
 

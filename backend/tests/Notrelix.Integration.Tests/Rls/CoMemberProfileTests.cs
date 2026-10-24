@@ -141,7 +141,7 @@ public sealed class CoMemberProfileTests : IAsyncLifetime
     [InlineData("ops.co_member_profiles(uuid[])")]
     [InlineData("ops.co_member_avatar_storage_key(uuid)")]
     [InlineData("ops.shares_workspace_with_caller(uuid)")]
-    public async Task TheResolverFunctions_AreExecutableByTheApplicationRoleOnly(string signature)
+    public async Task TheResolverFunctions_AreExecutableByTheApplicationAndWorkerRolesOnly(string signature)
     {
         await using var c = new NpgsqlConnection(_fixture.OwnerConnectionString);
         await c.OpenAsync();
@@ -152,7 +152,8 @@ public sealed class CoMemberProfileTests : IAsyncLifetime
         }
 
         (await CanAsync("notrelix_app")).Should().BeTrue();
-        foreach (var other in new[] { "public", "notrelix_auth", "notrelix_worker", "notrelix_support_readonly" })
+        (await CanAsync("notrelix_worker")).Should().BeTrue("background consumers resolve display names through the same functions");
+        foreach (var other in new[] { "public", "notrelix_auth", "notrelix_support_readonly" })
             (await CanAsync(other)).Should().BeFalse($"{other} must not execute {signature}");
     }
 

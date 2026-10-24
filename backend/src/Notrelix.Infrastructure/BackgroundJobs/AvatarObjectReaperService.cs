@@ -1,3 +1,4 @@
+using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Storage;
 namespace Notrelix.Infrastructure.BackgroundJobs;
 
@@ -36,7 +37,7 @@ internal sealed class AvatarObjectReaperService : BackgroundService
         {
             try
             {
-                await using var scope = _scopeFactory.CreateAsyncScope();
+                await using var scope = _scopeFactory.CreateWorkerAsyncScope();
                 var reaper = scope.ServiceProvider.GetRequiredService<AvatarObjectReaper>();
                 await reaper.RunOnceAsync(stoppingToken);
             }

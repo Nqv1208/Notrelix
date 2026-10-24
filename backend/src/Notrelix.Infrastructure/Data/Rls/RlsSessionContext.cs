@@ -89,6 +89,7 @@ public sealed class RlsSessionContext : IRlsSessionContext
             SELECT set_config('app.correlation_id', {correlationId}, true);
             SELECT set_config('app.scope_invitee_id', '', true);
             SELECT set_config('app.scope_token_hash', '', true);
+            SELECT set_config('app.scope_token_purpose', '', true);
         ", cancellationToken);
         _active = RlsBoundedScope.User;
     }
@@ -106,6 +107,7 @@ public sealed class RlsSessionContext : IRlsSessionContext
         var purpose = request.Purpose switch
         {
             TokenScopePurpose.WorkspaceInvitation => "workspace-invitation",
+            TokenScopePurpose.ApiToken => "api-token",
             _ => throw new ArgumentOutOfRangeException(nameof(request), request.Purpose, "Unknown token scope purpose."),
         };
 

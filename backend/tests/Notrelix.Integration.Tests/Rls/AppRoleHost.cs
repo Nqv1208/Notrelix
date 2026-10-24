@@ -34,6 +34,9 @@ internal static class AppRoleHost
             var settings = new Dictionary<string, string?>
             {
                 ["ConnectionStrings:NotrelixDb"] = db,
+                // Background work (dispatchers, deduplication, consumers, sweeps) connects as the worker login
+                // whenever the host serves as the application role; a control host on the owner uses it for both.
+                ["ConnectionStrings:NotrelixWorkerDb"] = db == fixture.AppConnectionString ? fixture.WorkerConnectionString : db,
                 ["ConnectionStrings:Redis"] = fixture.RedisConnectionString,
                 ["JwtSettings:SecretKey"] = "rls-conformance-signing-key-ThisIsNotASecret-0123456789",
                 ["JwtSettings:Issuer"] = "https://notrelix.test",

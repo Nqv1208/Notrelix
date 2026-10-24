@@ -13,11 +13,13 @@ public interface IIdentityUserFacts
         CancellationToken cancellationToken);
 
     /// <summary>
-    /// Sign-in emails of the given users (lower-case, trimmed); users that do not exist are omitted.
-    /// An email is personal data: the caller owns the visibility rule and must never call this for a
-    /// reader the policy does not allow.
+    /// Sign-in emails (lower-case, trimmed) of the given users as members of one Workspace; users that do
+    /// not exist or are not members are omitted. An email is personal data: the caller owns the visibility
+    /// rule (Workspaces: Owner or Admin reader, active non-guest subjects) and must never call this for a
+    /// reader the policy does not allow; the database enforces the same rule underneath.
     /// </summary>
     Task<IReadOnlyDictionary<Guid, string>> FindEmailsAsync(
+        Guid workspaceId,
         IReadOnlyCollection<Guid> userIds,
         CancellationToken cancellationToken);
 

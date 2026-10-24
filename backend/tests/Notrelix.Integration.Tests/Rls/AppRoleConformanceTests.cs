@@ -228,18 +228,18 @@ public sealed class AppRoleConformanceTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task ApiTokenAuthentication_UnderTheAppRole_CurrentlyRejectsAValidToken()
+    public async Task ApiTokenAuthentication_UnderTheAppRole_Works()
     {
         var url = $"/api/v1/workspaces/{_workspaceId}/api-tokens";
         var (owner, app) = await BothAsync(c => c.GetAsync(url), bearer: _apiTokenSecret);
         owner.StatusCode.Should().Be(HttpStatusCode.OK, await owner.Content.ReadAsStringAsync());
-        app.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        app.StatusCode.Should().Be(HttpStatusCode.OK, await app.Content.ReadAsStringAsync());
     }
 
     [Theory]
     [InlineData("INSERT INTO account.accounts (id) VALUES (gen_random_uuid())")]
     [InlineData("INSERT INTO authz.access_grants (id) VALUES (gen_random_uuid())")]
-    public async Task BootstrapInserts_UnderTheAppRole_AreCurrentlyDeniedByPolicy(string sql)
+    public async Task DirectInserts_OnAccountsAndGrants_AreStillDeniedByPolicy_BecauseTheWritesGoThroughBoundedFunctions(string sql)
     {
         var act = () => ScalarAsync(sql);
         (await act.Should().ThrowAsync<PostgresException>()).Which.MessageText.Should().Contain("row-level security");
@@ -250,14 +250,20 @@ public sealed class AppRoleConformanceTests : IAsyncLifetime
     [InlineData("messaging", "processed_events")]
     [InlineData("notifications", "email_outbox")]
     [InlineData("ops", "job_locks")]
-    public async Task WorkerInternalTables_HaveNoReadPolicyForTheAppRole_SoDispatchersAreBlindUnderIt(string schema, string table)
+    public async Task WorkerInternalTables_AreReadOnlyByTheWorkerLogin_NotTheApplicationLogin(string schema, string table)
     {
-        // The dispatchers, dedup filter and job locks read these tables through the application connection.
-        var visible = await ScalarAsync(
+        var appVisible = await ScalarAsync(
             "SELECT count(*) FROM pg_policies WHERE schemaname = @s AND tablename = @t " +
             "AND cmd IN ('SELECT','ALL') AND (roles @> ARRAY['notrelix_app']::name[] OR roles @> ARRAY['public']::name[])",
             ("s", schema), ("t", table));
-        visible.Should().Be("0");
+        appVisible.Should().Be("0", "the application login reads none of the background tables");
+
+        var workerPolicies = await ScalarAsync(
+            "SELECT count(*) FROM pg_policies WHERE schemaname = @s AND tablename = @t " +
+            "AND cmd = 'ALL' AND roles @> ARRAY['notrelix_worker']::name[]",
+            ("s", schema), ("t", table));
+        workerPolicies.Should().Be("1", "the worker login owns them; the dispatchers, the deduplication store and the " +
+            "consumers run over that connection (WorkerPrincipalTests)");
     }
 
     [Fact]

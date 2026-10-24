@@ -13,8 +13,8 @@
 -- the Application already decided to show.
 --
 -- The caller is the user the session context names (app.current_user_id). A person always resolves
--- themselves. The worker scope (already an unbounded background principal) resolves any requested id.
--- The one other exception is the inviter: the holder of an invitation link may resolve the display
+-- themselves. The worker scope (the unbounded background principal; only a connection logged in as the
+-- worker role can hold it) resolves any requested id. The one other exception is the inviter: the holder of an invitation link may resolve the display
 -- facts of the person who sent THAT invitation (the invitation preview names its inviter), and nobody
 -- else. No other scope resolves anyone: a credential or registration scope has no user relationship
 -- to share.
@@ -85,6 +85,6 @@ $$;
 REVOKE ALL ON FUNCTION ops.shares_workspace_with_caller(uuid) FROM PUBLIC;
 REVOKE ALL ON FUNCTION ops.co_member_profiles(uuid[]) FROM PUBLIC;
 REVOKE ALL ON FUNCTION ops.co_member_avatar_storage_key(uuid) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION ops.shares_workspace_with_caller(uuid) TO notrelix_app;
-GRANT EXECUTE ON FUNCTION ops.co_member_profiles(uuid[]) TO notrelix_app;
-GRANT EXECUTE ON FUNCTION ops.co_member_avatar_storage_key(uuid) TO notrelix_app;
+GRANT EXECUTE ON FUNCTION ops.shares_workspace_with_caller(uuid) TO notrelix_app, notrelix_worker;
+GRANT EXECUTE ON FUNCTION ops.co_member_profiles(uuid[]) TO notrelix_app, notrelix_worker;
+GRANT EXECUTE ON FUNCTION ops.co_member_avatar_storage_key(uuid) TO notrelix_app, notrelix_worker;

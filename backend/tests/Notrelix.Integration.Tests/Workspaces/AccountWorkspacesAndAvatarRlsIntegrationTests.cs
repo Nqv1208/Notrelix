@@ -57,6 +57,7 @@ public sealed class AccountWorkspacesAndAvatarRlsIntegrationTests : IAsyncLifeti
 
     private readonly string _storageRoot = Path.Combine(Path.GetTempPath(), "notrelix-avatars-" + Guid.NewGuid().ToString("N"));
     private string _appConnectionString = string.Empty;
+    private string _workerConnectionString = string.Empty;
 
     public async Task InitializeAsync()
     {
@@ -76,6 +77,10 @@ public sealed class AccountWorkspacesAndAvatarRlsIntegrationTests : IAsyncLifeti
             Password = secret,
             Options = "-c role=notrelix_app",
         }.ConnectionString;
+
+        // The background principal's login: sweeps and reapers connect as the worker role.
+        _workerConnectionString = await AppRoleLogin.CreateAsync(
+            _container.GetConnectionString(), "account_pages_worker_login", AppRoleLogin.WorkerRole);
     }
 
     public async Task DisposeAsync()
@@ -292,7 +297,7 @@ public sealed class AccountWorkspacesAndAvatarRlsIntegrationTests : IAsyncLifeti
     }
 
     [Fact]
-    public async Task Sweep_FailsClosed_WhenTheWorkerCannotReadUserRows()
+    public async Task Sweep_FailsClosed_WhenTheWorkerLoginCannotReadUserRows()
     {
         var alice = await SeedUserAsync("alice");
         var storage = NewStorage();
@@ -300,7 +305,7 @@ public sealed class AccountWorkspacesAndAvatarRlsIntegrationTests : IAsyncLifeti
         await UploadAsync(alice, storage);
         AgeEverything(DateTime.UtcNow.AddDays(-3));
 
-        await ExecuteAsync("DROP POLICY p_app_select_worker_scope ON identity.users");
+        await ExecuteAsync("DROP POLICY p_worker_all ON identity.users");
         try
         {
             var result = await RunReaperAsync(storage);
@@ -431,7 +436,7 @@ public sealed class AccountWorkspacesAndAvatarRlsIntegrationTests : IAsyncLifeti
 
         var request = RequestOf(userId, accountId);
         var compensations = new RequestRollbackCompensations(NullLogger<RequestRollbackCompensations>.Instance);
-        await using var context = CreateContext(tenant, _appConnectionString);
+        await using var context = CreateContext(tenant, _workerConnectionString);
         var rls = new RlsSessionContext(context, Options.Create(new RlsOptions { Enabled = true, SetSessionContext = true }), tenant);
         var session = new EfRequestDataSession(context, rls, NullLogger<EfRequestDataSession>.Instance, compensations: compensations);
         return await session.ExecuteAsync(
@@ -502,7 +507,7 @@ public sealed class AccountWorkspacesAndAvatarRlsIntegrationTests : IAsyncLifeti
     private async Task<(int Deleted, bool Skipped)> RunReaperAsync(IStorageService storage)
     {
         var tenant = new CurrentTenantContext();
-        await using var context = CreateContext(tenant, _appConnectionString);
+        await using var context = CreateContext(tenant, _workerConnectionString);
         var rls = new RlsSessionContext(context, Options.Create(new RlsOptions { Enabled = true, SetSessionContext = true }), tenant);
         var store = new PostgresAvatarReaperStore(context, tenant, rls, NullLogger<PostgresAvatarReaperStore>.Instance);
         var clock = new Mock<IDateTimeProvider>();

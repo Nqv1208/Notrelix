@@ -29,6 +29,7 @@ Use `000_apply_order.sql` or embed the files in the same order:
 12. `012_principal_scopes.sql`
 13. `013_co_member_profiles.sql`
 14. `014_anonymous_scopes.sql`
+15. `015_internal_principals.sql`
 
 ## Important fixes
 

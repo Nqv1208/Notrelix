@@ -151,7 +151,7 @@ internal sealed class OnboardingDraftSweepService : BackgroundService
         {
             try
             {
-                await using var scope = _scopeFactory.CreateAsyncScope();
+                await using var scope = _scopeFactory.CreateWorkerAsyncScope();
                 var sweeper = scope.ServiceProvider.GetRequiredService<OnboardingDraftSweeper>();
                 await sweeper.RunOnceAsync(stoppingToken);
             }

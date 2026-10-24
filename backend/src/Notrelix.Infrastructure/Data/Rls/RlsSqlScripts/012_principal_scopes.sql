@@ -39,7 +39,9 @@ $$;
 -- Enters the token scope named by a presented one-time token. The token row is located by digest (the
 -- function owner bypasses row-level security for this single lookup); when found, the scope is bound to
 -- the token's own account and workspace and those two identifiers are returned. When no row matches, no
--- scope is entered and nothing is returned. The digest, never a raw token, is the input.
+-- scope is entered and nothing is returned. The digest, never a raw token, is the input. The purpose
+-- ('workspace-invitation', 'api-token') is recorded with the scope so a policy written for one kind of token
+-- never admits the scope of another.
 CREATE OR REPLACE FUNCTION ops.enter_token_scope(p_purpose text, p_token_hash text, p_hash_version integer)
 RETURNS TABLE (account_id uuid, workspace_id uuid)
 LANGUAGE plpgsql
@@ -61,6 +63,16 @@ BEGIN
           FROM workspace.workspace_invitations i
          WHERE i.token_hash = p_token_hash
            AND i.hash_version = p_hash_version;
+    ELSIF p_purpose = 'api-token' THEN
+        -- Only a token that could authenticate right now enters a scope: active, not expired, and bound to
+        -- a user. A revoked, expired, user-less or unknown token enters nothing.
+        SELECT t.account_id, t.workspace_id
+          INTO v_account, v_workspace
+          FROM identity.api_tokens t
+         WHERE t.token_hash = p_token_hash
+           AND t.status = 'Active'
+           AND t.user_id IS NOT NULL
+           AND (t.expires_at IS NULL OR t.expires_at > now());
     ELSE
         RAISE EXCEPTION 'Unknown token scope purpose' USING ERRCODE = '22023';
     END IF;
@@ -74,6 +86,7 @@ BEGIN
     PERFORM set_config('app.scope_workspace_id', v_workspace::text, true);
     PERFORM set_config('app.scope_user_id', '', true);
     PERFORM set_config('app.scope_token_hash', p_token_hash, true);
+    PERFORM set_config('app.scope_token_purpose', p_purpose, true);
     PERFORM set_config('app.scope_invitee_id', '', true);
     PERFORM set_config('app.scope_invitation_role', '', true);
     PERFORM set_config('app.scope_invitation_email', '', true);

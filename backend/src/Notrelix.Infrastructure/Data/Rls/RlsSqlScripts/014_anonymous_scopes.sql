@@ -26,6 +26,7 @@ SET search_path = pg_catalog, ops, pg_temp
 AS $$
     SELECT ops.current_request_scope() IN ('token', 'registration')
        AND ops.current_setting_text('app.scope_token_hash') IS NOT NULL
+       AND ops.current_setting_text('app.scope_token_purpose') = 'workspace-invitation'
        AND (p_account IS NULL OR p_account = ops.current_setting_uuid('app.scope_account_id'))
        AND (p_workspace IS NULL OR p_workspace = ops.current_setting_uuid('app.scope_workspace_id'))
        AND COALESCE(p_account, p_workspace) IS NOT NULL;
@@ -171,6 +172,7 @@ BEGIN
         PERFORM set_config('app.scope_invitation_role', '', true);
         PERFORM set_config('app.scope_invitation_email', '', true);
         PERFORM set_config('app.scope_token_hash', '', true);
+        PERFORM set_config('app.scope_token_purpose', '', true);
         PERFORM set_config('app.scope_account_id', '', true);
         PERFORM set_config('app.scope_workspace_id', '', true);
     END IF;
@@ -222,12 +224,22 @@ AS $$
        AND EXISTS (SELECT 1 FROM identity.users u WHERE u.normalized_email = p_normalized_email AND u.deleted_at IS NULL);
 $$;
 
--- The only way the application role writes an authz.access_grants row inside a bounded scope. The row is
--- written immediately (not at SaveChanges) so every grant-derived policy of the rest of the request sees it.
--- The role set and the admin flags are derived here, never supplied:
+-- The only way the application role writes an authz.access_grants row. The row is written immediately (not at
+-- SaveChanges) so every grant-derived policy of the rest of the request sees it. The role set and the admin
+-- flags are derived here, never supplied:
 --   registration scope: the owner grant of the ONE new account for the new user (the account must not exist);
 --   invitee scope:      the invited person's account-level Member grant, or the invitation's own role in
---                       the invitation's own workspace.
+--                       the invitation's own workspace;
+--   tenant (app) scope: only inside the account and workspace the request is scoped to -
+--                       the account-level Member grant that accompanies adding someone to a workspace of
+--                       the account (never over an account administrator's grant);
+--                       a Member/Guest/Admin grant of the scoped workspace;
+--                       an Owner grant of the scoped workspace only when the caller is that workspace's
+--                       current Owner (the ownership transfer);
+--                       an Owner grant of a NEW workspace of the scoped account for the caller who
+--                       creates it (the workspace must not exist yet and the caller must be in the account).
+--                       Application authorization stays the authority that decides whether the caller may
+--                       do this; the function only bounds where the write can land.
 -- Anything else is refused.
 CREATE OR REPLACE FUNCTION ops.upsert_access_grant(
     p_account uuid, p_workspace uuid, p_user uuid, p_role text, p_granted_at timestamptz)
@@ -239,6 +251,7 @@ SET search_path = pg_catalog, authz, ops, pg_temp
 AS $$
 DECLARE
     v_scope text := ops.current_request_scope();
+    v_actor uuid := ops.current_user_id();
     v_allowed boolean := false;
     v_invitation_role text;
     v_is_admin boolean := p_role IN ('Owner', 'Admin');
@@ -268,6 +281,35 @@ BEGIN
         END IF;
     END IF;
 
+    IF NOT v_allowed
+       AND v_scope = 'app'
+       AND v_actor IS NOT NULL
+       AND p_account = ops.current_account_id() THEN
+        IF p_workspace IS NULL THEN
+            v_allowed := p_role = 'Member';
+        ELSIF p_workspace = ops.current_workspace_id() THEN
+            IF p_role = 'Owner' THEN
+                v_allowed := EXISTS (
+                    SELECT 1
+                      FROM authz.access_grants g
+                     WHERE g.account_id = p_account
+                       AND g.workspace_id = p_workspace
+                       AND g.user_id = v_actor
+                       AND g.revoked_at IS NULL
+                       AND g.membership_status = 'Active'
+                       AND 'Owner' = ANY (g.role_codes));
+            ELSE
+                v_allowed := true;
+            END IF;
+        ELSIF ops.current_workspace_id() IS NULL
+              AND p_role = 'Owner'
+              AND p_user = v_actor
+              AND ops.has_account_access(p_account)
+              AND NOT EXISTS (SELECT 1 FROM workspace.workspaces w WHERE w.id = p_workspace) THEN
+            v_allowed := true;
+        END IF;
+    END IF;
+
     IF NOT v_allowed THEN
         RAISE EXCEPTION 'Access grant write denied for the current scope' USING ERRCODE = '42501';
     END IF;
@@ -282,7 +324,9 @@ BEGIN
         ON CONFLICT (account_id, user_id) WHERE workspace_id IS NULL DO UPDATE
            SET membership_status = 'Active', role_codes = EXCLUDED.role_codes, permission_codes = ARRAY[]::text[],
                is_account_admin = EXCLUDED.is_account_admin, is_workspace_admin = false,
-               revoked_at = NULL, updated_at = EXCLUDED.updated_at;
+               revoked_at = NULL, updated_at = EXCLUDED.updated_at
+         -- a Member write never replaces an account administrator's grant
+         WHERE g.is_account_admin = false OR EXCLUDED.is_account_admin;
     ELSE
         INSERT INTO authz.access_grants AS g (
             id, account_id, workspace_id, user_id, source_context, membership_status, role_codes,
@@ -298,6 +342,32 @@ BEGIN
 END;
 $$;
 
+-- Ends a person's workspace grant. Valid only in the tenant (app) scope of that very workspace and account:
+-- the member removal and suspension of the scoped workspace. (A person leaving ends their OWN grant through
+-- the narrow own-grant update policy instead.) A grant that does not exist is left alone.
+CREATE OR REPLACE FUNCTION ops.revoke_access_grant(
+    p_account uuid, p_workspace uuid, p_user uuid, p_revoked_at timestamptz)
+RETURNS void
+LANGUAGE plpgsql
+VOLATILE
+SECURITY DEFINER
+SET search_path = pg_catalog, authz, ops, pg_temp
+AS $$
+BEGIN
+    IF p_account IS NULL OR p_workspace IS NULL OR p_user IS NULL
+       OR ops.current_request_scope() <> 'app'
+       OR ops.current_user_id() IS NULL
+       OR p_account IS DISTINCT FROM ops.current_account_id()
+       OR p_workspace IS DISTINCT FROM ops.current_workspace_id() THEN
+        RAISE EXCEPTION 'Access grant revocation denied for the current scope' USING ERRCODE = '42501';
+    END IF;
+
+    UPDATE authz.access_grants g
+       SET revoked_at = p_revoked_at, updated_at = p_revoked_at
+     WHERE g.account_id = p_account AND g.workspace_id = p_workspace AND g.user_id = p_user;
+END;
+$$;
+
 REVOKE ALL ON FUNCTION ops.has_invitation_binding(uuid, uuid) FROM PUBLIC;
 REVOKE ALL ON FUNCTION ops.has_invitee_scope(uuid, uuid) FROM PUBLIC;
 REVOKE ALL ON FUNCTION ops.has_invitee_scope_any() FROM PUBLIC;
@@ -308,6 +378,7 @@ REVOKE ALL ON FUNCTION ops.registration_user_allowed(uuid, text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION ops.registration_account_allowed(uuid) FROM PUBLIC;
 REVOKE ALL ON FUNCTION ops.email_registered(text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION ops.upsert_access_grant(uuid, uuid, uuid, text, timestamptz) FROM PUBLIC;
+REVOKE ALL ON FUNCTION ops.revoke_access_grant(uuid, uuid, uuid, timestamptz) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION ops.has_invitation_binding(uuid, uuid) TO notrelix_app, notrelix_auth, notrelix_worker, notrelix_support_readonly;
 GRANT EXECUTE ON FUNCTION ops.has_invitee_scope(uuid, uuid) TO notrelix_app, notrelix_auth, notrelix_worker, notrelix_support_readonly;
 GRANT EXECUTE ON FUNCTION ops.has_invitee_scope_any() TO notrelix_app;
@@ -317,6 +388,7 @@ GRANT EXECUTE ON FUNCTION ops.enter_invitee_scope(uuid) TO notrelix_app;
 GRANT EXECUTE ON FUNCTION ops.enter_registration_scope(uuid) TO notrelix_app;
 GRANT EXECUTE ON FUNCTION ops.email_registered(text) TO notrelix_app;
 GRANT EXECUTE ON FUNCTION ops.upsert_access_grant(uuid, uuid, uuid, text, timestamptz) TO notrelix_app;
+GRANT EXECUTE ON FUNCTION ops.revoke_access_grant(uuid, uuid, uuid, timestamptz) TO notrelix_app;
 
 -- -----------------------------------------------------------------------------
 -- Policies of the invitation token scope. Allow-list only; every other table keeps its own policies.
@@ -461,6 +533,7 @@ BEGIN
     PERFORM set_config('app.scope_account_id', '', true);
     PERFORM set_config('app.scope_workspace_id', '', true);
     PERFORM set_config('app.scope_token_hash', '', true);
+    PERFORM set_config('app.scope_token_purpose', '', true);
     PERFORM set_config('app.scope_invitee_id', '', true);
     PERFORM set_config('app.scope_invitation_role', '', true);
     PERFORM set_config('app.scope_invitation_email', '', true);

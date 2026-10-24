@@ -20,13 +20,15 @@
       "backend.architecture.common-entitlements",
       "backend.architecture.feature-structure",
       "backend.architecture.owner-connection-boundary",
-      "backend.architecture.rls-principal-scope"
+      "backend.architecture.rls-principal-scope",
+      "backend.architecture.internal-principals"
     ],
     "core": [
       "backend.data.rls-policy",
       "backend.data.domain-event-interceptor",
       "backend.data.runtime-role-guard",
-      "backend.data.owner-connection"
+      "backend.data.owner-connection",
+      "backend.data.database-principal"
     ],
     "platform": [
       "backend.messaging.ordering",
@@ -59,7 +61,12 @@
       "backend.rls.user-scope-isolation",
       "backend.rls.co-member-profile",
       "backend.rls.invitation-scope",
-      "backend.rls.credential-scope"
+      "backend.rls.credential-scope",
+      "backend.rls.worker-principal",
+      "backend.rls.api-token-scope",
+      "backend.rls.security-event-write",
+      "backend.rls.admin-grant-write",
+      "backend.rls.member-disclosure"
     ]
   },
   "proofs": {
@@ -281,6 +288,41 @@
     "backend.rls.credential-scope": {
       "tests": [
         "Notrelix.Integration.Tests.Rls.CredentialScopeTests"
+      ]
+    },
+    "backend.architecture.internal-principals": {
+      "tests": [
+        "Notrelix.Architecture.Tests.InternalPrincipalArchitectureTests"
+      ]
+    },
+    "backend.rls.worker-principal": {
+      "tests": [
+        "Notrelix.Integration.Tests.Rls.WorkerPrincipalTests"
+      ]
+    },
+    "backend.rls.api-token-scope": {
+      "tests": [
+        "Notrelix.Integration.Tests.Rls.ApiTokenScopeTests"
+      ]
+    },
+    "backend.rls.security-event-write": {
+      "tests": [
+        "Notrelix.Integration.Tests.Rls.SecurityEventWriteTests"
+      ]
+    },
+    "backend.rls.admin-grant-write": {
+      "tests": [
+        "Notrelix.Integration.Tests.Rls.AdminGrantWriteTests"
+      ]
+    },
+    "backend.rls.member-disclosure": {
+      "tests": [
+        "Notrelix.Integration.Tests.Rls.MemberDisclosureTests"
+      ]
+    },
+    "backend.data.database-principal": {
+      "tests": [
+        "Notrelix.Infrastructure.Tests.Data.DatabasePrincipalTests"
       ]
     },
     "backend.architecture.owner-connection-boundary": {

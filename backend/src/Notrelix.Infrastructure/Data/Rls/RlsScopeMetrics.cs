@@ -17,6 +17,14 @@ internal static class RlsScopeMetrics
         unit: "{entry}",
         description: "Entries into a bounded row-level-security scope.");
 
+    private static readonly Counter<long> SecurityAuditWrites = Meter.CreateCounter<long>(
+        "security_audit_event_write",
+        unit: "{event}",
+        description: "Security audit events the sink tried to persist, by outcome.");
+
+    public static void RecordSecurityAudit(bool written) =>
+        SecurityAuditWrites.Add(1, new KeyValuePair<string, object?>("outcome", written ? "written" : "failed"));
+
     public static void Record(string scopeKind, string reasonCategory, bool bound) =>
         Entries.Add(
             1,

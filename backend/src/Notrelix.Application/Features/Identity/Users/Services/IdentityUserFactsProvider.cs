@@ -2,6 +2,7 @@ using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.Identity.Public.Facts;
 using Notrelix.Application.Features.Identity.Public.Queries;
 using Notrelix.Application.Features.Identity.Registration.Ports;
+using Notrelix.Application.Features.Identity.Users.Ports;
 
 namespace Notrelix.Application.Features.Identity.Users.Services;
 
@@ -14,11 +15,16 @@ public sealed class IdentityUserFactsProvider : IIdentityUserFacts
 {
     private readonly IIdentityDbContext _context;
     private readonly IEmailRegistrationProbe? _registrationProbe;
+    private readonly IMemberEmailReadPort? _emailReadPort;
 
-    public IdentityUserFactsProvider(IIdentityDbContext context, IEmailRegistrationProbe? registrationProbe = null)
+    public IdentityUserFactsProvider(
+        IIdentityDbContext context,
+        IEmailRegistrationProbe? registrationProbe = null,
+        IMemberEmailReadPort? emailReadPort = null)
     {
         _context = context;
         _registrationProbe = registrationProbe;
+        _emailReadPort = emailReadPort;
     }
 
     public async Task<IdentityUserFact?> FindByIdAsync(
@@ -50,11 +56,15 @@ public sealed class IdentityUserFactsProvider : IIdentityUserFacts
     }
 
     public async Task<IReadOnlyDictionary<Guid, string>> FindEmailsAsync(
+        Guid workspaceId,
         IReadOnlyCollection<Guid> userIds,
         CancellationToken cancellationToken)
     {
         if (userIds.Count == 0)
             return new Dictionary<Guid, string>();
+
+        if (_emailReadPort is not null)
+            return await _emailReadPort.FindAsync(workspaceId, userIds, cancellationToken);
 
         var rows = await _context.Users
             .AsNoTracking()

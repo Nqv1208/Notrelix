@@ -32,9 +32,12 @@ public class RlsPrincipalScopeArchitectureTests
         helper.Should().NotBeNullOrEmpty();
         var admitted = Regex.Matches(helper, @"'([a-z_]+)'").Select(m => m.Groups[1].Value).ToArray();
 
-        admitted.Should().BeEquivalentTo(["worker", "system", "migration", "migrator"],
-            "ops.is_worker_scope() must not be widened (a worker scope is an unbounded all-tenant bypass)");
+        admitted.Should().BeEquivalentTo(["worker", "notrelix_worker"],
+            "ops.is_worker_scope() admits only the worker scope held by a notrelix_worker login " +
+            "(a worker scope is an unbounded all-tenant bypass)");
         admitted.Should().NotIntersectWith(BoundedScopes);
+        helper.Should().Contain("pg_has_role(session_user, 'notrelix_worker', 'MEMBER')",
+            "the scope value is a session setting any connection can write; the login decides");
     }
 
     [Fact]

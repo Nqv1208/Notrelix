@@ -60,14 +60,20 @@ public static class PersistenceRegistration
         services.AddScoped<AuditableEntityInterceptor>();
         services.AddScoped<DomainEventInterceptor>();
 
-        var connectionString = configuration.GetConnectionString("NotrelixDb");
+        // The application login (ConnectionStrings:NotrelixDb) serves requests; the background login
+        // (ConnectionStrings:NotrelixWorkerDb) is used by every scope that was switched to the worker
+        // principal (dispatchers, deduplication, consumers, sweeps). Unset, the worker string falls back to
+        // the application one.
+        var connectionStrings = DatabaseConnectionStrings.FromConfiguration(configuration);
+        services.AddSingleton(connectionStrings);
+        services.AddScoped<DatabasePrincipal>();
 
         // Single unified ApplicationDbContext
         services.AddDbContext<ApplicationDbContext>((sp, options) =>
         {
             options.AddInterceptors(sp.GetRequiredService<AuditableEntityInterceptor>());
             options.AddInterceptors(sp.GetRequiredService<DomainEventInterceptor>());
-            ConfigureNpgsql(options, connectionString);
+            ConfigureNpgsql(options, sp.GetRequiredService<DatabasePrincipal>().ResolveConnectionString());
         });
 
         // Owner connection (migrate, rls-apply, seed). Falls back to the runtime connection string
@@ -169,6 +175,7 @@ public static class PersistenceRegistration
         services.AddScoped<global::Notrelix.Application.Features.Workspaces.Abstractions.IWorkspaceSlugResolver, Notrelix.Infrastructure.Workspaces.Workspaces.WorkspaceSlugResolver>();
         services.AddScoped<global::Notrelix.Application.Features.Identity.OAuth.Abstractions.IOAuthIdentityProbe, Notrelix.Infrastructure.Identity.OAuth.OAuthIdentityProbe>();
         services.AddScoped<global::Notrelix.Application.Features.Identity.Registration.Ports.IEmailRegistrationProbe, Notrelix.Infrastructure.Identity.Registration.EmailRegistrationProbe>();
+        services.AddScoped<global::Notrelix.Application.Features.Identity.Users.Ports.IMemberEmailReadPort, Notrelix.Infrastructure.Identity.Users.MemberEmailReader>();
         services.AddScoped<global::Notrelix.Application.Features.Identity.Profiles.Ports.IAvatarStorageKeyReadPort, Notrelix.Infrastructure.Identity.Profiles.AvatarStorageKeyLookup>();
         services.AddScoped<Notrelix.Application.Features.Governance.Abstractions.IResourceAccessChangeReader, Notrelix.Infrastructure.Data.Authz.EfResourceAccessChangeReader>();
         services.AddScoped(sp => ActivatorUtilities.CreateInstance<ApplicationDbContextInitialiser>(
