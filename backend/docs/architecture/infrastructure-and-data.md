@@ -724,6 +724,7 @@ with its transaction. None is a member of `ops.is_worker_scope()`.
 token         one invitation: account + workspace + digest        enter_token_scope        (preview, decline)
 invitee       token + the person the invitation is addressed to   enter_invitee_scope       (accept while signed in)
 registration  one brand-new user and the one account it creates   enter_registration_scope  (register, register-and-accept)
+credential    one existing user derived from a credential         enter_credential_scope    (login, refresh, verify, reset)
 ```
 
 How they work together:
@@ -748,6 +749,19 @@ How they work together:
   and the invitation's own role in the invitation's own workspace (invitee). Outside those scopes the grant
   projection is unchanged. Account and user rows are written with INSERT-only policies bound to the scope, not
   broad policies.
+- `enter_credential_scope(kind, credential, hash_version)` finds the ONE user a presented credential names (a
+  normalized address, a refresh token digest, an email-verification digest, a linked provider identity) and binds
+  the scope to that user alone: the ordinary own-row policies then apply, and one-time credential rows
+  (`email_verification_tokens`, `password_reset_tokens`) are readable and writable only for the scope's user. An
+  unknown credential enters nothing, so the handler's own lookups find nothing, exactly like today. Login,
+  forgot/reset password, resend/confirm verification, refresh and OAuth sign-in use it (`CredentialScope`); MFA
+  completion and OAuth step-up use the ordinary user scope for the user their server-held challenge or state
+  record names. There is no broad SELECT policy on `identity.users` for any of this.
+- Boolean probes and exact-row reads replace row reads that no scope may have: `ops.email_registered` (an
+  address is taken; registration, invited registration, invitation preview, email change, OAuth sign-up),
+  `ops.oauth_identity_linked` (a provider identity is linked to someone else), and
+  `ops.resolve_workspace_slug` (the public resolve-by-slug card of one active workspace). Each returns only its
+  answer or its fixed columns.
 - Audit (Q3): entering a bounded scope writes a structured log line (scope kind, reason, derived ids, never a
   token or password) and increments `rls_scope_entry`; durable `audit.security_events` rows of the flows are
   unchanged.

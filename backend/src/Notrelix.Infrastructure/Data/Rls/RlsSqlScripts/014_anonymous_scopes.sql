@@ -400,3 +400,114 @@ SELECT ops.create_policy(
 SELECT ops.create_policy(
     'audit', 'audit_logs', 'p_app_insert_invitation_binding', 'INSERT', 'notrelix_app', NULL,
     'ops.has_invitation_binding(NULL, workspace_id)');
+
+-- -----------------------------------------------------------------------------
+-- Credential scope: one EXISTING user, derived by the database from the credential the request presents.
+-- -----------------------------------------------------------------------------
+-- Login, password reset, email verification and session refresh start from a credential, not from a
+-- known user. The application passes the credential (a normalized address, or a digest) and the database
+-- finds the one user it names; the scope is then bound to that user alone. No broad SELECT policy on
+-- identity.users exists for this: the lookup is this function, the row access afterwards is the ordinary
+-- own-row policy. The function returns the derived user id (NULL when nothing matches; nothing is entered
+-- then).
+--   email               p_credential = normalized email address
+--   refresh-token       p_credential = refresh token digest        (session of that digest)
+--   email-verification  p_credential = token digest + hash version (token of that digest)
+--   oauth-identity      p_credential = provider || chr(31) || provider subject (linked sign-in identity)
+CREATE OR REPLACE FUNCTION ops.enter_credential_scope(p_kind text, p_credential text, p_hash_version integer)
+RETURNS uuid
+LANGUAGE plpgsql
+VOLATILE
+SECURITY DEFINER
+SET search_path = pg_catalog, ops, pg_temp
+AS $$
+DECLARE
+    v_user uuid;
+BEGIN
+    IF p_credential IS NULL OR length(p_credential) = 0 THEN
+        RETURN NULL;
+    END IF;
+
+    IF p_kind = 'email' THEN
+        SELECT u.id INTO v_user
+          FROM identity.users u
+         WHERE u.normalized_email = p_credential AND u.deleted_at IS NULL;
+    ELSIF p_kind = 'refresh-token' THEN
+        SELECT s.user_id INTO v_user
+          FROM identity.user_sessions s
+         WHERE s.refresh_token_hash = p_credential;
+    ELSIF p_kind = 'email-verification' THEN
+        SELECT t.user_id INTO v_user
+          FROM identity.email_verification_tokens t
+         WHERE t.token_hash = p_credential AND t.hash_version = p_hash_version;
+    ELSIF p_kind = 'oauth-identity' THEN
+        SELECT a.user_id INTO v_user
+          FROM identity.oauth_accounts a
+         WHERE a.provider = split_part(p_credential, E'\x1f', 1)
+           AND a.provider_id = split_part(p_credential, E'\x1f', 2);
+    ELSE
+        RAISE EXCEPTION 'Unknown credential scope kind' USING ERRCODE = '22023';
+    END IF;
+
+    IF v_user IS NULL THEN
+        RETURN NULL;
+    END IF;
+
+    PERFORM set_config('app.request_scope', 'credential', true);
+    PERFORM set_config('app.scope_user_id', v_user::text, true);
+    PERFORM set_config('app.current_user_id', v_user::text, true);
+    PERFORM set_config('app.current_account_id', '', true);
+    PERFORM set_config('app.current_workspace_id', '', true);
+    PERFORM set_config('app.scope_account_id', '', true);
+    PERFORM set_config('app.scope_workspace_id', '', true);
+    PERFORM set_config('app.scope_token_hash', '', true);
+    PERFORM set_config('app.scope_invitee_id', '', true);
+    PERFORM set_config('app.scope_invitation_role', '', true);
+    PERFORM set_config('app.scope_invitation_email', '', true);
+    PERFORM set_config('app.scope_registration_account_id', '', true);
+    RETURN v_user;
+END;
+$$;
+REVOKE ALL ON FUNCTION ops.enter_credential_scope(text, text, integer) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION ops.enter_credential_scope(text, text, integer) TO notrelix_app;
+
+-- Whether a provider identity is already linked to ANY account, as a boolean (no row, no owner). Used by the
+-- link flow of a signed-in user to refuse an identity that belongs to someone else; the user's own link is
+-- visible through the ordinary own-row policy.
+CREATE OR REPLACE FUNCTION ops.oauth_identity_linked(p_provider text, p_subject text)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = pg_catalog, ops, pg_temp
+AS $$
+    SELECT p_provider IS NOT NULL AND p_subject IS NOT NULL
+       AND EXISTS (SELECT 1 FROM identity.oauth_accounts a WHERE a.provider = p_provider AND a.provider_id = p_subject);
+$$;
+REVOKE ALL ON FUNCTION ops.oauth_identity_linked(text, text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION ops.oauth_identity_linked(text, text) TO notrelix_app;
+
+-- -----------------------------------------------------------------------------
+-- Public workspace resolution (account id + slug), for the anonymous resolve endpoint.
+-- -----------------------------------------------------------------------------
+-- The endpoint is public by product design: it answers one active, non-deleted workspace by (account, slug)
+-- with the fields of the workspace card. It is an exact-row definer read, not a scope: no policy is widened,
+-- and nothing but these columns and the member count is returned.
+CREATE OR REPLACE FUNCTION ops.resolve_workspace_slug(p_account uuid, p_slug text)
+RETURNS TABLE (
+    workspace_id uuid, name text, slug text, description text, is_personal boolean,
+    created_at timestamptz, version bigint, size text, language text, member_count bigint)
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = pg_catalog, ops, pg_temp
+AS $$
+    SELECT w.id, w.name::text, w.slug::text, w.description::text, w.is_personal,
+           w.created_at, w.version, w.settings_size::text, w.settings_language::text,
+           (SELECT count(*) FROM workspace.workspace_members m WHERE m.workspace_id = w.id AND m.status <> 'Removed')
+      FROM workspace.workspaces w
+     WHERE p_account IS NOT NULL AND p_slug IS NOT NULL
+       AND w.account_id = p_account AND w.slug = p_slug AND w.status = 'Active' AND w.deleted_at IS NULL;
+$$;
+REVOKE ALL ON FUNCTION ops.resolve_workspace_slug(uuid, text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION ops.resolve_workspace_slug(uuid, text) TO notrelix_app;

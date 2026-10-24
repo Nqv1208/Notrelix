@@ -166,12 +166,12 @@ public sealed class AppRoleConformanceTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Login_UnderTheAppRole_CurrentlyRejectsAKnownUserWith401()
+    public async Task Login_UnderTheAppRole_Works()
     {
         var (owner, app) = await BothAsync(c => c.PostAsJsonAsync("/api/v1/auth/login",
             new { email = "alice-rls@example.com", password = Password }));
         owner.StatusCode.Should().Be(HttpStatusCode.OK);
-        app.StatusCode.Should().Be(HttpStatusCode.Unauthorized, "the user row is invisible without a session context");
+        app.StatusCode.Should().Be(HttpStatusCode.OK, await app.Content.ReadAsStringAsync());
     }
 
     [Fact]

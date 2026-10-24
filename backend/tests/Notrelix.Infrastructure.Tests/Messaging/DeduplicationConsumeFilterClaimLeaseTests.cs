@@ -267,6 +267,8 @@ public sealed class DeduplicationConsumeFilterClaimLeaseTests : IDisposable
             Task.FromResult(false);
         public Task<bool> EnterRegistrationScopeAsync(Guid userId, Notrelix.Application.Common.SystemOperations.SystemOperationReason reason, CancellationToken cancellationToken) =>
             Task.FromResult(false);
+        public Task<Guid?> EnterCredentialScopeAsync(CredentialScopeRequest request, CancellationToken cancellationToken) =>
+            Task.FromResult<Guid?>(null);
     }
 
     /// <summary>Message-id keyed effect: first apply performs the effect, later applies replay.</summary>

@@ -1,6 +1,7 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Requests.Scoping;
 using Notrelix.Application.Features.Identity.Abstractions;
+using Notrelix.Application.Features.Identity.Auth.Services;
 
 namespace Notrelix.Application.Features.Identity.Auth.Commands.RefreshToken;
 
@@ -15,13 +16,16 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
     private readonly IJwtService _jwtService;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IClientMetadata _clientMetadata;
+    private readonly CredentialScope? _credentialScope;
 
     public RefreshTokenCommandHandler(
         IIdentityDbContext context,
         IJwtService jwtService,
         IDateTimeProvider dateTimeProvider,
-        IClientMetadata clientMetadata)
+        IClientMetadata clientMetadata,
+        CredentialScope? credentialScope = null)
     {
+        _credentialScope = credentialScope;
         _context = context;
         _jwtService = jwtService;
         _dateTimeProvider = dateTimeProvider;
@@ -32,6 +36,10 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
     {
         var now = _dateTimeProvider.UtcNow;
         var tokenHash = RefreshTokenHash.Create(request.RefreshToken);
+
+        // The credential scope is bound to the owner of the session this refresh token names.
+        if (_credentialScope is not null)
+            await _credentialScope.EnterByRefreshTokenAsync(tokenHash.Hash, cancellationToken);
 
         var session = await _context.Sessions
             .FirstOrDefaultAsync(s =>

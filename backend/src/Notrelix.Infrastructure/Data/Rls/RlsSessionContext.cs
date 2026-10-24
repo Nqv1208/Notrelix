@@ -183,6 +183,46 @@ public sealed class RlsSessionContext : IRlsSessionContext
         return bound;
     }
 
+    public async Task<Guid?> EnterCredentialScopeAsync(
+        CredentialScopeRequest request,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        if (string.IsNullOrWhiteSpace(request.Credential))
+            throw new ArgumentException("A credential is required.", nameof(request));
+        RequireTransaction("credential");
+
+        var kind = request.Kind switch
+        {
+            CredentialScopeKind.NormalizedEmail => "email",
+            CredentialScopeKind.RefreshToken => "refresh-token",
+            CredentialScopeKind.EmailVerificationToken => "email-verification",
+            CredentialScopeKind.OAuthIdentity => "oauth-identity",
+            _ => throw new ArgumentOutOfRangeException(nameof(request), request.Kind, "Unknown credential scope kind."),
+        };
+
+        var connection = (NpgsqlConnection)_database.GetDbConnection();
+        var transaction = (NpgsqlTransaction)_database.CurrentTransaction!.GetDbTransaction();
+        await using var command = new NpgsqlCommand(
+            "SELECT ops.enter_credential_scope(@kind, @credential, @version)", connection, transaction);
+        command.Parameters.AddWithValue("kind", kind);
+        command.Parameters.AddWithValue("credential", request.Credential);
+        command.Parameters.AddWithValue("version", request.HashVersion);
+        var result = await command.ExecuteScalarAsync(cancellationToken);
+        Guid? userId = result is Guid found ? found : null;
+
+        RlsScopeMetrics.Record("credential", request.Reason.Category, userId is not null);
+        if (userId is not null)
+            _active = RlsBoundedScope.Credential;
+
+        // The credential itself (an address or a digest) is never logged; only the derived user id is.
+        _logger?.LogInformation(
+            userId is not null ? "Credential scope entered: {Kind} | {Category}: {Description} | user {UserId}"
+                               : "Credential scope not entered: {Kind} | {Category}: {Description}",
+            kind, request.Reason.Category, request.Reason.Description, userId);
+        return userId;
+    }
+
     private async Task<bool> ScalarBoolAsync(string sql, string parameter, object value, CancellationToken cancellationToken)
     {
         var connection = (NpgsqlConnection)_database.GetDbConnection();

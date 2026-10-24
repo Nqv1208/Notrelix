@@ -128,6 +128,7 @@ public static class DependencyInjection
         // Producer-owned public semantic facts (real consumers only)
         services.AddScoped<IIdentityUserFacts, IdentityUserFactsProvider>();
         services.AddScoped<Notrelix.Application.Features.Identity.Registration.Services.RegistrationScope>();
+        services.AddScoped<Notrelix.Application.Features.Identity.Auth.Services.CredentialScope>();
         services.AddScoped<Notrelix.Application.Features.Identity.Public.DefaultWorkspace.IIdentityDefaultWorkspace,
             Notrelix.Application.Features.Identity.Profiles.Services.IdentityDefaultWorkspaceProvider>();
         services.AddScoped<IAccountMembershipFacts, AccountMembershipFactsProvider>();

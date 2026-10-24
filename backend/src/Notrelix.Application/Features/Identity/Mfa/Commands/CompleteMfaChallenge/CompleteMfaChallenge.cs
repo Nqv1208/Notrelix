@@ -1,6 +1,7 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Requests.Scoping;
 using Notrelix.Application.Features.Identity.Abstractions;
+using Notrelix.Application.Features.Identity.Auth.Services;
 using Notrelix.Application.Features.Identity.Auth.Throttling;
 using Notrelix.Application.Features.Identity.Mfa.Abstractions;
 using Notrelix.Application.Features.Identity.Mfa.DTOs;
@@ -30,6 +31,7 @@ public sealed class CompleteMfaChallengeCommandHandler
     private readonly IAuthSessionIssuer _sessionIssuer;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ILogger<CompleteMfaChallengeCommandHandler> _logger;
+    private readonly CredentialScope? _credentialScope;
 
     public CompleteMfaChallengeCommandHandler(
         IIdentityDbContext context,
@@ -39,8 +41,10 @@ public sealed class CompleteMfaChallengeCommandHandler
         ISecurityActivityRecorder activity,
         IAuthSessionIssuer sessionIssuer,
         IDateTimeProvider dateTimeProvider,
-        ILogger<CompleteMfaChallengeCommandHandler> logger)
+        ILogger<CompleteMfaChallengeCommandHandler> logger,
+        CredentialScope? credentialScope = null)
     {
+        _credentialScope = credentialScope;
         _context = context;
         _challengeStore = challengeStore;
         _codeVerifier = codeVerifier;
@@ -72,6 +76,11 @@ public sealed class CompleteMfaChallengeCommandHandler
             await _throttle.RecordAnonymousFailureAsync(cancellationToken);
             return InvalidChallenge();
         }
+
+        // The request now acts for exactly the user the valid challenge belongs to (the challenge record is
+        // server-held, so the caller does not choose the user).
+        if (_credentialScope is not null)
+            await _credentialScope.EnterForServerBoundUserAsync(challenge.UserId, cancellationToken);
 
         // The subject is the user bound to a valid challenge, so a locked answer
         // is only ever produced for someone who already passed the password step.

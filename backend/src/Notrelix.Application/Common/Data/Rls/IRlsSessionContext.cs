@@ -47,7 +47,34 @@ public interface IRlsSessionContext
     /// when the scope cannot be entered. Requires an open transaction.
     /// </summary>
     Task<bool> EnterRegistrationScopeAsync(Guid userId, SystemOperationReason reason, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Enters the credential scope for the one existing user the database derives from the presented
+    /// credential (a normalized address, a refresh token digest, an email-verification digest). Returns the
+    /// derived user id, or <c>null</c> when nothing matches (no scope is entered then). Requires an open
+    /// transaction. The credential is never logged.
+    /// </summary>
+    Task<Guid?> EnterCredentialScopeAsync(CredentialScopeRequest request, CancellationToken cancellationToken);
 }
+
+/// <summary>What a presented credential identifies the user by.</summary>
+public enum CredentialScopeKind
+{
+    NormalizedEmail,
+    RefreshToken,
+    EmailVerificationToken,
+    OAuthIdentity,
+}
+
+/// <summary>
+/// A credential presented for the credential scope. <paramref name="Credential"/> is a normalized address or a
+/// digest, never a raw secret.
+/// </summary>
+public sealed record CredentialScopeRequest(
+    CredentialScopeKind Kind,
+    string Credential,
+    int HashVersion,
+    SystemOperationReason Reason);
 
 /// <summary>The bounded database scopes a request can enter; each ends with its transaction.</summary>
 public enum RlsBoundedScope

@@ -1,6 +1,7 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Requests.Scoping;
 using Notrelix.Application.Features.Identity.Abstractions;
+using Notrelix.Application.Features.Identity.Auth.Services;
 using Notrelix.Application.Features.Identity.Auth.Throttling;
 using Notrelix.Application.Features.Identity.Security.Abstractions;
 using Notrelix.Application.Features.Identity.Security.Services;
@@ -26,6 +27,7 @@ public class ResetPasswordCommandHandler : IRequestHandler<ResetPasswordCommand,
     private readonly ILoginThrottle _throttle;
     private readonly ISecurityActivityRecorder _activity;
     private readonly ILogger<ResetPasswordCommandHandler> _logger;
+    private readonly CredentialScope? _credentialScope;
 
     // Same watermark lifetime as change-password: longer than any access token.
     private static readonly TimeSpan RevocationWatermarkTtl = TimeSpan.FromHours(24);
@@ -39,8 +41,10 @@ public class ResetPasswordCommandHandler : IRequestHandler<ResetPasswordCommand,
         IJwtBlacklistService jwtBlacklist,
         ILoginThrottle throttle,
         ISecurityActivityRecorder activity,
-        ILogger<ResetPasswordCommandHandler> logger)
+        ILogger<ResetPasswordCommandHandler> logger,
+        CredentialScope? credentialScope = null)
     {
+        _credentialScope = credentialScope;
         _context = context;
         _otpService = otpService;
         _passwordHasher = passwordHasher;
@@ -67,6 +71,10 @@ public class ResetPasswordCommandHandler : IRequestHandler<ResetPasswordCommand,
         {
             return Result.Failure(new ApplicationError("identity.auth.invalid-code", "Invalid or expired code.", ApplicationErrorType.Validation));
         }
+
+        // The emailed code was just verified for this address; the scope is bound to the user it names.
+        if (_credentialScope is not null)
+            await _credentialScope.EnterByEmailAsync(email, cancellationToken);
 
         var user = await _context.Users
             .FirstOrDefaultAsync(u => u.NormalizedEmail == email.ToLowerInvariant(), cancellationToken);

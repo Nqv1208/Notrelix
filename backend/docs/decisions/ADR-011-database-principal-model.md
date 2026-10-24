@@ -324,6 +324,7 @@ applies to Global and Resource-scoped requests.
 - `backend/tests/Notrelix.Integration.Tests/Rls/UserScopeIsolationTests.cs`
 - `backend/tests/Notrelix.Integration.Tests/Rls/CoMemberProfileTests.cs`
 - `backend/tests/Notrelix.Integration.Tests/Rls/InvitationScopeTests.cs`
+- `backend/tests/Notrelix.Integration.Tests/Rls/CredentialScopeTests.cs`
 
 ### Contracts / migrations / generated evidence
 
