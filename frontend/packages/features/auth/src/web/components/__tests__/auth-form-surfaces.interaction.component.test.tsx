@@ -9,7 +9,9 @@ import {
   authSignInScenario,
   authSsoStep,
 } from "../../../verification/auth-ui-fixtures";
+import { PASSWORD_MIN_LENGTH } from "../../../core/schemas/password-policy";
 import { authCopy } from "../../copy/auth.copy";
+import { fillAuthCopy } from "../../copy/fill-auth-copy";
 import { AuthForgotSurface } from "../auth-forgot-surface";
 import { AuthInviteSurface } from "../auth-invite-surface";
 import { AuthRegisterFormSurface } from "../auth-form-surfaces";
@@ -296,7 +298,17 @@ describe("auth invite surface", () => {
     });
     fireEvent.click(accept);
     expect(onAccept).not.toHaveBeenCalled();
-    expect(screen.getByText(copy.invite.passwordShort)).toBeTruthy();
+    expect(
+      screen.getByText(
+        fillAuthCopy(copy.invite.passwordShort, { count: PASSWORD_MIN_LENGTH }),
+      ),
+    ).toBeTruthy();
+    // The minimum is the backend policy (8): seven characters are refused, eight pass.
+    fireEvent.change(screen.getByLabelText(copy.invite.passwordLabel), {
+      target: { value: "x".repeat(PASSWORD_MIN_LENGTH - 1) },
+    });
+    fireEvent.click(accept);
+    expect(onAccept).not.toHaveBeenCalled();
     fireEvent.change(screen.getByLabelText(copy.invite.passwordLabel), {
       target: { value: "mot-mat-khau-du-dai" },
     });

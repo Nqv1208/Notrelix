@@ -256,7 +256,7 @@ export const InviteRefused: Story = {
           view: {
             kind: "invite",
             invite: authGuestInvite,
-            fieldErrors: { password: "Dùng ít nhất 12 ký tự." },
+            fieldErrors: { password: "Dùng ít nhất 8 ký tự." },
           },
         })}
       />

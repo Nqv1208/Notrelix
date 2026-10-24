@@ -72,6 +72,8 @@ export const en = {
   otp: {
     title: "Two-step verification",
     lead: "Open the authenticator app on your phone and enter the 6-digit code for {{email}}.",
+    leadNoEmail:
+      "Open the authenticator app on your phone and enter the 6-digit code.",
     legend: "Code from the authenticator app",
     digit: "Digit {{index}} of 6",
     hint: "The code changes every 30 seconds. You can paste all 6 digits into the first box.",
@@ -129,7 +131,7 @@ export const en = {
     emailHint: "The invitation is tied to this email and cannot be changed.",
     nameLabel: "Full name",
     passwordLabel: "Create a password",
-    passwordHint: "At least 12 characters.",
+    passwordHint: "At least {{count}} characters.",
     show: "Show password",
     hide: "Hide password",
     accept: "Accept and create the account",
@@ -141,7 +143,7 @@ export const en = {
     hasAccount: "Already have a Notrelix account?",
     signInToAccept: "Sign in to accept",
     nameRequired: "Enter your name.",
-    passwordShort: "Use at least 12 characters.",
+    passwordShort: "Use at least {{count}} characters.",
     unreachable:
       "Could not reach Notrelix. Check the connection and try again.",
     declined: {
@@ -231,6 +233,7 @@ export const vi: AuthCopy = {
   otp: {
     title: "Xác minh hai bước",
     lead: "Mở ứng dụng xác thực trên điện thoại và nhập mã 6 số cho {{email}}.",
+    leadNoEmail: "Mở ứng dụng xác thực trên điện thoại và nhập mã 6 số.",
     legend: "Mã trong ứng dụng xác thực",
     digit: "Số {{index}} trên 6",
     hint: "Mã đổi sau mỗi 30 giây. Dán cả 6 số vào ô đầu cũng được.",
@@ -286,7 +289,7 @@ export const vi: AuthCopy = {
     emailHint: "Lời mời gắn với email này, không đổi được.",
     nameLabel: "Họ và tên",
     passwordLabel: "Tạo mật khẩu",
-    passwordHint: "Ít nhất 12 ký tự.",
+    passwordHint: "Ít nhất {{count}} ký tự.",
     show: "Hiện mật khẩu",
     hide: "Ẩn mật khẩu",
     accept: "Chấp nhận và tạo tài khoản",
@@ -298,7 +301,7 @@ export const vi: AuthCopy = {
     hasAccount: "Đã có tài khoản Notrelix?",
     signInToAccept: "Đăng nhập để chấp nhận",
     nameRequired: "Nhập họ và tên của bạn.",
-    passwordShort: "Dùng ít nhất 12 ký tự.",
+    passwordShort: "Dùng ít nhất {{count}} ký tự.",
     unreachable: "Chưa kết nối được Notrelix. Kiểm tra mạng rồi thử lại.",
     declined: {
       title: "Bạn đã từ chối lời mời",
