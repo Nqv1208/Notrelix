@@ -359,6 +359,36 @@
               "theme": "light"
             }
           ]
+        },
+        {
+          "id": "account-security--change-password",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "account-security--change-password-refused",
+          "state": "Error",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "account-security--password-changed",
+          "state": "Success",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         }
       ],
       "stateCoverage": {
@@ -397,6 +427,18 @@
         },
         {
           "id": "sso",
+          "testFile": "src/web/security/__tests__/account-security.interaction.component.test.tsx"
+        },
+        {
+          "id": "password-change",
+          "testFile": "src/web/security/__tests__/account-security.interaction.component.test.tsx"
+        },
+        {
+          "id": "password-code",
+          "testFile": "src/web/security/__tests__/account-security.interaction.component.test.tsx"
+        },
+        {
+          "id": "password-result",
           "testFile": "src/web/security/__tests__/account-security.interaction.component.test.tsx"
         },
         {

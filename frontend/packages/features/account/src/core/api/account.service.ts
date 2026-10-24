@@ -511,6 +511,19 @@ export function createAccountService(
       return wire.proofToken ?? "";
     },
 
+    /**
+     * Answers 200 with no body. The producer then ends every session of the
+     * person, this one included, and emails them; the step-up proof
+     * (`ChangePassword`) is required only while two-factor is on.
+     */
+    async changePassword(input: {
+      currentPassword: string;
+      newPassword: string;
+      stepUpToken?: string;
+    }): Promise<void> {
+      await api.post<void>(endpoints.auth.changePassword, input, QUIET);
+    },
+
     async disableTwoFactor(stepUpToken: string): Promise<void> {
       await api.post<void>(endpoints.auth.mfaDisable, { stepUpToken }, QUIET);
     },

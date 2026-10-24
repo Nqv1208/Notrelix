@@ -9,6 +9,7 @@
  *   GET  /auth/security/activity                cursor paging, newest first
  *   POST /auth/mfa/enrollment/start|verify      add the authenticator, recovery codes once
  *   POST /auth/security/step-up/*               proof of presence; throttled with 429
+ *   POST /auth/change-password                  current + new password; the proof only with two-factor on
  *   POST /auth/mfa/disable, /auth/mfa/recovery-codes/regenerate   need a single-use proof
  */
 import { defineMockOperation } from "../../operations/types";
@@ -44,8 +45,17 @@ const throttled = () =>
     STEP_UP_LOCK_SECONDS,
   );
 
+/** The producer's minimum (`PasswordPolicy.MinimumLength`). */
+const PASSWORD_MIN_LENGTH = 8;
+
 /** A wrong proof counts; the fifth in a row is throttled, a right one resets. */
-function checkProof(security: SecurityDetails, right: boolean) {
+function checkProof(
+  security: SecurityDetails,
+  right: boolean,
+  wrongCode:
+    | "identity.security.step-up-invalid-code"
+    | "identity.security.step-up-invalid-password",
+) {
   if (security.stepUpFailures >= MAX_STEP_UP_FAILURES) return throttled();
   if (right) {
     security.stepUpFailures = 0;
@@ -53,11 +63,7 @@ function checkProof(security: SecurityDetails, right: boolean) {
   }
   security.stepUpFailures += 1;
   if (security.stepUpFailures >= MAX_STEP_UP_FAILURES) return throttled();
-  return identityProblem(
-    400,
-    "identity.mfa.invalid-code",
-    "The proof is not right.",
-  );
+  return identityProblem(400, wrongCode, "The proof is not right.");
 }
 
 export const accountSecurityOperations = [
@@ -271,7 +277,11 @@ export const accountSecurityOperations = [
         body?.challengeToken === "mock-step-up-challenge" &&
         (code === MOCK_AUTH.otpCode ||
           code === MOCK_AUTH.backupCode.replace(/-/g, ""));
-      const refusal = checkProof(security, right);
+      const refusal = checkProof(
+        security,
+        right,
+        "identity.security.step-up-invalid-code",
+      );
       if (refusal) return refusal;
       const proofToken = `proof-${security.proofs.size + 1}`;
       security.proofs.set(proofToken, body?.purpose ?? "");
@@ -295,11 +305,91 @@ export const accountSecurityOperations = [
       const refusal = checkProof(
         security,
         body?.password === MOCK_AUTH.personalPassword,
+        "identity.security.step-up-invalid-password",
       );
       if (refusal) return refusal;
       const proofToken = `proof-${security.proofs.size + 1}`;
       security.proofs.set(proofToken, body?.purpose ?? "");
       return ok({ proofToken, expiresAt: store.getClock().offsetMinutes(5) });
+    },
+  }),
+
+  defineMockOperation<
+    Record<string, never>,
+    { currentPassword?: string; newPassword?: string; stepUpToken?: string }
+  >({
+    id: "account.auth.changePassword",
+    contract: { kind: "openapi", operationId: "Identity.Auth.ChangePassword" },
+    method: "POST",
+    route: "/auth/change-password",
+    async handle({ body, store }) {
+      const security = securityOf(store);
+      const current = body?.currentPassword ?? "";
+      const next = body?.newPassword ?? "";
+      const errors: Record<string, string[]> = {};
+      if (current === "")
+        errors.CurrentPassword = ["Current password is required"];
+      if (next === "") errors.NewPassword = ["New password is required"];
+      else if (next.length < PASSWORD_MIN_LENGTH)
+        errors.NewPassword = [
+          `Password must be at least ${PASSWORD_MIN_LENGTH} characters`,
+        ];
+      else if (next === current)
+        errors.NewPassword = [
+          "New password must be different from the current password",
+        ];
+      if (Object.keys(errors).length > 0)
+        return {
+          status: 400,
+          body: {
+            type: "https://notrelix.dev/problems/validation.failed",
+            title: "Validation failed",
+            status: 400,
+            detail: "One or more validation errors occurred.",
+            errorCode: "validation.failed",
+            errors,
+          },
+        };
+      // The current password shares the step-up budget: guesses are throttled alike.
+      if (security.stepUpFailures >= MAX_STEP_UP_FAILURES) return throttled();
+      if (current !== MOCK_AUTH.personalPassword) {
+        security.stepUpFailures += 1;
+        if (security.stepUpFailures >= MAX_STEP_UP_FAILURES) return throttled();
+        return identityProblem(
+          400,
+          "identity.auth.invalid-current-password",
+          "Current password is incorrect.",
+        );
+      }
+      if (security.twoFactorEnabled) {
+        const token = body?.stepUpToken ?? "";
+        if (security.proofs.get(token) !== "ChangePassword")
+          return identityProblem(
+            412,
+            "identity.security.step-up-required",
+            "Strong verification is required for this action.",
+          );
+        security.proofs.delete(token);
+      }
+      security.stepUpFailures = 0;
+      const now = store.getClock().isoNow();
+      security.passwordChangedAt = now;
+      // Every session ends, this one included; the person signs in again.
+      for (const session of security.sessions)
+        if (session.status === "Active") {
+          session.status = "Revoked";
+          session.revokedAt = now;
+        }
+      security.activity.unshift({
+        id: `activity-${security.activity.length + 1}`,
+        type: "PasswordChanged",
+        occurredAt: now,
+        ipAddress: null,
+        userAgent: null,
+      });
+      // The mock keeps one fixed password for sign-in; only the session ends.
+      store.logoutCurrentUser();
+      return { status: 200 };
     },
   }),
 

@@ -4,8 +4,10 @@ import {
   AccountSecuritySurface,
   createUseProfile,
   createUseSecurity,
+  passwordChangeFailureOf,
   useAccountSecurityCopy,
   type AccountSecurityData,
+  type AccountPasswordSubmission,
   type AccountSecurityFlow,
   type AccountSection,
   type StepUpPurpose,
@@ -32,7 +34,9 @@ type Step =
       factor: "code" | "password";
       challengeToken: string | null;
     }
-  | { kind: "codes"; codes: readonly string[] };
+  | { kind: "codes"; codes: readonly string[] }
+  | { kind: "password" }
+  | { kind: "passwordChanged" };
 
 const PURPOSE: Record<"disable" | "renew", StepUpPurpose> = {
   disable: "DisableMfa",
@@ -50,6 +54,10 @@ export function AccountSecurityPage() {
   const [step, setStep] = useState<Step | null>(null);
   const [stepError, setStepError] = useState<{
     error: "wrong" | "wait" | "failed";
+    wait?: number;
+  } | null>(null);
+  const [passwordError, setPasswordError] = useState<{
+    error: "wrongCurrent" | "wrongCode" | "rejected" | "wait" | "failed";
     wait?: number;
   } | null>(null);
   const [activityPages, setActivityPages] = useState<
@@ -302,9 +310,76 @@ export function AccountSecurityPage() {
     [finishStepUp, service, step],
   );
 
+  const startPasswordChange = useCallback(() => {
+    setActionError(false);
+    setStepError(null);
+    setPasswordError(null);
+    setStep({ kind: "password" });
+  }, []);
+
+  // Changing the password: with two-factor on, a second-factor proof first
+  // (its single-use token rides with the change), then the change itself. The
+  // producer ends every session when it succeeds, this one included.
+  const submitNewPassword = useCallback(
+    async ({ current, next, code }: AccountPasswordSubmission) => {
+      setBusy(true);
+      setPasswordError(null);
+      let stage: "proof" | "change" = "proof";
+      try {
+        let stepUpToken: string | undefined;
+        if (summary.data?.twoFactorEnabled) {
+          const requirement =
+            await service.getStepUpRequirement("ChangePassword");
+          stepUpToken =
+            requirement.factor === "mfa" && requirement.challengeToken
+              ? await service.completeStepUpWithCode(
+                  "ChangePassword",
+                  requirement.challengeToken,
+                  code,
+                )
+              : await service.completeStepUpWithPassword(
+                  "ChangePassword",
+                  current,
+                );
+        }
+        stage = "change";
+        await service.changePassword({
+          currentPassword: current,
+          newPassword: next,
+          stepUpToken,
+        });
+        setStep({ kind: "passwordChanged" });
+      } catch (error) {
+        const failure = passwordChangeFailureOf(error, stage);
+        setPasswordError(
+          failure.kind === "wait"
+            ? { error: "wait", wait: failure.seconds }
+            : {
+                error:
+                  failure.kind === "wrong-current"
+                    ? "wrongCurrent"
+                    : failure.kind === "wrong-code"
+                      ? "wrongCode"
+                      : failure.kind,
+              },
+        );
+      } finally {
+        setBusy(false);
+      }
+    },
+    [service, summary.data?.twoFactorEnabled],
+  );
+
   const flow = useMemo<AccountSecurityFlow | null>(() => {
     if (!step) return null;
-    if (step.kind === "codes") return step;
+    if (step.kind === "codes" || step.kind === "passwordChanged") return step;
+    if (step.kind === "password")
+      return {
+        kind: "password",
+        needsCode: summary.data?.twoFactorEnabled ?? false,
+        error: passwordError?.error ?? null,
+        wait: passwordError?.wait,
+      };
     const error = stepError?.error ?? null;
     return step.kind === "enroll"
       ? {
@@ -321,7 +396,7 @@ export function AccountSecurityPage() {
           error,
           wait: stepError?.wait,
         };
-  }, [step, stepError]);
+  }, [step, stepError, passwordError, summary.data?.twoFactorEnabled]);
 
   const loadMoreActivity = useCallback(async () => {
     if (!nextCursor) return;
@@ -344,13 +419,16 @@ export function AccountSecurityPage() {
       actionError={actionError}
       notice={notice}
       flow={flow}
-      passwordHref="/forgot-password"
+      onChangePassword={startPasswordChange}
+      onSubmitNewPassword={(submission) => void submitNewPassword(submission)}
+      onPasswordChangedContinue={() => void signOutThisDevice()}
       onSetTwoFactor={(enabled) => void setTwoFactor(enabled)}
       onSubmitCode={(code) => void submitCode(code)}
       onSubmitPassword={(password) => void submitPassword(password)}
       onCloseFlow={() => {
         setStep(null);
         setStepError(null);
+        setPasswordError(null);
       }}
       onLoadMoreActivity={() => void loadMoreActivity()}
       onRenewBackupCodes={() => void beginStepUp("renew")}

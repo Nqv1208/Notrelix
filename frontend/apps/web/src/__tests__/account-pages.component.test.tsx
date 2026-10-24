@@ -620,6 +620,106 @@ describe("AccountSecurityPage container", () => {
     });
   });
 
+  it("changes the password with a second-factor proof, then tells the person every session ended", async () => {
+    const post = vi.fn((url: string) =>
+      url === "/auth/security/step-up/requirement"
+        ? { requiredFactor: 0, challengeToken: "challenge-1" }
+        : url === "/auth/security/step-up/complete-mfa"
+          ? { proofToken: "proof-1" }
+          : undefined,
+    );
+    runtime.get = reads(table);
+    runtime.post = post;
+    await mount(<AccountSecurityPage />, "en");
+    await until(() => expect(text()).toContain("Change password"));
+    await clickButton("Change password");
+    await until(() => expect(text()).toContain("Change your password"));
+
+    const fill = async (label: string, value: string) => {
+      const field = Array.from(host?.querySelectorAll("label") ?? []).find(
+        (element) => element.textContent === label,
+      );
+      const input = host?.querySelector<HTMLInputElement>(
+        `#${CSS.escape(field?.htmlFor ?? "")}`,
+      );
+      if (!input) throw new Error(`No field "${label}"`);
+      const setter = Object.getOwnPropertyDescriptor(
+        HTMLInputElement.prototype,
+        "value",
+      )?.set;
+      await act(async () => {
+        setter?.call(input, value);
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+    };
+    await fill("Current password", "old-password-1");
+    await fill("Code", "123456");
+    await fill("New password", "new-password-2");
+    await fill("Repeat the new password", "new-password-2");
+    const submit = Array.from(host?.querySelectorAll("button") ?? []).filter(
+      (element) => element.textContent === "Change password",
+    );
+    await act(async () => {
+      submit[submit.length - 1]?.click();
+    });
+
+    await until(() => expect(text()).toContain("Password changed"));
+    expect(post).toHaveBeenCalledWith("/auth/security/step-up/requirement", {
+      purpose: "ChangePassword",
+    });
+    expect(post).toHaveBeenCalledWith("/auth/change-password", {
+      currentPassword: "old-password-1",
+      newPassword: "new-password-2",
+      stepUpToken: "proof-1",
+    });
+    expect(text()).toContain("signed out of every device");
+  });
+
+  it("says the current password is wrong when the producer refuses it", async () => {
+    const post = vi.fn((url: string) => {
+      if (url === "/auth/security/step-up/requirement")
+        return { requiredFactor: 0, challengeToken: "challenge-1" };
+      if (url === "/auth/security/step-up/complete-mfa")
+        return { proofToken: "proof-1" };
+      throw Object.assign(new Error("refused"), {
+        status: 400,
+        code: "identity.auth.invalid-current-password",
+      });
+    });
+    runtime.get = reads(table);
+    runtime.post = post;
+    await mount(<AccountSecurityPage />, "en");
+    await until(() => expect(text()).toContain("Change password"));
+    await clickButton("Change password");
+    await until(() => expect(text()).toContain("Change your password"));
+    const inputs = Array.from(
+      host?.querySelectorAll<HTMLInputElement>("form input") ?? [],
+    );
+    const setter = Object.getOwnPropertyDescriptor(
+      HTMLInputElement.prototype,
+      "value",
+    )?.set;
+    const values = [
+      "old-password-1",
+      "123456",
+      "new-password-2",
+      "new-password-2",
+    ];
+    for (const [index, input] of inputs.entries())
+      await act(async () => {
+        setter?.call(input, values[index] ?? "");
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+    const submit = Array.from(host?.querySelectorAll("button") ?? []).filter(
+      (element) => element.textContent === "Change password",
+    );
+    await act(async () => {
+      submit[submit.length - 1]?.click();
+    });
+    await until(() => expect(text()).toContain("That password is not right."));
+    expect(text()).not.toContain("signed out of every device, including");
+  });
+
   it("shows the localized error with a retry when the settings cannot load", async () => {
     runtime.get = reads({
       ...table,

@@ -146,6 +146,81 @@ describe("security", () => {
     expect(done.recoveryCodes).toHaveLength(10);
   });
 
+  it("changes the password with the current one and, while two-factor is on, a proof; every session ends", async () => {
+    const { api } = client();
+    const change = (body: Record<string, unknown>) =>
+      api.post("/auth/change-password", body);
+
+    // The producer's rules: 8 characters, different from the current password.
+    await expect(
+      change({
+        currentPassword: MOCK_AUTH.personalPassword,
+        newPassword: "short",
+      }),
+    ).rejects.toMatchObject({
+      status: 400,
+      code: "validation.failed",
+      validationErrors: { NewPassword: [expect.any(String)] },
+    });
+    await expect(
+      change({
+        currentPassword: MOCK_AUTH.personalPassword,
+        newPassword: MOCK_AUTH.personalPassword,
+      }),
+    ).rejects.toMatchObject({ status: 400 });
+    await expect(
+      change({
+        currentPassword: "wrong-password",
+        newPassword: "new-password-2",
+      }),
+    ).rejects.toMatchObject({
+      status: 400,
+      code: "identity.auth.invalid-current-password",
+    });
+    // Two-factor is on: the single-use proof is needed too.
+    await expect(
+      change({
+        currentPassword: MOCK_AUTH.personalPassword,
+        newPassword: "new-password-2",
+      }),
+    ).rejects.toMatchObject({
+      status: 412,
+      code: "identity.security.step-up-required",
+    });
+
+    const requirement = (await api.post("/auth/security/step-up/requirement", {
+      purpose: "ChangePassword",
+    })) as { challengeToken: string };
+    await expect(
+      api.post("/auth/security/step-up/complete-mfa", {
+        purpose: "ChangePassword",
+        challengeToken: requirement.challengeToken,
+        code: "000000",
+      }),
+    ).rejects.toMatchObject({
+      status: 400,
+      code: "identity.security.step-up-invalid-code",
+    });
+    const proof = (await api.post("/auth/security/step-up/complete-mfa", {
+      purpose: "ChangePassword",
+      challengeToken: requirement.challengeToken,
+      code: MOCK_AUTH.otpCode,
+    })) as { proofToken: string };
+    await change({
+      currentPassword: MOCK_AUTH.personalPassword,
+      newPassword: "new-password-2",
+      stepUpToken: proof.proofToken,
+    });
+    // The proof was single-use and this session is over.
+    await expect(
+      change({
+        currentPassword: MOCK_AUTH.personalPassword,
+        newPassword: "new-password-3",
+        stepUpToken: proof.proofToken,
+      }),
+    ).rejects.toMatchObject({ status: 412 });
+  });
+
   it("throttles a step-up after five wrong proofs", async () => {
     const { api } = client();
     for (let i = 0; i < 4; i += 1)

@@ -56,6 +56,8 @@ export {
   AccountSecuritySurface,
   relativeAge,
   type AccountActivityView,
+  type AccountPasswordError,
+  type AccountPasswordSubmission,
   type AccountSecurityData,
   type AccountSecurityFlow,
   type AccountSecuritySurfaceProps,

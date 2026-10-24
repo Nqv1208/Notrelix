@@ -46,3 +46,11 @@ export {
   phoneForSave,
   type PhoneCheck,
 } from "./phone";
+
+export {
+  PASSWORD_MIN_LENGTH,
+  checkNewPassword,
+  passwordChangeFailureOf,
+  type NewPasswordProblem,
+  type PasswordChangeFailure,
+} from "./password";

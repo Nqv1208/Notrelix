@@ -6,6 +6,9 @@ import {
   securityErrorScenario,
   securityNoticeScenario,
   securityEdgeDataScenario,
+  securityChangePasswordRefusedScenario,
+  securityChangePasswordScenario,
+  securityPasswordChangedScenario,
 } from "../../verification/account-security-fixtures";
 import { AccountSecuritySurface } from "./account-security-surface";
 
@@ -60,4 +63,34 @@ export const EdgeData: Story = {
     <AccountSecuritySurface {...securityEdgeDataScenario()} {...callbacks} />
   ),
   tags: ["fui-surface--account.security", "fui-state--EdgeData"],
+};
+
+export const ChangePassword: Story = {
+  render: () => (
+    <AccountSecuritySurface
+      {...securityChangePasswordScenario("en", { needsCode: true })}
+      {...callbacks}
+    />
+  ),
+  tags: ["fui-surface--account.security", "fui-state--EdgeData"],
+};
+
+export const ChangePasswordRefused: Story = {
+  render: () => (
+    <AccountSecuritySurface
+      {...securityChangePasswordRefusedScenario()}
+      {...callbacks}
+    />
+  ),
+  tags: ["fui-surface--account.security", "fui-state--Error"],
+};
+
+export const PasswordChanged: Story = {
+  render: () => (
+    <AccountSecuritySurface
+      {...securityPasswordChangedScenario()}
+      {...callbacks}
+    />
+  ),
+  tags: ["fui-surface--account.security", "fui-state--Success"],
 };

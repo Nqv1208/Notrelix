@@ -65,6 +65,37 @@ export const en = {
       "Each code works once when you don't have your phone. They are shown only now.",
     done: "I saved them",
   },
+  passwordFlow: {
+    title: "Change your password",
+    text: "Enter your current password, then choose a new one.",
+    textWithCode:
+      "Enter your current password and a code from your authenticator app, then choose a new password.",
+    currentLabel: "Current password",
+    currentRequired: "Enter your current password.",
+    wrongCurrent: "That password is not right.",
+    codeLabel: "Code",
+    codeRequired:
+      "Enter the code from your authenticator app or a backup code.",
+    wrongCode: "That code is not right. Check the app and try again.",
+    newLabel: "New password",
+    newHint:
+      "At least {{count}} characters, different from your current password.",
+    tooShort: "Use at least {{count}} characters.",
+    sameAsCurrent: "Choose a password different from your current one.",
+    rejected:
+      "We couldn't use that password. Use at least {{count}} characters, different from your current one.",
+    confirmLabel: "Repeat the new password",
+    mismatch: "The two passwords don't match.",
+    signOutNote:
+      "When the password changes, you are signed out of every device, this one included.",
+    submit: "Change password",
+    cancel: "Cancel",
+    wait: "Too many tries. Try again in {{seconds}} seconds.",
+    doneTitle: "Password changed",
+    doneText:
+      "You were signed out of every device, including this one. Sign in again with your new password.",
+    signInAgain: "Sign in",
+  },
   activity: {
     title: "Recent security activity",
     more: "Show more",
@@ -171,6 +202,35 @@ export const vi: AccountSecurityCopy = {
     codesText:
       "Mỗi mã dùng được một lần khi bạn không có điện thoại. Mã chỉ hiện lúc này.",
     done: "Tôi đã lưu",
+  },
+  passwordFlow: {
+    title: "Đổi mật khẩu",
+    text: "Nhập mật khẩu hiện tại, rồi chọn mật khẩu mới.",
+    textWithCode:
+      "Nhập mật khẩu hiện tại và mã từ ứng dụng xác thực, rồi chọn mật khẩu mới.",
+    currentLabel: "Mật khẩu hiện tại",
+    currentRequired: "Hãy nhập mật khẩu hiện tại.",
+    wrongCurrent: "Mật khẩu chưa đúng.",
+    codeLabel: "Mã",
+    codeRequired: "Hãy nhập mã từ ứng dụng xác thực hoặc một mã dự phòng.",
+    wrongCode: "Mã chưa đúng. Kiểm tra ứng dụng rồi thử lại.",
+    newLabel: "Mật khẩu mới",
+    newHint: "Ít nhất {{count}} ký tự, khác mật khẩu hiện tại.",
+    tooShort: "Hãy dùng ít nhất {{count}} ký tự.",
+    sameAsCurrent: "Hãy chọn mật khẩu khác mật khẩu hiện tại.",
+    rejected:
+      "Chưa dùng được mật khẩu này. Hãy dùng ít nhất {{count}} ký tự và khác mật khẩu hiện tại.",
+    confirmLabel: "Nhập lại mật khẩu mới",
+    mismatch: "Hai mật khẩu chưa khớp nhau.",
+    signOutNote:
+      "Khi đổi mật khẩu, bạn sẽ bị đăng xuất khỏi mọi thiết bị, kể cả thiết bị này.",
+    submit: "Đổi mật khẩu",
+    cancel: "Hủy",
+    wait: "Thử quá nhiều lần. Thử lại sau {{seconds}} giây.",
+    doneTitle: "Đã đổi mật khẩu",
+    doneText:
+      "Bạn đã bị đăng xuất khỏi mọi thiết bị, kể cả thiết bị này. Hãy đăng nhập lại bằng mật khẩu mới.",
+    signInAgain: "Đăng nhập",
   },
   activity: {
     title: "Hoạt động bảo mật gần đây",

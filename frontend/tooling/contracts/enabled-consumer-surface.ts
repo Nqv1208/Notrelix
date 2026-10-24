@@ -195,6 +195,16 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     consumerSymbol: "createAccountService",
     consumerFile:
       "frontend/packages/features/account/src/core/api/account.service.ts",
+    capability: "Identity.Auth.ChangePassword",
+    operationId: "Identity.Auth.ChangePassword",
+    mutation: true,
+  },
+  {
+    context: "Account",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAccountService",
+    consumerFile:
+      "frontend/packages/features/account/src/core/api/account.service.ts",
     capability: "Identity.Mfa.RegenerateRecoveryCodes",
     operationId: "Identity.Mfa.RegenerateRecoveryCodes",
     mutation: true,

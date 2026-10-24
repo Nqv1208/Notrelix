@@ -25,7 +25,18 @@ import {
   pluralCopy,
   type AccountSection,
 } from "../shared/account-surface-model";
+import {
+  AccountPasswordChangedPanel,
+  AccountPasswordPanel,
+  type AccountPasswordError,
+  type AccountPasswordSubmission,
+} from "./account-password-panel";
 import type { AccountSecurityCopy } from "./account-security.copy";
+
+export type {
+  AccountPasswordError,
+  AccountPasswordSubmission,
+} from "./account-password-panel";
 
 export interface AccountSessionView {
   readonly id: string;
@@ -66,7 +77,16 @@ export type AccountSecurityFlow =
       readonly error: "wrong" | "wait" | "failed" | null;
       readonly wait?: number;
     }
-  | { readonly kind: "codes"; readonly codes: readonly string[] };
+  | { readonly kind: "codes"; readonly codes: readonly string[] }
+  | {
+      /** Changing the password; `needsCode` while two-factor is on. */
+      readonly kind: "password";
+      readonly needsCode: boolean;
+      readonly error: AccountPasswordError | null;
+      readonly wait?: number;
+    }
+  /** The password changed and every session, this one too, was ended. */
+  | { readonly kind: "passwordChanged" };
 
 export interface AccountSecurityData {
   /** The single sign-on provider that owns the password; `null` = none. */
@@ -92,11 +112,16 @@ export interface AccountSecuritySurfaceProps {
   readonly actionError: boolean;
   /** The text of the toast at the foot of the page; `null` = none. */
   readonly notice: string | null;
-  /** Where a password of this account is changed; `null` = nowhere yet. */
-  readonly passwordHref: string | null;
   /** The step of two-factor or a sensitive change in progress; `null`/absent = none. */
   readonly flow?: AccountSecurityFlow | null;
   readonly onSetTwoFactor: (enabled: boolean) => void;
+  /** Opens the change of password; absent = the account cannot change it here. */
+  readonly onChangePassword?: () => void;
+  readonly onSubmitNewPassword?: (
+    submission: AccountPasswordSubmission,
+  ) => void;
+  /** After a change of password: leaves for the sign-in page. */
+  readonly onPasswordChangedContinue?: () => void;
   /** Answers the open step: the authenticator's digits or a backup code. */
   readonly onSubmitCode?: (code: string) => void;
   readonly onSubmitPassword?: (password: string) => void;
@@ -223,7 +248,10 @@ function FlowPanel({
   onClose,
 }: {
   copy: AccountSecurityCopy;
-  flow: AccountSecurityFlow;
+  flow: Exclude<
+    AccountSecurityFlow,
+    { kind: "password" } | { kind: "passwordChanged" }
+  >;
   busy: boolean;
   onSubmitCode?: (code: string) => void;
   onSubmitPassword?: (password: string) => void;
@@ -345,8 +373,10 @@ function SecurityBody({
   busy,
   actionError,
   notice,
-  passwordHref,
   flow,
+  onChangePassword,
+  onSubmitNewPassword,
+  onPasswordChangedContinue,
   onSetTwoFactor,
   onSubmitCode,
   onSubmitPassword,
@@ -414,10 +444,15 @@ function SecurityBody({
                 {copy.password.ssoLink}
                 <span className="sr-only">{copy.password.ssoLinkOpens}</span>
               </a>
-            ) : passwordHref ? (
-              <a href={passwordHref} className={cn(BTN_SM, FOCUS)}>
+            ) : onChangePassword ? (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={onChangePassword}
+                className={cn(BTN_SM, FOCUS)}
+              >
                 {copy.password.change}
-              </a>
+              </button>
             ) : (
               <span className="text-xs text-meta-foreground">
                 {copy.password.unavailable}
@@ -493,7 +528,22 @@ function SecurityBody({
         ) : null}
       </Block>
 
-      {flow ? (
+      {flow?.kind === "password" ? (
+        <AccountPasswordPanel
+          copy={copy}
+          needsCode={flow.needsCode}
+          error={flow.error}
+          wait={flow.wait}
+          busy={busy}
+          onSubmit={onSubmitNewPassword}
+          onClose={onCloseFlow}
+        />
+      ) : flow?.kind === "passwordChanged" ? (
+        <AccountPasswordChangedPanel
+          copy={copy}
+          onContinue={onPasswordChangedContinue}
+        />
+      ) : flow ? (
         <FlowPanel
           copy={copy}
           flow={flow}

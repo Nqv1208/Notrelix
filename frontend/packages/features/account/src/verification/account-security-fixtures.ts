@@ -59,6 +59,9 @@ export function securityFixture(
 export type SecurityScenario = Omit<
   AccountSecuritySurfaceProps,
   | "onSetTwoFactor"
+  | "onChangePassword"
+  | "onSubmitNewPassword"
+  | "onPasswordChangedContinue"
   | "onSubmitCode"
   | "onSubmitPassword"
   | "onCloseFlow"
@@ -78,7 +81,6 @@ export function securityDefaultScenario(
     busy: false,
     actionError: false,
     notice: null,
-    passwordHref: null,
   };
 }
 
@@ -104,7 +106,6 @@ export function securityOwnPasswordScenario(
   const base = securityFixture();
   return {
     ...securityDefaultScenario(locale),
-    passwordHref: "/forgot-password",
     security: {
       status: "ready",
       data: securityFixture({
@@ -149,5 +150,45 @@ export function securityEdgeDataScenario(): SecurityScenario {
         ),
       }),
     },
+  };
+}
+
+/** The change of password open on an account with its own password and no second step. */
+export function securityChangePasswordScenario(
+  locale: "en" | "vi" = "en",
+  overrides: { needsCode?: boolean } = {},
+): SecurityScenario {
+  const own = securityOwnPasswordScenario(locale);
+  return {
+    ...own,
+    security:
+      overrides.needsCode === true
+        ? { status: "ready", data: securityFixture({ ssoProvider: null }) }
+        : own.security,
+    flow: {
+      kind: "password",
+      needsCode: overrides.needsCode === true,
+      error: null,
+    },
+  };
+}
+
+/** The change of password refused: the current password is not right. */
+export function securityChangePasswordRefusedScenario(
+  locale: "en" | "vi" = "en",
+): SecurityScenario {
+  return {
+    ...securityChangePasswordScenario(locale),
+    flow: { kind: "password", needsCode: false, error: "wrongCurrent" },
+  };
+}
+
+/** The password changed: every session is over, this one too. */
+export function securityPasswordChangedScenario(
+  locale: "en" | "vi" = "en",
+): SecurityScenario {
+  return {
+    ...securityOwnPasswordScenario(locale),
+    flow: { kind: "passwordChanged" },
   };
 }
