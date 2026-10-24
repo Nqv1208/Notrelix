@@ -166,7 +166,7 @@ describe("AccountProfileSurface", () => {
     }
   });
 
-  it("FUI[account.profile:phone-visibility] cannot be turned on without a phone number", () => {
+  it("FUI[account.profile:phone-visibility-empty] cannot be turned on without a phone number", () => {
     const copy = profileCopyFixture("en");
     const { view } = renderProfile({
       ...profileDefaultScenario("en"),
@@ -354,7 +354,7 @@ describe("AccountProfileSurface", () => {
     }
   });
 
-  it("FUI[account.profile:photo] offers to remove the photo only while there is one", () => {
+  it("FUI[account.profile:remove-photo] offers to remove the photo only while there is one", () => {
     const copy = profileCopyFixture("en");
     const without = renderProfile(profileDefaultScenario("en"));
     expect(

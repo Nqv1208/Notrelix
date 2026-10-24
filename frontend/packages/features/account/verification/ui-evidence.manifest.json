@@ -82,7 +82,7 @@
           {
             "state": "ReadOnly",
             "reason": "A member edits only their own profile; there is no product-authoritative read-only profile contract at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           }
         ]
       },
@@ -119,6 +119,10 @@
           "testFile": "src/web/profile/__tests__/account-profile.interaction.component.test.tsx"
         },
         {
+          "id": "phone-visibility-empty",
+          "testFile": "src/web/profile/__tests__/account-profile.interaction.component.test.tsx"
+        },
+        {
           "id": "saving",
           "testFile": "src/web/profile/__tests__/account-profile.interaction.component.test.tsx"
         },
@@ -136,6 +140,10 @@
         },
         {
           "id": "photo",
+          "testFile": "src/web/profile/__tests__/account-profile.interaction.component.test.tsx"
+        },
+        {
+          "id": "remove-photo",
           "testFile": "src/web/profile/__tests__/account-profile.interaction.component.test.tsx"
         },
         {
@@ -225,7 +233,7 @@
           {
             "state": "ReadOnly",
             "reason": "Appearance is a per-device choice and the sidebar default belongs to the signed-in member; there is no product-authoritative read-only contract at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           }
         ]
       },
@@ -360,22 +368,22 @@
           {
             "state": "Empty",
             "reason": "Security facts always exist for a signed-in member (a missing password date and zero sessions are covered by the EdgeData story).",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "HighDensity",
             "reason": "The page renders three fixed cards; there is no list that grows with data.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "ReadOnly",
             "reason": "The page shows a member's own security facts; there is no product-authoritative contract at this baseline for a read-only variant of this page.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "PermissionLimited",
             "reason": "The page shows a member's own security facts; there is no product-authoritative contract at this baseline for a permission-limited variant of this page.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           }
         ]
       },
@@ -506,7 +514,7 @@
           {
             "state": "ReadOnly",
             "reason": "A member edits only their own notification preferences; there is no product-authoritative read-only contract at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           }
         ]
       },
@@ -650,17 +658,17 @@
           {
             "state": "Empty",
             "reason": "A signed-in member belongs to at least one workspace; a member with none is sent to onboarding before this page.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "HighDensity",
             "reason": "The page lists the member's own workspaces, a handful of cards; there is no list that grows with data.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "ReadOnly",
             "reason": "The page shows a member's own memberships; there is no product-authoritative read-only variant at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           }
         ]
       },
@@ -753,22 +761,22 @@
           {
             "state": "Loading",
             "reason": "The frame shows the member's name from the shell's already loaded profile; each page draws its own loading state inside the frame.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "Empty",
             "reason": "The five pages of the account always exist; there is nothing to be empty.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "Error",
             "reason": "The frame has no data of its own to fail to load; each page draws its own error state.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "ReadOnly",
             "reason": "The account pages belong to the signed-in member; there is no read-only variant at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           }
         ]
       },
