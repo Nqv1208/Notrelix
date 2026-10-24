@@ -101,7 +101,7 @@ describe("auth sign-in surface", () => {
     expect(onBack).toHaveBeenCalledTimes(1);
   });
 
-  it("FUI[auth.sign-in:wrong] says the password is wrong and how many tries are left", () => {
+  it("FUI[auth.sign-in:wrong] says the password is wrong and never counts tries", () => {
     renderPureUi(
       <AuthSignInSurface
         {...authSignInScenario({
@@ -109,7 +109,6 @@ describe("auth sign-in surface", () => {
             kind: "password",
             email: AUTH_PERSONAL_EMAIL,
             error: "wrong",
-            attemptsLeft: 2,
           },
         })}
       />,
@@ -117,7 +116,7 @@ describe("auth sign-in surface", () => {
     expect(screen.getByRole("alert").textContent).toContain(
       copy.password.wrong,
     );
-    expect(screen.getByText(/Còn 2 lần thử/)).toBeTruthy();
+    expect(screen.queryByText(/lần thử/)).toBeNull();
     expect(
       screen.getByLabelText(copy.password.label).getAttribute("aria-invalid"),
     ).toBe("true");
@@ -131,8 +130,7 @@ describe("auth sign-in surface", () => {
           step: {
             kind: "password",
             email: AUTH_PERSONAL_EMAIL,
-            error: "wrong",
-            attemptsLeft: 0,
+            error: null,
             lockedSeconds: 48,
           },
           onSubmitPassword,
@@ -193,12 +191,8 @@ describe("auth sign-in surface", () => {
     expect([1, 2, 3, 4, 5, 6].map((index) => box(index).value).join("")).toBe(
       "482931",
     );
-    fireEvent.click(screen.getByLabelText(copy.otp.remember));
     fireEvent.click(verify);
-    expect(onVerify).toHaveBeenCalledWith({
-      code: "482931",
-      rememberDevice: true,
-    });
+    expect(onVerify).toHaveBeenCalledWith({ code: "482931" });
   });
 
   it("FUI[auth.sign-in:otp-backup] asks for a backup code instead and says when a code is wrong", () => {
@@ -212,7 +206,6 @@ describe("auth sign-in surface", () => {
             email: AUTH_PERSONAL_EMAIL,
             backup: true,
             error: "wrong",
-            attemptsLeft: 3,
           },
           onVerify,
           onToggleBackup,
@@ -223,11 +216,8 @@ describe("auth sign-in surface", () => {
       target: { value: "BK7Q-M2XN-91TD" },
     });
     fireEvent.click(screen.getByRole("button", { name: copy.otp.verify }));
-    expect(onVerify).toHaveBeenCalledWith({
-      code: "BK7Q-M2XN-91TD",
-      rememberDevice: false,
-    });
-    expect(screen.getByRole("alert").textContent).toContain("Còn 3 lần thử");
+    expect(onVerify).toHaveBeenCalledWith({ code: "BK7Q-M2XN-91TD" });
+    expect(screen.getByRole("alert").textContent).toContain(copy.otp.wrong);
     fireEvent.click(screen.getByRole("button", { name: copy.otp.useApp }));
     expect(onToggleBackup).toHaveBeenCalledTimes(1);
   });

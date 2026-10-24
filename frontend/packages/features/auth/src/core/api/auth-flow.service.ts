@@ -23,7 +23,7 @@ export interface AuthFlowApiClient {
 export const AUTH_FLOW_PATHS = {
   identify: "/auth/identify",
   login: "/auth/login",
-  otpVerify: "/auth/otp/verify",
+  mfaVerify: "/auth/mfa/verify",
   ssoStart: "/auth/sso/start",
   forgotPassword: "/auth/forgot-password",
   invite: (token: string) => `/invites/${encodeURIComponent(token)}`,
@@ -41,14 +41,65 @@ export interface IdentifyResult {
   } | null;
 }
 
+/**
+ * What a signed-in answer carries. The tokens are httpOnly cookies the page
+ * never reads, so the result is the user and when the session ends.
+ */
 export interface SessionResult {
-  readonly accessToken: string;
   readonly user: User;
+  readonly expiresAt: string | null;
 }
 
 /** A password that opens the account, or asks for the second step first. */
 export type LoginResult =
-  SessionResult | { readonly requiresOtp: true; readonly challengeId: string };
+  | ({ readonly kind: "session" } & SessionResult)
+  | {
+      readonly kind: "mfa";
+      readonly challengeToken: string;
+      /** How the second step is answered ("totp"); the page asks for the app's digits or a recovery code. */
+      readonly method: string | null;
+      readonly expiresAt: string | null;
+    };
+
+/** `Identity.Auth.Login` / `Identity.Mfa.VerifyChallenge`: `AuthSessionResponse`. */
+interface AuthSessionWire {
+  readonly expiresAt?: string | null;
+  readonly user?: {
+    readonly id?: string;
+    readonly email?: string | null;
+    readonly name?: string | null;
+    readonly avatarUrl?: string | null;
+  } | null;
+  readonly mfaRequired?: boolean;
+  readonly mfaChallengeToken?: string | null;
+  readonly mfaMethod?: string | null;
+  readonly mfaExpiresAt?: string | null;
+}
+
+function toUser(wire: AuthSessionWire["user"]): User {
+  return {
+    id: wire?.id ?? "",
+    email: wire?.email ?? "",
+    name: wire?.name ?? "",
+    avatarUrl: wire?.avatarUrl ?? null,
+  };
+}
+
+/** The one place the session answer is read into the page's model. */
+export function toLoginResult(wire: AuthSessionWire): LoginResult {
+  if (wire.mfaRequired && wire.mfaChallengeToken)
+    return {
+      kind: "mfa",
+      challengeToken: wire.mfaChallengeToken,
+      method: wire.mfaMethod ?? null,
+      expiresAt: wire.mfaExpiresAt ?? null,
+    };
+  return {
+    kind: "session",
+    user: toUser(wire.user),
+    expiresAt: wire.expiresAt ?? null,
+  };
+}
 
 export type InviteState = "valid" | "expired" | "used";
 
@@ -89,15 +140,16 @@ export function createAuthFlowService(api: AuthFlowApiClient) {
         QUIET,
       );
     },
-    login(data: { email: string; password: string }) {
-      return api.post<LoginResult>(AUTH_FLOW_PATHS.login, data, QUIET);
+    async login(data: { email: string; password: string }) {
+      return toLoginResult(
+        await api.post<AuthSessionWire>(AUTH_FLOW_PATHS.login, data, QUIET),
+      );
     },
-    verifyOtp(data: {
-      challengeId: string;
-      code: string;
-      rememberDevice: boolean;
-    }) {
-      return api.post<SessionResult>(AUTH_FLOW_PATHS.otpVerify, data, QUIET);
+    /** Answers the second step with the challenge the login gave and the code. */
+    async verifyMfa(data: { challengeToken: string; code: string }) {
+      return toLoginResult(
+        await api.post<AuthSessionWire>(AUTH_FLOW_PATHS.mfaVerify, data, QUIET),
+      );
     },
     /** Starts the round trip to Google, Microsoft or the company provider. */
     ssoStart(data: { email?: string; provider: string }) {

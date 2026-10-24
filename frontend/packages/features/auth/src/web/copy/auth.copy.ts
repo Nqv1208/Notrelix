@@ -43,8 +43,6 @@ export const en = {
     show: "Show password",
     hide: "Hide password",
     wrong: "Email or password is not right.",
-    attemptsLeft_one: "{{count}} try left before sign-in pauses.",
-    attemptsLeft_other: "{{count}} tries left before sign-in pauses.",
     lockTitle: "Try again in {{seconds}} seconds",
     lockBody:
       "To protect the account, signing in pauses after several wrong tries. You can reset the password now.",
@@ -73,7 +71,6 @@ export const en = {
     legend: "Code from the authenticator app",
     digit: "Digit {{index}} of 6",
     hint: "The code changes every 30 seconds. You can paste all 6 digits into the first box.",
-    remember: "Remember this device for 30 days",
     verify: "Verify",
     verifying: "Verifying…",
     backup: "Use a backup code",
@@ -84,9 +81,10 @@ export const en = {
     useApp: "Use the authenticator app",
     back: "Back to sign-in",
     wrong: "That code is not right. Check the app and try again.",
-    wrongLeft_one: "That code is not right. {{count}} try left.",
-    wrongLeft_other: "That code is not right. {{count}} tries left.",
     expired: "This verification expired. Sign in again.",
+    inactive:
+      "This account cannot sign in right now. Contact your administrator.",
+    locked: "Too many wrong codes. Try again in {{seconds}} seconds.",
   },
   forgot: {
     title: "Reset your password",
@@ -201,8 +199,6 @@ export const vi: AuthCopy = {
     show: "Hiện mật khẩu",
     hide: "Ẩn mật khẩu",
     wrong: "Email hoặc mật khẩu chưa đúng.",
-    attemptsLeft_one: "Còn {{count}} lần thử trước khi đăng nhập tạm dừng.",
-    attemptsLeft_other: "Còn {{count}} lần thử trước khi đăng nhập tạm dừng.",
     lockTitle: "Thử lại sau {{seconds}} giây",
     lockBody:
       "Để bảo vệ tài khoản, đăng nhập tạm dừng sau nhiều lần thử chưa đúng. Bạn có thể đặt lại mật khẩu ngay.",
@@ -230,7 +226,6 @@ export const vi: AuthCopy = {
     legend: "Mã trong ứng dụng xác thực",
     digit: "Số {{index}} trên 6",
     hint: "Mã đổi sau mỗi 30 giây. Dán cả 6 số vào ô đầu cũng được.",
-    remember: "Ghi nhớ thiết bị này 30 ngày",
     verify: "Xác minh",
     verifying: "Đang xác minh…",
     backup: "Dùng mã dự phòng",
@@ -240,9 +235,10 @@ export const vi: AuthCopy = {
     useApp: "Dùng ứng dụng xác thực",
     back: "Quay lại đăng nhập",
     wrong: "Mã chưa đúng. Kiểm tra ứng dụng rồi thử lại.",
-    wrongLeft_one: "Mã chưa đúng. Còn {{count}} lần thử.",
-    wrongLeft_other: "Mã chưa đúng. Còn {{count}} lần thử.",
     expired: "Phiên xác minh đã hết hạn. Hãy đăng nhập lại.",
+    inactive:
+      "Tài khoản này tạm thời không đăng nhập được. Hãy liên hệ quản trị viên.",
+    locked: "Nhập sai mã quá nhiều lần. Thử lại sau {{seconds}} giây.",
   },
   forgot: {
     title: "Đặt lại mật khẩu",

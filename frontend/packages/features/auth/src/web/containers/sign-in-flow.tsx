@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
+  IDENTITY_ERROR,
   readFlowError,
   type AuthFlowService,
   type SessionResult,
@@ -40,7 +41,6 @@ type Phase =
       kind: "password";
       email: string;
       error: "wrong" | "unreachable" | null;
-      attemptsLeft: number | null;
     }
   | {
       kind: "sso";
@@ -55,9 +55,8 @@ type Phase =
   | {
       kind: "otp";
       email: string;
-      challengeId: string;
-      error: "wrong" | "expired" | "unreachable" | null;
-      attemptsLeft: number | null;
+      challengeToken: string;
+      error: "wrong" | "expired" | "inactive" | "locked" | "unreachable" | null;
       backup: boolean;
     };
 
@@ -109,7 +108,7 @@ export function SignInFlow({
                 domain: email.split("@")[1] ?? "",
               },
             }
-          : { kind: "password", email, error: null, attemptsLeft: null },
+          : { kind: "password", email, error: null },
       );
     },
     onError: (error) =>
@@ -126,13 +125,12 @@ export function SignInFlow({
       service.login(input),
     onSuccess: (result, input) => {
       setLockSeconds(null);
-      if ("requiresOtp" in result)
+      if (result.kind === "mfa")
         setPhase({
           kind: "otp",
           email: input.email,
-          challengeId: result.challengeId,
+          challengeToken: result.challengeToken,
           error: null,
-          attemptsLeft: null,
           backup: false,
         });
       else signedIn(result);
@@ -148,40 +146,46 @@ export function SignInFlow({
           kind: "password",
           email: input.email,
           error: "unreachable",
-          attemptsLeft: null,
         });
         return;
       }
-      setLockSeconds(failure.retryAfterSeconds);
+      const throttled = failure.code === IDENTITY_ERROR.tooManyAttempts;
+      setLockSeconds(throttled ? failure.retryAfterSeconds : null);
       setPhase({
         kind: "password",
         email: input.email,
-        // A refusal for a locked account says it is locked, not that the password was wrong.
-        error: failure.code === "ACCOUNT_LOCKED" ? null : "wrong",
-        attemptsLeft: failure.attemptsLeft,
+        // A throttled attempt says how long to wait, not that the password was wrong.
+        error: throttled ? null : "wrong",
       });
     },
   });
 
   const verify = useMutation({
-    mutationFn: (input: {
-      challengeId: string;
-      code: string;
-      rememberDevice: boolean;
-    }) => service.verifyOtp(input),
-    onSuccess: signedIn,
+    mutationFn: (input: { challengeToken: string; code: string }) =>
+      service.verifyMfa(input),
+    onSuccess: (result) => {
+      if (result.kind === "session") signedIn(result);
+    },
     onError: (error) => {
       const failure = readFlowError(error);
+      setLockSeconds(
+        failure.code === IDENTITY_ERROR.tooManyAttempts
+          ? failure.retryAfterSeconds
+          : null,
+      );
       setPhase((current) =>
         current.kind === "otp"
           ? {
               ...current,
               error: failure.network
                 ? "unreachable"
-                : failure.code === "OTP_EXPIRED"
-                  ? "expired"
-                  : "wrong",
-              attemptsLeft: failure.attemptsLeft,
+                : failure.code === IDENTITY_ERROR.tooManyAttempts
+                  ? "locked"
+                  : failure.code === IDENTITY_ERROR.accountInactive
+                    ? "inactive"
+                    : failure.code === IDENTITY_ERROR.challengeInvalid
+                      ? "expired"
+                      : "wrong",
             }
           : current,
       );
@@ -215,7 +219,6 @@ export function SignInFlow({
           kind: "password",
           email: phase.email,
           error: phase.error,
-          attemptsLeft: phase.attemptsLeft,
           lockedSeconds,
         }
       : phase.kind === "otp"
@@ -223,7 +226,7 @@ export function SignInFlow({
             kind: "otp",
             email: phase.email,
             error: phase.error,
-            attemptsLeft: phase.attemptsLeft,
+            lockedSeconds,
             backup: phase.backup,
           }
         : phase;
@@ -257,9 +260,9 @@ export function SignInFlow({
         phase.kind === "sso" &&
         provider.mutate({ email: phase.email, provider: "microsoft-entra" })
       }
-      onVerify={({ code, rememberDevice }) =>
+      onVerify={({ code }) =>
         phase.kind === "otp" &&
-        verify.mutate({ challengeId: phase.challengeId, code, rememberDevice })
+        verify.mutate({ challengeToken: phase.challengeToken, code })
       }
       onToggleBackup={() =>
         setPhase((current) =>

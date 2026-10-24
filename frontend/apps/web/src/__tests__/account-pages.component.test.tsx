@@ -28,21 +28,47 @@ vi.mock("@notrelix/runtime-web", () => ({
         delete: async (url: string) => runtime.del?.(url),
       },
       endpoints: {
-        auth: { profile: "/auth/me" },
+        auth: {
+          profile: "/auth/me",
+          securitySummary: "/auth/security/summary",
+          securityActivity: "/auth/security/activity",
+          stepUpRequirement: "/auth/security/step-up/requirement",
+          stepUpCompleteMfa: "/auth/security/step-up/complete-mfa",
+          stepUpCompletePassword: "/auth/security/step-up/complete-password",
+          sessions: "/auth/sessions",
+          sessionRevoke: (id: string) => `/auth/sessions/${id}/revoke`,
+          sessionsRevokeOthers: "/auth/sessions/revoke-others",
+          mfaEnrollmentStart: "/auth/mfa/enrollment/start",
+          mfaEnrollmentVerify: "/auth/mfa/enrollment/verify",
+          mfaDisable: "/auth/mfa/disable",
+          mfaRecoveryCodes: "/auth/mfa/recovery-codes/regenerate",
+          changePassword: "/auth/change-password",
+        },
         users: {
           updateProfile: "/profile",
-          preferences: "/account/preferences",
-          security: "/users/security",
+          preferences: "/profile/preferences",
+        },
+        workspaces: {
+          detail: (id: string) => `/workspaces/${id}`,
+          myJobTitle: (id: string) => `/workspaces/${id}/members/me/job-title`,
+          myMembership: (id: string) => `/workspaces/${id}/members/me`,
         },
         notifications: {
           list: "/notifications",
           read: (id: string) => `/notifications/${id}/read`,
           readAll: "/notifications/read-all",
-          preferences: "/notifications/preferences",
+          preferences: (id: string) =>
+            `/workspaces/${id}/notification-preferences`,
         },
       },
     },
   }),
+}));
+
+vi.mock("@tanstack/react-router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@tanstack/react-router")>()),
+  useParams: () => ({ workspaceId: "w-1" }),
+  useNavigate: () => vi.fn(),
 }));
 
 import { AccountAppearancePage } from "../routes/workspaces/$workspaceId/account/appearance";
@@ -191,27 +217,32 @@ const profile = {
   name: "Ada Lovelace",
   email: "ada@example.com",
   avatarUrl: null,
-  timezone: "Asia/Ho_Chi_Minh",
-  locale: "vi",
-  createdAt: "2025-03-12T09:00:00.000Z",
 };
-const details = {
-  jobTitle: "Implementation lead",
-  phone: "0912 468 135",
+const prefs = {
+  locale: "vi",
   timezone: "Asia/Ho_Chi_Minh",
-  dateFormat: "dd/mm/yyyy",
-  avatarUrl: null,
+  theme: "light",
+  phone: "+84912468135",
+  phoneVisibleToWorkspaceMembers: false,
+  version: 2,
+};
+const member = {
+  userId: "u-1",
+  jobTitle: "Implementation lead",
+  version: 4,
   joinedAt: "2024-03-04T00:00:00.000Z",
-  managedBy: "Microsoft Entra",
-  workspaceName: "Minh An Group",
+};
+const workspace = { id: "w-1", name: "Minh An Group" };
+const base = {
+  "/auth/me": profile,
+  "/profile/preferences": prefs,
+  "/workspaces/w-1": workspace,
+  "/workspaces/w-1/members/me": member,
 };
 
 describe("AccountProfilePage container", () => {
   it("passes the Vietnamese copy and locale formatters to the surface", async () => {
-    runtime.get = reads({
-      "/auth/me": profile,
-      "/account/profile-details": details,
-    });
+    runtime.get = reads(base);
     await mount(<AccountProfilePage />, "vi");
     await until(() => expect(text()).toContain("Múi giờ"));
     expect(text()).toContain("Thành phố Hồ Chí Minh");
@@ -220,16 +251,21 @@ describe("AccountProfilePage container", () => {
     expect(text()).not.toContain("Member since");
   });
 
-  it("saves the name through the profile contract and the rest through the details", async () => {
+  it("saves the name, the preferences with their version and the job title with the membership version", async () => {
     const stored = { ...profile };
     const patch = vi.fn((url: string, body: unknown) =>
       url === "/profile"
         ? Object.assign(stored, body)
-        : { ...details, ...(body as object) },
+        : { ...prefs, ...(body as object), version: 3 },
     );
+    const put = vi.fn(() => ({}));
     // A read returns a copy: the cache must see a new object after the write.
-    runtime.get = (url) => (url === "/auth/me" ? { ...stored } : details);
+    runtime.get = (url) =>
+      url === "/auth/me"
+        ? { ...stored }
+        : (base as Record<string, unknown>)[url];
     runtime.patch = patch;
+    runtime.put = put;
     await mount(<AccountProfilePage />, "en");
     await until(() => expect(text()).toContain("Time zone"));
 
@@ -238,46 +274,28 @@ describe("AccountProfilePage container", () => {
 
     await until(() => expect(text()).toContain("Profile updated."));
     expect(patch).toHaveBeenCalledWith("/profile", { name: "Ada King" });
-    expect(patch).toHaveBeenCalledWith("/account/profile-details", {
-      jobTitle: "Implementation lead",
-      phone: "0912 468 135",
-      timezone: "Asia/Ho_Chi_Minh",
-      dateFormat: "dd/mm/yyyy",
-    });
+    // The phone and zone did not change, so no preferences write goes out.
+    expect(patch).not.toHaveBeenCalledWith(
+      "/profile/preferences",
+      expect.anything(),
+    );
+    expect(put).not.toHaveBeenCalled();
   });
 
   it("shows the localized error with a retry when the profile cannot load", async () => {
-    runtime.get = reads({
-      "/auth/me": new Error("boom"),
-      "/account/profile-details": details,
-    });
+    runtime.get = reads({ ...base, "/auth/me": new Error("boom") });
     await mount(<AccountProfilePage />, "vi");
     await until(() => expect(text()).toContain("Không thể tải hồ sơ của bạn."));
 
-    runtime.get = reads({
-      "/auth/me": profile,
-      "/account/profile-details": details,
-    });
+    runtime.get = reads(base);
     await clickButton("Thử lại");
     await until(() => expect(text()).toContain("Múi giờ"));
   });
 });
 
 describe("AccountAppearancePage container", () => {
-  const preferences = {
-    userId: "u-1",
-    theme: "light",
-    colorTheme: "default",
-    sidebarCollapsed: false,
-    defaultView: "list",
-  };
-  const table = {
-    "/account/preferences": preferences,
-    "/account/profile-details": details,
-  };
-
   it("passes the Vietnamese copy and the current device appearance to the surface", async () => {
-    runtime.get = reads(table);
+    runtime.get = reads(base);
     await mount(<AccountAppearancePage />, "vi");
     await until(() => expect(text()).toContain("Thu gọn theo mặc định"));
     expect(text()).toContain("Chế độ hiển thị");
@@ -286,21 +304,29 @@ describe("AccountAppearancePage container", () => {
     expect(checked("radio", "Sáng")).toBe("true");
     expect(checked("radio", "Xanh Notrelix")).toBe("true");
     expect(checked("radio", "Tiếng Việt")).toBe("true");
-    expect(text()).toContain("Minh An Group");
+    await until(() => expect(text()).toContain("Minh An Group"));
   });
 
-  it("applies a mode choice to the theme runtime and mirrors light/dark/system to the account", async () => {
-    const patch = vi.fn((_url: string, body: unknown) => body);
-    runtime.get = reads(table);
+  it("applies a mode choice to the theme runtime and mirrors light/dark/system to the account with the version", async () => {
+    const patch = vi.fn((_url: string, body: unknown) => ({
+      ...prefs,
+      ...(body as object),
+    }));
+    runtime.get = reads(base);
     runtime.patch = patch;
     await mount(<AccountAppearancePage />, "en");
     await until(() => expect(text()).toContain("Accent color"));
+    // The mirror quotes the version it read the preferences at.
+    await until(() => expect(text()).toContain("Collapsed by default"));
 
     await clickControl("radio", "Dark");
     expect(checked("radio", "Dark")).toBe("true");
-    expect(patch).toHaveBeenCalledWith("/account/preferences", {
-      theme: "dark",
-    });
+    await until(() =>
+      expect(patch).toHaveBeenCalledWith("/profile/preferences", {
+        theme: "dark",
+        expectedVersion: 2,
+      }),
+    );
     await until(() => expect(text()).toContain("Saved."));
 
     patch.mockClear();
@@ -310,7 +336,8 @@ describe("AccountAppearancePage container", () => {
   });
 
   it("applies an accent choice and switches the language through the runtimes", async () => {
-    runtime.get = reads(table);
+    runtime.get = reads(base);
+    runtime.patch = (_url, body) => ({ ...prefs, ...(body as object) });
     await mount(<AccountAppearancePage />, "en");
     await until(() => expect(text()).toContain("Accent color"));
     await clickControl("radio", "Coral");
@@ -320,95 +347,117 @@ describe("AccountAppearancePage container", () => {
     await until(() => expect(text()).toContain("Màu nhấn"));
   });
 
-  it("saves the sidebar default through the preferences hook and reports success", async () => {
-    let stored = preferences;
-    const patch = vi.fn((_url: string, body: unknown) => {
-      stored = { ...stored, ...(body as object) };
-      return stored;
-    });
-    runtime.get = (url) => (url === "/account/preferences" ? stored : details);
+  it("keeps the sidebar default in this browser only and never sends it to the account", async () => {
+    const patch = vi.fn();
+    runtime.get = reads(base);
     runtime.patch = patch;
     await mount(<AccountAppearancePage />, "en");
     await until(() => expect(text()).toContain("Collapsed by default"));
 
     await clickControl("switch", "Collapsed by default");
     await until(() => expect(text()).toContain("Saved."));
-    expect(patch).toHaveBeenCalledWith("/account/preferences", {
-      sidebarCollapsed: true,
-    });
+    expect(patch).not.toHaveBeenCalled();
     expect(checked("switch", "Collapsed by default")).toBe("true");
-  });
-
-  it("shows the localized error with a retry when the preferences cannot load", async () => {
-    runtime.get = reads({
-      "/account/preferences": new Error("boom"),
-      "/account/profile-details": details,
-    });
-    await mount(<AccountAppearancePage />, "vi");
-    await until(() =>
-      expect(text()).toContain("Không thể tải tùy chọn thanh bên của bạn."),
-    );
-    expect(text()).toContain("Chế độ hiển thị");
-
-    runtime.get = reads(table);
-    await clickButton("Thử lại");
-    await until(() => expect(text()).toContain("Thu gọn theo mặc định"));
   });
 });
 
 describe("AccountSecurityPage container", () => {
-  const security = {
+  const summary = {
     serverTime: "2026-10-12T03:40:00.000Z",
-    sso: { provider: "Microsoft Entra", email: "ada@example.com" },
-    twoFactorEnabled: true,
-    backupCodesLeft: 8,
-    sessions: [
-      {
-        id: "s-1",
-        device: "MacBook · Chrome",
-        kind: "desktop",
-        place: "Hà Nội",
-        lastActiveAt: null,
-      },
-      {
-        id: "s-2",
-        device: "iPhone 15",
-        kind: "phone",
-        place: "Hà Nội",
-        lastActiveAt: "2026-10-12T01:40:00.000Z",
-      },
-    ],
+    hasPasswordCredential: true,
+    passwordChangedAt: null,
+    mfa: { isEnabled: true, recoveryCodesRemaining: 8 },
+    activeSessionCount: 2,
+    linkedProviders: [],
   };
+  const sessions = [
+    {
+      id: "s-1",
+      status: 0,
+      createdAt: "2026-10-12T03:00:00.000Z",
+      expiresAt: "2026-11-12T03:00:00.000Z",
+      userAgent:
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/126.0 Safari/537.36",
+      isCurrent: true,
+    },
+    {
+      id: "s-2",
+      status: 0,
+      createdAt: "2026-10-12T01:40:00.000Z",
+      expiresAt: "2026-11-12T03:00:00.000Z",
+      userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5) Mobile Safari/604.1",
+      isCurrent: false,
+    },
+    {
+      id: "s-3",
+      status: 1,
+      createdAt: "2026-10-01T01:40:00.000Z",
+      expiresAt: "2026-11-01T03:00:00.000Z",
+      userAgent: "Mozilla/5.0 (iPad) Safari/604.1",
+      isCurrent: false,
+    },
+  ];
   const table = {
-    "/account/security-details": security,
-    "/account/profile-details": details,
+    "/auth/me": profile,
+    "/workspaces/w-1": workspace,
+    "/auth/security/summary": summary,
+    "/auth/sessions": sessions,
+    "/auth/security/activity": {
+      items: [
+        {
+          id: "a-1",
+          type: "SignInSucceeded",
+          occurredAt: "2026-10-12T03:00:00.000Z",
+          ipAddress: "10.0.0.1",
+          userAgent: "Chrome/126.0 Macintosh",
+        },
+      ],
+      nextCursor: null,
+    },
   };
 
-  it("passes the Vietnamese copy and the producer's clock to the surface", async () => {
+  it("derives devices from the user agent, shows only active sessions and the activity", async () => {
     runtime.get = reads(table);
     await mount(<AccountSecurityPage />, "vi");
     await until(() => expect(text()).toContain("Xác thực hai yếu tố"));
-    expect(text()).toContain("Đăng nhập một lần qua Microsoft Entra");
     expect(text()).toContain("2 phiên đang hoạt động");
-    expect(text()).toContain("2 giờ trước");
+    expect(text()).toContain("Chrome · macOS");
+    expect(text()).toContain("Đăng nhập 2 giờ trước");
+    expect(text()).toContain("Hoạt động bảo mật gần đây");
     expect(text()).toContain("Đã bật");
   });
 
-  it("renews the backup codes and shows the toast", async () => {
-    const post = vi.fn(() => security);
+  it("asks for a proof before creating new backup codes and shows them once", async () => {
+    const post = vi.fn((url: string) =>
+      url === "/auth/security/step-up/requirement"
+        ? { requiredFactor: 0, challengeToken: "challenge-1" }
+        : url === "/auth/security/step-up/complete-mfa"
+          ? { proofToken: "proof-1" }
+          : { recoveryCodes: ["AAAA-1111", "BBBB-2222"] },
+    );
     runtime.get = reads(table);
     runtime.post = post;
     await mount(<AccountSecurityPage />, "en");
     await until(() => expect(text()).toContain("Backup codes"));
     await clickButton("Create new codes");
-    await until(() => expect(text()).toContain("New backup codes created."));
-    expect(post).toHaveBeenCalledWith("/account/security/backup-codes", {});
+    await until(() =>
+      expect(text()).toContain("Confirm to create new backup codes"),
+    );
+    await typeInFirstField("123456");
+    await clickButton("Confirm");
+    await until(() => expect(text()).toContain("AAAA-1111"));
+    expect(post).toHaveBeenCalledWith("/auth/security/step-up/requirement", {
+      purpose: "RegenerateRecoveryCodes",
+    });
+    expect(post).toHaveBeenCalledWith("/auth/mfa/recovery-codes/regenerate", {
+      stepUpToken: "proof-1",
+    });
   });
 
   it("shows the localized error with a retry when the settings cannot load", async () => {
     runtime.get = reads({
-      "/account/security-details": new Error("boom"),
-      "/account/profile-details": details,
+      ...table,
+      "/auth/security/summary": new Error("boom"),
     });
     await mount(<AccountSecurityPage />, "vi");
     await until(() =>
@@ -421,32 +470,31 @@ describe("AccountSecurityPage container", () => {
 });
 
 describe("AccountNotificationsPage container", () => {
-  const matrix = {
-    rows: {
-      assigned: { app: true, email: true, mobile: true },
-      mention: { app: true, email: true, mobile: true },
-      approval: { app: true, email: true, mobile: true },
-      overdue: { app: true, email: true, mobile: false },
-      watching: { app: true, email: false, mobile: false },
-      invitation: { app: true, email: true, mobile: false },
-      digest: { app: false, email: true, mobile: false },
-    },
-    quietHours: { enabled: true, from: "21:00", to: "07:00", days: "weekdays" },
+  const prefsOf = {
+    version: 3,
+    rows: [
+      { type: "assigned", inApp: true, email: true },
+      { type: "mention", inApp: true, email: true },
+      { type: "approval", inApp: true, email: true },
+      { type: "overdue", inApp: true, email: false },
+      { type: "watching", inApp: true, email: false },
+      { type: "invitation", inApp: true, email: true },
+      { type: "digest", inApp: false, email: false },
+    ],
   };
-  const table = {
-    "/auth/me": profile,
-    "/account/notification-matrix": matrix,
-    "/account/profile-details": details,
-  };
+  const url = "/workspaces/w-1/notification-preferences";
+  const table = { "/auth/me": profile, [url]: prefsOf };
   const cell = (name: string) =>
     host?.querySelector<HTMLElement>(`[role="checkbox"][aria-label="${name}"]`);
 
-  it("passes the Vietnamese copy and the saved matrix to the surface", async () => {
+  it("passes the Vietnamese copy and the saved choices of the route's workspace to the surface", async () => {
     runtime.get = reads(table);
     await mount(<AccountNotificationsPage />, "vi");
-    await until(() => expect(text()).toContain("Giờ yên lặng"));
+    await until(() => expect(text()).toContain("workspace này"));
     expect(text()).toContain("@Ada Lovelace");
-    expect(text()).toContain("GMT+7");
+    // Mobile and quiet hours are not offered.
+    expect(text()).not.toContain("Di động");
+    expect(text()).not.toContain("Giờ yên lặng");
     expect(
       cell("Được giao việc: Trong ứng dụng")?.getAttribute("aria-checked"),
     ).toBe("true");
@@ -455,47 +503,51 @@ describe("AccountNotificationsPage container", () => {
     ).toBe("false");
   });
 
-  it("saves the changed matrix and reports success", async () => {
-    const put = vi.fn((_url: string, body: unknown) => body);
+  it("saves only the changed cell with the version it was read at", async () => {
+    const patch = vi.fn(() => ({ ...prefsOf, version: 4 }));
     runtime.get = reads(table);
-    runtime.put = put;
+    runtime.patch = patch;
     await mount(<AccountNotificationsPage />, "en");
-    await until(() => expect(text()).toContain("Quiet hours"));
+    await until(() => expect(text()).toContain("Daily digest"));
     await act(async () => cell("Daily digest: In the app")?.click());
     await clickButton("Save preferences");
     await until(() =>
       expect(text()).toContain("Notification preferences saved."),
     );
-    const sent = put.mock.calls[0]?.[1] as typeof matrix;
-    expect(sent.rows.digest.app).toBe(true);
-    expect(sent.quietHours.from).toBe("21:00");
+    expect(patch).toHaveBeenCalledWith(url, {
+      expectedVersion: 3,
+      rows: [{ type: "digest", inApp: true }],
+    });
   });
 
-  it("announces a failed save without losing the cells", async () => {
-    runtime.get = reads(table);
-    runtime.put = () => {
-      throw new Error("boom");
+  it("announces a failed save without losing the cells and refetches after a 412", async () => {
+    let reads412 = 0;
+    runtime.get = (u) => {
+      if (u === url) reads412 += 1;
+      return (table as Record<string, unknown>)[u];
+    };
+    runtime.patch = () => {
+      throw Object.assign(new Error("stale"), { status: 412 });
     };
     await mount(<AccountNotificationsPage />, "vi");
-    await until(() => expect(text()).toContain("Giờ yên lặng"));
+    await until(() => expect(text()).toContain("workspace này"));
+    await act(async () => cell("Tóm tắt hằng ngày: Email")?.click());
     await clickButton("Lưu tùy chọn");
     await until(() =>
       expect(text()).toContain("Không thể lưu tùy chọn thông báo của bạn."),
     );
+    await until(() => expect(reads412).toBeGreaterThan(1));
   });
 
   it("explains a failed load and retries", async () => {
-    runtime.get = reads({
-      ...table,
-      "/account/notification-matrix": new Error("boom"),
-    });
+    runtime.get = reads({ ...table, [url]: new Error("boom") });
     await mount(<AccountNotificationsPage />, "vi");
     await until(() =>
       expect(text()).toContain("Không thể tải tùy chọn thông báo của bạn."),
     );
     runtime.get = reads(table);
     await clickButton("Thử lại");
-    await until(() => expect(text()).toContain("Giờ yên lặng"));
+    await until(() => expect(text()).toContain("workspace này"));
   });
 });
 

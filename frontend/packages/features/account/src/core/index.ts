@@ -5,13 +5,27 @@
  */
 
 export type {
+  AccountActivityEntry,
+  AccountActivityPage,
+  AccountActivityType,
+  AccountDeviceKind,
+  AccountPreferences,
+  AccountPreferencesPatch,
+  AccountSecuritySummary,
+  AccountSession,
+  AccountTheme,
+  MyMemberProfile,
+  StepUpFactor,
+  StepUpPurpose,
+  StepUpRequirement,
+  TwoFactorEnrollment,
   UserProfile,
-  UserPreferences,
-  SecuritySettings,
 } from "./types/account";
 
 export {
   createAccountService,
+  describeDevice,
   type AccountApiClient,
   type AccountEndpoints,
+  type AccountService,
 } from "./api/account.service";

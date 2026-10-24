@@ -4,7 +4,6 @@
  * "BE requirement from FE: Auth"):
  *
  *   auth.identify      — POST /auth/identify              (how this email signs in)
- *   auth.otp.verify    — POST /auth/otp/verify            (second step)
  *   auth.sso.start     — POST /auth/sso/start             (company or Google/Microsoft sign-in)
  *   auth.invite.get    — GET  /invites/:token             (guest invitation preview)
  *   auth.invite.accept — POST /invites/:token/accept
@@ -22,17 +21,22 @@ const gap = { kind: "gap", gapId: "CTR-GAP-AUTH-FLOW" } as const;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD = 12;
 
-/** The session a successful sign-in hands back, as the login stub does. */
+/**
+ * The session a successful sign-in hands back: `AuthSessionResponse`. The
+ * tokens are httpOnly cookies and never in the body.
+ */
 export function sessionOf(store: MockStore) {
   const user = store.getCurrentUser();
   return {
-    accessToken: "mock-access-token",
+    expiresAt: store.getClock().offsetMinutes(60),
     user: {
       id: user.id,
       email: user.email,
       name: user.name,
       avatarUrl: user.avatarUrl,
+      emailConfirmed: true,
     },
+    mfaRequired: false,
   };
 }
 
@@ -43,6 +47,33 @@ function problem(
   extra: Record<string, unknown> = {},
 ) {
   return { status, body: { message, code, ...extra } };
+}
+
+/**
+ * A problem+json answer of an Identity operation: the dotted code is the
+ * `errorCode`, and a throttled step says when to try again in the body and in
+ * `Retry-After`.
+ */
+export function identityProblem(
+  status: number,
+  errorCode: string,
+  detail: string,
+  retryAfterSeconds?: number,
+) {
+  return {
+    status,
+    ...(retryAfterSeconds === undefined
+      ? {}
+      : { headers: { "Retry-After": String(retryAfterSeconds) } }),
+    body: {
+      type: `https://notrelix.dev/problems/${errorCode}`,
+      title: detail,
+      status,
+      detail,
+      errorCode,
+      ...(retryAfterSeconds === undefined ? {} : { retryAfterSeconds }),
+    },
+  };
 }
 
 export const authFlowOperations = [
@@ -74,28 +105,30 @@ export const authFlowOperations = [
 
   defineMockOperation<
     Record<string, never>,
-    { challengeId?: string; code?: string; rememberDevice?: boolean },
+    { challengeToken?: string; code?: string },
     unknown
   >({
-    id: "auth.otp.verify",
-    contract: gap,
+    id: "identity.mfa.verify",
+    contract: { kind: "openapi", operationId: "Identity.Mfa.VerifyChallenge" },
     method: "POST",
-    route: "/auth/otp/verify",
+    route: "/auth/mfa/verify",
     async handle({ body, store }) {
       const outcome = store.auth.verifyOtp(
-        body?.challengeId ?? "",
+        body?.challengeToken ?? "",
         body?.code ?? "",
       );
-      if (outcome.kind === "expired")
-        return problem(
-          401,
-          "OTP_EXPIRED",
+      if (outcome.kind === "challenge-invalid")
+        return identityProblem(
+          400,
+          "identity.mfa.challenge-invalid",
           "The verification expired. Sign in again.",
         );
       if (outcome.kind === "invalid")
-        return problem(401, "OTP_INVALID", "The code is not right.", {
-          attemptsLeft: outcome.attemptsLeft,
-        });
+        return identityProblem(
+          400,
+          "identity.mfa.invalid-code",
+          "The code is not right.",
+        );
       store.loginCurrentUser();
       return ok(sessionOf(store));
     },

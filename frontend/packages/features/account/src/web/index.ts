@@ -3,10 +3,12 @@
  */
 
 export { createUseUpdateProfile } from "./hooks/use-update-profile";
-export { createUseUpdatePreferences } from "./hooks/use-update-preferences";
 export { createUseProfile } from "./query/hooks/use-profile";
-export { createUsePreferences } from "./query/hooks/use-preferences";
-export { createUseSecuritySettings } from "./query/hooks/use-security-settings";
+export {
+  createUsePreferences,
+  isPreferencesConflict,
+} from "./query/hooks/use-preferences";
+export { createUseSecurity } from "./query/hooks/use-security";
 
 export { accountProfileCatalog } from "./profile/account-profile.catalog";
 export {
@@ -51,7 +53,9 @@ export { useAccountSecurityCopy } from "./security/use-account-security-copy";
 export {
   AccountSecuritySurface,
   relativeAge,
+  type AccountActivityView,
   type AccountSecurityData,
+  type AccountSecurityFlow,
   type AccountSecuritySurfaceProps,
   type AccountSessionView,
 } from "./security/account-security-surface";
@@ -72,7 +76,6 @@ export {
   type AccountNotificationsState,
   type AccountNotificationsSurfaceProps,
   type AccountNotificationValues,
-  type AccountQuietHours,
 } from "./notifications/account-notifications-surface";
 
 export { accountWorkspacesCatalog } from "./workspaces/account-workspaces.catalog";

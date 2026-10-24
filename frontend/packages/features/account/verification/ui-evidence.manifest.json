@@ -515,7 +515,7 @@
           "testFile": "src/web/notifications/__tests__/account-notifications.interaction.component.test.tsx"
         },
         {
-          "id": "quiet",
+          "id": "scope",
           "testFile": "src/web/notifications/__tests__/account-notifications.interaction.component.test.tsx"
         },
         {

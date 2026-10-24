@@ -111,7 +111,7 @@ test("Profile shows the save bar only after a change and reports the result in V
   await page.goto(`${account}/profile`);
   const bar = page.getByRole("region", { name: "Thay đổi chưa lưu" });
   await expect(bar).toHaveCount(0);
-  await page.getByLabel("Số điện thoại").fill("0988 000 111");
+  await page.getByLabel("Số điện thoại").fill("+84 988 000 111");
   await expect(bar).toContainText("Bạn có 1 thay đổi chưa lưu");
   await expect(page.getByText("Đã sửa")).toBeVisible();
   await bar.getByRole("button", { name: "Lưu thay đổi" }).click();
@@ -121,7 +121,7 @@ test("Profile shows the save bar only after a change and reports the result in V
   const nav = page.getByRole("navigation", { name: "Cài đặt tài khoản" });
   await nav.getByRole("link", { name: "Bảo mật" }).click();
   await nav.getByRole("link", { name: "Hồ sơ" }).click();
-  await expect(page.getByLabel("Số điện thoại")).toHaveValue("0988 000 111");
+  await expect(page.getByLabel("Số điện thoại")).toHaveValue("+84988000111");
 });
 
 test("Appearance radios move with the arrow keys and the sidebar switch toggles with Space", async ({
@@ -158,51 +158,52 @@ test("Security turns two-factor off and signs out the other devices", async ({
       name: "Phiên đăng nhập đang hoạt động",
     }),
   ).toBeVisible();
-  await expect(page.getByText("2 giờ trước")).toBeVisible();
-  await page
-    .getByRole("button", { name: "Đăng xuất iPad · ứng dụng Notrelix" })
-    .click();
+  await expect(page.getByText("Đăng nhập 2 giờ trước")).toBeVisible();
+  await page.getByRole("button", { name: "Đăng xuất Safari · iPad" }).click();
   await expect(page.getByText("Đã đăng xuất.")).toBeVisible();
   await expect(page.getByText("2 phiên đang hoạt động")).toBeVisible();
+  // New backup codes need a proof first, then they are shown once.
   await page.getByRole("button", { name: "Tạo mã mới" }).click();
-  await expect(page.getByText("Đã tạo mã dự phòng mới.")).toBeVisible();
+  await page.getByLabel("Mã", { exact: true }).fill("482931");
+  await page.getByRole("button", { name: "Xác nhận" }).click();
+  await expect(page.getByText("Lưu mã dự phòng của bạn")).toBeVisible();
+  await page.getByRole("button", { name: "Tôi đã lưu" }).click();
   await page
     .getByRole("button", { name: "Đăng xuất mọi thiết bị khác" })
     .click();
   await expect(page.getByText("1 phiên đang hoạt động")).toBeVisible();
   await page.getByRole("button", { name: "Tắt xác thực hai yếu tố" }).click();
+  await page.getByLabel("Mã", { exact: true }).fill("482931");
+  await page.getByRole("button", { name: "Xác nhận" }).click();
   await expect(
     page.getByRole("button", { name: "Bật xác thực hai yếu tố" }),
   ).toBeVisible();
 });
 
-test("Notification cells are named by event and channel, toggle with Space and save", async ({
+test("Notification cells are named by event and channel, toggle with Space and save per workspace", async ({
   page,
 }) => {
   await page.goto(`${account}/notifications`);
   await expect(
     page.getByRole("heading", { level: 2, name: "Thông báo" }),
   ).toBeVisible();
+  // Mobile and quiet hours are not offered.
+  await expect(page.getByRole("switch")).toHaveCount(0);
   const cell = page.getByRole("checkbox", {
-    name: "Tóm tắt hằng ngày: trong ứng dụng",
+    name: "Tóm tắt hằng ngày: email",
   });
   await expect(cell).toHaveAttribute("aria-checked", "false");
   await cell.focus();
   await page.keyboard.press("Space");
   await expect(cell).toHaveAttribute("aria-checked", "true");
-
-  const quiet = page.getByRole("switch", { name: "Giờ yên lặng" });
-  await expect(quiet).toHaveAttribute("aria-checked", "true");
-  await page.getByLabel("Từ").selectOption("22:00");
   await page.getByRole("button", { name: "Lưu tùy chọn" }).click();
   await expect(page.getByText("Đã lưu tùy chọn thông báo.")).toBeVisible();
   const nav = page.getByRole("navigation", { name: "Cài đặt tài khoản" });
   await nav.getByRole("link", { name: "Bảo mật" }).click();
   await nav.getByRole("link", { name: "Thông báo" }).click();
   await expect(
-    page.getByRole("checkbox", { name: "Tóm tắt hằng ngày: trong ứng dụng" }),
+    page.getByRole("checkbox", { name: "Tóm tắt hằng ngày: email" }),
   ).toHaveAttribute("aria-checked", "true");
-  await expect(page.getByLabel("Từ")).toHaveValue("22:00");
 });
 
 test("Workspaces sets the default and asks before leaving; the only owner cannot leave", async ({

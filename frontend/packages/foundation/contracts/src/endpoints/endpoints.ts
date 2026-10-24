@@ -8,11 +8,26 @@ export const endpoints = {
     forgotPassword: "/auth/forgot-password",
     resetPassword: "/auth/reset-password",
     profile: "/auth/me",
+    changePassword: "/auth/change-password",
+    // Identity.Security.* / Identity.Sessions.* / Identity.Mfa.*
+    securitySummary: "/auth/security/summary",
+    securityActivity: "/auth/security/activity",
+    stepUpRequirement: "/auth/security/step-up/requirement",
+    stepUpCompleteMfa: "/auth/security/step-up/complete-mfa",
+    stepUpCompletePassword: "/auth/security/step-up/complete-password",
+    sessions: "/auth/sessions",
+    sessionRevoke: (sessionId: string) =>
+      `/auth/sessions/${encodeURIComponent(sessionId)}/revoke`,
+    sessionsRevokeOthers: "/auth/sessions/revoke-others",
+    mfaEnrollmentStart: "/auth/mfa/enrollment/start",
+    mfaEnrollmentVerify: "/auth/mfa/enrollment/verify",
+    mfaDisable: "/auth/mfa/disable",
+    mfaRecoveryCodes: "/auth/mfa/recovery-codes/regenerate",
   },
   users: {
     updateProfile: "/profile",
-    preferences: "/account/preferences",
-    security: "/users/security",
+    // Identity.Profile.GetPreferences / UpdatePreferences.
+    preferences: "/profile/preferences",
   },
   workspaces: {
     list: "/workspaces",
@@ -29,6 +44,11 @@ export const endpoints = {
       `/workspaces/${workspaceId}/pins/${encodeURIComponent(kind)}/${resourceId}`,
     // Workspace profile, settings and lifecycle (producer: Workspaces.Workspaces.*).
     profile: (workspaceId: string) => `/workspaces/${workspaceId}/profile`,
+    // The signed-in member's own job title (Workspaces.Members.UpdateMyJobTitle).
+    myJobTitle: (workspaceId: string) =>
+      `/workspaces/${workspaceId}/members/me/job-title`,
+    myMembership: (workspaceId: string) =>
+      `/workspaces/${workspaceId}/members/me`,
     settings: (workspaceId: string) => `/workspaces/${workspaceId}/settings`,
     archive: (workspaceId: string) => `/workspaces/${workspaceId}/archive`,
     activity: (workspaceId: string) => `/workspaces/${workspaceId}/activity`,
@@ -136,6 +156,9 @@ export const endpoints = {
     list: "/notifications",
     read: (id: string) => `/notifications/${id}/read`,
     readAll: "/notifications/read-all",
+    // Collaboration.Preferences.*: one member's choices in one workspace.
+    preferences: (workspaceId: string) =>
+      `/workspaces/${workspaceId}/notification-preferences`,
   },
 
   boardGroups: {

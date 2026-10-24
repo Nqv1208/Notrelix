@@ -109,7 +109,7 @@ test.describe("Sign-in pages (owner)", () => {
   }) => {
     await toPassword(page);
     const password = page.getByLabel("Mật khẩu", { exact: true });
-    for (let attempt = 1; attempt <= 5; attempt += 1) {
+    for (let attempt = 1; attempt <= 4; attempt += 1) {
       await password.fill(`sai-mat-khau-${attempt}`);
       await page.locator("form button[type=submit]").click();
       // The answer clears the field: the next try starts from an empty one.
@@ -117,9 +117,12 @@ test.describe("Sign-in pages (owner)", () => {
       await expect(page.getByRole("alert").first()).toContainText(
         "Email hoặc mật khẩu chưa đúng.",
       );
-      if (attempt === 4)
-        await expect(page.getByText(/Còn 1 lần thử/)).toBeVisible();
+      // No answer counts the tries left.
+      await expect(page.getByText(/lần thử/)).toHaveCount(0);
     }
+    // The fifth wrong try is throttled: the wait time shows, not a counter.
+    await password.fill("sai-mat-khau-5");
+    await page.locator("form button[type=submit]").click();
     await expect(page.getByText(/Thử lại sau \d+ giây/)).toBeVisible();
     const wait = page.locator("form button[type=submit]");
     await expect(wait).toBeDisabled();

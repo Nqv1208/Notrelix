@@ -53,4 +53,8 @@ export type {
   LoginResult,
   SessionResult,
 } from "./api/auth-flow.service";
-export { readFlowError, type FlowError } from "./utils/flow-error";
+export {
+  IDENTITY_ERROR,
+  readFlowError,
+  type FlowError,
+} from "./utils/flow-error";

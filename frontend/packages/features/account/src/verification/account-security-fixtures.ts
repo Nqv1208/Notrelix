@@ -34,22 +34,22 @@ export function securityFixture(
         id: "session-macbook",
         device: "MacBook · Chrome",
         kind: "desktop",
-        place: "Hà Nội",
-        lastActiveAt: null,
+        isCurrent: true,
+        signedInAt: "2026-10-12T03:00:00.000Z",
       },
       {
         id: "session-iphone",
         device: "iPhone 15 · ứng dụng Notrelix",
         kind: "phone",
-        place: "Hà Nội",
-        lastActiveAt: "2026-10-12T01:40:00.000Z",
+        isCurrent: false,
+        signedInAt: "2026-10-12T01:40:00.000Z",
       },
       {
         id: "session-ipad",
         device: "iPad · ứng dụng Notrelix",
         kind: "tablet",
-        place: "Hà Nội",
-        lastActiveAt: "2026-10-09T03:40:00.000Z",
+        isCurrent: false,
+        signedInAt: "2026-10-09T03:40:00.000Z",
       },
     ],
     ...overrides,
@@ -59,6 +59,10 @@ export function securityFixture(
 export type SecurityScenario = Omit<
   AccountSecuritySurfaceProps,
   | "onSetTwoFactor"
+  | "onSubmitCode"
+  | "onSubmitPassword"
+  | "onCloseFlow"
+  | "onLoadMoreActivity"
   | "onRenewBackupCodes"
   | "onSignOut"
   | "onSignOutOthers"
@@ -140,7 +144,6 @@ export function securityEdgeDataScenario(): SecurityScenario {
                 ...session,
                 device:
                   "Máy tính bảng Samsung Galaxy Tab S9 Ultra · ứng dụng Notrelix cho Android",
-                place: "Thành phố Hồ Chí Minh, Việt Nam",
               }
             : session,
         ),

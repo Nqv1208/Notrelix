@@ -1,7 +1,4 @@
-import type {
-  AccountNotificationValues,
-  AccountWorkspaceRole,
-} from "@notrelix/features-account";
+import type { AccountWorkspaceRole } from "@notrelix/features-account";
 
 /**
  * The calls behind the account pages that the profile and preference
@@ -35,31 +32,6 @@ export interface AccountPagesApiClient {
 
 const QUIET = { skipGlobalErrorToast: true } as const;
 
-export interface ProfileDetailsDto {
-  readonly jobTitle: string;
-  readonly phone: string;
-  readonly timezone: string;
-  readonly dateFormat: string;
-  readonly avatarUrl: string | null;
-  readonly joinedAt: string;
-  readonly managedBy: string | null;
-  readonly workspaceName: string;
-}
-
-export interface SecurityDetailsDto {
-  readonly serverTime: string;
-  readonly sso: { provider: string; email: string } | null;
-  readonly twoFactorEnabled: boolean;
-  readonly backupCodesLeft: number;
-  readonly sessions: readonly {
-    id: string;
-    device: string;
-    kind: "desktop" | "phone" | "tablet";
-    place: string;
-    lastActiveAt: string | null;
-  }[];
-}
-
 export interface AccountWorkspacesDto {
   readonly workspaces: readonly {
     id: string;
@@ -77,64 +49,10 @@ export interface AccountWorkspacesDto {
 
 export function createAccountPagesApi(api: AccountPagesApiClient) {
   return {
-    getDetails() {
-      return api.get<ProfileDetailsDto>("/account/profile-details", QUIET);
-    },
-    updateDetails(input: {
-      jobTitle: string;
-      phone: string;
-      timezone: string;
-      dateFormat: string;
-    }) {
-      return api.patch<ProfileDetailsDto>(
-        "/account/profile-details",
-        input,
-        QUIET,
-      );
-    },
     setAvatar(dataUrl: string) {
-      return api.put<ProfileDetailsDto>("/account/avatar", { dataUrl }, QUIET);
-    },
-    getSecurity() {
-      return api.get<SecurityDetailsDto>("/account/security-details", QUIET);
-    },
-    setTwoFactor(enabled: boolean) {
-      return api.put<SecurityDetailsDto>(
-        "/account/security/two-factor",
-        { enabled },
-        QUIET,
-      );
-    },
-    renewBackupCodes() {
-      return api.post<SecurityDetailsDto>(
-        "/account/security/backup-codes",
-        {},
-        { ...QUIET, idempotencyKey: crypto.randomUUID() },
-      );
-    },
-    revokeSession(sessionId: string) {
-      return api.delete<void>(
-        `/account/security/sessions/${encodeURIComponent(sessionId)}`,
-        QUIET,
-      );
-    },
-    revokeOtherSessions() {
-      return api.post<void>(
-        "/account/security/sessions/revoke-others",
-        {},
-        { ...QUIET, idempotencyKey: crypto.randomUUID() },
-      );
-    },
-    getNotificationMatrix() {
-      return api.get<AccountNotificationValues>(
-        "/account/notification-matrix",
-        QUIET,
-      );
-    },
-    saveNotificationMatrix(values: AccountNotificationValues) {
-      return api.put<AccountNotificationValues>(
-        "/account/notification-matrix",
-        values,
+      return api.put<{ avatarUrl: string | null }>(
+        "/account/avatar",
+        { dataUrl },
         QUIET,
       );
     },

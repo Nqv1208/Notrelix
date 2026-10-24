@@ -2,12 +2,30 @@
 export interface FlowError {
   readonly status: number | null;
   readonly code: string | null;
-  readonly attemptsLeft: number | null;
   readonly retryAfterSeconds: number | null;
   readonly fieldErrors: Readonly<Record<string, string>>;
   /** The call never reached the server. */
   readonly network: boolean;
 }
+
+/**
+ * The code a refusal carries: the Identity operations answer a dotted
+ * `errorCode` (`identity.auth.invalid-credentials`); the pages still on a
+ * mocked contract answer `code`.
+ */
+function errorCodeOf(details: Record<string, unknown>): string | null {
+  if (typeof details.errorCode === "string") return details.errorCode;
+  return typeof details.code === "string" ? details.code : null;
+}
+
+/** The dotted Identity codes the sign-in page tells apart. */
+export const IDENTITY_ERROR = {
+  invalidCredentials: "identity.auth.invalid-credentials",
+  tooManyAttempts: "identity.auth.too-many-attempts",
+  invalidCode: "identity.mfa.invalid-code",
+  challengeInvalid: "identity.mfa.challenge-invalid",
+  accountInactive: "identity.mfa.account-inactive",
+} as const;
 
 export function readFlowError(error: unknown): FlowError {
   const err = (error ?? {}) as {
@@ -29,8 +47,7 @@ export function readFlowError(error: unknown): FlowError {
       fieldErrors[field] = messages[0];
   return {
     status: typeof err.status === "number" ? err.status : null,
-    code: typeof details.code === "string" ? details.code : null,
-    attemptsLeft: num(details.attemptsLeft),
+    code: errorCodeOf(details),
     retryAfterSeconds: num(details.retryAfterSeconds),
     fieldErrors,
     network: err.kind === "network",

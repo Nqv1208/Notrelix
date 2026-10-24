@@ -15,7 +15,7 @@ export const MOCK_AUTH = {
   personalPassword: "mock-pass-phrase-2026",
   /** The six digits the authenticator app shows for that account. */
   otpCode: "482931",
-  /** One of the backup codes handed out when the second step was set up. */
+  /** One of the recovery codes handed out when the second step was set up. */
   backupCode: "BK7Q-M2XN-91TD",
   /** A company whose people sign in through the company identity provider. */
   ssoDomain: "minhan.vn",
@@ -123,29 +123,23 @@ const INVITES: readonly MockGuestInvite[] = [
 
 export type MockLoginOutcome =
   | { readonly kind: "signed-in" }
-  | { readonly kind: "otp"; readonly challengeId: string }
-  | {
-      readonly kind: "invalid";
-      readonly attemptsLeft: number;
-      /** This wrong attempt was the last one: the account is locked now. */
-      readonly locked: boolean;
-    }
+  | { readonly kind: "otp"; readonly challengeToken: string }
+  | { readonly kind: "invalid" }
+  /** Too many wrong passwords: the attempt is throttled, not verified. */
   | { readonly kind: "locked"; readonly retryAfterSeconds: number };
 
+/** The answer to a second-step code (`identity.mfa.*`); no one is told how many tries are left. */
 export type MockOtpOutcome =
   | { readonly kind: "signed-in" }
-  | { readonly kind: "invalid"; readonly attemptsLeft: number }
-  | { readonly kind: "expired" };
+  | { readonly kind: "invalid" }
+  | { readonly kind: "challenge-invalid" };
 
 const OTP_ATTEMPTS = 5;
 
 export class MockAuthDirectory {
   private attempts = new Map<string, number>();
   private lockedUntil = new Map<string, number>();
-  private challenges = new Map<
-    string,
-    { email: string; attemptsLeft: number }
-  >();
+  private challenges = new Map<string, { email: string; triesLeft: number }>();
   private acceptedInvites = new Set<string>();
   private declinedInvites = new Set<string>();
   private sequence = 0;
@@ -195,41 +189,38 @@ export class MockAuthDirectory {
       password === MOCK_AUTH.personalPassword
     ) {
       this.attempts.delete(email);
-      const challengeId = `challenge-${(this.sequence += 1)}`;
-      this.challenges.set(challengeId, { email, attemptsLeft: OTP_ATTEMPTS });
-      return { kind: "otp", challengeId };
+      const challengeToken = `challenge-${(this.sequence += 1)}`;
+      this.challenges.set(challengeToken, { email, triesLeft: OTP_ATTEMPTS });
+      return { kind: "otp", challengeToken };
     }
     const failed = (this.attempts.get(email) ?? 0) + 1;
     this.attempts.set(email, failed);
     if (failed >= MOCK_AUTH.maxAttempts) {
       this.lockedUntil.set(email, this.nowMs() + MOCK_AUTH.lockSeconds * 1000);
-      return { kind: "invalid", attemptsLeft: 0, locked: true };
+      return { kind: "locked", retryAfterSeconds: MOCK_AUTH.lockSeconds };
     }
-    return {
-      kind: "invalid",
-      attemptsLeft: MOCK_AUTH.maxAttempts - failed,
-      locked: false,
-    };
+    return { kind: "invalid" };
   }
 
   /** The second step: the app's six digits, or a backup code. */
-  verifyOtp(challengeId: string, code: string): MockOtpOutcome {
-    const challenge = this.challenges.get(challengeId);
-    if (!challenge) return { kind: "expired" };
+  verifyOtp(challengeToken: string, code: string): MockOtpOutcome {
+    const challenge = this.challenges.get(challengeToken);
+    if (!challenge) return { kind: "challenge-invalid" };
     const normalised = code.replace(/[\s-]/g, "").toUpperCase();
     if (
       normalised === MOCK_AUTH.otpCode ||
       normalised === MOCK_AUTH.backupCode.replace(/-/g, "")
     ) {
-      this.challenges.delete(challengeId);
+      this.challenges.delete(challengeToken);
       return { kind: "signed-in" };
     }
-    challenge.attemptsLeft -= 1;
-    if (challenge.attemptsLeft <= 0) {
-      this.challenges.delete(challengeId);
-      return { kind: "expired" };
+    challenge.triesLeft -= 1;
+    // After the last wrong code the challenge is dead: sign in again.
+    if (challenge.triesLeft <= 0) {
+      this.challenges.delete(challengeToken);
+      return { kind: "challenge-invalid" };
     }
-    return { kind: "invalid", attemptsLeft: challenge.attemptsLeft };
+    return { kind: "invalid" };
   }
 
   invite(token: string): MockGuestInvite | undefined {

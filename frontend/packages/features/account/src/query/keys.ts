@@ -8,4 +8,11 @@ export const accountQueryKeys = {
     accountQueryKey(accountId, "account", "preferences"),
   security: (accountId: string) =>
     accountQueryKey(accountId, "account", "security"),
+  sessions: (accountId: string) =>
+    accountQueryKey(accountId, "account", "sessions"),
+  activity: (accountId: string) =>
+    accountQueryKey(accountId, "account", "security-activity"),
+  /** The member's job title is a workspace fact of the person's own row. */
+  memberProfile: (accountId: string, workspaceId: string) =>
+    accountQueryKey(accountId, "account", "member-profile", workspaceId),
 } as const;

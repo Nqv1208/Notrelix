@@ -1,24 +1,108 @@
+/** The signed-in person (`Identity.Auth.GetCurrentUser`, `UserDto`). */
 export interface UserProfile {
   id: string;
   email: string;
   name: string;
   avatarUrl: string | null;
-  timezone: string;
-  locale: string;
-  createdAt: string;
 }
 
-export interface UserPreferences {
-  userId: string;
-  theme: "light" | "dark" | "system";
-  colorTheme: string;
-  sidebarCollapsed: boolean;
-  defaultView: string;
+export type AccountTheme = "light" | "dark" | "system";
+
+/**
+ * The person's own preferences (`Identity.Profile.*Preferences`): locale, time
+ * zone, theme and phone. `version` is what the next save quotes as
+ * `expectedVersion` (0 before the first save). Date format, sidebar and default
+ * view are client-side presentation and not part of this contract.
+ */
+export interface AccountPreferences {
+  readonly locale: string;
+  readonly timezone: string;
+  readonly theme: AccountTheme;
+  /** E.164, or `""` when none. */
+  readonly phone: string;
+  readonly phoneVisibleToWorkspaceMembers: boolean;
+  readonly version: number;
 }
 
-export interface SecuritySettings {
-  userId: string;
-  twoFactorEnabled: boolean;
-  lastPasswordChange: string;
-  activeSessions: number;
+/** What a preferences save may change; every field is optional. */
+export type AccountPreferencesPatch = Partial<
+  Omit<AccountPreferences, "version">
+>;
+
+/** The member's job title in one workspace (`Workspaces.Members.*JobTitle`). */
+export interface MyMemberProfile {
+  /** `""` when none. */
+  readonly jobTitle: string;
+  readonly version: number;
+  /** ISO timestamp the person joined the workspace. */
+  readonly joinedAt: string | null;
+}
+
+export interface AccountSecuritySummary {
+  readonly serverTime: string;
+  readonly hasPassword: boolean;
+  readonly passwordChangedAt: string | null;
+  readonly twoFactorEnabled: boolean;
+  readonly recoveryCodesLeft: number;
+  readonly activeSessionCount: number;
+  /** Sign-in providers linked to the account ("google", "microsoft"). */
+  readonly linkedProviders: readonly string[];
+}
+
+export type AccountDeviceKind = "desktop" | "phone" | "tablet";
+
+/** One sign-in of the person; the producer has no place and no last-active time. */
+export interface AccountSession {
+  readonly id: string;
+  readonly status: "active" | "revoked" | "expired";
+  readonly createdAt: string;
+  readonly expiresAt: string;
+  readonly isCurrent: boolean;
+  /** "Chrome on macOS", read from the user agent. */
+  readonly device: string;
+  readonly kind: AccountDeviceKind;
+  readonly ipAddress: string | null;
+}
+
+export type AccountActivityType =
+  | "SignInSucceeded"
+  | "SignInFailed"
+  | "PasswordChanged"
+  | "PasswordReset"
+  | "MfaEnabled"
+  | "MfaDisabled"
+  | "SessionRevoked"
+  | "OtherSessionsRevoked";
+
+export interface AccountActivityEntry {
+  readonly id: string;
+  readonly type: AccountActivityType | string;
+  readonly occurredAt: string;
+  readonly ipAddress: string | null;
+  readonly device: string;
+}
+
+export interface AccountActivityPage {
+  readonly items: readonly AccountActivityEntry[];
+  /** Pass back as `cursor` for the next page; `null` = the end. */
+  readonly nextCursor: string | null;
+}
+
+/** The authenticator the person adds in step one of turning two-factor on. */
+export interface TwoFactorEnrollment {
+  readonly methodId: string;
+  readonly secret: string;
+  readonly otpAuthUri: string;
+}
+
+/** What proves the person is present before a sensitive change. */
+export type StepUpFactor = "mfa" | "password" | "oauth";
+
+export type StepUpPurpose =
+  "DisableMfa" | "RegenerateRecoveryCodes" | "ChangePassword";
+
+export interface StepUpRequirement {
+  readonly factor: StepUpFactor;
+  /** The challenge a second-factor answer quotes. */
+  readonly challengeToken: string | null;
 }
