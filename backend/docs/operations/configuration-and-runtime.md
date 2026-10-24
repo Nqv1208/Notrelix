@@ -297,10 +297,19 @@ Database connections and the serving role (`ConnectionStrings`, `Rls:RoleEnforce
 
 | Key | Default | Meaning |
 |---|---|---|
-| `ConnectionStrings:NotrelixDb` | none (required) | The runtime connection: every request, background job and consumer. |
-| `ConnectionStrings:NotrelixMigrationDb` | unset | The owner connection used only by `--migrate`, `--rls-apply`, `--seed` and the Development startup migrate/seed. While unset, the runtime string is used for both (today's single-connection behavior); the initialiser logs that fallback. |
-| `ConnectionStrings:NotrelixWorkerDb` | unset (required while `Rls:RoleEnforcement` is `Enforce`) | The background login (`notrelix_worker`) used by the outbox and email dispatchers, the deduplication store, message consumers, sweeps, reapers and job locks. While unset, `ConnectionStrings:NotrelixDb` is used for both, which `Enforce` refuses at startup. The unbounded worker scope is honoured only on a connection logged in as a member of `notrelix_worker`. |
-| `Rls:RoleEnforcement` | `Enforce` | `Enforce` fails startup when either login is a superuser, a BYPASSRLS role, a login that can `RESET ROLE` into one, or holds the owner's privileges on the tenant tables; when the application login is a member of `notrelix_worker`; when the background login is not; or when `ConnectionStrings:NotrelixWorkerDb` is unset. `Warn` logs the same findings and continues. `Off` does not inspect the roles (the OpenAPI export and the owner control hosts of the tests only). The Compose stacks and the container smoke set `Warn` until they are switched to the application and worker logins. |
+| `ConnectionStrings:NotrelixDb` | none (required) | The application login (`notrelix_app`): every request. `--rls-apply` takes this login's password from it. |
+| `ConnectionStrings:NotrelixMigrationDb` | none (required while `Rls:RoleEnforcement` is `Enforce`) | The owner connection used only by `--migrate`, `--rls-apply`, `--seed` and the Development startup migrate/seed. A host that opted out of enforcement (`Warn` or `Off`: the test hosts on one privileged login) falls back to the runtime string and the initialiser logs it. |
+| `ConnectionStrings:NotrelixWorkerDb` | none (required while `Rls:RoleEnforcement` is `Enforce`; the host refuses to start without it) | The background login (`notrelix_worker`) used by the outbox and email dispatchers, the deduplication store, message consumers, sweeps, reapers and job locks. Only a host that opted out of enforcement falls back to the application string. The unbounded worker scope is honoured only on a connection logged in as a member of `notrelix_worker`. `--rls-apply` takes this login's password from it. |
+| `Rls:RoleEnforcement` | `Enforce` | `Enforce` fails startup when either login is a superuser, a BYPASSRLS role, a login that can `RESET ROLE` into one, or holds the owner's privileges on the tenant tables; when the application login is a member of `notrelix_worker`; when the background login is not; or when `ConnectionStrings:NotrelixWorkerDb` is unset. `Warn` logs the same findings and continues. `Off` does not inspect the roles (the OpenAPI export and the owner control hosts of the tests only). Every Compose stack (development, staging, production, real-e2e) and the container smoke run `Enforce`. |
+
+Compose variables behind these strings: `POSTGRES_USER` / `POSTGRES_PASSWORD` are the owner,
+`NOTRELIX_APP_DB_PASSWORD` and `NOTRELIX_WORKER_DB_PASSWORD` the two runtime logins (required by the staging overlay;
+production carries full strings in `CONNECTIONSTRINGS_NOTRELIXDB`, `CONNECTIONSTRINGS_NOTRELIXWORKERDB` and
+`CONNECTIONSTRINGS_NOTRELIXMIGRATIONDB`). Passwords must not contain `;` or `=`. `notrelix_app` and `notrelix_worker`
+are LOGIN roles created idempotently by `--rls-apply` (the user name in each string must be exactly the role name and
+the password in each string is the role's password; the server quotes it and it is never logged) and, on a fresh
+compose-managed volume, by `infra/postgres/init/20-create-runtime-logins.sh`. Rotate by changing the secret and
+running `--rls-apply`.
 
 The owner connection must stay a superuser or BYPASSRLS role: data-migration guards such as the item-key
 backfill refuse to run as a plain non-bypass owner under FORCE ROW LEVEL SECURITY. The serving connection is

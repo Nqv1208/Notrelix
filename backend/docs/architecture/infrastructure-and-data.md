@@ -657,10 +657,11 @@ worker    dispatchers, deduplication, consumers, sweeps, reapers, job locks (not
 ```
 
 `OwnerDbContextProvider` supplies the owner `ApplicationDbContext` to the initialiser and the policy
-applier only (an architecture test restricts who may name it); the serving path never receives it. While
-`NotrelixMigrationDb` is unset the owner context uses the serving string, so a single connection keeps
-working. `RuntimeDatabaseRoleGuard` inspects BOTH serving connections at startup (`Rls:RoleEnforcement`:
-`Off`, `Warn`, `Enforce`; `Enforce` is the default; the Compose stacks run `Warn` until switched to the two logins) and rejects a superuser, BYPASSRLS,
+applier only (an architecture test restricts who may name it); the serving path never receives it.
+`NotrelixMigrationDb` is required while `Rls:RoleEnforcement` is `Enforce` (the default of every environment,
+the Compose stacks and the container smoke included); only a host that opted out with `Warn` or `Off` (test hosts
+on one privileged login) falls back to the serving string. `RuntimeDatabaseRoleGuard` inspects BOTH serving connections at startup (`Rls:RoleEnforcement`:
+`Off`, `Warn`, `Enforce`; `Enforce` is the default) and rejects a superuser, BYPASSRLS,
 an owner-privileged login, or a login that could leave a `SET ROLE` constraint. The application login must
 not be a member of `notrelix_worker`; the background login must be one; and a missing
 `ConnectionStrings:NotrelixWorkerDb` (background work would run as the application login) is refused too.
@@ -679,12 +680,26 @@ their scopes with `IServiceScopeFactory.CreateWorkerAsyncScope()`; every message
 `WorkerPrincipalConsumeFilter`, the first filter of each transport's consume pipeline, so the deduplication
 claim, the consumer's own writes and the commands it dispatches (the first-workspace provisioning command
 included) share one worker-login context and keep their single-transaction atomicity. Switching after the
-connection was resolved throws. While `ConnectionStrings:NotrelixWorkerDb` is unset it falls back to
-`NotrelixDb` (a single-login host with `Rls:RoleEnforcement` `Off`; every enforced host must set it). The worker login is the only connection for which
+connection was resolved throws. `ConnectionStrings:NotrelixWorkerDb` is required while `Rls:RoleEnforcement` is
+`Enforce` (configuration binding refuses the host); only a host that opted out with `Warn` or `Off` falls back to
+`NotrelixDb`. The worker login is the only connection for which
 `ops.is_worker_scope()` is true (see 34B); `ops.job_locks` and every `messaging.*` table have `p_worker_all`
 for it and no policy for the application role. Architecture tests
 (`InternalPrincipalArchitectureTests`) pin that every `BackgroundService` creates worker scopes, that the
 worker filter precedes every other consume filter, and where a system context may be entered.
+
+**Provisioning the two logins.** `notrelix_app` and `notrelix_worker` are LOGIN roles used directly (no
+`SET ROLE`). `001_roles.sql` creates them NOLOGIN so the grants have a target; the owner then makes them logins
+with `RlsLoginRoleProvisioner` at the end of `--rls-apply` (and of the Development startup policy application):
+`ALTER ROLE ... LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS PASSWORD ...`, re-asserted on
+every run, and any worker membership of the application login is revoked. The password is the one inside the
+login's own connection string (`NotrelixDb` must name `notrelix_app`, `NotrelixWorkerDb` must name
+`notrelix_worker`, both with a password), so the secret that opens the connection is the single source of the role's
+password and rotating it is a secret change plus an `--rls-apply`. The server quotes the password
+(`format('%L')`); it is never logged. On a fresh compose-managed data directory the init script
+`infra/postgres/init/20-create-runtime-logins.sh` creates the same roles from `NOTRELIX_APP_DB_PASSWORD` and
+`NOTRELIX_WORKER_DB_PASSWORD` (init scripts run only on an empty volume; existing volumes and external databases
+rely on `--rls-apply`).
 
 ---
 

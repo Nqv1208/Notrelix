@@ -100,8 +100,9 @@ choice constrains every future anonymous endpoint and internal table.
    - **`notrelix_app`**: the serving role for requests. Not the owner, not superuser, no `BYPASSRLS`.
    - **`notrelix_worker`**: the role of the outbox and email dispatchers, the deduplication store,
      message consumers (including the first-workspace provisioning consumer), sweeps, reapers and job
-     locks, on a second connection (`ConnectionStrings:NotrelixWorkerDb`, falling back to
-     `ConnectionStrings:NotrelixDb` while unset so single-login development and test hosts keep working).
+     locks, on a second connection (`ConnectionStrings:NotrelixWorkerDb`, required while
+     `Rls:RoleEnforcement` is `Enforce`; only a host that opted out of enforcement falls back to
+     `ConnectionStrings:NotrelixDb`).
      A dependency-injection scope chooses its principal before its first database use
      (`DatabasePrincipal`): background loops create their scopes with `CreateWorkerAsyncScope()`, and the
      first consume filter of every message pipeline (`WorkerPrincipalConsumeFilter`) switches the consume
@@ -427,3 +428,28 @@ refinements that the fleet made necessary or made visible.
 - **Test fleet.** Hosts and pipelines under test run on the application login and background work on the
   worker login; the owner migrates, applies the pack, seeds, resets and verifies
   (`IntegrationFleetRoleBoundaryTests` keeps this from eroding).
+
+## Amendment 2026-10-25 (environments)
+
+Every environment now runs on the target model; nothing remains on the single privileged login.
+
+- **Provisioning.** `RlsLoginRoleProvisioner` makes `notrelix_app` and `notrelix_worker` LOGIN roles
+  (no superuser, createdb, createrole, replication or `BYPASSRLS`) at the end of `--rls-apply` and of the
+  Development startup policy application, taking each password from the login's own connection string
+  (`NotrelixDb` / `NotrelixWorkerDb`, user name must equal the role), re-asserting it on every run and revoking any
+  worker membership from the application login. The fresh-volume init script
+  `infra/postgres/init/20-create-runtime-logins.sh` creates the same roles from `NOTRELIX_APP_DB_PASSWORD` and
+  `NOTRELIX_WORKER_DB_PASSWORD`. Evidence: `LoginRoleProvisioningTests`, `RlsLoginRoleProvisionerTests`.
+- **Environments.** The development, staging, production and real-e2e Compose stacks, the container smoke
+  (which migrates and applies the pack in the image, then serves on the two logins) and the stack smoke use
+  `notrelix_app` for the API, `notrelix_worker` for background work and the owner for migrate, seed and rls-apply, with
+  `Rls:RoleEnforcement=Enforce`. `scripts/ci/validate-infra.py` and `deliveryctl architecture-check` pin this.
+- **Fallbacks removed.** The worker-to-application and owner-to-application connection fallbacks now exist only for
+  hosts that explicitly opt out of enforcement (`Warn` or `Off`: the in-process test hosts and the OpenAPI export,
+  which run on one privileged login or no database); under `Enforce` configuration binding refuses a host without
+  the worker or owner string.
+- **`notifications.notification_items`** is readable by the application login only through the caller's own recipient
+  row (`recipient_user_id = ops.current_user_id()`); the workspace-wide fallback branch is gone. No Application
+  read of notification items exists (the only readers are the worker-login mention consumer and the owner seed
+  and reset), so no read semantics changed. Evidence: `NotificationItems_AreReadableOnlyByTheirRecipient_NotByACoMemberOfTheSameWorkspace`
+  and `NotificationItems_CoMemberInTheSameWorkspace_CannotReadAnotherPersonsItems`.

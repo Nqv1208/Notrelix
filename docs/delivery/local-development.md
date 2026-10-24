@@ -464,6 +464,15 @@ make db-rls
 make db-psql
 ```
 
+The development stack connects as three logins: the API serves requests as `notrelix_app`, background work runs as
+`notrelix_worker`, and `make db-migrate`, `make db-seed`, `make db-init` and `make db-rls` run as the database owner
+(`POSTGRES_USER`) through `ConnectionStrings__NotrelixMigrationDb`. The passwords of the two runtime logins are
+`NOTRELIX_APP_DB_PASSWORD` and `NOTRELIX_WORKER_DB_PASSWORD` (compose defaults for local use; override them in
+`.env.dev`; values must not contain `;` or `=`). A fresh volume creates the logins from
+`infra/postgres/init`; the Development startup (`Rls__ApplyPoliciesOnStartup`) and `make db-rls` provision them on
+an existing volume, so no volume reset is needed after pulling this change. The API runs with
+`Rls__RoleEnforcement=Enforce` and does not start when a login is privileged or missing.
+
 # 43. DEL-DEV-017 — Local schema changes use migrations
 
 For intended persistence change:
