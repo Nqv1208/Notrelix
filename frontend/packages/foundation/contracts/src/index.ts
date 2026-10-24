@@ -1,5 +1,6 @@
 export {
   createNotrelixClient,
+  resolveApiAssetUrl,
   type ApiRequestOptions,
   type ApiUploadOptions,
   type UploadProgress,

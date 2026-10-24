@@ -28,6 +28,15 @@ export const endpoints = {
     updateProfile: "/profile",
     // Identity.Profile.GetPreferences / UpdatePreferences.
     preferences: "/profile/preferences",
+    // Identity.Profile.UploadAvatar (PUT, multipart part `file`) / RemoveAvatar (DELETE).
+    avatar: "/profile/avatar",
+  },
+  account: {
+    // Workspaces.Members.ListMyWorkspaces / SetDefaultWorkspace / LeaveWorkspace.
+    workspaces: "/account/workspaces",
+    defaultWorkspace: "/account/default-workspace",
+    leaveWorkspace: (workspaceId: string) =>
+      `/account/workspaces/${encodeURIComponent(workspaceId)}`,
   },
   workspaces: {
     list: "/workspaces",

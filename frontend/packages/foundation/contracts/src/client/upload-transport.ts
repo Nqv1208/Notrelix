@@ -19,6 +19,8 @@ export interface RawUploadResponse {
 
 export interface UploadTransportRequest {
   readonly url: string;
+  /** `POST` unless the operation replaces a resource (`PUT`). */
+  readonly method: "POST" | "PUT";
   readonly form: FormData;
   /** No Content-Type: the transport sets the multipart boundary itself. */
   readonly headers: Readonly<Record<string, string>>;
@@ -48,7 +50,7 @@ export function createXhrUploadTransport(
         return;
       }
       const xhr = createXhr();
-      xhr.open("POST", request.url);
+      xhr.open(request.method, request.url);
       xhr.withCredentials = true;
       for (const [name, value] of Object.entries(request.headers)) {
         xhr.setRequestHeader(name, value);
@@ -83,7 +85,7 @@ export function createFetchUploadTransport(
 ): UploadTransport {
   return async (request) => {
     const init: RequestInit = {
-      method: "POST",
+      method: request.method,
       body: request.form,
       headers: { ...request.headers },
       credentials: "include",

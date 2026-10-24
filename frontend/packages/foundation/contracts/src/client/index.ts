@@ -7,6 +7,7 @@ export {
   type NotrelixClientConfig,
   type SessionExpiredEvent,
 } from "./api-client";
+export { configureApiAssetOrigin, resolveApiAssetUrl } from "./asset-url";
 export {
   createCsrfProvider,
   CSRF_HEADER,
