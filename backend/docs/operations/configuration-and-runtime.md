@@ -293,6 +293,21 @@ only when the environment is `Production`. The staging Compose overlay in this r
 HTTP behind its own nginx (default origins `http://localhost`), so staging cookies are intentionally not
 `Secure`; if staging is published over HTTPS the cookie condition must be changed in the same step.
 
+Database connections and the serving role (`ConnectionStrings`, `Rls:RoleEnforcement`):
+
+| Key | Default | Meaning |
+|---|---|---|
+| `ConnectionStrings:NotrelixDb` | none (required) | The runtime connection: every request, background job and consumer. |
+| `ConnectionStrings:NotrelixMigrationDb` | unset | The owner connection used only by `--migrate`, `--rls-apply`, `--seed` and the Development startup migrate/seed. While unset, the runtime string is used for both (today's single-connection behavior); the initialiser logs that fallback. |
+| `Rls:RoleEnforcement` | `Off` | `Off` does not inspect the runtime role. `Warn` logs a warning at startup when the runtime connection is a superuser, a BYPASSRLS role, a login that can `RESET ROLE` into one, or holds the owner's privileges on the tenant tables. `Enforce` fails startup in the same cases. |
+
+The owner connection must stay a superuser or BYPASSRLS role: data-migration guards such as the item-key
+backfill refuse to run as a plain non-bypass owner under FORCE ROW LEVEL SECURITY. The serving connection is
+meant to be the non-owner `notrelix_app` login. The guard (`RuntimeDatabaseRoleGuard`, a hosted service
+registered before the background workers) does not run in the command modes, which use the owner
+connection. No environment sets `Enforce` yet; the key defaults to `Off` until the environments are switched
+to the application login.
+
 These values are current executable evidence.
 
 They are not timeless architecture constants.

@@ -30,6 +30,13 @@ namespace Notrelix.Infrastructure;
 /// </summary>
 public static class PersistenceRegistration
 {
+    internal static void ConfigureNpgsql(DbContextOptionsBuilder options, string? connectionString) =>
+        options.UseNpgsql(connectionString, npg =>
+        {
+            npg.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
+            npg.MigrationsHistoryTable("__EFMigrationsHistory", DbSchemas.Ops);
+        }).UseSnakeCaseNamingConvention();
+
     public static IServiceCollection AddPersistence(
         this IServiceCollection services, IConfiguration configuration)
     {
@@ -60,12 +67,15 @@ public static class PersistenceRegistration
         {
             options.AddInterceptors(sp.GetRequiredService<AuditableEntityInterceptor>());
             options.AddInterceptors(sp.GetRequiredService<DomainEventInterceptor>());
-            options.UseNpgsql(connectionString, npg =>
-            {
-                npg.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
-                npg.MigrationsHistoryTable("__EFMigrationsHistory", DbSchemas.Ops);
-            }).UseSnakeCaseNamingConvention();
+            ConfigureNpgsql(options, connectionString);
         });
+
+        // Owner connection (migrate, rls-apply, seed). Falls back to the runtime connection string
+        // while ConnectionStrings:NotrelixMigrationDb is unset.
+        services.AddScoped<OwnerDbContextProvider>();
+
+        // Refuses (or warns about) a serving connection that row-level security cannot constrain.
+        services.AddHostedService<RuntimeDatabaseRoleGuard>();
 
         // Provider-independent data session (transaction/RLS/SaveChanges mechanics)
         services.AddScoped<IRequestDataSession, EfRequestDataSession>();
@@ -157,8 +167,11 @@ public static class PersistenceRegistration
         services.AddScoped<IActorLookupService, ActorLookupService>();
         services.AddScoped<IMemberPhoneLookup, MemberPhoneLookup>();
         services.AddScoped<Notrelix.Application.Features.Governance.Abstractions.IResourceAccessChangeReader, Notrelix.Infrastructure.Data.Authz.EfResourceAccessChangeReader>();
-        services.AddScoped<ApplicationDbContextInitialiser>();
-        services.AddScoped<RlsPolicyApplier>();
+        services.AddScoped(sp => ActivatorUtilities.CreateInstance<ApplicationDbContextInitialiser>(
+            sp, sp.GetRequiredService<OwnerDbContextProvider>().Context));
+        services.AddScoped(sp => new RlsPolicyApplier(
+            sp.GetRequiredService<OwnerDbContextProvider>().Context,
+            sp.GetRequiredService<ILogger<RlsPolicyApplier>>()));
         services.AddScoped<RlsSessionContext>();
         services.AddScoped<IRlsSessionContext>(sp => sp.GetRequiredService<RlsSessionContext>());
 

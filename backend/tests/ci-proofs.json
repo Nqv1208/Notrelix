@@ -18,11 +18,14 @@
       "backend.architecture.application-transport",
       "backend.architecture.integration-event-ownership",
       "backend.architecture.common-entitlements",
-      "backend.architecture.feature-structure"
+      "backend.architecture.feature-structure",
+      "backend.architecture.owner-connection-boundary"
     ],
     "core": [
       "backend.data.rls-policy",
-      "backend.data.domain-event-interceptor"
+      "backend.data.domain-event-interceptor",
+      "backend.data.runtime-role-guard",
+      "backend.data.owner-connection"
     ],
     "platform": [
       "backend.messaging.ordering",
@@ -48,7 +51,9 @@
       "backend.integration.production-composition",
       "backend.integration.production-graph",
       "backend.messaging.realtime-resource-changed",
-      "backend.rls.app-role-conformance"
+      "backend.rls.app-role-conformance",
+      "backend.rls.runtime-role-guard",
+      "backend.rls.owner-connection-split"
     ]
   },
   "proofs": {
@@ -242,9 +247,34 @@
         "Notrelix.Integration.Tests.Messaging.RealtimeResourceChangedConsumerIntegrationTests"
       ]
     },
+    "backend.architecture.owner-connection-boundary": {
+      "tests": [
+        "Notrelix.Architecture.Tests.OwnerConnectionBoundaryTests"
+      ]
+    },
+    "backend.data.runtime-role-guard": {
+      "tests": [
+        "Notrelix.Infrastructure.Tests.Data.RuntimeDatabaseRoleGuardTests"
+      ]
+    },
+    "backend.data.owner-connection": {
+      "tests": [
+        "Notrelix.Infrastructure.Tests.Data.OwnerDbContextProviderTests"
+      ]
+    },
     "backend.rls.app-role-conformance": {
       "tests": [
         "Notrelix.Integration.Tests.Rls.AppRoleConformanceTests"
+      ]
+    },
+    "backend.rls.runtime-role-guard": {
+      "tests": [
+        "Notrelix.Integration.Tests.Rls.RuntimeDatabaseRoleGuardIntegrationTests"
+      ]
+    },
+    "backend.rls.owner-connection-split": {
+      "tests": [
+        "Notrelix.Integration.Tests.Rls.OwnerConnectionSplitIntegrationTests"
       ]
     }
   }

@@ -644,6 +644,27 @@ EF query filters and PostgreSQL RLS are separate controls.
 
 ---
 
+# 34A. Owner and serving database connections
+
+Two identities exist on purpose:
+
+```text
+owner     migrations, --rls-apply, seed        ConnectionStrings:NotrelixMigrationDb
+serving   requests, jobs, consumers            ConnectionStrings:NotrelixDb
+```
+
+`OwnerDbContextProvider` supplies the owner `ApplicationDbContext` to the initialiser and the policy
+applier only (an architecture test restricts who may name it); the serving path never receives it. While
+`NotrelixMigrationDb` is unset the owner context uses the serving string, so a single connection keeps
+working. `RuntimeDatabaseRoleGuard` inspects the serving connection at startup (`Rls:RoleEnforcement`:
+`Off`, `Warn`, `Enforce`) and rejects a superuser, BYPASSRLS, an owner-privileged login, or a login that
+could leave a `SET ROLE` constraint. RLS only constrains the serving path when it connects as the
+non-owner application role; until an environment does, its policies are not exercised there.
+`PostgresTestContainer`/`AppRoleTestContainer` provide the application-role database for the conformance
+suite (`Notrelix.Integration.Tests.Rls`), which records the flows that currently fail under that role.
+
+---
+
 # 35. Same physical connection
 
 ADR-002 relies on the same scoped DbContext/physical connection lifecycle between bootstrap and later full request scope.
