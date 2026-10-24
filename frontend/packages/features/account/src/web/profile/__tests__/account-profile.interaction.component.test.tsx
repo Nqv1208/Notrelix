@@ -82,7 +82,7 @@ describe("AccountProfileSurface", () => {
       const copy = profileCopyFixture(locale);
       const { view } = renderProfile(profileDefaultScenario(locale));
       const phone = screen.getByLabelText(copy.phoneLabel);
-      fireEvent.change(phone, { target: { value: "0988 000 111" } });
+      fireEvent.change(phone, { target: { value: "+84 988 000 111" } });
       const bar = screen.getByRole("region", { name: copy.unsavedRegion });
       expect(bar.textContent).toContain(copy.unsaved.one);
       expect(bar.textContent).toContain(copy.phoneLabel);
@@ -95,8 +95,8 @@ describe("AccountProfileSurface", () => {
         screen.getByRole("region", { name: copy.unsavedRegion }).textContent,
       ).toContain(copy.unsaved.other.replace("{{count}}", "2"));
 
-      // Back to the saved values (trailing space ignored): nothing to save.
-      fireEvent.change(phone, { target: { value: "0912 468 135 " } });
+      // Back to the saved number, typed with spaces: spacing is not a change.
+      fireEvent.change(phone, { target: { value: "+84 912 468 135 " } });
       fireEvent.change(screen.getByLabelText(copy.jobTitleLabel), {
         target: { value: "Implementation lead" },
       });
@@ -127,7 +127,7 @@ describe("AccountProfileSurface", () => {
       expect(props.onSave).toHaveBeenCalledWith({
         name: "Ada King",
         jobTitle: "Implementation lead",
-        phone: "0912 468 135",
+        phone: "+84912468135",
         timezone: "Asia/Tokyo",
         dateFormat: "yyyy-mm-dd",
       });
@@ -173,6 +173,42 @@ describe("AccountProfileSurface", () => {
       expect(screen.getByText(copy.phoneInvalid)).toBeTruthy();
       fireEvent.submit(name.closest("form") as HTMLFormElement);
       expect(props.onSave).not.toHaveBeenCalled();
+      view.unmount();
+    }
+  });
+
+  it("FUI[account.profile:phone] sends the phone as E.164 and asks for the country code on a national number", () => {
+    for (const locale of LOCALES) {
+      const copy = profileCopyFixture(locale);
+      const { props, view } = renderProfile(profileDefaultScenario(locale));
+      const phone = screen.getByLabelText(copy.phoneLabel);
+      const form = phone.closest("form") as HTMLFormElement;
+
+      // A national number is not guessed into a region.
+      fireEvent.change(phone, { target: { value: "0988 000 111" } });
+      expect(screen.getByText(copy.phoneCountryCode)).toBeTruthy();
+      expect(phone.getAttribute("aria-invalid")).toBe("true");
+      expect(
+        (screen.getByRole("button", { name: copy.save }) as HTMLButtonElement)
+          .disabled,
+      ).toBe(true);
+      fireEvent.submit(form);
+      expect(props.onSave).not.toHaveBeenCalled();
+
+      // Spacing, hyphens and brackets are tidied away before the send.
+      fireEvent.change(phone, { target: { value: "+84 (988) 000-111" } });
+      expect(screen.queryByText(copy.phoneCountryCode)).toBeNull();
+      fireEvent.click(screen.getByRole("button", { name: copy.save }));
+      expect(props.onSave).toHaveBeenCalledWith(
+        expect.objectContaining({ phone: "+84988000111" }),
+      );
+
+      // Emptying the field clears the phone.
+      fireEvent.change(phone, { target: { value: "  " } });
+      fireEvent.click(screen.getByRole("button", { name: copy.save }));
+      expect(props.onSave).toHaveBeenLastCalledWith(
+        expect.objectContaining({ phone: "" }),
+      );
       view.unmount();
     }
   });

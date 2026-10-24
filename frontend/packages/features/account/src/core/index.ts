@@ -38,3 +38,11 @@ export {
   type AccountEndpoints,
   type AccountService,
 } from "./api/account.service";
+
+export {
+  PHONE_MAX_DIGITS,
+  PHONE_MIN_DIGITS,
+  checkPhone,
+  phoneForSave,
+  type PhoneCheck,
+} from "./phone";

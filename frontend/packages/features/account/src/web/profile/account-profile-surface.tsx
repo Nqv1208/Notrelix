@@ -19,6 +19,7 @@ import {
   type AccountSaveStatus,
   type AccountSection,
 } from "../shared/account-surface-model";
+import { checkPhone, phoneForSave } from "../../core/phone";
 import type { AccountPhotoFailure } from "../../core/types/account";
 import type { AccountProfileCopy } from "./account-profile.copy";
 
@@ -59,7 +60,6 @@ export interface AccountProfileSurfaceProps {
 
 const TIMEZONES = ["UTC", "Asia/Ho_Chi_Minh", "Asia/Tokyo", "Europe/Paris"];
 const DATE_FORMATS = ["dd/mm/yyyy", "yyyy-mm-dd"];
-const PHONE = /^[0-9 +().-]{0,20}$/;
 
 function lookup(labels: Readonly<Record<string, string>>, id: string): string {
   return labels[id] ?? id;
@@ -160,6 +160,7 @@ function ProfileBody({
     dateFormat: React.useId(),
     nameError: React.useId(),
     phoneError: React.useId(),
+    phoneHelp: React.useId(),
   };
   const fileInput = React.useRef<HTMLInputElement>(null);
 
@@ -184,8 +185,13 @@ function ProfileBody({
     "timezone",
     "dateFormat",
   ];
+  // The phone compares as the number it stands for: spacing is not a change.
   const norm = (key: FieldKey, from: AccountProfileValues) =>
-    key === "timezone" || key === "dateFormat" ? from[key] : from[key].trim();
+    key === "timezone" || key === "dateFormat"
+      ? from[key]
+      : key === "phone"
+        ? (phoneForSave(from.phone) ?? from.phone.trim())
+        : from[key].trim();
   const changed = FIELD_ORDER.filter(
     (key) => norm(key, values) !== norm(key, data),
   );
@@ -197,7 +203,13 @@ function ProfileBody({
     dateFormat: copy.dateFormatLabel,
   };
   const nameError = values.name.trim() === "" ? copy.nameRequired : null;
-  const phoneError = PHONE.test(values.phone) ? null : copy.phoneInvalid;
+  const phoneCheck = checkPhone(values.phone);
+  const phoneError =
+    phoneCheck.kind !== "invalid"
+      ? null
+      : phoneCheck.reason === "country-code"
+        ? copy.phoneCountryCode
+        : copy.phoneInvalid;
   const saving = save.state === "saving";
   const dirty = changed.length > 0;
   const isEdited = (key: FieldKey) => changed.includes(key);
@@ -209,7 +221,8 @@ function ProfileBody({
     onSave({
       name: values.name.trim(),
       jobTitle: values.jobTitle.trim(),
-      phone: values.phone.trim(),
+      // Valid here: an invalid number blocks the save above.
+      phone: phoneForSave(values.phone) ?? "",
       timezone: values.timezone,
       dateFormat: values.dateFormat,
     });
@@ -392,20 +405,23 @@ function ProfileBody({
           edited={isEdited("phone")}
           editedText={copy.edited}
           editedId={`${ids.phone}-edited`}
+          hint={copy.phoneHelp}
+          hintId={ids.phoneHelp}
         >
           <input
             id={ids.phone}
             type="tel"
+            inputMode="tel"
             autoComplete="tel"
+            placeholder={copy.phonePlaceholder}
             value={values.phone}
             disabled={saving}
             aria-invalid={phoneError ? true : undefined}
-            aria-describedby={
-              cn(
-                phoneError && ids.phoneError,
-                isEdited("phone") && `${ids.phone}-edited`,
-              ) || undefined
-            }
+            aria-describedby={cn(
+              phoneError && ids.phoneError,
+              ids.phoneHelp,
+              isEdited("phone") && `${ids.phone}-edited`,
+            )}
             onChange={(event) => set("phone", event.target.value)}
             className={cn(INPUT, editedClass("phone"))}
           />

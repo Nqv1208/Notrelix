@@ -29,7 +29,13 @@ export const en = {
     "Managed by {{workspace}} through {{provider}}. It can't be changed here.",
   emailHelp: "Contact support to change your email.",
   phoneLabel: "Phone number",
-  phoneInvalid: "Enter a phone number, or leave it empty.",
+  phonePlaceholder: "+84 912 345 678",
+  phoneHelp:
+    "Start with the country code, for example +84 for Vietnam. Spaces and dashes are fine.",
+  phoneCountryCode:
+    "Start the number with its country code, for example +84 912 345 678.",
+  phoneInvalid:
+    "That doesn't look like a phone number. Use a + and 8 to 15 digits, or leave it empty.",
   timezoneLabel: "Time zone",
   timezoneHelp: "Due dates and quiet hours follow this time zone.",
   dateFormatLabel: "Date format",
@@ -83,7 +89,12 @@ export const vi: AccountProfileCopy = {
     "Do {{workspace}} quản lý qua {{provider}}. Không đổi được ở đây.",
   emailHelp: "Liên hệ bộ phận hỗ trợ để đổi địa chỉ email.",
   phoneLabel: "Số điện thoại",
-  phoneInvalid: "Hãy nhập số điện thoại, hoặc để trống.",
+  phonePlaceholder: "+84 912 345 678",
+  phoneHelp:
+    "Bắt đầu bằng mã quốc gia, ví dụ +84 cho Việt Nam. Có thể dùng dấu cách và dấu gạch ngang.",
+  phoneCountryCode: "Hãy bắt đầu số bằng mã quốc gia, ví dụ +84 912 345 678.",
+  phoneInvalid:
+    "Số này chưa đúng dạng số điện thoại. Hãy dùng dấu + và từ 8 đến 15 chữ số, hoặc để trống.",
   timezoneLabel: "Múi giờ",
   timezoneHelp: "Hạn việc và giờ yên lặng tính theo múi giờ này.",
   dateFormatLabel: "Định dạng ngày",
