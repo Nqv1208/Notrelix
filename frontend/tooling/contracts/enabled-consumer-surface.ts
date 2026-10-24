@@ -279,18 +279,6 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
   },
   {
     context: "Identity",
-    capability: "endpoints.auth.login",
-    consumerSymbol: "TODO",
-    consumerFile:
-      "frontend/packages/features/auth/src/core/api/auth.service.ts",
-    classification: "COMPATIBILITY_GAP_MOCKED",
-    gapId: "CTR-GAP-TODO",
-    method: "POST",
-    pathTemplate: "endpoints.auth.login",
-    mutation: true,
-  },
-  {
-    context: "Identity",
     capability: "endpoints.auth.register",
     consumerSymbol: "TODO",
     consumerFile:
@@ -1186,14 +1174,12 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
   },
   {
     context: "Identity",
-    classification: "COMPATIBILITY_GAP_MOCKED",
+    classification: "CANONICAL_MOCKED",
     consumerSymbol: "createAuthFlowService",
     consumerFile:
       "frontend/packages/features/auth/src/core/api/auth-flow.service.ts",
-    capability: "Which way an email signs in (password or company provider)",
-    gapId: "CTR-GAP-AUTH-FLOW",
-    method: "POST",
-    pathTemplate: "/auth/identify",
+    capability: "Identity.Auth.IdentifySignIn",
+    operationId: "Identity.Auth.IdentifySignIn",
     mutation: true,
   },
   {
@@ -1218,50 +1204,52 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
   },
   {
     context: "Identity",
-    classification: "COMPATIBILITY_GAP_MOCKED",
+    classification: "CANONICAL_MOCKED",
     consumerSymbol: "createAuthFlowService",
     consumerFile:
       "frontend/packages/features/auth/src/core/api/auth-flow.service.ts",
-    capability: "Sign in through Google, Microsoft or the company provider",
-    gapId: "CTR-GAP-AUTH-FLOW",
-    method: "POST",
-    pathTemplate: "/auth/sso/start",
-    mutation: true,
-  },
-  {
-    context: "Identity",
-    classification: "COMPATIBILITY_GAP_MOCKED",
-    consumerSymbol: "createAuthFlowService",
-    consumerFile:
-      "frontend/packages/features/auth/src/core/api/auth-flow.service.ts",
-    capability: "Read a guest invitation before accepting it",
-    gapId: "CTR-GAP-AUTH-FLOW",
-    method: "GET",
-    pathTemplate: "/invites/{token}",
+    capability: "Identity.Auth.OAuth.Start",
+    operationId: "Identity.Auth.OAuth.Start",
     mutation: false,
   },
   {
-    context: "Identity",
-    classification: "COMPATIBILITY_GAP_MOCKED",
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
     consumerSymbol: "createAuthFlowService",
     consumerFile:
       "frontend/packages/features/auth/src/core/api/auth-flow.service.ts",
-    capability: "Accept a guest invitation and create the account",
-    gapId: "CTR-GAP-AUTH-FLOW",
-    method: "POST",
-    pathTemplate: "/invites/{token}/accept",
+    capability: "Workspaces.Invitations.GetInvitationByToken",
+    operationId: "Workspaces.Invitations.GetInvitationByToken",
     mutation: true,
   },
   {
-    context: "Identity",
-    classification: "COMPATIBILITY_GAP_MOCKED",
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
     consumerSymbol: "createAuthFlowService",
     consumerFile:
       "frontend/packages/features/auth/src/core/api/auth-flow.service.ts",
-    capability: "Decline a guest invitation",
-    gapId: "CTR-GAP-AUTH-FLOW",
-    method: "POST",
-    pathTemplate: "/invites/{token}/decline",
+    capability: "Workspaces.Invitations.AcceptInvitationWithRegistration",
+    operationId: "Workspaces.Invitations.AcceptInvitationWithRegistration",
+    mutation: true,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAuthFlowService",
+    consumerFile:
+      "frontend/packages/features/auth/src/core/api/auth-flow.service.ts",
+    capability: "Workspaces.Invitations.AcceptInvitation",
+    operationId: "Workspaces.Invitations.AcceptInvitation",
+    mutation: true,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAuthFlowService",
+    consumerFile:
+      "frontend/packages/features/auth/src/core/api/auth-flow.service.ts",
+    capability: "Workspaces.Invitations.DeclineInvitationByToken",
+    operationId: "Workspaces.Invitations.DeclineInvitationByToken",
     mutation: true,
   },
   {

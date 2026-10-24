@@ -1,10 +1,10 @@
 import type { User } from "../types/auth";
 
 /**
- * The calls behind the sign-in pages that go past the plain login (gap
- * `CTR-GAP-AUTH-FLOW`, see docs/superpowers/be-blockers-2026-10.md, "BE
- * requirement from FE: Auth"): which way an email signs in, the second step,
- * the company or Google/Microsoft round trip, the guest invitation.
+ * The calls behind the sign-in pages that go past the plain login: which way
+ * an email signs in, the second step, the Google/Microsoft round trip, the
+ * guest invitation. The backend answers are read into the pages' models in
+ * this one file; the pages never see a wire shape.
  */
 export interface AuthFlowRequestOptions {
   skipAuthRefresh?: boolean;
@@ -24,10 +24,26 @@ export const AUTH_FLOW_PATHS = {
   identify: "/auth/identify",
   login: "/auth/login",
   mfaVerify: "/auth/mfa/verify",
-  ssoStart: "/auth/sso/start",
+  /** The browser is sent here (a redirect), never called with XHR. */
+  oauthStart: (provider: string) =>
+    `/auth/oauth/${encodeURIComponent(provider)}/start`,
   forgotPassword: "/auth/forgot-password",
-  invite: (token: string) => `/invites/${encodeURIComponent(token)}`,
+  invitationPreview: "/invitations/preview",
+  invitationDecline: "/invitations/decline",
+  invitationAcceptWithRegistration: "/invitations/accept-with-registration",
+  invitationAccept: "/invitations/accept",
 } as const;
+
+/** `Identity.Auth.IdentifySignIn`: `SignInMethodDto`. */
+interface IdentifyWire {
+  readonly method?: string | null;
+  readonly sso?: {
+    readonly orgName?: string | null;
+    readonly orgInitials?: string | null;
+    readonly provider?: string | null;
+    readonly providerLabel?: string | null;
+  } | null;
+}
 
 /** How an email signs in: with a password, or through its company's provider. */
 export interface IdentifyResult {
@@ -115,15 +131,100 @@ export interface InvitePreview {
   readonly expiresOn: string | null;
   /** The invited email; withheld when the invitation cannot be used. */
   readonly email: string | null;
+  /** The invitation carries no name: the guest types their own. */
   readonly name: string | null;
   /** The email already has a Notrelix account. */
   readonly hasAccount: boolean;
 }
 
 export interface InviteAcceptResult {
-  /** Where the guest lands: the board they were invited to. */
+  /** Where the guest lands: the board they were invited to, else the workspace. */
   readonly redirectTo: string;
+  /** A second press of the link: no session was issued, the guest signs in. */
   readonly alreadyAccepted: boolean;
+  /** The session the registration opened; null when none was. */
+  readonly session: SessionResult | null;
+}
+
+/** `Workspaces.Invitations.GetInvitationByToken`: `InvitationPreviewDto`. */
+interface InvitationPreviewWire {
+  readonly state?: string | null;
+  readonly inviterName?: string | null;
+  readonly workspaceName?: string | null;
+  readonly role?: string | null;
+  readonly resourceKind?: string | null;
+  readonly resourceTitle?: string | null;
+  readonly resourceLevel?: string | null;
+  readonly expiresOn?: string | null;
+  readonly email?: string | null;
+  readonly hasAccount?: boolean;
+}
+
+/** `AcceptInvitationWithRegistrationResponse`. */
+interface AcceptWithRegistrationWire {
+  readonly workspaceId?: string;
+  readonly resourceKind?: string | null;
+  readonly resourceId?: string | null;
+  readonly alreadyAccepted?: boolean;
+  readonly expiresAt?: string | null;
+  readonly user?: AuthSessionWire["user"] & { emailConfirmed?: boolean };
+}
+
+/** `AcceptInvitationResultDto`. */
+interface AcceptInvitationWire {
+  readonly workspaceId?: string;
+  readonly resourceKind?: string | null;
+  readonly resourceId?: string | null;
+}
+
+const BOARD_KIND = "work-management.board";
+
+function initialsOf(name: string): string {
+  const letters = name
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => Array.from(word)[0]?.toUpperCase() ?? "");
+  return letters.length <= 2
+    ? letters.join("")
+    : `${letters[0]}${letters[letters.length - 1]}`;
+}
+
+function levelOf(wire: string | null | undefined): InvitePreview["level"] {
+  const level = wire?.toLowerCase();
+  return level === "editor" || level === "commenter" ? level : "viewer";
+}
+
+/** The one place the invitation preview is read into the page's model. */
+export function toInvitePreview(wire: InvitationPreviewWire): InvitePreview {
+  const state =
+    wire.state === "expired" || wire.state === "used" ? wire.state : "valid";
+  const workspaceName = wire.workspaceName ?? "";
+  const inviterName = wire.inviterName ?? "";
+  return {
+    state,
+    inviterName,
+    inviterInitials: initialsOf(inviterName),
+    orgName: workspaceName,
+    boardTitle: wire.resourceTitle ?? workspaceName,
+    level: levelOf(wire.resourceLevel),
+    expiresOn: wire.expiresOn ?? null,
+    email: wire.email ?? null,
+    name: null,
+    hasAccount: wire.hasAccount ?? false,
+  };
+}
+
+/** The board the guest was invited to, else the workspace the invitation is in. */
+function landingOf(wire: {
+  workspaceId?: string;
+  resourceKind?: string | null;
+  resourceId?: string | null;
+}): string {
+  const workspace = `/workspaces/${encodeURIComponent(wire.workspaceId ?? "")}`;
+  return wire.resourceKind === BOARD_KIND && wire.resourceId
+    ? `${workspace}/boards/${encodeURIComponent(wire.resourceId)}`
+    : workspace;
 }
 
 const QUIET: AuthFlowRequestOptions = {
@@ -133,12 +234,24 @@ const QUIET: AuthFlowRequestOptions = {
 
 export function createAuthFlowService(api: AuthFlowApiClient) {
   return {
-    identify(email: string) {
-      return api.post<IdentifyResult>(
+    async identify(email: string): Promise<IdentifyResult> {
+      const wire = await api.post<IdentifyWire>(
         AUTH_FLOW_PATHS.identify,
         { email },
         QUIET,
       );
+      const sso = wire.sso;
+      return wire.method === "sso" && sso
+        ? {
+            method: "sso",
+            sso: {
+              orgName: sso.orgName ?? "",
+              orgInitials: sso.orgInitials ?? "",
+              provider: sso.provider ?? "",
+              providerLabel: sso.providerLabel ?? "",
+            },
+          }
+        : { method: "password", sso: null };
     },
     async login(data: { email: string; password: string }) {
       return toLoginResult(
@@ -151,31 +264,69 @@ export function createAuthFlowService(api: AuthFlowApiClient) {
         await api.post<AuthSessionWire>(AUTH_FLOW_PATHS.mfaVerify, data, QUIET),
       );
     },
-    /** Starts the round trip to Google, Microsoft or the company provider. */
-    ssoStart(data: { email?: string; provider: string }) {
-      return api.post<SessionResult & { redirectUrl: string | null }>(
-        AUTH_FLOW_PATHS.ssoStart,
-        data,
-        QUIET,
-      );
+    /**
+     * Where the browser goes to sign in with Google or Microsoft (path under
+     * the API base). The provider's page and the way back are the backend's:
+     * it sets the session cookies and redirects to the web `/auth/callback`,
+     * or to `/sign-in?error=<code>`.
+     */
+    oauthStartPath(provider: string, returnUrl?: string | null): string {
+      const path = AUTH_FLOW_PATHS.oauthStart(provider);
+      return returnUrl
+        ? `${path}?returnUrl=${encodeURIComponent(returnUrl)}`
+        : path;
     },
     forgotPassword(email: string) {
       return api.post<void>(AUTH_FLOW_PATHS.forgotPassword, { email }, QUIET);
     },
-    getInvite(token: string) {
-      return api.get<InvitePreview>(AUTH_FLOW_PATHS.invite(token), QUIET);
+    /** A token the server does not know answers 404. */
+    async getInvite(token: string) {
+      return toInvitePreview(
+        await api.post<InvitationPreviewWire>(
+          AUTH_FLOW_PATHS.invitationPreview,
+          { token },
+          QUIET,
+        ),
+      );
     },
-    acceptInvite(token: string, data: { name: string; password: string }) {
-      return api.post<InviteAcceptResult>(
-        `${AUTH_FLOW_PATHS.invite(token)}/accept`,
-        data,
+    /**
+     * Accepts without an account: creates it and opens the session. An email
+     * that already has one answers 409; the page asks the guest to sign in.
+     */
+    async acceptInviteWithRegistration(
+      token: string,
+      data: { name: string; password: string },
+    ): Promise<InviteAcceptResult> {
+      const wire = await api.post<AcceptWithRegistrationWire>(
+        AUTH_FLOW_PATHS.invitationAcceptWithRegistration,
+        { token, ...data },
         QUIET,
       );
+      return {
+        redirectTo: landingOf(wire),
+        alreadyAccepted: wire.alreadyAccepted ?? false,
+        session: wire.user
+          ? { user: toUser(wire.user), expiresAt: wire.expiresAt ?? null }
+          : null,
+      };
+    },
+    /** Accepts with the signed-in session; without one the call answers 401. */
+    async acceptInvite(token: string): Promise<InviteAcceptResult> {
+      const wire = await api.post<AcceptInvitationWire>(
+        AUTH_FLOW_PATHS.invitationAccept,
+        { token },
+        QUIET,
+      );
+      return {
+        redirectTo: landingOf(wire),
+        alreadyAccepted: false,
+        session: null,
+      };
     },
     declineInvite(token: string) {
       return api.post<void>(
-        `${AUTH_FLOW_PATHS.invite(token)}/decline`,
-        {},
+        AUTH_FLOW_PATHS.invitationDecline,
+        { token },
         QUIET,
       );
     },

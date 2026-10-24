@@ -165,6 +165,15 @@ test.describe("Sign-in pages (owner)", () => {
     await expect(page).toHaveURL(/\/workspaces\/mock-workspace-primary/);
   });
 
+  test("a provider sign-in stopped for a second step says to use the password; the callback route signs in", async ({
+    page,
+  }) => {
+    await open(page, "/sign-in?error=identity.oauth.mfa-required");
+    await expect(page.getByRole("alert")).toContainText("xác minh hai bước");
+    await open(page, "/auth/callback");
+    await expect(page).toHaveURL(/\/workspaces\/mock-workspace-primary/);
+  });
+
   test("the language switch changes the copy", async ({ page }) => {
     await open(page, "/sign-in");
     await page.getByRole("button", { name: "English" }).click();
@@ -215,10 +224,36 @@ test.describe("Sign-in pages (owner)", () => {
       .getByRole("button", { name: "Chấp nhận và tạo tài khoản" })
       .click();
     await expect(page.getByText("Dùng ít nhất 12 ký tự.")).toBeVisible();
+    await page.getByLabel("Họ và tên").fill("Đặng Minh Tuấn");
     await page.getByLabel("Tạo mật khẩu").fill("mot-mat-khau-du-dai");
     await page
       .getByRole("button", { name: "Chấp nhận và tạo tài khoản" })
       .click();
+    await expect(page).toHaveURL(
+      /\/workspaces\/mock-workspace-primary\/boards\/mock-board-erp/,
+    );
+  });
+
+  test("a guest whose email already has an account signs in, comes back to the link and accepts", async ({
+    page,
+  }) => {
+    await open(page, "/invite/invite-erp-existing");
+    await expect(page.getByLabel("Tạo mật khẩu")).toHaveCount(0);
+    await page.getByRole("button", { name: "Đăng nhập để chấp nhận" }).click();
+    await expect(page).toHaveURL(
+      /\/sign-in\?redirect=%2Finvite%2Finvite-erp-existing/,
+    );
+    await page.getByLabel("Email").fill(MOCK_AUTH.personalEmail);
+    await page.getByRole("button", { name: "Tiếp tục", exact: true }).click();
+    await page
+      .getByLabel("Mật khẩu", { exact: true })
+      .fill(MOCK_AUTH.personalPassword);
+    await page.locator("form button[type=submit]").click();
+    for (const [index, digit] of MOCK_AUTH.otpCode.split("").entries())
+      await page.getByLabel(`Số ${index + 1} trên 6`).fill(digit);
+    await page.getByRole("button", { name: "Xác minh" }).click();
+    await expect(page).toHaveURL(/\/invite\/invite-erp-existing/);
+    await page.getByRole("button", { name: /^Chấp nhận/ }).click();
     await expect(page).toHaveURL(
       /\/workspaces\/mock-workspace-primary\/boards\/mock-board-erp/,
     );

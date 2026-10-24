@@ -1,25 +1,29 @@
 /**
- * Identity: what the sign-in pages of the 2026-10 Auth mockup need beyond the
- * stub login (gap `CTR-GAP-AUTH-FLOW`, see docs/superpowers/be-blockers-2026-10.md,
- * "BE requirement from FE: Auth"):
+ * Identity and Workspaces: the pre-login calls of the sign-in and invitation
+ * pages, on the backend's own routes and shapes:
  *
- *   auth.identify      — POST /auth/identify              (how this email signs in)
- *   auth.sso.start     — POST /auth/sso/start             (company or Google/Microsoft sign-in)
- *   auth.invite.get    — GET  /invites/:token             (guest invitation preview)
- *   auth.invite.accept — POST /invites/:token/accept
- *   auth.invite.decline— POST /invites/:token/decline
+ *   POST /auth/identify                     how this email signs in
+ *   GET  /auth/oauth/:provider/start        Google or Microsoft sign-in (the real call is a redirect)
+ *   POST /invitations/preview               guest invitation preview
+ *   POST /invitations/decline
+ *   POST /invitations/accept-with-registration
+ *   POST /invitations/accept                the signed-in accept
  *
- * `POST /auth/login` (identity.handlers.ts) takes the same gap: with an email
- * it checks the account, counts wrong passwords and locks.
+ * `POST /auth/login` (identity.handlers.ts) takes the same world: with an
+ * email it checks the account, counts wrong passwords and locks.
  */
 import { defineMockOperation } from "../../operations/types";
-import { noContent, notFound, ok } from "../../transport/create-response";
+import {
+  noContent,
+  notFound,
+  ok,
+  unauthorized,
+} from "../../transport/create-response";
 import type { MockStore } from "../../state/mock-store";
 
-const gap = { kind: "gap", gapId: "CTR-GAP-AUTH-FLOW" } as const;
-
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const MIN_PASSWORD = 12;
+/** The backend's minimum; the page asks for more. */
+const MIN_PASSWORD = 8;
 
 /**
  * The session a successful sign-in hands back: `AuthSessionResponse`. The
@@ -38,15 +42,6 @@ export function sessionOf(store: MockStore) {
     },
     mfaRequired: false,
   };
-}
-
-function problem(
-  status: number,
-  code: string,
-  message: string,
-  extra: Record<string, unknown> = {},
-) {
-  return { status, body: { message, code, ...extra } };
 }
 
 /**
@@ -76,17 +71,48 @@ export function identityProblem(
   };
 }
 
+/** A problem+json answer without an Identity code: the producer's generic `errorCode`. */
+function genericProblem(
+  status: number,
+  errorCode: string,
+  detail: string,
+  errors?: Record<string, string[]>,
+) {
+  return {
+    status,
+    body: {
+      type: `https://notrelix.dev/problems/${errorCode}`,
+      title: detail,
+      status,
+      detail,
+      errorCode,
+      ...(errors ? { errors } : {}),
+    },
+  };
+}
+
+/** A refused business rule: the messages sit under `errors._errors`. */
+function ruleProblem(detail: string) {
+  return genericProblem(400, "business_rule.violation", detail, {
+    _errors: [detail],
+  });
+}
+
+function levelWord(level: string): string {
+  return level.charAt(0).toUpperCase() + level.slice(1);
+}
+
 export const authFlowOperations = [
   defineMockOperation<Record<string, never>, { email?: string }, unknown>({
     id: "auth.identify",
-    contract: gap,
+    contract: { kind: "openapi", operationId: "Identity.Auth.IdentifySignIn" },
     method: "POST",
     route: "/auth/identify",
     async handle({ body, store }) {
       const email = body?.email?.trim() ?? "";
       if (!EMAIL.test(email))
-        return problem(422, "VALIDATION_ERROR", "Validation failed", {
-          errors: { email: ["Enter a work email."] },
+        return genericProblem(400, "validation.failed", "Validation failed", {
+          Email: ["Enter a work email."],
         });
       const { method, sso } = store.auth.identify(email);
       return ok({
@@ -134,90 +160,150 @@ export const authFlowOperations = [
     },
   }),
 
-  defineMockOperation<
-    Record<string, never>,
-    { email?: string; provider?: string },
-    unknown
-  >({
-    id: "auth.sso.start",
-    contract: gap,
-    method: "POST",
-    route: "/auth/sso/start",
+  defineMockOperation<{ provider: string }, never, unknown>({
+    id: "auth.oauth.start",
+    contract: { kind: "openapi", operationId: "Identity.Auth.OAuth.Start" },
+    method: "GET",
+    route: "/auth/oauth/:provider/start",
     async handle({ store }) {
-      // The real call answers with the provider's address to go to; the mock
-      // plays the round trip and answers with the signed-in session.
+      // The real call redirects the browser to the provider and back to the
+      // web `/auth/callback` with the session cookies set. The mock plays the
+      // round trip: the session opens and the host goes to the callback.
       store.loginCurrentUser();
-      return ok({ redirectUrl: null, ...sessionOf(store) });
+      return ok({});
     },
   }),
 
-  defineMockOperation<{ token: string }, never, unknown>({
-    id: "auth.invite.get",
-    contract: gap,
-    method: "GET",
-    route: "/invites/:token",
-    async handle({ params, store }) {
-      const invite = store.auth.invite(params.token);
+  defineMockOperation<Record<string, never>, { token?: string }, unknown>({
+    id: "invitations.preview",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Invitations.GetInvitationByToken",
+    },
+    method: "POST",
+    route: "/invitations/preview",
+    async handle({ body, store }) {
+      const invite = store.auth.invite(body?.token ?? "");
       if (!invite) return notFound("Invitation not found");
+      const valid = invite.state === "valid";
       return ok({
         state: invite.state,
         inviterName: invite.inviterName,
-        inviterInitials: invite.inviterInitials,
-        orgName: invite.orgName,
-        boardTitle: invite.boardTitle,
-        level: invite.level,
+        workspaceName: invite.orgName,
+        role: "Guest",
+        resourceKind: "work-management.board",
+        resourceTitle: invite.boardTitle,
+        resourceLevel: levelWord(invite.level),
         expiresOn: invite.expiresOn,
         // Nothing of the guest's details leaves an invitation that cannot be used.
-        email: invite.state === "valid" ? invite.email : null,
-        name: invite.state === "valid" ? invite.name : null,
-        hasAccount: invite.hasAccount,
+        email: valid ? invite.email : null,
+        hasAccount: valid ? invite.hasAccount : false,
       });
+    },
+  }),
+
+  defineMockOperation<Record<string, never>, { token?: string }, unknown>({
+    id: "invitations.decline",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Invitations.DeclineInvitationByToken",
+    },
+    method: "POST",
+    route: "/invitations/decline",
+    async handle({ body, store }) {
+      const token = body?.token ?? "";
+      if (!store.auth.invite(token)) return notFound();
+      if (!store.auth.declineInvite(token))
+        return ruleProblem("The invitation cannot be declined any more.");
+      return noContent();
     },
   }),
 
   defineMockOperation<
-    { token: string },
-    { name?: string; password?: string },
+    Record<string, never>,
+    { token?: string; name?: string; password?: string },
     unknown
   >({
-    id: "auth.invite.accept",
-    contract: gap,
+    id: "invitations.acceptWithRegistration",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Invitations.AcceptInvitationWithRegistration",
+    },
     method: "POST",
-    route: "/invites/:token/accept",
-    async handle({ params, body, store }) {
-      const invite = store.auth.invite(params.token);
+    route: "/invitations/accept-with-registration",
+    async handle({ body, store }) {
+      const token = body?.token ?? "";
+      const invite = store.auth.invite(token);
       if (!invite) return notFound("Invitation not found");
-      if (invite.state === "expired")
-        return problem(410, "INVITE_EXPIRED", "The invitation expired.");
       const errors: Record<string, string[]> = {};
-      if (!body?.name?.trim()) errors.name = ["Enter your name."];
-      if (!invite.hasAccount && (body?.password?.length ?? 0) < MIN_PASSWORD)
-        errors.password = ["At least 12 characters."];
+      if (!body?.name?.trim()) errors.Name = ["Enter your name."];
+      if ((body?.password?.length ?? 0) < MIN_PASSWORD)
+        errors.Password = ["At least 8 characters."];
       if (Object.keys(errors).length > 0)
-        return problem(422, "VALIDATION_ERROR", "Validation failed", {
-          errors,
+        return genericProblem(400, "validation.failed", "Validation failed", {
+          ...errors,
         });
-      const outcome = store.auth.acceptInvite(params.token);
+      // The only 409 of this call: the invited address already has an account.
+      if (invite.hasAccount)
+        return genericProblem(
+          409,
+          "concurrency.conflict",
+          "This email already has an account.",
+        );
+      const outcome = store.auth.acceptInvite(token);
       if (outcome === "gone")
-        return problem(410, "INVITE_GONE", "The invitation cannot be used.");
-      // A second press is safe: the guest is added once.
+        return ruleProblem("The invitation cannot be used.");
+      const landing = {
+        workspaceSlug: invite.workspaceId,
+        workspaceId: invite.workspaceId,
+        resourceKind: "work-management.board",
+        resourceId: invite.boardId,
+      };
+      // A second press is safe: the guest is added once and no session opens.
+      if (outcome === "already")
+        return ok({
+          ...landing,
+          alreadyAccepted: true,
+          expiresAt: null,
+          user: null,
+        });
       store.loginCurrentUser();
+      const session = sessionOf(store);
       return ok({
-        redirectTo: invite.boardPath,
-        alreadyAccepted: outcome === "already",
+        ...landing,
+        alreadyAccepted: false,
+        expiresAt: session.expiresAt,
+        user: {
+          id: session.user.id,
+          email: invite.email,
+          name: body?.name?.trim() ?? "",
+          emailConfirmed: true,
+        },
       });
     },
   }),
 
-  defineMockOperation<{ token: string }, never, unknown>({
-    id: "auth.invite.decline",
-    contract: gap,
+  defineMockOperation<Record<string, never>, { token?: string }, unknown>({
+    id: "invitations.accept",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Invitations.AcceptInvitation",
+    },
     method: "POST",
-    route: "/invites/:token/decline",
-    async handle({ params, store }) {
-      if (!store.auth.invite(params.token)) return notFound();
-      store.auth.declineInvite(params.token);
-      return noContent();
+    route: "/invitations/accept",
+    async handle({ body, store }) {
+      if (store.isCurrentUserLoggedOut()) return unauthorized();
+      const token = body?.token ?? "";
+      const invite = store.auth.invite(token);
+      if (!invite) return notFound("Invitation not found");
+      if (store.auth.acceptInvite(token) === "gone")
+        return ruleProblem("The invitation cannot be used.");
+      return ok({
+        workspaceSlug: invite.workspaceId,
+        workspaceId: invite.workspaceId,
+        resourceKind: "work-management.board",
+        resourceId: invite.boardId,
+      });
     },
   }),
 ];

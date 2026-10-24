@@ -12,6 +12,7 @@ export function SignInPage() {
         navigation={navigation}
         redirect={search.get("redirect")}
         initialEmail={search.get("email") ?? ""}
+        providerError={search.get("error")}
       />
     </AuthLayout>
   );

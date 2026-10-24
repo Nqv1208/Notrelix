@@ -82,8 +82,11 @@ function InviteForm({
   const [name, setName] = useState(invite.name);
   const [password, setPassword] = useState("");
   const [tried, setTried] = useState(false);
+  // An email that has an account signs in and accepts: no name is created.
+  const nameRequired = !invite.hasAccount;
   const nameError =
-    view.fieldErrors?.name ?? (tried && !name.trim() ? t.nameRequired : null);
+    view.fieldErrors?.name ??
+    (tried && nameRequired && !name.trim() ? t.nameRequired : null);
   const passwordError = invite.hasAccount
     ? null
     : (view.fieldErrors?.password ??
@@ -131,7 +134,7 @@ function InviteForm({
         onSubmit={(event) => {
           event.preventDefault();
           setTried(true);
-          if (!name.trim()) return;
+          if (nameRequired && !name.trim()) return;
           if (!invite.hasAccount && password.length < 12) return;
           onAccept({ name: name.trim(), password });
         }}

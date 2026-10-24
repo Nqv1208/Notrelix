@@ -1,9 +1,7 @@
 import { wallClockMs } from "./clock";
 
 /**
- * Who can sign in, and how, in the mock world (gap `CTR-GAP-AUTH-FLOW`, see
- * docs/superpowers/be-blockers-2026-10.md, "BE requirement from FE: Auth"):
- * the accounts with a password and a second step, the company domains that
+ * Who can sign in, and how, in the mock world: the accounts with a password and a second step, the company domains that
  * sign in through their own identity provider, the sign-in attempts and the
  * lock, the guest invitations. Test values for the mock only; no real
  * account is behind any of them.
@@ -51,16 +49,20 @@ export interface MockGuestInvite {
   readonly boardTitle: string;
   /** Guest access: what they may do and until when (ISO day), "viewer" | "commenter" | "editor". */
   readonly level: "viewer" | "commenter" | "editor";
-  readonly expiresOn: string | null;
+  /** ISO day the access ends. */
+  readonly expiresOn: string;
   readonly email: string;
   /** The name the inviter typed, offered as the starting value. */
   readonly name: string;
   /** The invited email already has an account: the page asks to sign in instead. */
   readonly hasAccount: boolean;
-  readonly boardPath: string;
+  /** The workspace and board the invitation is for. */
+  readonly workspaceId: string;
+  readonly boardId: string;
 }
 
-const BOARD_PATH = "/workspaces/mock-workspace-primary/boards/mock-board-erp";
+const WORKSPACE_ID = "mock-workspace-primary";
+const BOARD_ID = "mock-board-erp";
 
 const INVITES: readonly MockGuestInvite[] = [
   {
@@ -75,7 +77,8 @@ const INVITES: readonly MockGuestInvite[] = [
     email: "tuan@doitac-erp.vn",
     name: "Đặng Minh Tuấn",
     hasAccount: false,
-    boardPath: BOARD_PATH,
+    workspaceId: WORKSPACE_ID,
+    boardId: BOARD_ID,
   },
   {
     token: "invite-erp-existing",
@@ -89,7 +92,8 @@ const INVITES: readonly MockGuestInvite[] = [
     email: MOCK_AUTH.personalEmail,
     name: MOCK_AUTH.personalName,
     hasAccount: true,
-    boardPath: BOARD_PATH,
+    workspaceId: WORKSPACE_ID,
+    boardId: BOARD_ID,
   },
   {
     token: "invite-erp-expired",
@@ -103,7 +107,8 @@ const INVITES: readonly MockGuestInvite[] = [
     email: "khach@doitac-erp.vn",
     name: "",
     hasAccount: false,
-    boardPath: BOARD_PATH,
+    workspaceId: WORKSPACE_ID,
+    boardId: BOARD_ID,
   },
   {
     token: "invite-erp-used",
@@ -113,11 +118,12 @@ const INVITES: readonly MockGuestInvite[] = [
     orgName: "Minh An Group",
     boardTitle: "Triển khai ERP Q4",
     level: "viewer",
-    expiresOn: null,
+    expiresOn: "2026-12-31",
     email: "da.dung@doitac-erp.vn",
     name: "",
     hasAccount: false,
-    boardPath: BOARD_PATH,
+    workspaceId: WORKSPACE_ID,
+    boardId: BOARD_ID,
   },
 ];
 
@@ -240,9 +246,11 @@ export class MockAuthDirectory {
     return "accepted";
   }
 
+  /** Declining twice is fine; an accepted, expired or used invitation cannot be declined. */
   declineInvite(token: string): boolean {
     const invite = INVITES.find((entry) => entry.token === token);
     if (!invite || invite.state !== "valid") return false;
+    if (this.acceptedInvites.has(token)) return false;
     this.declinedInvites.add(token);
     return true;
   }

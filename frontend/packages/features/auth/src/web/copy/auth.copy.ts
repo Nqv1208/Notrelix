@@ -32,6 +32,10 @@ export const en = {
     invalid: "Enter an email like name@company.com.",
     unreachable:
       "Could not reach Notrelix. Check the connection and try again.",
+    mfaRequired:
+      "This account uses a second step, so it signs in with its email and password and then the authenticator code.",
+    providerFailed:
+      "Signing in with the provider did not work. Try again, or use your email and password.",
   },
   password: {
     title: "Enter your password",
@@ -188,6 +192,10 @@ export const vi: AuthCopy = {
     createWorkspace: "Tạo workspace",
     invalid: "Nhập email dạng ten@congty.vn.",
     unreachable: "Chưa kết nối được Notrelix. Kiểm tra mạng rồi thử lại.",
+    mfaRequired:
+      "Tài khoản này có xác minh hai bước, nên đăng nhập bằng email và mật khẩu rồi nhập mã từ ứng dụng xác thực.",
+    providerFailed:
+      "Đăng nhập bằng nhà cung cấp chưa được. Thử lại, hoặc dùng email và mật khẩu.",
   },
   password: {
     title: "Nhập mật khẩu",

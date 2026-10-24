@@ -35,8 +35,11 @@ function useCountdown(seconds: number | null): number {
   return left;
 }
 
+type EmailError =
+  "invalid" | "unreachable" | "mfa-required" | "provider-failed";
+
 type Phase =
-  | { kind: "email"; error: "invalid" | "unreachable" | null }
+  | { kind: "email"; error: EmailError | null }
   | {
       kind: "password";
       email: string;
@@ -48,6 +51,7 @@ type Phase =
       org: {
         name: string;
         initials: string;
+        provider: string;
         providerLabel: string;
         domain: string;
       };
@@ -70,16 +74,26 @@ export function SignInFlow({
   navigation,
   redirect,
   initialEmail = "",
+  providerError = null,
 }: {
   service: AuthFlowService;
   navigation: AuthFlowNavigation;
   /** Where to go after signing in; the home page without it. */
   redirect?: string | null;
   initialEmail?: string;
+  /** The `error` code the backend put on `/sign-in` after a provider sign-in that did not open a session. */
+  providerError?: string | null;
 }) {
   const copy = useAuthCopy();
   const queryClient = useQueryClient();
-  const [phase, setPhase] = useState<Phase>({ kind: "email", error: null });
+  const [phase, setPhase] = useState<Phase>({
+    kind: "email",
+    error: providerError
+      ? providerError === IDENTITY_ERROR.oauthMfaRequired
+        ? "mfa-required"
+        : "provider-failed"
+      : null,
+  });
   const [typedEmail, setTypedEmail] = useState(initialEmail);
   const [lockSeconds, setLockSeconds] = useState<number | null>(null);
   const lockedSeconds = useCountdown(lockSeconds);
@@ -104,6 +118,7 @@ export function SignInFlow({
               org: {
                 name: result.sso.orgName,
                 initials: result.sso.orgInitials,
+                provider: result.sso.provider,
                 providerLabel: result.sso.providerLabel,
                 domain: email.split("@")[1] ?? "",
               },
@@ -192,26 +207,11 @@ export function SignInFlow({
     },
   });
 
-  const provider = useMutation({
-    mutationFn: (input: { email?: string; provider: string }) =>
-      service.ssoStart(input),
-    onSuccess: (result) => {
-      if (result.redirectUrl) window.location.assign(result.redirectUrl);
-      else signedIn(result);
-    },
-    onError: () =>
-      setPhase((current) =>
-        current.kind === "email"
-          ? { kind: "email", error: "unreachable" }
-          : current,
-      ),
-  });
+  /** The provider's page and the way back are the backend's: the browser leaves. */
+  const startProvider = (name: string) =>
+    navigation.startProviderSignIn(service.oauthStartPath(name, redirect));
 
-  const pending =
-    identify.isPending ||
-    login.isPending ||
-    verify.isPending ||
-    provider.isPending;
+  const pending = identify.isPending || login.isPending || verify.isPending;
 
   const step: AuthSignInStep =
     phase.kind === "password"
@@ -243,7 +243,7 @@ export function SignInFlow({
       pending={pending}
       initialEmail={typedEmail}
       onContinue={(email) => identify.mutate(email)}
-      onProvider={(name) => provider.mutate({ provider: name })}
+      onProvider={startProvider}
       onCreateWorkspace={() => navigation.navigate({ to: "/sign-up" })}
       onChangeEmail={backToEmail}
       onSubmitPassword={(password) =>
@@ -256,10 +256,7 @@ export function SignInFlow({
           search: typedEmail ? { email: typedEmail } : undefined,
         })
       }
-      onSso={() =>
-        phase.kind === "sso" &&
-        provider.mutate({ email: phase.email, provider: "microsoft-entra" })
-      }
+      onSso={() => phase.kind === "sso" && startProvider(phase.org.provider)}
       onVerify={({ code }) =>
         phase.kind === "otp" &&
         verify.mutate({ challengeToken: phase.challengeToken, code })

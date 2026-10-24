@@ -29,7 +29,13 @@ import {
 export type AuthSignInStep =
   | {
       readonly kind: "email";
-      readonly error?: "invalid" | "unreachable" | null;
+      readonly error?:
+        | "invalid"
+        | "unreachable"
+        /** A provider sign-in was stopped: the account has a second factor, so it signs in with its password. */
+        | "mfa-required"
+        | "provider-failed"
+        | null;
     }
   | {
       readonly kind: "password";
@@ -151,6 +157,12 @@ function EmailStep({
           ) : null}
           {step.error === "unreachable" ? (
             <FieldError>{t.unreachable}</FieldError>
+          ) : null}
+          {step.error === "mfa-required" ? (
+            <FieldError>{t.mfaRequired}</FieldError>
+          ) : null}
+          {step.error === "provider-failed" ? (
+            <FieldError>{t.providerFailed}</FieldError>
           ) : null}
         </div>
         <button
