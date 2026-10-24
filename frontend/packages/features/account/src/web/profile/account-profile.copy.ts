@@ -34,9 +34,9 @@ export const en = {
     "Start with the country code, for example +84 for Vietnam. Spaces and dashes are fine.",
   phoneCountryCode:
     "Start the number with its country code, for example +84 912 345 678.",
-  phoneVisibleLabel: "Let people in my workspaces see my phone number",
+  phoneVisibleLabel: "Visible to people in my workspaces",
   phoneVisibleHint:
-    "Off by default: only you see it. This applies to every workspace you belong to.",
+    "Off by default: only you see your phone number. This applies to every workspace you belong to.",
   phoneInvalid:
     "That doesn't look like a phone number. Use a + and 8 to 15 digits, or leave it empty.",
   timezoneLabel: "Time zone",
@@ -96,9 +96,9 @@ export const vi: AccountProfileCopy = {
   phoneHelp:
     "Bắt đầu bằng mã quốc gia, ví dụ +84 cho Việt Nam. Có thể dùng dấu cách và dấu gạch ngang.",
   phoneCountryCode: "Hãy bắt đầu số bằng mã quốc gia, ví dụ +84 912 345 678.",
-  phoneVisibleLabel: "Cho người trong các workspace của tôi xem số điện thoại",
+  phoneVisibleLabel: "Hiển thị cho người trong các workspace của tôi",
   phoneVisibleHint:
-    "Mặc định tắt: chỉ mình bạn thấy. Áp dụng cho mọi workspace bạn tham gia.",
+    "Mặc định tắt: chỉ mình bạn thấy số điện thoại. Áp dụng cho mọi workspace bạn tham gia.",
   phoneInvalid:
     "Số này chưa đúng dạng số điện thoại. Hãy dùng dấu + và từ 8 đến 15 chữ số, hoặc để trống.",
   timezoneLabel: "Múi giờ",
