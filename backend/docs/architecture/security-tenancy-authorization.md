@@ -28,6 +28,7 @@ evidence:
   - backend/tests/Notrelix.Integration.Tests/
   - backend/tests/Notrelix.Architecture.Tests/
   - backend/docs/decisions/ADR-002-rls-bootstrap-connection-lifecycle.md
+  - backend/docs/decisions/ADR-011-database-principal-model.md
   - backend/docs/decisions/ADR-009-space-scoped-authorization.md
   - backend/docs/decisions/ADR-003-csrf-protection.md
   - backend/docs/decisions/ADR-004-rate-limiting-architecture.md
@@ -748,6 +749,8 @@ RlsSqlScripts/
 ```
 
 Current accepted ADR-002 defines bootstrap/full RLS connection lifecycle.
+Current accepted ADR-011 defines the database identities (owner, `notrelix_app`, `notrelix_worker`) and the
+bounded `user`, `token`, `credential` and `registration` scopes that stand beside the `app` and `worker` scopes.
 
 These are implementation evidence.
 

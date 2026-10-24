@@ -15,6 +15,7 @@ evidence:
   - backend/src/Notrelix.Infrastructure/Integrations/
   - backend/src/Notrelix.Infrastructure/Storage/
   - backend/docs/decisions/ADR-002-rls-bootstrap-connection-lifecycle.md
+  - backend/docs/decisions/ADR-011-database-principal-model.md
   - backend/tests/Notrelix.Infrastructure.Tests/
   - backend/tests/Notrelix.Integration.Tests/
 review_on:
