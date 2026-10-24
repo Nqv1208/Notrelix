@@ -159,7 +159,7 @@ jobs:
           format: spdx-json
           output: backend.sbom.spdx.json
       - name: Upload SBOM
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: container-backend-sbom
           path: backend.sbom.spdx.json
@@ -224,7 +224,7 @@ jobs:
         run: docker save -o "$GITHUB_WORKSPACE/release-image-backend-api.tar" "$IMAGE"
       - name: Upload validated image
         if: needs.changes.outputs.publish_mode == 'true'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: release-image-backend-api
           path: release-image-backend-api.tar
@@ -270,7 +270,7 @@ jobs:
           format: spdx-json
           output: web.sbom.spdx.json
       - name: Upload SBOM
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: container-web-sbom
           path: web.sbom.spdx.json
@@ -295,7 +295,7 @@ jobs:
         run: docker save -o "$GITHUB_WORKSPACE/release-image-web.tar" "$IMAGE"
       - name: Upload validated image
         if: needs.changes.outputs.publish_mode == 'true'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: release-image-web
           path: release-image-web.tar
@@ -341,7 +341,7 @@ jobs:
           format: spdx-json
           output: marketing.sbom.spdx.json
       - name: Upload SBOM
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: container-marketing-sbom
           path: marketing.sbom.spdx.json
@@ -366,7 +366,7 @@ jobs:
         run: docker save -o "$GITHUB_WORKSPACE/release-image-marketing.tar" "$IMAGE"
       - name: Upload validated image
         if: needs.changes.outputs.publish_mode == 'true'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: release-image-marketing
           path: release-image-marketing.tar
@@ -414,15 +414,15 @@ jobs:
           done
       - name: Download validated backend image
         if: env.PUBLISH_BACKEND == 'true'
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with: {name: release-image-backend-api, path: images}
       - name: Download validated web image
         if: env.PUBLISH_WEB == 'true'
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with: {name: release-image-web, path: images}
       - name: Download validated marketing image
         if: env.PUBLISH_MARKETING == 'true'
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with: {name: release-image-marketing, path: images}
       - name: Authenticate to GHCR
         env: {GHCR_TOKEN: '${{ github.token }}'}
@@ -458,19 +458,19 @@ jobs:
           [[ "$PUBLISH_MARKETING" == true ]] && publish marketing release-image-marketing.tar marketing "$MARKETING_IMAGE_NAME" container-marketing-sbom marketing
       - name: Attest backend release-image manifest
         if: env.PUBLISH_BACKEND == 'true'
-        uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4.2.0
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with: {subject-path: release-images/release-image-backend-api.json}
       - name: Attest web release-image manifest
         if: env.PUBLISH_WEB == 'true'
-        uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4.2.0
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with: {subject-path: release-images/release-image-web.json}
       - name: Attest marketing release-image manifest
         if: env.PUBLISH_MARKETING == 'true'
-        uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4.2.0
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with: {subject-path: release-images/release-image-marketing.json}
       - name: Attest backend application image provenance
         if: env.PUBLISH_BACKEND == 'true'
-        uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4.2.0
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-name: ${{ steps.publish.outputs.subject_name_backend }}
           subject-digest: ${{ steps.publish.outputs.subject_digest_backend }}
@@ -478,7 +478,7 @@ jobs:
           create-storage-record: false
       - name: Attest web application image provenance
         if: env.PUBLISH_WEB == 'true'
-        uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4.2.0
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-name: ${{ steps.publish.outputs.subject_name_web }}
           subject-digest: ${{ steps.publish.outputs.subject_digest_web }}
@@ -486,14 +486,14 @@ jobs:
           create-storage-record: false
       - name: Attest marketing application image provenance
         if: env.PUBLISH_MARKETING == 'true'
-        uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4.2.0
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-name: ${{ steps.publish.outputs.subject_name_marketing }}
           subject-digest: ${{ steps.publish.outputs.subject_digest_marketing }}
           push-to-registry: true
           create-storage-record: false
       - name: Upload release-image manifests
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: release-image-manifests
           path: release-images/release-image-*.json
