@@ -23,6 +23,7 @@ type Story = StoryObj;
 
 const noop = () => undefined;
 const callbacks = {
+  onChangePassword: noop,
   onSetTwoFactor: noop,
   onRenewBackupCodes: noop,
   onSignOut: noop,
