@@ -27,6 +27,8 @@ public class WorkspaceConfiguration : IEntityTypeConfiguration<Workspace>
             settings.Property(s => s.InvitationExpiryDays).HasColumnName("settings_invitation_expiry_days");
             settings.Property(s => s.GuestDefaultExpiryDays).HasColumnName("settings_guest_default_expiry_days");
             settings.Property(s => s.PublicSharingChangedAt).HasColumnName("settings_public_sharing_changed_at");
+            settings.Property(s => s.Size).HasColumnName("settings_size").HasMaxLength(16);
+            settings.Property(s => s.Language).HasColumnName("settings_language").HasMaxLength(8);
         });
 
         builder.Ignore(x => x.IsDeleted);

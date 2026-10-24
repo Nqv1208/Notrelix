@@ -51,7 +51,9 @@ public class ResolveSlugQueryHandler : IRequestHandler<ResolveSlugQuery, Result<
             memberCount,
             workspace.CreatedAt.DateTime,
             null,
-            workspace.Version
+            workspace.Version,
+            workspace.Settings.Size,
+            workspace.Settings.Language
         ));
     }
 }

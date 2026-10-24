@@ -2,6 +2,8 @@ namespace Notrelix.Application.Features.Workspaces.DTOs;
 
 /// <param name="MemberCount">Members whose participation has not ended (active and suspended; removed members are not counted).</param>
 /// <param name="Version">The Workspace aggregate version, sent back as <c>expectedVersion</c> by profile, settings, archive and delete writes.</param>
+/// <param name="Size">The company-size band (<c>1-10</c>, <c>11-50</c>, <c>51-200</c>, <c>201-1000</c> or <c>1000+</c>); null until an Owner or Admin sets it.</param>
+/// <param name="Language">The workspace language, <c>vi</c> or <c>en</c>; null until set.</param>
 public record WorkspaceDto(
     Guid Id,
     string Name,
@@ -16,7 +18,9 @@ public record WorkspaceDto(
     int MemberCount,
     DateTime CreatedAt,
     string? Settings,
-    long Version
+    long Version,
+    string? Size = null,
+    string? Language = null
 );
 
 /// <param name="Status">The membership status enum name (<c>Active</c> or <c>Suspended</c>). Removed members are not listed: removal ends the participation (docs/product/workspaces.md §13, §20).</param>

@@ -272,6 +272,18 @@ overridable per environment. The MFA wrong-code budget per challenge (5) is a co
 | `Interval` | `01:00:00` (1 hour) | Time between sweeps. Range 10 seconds to 1 day. |
 | `BatchSize` | 1000 | Rows deleted per transaction. Range 1 to 10000. |
 
+`Workspaces:Onboarding:DraftSweep` (Infrastructure, `OnboardingDraftSweepOptions`, validated on start by
+`OnboardingDraftSweepOptionsValidator`) configures the sweep of expired onboarding drafts
+(`OnboardingDraftSweepService`, a hosted service; the retention itself is the Domain constant of 30 days after the last
+save, `OnboardingDraft.Retention`). The sweep runs under the system context with the RLS worker scope and claims rows
+with `FOR UPDATE SKIP LOCKED`:
+
+| Key | Default | Meaning |
+|---|---|---|
+| `Enabled` | `true` | When false nothing is deleted. |
+| `Interval` | `01:00:00` (1 hour) | Time between sweeps. Range 10 seconds to 1 day. |
+| `BatchSize` | 500 | Rows deleted per transaction. Range 1 to 10000. |
+
 Several API instances may sweep at once (rows are claimed with `FOR UPDATE SKIP LOCKED`). The sweep runs
 under the explicit system (worker) tenant context and RLS worker scope and touches only
 `identity.user_security_activity`.

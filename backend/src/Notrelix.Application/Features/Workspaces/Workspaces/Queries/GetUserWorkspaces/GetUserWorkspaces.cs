@@ -52,7 +52,9 @@ public class GetUserWorkspacesQueryHandler : IRequestHandler<GetUserWorkspacesQu
             "free", null, null,
             null, w.Status == WorkspaceStatus.Archived, memberCounts.GetValueOrDefault(w.Id), w.CreatedAt.DateTime,
             null,
-            w.Version
+            w.Version,
+            w.Settings.Size,
+            w.Settings.Language
         )).ToList();
 
         return Result<List<WorkspaceDto>>.Success(result);

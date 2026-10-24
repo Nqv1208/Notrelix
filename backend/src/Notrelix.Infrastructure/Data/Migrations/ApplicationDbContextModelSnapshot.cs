@@ -13303,9 +13303,19 @@ namespace Notrelix.Infrastructure.Data.Migrations
                                 .HasColumnType("integer")
                                 .HasColumnName("settings_invitation_expiry_days");
 
+                            b1.Property<string>("Language")
+                                .HasMaxLength(8)
+                                .HasColumnType("character varying(8)")
+                                .HasColumnName("settings_language");
+
                             b1.Property<DateTimeOffset?>("PublicSharingChangedAt")
                                 .HasColumnType("timestamp with time zone")
                                 .HasColumnName("settings_public_sharing_changed_at");
+
+                            b1.Property<string>("Size")
+                                .HasMaxLength(16)
+                                .HasColumnType("character varying(16)")
+                                .HasColumnName("settings_size");
 
                             b1.HasKey("WorkspaceId");
 

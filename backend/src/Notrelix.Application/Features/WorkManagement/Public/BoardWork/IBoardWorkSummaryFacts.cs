@@ -40,13 +40,13 @@ public interface IBoardWorkSummaryFacts
         CancellationToken cancellationToken);
 }
 
-/// <param name="Kind"><c>inbox</c> for an Intake Board, else <c>kanban</c> when its default View is a Kanban View, else <c>table</c>.</param>
+/// <param name="Kind"><c>inbox</c> for an Intake Board, else <c>kanban</c> when its default (not archived) View is a Kanban View, else <c>table</c>.</param>
 /// <param name="MemberCount">People who are members of the Board (meaningful for a Private Board).</param>
 /// <param name="OpenItems">Unfinished Items of any level.</param>
 /// <param name="TopLevelDone">Completed top-level Items.</param>
 /// <param name="TopLevelTotal">All top-level Items.</param>
 /// <param name="Overdue">Unfinished Items of any level past their due time.</param>
-/// <param name="WaitingReview">Pending approval requests that target the Board or one of its unfinished Items.</param>
+/// <param name="WaitingReview">Unfinished Items with at least one pending approval request, each Item counted once. A request aimed at the Board itself is not an Item.</param>
 /// <param name="Unclaimed">Unfinished top-level Items with no assignee.</param>
 /// <param name="LastActivityAt">Latest of the Board's and its Items' last change.</param>
 /// <param name="TopAssignees">Up to three people with the most unfinished Items on this Board.</param>

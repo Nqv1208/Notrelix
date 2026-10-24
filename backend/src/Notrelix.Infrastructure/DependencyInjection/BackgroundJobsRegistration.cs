@@ -32,6 +32,14 @@ public static class BackgroundJobsRegistration
         services.AddScoped<SecurityActivityRetentionSweeper>();
         services.AddHostedService<SecurityActivityRetentionService>();
 
+        // Workspaces: delete onboarding drafts past their 30-day expiry (reads already treat them as absent).
+        services.AddOptions<OnboardingDraftSweepOptions>()
+            .Bind(configuration.GetSection(OnboardingDraftSweepOptions.SectionName))
+            .ValidateOnStart();
+        services.AddSingleton<IValidateOptions<OnboardingDraftSweepOptions>, OnboardingDraftSweepOptionsValidator>();
+        services.AddScoped<OnboardingDraftSweeper>();
+        services.AddHostedService<OnboardingDraftSweepService>();
+
         return services;
     }
 }

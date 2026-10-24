@@ -4824,6 +4824,8 @@ export interface components {
             expectedVersion?: number;
             /** Format: int32 */
             guestDefaultExpiryDays?: number | null;
+            size?: string | null;
+            language?: string | null;
         };
         "Notrelix.API.Contracts.Workspaces.Spaces.Requests.AddSpaceMemberRequest": {
             subjectType?: string | null;
@@ -4910,6 +4912,9 @@ export interface components {
             name?: string | null;
             description?: string | null;
             isPersonal?: boolean;
+            slug?: string | null;
+            size?: string | null;
+            language?: string | null;
         };
         "Notrelix.API.Contracts.Workspaces.Workspaces.Requests.RestoreWorkspaceRequest": {
             /** Format: int64 */
@@ -5622,6 +5627,8 @@ export interface components {
             settings?: string | null;
             /** Format: int64 */
             version?: number;
+            size?: string | null;
+            language?: string | null;
         };
         "Notrelix.Application.Features.Workspaces.DTOs.WorkspaceInvitationDto": {
             /** Format: uuid */
@@ -5715,10 +5722,12 @@ export interface components {
         "Notrelix.Application.Features.Workspaces.Onboarding.Queries.CheckWorkspaceSlug.WorkspaceSlugCheckDto": {
             status?: string | null;
             suggestion?: string | null;
+            reason?: string | null;
         };
         "Notrelix.Application.Features.Workspaces.Onboarding.Queries.GetGettingStarted.GettingStartedDto": {
             dismissed?: boolean;
             items?: components["schemas"]["Notrelix.Application.Features.Workspaces.Onboarding.Queries.GetGettingStarted.GettingStartedItemDto"][] | null;
+            visible?: boolean;
         };
         "Notrelix.Application.Features.Workspaces.Onboarding.Queries.GetGettingStarted.GettingStartedItemDto": {
             key?: string | null;
@@ -5756,6 +5765,8 @@ export interface components {
             invitationExpiryDays?: number;
             /** Format: int32 */
             guestDefaultExpiryDays?: number | null;
+            size?: string | null;
+            language?: string | null;
         };
         "Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpace.SpaceDto": {
             /** Format: uuid */

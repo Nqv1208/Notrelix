@@ -19225,6 +19225,14 @@
             "type": "integer",
             "format": "int32",
             "nullable": true
+          },
+          "size": {
+            "type": "string",
+            "nullable": true
+          },
+          "language": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -19474,6 +19482,18 @@
           },
           "isPersonal": {
             "type": "boolean"
+          },
+          "slug": {
+            "type": "string",
+            "nullable": true
+          },
+          "size": {
+            "type": "string",
+            "nullable": true
+          },
+          "language": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -21631,6 +21651,14 @@
           "version": {
             "type": "integer",
             "format": "int64"
+          },
+          "size": {
+            "type": "string",
+            "nullable": true
+          },
+          "language": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -21908,6 +21936,10 @@
           "suggestion": {
             "type": "string",
             "nullable": true
+          },
+          "reason": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -21924,6 +21956,9 @@
               "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Onboarding.Queries.GetGettingStarted.GettingStartedItemDto"
             },
             "nullable": true
+          },
+          "visible": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -22026,6 +22061,14 @@
           "guestDefaultExpiryDays": {
             "type": "integer",
             "format": "int32",
+            "nullable": true
+          },
+          "size": {
+            "type": "string",
+            "nullable": true
+          },
+          "language": {
+            "type": "string",
             "nullable": true
           }
         },

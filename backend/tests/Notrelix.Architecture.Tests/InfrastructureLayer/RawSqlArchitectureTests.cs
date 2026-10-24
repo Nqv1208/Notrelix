@@ -47,6 +47,9 @@ public class RawSqlArchitectureTests
         // Security activity retention: bounded DELETE ... FOR UPDATE SKIP LOCKED sweep of
         // identity.user_security_activity under the system context.
         "src/Notrelix.Infrastructure/BackgroundJobs/SecurityActivityRetention.cs",
+        // Onboarding draft sweep: bounded DELETE ... FOR UPDATE SKIP LOCKED of expired
+        // workspace.onboarding_drafts rows under the system context.
+        "src/Notrelix.Infrastructure/BackgroundJobs/OnboardingDraftSweep.cs",
         // Reserves a Board's Item keys with one row-locking UPDATE ... RETURNING
         // on work.boards inside the request transaction (EF cannot express it
         // without loading and versioning the Board aggregate).
