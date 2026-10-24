@@ -166,7 +166,8 @@ public sealed class AutomationMoveItemExecutorCompositionIntegrationTests : IAsy
                 new Notrelix.Application.Common.Idempotency.IdempotencyOptions()));
         var authorizer = new Application.Features.WorkManagement.BoardItems.Services.WorkItemActionAuthorizer(
             new ResourceLocator(
-                context, context, context, context, context, context),
+                context, context, context, context, context, context,
+                new Moq.Mock<Notrelix.Application.Common.Data.Rls.IRlsSessionContext>().Object),
             Notrelix.Application.Common.Requests.Execution.RequestDescriptorRegistry
                 .Create(typeof(IWorkItemActions).Assembly),
             new PostgresAccessFactsProvider(

@@ -7,6 +7,10 @@ public sealed class DataSessionBehaviorTests
         : IRequest<string>, IAuthenticatedRequest, IWorkspaceRequest, IReadRequest;
     private sealed record WriteRequest(Guid WorkspaceId)
         : IRequest<string>, IAuthenticatedRequest, IWorkspaceRequest, IWriteRequest;
+    private sealed record GlobalAuthenticatedRead
+        : IRequest<string>, IAuthenticatedRequest, IGlobalRequest, IReadRequest;
+    private sealed record GlobalAnonymousRead
+        : IRequest<string>, IAnonymousRequest, IGlobalRequest, IReadRequest;
     private sealed record SecurityReadRequest(Guid WorkspaceId)
         : IRequest<string>, IAuthenticatedRequest, IWorkspaceRequest, INoDataRequest, IRequireVerifiedEmail;
 
@@ -31,6 +35,35 @@ public sealed class DataSessionBehaviorTests
             .MakeGenericMethod(requestType);
 
         await (Task)method.Invoke(null, [expectedAccess])!;
+    }
+
+    [Fact]
+    public async Task Global_authenticated_request_applies_the_user_scope_and_not_the_tenant_scope()
+    {
+        var fixture = CreateFixture<GlobalAuthenticatedRead>(ApplicationScopeKind.Global);
+
+        await fixture.Behavior.Handle(new GlobalAuthenticatedRead(), _ => Task.FromResult("ok"), CancellationToken.None);
+
+        fixture.Session.Verify(session => session.ExecuteAsync(
+            It.Is<RequestDataSessionOptions>(options =>
+                options.Access == RequestDataAccess.ReadOnly
+                && !options.ApplyTenantScope
+                && options.UserScopeUserId != null && options.UserScopeUserId != Guid.Empty),
+            It.IsAny<Func<CancellationToken, Task<string>>>(),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Global_anonymous_request_applies_no_scope()
+    {
+        var fixture = CreateFixture<GlobalAnonymousRead>(ApplicationScopeKind.Global);
+
+        await fixture.Behavior.Handle(new GlobalAnonymousRead(), _ => Task.FromResult("ok"), CancellationToken.None);
+
+        fixture.Session.Verify(session => session.ExecuteAsync(
+            It.Is<RequestDataSessionOptions>(options => !options.ApplyTenantScope && options.UserScopeUserId == null),
+            It.IsAny<Func<CancellationToken, Task<string>>>(),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     private static async Task VerifySession<TRequest>(RequestDataAccess expectedAccess)

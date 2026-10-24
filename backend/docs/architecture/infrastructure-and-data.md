@@ -666,6 +666,28 @@ suite (`Notrelix.Integration.Tests.Rls`), which records the flows that currently
 
 ---
 
+# 34B. Bounded principal scopes
+
+`RlsSqlScripts/012_principal_scopes.sql` adds the scopes of ADR-011 next to `app` and `worker`. None of them
+is a member of `ops.is_worker_scope()` (an architecture test pins that list):
+
+```text
+user    authenticated user, no tenant        ApplyUserScopeAsync(userId)
+token   one account/workspace named by a    EnterTokenScopeAsync(request)  ->  ops.enter_token_scope(...)
+        presented token digest
+```
+
+`DataSessionBehavior` applies the user scope to every Global authenticated request
+(`RequestDataSessionOptions.UserScopeUserId`; mutually exclusive with the tenant scope). `ResourceLocator`
+runs its lookup in a short read-only transaction in the user scope when no data session is open, so a row the
+caller holds no grant on is not found; inside an open data session the session's own scope applies. Both
+scope entries are transaction-local and require an open transaction. `ApplyUserScopeAsync` is a no-op while
+`Rls:SetSessionContext` is false. `EnterTokenScopeAsync` is the only way to enter a token scope: the database
+derives account and workspace from the digest, logs the entry with its reason, and counts it
+(`rls_scope_entry`); the token value is never logged. No flow uses the token scope yet.
+
+---
+
 # 35. Same physical connection
 
 ADR-002 relies on the same scoped DbContext/physical connection lifecycle between bootstrap and later full request scope.

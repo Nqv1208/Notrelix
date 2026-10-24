@@ -50,6 +50,10 @@ public sealed class EfRequestDataSession : IRequestDataSession
         if (options.Access == RequestDataAccess.None)
             return await action(cancellationToken);
 
+        if (options.ApplyTenantScope && options.UserScopeUserId is not null)
+            throw new ArgumentException(
+                "A data session applies either the tenant scope or the user scope, never both.", nameof(options));
+
         using var sessionOpen = PipelineActivitySource.Instance.StartActivity("data_session.open");
         await using var transaction =
             await _dbContext.Database.BeginTransactionAsync(cancellationToken);
@@ -69,6 +73,13 @@ public sealed class EfRequestDataSession : IRequestDataSession
                 _logger.LogTrace("Applying RLS session context");
                 using var sessionRls = PipelineActivitySource.Instance.StartActivity("data_session.rls");
                 await _rls.ApplyAsync(cancellationToken);
+            }
+
+            if (options.UserScopeUserId is { } userScopeUserId)
+            {
+                _logger.LogTrace("Applying RLS user scope");
+                using var userRls = PipelineActivitySource.Instance.StartActivity("data_session.rls");
+                await _rls.ApplyUserScopeAsync(userScopeUserId, cancellationToken);
             }
 
             var response = await action(cancellationToken);

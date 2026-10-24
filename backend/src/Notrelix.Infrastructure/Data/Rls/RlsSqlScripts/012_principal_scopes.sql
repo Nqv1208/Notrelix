@@ -85,3 +85,18 @@ REVOKE ALL ON FUNCTION ops.enter_token_scope(text, text, integer) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION ops.has_user_scope(uuid) TO notrelix_app, notrelix_auth, notrelix_worker, notrelix_support_readonly;
 GRANT EXECUTE ON FUNCTION ops.has_token_scope(uuid, uuid) TO notrelix_app, notrelix_auth, notrelix_worker, notrelix_support_readonly;
 GRANT EXECUTE ON FUNCTION ops.enter_token_scope(text, text, integer) TO notrelix_app;
+
+-- -----------------------------------------------------------------------------
+-- Tenantless internal rows written by Global authenticated requests.
+-- A Global request (profile, sessions, MFA ...) raises domain events that carry no account or workspace.
+-- The tenant-scoped INSERT policies of these internal tables cannot admit such a row, so a second
+-- INSERT-only policy admits exactly it, and only in the user scope of the user who raised it. No read,
+-- update or delete is added: the tables stay worker-readable only.
+-- -----------------------------------------------------------------------------
+SELECT ops.create_policy(
+    'events', 'domain_event_logs', 'p_app_insert_user_scope', 'INSERT', 'notrelix_app', NULL,
+    'workspace_id IS NULL AND ops.has_user_scope(ops.current_user_id()) '
+    || 'AND (actor_user_id IS NULL OR actor_user_id = ops.current_user_id())');
+SELECT ops.create_policy(
+    'messaging', 'outbox_messages', 'p_app_insert_user_scope', 'INSERT', 'notrelix_app', NULL,
+    'account_id IS NULL AND workspace_id IS NULL AND ops.has_user_scope(ops.current_user_id())');

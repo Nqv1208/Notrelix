@@ -159,24 +159,30 @@ public sealed class AppRoleConformanceTests : IAsyncLifetime
     }
 
     [Theory]
-    [InlineData("/api/v1/auth/me")]
-    [InlineData("/api/v1/auth/bootstrap")]
-    public async Task GlobalAuthenticatedRequest_UnderTheAppRole_CurrentlyFailsWith400UserNotFound(string path)
+    [InlineData("/api/v1/auth/me", "alice-rls@example.com")]
+    [InlineData("/api/v1/auth/bootstrap", "Alice")]
+    [InlineData("/api/v1/account/workspaces", "WS")]
+    [InlineData("/api/v1/profile/preferences", "")]
+    [InlineData("/api/v1/auth/mfa/status", "")]
+    [InlineData("/api/v1/auth/sessions", "")]
+    public async Task GlobalAuthenticatedRequest_UnderTheAppRole_Works(string path, string expectedBodyFragment)
     {
         var (owner, app) = await BothAsync(c => c.GetAsync(path), jwt: true);
         owner.StatusCode.Should().Be(HttpStatusCode.OK, await owner.Content.ReadAsStringAsync());
-        app.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        (await app.Content.ReadAsStringAsync()).Should().Contain("User not found");
+        app.StatusCode.Should().Be(HttpStatusCode.OK, await app.Content.ReadAsStringAsync());
+        if (expectedBodyFragment.Length > 0)
+            (await app.Content.ReadAsStringAsync()).Should().Contain(expectedBodyFragment);
     }
 
     [Fact]
-    public async Task AccountWorkspaceList_UnderTheAppRole_CurrentlyReturnsAnEmptyList()
+    public async Task ProfileUpdate_UnderTheAppRole_PersistsTheCallersOwnRow()
     {
-        var (owner, app) = await BothAsync(c => c.GetAsync("/api/v1/account/workspaces"), jwt: true);
-        owner.StatusCode.Should().Be(HttpStatusCode.OK);
-        (await owner.Content.ReadAsStringAsync()).Should().Contain("WS");
-        app.StatusCode.Should().Be(HttpStatusCode.OK);
-        (await app.Content.ReadAsStringAsync()).Should().Be("[]");
+        var app = await CallAsync(_fixture.AppConnectionString,
+            c => c.PatchAsJsonAsync("/api/v1/profile/", new { name = "Alice Renamed" }), jwt: true);
+        app.StatusCode.Should().Be(HttpStatusCode.OK, await app.Content.ReadAsStringAsync());
+
+        var me = await CallAsync(_fixture.AppConnectionString, c => c.GetAsync("/api/v1/auth/me"), jwt: true);
+        (await me.Content.ReadAsStringAsync()).Should().Contain("Alice Renamed");
     }
 
     [Fact]
@@ -188,11 +194,11 @@ public sealed class AppRoleConformanceTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task ResourceScopedRequest_UnderTheAppRole_CurrentlyReturnsNotFound()
+    public async Task ResourceScopedRequest_UnderTheAppRole_Works()
     {
         var (owner, app) = await BothAsync(c => c.GetAsync($"/api/v1/boards/{_boardId}"), jwt: true);
         owner.StatusCode.Should().Be(HttpStatusCode.OK, await owner.Content.ReadAsStringAsync());
-        app.StatusCode.Should().Be(HttpStatusCode.NotFound, "the resource locator runs before any session context");
+        app.StatusCode.Should().Be(HttpStatusCode.OK, "the resource locator runs in the user scope before the tenant is known");
     }
 
     [Fact]

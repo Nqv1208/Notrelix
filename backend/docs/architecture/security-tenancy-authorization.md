@@ -751,6 +751,8 @@ RlsSqlScripts/
 Current accepted ADR-002 defines bootstrap/full RLS connection lifecycle.
 Current accepted ADR-011 defines the database identities (owner, `notrelix_app`, `notrelix_worker`) and the
 bounded `user`, `token`, `credential` and `registration` scopes that stand beside the `app` and `worker` scopes.
+The `user` scope (Global authenticated requests, resource location) and the `token` scope primitive exist;
+see `infrastructure-and-data.md` section 34B.
 
 These are implementation evidence.
 

@@ -14,7 +14,20 @@ internal static class AppRoleHost
         AppRoleTestContainer fixture, string db, IReadOnlyDictionary<string, string?>? extra = null) =>
         new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
-            builder.ConfigureLogging(l => { l.ClearProviders(); l.SetMinimumLevel(LogLevel.Critical); });
+            builder.ConfigureLogging(l =>
+            {
+                l.ClearProviders();
+                // NOTRELIX_APP_ROLE_LOG=1 prints server errors, to diagnose a flow that fails under the role.
+                if (Environment.GetEnvironmentVariable("NOTRELIX_APP_ROLE_LOG") == "1")
+                {
+                    l.AddSimpleConsole();
+                    l.SetMinimumLevel(LogLevel.Error);
+                }
+                else
+                {
+                    l.SetMinimumLevel(LogLevel.Critical);
+                }
+            });
             builder.UseEnvironment("Testing");
             foreach (var (k, v) in RateLimitTestSettings.Generous) builder.UseSetting(k, v);
             var keys = Path.Combine(Path.GetTempPath(), "notrelix-rls-conf-keys", Guid.NewGuid().ToString("N"));
