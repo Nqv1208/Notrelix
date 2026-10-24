@@ -73,7 +73,7 @@ internal sealed class OutboxDispatcher : BackgroundService
         if (claimed.Count == 0) return false;
 
         // Phase 2: Publish outside database transaction
-        await using var scope = _scopeFactory.CreateAsyncScope();
+        await using var scope = _scopeFactory.CreateWorkerAsyncScope();
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var integrationEventBus = scope.ServiceProvider.GetRequiredService<IIntegrationEventBus>();
         var eventTypeRegistry = scope.ServiceProvider.GetRequiredService<IEventTypeRegistry>();
@@ -116,7 +116,7 @@ internal sealed class OutboxDispatcher : BackgroundService
 
         try
         {
-            await using var scope = _scopeFactory.CreateAsyncScope();
+            await using var scope = _scopeFactory.CreateWorkerAsyncScope();
             var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
             // Dead-letter is the exhausted 'Failed' terminal state, not a status of
@@ -143,7 +143,7 @@ internal sealed class OutboxDispatcher : BackgroundService
 
     private async Task<(List<Guid> Ids, Guid LockId)> ClaimBatchAsync(CancellationToken cancellationToken)
     {
-        await using var scope = _scopeFactory.CreateAsyncScope();
+        await using var scope = _scopeFactory.CreateWorkerAsyncScope();
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var dateTimeProvider = scope.ServiceProvider.GetRequiredService<IDateTimeProvider>();
 

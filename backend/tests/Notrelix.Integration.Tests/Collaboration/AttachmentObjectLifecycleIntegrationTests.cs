@@ -50,6 +50,7 @@ public sealed class AttachmentObjectLifecycleIntegrationTests : IAsyncLifetime
 
     private readonly string _storageRoot = Path.Combine(Path.GetTempPath(), "notrelix-lifecycle-" + Guid.NewGuid().ToString("N"));
     private string _reaperConnectionString = string.Empty;
+    private string _workerConnectionString = string.Empty;
 
     public async Task InitializeAsync()
     {
@@ -71,6 +72,10 @@ public sealed class AttachmentObjectLifecycleIntegrationTests : IAsyncLifetime
             Options = "-c role=notrelix_app",
         };
         _reaperConnectionString = builder.ConnectionString;
+
+        // The reaper is a background job: it connects as the worker role, never as the application role.
+        _workerConnectionString = await Notrelix.Testing.Integration.AppRoleLogin.CreateAsync(
+            _container.GetConnectionString(), "reaper_worker_login", Notrelix.Testing.Integration.AppRoleLogin.WorkerRole);
     }
 
     public async Task DisposeAsync()
@@ -237,7 +242,7 @@ public sealed class AttachmentObjectLifecycleIntegrationTests : IAsyncLifetime
         await using var transaction = await context.Database.BeginTransactionAsync();
         var visible = await context.Attachments.IgnoreQueryFilters().CountAsync();
 
-        visible.Should().Be(0, "the login role has no tenant context: only the explicit worker scope sees rows");
+        visible.Should().Be(0, "the application login has no tenant context: only the worker login sees rows");
     }
 
     [Fact]
@@ -369,7 +374,7 @@ public sealed class AttachmentObjectLifecycleIntegrationTests : IAsyncLifetime
         IStorageService storage, AttachmentRetentionOptions? options = null, IDateTimeProvider? clock = null)
     {
         var tenant = new CurrentTenantContext();
-        var context = CreateContext(tenant, _reaperConnectionString);
+        var context = CreateContext(tenant, _workerConnectionString);
         var rls = new RlsSessionContext(context, Options.Create(new RlsOptions { Enabled = true, SetSessionContext = true }), tenant);
         var store = new PostgresAttachmentReaperStore(context, tenant, rls, NullLogger<PostgresAttachmentReaperStore>.Instance);
         var reaper = new AttachmentObjectReaper(

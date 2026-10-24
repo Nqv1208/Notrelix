@@ -14,6 +14,8 @@ public class UpdateWorkspaceSettingsCommandValidator : AbstractValidator<UpdateW
         RuleFor(x => x.GuestDefaultExpiryDays)
             .Must(days => days is null || WorkspaceSettings.AllowedGuestDefaultExpiryDays.Contains(days.Value))
             .WithMessage("Guest default expiry must be 30, 90 or 180 days, or none.");
+        RuleFor(x => x.Size).MaximumLength(16);
+        RuleFor(x => x.Language).MaximumLength(8);
         RuleFor(x => x.ExpectedVersion).GreaterThan(0);
     }
 }

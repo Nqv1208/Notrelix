@@ -11,6 +11,9 @@ public static class WorkspaceRuleCodes
     public const string Workspaces_Workspace_CannotUpdateDescriptionArchived = "Workspaces_Workspace_CannotUpdateDescriptionArchived";
     public const string Workspaces_Workspace_CannotUpdateSettingsArchived = "Workspaces_Workspace_CannotUpdateSettingsArchived";
     public const string Workspaces_Workspace_CannotUnarchiveNonArchived = "Workspaces_Workspace_CannotUnarchiveNonArchived";
+    public const string Workspaces_Workspace_SlugTooShort = "Workspaces_Workspace_SlugTooShort";
+    public const string Workspaces_Workspace_SlugTooLong = "Workspaces_Workspace_SlugTooLong";
+    public const string Workspaces_Workspace_SlugReserved = "Workspaces_Workspace_SlugReserved";
 
     // ── Invitation ────────────────────────────────────────────────────────
     public const string Workspaces_Invitation_ExpiryMustBePositive = "Workspaces_Invitation_ExpiryMustBePositive";
@@ -91,6 +94,8 @@ public static class WorkspaceRuleCodes
     public const string Workspaces_Settings_DefaultMemberRoleMustBeGuestOrMember = "Workspaces_Settings_DefaultMemberRoleMustBeGuestOrMember";
     public const string Workspaces_Settings_InvitationExpiryDaysOutOfRange = "Workspaces_Settings_InvitationExpiryDaysOutOfRange";
     public const string Workspaces_Settings_GuestDefaultExpiryDaysInvalid = "Workspaces_Settings_GuestDefaultExpiryDaysInvalid";
+    public const string Workspaces_Settings_SizeInvalid = "Workspaces_Settings_SizeInvalid";
+    public const string Workspaces_Settings_LanguageInvalid = "Workspaces_Settings_LanguageInvalid";
 
     // ── Navigation (recents and pins, WX-DEC-011) ─────────────────────────
     public const string Workspaces_Navigation_UnsupportedResourceKind = "Workspaces_Navigation_UnsupportedResourceKind";

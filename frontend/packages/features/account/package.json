@@ -25,7 +25,8 @@
     "@notrelix/query": "workspace:*",
     "@notrelix/ui-web": "workspace:*",
     "@tanstack/react-query": "^5.95.2",
-    "lucide-react": "^0.562.0"
+    "lucide-react": "^0.562.0",
+    "qrcode-generator": "^2.0.4"
   },
   "devDependencies": {
     "typescript": "^5.0.0",

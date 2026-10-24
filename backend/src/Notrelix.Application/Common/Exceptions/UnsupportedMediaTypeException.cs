@@ -8,4 +8,12 @@ namespace Notrelix.Application.Common.Exceptions;
 public sealed class UnsupportedMediaTypeException : Exception
 {
     public UnsupportedMediaTypeException(string message) : base(message) { }
+
+    /// <param name="errorCode">Stable public error code; when absent the API reports the attachment code.</param>
+    public UnsupportedMediaTypeException(string message, string errorCode) : base(message)
+    {
+        ErrorCode = errorCode;
+    }
+
+    public string? ErrorCode { get; }
 }

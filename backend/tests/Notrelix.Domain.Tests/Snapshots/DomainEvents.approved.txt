@@ -1108,7 +1108,7 @@ workspaces.workspace-invitation-created|1|Notrelix.Domain.Workspaces.Invitations
 workspaces.workspace-invitation-created|1|Notrelix.Domain.Workspaces.Invitations.Events.WorkspaceInvitationCreatedDomainEvent|Workspace|InvitationId|System.Guid|False
 workspaces.workspace-invitation-created|1|Notrelix.Domain.Workspaces.Invitations.Events.WorkspaceInvitationCreatedDomainEvent|Workspace|InvitedBy|System.Guid|False
 workspaces.workspace-invitation-created|1|Notrelix.Domain.Workspaces.Invitations.Events.WorkspaceInvitationCreatedDomainEvent|Workspace|Role|Notrelix.Domain.Workspaces.Members.WorkspaceRole|False
-workspaces.workspace-invitation-declined|1|Notrelix.Domain.Workspaces.Invitations.Events.WorkspaceInvitationDeclinedDomainEvent|Workspace|DeclinedBy|System.Guid|False
+workspaces.workspace-invitation-declined|1|Notrelix.Domain.Workspaces.Invitations.Events.WorkspaceInvitationDeclinedDomainEvent|Workspace|DeclinedBy|System.Guid|True
 workspaces.workspace-invitation-declined|1|Notrelix.Domain.Workspaces.Invitations.Events.WorkspaceInvitationDeclinedDomainEvent|Workspace|InvitationId|System.Guid|False
 workspaces.workspace-invitation-expired|1|Notrelix.Domain.Workspaces.Invitations.Events.WorkspaceInvitationExpiredDomainEvent|Workspace|InvitationId|System.Guid|False
 workspaces.workspace-invitation-resent|1|Notrelix.Domain.Workspaces.Invitations.Events.WorkspaceInvitationResentDomainEvent|Workspace|InvitationId|System.Guid|False

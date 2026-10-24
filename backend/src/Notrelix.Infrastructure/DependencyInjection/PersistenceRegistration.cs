@@ -30,6 +30,13 @@ namespace Notrelix.Infrastructure;
 /// </summary>
 public static class PersistenceRegistration
 {
+    internal static void ConfigureNpgsql(DbContextOptionsBuilder options, string? connectionString) =>
+        options.UseNpgsql(connectionString, npg =>
+        {
+            npg.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
+            npg.MigrationsHistoryTable("__EFMigrationsHistory", DbSchemas.Ops);
+        }).UseSnakeCaseNamingConvention();
+
     public static IServiceCollection AddPersistence(
         this IServiceCollection services, IConfiguration configuration)
     {
@@ -53,19 +60,28 @@ public static class PersistenceRegistration
         services.AddScoped<AuditableEntityInterceptor>();
         services.AddScoped<DomainEventInterceptor>();
 
-        var connectionString = configuration.GetConnectionString("NotrelixDb");
+        // The application login (ConnectionStrings:NotrelixDb) serves requests; the background login
+        // (ConnectionStrings:NotrelixWorkerDb) is used by every scope that was switched to the worker
+        // principal (dispatchers, deduplication, consumers, sweeps). Unset, the worker string falls back to
+        // the application one.
+        var connectionStrings = DatabaseConnectionStrings.FromConfiguration(configuration);
+        services.AddSingleton(connectionStrings);
+        services.AddScoped<DatabasePrincipal>();
 
         // Single unified ApplicationDbContext
         services.AddDbContext<ApplicationDbContext>((sp, options) =>
         {
             options.AddInterceptors(sp.GetRequiredService<AuditableEntityInterceptor>());
             options.AddInterceptors(sp.GetRequiredService<DomainEventInterceptor>());
-            options.UseNpgsql(connectionString, npg =>
-            {
-                npg.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
-                npg.MigrationsHistoryTable("__EFMigrationsHistory", DbSchemas.Ops);
-            }).UseSnakeCaseNamingConvention();
+            ConfigureNpgsql(options, sp.GetRequiredService<DatabasePrincipal>().ResolveConnectionString());
         });
+
+        // Owner connection (migrate, rls-apply, seed). Falls back to the runtime connection string
+        // while ConnectionStrings:NotrelixMigrationDb is unset.
+        services.AddScoped<OwnerDbContextProvider>();
+
+        // Refuses (or warns about) a serving connection that row-level security cannot constrain.
+        services.AddHostedService<RuntimeDatabaseRoleGuard>();
 
         // Provider-independent data session (transaction/RLS/SaveChanges mechanics)
         services.AddScoped<IRequestDataSession, EfRequestDataSession>();
@@ -156,9 +172,17 @@ public static class PersistenceRegistration
             global::Notrelix.Infrastructure.CrossContext.Governance.WorkManagement.BoardChildAuthorizationFactsAdapter>();
         services.AddScoped<IActorLookupService, ActorLookupService>();
         services.AddScoped<IMemberPhoneLookup, MemberPhoneLookup>();
+        services.AddScoped<global::Notrelix.Application.Features.Workspaces.Abstractions.IWorkspaceSlugResolver, Notrelix.Infrastructure.Workspaces.Workspaces.WorkspaceSlugResolver>();
+        services.AddScoped<global::Notrelix.Application.Features.Identity.OAuth.Abstractions.IOAuthIdentityProbe, Notrelix.Infrastructure.Identity.OAuth.OAuthIdentityProbe>();
+        services.AddScoped<global::Notrelix.Application.Features.Identity.Registration.Ports.IEmailRegistrationProbe, Notrelix.Infrastructure.Identity.Registration.EmailRegistrationProbe>();
+        services.AddScoped<global::Notrelix.Application.Features.Identity.Users.Ports.IMemberEmailReadPort, Notrelix.Infrastructure.Identity.Users.MemberEmailReader>();
+        services.AddScoped<global::Notrelix.Application.Features.Identity.Profiles.Ports.IAvatarStorageKeyReadPort, Notrelix.Infrastructure.Identity.Profiles.AvatarStorageKeyLookup>();
         services.AddScoped<Notrelix.Application.Features.Governance.Abstractions.IResourceAccessChangeReader, Notrelix.Infrastructure.Data.Authz.EfResourceAccessChangeReader>();
-        services.AddScoped<ApplicationDbContextInitialiser>();
-        services.AddScoped<RlsPolicyApplier>();
+        services.AddScoped(sp => ActivatorUtilities.CreateInstance<ApplicationDbContextInitialiser>(
+            sp, sp.GetRequiredService<OwnerDbContextProvider>().Context));
+        services.AddScoped(sp => new RlsPolicyApplier(
+            sp.GetRequiredService<OwnerDbContextProvider>().Context,
+            sp.GetRequiredService<ILogger<RlsPolicyApplier>>()));
         services.AddScoped<RlsSessionContext>();
         services.AddScoped<IRlsSessionContext>(sp => sp.GetRequiredService<RlsSessionContext>());
 

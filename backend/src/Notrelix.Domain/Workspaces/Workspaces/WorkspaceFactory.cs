@@ -10,9 +10,11 @@ public static class WorkspaceFactory
         string slug,
         DateTimeOffset createdAt,
         bool isPersonal = false,
-        string? description = null)
+        string? description = null,
+        string? size = null,
+        string? language = null)
     {
-        var workspace = Workspace.Create(accountId, ownerId, name, slug, createdAt, description: description, isPersonal: isPersonal);
+        var workspace = Workspace.Create(accountId, ownerId, name, slug, createdAt, description: description, isPersonal: isPersonal, size: size, language: language);
         var ownerMember = WorkspaceMember.Create(accountId, workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, createdAt);
 
         return new WorkspaceCreationResult(workspace, ownerMember);

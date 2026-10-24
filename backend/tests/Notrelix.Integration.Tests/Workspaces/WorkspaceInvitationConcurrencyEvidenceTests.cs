@@ -155,7 +155,9 @@ public sealed class WorkspaceInvitationConcurrencyEvidenceTests : IAsyncLifetime
             grantProjection,
             new Notrelix.Application.Features.Workspaces.Invitations.Services.InvitationInitialEntries(context, new Notrelix.Infrastructure.Workspaces.Spaces.SpaceStore(context)),
             new Notrelix.Infrastructure.Data.Authz.GuestResourceAccessActionsAdapter(context),
-            new Mock<Notrelix.Application.Common.Auditing.IAuditService>().Object);
+            new Mock<Notrelix.Application.Common.Auditing.IAuditService>().Object,
+            new Notrelix.Application.Features.Workspaces.Invitations.Services.InvitationTokenScope(
+                context, SystemTenant(), new Mock<IRlsSessionContext>().Object));
 
         return (context, handler);
     }

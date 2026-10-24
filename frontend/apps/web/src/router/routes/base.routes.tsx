@@ -8,6 +8,7 @@ import { RootLayout } from "../../routes/__root";
 import { IndexPage } from "../../routes/index";
 import { SignInPage } from "../../routes/sign-in";
 import { SignUpPage } from "../../routes/sign-up";
+import { AuthCallbackPage } from "../../routes/auth-callback";
 import { ForgotPasswordPage } from "../../routes/forgot-password";
 import { HomePage } from "../../routes/home";
 import { InvitePage } from "../../routes/invite/$token";
@@ -29,6 +30,12 @@ export const signInRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/sign-in",
   component: SignInPage,
+});
+
+export const authCallbackRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/auth/callback",
+  component: AuthCallbackPage,
 });
 
 export const signUpRoute = createRoute({

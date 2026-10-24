@@ -59,6 +59,12 @@ BEGIN
         RETURN true;
     END IF;
 
+    -- A person holding a valid invitation is provisionally inside the invited account/workspace for the
+    -- request that accepts it (the bounded invitee scope; see 014_anonymous_scopes.sql).
+    IF ops.has_invitee_scope(p_account_id, NULL) THEN
+        RETURN true;
+    END IF;
+
     IF v_user_id IS NULL THEN
         RETURN false;
     END IF;
@@ -100,6 +106,10 @@ BEGIN
     END IF;
 
     IF ops.is_worker_scope() THEN
+        RETURN true;
+    END IF;
+
+    IF ops.has_invitee_scope(p_account_id, p_workspace_id) THEN
         RETURN true;
     END IF;
 

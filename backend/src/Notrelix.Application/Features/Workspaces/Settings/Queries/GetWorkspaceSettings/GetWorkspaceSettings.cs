@@ -17,7 +17,9 @@ public record WorkspaceSettingsDto(
     bool AllowGuestInvites,
     string DefaultMemberRole,
     int InvitationExpiryDays,
-    int? GuestDefaultExpiryDays
+    int? GuestDefaultExpiryDays,
+    string? Size = null,
+    string? Language = null
 );
 
 public class GetWorkspaceSettingsQueryHandler : IRequestHandler<GetWorkspaceSettingsQuery, Result<WorkspaceSettingsDto>>
@@ -45,6 +47,8 @@ public class GetWorkspaceSettingsQueryHandler : IRequestHandler<GetWorkspaceSett
             s.AllowGuestInvites,
             s.DefaultMemberRole.ToString(),
             s.InvitationExpiryDays,
-            s.GuestDefaultExpiryDays));
+            s.GuestDefaultExpiryDays,
+            s.Size,
+            s.Language));
     }
 }

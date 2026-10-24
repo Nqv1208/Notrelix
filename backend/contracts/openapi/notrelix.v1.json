@@ -2693,6 +2693,59 @@
         }
       }
     },
+    "/api/v1/auth/identify": {
+      "post": {
+        "tags": [
+          "Identity.Auth",
+          "Identity.Auth"
+        ],
+        "summary": "Tell the sign-in page how an email signs in",
+        "description": "Answers password or single sign-on from the email's text alone; an unknown email and a known password email get the same answer. Rate limited per IP.",
+        "operationId": "Identity.Auth.IdentifySignIn",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Endpoints.Identity.Auth.Queries.IdentifySignInRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Identity.Auth.Queries.IdentifySignIn.SignInMethodDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/auth/csrf": {
       "get": {
         "tags": [
@@ -3765,6 +3818,7 @@
           "Identity.Mfa"
         ],
         "summary": "Complete an MFA challenge with a TOTP or recovery code",
+        "description": "The challenge comes from the request body or, after an OAuth sign-in, from the httpOnly mfaChallenge cookie. A body token wins. The cookie is cleared on success and when the challenge is expired or exhausted.",
         "operationId": "Identity.Mfa.VerifyChallenge",
         "requestBody": {
           "content": {
@@ -4346,6 +4400,201 @@
           },
           "412": {
             "description": "Precondition Failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/profile/avatar": {
+      "put": {
+        "tags": [
+          "Identity.Profile",
+          "Identity.Profile"
+        ],
+        "summary": "Replace your profile photo (multipart/form-data, streamed)",
+        "description": "One image in the part named 'file': PNG, JPEG or WebP, at most 2,000,000 bytes, recognised from its bytes. Returns the address the photo is served from.",
+        "operationId": "Identity.Profile.UploadAvatar",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Contracts.Identity.Profile.UploadAvatarForm"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Identity.Profiles.DTOs.ProfileAvatarDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload Too Large",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Identity.Profile",
+          "Identity.Profile"
+        ],
+        "summary": "Remove your profile photo",
+        "description": "Removing an absent photo succeeds and changes nothing.",
+        "operationId": "Identity.Profile.RemoveAvatar",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Identity.Profiles.DTOs.ProfileAvatarDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/users/{userId}/avatar": {
+      "get": {
+        "tags": [
+          "Identity.Profile",
+          "Identity.Profile"
+        ],
+        "summary": "Read a user's profile photo (authorised, streamed)",
+        "description": "Visible to the person and to people who share an active workspace with them. Any other reader, or a user without an uploaded photo, gets 404. The address carries the object id in 'v', so a response may be cached privately as immutable.",
+        "operationId": "Identity.Profile.GetUserAvatar",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/webp": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -14056,7 +14305,8 @@
           "Workspaces.Invitations",
           "Workspaces.Invitations"
         ],
-        "summary": "Get workspace invitation details by token",
+        "summary": "Read an invitation link before signing in",
+        "description": "Answers valid, expired or used with the inviter's display name, the Workspace name and, for a guest invitation, the resource title and level. The invited email and whether it has an account are returned only while the invitation is valid.",
         "operationId": "Workspaces.Invitations.GetInvitationByToken",
         "requestBody": {
           "content": {
@@ -14074,7 +14324,166 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Invitations.Queries.GetInvitationByToken.WorkspaceInvitationDto"
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Invitations.Queries.GetInvitationByToken.InvitationPreviewDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/invitations/accept-with-registration": {
+      "post": {
+        "tags": [
+          "Workspaces.Invitations",
+          "Workspaces.Invitations"
+        ],
+        "summary": "Accept an invitation by creating the account in the same step",
+        "description": "Creates the sign-in identity for the invited address, joins the Workspace and signs the person in (httpOnly cookies). A repeat press answers the same success with alreadyAccepted and no session. An address that already has an account answers 409: sign in and accept instead.",
+        "operationId": "Workspaces.Invitations.AcceptInvitationWithRegistration",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Contracts.Workspaces.Invitations.Requests.AcceptInvitationWithRegistrationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.API.Contracts.Workspaces.Invitations.Responses.AcceptInvitationWithRegistrationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/invitations/decline": {
+      "post": {
+        "tags": [
+          "Workspaces.Invitations",
+          "Workspaces.Invitations"
+        ],
+        "summary": "Decline a workspace invitation with its token, without signing in",
+        "description": "Declining is permanent. A repeat press on an already declined invitation answers the same 204.",
+        "operationId": "Workspaces.Invitations.DeclineInvitationByToken",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Contracts.Identity.OneTimeTokenRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
                 }
               }
             }
@@ -14752,6 +15161,189 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/account/workspaces": {
+      "get": {
+        "tags": [
+          "Workspaces.Members",
+          "Workspaces.Members"
+        ],
+        "summary": "List the workspaces you belong to, with your role and the default",
+        "description": "Only the caller's own active memberships of active workspaces, ordered by name. Member count is null for a Guest and department count is null unless the caller is an Owner or Admin. isDefault marks the workspace that opens with the app; canLeave is false only for the last active Owner.",
+        "operationId": "Workspaces.Members.ListMyWorkspaces",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.DTOs.AccountWorkspaceDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/account/default-workspace": {
+      "put": {
+        "tags": [
+          "Workspaces.Members",
+          "Workspaces.Members"
+        ],
+        "summary": "Choose the workspace that opens with the app",
+        "description": "The caller must be an active member of the workspace; a workspace the caller cannot open answers 404. Choosing the current default succeeds and changes nothing.",
+        "operationId": "Workspaces.Members.SetDefaultWorkspace",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Endpoints.Workspaces.Members.Commands.SetDefaultWorkspaceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/account/workspaces/{workspaceId}": {
+      "delete": {
+        "tags": [
+          "Workspaces.Members",
+          "Workspaces.Members"
+        ],
+        "summary": "Leave a workspace",
+        "description": "Ends the caller's own membership. The last active Owner cannot leave and gets 409 workspaces.member.last-owner-cannot-leave. Revokes the caller's access to the workspace and clears it as the default.",
+        "operationId": "Workspaces.Members.LeaveWorkspace",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
                 }
               }
             }
@@ -18077,6 +18669,20 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.API.Contracts.Identity.Profile.UploadAvatarForm": {
+        "required": [
+          "file"
+        ],
+        "type": "object",
+        "properties": {
+          "file": {
+            "type": "string",
+            "format": "binary",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.API.Contracts.Integrations.Calendar.Requests.ConnectCalendarRequest": {
         "type": "object",
         "properties": {
@@ -19067,6 +19673,24 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.API.Contracts.Workspaces.Invitations.Requests.AcceptInvitationWithRegistrationRequest": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "password": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.API.Contracts.Workspaces.Invitations.Requests.ChangeInvitationRoleRequest": {
         "type": "object",
         "properties": {
@@ -19086,6 +19710,45 @@
           "level": {
             "type": "string",
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.API.Contracts.Workspaces.Invitations.Responses.AcceptInvitationWithRegistrationResponse": {
+        "required": [
+          "alreadyAccepted",
+          "workspaceId",
+          "workspaceSlug"
+        ],
+        "type": "object",
+        "properties": {
+          "workspaceSlug": {
+            "type": "string",
+            "nullable": true
+          },
+          "workspaceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "resourceKind": {
+            "type": "string",
+            "nullable": true
+          },
+          "resourceId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "alreadyAccepted": {
+            "type": "boolean"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "user": {
+            "$ref": "#/components/schemas/Notrelix.Application.Common.Security.Auth.UserDto"
           }
         },
         "additionalProperties": false
@@ -19224,6 +19887,14 @@
           "guestDefaultExpiryDays": {
             "type": "integer",
             "format": "int32",
+            "nullable": true
+          },
+          "size": {
+            "type": "string",
+            "nullable": true
+          },
+          "language": {
+            "type": "string",
             "nullable": true
           }
         },
@@ -19474,6 +20145,18 @@
           },
           "isPersonal": {
             "type": "boolean"
+          },
+          "slug": {
+            "type": "string",
+            "nullable": true
+          },
+          "size": {
+            "type": "string",
+            "nullable": true
+          },
+          "language": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -19709,6 +20392,16 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.API.Endpoints.Identity.Auth.Queries.IdentifySignInRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.API.Endpoints.Identity.Profile.Commands.UpdateAccountPreferencesRequest": {
         "type": "object",
         "properties": {
@@ -19810,6 +20503,16 @@
           "category": {
             "type": "string",
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.API.Endpoints.Workspaces.Members.Commands.SetDefaultWorkspaceRequest": {
+        "type": "object",
+        "properties": {
+          "workspaceId": {
+            "type": "string",
+            "format": "uuid"
           }
         },
         "additionalProperties": false
@@ -20227,6 +20930,41 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.Application.Features.Identity.Auth.Queries.IdentifySignIn.SignInMethodDto": {
+        "type": "object",
+        "properties": {
+          "method": {
+            "type": "string",
+            "nullable": true
+          },
+          "sso": {
+            "$ref": "#/components/schemas/Notrelix.Application.Features.Identity.Auth.Queries.IdentifySignIn.SsoSignInDto"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Identity.Auth.Queries.IdentifySignIn.SsoSignInDto": {
+        "type": "object",
+        "properties": {
+          "orgName": {
+            "type": "string",
+            "nullable": true
+          },
+          "orgInitials": {
+            "type": "string",
+            "nullable": true
+          },
+          "provider": {
+            "type": "string",
+            "nullable": true
+          },
+          "providerLabel": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.Application.Features.Identity.Mfa.DTOs.MfaEnrollmentStartResult": {
         "type": "object",
         "properties": {
@@ -20346,6 +21084,16 @@
           },
           "phoneVisibleToWorkspaceMembers": {
             "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Identity.Profiles.DTOs.ProfileAvatarDto": {
+        "type": "object",
+        "properties": {
+          "avatarUrl": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -21575,6 +22323,44 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.Application.Features.Workspaces.DTOs.AccountWorkspaceDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "slug": {
+            "type": "string",
+            "nullable": true
+          },
+          "role": {
+            "type": "string",
+            "nullable": true
+          },
+          "memberCount": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "departmentCount": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "isDefault": {
+            "type": "boolean"
+          },
+          "canLeave": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.Application.Features.Workspaces.DTOs.WorkspaceDto": {
         "type": "object",
         "properties": {
@@ -21631,6 +22417,14 @@
           "version": {
             "type": "integer",
             "format": "int64"
+          },
+          "size": {
+            "type": "string",
+            "nullable": true
+          },
+          "language": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -21776,18 +22570,23 @@
           "workspaceId": {
             "type": "string",
             "format": "uuid"
+          },
+          "resourceKind": {
+            "type": "string",
+            "nullable": true
+          },
+          "resourceId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
           }
         },
         "additionalProperties": false
       },
-      "Notrelix.Application.Features.Workspaces.Invitations.Queries.GetInvitationByToken.WorkspaceInvitationDto": {
+      "Notrelix.Application.Features.Workspaces.Invitations.Queries.GetInvitationByToken.InvitationPreviewDto": {
         "type": "object",
         "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "workspaceName": {
+          "state": {
             "type": "string",
             "nullable": true
           },
@@ -21795,7 +22594,7 @@
             "type": "string",
             "nullable": true
           },
-          "email": {
+          "workspaceName": {
             "type": "string",
             "nullable": true
           },
@@ -21803,13 +22602,11 @@
             "type": "string",
             "nullable": true
           },
-          "isExpired": {
-            "type": "boolean"
-          },
-          "isAccepted": {
-            "type": "boolean"
-          },
           "resourceKind": {
+            "type": "string",
+            "nullable": true
+          },
+          "resourceTitle": {
             "type": "string",
             "nullable": true
           },
@@ -21817,9 +22614,16 @@
             "type": "string",
             "nullable": true
           },
-          "initialEntryCount": {
-            "type": "integer",
-            "format": "int32"
+          "expiresOn": {
+            "type": "string",
+            "format": "date"
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "hasAccount": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -21908,6 +22712,10 @@
           "suggestion": {
             "type": "string",
             "nullable": true
+          },
+          "reason": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -21924,6 +22732,9 @@
               "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Onboarding.Queries.GetGettingStarted.GettingStartedItemDto"
             },
             "nullable": true
+          },
+          "visible": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -22026,6 +22837,14 @@
           "guestDefaultExpiryDays": {
             "type": "integer",
             "format": "int32",
+            "nullable": true
+          },
+          "size": {
+            "type": "string",
+            "nullable": true
+          },
+          "language": {
+            "type": "string",
             "nullable": true
           }
         },

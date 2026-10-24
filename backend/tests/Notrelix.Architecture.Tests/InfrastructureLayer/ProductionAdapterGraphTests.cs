@@ -125,6 +125,7 @@ public class ProductionAdapterGraphTests
     [
         ("IWorkManagementCollaborationReadPort", "WorkManagementCollaborationReadAdapter"),
         ("IIdentityBootstrapReadPort", "IdentityBootstrapReadAdapter"),
+        ("IAvatarAudienceReadPort", "AvatarAudienceReadAdapter"),
         ("IWorkActionPort", "WorkItemActionAdapter"),
         ("IWorkItemProjectionSourceAdapter", "WorkItemProjectionSourceAdapter"),
     ];
@@ -182,6 +183,7 @@ public class ProductionAdapterGraphTests
                 {
                     services.AddScoped<IWorkManagementCollaborationReadPort, WorkManagementCollaborationReadAdapter>();
                     services.AddScoped<IIdentityBootstrapReadPort, IdentityBootstrapReadAdapter>();
+                    services.AddScoped<IAvatarAudienceReadPort, AvatarAudienceReadAdapter>();
                     services.AddScoped<IWorkActionPort, WorkItemActionAdapter>();
                     services.AddScoped<
                         Notrelix.Application.Features.Analytics.Abstractions.IWorkItemProjectionSourceAdapter,

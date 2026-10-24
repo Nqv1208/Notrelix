@@ -272,6 +272,18 @@ overridable per environment. The MFA wrong-code budget per challenge (5) is a co
 | `Interval` | `01:00:00` (1 hour) | Time between sweeps. Range 10 seconds to 1 day. |
 | `BatchSize` | 1000 | Rows deleted per transaction. Range 1 to 10000. |
 
+`Workspaces:Onboarding:DraftSweep` (Infrastructure, `OnboardingDraftSweepOptions`, validated on start by
+`OnboardingDraftSweepOptionsValidator`) configures the sweep of expired onboarding drafts
+(`OnboardingDraftSweepService`, a hosted service; the retention itself is the Domain constant of 30 days after the last
+save, `OnboardingDraft.Retention`). The sweep runs under the system context with the RLS worker scope and claims rows
+with `FOR UPDATE SKIP LOCKED`:
+
+| Key | Default | Meaning |
+|---|---|---|
+| `Enabled` | `true` | When false nothing is deleted. |
+| `Interval` | `01:00:00` (1 hour) | Time between sweeps. Range 10 seconds to 1 day. |
+| `BatchSize` | 500 | Rows deleted per transaction. Range 1 to 10000. |
+
 Several API instances may sweep at once (rows are claimed with `FOR UPDATE SKIP LOCKED`). The sweep runs
 under the explicit system (worker) tenant context and RLS worker scope and touches only
 `identity.user_security_activity`.
@@ -280,6 +292,22 @@ Session cookies: `CookieService` marks the access and refresh cookies `Secure` (
 only when the environment is `Production`. The staging Compose overlay in this repository serves plain
 HTTP behind its own nginx (default origins `http://localhost`), so staging cookies are intentionally not
 `Secure`; if staging is published over HTTPS the cookie condition must be changed in the same step.
+
+Database connections and the serving role (`ConnectionStrings`, `Rls:RoleEnforcement`):
+
+| Key | Default | Meaning |
+|---|---|---|
+| `ConnectionStrings:NotrelixDb` | none (required) | The runtime connection: every request, background job and consumer. |
+| `ConnectionStrings:NotrelixMigrationDb` | unset | The owner connection used only by `--migrate`, `--rls-apply`, `--seed` and the Development startup migrate/seed. While unset, the runtime string is used for both (today's single-connection behavior); the initialiser logs that fallback. |
+| `ConnectionStrings:NotrelixWorkerDb` | unset | The background login (`notrelix_worker`) used by the outbox and email dispatchers, the deduplication store, message consumers, sweeps, reapers and job locks. While unset, `ConnectionStrings:NotrelixDb` is used for both (single-login development and test hosts). The unbounded worker scope is honoured only on a connection logged in as a member of `notrelix_worker`. |
+| `Rls:RoleEnforcement` | `Off` | `Off` does not inspect the runtime role. `Warn` logs a warning at startup when the runtime connection is a superuser, a BYPASSRLS role, a login that can `RESET ROLE` into one, or holds the owner's privileges on the tenant tables. `Enforce` fails startup in the same cases. |
+
+The owner connection must stay a superuser or BYPASSRLS role: data-migration guards such as the item-key
+backfill refuse to run as a plain non-bypass owner under FORCE ROW LEVEL SECURITY. The serving connection is
+meant to be the non-owner `notrelix_app` login. The guard (`RuntimeDatabaseRoleGuard`, a hosted service
+registered before the background workers) does not run in the command modes, which use the owner
+connection. No environment sets `Enforce` yet; the key defaults to `Off` until the environments are switched
+to the application login.
 
 These values are current executable evidence.
 
@@ -999,6 +1027,27 @@ Validate allowed targets.
 Do not accept arbitrary client-provided post-auth redirect URL without a safe allowlist/contract.
 
 Avoid open redirect.
+
+Current contract (`OAuth` section, `OAuthRedirectOptions`):
+
+```text
+FrontendSuccessUrl   where a completed OAuth sign-in lands (/auth/callback)
+FrontendFailureUrl   where a failed OAuth sign-in lands (/sign-in)
+FrontendMfaUrl       where an OAuth sign-in that needs a second factor lands (/sign-in?step=mfa)
+```
+
+The only client-influenced part is the person's return path. `returnUrl` on `GET /auth/oauth/{provider}/start`
+is validated (an internal root-relative path: one leading slash, no backslash, no control character,
+no percent-encoded variant of those, at most 512 characters) and stored in the OAuth state. The callback
+appends it as `?returnTo=<path>` to the success or MFA URL only when it passes the same check
+(`SafeReturnPath`); otherwise it is dropped. The frontend repeats the check before navigating.
+
+An OAuth sign-in of an MFA-enabled user issues no session. The challenge travels in the `mfaChallenge`
+cookie, never in a URL: httpOnly, SameSite=Lax, Secure when the request is HTTPS, path `/api/v1/auth/mfa`,
+lifetime at most the challenge lifetime and five minutes. `POST /auth/mfa/verify` reads it when the body
+has no challenge (a body challenge wins), clears it on success and when the challenge is expired or
+exhausted, and answers `identity.mfa.challenge-invalid` when neither exists. The five-wrong-codes limit
+per challenge is unchanged.
 
 ---
 

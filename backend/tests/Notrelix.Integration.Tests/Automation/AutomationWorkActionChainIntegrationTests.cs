@@ -129,7 +129,8 @@ public sealed class AutomationWorkActionChainIntegrationTests : IAsyncLifetime
         // connection and transaction exactly like the canonical behaviors.
         var authorizer = new Application.Features.WorkManagement.BoardItems.Services.WorkItemActionAuthorizer(
             new Notrelix.Infrastructure.Services.ResourceLocator(
-                workContext, workContext, workContext, workContext, workContext, workContext),
+                workContext, workContext, workContext, workContext, workContext, workContext,
+                new Moq.Mock<Notrelix.Application.Common.Data.Rls.IRlsSessionContext>().Object),
             Notrelix.Application.Common.Requests.Execution.RequestDescriptorRegistry
                 .Create(typeof(Application.Features.WorkManagement.Public.ItemMovement.IWorkItemActions).Assembly),
             new Notrelix.Infrastructure.Data.Authz.PostgresAccessFactsProvider(

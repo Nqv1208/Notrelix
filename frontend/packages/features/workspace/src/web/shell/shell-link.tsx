@@ -80,13 +80,17 @@ export function IdentityMark({
     shape === "round" ? "rounded-full" : "rounded-md",
     className,
   );
-  if (imageUrl) {
+  const src = imageUrl || null;
+  // A photo the producer will not serve (removed, not allowed) falls back to the initials.
+  const [failedSrc, setFailedSrc] = React.useState<string | null>(null);
+  if (src && src !== failedSrc) {
     return (
       <img
-        src={imageUrl}
+        src={src}
         alt=""
         aria-hidden="true"
         className={cn(box, "object-cover")}
+        onError={() => setFailedSrc(src)}
       />
     );
   }

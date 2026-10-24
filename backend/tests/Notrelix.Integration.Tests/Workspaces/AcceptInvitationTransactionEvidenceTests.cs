@@ -135,7 +135,9 @@ public sealed class AcceptInvitationTransactionEvidenceTests : IAsyncLifetime
             grantProjection,
             new InvitationInitialEntries(context, new Notrelix.Infrastructure.Workspaces.Spaces.SpaceStore(context)),
             new Notrelix.Infrastructure.Data.Authz.GuestResourceAccessActionsAdapter(context),
-            new Mock<Notrelix.Application.Common.Auditing.IAuditService>().Object);
+            new Mock<Notrelix.Application.Common.Auditing.IAuditService>().Object,
+            new Notrelix.Application.Features.Workspaces.Invitations.Services.InvitationTokenScope(
+                context, SystemTenant(), new Mock<IRlsSessionContext>().Object));
 
         return (session, context, handler, requestContext);
     }
@@ -220,7 +222,9 @@ public sealed class AcceptInvitationTransactionEvidenceTests : IAsyncLifetime
             grantProjection,
             new InvitationInitialEntries(context, new Notrelix.Infrastructure.Workspaces.Spaces.SpaceStore(context)),
             new Notrelix.Infrastructure.Data.Authz.GuestResourceAccessActionsAdapter(context),
-            new Mock<Notrelix.Application.Common.Auditing.IAuditService>().Object);
+            new Mock<Notrelix.Application.Common.Auditing.IAuditService>().Object,
+            new Notrelix.Application.Features.Workspaces.Invitations.Services.InvitationTokenScope(
+                context, SystemTenant(), new Mock<IRlsSessionContext>().Object));
 
         var result = await RunInTransactionAsync(session, handler, graph.RawToken);
 
@@ -308,7 +312,9 @@ public sealed class AcceptInvitationTransactionEvidenceTests : IAsyncLifetime
             grantProjection,
             new InvitationInitialEntries(context, new Notrelix.Infrastructure.Workspaces.Spaces.SpaceStore(context)),
             new Notrelix.Infrastructure.Data.Authz.GuestResourceAccessActionsAdapter(context),
-            new Mock<Notrelix.Application.Common.Auditing.IAuditService>().Object);
+            new Mock<Notrelix.Application.Common.Auditing.IAuditService>().Object,
+            new Notrelix.Application.Features.Workspaces.Invitations.Services.InvitationTokenScope(
+                context, SystemTenant(), new Mock<IRlsSessionContext>().Object));
 
         var result = await handler.Handle(new AcceptInvitationCommand(graph.RawToken), CancellationToken.None);
         await context.SaveChangesAsync();

@@ -143,6 +143,16 @@ internal sealed class AttachmentObjectReaper
     {
         try
         {
+            // The listing may predate another instance's chunk or a purge that already removed the
+            // object; re-checking under the sweep claim keeps every object deleted exactly once.
+            await using (var existing = await _storage.OpenReadAsync(key, ct))
+            {
+                if (existing is null)
+                {
+                    return false;
+                }
+            }
+
             await _storage.DeleteAsync(key, ct);
             return true;
         }

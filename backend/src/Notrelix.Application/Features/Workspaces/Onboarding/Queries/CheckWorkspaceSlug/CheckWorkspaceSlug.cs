@@ -1,11 +1,14 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Workspaces.Abstractions;
+using Notrelix.Domain.Workspaces.Rules;
 
 namespace Notrelix.Application.Features.Workspaces.Onboarding.Queries.CheckWorkspaceSlug;
 
 /// <param name="Status"><c>free</c>, <c>taken</c> or <c>invalid</c>.</param>
 /// <param name="Suggestion">The next free address; present only when <paramref name="Status"/> is <c>taken</c>.</param>
-public record WorkspaceSlugCheckDto(string Status, string? Suggestion);
+/// <param name="Reason">The stable rule code the address breaks; present only when <paramref name="Status"/> is <c>invalid</c>:
+/// <c>SharedKernel_Slug_InvalidFormat</c>, <c>Workspaces_Workspace_SlugTooShort</c>, <c>Workspaces_Workspace_SlugTooLong</c> or <c>Workspaces_Workspace_SlugReserved</c>.</param>
+public record WorkspaceSlugCheckDto(string Status, string? Suggestion, string? Reason = null);
 
 public static class WorkspaceSlugStatuses
 {
@@ -18,7 +21,8 @@ public static class WorkspaceSlugStatuses
 /// Whether a workspace address is usable in the caller's Account (accepted 2026-10-23: unique within the
 /// Account only, never global). Same authorization as creating a workspace, because it answers only for
 /// the Account the caller may create in. Active (not deleted) workspaces of the Account hold addresses,
-/// exactly as the unique index does. The address is checked after trimming and lower-casing.
+/// exactly as the unique index does. The address is checked after trimming and lower-casing against the
+/// same rule creation enforces (<see cref="WorkspaceSlugRules"/>: 3 to 63 characters, not reserved).
 /// </summary>
 public record CheckWorkspaceSlugQuery(string? Slug)
     : IQuery<Result<WorkspaceSlugCheckDto>>, IAuthenticatedRequest, IReadRequest, IAccountRequest, IRequirePermission
@@ -42,17 +46,18 @@ public class CheckWorkspaceSlugQueryHandler : IRequestHandler<CheckWorkspaceSlug
 
     public async Task<Result<WorkspaceSlugCheckDto>> Handle(CheckWorkspaceSlugQuery request, CancellationToken ct)
     {
-        if (!Slug.IsValid(request.Slug))
-            return Result<WorkspaceSlugCheckDto>.Success(new WorkspaceSlugCheckDto(WorkspaceSlugStatuses.Invalid, null));
+        var violation = WorkspaceSlugRules.FindViolation(request.Slug);
+        if (violation is not null)
+            return Result<WorkspaceSlugCheckDto>.Success(new WorkspaceSlugCheckDto(WorkspaceSlugStatuses.Invalid, null, violation));
 
         var accountId = _requestContext.RequireAccountId();
-        var slug = request.Slug!.Trim().ToLowerInvariant();
+        var slug = WorkspaceSlugRules.Normalize(request.Slug);
 
         var candidates = new List<string> { slug };
         for (var n = 2; n < SuggestionAttempts + 2; n++)
         {
             var suffix = "-" + n;
-            candidates.Add((slug.Length + suffix.Length > Slug.MaxLength ? slug[..(Slug.MaxLength - suffix.Length)].TrimEnd('-') : slug) + suffix);
+            candidates.Add((slug.Length + suffix.Length > WorkspaceSlugRules.MaxLength ? slug[..(WorkspaceSlugRules.MaxLength - suffix.Length)].TrimEnd('-') : slug) + suffix);
         }
 
         var taken = (await _context.Workspaces
@@ -65,7 +70,7 @@ public class CheckWorkspaceSlugQueryHandler : IRequestHandler<CheckWorkspaceSlug
             return Result<WorkspaceSlugCheckDto>.Success(new WorkspaceSlugCheckDto(WorkspaceSlugStatuses.Free, null));
 
         var suggestion = candidates.Skip(1).FirstOrDefault(c => !taken.Contains(c))
-            ?? (slug.Length > Slug.MaxLength - 7 ? slug[..(Slug.MaxLength - 7)].TrimEnd('-') : slug) + "-" + Guid.NewGuid().ToString("N")[..6];
+            ?? (slug.Length > WorkspaceSlugRules.MaxLength - 7 ? slug[..(WorkspaceSlugRules.MaxLength - 7)].TrimEnd('-') : slug) + "-" + Guid.NewGuid().ToString("N")[..6];
         return Result<WorkspaceSlugCheckDto>.Success(new WorkspaceSlugCheckDto(WorkspaceSlugStatuses.Taken, suggestion));
     }
 }

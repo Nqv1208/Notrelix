@@ -19,6 +19,7 @@ export type {
 } from "./core";
 
 export { createAuthService } from "./core";
+export { authQueryKeys } from "./core/query/keys";
 export type { AuthApiClient, AuthEndpoints } from "./core";
 
 export {
@@ -70,7 +71,12 @@ export type {
   AuthFlowNavigation,
   AuthCopy,
 } from "./web";
-export { createAuthFlowService, AUTH_FLOW_PATHS, readFlowError } from "./core";
+export {
+  createAuthFlowService,
+  AUTH_FLOW_PATHS,
+  readFlowError,
+  safeReturnPath,
+} from "./core";
 export type {
   AuthFlowApiClient,
   AuthFlowService,

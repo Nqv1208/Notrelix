@@ -1,4 +1,5 @@
 using Notrelix.API.Endpoints.Admin;
+using Notrelix.API.Endpoints.Identity.Users;
 using Notrelix.API.Realtime;
 using Notrelix.API.Endpoints.Automation.Executions;
 using Notrelix.API.Endpoints.Automation.Rules;
@@ -48,6 +49,7 @@ public static class EndpointRouteBuilderExtensions
         // Auth & Identity
         app.RegisterAuthEndpoints();
         app.RegisterProfileEndpoints();
+        app.RegisterUserAvatarEndpoints();
         app.RegisterApiTokenEndpoints();
         app.MapHealthEndpoints();
 

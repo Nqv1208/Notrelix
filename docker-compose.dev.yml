@@ -124,6 +124,7 @@ services:
       Messaging__RabbitMQ__Password: ${RABBITMQ_PASSWORD:-rabbitmq_local_only}
       OAuth__FrontendSuccessUrl: ${OAUTH_FRONTEND_SUCCESS_URL:-http://localhost:3000/auth/callback}
       OAuth__FrontendFailureUrl: ${OAUTH_FRONTEND_FAILURE_URL:-http://localhost:3000/login}
+      OAuth__FrontendMfaUrl: ${OAUTH_FRONTEND_MFA_URL:-http://localhost:3000/sign-in?step=mfa}
       OAuth__Providers__Google__Enabled: ${OAUTH_GOOGLE_ENABLED:-false}
       OAuth__Providers__Google__ClientId: ${OAUTH_GOOGLE_CLIENT_ID:-}
       OAuth__Providers__Google__ClientSecret: ${OAUTH_GOOGLE_CLIENT_SECRET:-}

@@ -24,6 +24,14 @@ public sealed class UserProfile : SoftDeletableAggregateRoot
     /// </summary>
     public bool PhoneVisibleToWorkspaceMembers { get; private set; }
 
+    /// <summary>
+    /// The Workspace that opens with the app for this person, or null when none is chosen (the
+    /// product then opens the first Workspace it knows). A stable id only: whether the person is
+    /// still an active member of that Workspace is a Workspaces fact, so readers treat a default
+    /// they cannot open as absent and Workspaces clears it when the person leaves.
+    /// </summary>
+    public Guid? DefaultWorkspaceId { get; private set; }
+
     private UserProfile() : base() { }
 
     public static UserProfile Create(Guid userId, DateTimeOffset createdAt)
@@ -110,6 +118,33 @@ public sealed class UserProfile : SoftDeletableAggregateRoot
         Theme = nextTheme;
         Phone = nextPhone;
         PhoneVisibleToWorkspaceMembers = nextPhoneVisible;
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+        RaiseDomainEvent(new UserProfileUpdatedDomainEvent(UserId, UserId, updatedAt));
+        return true;
+    }
+
+    /// <summary>
+    /// Chooses (or, with null, clears) the Workspace that opens with the app. Returns true when state
+    /// changed; choosing the current value is a semantic no-op (no version bump, no event).
+    /// Membership of the chosen Workspace is an external fact checked by Application.
+    /// </summary>
+    public bool ChangeDefaultWorkspace(Guid? workspaceId, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+
+        if (workspaceId is { } chosen)
+        {
+            Guard.NotEmpty(chosen);
+        }
+
+        if (workspaceId == DefaultWorkspaceId)
+        {
+            return false;
+        }
+
+        var pending = PrepareAuditUpdate(UserId, updatedAt);
+        DefaultWorkspaceId = workspaceId;
         ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new UserProfileUpdatedDomainEvent(UserId, UserId, updatedAt));

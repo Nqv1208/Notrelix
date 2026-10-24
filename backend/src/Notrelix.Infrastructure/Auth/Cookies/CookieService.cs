@@ -46,5 +46,58 @@ namespace Notrelix.Infrastructure.Auth.Cookies
             response.Cookies.Delete("refreshToken");
             response.Cookies.Delete("accessToken");
         }
+
+        public void SetMfaChallengeCookie(string challengeToken, DateTimeOffset challengeExpiresAt)
+        {
+            var context = _httpContextAccessor.HttpContext ?? throw new InvalidOperationException("No active HTTP context found.");
+
+            var remaining = challengeExpiresAt - DateTimeOffset.UtcNow;
+            var lifetime = remaining < ICookieService.MfaChallengeCookieMaxLifetime
+                ? remaining
+                : ICookieService.MfaChallengeCookieMaxLifetime;
+            if (lifetime <= TimeSpan.Zero)
+            {
+                DeleteMfaChallengeCookie();
+                return;
+            }
+
+            context.Response.Cookies.Append(
+                ICookieService.MfaChallengeCookieName,
+                challengeToken,
+                new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = context.Request.IsHttps,
+                    SameSite = SameSiteMode.Lax,
+                    Path = ICookieService.MfaChallengeCookiePath,
+                    MaxAge = lifetime,
+                    Expires = DateTimeOffset.UtcNow.Add(lifetime),
+                    IsEssential = true,
+                });
+        }
+
+        public string? GetMfaChallengeCookie()
+        {
+            var context = _httpContextAccessor.HttpContext;
+            return context is not null
+                && context.Request.Cookies.TryGetValue(ICookieService.MfaChallengeCookieName, out var value)
+                && !string.IsNullOrWhiteSpace(value)
+                    ? value
+                    : null;
+        }
+
+        public void DeleteMfaChallengeCookie()
+        {
+            var context = _httpContextAccessor.HttpContext ?? throw new InvalidOperationException("No active HTTP context found.");
+            context.Response.Cookies.Delete(
+                ICookieService.MfaChallengeCookieName,
+                new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = context.Request.IsHttps,
+                    SameSite = SameSiteMode.Lax,
+                    Path = ICookieService.MfaChallengeCookiePath,
+                });
+        }
     }
 }

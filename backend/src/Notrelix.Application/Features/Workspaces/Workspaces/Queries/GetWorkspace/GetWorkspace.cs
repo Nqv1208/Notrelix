@@ -46,7 +46,9 @@ public class GetWorkspaceQueryHandler : IRequestHandler<GetWorkspaceQuery, Resul
             memberCount,
             workspace.CreatedAt.DateTime,
             null,
-            workspace.Version
+            workspace.Version,
+            workspace.Settings.Size,
+            workspace.Settings.Language
         ));
     }
 }

@@ -2,6 +2,7 @@ import {
   rootRoute,
   indexRoute,
   signInRoute,
+  authCallbackRoute,
   signUpRoute,
   forgotPasswordRoute,
   homeRoute,
@@ -46,6 +47,7 @@ import {
 export const routeTree = rootRoute.addChildren([
   indexRoute,
   signInRoute,
+  authCallbackRoute,
   signUpRoute,
   forgotPasswordRoute,
   homeRoute,

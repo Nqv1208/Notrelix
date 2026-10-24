@@ -1,6 +1,7 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Requests.Scoping;
 using Notrelix.Application.Features.Identity.Abstractions;
+using Notrelix.Application.Features.Identity.Auth.Services;
 
 namespace Notrelix.Application.Features.Identity.Auth.Commands.ForgotPassword;
 
@@ -16,14 +17,17 @@ public class ForgotPasswordCommandHandler : IRequestHandler<ForgotPasswordComman
     private readonly IRateLimitService _rateLimitService;
     private readonly IEmailService _emailService;
     private readonly ILogger<ForgotPasswordCommandHandler> _logger;
+    private readonly CredentialScope? _credentialScope;
 
     public ForgotPasswordCommandHandler(
         IIdentityDbContext context,
         IOtpService otpService,
         IRateLimitService rateLimitService,
         IEmailService emailService,
-        ILogger<ForgotPasswordCommandHandler> logger)
+        ILogger<ForgotPasswordCommandHandler> logger,
+        CredentialScope? credentialScope = null)
     {
+        _credentialScope = credentialScope;
         _context = context;
         _otpService = otpService;
         _rateLimitService = rateLimitService;
@@ -42,6 +46,9 @@ public class ForgotPasswordCommandHandler : IRequestHandler<ForgotPasswordComman
         {
             return Result.Failure(new ApplicationError("identity.auth.rate-limited", "Too many requests. Please try again later.", ApplicationErrorType.BusinessRule));
         }
+
+        if (_credentialScope is not null)
+            await _credentialScope.EnterByEmailAsync(email, cancellationToken);
 
         var user = await _context.Users
             .FirstOrDefaultAsync(u => u.NormalizedEmail == email.ToLowerInvariant(), cancellationToken);

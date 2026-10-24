@@ -1,3 +1,5 @@
+using Notrelix.Application.Common.SystemOperations;
+using Microsoft.EntityFrameworkCore.Storage;
 namespace Notrelix.Infrastructure.Data.Rls;
 
 public sealed class RlsSessionContext : IRlsSessionContext
@@ -5,19 +7,29 @@ public sealed class RlsSessionContext : IRlsSessionContext
     private readonly DatabaseFacade _database;
     private readonly IOptions<RlsOptions> _options;
     private readonly ICurrentTenantContext _tenant;
+    private readonly ILogger<RlsSessionContext>? _logger;
+    private RlsBoundedScope _active;
 
     public RlsSessionContext(
         ApplicationDbContext dbContext,
         IOptions<RlsOptions> options,
-        ICurrentTenantContext tenant)
+        ICurrentTenantContext tenant,
+        ILogger<RlsSessionContext>? logger = null)
     {
         _database = dbContext.Database;
         _options = options;
         _tenant = tenant;
+        _logger = logger;
     }
+
+    public bool IsSessionContextEnabled => _options.Value.SetSessionContext;
+
+    public RlsBoundedScope ActiveBoundedScope => _active;
 
     public async Task ApplyAsync(CancellationToken cancellationToken)
     {
+        _active = RlsBoundedScope.None;
+
         if (!_options.Value.SetSessionContext)
         {
             if (!_tenant.IsSystemContext)
@@ -51,6 +63,184 @@ public sealed class RlsSessionContext : IRlsSessionContext
             SELECT set_config('app.request_scope', {scope}, true);
             SELECT set_config('app.correlation_id', {correlationId}, true);
         ", cancellationToken);
+    }
+
+    public async Task ApplyUserScopeAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        if (userId == Guid.Empty)
+            throw new ArgumentException("User id is required.", nameof(userId));
+
+        if (!_options.Value.SetSessionContext)
+            return;
+
+        RequireTransaction("user");
+
+        var user = userId.ToString();
+        var correlationId = System.Diagnostics.Activity.Current?.Id ?? "";
+
+        // The user scope carries the authenticated user only: account and workspace values are cleared
+        // so a policy cannot read a tenant left over from an earlier statement of the same transaction.
+        await _database.ExecuteSqlInterpolatedAsync($@"
+            SELECT set_config('app.current_user_id', {user}, true);
+            SELECT set_config('app.scope_user_id', {user}, true);
+            SELECT set_config('app.current_account_id', '', true);
+            SELECT set_config('app.current_workspace_id', '', true);
+            SELECT set_config('app.request_scope', 'user', true);
+            SELECT set_config('app.correlation_id', {correlationId}, true);
+            SELECT set_config('app.scope_invitee_id', '', true);
+            SELECT set_config('app.scope_token_hash', '', true);
+            SELECT set_config('app.scope_token_purpose', '', true);
+        ", cancellationToken);
+        _active = RlsBoundedScope.User;
+    }
+
+    public async Task<TokenScopeBinding?> EnterTokenScopeAsync(
+        TokenScopeRequest request,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        if (string.IsNullOrWhiteSpace(request.TokenHash))
+            throw new ArgumentException("A token digest is required.", nameof(request));
+
+        RequireTransaction("token");
+
+        var purpose = request.Purpose switch
+        {
+            TokenScopePurpose.WorkspaceInvitation => "workspace-invitation",
+            TokenScopePurpose.ApiToken => "api-token",
+            _ => throw new ArgumentOutOfRangeException(nameof(request), request.Purpose, "Unknown token scope purpose."),
+        };
+
+        var connection = (NpgsqlConnection)_database.GetDbConnection();
+        var transaction = (NpgsqlTransaction)_database.CurrentTransaction!.GetDbTransaction();
+        await using var command = new NpgsqlCommand(
+            "SELECT account_id, workspace_id FROM ops.enter_token_scope(@purpose, @hash, @version)",
+            connection,
+            transaction);
+        command.Parameters.AddWithValue("purpose", purpose);
+        command.Parameters.AddWithValue("hash", request.TokenHash);
+        command.Parameters.AddWithValue("version", request.HashVersion);
+
+        TokenScopeBinding? binding = null;
+        await using (var reader = await command.ExecuteReaderAsync(cancellationToken))
+        {
+            if (await reader.ReadAsync(cancellationToken))
+                binding = new TokenScopeBinding(reader.GetGuid(0), reader.GetGuid(1));
+        }
+
+        RlsScopeMetrics.Record("token", request.Reason.Category, binding is not null);
+
+        if (binding is null)
+        {
+            _logger?.LogWarning(
+                "Token scope not entered: {Purpose} | {Category}: {Description}",
+                purpose, request.Reason.Category, request.Reason.Description);
+        }
+        else
+        {
+            _active = RlsBoundedScope.Token;
+            _logger?.LogWarning(
+                "Token scope entered: {Purpose} | {Category}: {Description} | account {AccountId} workspace {WorkspaceId}",
+                purpose, request.Reason.Category, request.Reason.Description, binding.AccountId, binding.WorkspaceId);
+        }
+
+        return binding;
+    }
+
+    public async Task<bool> EnterInviteeScopeAsync(
+        Guid userId, SystemOperationReason reason, CancellationToken cancellationToken)
+    {
+        if (userId == Guid.Empty)
+            throw new ArgumentException("User id is required.", nameof(userId));
+        ArgumentNullException.ThrowIfNull(reason);
+        RequireTransaction("invitee");
+
+        var bound = await ScalarBoolAsync("SELECT ops.enter_invitee_scope(@user)", "user", userId, cancellationToken);
+        RlsScopeMetrics.Record("invitee", reason.Category, bound);
+        if (bound)
+            _active = RlsBoundedScope.Invitee;
+        _logger?.LogInformation(
+            bound ? "Invitee scope entered: {Category}: {Description} | user {UserId}"
+                  : "Invitee scope not entered: {Category}: {Description} | user {UserId}",
+            reason.Category, reason.Description, userId);
+        return bound;
+    }
+
+    public async Task<bool> EnterRegistrationScopeAsync(
+        Guid userId, SystemOperationReason reason, CancellationToken cancellationToken)
+    {
+        if (userId == Guid.Empty)
+            throw new ArgumentException("User id is required.", nameof(userId));
+        ArgumentNullException.ThrowIfNull(reason);
+        RequireTransaction("registration");
+
+        var bound = await ScalarBoolAsync("SELECT ops.enter_registration_scope(@user)", "user", userId, cancellationToken);
+        RlsScopeMetrics.Record("registration", reason.Category, bound);
+        if (bound)
+            _active = RlsBoundedScope.Registration;
+        _logger?.LogInformation(
+            bound ? "Registration scope entered: {Category}: {Description} | user {UserId}"
+                  : "Registration scope not entered: {Category}: {Description} | user {UserId}",
+            reason.Category, reason.Description, userId);
+        return bound;
+    }
+
+    public async Task<Guid?> EnterCredentialScopeAsync(
+        CredentialScopeRequest request,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        if (string.IsNullOrWhiteSpace(request.Credential))
+            throw new ArgumentException("A credential is required.", nameof(request));
+        RequireTransaction("credential");
+
+        var kind = request.Kind switch
+        {
+            CredentialScopeKind.NormalizedEmail => "email",
+            CredentialScopeKind.RefreshToken => "refresh-token",
+            CredentialScopeKind.EmailVerificationToken => "email-verification",
+            CredentialScopeKind.OAuthIdentity => "oauth-identity",
+            _ => throw new ArgumentOutOfRangeException(nameof(request), request.Kind, "Unknown credential scope kind."),
+        };
+
+        var connection = (NpgsqlConnection)_database.GetDbConnection();
+        var transaction = (NpgsqlTransaction)_database.CurrentTransaction!.GetDbTransaction();
+        await using var command = new NpgsqlCommand(
+            "SELECT ops.enter_credential_scope(@kind, @credential, @version)", connection, transaction);
+        command.Parameters.AddWithValue("kind", kind);
+        command.Parameters.AddWithValue("credential", request.Credential);
+        command.Parameters.AddWithValue("version", request.HashVersion);
+        var result = await command.ExecuteScalarAsync(cancellationToken);
+        Guid? userId = result is Guid found ? found : null;
+
+        RlsScopeMetrics.Record("credential", request.Reason.Category, userId is not null);
+        if (userId is not null)
+            _active = RlsBoundedScope.Credential;
+
+        // The credential itself (an address or a digest) is never logged; only the derived user id is.
+        _logger?.LogInformation(
+            userId is not null ? "Credential scope entered: {Kind} | {Category}: {Description} | user {UserId}"
+                               : "Credential scope not entered: {Kind} | {Category}: {Description}",
+            kind, request.Reason.Category, request.Reason.Description, userId);
+        return userId;
+    }
+
+    private async Task<bool> ScalarBoolAsync(string sql, string parameter, object value, CancellationToken cancellationToken)
+    {
+        var connection = (NpgsqlConnection)_database.GetDbConnection();
+        var transaction = (NpgsqlTransaction)_database.CurrentTransaction!.GetDbTransaction();
+        await using var command = new NpgsqlCommand(sql, connection, transaction);
+        command.Parameters.AddWithValue(parameter, value);
+        return await command.ExecuteScalarAsync(cancellationToken) is true;
+    }
+
+    private void RequireTransaction(string scopeKind)
+    {
+        if (_database.CurrentTransaction is null)
+        {
+            throw new InvalidOperationException(
+                $"The {scopeKind} scope is transaction-local and must be entered inside an open transaction.");
+        }
     }
 
     /// <summary>

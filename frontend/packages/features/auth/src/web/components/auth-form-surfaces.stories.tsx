@@ -96,7 +96,6 @@ export const SignInPasswordWrong: Story = {
             kind: "password",
             email: AUTH_PERSONAL_EMAIL,
             error: "wrong",
-            attemptsLeft: 2,
           },
         })}
       />
@@ -105,7 +104,7 @@ export const SignInPasswordWrong: Story = {
   tags: ["fui-surface--auth.sign-in", "fui-state--Error"],
 };
 
-/** Five wrong passwords: the error stays, the lock card counts down, the button waits. */
+/** Too many wrong passwords: the lock card counts down, the button waits. */
 export const SignInLocked: Story = {
   render: () => (
     <Page>
@@ -114,8 +113,7 @@ export const SignInLocked: Story = {
           step: {
             kind: "password",
             email: AUTH_PERSONAL_EMAIL,
-            error: "wrong",
-            attemptsLeft: 0,
+            error: null,
             lockedSeconds: 48,
           },
         })}
@@ -169,7 +167,6 @@ export const SignInOtpWrong: Story = {
             kind: "otp",
             email: AUTH_PERSONAL_EMAIL,
             error: "wrong",
-            attemptsLeft: 3,
           },
         })}
       />
@@ -259,7 +256,7 @@ export const InviteRefused: Story = {
           view: {
             kind: "invite",
             invite: authGuestInvite,
-            fieldErrors: { password: "Dùng ít nhất 12 ký tự." },
+            fieldErrors: { password: "Dùng ít nhất 8 ký tự." },
           },
         })}
       />

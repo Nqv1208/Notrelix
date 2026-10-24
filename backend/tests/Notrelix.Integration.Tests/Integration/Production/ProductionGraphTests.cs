@@ -1,3 +1,4 @@
+using Notrelix.Testing.Core;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
@@ -228,6 +229,11 @@ public sealed class ProductionGraphTests : IAsyncLifetime
             .WithWebHostBuilder(builder =>
             {
                 builder.UseEnvironment("Production");
+
+                foreach (var (rateLimitKey, rateLimitValue) in RateLimitTestSettings.Generous)
+                {
+                    builder.UseSetting(rateLimitKey, rateLimitValue);
+                }
 
                 // Settings are visible to Program.Main before builder.Build(),
                 // which AddInfrastructure relies on (registration-time reads).

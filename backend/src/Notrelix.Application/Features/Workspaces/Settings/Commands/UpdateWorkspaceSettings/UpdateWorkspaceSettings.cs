@@ -11,7 +11,9 @@ public record UpdateWorkspaceSettingsCommand(
     string DefaultMemberRole,
     int InvitationExpiryDays,
     long ExpectedVersion,
-    int? GuestDefaultExpiryDays = null
+    int? GuestDefaultExpiryDays = null,
+    string? Size = null,
+    string? Language = null
 ) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.ManageWorkspace;
@@ -48,7 +50,10 @@ public class UpdateWorkspaceSettingsCommandHandler : IRequestHandler<UpdateWorks
             request.AllowGuestInvites,
             defaultRole,
             request.InvitationExpiryDays,
-            request.GuestDefaultExpiryDays);
+            request.GuestDefaultExpiryDays,
+            // Not sent means keep: a client that predates these fields must not clear them.
+            request.Size ?? workspace.Settings.Size,
+            request.Language ?? workspace.Settings.Language);
 
         workspace.UpdateSettings(settings, _requestContext.UserId, _dateTimeProvider.UtcNow);
         return Result.Success();

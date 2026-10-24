@@ -18,6 +18,10 @@ public sealed class RlsPolicyApplier
         "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.009_policies_notifications_activity_search.sql",
         "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.010_policies_events_messaging_audit_ops.sql",
         "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.011_verification.sql",
+        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.012_principal_scopes.sql",
+        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.013_co_member_profiles.sql",
+        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.014_anonymous_scopes.sql",
+        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.015_internal_principals.sql",
     ];
 
     public RlsPolicyApplier(ApplicationDbContext context, ILogger<RlsPolicyApplier> logger)

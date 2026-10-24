@@ -131,7 +131,9 @@ public sealed class GuestAndEntryInvitationIntegrationTests : IAsyncLifetime
             new WorkspaceGrantProjectionServiceAdapter(projection),
             new InvitationInitialEntries(context, new SpaceStore(context)),
             new GuestResourceAccessActionsAdapter(context),
-            new Mock<IAuditService>().Object);
+            new Mock<IAuditService>().Object,
+            new Notrelix.Application.Features.Workspaces.Invitations.Services.InvitationTokenScope(
+                context, SystemTenant(), new Mock<IRlsSessionContext>().Object));
 
         try
         {

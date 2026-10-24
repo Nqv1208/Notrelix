@@ -7,9 +7,12 @@ using Notrelix.Domain.Documents.Pages;
 using Notrelix.Domain.Governance.Permissions;
 using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.SharedKernel.Ordering;
+using Notrelix.Domain.WorkManagement.Approvals;
+using Notrelix.Domain.WorkManagement.Fields;
 using Notrelix.Domain.WorkManagement.BoardGroups;
 using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.WorkManagement.Items;
+using Notrelix.Domain.WorkManagement.Views;
 using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Domain.Workspaces.Spaces;
 using Notrelix.Domain.Workspaces.Teams;
@@ -228,20 +231,28 @@ public sealed class SpaceOverviewIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task InboxBoard_ReportsUnclaimedItems_AndPendingApprovalsOnTheBoardOrItsUnfinishedItemsWaitForReview()
+    public async Task InboxBoard_ReportsUnclaimedItems_AndWaitingReviewCountsUnfinishedItemsWithAPendingApprovalOnceEach()
     {
         var stack = await _host.SeedWorkspaceAsync();
         var member = await _host.AddMemberAsync(stack, WorkspaceRole.Member, "Member");
         var space = await SeedSpaceAsync(stack, member);
-        var inbox = await SeedBoardWithItemsAsync(stack, "Requests", space, member, ("a", false, null, false), ("b", false, null, true));
+        var inbox = await SeedBoardWithItemsAsync(stack, "Requests", space, member, ("a", false, null, false), ("b", false, null, true), ("c", false, null, true), ("d", true, null, false));
         await _host.WithSystemContextAsync(async c =>
         {
             var board = await c.Boards.SingleAsync(b => b.Id == inbox);
             typeof(Board).GetProperty(nameof(Board.BoardFamily))!.SetValue(board, BoardFamily.Intake);
-            var itemId = (await c.BoardItems.FirstAsync(i => i.BoardId == inbox)).Id;
-            c.ApprovalRequests.Add(Notrelix.Domain.WorkManagement.Approvals.ApprovalRequest.Create(
-                stack.AccountId, stack.WorkspaceId, ResourceRef.Create(ResourceKind.Create("work-management.board-item"), itemId, stack.WorkspaceId), "Review", stack.OwnerId, _host.Now));
-            c.ApprovalRequests.Add(Notrelix.Domain.WorkManagement.Approvals.ApprovalRequest.Create(
+            var items = await c.BoardItems.Where(i => i.BoardId == inbox).ToListAsync();
+            Guid IdOf(string name) => items.Single(i => i.Name == name).Id;
+            ApprovalRequest On(Guid itemId, string title) => ApprovalRequest.Create(
+                stack.AccountId, stack.WorkspaceId, ResourceRef.Create(ResourceKind.Create("work-management.board-item"), itemId, stack.WorkspaceId), title, stack.OwnerId, _host.Now);
+
+            // Item a has two pending requests but is one waiting Item; b has one; c has none; d is finished.
+            c.ApprovalRequests.Add(On(IdOf("a"), "Review 1"));
+            c.ApprovalRequests.Add(On(IdOf("a"), "Review 2"));
+            c.ApprovalRequests.Add(On(IdOf("b"), "Review"));
+            c.ApprovalRequests.Add(On(IdOf("d"), "Review of a finished item"));
+            // A request aimed at the Board itself is not an Item.
+            c.ApprovalRequests.Add(ApprovalRequest.Create(
                 stack.AccountId, stack.WorkspaceId, ResourceRef.Create(ResourceKind.Create("work-management.board"), inbox, stack.WorkspaceId), "Board review", stack.OwnerId, _host.Now));
         });
 
@@ -252,6 +263,79 @@ public sealed class SpaceOverviewIntegrationTests : IAsyncLifetime
         board.Attention.Should().BeEquivalentTo(new SpaceOverviewBoardAttentionDto(0, 2, 1));
         overview.Attention.Select(a => (a.Id, a.Count)).Should().BeEquivalentTo([("unassigned", 1), ("review", 2)]);
     }
+
+    [Fact]
+    public async Task BoardKind_IntakeIsInbox_OnlyADefaultKanbanViewIsKanban_EverythingElseIsATable()
+    {
+        var stack = await _host.SeedWorkspaceAsync();
+        var member = await _host.AddMemberAsync(stack, WorkspaceRole.Member, "Member");
+        var space = await SeedSpaceAsync(stack, member);
+        var kanban = await SeedBoardWithItemsAsync(stack, "Kanban default", space, member, ("a", false, null, true));
+        var tableDefault = await SeedBoardWithItemsAsync(stack, "Table default", space, member, ("a", false, null, true));
+        var noDefault = await SeedBoardWithItemsAsync(stack, "No default", space, member, ("a", false, null, true));
+        var noView = await SeedBoardWithItemsAsync(stack, "No view", space, member, ("a", false, null, true));
+        var intake = await SeedBoardWithItemsAsync(stack, "Intake with kanban", space, member, ("a", false, null, true));
+        await SeedViewAsync(stack, kanban, ViewType.Kanban, isDefault: true);
+        await SeedViewAsync(stack, tableDefault, ViewType.Table, isDefault: true);
+        await SeedViewAsync(stack, tableDefault, ViewType.Kanban, isDefault: false);
+        await SeedViewAsync(stack, noDefault, ViewType.Kanban, isDefault: false);
+        await SeedViewAsync(stack, intake, ViewType.Kanban, isDefault: true);
+        await _host.WithSystemContextAsync(async c =>
+        {
+            var board = await c.Boards.SingleAsync(b => b.Id == intake);
+            typeof(Board).GetProperty(nameof(Board.BoardFamily))!.SetValue(board, BoardFamily.Intake);
+        });
+
+        var overview = await GetAsync(stack, member, space);
+
+        overview.Boards.ToDictionary(b => b.Id, b => b.Kind).Should().BeEquivalentTo(new Dictionary<Guid, string>
+        {
+            [kanban] = "kanban",
+            [tableDefault] = "table",
+            [noDefault] = "table",
+            [noView] = "table",
+            [intake] = "inbox",
+        });
+    }
+
+    [Fact]
+    public async Task Caps_AreSixBoards_FourDocs_FiveWorkloadPeople_WhileTotalsKeepCounting()
+    {
+        var stack = await _host.SeedWorkspaceAsync();
+        var members = new List<Guid>();
+        for (var i = 0; i < 7; i++)
+            members.Add(await _host.AddMemberAsync(stack, WorkspaceRole.Member, $"Member {i}"));
+        var space = await SeedSpaceAsync(stack, members.ToArray());
+        for (var i = 0; i < 8; i++)
+            await SeedBoardWithItemsAsync(stack, $"Board {i}", space, members[i % members.Count], ("open", false, null, true));
+        await _host.WithSystemContextAsync(c =>
+        {
+            for (var i = 0; i < 6; i++)
+                c.Pages.Add(Page.Create(stack.AccountId, stack.WorkspaceId, $"Doc {i}", stack.OwnerId, OrgTreeTestHost.BaseTime.AddMinutes(i), spaceId: space));
+            return Task.CompletedTask;
+        });
+
+        var overview = await GetAsync(stack, stack.OwnerId, space);
+
+        overview.BoardTotal.Should().Be(8);
+        overview.Boards.Should().HaveCount(6);
+        overview.DocTotal.Should().Be(6);
+        overview.Docs.Should().HaveCount(4);
+        overview.Docs.Select(d => d.Title).Should().Equal("Doc 5", "Doc 4", "Doc 3", "Doc 2");
+        overview.Workload.Should().HaveCount(5);
+    }
+
+    private Task SeedViewAsync(OrgStack stack, Guid board, ViewType type, bool isDefault) =>
+        _host.WithSystemContextAsync(c =>
+        {
+            BoardViewConfig config = type == ViewType.Kanban
+                ? KanbanViewConfig.Create(
+                    BoardField.Create(stack.AccountId, stack.WorkspaceId, board, "Status", FieldType.Status, FieldSettings.Create(JsonValue.Create("{\"transitions\":[]}")), FractionalIndex.Create("a0"), stack.OwnerId, OrgTreeTestHost.BaseTime),
+                    [Guid.NewGuid()])
+                : TableViewConfig.Create(JsonValue.EmptyObject());
+            c.BoardViews.Add(BoardView.Create(stack.AccountId, stack.WorkspaceId, board, $"{type} view", type, config, stack.OwnerId, OrgTreeTestHost.BaseTime, isDefault));
+            return Task.CompletedTask;
+        });
 
     private Task<Guid> SeedSpaceAsync(OrgStack stack, params Guid[] members) =>
         _host.SeedSpaceAsync(stack, $"Dept {Guid.NewGuid():N}"[..12], SpaceVisibility.Workspace, stack.OwnerId, type: SpaceType.Department, transition: s =>
