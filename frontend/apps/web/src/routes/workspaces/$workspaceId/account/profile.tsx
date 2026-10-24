@@ -98,6 +98,8 @@ export function AccountProfilePage() {
               email: profile.email,
               jobTitle: member.data.jobTitle,
               phone: preferences.preferences.phone,
+              phoneVisibleToWorkspaceMembers:
+                preferences.preferences.phoneVisibleToWorkspaceMembers,
               timezone: preferences.preferences.timezone,
               dateFormat,
               joinedAt: member.data.joinedAt,
@@ -129,10 +131,15 @@ export function AccountProfilePage() {
           await updateName.mutateAsync({ name: values.name });
         if (
           values.phone !== preferences.preferences?.phone ||
+          values.phoneVisibleToWorkspaceMembers !==
+            preferences.preferences?.phoneVisibleToWorkspaceMembers ||
           values.timezone !== preferences.preferences?.timezone
         )
+          // One write, quoting the version the preferences were read at.
           await preferences.save({
             phone: values.phone,
+            phoneVisibleToWorkspaceMembers:
+              values.phoneVisibleToWorkspaceMembers,
             timezone: values.timezone,
           });
         if (values.jobTitle !== member.data?.jobTitle)

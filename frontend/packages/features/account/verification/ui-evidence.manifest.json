@@ -115,6 +115,10 @@
           "testFile": "src/web/profile/__tests__/account-profile.interaction.component.test.tsx"
         },
         {
+          "id": "phone-visibility",
+          "testFile": "src/web/profile/__tests__/account-profile.interaction.component.test.tsx"
+        },
+        {
           "id": "saving",
           "testFile": "src/web/profile/__tests__/account-profile.interaction.component.test.tsx"
         },

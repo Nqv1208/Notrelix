@@ -33,6 +33,7 @@ export function profileFixture(
     jobTitle: "Implementation lead",
     email: "ada@example.com",
     phone: "+84912468135",
+    phoneVisibleToWorkspaceMembers: false,
     timezone: "Asia/Ho_Chi_Minh",
     dateFormat: "dd/mm/yyyy",
     joinedAt: "2024-03-04T00:00:00.000Z",

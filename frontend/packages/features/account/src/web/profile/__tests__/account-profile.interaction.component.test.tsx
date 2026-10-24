@@ -128,11 +128,72 @@ describe("AccountProfileSurface", () => {
         name: "Ada King",
         jobTitle: "Implementation lead",
         phone: "+84912468135",
+        phoneVisibleToWorkspaceMembers: false,
         timezone: "Asia/Tokyo",
         dateFormat: "yyyy-mm-dd",
       });
       view.unmount();
     }
+  });
+
+  it("FUI[account.profile:phone-visibility] keeps the phone to the person by default and sends the choice with the save", () => {
+    for (const locale of LOCALES) {
+      const copy = profileCopyFixture(locale);
+      const { props, view } = renderProfile(profileDefaultScenario(locale));
+      const visible = screen.getByLabelText(
+        copy.phoneVisibleLabel,
+      ) as HTMLInputElement;
+      expect(visible.checked).toBe(false);
+      expect(screen.getByText(copy.phoneVisibleHint)).toBeTruthy();
+
+      fireEvent.click(visible);
+      const bar = screen.getByRole("region", { name: copy.unsavedRegion });
+      expect(bar.textContent).toContain(copy.phoneVisibleLabel);
+      fireEvent.click(screen.getByRole("button", { name: copy.save }));
+      expect(props.onSave).toHaveBeenCalledWith(
+        expect.objectContaining({
+          phone: "+84912468135",
+          phoneVisibleToWorkspaceMembers: true,
+        }),
+      );
+
+      // Back to off: nothing is left to save.
+      fireEvent.click(visible);
+      expect(screen.queryByRole("region", { name: copy.unsavedRegion })).toBe(
+        null,
+      );
+      view.unmount();
+    }
+  });
+
+  it("FUI[account.profile:phone-visibility] cannot be turned on without a phone number", () => {
+    const copy = profileCopyFixture("en");
+    const { view } = renderProfile({
+      ...profileDefaultScenario("en"),
+      profile: { status: "ready", data: profileFixture({ phone: "" }) },
+    });
+    expect(
+      (screen.getByLabelText(copy.phoneVisibleLabel) as HTMLInputElement)
+        .disabled,
+    ).toBe(true);
+    view.unmount();
+
+    const shared = renderProfile({
+      ...profileDefaultScenario("en"),
+      profile: {
+        status: "ready",
+        data: profileFixture({
+          phone: "",
+          phoneVisibleToWorkspaceMembers: true,
+        }),
+      },
+    });
+    // A stored "visible" can always be switched off again.
+    expect(
+      (screen.getByLabelText(copy.phoneVisibleLabel) as HTMLInputElement)
+        .disabled,
+    ).toBe(false);
+    shared.view.unmount();
   });
 
   it("FUI[account.profile:discard] restores the saved values", () => {

@@ -298,6 +298,46 @@ describe("AccountProfilePage container", () => {
     expect(put).not.toHaveBeenCalled();
   });
 
+  it("saves the phone as an international number with its visibility in one preferences write", async () => {
+    const patch = vi.fn((_url: string, body: unknown) => ({
+      ...prefs,
+      ...(body as object),
+      version: 3,
+    }));
+    runtime.get = reads(base);
+    runtime.patch = patch;
+    await mount(<AccountProfilePage />, "en");
+    await until(() => expect(text()).toContain("Time zone"));
+
+    const setter = Object.getOwnPropertyDescriptor(
+      HTMLInputElement.prototype,
+      "value",
+    )?.set;
+    const phone = host?.querySelector<HTMLInputElement>('input[type="tel"]');
+    const visible = host?.querySelector<HTMLInputElement>(
+      'input[type="checkbox"]',
+    );
+    if (!phone || !visible) throw new Error("No phone controls");
+    expect(visible.checked).toBe(false);
+    await act(async () => {
+      setter?.call(phone, "+84 (988) 000-111");
+      phone.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await act(async () => {
+      visible.click();
+    });
+    await clickButton("Save changes");
+
+    await until(() => expect(text()).toContain("Profile updated."));
+    expect(patch).toHaveBeenCalledTimes(1);
+    expect(patch).toHaveBeenCalledWith("/profile/preferences", {
+      phone: "+84988000111",
+      phoneVisibleToWorkspaceMembers: true,
+      timezone: "Asia/Ho_Chi_Minh",
+      expectedVersion: 2,
+    });
+  });
+
   it("shows the localized error with a retry when the profile cannot load", async () => {
     runtime.get = reads({ ...base, "/auth/me": new Error("boom") });
     await mount(<AccountProfilePage />, "vi");

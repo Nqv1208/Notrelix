@@ -28,6 +28,8 @@ export interface AccountProfileValues {
   readonly name: string;
   readonly jobTitle: string;
   readonly phone: string;
+  /** Other members of the person's workspaces may see the phone; off = only the person. */
+  readonly phoneVisibleToWorkspaceMembers: boolean;
   readonly timezone: string;
   readonly dateFormat: string;
 }
@@ -147,6 +149,7 @@ function ProfileBody({
     name: data.name,
     jobTitle: data.jobTitle,
     phone: data.phone,
+    phoneVisibleToWorkspaceMembers: data.phoneVisibleToWorkspaceMembers,
     timezone: data.timezone,
     dateFormat: data.dateFormat,
   });
@@ -161,6 +164,8 @@ function ProfileBody({
     nameError: React.useId(),
     phoneError: React.useId(),
     phoneHelp: React.useId(),
+    phoneVisible: React.useId(),
+    phoneVisibleHint: React.useId(),
   };
   const fileInput = React.useRef<HTMLInputElement>(null);
 
@@ -170,28 +175,41 @@ function ProfileBody({
       name: data.name,
       jobTitle: data.jobTitle,
       phone: data.phone,
+      phoneVisibleToWorkspaceMembers: data.phoneVisibleToWorkspaceMembers,
       timezone: data.timezone,
       dateFormat: data.dateFormat,
     });
-  }, [data.name, data.jobTitle, data.phone, data.timezone, data.dateFormat]);
+  }, [
+    data.name,
+    data.jobTitle,
+    data.phone,
+    data.phoneVisibleToWorkspaceMembers,
+    data.timezone,
+    data.dateFormat,
+  ]);
 
-  const set = (key: FieldKey, value: string) =>
-    setValues((current) => ({ ...current, [key]: value }));
+  const set = (
+    key: Exclude<FieldKey, "phoneVisibleToWorkspaceMembers">,
+    value: string,
+  ) => setValues((current) => ({ ...current, [key]: value }));
 
   const FIELD_ORDER: readonly FieldKey[] = [
     "name",
     "jobTitle",
     "phone",
+    "phoneVisibleToWorkspaceMembers",
     "timezone",
     "dateFormat",
   ];
   // The phone compares as the number it stands for: spacing is not a change.
-  const norm = (key: FieldKey, from: AccountProfileValues) =>
-    key === "timezone" || key === "dateFormat"
-      ? from[key]
-      : key === "phone"
-        ? (phoneForSave(from.phone) ?? from.phone.trim())
-        : from[key].trim();
+  const norm = (key: FieldKey, from: AccountProfileValues): string | boolean =>
+    key === "phoneVisibleToWorkspaceMembers"
+      ? from.phoneVisibleToWorkspaceMembers
+      : key === "timezone" || key === "dateFormat"
+        ? from[key]
+        : key === "phone"
+          ? (phoneForSave(from.phone) ?? from.phone.trim())
+          : from[key].trim();
   const changed = FIELD_ORDER.filter(
     (key) => norm(key, values) !== norm(key, data),
   );
@@ -199,6 +217,7 @@ function ProfileBody({
     name: copy.nameLabel,
     jobTitle: copy.jobTitleLabel,
     phone: copy.phoneLabel,
+    phoneVisibleToWorkspaceMembers: copy.phoneVisibleLabel,
     timezone: copy.timezoneLabel,
     dateFormat: copy.dateFormatLabel,
   };
@@ -223,6 +242,7 @@ function ProfileBody({
       jobTitle: values.jobTitle.trim(),
       // Valid here: an invalid number blocks the save above.
       phone: phoneForSave(values.phone) ?? "",
+      phoneVisibleToWorkspaceMembers: values.phoneVisibleToWorkspaceMembers,
       timezone: values.timezone,
       dateFormat: values.dateFormat,
     });
@@ -232,6 +252,7 @@ function ProfileBody({
       name: data.name,
       jobTitle: data.jobTitle,
       phone: data.phone,
+      phoneVisibleToWorkspaceMembers: data.phoneVisibleToWorkspaceMembers,
       timezone: data.timezone,
       dateFormat: data.dateFormat,
     });
@@ -434,6 +455,37 @@ function ProfileBody({
               {phoneError}
             </span>
           ) : null}
+          <div className="mt-1 flex items-start gap-2">
+            <input
+              id={ids.phoneVisible}
+              type="checkbox"
+              checked={values.phoneVisibleToWorkspaceMembers}
+              disabled={
+                saving ||
+                (phoneCheck.kind === "empty" &&
+                  !values.phoneVisibleToWorkspaceMembers)
+              }
+              aria-describedby={ids.phoneVisibleHint}
+              onChange={(event) =>
+                setValues((current) => ({
+                  ...current,
+                  phoneVisibleToWorkspaceMembers: event.target.checked,
+                }))
+              }
+              className={cn("mt-[3px] size-4 shrink-0 accent-primary", FOCUS)}
+            />
+            <div className="min-w-0 text-compact leading-[1.45]">
+              <label htmlFor={ids.phoneVisible} className="text-foreground">
+                {copy.phoneVisibleLabel}
+              </label>
+              <small
+                id={ids.phoneVisibleHint}
+                className="block text-xs text-meta-foreground"
+              >
+                {copy.phoneVisibleHint}
+              </small>
+            </div>
+          </div>
         </Field>
         <Field
           htmlFor={ids.timezone}
