@@ -1,4 +1,7 @@
+using Notrelix.Domain.Workspaces.Members;
+using Notrelix.Infrastructure.Data.Notifications;
 using Notrelix.Integration.Tests.Containers;
+using Notrelix.Testing.Application.Fakes;
 using Npgsql;
 
 namespace Notrelix.Integration.Tests.Rls;
@@ -154,6 +157,55 @@ public sealed class DerivedScopePolicyTests : IAsyncLifetime
                 .Should().Be(1, "a person reads only their own recipient rows");
             return 0;
         });
+    }
+
+    [Fact]
+    public async Task NotificationItems_AreReadableOnlyByTheirRecipient_NotByACoMemberOfTheSameWorkspace()
+    {
+        var coMember = await AppRoleMembers.AddAsync(
+            _fixture, _a, "CoMember", WorkspaceRole.Admin, WorkspaceMemberStatus.Active, "hash");
+
+        var system = new FakeCurrentTenantContext();
+        system.SetSystem();
+        await using (var ctx = _fixture.CreateOwnerContext(system))
+        {
+            foreach (var (recipient, title) in new[] { (_a.User.Id, "for-owner"), (coMember.Id, "for-comember") })
+            {
+                var item = NotificationItemRecord.Create(
+                    accountId: _a.AccountId, workspaceId: _a.WorkspaceId, sourceContext: "collaboration",
+                    notificationType: "mention.created", severity: NotificationSeverity.Info, title: title,
+                    createdAt: DateTimeOffset.UtcNow, deduplicationKey: $"dedup-{title}");
+                ctx.NotificationItems.Add(item);
+                ctx.NotificationRecipients.Add(NotificationRecipientRecord.Create(
+                    _a.AccountId, item.Id, _a.WorkspaceId, recipient, DateTimeOffset.UtcNow));
+            }
+
+            await ctx.SaveChangesAsync();
+        }
+
+        await AsAppAsync(_a, async (c, t) =>
+        {
+            (await CountAsync(c, t, "SELECT count(*) FROM notifications.notification_items"))
+                .Should().Be(1, "the owner of the workspace reads only the item addressed to them");
+            (await CountAsync(c, t, "SELECT count(*) FROM notifications.notification_items WHERE title = 'for-comember'"))
+                .Should().Be(0, "another member's item is invisible even to the workspace owner");
+            return 0;
+        });
+
+        var coMemberTenant = _a with { User = coMember };
+        await AsAppAsync(coMemberTenant, async (c, t) =>
+        {
+            (await CountAsync(c, t, "SELECT count(*) FROM notifications.notification_items WHERE title = 'for-owner'"))
+                .Should().Be(0, "a co-member cannot read the owner's notification items");
+            (await CountAsync(c, t, "SELECT count(*) FROM notifications.notification_items WHERE title = 'for-comember'"))
+                .Should().Be(1);
+            return 0;
+        });
+
+        await using var worker = new NpgsqlConnection(_fixture.WorkerConnectionString);
+        await worker.OpenAsync();
+        await using var count = new NpgsqlCommand("SELECT count(*) FROM notifications.notification_items", worker);
+        ((long)(await count.ExecuteScalarAsync())!).Should().Be(2, "background readers run on the worker login and read every item");
     }
 
     [Fact]
