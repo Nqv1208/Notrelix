@@ -1012,6 +1012,27 @@ Do not accept arbitrary client-provided post-auth redirect URL without a safe al
 
 Avoid open redirect.
 
+Current contract (`OAuth` section, `OAuthRedirectOptions`):
+
+```text
+FrontendSuccessUrl   where a completed OAuth sign-in lands (/auth/callback)
+FrontendFailureUrl   where a failed OAuth sign-in lands (/sign-in)
+FrontendMfaUrl       where an OAuth sign-in that needs a second factor lands (/sign-in?step=mfa)
+```
+
+The only client-influenced part is the person's return path. `returnUrl` on `GET /auth/oauth/{provider}/start`
+is validated (an internal root-relative path: one leading slash, no backslash, no control character,
+no percent-encoded variant of those, at most 512 characters) and stored in the OAuth state. The callback
+appends it as `?returnTo=<path>` to the success or MFA URL only when it passes the same check
+(`SafeReturnPath`); otherwise it is dropped. The frontend repeats the check before navigating.
+
+An OAuth sign-in of an MFA-enabled user issues no session. The challenge travels in the `mfaChallenge`
+cookie, never in a URL: httpOnly, SameSite=Lax, Secure when the request is HTTPS, path `/api/v1/auth/mfa`,
+lifetime at most the challenge lifetime and five minutes. `POST /auth/mfa/verify` reads it when the body
+has no challenge (a body challenge wins), clears it on success and when the challenge is expired or
+exhausted, and answers `identity.mfa.challenge-invalid` when neither exists. The five-wrong-codes limit
+per challenge is unchanged.
+
 ---
 
 # 60. JWT settings

@@ -142,8 +142,16 @@ public sealed class CompleteMfaChallengeCommandHandler
         return Result<AuthResult>.Success(authResult);
     }
 
-    private static Result<AuthResult> InvalidChallenge() => Result<AuthResult>.Failure(new ApplicationError(
-        "identity.mfa.challenge-invalid",
+    private static Result<AuthResult> InvalidChallenge() => Result<AuthResult>.Failure(CompleteMfaChallengeErrors.ChallengeInvalid);
+}
+
+public static class CompleteMfaChallengeErrors
+{
+    public const string ChallengeInvalidCode = "identity.mfa.challenge-invalid";
+
+    /// <summary>The challenge is unknown, expired, exhausted or of another purpose.</summary>
+    public static ApplicationError ChallengeInvalid { get; } = new(
+        ChallengeInvalidCode,
         "MFA challenge is invalid or expired.",
-        ApplicationErrorType.Validation));
+        ApplicationErrorType.Validation);
 }

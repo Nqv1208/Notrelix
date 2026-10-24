@@ -93,4 +93,24 @@ public class StartOAuthLoginCommandValidatorTests
 
         result.IsValid.Should().BeTrue();
     }
+
+    [Theory]
+    [InlineData("/\\evil.com")]
+    [InlineData("/%2F%2Fevil.com")]
+    [InlineData("/%5Cevil.com")]
+    [InlineData("javascript:alert(1)")]
+    [InlineData("/ok\r\nSet-Cookie: x=1")]
+    public void Validate_WhenReturnUrlCouldLeaveTheSite_ShouldFail(string returnUrl)
+    {
+        var command = new StartOAuthLoginCommand
+        {
+            Provider = OAuthProvider.Google,
+            ReturnUrl = returnUrl
+        };
+
+        var result = _validator.Validate(command);
+
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.PropertyName == "ReturnUrl");
+    }
 }

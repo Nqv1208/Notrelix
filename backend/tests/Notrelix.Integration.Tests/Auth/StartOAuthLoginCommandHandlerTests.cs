@@ -132,6 +132,36 @@ public class StartOAuthLoginCommandHandlerTests
     }
 
     [Fact]
+    public async Task Handle_WhenReturnUrlIsNotAnInternalPath_ShouldNotStoreIt()
+    {
+        var optionsProvider = new Mock<IOAuthOptionsProvider>();
+        optionsProvider.Setup(x => x.IsProviderEnabled(OAuthProvider.Google)).Returns(true);
+        optionsProvider.Setup(x => x.GetRedirectUri(OAuthProvider.Google)).Returns("https://localhost/callback");
+        var providerClient = new Mock<IOAuthProviderClient>();
+        providerClient.Setup(x => x.BuildAuthorizationUrlAsync(
+                OAuthProvider.Google, It.IsAny<OAuthAuthorizationRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new OAuthAuthorizationUrlResult("https://accounts.google.com/oauth2/auth"));
+        var stateStore = new Mock<IOAuthStateStore>();
+        OAuthLoginState? storedState = null;
+        stateStore.Setup(x => x.StoreAsync(It.IsAny<OAuthLoginState>(), It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()))
+            .Callback<OAuthLoginState, TimeSpan, CancellationToken>((s, _, _) => storedState = s)
+            .Returns(Task.CompletedTask);
+        var dateTimeProvider = new Mock<IDateTimeProvider>();
+        dateTimeProvider.Setup(x => x.UtcNow).Returns(new DateTimeOffset(2026, 7, 7, 12, 0, 0, TimeSpan.Zero));
+
+        var handler = new StartOAuthLoginCommandHandler(
+            optionsProvider.Object, providerClient.Object, stateStore.Object, dateTimeProvider.Object);
+
+        await handler.Handle(new StartOAuthLoginCommand
+        {
+            Provider = OAuthProvider.Google,
+            ReturnUrl = "//evil.com/phish"
+        }, CancellationToken.None);
+
+        storedState!.ReturnUrl.Should().BeNull("only an internal path may ever be redirected to after sign-in");
+    }
+
+    [Fact]
     public async Task Handle_GitHubProvider_ShouldNotGeneratePKCE()
     {
         var optionsProvider = new Mock<IOAuthOptionsProvider>();
