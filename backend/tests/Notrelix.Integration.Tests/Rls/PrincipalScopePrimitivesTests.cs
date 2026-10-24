@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore.Storage;
-using Notrelix.Application.Common.Data.Rls;
 using Notrelix.Application.Common.SystemOperations;
 using Notrelix.Infrastructure.Data.Rls;
 using Notrelix.Integration.Tests.Containers;

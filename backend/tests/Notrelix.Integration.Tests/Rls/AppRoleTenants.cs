@@ -1,6 +1,5 @@
 using Notrelix.Application.Common.Requests;
 using Notrelix.Domain.Accounts.Accounts;
-using Notrelix.Domain.Identity.Tokens;
 using Notrelix.Domain.Identity.Users;
 using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.Workspaces.Invitations;

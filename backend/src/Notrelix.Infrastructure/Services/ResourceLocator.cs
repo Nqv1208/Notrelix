@@ -60,7 +60,7 @@ public sealed class ResourceLocator : IResourceLocator
 
     /// <summary>
     /// Locates the resource by stable identity. Called by the execution-context stage before any tenant is
-    /// known, so with no transaction open it runs in a short read-only transaction in the <c>user</c>
+    /// known, so with no transaction open it runs in a short transaction in the <c>user</c>
     /// scope: a row the actor holds no grant on is not found, exactly like a row that does not exist.
     /// Inside an open data session (handlers that locate a second resource) the session's own scope applies.
     /// </summary>
@@ -76,7 +76,6 @@ public sealed class ResourceLocator : IResourceLocator
         }
 
         await using var transaction = await database.BeginTransactionAsync(cancellationToken);
-        await database.ExecuteSqlRawAsync("SET TRANSACTION READ ONLY", cancellationToken);
         await _rls.ApplyUserScopeAsync(actorUserId, cancellationToken);
         var location = await QueryAsync(resource, cancellationToken);
         await transaction.CommitAsync(cancellationToken);

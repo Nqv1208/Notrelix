@@ -679,7 +679,7 @@ token   one account/workspace named by a    EnterTokenScopeAsync(request)  ->  o
 
 `DataSessionBehavior` applies the user scope to every Global authenticated request
 (`RequestDataSessionOptions.UserScopeUserId`; mutually exclusive with the tenant scope). `ResourceLocator`
-runs its lookup in a short read-only transaction in the user scope when no data session is open, so a row the
+runs its lookup in a short transaction in the user scope when no data session is open, so a row the
 caller holds no grant on is not found; inside an open data session the session's own scope applies. Both
 scope entries are transaction-local and require an open transaction. `ApplyUserScopeAsync` is a no-op while
 `Rls:SetSessionContext` is false. `EnterTokenScopeAsync` is the only way to enter a token scope: the database

@@ -5,9 +5,7 @@ using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Notrelix.API;
-using Notrelix.Application.Features.Identity.Auth.Sessions;
 using Notrelix.Infrastructure.Data.Rls;
-using Notrelix.Infrastructure.Security.Tokens;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
 using Npgsql;
@@ -95,10 +93,10 @@ public sealed class UserScopeIsolationTests : IAsyncLifetime
         (await AsAsync(_b, c => c.PatchAsJsonAsync("/api/v1/profile/", new { name = "Bbb Renamed" }))).StatusCode
             .Should().Be(HttpStatusCode.OK);
 
-        (await AsAsync(_a, c => c.GetAsync("/api/v1/auth/me"))).Content.ReadAsStringAsync().Result
-            .Should().Contain("Aaa").And.NotContain("Bbb Renamed");
-        (await AsAsync(_b, c => c.GetAsync("/api/v1/auth/me"))).Content.ReadAsStringAsync().Result
-            .Should().Contain("Bbb Renamed");
+        var meOfA = await (await AsAsync(_a, c => c.GetAsync("/api/v1/auth/me"))).Content.ReadAsStringAsync();
+        var meOfB = await (await AsAsync(_b, c => c.GetAsync("/api/v1/auth/me"))).Content.ReadAsStringAsync();
+        meOfA.Should().Contain("Aaa").And.NotContain("Bbb Renamed");
+        meOfB.Should().Contain("Bbb Renamed");
     }
 
     private async Task<T> InUserScopeAsync<T>(AppRoleTenant who, Func<NpgsqlConnection, NpgsqlTransaction, Task<T>> body)
