@@ -31,6 +31,7 @@ import {
   type AccountPasswordError,
   type AccountPasswordSubmission,
 } from "./account-password-panel";
+import { AccountQrCode } from "./account-qr-code";
 import type { AccountSecurityCopy } from "./account-security.copy";
 
 export type {
@@ -314,7 +315,22 @@ function FlowPanel({
           <p className="m-0 mt-1 text-crumb text-muted-foreground">
             {t.enrollText}
           </p>
-          <p className="m-0 mt-2 font-mono text-nav break-all">{flow.secret}</p>
+          {flow.otpAuthUri ? (
+            <AccountQrCode
+              value={flow.otpAuthUri}
+              label={t.qrLabel}
+              className="mt-3 size-[168px] rounded-[8px] border border-line"
+            />
+          ) : null}
+          <p className="m-0 mt-3 text-xs text-meta-foreground">
+            {t.secretLabel}
+          </p>
+          <p
+            data-f="secret"
+            className="m-0 mt-1 font-mono text-nav break-all select-all"
+          >
+            {flow.secret}
+          </p>
         </>
       ) : (
         <p className="m-0 mt-1 text-crumb text-muted-foreground">

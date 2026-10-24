@@ -296,7 +296,10 @@
       "owner": "@notrelix/features-account",
       "surfaceKind": "data",
       "pureEntry": "src/web/security/account-security-surface.tsx",
-      "coveredSources": [],
+      "coveredSources": [
+        "src/web/security/account-password-panel.tsx",
+        "src/web/security/account-qr-code.tsx"
+      ],
       "stories": [
         {
           "id": "account-security--default",
@@ -389,6 +392,16 @@
               "theme": "light"
             }
           ]
+        },
+        {
+          "id": "account-security--enroll-two-factor",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         }
       ],
       "stateCoverage": {
@@ -427,6 +440,14 @@
         },
         {
           "id": "sso",
+          "testFile": "src/web/security/__tests__/account-security.interaction.component.test.tsx"
+        },
+        {
+          "id": "enroll-fallback",
+          "testFile": "src/web/security/__tests__/account-security.interaction.component.test.tsx"
+        },
+        {
+          "id": "enroll",
           "testFile": "src/web/security/__tests__/account-security.interaction.component.test.tsx"
         },
         {

@@ -192,3 +192,22 @@ export function securityPasswordChangedScenario(
     flow: { kind: "passwordChanged" },
   };
 }
+
+/** The authenticator address the producer sends when two-factor enrollment starts. */
+export const ENROLLMENT_OTP_AUTH_URI =
+  "otpauth://totp/Notrelix:ada%40example.com?secret=JBSWY3DPEHPK3PXP&issuer=Notrelix";
+
+/** Step one of turning two-factor on: the QR code and the key to type by hand. */
+export function securityEnrollScenario(
+  locale: "en" | "vi" = "en",
+): SecurityScenario {
+  return {
+    ...securityOwnPasswordScenario(locale),
+    flow: {
+      kind: "enroll",
+      secret: "JBSWY3DPEHPK3PXP",
+      otpAuthUri: ENROLLMENT_OTP_AUTH_URI,
+      error: null,
+    },
+  };
+}

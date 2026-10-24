@@ -11,6 +11,7 @@ import {
   securityChangePasswordRefusedScenario,
   securityChangePasswordScenario,
   securityPasswordChangedScenario,
+  securityEnrollScenario,
   securityOwnPasswordScenario,
   type SecurityScenario,
 } from "../../../verification/account-security-fixtures";
@@ -210,6 +211,47 @@ describe("AccountSecuritySurface", () => {
       expect(done.props.onPasswordChangedContinue).toHaveBeenCalledTimes(1);
       done.view.unmount();
     }
+  });
+
+  it("FUI[account.security:enroll] shows a QR code of the producer's address with the key as a fallback and sends the first code", () => {
+    for (const locale of LOCALES) {
+      const t = securityCopyFixture(locale).flow;
+      const { props, view } = renderSecurity(securityEnrollScenario(locale), {
+        onSubmitCode: vi.fn(),
+      });
+      const qr = screen.getByRole("img", { name: t.qrLabel });
+      expect(qr.tagName.toLowerCase()).toBe("svg");
+      expect(
+        qr.querySelector("path")?.getAttribute("d")?.length,
+      ).toBeGreaterThan(100);
+      expect(screen.getByText(t.enrollText)).toBeTruthy();
+      expect(screen.getByText("JBSWY3DPEHPK3PXP")).toBeTruthy();
+      expect(screen.getByText(t.secretLabel)).toBeTruthy();
+
+      fireEvent.change(screen.getByLabelText(t.codeLabel), {
+        target: { value: "482931" },
+      });
+      fireEvent.click(screen.getByRole("button", { name: t.confirm }));
+      expect(props.onSubmitCode).toHaveBeenCalledWith("482931");
+      view.unmount();
+    }
+  });
+
+  it("FUI[account.security:enroll-fallback] still offers the key when the producer sent no address", () => {
+    const t = securityCopyFixture("en").flow;
+    const scenario = securityEnrollScenario("en");
+    const { view } = renderSecurity({
+      ...scenario,
+      flow: {
+        kind: "enroll",
+        secret: "JBSWY3DPEHPK3PXP",
+        otpAuthUri: "",
+        error: null,
+      },
+    });
+    expect(screen.queryByRole("img", { name: t.qrLabel })).toBeNull();
+    expect(screen.getByText("JBSWY3DPEHPK3PXP")).toBeTruthy();
+    view.unmount();
   });
 
   it("FUI[account.security:two-factor] turns the second step off and on", () => {

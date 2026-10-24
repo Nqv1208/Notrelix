@@ -620,6 +620,49 @@ describe("AccountSecurityPage container", () => {
     });
   });
 
+  it("turns two-factor on with a QR code of the producer's address, then shows the recovery codes once", async () => {
+    const post = vi.fn((url: string) =>
+      url === "/auth/mfa/enrollment/start"
+        ? {
+            mfaMethodId: "method-1",
+            secret: "JBSWY3DPEHPK3PXP",
+            otpAuthUri:
+              "otpauth://totp/Notrelix:ada%40example.com?secret=JBSWY3DPEHPK3PXP&issuer=Notrelix",
+          }
+        : {
+            mfaMethodId: "method-1",
+            recoveryCodes: ["AAAA-1111", "BBBB-2222"],
+          },
+    );
+    runtime.get = reads({
+      ...table,
+      "/auth/security/summary": {
+        ...summary,
+        mfa: { isEnabled: false, recoveryCodesRemaining: 0 },
+      },
+    });
+    runtime.post = post;
+    await mount(<AccountSecurityPage />, "en");
+    await until(() =>
+      expect(text()).toContain("Turn on two-factor authentication"),
+    );
+    await clickButton("Turn on two-factor authentication");
+    await until(() => expect(text()).toContain("JBSWY3DPEHPK3PXP"));
+    expect(
+      host?.querySelector(
+        'svg[aria-label="QR code for your authenticator app"]',
+      ),
+    ).not.toBeNull();
+
+    await typeInFirstField("482931");
+    await clickButton("Confirm");
+    await until(() => expect(text()).toContain("AAAA-1111"));
+    expect(post).toHaveBeenCalledWith("/auth/mfa/enrollment/verify", {
+      mfaMethodId: "method-1",
+      code: "482931",
+    });
+  });
+
   it("changes the password with a second-factor proof, then tells the person every session ended", async () => {
     const post = vi.fn((url: string) =>
       url === "/auth/security/step-up/requirement"

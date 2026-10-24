@@ -47,7 +47,9 @@ export const en = {
   flow: {
     enrollTitle: "Set up the authenticator app",
     enrollText:
-      "Add this key to your authenticator app, then enter the 6-digit code it shows.",
+      "Scan this QR code with your authenticator app, then enter the 6-digit code it shows.",
+    qrLabel: "QR code for your authenticator app",
+    secretLabel: "Can't scan it? Enter this key in the app instead:",
     disableTitle: "Confirm to turn off two-factor authentication",
     renewTitle: "Confirm to create new backup codes",
     codeText:
@@ -186,7 +188,9 @@ export const vi: AccountSecurityCopy = {
   flow: {
     enrollTitle: "Thiết lập ứng dụng xác thực",
     enrollText:
-      "Thêm khóa này vào ứng dụng xác thực, rồi nhập mã 6 số ứng dụng hiển thị.",
+      "Quét mã QR này bằng ứng dụng xác thực, rồi nhập mã 6 số ứng dụng hiển thị.",
+    qrLabel: "Mã QR cho ứng dụng xác thực",
+    secretLabel: "Không quét được? Hãy nhập khóa này vào ứng dụng:",
     disableTitle: "Xác nhận để tắt xác thực hai lớp",
     renewTitle: "Xác nhận để tạo mã dự phòng mới",
     codeText: "Nhập mã 6 số từ ứng dụng xác thực hoặc một mã dự phòng.",

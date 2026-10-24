@@ -9,6 +9,7 @@ import {
   securityChangePasswordRefusedScenario,
   securityChangePasswordScenario,
   securityPasswordChangedScenario,
+  securityEnrollScenario,
 } from "../../verification/account-security-fixtures";
 import { AccountSecuritySurface } from "./account-security-surface";
 
@@ -93,4 +94,11 @@ export const PasswordChanged: Story = {
     />
   ),
   tags: ["fui-surface--account.security", "fui-state--Success"],
+};
+
+export const EnrollTwoFactor: Story = {
+  render: () => (
+    <AccountSecuritySurface {...securityEnrollScenario()} {...callbacks} />
+  ),
+  tags: ["fui-surface--account.security", "fui-state--EdgeData"],
 };
