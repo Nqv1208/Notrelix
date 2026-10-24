@@ -647,11 +647,13 @@ EF query filters and PostgreSQL RLS are separate controls.
 
 # 34A. Owner and serving database connections
 
-Two identities exist on purpose:
+Three identities exist on purpose:
 
 ```text
 owner     migrations, --rls-apply, seed        ConnectionStrings:NotrelixMigrationDb
-serving   requests, jobs, consumers            ConnectionStrings:NotrelixDb
+serving   requests (notrelix_app)              ConnectionStrings:NotrelixDb
+worker    dispatchers, deduplication, consumers, sweeps, reapers, job locks (notrelix_worker)
+                                               ConnectionStrings:NotrelixWorkerDb
 ```
 
 `OwnerDbContextProvider` supplies the owner `ApplicationDbContext` to the initialiser and the policy
@@ -662,14 +664,32 @@ working. `RuntimeDatabaseRoleGuard` inspects the serving connection at startup (
 could leave a `SET ROLE` constraint. RLS only constrains the serving path when it connects as the
 non-owner application role; until an environment does, its policies are not exercised there.
 `PostgresTestContainer`/`AppRoleTestContainer` provide the application-role database for the conformance
-suite (`Notrelix.Integration.Tests.Rls`), which records the flows that currently fail under that role.
+suite (`Notrelix.Integration.Tests.Rls`).
+
+**The worker connection.** A dependency-injection scope's `ApplicationDbContext` connects as the principal
+the scope chose before its first use (`DatabasePrincipal`, `Data/DatabasePrincipal.cs`). Request scopes are
+the application principal. Background loops (`OutboxDispatcher`, `EmailDispatcher`,
+`OnboardingDraftSweepService`, `SecurityActivityRetentionService`, the two object reaper services) create
+their scopes with `IServiceScopeFactory.CreateWorkerAsyncScope()`; every message-consume scope is switched by
+`WorkerPrincipalConsumeFilter`, the first filter of each transport's consume pipeline, so the deduplication
+claim, the consumer's own writes and the commands it dispatches (the first-workspace provisioning command
+included) share one worker-login context and keep their single-transaction atomicity. Switching after the
+connection was resolved throws. While `ConnectionStrings:NotrelixWorkerDb` is unset it falls back to
+`NotrelixDb` (single-login development and test hosts). The worker login is the only connection for which
+`ops.is_worker_scope()` is true (see 34B); `ops.job_locks` and every `messaging.*` table have `p_worker_all`
+for it and no policy for the application role. Architecture tests
+(`InternalPrincipalArchitectureTests`) pin that every `BackgroundService` creates worker scopes, that the
+worker filter precedes every other consume filter, and where a system context may be entered.
 
 ---
 
 # 34B. Bounded principal scopes
 
 `RlsSqlScripts/012_principal_scopes.sql` adds the scopes of ADR-011 next to `app` and `worker`. None of them
-is a member of `ops.is_worker_scope()` (an architecture test pins that list):
+is a member of `ops.is_worker_scope()` (an architecture test pins that list). `ops.is_worker_scope()` itself
+is the scope value `worker` AND a connection whose login (`session_user`) is a member of `notrelix_worker`:
+the scope value is a session setting any connection can write, so an application login that sets it, or
+sets `system`, `migration` or `migrator`, sees nothing extra:
 
 ```text
 user    authenticated user, no tenant        ApplyUserScopeAsync(userId)
@@ -684,7 +704,9 @@ caller holds no grant on is not found; inside an open data session the session's
 scope entries are transaction-local and require an open transaction. `ApplyUserScopeAsync` is a no-op while
 `Rls:SetSessionContext` is false. `EnterTokenScopeAsync` is the only way to enter a token scope: the database
 derives account and workspace from the digest, logs the entry with its reason, and counts it
-(`rls_scope_entry`); the token value is never logged. No flow uses the token scope yet.
+(`rls_scope_entry`); the token value is never logged. The invitation flows (34D) and API-token authentication
+use it; the scope records its purpose (`app.scope_token_purpose`: `workspace-invitation` or `api-token`) and
+every policy written for one purpose checks it.
 
 ---
 
@@ -703,7 +725,8 @@ ops.shares_workspace_with_caller(uuid)  the relationship rule both use
 Relationship: the caller (`app.current_user_id`, in the `app` or `user` scope) and the requested person hold a
 `workspace.workspace_members` row in the same workspace, in any membership state (active, suspended,
 removed) and any role (guests included), so historical attribution keeps resolving. A person always resolves
-themselves; the worker scope resolves any id; a token, credential or registration scope resolves nobody. The
+themselves; the worker scope (a worker login only) resolves any id; a token (other than the inviter case of an
+invitation), credential or registration scope resolves nobody. The
 functions are `SECURITY DEFINER` with a pinned `search_path`, revoked from PUBLIC and executable by the
 application role only. Which members a person may LIST remains an Application authorization rule; the
 functions resolve display facts for ids the Application already decided to show. Email and phone are not
@@ -765,6 +788,39 @@ How they work together:
 - Audit (Q3): entering a bounded scope writes a structured log line (scope kind, reason, derived ids, never a
   token or password) and increments `rls_scope_entry`; durable `audit.security_events` rows of the flows are
   unchanged.
+
+---
+
+# 34E. Internal principals: API tokens, audit, grant writes, member email and phone
+
+`RlsSqlScripts/015_internal_principals.sql` (and the `ops.upsert_access_grant` / `ops.revoke_access_grant` part
+of `014`) add the bounded paths that remain for the application login:
+
+- **API-token authentication.** `ApiTokenAuthenticationHandler` hashes the presented bearer secret and enters
+  the token scope with purpose `api-token` (`ops.enter_token_scope`), inside a short transaction of its own.
+  The function finds the token by digest and enters the scope only for a token that is active, unexpired and
+  bound to a user; an unknown, revoked, expired or user-less token enters nothing. Policies
+  (`ops.has_api_token_binding`) let the scope read and update that single `identity.api_tokens` row (recording
+  its use) and insert the internal event and outbox rows that recording raises for the token's own
+  tenant; nothing else of the tenant opens up. The request then runs through the ordinary pipeline as the
+  token's user and workspace.
+- **Security audit.** `SecurityAuditSink` writes `audit.security_events` through the insert-only
+  `ops.record_security_event` (known event types only; actor and tenant derived from the scope it enters, never
+  supplied). A failed write is logged at error level and counted (`security_audit_event_write`). A host that
+  sets no session context inserts the row directly.
+- **Admin-driven grant writes.** `AccessGrantProjectionService` writes grants through `ops.upsert_access_grant`
+  and ends them through `ops.revoke_access_grant` whenever the host sets session context and the scope runs as
+  the application principal: add, remove, suspend, activate and re-role a member, create a workspace, transfer
+  ownership. Inside the tenant scope a write lands only in the request's own account and workspace; Owner only
+  by the current Owner (transfer) or for the caller creating a new workspace of their account; the
+  account-level grant is Member only and never replaces an administrator's. A person leaving still ends their
+  own grant through the own-grant update policy. A worker-principal scope (consumers: the first-workspace
+  provisioning) writes the rows directly through its worker policy.
+- **Other people's email and phone.** `ops.disclosable_member_emails` and `ops.shared_member_phones` mirror the
+  Application rules (email: active Owner/Admin reader, active non-guest subjects; phone: active non-guest reader
+  and subject, subject opted in) and take the Workspace as a parameter, which is why
+  `IIdentityUserFacts.FindEmailsAsync` and `IMemberPhoneLookup.FindSharedPhonesAsync` take a workspace id.
+  `MemberEmailReader` and `MemberPhoneLookup` call them when session context is set.
 
 ---
 

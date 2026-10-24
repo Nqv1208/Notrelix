@@ -756,6 +756,12 @@ see `infrastructure-and-data.md` section 34B. Display name and avatar of co-memb
 owner-defined functions (section 34C); no other identity column is exposed. The anonymous invitation and
 registration flows use bounded token, invitee and registration scopes, and the credential flows a credential
 scope derived by the database from the presented credential (section 34D).
+Background work (dispatchers, deduplication, consumers, sweeps, reapers, job locks) connects as the
+`notrelix_worker` login on its own connection; `ops.is_worker_scope()` is true only for that login, so the
+serving process cannot claim the unbounded scope by setting a session value. API-token authentication enters
+a token scope with purpose `api-token`, bound to the token's own account and workspace; admin-driven grant
+writes, security-event writes and others' email and phone go through bounded owner-defined functions
+(section 34E).
 
 These are implementation evidence.
 
@@ -1443,9 +1449,11 @@ user security activity   identity.user_security_activity   Identity-owned, the u
 Audit persistence. The middleware only knows the status code after the use case returned, when the
 request's data session has already committed, so staging an entity on the request context is never
 saved. The middleware therefore calls `ISecurityAuditSink` (Infrastructure, `SecurityAuditSink`), which
-opens its own DI scope and short transaction under an explicit, logged system (worker) context with the
-RLS worker scope of `audit.security_events`, saves and commits, and swallows (but logs) failure so
-auditing can neither fail a request nor be silent. The request's own transaction model is untouched;
+opens its own DI scope and short transaction, enters the user scope of the request's user when there is one
+and writes the row through the insert-only owner-defined `ops.record_security_event` (the actor and the
+tenant are derived from that scope, never supplied; the event type must be a known one), commits, and on
+failure logs an error and counts it (`security_audit_event_write`) so auditing can neither fail a request nor
+be silent. The request's own transaction model is untouched;
 the sink writes only that table and is not a use-case port.
 
 Activity feed. Use cases record a line through `ISecurityActivityRecorder`, which only stages a
@@ -1458,7 +1466,7 @@ filter (no user id input exists), `GET /api/v1/auth/security/activity`, keyset c
 (`occurredAt` desc, `id` desc). The table has user-owned RLS (`apply_user_owned_policies`: the
 owner for app access, the auth role for anonymous sign-in steps, the worker role for retention).
 `SecurityActivityRetentionService` (hosted, `Security:Activity:Retention`) deletes rows older than
-90 days in bounded `SKIP LOCKED` batches under the worker scope.
+90 days in bounded `SKIP LOCKED` batches as the worker login.
 
 ---
 

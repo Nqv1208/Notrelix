@@ -25,6 +25,8 @@ evidence:
   - backend/src/Notrelix.Infrastructure/Data/Rls/RlsSqlScripts/012_principal_scopes.sql
   - backend/src/Notrelix.Infrastructure/Data/Rls/RlsSqlScripts/013_co_member_profiles.sql
   - backend/src/Notrelix.Infrastructure/Data/Rls/RlsSqlScripts/014_anonymous_scopes.sql
+  - backend/src/Notrelix.Infrastructure/Data/Rls/RlsSqlScripts/015_internal_principals.sql
+  - backend/src/Notrelix.Infrastructure/Data/DatabasePrincipal.cs
   - backend/tests/Notrelix.Integration.Tests/Rls/AppRoleConformanceTests.cs
   - backend/tests/Notrelix.Integration.Tests/Rls/RuntimeDatabaseRoleGuardIntegrationTests.cs
 review_on:
@@ -91,9 +93,16 @@ choice constrains every future anonymous endpoint and internal table.
      `OwnerDbContextProvider`; the serving path never receives it. Development, CI and real-e2e use
      `postgres` for this purpose only; staging and production use a dedicated owner role.
    - **`notrelix_app`**: the serving role for requests. Not the owner, not superuser, no `BYPASSRLS`.
-   - **`notrelix_worker`**: the role of dispatchers, deduplication and job locks, on a second connection.
-     Internal tables (`messaging.*`, `notifications.email_outbox`, `ops.*` job tables and similar) keep
-     worker-only policies; no application-role policy gated by a session value is added for them.
+   - **`notrelix_worker`**: the role of the outbox and email dispatchers, the deduplication store,
+     message consumers (including the first-workspace provisioning consumer), sweeps, reapers and job
+     locks, on a second connection (`ConnectionStrings:NotrelixWorkerDb`, falling back to
+     `ConnectionStrings:NotrelixDb` while unset so single-login development and test hosts keep working).
+     A dependency-injection scope chooses its principal before its first database use
+     (`DatabasePrincipal`): background loops create their scopes with `CreateWorkerAsyncScope()`, and the
+     first consume filter of every message pipeline (`WorkerPrincipalConsumeFilter`) switches the consume
+     scope; the context's connection is then fixed. Internal tables (`messaging.*`,
+     `notifications.email_outbox`, `ops.*` job tables and similar) keep worker-only policies; no
+     application-role policy gated by a session value is added for them.
    `notrelix_app` and `notrelix_worker` are `LOGIN` roles used directly. There is no `SET ROLE` switching
    inside a pooled connection. The owner creates them idempotently during policy application and the
    database init script creates them on fresh volumes; their passwords come from the same secret mechanism
@@ -113,13 +122,17 @@ choice constrains every future anonymous endpoint and internal table.
    |---|---|---|
    | `app` | authenticated user inside an account/workspace (ADR-002) | user id from the verified principal; account/workspace from the tenant bootstrap |
    | `user` | authenticated user with no tenant yet (Global requests, resource location, bootstrap lookups) | user id from the verified principal |
-   | `token` | one account/workspace named by a presented one-time token | derived by the database from the token digest |
+   | `token` | one account/workspace named by a presented token: an invitation, or an API token presented as a bearer credential (the purpose is recorded with the scope and policies check it) | derived by the database from the token digest |
    | `credential` | one user named by a presented credential digest or normalized email | derived by the database |
    | `registration` | the rows a registration creates | the ids of those rows |
-   | `worker` | background processing | narrowed and removed from the application connection |
+   | `worker` | background processing | the connection's login: honoured only for a member of `notrelix_worker` |
 
-   `ops.is_worker_scope()` is not widened: `user`, `token`, `credential` and `registration` are never members
-   of it. Policies that admit these scopes do so through dedicated helpers (`ops.has_user_scope`,
+   `ops.is_worker_scope()` is the scope value `worker` **and** a session login that is a member of
+   `notrelix_worker` (`session_user`, because inside the definer function `current_user` is the owner). The
+   scope value is a session setting any connection can write, so on its own it proves nothing: an
+   application login that sets it gains nothing. `system`, `migration` and `migrator` were never set by any
+   code and are no longer admitted. `user`, `token`, `credential` and `registration` are never members of
+   it. Policies that admit these scopes do so through dedicated helpers (`ops.has_user_scope`,
    `ops.has_token_scope`) that compare the row to the bound values and are never satisfied in `app` scope.
 
 4. **Bounded scope entry through owner-defined functions.** Token and credential scopes are entered with
@@ -133,7 +146,26 @@ choice constrains every future anonymous endpoint and internal table.
 5. **Writes the app role may not express as a row policy go through bounded owner-defined functions.**
    `authz.access_grants`, `account.accounts` and first-workspace rows are created under the application
    role by functions that validate their inputs and check the bound scope, not by broad INSERT policies
-   (a grant-based INSERT check cannot bootstrap the first grant).
+   (a grant-based INSERT check cannot bootstrap the first grant). `ops.upsert_access_grant` and
+   `ops.revoke_access_grant` write and end grants inside a registration or invitee scope and, in the
+   tenant (`app`) scope, only for the request's own account and workspace and the account-level Member
+   grant that accompanies a workspace membership (an Owner grant only by the current Owner, the ownership
+   transfer, or for the caller creating a new workspace of their account; an administrator's account grant
+   is never overwritten). Application authorization remains the authority on whether the caller may change
+   the membership; the function is a bound, not a second authorization engine. A person leaving ends their
+   own grant through the one narrow own-grant update policy. The background login (first-workspace
+   provisioning, other consumers) writes through its own worker policy.
+
+   Security audit rows (`audit.security_events`, often tenantless) are written through the insert-only
+   `ops.record_security_event` function: the event type must be a known one, the actor is the user of the
+   current scope (or none) and the tenant the workspace of the current tenant scope (or none), neither
+   supplied by the caller, and no read, update or delete is granted. A failed write is logged as an error
+   and counted (`security_audit_event_write`), never silent and never a failed request.
+
+   Other people's email and phone are read through `ops.disclosable_member_emails` and
+   `ops.shared_member_phones`, which apply the Application rule underneath it (email: reader is an active
+   Owner or Admin of the Workspace, subjects are active non-guest members; phone: reader and subject are
+   active non-guest members, the subject opted in). Neither widens a row policy.
 
 6. **Co-member display name and avatar** are exposed by an owner-defined function that returns only
    `id`, display name and avatar fields for users who share at least one workspace membership with the
@@ -262,14 +294,18 @@ The database derives the bound from the presented digest; the application never 
 - RLS constrains the serving path in every environment and in the test fleet; regressions fail at startup
   or in the conformance suite.
 - Anonymous blast radius is one account, workspace or user.
-- Worker-only internal tables stay unreachable from the request path.
+- Worker-only internal tables stay unreachable from the request path, and the unbounded worker scope can no
+  longer be claimed by the serving process.
 
 ### Negative / trade-offs
 
 - A small allow-list of token, credential and registration policies and entry functions that must be kept in
   sync with the flows (guard tests enforce the shape).
 - One extra statement per bounded request and an extra short transaction for resource location.
-- Two connection strings and two pools to operate, plus provisioning of two login secrets.
+- Two connection strings and two pools to operate, plus provisioning of two login secrets. A message and
+  everything its consumer does (the deduplication claim, the effect, the commands it dispatches) run on the
+  worker connection, whose policies admit all tenants: tenant policies do not bound consumer effects, the
+  consumer's declared tenant scope and the Application do.
 - Session values remain settable by the application login: a compromised application process holding the
   login can still assert scopes. RLS defends against Application bugs and injection, not against a hostile
   process holding the serving credentials.
@@ -325,6 +361,12 @@ applies to Global and Resource-scoped requests.
 - `backend/tests/Notrelix.Integration.Tests/Rls/CoMemberProfileTests.cs`
 - `backend/tests/Notrelix.Integration.Tests/Rls/InvitationScopeTests.cs`
 - `backend/tests/Notrelix.Integration.Tests/Rls/CredentialScopeTests.cs`
+- `backend/tests/Notrelix.Integration.Tests/Rls/WorkerPrincipalTests.cs`
+- `backend/tests/Notrelix.Integration.Tests/Rls/ApiTokenScopeTests.cs`
+- `backend/tests/Notrelix.Integration.Tests/Rls/SecurityEventWriteTests.cs`
+- `backend/tests/Notrelix.Integration.Tests/Rls/AdminGrantWriteTests.cs`
+- `backend/tests/Notrelix.Integration.Tests/Rls/MemberDisclosureTests.cs`
+- `backend/tests/Notrelix.Architecture.Tests/Authorization/InternalPrincipalArchitectureTests.cs`
 
 ### Contracts / migrations / generated evidence
 

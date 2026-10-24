@@ -299,6 +299,7 @@ Database connections and the serving role (`ConnectionStrings`, `Rls:RoleEnforce
 |---|---|---|
 | `ConnectionStrings:NotrelixDb` | none (required) | The runtime connection: every request, background job and consumer. |
 | `ConnectionStrings:NotrelixMigrationDb` | unset | The owner connection used only by `--migrate`, `--rls-apply`, `--seed` and the Development startup migrate/seed. While unset, the runtime string is used for both (today's single-connection behavior); the initialiser logs that fallback. |
+| `ConnectionStrings:NotrelixWorkerDb` | unset | The background login (`notrelix_worker`) used by the outbox and email dispatchers, the deduplication store, message consumers, sweeps, reapers and job locks. While unset, `ConnectionStrings:NotrelixDb` is used for both (single-login development and test hosts). The unbounded worker scope is honoured only on a connection logged in as a member of `notrelix_worker`. |
 | `Rls:RoleEnforcement` | `Off` | `Off` does not inspect the runtime role. `Warn` logs a warning at startup when the runtime connection is a superuser, a BYPASSRLS role, a login that can `RESET ROLE` into one, or holds the owner's privileges on the tenant tables. `Enforce` fails startup in the same cases. |
 
 The owner connection must stay a superuser or BYPASSRLS role: data-migration guards such as the item-key
