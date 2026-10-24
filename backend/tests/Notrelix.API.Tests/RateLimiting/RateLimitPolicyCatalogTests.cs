@@ -39,14 +39,12 @@ public sealed class RateLimitPolicyCatalogTests : IClassFixture<NotrelixApiFacto
     }
 
     [Fact]
-    public void Startup_FailsFast_WhenAnEndpointNamesAPolicyThatIsNotConfigured()
+    public void Catalog_ReportsAnEndpointPolicyThatIsNotConfigured()
     {
         var provider = new RateLimitPolicyProvider(Microsoft.Extensions.Options.Options.Create(new RateLimitingOptions()));
         var endpoints = new TestEndpointDataSource(new RateLimitPolicyAttribute("NoSuchPolicy"));
 
-        var act = () => RateLimitingOptionsValidator.EnsureEveryDeclaredPolicyIsConfigured(endpoints, provider);
-
-        act.Should().Throw<InvalidOperationException>().WithMessage("*NoSuchPolicy*");
+        RateLimitingOptionsValidator.FindUnconfiguredPolicies(endpoints, provider).Should().Equal("NoSuchPolicy");
     }
 
     [Fact]

@@ -645,8 +645,13 @@ Binding RateLimiting:Policies would silently drop every policy.
 
 Startup validation:
 → every policy needs PermitLimit > 0, WindowSeconds > 0, a known Algorithm and FailMode
-→ after endpoints are mapped, every RateLimitPolicyAttribute name used by an endpoint must resolve
-  to a configured policy, otherwise the host stops
+
+Declared-name proof (CI, not startup):
+→ every RateLimitPolicyAttribute name used by an endpoint must resolve to a configured policy;
+  RateLimitPolicyCatalogTests checks it on the real endpoint graph with the shipped appsettings and
+  an architecture test checks it against the source. It is not run at host startup because
+  enumerating every endpoint eagerly costs seconds per host.
+→ at runtime an unresolved name is logged as an error and the request is not limited
 
 Auth tiers (appsettings.json is the numeric evidence):
 AuthCredentialByIp    30 / 60 s  by IP      Closed  login, register, forgot/reset password,

@@ -4,9 +4,10 @@ using Notrelix.API.Options;
 namespace Notrelix.API.RateLimiting;
 
 /// <summary>
-/// Validates the configured rate-limit policies and proves that every policy name declared by an
-/// endpoint through <see cref="RateLimitPolicyAttribute"/> resolves to a configured policy, so a
-/// misnamed or unbound policy stops the host instead of silently disabling a limit.
+/// Validates the configured rate-limit policies at startup and finds policy names declared by an
+/// endpoint through <see cref="RateLimitPolicyAttribute"/> that resolve to no configured policy.
+/// The endpoint check runs in the API test suite rather than at host startup: enumerating every
+/// endpoint eagerly costs seconds of startup per host.
 /// </summary>
 public sealed class RateLimitingOptionsValidator : IValidateOptions<RateLimitingOptions>
 {
@@ -48,17 +49,4 @@ public sealed class RateLimitingOptionsValidator : IValidateOptions<RateLimiting
             .Distinct(StringComparer.Ordinal)
             .Order(StringComparer.Ordinal)
             .ToList();
-
-    public static void EnsureEveryDeclaredPolicyIsConfigured(
-        EndpointDataSource endpoints,
-        IRateLimitPolicyProvider policies)
-    {
-        var missing = FindUnconfiguredPolicies(endpoints, policies);
-        if (missing.Count > 0)
-        {
-            throw new InvalidOperationException(
-                "Endpoints declare rate-limit policies that are not configured under RateLimiting:Policies: "
-                + string.Join(", ", missing) + ".");
-        }
-    }
 }

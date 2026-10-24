@@ -4,7 +4,6 @@ using Notrelix.API.Endpoints;
 using Notrelix.API.Extensions;
 using Notrelix.API.Middleware;
 using Notrelix.API.OpenApi;
-using Notrelix.API.RateLimiting;
 using Notrelix.Infrastructure;
 using Notrelix.Infrastructure.Options;
 using Dpo = Notrelix.Infrastructure.Options.DataProtectionOptions;
@@ -143,9 +142,5 @@ app.UseAuthorization();
 
 // 15. Endpoints
 app.MapEndpoints();
-
-RateLimitingOptionsValidator.EnsureEveryDeclaredPolicyIsConfigured(
-    app.Services.GetRequiredService<EndpointDataSource>(),
-    app.Services.GetRequiredService<IRateLimitPolicyProvider>());
 
 app.Run();
