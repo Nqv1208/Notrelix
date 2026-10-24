@@ -688,6 +688,30 @@ derives account and workspace from the digest, logs the entry with its reason, a
 
 ---
 
+# 34C. Co-member display facts
+
+`identity.users` exposes only the caller's own row to the application role: the row carries the email, the
+password hash and security state, and a row policy cannot hide columns. Display name and avatar of another
+person resolve through owner-defined functions in `RlsSqlScripts/013_co_member_profiles.sql`:
+
+```text
+ops.co_member_profiles(uuid[])          -> (user_id, name, avatar)      ActorLookupService
+ops.co_member_avatar_storage_key(uuid)  -> storage key                  AvatarStorageKeyLookup
+ops.shares_workspace_with_caller(uuid)  the relationship rule both use
+```
+
+Relationship: the caller (`app.current_user_id`, in the `app` or `user` scope) and the requested person hold a
+`workspace.workspace_members` row in the same workspace, in any membership state (active, suspended,
+removed) and any role (guests included), so historical attribution keeps resolving. A person always resolves
+themselves; the worker scope resolves any id; a token, credential or registration scope resolves nobody. The
+functions are `SECURITY DEFINER` with a pinned `search_path`, revoked from PUBLIC and executable by the
+application role only. Which members a person may LIST remains an Application authorization rule; the
+functions resolve display facts for ids the Application already decided to show. Email and phone are not
+reachable through them. The avatar endpoint additionally keeps its Application rule (an active shared
+workspace) on top of the function's relationship.
+
+---
+
 # 35. Same physical connection
 
 ADR-002 relies on the same scoped DbContext/physical connection lifecycle between bootstrap and later full request scope.

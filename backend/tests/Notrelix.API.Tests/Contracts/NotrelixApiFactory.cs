@@ -268,6 +268,14 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
             services.RemoveAll<IRequestDataSession>();
             services.AddScoped<IRequestDataSession, InMemoryRequestDataSession>();
 
+            // The co-member display resolvers call owner-defined PostgreSQL functions; the In-Memory provider
+            // has no such functions, so resolve straight from the user set (the relationship rule itself is
+            // proven by the application-role integration suite).
+            services.RemoveAll<IActorLookupService>();
+            services.AddScoped<IActorLookupService, InMemoryActorLookupService>();
+            services.RemoveAll<Notrelix.Application.Features.Identity.Profiles.Ports.IAvatarStorageKeyReadPort>();
+            services.AddScoped<Notrelix.Application.Features.Identity.Profiles.Ports.IAvatarStorageKeyReadPort, InMemoryAvatarStorageKeyReadPort>();
+
             // Access facts resolve through PostgreSQL-specific SQL; provide
             // owner-level facts so the pure policy engine mirrors the legacy
             // always-allow decision store mock used by these tests.
@@ -679,4 +687,30 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
         Workspaces = new List<WorkspaceInfo>(),
         PersonalWorkspace = new PersonalWorkspaceStatus { Status = "none" }
     };
+}
+
+internal sealed class InMemoryActorLookupService : IActorLookupService
+{
+    private readonly Notrelix.Infrastructure.Data.ApplicationDbContext _context;
+
+    public InMemoryActorLookupService(Notrelix.Infrastructure.Data.ApplicationDbContext context) => _context = context;
+
+    public async Task<ActorSnapshot?> FindAsync(Guid userId, CancellationToken ct) =>
+        (await FindManyAsync([userId], ct)).FirstOrDefault();
+
+    public async Task<IReadOnlyList<ActorSnapshot>> FindManyAsync(IReadOnlyList<Guid> userIds, CancellationToken ct) =>
+        await _context.Users
+            .Where(u => userIds.Contains(u.Id))
+            .Select(u => new ActorSnapshot(u.Id, u.Name, u.Avatar))
+            .ToListAsync(ct);
+}
+
+internal sealed class InMemoryAvatarStorageKeyReadPort : Notrelix.Application.Features.Identity.Profiles.Ports.IAvatarStorageKeyReadPort
+{
+    private readonly Notrelix.Infrastructure.Data.ApplicationDbContext _context;
+
+    public InMemoryAvatarStorageKeyReadPort(Notrelix.Infrastructure.Data.ApplicationDbContext context) => _context = context;
+
+    public Task<string?> FindAsync(Guid ownerId, CancellationToken cancellationToken) =>
+        _context.Users.Where(u => u.Id == ownerId).Select(u => u.AvatarStorageKey).FirstOrDefaultAsync(cancellationToken);
 }

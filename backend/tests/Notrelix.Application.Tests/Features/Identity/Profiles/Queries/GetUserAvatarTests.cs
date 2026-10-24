@@ -10,11 +10,12 @@ namespace Notrelix.Application.Tests.Features.Identity.Profiles.Queries;
 public sealed class GetUserAvatarTests : IdentityHandlerTestBase
 {
     private readonly Mock<IAvatarAudienceReadPort> _audience = new();
+    private readonly Mock<IAvatarStorageKeyReadPort> _keys = new();
     private readonly Mock<IStorageService> _storage = new();
     private readonly Guid _ownerId = Guid.CreateVersion7();
 
     private GetUserAvatarQueryHandler Sut() => new(
-        IdentityContextMock.Object, RequestContextMock.Object, _audience.Object, _storage.Object,
+        IdentityContextMock.Object, RequestContextMock.Object, _audience.Object, _keys.Object, _storage.Object,
         NullLogger<GetUserAvatarQueryHandler>.Instance);
 
     private User OwnerWithPhoto(string? key = null)
@@ -22,6 +23,7 @@ public sealed class GetUserAvatarTests : IdentityHandlerTestBase
         var owner = CreateUser(email: "owner@test.com", id: _ownerId);
         key ??= AvatarStorageKey.Create(_ownerId, new AvatarFormat("image/webp", "webp"));
         owner.ChangeUploadedAvatar(key, AvatarStorageKey.UrlFor(_ownerId, key), _ownerId, TestNow);
+        _keys.Setup(k => k.FindAsync(_ownerId, It.IsAny<CancellationToken>())).ReturnsAsync(key);
         _storage.Setup(s => s.OpenReadAsync(key, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new MemoryStream([1, 2, 3]));
         return owner;

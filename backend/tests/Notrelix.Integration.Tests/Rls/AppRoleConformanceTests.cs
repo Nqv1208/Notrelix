@@ -235,20 +235,37 @@ public sealed class AppRoleConformanceTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task CoMemberProfile_UnderTheAppRole_IsCurrentlyInvisible()
+    public async Task CoMemberProfile_UnderTheAppRole_ResolvesThroughTheFunction_WhileTheUsersRowStaysHidden()
     {
-        // Another member's display name and avatar cannot be read: only the caller's own user row is visible.
+        var bob = User.Create("bob-rls@example.com", "Bob", "hash", DateTimeOffset.UtcNow, hasPasswordCredential: true);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using (var ctx = _fixture.CreateOwnerContext(tenant))
+        {
+            ctx.Users.Add(bob);
+            ctx.WorkspaceMembers.Add(WorkspaceMember.Create(
+                (await ctx.Workspaces.IgnoreQueryFilters().SingleAsync(w => w.Id == _workspaceId)).AccountId,
+                _workspaceId, bob.Id, WorkspaceRole.Member, _alice.Id, DateTimeOffset.UtcNow));
+            await ctx.SaveChangesAsync();
+        }
+
         await using var connection = new NpgsqlConnection(_fixture.AppConnectionString);
         await connection.OpenAsync();
         await using var tx = await connection.BeginTransactionAsync();
         await using (var set = new NpgsqlCommand("SELECT set_config('app.current_user_id', @u, true), set_config('app.request_scope', 'app', true)", connection, tx))
         {
-            set.Parameters.AddWithValue("u", Guid.NewGuid().ToString());
+            set.Parameters.AddWithValue("u", bob.Id.ToString());
             await set.ExecuteNonQueryAsync();
         }
 
-        await using var read = new NpgsqlCommand("SELECT count(*) FROM identity.users WHERE id = @id", connection, tx);
-        read.Parameters.AddWithValue("id", _alice.Id);
-        Convert.ToInt64(await read.ExecuteScalarAsync()).Should().Be(0);
+        await using (var row = new NpgsqlCommand("SELECT count(*) FROM identity.users WHERE id = @id", connection, tx))
+        {
+            row.Parameters.AddWithValue("id", _alice.Id);
+            Convert.ToInt64(await row.ExecuteScalarAsync()).Should().Be(0, "the row policy still exposes only the caller's own row");
+        }
+
+        await using var resolve = new NpgsqlCommand("SELECT name FROM ops.co_member_profiles(@ids)", connection, tx);
+        resolve.Parameters.AddWithValue("ids", new[] { _alice.Id });
+        (await resolve.ExecuteScalarAsync()).Should().Be("Alice", "a co-member's display name resolves through the owner-defined function");
     }
 }

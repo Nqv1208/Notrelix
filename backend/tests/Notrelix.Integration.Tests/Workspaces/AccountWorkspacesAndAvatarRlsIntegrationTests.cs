@@ -326,19 +326,25 @@ public sealed class AccountWorkspacesAndAvatarRlsIntegrationTests : IAsyncLifeti
     }
 
     [Fact]
-    public async Task ReadingAnotherUsersAvatar_UnderTheAppRole_FailsClosedAsNotFound()
+    public async Task ReadingAnotherUsersAvatar_UnderTheAppRole_WorksForACoMember_AndFailsClosedForEveryoneElse()
     {
-        // Known gap shared with ActorLookupService: under notrelix_app another person's users row is
-        // not visible, so a co-member read answers not-found. It must never return another user's data.
         var alice = await SeedUserAsync("alice");
         var bob = await SeedUserAsync("bob");
+        var carol = await SeedUserAsync("carol");
         var ws = await SeedWorkspaceAsync(AccountA, alice, "Shared");
         await AddMemberAsync(AccountA, alice, ws, bob, WorkspaceRole.Member);
         var storage = NewStorage();
         await UploadAsync(alice, storage);
 
-        var act = async () => await ReadAvatarAsync(bob, alice, storage);
+        var read = await ReadAvatarAsync(bob, alice, storage);
+        await using (read.Content)
+        {
+            read.ContentType.Should().Be("image/png");
+        }
 
+        // Carol shares no workspace with Alice: the owner-defined function does not resolve the key, so the
+        // answer is the same not-found as for a person without a photo.
+        var act = async () => await ReadAvatarAsync(carol, alice, storage);
         await act.Should().ThrowAsync<NotFoundException>();
     }
 
@@ -486,7 +492,7 @@ public sealed class AccountWorkspacesAndAvatarRlsIntegrationTests : IAsyncLifeti
         var dto = await RunAsync(viewer, AccountA, null, async (context, request, _) =>
         {
             var handler = new GetUserAvatarQueryHandler(
-                context, request, new AvatarAudienceReadAdapter(context), storage,
+                context, request, new AvatarAudienceReadAdapter(context), new Notrelix.Infrastructure.Identity.Profiles.AvatarStorageKeyLookup(context), storage,
                 NullLogger<GetUserAvatarQueryHandler>.Instance);
             return (await handler.Handle(new GetUserAvatarQuery(owner), default)).Data!;
         });

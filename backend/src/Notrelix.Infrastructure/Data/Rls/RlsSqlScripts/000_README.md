@@ -27,6 +27,7 @@ Use `000_apply_order.sql` or embed the files in the same order:
 10. `010_policies_events_messaging_audit_ops.sql`
 11. `011_verification.sql`
 12. `012_principal_scopes.sql`
+13. `013_co_member_profiles.sql`
 
 ## Important fixes
 

@@ -10,3 +10,4 @@
 \i 010_policies_events_messaging_audit_ops.sql
 \i 011_verification.sql
 \i 012_principal_scopes.sql
+\i 013_co_member_profiles.sql

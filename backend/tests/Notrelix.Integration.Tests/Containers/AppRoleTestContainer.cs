@@ -34,7 +34,6 @@ public sealed class AppRoleTestContainer : IAsyncLifetime
     public async Task InitializeAsync()
     {
         await _postgres.InitializeAsync();
-        await _postgres.ApplyRlsAsync();
         AppConnectionString = await AppRoleLogin.CreateAsync(OwnerConnectionString, "notrelix_conformance_login");
 
         _redis = new ContainerBuilder()

@@ -23,6 +23,7 @@ public sealed class GetUserAvatarQueryHandler : IRequestHandler<GetUserAvatarQue
     private readonly IIdentityDbContext _context;
     private readonly ICurrentRequestContext _currentUser;
     private readonly IAvatarAudienceReadPort _audience;
+    private readonly IAvatarStorageKeyReadPort _keys;
     private readonly IStorageService _storage;
     private readonly ILogger<GetUserAvatarQueryHandler> _logger;
 
@@ -30,12 +31,14 @@ public sealed class GetUserAvatarQueryHandler : IRequestHandler<GetUserAvatarQue
         IIdentityDbContext context,
         ICurrentRequestContext currentUser,
         IAvatarAudienceReadPort audience,
+        IAvatarStorageKeyReadPort keys,
         IStorageService storage,
         ILogger<GetUserAvatarQueryHandler> logger)
     {
         _context = context;
         _currentUser = currentUser;
         _audience = audience;
+        _keys = keys;
         _storage = storage;
         _logger = logger;
     }
@@ -44,11 +47,15 @@ public sealed class GetUserAvatarQueryHandler : IRequestHandler<GetUserAvatarQue
     {
         var viewerId = _currentUser.UserId;
 
-        var key = await _context.Users
-            .AsNoTracking()
-            .Where(u => u.Id == request.UserId)
-            .Select(u => u.AvatarStorageKey)
-            .FirstOrDefaultAsync(ct);
+        // The person's own row is read directly; another person's key is resolved through the Identity port,
+        // which answers only for people the caller shares a workspace membership with.
+        var key = viewerId == request.UserId
+            ? await _context.Users
+                .AsNoTracking()
+                .Where(u => u.Id == request.UserId)
+                .Select(u => u.AvatarStorageKey)
+                .FirstOrDefaultAsync(ct)
+            : await _keys.FindAsync(request.UserId, ct);
 
         if (key is null
             || (viewerId != request.UserId && !await _audience.ShareActiveWorkspaceAsync(viewerId, request.UserId, ct)))

@@ -56,7 +56,8 @@
       "backend.rls.runtime-role-guard",
       "backend.rls.owner-connection-split",
       "backend.rls.principal-scope-primitives",
-      "backend.rls.user-scope-isolation"
+      "backend.rls.user-scope-isolation",
+      "backend.rls.co-member-profile"
     ]
   },
   "proofs": {
@@ -263,6 +264,11 @@
     "backend.rls.user-scope-isolation": {
       "tests": [
         "Notrelix.Integration.Tests.Rls.UserScopeIsolationTests"
+      ]
+    },
+    "backend.rls.co-member-profile": {
+      "tests": [
+        "Notrelix.Integration.Tests.Rls.CoMemberProfileTests"
       ]
     },
     "backend.architecture.owner-connection-boundary": {

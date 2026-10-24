@@ -23,6 +23,7 @@ evidence:
   - backend/src/Notrelix.Infrastructure/Data/OwnerDbContextProvider.cs
   - backend/src/Notrelix.Infrastructure/Data/Rls/RlsSqlScripts/002_context_helpers.sql
   - backend/src/Notrelix.Infrastructure/Data/Rls/RlsSqlScripts/012_principal_scopes.sql
+  - backend/src/Notrelix.Infrastructure/Data/Rls/RlsSqlScripts/013_co_member_profiles.sql
   - backend/tests/Notrelix.Integration.Tests/Rls/AppRoleConformanceTests.cs
   - backend/tests/Notrelix.Integration.Tests/Rls/RuntimeDatabaseRoleGuardIntegrationTests.cs
 review_on:
@@ -320,6 +321,7 @@ applies to Global and Resource-scoped requests.
 - `backend/tests/Notrelix.Architecture.Tests/Authorization/RlsPrincipalScopeArchitectureTests.cs`
 - `backend/tests/Notrelix.Integration.Tests/Rls/PrincipalScopePrimitivesTests.cs`
 - `backend/tests/Notrelix.Integration.Tests/Rls/UserScopeIsolationTests.cs`
+- `backend/tests/Notrelix.Integration.Tests/Rls/CoMemberProfileTests.cs`
 
 ### Contracts / migrations / generated evidence
 

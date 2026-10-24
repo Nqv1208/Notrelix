@@ -30,8 +30,9 @@ public sealed class PostgresTestContainer : IAsyncLifetime
     public string OwnerConnectionString => ConnectionString;
 
     /// <summary>
-    /// Applies the row-level-security policy pack (roles, helpers, policies) as the owner. The shared
-    /// fixture does not do this on its own, so existing suites keep running without policies.
+    /// Applies the row-level-security policy pack (roles, helpers, policies, owner-defined functions) as the
+    /// owner. The fixture applies it once after migrating, because adapters call pack functions (for
+    /// example the co-member profile resolver); the owner connection bypasses the policies themselves.
     /// </summary>
     public async Task ApplyRlsAsync()
     {
@@ -49,6 +50,7 @@ public sealed class PostgresTestContainer : IAsyncLifetime
             tenant.SetWorkspace(Guid.Parse("00000000-0000-0000-0000-000000000001"), Guid.Parse("00000000-0000-0000-0000-000000000001"), null);
             await using var context = CreateContext(tenant);
             await context.Database.MigrateAsync();
+            await new RlsPolicyApplier(context, NullLogger<RlsPolicyApplier>.Instance).ApplyAsync();
         }
     }
 
