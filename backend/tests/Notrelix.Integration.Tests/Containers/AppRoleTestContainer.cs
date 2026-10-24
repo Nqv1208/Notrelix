@@ -27,6 +27,10 @@ public sealed class AppRoleTestContainer : IAsyncLifetime
     public Notrelix.Infrastructure.Data.ApplicationDbContext CreateOwnerContext(ICurrentTenantContext? tenant = null) =>
         _postgres.CreateContext(tenant);
 
+    /// <summary>A context connected as the application-role login (row-level security applies).</summary>
+    public Notrelix.Infrastructure.Data.ApplicationDbContext CreateAppContext(ICurrentTenantContext? tenant = null) =>
+        PostgresTestContainer.CreateContextFor(AppConnectionString, tenant);
+
     public async Task InitializeAsync()
     {
         await _postgres.InitializeAsync();

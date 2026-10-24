@@ -1,0 +1,87 @@
+-- =============================================================================
+-- 012_principal_scopes.sql — Bounded principal scopes (user, token)
+-- =============================================================================
+-- Scope values written here are NOT members of ops.is_worker_scope(): a bounded scope never satisfies the
+-- unbounded worker bypass. The scope-bound session values (app.scope_*) are written by the application
+-- connection for the authenticated user scope and ONLY by the enter_* definer functions for token scopes,
+-- which derive account/workspace from a presented token digest instead of trusting supplied identifiers.
+-- Entry functions must run inside a transaction: the values are transaction-local.
+-- =============================================================================
+
+-- True when the row's user is the user the current bounded scope was entered for.
+CREATE OR REPLACE FUNCTION ops.has_user_scope(p_user uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = pg_catalog, ops, pg_temp
+AS $$
+    SELECT p_user IS NOT NULL
+       AND ops.current_request_scope() IN ('user', 'credential', 'registration')
+       AND p_user = ops.current_setting_uuid('app.scope_user_id');
+$$;
+
+-- True when the row belongs to the account (and workspace, when the row has one) the current token scope
+-- was entered for. Never true in any other scope.
+CREATE OR REPLACE FUNCTION ops.has_token_scope(p_account uuid, p_workspace uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = pg_catalog, ops, pg_temp
+AS $$
+    SELECT p_account IS NOT NULL
+       AND ops.current_request_scope() = 'token'
+       AND p_account = ops.current_setting_uuid('app.scope_account_id')
+       AND (p_workspace IS NULL OR p_workspace = ops.current_setting_uuid('app.scope_workspace_id'));
+$$;
+
+-- Enters the token scope named by a presented one-time token. The token row is located by digest (the
+-- function owner bypasses row-level security for this single lookup); when found, the scope is bound to
+-- the token's own account and workspace and those two identifiers are returned. When no row matches, no
+-- scope is entered and nothing is returned. The digest, never a raw token, is the input.
+CREATE OR REPLACE FUNCTION ops.enter_token_scope(p_purpose text, p_token_hash text, p_hash_version integer)
+RETURNS TABLE (account_id uuid, workspace_id uuid)
+LANGUAGE plpgsql
+VOLATILE
+SECURITY DEFINER
+SET search_path = pg_catalog, ops, pg_temp
+AS $$
+DECLARE
+    v_account uuid;
+    v_workspace uuid;
+BEGIN
+    IF p_token_hash IS NULL OR length(p_token_hash) = 0 THEN
+        RETURN;
+    END IF;
+
+    IF p_purpose = 'workspace-invitation' THEN
+        SELECT i.account_id, i.workspace_id
+          INTO v_account, v_workspace
+          FROM workspace.workspace_invitations i
+         WHERE i.token_hash = p_token_hash
+           AND i.hash_version = p_hash_version;
+    ELSE
+        RAISE EXCEPTION 'Unknown token scope purpose' USING ERRCODE = '22023';
+    END IF;
+
+    IF v_account IS NULL OR v_workspace IS NULL THEN
+        RETURN;
+    END IF;
+
+    PERFORM set_config('app.request_scope', 'token', true);
+    PERFORM set_config('app.scope_account_id', v_account::text, true);
+    PERFORM set_config('app.scope_workspace_id', v_workspace::text, true);
+    PERFORM set_config('app.scope_user_id', '', true);
+    PERFORM set_config('app.scope_token_hash', p_token_hash, true);
+
+    RETURN QUERY SELECT v_account, v_workspace;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION ops.has_user_scope(uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION ops.has_token_scope(uuid, uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION ops.enter_token_scope(text, text, integer) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION ops.has_user_scope(uuid) TO notrelix_app, notrelix_auth, notrelix_worker, notrelix_support_readonly;
+GRANT EXECUTE ON FUNCTION ops.has_token_scope(uuid, uuid) TO notrelix_app, notrelix_auth, notrelix_worker, notrelix_support_readonly;
+GRANT EXECUTE ON FUNCTION ops.enter_token_scope(text, text, integer) TO notrelix_app;

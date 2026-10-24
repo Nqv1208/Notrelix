@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore.Storage;
 namespace Notrelix.Infrastructure.Data.Rls;
 
 public sealed class RlsSessionContext : IRlsSessionContext
@@ -5,15 +6,18 @@ public sealed class RlsSessionContext : IRlsSessionContext
     private readonly DatabaseFacade _database;
     private readonly IOptions<RlsOptions> _options;
     private readonly ICurrentTenantContext _tenant;
+    private readonly ILogger<RlsSessionContext>? _logger;
 
     public RlsSessionContext(
         ApplicationDbContext dbContext,
         IOptions<RlsOptions> options,
-        ICurrentTenantContext tenant)
+        ICurrentTenantContext tenant,
+        ILogger<RlsSessionContext>? logger = null)
     {
         _database = dbContext.Database;
         _options = options;
         _tenant = tenant;
+        _logger = logger;
     }
 
     public async Task ApplyAsync(CancellationToken cancellationToken)
@@ -51,6 +55,91 @@ public sealed class RlsSessionContext : IRlsSessionContext
             SELECT set_config('app.request_scope', {scope}, true);
             SELECT set_config('app.correlation_id', {correlationId}, true);
         ", cancellationToken);
+    }
+
+    public async Task ApplyUserScopeAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        if (userId == Guid.Empty)
+            throw new ArgumentException("User id is required.", nameof(userId));
+
+        if (!_options.Value.SetSessionContext)
+            return;
+
+        RequireTransaction("user");
+
+        var user = userId.ToString();
+        var correlationId = System.Diagnostics.Activity.Current?.Id ?? "";
+
+        // The user scope carries the authenticated user only: account and workspace values are cleared
+        // so a policy cannot read a tenant left over from an earlier statement of the same transaction.
+        await _database.ExecuteSqlInterpolatedAsync($@"
+            SELECT set_config('app.current_user_id', {user}, true);
+            SELECT set_config('app.scope_user_id', {user}, true);
+            SELECT set_config('app.current_account_id', '', true);
+            SELECT set_config('app.current_workspace_id', '', true);
+            SELECT set_config('app.request_scope', 'user', true);
+            SELECT set_config('app.correlation_id', {correlationId}, true);
+        ", cancellationToken);
+    }
+
+    public async Task<TokenScopeBinding?> EnterTokenScopeAsync(
+        TokenScopeRequest request,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        if (string.IsNullOrWhiteSpace(request.TokenHash))
+            throw new ArgumentException("A token digest is required.", nameof(request));
+
+        RequireTransaction("token");
+
+        var purpose = request.Purpose switch
+        {
+            TokenScopePurpose.WorkspaceInvitation => "workspace-invitation",
+            _ => throw new ArgumentOutOfRangeException(nameof(request), request.Purpose, "Unknown token scope purpose."),
+        };
+
+        var connection = (NpgsqlConnection)_database.GetDbConnection();
+        var transaction = (NpgsqlTransaction)_database.CurrentTransaction!.GetDbTransaction();
+        await using var command = new NpgsqlCommand(
+            "SELECT account_id, workspace_id FROM ops.enter_token_scope(@purpose, @hash, @version)",
+            connection,
+            transaction);
+        command.Parameters.AddWithValue("purpose", purpose);
+        command.Parameters.AddWithValue("hash", request.TokenHash);
+        command.Parameters.AddWithValue("version", request.HashVersion);
+
+        TokenScopeBinding? binding = null;
+        await using (var reader = await command.ExecuteReaderAsync(cancellationToken))
+        {
+            if (await reader.ReadAsync(cancellationToken))
+                binding = new TokenScopeBinding(reader.GetGuid(0), reader.GetGuid(1));
+        }
+
+        RlsScopeMetrics.Record("token", request.Reason.Category, binding is not null);
+
+        if (binding is null)
+        {
+            _logger?.LogWarning(
+                "Token scope not entered: {Purpose} | {Category}: {Description}",
+                purpose, request.Reason.Category, request.Reason.Description);
+        }
+        else
+        {
+            _logger?.LogWarning(
+                "Token scope entered: {Purpose} | {Category}: {Description} | account {AccountId} workspace {WorkspaceId}",
+                purpose, request.Reason.Category, request.Reason.Description, binding.AccountId, binding.WorkspaceId);
+        }
+
+        return binding;
+    }
+
+    private void RequireTransaction(string scopeKind)
+    {
+        if (_database.CurrentTransaction is null)
+        {
+            throw new InvalidOperationException(
+                $"The {scopeKind} scope is transaction-local and must be entered inside an open transaction.");
+        }
     }
 
     /// <summary>

@@ -59,10 +59,15 @@ public sealed class PostgresTestContainer : IAsyncLifetime
         await _container.DisposeAsync();
     }
 
-    public ApplicationDbContext CreateContext(ICurrentTenantContext? tenant = null, params IInterceptor[] interceptors)
+    public ApplicationDbContext CreateContext(ICurrentTenantContext? tenant = null, params IInterceptor[] interceptors) =>
+        CreateContextFor(ConnectionString, tenant, interceptors);
+
+    /// <summary>A context over an explicit connection string (for example the application-role login).</summary>
+    public static ApplicationDbContext CreateContextFor(
+        string connectionString, ICurrentTenantContext? tenant = null, params IInterceptor[] interceptors)
     {
         var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>()
-            .UseNpgsql(ConnectionString, npgOptions =>
+            .UseNpgsql(connectionString, npgOptions =>
             {
                 npgOptions.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
                 npgOptions.MigrationsHistoryTable("__EFMigrationsHistory", "ops");

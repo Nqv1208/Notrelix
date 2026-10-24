@@ -9,3 +9,4 @@
 \i 009_policies_notifications_activity_search.sql
 \i 010_policies_events_messaging_audit_ops.sql
 \i 011_verification.sql
+\i 012_principal_scopes.sql

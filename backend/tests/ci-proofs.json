@@ -19,7 +19,8 @@
       "backend.architecture.integration-event-ownership",
       "backend.architecture.common-entitlements",
       "backend.architecture.feature-structure",
-      "backend.architecture.owner-connection-boundary"
+      "backend.architecture.owner-connection-boundary",
+      "backend.architecture.rls-principal-scope"
     ],
     "core": [
       "backend.data.rls-policy",
@@ -53,7 +54,8 @@
       "backend.messaging.realtime-resource-changed",
       "backend.rls.app-role-conformance",
       "backend.rls.runtime-role-guard",
-      "backend.rls.owner-connection-split"
+      "backend.rls.owner-connection-split",
+      "backend.rls.principal-scope-primitives"
     ]
   },
   "proofs": {
@@ -245,6 +247,16 @@
     "backend.messaging.realtime-resource-changed": {
       "tests": [
         "Notrelix.Integration.Tests.Messaging.RealtimeResourceChangedConsumerIntegrationTests"
+      ]
+    },
+    "backend.architecture.rls-principal-scope": {
+      "tests": [
+        "Notrelix.Architecture.Tests.RlsPrincipalScopeArchitectureTests"
+      ]
+    },
+    "backend.rls.principal-scope-primitives": {
+      "tests": [
+        "Notrelix.Integration.Tests.Rls.PrincipalScopePrimitivesTests"
       ]
     },
     "backend.architecture.owner-connection-boundary": {
