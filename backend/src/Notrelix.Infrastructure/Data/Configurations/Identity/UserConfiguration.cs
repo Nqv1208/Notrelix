@@ -25,6 +25,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.Property(x => x.Name).HasColumnName("name").IsRequired().HasMaxLength(256);
         builder.Property(x => x.Avatar).HasColumnName("avatar");
+        builder.Property(x => x.AvatarStorageKey).HasColumnName("avatar_storage_key").HasMaxLength(200);
         builder.Property(x => x.PasswordHash).HasColumnName("password_hash").IsRequired();
         builder.Property(x => x.HasPasswordCredential).HasColumnName("has_password_credential").IsRequired().HasDefaultValue(false);
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<string>().IsRequired().HasMaxLength(50);

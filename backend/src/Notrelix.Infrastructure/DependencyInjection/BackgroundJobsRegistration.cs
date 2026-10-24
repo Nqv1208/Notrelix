@@ -24,6 +24,11 @@ public static class BackgroundJobsRegistration
         services.AddScoped<AttachmentObjectReaper>();
         services.AddHostedService<AttachmentObjectReaperService>();
 
+        // Identity: remove profile photo objects that no user references (replaced, removed or never committed).
+        services.AddScoped<IAvatarReaperStore, PostgresAvatarReaperStore>();
+        services.AddScoped<AvatarObjectReaper>();
+        services.AddHostedService<AvatarObjectReaperService>();
+
         // User-visible security activity feed: delete entries past the retention (default 90 days).
         services.AddOptions<SecurityActivityRetentionOptions>()
             .Bind(configuration.GetSection(SecurityActivityRetentionOptions.SectionName))

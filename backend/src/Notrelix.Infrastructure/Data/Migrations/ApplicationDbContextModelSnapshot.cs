@@ -4375,6 +4375,10 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
+                    b.Property<Guid?>("DefaultWorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("default_workspace_id");
+
                     b.Property<string>("DeleteReason")
                         .HasColumnType("text")
                         .HasColumnName("delete_reason");
@@ -4999,6 +5003,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.Property<string>("Avatar")
                         .HasColumnType("text")
                         .HasColumnName("avatar");
+
+                    b.Property<string>("AvatarStorageKey")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("avatar_storage_key");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
