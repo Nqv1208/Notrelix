@@ -66,11 +66,26 @@ public static class CompleteOAuthLoginEndpoint
             return Results.Redirect(redirectOptions.Value.FrontendFailureUrl);
         }
 
+        // An MFA-enabled user has no session yet: the result carries a challenge, not tokens. Issuing
+        // cookies from it would set an empty or partial session. Until the product decides how the
+        // browser receives the challenge after a redirect, fail closed: no cookie, a stable error code.
+        if (result.Data.MfaRequired
+            || string.IsNullOrEmpty(result.Data.AccessToken)
+            || string.IsNullOrEmpty(result.Data.RefreshToken))
+        {
+            return Results.Redirect(AppendErrorCode(redirectOptions.Value.FrontendFailureUrl, MfaRequiredErrorCode));
+        }
+
         cookieService.SetTokenCookie(result.Data.AccessToken, result.Data.RefreshToken);
 
         var returnUrl = redirectOptions.Value.FrontendSuccessUrl;
         return Results.Redirect(returnUrl);
     }
+
+    internal const string MfaRequiredErrorCode = "identity.oauth.mfa-required";
+
+    internal static string AppendErrorCode(string baseUrl, string errorCode) =>
+        $"{baseUrl}{(baseUrl.Contains('?') ? '&' : '?')}error={Uri.EscapeDataString(errorCode)}";
 
     private static string BuildFlowHandoffUrl(
         string baseUrl, string? code, string state, string? error, string? errorDescription)
