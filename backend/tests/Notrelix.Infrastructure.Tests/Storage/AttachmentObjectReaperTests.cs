@@ -295,7 +295,8 @@ public sealed class AttachmentObjectReaperTests
         public Func<string, Task>? DeleteGate { get; set; }
 
         public Task WriteAsync(string key, Stream content, string contentType, CancellationToken ct) => Task.CompletedTask;
-        public Task<Stream?> OpenReadAsync(string key, CancellationToken ct) => Task.FromResult<Stream?>(null);
+        public Task<Stream?> OpenReadAsync(string key, CancellationToken ct) =>
+            Task.FromResult<Stream?>(Objects.ContainsKey(key) || FailingKeys.Contains(key) ? new MemoryStream() : null);
 
         public async Task DeleteAsync(string key, CancellationToken ct)
         {
