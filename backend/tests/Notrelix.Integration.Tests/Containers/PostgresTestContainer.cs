@@ -2,7 +2,9 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Npgsql;
 using Testcontainers.PostgreSql;
+using Microsoft.Extensions.Logging.Abstractions;
 using Notrelix.Infrastructure.Data;
+using Notrelix.Infrastructure.Data.Rls;
 using Notrelix.Testing.Application.Fakes;
 using Notrelix.Testing.Integration;
 
@@ -23,6 +25,19 @@ public sealed class PostgresTestContainer : IAsyncLifetime
             ? $"{_container.GetConnectionString()};Include Error Detail=true"
             : throw new InvalidOperationException(
                 "Docker is not available (NO_DOCKER env var is set). Use --filter \"Category!=RequiresDocker\" to skip Docker-dependent tests.");
+
+    /// <summary>The container superuser: the owner of every table, used to migrate, seed and apply policies.</summary>
+    public string OwnerConnectionString => ConnectionString;
+
+    /// <summary>
+    /// Applies the row-level-security policy pack (roles, helpers, policies) as the owner. The shared
+    /// fixture does not do this on its own, so existing suites keep running without policies.
+    /// </summary>
+    public async Task ApplyRlsAsync()
+    {
+        await using var context = CreateContext(new FakeCurrentTenantContext());
+        await new RlsPolicyApplier(context, NullLogger<RlsPolicyApplier>.Instance).ApplyAsync();
+    }
 
     public async Task InitializeAsync()
     {

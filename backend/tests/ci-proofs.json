@@ -47,7 +47,8 @@
       "backend.integration.migration-smoke",
       "backend.integration.production-composition",
       "backend.integration.production-graph",
-      "backend.messaging.realtime-resource-changed"
+      "backend.messaging.realtime-resource-changed",
+      "backend.rls.app-role-conformance"
     ]
   },
   "proofs": {
@@ -239,6 +240,11 @@
     "backend.messaging.realtime-resource-changed": {
       "tests": [
         "Notrelix.Integration.Tests.Messaging.RealtimeResourceChangedConsumerIntegrationTests"
+      ]
+    },
+    "backend.rls.app-role-conformance": {
+      "tests": [
+        "Notrelix.Integration.Tests.Rls.AppRoleConformanceTests"
       ]
     }
   }
