@@ -1425,6 +1425,31 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.Identity.Auth.Queries.IdentifySignIn.IdentifySignInQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAnonymousRequest"
+    ],
+    "scopeMarkers": [
+      "IGlobalRequest"
+    ],
+    "dataMarkers": [
+      "INoDataRequest"
+    ],
+    "requiresPermission": false,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Identity.Auth.Queries.IdentifySignIn.IdentifySignInQueryHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.Identity.Mfa.Commands.CompleteMfaChallenge.CompleteMfaChallengeCommand",
     "kind": "Command",
     "principalMarkers": [
@@ -5600,6 +5625,31 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.Workspaces.Invitations.Commands.AcceptInvitationWithRegistration.AcceptInvitationWithRegistrationCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAnonymousRequest"
+    ],
+    "scopeMarkers": [
+      "ITokenScopedRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": false,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Workspaces.Invitations.Commands.AcceptInvitationWithRegistration.AcceptInvitationWithRegistrationCommandHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.Workspaces.Invitations.Commands.CancelInvitation.CancelInvitationCommand",
     "kind": "Command",
     "principalMarkers": [
@@ -5672,6 +5722,31 @@
     "publicCache": false,
     "handlerTypes": [
       "Notrelix.Application.Features.Workspaces.Invitations.Commands.DeclineInvitation.DeclineInvitationCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Workspaces.Invitations.Commands.DeclineInvitationByToken.DeclineInvitationByTokenCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAnonymousRequest"
+    ],
+    "scopeMarkers": [
+      "ITokenScopedRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": false,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Workspaces.Invitations.Commands.DeclineInvitationByToken.DeclineInvitationByTokenCommandHandler"
     ]
   },
   {

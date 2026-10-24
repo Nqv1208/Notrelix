@@ -26,6 +26,8 @@ public static class MapInvitationEndpoints
         invitationsGroup.MapAcceptInvitation();
         invitationsGroup.MapDeclineInvitation();
         invitationsGroup.MapGetInvitationByToken();
+        invitationsGroup.MapAcceptInvitationWithRegistration();
+        invitationsGroup.MapDeclineInvitationByToken();
 
         var resourceGroup = app
             .MapGroup("/api/v1/resources/{resourceType}/{resourceId:guid}/invitations")

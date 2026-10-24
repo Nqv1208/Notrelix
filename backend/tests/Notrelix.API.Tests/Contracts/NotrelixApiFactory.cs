@@ -420,9 +420,20 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
                 Result<OAuthLoginStartResult>.Success(new OAuthLoginStartResult("https://accounts.google.com/o/oauth2/auth?test=true")));
             MockWorkspaceHandler<CompleteOAuthLoginCommand, Result<AuthResult>>(services,
                 Result<AuthResult>.Success(CreateAuthResult()));
-            MockWorkspaceHandler<InvitationByToken.GetInvitationByTokenQuery, Result<InvitationByToken.WorkspaceInvitationDto>>(services,
-                Result<InvitationByToken.WorkspaceInvitationDto>.Success(new InvitationByToken.WorkspaceInvitationDto(
-                    Guid.NewGuid(), "Test Workspace", "Inviter", "test@test.com", "Member", false, false)));
+            MockWorkspaceHandler<InvitationByToken.GetInvitationByTokenQuery, Result<InvitationByToken.InvitationPreviewDto>>(services,
+                Result<InvitationByToken.InvitationPreviewDto>.Success(new InvitationByToken.InvitationPreviewDto(
+                    "valid", "Inviter", "Test Workspace", "Member", null, null, null, new DateOnly(2030, 1, 1), "test@test.com", false)));
+            MockWorkspaceHandler<Notrelix.Application.Features.Workspaces.Invitations.Commands.DeclineInvitationByToken.DeclineInvitationByTokenCommand, Result>(
+                services, Result.Success());
+            MockWorkspaceHandler<Notrelix.Application.Features.Workspaces.Invitations.Commands.AcceptInvitationWithRegistration.AcceptInvitationWithRegistrationCommand,
+                Result<Notrelix.Application.Features.Workspaces.Invitations.Commands.AcceptInvitationWithRegistration.AcceptInvitationWithRegistrationDto>>(services,
+                Result<Notrelix.Application.Features.Workspaces.Invitations.Commands.AcceptInvitationWithRegistration.AcceptInvitationWithRegistrationDto>.Success(
+                    new(new Notrelix.Application.Features.Workspaces.Invitations.Commands.AcceptInvitation.AcceptInvitationResultDto("test", Guid.NewGuid()),
+                        false, new Notrelix.Application.Features.Identity.Public.InvitedRegistration.InvitedUserRegistration(Guid.NewGuid(), "t@t.com", "T", "a", "r", DateTime.UtcNow.AddHours(1)))));
+            MockWorkspaceHandler<Notrelix.Application.Features.Identity.Auth.Queries.IdentifySignIn.IdentifySignInQuery,
+                Result<Notrelix.Application.Features.Identity.Auth.Queries.IdentifySignIn.SignInMethodDto>>(services,
+                Result<Notrelix.Application.Features.Identity.Auth.Queries.IdentifySignIn.SignInMethodDto>.Success(
+                    new Notrelix.Application.Features.Identity.Auth.Queries.IdentifySignIn.SignInMethodDto("password", null)));
             MockWorkspaceHandler<ConnectCalendarCommand, Result<Guid>>(services,
                 Result<Guid>.Success(Guid.NewGuid()));
             MockWorkspaceHandler<DisconnectCalendarCommand, Result>(services, Result.Success());

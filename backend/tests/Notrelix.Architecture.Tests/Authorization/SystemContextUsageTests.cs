@@ -41,6 +41,7 @@ public class SystemContextUsageTests
         "WorkspaceOwnerUpdateLocker.cs",
         "PostgresAttachmentReaperStore.cs",
         "CalendarWebhookBindingResolver.cs",
+        "InvitationTokenScope.cs",
     ];
 
     [Fact]

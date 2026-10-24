@@ -108,6 +108,9 @@ public class IgnoreQueryFiltersArchitectureTests
             "Resource locator bypasses EF query filter to resolve resource tenant context before RLS is set",
             "Keep as InfrastructureBootstrap — resolver runs before RLS session is established"),
 
+        ["InvitationTokenScope.cs"] = new("InvitationTokenScope.cs", AllowlistClassification.InfrastructureBootstrap,
+            "Invitation-token requests carry only the one-time secret: the invitation is located by the hash of the secret across tenants, then the request adopts that invitation's own Account and Workspace scope",
+            "Keep as InfrastructureBootstrap — token locator runs before a tenant scope exists (same pattern as CalendarWebhookBindingResolver)"),
         ["CalendarWebhookBindingResolver.cs"] = new("CalendarWebhookBindingResolver.cs", AllowlistClassification.InfrastructureBootstrap,
             "Webhook binding resolver bypasses EF query filter to resolve the owning calendar binding across tenant boundaries before the derived tenant can be adopted",
             "Keep as InfrastructureBootstrap — resolver runs before RLS session is established (same pattern as ResourceLocator)"),

@@ -20,4 +20,11 @@ public interface IIdentityUserFacts
     Task<IReadOnlyDictionary<Guid, string>> FindEmailsAsync(
         IReadOnlyCollection<Guid> userIds,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Whether a sign-in identity exists for the email (case-insensitive, trimmed). Only a caller that
+    /// already holds proof of the address (for example a one-time invitation token delivered to it) may
+    /// expose the answer; it must never back an anonymous "does this account exist" lookup.
+    /// </summary>
+    Task<bool> ExistsByEmailAsync(string email, CancellationToken cancellationToken);
 }

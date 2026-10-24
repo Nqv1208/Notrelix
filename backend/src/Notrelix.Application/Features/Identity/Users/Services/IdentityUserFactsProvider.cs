@@ -61,4 +61,12 @@ public sealed class IdentityUserFactsProvider : IIdentityUserFacts
 
         return rows.ToDictionary(r => r.Id, r => r.NormalizedEmail);
     }
+
+    public Task<bool> ExistsByEmailAsync(string email, CancellationToken cancellationToken)
+    {
+        var normalized = email.Trim().ToLowerInvariant();
+        return _context.Users
+            .AsNoTracking()
+            .AnyAsync(u => u.NormalizedEmail == normalized, cancellationToken);
+    }
 }

@@ -136,6 +136,10 @@ public static class DependencyInjection
         services.AddScoped<IAccountMembershipActions, AccountMembershipActions>();
 
         services.AddScoped<Notrelix.Application.Features.Workspaces.Invitations.Services.InvitationInitialEntries>();
+        services.AddScoped<Notrelix.Application.Features.Workspaces.Invitations.Services.InvitationAcceptanceService>();
+        services.AddScoped<Notrelix.Application.Features.Workspaces.Invitations.Services.InvitationTokenScope>();
+        services.AddScoped<Notrelix.Application.Features.Identity.Public.InvitedRegistration.IInvitedUserRegistrationActions,
+            Notrelix.Application.Features.Identity.Registration.Services.InvitedUserRegistrationActions>();
 
         // Producer-owned public target actions (WorkManagement item mutations)
         services.AddScoped<MoveBoardItemUseCase>();
