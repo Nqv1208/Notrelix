@@ -60,7 +60,7 @@ public sealed class CreateAutomationRulePipelineTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -97,7 +97,7 @@ public sealed class CreateAutomationRulePipelineTests : IAsyncLifetime
             second.Data.Should().Be(firstRuleId, "the replay carries the original rule id, not a new one");
         }
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.AutomationRules.IgnoreQueryFilters()
                 .CountAsync(r => r.WorkspaceId == workspaceId && r.Name == "Idempotent Rule"))
             .Should().Be(1, "the same operation key must never create a second rule");
@@ -130,7 +130,7 @@ public sealed class CreateAutomationRulePipelineTests : IAsyncLifetime
                     "two distinct operations are two legitimate rule creations, not duplicates");
         }
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.AutomationRules.IgnoreQueryFilters()
                 .CountAsync(r => r.WorkspaceId == workspaceId && r.Name == "Two Key Rule"))
             .Should().Be(2);
@@ -244,7 +244,7 @@ public sealed class CreateAutomationRulePipelineTests : IAsyncLifetime
         };
 
         await act.Should().ThrowAsync<Exception>();
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.AutomationRules.IgnoreQueryFilters().CountAsync(r => r.WorkspaceId == workspaceId && r.Name == "Traversal"))
             .Should().Be(0);
     }
@@ -255,13 +255,13 @@ public sealed class CreateAutomationRulePipelineTests : IAsyncLifetime
         var user = User.Create($"auto-{Guid.NewGuid():N}@example.com", "Auto Member", "hashed", now, true);
         user.ConfirmEmail(user.Id, now);
 
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Users.Add(user);
         seed.AccountMembers.Add(AccountMember.Create(accountId, user.Id, AccountRole.Member, user.Id, now));
         seed.WorkspaceMembers.Add(WorkspaceMember.Create(accountId, workspaceId, user.Id, role, user.Id, now));
         await seed.SaveChangesAsync();
 
-        await using var grant = _db.CreateContext(SystemTenant());
+        await using var grant = _db.CreateOwnerContext(SystemTenant());
         var projection = new AccessGrantProjectionService(grant);
         await projection.SyncWorkspaceMemberGrantAsync(accountId, workspaceId, user.Id, role, now, CancellationToken.None);
         await grant.SaveChangesAsync();
@@ -329,7 +329,7 @@ public sealed class CreateAutomationRulePipelineTests : IAsyncLifetime
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(IdempotencyBehavior<,>));
 
         services.AddScoped<ApplicationDbContext>(sp =>
-            _db.CreateContext(sp.GetRequiredService<ICurrentTenantContext>()));
+            _db.CreateOwnerContext(sp.GetRequiredService<ICurrentTenantContext>()));
         services.AddScoped<IWorkspaceDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IAccountDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IGovernanceDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
@@ -409,7 +409,7 @@ public sealed class CreateAutomationRulePipelineTests : IAsyncLifetime
         var account = Account.Create("Auto Account", $"auto-{Guid.NewGuid():N}", AccountType.Team, owner.Id, now);
         var workspace = Workspace.Create(account.Id, owner.Id, "Auto WS", $"auto-ws-{Guid.NewGuid():N}", now);
 
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Users.Add(owner);
         seed.Accounts.Add(account);
         seed.AccountMembers.Add(AccountMember.Create(account.Id, owner.Id, AccountRole.Owner, owner.Id, now));
@@ -417,7 +417,7 @@ public sealed class CreateAutomationRulePipelineTests : IAsyncLifetime
         seed.WorkspaceMembers.Add(WorkspaceMember.Create(account.Id, workspace.Id, owner.Id, WorkspaceRole.Owner, owner.Id, now));
         await seed.SaveChangesAsync();
 
-        await using var grant = _db.CreateContext(SystemTenant());
+        await using var grant = _db.CreateOwnerContext(SystemTenant());
         var projection = new AccessGrantProjectionService(grant);
         await projection.SyncWorkspaceMemberGrantAsync(account.Id, workspace.Id, owner.Id, WorkspaceRole.Owner, now, CancellationToken.None);
         await grant.SaveChangesAsync();

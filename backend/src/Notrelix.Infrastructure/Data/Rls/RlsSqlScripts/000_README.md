@@ -30,6 +30,8 @@ Use `000_apply_order.sql` or embed the files in the same order:
 13. `013_co_member_profiles.sql`
 14. `014_anonymous_scopes.sql`
 15. `015_internal_principals.sql`
+16. `016_policies_derived_scope.sql`
+17. `017_webhook_scope.sql`
 
 ## Important fixes
 

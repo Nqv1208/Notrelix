@@ -34,7 +34,7 @@ public sealed class PageArchivedOutboxEvidenceTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -55,7 +55,7 @@ public sealed class PageArchivedOutboxEvidenceTests : IAsyncLifetime
         var ownerId = Guid.NewGuid();
         var workspace = Workspace.Create(accountId, ownerId, "DC Page Archive WS", $"dc-arch-{Guid.NewGuid():N}", Now);
 
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Workspaces.Add(workspace);
         await seed.SaveChangesAsync();
 
@@ -81,7 +81,7 @@ public sealed class PageArchivedOutboxEvidenceTests : IAsyncLifetime
 
     private async Task<int> CountArchivedOutboxAsync(Guid workspaceId)
     {
-        await using var probe = _db.CreateContext(SystemTenant());
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
         return await probe.Set<MessagingOutboxMessage>()
             .IgnoreQueryFilters()
             .CountAsync(message => message.WorkspaceId == workspaceId
@@ -98,7 +98,7 @@ public sealed class PageArchivedOutboxEvidenceTests : IAsyncLifetime
     {
         var graph = await SeedWorkspaceAsync();
 
-        await using var context = _db.CreateContext(SystemTenant(), CreateOutboxInterceptor());
+        await using var context = _db.CreateOwnerContext(SystemTenant(), CreateOutboxInterceptor());
         var page = NewActivePage(graph);
         context.Pages.Add(page);
         await context.SaveChangesAsync();
@@ -109,7 +109,7 @@ public sealed class PageArchivedOutboxEvidenceTests : IAsyncLifetime
         (await CountArchivedOutboxAsync(graph.WorkspaceId)).Should().Be(1,
             "the archive mutation must stage exactly one producer-owned outward event");
 
-        await using var probe = _db.CreateContext(SystemTenant());
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
         var outbox = await probe.Set<MessagingOutboxMessage>()
             .IgnoreQueryFilters()
             .SingleAsync(message => message.WorkspaceId == graph.WorkspaceId
@@ -130,7 +130,7 @@ public sealed class PageArchivedOutboxEvidenceTests : IAsyncLifetime
     {
         var graph = await SeedWorkspaceAsync();
 
-        await using var context = _db.CreateContext(SystemTenant(), CreateOutboxInterceptor());
+        await using var context = _db.CreateOwnerContext(SystemTenant(), CreateOutboxInterceptor());
         await using var transaction = await context.Database.BeginTransactionAsync();
         var page = NewActivePage(graph);
         context.Pages.Add(page);
@@ -158,7 +158,7 @@ public sealed class PageArchivedOutboxEvidenceTests : IAsyncLifetime
         var graph = await SeedWorkspaceAsync();
         Guid pageId;
 
-        await using (var context = _db.CreateContext(SystemTenant(), CreateOutboxInterceptor()))
+        await using (var context = _db.CreateOwnerContext(SystemTenant(), CreateOutboxInterceptor()))
         {
             var page = NewActivePage(graph);
             context.Pages.Add(page);
@@ -169,7 +169,7 @@ public sealed class PageArchivedOutboxEvidenceTests : IAsyncLifetime
             pageId = page.Id;
         }
 
-        await using (var context = _db.CreateContext(SystemTenant(), CreateOutboxInterceptor()))
+        await using (var context = _db.CreateOwnerContext(SystemTenant(), CreateOutboxInterceptor()))
         {
             var page = await context.Pages.IgnoreQueryFilters().SingleAsync(p => p.Id == pageId);
             page.Archive(graph.AuthorId, Now);
@@ -191,7 +191,7 @@ public sealed class PageArchivedOutboxEvidenceTests : IAsyncLifetime
                 "the failure must originate from PostgreSQL, not an EF-side save error");
         }
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.Pages.IgnoreQueryFilters().SingleAsync(p => p.Id == pageId)).Status
             .Should().Be(PageStatus.Active,
             "the failed save must leave the committed lifecycle state Active");
@@ -204,7 +204,7 @@ public sealed class PageArchivedOutboxEvidenceTests : IAsyncLifetime
     {
         var graph = await SeedWorkspaceAsync();
 
-        await using var context = _db.CreateContext(SystemTenant(), CreateOutboxInterceptor());
+        await using var context = _db.CreateOwnerContext(SystemTenant(), CreateOutboxInterceptor());
         var page = NewActivePage(graph);
         context.Pages.Add(page);
         await context.SaveChangesAsync();
@@ -230,7 +230,7 @@ public sealed class PageArchivedOutboxEvidenceTests : IAsyncLifetime
         var graph = await SeedWorkspaceAsync();
         Guid pageId;
 
-        await using (var context = _db.CreateContext(SystemTenant(), CreateOutboxInterceptor()))
+        await using (var context = _db.CreateOwnerContext(SystemTenant(), CreateOutboxInterceptor()))
         {
             var page = NewActivePage(graph);
             context.Pages.Add(page);
@@ -246,7 +246,7 @@ public sealed class PageArchivedOutboxEvidenceTests : IAsyncLifetime
             new FailingArchivedEventMapper(),
             new IntegrationEventCollector());
 
-        await using (var context = _db.CreateContext(SystemTenant(), failingInterceptor))
+        await using (var context = _db.CreateOwnerContext(SystemTenant(), failingInterceptor))
         {
             var page = await context.Pages.IgnoreQueryFilters().SingleAsync(p => p.Id == pageId);
             page.Archive(graph.AuthorId, Now);
@@ -256,7 +256,7 @@ public sealed class PageArchivedOutboxEvidenceTests : IAsyncLifetime
                 "outward enrollment runs inside the SaveChanges chain, so its failure aborts the commit");
         }
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.Pages.IgnoreQueryFilters().SingleAsync(p => p.Id == pageId)).Status
             .Should().Be(PageStatus.Active,
             "a failed enrollment must leave the committed lifecycle state Active");

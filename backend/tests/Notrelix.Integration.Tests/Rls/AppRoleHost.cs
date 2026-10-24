@@ -45,6 +45,9 @@ internal static class AppRoleHost
                 ["Frontend:AppBaseUrl"] = "https://app.notrelix.test",
                 ["Rls:Enabled"] = "true",
                 ["Rls:SetSessionContext"] = "true",
+                // The role guard is on (the default) for every host that runs as the real roles; only the
+                // owner control host, which exists to prove a flow works without row-level security, turns it off.
+                ["Rls:RoleEnforcement"] = db == fixture.AppConnectionString ? "Enforce" : "Off",
                 ["Smtp:Enabled"] = "true",
                 ["Smtp:Host"] = "localhost",
                 ["Smtp:Port"] = "587",

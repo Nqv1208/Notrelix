@@ -39,6 +39,8 @@ services:
       ASPNETCORE_URLS: http://+:8000
       ConnectionStrings__NotrelixDb: ${CONNECTIONSTRINGS_NOTRELIXDB:?CONNECTIONSTRINGS_NOTRELIXDB is required}
       ConnectionStrings__Redis: ${CONNECTIONSTRINGS_REDIS:?CONNECTIONSTRINGS_REDIS is required}
+      # Interim: the stack still connects as one privileged login; the application and worker logins replace this.
+      Rls__RoleEnforcement: Warn
       SeedData__Enabled: "false"
       JwtSettings__SecretKey: ${JWT_SECRET:?JWT_SECRET is required}
       JwtSettings__Issuer: ${JWT_ISSUER:?JWT_ISSUER is required}

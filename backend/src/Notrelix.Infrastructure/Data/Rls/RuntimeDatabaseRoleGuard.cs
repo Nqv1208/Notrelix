@@ -11,6 +11,8 @@ namespace Notrelix.Infrastructure.Data.Rls;
 /// <param name="SessionBypassesRls">The login role has BYPASSRLS.</param>
 /// <param name="OwnsTenantTables">The effective role holds the privileges of the owner of <c>identity.users</c>
 /// (<c>null</c> when that table does not exist yet).</param>
+/// <param name="MemberOfWorkerRole">The login role is a member of <c>notrelix_worker</c> (the role the unbounded
+/// worker scope is honoured for).</param>
 public sealed record RuntimeDatabaseRoleFacts(
     string CurrentUser,
     string SessionUser,
@@ -18,15 +20,21 @@ public sealed record RuntimeDatabaseRoleFacts(
     bool CurrentBypassesRls,
     bool SessionIsSuperuser,
     bool SessionBypassesRls,
-    bool? OwnsTenantTables);
+    bool? OwnsTenantTables,
+    bool MemberOfWorkerRole = false);
 
 /// <summary>
 /// Startup check that the serving process does not connect with a role row-level security cannot
 /// constrain. The migrate, seed and policy-apply commands use the owner connection and never run it.
 /// </summary>
 /// <remarks>
-/// <see cref="RlsOptions.RoleEnforcement"/> decides the reaction: <c>Off</c> (default) does not open a
-/// connection, <c>Warn</c> logs, <c>Enforce</c> fails startup.
+/// <see cref="RlsOptions.RoleEnforcement"/> decides the reaction: <c>Off</c> does not open a connection,
+/// <c>Warn</c> logs, <c>Enforce</c> (the default of every environment) fails startup. Both database logins
+/// are checked: the application login (requests) must be constrained and must NOT be a member of
+/// <c>notrelix_worker</c>, and the background login (dispatchers, consumers, sweeps) must be constrained
+/// and BE a member of it. A background login that is just the application login (no separate
+/// <c>ConnectionStrings:NotrelixWorkerDb</c>) is a violation too, because the worker scope is honoured only
+/// for members of <c>notrelix_worker</c>.
 /// </remarks>
 public sealed class RuntimeDatabaseRoleGuard : IHostedService
 {
@@ -40,7 +48,9 @@ public sealed class RuntimeDatabaseRoleGuard : IHostedService
                (SELECT pg_has_role(current_user, c.relowner, 'USAGE')
                   FROM pg_class c
                   JOIN pg_namespace n ON n.oid = c.relnamespace
-                 WHERE n.nspname = 'identity' AND c.relname = 'users')
+                 WHERE n.nspname = 'identity' AND c.relname = 'users'),
+               COALESCE((SELECT pg_has_role(session_user, r.oid, 'MEMBER')
+                           FROM pg_roles r WHERE r.rolname = 'notrelix_worker'), false)
         """;
 
     private readonly IServiceScopeFactory _scopes;
@@ -90,6 +100,26 @@ public sealed class RuntimeDatabaseRoleGuard : IHostedService
             }
         }
 
+        if (facts.MemberOfWorkerRole)
+        {
+            violations.Add($"login role '{facts.SessionUser}' is a member of notrelix_worker, so the application connection could assert the unbounded worker scope");
+        }
+
+        return violations;
+    }
+
+    /// <summary>The reasons the background login is not acceptable; empty when it is.</summary>
+    public static IReadOnlyList<string> EvaluateWorker(RuntimeDatabaseRoleFacts facts)
+    {
+        // Same constraints as the application login (not a superuser, not BYPASSRLS, not the table owner,
+        // no way back to a privileged role), except that it must BE the worker role member.
+        var violations = Evaluate(facts with { MemberOfWorkerRole = false }).ToList();
+
+        if (!facts.MemberOfWorkerRole)
+        {
+            violations.Add($"background login '{facts.SessionUser}' is not a member of notrelix_worker, so the worker scope would not be honoured for it");
+        }
+
         return violations;
     }
 
@@ -101,26 +131,53 @@ public sealed class RuntimeDatabaseRoleGuard : IHostedService
             return;
         }
 
-        await using var scope = _scopes.CreateAsyncScope();
-        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        if (!context.Database.IsNpgsql())
+        var violations = new List<string>();
+        string? appRole = null;
+        DatabaseConnectionStrings? connectionStrings;
+
+        await using (var scope = _scopes.CreateAsyncScope())
         {
-            return;
+            connectionStrings = scope.ServiceProvider.GetService<DatabaseConnectionStrings>();
+            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            if (!context.Database.IsNpgsql())
+            {
+                return;
+            }
+
+            var facts = await ReadFactsAsync(context, cancellationToken);
+            appRole = facts.CurrentUser;
+            violations.AddRange(Evaluate(facts).Select(v => "application connection: " + v));
         }
 
-        var facts = await ReadFactsAsync(context, cancellationToken);
-        var violations = Evaluate(facts);
+        string? workerRole = null;
+        if (connectionStrings is { WorkerUsesApplicationFallback: true })
+        {
+            violations.Add(
+                "background connection: ConnectionStrings:NotrelixWorkerDb is not set, so background work would run " +
+                "as the application login");
+        }
+        else if (connectionStrings is not null)
+        {
+            await using var workerScope = _scopes.CreateWorkerAsyncScope();
+            var context = workerScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var facts = await ReadFactsAsync(context, cancellationToken);
+            workerRole = facts.CurrentUser;
+            violations.AddRange(EvaluateWorker(facts).Select(v => "background connection: " + v));
+        }
+
         if (violations.Count == 0)
         {
             _logger.LogInformation(
-                "Runtime database role '{Role}' is constrained by row-level security.", facts.CurrentUser);
+                "Runtime database roles are constrained by row-level security: application '{AppRole}', background '{WorkerRole}'.",
+                appRole, workerRole);
             return;
         }
 
         var message =
-            "The serving database connection is not constrained by row-level security: " +
+            "The serving database connections are not what row-level security requires: " +
             string.Join("; ", violations) +
-            ". Connect the runtime as the non-owner application role and keep the owner connection " +
+            ". Connect requests as the non-owner application login (ConnectionStrings:NotrelixDb), background work as " +
+            "the worker login (ConnectionStrings:NotrelixWorkerDb) and keep the owner connection " +
             "(ConnectionStrings:NotrelixMigrationDb) for migrate, seed and rls-apply.";
 
         if (mode == RlsRoleEnforcementMode.Enforce)
@@ -155,7 +212,8 @@ public sealed class RuntimeDatabaseRoleGuard : IHostedService
                 !reader.IsDBNull(3) && reader.GetBoolean(3),
                 !reader.IsDBNull(4) && reader.GetBoolean(4),
                 !reader.IsDBNull(5) && reader.GetBoolean(5),
-                reader.IsDBNull(6) ? null : reader.GetBoolean(6));
+                reader.IsDBNull(6) ? null : reader.GetBoolean(6),
+                !reader.IsDBNull(7) && reader.GetBoolean(7));
         }
         finally
         {

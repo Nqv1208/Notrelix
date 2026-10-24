@@ -20,7 +20,7 @@ public class SeedDataInitialiserTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -42,7 +42,7 @@ public class SeedDataInitialiserTests : IAsyncLifetime
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
-        await using var context = _db.CreateContext(tenant);
+        await using var context = _db.CreateOwnerContext(tenant);
         var initialiser = CreateInitialiser(context);
 
         await initialiser.SeedAsync();
@@ -68,7 +68,7 @@ public class SeedDataInitialiserTests : IAsyncLifetime
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
-        await using var context = _db.CreateContext(tenant);
+        await using var context = _db.CreateOwnerContext(tenant);
         var initialiser = CreateInitialiser(context);
 
         await initialiser.SeedAsync();
@@ -85,7 +85,7 @@ public class SeedDataInitialiserTests : IAsyncLifetime
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
-        await using var context = _db.CreateContext(tenant);
+        await using var context = _db.CreateOwnerContext(tenant);
 
         await CreateInitialiser(context).SeedAsync();
 
@@ -106,7 +106,7 @@ public class SeedDataInitialiserTests : IAsyncLifetime
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
-        await using var context = _db.CreateContext(tenant);
+        await using var context = _db.CreateOwnerContext(tenant);
 
         await CreateInitialiser(context).SeedAsync();
 
@@ -140,7 +140,7 @@ public class SeedDataInitialiserTests : IAsyncLifetime
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
-        await using var context = _db.CreateContext(tenant);
+        await using var context = _db.CreateOwnerContext(tenant);
 
         await CreateInitialiser(context).SeedAsync();
         await CreateInitialiser(context, resetBeforeSeed: true).SeedAsync();
@@ -159,7 +159,7 @@ public class SeedDataInitialiserTests : IAsyncLifetime
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
-        await using var context = _db.CreateContext(tenant);
+        await using var context = _db.CreateOwnerContext(tenant);
         await CreateInitialiser(context).SeedAsync();
 
         var boardId = await context.Boards
@@ -198,7 +198,7 @@ public class SeedDataInitialiserTests : IAsyncLifetime
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
-        await using var context = _db.CreateContext(tenant);
+        await using var context = _db.CreateOwnerContext(tenant);
         await CreateInitialiser(context).SeedAsync();
 
         (await context.Blocks.CountAsync()).Should().Be(500);

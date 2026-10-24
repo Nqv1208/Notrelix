@@ -21,7 +21,7 @@ public class AccessGrantProjectionTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -37,7 +37,7 @@ public class AccessGrantProjectionTests : IAsyncLifetime
     [Fact]
     public async Task SyncAccountMemberGrant_WhenNoGrantExists_CreatesAccountLevelGrant()
     {
-        await using var context = _db.CreateContext(SystemTenant());
+        await using var context = _db.CreateOwnerContext(SystemTenant());
         var projection = new AccessGrantProjectionService(context);
         var accountId = Guid.CreateVersion7();
         var userId = Guid.CreateVersion7();
@@ -58,7 +58,7 @@ public class AccessGrantProjectionTests : IAsyncLifetime
     [Fact]
     public async Task SyncAccountMemberGrant_WhenGrantExists_UpdatesRoleAndAdminFlag()
     {
-        await using var context = _db.CreateContext(SystemTenant());
+        await using var context = _db.CreateOwnerContext(SystemTenant());
         var projection = new AccessGrantProjectionService(context);
         var accountId = Guid.CreateVersion7();
         var userId = Guid.CreateVersion7();
@@ -79,7 +79,7 @@ public class AccessGrantProjectionTests : IAsyncLifetime
     [Fact]
     public async Task SyncWorkspaceMemberGrant_WhenNoGrantExists_CreatesWorkspaceGrant()
     {
-        await using var context = _db.CreateContext(SystemTenant());
+        await using var context = _db.CreateOwnerContext(SystemTenant());
         var projection = new AccessGrantProjectionService(context);
         var accountId = Guid.CreateVersion7();
         var workspaceId = Guid.CreateVersion7();
@@ -100,7 +100,7 @@ public class AccessGrantProjectionTests : IAsyncLifetime
     [Fact]
     public async Task RevokeWorkspaceMemberGrant_WhenGrantExists_SetsRevokedAt()
     {
-        await using var context = _db.CreateContext(SystemTenant());
+        await using var context = _db.CreateOwnerContext(SystemTenant());
         var projection = new AccessGrantProjectionService(context);
         var accountId = Guid.CreateVersion7();
         var workspaceId = Guid.CreateVersion7();
@@ -120,7 +120,7 @@ public class AccessGrantProjectionTests : IAsyncLifetime
     [Fact]
     public async Task RevokeWorkspaceMemberGrant_WhenNoGrantExists_DoesNothing()
     {
-        await using var context = _db.CreateContext(SystemTenant());
+        await using var context = _db.CreateOwnerContext(SystemTenant());
         var projection = new AccessGrantProjectionService(context);
 
         var act = () => projection.RevokeWorkspaceMemberGrantAsync(
@@ -132,7 +132,7 @@ public class AccessGrantProjectionTests : IAsyncLifetime
     [Fact]
     public async Task SyncWorkspaceMemberGrant_AfterRevoke_ReactivatesGrant()
     {
-        await using var context = _db.CreateContext(SystemTenant());
+        await using var context = _db.CreateOwnerContext(SystemTenant());
         var projection = new AccessGrantProjectionService(context);
         var accountId = Guid.CreateVersion7();
         var workspaceId = Guid.CreateVersion7();
@@ -157,7 +157,7 @@ public class AccessGrantProjectionTests : IAsyncLifetime
     [Fact]
     public async Task SyncAccountMemberGrant_KeepsAccountAndWorkspaceGrantsSeparate()
     {
-        await using var context = _db.CreateContext(SystemTenant());
+        await using var context = _db.CreateOwnerContext(SystemTenant());
         var projection = new AccessGrantProjectionService(context);
         var accountId = Guid.CreateVersion7();
         var workspaceId = Guid.CreateVersion7();

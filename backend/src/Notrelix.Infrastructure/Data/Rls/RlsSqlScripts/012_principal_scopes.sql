@@ -104,16 +104,31 @@ GRANT EXECUTE ON FUNCTION ops.has_token_scope(uuid, uuid) TO notrelix_app, notre
 GRANT EXECUTE ON FUNCTION ops.enter_token_scope(text, text, integer) TO notrelix_app;
 
 -- -----------------------------------------------------------------------------
--- Tenantless internal rows written by Global authenticated requests.
--- A Global request (profile, sessions, MFA ...) raises domain events that carry no account or workspace.
--- The tenant-scoped INSERT policies of these internal tables cannot admit such a row, so a second
--- INSERT-only policy admits exactly it, and only in the user scope of the user who raised it. No read,
--- update or delete is added: the tables stay worker-readable only.
+-- Tenantless internal rows written on behalf of an authenticated person.
+-- A Global request (profile, sessions, MFA ...) raises domain events that carry no account or workspace,
+-- and so does a tenant-scoped request that changes one of the person's own facts (choosing the default
+-- workspace changes the profile). The tenant-scoped INSERT policies of these internal tables cannot admit
+-- such a row, so a second INSERT-only policy admits exactly it: in the user scope or the tenant (app)
+-- scope of the authenticated person who raised it, never for another person's actions. No read, update or
+-- delete is added: the tables stay worker-readable only.
 -- -----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION ops.has_tenantless_actor_scope(p_actor uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = pg_catalog, ops, pg_temp
+AS $$
+    SELECT ops.current_user_id() IS NOT NULL
+       AND (p_actor IS NULL OR p_actor = ops.current_user_id())
+       AND (ops.has_user_scope(ops.current_user_id()) OR ops.current_request_scope() = 'app');
+$$;
+REVOKE ALL ON FUNCTION ops.has_tenantless_actor_scope(uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION ops.has_tenantless_actor_scope(uuid) TO notrelix_app;
+
 SELECT ops.create_policy(
     'events', 'domain_event_logs', 'p_app_insert_user_scope', 'INSERT', 'notrelix_app', NULL,
-    'workspace_id IS NULL AND ops.has_user_scope(ops.current_user_id()) '
-    || 'AND (actor_user_id IS NULL OR actor_user_id = ops.current_user_id())');
+    'workspace_id IS NULL AND ops.has_tenantless_actor_scope(actor_user_id)');
 SELECT ops.create_policy(
     'messaging', 'outbox_messages', 'p_app_insert_user_scope', 'INSERT', 'notrelix_app', NULL,
-    'account_id IS NULL AND workspace_id IS NULL AND ops.has_user_scope(ops.current_user_id())');
+    'account_id IS NULL AND workspace_id IS NULL AND ops.has_tenantless_actor_scope(NULL)');

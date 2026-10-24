@@ -117,7 +117,7 @@ public sealed class ApiTokenHttpFlowTests : IAsyncLifetime
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
-        return _fixture.CreatePostgresContext(tenant);
+        return _fixture.CreatePostgresOwnerContext(tenant);
     }
 
     private static string ListTokensUrl(Guid workspaceId)
@@ -134,6 +134,7 @@ public sealed class ApiTokenHttpFlowTests : IAsyncLifetime
         var baseConfig = new Dictionary<string, string?>
         {
             ["ConnectionStrings:NotrelixDb"] = _fixture.PostgresConnectionString,
+            ["ConnectionStrings:NotrelixWorkerDb"] = _fixture.PostgresWorkerConnectionString,
             ["ConnectionStrings:Redis"] = _fixture.RedisConnectionString,
             ["JwtSettings:SecretKey"] = "api-token-http-test-signing-key-ThisIsNotASecret-0123456789",
             ["JwtSettings:Issuer"] = "https://notrelix.test",

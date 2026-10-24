@@ -104,4 +104,76 @@ public sealed class RuntimeDatabaseRoleGuardIntegrationTests
         (await FluentActions.Awaiting(() => guard.StartAsync(default)).Should().ThrowAsync<InvalidOperationException>())
             .Which.Message.Should().Contain("BYPASSRLS");
     }
+
+    // ----- the background login ------------------------------------------------------------------------
+
+    private static RuntimeDatabaseRoleGuard TwoLoginGuard(
+        string application, string? worker, RlsRoleEnforcementMode mode, out List<string> warnings)
+    {
+        var captured = new List<string>();
+        warnings = captured;
+        var services = new ServiceCollection();
+        var strings = string.IsNullOrWhiteSpace(worker)
+            ? new DatabaseConnectionStrings(application, application, true)
+            : new DatabaseConnectionStrings(application, worker, false);
+        services.AddSingleton(strings);
+        services.AddScoped<DatabasePrincipal>();
+        services.AddDbContext<ApplicationDbContext>((sp, o) =>
+            o.UseNpgsql(sp.GetRequiredService<DatabasePrincipal>().IsWorker ? strings.Worker : strings.Application));
+        var provider = services.BuildServiceProvider();
+        return new RuntimeDatabaseRoleGuard(
+            provider.GetRequiredService<IServiceScopeFactory>(),
+            Options.Create(new RlsOptions { RoleEnforcement = mode }),
+            new CapturingLogger(captured));
+    }
+
+    [Fact]
+    public async Task ApplicationLoginAndWorkerLogin_StartInEveryMode()
+    {
+        foreach (var mode in Enum.GetValues<RlsRoleEnforcementMode>())
+        {
+            var guard = TwoLoginGuard(_fixture.AppConnectionString, _fixture.WorkerConnectionString, mode, out var warnings);
+            await guard.StartAsync(default);
+            warnings.Should().BeEmpty($"the application and worker logins are what {mode} mode expects");
+        }
+    }
+
+    [Fact]
+    public async Task MissingWorkerConnection_IsRefusedWhenEnforced_BecauseBackgroundWorkWouldRunAsTheApplicationLogin()
+    {
+        var guard = TwoLoginGuard(_fixture.AppConnectionString, null, RlsRoleEnforcementMode.Enforce, out _);
+
+        (await FluentActions.Awaiting(() => guard.StartAsync(default)).Should().ThrowAsync<InvalidOperationException>())
+            .Which.Message.Should().Contain("ConnectionStrings:NotrelixWorkerDb is not set");
+    }
+
+    [Fact]
+    public async Task WorkerConnectionThatIsTheApplicationLogin_IsRefusedWhenEnforced()
+    {
+        var guard = TwoLoginGuard(_fixture.AppConnectionString, _fixture.AppConnectionString, RlsRoleEnforcementMode.Enforce, out _);
+
+        (await FluentActions.Awaiting(() => guard.StartAsync(default)).Should().ThrowAsync<InvalidOperationException>())
+            .Which.Message.Should().Contain("not a member of notrelix_worker");
+    }
+
+    [Fact]
+    public async Task ApplicationConnectionThatIsTheWorkerLogin_IsRefusedWhenEnforced()
+    {
+        var guard = TwoLoginGuard(_fixture.WorkerConnectionString, _fixture.WorkerConnectionString, RlsRoleEnforcementMode.Enforce, out _);
+
+        (await FluentActions.Awaiting(() => guard.StartAsync(default)).Should().ThrowAsync<InvalidOperationException>())
+            .Which.Message.Should().Contain("application connection").And.Contain("member of notrelix_worker");
+    }
+
+    [Fact]
+    public async Task PrivilegedWorkerConnection_IsRefusedWhenEnforced_AndWarnedWhenWarn()
+    {
+        var enforce = TwoLoginGuard(_fixture.AppConnectionString, _fixture.OwnerConnectionString, RlsRoleEnforcementMode.Enforce, out _);
+        (await FluentActions.Awaiting(() => enforce.StartAsync(default)).Should().ThrowAsync<InvalidOperationException>())
+            .Which.Message.Should().Contain("background connection").And.Contain("superuser");
+
+        var warn = TwoLoginGuard(_fixture.AppConnectionString, _fixture.OwnerConnectionString, RlsRoleEnforcementMode.Warn, out var warnings);
+        await warn.StartAsync(default);
+        warnings.Should().ContainSingle().Which.Should().Contain("background connection");
+    }
 }

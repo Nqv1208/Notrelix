@@ -39,7 +39,7 @@ public sealed class SoftDeleteQueryTranslationTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -68,7 +68,7 @@ public sealed class SoftDeleteQueryTranslationTests : IAsyncLifetime
             FractionalIndex.Create("a1"), ownerId, Now);
         deletedField.Delete(ownerId, Now);
 
-        await using (var seed = _db.CreateContext(SystemTenant()))
+        await using (var seed = _db.CreateOwnerContext(SystemTenant()))
         {
             seed.Workspaces.Add(workspace);
             seed.Boards.Add(board);
@@ -78,7 +78,7 @@ public sealed class SoftDeleteQueryTranslationTests : IAsyncLifetime
             await seed.SaveChangesAsync();
         }
 
-        await using var context = _db.CreateContext(SystemTenant());
+        await using var context = _db.CreateOwnerContext(SystemTenant());
         var handler = new GetFullBoardQueryHandler(
             context, new ActorLookupService(context), new EmptyCollaborationReadPort(),
             Mock.Of<Notrelix.Application.Features.Governance.Public.Visibility.IResourceVisibility>(),
@@ -103,14 +103,14 @@ public sealed class SoftDeleteQueryTranslationTests : IAsyncLifetime
         var deletedPage = Page.Create(accountId, workspace.Id, "Deleted", ownerId, Now);
         deletedPage.Delete(ownerId, Now);
 
-        await using (var seed = _db.CreateContext(SystemTenant()))
+        await using (var seed = _db.CreateOwnerContext(SystemTenant()))
         {
             seed.Workspaces.Add(workspace);
             seed.Pages.AddRange(activePage, deletedPage);
             await seed.SaveChangesAsync();
         }
 
-        await using var context = _db.CreateContext(SystemTenant());
+        await using var context = _db.CreateOwnerContext(SystemTenant());
         var handler = new GetPageQueryHandler(context, new FakeResourceVisibility(), new FakeCurrentRequestContext());
 
         var found = await handler.Handle(new GetPageQuery(activePage.Id), CancellationToken.None);
@@ -133,13 +133,13 @@ public sealed class SoftDeleteQueryTranslationTests : IAsyncLifetime
         var deletedComment = Comment.Create(accountId, workspaceId, Target(), "removed", authorId, Now.AddSeconds(1));
         deletedComment.Delete(authorId, Now.AddSeconds(2));
 
-        await using (var seed = _db.CreateContext(SystemTenant()))
+        await using (var seed = _db.CreateOwnerContext(SystemTenant()))
         {
             seed.Comments.AddRange(activeComment, deletedComment);
             await seed.SaveChangesAsync();
         }
 
-        await using var context = _db.CreateContext(SystemTenant());
+        await using var context = _db.CreateOwnerContext(SystemTenant());
         var handler = new GetCommentsQueryHandler(context, new ActorLookupService(context));
 
         var result = await handler.Handle(GetCommentsQuery.ForBoardItem(itemId), CancellationToken.None);

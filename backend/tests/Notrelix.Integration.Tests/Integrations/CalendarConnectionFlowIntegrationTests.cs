@@ -61,7 +61,7 @@ public sealed class CalendarConnectionFlowIntegrationTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -78,7 +78,7 @@ public sealed class CalendarConnectionFlowIntegrationTests : IAsyncLifetime
         var account = Domain.Accounts.Accounts.Account.Create("Cal Account", $"cal-{Guid.NewGuid():N}", Domain.Accounts.Accounts.AccountType.Team, ownerId, Now);
         var workspace = Workspace.Create(accountId, ownerId, "Cal WS", $"cal-{Guid.NewGuid():N}", Now);
 
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Users.Add(owner);
         seed.Accounts.Add(account);
         seed.AccountMembers.Add(Domain.Accounts.Members.AccountMember.Create(accountId, ownerId, Domain.Accounts.Members.AccountRole.Owner, ownerId, Now));
@@ -153,7 +153,7 @@ public sealed class CalendarConnectionFlowIntegrationTests : IAsyncLifetime
         // Production parity: ONE scoped ApplicationDbContext shared by the
         // IIntegrationDbContext seam, the DataSession commit, and the secret
         // store's staging — so blob + aggregates share one transaction fate.
-        services.AddScoped<ApplicationDbContext>(_ => _db.CreateContext(tenant));
+        services.AddScoped<ApplicationDbContext>(_ => _db.CreateOwnerContext(tenant));
         services.AddScoped<IIntegrationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<Notrelix.Application.Features.WorkManagement.Abstractions.IWorkManagementDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<Notrelix.Application.Features.Documents.Abstractions.IDocumentDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
@@ -244,7 +244,7 @@ public sealed class CalendarConnectionFlowIntegrationTests : IAsyncLifetime
             .SaveChangesAsync(CancellationToken.None);
 
         // Round-trip: reload from the DB and verify all three authorities.
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         var calendar = await verify.CalendarIntegrations.IgnoreQueryFilters()
             .SingleAsync(ci => ci.Id == result.Data);
         calendar.WorkspaceId.Should().Be(stack.WorkspaceId);
@@ -279,7 +279,7 @@ public sealed class CalendarConnectionFlowIntegrationTests : IAsyncLifetime
         await using (var provider = CreateProvider(stack))
         await using (var scope = provider.CreateAsyncScope())
         {
-            await using var read = _db.CreateContext(SystemTenant());
+            await using var read = _db.CreateOwnerContext(SystemTenant());
             var calendarId = (await read.CalendarIntegrations.IgnoreQueryFilters()
                 .SingleAsync(ci => ci.WorkspaceId == stack.WorkspaceId)).Id;
             (await scope.ServiceProvider.GetRequiredService<DisconnectCalendarCommandHandler>()
@@ -297,7 +297,7 @@ public sealed class CalendarConnectionFlowIntegrationTests : IAsyncLifetime
                 .SaveChangesAsync(CancellationToken.None);
         }
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
 
         // CAL-CONN-001: disconnecting the ONLY binding revoked the generic
         // connection, so the reconnect created a fresh connection/binding.
@@ -350,7 +350,7 @@ public sealed class CalendarConnectionFlowIntegrationTests : IAsyncLifetime
                 .SaveChangesAsync(CancellationToken.None);
         }
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
 
         var connections = await verify.IntegrationConnections.IgnoreQueryFilters()
             .Where(c => c.WorkspaceId == stack.WorkspaceId).ToListAsync();
@@ -393,7 +393,7 @@ public sealed class CalendarConnectionFlowIntegrationTests : IAsyncLifetime
 
         Guid connectionId;
         Guid calendarId;
-        await using (var read = _db.CreateContext(SystemTenant()))
+        await using (var read = _db.CreateOwnerContext(SystemTenant()))
         {
             var calendar = await read.CalendarIntegrations.IgnoreQueryFilters()
                 .SingleAsync(ci => ci.WorkspaceId == stack.WorkspaceId);
@@ -410,7 +410,7 @@ public sealed class CalendarConnectionFlowIntegrationTests : IAsyncLifetime
                 .SaveChangesAsync(CancellationToken.None);
         }
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.CalendarIntegrations.IgnoreQueryFilters().SingleAsync(ci => ci.Id == calendarId))
             .IsActive.Should().BeFalse("the binding lifecycle authority deactivates first");
 
@@ -439,7 +439,7 @@ public sealed class CalendarConnectionFlowIntegrationTests : IAsyncLifetime
 
         Guid connectionId;
         Guid firstCalendarId;
-        await using (var read = _db.CreateContext(SystemTenant()))
+        await using (var read = _db.CreateOwnerContext(SystemTenant()))
         {
             var first = await read.CalendarIntegrations.IgnoreQueryFilters()
                 .SingleAsync(ci => ci.WorkspaceId == stack.WorkspaceId);
@@ -461,7 +461,7 @@ public sealed class CalendarConnectionFlowIntegrationTests : IAsyncLifetime
                 .SaveChangesAsync(CancellationToken.None);
         }
 
-        await using (var midVerify = _db.CreateContext(SystemTenant()))
+        await using (var midVerify = _db.CreateOwnerContext(SystemTenant()))
         {
             (await midVerify.IntegrationConnections.IgnoreQueryFilters().SingleAsync(c => c.Id == connectionId))
                 .Status.Should().Be(IntegrationConnectionStatus.Active,
@@ -472,7 +472,7 @@ public sealed class CalendarConnectionFlowIntegrationTests : IAsyncLifetime
         await using (var provider = CreateProvider(stack))
         await using (var scope = provider.CreateAsyncScope())
         {
-            await using var read = _db.CreateContext(SystemTenant());
+            await using var read = _db.CreateOwnerContext(SystemTenant());
             var last = await read.CalendarIntegrations.IgnoreQueryFilters()
                 .SingleAsync(ci => ci.ConnectionId == connectionId && ci.IsActive && ci.DeletedAt == null);
             (await scope.ServiceProvider.GetRequiredService<DisconnectCalendarCommandHandler>()
@@ -481,7 +481,7 @@ public sealed class CalendarConnectionFlowIntegrationTests : IAsyncLifetime
                 .SaveChangesAsync(CancellationToken.None);
         }
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.IntegrationConnections.IgnoreQueryFilters().SingleAsync(c => c.Id == connectionId))
             .Status.Should().Be(IntegrationConnectionStatus.Revoked,
             "the last binding revokes the generic connection per CAL-CONN-001");
@@ -502,7 +502,7 @@ public sealed class CalendarConnectionFlowIntegrationTests : IAsyncLifetime
         var secretReference = Guid.NewGuid().ToString();
         connection.RotateSecret("1", SecretRef.Create(secretReference), actorId, Now);
 
-        await using (var seed = _db.CreateContext(SystemTenant()))
+        await using (var seed = _db.CreateOwnerContext(SystemTenant()))
         {
             seed.IntegrationConnections.Add(connection);
             seed.IntegrationSecretVersions.Add(
@@ -516,7 +516,7 @@ public sealed class CalendarConnectionFlowIntegrationTests : IAsyncLifetime
 
         var tenant = new FakeCurrentTenantContext();
         tenant.SetWorkspace(accountId, workspaceId, actorId);
-        await using (var revokeContext = _db.CreateContext(
+        await using (var revokeContext = _db.CreateOwnerContext(
                          tenant,
                          CreateConnectionOutboxInterceptor()))
         {
@@ -526,7 +526,7 @@ public sealed class CalendarConnectionFlowIntegrationTests : IAsyncLifetime
             await revokeContext.SaveChangesAsync();
         }
 
-        await using var probe = _db.CreateContext(SystemTenant());
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
         var outbox = await probe.Set<MessagingOutboxMessage>()
             .IgnoreQueryFilters()
             .SingleAsync(x => x.MessageName == "integrations.integration-connection-revoked"
@@ -540,7 +540,7 @@ public sealed class CalendarConnectionFlowIntegrationTests : IAsyncLifetime
         var cleanupStore = new RecordingSecretStore();
         var consumerTenant = new FakeCurrentTenantContext();
         consumerTenant.SetWorkspace(accountId, workspaceId, actorId);
-        await using var consumerDb = _db.CreateContext(consumerTenant);
+        await using var consumerDb = _db.CreateOwnerContext(consumerTenant);
         var consumer = new IntegrationConnectionRevokedConsumer(
             consumerDb,
             cleanupStore,
@@ -608,7 +608,7 @@ public sealed class CalendarConnectionFlowIntegrationTests : IAsyncLifetime
 
         await transaction.RollbackAsync(CancellationToken.None);
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.IntegrationSecretBlobs.IgnoreQueryFilters().AnyAsync()).Should().BeFalse(
             "no physical secret may survive the aborted workflow");
         (await verify.IntegrationConnections.IgnoreQueryFilters()
@@ -647,7 +647,7 @@ public sealed class CalendarConnectionFlowIntegrationTests : IAsyncLifetime
         // A real Identity user with the role in the workspace; the pipeline
         // runs AS that user (locator/tenant/facts evaluate their membership).
         var actor = Guid.NewGuid();
-        await using (var seed = _db.CreateContext(SystemTenant()))
+        await using (var seed = _db.CreateOwnerContext(SystemTenant()))
         {
             var user = Domain.Identity.Users.User.Create($"cal-{role}-{Guid.NewGuid():N}@example.com", $"Cal {role}", "hashed", Now, true);
             user.ConfirmEmail(user.Id, Now);
@@ -710,7 +710,7 @@ public sealed class CalendarConnectionFlowIntegrationTests : IAsyncLifetime
         var (stack, calendarId) = await SeedConnectedCalendarAsync();
 
         var actor = Guid.NewGuid();
-        await using (var seed = _db.CreateContext(SystemTenant()))
+        await using (var seed = _db.CreateOwnerContext(SystemTenant()))
         {
             var user = Domain.Identity.Users.User.Create($"cal-disc-{role}-{Guid.NewGuid():N}@example.com", $"Cal Disc {role}", "hashed", Now, true);
             user.ConfirmEmail(user.Id, Now);
@@ -758,7 +758,7 @@ public sealed class CalendarConnectionFlowIntegrationTests : IAsyncLifetime
         }
 
         Guid calendarId;
-        await using (var read = _db.CreateContext(SystemTenant()))
+        await using (var read = _db.CreateOwnerContext(SystemTenant()))
         {
             calendarId = (await read.CalendarIntegrations.IgnoreQueryFilters()
                 .SingleAsync(ci => ci.WorkspaceId == stack.WorkspaceId)).Id;
@@ -769,7 +769,7 @@ public sealed class CalendarConnectionFlowIntegrationTests : IAsyncLifetime
 
     private async Task SeedWorkspaceMemberAsync(Guid accountId, Guid workspaceId, Guid userId, WorkspaceRole role)
     {
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.WorkspaceMembers.Add(WorkspaceMember.Create(
             accountId, workspaceId, userId, role, Guid.NewGuid(), DateTimeOffset.UtcNow));
         await seed.SaveChangesAsync();
@@ -777,7 +777,7 @@ public sealed class CalendarConnectionFlowIntegrationTests : IAsyncLifetime
 
     private async Task SyncAccessGrantsAsync(Guid accountId, Guid workspaceId, params (Guid UserId, WorkspaceRole Role)[] members)
     {
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         var projection = new Notrelix.Infrastructure.Data.Authz.AccessGrantProjectionService(seed);
         foreach (var (userId, role) in members)
         {

@@ -50,7 +50,7 @@ public sealed class ApiTokenFlowTests : IAsyncLifetime
     public async Task InitializeAsync()
     {
         await _fixture.ResetAsync();
-        await using var context = _fixture.CreatePostgresContext();
+        await using var context = _fixture.CreatePostgresOwnerContext();
         _user = User.Create(Email, "API Token User", "hashed", _now, hasPasswordCredential: true);
         context.Users.Add(_user);
         await context.SaveChangesAsync();
@@ -62,7 +62,7 @@ public sealed class ApiTokenFlowTests : IAsyncLifetime
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
-        return _fixture.CreatePostgresContext(tenant);
+        return _fixture.CreatePostgresOwnerContext(tenant);
     }
 
     private Mock<ICurrentRequestContext> Actor(Guid userId) =>
@@ -154,7 +154,7 @@ public sealed class ApiTokenFlowTests : IAsyncLifetime
 
     private DbContextOptions<ApplicationDbContext> CreateOptions(params IInterceptor[] interceptors)
         => new DbContextOptionsBuilder<ApplicationDbContext>()
-            .UseNpgsql(_fixture.PostgresConnectionString, npgOptions =>
+            .UseNpgsql(_fixture.PostgresOwnerConnectionString, npgOptions =>
             {
                 npgOptions.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
                 npgOptions.MigrationsHistoryTable("__EFMigrationsHistory", "ops");

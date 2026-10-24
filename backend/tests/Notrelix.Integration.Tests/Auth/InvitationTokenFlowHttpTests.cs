@@ -73,7 +73,7 @@ public sealed class InvitationTokenFlowHttpTests : IAsyncLifetime
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
-        return _fixture.CreatePostgresContext(tenant);
+        return _fixture.CreatePostgresOwnerContext(tenant);
     }
 
     private async Task<string> SeedInvitationAsync(
@@ -131,6 +131,7 @@ public sealed class InvitationTokenFlowHttpTests : IAsyncLifetime
             var settings = new Dictionary<string, string?>
             {
                 ["ConnectionStrings:NotrelixDb"] = _fixture.PostgresConnectionString,
+                ["ConnectionStrings:NotrelixWorkerDb"] = _fixture.PostgresWorkerConnectionString,
                 ["ConnectionStrings:Redis"] = _fixture.RedisConnectionString,
                 ["JwtSettings:SecretKey"] = "invitation-http-test-signing-key-ThisIsNotASecret-0123456789",
                 ["JwtSettings:Issuer"] = "https://notrelix.test",

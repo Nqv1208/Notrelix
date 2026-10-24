@@ -1,6 +1,5 @@
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Containers;
-using Notrelix.Testing.Integration;
 
 namespace Notrelix.Integration.Tests.Containers;
 
@@ -28,7 +27,7 @@ public sealed class AppRoleTestContainer : IAsyncLifetime
     public string RedisConnectionString { get; private set; } = string.Empty;
 
     public Notrelix.Infrastructure.Data.ApplicationDbContext CreateOwnerContext(ICurrentTenantContext? tenant = null) =>
-        _postgres.CreateContext(tenant);
+        _postgres.CreateOwnerContext(tenant);
 
     /// <summary>A context connected as the worker-role login (row-level security applies; the worker policies admit it).</summary>
     public Notrelix.Infrastructure.Data.ApplicationDbContext CreateWorkerContext(ICurrentTenantContext? tenant = null) =>
@@ -41,9 +40,8 @@ public sealed class AppRoleTestContainer : IAsyncLifetime
     public async Task InitializeAsync()
     {
         await _postgres.InitializeAsync();
-        AppConnectionString = await AppRoleLogin.CreateAsync(OwnerConnectionString, "notrelix_conformance_login");
-        WorkerConnectionString = await AppRoleLogin.CreateAsync(
-            OwnerConnectionString, "notrelix_conformance_worker_login", AppRoleLogin.WorkerRole);
+        AppConnectionString = _postgres.AppConnectionString;
+        WorkerConnectionString = _postgres.WorkerConnectionString;
 
         _redis = new ContainerBuilder("redis:7-alpine")
             .WithName($"notrelix-test-redis-{Guid.NewGuid():N}")

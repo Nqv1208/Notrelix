@@ -22,7 +22,7 @@ public class GetBootstrapQueryHandlerTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -35,7 +35,7 @@ public class GetBootstrapQueryHandlerTests : IAsyncLifetime
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
-        await using var context = _db.CreateContext(tenant);
+        await using var context = _db.CreateOwnerContext(tenant);
         var currentUser = new FakeCurrentUser { UserId = Guid.NewGuid() };
         var handler = new GetBootstrapQueryHandler(new IdentityBootstrapReadAdapter(context, context, context), currentUser);
 
@@ -50,7 +50,7 @@ public class GetBootstrapQueryHandlerTests : IAsyncLifetime
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
-        await using var context = _db.CreateContext(tenant);
+        await using var context = _db.CreateOwnerContext(tenant);
         var now = DateTimeOffset.UtcNow;
         var user = User.Create("test@example.com", "Test User", "hashedpassword", now, hasPasswordCredential: true);
         context.Users.Add(user);
@@ -73,7 +73,7 @@ public class GetBootstrapQueryHandlerTests : IAsyncLifetime
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
-        await using var context = _db.CreateContext(tenant);
+        await using var context = _db.CreateOwnerContext(tenant);
         var now = DateTimeOffset.UtcNow;
 
         var user = User.Create("test@example.com", "Test User", "hashedpassword", now, hasPasswordCredential: true);
@@ -105,7 +105,7 @@ public class GetBootstrapQueryHandlerTests : IAsyncLifetime
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
-        await using var context = _db.CreateContext(tenant);
+        await using var context = _db.CreateOwnerContext(tenant);
         var now = DateTimeOffset.UtcNow;
 
         var user = User.Create("test@example.com", "Test User", "hashedpassword", now, hasPasswordCredential: true);
@@ -131,7 +131,7 @@ public class GetBootstrapQueryHandlerTests : IAsyncLifetime
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
-        await using var context = _db.CreateContext(tenant);
+        await using var context = _db.CreateOwnerContext(tenant);
         var now = DateTimeOffset.UtcNow;
 
         var user = User.Create("test@example.com", "Test User", "hashedpassword", now, hasPasswordCredential: true);
@@ -154,7 +154,7 @@ public class GetBootstrapQueryHandlerTests : IAsyncLifetime
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
-        await using var context = _db.CreateContext(tenant);
+        await using var context = _db.CreateOwnerContext(tenant);
         var now = DateTimeOffset.UtcNow;
 
         var caller = User.Create("caller@example.com", "Caller", "hashedpassword", now, hasPasswordCredential: true);

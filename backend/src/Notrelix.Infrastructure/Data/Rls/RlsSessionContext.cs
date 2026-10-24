@@ -225,6 +225,50 @@ public sealed class RlsSessionContext : IRlsSessionContext
         return userId;
     }
 
+    /// <summary>
+    /// Enters the scope of a verified inbound calendar webhook: bound by the database to the tenant of the
+    /// active calendar binding the webhook path identifies. Returns that tenant, or <c>null</c> (no scope
+    /// entered) when no active binding has the path. Must run inside the request transaction.
+    /// </summary>
+    public async Task<TokenScopeBinding?> EnterWebhookScopeAsync(
+        string webhookPath, SystemOperationReason reason, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(webhookPath))
+            throw new ArgumentException("Webhook path is required.", nameof(webhookPath));
+        ArgumentNullException.ThrowIfNull(reason);
+        RequireTransaction("webhook");
+
+        var connection = (NpgsqlConnection)_database.GetDbConnection();
+        var transaction = (NpgsqlTransaction)_database.CurrentTransaction!.GetDbTransaction();
+        await using var command = new NpgsqlCommand(
+            "SELECT account_id, workspace_id FROM ops.enter_webhook_scope(@path)", connection, transaction);
+        command.Parameters.AddWithValue("path", webhookPath);
+
+        TokenScopeBinding? binding = null;
+        await using (var reader = await command.ExecuteReaderAsync(cancellationToken))
+        {
+            if (await reader.ReadAsync(cancellationToken))
+                binding = new TokenScopeBinding(reader.GetGuid(0), reader.GetGuid(1));
+        }
+
+        RlsScopeMetrics.Record("webhook", reason.Category, binding is not null);
+        if (binding is null)
+        {
+            _logger?.LogWarning(
+                "Webhook scope not entered: {Category}: {Description}", reason.Category, reason.Description);
+        }
+        else
+        {
+            _active = RlsBoundedScope.Token;
+            // The path is a locator secret and is never logged; only the derived tenant is.
+            _logger?.LogInformation(
+                "Webhook scope entered: {Category}: {Description} | account {AccountId} workspace {WorkspaceId}",
+                reason.Category, reason.Description, binding.AccountId, binding.WorkspaceId);
+        }
+
+        return binding;
+    }
+
     private async Task<bool> ScalarBoolAsync(string sql, string parameter, object value, CancellationToken cancellationToken)
     {
         var connection = (NpgsqlConnection)_database.GetDbConnection();

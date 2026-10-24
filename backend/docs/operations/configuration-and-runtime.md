@@ -299,15 +299,14 @@ Database connections and the serving role (`ConnectionStrings`, `Rls:RoleEnforce
 |---|---|---|
 | `ConnectionStrings:NotrelixDb` | none (required) | The runtime connection: every request, background job and consumer. |
 | `ConnectionStrings:NotrelixMigrationDb` | unset | The owner connection used only by `--migrate`, `--rls-apply`, `--seed` and the Development startup migrate/seed. While unset, the runtime string is used for both (today's single-connection behavior); the initialiser logs that fallback. |
-| `ConnectionStrings:NotrelixWorkerDb` | unset | The background login (`notrelix_worker`) used by the outbox and email dispatchers, the deduplication store, message consumers, sweeps, reapers and job locks. While unset, `ConnectionStrings:NotrelixDb` is used for both (single-login development and test hosts). The unbounded worker scope is honoured only on a connection logged in as a member of `notrelix_worker`. |
-| `Rls:RoleEnforcement` | `Off` | `Off` does not inspect the runtime role. `Warn` logs a warning at startup when the runtime connection is a superuser, a BYPASSRLS role, a login that can `RESET ROLE` into one, or holds the owner's privileges on the tenant tables. `Enforce` fails startup in the same cases. |
+| `ConnectionStrings:NotrelixWorkerDb` | unset (required while `Rls:RoleEnforcement` is `Enforce`) | The background login (`notrelix_worker`) used by the outbox and email dispatchers, the deduplication store, message consumers, sweeps, reapers and job locks. While unset, `ConnectionStrings:NotrelixDb` is used for both, which `Enforce` refuses at startup. The unbounded worker scope is honoured only on a connection logged in as a member of `notrelix_worker`. |
+| `Rls:RoleEnforcement` | `Enforce` | `Enforce` fails startup when either login is a superuser, a BYPASSRLS role, a login that can `RESET ROLE` into one, or holds the owner's privileges on the tenant tables; when the application login is a member of `notrelix_worker`; when the background login is not; or when `ConnectionStrings:NotrelixWorkerDb` is unset. `Warn` logs the same findings and continues. `Off` does not inspect the roles (the OpenAPI export and the owner control hosts of the tests only). The Compose stacks and the container smoke set `Warn` until they are switched to the application and worker logins. |
 
 The owner connection must stay a superuser or BYPASSRLS role: data-migration guards such as the item-key
 backfill refuse to run as a plain non-bypass owner under FORCE ROW LEVEL SECURITY. The serving connection is
 meant to be the non-owner `notrelix_app` login. The guard (`RuntimeDatabaseRoleGuard`, a hosted service
 registered before the background workers) does not run in the command modes, which use the owner
-connection. No environment sets `Enforce` yet; the key defaults to `Off` until the environments are switched
-to the application login.
+connection. The guard connects at startup, so a host whose database is unreachable does not begin serving.
 
 These values are current executable evidence.
 

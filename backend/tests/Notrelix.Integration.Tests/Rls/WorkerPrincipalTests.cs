@@ -224,7 +224,12 @@ public sealed class WorkerPrincipalTests : IAsyncLifetime
         // has its own connection.
         using var factory = AppRoleHost.CreateFactory(
             _fixture, _fixture.AppConnectionString,
-            new Dictionary<string, string?> { ["ConnectionStrings:NotrelixWorkerDb"] = _fixture.AppConnectionString });
+            new Dictionary<string, string?>
+            {
+                ["ConnectionStrings:NotrelixWorkerDb"] = _fixture.AppConnectionString,
+                // The role guard refuses this wiring at startup; the control turns it off to show why it must.
+                ["Rls:RoleEnforcement"] = "Off",
+            });
         using var client = factory.CreateClient();
 
         var register = await client.PostAsJsonAsync("/api/v1/auth/register",

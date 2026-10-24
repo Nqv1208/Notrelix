@@ -51,7 +51,7 @@ public sealed class AccountWorkspacesHttpFlowTests : IAsyncLifetime
 
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
-        await using var context = _fixture.CreatePostgresContext(tenant);
+        await using var context = _fixture.CreatePostgresOwnerContext(tenant);
         context.Users.AddRange(_alice, _bob);
         await context.SaveChangesAsync();
 
@@ -78,6 +78,7 @@ public sealed class AccountWorkspacesHttpFlowTests : IAsyncLifetime
             builder.ConfigureLogging(logging =>
             {
                 logging.ClearProviders();
+                logging.AddSimpleConsole();
                 logging.SetMinimumLevel(LogLevel.Warning);
             });
             builder.UseEnvironment("Testing");
@@ -92,6 +93,7 @@ public sealed class AccountWorkspacesHttpFlowTests : IAsyncLifetime
             var settings = new Dictionary<string, string?>
             {
                 ["ConnectionStrings:NotrelixDb"] = _fixture.PostgresConnectionString,
+                ["ConnectionStrings:NotrelixWorkerDb"] = _fixture.PostgresWorkerConnectionString,
                 ["ConnectionStrings:Redis"] = _fixture.RedisConnectionString,
                 ["JwtSettings:SecretKey"] = "account-http-test-signing-key-ThisIsNotASecret-0123456789",
                 ["JwtSettings:Issuer"] = "https://notrelix.test",

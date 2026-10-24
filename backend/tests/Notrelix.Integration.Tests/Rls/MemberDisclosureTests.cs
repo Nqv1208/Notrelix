@@ -172,7 +172,7 @@ public sealed class MemberDisclosureTests : IAsyncLifetime
         await using var tx = await ctx.Database.BeginTransactionAsync();
         var rls = new RlsSessionContext(ctx, Options.Create(new RlsOptions { Enabled = true, SetSessionContext = true }), tenant, NullLogger<RlsSessionContext>.Instance);
         await rls.ApplyAsync(CancellationToken.None);
-        return await new MemberEmailReader(ctx, rls).FindAsync(workspaceId, Everyone, CancellationToken.None);
+        return await new MemberEmailReader(ctx).FindAsync(workspaceId, Everyone, CancellationToken.None);
     }
 
     // ------------------------------------------------------------------------------------------------
@@ -220,7 +220,7 @@ public sealed class MemberDisclosureTests : IAsyncLifetime
         var rls = new RlsSessionContext(ctx, Options.Create(new RlsOptions { Enabled = true, SetSessionContext = true }), tenant, NullLogger<RlsSessionContext>.Instance);
         await rls.ApplyAsync(CancellationToken.None);
 
-        var phones = await new MemberPhoneLookup(ctx, ctx, rls).FindSharedPhonesAsync(_a.WorkspaceId, Everyone, CancellationToken.None);
+        var phones = await new MemberPhoneLookup(ctx, ctx).FindSharedPhonesAsync(_a.WorkspaceId, Everyone, CancellationToken.None);
         phones.Keys.Should().BeEquivalentTo(new[] { _a.User.Id, _admin.Id, _member.Id });
     }
 

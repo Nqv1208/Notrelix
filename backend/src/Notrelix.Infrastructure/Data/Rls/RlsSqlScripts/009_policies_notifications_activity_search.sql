@@ -34,7 +34,6 @@ BEGIN
     END IF;
 END $$;
 
-SELECT ops.apply_user_owned_policies('notifications', 'notification_recipients', 'user_id', false, true);
 SELECT ops.apply_user_owned_policies('notifications', 'notification_preferences', 'user_id', false, true);
 SELECT ops.apply_user_owned_policies('notifications', 'notification_preference_sets', 'user_id', false, true);
 SELECT ops.apply_user_owned_policies('notifications', 'notification_counters', 'user_id', false, true);

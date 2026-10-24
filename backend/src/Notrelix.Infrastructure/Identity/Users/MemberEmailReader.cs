@@ -4,21 +4,19 @@ using Notrelix.Infrastructure.Data;
 namespace Notrelix.Infrastructure.Identity.Users;
 
 /// <summary>
-/// Reads other people's sign-in email for one Workspace. Under a host that sets database session context the
-/// read goes through the owner-defined <c>ops.disclosable_member_emails</c> function, which applies the same
+/// Reads other people's sign-in email for one Workspace. On PostgreSQL the
+/// read always goes through the owner-defined <c>ops.disclosable_member_emails</c> function, which applies the same
 /// rule the Workspaces disclosure applies (reader is an active Owner or Admin of the Workspace, subjects are
-/// active non-guest members of it): another person's user row is not readable by the application role. A
-/// host without session context reads the user rows directly.
+/// active non-guest members of it): another person's user row is not readable by the application role. Only a
+/// provider without that function (the in-memory test provider) reads the user rows directly.
 /// </summary>
 public sealed class MemberEmailReader : IMemberEmailReadPort
 {
     private readonly ApplicationDbContext _context;
-    private readonly IRlsSessionContext _rls;
 
-    public MemberEmailReader(ApplicationDbContext context, IRlsSessionContext rls)
+    public MemberEmailReader(ApplicationDbContext context)
     {
         _context = context;
-        _rls = rls;
     }
 
     public async Task<IReadOnlyDictionary<Guid, string>> FindAsync(
@@ -29,7 +27,7 @@ public sealed class MemberEmailReader : IMemberEmailReadPort
             return new Dictionary<Guid, string>();
         }
 
-        if (_rls.IsSessionContextEnabled && _context.Database.IsNpgsql())
+        if (_context.Database.IsNpgsql())
         {
             var ids = userIds.Distinct().ToArray();
             var found = await _context.Database

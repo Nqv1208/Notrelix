@@ -43,7 +43,7 @@ public sealed class RegistrationWorkspaceRuntimeChainIntegrationTests : IAsyncLi
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -77,7 +77,7 @@ public sealed class RegistrationWorkspaceRuntimeChainIntegrationTests : IAsyncLi
 
             if (workspace is null)
             {
-                await using var diag = _db.CreateContext(SystemTenant());
+                await using var diag = _db.CreateOwnerContext(SystemTenant());
                 var outboxState = await diag.Set<MessagingOutboxMessage>().IgnoreQueryFilters()
                     .Where(m => m.Id == outbox.Id).Select(m => new { m.Status, m.RetryCount }).ToListAsync();
                 var dedupState = await diag.Set<MessagingProcessedEvent>().IgnoreQueryFilters()
@@ -99,7 +99,7 @@ public sealed class RegistrationWorkspaceRuntimeChainIntegrationTests : IAsyncLi
             var dispatcherCompleted = await WaitForOutboxProcessedAsync(outbox.Id);
             dispatcherCompleted.Should().BeTrue();
 
-            await using var probe = _db.CreateContext(SystemTenant());
+            await using var probe = _db.CreateOwnerContext(SystemTenant());
             (await probe.Workspaces.IgnoreQueryFilters()
                 .CountAsync(w => w.AccountId == graph.AccountId && w.IsPersonal)).Should().Be(1,
                 "exactly one personal Workspace must be provisioned");
@@ -159,7 +159,7 @@ public sealed class RegistrationWorkspaceRuntimeChainIntegrationTests : IAsyncLi
                 if (!workspaceFailures.WasInvoked)
                     return false;
 
-                await using var probe = _db.CreateContext(SystemTenant());
+                await using var probe = _db.CreateOwnerContext(SystemTenant());
                 return await probe.Set<MessagingOutboxMessage>().IgnoreQueryFilters()
                     .AnyAsync(m => m.Id == outboxId && m.Status == "Processed");
             });
@@ -176,7 +176,7 @@ public sealed class RegistrationWorkspaceRuntimeChainIntegrationTests : IAsyncLi
             retriesExhausted.Should().BeTrue(
                 "the consumer retry policy must run to exhaustion when the injected projection keeps failing");
 
-            await using var probe = _db.CreateContext(SystemTenant());
+            await using var probe = _db.CreateOwnerContext(SystemTenant());
 
             workspaceFailures.InvocationCount.Should().Be(4,
                 "exactly 1 initial attempt + 3 retries must be invoked; a rolled-back attempt must never be retried as an idempotent AlreadyExisted success");
@@ -242,6 +242,12 @@ public sealed class RegistrationWorkspaceRuntimeChainIntegrationTests : IAsyncLi
 
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var collector = scope.ServiceProvider.GetRequiredService<IIntegrationEventCollector>();
+        var rls = scope.ServiceProvider.GetRequiredService<Notrelix.Application.Common.Data.Rls.IRlsSessionContext>();
+        var principal = scope.ServiceProvider.GetRequiredService<DatabasePrincipal>();
+
+        // Registration runs in the request transaction, in the registration scope the database derives for
+        // the one new identity: the application login has no other way to create the first rows.
+        await using var transaction = await context.Database.BeginTransactionAsync();
 
         var passwordHasher = new Mock<IPasswordHasher>();
         passwordHasher.Setup(x => x.HashPassword(It.IsAny<string>())).Returns("hashed-password");
@@ -255,7 +261,7 @@ public sealed class RegistrationWorkspaceRuntimeChainIntegrationTests : IAsyncLi
 
         var provisioning = new AccountProvisioningService(
             context,
-            new AccountGrantProjectionServiceAdapter(new AccessGrantProjectionService(context)));
+            new AccountGrantProjectionServiceAdapter(new AccessGrantProjectionService(context, rls, principal)));
 
         var handler = new RegisterCommandHandler(
             context,
@@ -263,7 +269,9 @@ public sealed class RegistrationWorkspaceRuntimeChainIntegrationTests : IAsyncLi
             passwordHasher.Object,
             sessionIssuer,
             dateTimeProvider.Object,
-            collector);
+            collector,
+            registrationProbe: scope.ServiceProvider.GetService<Notrelix.Application.Features.Identity.Registration.Ports.IEmailRegistrationProbe>(),
+            registrationScope: new Notrelix.Application.Features.Identity.Registration.Services.RegistrationScope(rls));
 
         var result = await handler.Handle(new RegisterCommand
         {
@@ -274,10 +282,12 @@ public sealed class RegistrationWorkspaceRuntimeChainIntegrationTests : IAsyncLi
         result.Succeeded.Should().BeTrue($"Handle Succeeded=false. Errors: {string.Join(", ", result.Errors)}");
 
         await context.SaveChangesAsync();
+        await transaction.CommitAsync();
 
-        var user = await context.Users.IgnoreQueryFilters()
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
+        var user = await verify.Users.IgnoreQueryFilters()
             .SingleAsync(u => u.NormalizedEmail == email.ToLowerInvariant());
-        var account = await context.Accounts.IgnoreQueryFilters()
+        var account = await verify.Accounts.IgnoreQueryFilters()
             .SingleAsync(a => a.Type == Notrelix.Domain.Accounts.Accounts.AccountType.Personal);
         graph.SetUser(user.Id);
         graph.SetAccount(account.Id);
@@ -292,6 +302,7 @@ public sealed class RegistrationWorkspaceRuntimeChainIntegrationTests : IAsyncLi
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["ConnectionStrings:NotrelixDb"] = _db.ConnectionString,
+                ["ConnectionStrings:NotrelixWorkerDb"] = _db.WorkerConnectionString,
                 ["ConnectionStrings:Redis"] = "localhost:6379,abortConnect=false",
                 ["Messaging:Transport"] = "InMemory",
                 ["Rls:Enabled"] = "true",
@@ -309,6 +320,7 @@ public sealed class RegistrationWorkspaceRuntimeChainIntegrationTests : IAsyncLi
         builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
         {
             ["ConnectionStrings:NotrelixDb"] = _db.ConnectionString,
+            ["ConnectionStrings:NotrelixWorkerDb"] = _db.WorkerConnectionString,
             ["ConnectionStrings:Redis"] = "localhost:6379,abortConnect=false",
             ["Messaging:Transport"] = "InMemory",
             ["Rls:Enabled"] = "true",
@@ -368,7 +380,7 @@ public sealed class RegistrationWorkspaceRuntimeChainIntegrationTests : IAsyncLi
         MessagingOutboxMessage? found = null;
         var completed = await WaitForAsync(async () =>
         {
-            await using var probe = _db.CreateContext(SystemTenant());
+            await using var probe = _db.CreateOwnerContext(SystemTenant());
             found = await probe.Set<MessagingOutboxMessage>()
                 .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(m => m.MessageName == RegistrationMessageName
@@ -384,7 +396,7 @@ public sealed class RegistrationWorkspaceRuntimeChainIntegrationTests : IAsyncLi
         Workspace? found = null;
         var completed = await WaitForAsync(async () =>
         {
-            await using var probe = _db.CreateContext(SystemTenant());
+            await using var probe = _db.CreateOwnerContext(SystemTenant());
             found = await probe.Workspaces.IgnoreQueryFilters()
                 .FirstOrDefaultAsync(w => w.AccountId == accountId && w.IsPersonal);
             return found is not null;
@@ -397,7 +409,7 @@ public sealed class RegistrationWorkspaceRuntimeChainIntegrationTests : IAsyncLi
     {
         return await WaitForAsync(async () =>
         {
-            await using var probe = _db.CreateContext(SystemTenant());
+            await using var probe = _db.CreateOwnerContext(SystemTenant());
             return await probe.Set<MessagingProcessedEvent>()
                 .IgnoreQueryFilters()
                 .AnyAsync(p => p.EventId == eventId
@@ -410,7 +422,7 @@ public sealed class RegistrationWorkspaceRuntimeChainIntegrationTests : IAsyncLi
     {
         return await WaitForAsync(async () =>
         {
-            await using var probe = _db.CreateContext(SystemTenant());
+            await using var probe = _db.CreateOwnerContext(SystemTenant());
             return await probe.Set<MessagingOutboxMessage>()
                 .IgnoreQueryFilters()
                 .AnyAsync(m => m.Id == outboxId && m.Status == "Processed");

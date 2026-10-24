@@ -26,9 +26,14 @@ evidence:
   - backend/src/Notrelix.Infrastructure/Data/Rls/RlsSqlScripts/013_co_member_profiles.sql
   - backend/src/Notrelix.Infrastructure/Data/Rls/RlsSqlScripts/014_anonymous_scopes.sql
   - backend/src/Notrelix.Infrastructure/Data/Rls/RlsSqlScripts/015_internal_principals.sql
+  - backend/src/Notrelix.Infrastructure/Data/Rls/RlsSqlScripts/016_policies_derived_scope.sql
+  - backend/src/Notrelix.Infrastructure/Data/Rls/RlsSqlScripts/017_webhook_scope.sql
   - backend/src/Notrelix.Infrastructure/Data/DatabasePrincipal.cs
   - backend/tests/Notrelix.Integration.Tests/Rls/AppRoleConformanceTests.cs
   - backend/tests/Notrelix.Integration.Tests/Rls/RuntimeDatabaseRoleGuardIntegrationTests.cs
+  - backend/tests/Notrelix.Integration.Tests/Rls/PolicyCoverageTests.cs
+  - backend/tests/Notrelix.Integration.Tests/Rls/DerivedScopePolicyTests.cs
+  - backend/tests/Notrelix.Architecture.Tests/InfrastructureLayer/IntegrationFleetRoleBoundaryTests.cs
 review_on:
   - decision-superseded
   - rls-principal-model-change
@@ -367,6 +372,9 @@ applies to Global and Resource-scoped requests.
 - `backend/tests/Notrelix.Integration.Tests/Rls/AdminGrantWriteTests.cs`
 - `backend/tests/Notrelix.Integration.Tests/Rls/MemberDisclosureTests.cs`
 - `backend/tests/Notrelix.Architecture.Tests/Authorization/InternalPrincipalArchitectureTests.cs`
+- `backend/tests/Notrelix.Integration.Tests/Rls/PolicyCoverageTests.cs`
+- `backend/tests/Notrelix.Integration.Tests/Rls/DerivedScopePolicyTests.cs`
+- `backend/tests/Notrelix.Architecture.Tests/InfrastructureLayer/IntegrationFleetRoleBoundaryTests.cs`
 
 ### Contracts / migrations / generated evidence
 
@@ -386,3 +394,36 @@ Extends ADR-002 (connection lifecycle) with the identity the connection runs as 
 that replace the application-asserted `worker` bypass for request-path flows. Decided by the product owner's
 delegate on 2026-10-24: explicit bounded scopes for anonymous flows, a user scope for Global requests,
 co-member visibility of display name and avatar, application role in every environment.
+
+## Amendment 2026-10-25
+
+Recorded while the integration fleet moved onto the real roles. The decision is unchanged; these are
+refinements that the fleet made necessary or made visible.
+
+- **Coverage is a catalog rule.** Every base table of every application schema (all but
+  `ops.__EFMigrationsHistory`) must have forced row-level security and a policy, or the policy apply fails; the
+  generic helpers raise instead of skipping a table they cannot scope. Eighteen tables that the helpers had
+  skipped silently (open to the application login through the schema grants) now inherit the scope of their
+  parent or owner (`016_policies_derived_scope.sql`), and `apply_worker_internal_policies` no longer falls back
+  to an unconditional application INSERT for a tenantless table.
+- **Tenantless person events** (`events.domain_event_logs`, `messaging.outbox_messages`) are admitted for the
+  authenticated person in the user scope or the `app` scope, INSERT-only, for the actor's own actions.
+- **Verified calendar webhook scope.** The inbound calendar webhook is an anonymous token-class flow (it was
+  named in the plan's Q2 class list as already having a narrow lookup scope); after signature verification it
+  enters a `calendar-webhook` token-kind scope derived by the database from the binding's webhook path, which
+  admits only the receipt claim and the processing outbox message for that account and workspace.
+- **Both logins are checked.** `RuntimeDatabaseRoleGuard` also verifies the background login, refuses an
+  application login that is a member of `notrelix_worker` and a missing `ConnectionStrings:NotrelixWorkerDb`
+  (the single-login fallback of decision 1 now exists only with `Rls:RoleEnforcement=Off`). `Enforce` is the code and
+  shipped-settings default (fail closed); the Compose stacks and container smoke opt down to `Warn` explicitly
+  until they are switched to the two logins.
+- **Member email, member phone and the security-event sink always use their owner-defined functions on
+  PostgreSQL**; the session-context gating is gone, so a host cannot silently take the direct-read path.
+- **Residual, recorded and unchanged:** the `app.scope_*` and `app.current_*` values are session settings the
+  application login can write. The bounded scopes make an honest application bounded and an injection or a
+  handler bug unable to widen a scope through ids it is trusted with, but a process that holds the application
+  credentials can assert a scope; only the worker scope is additionally tied to the login. This is the
+  trade-off listed under Consequences, not a gap to close in this decision.
+- **Test fleet.** Hosts and pipelines under test run on the application login and background work on the
+  worker login; the owner migrates, applies the pack, seeds, resets and verifies
+  (`IntegrationFleetRoleBoundaryTests` keeps this from eroding).

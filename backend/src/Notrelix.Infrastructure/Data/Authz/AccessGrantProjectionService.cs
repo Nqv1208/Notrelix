@@ -27,7 +27,7 @@ public sealed class AccessGrantProjectionService
     }
 
     /// <summary>
-    /// Under a host that sets database session context the application role has no write policy on grants,
+    /// On PostgreSQL the application role has no write policy on grants,
     /// and the rest of the request needs a grant at once because its policies derive from it. The grant is
     /// therefore written immediately through the owner-defined <c>ops.upsert_access_grant</c> /
     /// <c>ops.revoke_access_grant</c> functions, which validate the write against the scope the request runs
@@ -35,12 +35,12 @@ public sealed class AccessGrantProjectionService
     /// admin flags themselves. Application authorization remains the authority on whether the caller may
     /// change the membership; the functions only bound where the write can land. The background login
     /// (message consumers, for example the first-workspace provisioning) writes the rows directly: it is the
-    /// unbounded principal and its policy admits them. A host without session context has no policy to
-    /// satisfy and writes directly too.
+    /// unbounded principal and its policy admits them. A service built without a session context (an owner
+    /// connection that seeds, or a provider without the functions) writes directly.
     /// </summary>
     private bool UsesBoundedGrantWrite =>
         _rls?.ActiveBoundedScope is RlsBoundedScope.Registration or RlsBoundedScope.Invitee
-        || (_rls is { IsSessionContextEnabled: true }
+        || (_rls is not null
             && _principal is not { IsWorker: true }
             && _context.Database.IsNpgsql());
 

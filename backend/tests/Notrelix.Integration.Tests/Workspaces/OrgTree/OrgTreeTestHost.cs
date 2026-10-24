@@ -120,7 +120,7 @@ internal sealed class OrgTreeTestHost
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(AccessControlBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(IdempotencyBehavior<,>));
 
-        services.AddScoped<ApplicationDbContext>(sp => _db.CreateContext(sp.GetRequiredService<ICurrentTenantContext>()));
+        services.AddScoped<ApplicationDbContext>(sp => _db.CreateOwnerContext(sp.GetRequiredService<ICurrentTenantContext>()));
         services.AddScoped<IWorkspaceDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IIdentityDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IAccountDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
@@ -241,14 +241,14 @@ internal sealed class OrgTreeTestHost
 
     public async Task WithSystemContextAsync(Func<ApplicationDbContext, Task> action)
     {
-        await using var context = _db.CreateContext(SystemTenant());
+        await using var context = _db.CreateOwnerContext(SystemTenant());
         await action(context);
         await context.SaveChangesAsync();
     }
 
     public async Task<T> ReadAsync<T>(Func<ApplicationDbContext, Task<T>> read)
     {
-        await using var context = _db.CreateContext(SystemTenant());
+        await using var context = _db.CreateOwnerContext(SystemTenant());
         return await read(context);
     }
 
@@ -441,7 +441,7 @@ internal sealed class OrgTreeTestHost
 
     private async Task SyncGrantAsync(Guid accountId, Guid workspaceId, Guid userId, WorkspaceRole role)
     {
-        await using var grant = _db.CreateContext(SystemTenant());
+        await using var grant = _db.CreateOwnerContext(SystemTenant());
         var projection = new AccessGrantProjectionService(grant);
         await projection.SyncWorkspaceMemberGrantAsync(accountId, workspaceId, userId, role, BaseTime, CancellationToken.None);
         await grant.SaveChangesAsync();

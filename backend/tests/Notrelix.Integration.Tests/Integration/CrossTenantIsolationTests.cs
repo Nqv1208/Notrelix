@@ -43,7 +43,7 @@ public class CrossTenantIsolationTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_fixture.ConnectionString);
+        _reset = new DatabaseReset(_fixture.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -51,7 +51,7 @@ public class CrossTenantIsolationTests : IAsyncLifetime
 
     private ApplicationDbContext CreateContext(ICurrentTenantContext tenant)
     {
-        return _fixture.CreateContext(tenant);
+        return _fixture.CreateOwnerContext(tenant);
     }
 
     // ============================================================

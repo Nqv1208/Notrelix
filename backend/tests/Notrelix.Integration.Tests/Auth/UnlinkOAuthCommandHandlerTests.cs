@@ -27,7 +27,7 @@ public class UnlinkOAuthCommandHandlerTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -99,14 +99,14 @@ public class UnlinkOAuthCommandHandlerTests : IAsyncLifetime
             EmptySnapshot(OAuthProvider.Google), null, user.Id, now);
 
         Guid userId;
-        await using (var seedContext = _db.CreateContext())
+        await using (var seedContext = _db.CreateOwnerContext())
         {
             seedContext.Users.Add(user);
             await seedContext.SaveChangesAsync();
             userId = user.Id;
         }
 
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateOwnerContext();
         var stepUp = CreateStepUp(context, now);
         var stepUpToken = await IssuePasswordProof(stepUp, userId, TestPassword);
         var handler = CreateHandler(context, userId, stepUp);
@@ -134,14 +134,14 @@ public class UnlinkOAuthCommandHandlerTests : IAsyncLifetime
             EmptySnapshot(OAuthProvider.Google), null, user.Id, now);
 
         Guid userId;
-        await using (var seedContext = _db.CreateContext())
+        await using (var seedContext = _db.CreateOwnerContext())
         {
             seedContext.Users.Add(user);
             await seedContext.SaveChangesAsync();
             userId = user.Id;
         }
 
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateOwnerContext();
         var stepUp = CreateStepUp(context, now);
         var stepUpToken = await IssueOAuthProof(stepUp, userId);
         var handler = CreateHandler(context, userId, stepUp);
@@ -165,7 +165,7 @@ public class UnlinkOAuthCommandHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_WhenProviderNotLinked_ShouldBeNoOpSuccess()
     {
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateOwnerContext();
         var now = DateTimeOffset.UtcNow;
         var user = User.Create("no-link@example.com", "No Link", "hashed", now, hasPasswordCredential: true);
         context.Users.Add(user);
@@ -188,7 +188,7 @@ public class UnlinkOAuthCommandHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_WhenSuspendedUser_ShouldReturnConflict()
     {
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateOwnerContext();
         var now = DateTimeOffset.UtcNow;
         var user = User.Create("suspended-unlink@example.com", "Suspended", "hashed", now, hasPasswordCredential: true);
         user.LinkOAuthAccount(OAuthProvider.Google, "google-sub-sus",

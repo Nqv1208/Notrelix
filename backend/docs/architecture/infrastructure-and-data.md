@@ -659,12 +659,17 @@ worker    dispatchers, deduplication, consumers, sweeps, reapers, job locks (not
 `OwnerDbContextProvider` supplies the owner `ApplicationDbContext` to the initialiser and the policy
 applier only (an architecture test restricts who may name it); the serving path never receives it. While
 `NotrelixMigrationDb` is unset the owner context uses the serving string, so a single connection keeps
-working. `RuntimeDatabaseRoleGuard` inspects the serving connection at startup (`Rls:RoleEnforcement`:
-`Off`, `Warn`, `Enforce`) and rejects a superuser, BYPASSRLS, an owner-privileged login, or a login that
-could leave a `SET ROLE` constraint. RLS only constrains the serving path when it connects as the
-non-owner application role; until an environment does, its policies are not exercised there.
-`PostgresTestContainer`/`AppRoleTestContainer` provide the application-role database for the conformance
-suite (`Notrelix.Integration.Tests.Rls`).
+working. `RuntimeDatabaseRoleGuard` inspects BOTH serving connections at startup (`Rls:RoleEnforcement`:
+`Off`, `Warn`, `Enforce`; `Enforce` is the default; the Compose stacks run `Warn` until switched to the two logins) and rejects a superuser, BYPASSRLS,
+an owner-privileged login, or a login that could leave a `SET ROLE` constraint. The application login must
+not be a member of `notrelix_worker`; the background login must be one; and a missing
+`ConnectionStrings:NotrelixWorkerDb` (background work would run as the application login) is refused too.
+`PostgresTestContainer` migrates and applies the pack as the owner and hands out the application login
+(`ConnectionString`, what every host and pipeline under test uses), the worker login
+(`WorkerConnectionString`) and the owner (`OwnerConnectionString`: seeding, reset, verification only,
+`CreateOwnerContext`). An architecture test (`IntegrationFleetRoleBoundaryTests`) keeps a host from being
+given the owner connection and names the few tests that build a container of their own (migrations and
+backfills, the policy pack on a database of the test's own making).
 
 **The worker connection.** A dependency-injection scope's `ApplicationDbContext` connects as the principal
 the scope chose before its first use (`DatabasePrincipal`, `Data/DatabasePrincipal.cs`). Request scopes are
@@ -675,7 +680,7 @@ their scopes with `IServiceScopeFactory.CreateWorkerAsyncScope()`; every message
 claim, the consumer's own writes and the commands it dispatches (the first-workspace provisioning command
 included) share one worker-login context and keep their single-transaction atomicity. Switching after the
 connection was resolved throws. While `ConnectionStrings:NotrelixWorkerDb` is unset it falls back to
-`NotrelixDb` (single-login development and test hosts). The worker login is the only connection for which
+`NotrelixDb` (a single-login host with `Rls:RoleEnforcement` `Off`; every enforced host must set it). The worker login is the only connection for which
 `ops.is_worker_scope()` is true (see 34B); `ops.job_locks` and every `messaging.*` table have `p_worker_all`
 for it and no policy for the application role. Architecture tests
 (`InternalPrincipalArchitectureTests`) pin that every `BackgroundService` creates worker scopes, that the
@@ -806,11 +811,11 @@ of `014`) add the bounded paths that remain for the application login:
   token's user and workspace.
 - **Security audit.** `SecurityAuditSink` writes `audit.security_events` through the insert-only
   `ops.record_security_event` (known event types only; actor and tenant derived from the scope it enters, never
-  supplied). A failed write is logged at error level and counted (`security_audit_event_write`). A host that
-  sets no session context inserts the row directly.
+  supplied). A failed write is logged at error level and counted (`security_audit_event_write`). On
+  PostgreSQL the sink always uses the function; only a provider without it inserts directly.
 - **Admin-driven grant writes.** `AccessGrantProjectionService` writes grants through `ops.upsert_access_grant`
-  and ends them through `ops.revoke_access_grant` whenever the host sets session context and the scope runs as
-  the application principal: add, remove, suspend, activate and re-role a member, create a workspace, transfer
+  and ends them through `ops.revoke_access_grant` whenever the scope runs as the application principal on
+  PostgreSQL (a service built without a session context, such as an owner seeding connection, writes directly): add, remove, suspend, activate and re-role a member, create a workspace, transfer
   ownership. Inside the tenant scope a write lands only in the request's own account and workspace; Owner only
   by the current Owner (transfer) or for the caller creating a new workspace of their account; the
   account-level grant is Member only and never replaces an administrator's. A person leaving still ends their
@@ -820,7 +825,49 @@ of `014`) add the bounded paths that remain for the application login:
   Application rules (email: active Owner/Admin reader, active non-guest subjects; phone: active non-guest reader
   and subject, subject opted in) and take the Workspace as a parameter, which is why
   `IIdentityUserFacts.FindEmailsAsync` and `IMemberPhoneLookup.FindSharedPhonesAsync` take a workspace id.
-  `MemberEmailReader` and `MemberPhoneLookup` call them when session context is set.
+  `MemberEmailReader` and `MemberPhoneLookup` always call them on PostgreSQL.
+
+---
+
+# 34F. Policy coverage, derived scopes and the webhook scope
+
+**Every application table has forced row-level security and a policy.** `RlsPolicyApplier` verifies the
+catalog after applying the pack and fails the apply for ANY base table of ANY schema (except the migration
+history `ops.__EFMigrationsHistory`) that has RLS disabled, not forced, or no policy; `PolicyCoverageTests`
+asserts the same against the database the migrations produced, and that no policy of the application role is
+unconditional except the read-only shared catalogs (`billing.plans`, `plan_prices`, `plan_limits`,
+`automation.automation_templates`). The generic helpers no longer skip silently: `apply_scoped_business_policies`
+raises for a table with no `account_id`/`workspace_id`, `apply_user_owned_policies` raises for a missing owner
+column, and `apply_worker_internal_policies` creates an application INSERT policy only when a tenant scope
+exists (a tenantless internal log is the worker's alone; the old fallback of `true` admitted any insert).
+
+`016_policies_derived_scope.sql` declares the tables without a tenant column of their own, which had been
+open to the application login because the generic helper skipped them: `automation.automation_execution_steps`,
+`automation.automation_templates` (shared catalog), `billing.invoice_line_items`, `subscription_items`,
+`usage_metric_history`, `governance.custom_role_permissions`, `governance.member_role_assignments`,
+`identity.mfa_recovery_batches`, `identity.mfa_recovery_codes`, `integration.calendar_events`,
+`calendar_event_links`, `integration_scopes`, `integration_secret_versions`, `integration_sync_cursors`,
+`integration_secret_blobs`, `inbound_webhook_receipts`, `notifications.notification_recipients` (owner column
+`recipient_user_id`; the earlier call named a column that does not exist) and `ops.idempotency_records`
+(partition string `account:{N}[:workspace:{N}|:user:{N}]` checked with `ops.has_idempotency_scope`; `system` is
+the worker's). A child inherits its parent's scope; `DerivedScopePolicyTests` proves the application login
+reads and writes only inside a scope it holds.
+
+**Tenantless person events.** A Global request, and a tenant-scoped request that changes one of the person's
+own facts (choosing the default workspace changes the profile), raises domain events with no tenant. The
+INSERT-only policies `p_app_insert_user_scope` on `events.domain_event_logs` and `messaging.outbox_messages`
+admit such a row (`ops.has_tenantless_actor_scope`) in the user scope or the `app` scope of the person who
+raised it, never for another actor.
+
+**Verified calendar webhook.** `HandleCalendarWebhook` authenticates by provider signature, so no user's
+grants exist for a policy to read. After verification the handler enters a token-kind scope with purpose
+`calendar-webhook` (`RlsSessionContext.EnterWebhookScopeAsync` -> `ops.enter_webhook_scope(path)`), which the
+database derives from the active, undeleted calendar binding the webhook path identifies. The scope admits
+only the receipt claim (`integration.inbound_webhook_receipts` INSERT and the RETURNING read-back) and the
+processing message (`messaging.outbox_messages` INSERT) for that account and workspace
+(`ops.has_webhook_binding`, `017_webhook_scope.sql`); the tenant-scoped consumer then runs on the worker
+principal. The entry is logged with its reason and counted (`rls_scope_entry`, scope `webhook`); the path is
+never logged.
 
 ---
 

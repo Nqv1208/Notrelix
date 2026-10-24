@@ -42,7 +42,7 @@ public sealed class CalendarWebhookIntakeIntegrationTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -100,19 +100,21 @@ public sealed class CalendarWebhookIntakeIntegrationTests : IAsyncLifetime
             provider, CalendarSyncDirection.Pull, Guid.NewGuid(), Now);
         if (!active) binding.Deactivate(Guid.NewGuid(), Now);
 
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.IntegrationConnections.Add(connection);
         seed.CalendarIntegrations.Add(binding);
         await seed.SaveChangesAsync();
         return (connection.Id, accountId, workspaceId);
     }
 
-    private HandleCalendarWebhookCommandHandler CreateHandler(
+    private TransactionalWebhookHandler CreateHandler(
         FakeCurrentTenantContext? tenant = null,
         Notrelix.Application.Common.Messaging.IIntegrationEventCollector? collector = null)
     {
         var scopeTenant = tenant ?? SystemTenant();
-        var context = _db.CreateContext(scopeTenant);
+        // The handler runs on the application login, as the request pipeline runs it: inside the request
+        // transaction, which the pipeline (here the wrapper) commits.
+        var context = _db.CreateAppContext(scopeTenant);
         var options = Microsoft.Extensions.Options.Options.Create(new Notrelix.Infrastructure.Options.CalendarWebhookOptions
         {
             Providers = new Dictionary<string, Notrelix.Infrastructure.Options.CalendarWebhookOptions.CalendarWebhookProviderOptions>
@@ -136,12 +138,30 @@ public sealed class CalendarWebhookIntakeIntegrationTests : IAsyncLifetime
             }),
             scopeTenant);
 
-        return new HandleCalendarWebhookCommandHandler(
-            new CalendarWebhookBindingResolver(context, scopeTenant, rls),
-            new CalendarWebhookVerifier(new FixedClock(Now), options),
-            new CalendarWebhookIntake(context, encryptor.Object),
-            collector ?? new IntegrationEventCollector(),
-            new FixedClock(Now));
+        return new TransactionalWebhookHandler(
+            context,
+            new HandleCalendarWebhookCommandHandler(
+                new CalendarWebhookBindingResolver(context, scopeTenant, rls),
+                new CalendarWebhookVerifier(new FixedClock(Now), options),
+                new CalendarWebhookIntake(context, encryptor.Object),
+                collector ?? new IntegrationEventCollector(),
+                new FixedClock(Now)));
+    }
+
+    /// <summary>The request data session: one transaction around the handler, committed on success.</summary>
+    private sealed class TransactionalWebhookHandler(
+        Notrelix.Infrastructure.Data.ApplicationDbContext context,
+        HandleCalendarWebhookCommandHandler inner)
+    {
+        public async Task<Notrelix.Application.Common.Models.Result> Handle(
+            HandleCalendarWebhookCommand command, CancellationToken cancellationToken)
+        {
+            await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+            var result = await inner.Handle(command, cancellationToken);
+            await context.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+            return result;
+        }
     }
 
     [Fact]
@@ -163,7 +183,7 @@ public sealed class CalendarWebhookIntakeIntegrationTests : IAsyncLifetime
             "the tenant must be derived from the verified binding, not from the payload");
         tenant.WorkspaceId.Should().Be(workspaceId);
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         var receipt = await verify.InboundWebhookReceipts.IgnoreQueryFilters()
             .SingleAsync(r => r.Provider == Provider && r.ExternalEventId == externalEventId);
         receipt.Status.Should().Be("Captured",
@@ -199,7 +219,7 @@ public sealed class CalendarWebhookIntakeIntegrationTests : IAsyncLifetime
     {
         var (connectionId, accountId, workspaceId) = await SeedBindingAsync(WebhookPath);
 
-        await using var context = _db.CreateContext(SystemTenant());
+        await using var context = _db.CreateOwnerContext(SystemTenant());
         await new Notrelix.Infrastructure.Data.Rls.RlsPolicyApplier(
             context,
             NullLogger<Notrelix.Infrastructure.Data.Rls.RlsPolicyApplier>.Instance)
@@ -276,7 +296,7 @@ public sealed class CalendarWebhookIntakeIntegrationTests : IAsyncLifetime
             "the handler must derive tenant from the binding, never from the payload");
         tenant.WorkspaceId.Should().Be(workspaceId);
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         var receipt = await verify.InboundWebhookReceipts.IgnoreQueryFilters()
             .SingleAsync(r => r.Provider == Provider && r.ExternalEventId == externalEventId);
         receipt.ConnectionId.Should().Be(connectionId,
@@ -302,7 +322,7 @@ public sealed class CalendarWebhookIntakeIntegrationTests : IAsyncLifetime
         tenant.AccountId.Should().BeNull("an invalid signature must not derive any tenant");
         tenant.WorkspaceId.Should().BeNull();
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.InboundWebhookReceipts.IgnoreQueryFilters()
             .AnyAsync(r => r.Provider == Provider && r.ExternalEventId == externalEventId))
             .Should().BeFalse("untrusted callbacks must not create durable receipt rows");
@@ -372,7 +392,7 @@ public sealed class CalendarWebhookIntakeIntegrationTests : IAsyncLifetime
     {
         await SeedBindingAsync(WebhookPath);
         // Soft-delete the binding.
-        await using (var ctx = _db.CreateContext(SystemTenant()))
+        await using (var ctx = _db.CreateOwnerContext(SystemTenant()))
         {
             var binding = await ctx.CalendarIntegrations.IgnoreQueryFilters()
                 .SingleAsync(ci => ci.WebhookPath == WebhookPath);
@@ -405,7 +425,7 @@ public sealed class CalendarWebhookIntakeIntegrationTests : IAsyncLifetime
         var binding = CalendarIntegration.Create(
             accountId, workspaceId, connection.Id, WebhookPath,
             CalendarProvider.Outlook, CalendarSyncDirection.Pull, Guid.NewGuid(), Now);
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.IntegrationConnections.Add(connection);
         seed.CalendarIntegrations.Add(binding);
         await seed.SaveChangesAsync();
@@ -447,7 +467,7 @@ public sealed class CalendarWebhookIntakeIntegrationTests : IAsyncLifetime
             new HandleCalendarWebhookCommand(Provider, signature, timestamp, body, WebhookPath), CancellationToken.None))
             .Succeeded.Should().BeTrue("the intake is idempotent at the transport boundary");
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.InboundWebhookReceipts.IgnoreQueryFilters()
             .CountAsync(r => r.ExternalEventId == externalEventId && r.Status == "Captured"))
             .Should().Be(1, "exactly one non-terminal receipt survives the duplicate delivery");
@@ -475,7 +495,7 @@ public sealed class CalendarWebhookIntakeIntegrationTests : IAsyncLifetime
         results.Should().OnlyContain(r => r.Succeeded,
             "the loser of the claim race must not surface an error to the provider");
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.InboundWebhookReceipts.IgnoreQueryFilters()
             .CountAsync(r => r.ExternalEventId == externalEventId && r.Status == "Captured"))
             .Should().Be(1, "exactly one non-terminal receipt survives concurrent delivery");
@@ -499,7 +519,7 @@ public sealed class CalendarWebhookIntakeIntegrationTests : IAsyncLifetime
             new HandleCalendarWebhookCommand(Provider, sig2, ts2, body2, WebhookPath), CancellationToken.None))
             .Succeeded.Should().BeTrue("a distinct event on the same connection must be accepted");
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         var receipts = await verify.InboundWebhookReceipts.IgnoreQueryFilters()
             .Where(r => r.ConnectionId == connectionId && r.Status == "Captured")
             .ToListAsync();
@@ -539,7 +559,7 @@ public sealed class CalendarWebhookIntakeIntegrationTests : IAsyncLifetime
         tenantA.AccountId.Should().Be(accountA);
         tenantB.AccountId.Should().Be(accountB);
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         var receipts = await verify.InboundWebhookReceipts.IgnoreQueryFilters()
             .Where(r => r.ExternalEventId == sharedExternalEventId && r.Status == "Captured")
             .ToListAsync();
@@ -567,7 +587,7 @@ public sealed class CalendarWebhookIntakeIntegrationTests : IAsyncLifetime
         tenant.AccountId.Should().BeNull("a revoked connection must not derive any tenant");
         tenant.WorkspaceId.Should().BeNull();
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.InboundWebhookReceipts.IgnoreQueryFilters()
             .AnyAsync(r => r.ExternalEventId == externalEventId && (r.Status == "Processed" || r.Status == "Captured")))
             .Should().BeFalse("a revoked connection must produce no accepted receipt");

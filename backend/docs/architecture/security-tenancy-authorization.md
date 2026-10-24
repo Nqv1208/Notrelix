@@ -761,7 +761,10 @@ Background work (dispatchers, deduplication, consumers, sweeps, reapers, job loc
 serving process cannot claim the unbounded scope by setting a session value. API-token authentication enters
 a token scope with purpose `api-token`, bound to the token's own account and workspace; admin-driven grant
 writes, security-event writes and others' email and phone go through bounded owner-defined functions
-(section 34E).
+(section 34E). Every application table of every schema has forced RLS and a policy (the apply fails
+otherwise); tables without a tenant column inherit their parent's or owner's scope, the verified calendar
+webhook enters a `calendar-webhook` token-kind scope derived from its binding, and the integration test
+fleet runs hosts on the application login and background work on the worker login (section 34F).
 
 These are implementation evidence.
 

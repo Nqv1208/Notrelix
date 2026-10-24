@@ -51,7 +51,7 @@ public sealed class AcceptInvitationTransactionEvidenceTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -92,7 +92,7 @@ public sealed class AcceptInvitationTransactionEvidenceTests : IAsyncLifetime
             ownerId,
             FixedTime.AddDays(-1));
 
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Accounts.Add(account);
         seed.Users.Add(user);
         seed.Workspaces.Add(workspace);
@@ -108,7 +108,7 @@ public sealed class AcceptInvitationTransactionEvidenceTests : IAsyncLifetime
         AcceptInvitationCommandHandler Handler,
         Mock<ICurrentRequestContext> RequestContext) Create(Guid userId)
     {
-        var context = _db.CreateContext(SystemTenant());
+        var context = _db.CreateOwnerContext(SystemTenant());
         var session = new EfRequestDataSession(
             context,
             new RlsSessionContext(context, Options.Create(new RlsOptions()), SystemTenant()),
@@ -199,7 +199,7 @@ public sealed class AcceptInvitationTransactionEvidenceTests : IAsyncLifetime
     public async Task AcceptInvitation_FullHandlerGraphInOneComposition_EmitsExactlyOneMembershipOutboxFact()
     {
         var graph = await SeedInvitationAsync();
-        await using var context = _db.CreateContext(SystemTenant(), CreateOutboxInterceptor());
+        await using var context = _db.CreateOwnerContext(SystemTenant(), CreateOutboxInterceptor());
         var session = new EfRequestDataSession(
             context,
             new RlsSessionContext(context, Options.Create(new RlsOptions()), SystemTenant()),
@@ -229,7 +229,7 @@ public sealed class AcceptInvitationTransactionEvidenceTests : IAsyncLifetime
         var result = await RunInTransactionAsync(session, handler, graph.RawToken);
 
         result.Succeeded.Should().BeTrue();
-        using (var probe = _db.CreateContext(SystemTenant()))
+        using (var probe = _db.CreateOwnerContext(SystemTenant()))
         {
             var membershipEvents = await probe.Set<MessagingOutboxMessage>()
                 .IgnoreQueryFilters()
@@ -286,14 +286,14 @@ public sealed class AcceptInvitationTransactionEvidenceTests : IAsyncLifetime
     {
         var graph = await SeedInvitationAsync();
 
-        await using (var seed = _db.CreateContext(SystemTenant()))
+        await using (var seed = _db.CreateOwnerContext(SystemTenant()))
         {
             seed.WorkspaceMembers.Add(WorkspaceMember.Create(
                 graph.AccountId, graph.WorkspaceId, graph.UserId, WorkspaceRole.Member, graph.UserId, FixedTime));
             await seed.SaveChangesAsync();
         }
 
-        await using var context = _db.CreateContext(SystemTenant(), CreateOutboxInterceptor());
+        await using var context = _db.CreateOwnerContext(SystemTenant(), CreateOutboxInterceptor());
         var grantProjection = new WorkspaceGrantProjectionServiceAdapter(new AccessGrantProjectionService(context));
         var accountGrantProjection = new AccountGrantProjectionServiceAdapter(new AccessGrantProjectionService(context));
         var requestContext = new Mock<ICurrentRequestContext>();
@@ -323,7 +323,7 @@ public sealed class AcceptInvitationTransactionEvidenceTests : IAsyncLifetime
         (await context.WorkspaceInvitations.SingleAsync(i => i.Id == graph.InvitationId)).Status
             .Should().Be(WorkspaceInvitationStatus.Accepted);
 
-        using (var probe = _db.CreateContext(SystemTenant()))
+        using (var probe = _db.CreateOwnerContext(SystemTenant()))
         {
             var membershipEvents = await probe.Set<MessagingOutboxMessage>()
                 .IgnoreQueryFilters()
@@ -355,7 +355,7 @@ public sealed class AcceptInvitationTransactionEvidenceTests : IAsyncLifetime
 
     private async Task<string> WorkspaceSlugAsync(Guid workspaceId)
     {
-        await using var probe = _db.CreateContext(SystemTenant());
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
         return await probe.Workspaces.Where(w => w.Id == workspaceId).Select(w => w.Slug).SingleAsync();
     }
 }

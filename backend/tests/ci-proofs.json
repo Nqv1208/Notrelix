@@ -21,7 +21,8 @@
       "backend.architecture.feature-structure",
       "backend.architecture.owner-connection-boundary",
       "backend.architecture.rls-principal-scope",
-      "backend.architecture.internal-principals"
+      "backend.architecture.internal-principals",
+      "backend.architecture.integration-fleet-roles"
     ],
     "core": [
       "backend.data.rls-policy",
@@ -66,7 +67,9 @@
       "backend.rls.api-token-scope",
       "backend.rls.security-event-write",
       "backend.rls.admin-grant-write",
-      "backend.rls.member-disclosure"
+      "backend.rls.member-disclosure",
+      "backend.rls.policy-coverage",
+      "backend.rls.derived-scope-policy"
     ]
   },
   "proofs": {
@@ -353,6 +356,21 @@
     "backend.rls.owner-connection-split": {
       "tests": [
         "Notrelix.Integration.Tests.Rls.OwnerConnectionSplitIntegrationTests"
+      ]
+    },
+    "backend.rls.policy-coverage": {
+      "tests": [
+        "Notrelix.Integration.Tests.Rls.PolicyCoverageTests"
+      ]
+    },
+    "backend.rls.derived-scope-policy": {
+      "tests": [
+        "Notrelix.Integration.Tests.Rls.DerivedScopePolicyTests"
+      ]
+    },
+    "backend.architecture.integration-fleet-roles": {
+      "tests": [
+        "Notrelix.Architecture.Tests.IntegrationFleetRoleBoundaryTests"
       ]
     }
   }

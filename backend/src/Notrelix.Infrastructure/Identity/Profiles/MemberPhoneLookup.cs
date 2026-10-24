@@ -4,23 +4,21 @@ using Notrelix.Infrastructure.Data;
 namespace Notrelix.Infrastructure.Identity.Profiles;
 
 /// <summary>
-/// Phones people chose to share with the members of their Workspace. Under a host that sets database
-/// session context the read goes through the owner-defined <c>ops.shared_member_phones</c> function, which
+/// Phones people chose to share with the members of their Workspace. On PostgreSQL the
+/// read always goes through the owner-defined <c>ops.shared_member_phones</c> function, which
 /// applies the same rule the Application applies (reader and subject are active non-guest members of the
 /// Workspace, the subject opted in): another person's profile row is not readable by the application role.
-/// A host without session context reads the profile rows directly.
+/// Only a provider without that function (the in-memory test provider) reads the profile rows directly.
 /// </summary>
 public sealed class MemberPhoneLookup : IMemberPhoneLookup
 {
     private readonly IIdentityDbContext _context;
     private readonly ApplicationDbContext _database;
-    private readonly IRlsSessionContext _rls;
 
-    public MemberPhoneLookup(IIdentityDbContext context, ApplicationDbContext database, IRlsSessionContext rls)
+    public MemberPhoneLookup(IIdentityDbContext context, ApplicationDbContext database)
     {
         _context = context;
         _database = database;
-        _rls = rls;
     }
 
     public async Task<IReadOnlyDictionary<Guid, string>> FindSharedPhonesAsync(
@@ -31,7 +29,7 @@ public sealed class MemberPhoneLookup : IMemberPhoneLookup
             return new Dictionary<Guid, string>();
         }
 
-        if (_rls.IsSessionContextEnabled && _database.Database.IsNpgsql())
+        if (_database.Database.IsNpgsql())
         {
             var ids = userIds.Distinct().ToArray();
             var found = await _database.Database

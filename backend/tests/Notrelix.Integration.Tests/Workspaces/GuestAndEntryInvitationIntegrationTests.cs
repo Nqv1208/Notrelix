@@ -43,7 +43,7 @@ public sealed class GuestAndEntryInvitationIntegrationTests : IAsyncLifetime
 
     public GuestAndEntryInvitationIntegrationTests(PostgresTestContainer db) => _db = db;
 
-    public async Task InitializeAsync() => await new DatabaseReset(_db.ConnectionString).ResetAsync();
+    public async Task InitializeAsync() => await new DatabaseReset(_db.OwnerConnectionString).ResetAsync();
     public Task DisposeAsync() => Task.CompletedTask;
 
     private static ICurrentTenantContext SystemTenant()
@@ -70,7 +70,7 @@ public sealed class GuestAndEntryInvitationIntegrationTests : IAsyncLifetime
         var team = Team.Create(account.Id, ws.Id, "Design", ownerId, Now);
         var space = Space.Create(account.Id, ws.Id, "Client space", SpaceVisibility.Workspace, ownerId, Now);
 
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Accounts.Add(account);
         seed.Users.Add(user);
         seed.Workspaces.AddRange(ws, other);
@@ -87,7 +87,7 @@ public sealed class GuestAndEntryInvitationIntegrationTests : IAsyncLifetime
     {
         var issued = new OneTimeTokenService().Generate(TokenPurpose.WorkspaceInvitation);
         var invitation = factory(InvitationTokenHash.Create(issued.TokenHash), issued.HashVersion);
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.WorkspaceInvitations.Add(invitation);
         await seed.SaveChangesAsync();
         return issued.RawToken;
@@ -109,7 +109,7 @@ public sealed class GuestAndEntryInvitationIntegrationTests : IAsyncLifetime
     private async Task<(Result<AcceptInvitationResultDto> Result, bool Threw)> AcceptAsync(
         Guid userId, string rawToken, bool throwAfterHandler = false)
     {
-        await using var context = _db.CreateContext(SystemTenant());
+        await using var context = _db.CreateOwnerContext(SystemTenant());
         var session = new EfRequestDataSession(
             context,
             new RlsSessionContext(context, Options.Create(new RlsOptions()), SystemTenant()),
@@ -171,7 +171,7 @@ public sealed class GuestAndEntryInvitationIntegrationTests : IAsyncLifetime
         var (result, _) = await AcceptAsync(w.UserId, token);
 
         result.Succeeded.Should().BeTrue(string.Join(";", result.Errors));
-        await using var probe = _db.CreateContext(SystemTenant());
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
         (await probe.WorkspaceMembers.SingleAsync(m => m.WorkspaceId == w.WorkspaceId && m.UserId == w.UserId))
             .Role.Should().Be(WorkspaceRole.Guest, "guest is the membership fact the invitation names");
         (await probe.TeamMembers.CountAsync(m => m.TeamId == w.TeamId && m.UserId == w.UserId && m.Status == TeamMemberStatus.Active))
@@ -189,7 +189,7 @@ public sealed class GuestAndEntryInvitationIntegrationTests : IAsyncLifetime
         var (_, threw) = await AcceptAsync(w.UserId, token, throwAfterHandler: true);
 
         threw.Should().BeTrue();
-        await using var probe = _db.CreateContext(SystemTenant());
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
         (await probe.WorkspaceMembers.CountAsync(m => m.WorkspaceId == w.WorkspaceId && m.UserId == w.UserId)).Should().Be(0);
         (await probe.TeamMembers.CountAsync(m => m.TeamId == w.TeamId && m.UserId == w.UserId)).Should().Be(0);
         (await probe.SpaceMembers.CountAsync(m => m.SpaceId == w.SpaceId && m.SubjectId == w.UserId)).Should().Be(0);
@@ -202,7 +202,7 @@ public sealed class GuestAndEntryInvitationIntegrationTests : IAsyncLifetime
     {
         var w = await SeedWorldAsync();
         var token = await SeedWorkspaceInvitationAsync(w, WorkspaceRole.Member, Entries(w));
-        await using (var ctx = _db.CreateContext(SystemTenant()))
+        await using (var ctx = _db.CreateOwnerContext(SystemTenant()))
         {
             var team = await ctx.Teams.SingleAsync(t => t.Id == w.TeamId);
             team.Delete(w.OwnerId, Now);
@@ -213,7 +213,7 @@ public sealed class GuestAndEntryInvitationIntegrationTests : IAsyncLifetime
 
         result.Succeeded.Should().BeFalse();
         result.Errors.Should().ContainMatch("*no longer available*");
-        await using var probe = _db.CreateContext(SystemTenant());
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
         (await probe.WorkspaceMembers.CountAsync(m => m.WorkspaceId == w.WorkspaceId && m.UserId == w.UserId)).Should().Be(0);
         (await probe.SpaceMembers.CountAsync(m => m.SpaceId == w.SpaceId && m.SubjectId == w.UserId)).Should().Be(0);
         (await probe.WorkspaceInvitations.SingleAsync(i => i.WorkspaceId == w.WorkspaceId)).Status
@@ -231,7 +231,7 @@ public sealed class GuestAndEntryInvitationIntegrationTests : IAsyncLifetime
         var (result, _) = await AcceptAsync(w.UserId, token);
 
         result.Succeeded.Should().BeTrue(string.Join(";", result.Errors));
-        await using var probe = _db.CreateContext(SystemTenant());
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
         (await probe.WorkspaceMembers.SingleAsync(m => m.WorkspaceId == w.WorkspaceId && m.UserId == w.UserId))
             .Role.Should().Be(WorkspaceRole.Guest, "a resource invitation never creates a member");
         var entry = await probe.ResourcePermissions.SingleAsync(p => p.ResourceId == w.BoardId);
@@ -254,7 +254,7 @@ public sealed class GuestAndEntryInvitationIntegrationTests : IAsyncLifetime
         var (result, _) = await AcceptAsync(w.UserId, second);
 
         result.Succeeded.Should().BeTrue(string.Join(";", result.Errors));
-        await using var probe = _db.CreateContext(SystemTenant());
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
         (await probe.WorkspaceMembers.CountAsync(m => m.WorkspaceId == w.WorkspaceId && m.UserId == w.UserId)).Should().Be(1);
         (await probe.ResourcePermissions.Where(p => p.ResourceId == w.BoardId).ToListAsync())
             .Should().ContainSingle().Which.Level.Should().Be(PermissionLevel.Editor);
@@ -270,7 +270,7 @@ public sealed class GuestAndEntryInvitationIntegrationTests : IAsyncLifetime
 
         result.Succeeded.Should().BeFalse("cross-tenant resource is unavailable");
         result.Errors.Should().ContainMatch("*no longer available*");
-        await using var probe = _db.CreateContext(SystemTenant());
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
         (await probe.ResourcePermissions.CountAsync()).Should().Be(0);
         (await probe.WorkspaceMembers.CountAsync(m => m.UserId == w.UserId)).Should().Be(0);
     }
@@ -284,7 +284,7 @@ public sealed class GuestAndEntryInvitationIntegrationTests : IAsyncLifetime
         var (_, threw) = await AcceptAsync(w.UserId, token, throwAfterHandler: true);
 
         threw.Should().BeTrue();
-        await using var probe = _db.CreateContext(SystemTenant());
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
         (await probe.ResourcePermissions.CountAsync()).Should().Be(0);
         (await probe.WorkspaceMembers.CountAsync(m => m.UserId == w.UserId)).Should().Be(0);
     }
@@ -294,7 +294,7 @@ public sealed class GuestAndEntryInvitationIntegrationTests : IAsyncLifetime
     {
         var w = await SeedWorldAsync();
         await SeedResourceInvitationAsync(w, w.BoardId, "Viewer");
-        await using var ctx = _db.CreateContext(SystemTenant());
+        await using var ctx = _db.CreateOwnerContext(SystemTenant());
 
         var tooHigh = async () => await ctx.Database.ExecuteSqlRawAsync(
             "UPDATE workspace.workspace_invitations SET resource_level = 'Manager'");
@@ -317,7 +317,7 @@ public sealed class GuestAndEntryInvitationIntegrationTests : IAsyncLifetime
 
         result.Succeeded.Should().BeFalse();
         result.Errors.Should().ContainMatch("*different email*");
-        await using var probe = _db.CreateContext(SystemTenant());
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
         (await probe.ResourcePermissions.CountAsync()).Should().Be(0);
         (await probe.WorkspaceMembers.CountAsync(m => m.UserId == w.UserId)).Should().Be(0);
     }
@@ -332,7 +332,7 @@ public sealed class GuestAndEntryInvitationIntegrationTests : IAsyncLifetime
 
         result.Succeeded.Should().BeFalse();
         result.Errors.Should().ContainMatch("*expired*");
-        await using var probe = _db.CreateContext(SystemTenant());
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
         (await probe.WorkspaceMembers.CountAsync(m => m.UserId == w.UserId)).Should().Be(0);
         (await probe.TeamMembers.CountAsync(m => m.UserId == w.UserId)).Should().Be(0);
     }
@@ -348,7 +348,7 @@ public sealed class GuestAndEntryInvitationIntegrationTests : IAsyncLifetime
 
         second.Succeeded.Should().BeFalse("an invitation token is single use");
         second.Errors.Should().ContainMatch("*no longer valid*");
-        await using var probe = _db.CreateContext(SystemTenant());
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
         (await probe.ResourcePermissions.CountAsync()).Should().Be(1);
     }
 }

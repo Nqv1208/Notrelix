@@ -115,26 +115,21 @@ public sealed class ProductionGraphTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Production_host_fails_when_database_is_unreachable()
+    public void Production_host_fails_when_database_is_unreachable()
     {
-        // Production forbids startup migration (explicit --migrate command mode),
-        // so an unreachable database is surfaced at request time: the first
-        // data-session query against it must fail.
+        // Production forbids startup migration (explicit --migrate command mode), but an enforcing database
+        // role guard connects as both database logins when the host starts: a host whose database is
+        // unreachable never begins serving.
         using var factory = CreateFactory(config =>
-            config["ConnectionStrings:NotrelixDb"] =
-                "Host=127.0.0.1;Port=9;Database=missing;Username=x;Password=y");
-        using var client = factory.CreateClient();
-        using var scope = factory.Services.CreateScope();
+            {
+                config["ConnectionStrings:NotrelixDb"] =
+                    "Host=127.0.0.1;Port=9;Database=missing;Username=x;Password=y";
+                config["Rls:RoleEnforcement"] = "Enforce";
+            });
 
-        var session = scope.ServiceProvider.GetRequiredService<IRequestDataSession>();
-        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var act = async () => await session.ExecuteAsync(
-            new RequestDataSessionOptions(RequestDataAccess.ReadOnly, false, false),
-            _ => context.Database.ExecuteSqlRawAsync("SELECT 1"),
-            CancellationToken.None);
+        var start = () => factory.CreateClient();
 
-        await act.Should().ThrowAsync<Exception>(
-            "the database is mandatory in production");
+        start.Should().Throw<Exception>("the database is mandatory in production");
     }
 
     [Fact]
@@ -201,6 +196,7 @@ public sealed class ProductionGraphTests : IAsyncLifetime
         var baseConfig = new Dictionary<string, string?>
         {
             ["ConnectionStrings:NotrelixDb"] = _fixture.PostgresConnectionString,
+            ["ConnectionStrings:NotrelixWorkerDb"] = _fixture.PostgresWorkerConnectionString,
             ["ConnectionStrings:Redis"] = _fixture.RedisConnectionString,
             ["JwtSettings:SecretKey"] = "production-graph-test-signing-key-ThisIsNotASecret-0123456789",
             ["JwtSettings:Issuer"] = "https://notrelix.test",

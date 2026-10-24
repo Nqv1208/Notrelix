@@ -28,7 +28,7 @@ public class CompleteOAuthLoginCommandHandlerTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -89,7 +89,7 @@ public class CompleteOAuthLoginCommandHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_WhenErrorReturned_ShouldReturnFailure()
     {
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateOwnerContext();
         var mocks = CreateMocks();
         var handler = CreateHandler(mocks.StateStore, mocks.ProviderClient, mocks.OptionsProvider,
             mocks.SessionIssuer, mocks.PasswordHasher, mocks.DateTimeProvider, mocks.EventCollector, context);
@@ -112,7 +112,7 @@ public class CompleteOAuthLoginCommandHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_WhenStateInvalid_ShouldReturnFailure()
     {
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateOwnerContext();
         var mocks = CreateMocks();
         mocks.StateStore.Setup(x => x.ConsumeAsync("bad-state", It.IsAny<CancellationToken>()))
             .ReturnsAsync((OAuthLoginState?)null);
@@ -135,7 +135,7 @@ public class CompleteOAuthLoginCommandHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_WhenProviderMismatch_ShouldReturnFailure()
     {
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateOwnerContext();
         var mocks = CreateMocks();
         var mismatchedState = ValidState with { Provider = OAuthProvider.Apple };
         mocks.StateStore.Setup(x => x.ConsumeAsync("test-state", It.IsAny<CancellationToken>()))
@@ -159,7 +159,7 @@ public class CompleteOAuthLoginCommandHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_WhenCodeRedemptionFails_ShouldReturnFailure()
     {
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateOwnerContext();
         var mocks = CreateMocks();
         mocks.StateStore.Setup(x => x.ConsumeAsync("test-state", It.IsAny<CancellationToken>()))
             .ReturnsAsync(ValidState);
@@ -184,7 +184,7 @@ public class CompleteOAuthLoginCommandHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_WhenOAuthAccountExists_ShouldLoginExistingLinkedAccount()
     {
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateOwnerContext();
         var now = DateTimeOffset.UtcNow;
 
         var user = User.Create("oauth-linked@example.com", "OAuth User", "hashed", now, hasPasswordCredential: true);
@@ -227,7 +227,7 @@ public class CompleteOAuthLoginCommandHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_WhenSuspendedUserHasOAuthAccount_ShouldReturnFailure()
     {
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateOwnerContext();
         var now = DateTimeOffset.UtcNow;
 
         var user = User.Create("suspended@example.com", "Suspended User", "hashed", now, hasPasswordCredential: true);
@@ -263,7 +263,7 @@ public class CompleteOAuthLoginCommandHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_WhenUserExistsWithVerifiedEmail_ShouldRejectInsteadOfAutoLinking()
     {
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateOwnerContext();
         var now = DateTimeOffset.UtcNow;
 
         var user = User.Create("existing@example.com", "Existing User", "hashed", now, hasPasswordCredential: true);
@@ -303,7 +303,7 @@ public class CompleteOAuthLoginCommandHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_WhenEmailNotVerified_ShouldReturnFailure()
     {
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateOwnerContext();
         var mocks = CreateMocks();
         mocks.StateStore.Setup(x => x.ConsumeAsync("test-state", It.IsAny<CancellationToken>()))
             .ReturnsAsync(ValidState);
@@ -330,7 +330,7 @@ public class CompleteOAuthLoginCommandHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_WhenNoExistingUser_ShouldCreateNewUserAndAccount()
     {
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateOwnerContext();
         var now = DateTimeOffset.UtcNow;
 
         var mocks = CreateMocks();
@@ -389,7 +389,7 @@ public class CompleteOAuthLoginCommandHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_WhenProvisioningFails_DoesNotEmitRegistrationCompleted()
     {
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateOwnerContext();
         var now = DateTimeOffset.UtcNow;
 
         var mocks = CreateMocks();
@@ -424,7 +424,7 @@ public class CompleteOAuthLoginCommandHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_GitHubProvider_WithNullCodeVerifier_ShouldCreateNewUser()
     {
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateOwnerContext();
         var now = DateTimeOffset.UtcNow;
 
         var gitHubState = new OAuthLoginState(

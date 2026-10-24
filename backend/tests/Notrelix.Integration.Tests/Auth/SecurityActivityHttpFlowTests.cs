@@ -58,7 +58,7 @@ public sealed class SecurityActivityHttpFlowTests : IAsyncLifetime
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
-        return _fixture.CreatePostgresContext(tenant);
+        return _fixture.CreatePostgresOwnerContext(tenant);
     }
 
     private WebApplicationFactory<Program> CreateFactory() =>
@@ -80,6 +80,7 @@ public sealed class SecurityActivityHttpFlowTests : IAsyncLifetime
             var settings = new Dictionary<string, string?>
             {
                 ["ConnectionStrings:NotrelixDb"] = _fixture.PostgresConnectionString,
+                ["ConnectionStrings:NotrelixWorkerDb"] = _fixture.PostgresWorkerConnectionString,
                 ["ConnectionStrings:Redis"] = _fixture.RedisConnectionString,
                 ["JwtSettings:SecretKey"] = "activity-http-test-signing-key-ThisIsNotASecret-0123456789",
                 ["JwtSettings:Issuer"] = "https://notrelix.test",

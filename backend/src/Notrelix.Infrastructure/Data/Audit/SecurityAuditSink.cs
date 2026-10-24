@@ -21,10 +21,10 @@ public interface ISecurityAuditSink
 /// is never reused: it is closed by the time the middleware sees the status code, and sharing it
 /// would either lose the event (no save) or reopen the request's transaction model. The event has
 /// no tenant (anonymous and pre-authentication failures are common), which no tenant-scoped policy
-/// admits, so under a host that sets database session context the row is written through the
+/// admits, so on PostgreSQL the row is always written through the
 /// owner-defined insert-only <c>ops.record_security_event</c> function: no system scope, no read, and the
 /// actor and tenant of the row are derived from the scope the sink enters (the user of the request, or
-/// none), never taken from the caller. A host that sets no session context has no policy to satisfy and
+/// none), never taken from the caller. Only a provider without that function (the in-memory test provider)
 /// inserts the row directly.
 /// </summary>
 /// <remarks>
@@ -52,7 +52,7 @@ public sealed class SecurityAuditSink : ISecurityAuditSink
 
             await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
 
-            if (rls.IsSessionContextEnabled)
+            if (context.Database.IsNpgsql())
             {
                 if (securityEvent.UserId is { } userId && userId != Guid.Empty)
                 {

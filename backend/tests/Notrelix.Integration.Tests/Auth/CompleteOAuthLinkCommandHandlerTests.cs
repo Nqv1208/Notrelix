@@ -23,7 +23,7 @@ public class CompleteOAuthLinkCommandHandlerTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -88,7 +88,7 @@ public class CompleteOAuthLinkCommandHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_WhenErrorReturned_ShouldReturnFailure()
     {
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateOwnerContext();
         var mocks = CreateMocks();
         var handler = CreateHandler(mocks.StateStore, mocks.ProviderClient, mocks.OptionsProvider,
             mocks.DateTimeProvider, context, Guid.NewGuid());
@@ -102,7 +102,7 @@ public class CompleteOAuthLinkCommandHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_WhenStateInvalid_ShouldReturnFailure()
     {
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateOwnerContext();
         var mocks = CreateMocks();
         mocks.StateStore.Setup(x => x.ConsumeAsync("link-state", It.IsAny<CancellationToken>()))
             .ReturnsAsync((OAuthLoginState?)null);
@@ -118,7 +118,7 @@ public class CompleteOAuthLinkCommandHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_WhenStateBoundToLoginFlow_ShouldReturnFailure()
     {
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateOwnerContext();
         var currentUserId = Guid.NewGuid();
         var mocks = CreateMocks();
         var loginState = new OAuthLoginState(
@@ -139,7 +139,7 @@ public class CompleteOAuthLinkCommandHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_WhenStateBoundToAnotherUser_ShouldReturnFailure()
     {
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateOwnerContext();
         var mocks = CreateMocks();
         mocks.StateStore.Setup(x => x.ConsumeAsync("link-state", It.IsAny<CancellationToken>()))
             .ReturnsAsync(LinkState(Guid.NewGuid()));
@@ -155,7 +155,7 @@ public class CompleteOAuthLinkCommandHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_WhenProviderMismatch_ShouldReturnFailure()
     {
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateOwnerContext();
         var currentUserId = Guid.NewGuid();
         var mocks = CreateMocks();
         var mismatchedState = LinkState(currentUserId) with { Provider = OAuthProvider.Apple };
@@ -173,7 +173,7 @@ public class CompleteOAuthLinkCommandHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_WhenCodeRedemptionFails_ShouldReturnFailure()
     {
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateOwnerContext();
         var currentUserId = Guid.NewGuid();
         var mocks = CreateMocks();
         mocks.StateStore.Setup(x => x.ConsumeAsync("link-state", It.IsAny<CancellationToken>()))
@@ -192,7 +192,7 @@ public class CompleteOAuthLinkCommandHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_WhenUserNotFound_ShouldReturnFailure()
     {
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateOwnerContext();
         var currentUserId = Guid.NewGuid();
         var mocks = CreateMocks();
         mocks.StateStore.Setup(x => x.ConsumeAsync("link-state", It.IsAny<CancellationToken>()))
@@ -214,7 +214,7 @@ public class CompleteOAuthLinkCommandHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_WhenSuspendedUser_ShouldReturnFailure()
     {
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateOwnerContext();
         var now = DateTimeOffset.UtcNow;
         var user = User.Create("suspended-link@example.com", "Suspended", "hashed", now, hasPasswordCredential: true);
         user.Suspend(Guid.NewGuid(), now, "Testing");
@@ -241,7 +241,7 @@ public class CompleteOAuthLinkCommandHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_WhenProviderSubjectFree_ShouldLinkToCurrentUser()
     {
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateOwnerContext();
         var now = DateTimeOffset.UtcNow;
         var user = User.Create("link-target@example.com", "Link Target", "hashed", now, hasPasswordCredential: true);
         context.Users.Add(user);
@@ -275,7 +275,7 @@ public class CompleteOAuthLinkCommandHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_WhenProviderAlreadyLinkedToSelf_ShouldReturnAlreadyLinkedNoOp()
     {
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateOwnerContext();
         var now = DateTimeOffset.UtcNow;
         var user = User.Create("self-linked@example.com", "Self Linked", "hashed", now, hasPasswordCredential: true);
         user.LinkOAuthAccount(OAuthProvider.Google, "google-sub-self",
@@ -308,7 +308,7 @@ public class CompleteOAuthLinkCommandHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_WhenProviderSubjectLinkedToAnotherUser_ShouldReturnConflict()
     {
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateOwnerContext();
         var now = DateTimeOffset.UtcNow;
         var otherUser = User.Create("other@example.com", "Other User", "hashed", now, hasPasswordCredential: true);
         otherUser.LinkOAuthAccount(OAuthProvider.Google, "google-sub-taken",

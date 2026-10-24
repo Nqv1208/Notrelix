@@ -39,7 +39,7 @@ public sealed class WorkspacePlacementProjectionIntegrationTests : IAsyncLifetim
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -55,7 +55,7 @@ public sealed class WorkspacePlacementProjectionIntegrationTests : IAsyncLifetim
     private (ApplicationDbContext Context, WorkspaceWorkItemPlacementService Service) CreateService(
         IWorkItemProjectionSourceAdapter? source = null)
     {
-        var context = _db.CreateContext(SystemTenant());
+        var context = _db.CreateOwnerContext(SystemTenant());
         return (context, new WorkspaceWorkItemPlacementService(context, source ?? new StubProjectionSource()));
     }
 
@@ -163,7 +163,7 @@ public sealed class WorkspacePlacementProjectionIntegrationTests : IAsyncLifetim
         var group = Domain.WorkManagement.BoardGroups.BoardGroup.Create(accountId, workspace.Id, board.Id, "Todo", Domain.SharedKernel.Color.Create("#808080"), Domain.SharedKernel.Ordering.FractionalIndex.Initial(), ownerId, Now);
         var item = Domain.WorkManagement.Items.BoardItem.CreateRoot(accountId, workspace.Id, board.Id, group.Id, "Task", Domain.SharedKernel.Ordering.FractionalIndex.Initial(), ownerId, Now);
 
-        await using (var seed = _db.CreateContext(SystemTenant()))
+        await using (var seed = _db.CreateOwnerContext(SystemTenant()))
         {
             seed.Workspaces.Add(workspace);
             seed.Boards.Add(board);
@@ -181,7 +181,7 @@ public sealed class WorkspacePlacementProjectionIntegrationTests : IAsyncLifetim
         // Rebuild from the producer-owned snapshot contract. The item exists in
         // the snapshot, so no per-row revalidation lookup occurs.
         var source = new StubProjectionSource(
-            await new WorkItemProjectionSourceService(_db.CreateContext(SystemTenant()))
+            await new WorkItemProjectionSourceService(_db.CreateOwnerContext(SystemTenant()))
                 .GetWorkspacePlacementsAsync(workspace.Id, CancellationToken.None));
         var (rebuildContext, rebuildService) = CreateService(source);
         await rebuildService.RebuildWorkspaceAsync(workspace.Id, source.WorkspaceSnapshots, CancellationToken.None);
@@ -520,7 +520,7 @@ public sealed class WorkspacePlacementProjectionIntegrationTests : IAsyncLifetim
         var realGroup = Domain.WorkManagement.BoardGroups.BoardGroup.Create(accountId, workspace.Id, board.Id, "Real", Domain.SharedKernel.Color.Create("#808080"), Domain.SharedKernel.Ordering.FractionalIndex.Initial(), ownerId, Now);
         var item = Domain.WorkManagement.Items.BoardItem.CreateRoot(accountId, workspace.Id, board.Id, realGroup.Id, "Task", Domain.SharedKernel.Ordering.FractionalIndex.Initial(), ownerId, Now);
 
-        await using (var seed = _db.CreateContext(SystemTenant()))
+        await using (var seed = _db.CreateOwnerContext(SystemTenant()))
         {
             seed.Workspaces.Add(workspace);
             seed.Boards.Add(board);
@@ -548,7 +548,7 @@ public sealed class WorkspacePlacementProjectionIntegrationTests : IAsyncLifetim
         var row = await context.WorkspaceWorkItemPlacements.SingleAsync(p => p.WorkspaceId == workspace.Id && p.ItemId == item.Id);
         row.GroupId.Should().Be(fakeGroup, "Analytics consumes whatever the producer contract reports — the producer implementation is replaceable");
 
-        await using var probe = _db.CreateContext(SystemTenant());
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
         var workItem = await probe.BoardItems.SingleAsync(i => i.Id == item.Id);
         workItem.GroupId.Should().Be(realGroup.Id, "the substitution must not touch the real Work producer state");
     }
@@ -596,7 +596,7 @@ public sealed class WorkspacePlacementProjectionIntegrationTests : IAsyncLifetim
         var groupB = Domain.WorkManagement.BoardGroups.BoardGroup.Create(accountId, workspace.Id, board.Id, "B", Domain.SharedKernel.Color.Create("#00FF00"), Domain.SharedKernel.Ordering.FractionalIndex.Create("a1"), ownerId, Now);
         var item = Domain.WorkManagement.Items.BoardItem.CreateRoot(accountId, workspace.Id, board.Id, groupA.Id, "Task", Domain.SharedKernel.Ordering.FractionalIndex.Initial(), ownerId, Now);
 
-        await using (var seed = _db.CreateContext(SystemTenant()))
+        await using (var seed = _db.CreateOwnerContext(SystemTenant()))
         {
             seed.Workspaces.Add(workspace);
             seed.Boards.Add(board);
@@ -609,7 +609,7 @@ public sealed class WorkspacePlacementProjectionIntegrationTests : IAsyncLifetim
         // The producer-owned snapshot flows through the published contract,
         // implemented against the Work producer's own DbContext.
         IWorkItemProjectionSource producerSource =
-            new WorkItemProjectionSourceService(_db.CreateContext(SystemTenant()));
+            new WorkItemProjectionSourceService(_db.CreateOwnerContext(SystemTenant()));
         var snapshot = await producerSource.GetWorkspacePlacementsAsync(workspace.Id, CancellationToken.None);
 
         snapshot.Should().ContainSingle(s => s.ItemId == item.Id);

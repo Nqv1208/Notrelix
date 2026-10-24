@@ -29,7 +29,7 @@ public sealed class OutboxAtomicityTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_fixture.ConnectionString);
+        _reset = new DatabaseReset(_fixture.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -79,7 +79,7 @@ public sealed class OutboxAtomicityTests : IAsyncLifetime
 
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
-        await using var context = _fixture.CreateContext(tenant, CreateInterceptor(collector, now));
+        await using var context = _fixture.CreateOwnerContext(tenant, CreateInterceptor(collector, now));
 
         context.Workspaces.Add(Workspace.Create(
             Guid.NewGuid(), ActorUserId, "Atomic Workspace", "atomic-workspace", now));
@@ -103,7 +103,7 @@ public sealed class OutboxAtomicityTests : IAsyncLifetime
 
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
-        await using var context = _fixture.CreateContext(tenant, CreateInterceptor(collector, now));
+        await using var context = _fixture.CreateOwnerContext(tenant, CreateInterceptor(collector, now));
 
         await using var transaction = await context.Database.BeginTransactionAsync();
         context.Workspaces.Add(Workspace.Create(
@@ -127,7 +127,7 @@ public sealed class OutboxAtomicityTests : IAsyncLifetime
 
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
-        await using var context = _fixture.CreateContext(tenant, CreateInterceptor(collector, now));
+        await using var context = _fixture.CreateOwnerContext(tenant, CreateInterceptor(collector, now));
 
         context.Workspaces.Add(Workspace.Create(
             Guid.NewGuid(), ActorUserId, "Failing Workspace", "failing-workspace", now));

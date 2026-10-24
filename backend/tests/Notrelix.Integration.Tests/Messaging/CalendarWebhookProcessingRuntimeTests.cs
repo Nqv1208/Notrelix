@@ -55,7 +55,7 @@ public sealed class CalendarWebhookProcessingRuntimeTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -99,7 +99,7 @@ public sealed class CalendarWebhookProcessingRuntimeTests : IAsyncLifetime
         // 2. Durable bootstrap state: one Captured (non-terminal) claim and
         //    exactly one outbox row with the authoritative tenant envelope.
         {
-            await using var probe = _db.CreateContext(SystemTenant());
+            await using var probe = _db.CreateOwnerContext(SystemTenant());
             var outbox = await probe.Set<MessagingOutboxMessage>().IgnoreQueryFilters()
                 .SingleAsync(m => m.MessageName == "integrations.calendar-webhook-processing-requested"
                                && m.WorkspaceId == workspaceId);
@@ -139,7 +139,7 @@ public sealed class CalendarWebhookProcessingRuntimeTests : IAsyncLifetime
             (await OutboxRowCountAsync(accountId, workspaceId)).Should().Be(1,
                 "exactly one processing enrollment per callback");
 
-            await using var final = _db.CreateContext(SystemTenant());
+            await using var final = _db.CreateOwnerContext(SystemTenant());
             var terminal = await final.InboundWebhookReceipts.IgnoreQueryFilters()
                 .SingleAsync(r => r.Id == receiptId);
             terminal.Status.Should().Be("Processed");
@@ -203,7 +203,7 @@ public sealed class CalendarWebhookProcessingRuntimeTests : IAsyncLifetime
         }
 
         {
-            await using var probe = _db.CreateContext(SystemTenant());
+            await using var probe = _db.CreateOwnerContext(SystemTenant());
             var receipt = await probe.InboundWebhookReceipts.IgnoreQueryFilters()
                 .SingleAsync(r => r.Provider == Provider && r.ExternalEventId == externalEventId);
             receipt.Status.Should().Be("Captured",
@@ -234,7 +234,7 @@ public sealed class CalendarWebhookProcessingRuntimeTests : IAsyncLifetime
                 "the consumer must reach the single durable target reconciliation. Snapshot: {0}",
                 processed.Snapshot);
 
-            await using var final = _db.CreateContext(SystemTenant());
+            await using var final = _db.CreateOwnerContext(SystemTenant());
             (await final.InboundWebhookReceipts.IgnoreQueryFilters()
                 .CountAsync(r => r.ExternalEventId == externalEventId)).Should().Be(1,
                 "no duplicate receipt is created by a redelivered callback");
@@ -261,7 +261,7 @@ public sealed class CalendarWebhookProcessingRuntimeTests : IAsyncLifetime
     public async Task ProcessingUseCase_RejectsMalformedPayload_AsTerminalFailure()
     {
         var (connectionId, _, workspaceId) = await SeedBindingAsync(WebhookPath);
-        await using var db = _db.CreateContext(SystemTenant());
+        await using var db = _db.CreateOwnerContext(SystemTenant());
         var useCase = new CalendarWebhookProcessingUseCase(db);
 
         var outcome = await useCase.ProcessAsync(
@@ -289,7 +289,7 @@ public sealed class CalendarWebhookProcessingRuntimeTests : IAsyncLifetime
         var tenant = new FakeCurrentTenantContext();
         tenant.SetWorkspace(accountId, workspaceId, Guid.NewGuid());
 
-        await using var db = _db.CreateContext(tenant);
+        await using var db = _db.CreateOwnerContext(tenant);
         var outcome = await new CalendarWebhookProcessingUseCase(db).ProcessAsync(
             new CalendarWebhookProcessingInput(
                 Guid.NewGuid(),
@@ -314,7 +314,7 @@ public sealed class CalendarWebhookProcessingRuntimeTests : IAsyncLifetime
         var conflictingTargetId = Guid.NewGuid();
         var resourceKind = ResourceKind.Create("work-management.board-item");
 
-        await using (var seed = _db.CreateContext(SystemTenant()))
+        await using (var seed = _db.CreateOwnerContext(SystemTenant()))
         {
             var integration = await seed.CalendarIntegrations
                 .IgnoreQueryFilters()
@@ -336,7 +336,7 @@ public sealed class CalendarWebhookProcessingRuntimeTests : IAsyncLifetime
             resourceId = conflictingTargetId,
         });
 
-        await using var db = _db.CreateContext(SystemTenant());
+        await using var db = _db.CreateOwnerContext(SystemTenant());
         var outcome = await new CalendarWebhookProcessingUseCase(db).ProcessAsync(
             new CalendarWebhookProcessingInput(
                 Guid.NewGuid(),
@@ -363,6 +363,7 @@ public sealed class CalendarWebhookProcessingRuntimeTests : IAsyncLifetime
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["ConnectionStrings:NotrelixDb"] = _db.ConnectionString,
+                ["ConnectionStrings:NotrelixWorkerDb"] = _db.WorkerConnectionString,
                 ["Messaging:Transport"] = "InMemory",
                 // Each runtime test provider owns an in-memory bus. A unique
                 // endpoint namespace prevents parallel integration tests from
@@ -479,7 +480,7 @@ public sealed class CalendarWebhookProcessingRuntimeTests : IAsyncLifetime
         var binding = CalendarIntegration.Create(
             accountId, workspaceId, connection.Id, webhookPath,
             CalendarProvider.Google, CalendarSyncDirection.Pull, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.IntegrationConnections.Add(connection);
         seed.CalendarIntegrations.Add(binding);
         await seed.SaveChangesAsync();
@@ -508,7 +509,7 @@ public sealed class CalendarWebhookProcessingRuntimeTests : IAsyncLifetime
 
     private async Task<long> OutboxRowCountAsync(Guid accountId, Guid workspaceId)
     {
-        await using var probe = _db.CreateContext(SystemTenant());
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
         return await probe.Set<MessagingOutboxMessage>().IgnoreQueryFilters()
             .CountAsync(m => m.MessageName == "integrations.calendar-webhook-processing-requested"
                           && m.AccountId == accountId
@@ -519,7 +520,7 @@ public sealed class CalendarWebhookProcessingRuntimeTests : IAsyncLifetime
     {
         return await WaitForAsync(async () =>
         {
-            await using var probe = _db.CreateContext(SystemTenant());
+            await using var probe = _db.CreateOwnerContext(SystemTenant());
             return await probe.Set<MessagingOutboxMessage>().IgnoreQueryFilters()
                 .AnyAsync(m => m.Id == outboxId && m.Status == "Processed");
         });
@@ -534,7 +535,7 @@ public sealed class CalendarWebhookProcessingRuntimeTests : IAsyncLifetime
     {
         var reached = await WaitForAsync(async () =>
         {
-            await using var probe = _db.CreateContext(SystemTenant());
+            await using var probe = _db.CreateOwnerContext(SystemTenant());
             var receipt = await probe.InboundWebhookReceipts.IgnoreQueryFilters()
                 .FirstOrDefaultAsync(r => r.Id == receiptId);
             return receipt?.Status == status;
@@ -553,7 +554,7 @@ public sealed class CalendarWebhookProcessingRuntimeTests : IAsyncLifetime
         RuntimeTransportObservation transport,
         TenantObservationRecorder recorder)
     {
-        await using var probe = _db.CreateContext(SystemTenant());
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
         var receipt = await probe.InboundWebhookReceipts.IgnoreQueryFilters()
             .SingleOrDefaultAsync(r => r.Id == receiptId);
         var outbox = await probe.Set<MessagingOutboxMessage>().IgnoreQueryFilters()

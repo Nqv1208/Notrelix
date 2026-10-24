@@ -43,7 +43,7 @@ public sealed class OnboardingIntegrationTests : IAsyncLifetime
         _host = new OrgTreeTestHost(db);
     }
 
-    public async Task InitializeAsync() => await new DatabaseReset(_db.ConnectionString).ResetAsync();
+    public async Task InitializeAsync() => await new DatabaseReset(_db.OwnerConnectionString).ResetAsync();
 
     public Task DisposeAsync() => Task.CompletedTask;
 

@@ -69,7 +69,7 @@ public sealed class OwnerConnectionSplitIntegrationTests
     {
         using var refused = Host(_fixture.OwnerConnectionString, owner: null, enforcement: "Enforce");
         FluentActions.Invoking(() => refused.CreateClient())
-            .Should().Throw<InvalidOperationException>().Which.Message.Should().Contain("not constrained by row-level security");
+            .Should().Throw<InvalidOperationException>().Which.Message.Should().Contain("is a superuser");
 
         using var accepted = Host(_fixture.AppConnectionString, _fixture.OwnerConnectionString, enforcement: "Enforce");
         using var client = accepted.CreateClient();

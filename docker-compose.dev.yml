@@ -99,6 +99,8 @@ services:
       ConnectionStrings__NotrelixDb: >-
         Host=postgres;Port=5432;Database=${POSTGRES_DB:-notrelix_dev};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD}
       ConnectionStrings__Redis: redis:6379,password=${REDIS_PASSWORD}
+      # Interim: the stack still connects as one privileged login; the application and worker logins replace this.
+      Rls__RoleEnforcement: Warn
       Database__MigrateOnStartup: "true"
       SeedData__Enabled: "true"
       SeedData__RunOnStartup: "true"

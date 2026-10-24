@@ -50,7 +50,7 @@ public sealed class AutomationWorkEventRuntimeChainIntegrationTests : IAsyncLife
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -85,7 +85,7 @@ public sealed class AutomationWorkEventRuntimeChainIntegrationTests : IAsyncLife
         var rule = AutomationRule.Create(accountId, workspace.Id, "Chain rule", config, ownerId, now);
         rule.Enable(ownerId, now);
 
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Workspaces.Add(workspace);
         seed.WorkspaceMembers.Add(WorkspaceMember.Create(
             accountId, workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, now));
@@ -195,6 +195,7 @@ public sealed class AutomationWorkEventRuntimeChainIntegrationTests : IAsyncLife
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["ConnectionStrings:NotrelixDb"] = _db.ConnectionString,
+                ["ConnectionStrings:NotrelixWorkerDb"] = _db.WorkerConnectionString,
                 ["ConnectionStrings:Redis"] = "localhost:6379,abortConnect=false",
                 ["Messaging:Transport"] = "InMemory",
                 ["Rls:Enabled"] = "true",
@@ -212,6 +213,7 @@ public sealed class AutomationWorkEventRuntimeChainIntegrationTests : IAsyncLife
         builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
         {
             ["ConnectionStrings:NotrelixDb"] = _db.ConnectionString,
+            ["ConnectionStrings:NotrelixWorkerDb"] = _db.WorkerConnectionString,
             ["ConnectionStrings:Redis"] = "localhost:6379,abortConnect=false",
             ["Messaging:Transport"] = "InMemory",
             ["Rls:Enabled"] = "true",
@@ -250,14 +252,14 @@ public sealed class AutomationWorkEventRuntimeChainIntegrationTests : IAsyncLife
 
     private async Task<int> ExecutionCountAsync(Guid ruleId)
     {
-        await using var probe = _db.CreateContext(SystemTenant());
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
         return await probe.AutomationExecutions.IgnoreQueryFilters()
             .CountAsync(e => e.RuleId == ruleId);
     }
 
     private async Task<int> IntentCountAsync(Guid workspaceId, string messageName)
     {
-        await using var probe = _db.CreateContext(SystemTenant());
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
         return await probe.Set<MessagingOutboxMessage>()
             .IgnoreQueryFilters()
             .CountAsync(m => m.WorkspaceId == workspaceId && m.MessageName == messageName);
@@ -281,7 +283,7 @@ public sealed class AutomationWorkEventRuntimeChainIntegrationTests : IAsyncLife
 
     private async Task<string> DiagnosticAsync(string consumerEndpoint)
     {
-        await using var probe = _db.CreateContext(SystemTenant());
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
         var processed = await probe.Set<MessagingProcessedEvent>().IgnoreQueryFilters()
             .Where(p => p.ConsumerName == consumerEndpoint)
             .Select(p => p.EventId + ":" + p.Status)

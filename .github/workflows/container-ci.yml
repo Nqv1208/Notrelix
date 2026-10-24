@@ -193,6 +193,7 @@ jobs:
             -e ForwardedHeaders__RequireKnownProxyInProduction=false \
             -e Rls__Enabled=true \
             -e Rls__SetSessionContext=true \
+            -e Rls__RoleEnforcement=Warn \
             -e DataProtection__PersistKeys=true \
             -e DataProtection__KeysPath=/tmp/dataprotection-keys \
             -e ConnectionStrings__NotrelixDb="Host=notrelix-ci-postgres;Port=5432;Database=notrelix;Username=postgres;Password=ci" \

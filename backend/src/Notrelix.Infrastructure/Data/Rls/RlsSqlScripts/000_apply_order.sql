@@ -13,3 +13,5 @@
 \i 013_co_member_profiles.sql
 \i 014_anonymous_scopes.sql
 \i 015_internal_principals.sql
+\i 016_policies_derived_scope.sql
+\i 017_webhook_scope.sql
