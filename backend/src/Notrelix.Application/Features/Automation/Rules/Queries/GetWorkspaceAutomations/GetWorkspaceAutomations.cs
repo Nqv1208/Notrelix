@@ -47,7 +47,9 @@ public class GetWorkspaceAutomationsQueryHandler : IRequestHandler<GetWorkspaceA
                 JsonSerializer.Serialize(item.Configuration),
                 item.IsEnabled,
                 item.CreatedAt.DateTime,
-                item.UpdatedAt.HasValue ? item.UpdatedAt.Value.DateTime : null))
+                item.UpdatedAt.HasValue ? item.UpdatedAt.Value.DateTime : null,
+                item.ExecutorUserId,
+                item.DisabledReason))
             .ToList();
 
         return Result<IReadOnlyList<AutomationRuleDto>>.Success(dtos);

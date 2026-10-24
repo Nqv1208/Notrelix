@@ -18,6 +18,18 @@ public sealed class Slug : ValueObject
         Value = value;
     }
 
+    /// <summary>The longest slug a Workspace stores.</summary>
+    public const int MaxLength = 128;
+
+    /// <summary>True when the trimmed, lower-cased value is a valid slug no longer than <see cref="MaxLength"/>.</summary>
+    public static bool IsValid(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return false;
+        var normalized = value.Trim().ToLowerInvariant();
+        return normalized.Length <= MaxLength && SlugRegex.IsMatch(normalized);
+    }
+
     public static Slug Create(string value)
     {
         Guard.NotNullOrWhiteSpace(value);

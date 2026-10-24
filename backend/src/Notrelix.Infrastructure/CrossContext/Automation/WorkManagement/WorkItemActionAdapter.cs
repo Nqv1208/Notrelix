@@ -30,4 +30,16 @@ public sealed class WorkItemActionAdapter : IWorkActionPort
 
         return new WorkActionResult(result.ItemId, result.GroupId, result.Position);
     }
+
+    public Task EnsureMoveItemAllowedAsync(
+        Guid itemId,
+        Guid targetGroupId,
+        AutomationPrincipal automationPrincipal,
+        CancellationToken cancellationToken)
+    {
+        // The probe has no execution of its own: a fresh operation id keeps the
+        // identity well-formed and nothing is deduplicated or persisted.
+        var request = WorkActionAcl.ToWorkMoveRequest(itemId, targetGroupId, Guid.CreateVersion7(), automationPrincipal);
+        return _workItemActions.EnsureMoveItemAllowedAsync(request, cancellationToken);
+    }
 }

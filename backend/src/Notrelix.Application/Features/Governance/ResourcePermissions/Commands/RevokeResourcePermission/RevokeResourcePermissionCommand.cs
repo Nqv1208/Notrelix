@@ -1,5 +1,6 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Governance.Abstractions;
+using Notrelix.Application.Features.Governance.Public.Access;
 
 namespace Notrelix.Application.Features.Governance.ResourcePermissions.Commands.RevokeResourcePermission;
 
@@ -37,13 +38,16 @@ public class RevokeResourcePermissionCommandHandler : IRequestHandler<RevokeReso
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IAuditService _auditService;
+    private readonly IResourceAccessChangeRecorder _changes;
 
     public RevokeResourcePermissionCommandHandler(
         IGovernanceDbContext context,
         ICurrentRequestContext requestContext,
         IDateTimeProvider dateTimeProvider,
-        IAuditService auditService)
+        IAuditService auditService,
+        IResourceAccessChangeRecorder changes)
     {
+        _changes = changes;
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
@@ -71,6 +75,13 @@ public class RevokeResourcePermissionCommandHandler : IRequestHandler<RevokeReso
         var actorId = _requestContext.UserId;
 
         permission.Revoke(actorId, _dateTimeProvider.UtcNow);
+
+        if (kind.Value == "work-management.board")
+        {
+            await _changes.RecordAsync(
+                new ResourceAccessChangeRecord(kind.Value, request.ResourceId, AccessChangeKinds.Removed, permission.SubjectType.ToString(), permission.SubjectId, AccessLevels.OfRank((int)permission.Level), null),
+                cancellationToken);
+        }
 
         await _auditService.RecordAsync(
             workspaceId,

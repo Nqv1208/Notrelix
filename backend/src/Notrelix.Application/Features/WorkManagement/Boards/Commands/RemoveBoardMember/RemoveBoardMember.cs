@@ -1,6 +1,7 @@
 using BoardEntity = global::Notrelix.Domain.WorkManagement.Boards.Board;
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Features.WorkManagement.Boards.Services;
 
 namespace Notrelix.Application.Features.WorkManagement.Boards.Commands.RemoveBoardMember;
 
@@ -21,11 +22,14 @@ public class RemoveBoardMemberCommandHandler : IRequestHandler<RemoveBoardMember
 {
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
+    private readonly BoardAccessChangeLog _changeLog;
 
     public RemoveBoardMemberCommandHandler(
         IWorkManagementDbContext context,
-        ICurrentUser currentUser)
+        ICurrentUser currentUser,
+        BoardAccessChangeLog changeLog)
     {
+        _changeLog = changeLog;
         _context = context;
         _currentUser = currentUser;
     }
@@ -41,7 +45,10 @@ public class RemoveBoardMemberCommandHandler : IRequestHandler<RemoveBoardMember
             .FirstOrDefaultAsync(m => m.BoardId == board.Id && m.UserId == request.UserId, ct);
 
         if (member is not null)
+        {
             _context.BoardMembers.Remove(member);
+            await _changeLog.MemberRemovedAsync(board.Id, request.UserId, member.Role, ct);
+        }
 
         return Result.Success();
     }

@@ -480,10 +480,35 @@ Channel delivery state is separate from Notification read state.
 
 Notification preferences may depend on User, Account policy, type, and urgency.
 
-Owner decision (D15, accepted 2026-10-23): the notification preference matrix (per person and Workspace,
-notification type by channel) is Collaboration-owned. Its storage and API wait for a stable notification type
-vocabulary: today only `mention.created` is produced by a consumer, so the set of types, the default per type
-and channel, and the channels (in-app and email) are product decisions still to be recorded here.
+Owner decision (D15, accepted 2026-10-23): the notification preference matrix is Collaboration-owned. It is
+personal state of one person in one Workspace: notification type by channel, readable and changeable only by that
+person, who must be an active member of the Workspace.
+
+Vocabulary (stable codes, never renamed or reused):
+
+```text
+types:    assigned, mention, approval, overdue, watching, invitation, digest
+channels: in_app, email
+```
+
+Defaults apply to every cell the person never changed, so no row exists until the first change and a later default
+change reaches everyone who never chose:
+
+```text
+in_app  on  for all seven types
+email   on  for assigned, mention, approval, invitation
+email   off for overdue, watching, digest
+```
+
+A save changes only the named cells, all or nothing; values that already hold are a no-op that keeps the version;
+a stale expected version is refused (precondition failed). Quiet hours and a mobile channel are later decisions.
+
+Producers: only `mention` has one today. The mention notification consumer maps the stored notification type
+`mention.created` to the `mention` type and does not create the in-app notification when the mentioned person
+turned `mention` off on `in_app` in that Workspace (the mention itself, its activity and realtime attention are
+unaffected). The other six types have no producer yet, so their preferences are stored and returned but nothing
+reads them until a producer exists. No email delivery path exists yet, so the `email` channel is a stored choice
+that no consumer honours today.
 
 Provider preferences cannot weaken mandatory security delivery when policy says otherwise.
 

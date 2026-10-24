@@ -8,6 +8,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Collaboration.Comments.Commands.CreateComment;
+using Notrelix.Domain.Collaboration.Preferences;
 using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.SharedKernel.Ordering;
 using Notrelix.Domain.WorkManagement.Boards;
@@ -269,6 +270,91 @@ public sealed class MentionCreatedNotificationRuntimeChainIntegrationTests : IAs
             .CountAsync(m => m.MessageName == "mention.created"
                 && (m.WorkspaceId == graphB.WorkspaceId || m.AccountId == graphB.AccountId))).Should().Be(0,
             "the foreign tenant stages no mention facts of its own");
+    }
+
+    [Fact]
+    public async Task MentionCreated_WithTheMentionedUsersInAppPreferenceOff_CreatesNoNotificationForThem()
+    {
+        var graph = await SeedMentionStackAsync();
+        await SeedPreferenceAsync(graph, graph.MentionedUserId, inApp: false);
+
+        var outboxEventId = await RunMentionChainAsync(graph);
+
+        await using var probe = _db.CreateContext(SystemTenant());
+        (await probe.Set<NotificationItemRecord>().IgnoreQueryFilters()
+            .CountAsync(n => n.SourceEventId == outboxEventId)).Should().Be(0,
+            "the mentioned person turned the mention in-app preference off in this workspace");
+        (await probe.Set<NotificationRecipientRecord>().IgnoreQueryFilters()
+            .CountAsync(r => r.RecipientUserId == graph.MentionedUserId)).Should().Be(0);
+    }
+
+    [Fact]
+    public async Task MentionCreated_AnotherUsersPreferenceOrAnotherWorkspace_DoesNotSuppressTheNotification()
+    {
+        var graph = await SeedMentionStackAsync();
+        await SeedPreferenceAsync(graph, graph.AuthorId, inApp: false);
+        await SeedPreferenceAsync(graph, graph.MentionedUserId, inApp: false, workspaceId: Guid.NewGuid());
+
+        var outboxEventId = await RunMentionChainAsync(graph);
+
+        await using var probe = _db.CreateContext(SystemTenant());
+        (await probe.Set<NotificationItemRecord>().IgnoreQueryFilters()
+            .CountAsync(n => n.SourceEventId == outboxEventId)).Should().Be(1,
+            "a preference is the mentioned person's own and per workspace");
+    }
+
+    [Fact]
+    public async Task MentionCreated_WithOnlyTheEmailPreferenceOff_StillCreatesTheInAppNotification()
+    {
+        var graph = await SeedMentionStackAsync();
+        await using (var seed = _db.CreateContext(SystemTenant()))
+        {
+            seed.NotificationPreferenceSets.Add(NotificationPreferenceSet.Create(
+                graph.AccountId, graph.WorkspaceId, graph.MentionedUserId,
+                [new NotificationPreferenceChange(NotificationTypes.Mention, NotificationChannels.Email, false)],
+                DateTimeOffset.UtcNow)!);
+            await seed.SaveChangesAsync();
+        }
+
+        var outboxEventId = await RunMentionChainAsync(graph);
+
+        await using var probe = _db.CreateContext(SystemTenant());
+        (await probe.Set<NotificationItemRecord>().IgnoreQueryFilters()
+            .CountAsync(n => n.SourceEventId == outboxEventId)).Should().Be(1);
+    }
+
+    private async Task SeedPreferenceAsync(MentionGraph graph, Guid userId, bool inApp, Guid? workspaceId = null)
+    {
+        await using var seed = _db.CreateContext(SystemTenant());
+        seed.NotificationPreferenceSets.Add(NotificationPreferenceSet.Create(
+            graph.AccountId, workspaceId ?? graph.WorkspaceId, userId,
+            [new NotificationPreferenceChange(NotificationTypes.Mention, NotificationChannels.InApp, inApp)],
+            DateTimeOffset.UtcNow)!);
+        await seed.SaveChangesAsync();
+    }
+
+    /// <summary>Runs the mention through the production chain until the notification consumer completed; returns the event id.</summary>
+    private async Task<Guid> RunMentionChainAsync(MentionGraph graph)
+    {
+        await using var provider = BuildProvider(graph);
+        var hostedServices = provider.GetServices<IHostedService>().ToArray();
+        foreach (var hosted in hostedServices)
+            await hosted.StartAsync(CancellationToken.None);
+
+        try
+        {
+            await CreateCommentWithMentionAsync(provider, graph);
+            var outbox = await WaitForOutboxAsync(graph, "mention.created");
+            outbox.Should().NotBeNull();
+            (await WaitForDedupSucceededAsync(outbox!.EventId, NotificationConsumerEndpoint)).Should().BeTrue(
+                "the notification consumer must have completed before its outcome is asserted");
+            return outbox.EventId;
+        }
+        finally
+        {
+            foreach (var hosted in hostedServices.Reverse())
+                await hosted.StopAsync(CancellationToken.None);
+        }
     }
 
     /// <summary>

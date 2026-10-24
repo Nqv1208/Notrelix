@@ -1125,6 +1125,14 @@ Do not create ambiguous competing progress truths.
 
 ---
 
+## Board sharing and make-private (CTR-GAP-WM-BOARD-SHARING)
+
+Work Management owns the Board, its members, its visibility and its Items, and serves the sharing view. `GET /boards/{boardId}/sharing` needs the single-Board read (`ViewBoard`); it composes the Governance sharing fact (who holds access given on the Board, and the log) with Work Management's own figures. The same disclosure rule as the access summary applies (entries only to Board managers and Board members, counts to other readers). `privateImpact` (managers only) is the people who reach the Board only through its Space (Governance's fact) with their unfinished and overdue Items on this Board, which Work Management counts from its own tables: an Item is unfinished when it is not completed, not archived and not deleted, and overdue when its due instant has passed. `POST /boards/{boardId}/sharing/private` (`ManageBoard`, idempotent) adds the given people as Board members who can edit (people already on the Board keep their role) and sets the visibility to Private in one transaction owned by Work Management; if any person is not a participant of the Workspace nothing changes. Board member and visibility changes are reported to Governance for the sharing log through `IResourceAccessChangeRecorder`.
+
+## Published figures for the Space overview and the getting-started card
+
+Work Management publishes read-only facts that Workspaces composes; Workspaces never reads Work persistence. `IBoardWorkSummaryFacts` takes Board ids the caller already filtered with the Governance visible set and never widens them: per Board the unfinished, overdue, top-level done/total, unclaimed and waiting-review counts, member count, last change and the top assignees, plus open work per person. `IFirstWorkItemFacts` answers the earliest Board with an active Item and the newest Board among the readable ids. An Item counts when it is not archived and not deleted; unfinished means no completion time; a Board runs when it has an unfinished Item (docs/product/workspaces.md 48.3 holds the running-board rule). "Waiting review" is a Pending approval request that targets the Board or one of its unfinished Items. Kind is `inbox` for an Intake Board, else the type of the default View (Kanban or table).
+
 # 77.1. WM-041 — Progress of an Item with child Items is derived
 
 Decided 2026-10-12 (UI mockup review). When an Item has non-archived child Items, its progress is derived as

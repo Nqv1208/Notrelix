@@ -1,3 +1,4 @@
+using Notrelix.Domain.Collaboration.Preferences;
 using Notrelix.Domain.Collaboration.Presence;
 using Notrelix.Domain.Collaboration.ReadStates;
 using Notrelix.Domain.Collaboration.Watchers;
@@ -14,4 +15,5 @@ public interface ICollaborationDbContext
     DbSet<ResourceWatcher> ResourceWatchers { get; }
     DbSet<PresenceSession> PresenceSessions { get; }
     DbSet<ResourceReadState> ResourceReadStates { get; }
+    DbSet<NotificationPreferenceSet> NotificationPreferenceSets { get; }
 }

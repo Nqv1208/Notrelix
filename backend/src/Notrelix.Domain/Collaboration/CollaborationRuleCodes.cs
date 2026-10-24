@@ -8,6 +8,12 @@ public static class CollaborationRuleCodes
     // ── Notification ──────────────────────────────────────────────────────
     public const string Collaboration_Notification_CannotNotifySelf = "Collaboration_Notification_CannotNotifySelf";
 
+    // ── Notification preferences ──────────────────────────────────────────
+    public const string Collaboration_NotificationPreference_UnknownType = "Collaboration_NotificationPreference_UnknownType";
+    public const string Collaboration_NotificationPreference_UnknownChannel = "Collaboration_NotificationPreference_UnknownChannel";
+    public const string Collaboration_NotificationPreference_ConflictingChange = "Collaboration_NotificationPreference_ConflictingChange";
+    public const string Collaboration_NotificationPreference_NoChanges = "Collaboration_NotificationPreference_NoChanges";
+
     // ── Reaction ──────────────────────────────────────────────────────────
     public const string Collaboration_Reaction_DuplicateReaction = "Collaboration_Reaction_DuplicateReaction";
 

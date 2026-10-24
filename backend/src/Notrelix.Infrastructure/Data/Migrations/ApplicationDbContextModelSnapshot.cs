@@ -1388,6 +1388,15 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(1024)")
                         .HasColumnName("description");
 
+                    b.Property<string>("DisabledReason")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("disabled_reason");
+
+                    b.Property<Guid?>("ExecutorUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("executor_user_id");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(256)
@@ -1424,6 +1433,9 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                     b.HasIndex("WorkspaceId")
                         .HasDatabaseName("idx_automation_rules_workspace_id");
+
+                    b.HasIndex("WorkspaceId", "ExecutorUserId")
+                        .HasDatabaseName("idx_automation_rules_workspace_executor");
 
                     b.ToTable("automation_rules", "automation");
                 });
@@ -2661,6 +2673,147 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Notrelix.Domain.Collaboration.Preferences.NotificationPreferenceEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Channel")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("channel");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("DeliveryMode")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasDefaultValue("Immediate")
+                        .HasColumnName("delivery_mode");
+
+                    b.Property<int?>("DigestIntervalMinutes")
+                        .HasColumnType("integer")
+                        .HasColumnName("digest_interval_minutes");
+
+                    b.Property<bool>("IsEnabled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_enabled");
+
+                    b.Property<string>("NotificationType")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("character varying(160)")
+                        .HasColumnName("notification_type");
+
+                    b.Property<string>("QuietHoursJson")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("quiet_hours_json")
+                        .HasDefaultValueSql("'{}'::jsonb");
+
+                    b.Property<Guid?>("SetId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("set_id");
+
+                    b.Property<string>("Timezone")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("timezone");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<Guid?>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_notification_preferences");
+
+                    b.HasIndex("SetId")
+                        .HasDatabaseName("ix_notification_preferences_set_id");
+
+                    b.HasIndex("UserId", "WorkspaceId")
+                        .HasDatabaseName("ix_notifications_preferences_user");
+
+                    b.HasIndex("UserId", "NotificationType", "Channel")
+                        .IsUnique()
+                        .HasDatabaseName("ux_notifications_preferences_global")
+                        .HasFilter("\"workspace_id\" IS NULL");
+
+                    b.HasIndex("WorkspaceId", "UserId", "NotificationType", "Channel")
+                        .IsUnique()
+                        .HasDatabaseName("ux_notifications_preferences_workspace")
+                        .HasFilter("\"workspace_id\" IS NOT NULL");
+
+                    b.ToTable("notification_preferences", "notifications");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Collaboration.Preferences.NotificationPreferenceSet", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasDefaultValue(1L)
+                        .HasColumnName("version");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_notification_preference_sets");
+
+                    b.HasIndex("WorkspaceId", "UserId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_notification_preference_sets_member");
+
+                    b.ToTable("notification_preference_sets", "notifications");
+                });
+
             modelBuilder.Entity("Notrelix.Domain.Collaboration.Presence.PresenceSession", b =>
                 {
                     b.Property<Guid>("Id")
@@ -3283,6 +3436,80 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasDatabaseName("idx_document_versions_page_version");
 
                     b.ToTable("document_versions", "docs");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Governance.AccessChanges.ResourceAccessChange", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<Guid>("ActorUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("actor_user_id");
+
+                    b.Property<string>("FromLevel")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("from_level");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("change_kind");
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at");
+
+                    b.Property<Guid>("ResourceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("resource_id");
+
+                    b.Property<string>("ResourceKind")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("resource_type");
+
+                    b.Property<DateTimeOffset>("RetentionUntil")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("retention_until");
+
+                    b.Property<Guid?>("SubjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subject_id");
+
+                    b.Property<string>("SubjectType")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("subject_type");
+
+                    b.Property<string>("ToLevel")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("to_level");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_resource_access_changes");
+
+                    b.HasIndex("RetentionUntil")
+                        .HasDatabaseName("idx_resource_access_changes_retention");
+
+                    b.HasIndex("WorkspaceId", "ResourceKind", "ResourceId", "OccurredAt")
+                        .IsDescending(false, false, false, true)
+                        .HasDatabaseName("idx_resource_access_changes_resource");
+
+                    b.ToTable("resource_access_changes", "governance");
                 });
 
             modelBuilder.Entity("Notrelix.Domain.Governance.Permissions.FieldPermission", b =>
@@ -7943,6 +8170,88 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.ToTable("recent_resources", "workspace");
                 });
 
+            modelBuilder.Entity("Notrelix.Domain.Workspaces.Onboarding.GettingStartedDismissal", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<DateTimeOffset>("DismissedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("dismissed_at");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_getting_started_dismissals");
+
+                    b.HasIndex("WorkspaceId", "UserId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_getting_started_dismissals_member");
+
+                    b.ToTable("getting_started_dismissals", "workspace");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Workspaces.Onboarding.OnboardingDraft", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Data")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("data");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<string>("Step")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("step");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<Guid?>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_onboarding_drafts");
+
+                    b.HasIndex("ExpiresAt")
+                        .HasDatabaseName("ix_onboarding_drafts_expires");
+
+                    b.HasIndex("UserId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_onboarding_drafts_user");
+
+                    b.ToTable("onboarding_drafts", "workspace");
+                });
+
             modelBuilder.Entity("Notrelix.Domain.Workspaces.Spaces.Space", b =>
                 {
                     b.Property<Guid>("Id")
@@ -10179,87 +10488,6 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.ToTable("notification_items", "notifications");
                 });
 
-            modelBuilder.Entity("Notrelix.Infrastructure.Data.Notifications.NotificationPreferenceRecord", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("Channel")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("channel");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("DeliveryMode")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasDefaultValue("Immediate")
-                        .HasColumnName("delivery_mode");
-
-                    b.Property<int?>("DigestIntervalMinutes")
-                        .HasColumnType("integer")
-                        .HasColumnName("digest_interval_minutes");
-
-                    b.Property<bool>("IsEnabled")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(true)
-                        .HasColumnName("is_enabled");
-
-                    b.Property<string>("NotificationType")
-                        .IsRequired()
-                        .HasMaxLength(160)
-                        .HasColumnType("character varying(160)")
-                        .HasColumnName("notification_type");
-
-                    b.Property<string>("QuietHoursJson")
-                        .IsRequired()
-                        .HasColumnType("jsonb")
-                        .HasColumnName("quiet_hours_json");
-
-                    b.Property<string>("Timezone")
-                        .HasMaxLength(80)
-                        .HasColumnType("character varying(80)")
-                        .HasColumnName("timezone");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_id");
-
-                    b.Property<Guid?>("WorkspaceId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("workspace_id");
-
-                    b.HasKey("Id")
-                        .HasName("pk_notification_preferences");
-
-                    b.HasIndex("UserId", "WorkspaceId")
-                        .HasDatabaseName("ix_notifications_preferences_user");
-
-                    b.HasIndex("UserId", "NotificationType", "Channel")
-                        .IsUnique()
-                        .HasDatabaseName("ux_notifications_preferences_global")
-                        .HasFilter("\"workspace_id\" IS NULL");
-
-                    b.HasIndex("WorkspaceId", "UserId", "NotificationType", "Channel")
-                        .IsUnique()
-                        .HasDatabaseName("ux_notifications_preferences_workspace")
-                        .HasFilter("\"workspace_id\" IS NOT NULL");
-
-                    b.ToTable("notification_preferences", "notifications");
-                });
-
             modelBuilder.Entity("Notrelix.Infrastructure.Data.Notifications.NotificationRecipientRecord", b =>
                 {
                     b.Property<Guid>("Id")
@@ -11656,6 +11884,15 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Notrelix.Domain.Collaboration.Preferences.NotificationPreferenceEntry", b =>
+                {
+                    b.HasOne("Notrelix.Domain.Collaboration.Preferences.NotificationPreferenceSet", null)
+                        .WithMany("Entries")
+                        .HasForeignKey("SetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasConstraintName("fk_notification_preferences_notification_preference_sets_set_id");
+                });
+
             modelBuilder.Entity("Notrelix.Domain.Collaboration.Reactions.Reaction", b =>
                 {
                     b.OwnsOne("Notrelix.Domain.Collaboration.Reactions.Emoji", "Emoji", b1 =>
@@ -13037,17 +13274,38 @@ namespace Notrelix.Infrastructure.Data.Migrations
                                 .HasColumnType("uuid")
                                 .HasColumnName("id");
 
+                            b1.Property<bool>("AllowGuestInvites")
+                                .HasColumnType("boolean")
+                                .HasDefaultValue(false)
+                                .HasColumnName("settings_allow_guest_invites");
+
                             b1.Property<bool>("AllowPublicSharing")
-                                .ValueGeneratedOnAdd()
                                 .HasColumnType("boolean")
                                 .HasDefaultValue(false)
                                 .HasColumnName("settings_allow_public_sharing");
 
+                            b1.Property<string>("DefaultMemberRole")
+                                .IsRequired()
+                                .HasMaxLength(50)
+                                .HasColumnType("character varying(50)")
+                                .HasColumnName("settings_default_member_role");
+
                             b1.Property<bool>("EnforceMfa")
-                                .ValueGeneratedOnAdd()
                                 .HasColumnType("boolean")
                                 .HasDefaultValue(false)
                                 .HasColumnName("settings_enforce_mfa");
+
+                            b1.Property<int?>("GuestDefaultExpiryDays")
+                                .HasColumnType("integer")
+                                .HasColumnName("settings_guest_default_expiry_days");
+
+                            b1.Property<int>("InvitationExpiryDays")
+                                .HasColumnType("integer")
+                                .HasColumnName("settings_invitation_expiry_days");
+
+                            b1.Property<DateTimeOffset?>("PublicSharingChangedAt")
+                                .HasColumnType("timestamp with time zone")
+                                .HasColumnName("settings_public_sharing_changed_at");
 
                             b1.HasKey("WorkspaceId");
 
@@ -13107,6 +13365,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
             modelBuilder.Entity("Notrelix.Domain.Billing.Usage.UsageMetric", b =>
                 {
                     b.Navigation("History");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Collaboration.Preferences.NotificationPreferenceSet", b =>
+                {
+                    b.Navigation("Entries");
                 });
 
             modelBuilder.Entity("Notrelix.Domain.Governance.Roles.CustomRole", b =>

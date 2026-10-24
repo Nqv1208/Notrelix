@@ -378,7 +378,34 @@ payload/errors are management data. A Webhook Rule reaches the n8n integration, 
 enabling any Rule also name `ManageIntegrations` through `IRequireAdditionalPermission` (pipeline-only).
 For that, the workspace-role baseline lets `ManageIntegrations` apply to the `automation.rule` resource
 kind next to `workspaces.workspace` and `integrations.calendar-integration`; it never widens to other kinds.
-Rule/executor identity (who a rule acts as) remains an open product decision.
+
+# 12.3. Automation executor identity (AUT-020)
+
+A Rule acts as its **executor**: the creator, stored on the Rule (`ExecutorUserId`), never the trigger actor
+and never a system principal. The trigger fact only decides *whether* a Rule starts (workspace scope); the
+executor decides *what the Rule may do*.
+
+- Create and enable evaluate the executor's authority through `AutomationExecutorAuthority` ->
+  `IWorkActionPort.EnsureMoveItemAllowedAsync` -> `IWorkItemActions.EnsureMoveItemAllowedAsync`, which runs the
+  same canonical MoveItem decision (`WorkItemActionAuthorizer`: resource location, facts, policy engine) as
+  the HTTP command and checks the target group belongs to the item's board. No second evaluator exists; the
+  facts provider needs the pipeline's data-session transaction, so the check runs inside the command pipeline
+  or the consumer transaction.
+- Every execution repeats that check before the move, then moves through the same `IWorkItemActions` path as
+  the executor. A `Forbidden`/`NotFound` result (permission lost, no longer an active member, target no longer
+  visible) fails closed: the execution fails, the Rule is disabled with a recorded reason
+  (`AutomationRule.DisableAutomatically(reason)`), nothing is moved. Technical failures of the check stay
+  retryable under the execution id.
+- Member lifecycle reaches Automation only through Workspaces-published facts (`workspace.member.removed`,
+  `workspace.member.suspended`, `workspace.member.role-changed` with the Workspaces-ranked `isDemotion`),
+  consumed by thin Automation consumers that call `AutomationExecutorLifecycle` to disable the executor's
+  Active Rules in that workspace. Workspaces never writes Automation storage, and Automation never carries
+  Workspaces role vocabulary. The execution-time check stays the authority; the consumers only stop Rules
+  earlier.
+- A Rule with no executor (legacy row without a recorded creator) is not executable, cannot be enabled, and
+  is disabled when first evaluated.
+- Attribution: facts written for an automated move carry the executor as actor plus `automationRuleId` /
+  `automationExecutionId` (additive on `board_item.moved` v2).
 
 ---
 

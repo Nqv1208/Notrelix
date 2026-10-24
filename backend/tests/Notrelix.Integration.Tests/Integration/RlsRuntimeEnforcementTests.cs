@@ -15,6 +15,7 @@ using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Domain.Workspaces.Navigation;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Authz;
+using Notrelix.Domain.Collaboration.Preferences;
 using Notrelix.Infrastructure.Data.Notifications;
 using Notrelix.Infrastructure.Data.Rls;
 using Notrelix.Infrastructure.Workspaces.Members;
@@ -321,6 +322,42 @@ public sealed class RlsRuntimeEnforcementTests : IAsyncLifetime
             "a granted workspace-A member observes the workspace notification");
     }
 
+    /// <summary>
+    /// The notification preference matrix is personal state: under the application role a person sees only
+    /// their own set and explicit choices, never another person's in the same workspace.
+    /// </summary>
+    [Fact]
+    public async Task NotificationPreferences_AreVisibleOnlyToTheirOwner()
+    {
+        var userB = Guid.Parse("00000000-0000-0000-0000-00000000BB04");
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using (var context = CreateContext(tenant))
+        {
+            foreach (var user in new[] { UserId, userB })
+            {
+                context.NotificationPreferenceSets.Add(NotificationPreferenceSet.Create(
+                    AccountA, WsA1, user,
+                    [new NotificationPreferenceChange(NotificationTypes.Mention, NotificationChannels.InApp, false)],
+                    FixedTime)!);
+            }
+
+            await context.SaveChangesAsync();
+        }
+
+        var setsSeenByA = await QueryScalarsAsAppRoleAsync(
+            "SELECT user_id::text FROM notifications.notification_preference_sets", userId: UserId);
+        var entriesSeenByB = await QueryScalarsAsAppRoleAsync(
+            "SELECT user_id::text FROM notifications.notification_preferences", userId: userB);
+        var setsSeenByStranger = await QueryScalarsAsAppRoleAsync(
+            "SELECT user_id::text FROM notifications.notification_preference_sets",
+            userId: Guid.Parse("00000000-0000-0000-0000-00000000BB05"));
+
+        setsSeenByA.Should().BeEquivalentTo([UserId.ToString()]);
+        entriesSeenByB.Should().BeEquivalentTo([userB.ToString()]);
+        setsSeenByStranger.Should().BeEmpty("a person never sees another person's preferences");
+    }
+
     private static readonly Guid NotificationSourceEventId =
         Guid.Parse("A0000000-0000-0000-0000-00000000EE01");
 
@@ -622,6 +659,49 @@ public sealed class RlsRuntimeEnforcementTests : IAsyncLifetime
             """, userId: UserId);
         (await forgedInsert.Should().ThrowAsync<PostgresException>())
             .Which.SqlState.Should().Be("42501", "the app role cannot write a pin owned by another user");
+    }
+
+    /// <summary>
+    /// Onboarding state: a draft is visible only to its owner (no tenant needed); the getting-started
+    /// dismissal is visible only to its owner inside a workspace the user has a grant in, and the app
+    /// role cannot write a row owned by another user.
+    /// </summary>
+    [Fact]
+    public async Task AppRole_OnboardingState_IsVisibleOnlyToItsOwner()
+    {
+        var otherUser = Guid.Parse("00000000-0000-0000-0000-0000000000BC");
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using (var context = CreateContext(tenant))
+        {
+            context.OnboardingDrafts.AddRange(
+                Notrelix.Domain.Workspaces.Onboarding.OnboardingDraft.Create(UserId, "mine", null, "{}", FixedTime),
+                Notrelix.Domain.Workspaces.Onboarding.OnboardingDraft.Create(otherUser, "theirs", null, "{}", FixedTime));
+            context.GettingStartedDismissals.AddRange(
+                Notrelix.Domain.Workspaces.Onboarding.GettingStartedDismissal.Create(AccountA, WsA1, UserId, FixedTime),
+                Notrelix.Domain.Workspaces.Onboarding.GettingStartedDismissal.Create(AccountA, WsA1, otherUser, FixedTime),
+                Notrelix.Domain.Workspaces.Onboarding.GettingStartedDismissal.Create(AccountA, WsA2, UserId, FixedTime));
+            await context.SaveChangesAsync();
+        }
+
+        await SeedGrantAsync(AccountA, WsA1, UserId);
+        await SeedGrantAsync(AccountA, WsA1, otherUser);
+
+        (await QueryScalarsAsAppRoleAsync("SELECT step FROM workspace.onboarding_drafts ORDER BY 1", userId: UserId))
+            .Should().Equal(["mine"]);
+        (await QueryScalarsAsAppRoleAsync("SELECT step FROM workspace.onboarding_drafts ORDER BY 1", userId: otherUser))
+            .Should().Equal(["theirs"]);
+        (await QueryScalarsAsAppRoleAsync("SELECT step FROM workspace.onboarding_drafts"))
+            .Should().BeEmpty("a request without user context must see no draft");
+        (await QueryScalarsAsAppRoleAsync("SELECT workspace_id::text FROM workspace.getting_started_dismissals ORDER BY 1", userId: UserId))
+            .Should().Equal([WsA1.ToString()], "only the member's own dismissal in a workspace they have a grant in");
+
+        var forgedDraft = () => QueryScalarsAsAppRoleAsync($"""
+            INSERT INTO workspace.onboarding_drafts (id, user_id, step, data, created_at, updated_at, expires_at)
+            VALUES ('{Guid.NewGuid()}', '{otherUser}', 'forged', '[]'::jsonb, now(), now(), now())
+            RETURNING id::text
+            """, userId: UserId);
+        (await forgedDraft.Should().ThrowAsync<PostgresException>()).Which.SqlState.Should().Be("42501");
     }
 
     /// <summary>

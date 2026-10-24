@@ -10,7 +10,8 @@ public record UpdateWorkspaceSettingsCommand(
     bool AllowGuestInvites,
     string DefaultMemberRole,
     int InvitationExpiryDays,
-    long ExpectedVersion
+    long ExpectedVersion,
+    int? GuestDefaultExpiryDays = null
 ) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.ManageWorkspace;
@@ -46,7 +47,8 @@ public class UpdateWorkspaceSettingsCommandHandler : IRequestHandler<UpdateWorks
             request.EnforceMfa,
             request.AllowGuestInvites,
             defaultRole,
-            request.InvitationExpiryDays);
+            request.InvitationExpiryDays,
+            request.GuestDefaultExpiryDays);
 
         workspace.UpdateSettings(settings, _requestContext.UserId, _dateTimeProvider.UtcNow);
         return Result.Success();

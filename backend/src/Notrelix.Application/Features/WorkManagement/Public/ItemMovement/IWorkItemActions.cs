@@ -60,4 +60,16 @@ public interface IWorkItemActions
     Task<WorkItemMoveResult> MoveItemAsync(
         WorkItemMoveRequest request,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Evaluates, without mutating anything, whether the executor may perform
+    /// this exact move: the item exists in the declared workspace and is visible
+    /// to the executor, the target group is on the item's board, and the canonical
+    /// MoveItem decision allows the executor. Same exceptions as
+    /// <see cref="MoveItemAsync"/>; used by callers that must prove authority
+    /// before they bind an executor to a future move (AUT-020).
+    /// </summary>
+    Task EnsureMoveItemAllowedAsync(
+        WorkItemMoveRequest request,
+        CancellationToken cancellationToken);
 }

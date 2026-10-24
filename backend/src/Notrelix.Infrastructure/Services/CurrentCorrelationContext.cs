@@ -4,6 +4,14 @@ public sealed class CurrentCorrelationContext : ICorrelationContext
 {
     public Guid CorrelationId { get; private set; }
     public Guid? CausationId { get; private set; }
+    public Guid? AutomationRuleId { get; private set; }
+
+    public void SetAutomationRule(Guid ruleId)
+    {
+        AutomationRuleId = ruleId == Guid.Empty
+            ? throw new ArgumentException("RuleId cannot be empty.", nameof(ruleId))
+            : ruleId;
+    }
 
     public void Set(Guid correlationId, Guid? causationId = null)
     {
@@ -17,5 +25,6 @@ public sealed class CurrentCorrelationContext : ICorrelationContext
     {
         CorrelationId = Guid.Empty;
         CausationId = null;
+        AutomationRuleId = null;
     }
 }

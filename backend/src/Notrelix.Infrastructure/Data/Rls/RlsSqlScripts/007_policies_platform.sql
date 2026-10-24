@@ -43,10 +43,17 @@ SELECT ops.apply_scope_expression_policies('workspace', 'recent_resources',
     'ops.has_workspace_access(account_id, workspace_id) AND user_id = ops.current_user_id()', true);
 SELECT ops.apply_scope_expression_policies('workspace', 'pinned_resources',
     'ops.has_workspace_access(account_id, workspace_id) AND user_id = ops.current_user_id()', true);
+
+-- Onboarding: an unfinished draft is personal (user-owned, no tenant yet); the getting-started
+-- dismissal is workspace scope AND row ownership, like the navigation state above.
+SELECT ops.apply_user_owned_policies('workspace', 'onboarding_drafts', 'user_id', true, false);
+SELECT ops.apply_scope_expression_policies('workspace', 'getting_started_dismissals',
+    'ops.has_workspace_access(account_id, workspace_id) AND user_id = ops.current_user_id()', true);
 SELECT ops.apply_scoped_business_policies('governance', 'custom_roles', true);
 SELECT ops.apply_scoped_business_policies('governance', 'custom_role_permissions', true);
 SELECT ops.apply_scoped_business_policies('governance', 'workspace_member_role_assignments', true);
 SELECT ops.apply_scoped_business_policies('governance', 'resource_permissions', true);
+SELECT ops.apply_scoped_business_policies('governance', 'resource_access_changes', true);
 SELECT ops.apply_scoped_business_policies('governance', 'field_permissions', true);
 SELECT ops.apply_scoped_business_policies('governance', 'permission_rules', true);
 SELECT ops.apply_scoped_business_policies('governance', 'permission_templates', true);

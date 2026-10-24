@@ -5,6 +5,7 @@ using Notrelix.API.Endpoints.Automation.Rules;
 using Notrelix.API.Endpoints.Collaboration.Activity;
 using Notrelix.API.Endpoints.Collaboration.Attachments;
 using Notrelix.API.Endpoints.Collaboration.Comments;
+using Notrelix.API.Endpoints.Collaboration.Preferences;
 using Notrelix.API.Endpoints.Accounts;
 using Notrelix.API.Endpoints.Documents.Blocks;
 using Notrelix.API.Endpoints.Documents.Pages;
@@ -32,6 +33,7 @@ using Notrelix.API.Endpoints.Workspaces.Activity;
 using Notrelix.API.Endpoints.Workspaces.Invitations;
 using Notrelix.API.Endpoints.Workspaces.Members;
 using Notrelix.API.Endpoints.Workspaces.Navigation;
+using Notrelix.API.Endpoints.Workspaces.Onboarding;
 using Notrelix.API.Endpoints.Workspaces.Settings;
 using Notrelix.API.Endpoints.Workspaces.Spaces;
 using Notrelix.API.Endpoints.Workspaces.Teams;
@@ -64,6 +66,7 @@ public static class EndpointRouteBuilderExtensions
         app.RegisterTeamEndpoints();
         app.RegisterWorkspaceActivityEndpoints();
         app.RegisterWorkspaceNavigationEndpoints();
+        app.RegisterWorkspaceOnboardingEndpoints();
 
         // Document
         app.AddPageEndpoints();
@@ -115,6 +118,7 @@ public static class EndpointRouteBuilderExtensions
         app.RegisterBoardItemActivityEndpoints();
         app.MapAttachmentsEndpoints();
         app.MapCommentsEndpoints();
+        app.RegisterNotificationPreferenceEndpoints();
 
         // Governance
         app.MapResourcePermissionsEndpoints();

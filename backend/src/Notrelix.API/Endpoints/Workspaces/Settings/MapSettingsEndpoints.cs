@@ -15,6 +15,13 @@ public static class MapSettingsEndpoints
         group.MapGetWorkspaceSettings();
         group.MapUpdateWorkspaceSettings();
 
+        var securityExtGroup = app
+            .MapGroup("/api/v1/workspaces/{workspaceId:guid}/security-ext")
+            .WithTags("Workspaces.Settings")
+            .WithOpenApi();
+
+        securityExtGroup.MapGetWorkspaceSecurityExt();
+
         return app;
     }
 }

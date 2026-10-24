@@ -157,6 +157,10 @@ internal sealed class OrgTreeTestHost
         services.AddScoped<ISpaceContentReader, SpaceContentReader>();
         services.AddScoped<IBoardSpacePlacementFacts, BoardSpacePlacementFactsAdapter>();
         services.AddScoped<IPageSpacePlacementFacts, PageSpacePlacementFactsAdapter>();
+        services.AddScoped<ISpaceReachReader, SpaceReachReader>();
+        services.AddScoped<Notrelix.Application.Features.WorkManagement.Public.GettingStarted.IFirstWorkItemFacts, Notrelix.Infrastructure.CrossContext.Workspaces.WorkManagement.FirstWorkItemFactsAdapter>();
+        services.AddScoped<Notrelix.Application.Features.WorkManagement.Public.BoardWork.IBoardWorkSummaryFacts, Notrelix.Infrastructure.CrossContext.Workspaces.WorkManagement.BoardWorkSummaryFactsAdapter>();
+        services.AddScoped<Notrelix.Application.Features.Documents.Public.SpaceOverview.IPageSpaceOverviewFacts, Notrelix.Infrastructure.CrossContext.Workspaces.Documents.PageSpaceOverviewFactsAdapter>();
         services.AddScoped<Notrelix.Application.Features.Workspaces.Public.SpacePlacement.ISpacePlacementTargets,
             Notrelix.Infrastructure.Workspaces.Spaces.SpacePlacementTargets>();
         services.AddScoped<Notrelix.Application.Features.WorkManagement.Boards.Services.IBoardSpacePlacement,
@@ -166,6 +170,12 @@ internal sealed class OrgTreeTestHost
         services.AddScoped<Notrelix.Application.Features.Documents.Pages.Services.IPageSubtreeStore,
             Notrelix.Infrastructure.Documents.Pages.PageSubtreeStore>();
 
+        services.AddScoped<Notrelix.Application.Features.Identity.Public.Queries.IIdentityUserFacts, Notrelix.Application.Features.Identity.Users.Services.IdentityUserFactsProvider>();
+        services.AddScoped<Notrelix.Application.Features.Accounts.Public.Domains.IAccountDomainFacts, Notrelix.Application.Features.Accounts.Members.AccountDomainFactsProvider>();
+        services.AddScoped<Notrelix.Application.Features.Workspaces.Public.Members.IMemberEmailDisclosure, Notrelix.Application.Features.Workspaces.Members.Services.MemberEmailDisclosure>();
+        services.AddScoped<IResourceAccessChangeReader, Notrelix.Infrastructure.Data.Authz.EfResourceAccessChangeReader>();
+        services.AddScoped<Notrelix.Application.Features.Governance.Public.Access.IResourceAccessChangeRecorder, Notrelix.Application.Features.Governance.AccessChanges.ResourceAccessChangeRecorder>();
+        services.AddScoped<Notrelix.Application.Features.WorkManagement.Boards.Services.BoardAccessChangeLog>();
         services.AddScoped<IResourceLocator, ResourceLocator>();
         services.AddScoped<IActorLookupService, ActorLookupService>();
         services.AddScoped<IMemberPhoneLookup, Notrelix.Infrastructure.Identity.Profiles.MemberPhoneLookup>();

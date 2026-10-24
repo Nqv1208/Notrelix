@@ -1,4 +1,5 @@
 using Notrelix.Application.Events.Collaboration;
+using Notrelix.Domain.Collaboration.Preferences;
 using Notrelix.Infrastructure.Data.Abstractions;
 using Notrelix.Infrastructure.Data.Notifications;
 
@@ -44,11 +45,20 @@ public sealed class MentionCreatedNotificationConsumer : IConsumer<MentionCreate
             return;
         }
 
+        var preferenceType = NotificationTypes.FromProducedType(NotificationTypes.MentionProducedType)!;
+        if (!await IsInAppEnabledAsync(msg.AccountId.Value, msg.WorkspaceId.Value, msg.MentionedUserId, preferenceType, context.CancellationToken))
+        {
+            _logger.LogInformation(
+                "Mention {MentionId} -> user {UserId} not notified in-app: the user turned the {Type} in-app preference off in workspace {WorkspaceId}",
+                msg.MentionId, msg.MentionedUserId, preferenceType, msg.WorkspaceId);
+            return;
+        }
+
         var notificationItem = NotificationItemRecord.Create(
             accountId: msg.AccountId.Value,
             workspaceId: msg.WorkspaceId.Value,
             sourceContext: "collaboration",
-            notificationType: "mention.created",
+            notificationType: NotificationTypes.MentionProducedType,
             severity: NotificationSeverity.Info,
             title: "You were mentioned",
             createdAt: now,
@@ -77,5 +87,21 @@ public sealed class MentionCreatedNotificationConsumer : IConsumer<MentionCreate
         _logger.LogInformation(
             "Created notification for mention {MentionId} -> user {UserId} in workspace {WorkspaceId}",
             msg.MentionId, msg.MentionedUserId, msg.WorkspaceId);
+    }
+
+    /// <summary>
+    /// The mentioned person's own in-app choice for this type in this Workspace, else the default (on). The
+    /// consumer reads under the tenant restored from the event envelope, and addresses the set by that
+    /// (Account, Workspace) and the recipient, never by an ambient request user.
+    /// </summary>
+    private async Task<bool> IsInAppEnabledAsync(Guid accountId, Guid workspaceId, Guid userId, string type, CancellationToken ct)
+    {
+        var set = await _context.NotificationPreferenceSets
+            .AsNoTracking()
+            .Include(s => s.Entries)
+            .FirstOrDefaultAsync(s => s.AccountId == accountId && s.WorkspaceId == workspaceId && s.UserId == userId, ct);
+
+        return set?.IsEnabled(type, NotificationChannels.InApp)
+            ?? NotificationPreferenceDefaults.IsEnabled(type, NotificationChannels.InApp);
     }
 }

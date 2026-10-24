@@ -11,6 +11,9 @@ public class UpdateWorkspaceSettingsCommandValidator : AbstractValidator<UpdateW
                        || role.Equals("Member", StringComparison.OrdinalIgnoreCase))
             .WithMessage("Default member role must be Guest or Member.");
         RuleFor(x => x.InvitationExpiryDays).InclusiveBetween(1, 30);
+        RuleFor(x => x.GuestDefaultExpiryDays)
+            .Must(days => days is null || WorkspaceSettings.AllowedGuestDefaultExpiryDays.Contains(days.Value))
+            .WithMessage("Guest default expiry must be 30, 90 or 180 days, or none.");
         RuleFor(x => x.ExpectedVersion).GreaterThan(0);
     }
 }

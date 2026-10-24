@@ -31,7 +31,10 @@ public sealed class PostgresResourceAccessEntriesReader : IResourceAccessEntries
             reader.GetGuid(1),
             reader.GetInt32(2),
             reader.IsDBNull(3) ? null : reader.GetGuid(3),
-            reader.IsDBNull(4) ? null : reader.GetString(4))), cancellationToken);
+            reader.IsDBNull(4) ? null : reader.GetString(4),
+            reader.GetGuid(5),
+            reader.GetFieldValue<DateTimeOffset>(6),
+            reader.IsDBNull(7) ? null : reader.GetInt32(7))), cancellationToken);
 
         var reach = new List<AccessReachEntry>();
         await ReadAsync(ResourceAccessEntriesQuery.ReachSql, request, reader => reach.Add(new AccessReachEntry(
@@ -46,10 +49,18 @@ public sealed class PostgresResourceAccessEntriesReader : IResourceAccessEntries
             await ReadAsync(ResourceAccessEntriesQuery.SpaceNameSql, request, reader => spaceName = reader.GetString(0), cancellationToken);
         }
 
+        var spaceRoles = new List<SpaceRoleEntry>();
+        if (request.SpaceId is not null)
+        {
+            await ReadAsync(ResourceAccessEntriesQuery.SpaceRolesSql, request, reader => spaceRoles.Add(new SpaceRoleEntry(
+                reader.GetGuid(0),
+                reader.GetInt32(1))), cancellationToken);
+        }
+
         var hasReadRules = false;
         await ReadAsync(ResourceAccessEntriesQuery.HasReadRulesSql, request, reader => hasReadRules = reader.GetBoolean(0), cancellationToken);
 
-        return new ResourceAccessEntries(grants, reach, spaceName, hasReadRules);
+        return new ResourceAccessEntries(grants, reach, spaceName, hasReadRules, spaceRoles);
     }
 
     private async Task ReadAsync(

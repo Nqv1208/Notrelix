@@ -114,3 +114,72 @@ public sealed class N8nDispatchConsumerDefinition
         });
     }
 }
+
+public sealed class WorkspaceMemberRemovedAutomationConsumerDefinition
+    : ConsumerDefinition<WorkspaceMemberRemovedAutomationConsumer>
+{
+    public WorkspaceMemberRemovedAutomationConsumerDefinition()
+    {
+        EndpointName = "notrelix-automation-workspace-member-removed-v1";
+        ConcurrentMessageLimit = 4;
+    }
+
+    protected override void ConfigureConsumer(
+        IReceiveEndpointConfigurator endpointConfigurator,
+        IConsumerConfigurator<WorkspaceMemberRemovedAutomationConsumer> consumerConfigurator,
+        IRegistrationContext context)
+    {
+        endpointConfigurator.PrefetchCount = 8;
+        endpointConfigurator.UseMessageRetry(r =>
+        {
+            r.Interval(3, TimeSpan.FromMilliseconds(200));
+            r.Ignore<ArgumentException>();
+        });
+    }
+}
+
+public sealed class WorkspaceMemberSuspendedAutomationConsumerDefinition
+    : ConsumerDefinition<WorkspaceMemberSuspendedAutomationConsumer>
+{
+    public WorkspaceMemberSuspendedAutomationConsumerDefinition()
+    {
+        EndpointName = "notrelix-automation-workspace-member-suspended-v1";
+        ConcurrentMessageLimit = 4;
+    }
+
+    protected override void ConfigureConsumer(
+        IReceiveEndpointConfigurator endpointConfigurator,
+        IConsumerConfigurator<WorkspaceMemberSuspendedAutomationConsumer> consumerConfigurator,
+        IRegistrationContext context)
+    {
+        endpointConfigurator.PrefetchCount = 8;
+        endpointConfigurator.UseMessageRetry(r =>
+        {
+            r.Interval(3, TimeSpan.FromMilliseconds(200));
+            r.Ignore<ArgumentException>();
+        });
+    }
+}
+
+public sealed class WorkspaceMemberRoleChangedAutomationConsumerDefinition
+    : ConsumerDefinition<WorkspaceMemberRoleChangedAutomationConsumer>
+{
+    public WorkspaceMemberRoleChangedAutomationConsumerDefinition()
+    {
+        EndpointName = "notrelix-automation-workspace-member-role-changed-v1";
+        ConcurrentMessageLimit = 4;
+    }
+
+    protected override void ConfigureConsumer(
+        IReceiveEndpointConfigurator endpointConfigurator,
+        IConsumerConfigurator<WorkspaceMemberRoleChangedAutomationConsumer> consumerConfigurator,
+        IRegistrationContext context)
+    {
+        endpointConfigurator.PrefetchCount = 8;
+        endpointConfigurator.UseMessageRetry(r =>
+        {
+            r.Interval(3, TimeSpan.FromMilliseconds(200));
+            r.Ignore<ArgumentException>();
+        });
+    }
+}

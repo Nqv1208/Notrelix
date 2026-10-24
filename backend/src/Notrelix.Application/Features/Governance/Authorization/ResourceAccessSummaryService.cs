@@ -23,7 +23,7 @@ namespace Notrelix.Application.Features.Governance.Authorization;
 /// attributed once, in the order Space → Team → User; Guests are attributed
 /// only to the guest count.
 /// </remarks>
-public sealed class ResourceAccessSummaryService : IResourceAccessSummary
+public sealed partial class ResourceAccessSummaryService : IResourceAccessSummary, IBoardSharingSummary
 {
     private const string BoardKind = "work-management.board";
 
@@ -34,6 +34,8 @@ public sealed class ResourceAccessSummaryService : IResourceAccessSummary
     private readonly IResourceAccessEntriesReader _entries;
     private readonly IResourceVisibility _visibility;
     private readonly IActorLookupService _actors;
+    private readonly IResourceAccessChangeReader _changes;
+    private readonly IDateTimeProvider _clock;
 
     public ResourceAccessSummaryService(
         IExecutionContextReader executionContext,
@@ -42,8 +44,12 @@ public sealed class ResourceAccessSummaryService : IResourceAccessSummary
         IBoardAccessSubjectFacts boards,
         IResourceAccessEntriesReader entries,
         IResourceVisibility visibility,
-        IActorLookupService actors)
+        IActorLookupService actors,
+        IResourceAccessChangeReader changes,
+        IDateTimeProvider clock)
     {
+        _changes = changes;
+        _clock = clock;
         _executionContext = executionContext;
         _facts = facts;
         _policy = policy;
@@ -73,7 +79,20 @@ public sealed class ResourceAccessSummaryService : IResourceAccessSummary
         IsIdempotent: false,
         RequiresExpectedVersion: false);
 
-    public async Task<BoardAccessSummary?> GetBoardAccessAsync(Guid boardId, CancellationToken cancellationToken)
+    /// <summary>The facts both reads share: the caller may see the Board and these are its explicit entries.</summary>
+    private sealed record LoadedBoard(
+        Guid UserId,
+        Guid WorkspaceId,
+        AccessFacts Facts,
+        EffectiveResourceAccess Effective,
+        BoardAccessSubject Board,
+        ResourceAccessEntries Entries,
+        bool WorkspaceVisible,
+        Guid? SpaceId,
+        bool CanManage,
+        bool SpaceVisible);
+
+    private async Task<LoadedBoard?> LoadAsync(Guid boardId, CancellationToken cancellationToken)
     {
         if (boardId == Guid.Empty)
         {
@@ -114,6 +133,28 @@ public sealed class ResourceAccessSummaryService : IResourceAccessSummary
                 accountId, workspaceId, BoardKind, board.BoardId, spaceId, board.MemberUserIds, nameof(PermissionAction.ViewBoard)),
             cancellationToken);
 
+        // Grants are disclosed exactly to a caller the engine lets manage the
+        // Board's permissions (the GetResourcePermissions gate), decided over
+        // that action's own facts (permission rules are action-specific).
+        var manageProbe = new BoardProbe(boardId, PermissionAction.ManageBoardPermission);
+        var manageFacts = await _facts.ResolveAsync(BoardProbeDescriptor, context, manageProbe, cancellationToken);
+        var canManage = _policy.Evaluate(BoardProbeDescriptor, context, manageFacts, manageProbe).Kind == AccessDecisionKind.Allowed;
+        var spaceVisible = spaceId is { } placedIn
+            && (await _visibility.VisibleSpaceIdsAsync(workspaceId, userId, cancellationToken)).Contains(placedIn);
+
+        return new LoadedBoard(userId, workspaceId, facts, effective, board, entries, workspaceVisible, spaceId, canManage, spaceVisible);
+    }
+
+    public async Task<BoardAccessSummary?> GetBoardAccessAsync(Guid boardId, CancellationToken cancellationToken)
+    {
+        var loaded = await LoadAsync(boardId, cancellationToken);
+        if (loaded is null)
+        {
+            return null;
+        }
+
+        var (userId, _, facts, effective, board, entries, workspaceVisible, spaceId, canManage, spaceVisible) = loaded;
+
         // A Private Board is reached only by workspace Owners, board members and
         // explicit grants (all enumerated) unless a read permission rule applies;
         // a Workspace-visible Board also has implicit reach that is not enumerated.
@@ -124,15 +165,6 @@ public sealed class ResourceAccessSummaryService : IResourceAccessSummary
         {
             sourceKind = AccessSourceKinds.Guest;
         }
-
-        // Grants are disclosed exactly to a caller the engine lets manage the
-        // Board's permissions (the GetResourcePermissions gate), decided over
-        // that action's own facts (permission rules are action-specific).
-        var manageProbe = new BoardProbe(boardId, PermissionAction.ManageBoardPermission);
-        var manageFacts = await _facts.ResolveAsync(BoardProbeDescriptor, context, manageProbe, cancellationToken);
-        var canManage = _policy.Evaluate(BoardProbeDescriptor, context, manageFacts, manageProbe).Kind == AccessDecisionKind.Allowed;
-        var spaceVisible = spaceId is { } placedIn
-            && (await _visibility.VisibleSpaceIdsAsync(workspaceId, userId, cancellationToken)).Contains(placedIn);
 
         var memberIds = board.MemberUserIds.ToHashSet();
         var namedUserIds = entries.Reach

@@ -1,6 +1,7 @@
 using BoardEntity = global::Notrelix.Domain.WorkManagement.Boards.Board;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Features.WorkManagement.Boards.Services;
 
 namespace Notrelix.Application.Features.WorkManagement.Boards.Commands.UpdateBoardVisibility;
 
@@ -19,12 +20,15 @@ public class UpdateBoardVisibilityCommandHandler : IRequestHandler<UpdateBoardVi
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly BoardAccessChangeLog _changeLog;
 
     public UpdateBoardVisibilityCommandHandler(
         IWorkManagementDbContext context,
         ICurrentRequestContext requestContext,
-        IDateTimeProvider dateTimeProvider)
+        IDateTimeProvider dateTimeProvider,
+        BoardAccessChangeLog changeLog)
     {
+        _changeLog = changeLog;
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
@@ -35,7 +39,10 @@ public class UpdateBoardVisibilityCommandHandler : IRequestHandler<UpdateBoardVi
         var board = await _context.Boards.FirstOrDefaultAsync(b => b.Id == request.BoardId, ct);
         if (board is null) throw new NotFoundException(nameof(BoardEntity), request.BoardId);
 
+        var previous = board.Visibility;
         board.ChangeVisibility(request.Visibility, _requestContext.UserId, _dateTimeProvider.UtcNow);
+        if (previous != board.Visibility)
+            await _changeLog.VisibilityChangedAsync(board.Id, board.Visibility, ct);
         return Result.Success();
     }
 }

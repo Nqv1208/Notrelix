@@ -32,6 +32,16 @@ public interface IWorkActionPort
         Guid executionId,
         AutomationPrincipal automationPrincipal,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Proves, without mutating, that the principal's executor may perform this
+    /// move now (AUT-020). Raises the target-owned Forbidden/NotFound errors.
+    /// </summary>
+    Task EnsureMoveItemAllowedAsync(
+        Guid itemId,
+        Guid targetGroupId,
+        AutomationPrincipal automationPrincipal,
+        CancellationToken cancellationToken);
 }
 
 /// <summary>

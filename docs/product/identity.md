@@ -667,6 +667,8 @@ One User may participate in multiple Accounts/Workspaces.
 
 Identity should not store one permanently authoritative “current Workspace” as identity truth.
 
+Public fact: Identity publishes users' sign-in email through `IIdentityUserFacts.FindEmailsAsync` (lower-case, trimmed). It is personal data: Identity does not decide who may see it. A consumer that shows an email owns that visibility rule, applies it before calling the port, and never calls it for a reader the rule excludes. Workspaces shows a member's email only to a Workspace Owner or Admin, for active non-Guest members (docs/product/workspaces.md section 48.2).
+
 # 62. ID-017 — Current Account/Workspace is session/UI context, not principal identity
 
 Selected scope can change during one authenticated session.

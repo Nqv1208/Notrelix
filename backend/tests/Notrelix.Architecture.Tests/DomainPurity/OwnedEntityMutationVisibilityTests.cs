@@ -47,6 +47,8 @@ public class OwnedEntityMutationVisibilityTests
 
         // ── Workspaces ──
         "Notrelix.Domain.Workspaces.Teams.TeamMember",
+        // Personal onboarding state keyed by user (one row per user, replaced as a whole); not owned by any aggregate.
+        "Notrelix.Domain.Workspaces.Onboarding.OnboardingDraft",
 
         // ── Accounts ──
         "Notrelix.Domain.Accounts.Regions.AccountRegion",

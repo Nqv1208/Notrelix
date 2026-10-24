@@ -10,7 +10,9 @@ public record AutomationRuleDto(
     string Configuration,
     bool IsEnabled,
     DateTime CreatedAt,
-    DateTime? UpdatedAt);
+    DateTime? UpdatedAt,
+    Guid? ExecutorUserId = null,
+    string? DisabledReason = null);
 
 public record AutomationExecutionDto(
     Guid Id,

@@ -560,6 +560,51 @@ Workspaces owns Team composition (members, lead, lifecycle).
 
 Governance owns what a Team grant means: a Team may be the subject of a Space membership entry, a resource permission or a permission rule (GOV-026). Managing Teams is a workspace Owner/Admin capability by default.
 
+
+# 48.2. Read extras for the Space, Team and security pages
+
+Three read-only queries serve the department Members tab, the Teams pages and the sharing and security page. They add no durable fact and no new owner: each is composed from Workspaces facts and filtered by Governance visibility.
+
+- `GET /workspaces/{workspaceId}/spaces/{spaceId}/members-extra`: people reached by the Space's User and Team entries, once each at their highest role (Teams expanded; Guests are Board-level grantees and are not counted), with job title, the Space's Teams that reach the person, and who made the Space; plus pending, unexpired invitations that name the Space (WSP-026). A Space the caller cannot see is NotFound.
+- `GET /workspaces/{workspaceId}/teams-ext`: per Team its people, who created and archived it (an archived Team accepts no change, so its last update is the archival), and the Spaces the caller can see where it holds a role, with the people who also hold a direct entry; plus Workspace Owners and Admins and the non-Guest active members a Team may take.
+- `GET /workspaces/{workspaceId}/security-ext`: active Guest count, the default Guest expiry for new entries, and when share links were turned off (the Workspace creation instant if the policy never changed; null while links are on).
+
+All three need `ViewMembers`, so a Guest is refused (GOV-009).
+
+Intentionally empty fields, not defects. The web client hides them until the named decision exists:
+
+- `email` (people, admins, directory, Team members): shown only to a Workspace Owner or Admin and only for active non-Guest members of the same Workspace; every other reader gets null and a Guest's address is never shown. The address comes from the Identity public facts port (`IIdentityUserFacts.FindEmailsAsync`); Workspaces holds the visibility rule (`IMemberEmailDisclosure`) and reads no Identity table.
+- `lastActiveAt` null and `activeNow` false: no activity source exists.
+- Space `guests` of `members-extra`: always empty; Board guests of a Space are served by the Space overview (`access.guests`, 48.3) from the Board sharing read (`GET /boards/{boardId}/sharing`, Work Management), where a guest is the Workspace role Guest. `invitations[].name` is null.
+- `companyDomain`: the Account's primary verified domain, read from the Accounts public fact (`IAccountDomainFacts`, ACC-010); null when the Account has none, and the page hides the row.
+- Team usage lists Space entries only; Board grants of a Team are not listed yet.
+
+The Workspace sharing policy also stores `guestDefaultExpiryDays` (30, 90, 180 or none). It only pre-fills new Guest entries and never changes existing ones (GOV-031); it is written with the Workspace settings by an Owner or Admin.
+
+# 48.3. Space overview (CTR-GAP-WS-SPACE-OVERVIEW)
+
+`GET /workspaces/{workspaceId}/spaces/{spaceId}/overview[?as=member]` is a Workspaces read facade for the department page. It returns structured figures only (counts, ids, kinds, flags, times); the client composes every sentence and label. It adds no durable fact: people and child Spaces are Workspaces facts, Board figures are Work Management's published facts (`IBoardWorkSummaryFacts`) and root Page figures are Documents' (`IPageSpaceOverviewFacts`). Workspaces reads no Work or Documents table.
+
+Authorization (all through the pipeline): the caller needs `ViewMembers` on the Workspace (a Guest is refused, GOV-009) and the Space must be one the caller can see, otherwise it is NotFound exactly like a missing Space (GOV-025, GOV-029). Boards and Pages enter only through the Governance visible id sets (`IResourceVisibility`), so a Board or Page the caller cannot read never appears, is never counted and never contributes to any figure. `?as=member` previews a plain department member and only a Space manager may ask (403 otherwise): Private Boards, Private child Spaces and Board guests are left out and not counted.
+
+**Running board rule.** A Board is *running* when it is not archived, not deleted, readable by the viewer, and has at least one unfinished Item. An Item counts when it is not archived and not deleted; it is unfinished when it has no completion time; it may be a sub-Item. Finished Boards (every Item done) and Boards without Items are not running: they appear only in `boardTotal`, which counts the Boards of the Space that are readable and not archived. `boards` lists the running Boards, most recently changed first, at most six.
+
+Per Board: `kind` is `inbox` for an Intake Board, else `kanban` when its default View is a Kanban View, else `table`; `progress` is done of total on top-level Items (null without any); `attention` is `overdue` (unfinished Items past their due time), `waitingReview` (pending approval requests on the Board or on one of its unfinished Items) and `unclaimed` (unfinished top-level Items nobody is assigned to), null when all are zero; `people` are the up to three people with the most unfinished Items; `updatedAt` is the latest change of the Board or of any of its Items; a Private Board carries `addedCount` (its members).
+
+The page aside lists only non-zero `attention` entries: `overdue`, `unassigned` (unclaimed Items on inbox Boards), `review` and `stale` (running Boards untouched for 14 days), each with the Board holding most of the count (the stalest Board for `stale`). `workload` is the top five people by unfinished Items across the readable Boards of the Space (most open first, then most overdue). `docTotal` counts readable root Pages of the Space (no parent, not archived) and `docs` lists the four most recently changed with the last editor.
+
+People: `peopleTotal` counts everyone the Space's User and Team entries reach once, Teams expanded, at the highest role, Guests excluded (WSP-026); `people` are the first four (admins first). `children` lists only child Spaces the caller can read (and, in the preview, only Workspace-visible ones) with their head count and the number of readable Boards in them; a child the caller cannot read is omitted, never zero. `access` carries admins, and members and viewers as a head count plus the Team entries at that role with their head count; `access.guests` are Workspace Guests with access to readable Boards of the Space, taken from the Board sharing read, so only a caller who may see a Board's entries (Board manager or member) gets them.
+
+Not served: templates (the first-step template catalog has no owner yet), the per-Doc "linked Items" note and the editor avatar.
+
+# 48.4. Onboarding owned by Workspaces
+
+Accepted 2026-10-23. Workspaces owns the pre-workspace onboarding state and the getting-started card; it creates no workspace by itself (creation stays `CreateWorkspace`, departments `CreateSpace`, invitations `InviteMember`, the first Board `Boards.Create`).
+
+- `GET /accounts/{accountId}/workspaces/slug-check?slug=`: `free`, `taken` or `invalid`, plus the next free address (`name-2`, `name-3`, ...) when taken. An address is unique within the Account only, never globally: active (not deleted) workspaces of the Account hold addresses, exactly as the unique index does (`ux_workspaces_account_slug_active`). It is `invalid` when it is not lowercase letters, digits and single hyphens of at most 128 characters after trimming and lower-casing. It needs the permission to create a workspace in the Account, so it never tells another Account's members anything. There is no reserved-word list yet (open decision).
+- `GET|PUT|DELETE /workspaces/onboarding-draft`: the caller's own unfinished onboarding (`step`, optional `workspaceId`, and a JSON-object `data` of at most 64 KB the server does not interpret). One draft per user, 30 days after the last save (an expired draft reads as absent and the next save replaces it); the subject is always the principal and RLS repeats it on the user. It is personal state, never workspace truth, and it holds no secret by contract. There is no scheduled sweep yet: an expired row stays until the user saves or deletes.
+- `GET /workspaces/{workspaceId}/getting-started` and `POST .../getting-started/dismiss`: any member (`ViewWorkspace`). The only served item is `first-item`, derived (never stored): done when a Board the caller can read has an active Item; `boardId` is then the Board of the earliest created Item, otherwise the newest Board the caller can read. `dismissed` is stored per user and Workspace and dismissing again is a no-op. The `invite-more` and `mobile` items have no signal yet.
+
 # 49. Organizational containers
 
 Spaces and Teams exist because they provide real organization value (department org tree, people partitioning).

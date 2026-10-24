@@ -90,7 +90,7 @@ public sealed class StatusOptionCategoryBackfillIntegrationTests : IAsyncLifetim
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
         await using var context = CreateContext(tenant);
-        context.Workspaces.Add(workspace);
+        await LegacySchemaWorkspaceSeed.InsertAsync(context, workspace);
         context.Boards.Add(board);
         context.BoardFields.AddRange(english, vietnamese, mixed, select);
         await context.SaveChangesAsync();

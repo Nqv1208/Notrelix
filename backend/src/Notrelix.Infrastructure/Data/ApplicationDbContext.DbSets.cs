@@ -53,6 +53,7 @@ using Notrelix.Domain.WorkManagement.Workload;
 using Notrelix.Domain.Collaboration.Attachments;
 using Notrelix.Domain.Collaboration.Comments;
 using Notrelix.Domain.Collaboration.Mentions;
+using Notrelix.Domain.Collaboration.Preferences;
 using Notrelix.Domain.Collaboration.Presence;
 using Notrelix.Domain.Collaboration.Reactions;
 using Notrelix.Domain.Collaboration.ReadStates;
@@ -145,6 +146,8 @@ public partial class ApplicationDbContext
     public DbSet<TeamMember> TeamMembers => Set<TeamMember>();
     public DbSet<RecentResource> RecentResources => Set<RecentResource>();
     public DbSet<PinnedResource> PinnedResources => Set<PinnedResource>();
+    public DbSet<Notrelix.Domain.Workspaces.Onboarding.OnboardingDraft> OnboardingDrafts => Set<Notrelix.Domain.Workspaces.Onboarding.OnboardingDraft>();
+    public DbSet<Notrelix.Domain.Workspaces.Onboarding.GettingStartedDismissal> GettingStartedDismissals => Set<Notrelix.Domain.Workspaces.Onboarding.GettingStartedDismissal>();
 
     // Document
     public DbSet<Page> Pages => Set<Page>();
@@ -211,6 +214,7 @@ public partial class ApplicationDbContext
 
     // Governance
     public DbSet<ResourcePermission> ResourcePermissions => Set<ResourcePermission>();
+    public DbSet<Notrelix.Domain.Governance.AccessChanges.ResourceAccessChange> ResourceAccessChanges => Set<Notrelix.Domain.Governance.AccessChanges.ResourceAccessChange>();
     public DbSet<FieldPermission> FieldPermissions => Set<FieldPermission>();
     public DbSet<PermissionRule> PermissionRules => Set<PermissionRule>();
     public DbSet<CustomRole> CustomRoles => Set<CustomRole>();
@@ -280,7 +284,7 @@ public partial class ApplicationDbContext
     // Canonical notifications
     public DbSet<NotificationItemRecord> NotificationItems => Set<NotificationItemRecord>();
     public DbSet<NotificationRecipientRecord> NotificationRecipients => Set<NotificationRecipientRecord>();
-    public DbSet<NotificationPreferenceRecord> CanonicalNotificationPreferences => Set<NotificationPreferenceRecord>();
+    public DbSet<NotificationPreferenceSet> NotificationPreferenceSets => Set<NotificationPreferenceSet>();
     public DbSet<NotificationCounterRecord> NotificationCounters => Set<NotificationCounterRecord>();
 
     // Collaboration read states

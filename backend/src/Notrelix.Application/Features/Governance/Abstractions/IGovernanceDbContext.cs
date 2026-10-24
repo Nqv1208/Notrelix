@@ -1,3 +1,4 @@
+using Notrelix.Domain.Governance.AccessChanges;
 using Notrelix.Domain.Governance.Templates;
 // ReSharper disable InconsistentNaming — intentionally mirrors DbContext member naming
 
@@ -6,6 +7,7 @@ namespace Notrelix.Application.Features.Governance.Abstractions;
 public interface IGovernanceDbContext
 {
     DbSet<ResourcePermission> ResourcePermissions { get; }
+    DbSet<ResourceAccessChange> ResourceAccessChanges { get; }
     DbSet<FieldPermission> FieldPermissions { get; }
     DbSet<PermissionRule> PermissionRules { get; }
     DbSet<CustomRole> CustomRoles { get; }

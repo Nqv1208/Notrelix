@@ -475,6 +475,56 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.Collaboration.Preferences.Commands.UpdateNotificationPreferences.UpdateNotificationPreferencesCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Collaboration.Preferences.Commands.UpdateNotificationPreferences.UpdateNotificationPreferencesCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Collaboration.Preferences.Queries.GetNotificationPreferences.GetNotificationPreferencesQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Collaboration.Preferences.Queries.GetNotificationPreferences.GetNotificationPreferencesQueryHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.Documents.Blocks.Commands.BatchUpdateBlocks.BatchUpdateBlocksCommand",
     "kind": "Command",
     "principalMarkers": [
@@ -3825,6 +3875,31 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.WorkManagement.Boards.Commands.MakeBoardPrivate.MakeBoardPrivateCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IResourceScopedRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": true,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.WorkManagement.Boards.Commands.MakeBoardPrivate.MakeBoardPrivateCommandHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.WorkManagement.Boards.Commands.MoveBoardToSpace.MoveBoardToSpaceCommand",
     "kind": "Command",
     "principalMarkers": [
@@ -4097,6 +4172,31 @@
     "publicCache": false,
     "handlerTypes": [
       "Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoardMembers.GetBoardMembersQueryHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoardSharing.GetBoardSharingQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IResourceScopedRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoardSharing.GetBoardSharingQueryHandler"
     ]
   },
   {
@@ -6125,6 +6225,156 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.Workspaces.Onboarding.Commands.ClearOnboardingDraft.ClearOnboardingDraftCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IGlobalRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": false,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Workspaces.Onboarding.Commands.ClearOnboardingDraft.ClearOnboardingDraftCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Workspaces.Onboarding.Commands.DismissGettingStarted.DismissGettingStartedCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Workspaces.Onboarding.Commands.DismissGettingStarted.DismissGettingStartedCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Workspaces.Onboarding.Commands.SaveOnboardingDraft.SaveOnboardingDraftCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IGlobalRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": false,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Workspaces.Onboarding.Commands.SaveOnboardingDraft.SaveOnboardingDraftCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Workspaces.Onboarding.Queries.CheckWorkspaceSlug.CheckWorkspaceSlugQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IAccountRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Workspaces.Onboarding.Queries.CheckWorkspaceSlug.CheckWorkspaceSlugQueryHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Workspaces.Onboarding.Queries.GetGettingStarted.GetGettingStartedQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Workspaces.Onboarding.Queries.GetGettingStarted.GetGettingStartedQueryHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Workspaces.Onboarding.Queries.GetOnboardingDraft.GetOnboardingDraftQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IGlobalRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": false,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Workspaces.Onboarding.Queries.GetOnboardingDraft.GetOnboardingDraftQueryHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.Workspaces.Provisioning.Commands.ProvisionPersonalWorkspace.ProvisionPersonalWorkspaceCommand",
     "kind": "Command",
     "principalMarkers": [
@@ -6172,6 +6422,31 @@
     "publicCache": false,
     "handlerTypes": [
       "Notrelix.Application.Features.Workspaces.Settings.Commands.UpdateWorkspaceSettings.UpdateWorkspaceSettingsCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Workspaces.Settings.Queries.GetWorkspaceSecurityExt.GetWorkspaceSecurityExtQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Workspaces.Settings.Queries.GetWorkspaceSecurityExt.GetWorkspaceSecurityExtQueryHandler"
     ]
   },
   {
@@ -6575,6 +6850,56 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceMembersExtra.GetSpaceMembersExtraQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceMembersExtra.GetSpaceMembersExtraQueryHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceOverview.GetSpaceOverviewQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceOverview.GetSpaceOverviewQueryHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceTree.GetSpaceTreeQuery",
     "kind": "Query",
     "principalMarkers": [
@@ -6947,6 +7272,31 @@
     "publicCache": false,
     "handlerTypes": [
       "Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeams.GetWorkspaceTeamsQueryHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.GetWorkspaceTeamsExtQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.GetWorkspaceTeamsExtQueryHandler"
     ]
   },
   {

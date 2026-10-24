@@ -340,6 +340,8 @@ Identity owns how a principal authenticates.
 
 A domain can influence routing without becoming authentication state.
 
+Public fact: Accounts publishes the Account's **primary verified domain** (`IAccountDomainFacts.GetPrimaryVerifiedDomainAsync`) to consumers such as the Workspace sharing page. The Account model has no primary flag, so the primary domain is the verified domain that was verified first (ties broken by name); pending and rejected domains never qualify, and the fact is null when none is verified or the Account does not exist. Consumers read the fact, never the domain table.
+
 # 33. Domain verification
 
 Verification establishes confidence that the Account controls a domain through an approved mechanism.

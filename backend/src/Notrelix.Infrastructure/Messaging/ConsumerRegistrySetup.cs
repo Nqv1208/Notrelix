@@ -524,6 +524,36 @@ public static class ConsumerRegistrySetup
             },
             new ConsumerDefinition
             {
+                ConsumerName = "WorkspaceMemberRemovedAutomationConsumer",
+                EventName = "workspace.member.removed",
+                EventVersion = 1,
+                EndpointName = "notrelix-automation-workspace-member-removed-v1",
+                BoundedContext = "Automation",
+                Description = "Disables the automation rules a removed member runs (AUT-020)",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "WorkspaceMemberSuspendedAutomationConsumer",
+                EventName = "workspace.member.suspended",
+                EventVersion = 1,
+                EndpointName = "notrelix-automation-workspace-member-suspended-v1",
+                BoundedContext = "Automation",
+                Description = "Disables the automation rules a suspended member runs (AUT-020)",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "WorkspaceMemberRoleChangedAutomationConsumer",
+                EventName = "workspace.member.role-changed",
+                EventVersion = 1,
+                EndpointName = "notrelix-automation-workspace-member-role-changed-v1",
+                BoundedContext = "Automation",
+                Description = "Disables the automation rules a demoted member runs (AUT-020)",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
                 ConsumerName = "N8nDispatchConsumer",
                 EventName = "automation.n8n-dispatch-requested",
                 EventVersion = 1,

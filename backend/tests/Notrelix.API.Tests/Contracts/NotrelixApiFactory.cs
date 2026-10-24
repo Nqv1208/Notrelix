@@ -40,6 +40,16 @@ using Notrelix.Application.Features.Workspaces.Workspaces.Commands.DeleteWorkspa
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.TransferOwnership;
 using Notrelix.Application.Features.Workspaces.Workspaces.Queries.GetAccountWorkspaces;
 using Notrelix.Application.Features.Workspaces.Workspaces.Queries.ResolveSlug;
+using Notrelix.Application.Features.Workspaces.Settings.Queries.GetWorkspaceSecurityExt;
+using Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceMembersExtra;
+using Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceOverview;
+using Notrelix.Application.Features.Workspaces.Onboarding.Commands.ClearOnboardingDraft;
+using Notrelix.Application.Features.Workspaces.Onboarding.Commands.DismissGettingStarted;
+using Notrelix.Application.Features.Workspaces.Onboarding.Commands.SaveOnboardingDraft;
+using Notrelix.Application.Features.Workspaces.Onboarding.Queries.CheckWorkspaceSlug;
+using Notrelix.Application.Features.Workspaces.Onboarding.Queries.GetGettingStarted;
+using Notrelix.Application.Features.Workspaces.Onboarding.Queries.GetOnboardingDraft;
+using Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt;
 using Notrelix.Application.Features.Workspaces.Settings.Queries.GetWorkspaceSettings;
 using Notrelix.Application.Features.Workspaces.Settings.Commands.UpdateWorkspaceSettings;
 using Notrelix.Application.Features.Workspaces.Members.Commands.AddMember;
@@ -428,7 +438,25 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
                 Result<WorkspaceDto>.Success(new WorkspaceDto(
                     Guid.NewGuid(), "Mocked", "mocked", null, false, "Free", null, null, null, false, 0, DateTime.UtcNow, null, 1)));
             MockWorkspaceHandler<GetWorkspaceSettingsQuery, Result<WorkspaceSettingsDto>>(services,
-                Result<WorkspaceSettingsDto>.Success(new WorkspaceSettingsDto(false, false, false, "Member", 7)));
+                Result<WorkspaceSettingsDto>.Success(new WorkspaceSettingsDto(false, false, false, "Member", 7, null)));
+            MockWorkspaceHandler<GetWorkspaceTeamsExtQuery, Result<WorkspaceTeamsExtDto>>(services,
+                Result<WorkspaceTeamsExtDto>.Success(new WorkspaceTeamsExtDto([], [], [])));
+            MockWorkspaceHandler<GetSpaceMembersExtraQuery, Result<SpaceMembersExtraDto>>(services,
+                Result<SpaceMembersExtraDto>.Success(new SpaceMembersExtraDto(new SpaceMembersExtraSummaryDto(0, 0, 0, 0), [], [], [])));
+            MockWorkspaceHandler<GetSpaceOverviewQuery, Result<SpaceOverviewDto>>(services,
+                Result<SpaceOverviewDto>.Success(new SpaceOverviewDto(0, [], 0, [], 0, [], [], [], [],
+                    new SpaceOverviewAccessDto([], new SpaceOverviewRoleDto(0, []), new SpaceOverviewRoleDto(0, []), []))));
+            MockWorkspaceHandler<CheckWorkspaceSlugQuery, Result<WorkspaceSlugCheckDto>>(services,
+                Result<WorkspaceSlugCheckDto>.Success(new WorkspaceSlugCheckDto("free", null)));
+            MockWorkspaceHandler<GetOnboardingDraftQuery, Result<OnboardingDraftResponseDto>>(services,
+                Result<OnboardingDraftResponseDto>.Success(new OnboardingDraftResponseDto(null)));
+            MockWorkspaceHandler<SaveOnboardingDraftCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<ClearOnboardingDraftCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<GetGettingStartedQuery, Result<GettingStartedDto>>(services,
+                Result<GettingStartedDto>.Success(new GettingStartedDto(false, [])));
+            MockWorkspaceHandler<DismissGettingStartedCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<GetWorkspaceSecurityExtQuery, Result<WorkspaceSecurityExtDto>>(services,
+                Result<WorkspaceSecurityExtDto>.Success(new WorkspaceSecurityExtDto(0, null, null, null)));
             MockWorkspaceHandler<UpdateWorkspaceSettingsCommand, Result>(services, Result.Success());
             MockWorkspaceHandler<AddMemberCommand, Result>(services, Result.Success());
             MockWorkspaceHandler<SuspendMemberCommand, Result>(services, Result.Success());

@@ -1097,6 +1097,116 @@
         ]
       }
     },
+    "/api/v1/workspaces/{workspaceId}/notification-preferences": {
+      "get": {
+        "tags": [
+          "Collaboration.Preferences"
+        ],
+        "summary": "Get the caller's notification preferences in a workspace",
+        "description": "One row per notification type (assigned, mention, approval, overdue, watching, invitation, digest) with its in-app and email value; a cell the caller never changed has its default. Version is 0 until the first change is saved.",
+        "operationId": "Collaboration.Preferences.GetNotificationPreferences",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Collaboration.Preferences.DTOs.NotificationPreferencesDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "Collaboration.Preferences"
+        ],
+        "summary": "Change the caller's notification preferences in a workspace",
+        "description": "Partial and all-or-nothing: only the named channels of the named types change. Answers the full matrix, 412 when expectedVersion is stale, 400 or 422 for an unknown type or no change requested. Setting values that already hold changes nothing and keeps the version.",
+        "operationId": "Collaboration.Preferences.UpdateNotificationPreferences",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Contracts.Collaboration.Preferences.Requests.UpdateNotificationPreferencesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Collaboration.Preferences.DTOs.NotificationPreferencesDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Precondition Failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
     "/api/v1/pages/{pageId}/blocks": {
       "get": {
         "tags": [
@@ -8878,6 +8988,125 @@
         ]
       }
     },
+    "/api/v1/boards/{boardId}/sharing": {
+      "get": {
+        "tags": [
+          "WorkManagement.Boards",
+          "WorkManagement.Boards"
+        ],
+        "summary": "Get who holds access on a board, its sharing log and who would lose it on Private",
+        "description": "Entries (people and Teams, level, how it is held) are returned only to a board manager or a board member; any other reader of the board gets the counts only. The log and the Private impact are for board managers. An entry id is the person's user id or the Team's id. Email is shown only to a workspace Owner or Admin and only for non-Guest people.",
+        "operationId": "WorkManagement.Boards.GetSharing",
+        "parameters": [
+          {
+            "name": "boardId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardSharingDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/boards/{boardId}/sharing/private": {
+      "post": {
+        "tags": [
+          "WorkManagement.Boards",
+          "WorkManagement.Boards"
+        ],
+        "summary": "Add people to a board, then make it Private, in one step",
+        "description": "Adds the given people as board members who can edit (people already on the board keep their role), then sets the visibility to Private, in one transaction. If any person cannot be added the board is unchanged.",
+        "operationId": "WorkManagement.Boards.MakePrivate",
+        "parameters": [
+          {
+            "name": "boardId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409.",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Contracts.WorkManagement.Boards.Requests.MakeBoardPrivateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "Idempotency-Replayed": {
+                "description": "true when this response is a replay of a stored result",
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Idempotency key reused with a different payload"
+          },
+          "503": {
+            "description": "Operation still being processed; retry after the indicated delay"
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
     "/api/v1/boards/{boardId}/archive": {
       "post": {
         "tags": [
@@ -14798,6 +15027,163 @@
         ]
       }
     },
+    "/api/v1/workspaces/onboarding-draft": {
+      "get": {
+        "tags": [
+          "Workspaces.Onboarding"
+        ],
+        "summary": "Get the caller's unfinished onboarding",
+        "description": "Only the caller's own draft; an expired draft reads as absent (draft is null).",
+        "operationId": "Workspaces.Onboarding.GetOnboardingDraft",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Onboarding.Queries.GetOnboardingDraft.OnboardingDraftResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Workspaces.Onboarding"
+        ],
+        "summary": "Save the caller's unfinished onboarding",
+        "description": "Replaces the one draft of the caller and restarts its 30 days; idempotent.",
+        "operationId": "Workspaces.Onboarding.SaveOnboardingDraft",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Contracts.Workspaces.Onboarding.Requests.SaveOnboardingDraftRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Workspaces.Onboarding"
+        ],
+        "summary": "Clear the caller's unfinished onboarding",
+        "description": "Succeeds when there is no draft.",
+        "operationId": "Workspaces.Onboarding.ClearOnboardingDraft",
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspaceId}/getting-started": {
+      "get": {
+        "tags": [
+          "Workspaces.Onboarding"
+        ],
+        "summary": "Get the getting-started card of a workspace",
+        "description": "Derived items (first-item from the Boards the caller can read) and whether the caller dismissed the card.",
+        "operationId": "Workspaces.Onboarding.GetGettingStarted",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Onboarding.Queries.GetGettingStarted.GettingStartedDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspaceId}/getting-started/dismiss": {
+      "post": {
+        "tags": [
+          "Workspaces.Onboarding"
+        ],
+        "summary": "Hide the getting-started card for the caller",
+        "description": "Stored per user and workspace; dismissing again is a no-op.",
+        "operationId": "Workspaces.Onboarding.DismissGettingStarted",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
     "/api/v1/workspaces/{workspaceId}/settings": {
       "get": {
         "tags": [
@@ -14873,6 +15259,48 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspaceId}/security-ext": {
+      "get": {
+        "tags": [
+          "Workspaces.Settings",
+          "Workspaces.Settings"
+        ],
+        "summary": "Get the read-only extras of the sharing and security page",
+        "description": "Active Guest count, the default Guest expiry for new entries and the instant share links were turned off. Needs the right to see the member list, so a Guest is refused.",
+        "operationId": "Workspaces.Settings.GetWorkspaceSecurityExt",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Settings.Queries.GetWorkspaceSecurityExt.WorkspaceSecurityExtDto"
                 }
               }
             }
@@ -15683,6 +16111,115 @@
         ]
       }
     },
+    "/api/v1/workspaces/{workspaceId}/spaces/{spaceId}/members-extra": {
+      "get": {
+        "tags": [
+          "Workspaces.Spaces",
+          "Workspaces.Spaces"
+        ],
+        "summary": "Get what the department members tab adds to the space member list",
+        "description": "People reached by the space's user and team entries once each at their highest role, with job title, the teams that reach them and who made the space, plus pending invitations that name the space. Email and activity are not exposed yet and board guests are listed through board sharing. A space the caller cannot see is 404.",
+        "operationId": "Workspaces.Spaces.GetSpaceMembersExtra",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "spaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceMembersExtra.SpaceMembersExtraDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspaceId}/spaces/{spaceId}/overview": {
+      "get": {
+        "tags": [
+          "Workspaces.Spaces",
+          "Workspaces.Spaces"
+        ],
+        "summary": "Get the department overview as structured figures",
+        "description": "Head count by role with teams expanded, the running boards (not archived, readable by the caller, with at least one unfinished item) with progress and attention counts, recent root pages, attention counts, open work per person, child space counts and the access card. Finished boards count only in boardTotal. A space the caller cannot see is 404; as=member previews a plain member and is allowed only for a space manager (403 otherwise).",
+        "operationId": "Workspaces.Spaces.GetSpaceOverview",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "spaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "as",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceOverview.SpaceOverviewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
     "/api/v1/workspaces/{workspaceId}/spaces/{spaceId}/members/{subjectType}/{subjectId}": {
       "patch": {
         "tags": [
@@ -15913,6 +16450,48 @@
                 "schema": {
                   "type": "string",
                   "format": "uuid"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspaceId}/teams-ext": {
+      "get": {
+        "tags": [
+          "Workspaces.Teams",
+          "Workspaces.Teams"
+        ],
+        "summary": "Get what the Teams pages add to the team list",
+        "description": "Per Team: people, who created and archived it and the Spaces where it holds a role; plus the workspace admins and the people a Team may take. Needs the right to see the member list, so a Guest is refused. Email is shown only to a workspace Owner or Admin and only for non-Guest people.",
+        "operationId": "Workspaces.Teams.GetWorkspaceTeamsExt",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.WorkspaceTeamsExtDto"
                 }
               }
             }
@@ -17013,6 +17592,55 @@
           }
         ]
       }
+    },
+    "/api/v1/accounts/{accountId}/workspaces/slug-check": {
+      "get": {
+        "tags": [
+          "Workspaces.Workspaces",
+          "Workspaces.Workspaces"
+        ],
+        "summary": "Check whether a workspace address is free in the account",
+        "description": "Status is free, taken or invalid (not a lowercase letters, digits and hyphens slug of at most 128 characters). A slug is unique within the account only. When taken, suggestion is the next free address. Needs the permission to create a workspace in the account.",
+        "operationId": "Workspaces.Workspaces.CheckWorkspaceSlug",
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "slug",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Onboarding.Queries.CheckWorkspaceSlug.WorkspaceSlugCheckDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -17154,6 +17782,42 @@
         "properties": {
           "contentMd": {
             "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.API.Contracts.Collaboration.Preferences.Requests.NotificationPreferenceRowRequest": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "nullable": true
+          },
+          "inApp": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "email": {
+            "type": "boolean",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.API.Contracts.Collaboration.Preferences.Requests.UpdateNotificationPreferencesRequest": {
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.API.Contracts.Collaboration.Preferences.Requests.NotificationPreferenceRowRequest"
+            },
             "nullable": true
           }
         },
@@ -17961,6 +18625,20 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.API.Contracts.WorkManagement.Boards.Requests.MakeBoardPrivateRequest": {
+        "type": "object",
+        "properties": {
+          "addUserIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.API.Contracts.WorkManagement.Boards.Requests.MoveBoardToSpaceRequest": {
         "type": "object",
         "properties": {
@@ -18501,6 +19179,24 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.API.Contracts.Workspaces.Onboarding.Requests.SaveOnboardingDraftRequest": {
+        "type": "object",
+        "properties": {
+          "step": {
+            "type": "string",
+            "nullable": true
+          },
+          "workspaceId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "data": {
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.API.Contracts.Workspaces.Settings.Requests.UpdateWorkspaceSettingsRequest": {
         "type": "object",
         "properties": {
@@ -18524,6 +19220,11 @@
           "expectedVersion": {
             "type": "integer",
             "format": "int64"
+          },
+          "guestDefaultExpiryDays": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -19230,6 +19931,39 @@
           },
           "kind": {
             "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Collaboration.Preferences.DTOs.NotificationPreferenceRowDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "nullable": true
+          },
+          "inApp": {
+            "type": "boolean"
+          },
+          "email": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Collaboration.Preferences.DTOs.NotificationPreferencesDto": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.Collaboration.Preferences.DTOs.NotificationPreferenceRowDto"
+            },
             "nullable": true
           }
         },
@@ -20464,6 +21198,52 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardPrivateImpactDto": {
+        "type": "object",
+        "properties": {
+          "lose": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "people": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardPrivateImpactPersonDto"
+            },
+            "nullable": true
+          },
+          "keep": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardPrivateImpactPersonDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "items": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "overdue": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardSchemaDto": {
         "type": "object",
         "properties": {
@@ -20496,6 +21276,176 @@
           "version": {
             "type": "integer",
             "format": "int64"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardSharingDto": {
+        "type": "object",
+        "properties": {
+          "boardId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "canManage": {
+            "type": "boolean"
+          },
+          "entriesDisclosed": {
+            "type": "boolean"
+          },
+          "visibility": {
+            "type": "string",
+            "nullable": true
+          },
+          "spaceId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "spaceName": {
+            "type": "string",
+            "nullable": true
+          },
+          "spacePeople": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "peopleCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "guestCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "peopleCountComplete": {
+            "type": "boolean"
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardSharingEntryDto"
+            },
+            "nullable": true
+          },
+          "log": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardSharingLogEntryDto"
+            },
+            "nullable": true
+          },
+          "privateImpact": {
+            "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardPrivateImpactDto"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardSharingEntryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "you": {
+            "type": "boolean"
+          },
+          "owner": {
+            "type": "boolean"
+          },
+          "level": {
+            "type": "string",
+            "nullable": true
+          },
+          "levelCapped": {
+            "type": "boolean"
+          },
+          "source": {
+            "type": "string",
+            "nullable": true
+          },
+          "permissionId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "memberRole": {
+            "type": "string",
+            "nullable": true
+          },
+          "spaceRole": {
+            "type": "string",
+            "nullable": true
+          },
+          "outsideSpace": {
+            "type": "boolean"
+          },
+          "teamPeople": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "addedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "grantedBy": {
+            "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardAccessGrantorDto"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardSharingLogEntryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string",
+            "nullable": true
+          },
+          "actor": {
+            "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardAccessGrantorDto"
+          },
+          "target": {
+            "type": "string",
+            "nullable": true
+          },
+          "from": {
+            "type": "string",
+            "nullable": true
+          },
+          "to": {
+            "type": "string",
+            "nullable": true
+          },
+          "guest": {
+            "type": "boolean"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
           }
         },
         "additionalProperties": false
@@ -20948,6 +21898,111 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.Application.Features.Workspaces.Onboarding.Queries.CheckWorkspaceSlug.WorkspaceSlugCheckDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "nullable": true
+          },
+          "suggestion": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Workspaces.Onboarding.Queries.GetGettingStarted.GettingStartedDto": {
+        "type": "object",
+        "properties": {
+          "dismissed": {
+            "type": "boolean"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Onboarding.Queries.GetGettingStarted.GettingStartedItemDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Workspaces.Onboarding.Queries.GetGettingStarted.GettingStartedItemDto": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "nullable": true
+          },
+          "done": {
+            "type": "boolean"
+          },
+          "boardId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "boardTitle": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Workspaces.Onboarding.Queries.GetOnboardingDraft.OnboardingDraftDto": {
+        "type": "object",
+        "properties": {
+          "step": {
+            "type": "string",
+            "nullable": true
+          },
+          "workspaceId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "data": { },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Workspaces.Onboarding.Queries.GetOnboardingDraft.OnboardingDraftResponseDto": {
+        "type": "object",
+        "properties": {
+          "draft": {
+            "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Onboarding.Queries.GetOnboardingDraft.OnboardingDraftDto"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Workspaces.Settings.Queries.GetWorkspaceSecurityExt.WorkspaceSecurityExtDto": {
+        "type": "object",
+        "properties": {
+          "guestCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "guestExpiryDays": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "companyDomain": {
+            "type": "string",
+            "nullable": true
+          },
+          "linksOffSince": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.Application.Features.Workspaces.Settings.Queries.GetWorkspaceSettings.WorkspaceSettingsDto": {
         "type": "object",
         "properties": {
@@ -20967,6 +22022,11 @@
           "invitationExpiryDays": {
             "type": "integer",
             "format": "int32"
+          },
+          "guestDefaultExpiryDays": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -21030,6 +22090,478 @@
           "addedAt": {
             "type": "string",
             "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceMembersExtra.SpaceMembersExtraDto": {
+        "type": "object",
+        "properties": {
+          "summary": {
+            "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceMembersExtra.SpaceMembersExtraSummaryDto"
+          },
+          "people": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceMembersExtra.SpaceMembersExtraPersonDto"
+            },
+            "nullable": true
+          },
+          "invitations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceMembersExtra.SpaceMembersExtraInvitationDto"
+            },
+            "nullable": true
+          },
+          "guests": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceMembersExtra.SpaceMembersExtraGuestDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceMembersExtra.SpaceMembersExtraGuestDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "outside": {
+            "type": "boolean"
+          },
+          "boardId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "boardName": {
+            "type": "string",
+            "nullable": true
+          },
+          "level": {
+            "type": "string",
+            "nullable": true
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceMembersExtra.SpaceMembersExtraInvitationDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "sentAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "role": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceMembersExtra.SpaceMembersExtraPersonDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "lastActiveAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "activeNow": {
+            "type": "boolean"
+          },
+          "viaTeams": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "creator": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceMembersExtra.SpaceMembersExtraSummaryDto": {
+        "type": "object",
+        "properties": {
+          "admins": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "members": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "viewers": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "invites": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceOverview.SpaceOverviewAccessDto": {
+        "type": "object",
+        "properties": {
+          "admins": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceOverview.SpaceOverviewPersonDto"
+            },
+            "nullable": true
+          },
+          "members": {
+            "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceOverview.SpaceOverviewRoleDto"
+          },
+          "viewers": {
+            "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceOverview.SpaceOverviewRoleDto"
+          },
+          "guests": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceOverview.SpaceOverviewGuestDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceOverview.SpaceOverviewAttentionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "boardId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceOverview.SpaceOverviewBoardAttentionDto": {
+        "type": "object",
+        "properties": {
+          "overdue": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "waitingReview": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "unclaimed": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceOverview.SpaceOverviewBoardDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "kind": {
+            "type": "string",
+            "nullable": true
+          },
+          "isPrivate": {
+            "type": "boolean"
+          },
+          "addedCount": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "progress": {
+            "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceOverview.SpaceOverviewProgressDto"
+          },
+          "attention": {
+            "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceOverview.SpaceOverviewBoardAttentionDto"
+          },
+          "people": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceOverview.SpaceOverviewPersonDto"
+            },
+            "nullable": true
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceOverview.SpaceOverviewChildDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "people": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "boards": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceOverview.SpaceOverviewDocDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "editorName": {
+            "type": "string",
+            "nullable": true
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceOverview.SpaceOverviewDto": {
+        "type": "object",
+        "properties": {
+          "peopleTotal": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "people": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceOverview.SpaceOverviewPersonDto"
+            },
+            "nullable": true
+          },
+          "boardTotal": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "boards": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceOverview.SpaceOverviewBoardDto"
+            },
+            "nullable": true
+          },
+          "docTotal": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "docs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceOverview.SpaceOverviewDocDto"
+            },
+            "nullable": true
+          },
+          "attention": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceOverview.SpaceOverviewAttentionDto"
+            },
+            "nullable": true
+          },
+          "workload": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceOverview.SpaceOverviewWorkloadDto"
+            },
+            "nullable": true
+          },
+          "children": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceOverview.SpaceOverviewChildDto"
+            },
+            "nullable": true
+          },
+          "access": {
+            "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceOverview.SpaceOverviewAccessDto"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceOverview.SpaceOverviewGuestBoardDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceOverview.SpaceOverviewGuestDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "boards": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceOverview.SpaceOverviewGuestBoardDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceOverview.SpaceOverviewPersonDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceOverview.SpaceOverviewProgressDto": {
+        "type": "object",
+        "properties": {
+          "done": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceOverview.SpaceOverviewRoleDto": {
+        "type": "object",
+        "properties": {
+          "people": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "teams": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceOverview.SpaceOverviewTeamDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceOverview.SpaceOverviewTeamDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceOverview.SpaceOverviewWorkloadDto": {
+        "type": "object",
+        "properties": {
+          "person": {
+            "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceOverview.SpaceOverviewPersonDto"
+          },
+          "active": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "overdue": {
+            "type": "integer",
+            "format": "int32"
           }
         },
         "additionalProperties": false
@@ -21143,6 +22675,212 @@
           },
           "jobTitle": {
             "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.TeamsExtAdminDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "role": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.TeamsExtDirectEntryDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "role": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.TeamsExtDirectoryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.TeamsExtPersonDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.TeamsExtTeamDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.TeamsExtPersonDto"
+          },
+          "archivedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "archivedBy": {
+            "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.TeamsExtPersonDto"
+          },
+          "people": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.TeamsExtTeamPersonDto"
+            },
+            "nullable": true
+          },
+          "usage": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.TeamsExtUsageDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.TeamsExtTeamPersonDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "role": {
+            "type": "string",
+            "nullable": true
+          },
+          "since": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.TeamsExtUsageDto": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "nullable": true
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "spaceType": {
+            "type": "string",
+            "nullable": true
+          },
+          "grant": {
+            "type": "string",
+            "nullable": true
+          },
+          "since": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "direct": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.TeamsExtDirectEntryDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.WorkspaceTeamsExtDto": {
+        "type": "object",
+        "properties": {
+          "teams": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.TeamsExtTeamDto"
+            },
+            "nullable": true
+          },
+          "admins": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.TeamsExtAdminDto"
+            },
+            "nullable": true
+          },
+          "directory": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.TeamsExtDirectoryDto"
+            },
             "nullable": true
           }
         },

@@ -716,6 +716,9 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
         services.AddSingleton(currentUserMock.Object);
         services.AddSingleton(clockMock.Object);
         services.AddSingleton(TimeProvider.System);
+        // AUT-020: capacity flows create Webhook rules, which never reach the Work port.
+        services.AddSingleton(new Moq.Mock<Notrelix.Application.Features.Automation.Ports.WorkManagement.IWorkActionPort>().Object);
+        services.AddScoped<Notrelix.Application.Features.Automation.Rules.Services.AutomationExecutorAuthority>();
 
         services.AddSingleton<IRequestDescriptorRegistry>(
             RequestDescriptorRegistry.Create(typeof(CreateAutomationRuleCommand).Assembly));

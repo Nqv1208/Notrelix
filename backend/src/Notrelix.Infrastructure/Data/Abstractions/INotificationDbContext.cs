@@ -1,3 +1,4 @@
+using Notrelix.Domain.Collaboration.Preferences;
 using Notrelix.Infrastructure.Data.Notifications;
 // ReSharper disable InconsistentNaming — intentionally mirrors DbContext member naming
 
@@ -7,7 +8,7 @@ public interface INotificationDbContext
 {
     DbSet<NotificationItemRecord> NotificationItems { get; }
     DbSet<NotificationRecipientRecord> NotificationRecipients { get; }
-    DbSet<NotificationPreferenceRecord> CanonicalNotificationPreferences { get; }
+    DbSet<NotificationPreferenceSet> NotificationPreferenceSets { get; }
     DbSet<NotificationCounterRecord> NotificationCounters { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);

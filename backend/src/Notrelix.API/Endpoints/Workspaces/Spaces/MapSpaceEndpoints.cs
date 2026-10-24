@@ -32,6 +32,8 @@ public static class MapSpaceEndpoints
         byIdGroup.MapRestoreSpace();
         byIdGroup.MapMoveSpace();
         byIdGroup.MapGetSpaceMembers();
+        byIdGroup.MapGetSpaceMembersExtra();
+        byIdGroup.MapGetSpaceOverview();
         byIdGroup.MapAddSpaceMember();
         byIdGroup.MapChangeSpaceMemberRole();
         byIdGroup.MapRemoveSpaceMember();

@@ -178,6 +178,10 @@ public class WorkspaceNamespaceArchitectureTests
             "Resource invitation resend (WSP-026): scoped by IResourceScopedRequest to one Board/Page and authorized by IRequirePermission (ManageBoardPermission/ManagePagePermission); the handler selects only the actor's own invitation", "Keep as-is"),
         ["RevokeResourceInvitationCommand"] = new("RevokeResourceInvitationCommand", AllowlistClassification.Intentional,
             "Resource invitation revoke (WSP-026): scoped by IResourceScopedRequest to one Board/Page and authorized by IRequirePermission (ManageBoardPermission/ManagePagePermission); the handler selects only the actor's own invitation", "Keep as-is"),
+        ["SaveOnboardingDraftCommand"] = new("SaveOnboardingDraftCommand", AllowlistClassification.Intentional,
+            "Personal onboarding draft owned by Workspaces and keyed by the principal (IGlobalRequest): the user may have no workspace yet, there is no resource scope and no user id input; RLS repeats the user ownership", "Keep as-is"),
+        ["ClearOnboardingDraftCommand"] = new("ClearOnboardingDraftCommand", AllowlistClassification.Intentional,
+            "Personal onboarding draft owned by Workspaces and keyed by the principal (IGlobalRequest): the user may have no workspace yet, there is no resource scope and no user id input; RLS repeats the user ownership", "Keep as-is"),
         ["ProvisionPersonalWorkspaceCommand"] = new("ProvisionPersonalWorkspaceCommand", AllowlistClassification.SystemCommand,
             "System-internal background command — no user request path", "Keep as-is"),
     };

@@ -11,4 +11,13 @@ public interface IIdentityUserFacts
     Task<IdentityUserFact?> FindByIdAsync(
         Guid userId,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Sign-in emails of the given users (lower-case, trimmed); users that do not exist are omitted.
+    /// An email is personal data: the caller owns the visibility rule and must never call this for a
+    /// reader the policy does not allow.
+    /// </summary>
+    Task<IReadOnlyDictionary<Guid, string>> FindEmailsAsync(
+        IReadOnlyCollection<Guid> userIds,
+        CancellationToken cancellationToken);
 }

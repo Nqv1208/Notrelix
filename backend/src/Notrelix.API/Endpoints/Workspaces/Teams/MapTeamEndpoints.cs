@@ -15,6 +15,13 @@ public static class MapTeamEndpoints
         group.MapGetWorkspaceTeams();
         group.MapCreateTeam();
 
+        var extGroup = app
+            .MapGroup("/api/v1/workspaces/{workspaceId:guid}/teams-ext")
+            .WithTags("Workspaces.Teams")
+            .WithOpenApi();
+
+        extGroup.MapGetWorkspaceTeamsExt();
+
         var byIdGroup = app
             .MapGroup("/api/v1/workspaces/{workspaceId:guid}/teams/{teamId:guid}")
             .WithTags("Workspaces.Teams")

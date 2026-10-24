@@ -1,5 +1,6 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Automation.Abstractions;
+using Notrelix.Application.Features.Automation.Rules.Services;
 
 namespace Notrelix.Application.Features.Automation.Rules.Commands.SetAutomationRuleEnabled;
 
@@ -24,12 +25,15 @@ public class SetAutomationRuleEnabledCommandHandler : IRequestHandler<SetAutomat
     private readonly IAutomationDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly AutomationExecutorAuthority _executorAuthority;
 
     public SetAutomationRuleEnabledCommandHandler(
         IAutomationDbContext context,
         ICurrentUser currentUser,
-        IDateTimeProvider dateTimeProvider)
+        IDateTimeProvider dateTimeProvider,
+        AutomationExecutorAuthority executorAuthority)
     {
+        _executorAuthority = executorAuthority;
         _context = context;
         _currentUser = currentUser;
         _dateTimeProvider = dateTimeProvider;
@@ -41,7 +45,23 @@ public class SetAutomationRuleEnabledCommandHandler : IRequestHandler<SetAutomat
             .FirstOrDefaultAsync(item => item.Id == request.AutomationRuleId, cancellationToken);
         if (rule is null) throw new NotFoundException(nameof(AutomationRule), request.AutomationRuleId);
 
-        if (request.IsEnabled) rule.Enable(_currentUser.UserId, _dateTimeProvider.UtcNow);
+        if (request.IsEnabled)
+        {
+            // AUT-020: enabling makes the rule executable as its bound executor, so
+            // that executor must hold the action's permission on the target now.
+            // A rule without an executor is rejected by the Domain on Enable.
+            if (rule.ExecutorUserId is { } executor && executor != Guid.Empty)
+            {
+                await _executorAuthority.EnsureCanExecuteAsync(
+                    rule.AccountId,
+                    rule.WorkspaceId,
+                    executor,
+                    rule.Configuration.Action,
+                    cancellationToken);
+            }
+
+            rule.Enable(_currentUser.UserId, _dateTimeProvider.UtcNow);
+        }
         else rule.Disable(_currentUser.UserId, _dateTimeProvider.UtcNow);
 
         return Result.Success();

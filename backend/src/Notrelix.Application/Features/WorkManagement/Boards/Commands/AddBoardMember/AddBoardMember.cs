@@ -3,6 +3,7 @@ using BoardMemberEntity = global::Notrelix.Domain.WorkManagement.Boards.BoardMem
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Governance.Public.Access;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Features.WorkManagement.Boards.Services;
 
 namespace Notrelix.Application.Features.WorkManagement.Boards.Commands.AddBoardMember;
 
@@ -26,13 +27,16 @@ public class AddBoardMemberCommandHandler : IRequestHandler<AddBoardMemberComman
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IWorkspaceAccessResolver _workspaceAccess;
+    private readonly BoardAccessChangeLog _changeLog;
 
     public AddBoardMemberCommandHandler(
         IWorkManagementDbContext context,
         ICurrentUser currentUser,
         IDateTimeProvider dateTimeProvider,
-        IWorkspaceAccessResolver workspaceAccess)
+        IWorkspaceAccessResolver workspaceAccess,
+        BoardAccessChangeLog changeLog)
     {
+        _changeLog = changeLog;
         _context = context;
         _currentUser = currentUser;
         _dateTimeProvider = dateTimeProvider;
@@ -62,6 +66,7 @@ public class AddBoardMemberCommandHandler : IRequestHandler<AddBoardMemberComman
 
         var member = BoardMemberEntity.Create(board.Id, request.UserId, role, _dateTimeProvider.UtcNow);
         _context.BoardMembers.Add(member);
+        await _changeLog.MemberAddedAsync(board.Id, request.UserId, role, ct);
 
         return Result.Success();
     }

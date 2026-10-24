@@ -134,11 +134,10 @@ public sealed class ReplayEngineTests
             MaxEventsPerSecond = 0,
         };
 
-        var strategy = new TestStrategy(10);
         using var cts = new CancellationTokenSource();
-
-        // Cancel after a short delay so the engine starts processing
-        cts.CancelAfter(TimeSpan.FromMilliseconds(1));
+        // The strategy cancels once the first event is handed over, so the engine meets the
+        // cancellation on the next event instead of racing a timer against a fast loop.
+        var strategy = new CancelAfterFirstEventStrategy(10, cts);
 
         var result = await _sut.ExecuteAsync(request, strategy, cts.Token);
 
@@ -233,6 +232,45 @@ file sealed class TestStrategy : IReplayStrategy
             };
 
             await Task.CompletedTask;
+        }
+    }
+}
+
+file sealed class CancelAfterFirstEventStrategy : IReplayStrategy
+{
+    private readonly int _count;
+    private readonly CancellationTokenSource _cts;
+
+    public CancelAfterFirstEventStrategy(int count, CancellationTokenSource cts)
+    {
+        _count = count;
+        _cts = cts;
+    }
+
+    public ReplayStrategyType StrategyType => ReplayStrategyType.Latest;
+
+    public async IAsyncEnumerable<EventPublication> GetEventsAsync(
+        ReplayRequest request,
+        IReplayCheckpointStore checkpointStore,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        for (var i = 0; i < _count; i++)
+        {
+            yield return new EventPublication
+            {
+                Event = new { Id = i },
+                Context = new PublishContext
+                {
+                    CorrelationId = Guid.NewGuid(),
+                    WorkspaceId = request.WorkspaceId,
+                    OccurredAt = DateTimeOffset.UtcNow,
+                },
+            };
+
+            if (i == 0)
+            {
+                await _cts.CancelAsync();
+            }
         }
     }
 }

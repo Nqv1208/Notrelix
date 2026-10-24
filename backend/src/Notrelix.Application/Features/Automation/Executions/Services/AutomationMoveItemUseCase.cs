@@ -23,6 +23,10 @@ public sealed class AutomationMoveItemUseCase
     private readonly IOrderingConflictClassifier _orderingConflicts;
     private readonly ICorrelationContext? _correlation;
 
+    internal const string NoExecutorReason = "The rule has no executor and cannot run; recreate it.";
+    internal const string ExecutorForbiddenReason = "The rule's executor no longer has permission to perform the action.";
+    internal const string ExecutorNotFoundReason = "The rule's target no longer exists or is not visible to its executor.";
+
     public AutomationMoveItemUseCase(
         IAutomationDbContext context,
         IWorkActionPort workActions,
@@ -53,7 +57,6 @@ public sealed class AutomationMoveItemUseCase
         }
 
         var rule = await _context.AutomationRules
-            .AsNoTracking()
             .FirstOrDefaultAsync(r => r.Id == message.RuleId, cancellationToken);
 
         // The execution lifecycle only permits Fail from Running, so every
@@ -77,15 +80,33 @@ public sealed class AutomationMoveItemUseCase
             return await startAndFail("Automation rule is not active.");
         }
 
-        if (!TryParseMoveItemConfiguration(rule.Configuration.Action.Configuration, out var itemId, out var targetGroupId))
+        if (!AutomationMoveItemConfiguration.TryParse(rule.Configuration.Action.Configuration, out var itemId, out var targetGroupId))
         {
             return await startAndFail("MoveItem action configuration is invalid.");
         }
+
+        // AUT-020: the rule runs as its bound executor. A rule with no executor
+        // (it predates the binding and had no creator on record) is not
+        // executable: fail closed and stop the rule.
+        if (!rule.HasExecutor)
+        {
+            rule.DisableAutomatically(NoExecutorReason, _clock.UtcNow);
+            return await startAndFail("The rule has no executor; the automation cannot execute.");
+        }
+
+        var executorUserId = rule.ExecutorUserId!.Value;
 
         if (message.ActorUserId is null || message.ActorUserId == Guid.Empty)
         {
             return await startAndFail("The trigger fact carried no trusted actor; the automation cannot execute.");
         }
+
+        var principal = new AutomationPrincipal(
+            message.AccountId!.Value,
+            executorUserId,
+            message.WorkspaceId!.Value,
+            message.CorrelationId,
+            message.CausationId);
 
         execution.Start(_clock.UtcNow);
         await _context.SaveChangesAsync(cancellationToken);
@@ -95,19 +116,34 @@ public sealed class AutomationMoveItemUseCase
         // facts and bound chains/self-triggers. The context is scoped to this
         // delivery.
         _correlation?.Set(message.CorrelationId, execution.Id);
+        _correlation?.SetAutomationRule(rule.Id);
 
         try
         {
+            // AUT-020: re-authorize the executor against the target now. Losing the
+            // permission (or the visibility of the target) stops the rule with a
+            // recorded reason; nothing is moved. Technical failures of the check
+            // stay retryable like the move itself.
+            try
+            {
+                await _workActions.EnsureMoveItemAllowedAsync(itemId, targetGroupId, principal, cancellationToken);
+            }
+            catch (ForbiddenException)
+            {
+                return await StopRuleAsync(rule, execution, ExecutorForbiddenReason,
+                    "The rule's executor no longer has permission to perform this action.", cancellationToken);
+            }
+            catch (NotFoundException)
+            {
+                return await StopRuleAsync(rule, execution, ExecutorNotFoundReason,
+                    "The rule's target is not available to its executor.", cancellationToken);
+            }
+
             var result = await _workActions.MoveItemAsync(
                 itemId,
                 targetGroupId,
                 message.ExecutionId,
-                new AutomationPrincipal(
-                    message.AccountId!.Value,
-                    message.ActorUserId.Value,
-                    message.WorkspaceId!.Value,
-                    message.CorrelationId,
-                    message.CausationId),
+                principal,
                 cancellationToken);
 
             execution.Succeed(_clock.UtcNow);
@@ -156,35 +192,16 @@ public sealed class AutomationMoveItemUseCase
         }
     }
 
-    private static bool TryParseMoveItemConfiguration(string? configuration, out Guid itemId, out Guid targetGroupId)
+    private async Task<bool> StopRuleAsync(
+        AutomationRule rule,
+        AutomationExecution execution,
+        string ruleReason,
+        string executionError,
+        CancellationToken cancellationToken)
     {
-        itemId = Guid.Empty;
-        targetGroupId = Guid.Empty;
-
-        if (string.IsNullOrWhiteSpace(configuration))
-        {
-            return false;
-        }
-
-        try
-        {
-            using var document = System.Text.Json.JsonDocument.Parse(configuration);
-            var root = document.RootElement;
-
-            if (root.ValueKind != System.Text.Json.JsonValueKind.Object
-                || !root.TryGetProperty("itemId", out var itemIdElement)
-                || !root.TryGetProperty("targetGroupId", out var groupElement)
-                || !Guid.TryParse(itemIdElement.GetString(), out itemId)
-                || !Guid.TryParse(groupElement.GetString(), out targetGroupId))
-            {
-                return false;
-            }
-
-            return itemId != Guid.Empty && targetGroupId != Guid.Empty;
-        }
-        catch (System.Text.Json.JsonException)
-        {
-            return false;
-        }
+        rule.DisableAutomatically(ruleReason, _clock.UtcNow);
+        execution.Fail(executionError, _clock.UtcNow);
+        await _context.SaveChangesAsync(cancellationToken);
+        return true;
     }
 }

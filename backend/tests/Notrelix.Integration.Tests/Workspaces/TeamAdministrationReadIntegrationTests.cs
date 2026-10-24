@@ -322,6 +322,8 @@ public sealed class TeamAdministrationReadIntegrationTests : IAsyncLifetime
 
         services.AddScoped<IResourceLocator, ResourceLocator>();
         services.AddScoped<IActorLookupService, ActorLookupService>();
+        services.AddScoped<Notrelix.Application.Features.Identity.Public.Queries.IIdentityUserFacts, Notrelix.Application.Features.Identity.Users.Services.IdentityUserFactsProvider>();
+        services.AddScoped<Notrelix.Application.Features.Workspaces.Public.Members.IMemberEmailDisclosure, Notrelix.Application.Features.Workspaces.Members.Services.MemberEmailDisclosure>();
         services.AddScoped<global::Notrelix.Application.Common.Tenancy.ITenantBootstrapStore, TenantBootstrapStore>();
 
         services.AddScoped<Notrelix.Application.Common.Context.ExecutionContext>();

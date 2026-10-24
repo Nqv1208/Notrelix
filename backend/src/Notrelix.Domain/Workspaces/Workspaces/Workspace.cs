@@ -161,8 +161,13 @@ public sealed class Workspace :
 
         if (Settings == newSettings) return;
 
+        // The links-off instant moves only when the policy value flips; every other settings write carries it.
+        var changedAt = newSettings.AllowPublicSharing != Settings.AllowPublicSharing
+            ? updatedAt
+            : Settings.PublicSharingChangedAt;
+
         var audit = PrepareAuditUpdate(updatedBy, updatedAt);
-        Settings = newSettings;
+        Settings = newSettings.WithPublicSharingChangedAt(changedAt);
         ApplyAuditUpdate(audit);
         IncrementVersion();
         RaiseDomainEvent(new WorkspaceSettingsUpdatedDomainEvent(AccountId, Id, updatedBy, updatedAt));

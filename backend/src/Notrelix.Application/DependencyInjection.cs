@@ -5,6 +5,7 @@ using Notrelix.Application.Common.Diagnostics;
 using Notrelix.Application.Features.Accounts.Members;
 using Notrelix.Application.Features.Governance.Authorization;
 using Notrelix.Application.Features.Accounts.Provisioning;
+using Notrelix.Application.Features.Accounts.Public.Domains;
 using Notrelix.Application.Features.Accounts.Public.Membership;
 using Notrelix.Application.Features.Accounts.Public.PersonalAccountProvisioning;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Services;
@@ -127,6 +128,9 @@ public static class DependencyInjection
         // Producer-owned public semantic facts (real consumers only)
         services.AddScoped<IIdentityUserFacts, IdentityUserFactsProvider>();
         services.AddScoped<IAccountMembershipFacts, AccountMembershipFactsProvider>();
+        services.AddScoped<IAccountDomainFacts, AccountDomainFactsProvider>();
+        services.AddScoped<Notrelix.Application.Features.Workspaces.Public.Members.IMemberEmailDisclosure,
+            Notrelix.Application.Features.Workspaces.Members.Services.MemberEmailDisclosure>();
 
         // Producer-owned public target actions (Accounts membership mutation)
         services.AddScoped<IAccountMembershipActions, AccountMembershipActions>();
@@ -141,12 +145,20 @@ public static class DependencyInjection
             Notrelix.Application.Features.Workspaces.Spaces.Services.SpaceTargetAuthorizer>();
         services.AddScoped<Notrelix.Application.Features.Workspaces.Spaces.Services.ISpaceContentReader,
             Notrelix.Application.Features.Workspaces.Spaces.Services.SpaceContentReader>();
+        services.AddScoped<Notrelix.Application.Features.Workspaces.Spaces.Services.ISpaceReachReader,
+            Notrelix.Application.Features.Workspaces.Spaces.Services.SpaceReachReader>();
+        services.AddScoped<Notrelix.Application.Features.WorkManagement.Boards.Services.BoardAccessChangeLog>();
         services.AddScoped<Notrelix.Application.Features.WorkManagement.Boards.Services.IBoardSpacePlacement,
             Notrelix.Application.Features.WorkManagement.Boards.Services.BoardSpacePlacement>();
         services.AddScoped<Notrelix.Application.Features.Documents.Pages.Services.IPageSpacePlacement,
             Notrelix.Application.Features.Documents.Pages.Services.PageSpacePlacement>();
         services.AddScoped<Notrelix.Application.Features.Governance.Public.Access.IResourceAccessSummary,
             Notrelix.Application.Features.Governance.Authorization.ResourceAccessSummaryService>();
+        services.AddScoped<Notrelix.Application.Features.Governance.Public.Access.IBoardSharingSummary>(sp =>
+            (Notrelix.Application.Features.Governance.Authorization.ResourceAccessSummaryService)
+            sp.GetRequiredService<Notrelix.Application.Features.Governance.Public.Access.IResourceAccessSummary>());
+        services.AddScoped<Notrelix.Application.Features.Governance.Public.Access.IResourceAccessChangeRecorder,
+            Notrelix.Application.Features.Governance.AccessChanges.ResourceAccessChangeRecorder>();
 
         // Producer-owned public projection source (WorkManagement placement facts)
         services.AddScoped<IWorkItemProjectionSource, WorkItemProjectionSourceService>();
@@ -159,6 +171,8 @@ public static class DependencyInjection
 
         // Automation-owned dispatch use cases (process progression)
         services.AddScoped<N8nDispatchUseCase>();
+        services.AddScoped<global::Notrelix.Application.Features.Automation.Rules.Services.AutomationExecutorAuthority>();
+        services.AddScoped<global::Notrelix.Application.Features.Automation.Rules.Services.AutomationExecutorLifecycle>();
         services.AddScoped<
             global::Notrelix.Application.Features.Automation.Executions.Services.AutomationMoveItemUseCase>();
 

@@ -42,6 +42,8 @@ public sealed class WorkPermissionActionMatrixArchitectureTests
         ["Boards.CreateBoardInWorkspaceCommand"] = PermissionAction.CreateBoard,
         ["Boards.UpdateBoardCommand"] = PermissionAction.ManageBoard,
         ["Boards.UpdateBoardVisibilityCommand"] = PermissionAction.ManageBoard,
+        ["Boards.MakeBoardPrivateCommand"] = PermissionAction.ManageBoard,
+        ["Boards.GetBoardSharingQuery"] = PermissionAction.ViewBoard,
         ["Boards.MoveBoardToSpaceCommand"] = PermissionAction.ManageBoard,
         ["Boards.ArchiveBoardCommand"] = PermissionAction.ManageBoard,
         ["Boards.UnarchiveBoardCommand"] = PermissionAction.ManageBoard,
