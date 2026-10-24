@@ -1088,7 +1088,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Complete an MFA challenge with a TOTP or recovery code */
+        /**
+         * Complete an MFA challenge with a TOTP or recovery code
+         * @description The challenge comes from the request body or, after an OAuth sign-in, from the httpOnly mfaChallenge cookie. A body token wins. The cookie is cleared on success and when the challenge is expired or exhausted.
+         */
         post: operations["Identity.Mfa.VerifyChallenge"];
         delete?: never;
         options?: never;
