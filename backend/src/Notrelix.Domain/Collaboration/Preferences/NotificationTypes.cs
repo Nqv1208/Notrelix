@@ -2,9 +2,9 @@ namespace Notrelix.Domain.Collaboration.Preferences;
 
 /// <summary>
 /// The stable vocabulary of notification types a person can set preferences for (accepted 2026-10-23).
-/// The codes are persisted and public: never rename or reuse one. Only <see cref="Mention"/> has a
-/// producer today (the <c>mention.created</c> consumer); the others are reserved so a person can already
-/// choose, and each gains delivery when its producer exists.
+/// The codes are persisted and public: never rename or reuse one. Mention, Assigned and Watching have a
+/// producer today; the others are reserved so a person can already choose, and each gains delivery when its
+/// producer exists.
 /// </summary>
 public static class NotificationTypes
 {
@@ -28,12 +28,29 @@ public static class NotificationTypes
     /// </summary>
     public const string MentionProducedType = "mention.created";
 
+    /// <summary>The Item the person is assigned to; maps to <see cref="Assigned"/>.</summary>
+    public const string ItemAssignedProducedType = "work.item.assigned";
+
+    /// <summary>Someone else was assigned to an Item the person follows; maps to <see cref="Watching"/>.</summary>
+    public const string ItemAssigneeAddedProducedType = "work.item.assignee-added";
+
+    /// <summary>An Item the person follows changed status; maps to <see cref="Watching"/>.</summary>
+    public const string ItemStatusChangedProducedType = "work.item.status-changed";
+
+    /// <summary>An Item the person follows got a comment; maps to <see cref="Watching"/>.</summary>
+    public const string ItemCommentedProducedType = "work.item.commented";
+
     /// <summary>
     /// Maps the type literal a producer stores on a notification to the preference type, or null when the
-    /// literal has no preference type. Today only <see cref="MentionProducedType"/> has a producer.
+    /// literal has no preference type.
     /// </summary>
-    public static string? FromProducedType(string? producedType) =>
-        string.Equals(producedType, MentionProducedType, StringComparison.Ordinal) ? Mention : null;
+    public static string? FromProducedType(string? producedType) => producedType switch
+    {
+        MentionProducedType => Mention,
+        ItemAssignedProducedType => Assigned,
+        ItemAssigneeAddedProducedType or ItemStatusChangedProducedType or ItemCommentedProducedType => Watching,
+        _ => null,
+    };
 }
 
 /// <summary>

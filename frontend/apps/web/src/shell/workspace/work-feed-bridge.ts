@@ -130,7 +130,10 @@ export type InboxTypeDto =
   | "overdue"
   | "assigned"
   | "changes_bundle"
-  | "board_invited";
+  | "board_invited"
+  | "followed_status"
+  | "followed_comment"
+  | "followed_assignee";
 
 export interface InboxTargetDto {
   readonly kind: "item" | "doc" | "board";
@@ -478,53 +481,66 @@ type WorkspaceInboxResponse =
 /** The most notifications the Inbox page loads; the producer pages beyond it. */
 const INBOX_PAGE_LIMIT = 30;
 
+/** The producer's notification types the Inbox page draws, and how. */
+const INBOX_TYPES: Readonly<Record<string, InboxTypeDto>> = {
+  "mention.created": "mention",
+  "work.item.assigned": "assigned",
+  "work.item.assignee-added": "followed_assignee",
+  "work.item.status-changed": "followed_status",
+  "work.item.commented": "followed_comment",
+};
+
 /**
- * The producer's notifications as the Inbox page lists them. Only a mention
- * has a producer today, so another type is not drawn; the need, approval,
- * bundle and detail parts of an entry have no source and stay empty.
+ * The producer's notifications as the Inbox page lists them. A mention, an
+ * assignment and the changes of an item the member follows are drawn; the
+ * need, approval, bundle and detail parts of an entry have no source and
+ * stay empty.
  */
 export function toInboxDto(
   workspaceId: string,
   dto: WorkspaceInboxResponse | null,
 ): InboxDto {
   const items = (dto?.items ?? [])
-    .filter((entry) => entry.type === "mention.created")
-    .map((entry): InboxEntryDto => ({
-      id: entry.id ?? "",
-      createdAt: entry.createdAt ?? "",
-      unread: entry.unread === true,
-      type: "mention",
-      actor: entry.actor?.id
-        ? { id: entry.actor.id, name: entry.actor.name ?? "" }
-        : null,
-      need: null,
-      following: false,
-      muted: false,
-      target: {
-        kind: "item",
-        id: entry.target?.id ?? null,
-        key: entry.target?.key ?? null,
-        title: entry.target?.title ?? "",
-        boardId: entry.target?.boardId ?? null,
-        boardName: null,
-        departmentId: null,
-        owner: null,
-      },
-      excerpt: entry.excerpt ?? null,
-      dueAt: null,
-      permission: null,
-      bundle: null,
-      detail: null,
-    }));
+    .filter((entry) => INBOX_TYPES[entry.type ?? ""] !== undefined)
+    .map((entry): InboxEntryDto => {
+      const type = INBOX_TYPES[entry.type ?? ""] ?? "mention";
+      return {
+        id: entry.id ?? "",
+        createdAt: entry.createdAt ?? "",
+        unread: entry.unread === true,
+        type,
+        actor: entry.actor?.id
+          ? { id: entry.actor.id, name: entry.actor.name ?? "" }
+          : null,
+        need: null,
+        following: type.startsWith("followed_"),
+        muted: false,
+        target: {
+          kind: "item",
+          id: entry.target?.id ?? null,
+          key: entry.target?.key ?? null,
+          title: entry.target?.title ?? "",
+          boardId: entry.target?.boardId ?? null,
+          boardName: null,
+          departmentId: null,
+          owner: null,
+        },
+        excerpt: entry.excerpt ?? null,
+        dueAt: null,
+        permission: null,
+        bundle: null,
+        detail: null,
+      };
+    });
   const unread = items.filter((entry) => entry.unread).length;
   return {
     workspace: { id: workspaceId, name: "" },
     items,
     counts: {
       need: 0,
-      mention: unread,
-      assigned: 0,
-      follow: 0,
+      mention: items.filter((entry) => entry.type === "mention").length,
+      assigned: items.filter((entry) => entry.type === "assigned").length,
+      follow: items.filter((entry) => entry.following).length,
       all: items.length,
       unread,
     },

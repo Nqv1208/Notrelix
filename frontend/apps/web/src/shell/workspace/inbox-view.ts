@@ -138,6 +138,9 @@ const KIND: Record<InboxEntryDto["type"], InboxKind> = {
   assigned: "assign",
   changes_bundle: "change",
   board_invited: "system",
+  followed_status: "change",
+  followed_comment: "change",
+  followed_assignee: "change",
 };
 
 /** The producer's inbox as the Inbox page draws it. */
@@ -214,6 +217,33 @@ export function toInboxEntries(
           copy,
           due ? copy.feed.assigned : copy.feed.assignedNoDue,
           { actor: actorName, title: target.title, due: due ?? "" },
+          ["actor", "title"],
+        );
+        context = { department, label: keyLabel };
+        break;
+      }
+      case "followed_status":
+      case "followed_comment":
+      case "followed_assignee": {
+        const template =
+          entry.type === "followed_status"
+            ? entry.excerpt
+              ? copy.feed.followedStatus
+              : copy.feed.followedStatusPlain
+            : entry.type === "followed_comment"
+              ? entry.excerpt
+                ? copy.feed.followedComment
+                : copy.feed.followedCommentPlain
+              : copy.feed.followedAssignee;
+        segments = sentence(
+          copy,
+          template,
+          {
+            actor: actorName,
+            title: target.title,
+            status: entry.excerpt ?? "",
+            excerpt: entry.excerpt ?? "",
+          },
           ["actor", "title"],
         );
         context = { department, label: keyLabel };

@@ -116,7 +116,10 @@ export type InboxType =
   | "overdue"
   | "assigned"
   | "changes_bundle"
-  | "board_invited";
+  | "board_invited"
+  | "followed_status"
+  | "followed_comment"
+  | "followed_assignee";
 
 export type InboxNeed = "approve" | "reply" | "overdue";
 

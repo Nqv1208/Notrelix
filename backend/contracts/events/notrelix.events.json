@@ -618,6 +618,11 @@
           "name": "BoardItemCreatedConsumer",
           "context": "WorkManagement",
           "maturity": "Implemented"
+        },
+        {
+          "name": "BoardItemCreatedFollowConsumer",
+          "context": "Collaboration",
+          "maturity": "Implemented"
         }
       ]
     },
@@ -717,6 +722,11 @@
         {
           "name": "BoardItemFieldValueChangedConsumer",
           "context": "WorkManagement",
+          "maturity": "Implemented"
+        },
+        {
+          "name": "BoardItemStatusChangedFollowConsumer",
+          "context": "Collaboration",
           "maturity": "Implemented"
         }
       ]
@@ -2099,6 +2109,11 @@
       "consumers": [
         {
           "name": "CommentCreatedActivityConsumer",
+          "context": "Collaboration",
+          "maturity": "Implemented"
+        },
+        {
+          "name": "CommentCreatedFollowConsumer",
           "context": "Collaboration",
           "maturity": "Implemented"
         }
@@ -4019,6 +4034,11 @@
         {
           "name": "BoardItemMemberAssignedAutomationConsumer",
           "context": "Automation",
+          "maturity": "Implemented"
+        },
+        {
+          "name": "BoardItemMemberAssignedFollowConsumer",
+          "context": "Collaboration",
           "maturity": "Implemented"
         }
       ]

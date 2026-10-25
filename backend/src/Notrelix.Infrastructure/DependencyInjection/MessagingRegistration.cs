@@ -10,6 +10,8 @@ public static class MessagingRegistration
     public static IServiceCollection AddMessaging(
         this IServiceCollection services, IConfiguration configuration)
     {
+        services.AddScoped<Notrelix.Infrastructure.Messaging.Consumers.Collaboration.ItemFollowerNotifier>();
+
         // Domain -> integration event mappers (order preserved for composite aggregation).
         services.AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.Identity.UserEventMapper>();
         services.AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.Workspaces.WorkspaceEventMapper>();
