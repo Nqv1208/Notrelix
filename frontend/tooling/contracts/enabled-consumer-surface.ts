@@ -2175,6 +2175,76 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
   },
   {
     context: "Work Management",
+    capability: "WorkManagement.BoardViews.List",
+    consumerSymbol: "createBoardApi",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/board.api.ts",
+    classification: "CANONICAL_MOCKED",
+    operationId: "WorkManagement.BoardViews.List",
+    mutation: false,
+  },
+  {
+    context: "Work Management",
+    capability: "WorkManagement.BoardViews.Create",
+    consumerSymbol: "createBoardApi",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/board.api.ts",
+    classification: "CANONICAL_MOCKED",
+    operationId: "WorkManagement.BoardViews.Create",
+    mutation: true,
+  },
+  {
+    context: "Work Management",
+    capability: "WorkManagement.BoardViews.UpdateConfig",
+    consumerSymbol: "createBoardApi",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/board.api.ts",
+    classification: "CANONICAL_MOCKED",
+    operationId: "WorkManagement.BoardViews.UpdateConfig",
+    mutation: true,
+  },
+  {
+    context: "Work Management",
+    capability: "WorkManagement.BoardViews.Rename",
+    consumerSymbol: "createBoardApi",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/board.api.ts",
+    classification: "CANONICAL_MOCKED",
+    operationId: "WorkManagement.BoardViews.Rename",
+    mutation: true,
+  },
+  {
+    context: "Work Management",
+    capability: "WorkManagement.BoardViews.SetVisibility",
+    consumerSymbol: "createBoardApi",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/board.api.ts",
+    classification: "CANONICAL_MOCKED",
+    operationId: "WorkManagement.BoardViews.SetVisibility",
+    mutation: true,
+  },
+  {
+    context: "Work Management",
+    capability: "WorkManagement.BoardViews.SetDefault",
+    consumerSymbol: "createBoardApi",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/board.api.ts",
+    classification: "CANONICAL_MOCKED",
+    operationId: "WorkManagement.BoardViews.SetDefault",
+    mutation: true,
+  },
+  {
+    context: "Work Management",
+    capability: "WorkManagement.BoardViews.Delete",
+    consumerSymbol: "createBoardApi",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/board.api.ts",
+    classification: "CANONICAL_MOCKED",
+    operationId: "WorkManagement.BoardViews.Delete",
+    mutation: true,
+  },
+  {
+    context: "Work Management",
     capability: "WorkManagement.BoardFields.Create",
     consumerSymbol: "TODO",
     consumerFile: "frontend/packages/product/work-management/state/src/api/",

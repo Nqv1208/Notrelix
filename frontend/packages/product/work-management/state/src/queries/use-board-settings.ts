@@ -64,6 +64,9 @@ export function useBoardSettings(boardId: string, workspaceId: string) {
       queryKey: wmQueryKeys.fullBoard(workspaceId, boardId),
     });
     void queryClient.invalidateQueries({
+      queryKey: wmQueryKeys.view(workspaceId, boardId),
+    });
+    void queryClient.invalidateQueries({
       queryKey: wmQueryKeys.columns(workspaceId, boardId),
     });
     void queryClient.invalidateQueries({

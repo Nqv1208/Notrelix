@@ -18,7 +18,7 @@ import {
   TypeMark,
   VIEW_ICON,
 } from "./board-settings-parts";
-import { SortableList, SortableRow } from "./board-settings-sortable";
+import { SortableRow } from "./board-settings-sortable";
 import { ViewPanel } from "./board-settings-view-panel";
 
 const KINDS: readonly BoardSettingsViewDto["kind"][] = [
@@ -61,10 +61,6 @@ export function ViewsSection({
     knownIds.current = settings.views.map((view) => view.id);
     const result = await run(actions.createView(kind));
     if (!result.ok) knownIds.current = null;
-  }
-
-  function reorderShared(ids: string[]) {
-    void run(actions.reorderViews([...ids, ...mine.map((view) => view.id)]));
   }
 
   return (
@@ -112,25 +108,14 @@ export function ViewsSection({
           <p className="m-0 text-item-small text-meta-foreground">{t.empty}</p>
         ) : (
           <div role="list" className="flex flex-col gap-0.5">
-            <SortableList
-              ids={shared.map((view) => view.id)}
-              onReorder={reorderShared}
-            >
-              {(order) =>
-                order.map((id) => {
-                  const view = shared.find((entry) => entry.id === id);
-                  return view ? (
-                    <ViewRow
-                      key={view.id}
-                      view={view}
-                      selected={view.id === viewId}
-                      sortable
-                      onOpen={() => onSelectView(view.id)}
-                    />
-                  ) : null;
-                })
-              }
-            </SortableList>
+            {shared.map((view) => (
+              <ViewRow
+                key={view.id}
+                view={view}
+                selected={view.id === viewId}
+                onOpen={() => onSelectView(view.id)}
+              />
+            ))}
           </div>
         )}
 

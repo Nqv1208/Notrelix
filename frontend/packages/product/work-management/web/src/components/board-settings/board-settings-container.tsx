@@ -4,17 +4,20 @@ import {
   useBoardSettings,
   useBoardView,
   useFullBoard,
+  useSavedViews,
   useWorkspaceAutomations,
 } from "@notrelix/work-management-state";
 import {
   resolveKanbanSettings,
   type BoardSettingsDto,
+  type BoardSettingsViewDto,
   type BoardSettingsWriteResult,
 } from "@notrelix/work-management-core";
 import { KanbanSettingsPanel } from "../views/kanban/kanban-settings-panel";
 import { useKanbanLaneCopy } from "../views/kanban/use-kanban-lane-copy";
 import { useBoardSettingsCopy } from "./use-board-settings-copy";
 import { BoardSettingsSurface } from "./board-settings-surface";
+import { fillCopy } from "./board-settings-format";
 import type {
   BoardSettingsActions,
   BoardSettingsSection,
@@ -58,6 +61,14 @@ function newFieldName(base: string, settings: BoardSettingsDto): string {
   return name;
 }
 
+/** "Table", "Table 2", ...: a view name the board has not used yet. */
+function newViewName(base: string, settings: BoardSettingsDto): string {
+  const taken = new Set(settings.views.map((view) => view.name.toLowerCase()));
+  let name = base;
+  for (let n = 2; taken.has(name.toLowerCase()); n += 1) name = `${base} ${n}`;
+  return name;
+}
+
 /**
  * The settings of one board: read from the board itself (only a manager
  * opens the page), every write goes to the board, field, option and group
@@ -68,7 +79,12 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
   const copy = useBoardSettingsCopy();
   const laneCopy = useKanbanLaneCopy();
   const { board, groups } = useFullBoard(boardId, workspaceId);
-  const { viewConfig, updateViewConfig } = useBoardView(boardId, workspaceId);
+  // The Kanban panel edits the Kanban view that is open (or the board's first one).
+  const { viewConfig, updateViewConfig } = useBoardView(boardId, workspaceId, {
+    viewId: props.viewId ?? undefined,
+    mode: "kanban",
+  });
+  const savedViews = useSavedViews(boardId, workspaceId);
   const kanban = useMemo(() => resolveKanbanSettings(viewConfig), [viewConfig]);
   const { access, error: accessError } = useBoardAccess(boardId, workspaceId);
   const { settings, isLoading, isError, forbidden, refetch, write } =
@@ -98,11 +114,32 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
         write((api, s) => api.deleteOption(s, fieldId, optionId)),
       reorderOptions: (fieldId, ids) =>
         write((api, s) => api.reorderOptions(s, fieldId, ids)),
-      createView: unsupported,
+      createView: (kind: BoardSettingsViewDto["kind"]) =>
+        write((api, s) =>
+          api.createView(s, kind, newViewName(copy.views.kinds[kind], s)),
+        ),
       reorderViews: unsupported,
-      updateView: unsupported,
-      duplicateView: unsupported,
-      deleteView: unsupported,
+      updateView: (viewId, changes) =>
+        write((api, s) => api.updateView(s, viewId, changes)),
+      duplicateView: (viewId) => {
+        const source = savedViews.views.find((view) => view.id === viewId);
+        if (!source) return Promise.resolve({ ok: false, reason: "failed" });
+        return write((api, s) =>
+          api.createView(
+            s,
+            source.viewMode,
+            newViewName(
+              fillCopy(copy.viewPanel.copyName, { name: source.name }),
+              s,
+            ),
+            source.viewConfig,
+            source.visibility,
+          ),
+        );
+      },
+      setDefaultView: (viewId) =>
+        write((api, s) => api.setDefaultView(s, viewId)),
+      deleteView: (viewId) => write((api, s) => api.deleteView(s, viewId)),
       createGroup: (name) => write((api, s) => api.createGroup(s, name)),
       reorderGroups: (ids) => write((api, s) => api.reorderGroups(s, ids)),
       updateGroup: (groupId, changes) =>
@@ -111,7 +148,7 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
         write((api, s) => api.deleteGroup(s, groupId, moveToGroupId)),
       setAutomationEnabled: unsupported,
     }),
-    [copy, write],
+    [copy, savedViews.views, write],
   );
 
   const rules = useWorkspaceAutomations(workspaceId);

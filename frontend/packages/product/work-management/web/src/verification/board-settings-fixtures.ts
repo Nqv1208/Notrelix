@@ -441,6 +441,7 @@ export function noopSettingsActions(
     reorderViews: ok,
     updateView: ok,
     duplicateView: ok,
+    setDefaultView: ok,
     deleteView: ok,
     createGroup: ok,
     reorderGroups: ok,

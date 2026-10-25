@@ -40,6 +40,7 @@ import {
   validationError,
 } from "../../transport/create-response";
 import type { MockStore } from "../../state/mock-store";
+import { savedViewTypeName } from "../../state/mock-board-saved-views";
 import type { MockBoardRecord, MockCardRecord } from "../../state/records";
 import {
   preconditionFailed,
@@ -385,6 +386,15 @@ export function canReadBoard(boardId: string, store: MockStore): boolean {
   return board ? projectBoardAccess(board, store) !== null : false;
 }
 
+/** Whether the caller edits a board (an Editor or a Manager). */
+export function canEditBoard(boardId: string, store: MockStore): boolean {
+  const board = store.getBoard(boardId);
+  if (!board) return false;
+  const level = projectBoardAccess(board, store)?.myLevel as
+    AccessLevel | undefined;
+  return level !== undefined && LEVEL_RANK[level] >= LEVEL_RANK.editor;
+}
+
 /** Whether the caller manages a board: only a manager opens its settings. */
 export function canManageBoard(boardId: string, store: MockStore): boolean {
   const board = store.getBoard(boardId);
@@ -499,7 +509,7 @@ function projectBoardAccess(
 const VIEW_CONFIG_KEY = (boardId: string) =>
   `notrelix-mock-board-view-config:${boardId}`;
 
-function readKeptViewConfig(boardId: string): string | null {
+export function readKeptViewConfig(boardId: string): string | null {
   try {
     return globalThis.sessionStorage?.getItem(VIEW_CONFIG_KEY(boardId)) ?? null;
   } catch {
@@ -507,7 +517,7 @@ function readKeptViewConfig(boardId: string): string | null {
   }
 }
 
-function keepViewConfig(boardId: string, config: string): void {
+export function keepViewConfig(boardId: string, config: string): void {
   try {
     globalThis.sessionStorage?.setItem(VIEW_CONFIG_KEY(boardId), config);
   } catch {
@@ -712,11 +722,10 @@ export const boardsOperations = [
     async handle({ params, store }) {
       const b = store.getBoard(params.id);
       if (!b) return notFound("Board not found");
-      const v = store.getBoardView(params.id);
+      const v = store.savedViews.defaultShared(params.id);
       return ok<BoardViewDtoApi>({
-        viewMode: v?.viewMode ?? "table",
-        config: readKeptViewConfig(params.id) ?? v?.viewConfig ?? "{}",
-        filters: v?.filters ?? "{}",
+        type: v?.type ?? "Table",
+        config: readKeptViewConfig(params.id) ?? v?.config ?? "{}",
       });
     },
   }),
@@ -743,12 +752,22 @@ export const boardsOperations = [
         config?: string;
         filters?: string;
       };
-      store.saveBoardView(
-        params.id,
-        data.viewMode ?? "table",
-        data.config ?? "{}",
-        data.filters,
-      );
+      // Like the producer: the board's shared default view takes the config,
+      // or is made when the board has none; a view's type never changes.
+      const existing = store.savedViews.defaultShared(params.id);
+      if (existing) {
+        existing.config = data.config ?? "{}";
+        existing.version += 1;
+      } else {
+        store.savedViews.add({
+          boardId: params.id,
+          name: savedViewTypeName(data.viewMode) ?? "Table",
+          type: savedViewTypeName(data.viewMode) ?? "Table",
+          config: data.config ?? "{}",
+          visibility: "Board",
+          createdBy: store.getCurrentUser().id,
+        });
+      }
       keepViewConfig(params.id, data.config ?? "{}");
       return ok<void>(undefined);
     },
