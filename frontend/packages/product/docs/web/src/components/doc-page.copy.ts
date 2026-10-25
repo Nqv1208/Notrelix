@@ -246,6 +246,8 @@ export const vi = {
     addPlaceholder: "Thêm người, nhóm, hoặc email khách",
     level: "Quyền khi mời: {{level}}",
     invite: "Mời",
+    inviteFailed:
+      "Chưa chia sẻ được. Chỉ chủ workspace hoặc người quản lý trang mới cấp quyền.",
     accessLabel: "Ai vào được trang",
     accessBySpace: "Theo {{space}}",
     accessBySpaceHint:
@@ -524,6 +526,8 @@ export const en: DocPageCopy = {
     addPlaceholder: "Add people, groups, or a guest email",
     level: "Permission when inviting: {{level}}",
     invite: "Invite",
+    inviteFailed:
+      "Could not give access. Only the workspace owner or a manager of the page can.",
     accessLabel: "Who can open this page",
     accessBySpace: "Follows {{space}}",
     accessBySpaceHint:

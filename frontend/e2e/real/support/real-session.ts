@@ -12,6 +12,16 @@ export const realUsers = {
     email: process.env.REAL_E2E_WORKSPACE_ADMIN_EMAIL ?? "user4@notrelix.io",
     password: process.env.REAL_E2E_WORKSPACE_ADMIN_PASSWORD ?? "Notrelix@123",
   },
+  /** Owner of Workspace 3: the only member who manages a page's permissions. */
+  workspaceOwner: {
+    email: process.env.REAL_E2E_WORKSPACE_OWNER_EMAIL ?? "member@notrelix.com",
+    password: process.env.REAL_E2E_WORKSPACE_OWNER_PASSWORD ?? "Notrelix@123",
+  },
+  /** A Guest of Workspace 3. */
+  workspaceGuest: {
+    email: process.env.REAL_E2E_WORKSPACE_GUEST_EMAIL ?? "user6@notrelix.io",
+    password: process.env.REAL_E2E_WORKSPACE_GUEST_PASSWORD ?? "Notrelix@123",
+  },
   guest: {
     email: process.env.REAL_E2E_GUEST_EMAIL ?? "user5@notrelix.io",
     password: process.env.REAL_E2E_GUEST_PASSWORD ?? "Notrelix@123",

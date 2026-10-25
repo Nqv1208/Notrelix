@@ -8,6 +8,7 @@ export { createUsePageHistory } from "./hooks/use-page-history";
 export { createUsePageBacklinks } from "./hooks/use-page-backlinks";
 export { createUseVersionSnapshot } from "./hooks/use-version-snapshot";
 export { createUsePagePermissions } from "./hooks/use-page-permissions";
+export { createUseSharePage } from "./hooks/use-share-page";
 export { createUseConvertTodo } from "./hooks/use-convert-todo";
 export { createUseDocsSearch } from "./hooks/use-docs-search";
 export { createUseDocsFavorites } from "./hooks/use-docs-favorites";

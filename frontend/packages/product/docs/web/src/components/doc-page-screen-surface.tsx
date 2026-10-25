@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import type { BlockType } from "@notrelix/docs-core";
 import { Skeleton } from "@notrelix/ui-web";
 import type { DocPageCopy } from "./doc-page.copy";
 import {
@@ -56,6 +57,7 @@ export interface DocPageScreenSurfaceProps {
   readonly panelTab: DocPanelTab;
   readonly overlay: DocOverlay;
   readonly mentionTasks: readonly DocTaskRef[];
+  readonly blockTypes?: readonly BlockType[];
   readonly toolbar?: DocToolbarCurrent;
   readonly versions?: DocVersionsState;
   readonly share?: DocShareView;
@@ -116,6 +118,7 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
     panelTab,
     overlay,
     mentionTasks,
+    blockTypes,
     toolbar = DEFAULT_TOOLBAR_CURRENT,
     versions,
     share,
@@ -165,6 +168,7 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
     compare: versions !== undefined,
     overlay,
     mentionTasks,
+    blockTypes,
     callbacks,
   };
 

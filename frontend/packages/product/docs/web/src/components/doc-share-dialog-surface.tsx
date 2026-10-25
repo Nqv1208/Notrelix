@@ -1,4 +1,10 @@
-import { useEffect, useRef, type KeyboardEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type ReactNode,
+} from "react";
 import {
   ChevronDown,
   CircleAlert,
@@ -12,6 +18,7 @@ import { cn } from "@notrelix/ui-web";
 import { fillDocCopy, type DocPageCopy } from "./doc-page.copy";
 import type {
   DocPageCallbacks,
+  DocPerson,
   DocShareMember,
   DocShareView,
 } from "./doc-page-models";
@@ -173,6 +180,28 @@ export function DocShareDialogSurface({
   const s = copy.share;
   const dialog = useRef<HTMLDivElement | null>(null);
   const onKeyDown = useModalFocus(dialog, callbacks?.onCloseOverlay);
+  const inviteEnabled = Boolean(share.candidates && callbacks?.onShareInvite);
+  const [query, setQuery] = useState("");
+  const [picked, setPicked] = useState<DocPerson | null>(null);
+  const needle = query.trim().toLowerCase();
+  const suggestions =
+    inviteEnabled && needle !== "" && !picked
+      ? (share.candidates ?? [])
+          .filter((person) => person.name.toLowerCase().includes(needle))
+          .slice(0, 5)
+      : [];
+  const [failed, setFailed] = useState(false);
+  const invite = () => {
+    if (!picked) return;
+    setFailed(false);
+    void callbacks
+      ?.onShareInvite?.(picked.id)
+      .then(() => {
+        setPicked(null);
+        setQuery("");
+      })
+      .catch(() => setFailed(true));
+  };
 
   return (
     <div
@@ -224,8 +253,16 @@ export function DocShareDialogSurface({
                 id="doc-share-add"
                 type="text"
                 autoComplete="off"
-                disabled
+                disabled={!inviteEnabled}
                 placeholder={s.addPlaceholder}
+                value={picked ? picked.name : query}
+                onChange={(event) => {
+                  setPicked(null);
+                  setQuery(event.target.value);
+                }}
+                role="combobox"
+                aria-expanded={suggestions.length > 0}
+                aria-controls="doc-share-suggestions"
                 className="h-full min-w-0 flex-1 border-0 bg-transparent p-0 text-nav text-foreground outline-none placeholder:text-meta-foreground leading-[1.45]"
               />
             </label>
@@ -242,8 +279,9 @@ export function DocShareDialogSurface({
             </button>
             <button
               type="button"
-              aria-disabled="true"
-              title={s.unavailable}
+              aria-disabled={picked ? undefined : "true"}
+              title={inviteEnabled ? undefined : s.unavailable}
+              onClick={picked ? invite : undefined}
               className={cn(
                 LEVEL,
                 "rounded-[7px] border-primary bg-brand-solid px-3 font-semibold text-brand-solid-foreground aria-disabled:text-brand-solid-foreground",
@@ -252,6 +290,37 @@ export function DocShareDialogSurface({
               {s.invite}
             </button>
           </div>
+
+          {failed ? (
+            <p role="alert" className="-mt-3 mb-0 text-crumb text-danger-text">
+              {s.inviteFailed}
+            </p>
+          ) : null}
+          {suggestions.length > 0 ? (
+            <div
+              id="doc-share-suggestions"
+              role="listbox"
+              aria-label={s.addPlaceholder}
+              className="-mt-3 flex flex-col rounded-[9px] border border-line-strong bg-doc-panel p-1"
+            >
+              {suggestions.map((person) => (
+                <button
+                  key={person.id}
+                  type="button"
+                  role="option"
+                  aria-selected="false"
+                  onClick={() => setPicked(person)}
+                  className="flex h-9 items-center gap-2 rounded-[7px] border-0 bg-transparent px-2 text-left text-nav text-foreground outline-none hover:bg-state-hover focus-visible:ring-2 focus-visible:ring-focus-ring"
+                >
+                  <DocAvatar
+                    person={person}
+                    className="size-6 text-avatar-lg"
+                  />
+                  {person.name}
+                </button>
+              ))}
+            </div>
+          ) : null}
 
           <div>
             <div

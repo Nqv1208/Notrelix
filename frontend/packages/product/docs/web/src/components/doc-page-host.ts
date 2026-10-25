@@ -1,4 +1,4 @@
-import type { Page } from "@notrelix/docs-core";
+import type { BlockType, Page } from "@notrelix/docs-core";
 import type {
   DocPerson,
   DocShareView,
@@ -34,6 +34,12 @@ export interface DocPageHost {
   readonly viewerId?: string;
   /** Whether the viewer may edit the page. */
   readonly canEdit: boolean;
+  /** The block types the producer stores; omitted offers every type. */
+  readonly blockTypes?: readonly BlockType[];
+  /** Gives a workspace member access to the page; omitted offers no invite. */
+  readonly onShareInvite?: (userId: string) => Promise<void>;
+  /** Whether a checklist line can become a work item; omitted offers it. */
+  readonly canConvertTodo?: boolean;
   /** The workspace's own locale-independent "now" (tests fix the clock). */
   readonly now: Date;
   /** Opens another page (host routing). */

@@ -201,6 +201,11 @@ export interface DocShareView {
   readonly space: DocSpaceView;
   readonly spaceMemberCount: number | null;
   readonly members: readonly DocShareMember[];
+  /**
+   * Workspace members the viewer may give access to; omitted keeps the invite
+   * field disabled (the viewer cannot manage the page's permissions).
+   */
+  readonly candidates?: readonly DocPerson[];
 }
 
 export type DocPanelTab = "links" | "toc" | "comments";
@@ -269,4 +274,6 @@ export interface DocPageCallbacks {
   readonly onMentionInsert?: () => void;
   readonly onOpenComments?: () => void;
   readonly onAddBlock?: (type: BlockType) => void;
+  /** Gives a workspace member access to the page at the edit level. */
+  readonly onShareInvite?: (userId: string) => Promise<void>;
 }

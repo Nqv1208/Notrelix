@@ -135,7 +135,8 @@ export const endpoints = {
     moveToSpace: (pageId: string) => `/pages/${pageId}/move-to-space`,
   },
   blocks: {
-    detail: (blockId: string) => `/blocks/${blockId}`,
+    detail: (pageId: string, blockId: string) =>
+      `/pages/${pageId}/blocks/${blockId}`,
     reorder: "/blocks/reorder",
     batch: (pageId: string) => `/pages/${pageId}/blocks/batch`,
   },

@@ -12,8 +12,10 @@ import { useCallback, useMemo } from "react";
 import { useQueries } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import {
+  CREATABLE_BLOCK_TYPES,
   createUsePageHistory,
   createUsePagePermissions,
+  createUseSharePage,
   type Page,
 } from "@notrelix/docs-state";
 import type {
@@ -41,6 +43,8 @@ import {
   wmQueryKeys,
 } from "@notrelix/work-management-state";
 import type { CardDetail } from "@notrelix/work-management-core";
+import { env as appEnv } from "@/config/env";
+import { useWorkspaceContext } from "@/providers/workspace-provider";
 import { destinationHref } from "../workspace/workspace-destinations";
 import { useSpaceHooks } from "../workspace/use-workspace-spaces";
 import { useWorkspaceViewer } from "../workspace/use-workspace-viewer";
@@ -123,6 +127,10 @@ export const useDocPageHost: UseDocPageHost = (
     () => createUsePagePermissions(featureDeps.api, featureDeps.endpoints),
     [featureDeps],
   );
+  const useSharePage = useMemo(
+    () => createUseSharePage(featureDeps.api, featureDeps.endpoints),
+    [featureDeps],
+  );
 
   const viewer = useWorkspaceViewer(workspaceId);
   const members = viewer.members;
@@ -130,6 +138,7 @@ export const useDocPageHost: UseDocPageHost = (
   const boards = useWorkspaceBoards(workspaceId);
   const history = usePageHistory(workspaceId, pageId);
   const permissions = usePagePermissions(workspaceId, pageId);
+  const sharePage = useSharePage(workspaceId, pageId);
 
   const now = useMemo(() => new Date(), []);
   const role = viewer.role;
@@ -285,42 +294,80 @@ export const useDocPageHost: UseDocPageHost = (
     [boardId, fullBoard.groups, mentionQuery, now, workspaceId],
   );
 
+  // Whom the viewer may give access to: the workspace's members who are not on the
+  // page yet, offered to an owner of the workspace (the producer decides each grant).
+  const candidates = useMemo<readonly DocPerson[] | undefined>(() => {
+    if (role !== "owner") return undefined;
+    const granted = new Set(
+      (permissions.data?.members ?? []).map(
+        (entry) => entry.subjectId ?? entry.userId,
+      ),
+    );
+    return (members.data ?? [])
+      .filter(
+        (member) => member.userId !== user?.id && !granted.has(member.userId),
+      )
+      .map((member) => personFor(member.userId));
+  }, [members.data, permissions.data, personFor, role, user?.id]);
+
+  // A page at the workspace root has no department: it is shared at the workspace level.
+  const { workspace } = useWorkspaceContext();
+  const workspaceSpace = useMemo<DocSpaceView>(
+    () => ({
+      id: workspaceId,
+      name: workspace?.name ?? "",
+      mark: initialsFor(workspace?.name ?? ""),
+      tone: markToneFor(workspaceId),
+      visibility: "workspace",
+      department: false,
+    }),
+    [workspace?.name, workspaceId],
+  );
+
   const share = useMemo<DocShareView | null>(() => {
-    if (!space) return null;
+    const shareSpace = space ?? workspaceSpace;
     // Permissions given on the page itself; a page without any lists its creator.
     const given = permissions.data?.members ?? [];
     if (given.length > 0) {
       return {
-        space,
+        space: shareSpace,
         spaceMemberCount: spaceMembers.data ? spaceMembers.data.length : null,
-        members: given.map((entry) => ({
-          id: entry.id,
-          kind: entry.kind,
-          person:
-            entry.kind === "person"
-              ? {
-                  id: entry.userId ?? entry.id,
-                  name: entry.name,
-                  initials: initialsFor(entry.name),
-                  tone: markToneFor(entry.userId ?? entry.id),
-                }
-              : undefined,
-          name: entry.name,
-          detail: entry.detail,
-          outside: entry.outside,
-          creator: entry.creator,
-          fixed: entry.creator,
-          you: entry.userId !== null && entry.userId === user?.id,
-          level: entry.level,
-        })),
+        candidates,
+        members: given.map((entry) => {
+          const personId = entry.subjectId ?? entry.userId ?? entry.id;
+          const person =
+            entry.kind !== "person"
+              ? undefined
+              : entry.name
+                ? {
+                    id: personId,
+                    name: entry.name,
+                    initials: initialsFor(entry.name),
+                    tone: markToneFor(personId),
+                  }
+                : personFor(personId);
+          return {
+            id: entry.id,
+            kind: entry.kind,
+            person,
+            name: person?.name ?? entry.name,
+            detail: entry.detail,
+            outside: entry.outside,
+            creator: entry.creator,
+            fixed: entry.creator,
+            you: entry.userId !== null && entry.userId === user?.id,
+            level: entry.level,
+          };
+        }),
       };
     }
     const created = (history.data ?? []).find(
       (entry) => entry.action === "created",
     );
     return {
-      space,
+      space: shareSpace,
       spaceMemberCount: spaceMembers.data ? spaceMembers.data.length : null,
+      candidates,
       members: created
         ? [
             {
@@ -338,10 +385,12 @@ export const useDocPageHost: UseDocPageHost = (
         : [],
     };
   }, [
+    candidates,
     history.data,
     permissions.data,
     personFor,
     space,
+    workspaceSpace,
     spaceMembers.data,
     user?.id,
   ]);
@@ -362,6 +411,12 @@ export const useDocPageHost: UseDocPageHost = (
     pageHref: (targetId) =>
       `/workspaces/${workspaceId}/docs/${encodeURIComponent(targetId)}`,
     canEdit: role !== "guest",
+    blockTypes: CREATABLE_BLOCK_TYPES,
+    // TRANSITION: no producer turns a checklist line into a work item; only the mock world does.
+    canConvertTodo: appEnv.mockApi,
+    onShareInvite: candidates
+      ? (userId) => sharePage.mutateAsync({ userId, level: "edit" })
+      : undefined,
     now,
     openPage: (targetId) =>
       void navigate({

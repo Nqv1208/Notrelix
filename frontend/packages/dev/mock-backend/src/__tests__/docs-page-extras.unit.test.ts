@@ -8,6 +8,9 @@ import { createMockFetch } from "../transport/create-mock-fetch";
 
 const endpoints = {
   pages: { detail: (id: string) => `/pages/${id}` },
+  resourcePermissions: {
+    list: (kind: string, id: string) => `/resources/${kind}/${id}/permissions`,
+  },
 } as never;
 
 function setup() {
