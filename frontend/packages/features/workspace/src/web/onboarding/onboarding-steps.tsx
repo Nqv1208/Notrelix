@@ -331,7 +331,9 @@ export function DepartmentsStep({
     <>
       <StepTitle
         title={t.title}
-        lead={fillOnboarding(t.lead, { size: sizeLabel })}
+        lead={
+          catalog ? fillOnboarding(t.lead, { size: sizeLabel }) : t.leadNeutral
+        }
       />
       {locked ? <Hint>{t.lockedNote}</Hint> : null}
       <ul

@@ -70,6 +70,8 @@ export const en = {
   },
   departments: {
     title: "Your departments",
+    leadNeutral:
+      "Rename, recolor, remove or add departments. Each has its own boards and members.",
     lead: "Suggested for {{size}}. Rename, recolor, remove or add departments. Each has its own boards and members.",
     listLabel: "Departments to create",
     nameLabel: "Department name",
@@ -388,6 +390,8 @@ export const vi: OnboardingCopy = {
   },
   departments: {
     title: "Các phòng ban của bạn",
+    leadNeutral:
+      "Sửa tên, đổi màu, bỏ hoặc thêm phòng. Mỗi phòng có board và thành viên riêng.",
     lead: "Gợi ý theo quy mô {{size}}. Sửa tên, đổi màu, bỏ hoặc thêm phòng. Mỗi phòng có board và thành viên riêng.",
     listLabel: "Phòng ban sẽ tạo",
     nameLabel: "Tên phòng ban",
