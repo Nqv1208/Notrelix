@@ -1127,6 +1127,160 @@
         ]
       }
     },
+    "/api/v1/workspaces/{workspaceId}/inbox": {
+      "get": {
+        "tags": [
+          "Collaboration.Notifications"
+        ],
+        "summary": "List the caller's own notifications in a workspace",
+        "description": "Newest first, one page at a time (limit 1 to 50, default 20; pass nextCursor to continue). Only the caller's own notifications; one about an Item on a Board the caller can no longer read is not shown. archived and dismissed notifications are not listed.",
+        "operationId": "Collaboration.Notifications.GetWorkspaceInbox",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "unreadOnly",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetWorkspaceInbox.WorkspaceInboxDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspaceId}/inbox/read-all": {
+      "post": {
+        "tags": [
+          "Collaboration.Notifications"
+        ],
+        "summary": "Mark every notification of the caller in a workspace read",
+        "description": "Only the caller's own unread notifications change; answers how many.",
+        "operationId": "Collaboration.Notifications.MarkWorkspaceInboxRead",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Collaboration.Notifications.Commands.MarkWorkspaceInboxRead.MarkedReadDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspaceId}/inbox/{notificationId}/read": {
+      "post": {
+        "tags": [
+          "Collaboration.Notifications"
+        ],
+        "summary": "Mark one notification of the caller read",
+        "description": "A notification that is not the caller's, or already read, changes nothing and still answers success.",
+        "operationId": "Collaboration.Notifications.MarkInboxEntryRead",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "notificationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
     "/api/v1/workspaces/{workspaceId}/notification-preferences": {
       "get": {
         "tags": [
@@ -20753,6 +20907,16 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.Application.Features.Collaboration.Notifications.Commands.MarkWorkspaceInboxRead.MarkedReadDto": {
+        "type": "object",
+        "properties": {
+          "marked": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.Application.Features.Collaboration.Notifications.DTOs.InboxSummaryDto": {
         "type": "object",
         "properties": {
@@ -21780,6 +21944,95 @@
           "lastRemindedAt": {
             "type": "string",
             "format": "date-time",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetWorkspaceInbox.InboxEntryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "unread": {
+            "type": "boolean"
+          },
+          "actor": {
+            "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetWorkspaceInbox.InboxPersonDto"
+          },
+          "excerpt": {
+            "type": "string",
+            "nullable": true
+          },
+          "target": {
+            "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetWorkspaceInbox.InboxTargetDto"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetWorkspaceInbox.InboxPersonDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetWorkspaceInbox.InboxTargetDto": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "nullable": true
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "boardId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "key": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetWorkspaceInbox.WorkspaceInboxDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetWorkspaceInbox.InboxEntryDto"
+            },
+            "nullable": true
+          },
+          "nextCursor": {
+            "type": "string",
             "nullable": true
           }
         },

@@ -475,6 +475,56 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.Collaboration.Notifications.Commands.MarkInboxEntryRead.MarkInboxEntryReadCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Collaboration.Notifications.Commands.MarkInboxEntryRead.MarkInboxEntryReadCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Collaboration.Notifications.Commands.MarkWorkspaceInboxRead.MarkWorkspaceInboxReadCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Collaboration.Notifications.Commands.MarkWorkspaceInboxRead.MarkWorkspaceInboxReadCommandHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.Collaboration.Notifications.Queries.GetInboxSummary.GetInboxSummaryQuery",
     "kind": "Query",
     "principalMarkers": [
@@ -3522,6 +3572,31 @@
     "publicCache": false,
     "handlerTypes": [
       "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetMyWorkExtended.GetMyWorkExtendedQueryHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetWorkspaceInbox.GetWorkspaceInboxQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetWorkspaceInbox.GetWorkspaceInboxQueryHandler"
     ]
   },
   {

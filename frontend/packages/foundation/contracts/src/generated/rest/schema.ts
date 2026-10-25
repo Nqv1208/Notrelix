@@ -318,6 +318,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/inbox": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the caller's own notifications in a workspace
+         * @description Newest first, one page at a time (limit 1 to 50, default 20; pass nextCursor to continue). Only the caller's own notifications; one about an Item on a Board the caller can no longer read is not shown. archived and dismissed notifications are not listed.
+         */
+        get: operations["Collaboration.Notifications.GetWorkspaceInbox"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/inbox/read-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark every notification of the caller in a workspace read
+         * @description Only the caller's own unread notifications change; answers how many.
+         */
+        post: operations["Collaboration.Notifications.MarkWorkspaceInboxRead"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/inbox/{notificationId}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark one notification of the caller read
+         * @description A notification that is not the caller's, or already read, changes nothing and still answers success.
+         */
+        post: operations["Collaboration.Notifications.MarkInboxEntryRead"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/notification-preferences": {
         parameters: {
             query?: never;
@@ -5317,6 +5377,10 @@ export interface components {
             createdAt?: string;
             kind?: string | null;
         };
+        "Notrelix.Application.Features.Collaboration.Notifications.Commands.MarkWorkspaceInboxRead.MarkedReadDto": {
+            /** Format: int32 */
+            marked?: number;
+        };
         "Notrelix.Application.Features.Collaboration.Notifications.DTOs.InboxSummaryDto": {
             perWorkspace?: components["schemas"]["Notrelix.Application.Features.Collaboration.Notifications.DTOs.InboxWorkspaceUnreadDto"][] | null;
             /** Format: int32 */
@@ -5662,6 +5726,35 @@ export interface components {
             note?: string | null;
             /** Format: date-time */
             lastRemindedAt?: string | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetWorkspaceInbox.InboxEntryDto": {
+            /** Format: uuid */
+            id?: string;
+            type?: string | null;
+            /** Format: date-time */
+            createdAt?: string;
+            unread?: boolean;
+            actor?: components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetWorkspaceInbox.InboxPersonDto"];
+            excerpt?: string | null;
+            target?: components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetWorkspaceInbox.InboxTargetDto"];
+        };
+        "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetWorkspaceInbox.InboxPersonDto": {
+            /** Format: uuid */
+            id?: string;
+            name?: string | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetWorkspaceInbox.InboxTargetDto": {
+            kind?: string | null;
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            boardId?: string | null;
+            key?: string | null;
+            title?: string | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetWorkspaceInbox.WorkspaceInboxDto": {
+            items?: components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetWorkspaceInbox.InboxEntryDto"][] | null;
+            nextCursor?: string | null;
         };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardAccessDto": {
             /** Format: uuid */
@@ -7141,6 +7234,77 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Notrelix.Application.Features.Collaboration.Notifications.DTOs.InboxSummaryDto"];
+                };
+            };
+        };
+    };
+    "Collaboration.Notifications.GetWorkspaceInbox": {
+        parameters: {
+            query?: {
+                unreadOnly?: boolean;
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetWorkspaceInbox.WorkspaceInboxDto"];
+                };
+            };
+        };
+    };
+    "Collaboration.Notifications.MarkWorkspaceInboxRead": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Collaboration.Notifications.Commands.MarkWorkspaceInboxRead.MarkedReadDto"];
+                };
+            };
+        };
+    };
+    "Collaboration.Notifications.MarkInboxEntryRead": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                notificationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
                 };
             };
         };
