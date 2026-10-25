@@ -819,7 +819,7 @@ describe.each([
     );
   });
 
-  it(`${fui("wm.item-page.surface:request-approval", locale)}lists the approvals asked, offers the board members but not the viewer, and asks the chosen one (${locale})`, () => {
+  it(`${fui("wm.item-page.surface:request-approval", locale)}lists the approvals asked, offers the board members but not the viewer in the item menu, and asks the chosen one (${locale})`, async () => {
     const item = erpPageItem();
     const data = erpPageDetailData(item);
     const board = erpPageBoard();
@@ -850,18 +850,22 @@ describe.each([
       ),
     ).toBeTruthy();
     expect(within(section).getByText("Looks good")).toBeTruthy();
-    fireEvent.click(
-      within(section).getByRole("button", { name: copy.approval.request }),
-    );
+    fireEvent.keyDown(screen.getByRole("button", { name: copy.topbar.more }), {
+      key: "Enter",
+    });
+    const ask = await screen.findByRole("menuitem", {
+      name: copy.approval.request,
+    });
+    fireEvent.keyDown(ask, { key: "ArrowRight" });
     const viewer = board.members.find(
       (member) => member.userId === erpPageViewer.userId,
     );
     if (viewer)
       expect(
-        screen.queryByRole("option", { name: new RegExp(viewer.name) }),
+        screen.queryByRole("menuitem", { name: new RegExp(viewer.name) }),
       ).toBeNull();
     fireEvent.click(
-      screen.getByRole("option", { name: new RegExp(asked.name) }),
+      await screen.findByRole("menuitem", { name: new RegExp(asked.name) }),
     );
     expect(onRequestApproval).toHaveBeenCalledWith(asked.userId);
   });

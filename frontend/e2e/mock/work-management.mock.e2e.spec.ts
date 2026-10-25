@@ -263,6 +263,10 @@ test.describe("Board header in a real browser", () => {
             weight: style.fontWeight,
           };
         });
+      // The tabs are saved views and settle once the board's views are read.
+      await expect
+        .poll(async () => Number((await paint(selected)).weight))
+        .toBeGreaterThan(Number((await paint(other)).weight));
       const selectedPaint = await paint(selected);
       const otherPaint = await paint(other);
       // The selected tab is underlined and set heavier; unselected tabs are not

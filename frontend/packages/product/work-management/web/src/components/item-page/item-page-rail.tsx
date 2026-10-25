@@ -588,15 +588,7 @@ export function ItemPageRail({
         copy={copy}
       />
 
-      <ItemApprovalSection
-        board={board}
-        people={people}
-        viewerUserId={viewerUserId}
-        data={data}
-        canRequest={editable}
-        onRequest={callbacks.onRequestApproval}
-        copy={copy}
-      />
+      <ItemApprovalSection data={data} copy={copy} />
 
       <div>
         <RailHeading

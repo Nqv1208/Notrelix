@@ -110,18 +110,22 @@ test.describe("Item page data (owner)", () => {
     await expect(files.getByText("ghi-chu.pdf")).toBeVisible();
   });
 
-  test("follow: the button says it is unavailable and the faces stay", async ({
+  test("follow: the button follows and unfollows, and the faces of the followers stay", async ({
     page,
   }) => {
     await open(page);
-    const follow = page.getByRole("button", { name: "Theo dõi", exact: true });
-    await expect(follow).toHaveAttribute("aria-pressed", "false");
-    await expect(follow).toHaveAttribute("aria-disabled", "true");
+    const follow = page.getByRole("button", {
+      name: /^(Đang theo dõi|Theo dõi)$/,
+    });
+    await expect(follow).not.toHaveAttribute("aria-disabled", "true");
+    const before = await follow.getAttribute("aria-pressed");
+    await follow.click();
+    await expect(follow).toHaveAttribute(
+      "aria-pressed",
+      before === "true" ? "false" : "true",
+    );
     await expect(
-      page.getByRole("group", { name: "1 người theo dõi" }),
-    ).toBeVisible();
-    await expect(
-      page.getByText("Theo dõi công việc chưa khả dụng"),
+      page.getByRole("group", { name: /người theo dõi/ }),
     ).toBeVisible();
   });
 

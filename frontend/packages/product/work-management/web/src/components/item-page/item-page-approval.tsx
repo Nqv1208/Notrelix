@@ -1,4 +1,3 @@
-import { CheckCheck } from "lucide-react";
 import type { Board } from "@notrelix/work-management-core";
 import { fillSheetCopy } from "../card-detail/item-sheet.copy";
 import type {
@@ -7,47 +6,40 @@ import type {
 } from "../card-detail/task-detail-types";
 import type { ItemPageCopy } from "./item-page.copy";
 import type { ItemPagePeople } from "./item-page-types";
-import { BUTTON_SM_VARIANT_CLASS } from "./item-page-parts";
-import { ItemListPicker, PickerPopover } from "./item-pickers";
 
 /**
- * The item's approvals: who was asked and what they answered, and, for a person who can edit the item,
- * "Request approval" with a board member picker (never the viewer). Absent when the host offers no
- * approvals at all.
+ * The people who may be asked to approve the item: whoever can read the board (its members, and everyone
+ * when it is workspace-wide), never the viewer.
  */
-export function ItemApprovalSection({
-  board,
-  people,
-  viewerUserId,
-  data,
-  canRequest,
-  onRequest,
-  copy,
-}: {
-  board: Board;
-  /** The workspace's people; the board's members without it. */
-  people?: ItemPagePeople;
-  viewerUserId?: string;
-  data: TaskDetailData | undefined;
-  canRequest: boolean;
-  onRequest?: (approverUserId: string) => void;
-  copy: ItemPageCopy;
-}) {
-  const t = copy.approval;
-  const approvals = data?.approvals;
-  if (approvals === undefined) return null;
-  const askable = canRequest && onRequest !== undefined;
-  if (!askable && approvals.length === 0) return null;
-
-  // Whoever can read the board may be asked: its members, and everyone when it is workspace-wide.
+export function approvalCandidates(
+  board: Board,
+  people: ItemPagePeople | undefined,
+  viewerUserId: string | undefined,
+): { id: string; label: string }[] {
   const candidates = people
     ? people.people.filter(
         (person) => person.onBoard || board.visibility === "workspace",
       )
     : board.members;
-  const options = candidates
+  return candidates
     .filter((person) => person.userId !== viewerUserId && person.name)
     .map((person) => ({ id: person.userId, label: person.name }));
+}
+
+/**
+ * The approvals asked about the item: who was asked and what they answered. Absent until one was asked
+ * (asking lives in the item menu), so the rail keeps its shape.
+ */
+export function ItemApprovalSection({
+  data,
+  copy,
+}: {
+  data: TaskDetailData | undefined;
+  copy: ItemPageCopy;
+}) {
+  const t = copy.approval;
+  const approvals = data?.approvals ?? [];
+  if (approvals.length === 0 && !data?.approvalError) return null;
 
   return (
     <section
@@ -72,37 +64,6 @@ export function ItemApprovalSection({
         <p role="alert" className="m-0 text-item-note text-danger-text">
           {data.approvalError === "alreadyAsked" ? t.alreadyAsked : t.failed}
         </p>
-      ) : null}
-      {askable ? (
-        <div>
-          <PickerPopover
-            trigger={
-              <button
-                type="button"
-                data-f="request-approval"
-                className={BUTTON_SM_VARIANT_CLASS.outline}
-              >
-                <CheckCheck aria-hidden="true" className="size-3.5" />
-                {t.request}
-              </button>
-            }
-          >
-            {(close) => (
-              <ItemListPicker
-                idPrefix="item-approver"
-                options={options}
-                currentId={null}
-                searchPlaceholder={t.searchPlaceholder}
-                searchLabel={t.searchLabel}
-                noMatch={t.noMatch}
-                onSelect={(userId) => {
-                  onRequest?.(userId);
-                  close();
-                }}
-              />
-            )}
-          </PickerPopover>
-        </div>
       ) : null}
     </section>
   );

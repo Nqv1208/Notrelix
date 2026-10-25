@@ -304,30 +304,30 @@ test("a requester asks a board member to approve from the item page, sees it wai
   const itemPage = `/workspaces/${workspace.id}/boards/${board.id}/items/${itemId}`;
   await page.goto(itemPage);
   const approval = page.locator('[data-f="item-approval"]');
-  await expect(approval).toBeVisible();
-  await expect(approval.getByRole("list")).toHaveCount(0);
+  // Nothing was asked yet: the rail has no approval block.
+  await expect(approval).toHaveCount(0);
 
-  // The person who asks is not offered; a board member is.
-  await approval.getByRole("button", { name: "Request approval" }).click();
-  const search = page.getByRole("combobox", {
-    name: "Who should approve this item",
-  });
-  await search.fill(approverName);
+  // The item menu offers the board members, not the person who asks.
+  const ask = async () => {
+    await page.getByRole("button", { name: "More", exact: true }).click();
+    await page.getByRole("menuitem", { name: "Request approval" }).click();
+  };
+  await ask();
+  await expect(
+    page.getByRole("menuitem", { name: approverName }),
+  ).toBeVisible();
   const sent = page.waitForResponse(
     (response) =>
       response.request().method() === "POST" &&
       response.url().includes(`/board-items/${itemId}/approval-requests`),
   );
-  await page.getByRole("option", { name: approverName }).click();
+  await page.getByRole("menuitem", { name: approverName }).click();
   expect((await sent).status()).toBeLessThan(300);
   await expect(approval.getByText(`Waiting for ${approverName}`)).toBeVisible();
 
   // Asking the same person again is refused with a notice, not a second request.
-  await approval.getByRole("button", { name: "Request approval" }).click();
-  await page
-    .getByRole("combobox", { name: "Who should approve this item" })
-    .fill(approverName);
-  await page.getByRole("option", { name: approverName }).click();
+  await ask();
+  await page.getByRole("menuitem", { name: approverName }).click();
   await expect(approval.getByRole("alert")).toHaveText(
     "That person was already asked about this item.",
   );

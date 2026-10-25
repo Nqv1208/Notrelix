@@ -60,8 +60,8 @@ test.describe("Item page states (owner)", () => {
     await expect(
       page.getByText("Thêm mô tả… gõ / để chèn bảng, việc, tài liệu"),
     ).toBeVisible();
-    // Sub-items have no producer: the page offers no list and no way to add.
-    await expect(page.getByText("Chưa có việc con.")).toHaveCount(0);
+    // Sub-items: an empty list that says so and offers a way to add one.
+    await expect(page.getByText("Chưa có việc con.")).toBeVisible();
     await expect(page.getByText("vừa xong", { exact: false })).toHaveCount(0);
     const rail = page.getByRole("complementary");
     await expect(
@@ -73,10 +73,10 @@ test.describe("Item page states (owner)", () => {
     ).toBeVisible();
     await expect(
       page.getByRole("button", { name: "Thêm việc con" }),
-    ).toHaveCount(0);
+    ).toBeVisible();
   });
 
-  test("a done item says when it was finished and how early, and offers no reopen", async ({
+  test("a done item says when it was finished and how early, and offers to reopen it", async ({
     page,
   }) => {
     await open(page, "mock-erp-item-131");
@@ -85,8 +85,8 @@ test.describe("Item page states (owner)", () => {
     await expect(
       page.getByRole("complementary").getByText("xong sớm 1 ngày"),
     ).toBeVisible();
-    // Reopening has no producer: the banner offers no button for it.
-    await expect(banner.getByRole("button", { name: "Mở lại" })).toHaveCount(0);
+    // Reopening returns the item to the status it had before it was completed.
+    await expect(banner.getByRole("button", { name: "Mở lại" })).toBeVisible();
   });
 
   test("an archived item is read-only and comes back with Khôi phục", async ({

@@ -332,9 +332,7 @@ export const en = {
   approval: {
     heading: "Approval",
     request: "Request approval",
-    searchPlaceholder: "Find a person",
     searchLabel: "Who should approve this item",
-    noMatch: "No board member matches",
     list: "Approval requests",
     pending: "Waiting for {{name}}",
     approved: "Approved by {{name}}",
@@ -718,9 +716,7 @@ export const vi: ItemPageCopy = {
   approval: {
     heading: "Phê duyệt",
     request: "Yêu cầu phê duyệt",
-    searchPlaceholder: "Tìm người",
     searchLabel: "Ai sẽ duyệt công việc này",
-    noMatch: "Không có thành viên bảng phù hợp",
     list: "Yêu cầu phê duyệt",
     pending: "Đang chờ {{name}}",
     approved: "{{name}} đã duyệt",

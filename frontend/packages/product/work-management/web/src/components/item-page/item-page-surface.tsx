@@ -27,6 +27,7 @@ import {
   ItemPageFiles,
   ItemPageLinks,
 } from "./item-page-sections";
+import { approvalCandidates } from "./item-page-approval";
 import { ItemPageTopbar } from "./item-page-topbar";
 import { BUTTON_SM_VARIANT_CLASS } from "./item-page-parts";
 import { formatItemDate } from "../shared/item-display";
@@ -259,6 +260,7 @@ export function ItemPageSurface({
             capabilities={capabilities}
             callbacks={callbacks}
             copy={copy}
+            approvers={approvalCandidates(board, people, viewer?.userId)}
           />
           {/* Below the desktop width the two columns stack and the page scrolls as one. */}
           <div className="flex min-h-0 flex-1 flex-col overflow-y-auto lg:flex-row lg:overflow-hidden">
