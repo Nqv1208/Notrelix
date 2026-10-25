@@ -413,23 +413,63 @@ export const workFeedOperations = [
   }),
   defineMockOperation<{ workspaceId: string }>({
     id: "wsFeed.inbox.list",
-    contract: { kind: "gap", gapId: INBOX },
+    contract: {
+      kind: "openapi",
+      operationId: "Collaboration.Notifications.GetWorkspaceInbox",
+    },
     method: "GET",
     route: "/workspaces/:workspaceId/inbox",
     async handle({ params, store }) {
       if (!store.isCurrentMemberOf(params.workspaceId)) return notFound();
-      return ok(buildInbox(store, params.workspaceId));
+      // The real producer lists notifications: a mention is the one kind it has.
+      const inbox = buildInbox(store, params.workspaceId);
+      return ok({
+        items: inbox.items
+          .filter((entry) => entry.type === "mention")
+          .map((entry) => ({
+            id: entry.id,
+            type: "mention.created",
+            createdAt: entry.createdAt,
+            unread: entry.unread,
+            actor: entry.actor,
+            excerpt: entry.excerpt,
+            target: {
+              kind: "item",
+              id: entry.target.id,
+              boardId: entry.target.boardId,
+              key: entry.target.key,
+              title: entry.target.title,
+            },
+          })),
+        nextCursor: null,
+      });
+    },
+  }),
+  defineMockOperation<{ workspaceId: string; id: string }>({
+    id: "wsFeed.inbox.read",
+    contract: {
+      kind: "openapi",
+      operationId: "Collaboration.Notifications.MarkInboxEntryRead",
+    },
+    method: "POST",
+    route: "/workspaces/:workspaceId/inbox/:id/read",
+    async handle({ params, store }) {
+      if (!store.isCurrentMemberOf(params.workspaceId)) return notFound();
+      return outcome(markInbox(store, params.id, { type: "handled" }));
     },
   }),
   defineMockOperation<{ workspaceId: string }>({
     id: "wsFeed.inbox.readAll",
-    contract: { kind: "gap", gapId: INBOX },
+    contract: {
+      kind: "openapi",
+      operationId: "Collaboration.Notifications.MarkWorkspaceInboxRead",
+    },
     method: "POST",
     route: "/workspaces/:workspaceId/inbox/read-all",
     async handle({ params, store }) {
       if (!store.isCurrentMemberOf(params.workspaceId)) return notFound();
       markAllInboxRead(store);
-      return noContent();
+      return ok({ marked: 0 });
     },
   }),
   defineMockOperation<{ id: string }>({

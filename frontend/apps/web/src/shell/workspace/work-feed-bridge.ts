@@ -411,7 +411,8 @@ const path = {
   inbox: (workspaceId: string) => `/workspaces/${workspaceId}/inbox`,
   inboxReadAll: (workspaceId: string) =>
     `/workspaces/${workspaceId}/inbox/read-all`,
-  inboxEntry: (id: string, action: string) => `/inbox/${id}/${action}`,
+  inboxEntryRead: (workspaceId: string, id: string) =>
+    `/workspaces/${workspaceId}/inbox/${id}/read`,
 };
 
 export const myWorkExtendedQueryKey = (workspaceId: string) =>
@@ -470,31 +471,78 @@ export function useInboxSummary() {
   });
 }
 
+type WorkspaceInboxResponse =
+  OperationResponse<"Collaboration.Notifications.GetWorkspaceInbox">;
+
+/** The most notifications the Inbox page loads; the producer pages beyond it. */
+const INBOX_PAGE_LIMIT = 50;
+
+/**
+ * The producer's notifications as the Inbox page lists them. Only a mention
+ * has a producer today, so another type is not drawn; the need, approval,
+ * bundle and detail parts of an entry have no source and stay empty.
+ */
+export function toInboxDto(
+  workspaceId: string,
+  dto: WorkspaceInboxResponse | null,
+): InboxDto {
+  const items = (dto?.items ?? [])
+    .filter((entry) => entry.type === "mention.created")
+    .map((entry): InboxEntryDto => ({
+      id: entry.id ?? "",
+      createdAt: entry.createdAt ?? "",
+      unread: entry.unread === true,
+      type: "mention",
+      actor: entry.actor?.id
+        ? { id: entry.actor.id, name: entry.actor.name ?? "" }
+        : null,
+      need: null,
+      following: false,
+      muted: false,
+      target: {
+        kind: "item",
+        id: entry.target?.id ?? null,
+        key: entry.target?.key ?? null,
+        title: entry.target?.title ?? "",
+        boardId: entry.target?.boardId ?? null,
+        boardName: null,
+        departmentId: null,
+        owner: null,
+      },
+      excerpt: entry.excerpt ?? null,
+      dueAt: null,
+      permission: null,
+      bundle: null,
+      detail: null,
+    }));
+  const unread = items.filter((entry) => entry.unread).length;
+  return {
+    workspace: { id: workspaceId, name: "" },
+    items,
+    counts: {
+      need: 0,
+      mention: unread,
+      assigned: 0,
+      follow: 0,
+      all: items.length,
+      unread,
+    },
+  };
+}
+
 export function useWorkspaceInbox(workspaceId: string) {
   const { api: client } = useAppRuntime();
   return useQuery({
     queryKey: inboxQueryKey(workspaceId),
     enabled: Boolean(workspaceId),
     staleTime: 15_000,
-    queryFn: async () => {
-      const dto = await client.api.get<InboxDto | null>(
-        path.inbox(workspaceId),
-      );
-      return (
-        dto ?? {
-          workspace: { id: workspaceId, name: "" },
-          items: [],
-          counts: {
-            need: 0,
-            mention: 0,
-            assigned: 0,
-            follow: 0,
-            all: 0,
-            unread: 0,
-          },
-        }
-      );
-    },
+    queryFn: async () =>
+      toInboxDto(
+        workspaceId,
+        await client.api.get<WorkspaceInboxResponse | null>(
+          `${path.inbox(workspaceId)}?limit=${INBOX_PAGE_LIMIT}`,
+        ),
+      ),
   });
 }
 
@@ -560,10 +608,7 @@ export interface WorkFeedWrites {
     text: string;
   }) => Promise<void>;
   readonly inbox: {
-    readonly handled: (id: string) => Promise<void>;
-    readonly snooze: (id: string, until: string) => Promise<void>;
-    readonly mute: (id: string) => Promise<void>;
-    readonly reply: (id: string, text: string) => Promise<void>;
+    readonly markRead: (id: string) => Promise<void>;
     readonly readAll: () => Promise<void>;
   };
 }
@@ -665,23 +710,9 @@ export function useWorkFeedWrites(workspaceId: string): WorkFeedWrites {
           ),
         ),
       inbox: {
-        handled: (id) =>
+        markRead: (id) =>
           perform(() =>
-            api.post<void>(path.inboxEntry(id, "handled"), {}, QUIET),
-          ),
-        snooze: (id, until) =>
-          perform(() =>
-            api.post<void>(path.inboxEntry(id, "snooze"), { until }, QUIET),
-          ),
-        mute: (id) =>
-          perform(() => api.post<void>(path.inboxEntry(id, "mute"), {}, QUIET)),
-        reply: (id, text) =>
-          perform(() =>
-            api.post<void>(
-              path.inboxEntry(id, "reply"),
-              { text },
-              { idempotencyKey: attemptKey(), ...QUIET },
-            ),
+            api.post<void>(path.inboxEntryRead(workspaceId, id), {}, QUIET),
           ),
         readAll: () =>
           perform(() =>
