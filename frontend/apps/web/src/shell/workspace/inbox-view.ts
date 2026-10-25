@@ -482,6 +482,7 @@ export function toInboxEntries(
       muted: entry.muted,
       done: entry.done,
       itemId: target.kind === "item" ? target.id : null,
+      docId: target.kind === "doc" ? target.id : null,
       bundle: entry.bundle
         ? {
             count: entry.bundle.children.length,

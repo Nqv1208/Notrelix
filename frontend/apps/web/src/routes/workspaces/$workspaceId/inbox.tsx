@@ -127,11 +127,15 @@ export function InboxPage() {
       onApprove: (item) => decide(item, "approve"),
       onRequestChanges: (item) => decide(item, "reject"),
       onReply: (item, text) => {
-        if (!item.itemId) return;
-        const itemId = item.itemId;
+        const send = item.itemId
+          ? () => writes.inbox.reply(item.itemId!, text)
+          : item.docId
+            ? () => writes.inbox.replyOnPage(item.docId!, text)
+            : null;
+        if (!send) return;
         act(
           item.id,
-          () => writes.inbox.reply(itemId, text),
+          send,
           formatCopy(copy.toasts2.replied, { name: item.person?.name ?? "" }),
         );
       },

@@ -448,6 +448,7 @@ const path = {
   inboxEntryUnmute: (workspaceId: string, id: string) =>
     `/workspaces/${workspaceId}/inbox/${id}/unmute`,
   itemComments: (itemId: string) => `/board-items/${itemId}/comments`,
+  pageComments: (pageId: string) => `/pages/${pageId}/comments`,
 };
 
 export const myWorkExtendedQueryKey = (workspaceId: string) =>
@@ -582,7 +583,7 @@ export function toInboxDto(
       done: view === "done",
       snoozedUntil: entry.snoozedUntil ?? null,
       target: {
-        kind: "item",
+        kind: entry.target?.kind === "doc" ? "doc" : "item",
         id: entry.target?.id ?? null,
         key: entry.target?.key ?? null,
         title: entry.target?.title ?? "",
@@ -729,6 +730,8 @@ export interface WorkFeedWrites {
     readonly mute: (id: string, muted: boolean) => Promise<void>;
     /** Posts a comment on the item the entry is about (the existing comment write). */
     readonly reply: (itemId: string, text: string) => Promise<void>;
+    /** Posts a comment on the page the entry is about (the existing page comment write). */
+    readonly replyOnPage: (pageId: string, text: string) => Promise<void>;
   };
 }
 
@@ -890,6 +893,14 @@ export function useWorkFeedWrites(workspaceId: string): WorkFeedWrites {
             await api.post<string>(
               path.itemComments(itemId),
               { contentMd: text, parentCommentId: null },
+              { idempotencyKey: attemptKey(), ...QUIET },
+            );
+          }),
+        replyOnPage: (pageId, text) =>
+          perform(async () => {
+            await api.post<string>(
+              path.pageComments(pageId),
+              { contentMd: text },
               { idempotencyKey: attemptKey(), ...QUIET },
             );
           }),

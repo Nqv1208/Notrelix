@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Collaboration.Public.Notifications;
+using Notrelix.Application.Features.Documents.Public.PageTitles;
 using Notrelix.Application.Features.Governance.Public.Visibility;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 
@@ -54,9 +55,11 @@ public class GetWorkspaceInboxQueryHandler(
     ICurrentRequestContext requestContext,
     IResourceVisibility visibility,
     INotificationInbox inbox,
-    IActorLookupService actors) : IRequestHandler<GetWorkspaceInboxQuery, Result<WorkspaceInboxDto>>
+    IActorLookupService actors,
+    IPageTitleFacts pageTitles) : IRequestHandler<GetWorkspaceInboxQuery, Result<WorkspaceInboxDto>>
 {
     private const string BoardItemKind = "work-management.board-item";
+    private const string PageKind = "documents.page";
 
     /// <summary>The notification type Collaboration stores for "someone asked you to approve an item".</summary>
     private const string ApprovalRequestedType = "approval.requested";
@@ -107,9 +110,27 @@ public class GetWorkspaceInboxQueryHandler(
             }
         }
 
-        // A notification without a target, or about an Item the caller reads, is shown; about one they do not read, not.
+        // A mention on a Page names the Page when the caller may still read it.
+        var pageIds = scanned
+            .Where(n => n.ResourceKind == PageKind && n.ResourceId is not null)
+            .Select(n => n.ResourceId!.Value)
+            .Distinct()
+            .ToList();
+        var readablePages = new Dictionary<Guid, string>();
+        if (pageIds.Count > 0)
+        {
+            var visiblePageIds = (await visibility.VisiblePageIdsAsync(request.WorkspaceId, userId, cancellationToken)).ToHashSet();
+            var titles = await pageTitles.TitlesAsync(
+                request.WorkspaceId, pageIds.Where(visiblePageIds.Contains).ToList(), cancellationToken);
+            readablePages = titles.ToDictionary(t => t.Key, t => t.Value);
+        }
+
+        // A notification without a target, or about an Item or Page the caller reads, is shown; about one they do not read, not.
         var shown = scanned
-            .Where(n => n.ResourceKind != BoardItemKind || n.ResourceId is null || readable.ContainsKey(n.ResourceId.Value))
+            .Where(n => n.ResourceId is null
+                        || (n.ResourceKind == BoardItemKind && readable.ContainsKey(n.ResourceId.Value))
+                        || (n.ResourceKind == PageKind && readablePages.ContainsKey(n.ResourceId.Value))
+                        || (n.ResourceKind != BoardItemKind && n.ResourceKind != PageKind))
             .ToList();
         var page = shown.Take(limit).ToList();
 
@@ -149,6 +170,10 @@ public class GetWorkspaceInboxQueryHandler(
             if (n.ResourceKind == BoardItemKind && n.ResourceId is { } itemId && readable.TryGetValue(itemId, out var item))
             {
                 target = new InboxTargetDto("item", itemId, item.BoardId, item.Key, item.Name);
+            }
+            else if (n.ResourceKind == PageKind && n.ResourceId is { } pageId && readablePages.TryGetValue(pageId, out var pageTitle))
+            {
+                target = new InboxTargetDto("doc", pageId, null, null, pageTitle);
             }
 
             return new InboxEntryDto(

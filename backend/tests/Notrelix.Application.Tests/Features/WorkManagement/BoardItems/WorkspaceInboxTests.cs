@@ -5,6 +5,7 @@ using Notrelix.Application.Features.Collaboration.Notifications.Commands.MuteInb
 using Notrelix.Application.Features.Collaboration.Notifications.Commands.ReopenInboxEntry;
 using Notrelix.Application.Features.Collaboration.Notifications.Commands.SnoozeInboxEntry;
 using Notrelix.Application.Features.Collaboration.Public.Notifications;
+using Notrelix.Application.Features.Documents.Public.PageTitles;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetWorkspaceInbox;
 using Notrelix.Testing.Application.Fakes;
 
@@ -16,6 +17,7 @@ public class WorkspaceInboxTests : WorkManagementHandlerTestBase
     private readonly FakeResourceVisibility _visibility = new();
     private readonly Mock<IActorLookupService> _actors = new();
     private readonly Mock<INotificationInbox> _inbox = new();
+    private readonly Mock<IPageTitleFacts> _pageTitles = new();
 
     public WorkspaceInboxTests()
     {
@@ -26,10 +28,33 @@ public class WorkspaceInboxTests : WorkManagementHandlerTestBase
     }
 
     private GetWorkspaceInboxQueryHandler Handler() =>
-        new(DbContextMock.Object, RequestContextMock.Object, _visibility, _inbox.Object, _actors.Object);
+        new(DbContextMock.Object, RequestContextMock.Object, _visibility, _inbox.Object, _actors.Object, _pageTitles.Object);
 
     private static InboxNotification Note(Guid? actor, Guid? resource, string? kind = ItemKind, bool unread = true) =>
         new(Guid.CreateVersion7(), "mention.created", actor, DateTimeOffset.UtcNow, "Mention", "You were mentioned", kind, resource, unread);
+
+    [Fact]
+    public async Task Inbox_NamesTheReadablePageOfAMention_AndDropsOneTheCallerCannotRead()
+    {
+        var readable = Guid.CreateVersion7();
+        var hidden = Guid.CreateVersion7();
+        _visibility.Pages.Add(readable);
+        _pageTitles
+            .Setup(t => t.TitlesAsync(TestWorkspaceId, It.Is<IReadOnlyCollection<Guid>>(ids => ids.Single() == readable), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<Guid, string> { [readable] = "Launch plan" });
+        _inbox
+            .Setup(i => i.ListAsync(TestWorkspaceId, TestUserId, InboxView.Inbox, null, null, GetWorkspaceInboxQuery.ScanLimit, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<InboxNotification>
+            {
+                Note(Guid.CreateVersion7(), readable, kind: "documents.page"),
+                Note(Guid.CreateVersion7(), hidden, kind: "documents.page"),
+            });
+
+        var result = await Handler().Handle(new GetWorkspaceInboxQuery(TestWorkspaceId, false, null, null), CancellationToken.None);
+
+        var entry = result.Data!.Items.Should().ContainSingle().Subject;
+        entry.Target.Should().BeEquivalentTo(new InboxTargetDto("doc", readable, null, null, "Launch plan"));
+    }
 
     [Fact]
     public async Task Inbox_ShowsNotificationsOfReadableItemsWithTheirTarget_AndDropsAnUnreadableOne()

@@ -150,6 +150,8 @@ export interface InboxItemView {
   readonly done?: boolean;
   /** The item the notification is about, when the reply can go to it. */
   readonly itemId?: string | null;
+  /** The page the notification is about, when the reply can go to it. */
+  readonly docId?: string | null;
   /** Where the row leads when it is a link; `null` selects it in place. */
   readonly href: string | null;
   readonly detail: InboxDetailView | null;
