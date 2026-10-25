@@ -162,5 +162,9 @@ public sealed class SoftDeleteQueryTranslationTests : IAsyncLifetime
             CancellationToken cancellationToken)
             => Task.FromResult<IReadOnlyDictionary<Guid, WorkItemCollaborationCounts>>(
                 new Dictionary<Guid, WorkItemCollaborationCounts>());
+
+        public Task<IReadOnlyList<Guid>> GetFollowedItemIdsAsync(
+            Guid workspaceId, Guid userId, int limit, CancellationToken cancellationToken)
+            => Task.FromResult<IReadOnlyList<Guid>>([]);
     }
 }

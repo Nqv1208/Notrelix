@@ -661,6 +661,25 @@ export function useWorkFeedWrites(workspaceId: string): WorkFeedWrites {
     [run],
   );
 
+  const unfollowEach = useCallback(
+    async (itemIds: readonly string[]): Promise<BulkResultDto> => ({
+      results: await Promise.all(
+        itemIds.map(async (itemId) => {
+          try {
+            await api.delete<void>(path.following(itemId), {
+              idempotencyKey: attemptKey(),
+              ...QUIET,
+            });
+            return { itemId, ok: true, error: null } as const;
+          } catch {
+            return { itemId, ok: false, error: "invalid" } as const;
+          }
+        }),
+      ),
+    }),
+    [api],
+  );
+
   return useMemo<WorkFeedWrites>(
     () => ({
       decideApproval: ({ itemId, boardId, decision, comment }) =>
@@ -705,11 +724,14 @@ export function useWorkFeedWrites(workspaceId: string): WorkFeedWrites {
       bulk: ({ itemIds, boardIds, action }) =>
         perform(
           () =>
-            api.post<BulkResultDto>(
-              path.myWorkBulk(workspaceId),
-              { itemIds, action },
-              { idempotencyKey: attemptKey(), ...QUIET },
-            ),
+            // Stopping to follow is one write per item on the follow route.
+            action.type === "unfollow"
+              ? unfollowEach(itemIds)
+              : api.post<BulkResultDto>(
+                  path.myWorkBulk(workspaceId),
+                  { itemIds, action },
+                  { idempotencyKey: attemptKey(), ...QUIET },
+                ),
           boardIds,
         ),
       createItem: ({ boardId, name }) =>
@@ -744,6 +766,6 @@ export function useWorkFeedWrites(workspaceId: string): WorkFeedWrites {
           ),
       },
     }),
-    [api, perform, workspaceId],
+    [api, perform, unfollowEach, workspaceId],
   );
 }

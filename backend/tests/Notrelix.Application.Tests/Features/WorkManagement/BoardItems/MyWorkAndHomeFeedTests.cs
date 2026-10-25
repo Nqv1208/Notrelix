@@ -1,4 +1,5 @@
 using Notrelix.Application.Features.Collaboration.Public.Notifications;
+using Notrelix.Application.Features.WorkManagement.Ports.Collaboration;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetHomeFeed;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetMyWorkExtended;
 using Notrelix.Domain.SharedKernel.Ordering;
@@ -11,6 +12,7 @@ public class MyWorkAndHomeFeedTests : WorkManagementHandlerTestBase
     private readonly FakeResourceVisibility _visibility = new();
     private readonly Mock<IActorLookupService> _actors = new();
     private readonly Mock<INotificationInbox> _inbox = new();
+    private readonly Mock<IWorkManagementCollaborationReadPort> _collaboration = new();
 
     public MyWorkAndHomeFeedTests()
     {
@@ -18,10 +20,13 @@ public class MyWorkAndHomeFeedTests : WorkManagementHandlerTestBase
             .Setup(a => a.FindManyAsync(It.IsAny<IReadOnlyList<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((IReadOnlyList<Guid> ids, CancellationToken _) =>
                 ids.Select(id => new ActorSnapshot(id, "Person " + id.ToString("N")[..4], null)).ToList());
+        _collaboration
+            .Setup(c => c.GetFollowedItemIdsAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
     }
 
     private GetMyWorkExtendedQueryHandler MyWork() =>
-        new(DbContextMock.Object, RequestContextMock.Object, _visibility, _actors.Object);
+        new(DbContextMock.Object, RequestContextMock.Object, _visibility, _actors.Object, _collaboration.Object);
 
     private GetHomeFeedQueryHandler Home() =>
         new(DbContextMock.Object, RequestContextMock.Object, _visibility, _inbox.Object, _actors.Object);
@@ -75,6 +80,32 @@ public class MyWorkAndHomeFeedTests : WorkManagementHandlerTestBase
         result.Data.Done.Should().ContainSingle(d => d.Id == done.Id && d.CompletedAt != null && d.Assignee == null);
         result.Data.Waiting.Should().BeEmpty();
         result.Data.Departments.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task MyWork_ListsTheOpenItemsTheCallerFollowsWithTheFollowingRelation()
+    {
+        var board = CreateBoard();
+        var hiddenBoard = CreateBoard();
+        SetupBoards(board, hiddenBoard);
+        _visibility.Boards.Add(board.Id);
+        var assignedAndFollowed = CreateBoardItem(boardId: board.Id);
+        var followedOnly = CreateBoardItem(boardId: board.Id);
+        var followedDone = CreateBoardItem(boardId: board.Id);
+        followedDone.Complete(TestNow, TestUserId, TestNow);
+        var followedHidden = CreateBoardItem(boardId: hiddenBoard.Id);
+        SetupBoardItems(assignedAndFollowed, followedOnly, followedDone, followedHidden);
+        SetupBoardItemMembers(CreateBoardItemMember(itemId: assignedAndFollowed.Id, userId: TestUserId));
+        _collaboration
+            .Setup(c => c.GetFollowedItemIdsAsync(TestWorkspaceId, TestUserId, It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([followedOnly.Id, assignedAndFollowed.Id, followedDone.Id, followedHidden.Id]);
+
+        var result = await MyWork().Handle(new GetMyWorkExtendedQuery(TestWorkspaceId), CancellationToken.None);
+
+        result.Data!.Items.Select(i => i.Id).Should().BeEquivalentTo([assignedAndFollowed.Id, followedOnly.Id]);
+        result.Data.Items.Single(i => i.Id == assignedAndFollowed.Id).Relations.Should().Equal("assigned", "following");
+        result.Data.Items.Single(i => i.Id == followedOnly.Id).Relations.Should().Equal("following");
+        result.Data.Done.Should().BeEmpty();
     }
 
     [Fact]

@@ -10,4 +10,15 @@ public interface IWorkManagementCollaborationReadPort
     Task<IReadOnlyDictionary<Guid, WorkItemCollaborationCounts>> GetCountsAsync(
         IReadOnlyCollection<Guid> itemIds,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// The board items of one Workspace the person follows, newest follow first, at most
+    /// <paramref name="limit"/>. Following is Collaboration's; whether the person may still read an
+    /// item is decided by the caller.
+    /// </summary>
+    Task<IReadOnlyList<Guid>> GetFollowedItemIdsAsync(
+        Guid workspaceId,
+        Guid userId,
+        int limit,
+        CancellationToken cancellationToken);
 }

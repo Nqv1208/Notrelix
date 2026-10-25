@@ -299,13 +299,14 @@ export function createItemExtrasApi(client: NotrelixClient) {
       };
     },
     async setFollowing(itemId: string, following: boolean): Promise<void> {
+      const options = { idempotencyKey: key(), ...quiet };
       if (following)
         await api.put<void>(
           `/board-items/${itemId}/following`,
           undefined,
-          quiet,
+          options,
         );
-      else await api.delete<void>(`/board-items/${itemId}/following`, quiet);
+      else await api.delete<void>(`/board-items/${itemId}/following`, options);
     },
     /**
      * Moves an item to another board (gap `CTR-GAP-WM-TABLE-BULK`, see

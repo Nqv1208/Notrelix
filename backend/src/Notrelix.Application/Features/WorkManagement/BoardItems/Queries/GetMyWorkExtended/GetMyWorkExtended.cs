@@ -2,6 +2,7 @@ using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Governance.Public.Visibility;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.WorkManagement.Common;
+using Notrelix.Application.Features.WorkManagement.Ports.Collaboration;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetMyWorkExtended;
 
@@ -9,8 +10,8 @@ namespace Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetMyW
 /// "My work" as the member's page draws it: the open Items assigned to the caller (soonest due first, undated
 /// last) and the Items the caller recently completed, each with its key, Status (label and work-status
 /// category), Priority option and the person in charge when it is someone else. Both lists are bounded and come only from Boards the
-/// caller may read (the single-read ViewBoard decision, GOV-029). Approvals, followed Items and "waiting on"
-/// have no source yet and are returned empty; <c>departments</c> is empty because no Board-to-department
+/// caller may read (the single-read ViewBoard decision, GOV-029). The open Items the caller follows are listed
+/// too, with the "following" relation. Approvals and "waiting on" have no source yet and are returned empty; <c>departments</c> is empty because no Board-to-department
 /// mapping exists.
 /// </summary>
 public record GetMyWorkExtendedQuery(Guid WorkspaceId)
@@ -70,9 +71,12 @@ public class GetMyWorkExtendedQueryHandler(
     IWorkManagementDbContext context,
     ICurrentRequestContext requestContext,
     IResourceVisibility visibility,
-    IActorLookupService actors) : IRequestHandler<GetMyWorkExtendedQuery, Result<MyWorkExtendedDto>>
+    IActorLookupService actors,
+    IWorkManagementCollaborationReadPort collaboration) : IRequestHandler<GetMyWorkExtendedQuery, Result<MyWorkExtendedDto>>
 {
     private static readonly IReadOnlyList<string> AssignedRelation = ["assigned"];
+    private static readonly IReadOnlyList<string> FollowingRelation = ["following"];
+    private static readonly IReadOnlyList<string> AssignedAndFollowingRelations = ["assigned", "following"];
 
     public async Task<Result<MyWorkExtendedDto>> Handle(GetMyWorkExtendedQuery request, CancellationToken cancellationToken)
     {
@@ -113,7 +117,29 @@ public class GetMyWorkExtendedQueryHandler(
             .Take(GetMyWorkExtendedQuery.DoneLimit)
             .ToListAsync(cancellationToken);
 
-        var all = open.Concat(done).ToList();
+        // The open Items the caller follows and is not assigned to, from Boards they may still read.
+        var followedIds = await collaboration.GetFollowedItemIdsAsync(
+            request.WorkspaceId, userId, GetMyWorkExtendedQuery.OpenLimit, cancellationToken);
+        var followedOnly = followedIds.Count == 0
+            ? []
+            : await (
+                    from item in context.BoardItems.AsNoTracking()
+                    join board in context.Boards.AsNoTracking() on item.BoardId equals board.Id
+                    where followedIds.Contains(item.Id)
+                          && item.WorkspaceId == request.WorkspaceId
+                          && item.DeletedAt == null
+                          && !item.IsArchived
+                          && item.CompletedAt == null
+                          && board.DeletedAt == null
+                          && !board.IsArchived
+                          && visibleBoardIds.Contains(board.Id)
+                    select item)
+                .ToListAsync(cancellationToken);
+        var followedSet = followedIds.ToHashSet();
+        var openIds = open.Select(i => i.Id).ToHashSet();
+        followedOnly = followedOnly.Where(i => !openIds.Contains(i.Id)).ToList();
+
+        var all = open.Concat(followedOnly).Concat(done).ToList();
         if (all.Count == 0)
         {
             return Result<MyWorkExtendedDto>.Success(Empty());
@@ -150,6 +176,8 @@ public class GetMyWorkExtendedQueryHandler(
         var people = (await actors.FindManyAsync(firstAssignee.Values.Distinct().ToList(), cancellationToken))
             .ToDictionary(a => a.UserId, a => new MyWorkPersonDto(a.UserId, a.Name));
 
+        var assignedIds = open.Concat(done).Select(i => i.Id).ToHashSet();
+
         MyWorkItemExtDto Map(BoardItem item)
         {
             semanticFields.TryGetValue(item.BoardId, out var fields);
@@ -165,14 +193,16 @@ public class GetMyWorkExtendedQueryHandler(
                 item.Version,
                 StatusOf(item, fields?.Status, optionByItemField),
                 PriorityOf(item, fields?.Priority, optionByItemField),
-                AssignedRelation,
+                followedSet.Contains(item.Id)
+                    ? (assignedIds.Contains(item.Id) ? AssignedAndFollowingRelations : FollowingRelation)
+                    : AssignedRelation,
                 firstAssignee.TryGetValue(item.Id, out var assigneeId) && people.TryGetValue(assigneeId, out var person) ? person : null,
                 null,
                 item.CompletedAt);
         }
 
         return Result<MyWorkExtendedDto>.Success(new MyWorkExtendedDto(
-            open.Select(Map).ToList(),
+            open.Concat(followedOnly).Select(Map).ToList(),
             done.Select(Map).ToList(),
             [],
             new Dictionary<string, string?>()));

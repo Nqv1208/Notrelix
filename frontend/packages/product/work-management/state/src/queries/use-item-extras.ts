@@ -51,6 +51,42 @@ export function useItemChildItems(
   return { ...query, toggle: toggle.mutate, addChild: add.mutate };
 }
 
+const followKey = (workspaceId: string, itemId: string) =>
+  workspaceQueryKey(workspaceId, "work-management", "item-following", itemId);
+
+/** Whether the member follows the item, who else does, and the write. */
+export function useItemFollowing(itemId: string, workspaceId: string) {
+  const { itemExtras } = useWorkManagementServices();
+  const queryClient = useQueryClient();
+  const query = useQuery({
+    queryKey: followKey(workspaceId, itemId),
+    queryFn: () => itemExtras.getFollowing(itemId),
+    enabled: Boolean(itemId),
+    staleTime: 15_000,
+  });
+  const set = useMutation({
+    mutationFn: (following: boolean) =>
+      itemExtras.setFollowing(itemId, following),
+    onSettled: () => {
+      void queryClient.invalidateQueries({
+        queryKey: followKey(workspaceId, itemId),
+      });
+      // My work and Home list the same relationship.
+      void queryClient.invalidateQueries({
+        queryKey: workspaceQueryKey(workspaceId, "work-management"),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: workspaceQueryKey(workspaceId, "workspace-feed"),
+      });
+    },
+  });
+  return {
+    following: query.data?.following ?? null,
+    followers: query.data?.followers ?? [],
+    setFollowing: set.mutate,
+  };
+}
+
 /** The plan of a board: phases, milestones, dependencies (gap `CTR-GAP-WM-PLAN-ITEMS`). */
 export function useBoardPlanItems(boardId: string, workspaceId: string) {
   const { itemExtras } = useWorkManagementServices();

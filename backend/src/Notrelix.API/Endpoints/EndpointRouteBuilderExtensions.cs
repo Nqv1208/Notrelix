@@ -7,6 +7,7 @@ using Notrelix.API.Endpoints.Billing;
 using Notrelix.API.Endpoints.Collaboration.Activity;
 using Notrelix.API.Endpoints.Collaboration.Attachments;
 using Notrelix.API.Endpoints.Collaboration.Comments;
+using Notrelix.API.Endpoints.Collaboration.Watchers;
 using Notrelix.API.Endpoints.Collaboration.Notifications;
 using Notrelix.API.Endpoints.Collaboration.Preferences;
 using Notrelix.API.Endpoints.Accounts;
@@ -122,6 +123,7 @@ public static class EndpointRouteBuilderExtensions
         app.RegisterBoardItemActivityEndpoints();
         app.MapAttachmentsEndpoints();
         app.MapCommentsEndpoints();
+        app.MapWatchersEndpoints();
         app.RegisterNotificationPreferenceEndpoints();
         app.RegisterInboxEndpoints();
 

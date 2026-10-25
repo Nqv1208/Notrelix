@@ -96,7 +96,7 @@ function isBucket(value: unknown): value is WorkBucket {
 }
 
 /**
- * The people who follow an item (gap `CTR-GAP-WS-ITEM-SHEET`): the member when
+ * The people who follow an item: the member when
  * they follow it, the assignees, then the others who chose to.
  */
 function followersOf(store: MockStore, cardId: string, memberFollows: boolean) {
@@ -264,7 +264,10 @@ export const workFeedOperations = [
   // ── Follow / unfollow ────────────────────────────────────────────────────
   defineMockOperation<{ id: string }>({
     id: "wsFeed.items.follow",
-    contract: { kind: "gap", gapId: MY_WORK_EXT },
+    contract: {
+      kind: "openapi",
+      operationId: "Collaboration.Watchers.FollowBoardItem",
+    },
     method: "PUT",
     route: "/board-items/:id/following",
     async handle({ params, store }) {
@@ -273,7 +276,10 @@ export const workFeedOperations = [
   }),
   defineMockOperation<{ id: string }>({
     id: "wsFeed.items.unfollow",
-    contract: { kind: "gap", gapId: MY_WORK_EXT },
+    contract: {
+      kind: "openapi",
+      operationId: "Collaboration.Watchers.UnfollowBoardItem",
+    },
     method: "DELETE",
     route: "/board-items/:id/following",
     async handle({ params, store }) {
@@ -362,7 +368,10 @@ export const workFeedOperations = [
   }),
   defineMockOperation<{ id: string }>({
     id: "wsFeed.items.followingState",
-    contract: { kind: "gap", gapId: ITEM_SHEET },
+    contract: {
+      kind: "openapi",
+      operationId: "Collaboration.Watchers.GetBoardItemFollowing",
+    },
     method: "GET",
     route: "/board-items/:id/following",
     async handle({ params, store }) {

@@ -625,6 +625,81 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.Collaboration.Watchers.Commands.FollowBoardItem.FollowBoardItemCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IResourceScopedRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": true,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Collaboration.Watchers.Commands.FollowBoardItem.FollowBoardItemCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Collaboration.Watchers.Commands.UnfollowBoardItem.UnfollowBoardItemCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IResourceScopedRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": true,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Collaboration.Watchers.Commands.UnfollowBoardItem.UnfollowBoardItemCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Collaboration.Watchers.Queries.GetBoardItemFollowing.GetBoardItemFollowingQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IResourceScopedRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Collaboration.Watchers.Queries.GetBoardItemFollowing.GetBoardItemFollowingQueryHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.Documents.Blocks.Commands.BatchUpdateBlocks.BatchUpdateBlocksCommand",
     "kind": "Command",
     "principalMarkers": [

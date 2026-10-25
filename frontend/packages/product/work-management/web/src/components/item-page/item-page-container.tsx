@@ -11,6 +11,7 @@ import {
   useDuplicateCard,
   useFullBoard,
   useItemChildItems,
+  useItemFollowing,
   useItemFileUploads,
   canRetryItemFileUpload,
   useWorkManagementServices,
@@ -26,6 +27,7 @@ import {
 import {
   groupCardsByStatus,
   MAX_ITEM_FILE_BYTES,
+  personInitials,
   type Board,
   type CardDetail,
   type CardFile,
@@ -278,6 +280,7 @@ function ItemPageReady({
   const updateUpdate = useUpdateCardUpdate(card.id, card.workspaceId);
   const deleteUpdate = useDeleteCardUpdate(card.id, card.workspaceId);
   const children = useItemChildItems(card.id, card.workspaceId, card.boardId);
+  const follow = useItemFollowing(card.id, card.workspaceId);
   const links = useItemLinks(card.id, card.workspaceId, card.boardId);
   const uploads: ItemPageUpload[] = fileUploads.uploads.map((upload) => ({
     ...upload,
@@ -490,8 +493,7 @@ function ItemPageReady({
     onClose: onBack,
     onRenameTitle: (cardId, patch) => updateCard.mutate({ cardId, patch }),
     onUpdateItem: patchItem,
-    // Following has no producer yet: the page does not offer it.
-    onToggleWatch: () => undefined,
+    onToggleWatch: (watched) => follow.setFollowing(watched),
     onToggleChildItem: (childId, done) => children.toggle({ childId, done }),
     onAddChildItem: (title) => children.addChild(title),
     onAddLink: (itemId, relation) => links.addLink({ itemId, relation }),
@@ -599,6 +601,12 @@ function ItemPageReady({
         childItems: children.data?.map((child) => ({
           ...child,
           itemKey: child.key,
+        })),
+        following: follow.following,
+        followers: follow.followers.map((person) => ({
+          userId: person.userId,
+          name: person.name,
+          initials: personInitials(person.name),
         })),
         links: links.data,
         linkCandidates,
