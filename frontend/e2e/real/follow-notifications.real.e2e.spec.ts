@@ -138,6 +138,7 @@ test("an assignee follows the item and is told, as a follower, about a later com
 
   // The Inbox page draws both entries.
   await reader.goto(`/workspaces/${readerWorkspace.id}/inbox`);
+  await reader.getByRole("tab", { name: /^All/ }).click();
   await expect(reader.getByText(`Followed ${unique}`).first()).toBeVisible();
   void workspace;
   await context.close();

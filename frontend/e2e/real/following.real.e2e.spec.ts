@@ -39,6 +39,15 @@ test("a member follows an item from its page, finds it under Following in My wor
   await page.goto(
     `/workspaces/${workspace.id}/boards/${board.id}/items/${itemId}`,
   );
+  // The creator follows the item from the start; stopping and following again
+  // are both written from the item page.
+  const unfollowedFirst = page.waitForResponse(
+    (response) =>
+      response.request().method() === "DELETE" &&
+      response.url().includes(`/board-items/${itemId}/following`),
+  );
+  await page.getByRole("button", { name: "Following", exact: true }).click();
+  expect((await unfollowedFirst).status()).toBeLessThan(300);
   const followed = page.waitForResponse(
     (response) =>
       response.request().method() === "PUT" &&

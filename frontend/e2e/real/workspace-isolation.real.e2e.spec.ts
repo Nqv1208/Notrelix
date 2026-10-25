@@ -16,7 +16,7 @@ test("workspace transition does not retain the previous workspace board", async 
   await page
     .getByRole("button", { name: /open the Notrelix system rail/ })
     .click();
-  await page.getByRole("button", { name: "Workspace 3", exact: true }).click();
+  await page.getByRole("button", { name: /^Workspace 3(,|$)/ }).click();
 
   await expect(page).toHaveURL(new RegExp(`/workspaces/${other.id}`));
   await expect(page).not.toHaveURL(new RegExp(board.id));

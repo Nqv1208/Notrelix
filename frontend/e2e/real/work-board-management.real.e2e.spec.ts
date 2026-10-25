@@ -172,13 +172,13 @@ test("a workspace owner sets the workspace time zone and first day of the week t
     page,
     `/workspaces/${workspace.id}/settings`,
   );
-  const zone = before.timeZone === "Asia/Tokyo" ? "Singapore" : "Tokyo";
-  const zoneId = zone === "Tokyo" ? "Asia/Tokyo" : "Asia/Singapore";
+  const zoneId =
+    before.timeZone === "Asia/Tokyo" ? "Asia/Singapore" : "Asia/Tokyo";
   const week = before.weekStart === "sunday" ? "Monday" : "Sunday";
 
   await page.goto(`/workspaces/${workspace.id}/settings`);
-  await page.getByLabel("Time zone", { exact: true }).click();
-  await page.getByRole("option", { name: new RegExp(zone) }).click();
+  // A searchable list of every IANA zone: type the identifier.
+  await page.getByLabel("Time zone", { exact: true }).fill(zoneId);
   await page.getByLabel("First day of the week", { exact: true }).click();
   await page.getByRole("option", { name: week }).click();
   const saved = page.waitForResponse(

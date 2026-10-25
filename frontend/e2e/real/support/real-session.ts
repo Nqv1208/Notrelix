@@ -110,9 +110,19 @@ export async function addItemToLane(page: Page, lane: string, title: string) {
       response.request().method() === "PATCH" &&
       /\/board-items\/[^/]+\/status$/.test(response.url()),
   );
+  // The board is read again once the writes settle; until then the card still
+  // carries its optimistic id and cannot be opened.
+  const reloaded = page.waitForResponse(
+    (response) =>
+      response.request().method() === "GET" &&
+      /\/boards\/[^/]+\/full/.test(response.url()),
+  );
   await page.keyboard.press("Enter");
   const status = (await created).status();
-  if (status < 300) await settled;
+  if (status < 300) {
+    await settled;
+    await reloaded;
+  }
   return status;
 }
 
