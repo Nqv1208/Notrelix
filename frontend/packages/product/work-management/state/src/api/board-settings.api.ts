@@ -98,6 +98,18 @@ function isLockedSystemField(column: OverviewField): boolean {
   return column.isSystem === true && fieldType(column.fieldType) !== "status";
 }
 
+/** The key a field is listed under: its name as a lowercase slug ("due-date"), or a short id when the name has no letters. */
+function fieldKey(column: OverviewField): string {
+  const slug = (column.name ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/gi, "d")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return slug || (column.id ?? "").slice(0, 8);
+}
+
 function mapField(column: OverviewField): BoardSettingsFieldDto {
   const type = fieldType(column.fieldType);
   const options = byPosition(column.options ?? []).map((option) => ({
@@ -109,7 +121,7 @@ function mapField(column: OverviewField): BoardSettingsFieldDto {
   return {
     id: column.id ?? "",
     version: column.version ?? 0,
-    key: (column.id ?? "").slice(0, 8),
+    key: fieldKey(column),
     type,
     name: column.name ?? "",
     detail: "",
@@ -117,7 +129,7 @@ function mapField(column: OverviewField): BoardSettingsFieldDto {
     accent: type === "status",
     unit: unitOf(column.settings),
     hasColumn: type === "status" || type === "select" || type === "multiselect",
-    valueCount: 0,
+    valueCount: column.valueCount ?? 0,
     options,
     defaultOptionId: null,
     required: false,
@@ -129,7 +141,7 @@ function mapField(column: OverviewField): BoardSettingsFieldDto {
 function mapSystemField(column: OverviewField): BoardSettingsSystemFieldDto {
   return {
     id: column.id ?? "",
-    key: (column.id ?? "").slice(0, 8),
+    key: fieldKey(column),
     name: column.name ?? "",
     type: fieldType(column.fieldType),
     detail: "",

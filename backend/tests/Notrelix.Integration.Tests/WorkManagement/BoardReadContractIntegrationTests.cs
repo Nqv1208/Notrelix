@@ -139,6 +139,16 @@ public sealed class BoardReadContractIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task FullBoard_CountsTheLiveItemsHoldingAValueOfEachField()
+    {
+        var board = await FullBoardAsync(visibleSpaces: [_spaceId]);
+
+        // The parent and its two live children; the archived child does not count.
+        board.Columns.Single(c => c.Id == _status.Id).ValueCount.Should().Be(3);
+        board.Columns.Single(c => c.Id == _priority.Id).ValueCount.Should().Be(1);
+    }
+
+    [Fact]
     public async Task FullBoard_HidesASpaceTheCallerCannotSee()
     {
         var board = await FullBoardAsync(visibleSpaces: []);

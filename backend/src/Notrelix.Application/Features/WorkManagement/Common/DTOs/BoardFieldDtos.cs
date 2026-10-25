@@ -12,7 +12,9 @@ public record BoardFieldDto(
     bool IsDeleted,
     long Version,
     // Options of a Select or Status field in display order; null for other field types.
-    List<BoardFieldOptionDto>? Options = null
+    List<BoardFieldOptionDto>? Options = null,
+    // Live Items of the Board that hold a non-empty value of this field; 0 when none do.
+    int ValueCount = 0
 );
 
 /// <summary>

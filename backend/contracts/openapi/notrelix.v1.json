@@ -25110,6 +25110,10 @@
               "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardFieldOptionDto"
             },
             "nullable": true
+          },
+          "valueCount": {
+            "type": "integer",
+            "format": "int32"
           }
         },
         "additionalProperties": false

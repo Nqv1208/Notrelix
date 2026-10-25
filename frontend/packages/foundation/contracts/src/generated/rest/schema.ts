@@ -6648,6 +6648,8 @@ export interface components {
             /** Format: int64 */
             version?: number;
             options?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardFieldOptionDto"][] | null;
+            /** Format: int32 */
+            valueCount?: number;
         };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardFieldOptionDto": {
             /** Format: uuid */

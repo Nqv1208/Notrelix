@@ -13,6 +13,7 @@ import { FieldTypePicker } from "./board-settings-field-picker";
 import {
   fieldLabel,
   fillCopy,
+  plural,
   shortDay,
   systemFieldRows,
   typeName,
@@ -375,9 +376,15 @@ function FieldRow({
           <span className="truncate text-crumb text-meta-foreground">
             {field.accent && field.usage ? (
               <Tag_>{field.usage}</Tag_>
-            ) : (
+            ) : field.usage ? (
               field.usage
-            )}
+            ) : field.valueCount > 0 ? (
+              plural(
+                copy.archiveDialog.values_one,
+                copy.archiveDialog.values_other,
+                field.valueCount,
+              )
+            ) : null}
           </span>
         </>
       )}
