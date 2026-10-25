@@ -152,7 +152,11 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
     [copy, savedViews.views, write],
   );
 
-  const rules = useWorkspaceAutomations(workspaceId, boardId);
+  const rules = useWorkspaceAutomations(
+    workspaceId,
+    boardId,
+    access?.myLevel === "manager",
+  );
   const { directory } = usePeopleDirectory(boardId, workspaceId);
   const workspaceRules = useMemo<WorkspaceRulesPanelProps>(
     () => ({

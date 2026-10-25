@@ -37,7 +37,11 @@ function failure(error: unknown): WorkspaceAutomationWriteResult {
  * The rules of the workspace, their writes and the runs of the rule that is
  * open. Only a person who manages the workspace reads them (`forbidden`).
  */
-export function useWorkspaceAutomations(workspaceId: string, boardId: string) {
+export function useWorkspaceAutomations(
+  workspaceId: string,
+  boardId: string,
+  allowed = true,
+) {
   const { workspaceAutomations } = useWorkManagementServices();
   const queryClient = useQueryClient();
   const [openRuleId, setOpenRuleId] = useState<string | null>(null);
@@ -45,7 +49,7 @@ export function useWorkspaceAutomations(workspaceId: string, boardId: string) {
   const rules = useQuery({
     queryKey: rulesKey(workspaceId, boardId),
     queryFn: () => workspaceAutomations.list(workspaceId, boardId),
-    enabled: Boolean(workspaceId && boardId),
+    enabled: Boolean(workspaceId && boardId && allowed),
     staleTime: 0,
     retry: false,
   });
