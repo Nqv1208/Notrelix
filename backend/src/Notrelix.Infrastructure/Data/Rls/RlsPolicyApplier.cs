@@ -24,6 +24,7 @@ public sealed class RlsPolicyApplier
         "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.015_internal_principals.sql",
         "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.016_policies_derived_scope.sql",
         "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.017_webhook_scope.sql",
+        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.018_billing_usage.sql",
     ];
 
     public RlsPolicyApplier(ApplicationDbContext context, ILogger<RlsPolicyApplier> logger)

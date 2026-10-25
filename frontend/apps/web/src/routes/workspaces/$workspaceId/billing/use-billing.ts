@@ -20,6 +20,8 @@ export const billingKeys = {
   all: (workspaceId: string) => workspaceQueryKey(workspaceId, "billing"),
   capabilities: (workspaceId: string) =>
     workspaceQueryKey(workspaceId, "billing", "capabilities"),
+  plan: (workspaceId: string) =>
+    workspaceQueryKey(workspaceId, "billing", "plan"),
   overview: (workspaceId: string) =>
     workspaceQueryKey(workspaceId, "billing", "overview"),
   plans: (workspaceId: string) =>

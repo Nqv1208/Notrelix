@@ -70,4 +70,62 @@ describe("Feature availability", () => {
       screen.getByText("Chỉ quản trị workspace xem được thanh toán"),
     ).toBeTruthy();
   });
+
+  it("FUI[workspace.billing-capabilities:plan] shows the current plan and lets the owner switch to another", () => {
+    const onChangePlan = vi.fn();
+    const plans = [
+      { code: "free", name: "Free" },
+      { code: "pro", name: "Pro" },
+    ];
+    const state = {
+      status: "ready" as const,
+      data: [
+        {
+          code: "STORAGE_GB",
+          isGranted: true,
+          isUnlimited: false,
+          limit: 100,
+          used: 12.4,
+          remaining: 88,
+        },
+      ],
+    };
+    const view = renderPureUi(
+      <BillingCapabilitiesSurface
+        copy={en}
+        onRetry={vi.fn()}
+        state={state}
+        plan={{
+          currentCode: "pro",
+          plans,
+          canChange: true,
+          changing: false,
+          failed: false,
+        }}
+        onChangePlan={onChangePlan}
+      />,
+    );
+    expect(screen.getByText("12.4 of 100 GB used")).toBeTruthy();
+    expect(screen.getByText("Pro")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Switch to Free" }));
+    expect(onChangePlan).toHaveBeenCalledWith("free");
+    expect(screen.queryByRole("button", { name: "Switch to Pro" })).toBeNull();
+
+    view.rerender(
+      <BillingCapabilitiesSurface
+        copy={en}
+        onRetry={vi.fn()}
+        state={state}
+        plan={{
+          currentCode: "pro",
+          plans,
+          canChange: false,
+          changing: false,
+          failed: false,
+        }}
+        onChangePlan={onChangePlan}
+      />,
+    );
+    expect(screen.queryByRole("button", { name: /Switch to/ })).toBeNull();
+  });
 });

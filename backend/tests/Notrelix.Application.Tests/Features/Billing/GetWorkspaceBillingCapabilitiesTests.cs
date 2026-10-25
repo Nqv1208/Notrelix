@@ -1,3 +1,4 @@
+using Notrelix.Application.Features.Billing.Abstractions;
 using Notrelix.Application.Features.Billing.Entitlements.Queries.GetWorkspaceBillingCapabilities;
 using Notrelix.Application.Features.Billing.Public.Facts;
 
@@ -14,7 +15,7 @@ public class GetWorkspaceBillingCapabilitiesTests
     private GetWorkspaceBillingCapabilitiesQueryHandler CreateSut()
     {
         _requestContext.Setup(c => c.RequireAccountId()).Returns(AccountId);
-        return new GetWorkspaceBillingCapabilitiesQueryHandler(_facts.Object, _requestContext.Object);
+        return new GetWorkspaceBillingCapabilitiesQueryHandler(_facts.Object, _requestContext.Object, new Mock<IBillingUsageReader>().Object);
     }
 
     private void SetFact(BillingCapabilityFact? fact) =>
@@ -26,7 +27,8 @@ public class GetWorkspaceBillingCapabilitiesTests
     private async Task<BillingCapabilityDto> Run()
     {
         var result = await CreateSut().Handle(new GetWorkspaceBillingCapabilitiesQuery(WorkspaceId), CancellationToken.None);
-        return Assert.Single(result.Data!);
+        Assert.Equal(BillingCapabilityCode.All, result.Data!.Select(c => c.Code));
+        return result.Data!.Single(c => c.Code == BillingCapabilityCode.AutomationRule);
     }
 
     [Fact]
