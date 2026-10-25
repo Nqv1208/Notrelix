@@ -136,3 +136,43 @@ test("a member adds sub-items on the item page, a sub-item has none of its own, 
   );
   expect(children.items).toHaveLength(2);
 });
+
+test("a table row with sub-items expands to show them", async ({ page }) => {
+  await signIn(page, realUsers.workspaceAdmin);
+  const { workspace, board } = await openBoard(
+    page,
+    "Workspace 3",
+    "Engineering Tasks",
+  );
+  const unique = Date.now().toString(36);
+  const parentId = (
+    await apiWrite<{ id: string }>(page, "POST", `/boards/${board.id}/items`, {
+      groupId: (
+        await apiRead<{ lists: { id: string }[] }>(
+          page,
+          `/boards/${board.id}/full`,
+        )
+      ).lists[0]!.id,
+      title: `Expandable ${unique}`,
+    })
+  ).data!.id;
+  for (const title of ["Alpha", "Beta"]) {
+    expect(
+      (
+        await apiWrite(page, "POST", `/board-items/${parentId}/child-items`, {
+          title: `${title} ${unique}`,
+        })
+      ).status,
+    ).toBeLessThan(300);
+  }
+
+  await page.goto(`/workspaces/${workspace.id}/boards/${board.id}?view=table`);
+  const row = page.locator(`[data-row-id="${parentId}"]`);
+  await expect(row).toBeVisible();
+  await expect(page.getByText(`Alpha ${unique}`)).toHaveCount(0);
+  await row.getByRole("button", { name: /^Show 2 sub-items/ }).click();
+  await expect(page.getByText(`Alpha ${unique}`)).toBeVisible();
+  await expect(page.getByText(`Beta ${unique}`)).toBeVisible();
+  await row.getByRole("button", { name: /^Hide sub-items/ }).click();
+  await expect(page.getByText(`Alpha ${unique}`)).toHaveCount(0);
+});

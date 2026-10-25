@@ -48,6 +48,7 @@ import { MainTableError } from "./main-table-error";
 import { fillTableCopy } from "./main-table.copy";
 import { MainTableSkeleton } from "./main-table-skeleton";
 import { MainTableSurface } from "./main-table-surface";
+import { TableSubItems } from "./table-sub-items";
 import type { TableEditors } from "./table-cell-editors";
 import {
   buildTableGroup,
@@ -505,6 +506,15 @@ export function MainTableView({
         aria-hidden={boardCovered || undefined}
       >
         <MainTableSurface
+          renderSubItems={(rowId) => (
+            <TableSubItems
+              itemId={rowId}
+              workspaceId={workspaceId}
+              boardId={boardId}
+              copy={copy}
+              onOpen={(id) => onSelectedItemChange?.(id)}
+            />
+          )}
           boardTitle={board.title}
           toolbar={{
             copy,

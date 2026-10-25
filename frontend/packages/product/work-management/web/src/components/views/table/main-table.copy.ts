@@ -112,6 +112,10 @@ export const en = {
       low: "Low",
     },
     childProgress: "{{done}} of {{total}} child items done",
+    expandChildren: "Show {{count}} sub-items of {{key}}",
+    collapseChildren: "Hide sub-items of {{key}}",
+    childrenLoading: "Loading sub-items…",
+    childrenFailed: "The sub-items could not be loaded.",
     menu: {
       open: "Open details",
       duplicate: "Duplicate",
@@ -301,6 +305,10 @@ export const vi: MainTableCopy = {
       low: "Thấp",
     },
     childProgress: "Đã xong {{done}} trên {{total}} việc con",
+    expandChildren: "Hiện {{count}} việc con của {{key}}",
+    collapseChildren: "Ẩn việc con của {{key}}",
+    childrenLoading: "Đang tải việc con…",
+    childrenFailed: "Chưa tải được việc con.",
     menu: {
       open: "Mở chi tiết",
       duplicate: "Nhân bản",

@@ -1,5 +1,6 @@
 import {
   useRef,
+  Fragment,
   useState,
   type CSSProperties,
   type KeyboardEvent,
@@ -99,6 +100,11 @@ export interface MainTableSurfaceProps {
   bulkAssign?: TableBulkBarProps["assign"];
   /** "Chuyển board" of the bulk bar; absent = disabled with the reason. */
   bulkMove?: TableBulkBarProps["move"];
+  /**
+   * What shows under a row whose sub-items are expanded (the container loads
+   * them); absent = rows have no expander.
+   */
+  renderSubItems?: (rowId: string) => React.ReactNode;
   /** Opens the status list of a row when the table first renders (stories, tests). */
   initialEditing?: { rowId: string; highlightStatusId?: string | null };
 }
@@ -113,6 +119,7 @@ export interface MainTableSurfaceProps {
  * the focused row's item, X selects it and Escape clears the selection.
  */
 export function MainTableSurface({
+  renderSubItems,
   toolbar,
   boardTitle,
   groups,
@@ -157,6 +164,15 @@ export function MainTableSurface({
     initialEditing?.rowId ?? null,
   );
   const [tabStopId, setTabStopId] = useState<string | null>(null);
+  const [expandedIds, setExpandedIds] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
+  const toggleExpanded = (id: string) =>
+    setExpandedIds((previous) => {
+      const next = new Set(previous);
+      if (!next.delete(id)) next.add(id);
+      return next;
+    });
   const [addRequest, setAddRequest] = useState({ groupId: "", count: 0 });
   const gridRef = useRef<HTMLDivElement>(null);
   // The width the pointer is dragging a column to; the saved width applies
@@ -310,52 +326,79 @@ export function MainTableSurface({
                 {collapsed
                   ? null
                   : group.rows.map((row) => (
-                      <TableRow
-                        key={row.id}
-                        row={row}
-                        copy={copy}
-                        columns={columns}
-                        accent={groupAccent(group)}
-                        statusOptions={statusOptions}
-                        selected={selectedIds.has(row.id)}
-                        active={openItemId === row.id}
-                        tabStop={tabStop === row.id}
-                        canEdit={canEdit}
-                        editors={editors}
-                        actions={
-                          rowActions
-                            ? {
-                                onDuplicate: rowActions.onDuplicate
-                                  ? () => rowActions.onDuplicate?.(row.id)
-                                  : undefined,
-                                onCopyLink: () => rowActions.onCopyLink(row.id),
-                                onArchive: rowActions.onArchive
-                                  ? () => rowActions.onArchive?.(row.id)
-                                  : undefined,
-                              }
-                            : undefined
-                        }
-                        editing={editingId === row.id}
-                        highlightStatusId={
-                          initialEditing?.rowId === row.id
-                            ? initialEditing.highlightStatusId
-                            : undefined
-                        }
-                        onSelectedChange={(selected) =>
-                          onRowSelectedChange(row.id, selected)
-                        }
-                        onOpen={() => onOpenItem(row.id)}
-                        onEditingChange={(editing) =>
-                          setEditingId(editing ? row.id : null)
-                        }
-                        onStatusChange={(optionId) =>
-                          onStatusChange(row.id, optionId)
-                        }
-                        onKeyDown={(event) => {
-                          setTabStopId(row.id);
-                          onRowKeyDown(event, row.id);
-                        }}
-                      />
+                      <Fragment key={row.id}>
+                        <TableRow
+                          row={row}
+                          expand={
+                            renderSubItems && row.progress
+                              ? {
+                                  expanded: expandedIds.has(row.id),
+                                  count: row.progress.total,
+                                  onToggle: () => toggleExpanded(row.id),
+                                }
+                              : undefined
+                          }
+                          copy={copy}
+                          columns={columns}
+                          accent={groupAccent(group)}
+                          statusOptions={statusOptions}
+                          selected={selectedIds.has(row.id)}
+                          active={openItemId === row.id}
+                          tabStop={tabStop === row.id}
+                          canEdit={canEdit}
+                          editors={editors}
+                          actions={
+                            rowActions
+                              ? {
+                                  onDuplicate: rowActions.onDuplicate
+                                    ? () => rowActions.onDuplicate?.(row.id)
+                                    : undefined,
+                                  onCopyLink: () =>
+                                    rowActions.onCopyLink(row.id),
+                                  onArchive: rowActions.onArchive
+                                    ? () => rowActions.onArchive?.(row.id)
+                                    : undefined,
+                                }
+                              : undefined
+                          }
+                          editing={editingId === row.id}
+                          highlightStatusId={
+                            initialEditing?.rowId === row.id
+                              ? initialEditing.highlightStatusId
+                              : undefined
+                          }
+                          onSelectedChange={(selected) =>
+                            onRowSelectedChange(row.id, selected)
+                          }
+                          onOpen={() => onOpenItem(row.id)}
+                          onEditingChange={(editing) =>
+                            setEditingId(editing ? row.id : null)
+                          }
+                          onStatusChange={(optionId) =>
+                            onStatusChange(row.id, optionId)
+                          }
+                          onKeyDown={(event) => {
+                            setTabStopId(row.id);
+                            onRowKeyDown(event, row.id);
+                          }}
+                        />
+                        {renderSubItems && expandedIds.has(row.id) ? (
+                          <div
+                            role="row"
+                            data-sub-items-of={row.id}
+                            className="grid min-w-full"
+                            style={{ gridTemplateColumns: "var(--table-grid)" }}
+                          >
+                            <div
+                              role="cell"
+                              className="box-border min-w-0 border-b border-border bg-state-hover/40 py-1 pr-3 pl-16"
+                              style={{ gridColumn: "1 / -1" }}
+                            >
+                              {renderSubItems(row.id)}
+                            </div>
+                          </div>
+                        ) : null}
+                      </Fragment>
                     ))}
                 {collapsed || !canCreate ? null : (
                   <TableAddRow
