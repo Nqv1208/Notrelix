@@ -22,7 +22,9 @@ namespace Notrelix.Integration.Tests.Rls;
 [Trait("Category", "RlsAppRole")]
 public sealed class CredentialScopeTests : IAsyncLifetime
 {
-    private const string Password = "Correct-Horse-9!";
+    private static readonly string Password = $"Pw-{Guid.NewGuid():N}-9";
+    private static readonly string WrongPassword = $"Pw-{Guid.NewGuid():N}-8";
+    private static readonly string NewPassword = $"Pw-{Guid.NewGuid():N}-7";
     private readonly AppRoleTestContainer _fixture;
     private string _hash = string.Empty;
     private AppRoleTenant _a = null!;
@@ -94,8 +96,8 @@ public sealed class CredentialScopeTests : IAsyncLifetime
         (await OwnerScalarAsync("SELECT count(*) FROM identity.user_sessions WHERE user_id = @u", ("u", _a.User.Id))).Should().Be("1");
         (await OwnerScalarAsync("SELECT count(*) FROM identity.user_sessions WHERE user_id = @u", ("u", _b.User.Id))).Should().Be("0");
 
-        var wrong = await CallAsync(c => c.PostAsJsonAsync("/api/v1/auth/login", new { email = "a-cred@example.com", password = "Wrong-Password-1!" }));
-        var unknown = await CallAsync(c => c.PostAsJsonAsync("/api/v1/auth/login", new { email = "nobody@example.com", password = "Wrong-Password-1!" }));
+        var wrong = await CallAsync(c => c.PostAsJsonAsync("/api/v1/auth/login", new { email = "a-cred@example.com", password = WrongPassword }));
+        var unknown = await CallAsync(c => c.PostAsJsonAsync("/api/v1/auth/login", new { email = "nobody@example.com", password = WrongPassword }));
         wrong.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
         unknown.StatusCode.Should().Be(wrong.StatusCode);
         static string Shape(string body) => System.Text.RegularExpressions.Regex.Replace(body, "\"traceId\":\"[^\"]*\"", "");
@@ -179,19 +181,19 @@ public sealed class CredentialScopeTests : IAsyncLifetime
         var beforeB = await OwnerScalarAsync("SELECT password_hash FROM identity.users WHERE id = @u", ("u", _b.User.Id));
 
         var wrongCode = await CallAsync(c => c.PostAsJsonAsync("/api/v1/auth/reset-password",
-            new { email = "a-cred@example.com", code = "000000", newPassword = "Brand-New-Pass-9!" }));
+            new { email = "a-cred@example.com", code = "000000", newPassword = NewPassword }));
         wrongCode.IsSuccessStatusCode.Should().BeFalse();
 
         var ok = await CallAsync(
             c => c.PostAsJsonAsync("/api/v1/auth/reset-password",
-                new { email = "a-cred@example.com", code, newPassword = "Brand-New-Pass-9!" }),
+                new { email = "a-cred@example.com", code, newPassword = NewPassword }),
             arrange: _ => { });
         // The code is generated through the same Redis the host uses.
         using (var factory = AppRoleHost.CreateFactory(_fixture, _fixture.AppConnectionString))
         using (var scope = factory.Services.CreateScope())
             code = await scope.ServiceProvider.GetRequiredService<IOtpService>().GenerateAsync("forgot-password", "a-cred@example.com");
         ok = await CallAsync(c => c.PostAsJsonAsync("/api/v1/auth/reset-password",
-            new { email = "a-cred@example.com", code, newPassword = "Brand-New-Pass-9!" }));
+            new { email = "a-cred@example.com", code, newPassword = NewPassword }));
         ok.IsSuccessStatusCode.Should().BeTrue(await ok.Content.ReadAsStringAsync());
 
         (await OwnerScalarAsync("SELECT password_hash FROM identity.users WHERE id = @u", ("u", _a.User.Id))).Should().NotBe(before);

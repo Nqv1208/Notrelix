@@ -27,6 +27,10 @@ const composeEnv = {
     process.env.REAL_E2E_POSTGRES_PASSWORD ?? "real-e2e-postgres-password",
   REDIS_PASSWORD:
     process.env.REAL_E2E_REDIS_PASSWORD ?? "real-e2e-redis-password",
+  NOTRELIX_APP_DB_PASSWORD:
+    process.env.REAL_E2E_APP_DB_PASSWORD ?? "real-e2e-app-password",
+  NOTRELIX_WORKER_DB_PASSWORD:
+    process.env.REAL_E2E_WORKER_DB_PASSWORD ?? "real-e2e-worker-password",
   POSTGRES_PORT: "55432",
   REDIS_PORT: "56379",
   BACKEND_PORT: "58000",

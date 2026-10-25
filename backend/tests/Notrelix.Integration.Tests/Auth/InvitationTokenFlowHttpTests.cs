@@ -31,7 +31,7 @@ namespace Notrelix.Integration.Tests.Auth;
 public sealed class InvitationTokenFlowHttpTests : IAsyncLifetime
 {
     private const string InviteeEmail = "invitee@example.com";
-    private const string Password = "Sup3r-secret-pw";
+    private static readonly string Password = $"Pw-{Guid.NewGuid():N}-9";
 
     private readonly CacheTestContainer _fixture;
     private readonly DateTimeOffset _now = DateTimeOffset.UtcNow;
