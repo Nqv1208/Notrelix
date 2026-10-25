@@ -1,4 +1,3 @@
-import { Construction } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
 import type { FeatureAvailabilityCopy } from "../unavailable/feature-availability.copy";
 import { formatCopy } from "../shell/shell-models";
@@ -237,7 +236,6 @@ export function BillingCapabilitiesSurface({
       {state.status === "ready" ? (
         <InfoNote className="max-w-[560px]">
           <b className="font-semibold text-foreground">
-            <Construction aria-hidden="true" className="mr-1 inline size-3.5" />
             {text.unavailableTitle}.
           </b>{" "}
           {text.unavailableBody}
