@@ -13,6 +13,7 @@ import type {
   BoardAccess,
   CardDetail,
   FullBoardResponse,
+  SavedBoardView,
   ViewConfig,
 } from "@notrelix/work-management-core";
 import {
@@ -67,19 +68,22 @@ function detailOf(board: FullBoardResponse, id: string): CardDetail {
 
 function fakeServices(access: BoardAccess) {
   let board = erpBoardScenario();
-  let view: { viewMode: "table"; viewConfig: ViewConfig } = {
+  let saved: SavedBoardView = {
+    id: "view-1",
+    name: "Table",
     viewMode: "table",
     viewConfig: defaultTableViewConfig,
+    isDefault: true,
+    visibility: "board",
+    createdBy: null,
+    version: 1,
   };
   const boards = {
     getFullBoard: vi.fn(async () => board),
-    getBoardView: vi.fn(async () => view),
-    saveBoardView: vi.fn(
-      async (
-        _id: string,
-        next: { viewMode: "table"; viewConfig: ViewConfig },
-      ) => {
-        view = next;
+    listSavedViews: vi.fn(async () => [saved]),
+    updateSavedViewConfig: vi.fn(
+      async (_boardId: string, _viewId: string, next: ViewConfig) => {
+        saved = { ...saved, viewConfig: next };
       },
     ),
   };
@@ -369,12 +373,11 @@ describe("MainTableView on the ERP board", () => {
     });
     fireEvent.click(screen.getByRole("menuitemradio", { name: /^Ưu tiên/ }));
     await waitFor(() =>
-      expect(boards.saveBoardView).toHaveBeenCalledWith(
+      expect(boards.updateSavedViewConfig).toHaveBeenCalledWith(
         expect.any(String),
+        "view-1",
         expect.objectContaining({
-          viewConfig: expect.objectContaining({
-            sortBy: [{ fieldId: "priority", direction: "asc" }],
-          }),
+          sortBy: [{ fieldId: "priority", direction: "asc" }],
         }),
       ),
     );
@@ -393,13 +396,10 @@ describe("MainTableView on the ERP board", () => {
     });
     fireEvent.keyDown(handle, { key: "ArrowRight", shiftKey: true });
     await waitFor(() =>
-      expect(boards.saveBoardView).toHaveBeenLastCalledWith(
+      expect(boards.updateSavedViewConfig).toHaveBeenLastCalledWith(
         expect.any(String),
-        expect.objectContaining({
-          viewConfig: expect.objectContaining({
-            columnWidths: { title: 372 },
-          }),
-        }),
+        "view-1",
+        expect.objectContaining({ columnWidths: { title: 372 } }),
       ),
     );
     await waitFor(() =>
@@ -414,11 +414,10 @@ describe("MainTableView on the ERP board", () => {
       { key: "Home" },
     );
     await waitFor(() =>
-      expect(boards.saveBoardView).toHaveBeenLastCalledWith(
+      expect(boards.updateSavedViewConfig).toHaveBeenLastCalledWith(
         expect.any(String),
-        expect.objectContaining({
-          viewConfig: expect.objectContaining({ columnWidths: {} }),
-        }),
+        "view-1",
+        expect.objectContaining({ columnWidths: {} }),
       ),
     );
   });
