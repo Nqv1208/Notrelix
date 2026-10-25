@@ -43,6 +43,12 @@ public static class NotificationTypes
     /// <summary>A message an Automation rule sent to a member about an Item; maps to <see cref="Assigned"/>.</summary>
     public const string AutomationProducedType = "work.item.automation";
 
+    /// <summary>An Item assigned to the person is due tomorrow (daily job); maps to <see cref="Overdue"/>.</summary>
+    public const string ItemDueTomorrowProducedType = "work.item.due-tomorrow";
+
+    /// <summary>An Item assigned to the person became overdue (daily job); maps to <see cref="Overdue"/>.</summary>
+    public const string ItemOverdueProducedType = "work.item.overdue";
+
     /// <summary>
     /// Maps the type literal a producer stores on a notification to the preference type, or null when the
     /// literal has no preference type.
@@ -51,6 +57,7 @@ public static class NotificationTypes
     {
         MentionProducedType => Mention,
         ItemAssignedProducedType or AutomationProducedType => Assigned,
+        ItemDueTomorrowProducedType or ItemOverdueProducedType => Overdue,
         ItemAssigneeAddedProducedType or ItemStatusChangedProducedType or ItemCommentedProducedType => Watching,
         _ => null,
     };
