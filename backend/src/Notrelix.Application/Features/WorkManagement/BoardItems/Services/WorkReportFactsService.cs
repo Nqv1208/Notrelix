@@ -2,18 +2,16 @@ using System.Text.Json;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.WorkManagement.Common;
 using Notrelix.Application.Features.WorkManagement.Public.Reports;
-using Notrelix.Domain.WorkManagement.Fields;
-using Notrelix.Domain.WorkManagement.Items;
 
-namespace Notrelix.Infrastructure.CrossContext.Analytics.WorkManagement;
+namespace Notrelix.Application.Features.WorkManagement.BoardItems.Services;
 
 /// <summary>
-/// Work Management-owned implementation of the published work report measures consumed by the Analytics
+/// Work Management-owned implementation (it reads Work persistence, which only Work Management does) of the work report measures consumed by the Analytics
 /// board and workspace reports. Reads only Work persistence through the Work port; the caller supplies the
 /// readable Board ids and this adapter never widens them. Every measure is one GROUP BY over the Boards'
 /// Items (and their Status values), so the cost follows the number of groups, not the number of Items.
 /// </summary>
-public sealed class WorkReportFactsAdapter : IWorkReportFacts
+public sealed class WorkReportFactsService : IWorkReportFacts
 {
     private const int MaxAssignees = 50;
     private static readonly string[] CategoryOrder =
@@ -26,7 +24,7 @@ public sealed class WorkReportFactsAdapter : IWorkReportFacts
 
     private readonly IWorkManagementDbContext _context;
 
-    public WorkReportFactsAdapter(IWorkManagementDbContext context)
+    public WorkReportFactsService(IWorkManagementDbContext context)
     {
         _context = context;
     }

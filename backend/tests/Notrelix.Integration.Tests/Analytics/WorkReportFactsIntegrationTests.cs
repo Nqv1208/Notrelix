@@ -6,7 +6,7 @@ using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.WorkManagement.Fields;
 using Notrelix.Domain.WorkManagement.Items;
 using Notrelix.Domain.Workspaces.Workspaces;
-using Notrelix.Infrastructure.CrossContext.Analytics.WorkManagement;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Services;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
 
@@ -103,7 +103,7 @@ public sealed class WorkReportFactsIntegrationTests : IAsyncLifetime
         var tenant = new FakeCurrentTenantContext();
         tenant.SetWorkspace(_accountId, _workspace.Id, _userId);
         await using var context = _db.CreateOwnerContext(tenant);
-        return await new WorkReportFactsAdapter(context).ReportAsync(_workspace.Id, boards, Now, 8, CancellationToken.None);
+        return await new WorkReportFactsService(context).ReportAsync(_workspace.Id, boards, Now, 8, CancellationToken.None);
     }
 
     [Fact]
@@ -168,7 +168,7 @@ public sealed class WorkReportFactsIntegrationTests : IAsyncLifetime
         var scope = new FakeCurrentTenantContext();
         scope.SetWorkspace(_accountId, _workspace.Id, _userId);
         await using var context = _db.CreateOwnerContext(scope);
-        var adapter = new WorkReportFactsAdapter(context);
+        var adapter = new WorkReportFactsService(context);
 
         (await adapter.BoardIdsInSpacesAsync(_workspace.Id, [_board.Id, _other.Id], [spaceId], CancellationToken.None))
             .Should().Equal(_board.Id);
