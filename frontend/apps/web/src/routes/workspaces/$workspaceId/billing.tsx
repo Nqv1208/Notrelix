@@ -15,9 +15,11 @@ import {
   type SectionState,
 } from "@notrelix/features-workspace/web";
 import { useFormatters } from "@notrelix/i18n";
+import { backendCapabilities } from "@/config/backend-capabilities";
 import { useWorkspaceContext } from "@/providers/workspace-provider";
 import { useSetupFrame } from "@/shell/workspace/use-setup-frame";
 import type { BillingSearch } from "../../../router/schemas/billing-search-schema";
+import { BillingCapabilitiesPage } from "./billing/billing-capabilities-page";
 import {
   billingKeys,
   useBillingApi,
@@ -44,6 +46,14 @@ function stateOf<T>(query: {
  * dialog over the overview.
  */
 export function BillingPage() {
+  return backendCapabilities.billingPlans ? (
+    <BillingPlansPage />
+  ) : (
+    <BillingCapabilitiesPage />
+  );
+}
+
+function BillingPlansPage() {
   const { workspaceId } = useWorkspaceContext();
   const copy = useBillingCopy();
   const teamsCopy = useWorkspaceTeamsCopy();

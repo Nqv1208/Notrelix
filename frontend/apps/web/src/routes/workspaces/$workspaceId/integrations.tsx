@@ -7,13 +7,16 @@ import {
   IntegrationDetailSurface,
   IntegrationDisconnectDialog,
   IntegrationUpgradeSheet,
+  FeatureUnavailableSurface,
   IntegrationsListSurface,
   WorkspaceSetupFrame,
   formatCopy,
+  useFeatureAvailabilityCopy,
   useIntegrationsCopy,
   useWorkspaceTeamsCopy,
   type SectionState,
 } from "@notrelix/features-workspace/web";
+import { backendCapabilities } from "@/config/backend-capabilities";
 import { useWorkspaceContext } from "@/providers/workspace-provider";
 import { useSetupFrame } from "@/shell/workspace/use-setup-frame";
 import type { IntegrationsSearch } from "../../../router/schemas/integrations-search-schema";
@@ -42,6 +45,26 @@ function stateOf<T>(query: {
  * the plan sheet of an Enterprise entry) and `disconnect` the confirmation.
  */
 export function IntegrationsPage() {
+  return backendCapabilities.integrations ? (
+    <AvailableIntegrationsPage />
+  ) : (
+    <UnavailableIntegrationsPage />
+  );
+}
+
+/** Integrations on a backend that has no producer for them yet. */
+function UnavailableIntegrationsPage() {
+  const copy = useFeatureAvailabilityCopy();
+  const teamsCopy = useWorkspaceTeamsCopy();
+  const frame = useSetupFrame("integrations");
+  return (
+    <WorkspaceSetupFrame copy={teamsCopy} frame={frame}>
+      <FeatureUnavailableSurface copy={copy} feature="integrations" />
+    </WorkspaceSetupFrame>
+  );
+}
+
+function AvailableIntegrationsPage() {
   const { workspaceId } = useWorkspaceContext();
   const copy = useIntegrationsCopy();
   const teamsCopy = useWorkspaceTeamsCopy();
