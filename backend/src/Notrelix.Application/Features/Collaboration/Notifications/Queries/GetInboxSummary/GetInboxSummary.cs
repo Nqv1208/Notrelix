@@ -1,6 +1,5 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Requests.Scoping;
-using Notrelix.Application.Common.Tenancy;
 using Notrelix.Application.Features.Collaboration.Notifications.DTOs;
 using Notrelix.Application.Features.Collaboration.Public.Notifications;
 

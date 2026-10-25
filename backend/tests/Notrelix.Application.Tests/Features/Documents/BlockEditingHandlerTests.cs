@@ -3,7 +3,6 @@ using Notrelix.Application.Features.Documents.Blocks.Commands.CreateBlock;
 using Notrelix.Application.Features.Documents.Blocks.Commands.UpdateBlock;
 using Notrelix.Domain.Documents.Blocks;
 using Notrelix.Domain.Documents.Pages;
-using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.SharedKernel.Ordering;
 using Notrelix.Testing.Application.Fakes;
 using TestDbSet = Notrelix.Application.Tests.Features.Collaboration.TestDbSet;

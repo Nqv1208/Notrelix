@@ -1,10 +1,7 @@
-using Notrelix.Application.Common.Tenancy;
 using Notrelix.Application.Features.Collaboration.Public.Notifications;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetHomeFeed;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetMyWorkExtended;
 using Notrelix.Domain.SharedKernel.Ordering;
-using Notrelix.Domain.WorkManagement.Fields;
-using Notrelix.Domain.WorkManagement.Items;
 using Notrelix.Testing.Application.Fakes;
 
 namespace Notrelix.Application.Tests.Features.WorkManagement.BoardItems;

@@ -1,5 +1,4 @@
 using Notrelix.Application.Common.Auditing;
-using Notrelix.Application.Common.Tenancy;
 using Notrelix.Application.Features.Governance.Abstractions;
 using Notrelix.Application.Features.Governance.Public.Access;
 using Notrelix.Application.Features.Governance.ResourcePermissions.Commands.GrantResourcePermission;

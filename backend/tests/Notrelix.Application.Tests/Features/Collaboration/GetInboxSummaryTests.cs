@@ -1,4 +1,3 @@
-using Notrelix.Application.Common.Tenancy;
 using Notrelix.Application.Features.Collaboration.Notifications.Queries.GetInboxSummary;
 using Notrelix.Application.Features.Collaboration.Public.Notifications;
 
