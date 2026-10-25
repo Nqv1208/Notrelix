@@ -33,7 +33,7 @@ test("billing shows what the workspace's billing grants, with the seeded limit a
     name: "Capabilities granted by billing",
   });
   await expect(row.getByText("Automation rules")).toBeVisible();
-  await expect(row.getByText(/^\d+ of 100 used$/)).toBeVisible();
+  await expect(row.getByText(/^\d+ of 500 used$/)).toBeVisible();
   await expect(row.getByText("Member seats")).toBeVisible();
   await expect(row.getByText("Guest seats")).toBeVisible();
   await expect(row.getByText("Storage")).toBeVisible();

@@ -34,7 +34,13 @@ test("a workspace admin reads the work report of all boards, then of one board",
     page.getByRole("region", { name: "Finished per week, last 8 weeks" }),
   ).toBeVisible();
 
-  await page.getByLabel("Board").selectOption({ label: "Engineering Tasks" });
+  const boardSelect = page.getByLabel("Board");
+  // Boards that share a title are told apart by a suffix, so match the prefix.
+  const engineering = await boardSelect
+    .locator("option", { hasText: /^Engineering Tasks/ })
+    .first()
+    .getAttribute("value");
+  await boardSelect.selectOption(engineering!);
   await expect(
     page.getByRole("region", { name: "Items by assignee" }),
   ).toBeVisible();
