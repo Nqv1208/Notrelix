@@ -8,6 +8,7 @@ describe("backendCapabilitiesOf", () => {
       integrations: true,
       reports: true,
       onboardingCatalog: true,
+      planItems: true,
     });
   });
 
@@ -17,6 +18,7 @@ describe("backendCapabilitiesOf", () => {
       integrations: true,
       reports: false,
       onboardingCatalog: false,
+      planItems: false,
     });
   });
 });

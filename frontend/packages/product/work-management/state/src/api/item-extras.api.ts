@@ -209,13 +209,17 @@ export interface PeopleDirectoryDto {
   readonly canInvite: boolean;
 }
 
-export function createItemExtrasApi(client: NotrelixClient) {
+export function createItemExtrasApi(
+  client: NotrelixClient,
+  options: { readonly planProduced?: boolean } = {},
+) {
   const { api } = client;
   const quiet = { skipGlobalErrorToast: true } as const;
   const key = () => crypto.randomUUID();
-  // A backend without a plan producer answers 404 once; the calendar and the
-  // timeline then show the board's items alone without asking again.
-  let planProduced = true;
+  // A backend without a plan producer is not asked at all (`planProduced: false`);
+  // one that answers 404 anyway is asked once. The calendar and the timeline
+  // then show the board's items alone.
+  let planProduced = options.planProduced ?? true;
   return {
     async getPlan(boardId: string): Promise<BoardPlanDto> {
       let dto: Partial<BoardPlanDto> | null = null;

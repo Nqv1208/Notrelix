@@ -37,8 +37,14 @@ export interface WorkManagementServices {
   >;
 }
 
+export interface WorkManagementServicesOptions {
+  /** The backend serves the markers, links and percents of a board plan. */
+  readonly planProduced?: boolean;
+}
+
 export function createWorkManagementServices(
   client: NotrelixClient,
+  options: WorkManagementServicesOptions = {},
 ): WorkManagementServices {
   return {
     boards: createBoardApi(client),
@@ -51,7 +57,9 @@ export function createWorkManagementServices(
     labels: createLabelApi(client),
     checklists: createChecklistApi(client),
     comments: createCommentApi(client),
-    itemExtras: createItemExtrasApi(client),
+    itemExtras: createItemExtrasApi(client, {
+      planProduced: options.planProduced,
+    }),
     boardSettings: createBoardSettingsApi(client),
     workspaceAutomations: createWorkspaceAutomationsApi(client),
   };

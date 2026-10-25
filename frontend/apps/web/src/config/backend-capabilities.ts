@@ -15,6 +15,8 @@ export interface BackendCapabilities {
   readonly reports: boolean;
   /** The department suggestions of the onboarding (a size and a name in, suggested departments out). */
   readonly onboardingCatalog: boolean;
+  /** The markers, links and percents the Calendar and the Timeline draw beside the items. */
+  readonly planItems: boolean;
 }
 
 export function backendCapabilitiesOf(mockApi: boolean): BackendCapabilities {
@@ -23,6 +25,7 @@ export function backendCapabilitiesOf(mockApi: boolean): BackendCapabilities {
     integrations: true,
     reports: mockApi,
     onboardingCatalog: mockApi,
+    planItems: mockApi,
   };
 }
 
