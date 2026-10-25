@@ -151,6 +151,8 @@ internal sealed class OrgTreeTestHost
         services.AddScoped<IResourceVisibility>(sp =>
             new PostgresResourceVisibility(sp.GetRequiredService<ApplicationDbContext>(), sp.GetRequiredService<TimeProvider>()));
         services.AddGovernanceInfrastructure(new ConfigurationBuilder().Build());
+        services.AddScoped<Notrelix.Application.Features.Governance.Public.Access.IResourceCreatorGrant,
+            Notrelix.Infrastructure.Data.Authz.ResourceCreatorGrantAdapter>();
 
         services.AddScoped<ISpaceStore>(sp => new SpaceStore(sp.GetRequiredService<ApplicationDbContext>()));
         services.AddScoped<ISpaceTargetAuthorizer, SpaceTargetAuthorizer>();
