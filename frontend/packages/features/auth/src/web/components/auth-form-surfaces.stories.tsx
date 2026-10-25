@@ -10,12 +10,14 @@ import {
   authRegisterPendingScenario,
   authSignInScenario,
   authSsoStep,
+  authVerifyEmailScenario,
 } from "../../verification/auth-ui-fixtures";
 import { authCopy } from "../copy/auth.copy";
 import { AuthForgotSurface } from "./auth-forgot-surface";
 import { AuthInviteSurface } from "./auth-invite-surface";
 import { AuthShell } from "./auth-shell";
 import { AuthSignInSurface } from "./auth-sign-in-surface";
+import { AuthVerifyEmailSurface } from "./auth-verify-email-surface";
 import { AuthRegisterFormSurface } from "./auth-form-surfaces";
 
 /**
@@ -228,6 +230,68 @@ export const ForgotSentReady: Story = {
     </Page>
   ),
   tags: ["fui-surface--auth.forgot", "fui-state--Success"],
+};
+
+export const VerifyEmailWaiting: Story = {
+  render: () => (
+    <Page>
+      <AuthVerifyEmailSurface {...authVerifyEmailScenario()} />
+    </Page>
+  ),
+  tags: ["fui-surface--auth.verify-email", "fui-state--Default"],
+};
+
+export const VerifyEmailConfirming: Story = {
+  render: () => (
+    <Page>
+      <AuthVerifyEmailSurface
+        {...authVerifyEmailScenario({ step: { kind: "confirming" } })}
+      />
+    </Page>
+  ),
+  tags: ["fui-surface--auth.verify-email", "fui-state--Loading"],
+};
+
+export const VerifyEmailSending: Story = {
+  render: () => (
+    <Page>
+      <AuthVerifyEmailSurface {...authVerifyEmailScenario({ pending: true })} />
+    </Page>
+  ),
+  tags: ["fui-surface--auth.verify-email", "fui-state--Loading"],
+};
+
+export const VerifyEmailInvalid: Story = {
+  render: () => (
+    <Page>
+      <AuthVerifyEmailSurface
+        {...authVerifyEmailScenario({ error: "invalid" })}
+      />
+    </Page>
+  ),
+  tags: ["fui-surface--auth.verify-email", "fui-state--Error"],
+};
+
+export const VerifyEmailFailed: Story = {
+  render: () => (
+    <Page>
+      <AuthVerifyEmailSurface
+        {...authVerifyEmailScenario({ step: { kind: "failed" } })}
+      />
+    </Page>
+  ),
+  tags: ["fui-surface--auth.verify-email", "fui-state--Error"],
+};
+
+export const VerifyEmailDone: Story = {
+  render: () => (
+    <Page>
+      <AuthVerifyEmailSurface
+        {...authVerifyEmailScenario({ step: { kind: "done" } })}
+      />
+    </Page>
+  ),
+  tags: ["fui-surface--auth.verify-email", "fui-state--Success"],
 };
 
 export const InviteDefault: Story = {

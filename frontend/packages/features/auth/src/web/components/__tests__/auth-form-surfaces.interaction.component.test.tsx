@@ -8,6 +8,7 @@ import {
   authRegisterDefaultScenario,
   authSignInScenario,
   authSsoStep,
+  authVerifyEmailScenario,
 } from "../../../verification/auth-ui-fixtures";
 import { PASSWORD_MIN_LENGTH } from "../../../core/schemas/password-policy";
 import { authCopy } from "../../copy/auth.copy";
@@ -17,6 +18,7 @@ import { AuthInviteSurface } from "../auth-invite-surface";
 import { AuthRegisterFormSurface } from "../auth-form-surfaces";
 import { AuthShell } from "../auth-shell";
 import { AuthSignInSurface } from "../auth-sign-in-surface";
+import { AuthVerifyEmailSurface } from "../auth-verify-email-surface";
 
 const copy = authCopy("vi");
 
@@ -275,6 +277,67 @@ describe("auth forgot-password surface", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: copy.sent.resend }));
     expect(onResend).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("auth verify-email surface", () => {
+  it("FUI[auth.verify-email:confirm] says it is confirming, then that the email is confirmed and continues", () => {
+    const onContinue = vi.fn();
+    const { rerender } = renderPureUi(
+      <AuthVerifyEmailSurface
+        {...authVerifyEmailScenario({ step: { kind: "confirming" } })}
+      />,
+    );
+    expect(screen.getByRole("status").textContent).toContain(
+      copy.verifyEmail.confirmingTitle,
+    );
+    rerender(
+      <AuthVerifyEmailSurface
+        {...authVerifyEmailScenario({ step: { kind: "done" }, onContinue })}
+      />,
+    );
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
+      copy.verifyEmail.doneTitle,
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.verifyEmail.continue }),
+    );
+    expect(onContinue).toHaveBeenCalledTimes(1);
+  });
+
+  it("FUI[auth.verify-email:resend] offers a new link for a dead link, rejects a malformed email, sends a good one and goes back", () => {
+    const onResend = vi.fn();
+    const onBack = vi.fn();
+    renderPureUi(
+      <AuthVerifyEmailSurface
+        {...authVerifyEmailScenario({
+          step: { kind: "failed" },
+          onResend,
+          onBack,
+        })}
+      />,
+    );
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
+      copy.verifyEmail.failedTitle,
+    );
+    const field = screen.getByLabelText(copy.verifyEmail.label);
+    fireEvent.change(field, { target: { value: "sai" } });
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.verifyEmail.send }),
+    );
+    expect(onResend).not.toHaveBeenCalled();
+    expect(screen.getByRole("alert").textContent).toContain(
+      copy.verifyEmail.invalid,
+    );
+    fireEvent.change(field, { target: { value: AUTH_PERSONAL_EMAIL } });
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.verifyEmail.send }),
+    );
+    expect(onResend).toHaveBeenCalledWith(AUTH_PERSONAL_EMAIL);
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.verifyEmail.back }),
+    );
+    expect(onBack).toHaveBeenCalledTimes(1);
   });
 });
 
