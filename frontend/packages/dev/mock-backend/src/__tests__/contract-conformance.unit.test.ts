@@ -116,16 +116,38 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
 
     const boardId = mockIds.boards.roadmap;
 
-    // 1. Board View read/save
+    // 1. Saved views: the default shared view, a private one, and their writes
     const initialView = await boardApi.getBoardView(boardId);
     expect(initialView.viewMode).toBe("table");
-    await boardApi.saveBoardView(boardId, {
-      viewMode: "kanban",
-      viewConfig: { ...initialView.viewConfig, groupBy: "status" },
+    const [defaultView] = await boardApi.listSavedViews(boardId);
+    expect(defaultView?.isDefault).toBe(true);
+    await boardApi.updateSavedViewConfig(boardId, defaultView!.id, {
+      ...initialView.viewConfig,
+      groupBy: "status",
     });
-    const updatedView = await boardApi.getBoardView(boardId);
-    expect(updatedView.viewMode).toBe("kanban");
-    expect(updatedView.viewConfig.groupBy).toBe("status");
+    expect((await boardApi.getBoardView(boardId)).viewConfig.groupBy).toBe(
+      "status",
+    );
+    const mine = await boardApi.createSavedView(boardId, {
+      name: "Mine",
+      viewMode: "kanban",
+      viewConfig: initialView.viewConfig,
+      visibility: "me",
+    });
+    expect(mine.viewMode).toBe("kanban");
+    expect(mine.visibility).toBe("me");
+    await boardApi.renameSavedView(boardId, mine.id, "Mine 2");
+    await boardApi.setSavedViewVisibility(boardId, mine.id, "board");
+    await boardApi.setDefaultSavedView(boardId, mine.id);
+    const listed = await boardApi.listSavedViews(boardId);
+    expect(listed[0]).toMatchObject({
+      id: mine.id,
+      name: "Mine 2",
+      visibility: "board",
+      isDefault: true,
+    });
+    await boardApi.deleteSavedView(boardId, defaultView!.id);
+    expect(await boardApi.listSavedViews(boardId)).toHaveLength(1);
 
     // 2. Group / List CRUD + Reorder
     await groupApi.createGroup({

@@ -71,6 +71,8 @@ export interface BoardSettingsActions {
     changes: BoardSettingsViewPatch,
   ): Promise<BoardSettingsWriteResult>;
   duplicateView(viewId: string): Promise<BoardSettingsWriteResult>;
+  /** The tab a board opens on. */
+  setDefaultView(viewId: string): Promise<BoardSettingsWriteResult>;
   deleteView(viewId: string): Promise<BoardSettingsWriteResult>;
   createGroup(name: string): Promise<BoardSettingsWriteResult>;
   reorderGroups(ids: readonly string[]): Promise<BoardSettingsWriteResult>;

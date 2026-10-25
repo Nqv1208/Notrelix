@@ -118,6 +118,7 @@ import { MockWorkspaceAutomations } from "./mock-workspace-automations";
 import { MockOnboarding } from "./mock-onboarding";
 import { ERP_STATE_ITEMS, erpLongChildTitles } from "./mock-item-states";
 import { MockBoardSharing, seedErpSharing } from "./mock-board-sharing";
+import { MockBoardSavedViews } from "./mock-board-saved-views";
 import { LIBRARY_DOCS, SECONDARY_BOARD_TITLES } from "./mock-docs-library";
 import {
   INVOICE_BLOCKS,
@@ -298,6 +299,8 @@ export class MockStore {
   private boardGrantsByBoardId = new Map<string, MockBoardGrantRecord[]>();
   /** The Board permissions `WorkManagement.Boards.GetSharing` answers with. */
   readonly sharing = new MockBoardSharing();
+  /** The saved views of the boards (shared with members or private). */
+  readonly savedViews = new MockBoardSavedViews(() => this);
   /** Seeded board audiences for the access read, keyed by board. */
   private boardAudienceByBoardId = new Map<string, MockBoardAudienceRecord>();
 
@@ -1725,6 +1728,7 @@ export class MockStore {
     this.notificationsById.clear();
     this.pagesById.clear();
     this.boardViewsByBoardId.clear();
+    this.savedViews.clear();
     this.columnsById.clear();
     this.labelsById.clear();
     this.checklistsById.clear();

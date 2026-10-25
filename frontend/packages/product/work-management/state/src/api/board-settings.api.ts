@@ -9,7 +9,13 @@ import type {
   BoardSettingsGroupDto,
   BoardSettingsSystemFieldDto,
   BoardSettingsUnavailable,
+  BoardSettingsViewDto,
+  BoardSettingsViewPatch,
+  SavedBoardView,
+  ViewConfig,
+  ViewMode,
 } from "@notrelix/work-management-core";
+import { defaultTableViewConfig, createBoardApi } from "./board.api";
 
 type Overview = OperationResponse<"WorkManagement.Boards.GetOverview">;
 type OverviewField = NonNullable<Overview["columns"]>[number];
@@ -37,7 +43,8 @@ const UNAVAILABLE: BoardSettingsUnavailable = {
   fieldArchive: true,
   fieldDelete: false,
   fieldRules: true,
-  views: true,
+  views: false,
+  viewSplit: true,
   automations: true,
   creatableFieldTypes: CREATABLE_FIELD_TYPES,
 };
@@ -140,11 +147,54 @@ function mapGroup(group: OverviewGroup): BoardSettingsGroupDto {
   };
 }
 
+/** A saved view as the Views section lists it. */
+export function mapSettingsView(
+  view: SavedBoardView,
+  fields: readonly BoardSettingsFieldDto[],
+): BoardSettingsViewDto {
+  const fieldName = (id: string) =>
+    fields.find((field) => field.id === id)?.name ?? id;
+  const config = view.viewConfig;
+  const sort = config.sortBy[0];
+  return {
+    id: view.id,
+    name: view.name,
+    kind: view.viewMode,
+    summary: [
+      config.filters.length > 0
+        ? config.filters.map((filter) => fieldName(filter.fieldId)).join(", ")
+        : "",
+      sort ? fieldName(sort.fieldId) : "",
+    ]
+      .filter((part) => part !== "")
+      .join(" · "),
+    visibility: view.visibility,
+    isDefault: view.isDefault,
+    fieldId: null,
+    filters: config.filters.map((filter) => ({
+      fieldName: fieldName(filter.fieldId),
+      operator: filter.operator,
+      values: Array.isArray(filter.value)
+        ? filter.value.join(", ")
+        : String(filter.value ?? ""),
+    })),
+    sort: sort
+      ? { fieldName: fieldName(sort.fieldId), text: sort.direction }
+      : null,
+    cardFieldIds: [],
+    cardFieldChoices: [],
+    lastEditedBy: "",
+    createdBy: "",
+    needsFix: false,
+  };
+}
+
 /** The settings page model of a board read. */
 export function mapBoardSettings(
   boardId: string,
   board: Overview,
   inherited: WorkspaceLocale = DEFAULT_LOCALE,
+  savedViews: readonly SavedBoardView[] = [],
 ): BoardSettingsDto {
   const columns = byPosition(
     (board.columns ?? []).filter((column) => column.isDeleted !== true),
@@ -152,6 +202,9 @@ export function mapBoardSettings(
   const groups = byPosition(
     (board.lists ?? []).filter((group) => group.isArchived !== true),
   ).map(mapGroup);
+  const fields = columns
+    .filter((column) => !isLockedSystemField(column))
+    .map(mapField);
   return {
     boardId,
     version: board.version ?? 0,
@@ -169,12 +222,10 @@ export function mapBoardSettings(
       weekStart: inherited.weekStart,
       isArchived: false,
     },
-    fields: columns
-      .filter((column) => !isLockedSystemField(column))
-      .map(mapField),
+    fields,
     systemFields: columns.filter(isLockedSystemField).map(mapSystemField),
     archivedFields: [],
-    views: [],
+    views: savedViews.map((view) => mapSettingsView(view, fields)),
     groups,
     automations: [],
     unavailable: UNAVAILABLE,
@@ -215,6 +266,7 @@ function movedId(
 
 export function createBoardSettingsApi(client: NotrelixClient) {
   const { api } = client;
+  const boardApi = createBoardApi(client);
   const quiet = { skipGlobalErrorToast: true } as const;
   const find = <T extends { id: string; version?: number }>(
     rows: readonly T[],
@@ -248,7 +300,8 @@ export function createBoardSettingsApi(client: NotrelixClient) {
             }))
             .catch(() => DEFAULT_LOCALE)
         : DEFAULT_LOCALE;
-      return mapBoardSettings(boardId, board, inherited);
+      const savedViews = await boardApi.listSavedViews(boardId).catch(() => []);
+      return mapBoardSettings(boardId, board, inherited, savedViews);
     },
 
     updateGeneral: (s: BoardSettingsDto, changes: BoardSettingsGeneralPatch) =>
@@ -357,6 +410,38 @@ export function createBoardSettingsApi(client: NotrelixClient) {
         quiet,
       );
     },
+
+    createView: (
+      s: BoardSettingsDto,
+      kind: ViewMode,
+      name: string,
+      config: ViewConfig = defaultTableViewConfig,
+      visibility: "board" | "me" = "board",
+    ) =>
+      boardApi.createSavedView(s.boardId, {
+        name,
+        viewMode: kind,
+        viewConfig: config,
+        visibility,
+      }),
+    updateView: async (
+      s: BoardSettingsDto,
+      viewId: string,
+      changes: BoardSettingsViewPatch,
+    ) => {
+      if (changes.name !== undefined)
+        await boardApi.renameSavedView(s.boardId, viewId, changes.name);
+      if (changes.visibility !== undefined)
+        await boardApi.setSavedViewVisibility(
+          s.boardId,
+          viewId,
+          changes.visibility,
+        );
+    },
+    setDefaultView: (s: BoardSettingsDto, viewId: string) =>
+      boardApi.setDefaultSavedView(s.boardId, viewId),
+    deleteView: (s: BoardSettingsDto, viewId: string) =>
+      boardApi.deleteSavedView(s.boardId, viewId),
 
     createGroup: (s: BoardSettingsDto, name: string) =>
       api.post<unknown>(

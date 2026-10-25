@@ -400,9 +400,11 @@ export const workspaceOperations = [
       }
       const kept = store.getWorkspaceSettings(params.workspaceId);
       const timeZone = body?.timeZone
-        ? WORKSPACE_TIME_ZONES.find(
-            (zone) => zone.toLowerCase() === body.timeZone?.toLowerCase(),
-          )
+        ? [
+            ...WORKSPACE_TIME_ZONES,
+            ...Intl.supportedValuesOf("timeZone"),
+            "UTC",
+          ].find((zone) => zone.toLowerCase() === body.timeZone?.toLowerCase())
         : kept.timeZone;
       if (!timeZone)
         return validationError({ TimeZone: ["Unknown time zone."] });

@@ -243,5 +243,8 @@ export const endpoints = {
   },
   boardViews: {
     detail: (boardId: string) => `/boards/${boardId}/views`,
+    saved: (boardId: string) => `/boards/${boardId}/views/saved`,
+    view: (boardId: string, viewId: string) =>
+      `/boards/${boardId}/views/${viewId}`,
   },
 };

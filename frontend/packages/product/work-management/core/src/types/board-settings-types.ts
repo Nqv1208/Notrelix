@@ -44,6 +44,8 @@ export interface BoardSettingsUnavailable {
   readonly fieldRules?: boolean;
   /** Saved and private views of the board. */
   readonly views?: boolean;
+  /** The field a view splits or places by is not saved with the view yet. */
+  readonly viewSplit?: boolean;
   /** Board automations. */
   readonly automations?: boolean;
   /** Deleting a group that still holds items. */

@@ -189,17 +189,44 @@ export interface WorkspaceSettings {
   readonly allowPublicSharing: boolean;
   readonly enforceMfa: boolean;
   /** IANA time zone the workspace's boards inherit. */
-  readonly timeZone: WorkspaceTimeZone;
+  readonly timeZone: string;
   /** First day of the week the workspace's boards inherit. */
   readonly weekStart: "monday" | "sunday";
 }
 
+/** The time zones the settings list names in words; any IANA id is accepted. */
 export const WORKSPACE_TIME_ZONES = [
   "Asia/Ho_Chi_Minh",
   "Asia/Singapore",
   "Asia/Tokyo",
 ] as const;
 export type WorkspaceTimeZone = (typeof WORKSPACE_TIME_ZONES)[number];
+
+/** Every IANA time zone id the browser or runtime lists, the named ones and UTC included. */
+export function allTimeZones(): readonly string[] {
+  const listed =
+    typeof Intl.supportedValuesOf === "function"
+      ? Intl.supportedValuesOf("timeZone")
+      : [];
+  return [...new Set([...WORKSPACE_TIME_ZONES, ...listed, "UTC"])];
+}
+
+/** The spelling of an IANA time zone id the list uses, or null when the runtime does not know it. */
+export function resolveTimeZone(value: string): string | null {
+  const wanted = value.trim();
+  if (!wanted) return null;
+  const listed = allTimeZones().find(
+    (zone) => zone.toLowerCase() === wanted.toLowerCase(),
+  );
+  if (listed) return listed;
+  if (!wanted.includes("/")) return null;
+  try {
+    new Intl.DateTimeFormat("en", { timeZone: wanted });
+    return wanted;
+  } catch {
+    return null;
+  }
+}
 
 export interface CreateWorkspaceInvitationInput {
   email: string;
