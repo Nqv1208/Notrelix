@@ -1,5 +1,6 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Accounts.Public.Membership;
+using Notrelix.Application.Features.Billing.Public.Seats;
 using Notrelix.Application.Features.Governance.Public.Access;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Application.Features.Workspaces.Invitations.Commands.AcceptInvitation;
@@ -22,6 +23,7 @@ public sealed class InvitationAcceptanceService
     private readonly InvitationInitialEntries _initialEntries;
     private readonly IGuestResourceAccessActions _guestResourceAccess;
     private readonly IAuditService _auditService;
+    private readonly IBillingSeatGate? _seatGate;
 
     public InvitationAcceptanceService(
         IWorkspaceDbContext workspaceContext,
@@ -30,8 +32,10 @@ public sealed class InvitationAcceptanceService
         IWorkspaceGrantProjectionService grantProjection,
         InvitationInitialEntries initialEntries,
         IGuestResourceAccessActions guestResourceAccess,
-        IAuditService auditService)
+        IAuditService auditService,
+        IBillingSeatGate? seatGate = null)
     {
+        _seatGate = seatGate;
         _workspaceContext = workspaceContext;
         _accountMembershipActions = accountMembershipActions;
         _accountMembershipFacts = accountMembershipFacts;
@@ -97,6 +101,19 @@ public sealed class InvitationAcceptanceService
         if (hasExtras && existingMember is not null && existingMember.Status != WorkspaceMemberStatus.Active)
             return Result<AcceptInvitationResultDto>.Failure(
                 "Your membership in this workspace is not active.");
+
+        // Billing owns the seat decision: a new membership takes a Member or Guest seat of the
+        // account's plan unless the person already holds that seat in another workspace.
+        if (existingMember is null
+            && _seatGate is not null
+            && !await _seatGate.CanAdmitAsync(
+                workspace.AccountId, invitation.WorkspaceId, userId, invitation.Role == WorkspaceRole.Guest, ct))
+        {
+            return Result<AcceptInvitationResultDto>.Failure(
+                invitation.Role == WorkspaceRole.Guest
+                    ? "The guest limit of this account's plan has been reached. Ask an account owner to upgrade the plan."
+                    : "The member limit of this account's plan has been reached. Ask an account owner to upgrade the plan.");
+        }
 
         if (invitation.InitialEntries.Count > 0
             && !await _initialEntries.AllTargetsEligibleAsync(invitation.WorkspaceId, invitation.InitialEntries, ct))

@@ -36,6 +36,9 @@ public static class BillingRegistration
             services.AddScoped<IBillingSubscriptionFacts, BillingSubscriptionFactsProvider>();
         }
 
+        services.AddScoped<Notrelix.Application.Features.Billing.Abstractions.IBillingUsageReader, BillingUsageReader>();
+        services.AddSingleton<Notrelix.Application.Features.Billing.Abstractions.IBillingPlanChangePolicy, BillingPlanChangePolicy>();
+
         return services;
     }
 }

@@ -52,7 +52,8 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
         InvitationInitialEntries initialEntries,
         IGuestResourceAccessActions guestResourceAccess,
         IAuditService auditService,
-        InvitationTokenScope tokenScope)
+        InvitationTokenScope tokenScope,
+        Notrelix.Application.Features.Billing.Public.Seats.IBillingSeatGate? seatGate = null)
     {
         _tokenScope = tokenScope;
         _workspaceContext = workspaceContext;
@@ -67,7 +68,8 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
             grantProjection,
             initialEntries,
             guestResourceAccess,
-            auditService);
+            auditService,
+            seatGate);
     }
 
     public async Task<Result<AcceptInvitationResultDto>> Handle(

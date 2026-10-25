@@ -1,5 +1,7 @@
 using Notrelix.Application.Features.Billing.Abstractions;
 using Notrelix.Application.Features.Billing.Entitlements.Services;
+using Notrelix.Application.Features.Billing.Plans;
+using Notrelix.Domain.Billing.Subscriptions;
 using Notrelix.Application.Features.Billing.Public.Facts;
 using Notrelix.Domain.Billing.Entitlements;
 using Notrelix.Domain.Billing.Plans;
@@ -22,12 +24,21 @@ public class BillingCapabilityFactsProviderTests
 
     private readonly Mock<IBillingDbContext> _contextMock = new();
     private readonly Mock<IDateTimeProvider> _clockMock = new();
+    private readonly Mock<IBillingUsageReader> _usageReader = new();
     private readonly BillingCapabilityFactsProvider _sut;
 
     public BillingCapabilityFactsProviderTests()
     {
         _clockMock.Setup(c => c.UtcNow).Returns(TestNow);
-        _sut = new BillingCapabilityFactsProvider(_contextMock.Object, _clockMock.Object);
+        _contextMock.Setup(c => c.Subscriptions).Returns(TestBillingDbSet.Create(new List<Subscription>()).Object);
+        _usageReader
+            .Setup(r => r.GetAccountUsageAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new BillingAccountUsage(0, 0, 0));
+        _sut = new BillingCapabilityFactsProvider(
+            _contextMock.Object,
+            _clockMock.Object,
+            _usageReader.Object,
+            new BillingPlanResolver(_contextMock.Object, _clockMock.Object));
     }
 
     private void SetupEntitlements(params Entitlement[] entitlements)
@@ -89,13 +100,13 @@ public class BillingCapabilityFactsProviderTests
     }
 
     [Fact]
-    public async Task GetCapability_WithNoEntitlement_IsUnavailable()
+    public async Task GetCapability_WithNoEntitlementForAnUnknownCapability_IsUnavailable()
     {
         SetupEntitlements();
         SetupUsage();
 
         var fact = await _sut.GetCapabilityAsync(
-            AccountId, WorkspaceId, BillingCapabilityCode.AutomationRule, 1, CancellationToken.None);
+            AccountId, WorkspaceId, "UNKNOWN_CAPABILITY", 1, CancellationToken.None);
 
         fact.Should().NotBeNull();
         fact!.IsAvailable.Should().BeFalse();
@@ -105,20 +116,20 @@ public class BillingCapabilityFactsProviderTests
     }
 
     [Fact]
-    public async Task GetCapability_MissingGrantStillReportsLedgerUsage()
+    public async Task GetCapability_MissingGrantFallsBackToThePlanAndStillReportsLedgerUsage()
     {
-        // TAC-BI-001 Used authority: history is never lossy. A missing grant
-        // reports the actual ledger sum, not zero, so a later owner action is
-        // evaluated against real committed usage.
+        // No explicit grant: the account's plan (Free without a subscription) is the base
+        // entitlement, and the actual ledger sum is reported so history is never lossy.
         SetupEntitlements();
         SetupUsage(Usage(2, WorkspaceId));
 
         var fact = await _sut.GetCapabilityAsync(
             AccountId, WorkspaceId, BillingCapabilityCode.AutomationRule, 1, CancellationToken.None);
 
-        fact!.IsAvailable.Should().BeFalse();
+        fact!.IsAvailable.Should().BeTrue();
+        fact.Limit.Should().Be(5);
         fact.Used.Should().Be(2);
-        fact.Remaining.Should().BeNull();
+        fact.Remaining.Should().Be(3);
     }
 
     [Fact]
@@ -165,7 +176,7 @@ public class BillingCapabilityFactsProviderTests
         var fact = await _sut.GetCapabilityAsync(
             AccountId, WorkspaceId, BillingCapabilityCode.AutomationRule, 1, CancellationToken.None);
 
-        fact!.IsAvailable.Should().BeFalse();
+        fact!.Limit.Should().Be(5, "an expired grant ceases to apply and the Free plan is the base");
         fact.Used.Should().Be(2, "expiry removes the grant, not the ledger history");
     }
 
@@ -180,10 +191,9 @@ public class BillingCapabilityFactsProviderTests
         var fact = await _sut.GetCapabilityAsync(
             AccountId, WorkspaceId, BillingCapabilityCode.AutomationRule, 1, CancellationToken.None);
 
-        fact!.IsAvailable.Should().BeFalse("a revoked grant ceases to apply");
-        fact.Limit.Should().BeNull();
+        fact!.Limit.Should().Be(5, "a revoked grant ceases to apply and the Free plan is the base");
         fact.Used.Should().Be(2, "revocation removes the grant, not the ledger history");
-        fact.Remaining.Should().BeNull();
+        fact.Remaining.Should().Be(3);
     }
 
     [Fact]
@@ -197,10 +207,9 @@ public class BillingCapabilityFactsProviderTests
         var fact = await _sut.GetCapabilityAsync(
             AccountId, WorkspaceId, BillingCapabilityCode.AutomationRule, 1, CancellationToken.None);
 
-        fact!.IsAvailable.Should().BeFalse("a disabled grant ceases to apply");
-        fact.Limit.Should().BeNull();
+        fact!.Limit.Should().Be(5, "a disabled grant ceases to apply and the Free plan is the base");
         fact.Used.Should().Be(2, "disable removes the grant, not the ledger history");
-        fact.Remaining.Should().BeNull();
+        fact.Remaining.Should().Be(3);
     }
 
     [Fact]
@@ -337,18 +346,17 @@ public class BillingCapabilityFactsProviderTests
     }
 
     [Fact]
-    public async Task GetCapability_Usage_IsWorkspaceIsolated()
+    public async Task GetCapability_Usage_SumsAcrossTheAccountsWorkspaces()
     {
-        // TAC-BI-001 Used authority: the ledger sum is scoped per (account,
-        // workspace, capability). Usage in another workspace must not count here.
+        // Entitlements are account-scoped, so usage sums over every workspace of the account.
         SetupEntitlements(ActiveEntitlement(limit: 5));
         SetupUsage(Usage(4, OtherWorkspaceId));
 
         var fact = await _sut.GetCapabilityAsync(
             AccountId, WorkspaceId, BillingCapabilityCode.AutomationRule, 1, CancellationToken.None);
 
-        fact!.Used.Should().Be(0, "usage in another workspace is not counted");
-        fact.Remaining.Should().Be(5);
+        fact!.Used.Should().Be(4, "usage in another workspace of the account counts");
+        fact.Remaining.Should().Be(1);
     }
 
     [Fact]
@@ -364,8 +372,8 @@ public class BillingCapabilityFactsProviderTests
         var fact = await _sut.GetCapabilityAsync(
             AccountId, WorkspaceId, BillingCapabilityCode.AutomationRule, 1, CancellationToken.None);
 
-        fact!.IsAvailable.Should().BeFalse(
-            "a workspace grant targets one workspace and does not leak to another");
+        fact!.Limit.Should().Be(5,
+            "a workspace grant targets one workspace and does not leak to another; the Free plan is the base");
     }
 
     [Fact]
@@ -380,5 +388,70 @@ public class BillingCapabilityFactsProviderTests
         typeof(BillingCapabilityFact).GetProperties().Select(p => p.Name).Should().BeEquivalentTo(
             ["IsAvailable", "Limit", "Used", "Remaining"],
             "the capability fact carries stable capability meaning only");
+    }
+
+    private void OnPlan(BillingPlanDefinition plan) =>
+        _contextMock.Setup(c => c.Subscriptions).Returns(TestBillingDbSet.Create(new List<Subscription>
+        {
+            Subscription.Create(AccountId, plan.PlanId, plan.Tier, TestNow.AddDays(-1), TestNow.AddYears(1), null, TestNow.AddDays(-1))
+        }).Object);
+
+    [Theory]
+    [InlineData(BillingCapabilityCode.MemberSeat, 10)]
+    [InlineData(BillingCapabilityCode.GuestSeat, 5)]
+    [InlineData(BillingCapabilityCode.StorageGb, 2)]
+    public async Task GetCapability_WithoutSubscription_UsesTheFreePlanLimits(string code, int limit)
+    {
+        SetupEntitlements();
+        SetupUsage();
+
+        var fact = await _sut.GetCapabilityAsync(AccountId, WorkspaceId, code, 1, CancellationToken.None);
+
+        fact!.IsAvailable.Should().BeTrue();
+        fact.Limit.Should().Be(limit);
+    }
+
+    [Fact]
+    public async Task GetCapability_OnTheProPlan_UsesTheProLimits()
+    {
+        SetupEntitlements();
+        SetupUsage();
+        OnPlan(BillingPlanCatalog.Pro);
+
+        var fact = await _sut.GetCapabilityAsync(
+            AccountId, WorkspaceId, BillingCapabilityCode.MemberSeat, 1, CancellationToken.None);
+
+        fact!.Limit.Should().Be(500);
+    }
+
+    [Fact]
+    public async Task GetCapability_OnTheEnterprisePlan_MemberSeatsAreUnlimited()
+    {
+        SetupEntitlements();
+        SetupUsage();
+        OnPlan(BillingPlanCatalog.Enterprise);
+
+        var fact = await _sut.GetCapabilityAsync(
+            AccountId, WorkspaceId, BillingCapabilityCode.MemberSeat, 1, CancellationToken.None);
+
+        fact!.IsAvailable.Should().BeTrue();
+        fact.Limit.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetCapability_MemberSeats_AreFullWhenTheAccountReachedTheLimit()
+    {
+        SetupEntitlements();
+        SetupUsage();
+        _usageReader
+            .Setup(r => r.GetAccountUsageAsync(AccountId, WorkspaceId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new BillingAccountUsage(10, 0, 0));
+
+        var fact = await _sut.GetCapabilityAsync(
+            AccountId, WorkspaceId, BillingCapabilityCode.MemberSeat, 1, CancellationToken.None);
+
+        fact!.IsAvailable.Should().BeFalse();
+        fact.Used.Should().Be(10);
+        fact.Remaining.Should().Be(0);
     }
 }

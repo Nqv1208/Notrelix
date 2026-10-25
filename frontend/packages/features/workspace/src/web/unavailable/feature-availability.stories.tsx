@@ -100,3 +100,66 @@ export const CapabilitiesEdgeData: Story = {
     }),
   tags: ["fui-surface--workspace.billing-capabilities", "fui-state--EdgeData"],
 };
+
+const PLANS = [
+  { code: "free", name: "Free" },
+  { code: "pro", name: "Pro" },
+  { code: "enterprise", name: "Enterprise" },
+] as const;
+
+export const CapabilitiesWithPlan: Story = {
+  render: () => (
+    <Page>
+      <BillingCapabilitiesSurface
+        copy={copy}
+        onRetry={noop}
+        plan={{
+          currentCode: "pro",
+          plans: PLANS,
+          canChange: true,
+          changing: false,
+          failed: false,
+        }}
+        onChangePlan={noop}
+        state={{
+          status: "ready",
+          data: [
+            {
+              code: "AUTOMATION_RULE",
+              isGranted: true,
+              isUnlimited: false,
+              limit: 100,
+              used: 12,
+              remaining: 88,
+            },
+            {
+              code: "MEMBER_SEAT",
+              isGranted: true,
+              isUnlimited: false,
+              limit: 500,
+              used: 86,
+              remaining: 414,
+            },
+            {
+              code: "GUEST_SEAT",
+              isGranted: true,
+              isUnlimited: false,
+              limit: 200,
+              used: 4,
+              remaining: 196,
+            },
+            {
+              code: "STORAGE_GB",
+              isGranted: true,
+              isUnlimited: false,
+              limit: 100,
+              used: 12.4,
+              remaining: 88,
+            },
+          ],
+        }}
+      />
+    </Page>
+  ),
+  tags: ["fui-surface--workspace.billing-capabilities", "fui-state--Default"],
+};

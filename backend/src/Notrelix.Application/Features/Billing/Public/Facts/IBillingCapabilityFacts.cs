@@ -7,9 +7,12 @@ namespace Notrelix.Application.Features.Billing.Public.Facts;
 public static class BillingCapabilityCode
 {
     public const string AutomationRule = "AUTOMATION_RULE";
+    public const string MemberSeat = "MEMBER_SEAT";
+    public const string GuestSeat = "GUEST_SEAT";
+    public const string StorageGb = "STORAGE_GB";
 
     /// <summary>Every capability Billing currently defines.</summary>
-    public static readonly IReadOnlyList<string> All = [AutomationRule];
+    public static readonly IReadOnlyList<string> All = [AutomationRule, MemberSeat, GuestSeat, StorageGb];
 }
 
 /// <summary>

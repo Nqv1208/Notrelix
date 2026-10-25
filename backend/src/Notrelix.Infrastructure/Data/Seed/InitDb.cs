@@ -1,8 +1,7 @@
-using Notrelix.Application.Features.Billing.Public.Facts;
+using Notrelix.Application.Features.Billing.Plans;
+using Notrelix.Domain.Billing.Subscriptions;
 using Notrelix.Domain.Accounts.Accounts;
 using Notrelix.Domain.Accounts.Members;
-using Notrelix.Domain.Billing.Entitlements;
-using Notrelix.Domain.Billing.Plans;
 using Notrelix.Domain.Collaboration.Comments;
 using Notrelix.Domain.Documents.Blocks;
 using Notrelix.Domain.Documents.Pages;
@@ -115,20 +114,20 @@ internal static class InitDb
     }
 
     /// <summary>
-    /// Development data only: the seeded account may create automation rules, so a
-    /// developer can use Automation without a billing catalog (none is seeded).
+    /// Development data only: the seeded account is on the Pro plan, so a developer can use
+    /// Automation, invite many people and store files without a payment provider.
     /// </summary>
     private static async Task GrantSeedEntitlementsAsync(
         ApplicationDbContext context, Account account, CancellationToken ct)
     {
-        var feature = FeatureCode.Create(BillingCapabilityCode.AutomationRule);
-        if (await context.Entitlements.AnyAsync(e => e.AccountId == account.Id && e.Feature == feature, ct))
+        if (await context.Subscriptions.AnyAsync(s => s.AccountId == account.Id, ct))
         {
             return;
         }
 
-        context.Entitlements.Add(Entitlement.Create(
-            account.Id, feature, limit: 50, EntitlementSource.Manual, Epoch));
+        var pro = BillingPlanCatalog.Pro;
+        context.Subscriptions.Add(Subscription.Create(
+            account.Id, pro.PlanId, pro.Tier, Epoch, Epoch.AddYears(10), createdBy: null, Epoch));
         await ClearAndSaveAsync(context, ct);
     }
 
