@@ -419,6 +419,50 @@
         ]
       }
     },
+    "/api/v1/workspaces/{workspaceId}/billing/capabilities": {
+      "get": {
+        "tags": [
+          "Billing",
+          "Billing"
+        ],
+        "summary": "Get the capabilities the workspace's billing grants, with limit and usage",
+        "operationId": "Billing.Capabilities.List",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Notrelix.Application.Features.Billing.Entitlements.Queries.GetWorkspaceBillingCapabilities.BillingCapabilityDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
     "/api/v1/board-items/{boardItemId}/activity": {
       "get": {
         "tags": [
@@ -20981,6 +21025,36 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.Application.Features.Billing.Entitlements.Queries.GetWorkspaceBillingCapabilities.BillingCapabilityDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "nullable": true
+          },
+          "isGranted": {
+            "type": "boolean"
+          },
+          "isUnlimited": {
+            "type": "boolean"
+          },
+          "limit": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "used": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "remaining": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.Application.Features.Collaboration.Attachments.DTOs.AttachmentDto": {
         "type": "object",
         "properties": {
@@ -24716,14 +24790,13 @@
       },
       "Notrelix.Domain.Automation.Executions.AutomationExecutionStatus": {
         "enum": [
-          0,
-          1,
-          2,
-          3,
-          4
+          "Queued",
+          "Running",
+          "Succeeded",
+          "Failed",
+          "Cancelled"
         ],
-        "type": "integer",
-        "format": "int32"
+        "type": "string"
       },
       "Notrelix.Domain.Identity.Security.SecurityActivityType": {
         "enum": [

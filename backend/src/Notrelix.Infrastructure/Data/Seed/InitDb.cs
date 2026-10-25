@@ -1,3 +1,4 @@
+using Notrelix.Application.Features.Billing.Public.Facts;
 using Notrelix.Domain.Accounts.Accounts;
 using Notrelix.Domain.Accounts.Members;
 using Notrelix.Domain.Billing.Entitlements;
@@ -120,7 +121,7 @@ internal static class InitDb
     private static async Task GrantSeedEntitlementsAsync(
         ApplicationDbContext context, Account account, CancellationToken ct)
     {
-        var feature = FeatureCode.Create("AUTOMATION_RULE");
+        var feature = FeatureCode.Create(BillingCapabilityCode.AutomationRule);
         if (await context.Entitlements.AnyAsync(e => e.AccountId == account.Id && e.Feature == feature, ct))
         {
             return;

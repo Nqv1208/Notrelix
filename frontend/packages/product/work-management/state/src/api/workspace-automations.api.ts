@@ -11,25 +11,19 @@ type RunRow = NonNullable<
   OperationResponse<"Automation.Executions.List">
 >[number];
 
-const STATUS_BY_NAME: Readonly<Record<string, WorkspaceAutomationRunStatus>> = {
-  queued: "queued",
-  running: "running",
-  succeeded: "succeeded",
-  failed: "failed",
-  cancelled: "cancelled",
+const STATUS_BY_NAME: Readonly<
+  Record<NonNullable<RunRow["status"]>, WorkspaceAutomationRunStatus>
+> = {
+  Queued: "queued",
+  Running: "running",
+  Succeeded: "succeeded",
+  Failed: "failed",
+  Cancelled: "cancelled",
 };
-const STATUS_BY_NUMBER: readonly WorkspaceAutomationRunStatus[] = [
-  "queued",
-  "running",
-  "succeeded",
-  "failed",
-  "cancelled",
-];
 
-/** The status arrives as its name; the contract documents it as a number. */
-function runStatus(raw: unknown): WorkspaceAutomationRunStatus {
-  if (typeof raw === "number") return STATUS_BY_NUMBER[raw] ?? "queued";
-  return STATUS_BY_NAME[String(raw ?? "").toLowerCase()] ?? "queued";
+/** The contract documents the status as its name, which is what the API sends. */
+function runStatus(raw: RunRow["status"]): WorkspaceAutomationRunStatus {
+  return (raw && STATUS_BY_NAME[raw]) || "queued";
 }
 
 function parse(json: string | null | undefined): unknown {

@@ -141,6 +141,23 @@ export interface paths {
         patch: operations["Automation.Rules.SetEnabled"];
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/billing/capabilities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the capabilities the workspace's billing grants, with limit and usage */
+        get: operations["Billing.Capabilities.List"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/board-items/{boardItemId}/activity": {
         parameters: {
             query?: never;
@@ -5392,6 +5409,17 @@ export interface components {
             executorUserId?: string | null;
             disabledReason?: string | null;
         };
+        "Notrelix.Application.Features.Billing.Entitlements.Queries.GetWorkspaceBillingCapabilities.BillingCapabilityDto": {
+            code?: string | null;
+            isGranted?: boolean;
+            isUnlimited?: boolean;
+            /** Format: int32 */
+            limit?: number | null;
+            /** Format: int32 */
+            used?: number;
+            /** Format: int32 */
+            remaining?: number | null;
+        };
         "Notrelix.Application.Features.Collaboration.Attachments.DTOs.AttachmentDto": {
             /** Format: uuid */
             id?: string;
@@ -6637,11 +6665,8 @@ export interface components {
             admins?: components["schemas"]["Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.TeamsExtAdminDto"][] | null;
             directory?: components["schemas"]["Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.TeamsExtDirectoryDto"][] | null;
         };
-        /**
-         * Format: int32
-         * @enum {integer}
-         */
-        "Notrelix.Domain.Automation.Executions.AutomationExecutionStatus": 0 | 1 | 2 | 3 | 4;
+        /** @enum {string} */
+        "Notrelix.Domain.Automation.Executions.AutomationExecutionStatus": "Queued" | "Running" | "Succeeded" | "Failed" | "Cancelled";
         /** @enum {string} */
         "Notrelix.Domain.Identity.Security.SecurityActivityType": "SignInSucceeded" | "SignInFailed" | "PasswordChanged" | "PasswordReset" | "MfaEnabled" | "MfaDisabled" | "SessionRevoked" | "OtherSessionsRevoked";
         /**
@@ -6926,6 +6951,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Billing.Capabilities.List": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Billing.Entitlements.Queries.GetWorkspaceBillingCapabilities.BillingCapabilityDto"][];
                 };
             };
         };

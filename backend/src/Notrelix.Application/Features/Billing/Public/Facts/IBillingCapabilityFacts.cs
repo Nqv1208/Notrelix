@@ -7,6 +7,9 @@ namespace Notrelix.Application.Features.Billing.Public.Facts;
 public static class BillingCapabilityCode
 {
     public const string AutomationRule = "AUTOMATION_RULE";
+
+    /// <summary>Every capability Billing currently defines.</summary>
+    public static readonly IReadOnlyList<string> All = [AutomationRule];
 }
 
 /// <summary>
