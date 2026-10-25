@@ -159,18 +159,31 @@ export function createItemExtrasApi(client: NotrelixClient) {
         { idempotencyKey: key(), ...quiet },
       );
     },
+    /**
+     * Read from the item itself (`WorkManagement.BoardItems.Get`): whether it
+     * is archived and when it was completed. The producer keeps no record of who
+     * archived or completed it, so the name is empty and the page words the state
+     * without one.
+     */
     async getLifecycle(itemId: string): Promise<ItemLifecycleDto> {
-      const dto = await api.get<Partial<ItemLifecycleDto> | null>(
-        `/board-items/${itemId}/lifecycle`,
-      );
+      const dto = await api.get<{
+        isArchived?: boolean;
+        completedAt?: string | null;
+        updatedAt?: string | null;
+      } | null>(`/board-items/${itemId}`);
       return {
-        archived: dto?.archived ?? null,
-        completed: dto?.completed ?? null,
+        archived: dto?.isArchived
+          ? { at: dto.updatedAt ?? "", byName: "" }
+          : null,
+        completed: dto?.completedAt
+          ? { at: dto.completedAt, byName: "" }
+          : null,
       };
     },
+    /** An archived item comes back with `WorkManagement.BoardItems.Unarchive`. */
     async restoreItem(itemId: string): Promise<void> {
       await api.post<void>(
-        `/board-items/${itemId}/restore`,
+        `/board-items/${itemId}/unarchive`,
         {},
         { idempotencyKey: key(), ...quiet },
       );

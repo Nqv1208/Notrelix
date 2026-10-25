@@ -195,7 +195,7 @@ function projectCardDto(c: MockCardRecord, store: MockStore): CardDtoApi {
     fieldValues: Object.keys(fieldValues).length > 0 ? fieldValues : null,
     createdAt: c.createdAt,
     updatedAt: c.updatedAt ?? null,
-    ...{ name: c.title, groupId: c.listId },
+    ...{ name: c.title, groupId: c.listId, isArchived: c.isArchived === true },
     ...readValues,
   };
 }

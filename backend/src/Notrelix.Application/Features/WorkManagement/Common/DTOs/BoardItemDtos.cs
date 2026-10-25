@@ -56,7 +56,8 @@ public record BoardItemDto(
     DateTimeOffset? DueAt = null,
     DateTimeOffset? StartedAt = null,
     DateTimeOffset? CompletedAt = null,
-    BoardItemChildProgressDto? ChildProgress = null
+    BoardItemChildProgressDto? ChildProgress = null,
+    bool IsArchived = false
 );
 
 public record BoardItemMemberDto(Guid UserId, string Name, string? Avatar, DateTimeOffset AssignedAt);

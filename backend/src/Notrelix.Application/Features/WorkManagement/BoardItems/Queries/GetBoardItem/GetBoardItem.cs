@@ -99,7 +99,8 @@ public class GetBoardItemQueryHandler : IRequestHandler<GetBoardItemQuery, Resul
             card.DueAt,
             card.StartedAt,
             card.CompletedAt,
-            values.ChildProgress
+            values.ChildProgress,
+            card.IsArchived
         ));
     }
 }

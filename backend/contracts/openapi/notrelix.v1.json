@@ -21742,6 +21742,9 @@
           },
           "childProgress": {
             "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemChildProgressDto"
+          },
+          "isArchived": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
