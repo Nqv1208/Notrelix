@@ -5,6 +5,8 @@
  * Consumed by docs/web and docs/mobile.
  */
 
+export { convertBlockProperties } from "./types/block";
+
 // Types
 export type {
   ID,

@@ -11,6 +11,9 @@ import type {
   DocBlockView,
   DocChip,
   DocCommentView,
+  DocConvertView,
+  DocPickerPageView,
+  DocTrashView,
   DocHeaderView,
   DocOverlay,
   DocPageCallbacks,
@@ -23,6 +26,11 @@ import type {
   DocTocEntry,
   DocVersionView,
 } from "./doc-page-models";
+import {
+  DocConvertTaskDialogSurface,
+  DocPagePickerDialogSurface,
+  DocTrashDialogSurface,
+} from "./doc-dialogs-surface";
 import { DocShareDialogSurface } from "./doc-share-dialog-surface";
 import { DocSidePanelSurface } from "./doc-side-panel-surface";
 import {
@@ -61,6 +69,12 @@ export interface DocPageScreenSurfaceProps {
   readonly toolbar?: DocToolbarCurrent;
   readonly versions?: DocVersionsState;
   readonly share?: DocShareView;
+  /** The trash list the trash dialog shows. */
+  readonly trash?: DocTrashView;
+  /** The pages the page picker offers. */
+  readonly pickerPages?: readonly DocPickerPageView[];
+  /** The convert-to-task dialog's boards and groups. */
+  readonly convert?: DocConvertView;
   readonly readOnly?: boolean;
   readonly canComment?: boolean;
   readonly canFormat?: boolean;
@@ -122,6 +136,9 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
     toolbar = DEFAULT_TOOLBAR_CURRENT,
     versions,
     share,
+    trash,
+    pickerPages,
+    convert,
     readOnly = false,
     canComment = false,
     canFormat = false,
@@ -158,6 +175,11 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
     ? (versions.list.find((entry) => entry.id === versions.selectedId) ?? null)
     : null;
   const shareOpen = overlay.kind === "share" && share !== undefined;
+  const dialogOpen =
+    shareOpen ||
+    (overlay.kind === "trash" && trash !== undefined) ||
+    (overlay.kind === "pagePicker" && pickerPages !== undefined) ||
+    (overlay.kind === "convertTask" && convert !== undefined);
   const articleProps: DocArticleSurfaceProps = {
     copy,
     title: header.title,
@@ -176,8 +198,8 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
     <>
       <div
         className="flex h-full min-h-0 min-w-0 flex-1 flex-col bg-doc-page text-body leading-[1.45] text-foreground"
-        aria-hidden={shareOpen || undefined}
-        inert={shareOpen || undefined}
+        aria-hidden={dialogOpen || undefined}
+        inert={dialogOpen || undefined}
       >
         <DocPageBarSurface
           copy={copy}
@@ -239,6 +261,29 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
           )}
         </div>
       </div>
+      {overlay.kind === "trash" && trash ? (
+        <DocTrashDialogSurface
+          copy={copy}
+          trash={trash}
+          callbacks={callbacks}
+        />
+      ) : null}
+      {overlay.kind === "pagePicker" && pickerPages ? (
+        <DocPagePickerDialogSurface
+          copy={copy}
+          blockId={overlay.blockId}
+          pages={pickerPages}
+          callbacks={callbacks}
+        />
+      ) : null}
+      {overlay.kind === "convertTask" && convert ? (
+        <DocConvertTaskDialogSurface
+          copy={copy}
+          blockId={overlay.blockId}
+          convert={convert}
+          callbacks={callbacks}
+        />
+      ) : null}
       {shareOpen && share ? (
         <DocShareDialogSurface
           copy={copy}

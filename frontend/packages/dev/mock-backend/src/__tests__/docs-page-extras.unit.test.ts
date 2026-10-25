@@ -4,12 +4,24 @@ import { createPageExtrasApi } from "../../../../product/docs/state/src/index";
 import { defaultConfig } from "../config/mock-config";
 import { MockStore } from "../state/mock-store";
 import { INVOICE_DOC_ID } from "../state/mock-docs-invoice";
+import { mockIds } from "../state/mock-ids";
 import { createMockFetch } from "../transport/create-mock-fetch";
 
 const endpoints = {
-  pages: { detail: (id: string) => `/pages/${id}` },
+  pages: {
+    detail: (id: string) => `/pages/${id}`,
+    backlinks: (id: string) => `/pages/${id}/backlinks`,
+  },
   resourcePermissions: {
     list: (kind: string, id: string) => `/resources/${kind}/${id}/permissions`,
+  },
+  blocks: {
+    detail: (pageId: string, blockId: string) =>
+      `/pages/${pageId}/blocks/${blockId}`,
+  },
+  boardItems: {
+    create: (boardId: string) => `/boards/${boardId}/items`,
+    linkPage: (itemId: string) => `/board-items/${itemId}/link-page`,
   },
 } as never;
 
@@ -41,13 +53,21 @@ describe("Documents page extras in the mock world (CTR-GAP-DOCS-PAGE-EXT)", () =
     );
   });
 
-  it("lists what mentions the page: a document and the item with it attached", async () => {
-    const { extras } = setup();
+  it("lists the pages that name the page, found from page references", async () => {
+    const { store, extras } = setup();
     const links = await extras.getBacklinks(INVOICE_DOC_ID);
-    expect(links.docs.map((doc) => [doc.title, doc.spaceName])).toEqual([
-      ["Đặc tả triển khai ERP", "Công nghệ"],
+    expect(links.docs.map((doc) => doc.title)).toEqual([
+      "Đặc tả triển khai ERP",
     ]);
-    expect(links.tasks.map((task) => task.key)).toEqual(["ERP-149"]);
+    const other = store
+      .getPages(store.getPage(INVOICE_DOC_ID)!.workspaceId)
+      .find((page) => page.id !== INVOICE_DOC_ID)!;
+    store.createBlock(other.id, {
+      type: "page_reference",
+      properties: JSON.stringify({ linkedPageId: INVOICE_DOC_ID }),
+    });
+    const after = await extras.getBacklinks(INVOICE_DOC_ID);
+    expect(after.docs.map((doc) => doc.id)).toContain(other.id);
   });
 
   it("serves the permissions given on the page, creator first", async () => {
@@ -96,27 +116,65 @@ describe("Documents page extras in the mock world (CTR-GAP-DOCS-PAGE-EXT)", () =
     });
   });
 
-  it("turns a checklist line into a work item and links the line to it", async () => {
+  it("turns a checklist line into a work item in the chosen group and links the line to it", async () => {
     const { store, extras } = setup();
     const line = store
       .getPageBlocks(INVOICE_DOC_ID)
       .find((block) => block.properties.includes("Đào tạo nhóm Công nợ"))!;
-    const task = await extras.convertTodo(INVOICE_DOC_ID, line.id);
-    expect(task).toMatchObject({
-      title: "Đào tạo nhóm Công nợ về đối chiếu tự động",
-    });
-    expect(store.getCard(task.id)?.itemKey).toBe(task.key);
+    const list = store.getLists(mockIds.boards.erp)[0]!;
+    const task = await extras.convertTodo(
+      INVOICE_DOC_ID,
+      {
+        id: line.id,
+        pageId: INVOICE_DOC_ID,
+        type: "todo",
+        properties: JSON.parse(line.properties),
+        position: 0,
+        parentId: null,
+        createdById: "",
+        updatedById: "",
+        createdAt: "",
+        updatedAt: "",
+      },
+      { boardId: mockIds.boards.erp, groupId: list.id },
+    );
+    expect(task.title).toBe("Đào tạo nhóm Công nợ về đối chiếu tự động");
+    expect(store.getCard(task.id)?.title).toBe(task.title);
     expect(
       JSON.parse(
         store.getPageBlocks(INVOICE_DOC_ID).find((b) => b.id === line.id)!
           .properties,
       ).linkedTaskId,
     ).toBe(task.id);
-    // A line that is already a task cannot be converted twice.
-    await expect(
-      extras.convertTodo(INVOICE_DOC_ID, line.id),
-    ).rejects.toMatchObject({
-      kind: "validation",
+  });
+
+  it("retypes a block in place, converting its content, and keeps trashed pages out of reads", async () => {
+    const { store, client } = setup();
+    const line = store
+      .getPageBlocks(INVOICE_DOC_ID)
+      .find((block) => block.type === "todo")!;
+    await client.api.patch(`/pages/${INVOICE_DOC_ID}/blocks/${line.id}`, {
+      type: "callout",
     });
+    const after = store
+      .getPageBlocks(INVOICE_DOC_ID)
+      .find((b) => b.id === line.id)!;
+    expect(after.type).toBe("callout");
+    expect(JSON.parse(after.properties).checked).toBeUndefined();
+    expect(JSON.parse(after.properties).text).toBeTruthy();
+
+    await client.api.post(`/pages/${INVOICE_DOC_ID}/archive`, {});
+    await expect(
+      client.api.get(`/pages/${INVOICE_DOC_ID}`),
+    ).rejects.toMatchObject({
+      kind: "not_found",
+    });
+    await expect(
+      client.api.delete(`/pages/mock-doc-product-spec`),
+    ).rejects.toBeTruthy();
+    await client.api.post(`/pages/${INVOICE_DOC_ID}/restore`, {});
+    await expect(
+      client.api.get(`/pages/${INVOICE_DOC_ID}`),
+    ).resolves.toBeTruthy();
   });
 });

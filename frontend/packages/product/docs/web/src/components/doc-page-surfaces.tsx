@@ -7,4 +7,5 @@ export * from "./doc-popups-surface";
 export * from "./doc-side-panel-surface";
 export * from "./doc-versions-surface";
 export * from "./doc-share-dialog-surface";
+export * from "./doc-dialogs-surface";
 export * from "./doc-page-screen-surface";

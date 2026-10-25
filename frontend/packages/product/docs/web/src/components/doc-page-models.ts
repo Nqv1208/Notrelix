@@ -4,7 +4,7 @@
  * facts (department, people, referenced tasks) into these; the pure surfaces
  * only render them.
  */
-import type { BlockType, PageStatus } from "@notrelix/docs-core";
+import type { BlockType } from "@notrelix/docs-core";
 
 /** The department/identity colours of the design (one fill in every appearance). */
 export type DocTone = "blue" | "gold" | "coral" | "sage" | "crimson" | "violet";
@@ -107,6 +107,16 @@ export type DocBlockView =
       readonly text: string;
     })
   | (DocBlockBase & { readonly kind: "divider" })
+  /** A link to another page; `title` is null while none is chosen or when it cannot be read. */
+  | (DocBlockBase & {
+      readonly kind: "pageReference";
+      readonly pageId: string | null;
+      readonly title: string | null;
+      readonly icon: string | null;
+      readonly href?: string;
+      /** A page is named but the viewer cannot read it (never says whether it exists). */
+      readonly unavailable: boolean;
+    })
   | (DocBlockBase & {
       readonly kind: "liveTable";
       readonly boardName: string;
@@ -136,7 +146,6 @@ export interface DocChip {
 export interface DocHeaderView {
   readonly title: string;
   readonly crumbs: readonly string[];
-  readonly status: PageStatus;
   /** "Đỗ Khánh Linh sửa lúc 16:40 hôm qua" parts. */
   readonly editedBy: string | null;
   readonly editedAt: string | null;
@@ -208,12 +217,56 @@ export interface DocShareView {
   readonly candidates?: readonly DocPerson[];
 }
 
+/** A trashed page in the trash list. */
+export interface DocTrashPageView {
+  readonly id: string;
+  readonly title: string;
+  readonly icon: string | null;
+}
+
+export interface DocTrashView {
+  readonly pages: readonly DocTrashPageView[];
+  readonly loading: boolean;
+  /** A restore or delete failed. */
+  readonly failed: boolean;
+  /** The page a write is running on. */
+  readonly busyId: string | null;
+}
+
+/** A page the picker offers for a page reference. */
+export interface DocPickerPageView {
+  readonly id: string;
+  readonly title: string;
+  readonly icon: string | null;
+  /** The department it sits in. */
+  readonly detail: string | null;
+}
+
+/** The convert-to-task dialog: boards the viewer can add to and the chosen board's groups. */
+export interface DocConvertView {
+  readonly boards: readonly { readonly id: string; readonly title: string }[];
+  /** The groups of the chosen board; `null` while they load. */
+  readonly groups:
+    readonly { readonly id: string; readonly name: string }[] | null;
+  readonly boardId: string | null;
+  readonly lineText: string;
+  readonly busy: boolean;
+  readonly failed: boolean;
+}
+
 export type DocPanelTab = "links" | "toc" | "comments";
 
 export type DocOverlay =
   | { readonly kind: "none" }
   | { readonly kind: "fileMenu"; readonly downloadOpen?: boolean }
   | { readonly kind: "share" }
+  | { readonly kind: "trash" }
+  | { readonly kind: "pagePicker"; readonly blockId: string }
+  | {
+      readonly kind: "convertTask";
+      readonly blockId: string;
+      readonly boardId: string | null;
+    }
   | {
       readonly kind: "slash";
       readonly blockId: string;
@@ -246,7 +299,20 @@ export interface DocPageCallbacks {
   ) => void;
   readonly onBlockTriggerClose?: () => void;
   readonly onTodoToggle?: (blockId: string, checked: boolean) => void;
+  /** Opens the convert-to-task dialog for a checklist line. */
   readonly onTodoConvert?: (blockId: string) => void;
+  readonly onConvertBoard?: (boardId: string) => void;
+  readonly onConvertConfirm?: (
+    blockId: string,
+    target: { readonly boardId: string; readonly groupId: string },
+  ) => void;
+  /** Moves the open page to the trash. */
+  readonly onTrashPage?: () => void;
+  readonly onOpenTrash?: () => void;
+  readonly onRestorePage?: (pageId: string) => void;
+  readonly onDeletePage?: (pageId: string) => void;
+  readonly onOpenPagePicker?: (blockId: string) => void;
+  readonly onPickPage?: (blockId: string, pageId: string) => void;
   readonly onBlockDeleteEmpty?: (blockId: string) => void;
   readonly onSlashSelect?: (blockId: string, type: BlockType) => void;
   readonly onTocSelect?: (id: string) => void;

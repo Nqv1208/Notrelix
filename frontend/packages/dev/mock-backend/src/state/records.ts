@@ -116,6 +116,8 @@ export interface MockPageRecord {
   activeUserIds?: string[];
   /** Date the document takes effect; absent = none. */
   deadline?: string | null;
+  /** When the page moved to the trash; absent = not in the trash. */
+  trashedAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }

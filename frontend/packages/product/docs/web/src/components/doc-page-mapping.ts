@@ -100,6 +100,12 @@ export interface BlockMappingContext {
   readonly board: { readonly name: string; readonly href?: string } | null;
   /** Quotes of the comments to mark in text (comments tab only). */
   readonly quotes: readonly string[];
+  /** The pages the viewer can read, for page references; omitted reads none. */
+  readonly pages?: ReadonlyMap<
+    string,
+    { readonly title: string; readonly icon: string | null }
+  >;
+  readonly pageHref?: (pageId: string) => string;
 }
 
 /** Stored blocks to the view model the article renders. */
@@ -165,6 +171,21 @@ export function toBlockViews(
         return { id: block.id, kind: "code", text };
       case "divider":
         return { id: block.id, kind: "divider" };
+      case "page_reference": {
+        const pageId = props.linkedPageId ?? null;
+        const target = pageId ? context.pages?.get(pageId) : undefined;
+        return {
+          id: block.id,
+          kind: "pageReference",
+          pageId,
+          title: target?.title ?? null,
+          icon: target?.icon ?? null,
+          ...(pageId && target && context.pageHref
+            ? { href: context.pageHref(pageId) }
+            : {}),
+          unavailable: Boolean(pageId) && !target,
+        };
+      }
       case "board_reference":
         return {
           id: block.id,

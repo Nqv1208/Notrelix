@@ -14,11 +14,7 @@ export function mapPage(dto: PageDtoApi): Page {
     parentId: dto.parentId ?? null,
     position: 0,
     deadline: dto.deadline ?? null,
-    status: dto.isArchived
-      ? "archived"
-      : dto.publishedAt
-        ? "published"
-        : (dto.status ?? "draft"),
+    status: dto.isArchived ? "archived" : "active",
     isPublished: Boolean(dto.publishedAt),
     isFavorited: false,
     isShared: false,

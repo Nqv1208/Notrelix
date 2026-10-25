@@ -58,6 +58,7 @@ export { createHistoryApi } from "./api/history.api";
 export { createPageExtrasApi } from "./api/page-extras.api";
 export type {
   ConvertedTaskDto,
+  ConvertTodoTarget,
   PageBacklinksDto,
   PagePermissionLevel,
   PagePermissionsDto,

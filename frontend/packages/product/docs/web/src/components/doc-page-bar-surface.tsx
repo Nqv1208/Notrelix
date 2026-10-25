@@ -1,6 +1,5 @@
-import { Check, ChevronDown, CircleAlert, MoreHorizontal } from "lucide-react";
+import { Check, CircleAlert, MoreHorizontal } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
-import type { PageStatus } from "@notrelix/docs-core";
 import { fillDocCopy, type DocPageCopy } from "./doc-page.copy";
 import type {
   DocHeaderView,
@@ -20,20 +19,11 @@ export interface DocPageBarSurfaceProps {
   readonly callbacks?: DocPageCallbacks;
 }
 
-const STATUS_KEY: Readonly<
-  Record<PageStatus, keyof DocPageCopy["header"]["status"]>
-> = {
-  draft: "draft",
-  review: "review",
-  published: "published",
-  archived: "archived",
-};
-
 const BUTTON =
   "inline-flex h-8 items-center gap-1.5 rounded-[7px] border border-line-strong bg-doc-panel px-3 text-compact leading-[1.45] font-medium text-foreground outline-none hover:bg-state-hover-strong focus-visible:ring-2 focus-visible:ring-focus-ring aria-disabled:cursor-default aria-disabled:text-muted-foreground";
 
 /**
- * The document bar (Final-Docs `.dbar`): crumb, status, who edited and the
+ * The document bar (Final-Docs `.dbar`): crumb, who edited and the
  * save state on the left; viewers, Share, the review action and More on the
  * right. 49 px with its bottom border.
  */
@@ -84,20 +74,6 @@ export function DocPageBarSurface({
           );
         })}
       </nav>
-      <button
-        type="button"
-        aria-haspopup="listbox"
-        aria-label={`${h.status.label}: ${h.status[STATUS_KEY[header.status]]}`}
-        aria-disabled="true"
-        className="inline-flex h-6.5 cursor-default items-center gap-1.5 rounded-full bg-doc-chip-review px-[9px] text-crumb font-semibold text-foreground outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
-      >
-        <span
-          aria-hidden="true"
-          className="size-2 rounded-full bg-doc-dot-review"
-        />
-        {h.status[STATUS_KEY[header.status]]}
-        <ChevronDown aria-hidden="true" className="size-[13px] stroke-[1.8]" />
-      </button>
       {edited ? (
         <span className="text-crumb text-meta-foreground">{edited}</span>
       ) : null}

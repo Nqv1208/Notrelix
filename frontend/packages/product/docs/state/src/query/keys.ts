@@ -8,6 +8,8 @@ export const docsQueryKeys = {
     workspaceQueryKey(workspaceId, "documents", "list"),
   detail: (workspaceId: string, pageId: string) =>
     workspaceQueryKey(workspaceId, "documents", "detail", pageId),
+  trash: (workspaceId: string) =>
+    workspaceQueryKey(workspaceId, "documents", "trash"),
   breadcrumb: (workspaceId: string, pageId: string) =>
     workspaceQueryKey(workspaceId, "documents", "breadcrumb", pageId),
   blocks: (workspaceId: string, pageId: string) =>

@@ -4005,12 +4005,33 @@ export class MockStore {
   }
 
   getPages(workspaceId: string): MockPageRecord[] {
+    return this.pagesOf(workspaceId).filter((p) => !p.trashedAt);
+  }
+
+  /** The workspace's pages in the trash, newest edit first. */
+  getTrashedPages(workspaceId: string): MockPageRecord[] {
+    return this.pagesOf(workspaceId).filter((p) => Boolean(p.trashedAt));
+  }
+
+  private pagesOf(workspaceId: string): MockPageRecord[] {
     const ids = this.pageIdsByWorkspaceId.get(workspaceId);
     if (!ids) return [];
     return Array.from(ids)
       .map((id) => this.pagesById.get(id))
       .filter((p): p is MockPageRecord => p !== undefined)
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  }
+
+  /** Moves a page to the trash (`Documents.Pages.ArchivePage`) or brings it back. */
+  setPageTrashed(pageId: string, trashed: boolean): boolean {
+    const page = this.pagesById.get(pageId);
+    if (!page) return false;
+    this.pagesById.set(pageId, {
+      ...page,
+      trashedAt: trashed ? this.clock.isoNow() : null,
+      version: (page.version ?? 1) + 1,
+    });
+    return true;
   }
 
   getPage(id: string): MockPageRecord | undefined {

@@ -31,6 +31,10 @@ export interface PageApiEndpoints {
     history: (pageId: string) => string;
     search: (workspaceId: string) => string;
     moveToSpace: (pageId: string) => string;
+    archive: (pageId: string) => string;
+    restore: (pageId: string) => string;
+    trash: (workspaceId: string) => string;
+    backlinks: (pageId: string) => string;
   };
   resourcePermissions: {
     list: (resourceKind: string, resourceId: string) => string;
@@ -42,6 +46,11 @@ export interface PageApiEndpoints {
   };
   comments: {
     detail: (commentId: string) => string;
+  };
+  /** Work Management reads and writes a page turns a checklist line into. */
+  boardItems: {
+    create: (boardId: string) => string;
+    linkPage: (itemId: string) => string;
   };
 }
 
@@ -92,6 +101,25 @@ export function createPageApi(api: DocsApiClient, endpoints: PageApiEndpoints) {
       return this.getDetail(pageId);
     },
 
+    /** `Documents.Pages.ArchivePage`: moves the page to the trash. */
+    async archive(pageId: string): Promise<void> {
+      await api.post<void>(endpoints.pages.archive(pageId), {});
+    },
+
+    /** `Documents.Pages.RestorePage`: brings a trashed page back. */
+    async restore(pageId: string): Promise<void> {
+      await api.post<void>(endpoints.pages.restore(pageId), {});
+    },
+
+    /** `Documents.Pages.ListTrashedPages`: the pages the caller may restore or delete. */
+    async getTrash(workspaceId: string): Promise<Page[]> {
+      const pages = await api.get<PageDtoApi[]>(
+        endpoints.pages.trash(workspaceId),
+      );
+      return pages.map(mapPage);
+    },
+
+    /** `Documents.Pages.DeletePage`: removes a trashed page for good. */
     async delete(pageId: string): Promise<void> {
       await api.delete<void>(endpoints.pages.detail(pageId));
     },

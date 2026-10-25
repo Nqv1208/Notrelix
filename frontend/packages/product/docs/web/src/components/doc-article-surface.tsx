@@ -322,6 +322,64 @@ const CHIP_STATUS_CLASS = {
   done: "bg-doc-chip-done",
 } as const;
 
+/** A link to another page: its icon and name, or the way to choose one. */
+function DocPageReference({
+  block,
+  copy,
+  readOnly,
+  callbacks,
+}: {
+  block: Extract<DocBlockView, { kind: "pageReference" }>;
+  copy: DocPageCopy;
+  readOnly: boolean;
+  callbacks?: DocPageCallbacks;
+}) {
+  const r = copy.blocks.pageReference;
+  const chooser = !readOnly && callbacks?.onOpenPagePicker;
+  const choose = chooser ? () => chooser(block.id) : undefined;
+  return (
+    <div
+      data-block={block.id}
+      className="mb-3.5 flex items-center gap-2 rounded-[9px] border border-border px-3 py-2 text-nav leading-[1.45]"
+    >
+      {block.pageId === null ? (
+        <button
+          type="button"
+          disabled={!choose}
+          onClick={choose}
+          className="border-0 bg-transparent p-0 text-left font-medium text-brand-subtle-foreground outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:text-meta-foreground"
+        >
+          {r.choose}
+        </button>
+      ) : block.unavailable || block.title === null ? (
+        <span className="text-meta-foreground">{r.unavailable}</span>
+      ) : (
+        <>
+          <span aria-hidden="true" className="w-5 text-center">
+            {block.icon ?? ""}
+          </span>
+          <a
+            href={block.href}
+            aria-label={fillDocCopy(r.open, { title: block.title })}
+            className="min-w-0 flex-1 truncate font-medium text-foreground no-underline hover:underline"
+          >
+            {block.title}
+          </a>
+        </>
+      )}
+      {block.pageId !== null && choose ? (
+        <button
+          type="button"
+          onClick={choose}
+          className="ml-auto border-0 bg-transparent p-0 text-crumb font-medium text-brand-subtle-foreground outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+        >
+          {r.change}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 /** The embedded live task table (Final-Docs `.live` and its note). */
 function DocLiveTable({
   block,
@@ -789,6 +847,18 @@ export function DocArticleSurface({
       case "liveTable": {
         rendered.push(
           <DocLiveTable key={block.id} block={block} copy={copy} />,
+        );
+        break;
+      }
+      case "pageReference": {
+        rendered.push(
+          <DocPageReference
+            key={block.id}
+            block={block}
+            copy={copy}
+            readOnly={readOnly}
+            callbacks={callbacks}
+          />,
         );
         break;
       }

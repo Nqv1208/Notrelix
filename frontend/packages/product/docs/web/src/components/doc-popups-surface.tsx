@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   Code2,
+  FileText,
   List,
   ListChecks,
   ListOrdered,
@@ -51,6 +52,11 @@ export const SLASH_TYPES: ReadonlyArray<{
   { type: "heading_3", icon: Type, keywords: "tieu de heading h3" },
   { type: "quote", icon: Quote, keywords: "trich dan quote" },
   { type: "callout", icon: TextQuote, keywords: "ghi chu noi bat callout" },
+  {
+    type: "page_reference",
+    icon: FileText,
+    keywords: "lien ket trang page link",
+  },
   { type: "code", icon: Code2, keywords: "ma code" },
   { type: "divider", icon: Minus, keywords: "duong ke divider" },
 ];

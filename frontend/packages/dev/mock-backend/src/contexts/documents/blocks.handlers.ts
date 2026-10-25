@@ -20,15 +20,47 @@ const PRODUCER_TYPE: Record<string, string> = {
   divider: "Divider",
   code: "Code",
   image: "Image",
-  embed: "File",
   board_reference: "Board",
   table: "Table",
   callout: "Callout",
   page_reference: "PageReference",
 };
-const STORE_TYPE: Record<string, string> = Object.fromEntries(
-  Object.entries(PRODUCER_TYPE).map(([key, value]) => [value, key]),
-);
+const STORE_TYPE: Record<string, string> = {
+  ...Object.fromEntries(
+    Object.entries(PRODUCER_TYPE).map(([key, value]) => [value, key]),
+  ),
+  // The producer also reads the editor's own names.
+  ...Object.fromEntries(Object.keys(PRODUCER_TYPE).map((key) => [key, key])),
+};
+
+/** Types whose content is text; a retype between two of them keeps the text. */
+const TEXT_LIKE = new Set([
+  "paragraph",
+  "heading_1",
+  "heading_2",
+  "heading_3",
+  "bulleted_list",
+  "numbered_list",
+  "todo",
+  "toggle",
+  "quote",
+  "callout",
+  "code",
+]);
+
+/** The producer's `BlockContentConversion`: text carries over, anything else starts empty. */
+function convertContent(from: string, to: string, content: string): string {
+  if (!TEXT_LIKE.has(from) || !TEXT_LIKE.has(to)) return "{}";
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = JSON.parse(content || "{}") as Record<string, unknown>;
+  } catch {
+    return "{}";
+  }
+  if (to !== "todo") delete parsed.checked;
+  if (to !== "code") delete parsed.language;
+  return JSON.stringify(parsed);
+}
 
 export function toBlockDto(b: any): BlockDtoApi {
   return {
@@ -134,16 +166,23 @@ export const blocksOperations = [
         .getPageBlocks(params.pageId)
         .find((b) => b.id === params.blockId);
       if (!existing) return notFound("Block not found");
-      const type = body?.type;
-      if (type && STORE_TYPE[type] !== existing.type) {
+      const type = body?.type ? STORE_TYPE[body.type] : undefined;
+      if (body?.type && !type) {
         return {
           status: 400,
           body: {
             title: "Validation failed",
             errorCode: "validation.failed",
-            errors: { _errors: ["A block keeps its type"] },
+            errors: { type: [`Unknown block type '${body.type}'.`] },
           },
         };
+      }
+      // A retype keeps the block's id, position and parent.
+      if (type && type !== existing.type) {
+        store.updateBlock(params.blockId, {
+          type,
+          properties: convertContent(existing.type, type, existing.properties),
+        });
       }
       if (body?.properties != null) {
         store.updateBlock(params.blockId, { properties: body.properties });

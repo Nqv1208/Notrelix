@@ -264,6 +264,14 @@ Potential types include paragraph, heading, todo, code, image, quote/callout, di
 
 Exact supported types are executable evidence.
 
+Current editor behavior on top of the stored types:
+
+- A block keeps its id when its type changes. Text carries over between text-like types (paragraph, headings, lists, task line, toggle, quote, callout, code); a change to or from any other type starts empty.
+- A page reference block names another page by `linkedPageId`. The reader sees the page's name only when the caller can read that page; otherwise it shows "page unavailable" and never says whether the page exists.
+- A page names the pages that reference it through a derived backlinks read, already filtered by what the caller may see; the editor lists them with their department when the caller can see it.
+- Turning a checklist line into a task is an editor orchestration of existing writes: pick a board the caller may add items to and one of its groups, create the item, link the page to it, then mark the line with `linkedTaskId`. Each write is separate; a failure after the item exists leaves the line unlinked.
+- Moving a page to the trash removes it from the tree and from page reads. A trashed page can be restored or deleted permanently, and only a trashed page can be deleted permanently.
+
 # 21. DCT-007 — Block content validates against Block Type
 
 Each Block Type defines as applicable:

@@ -247,4 +247,30 @@ describe("version compare", () => {
     );
     expect(linked[0]).toMatchObject({ kind: "todo", linkedTaskId: "t-9" });
   });
+
+  it("maps a page reference to the page it names, or to unavailable when the viewer cannot read it", () => {
+    const context = {
+      resolveTask: () => ({ id: "x", restricted: true as const }),
+      board: null,
+      quotes: [],
+      pages: new Map([["p-2", { title: "Chính sách", icon: "📄" }]]),
+      pageHref: (id: string) => `/docs/${id}`,
+    };
+    const views = toBlockViews(
+      [
+        block("r1", "page_reference", 1000, { linkedPageId: "p-2" }),
+        block("r2", "page_reference", 2000, { linkedPageId: "p-hidden" }),
+        block("r3", "page_reference", 3000, {}),
+      ],
+      context,
+    );
+    expect(views[0]).toMatchObject({
+      kind: "pageReference",
+      title: "Chính sách",
+      href: "/docs/p-2",
+      unavailable: false,
+    });
+    expect(views[1]).toMatchObject({ title: null, unavailable: true });
+    expect(views[2]).toMatchObject({ pageId: null, unavailable: false });
+  });
 });

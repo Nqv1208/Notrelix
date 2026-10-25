@@ -6,7 +6,10 @@
  *   pages.detail     — GET /pages/:id
  *   pages.create     — POST /workspaces/:workspaceId/pages
  *   pages.update     — PATCH /pages/:id
- *   pages.delete     — DELETE /pages/:id
+ *   pages.archive    — POST /pages/:id/archive (to the trash)
+ *   pages.restore    — POST /pages/:id/restore
+ *   pages.trash      — GET /workspaces/:workspaceId/pages/trash
+ *   pages.delete     — DELETE /pages/:id (a trashed page only)
  *   pages.moveToSpace — POST /pages/:pageId/move-to-space (Documents.Pages.MoveToSpace)
  *   pages.breadcrumb — GET /pages/:id/breadcrumb
  *   pages.blocks     — GET /pages/:id/blocks
@@ -130,6 +133,27 @@ export const pagesOperations = [
     },
   }),
 
+  // ─── GET /workspaces/:workspaceId/pages/trash ─────────────────────────────
+
+  defineMockOperation<{ workspaceId: string }, never, PageDtoApi[]>({
+    id: "pages.trash",
+    contract: {
+      kind: "openapi",
+      operationId: "Documents.Pages.ListTrashedPages",
+    },
+    method: "GET",
+    route: "/workspaces/:workspaceId/pages/trash",
+    async handle({ params, store }) {
+      if (!store.isCurrentMemberOf(params.workspaceId))
+        return notFound("Workspace not found");
+      return ok<PageDtoApi[]>(
+        store
+          .getTrashedPages(params.workspaceId)
+          .map((page) => mapPageDto(page, store)),
+      );
+    },
+  }),
+
   // ─── GET /pages/:id ───────────────────────────────────────────────────────
 
   defineMockOperation<{ id: string }, never, PageDtoApi>({
@@ -139,7 +163,8 @@ export const pagesOperations = [
     route: "/pages/:id",
     async handle({ params, store }) {
       const page = store.getPage(params.id);
-      if (!page) return notFound("Page not found");
+      // A page in the trash is reachable only to archive-level writes.
+      if (!page || page.trashedAt) return notFound("Page not found");
       return ok<PageDtoApi>(mapPageDto(page, store));
     },
   }),
@@ -217,6 +242,38 @@ export const pagesOperations = [
     },
   }),
 
+  // ─── POST /pages/:id/archive and /restore ─────────────────────────────────
+
+  defineMockOperation<{ id: string }, never, void>({
+    id: "pages.archive",
+    contract: { kind: "openapi", operationId: "Documents.Pages.ArchivePage" },
+    method: "POST",
+    route: "/pages/:id/archive",
+    async handle({ params, store }) {
+      const page = store.getPage(params.id);
+      if (!page || page.trashedAt) return notFound("Page not found");
+      if (store.getCurrentMemberRole(page.workspaceId) === "guest")
+        return forbidden();
+      store.setPageTrashed(params.id, true);
+      return noContent();
+    },
+  }),
+
+  defineMockOperation<{ id: string }, never, void>({
+    id: "pages.restore",
+    contract: { kind: "openapi", operationId: "Documents.Pages.RestorePage" },
+    method: "POST",
+    route: "/pages/:id/restore",
+    async handle({ params, store }) {
+      const page = store.getPage(params.id);
+      if (!page || !page.trashedAt) return notFound("Page not found");
+      if (store.getCurrentMemberRole(page.workspaceId) === "guest")
+        return forbidden();
+      store.setPageTrashed(params.id, false);
+      return noContent();
+    },
+  }),
+
   // ─── DELETE /pages/:id ────────────────────────────────────────────────────
 
   defineMockOperation<{ id: string }, never, void>({
@@ -225,8 +282,23 @@ export const pagesOperations = [
     method: "DELETE",
     route: "/pages/:id",
     async handle({ params, store }) {
-      const deleted = store.deletePage(params.id);
-      if (!deleted) return notFound("Page not found");
+      const page = store.getPage(params.id);
+      if (!page) return notFound("Page not found");
+      if (store.getCurrentMemberRole(page.workspaceId) === "guest")
+        return forbidden();
+      // The producer's Documents_Page_NotInTrash rule: only a trashed page is deleted.
+      if (!page.trashedAt)
+        return {
+          status: 400,
+          body: {
+            type: "https://docs.notrelix.com/problems/business_rule-violation",
+            title: "Business rule violation",
+            status: 400,
+            detail: "A page must be in the trash before it is deleted.",
+            errorCode: "business_rule.violation",
+          },
+        };
+      store.deletePage(params.id);
       return ok<void>(undefined);
     },
   }),

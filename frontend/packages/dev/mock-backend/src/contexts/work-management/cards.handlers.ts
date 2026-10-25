@@ -295,6 +295,24 @@ export const cardsOperations = [
     },
   }),
 
+  // ─── POST /board-items/:itemId/link-page ──────────────────────────────────
+
+  defineMockOperation<{ itemId: string }, { pageId?: string }, void>({
+    id: "wm.boardItems.linkPage",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardItems.LinkPage",
+    } as any,
+    method: "POST",
+    route: "/board-items/:itemId/link-page",
+    async handle({ params, body, store }) {
+      if (!store.getCard(params.itemId)) return notFound("Item not found");
+      const page = body?.pageId ? store.getPage(body.pageId) : undefined;
+      if (!page || page.trashedAt) return notFound("Page not found");
+      return ok<void>(undefined);
+    },
+  }),
+
   // ─── PATCH /board-items/:id ─────────────────────────────────────────────────────
 
   defineMockOperation<

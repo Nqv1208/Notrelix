@@ -61,7 +61,7 @@ function levelLabel(copy: DocPageCopy, level: DocShareMember["level"]): string {
 }
 
 /** Keeps Tab inside the dialog and closes it on Escape. */
-function useModalFocus(
+export function useModalFocus(
   dialog: React.RefObject<HTMLDivElement | null>,
   onClose: (() => void) | undefined,
 ) {
