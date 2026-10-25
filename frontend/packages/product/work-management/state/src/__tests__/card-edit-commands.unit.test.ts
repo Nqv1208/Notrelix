@@ -31,6 +31,7 @@ const baseCard = {
   boardId: "b-1",
   workspaceId: "ws-1",
   title: "Việc cũ",
+  version: 3,
   position: 1,
   status: "",
   priority: "low" as const,
@@ -168,6 +169,11 @@ describe("sheet edits reach the item detail the sheet reads", () => {
     await vi.waitFor(() => expect(updateCard).toHaveBeenCalled());
     expect(queryClient.getQueryData<CardDetail>(detailKey)!.title).toBe(
       "Việc mới",
+    );
+    expect(updateCard).toHaveBeenCalledWith(
+      "i-1",
+      { title: "Việc mới" },
+      expect.objectContaining({ expectedVersion: 3 }),
     );
     release();
     await pending;

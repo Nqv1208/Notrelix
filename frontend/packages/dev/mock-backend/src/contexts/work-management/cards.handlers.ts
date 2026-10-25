@@ -16,7 +16,7 @@
  *   cards.attachments.uploadFile — POST /board-items/:id/attachments/files (Collaboration.Attachments.UploadFile)
  *   cards.attachments.content    — GET /board-items/:id/attachments/:attachmentId/content (Collaboration.Attachments.GetContent)
  *   cards.moveToBoard       — POST /board-items/:id/move-to-board (gap)
- *   cards.fieldValues       — PATCH /board-items/:id/field-values
+ *   cards.fieldValues       — PATCH /board-items/:id/values/:fieldId
  *   cards.status            — PATCH /board-items/:id/status
  *   cards.attachments       — GET /board-items/:id/attachments
  *   cards.activity          — GET /board-items/:id/activity
@@ -490,7 +490,7 @@ export const cardsOperations = [
       operationId: "WorkManagement.BoardItems.UpdateFieldValue",
     } as any,
     method: "PATCH",
-    route: "/board-items/:id/field-values/:fieldId",
+    route: "/board-items/:id/values/:fieldId",
     async handle({ params, body, store }) {
       const data = body as { value: unknown };
       const updated = store.updateFieldValue(

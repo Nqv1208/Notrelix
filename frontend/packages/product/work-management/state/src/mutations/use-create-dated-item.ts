@@ -10,7 +10,7 @@ import {
 } from "@notrelix/work-management-core";
 import { addOptimisticCard } from "../cache/optimistic-card";
 import { useWorkManagementServices } from "../services";
-import { cardCommandId, runCardCommand } from "./card-command";
+import { runCardCommand } from "./card-command";
 import { applyCardPatch } from "./use-update-card";
 
 export interface CreateDatedItemVariables {
@@ -44,7 +44,7 @@ export function runCreateDatedItem(
   cards: DatedItemWriter,
   variables: CreateDatedItemVariables,
 ): Promise<void> {
-  const optimisticId = `optimistic-${cardCommandId("create-item", variables.boardId)}`;
+  const optimisticId = `optimistic-${crypto.randomUUID()}`;
   return runCardCommand({
     queryClient,
     workspaceId: variables.workspaceId,

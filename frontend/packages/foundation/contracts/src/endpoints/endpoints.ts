@@ -209,7 +209,7 @@ export const endpoints = {
     status: (itemId: string) => `/board-items/${itemId}/status`,
     fieldValues: (itemId: string) => `/board-items/${itemId}/field-values`,
     fieldValue: (itemId: string, fieldId: string) =>
-      `/board-items/${itemId}/field-values/${fieldId}`,
+      `/board-items/${itemId}/values/${fieldId}`,
     comments: (itemId: string) => `/board-items/${itemId}/comments`,
     attachments: (itemId: string) => `/board-items/${itemId}/attachments`,
     attachmentFiles: (itemId: string) =>
