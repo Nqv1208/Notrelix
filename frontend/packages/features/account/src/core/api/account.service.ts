@@ -227,7 +227,7 @@ export function describeDevice(userAgent: string | null | undefined): {
   const ua = userAgent ?? "";
   const kind: AccountDeviceKind = /iPad|Tablet/i.test(ua)
     ? "tablet"
-    : /iPhone|Android.+Mobile|Mobile/i.test(ua)
+    : /iPhone|Mobile/i.test(ua)
       ? "phone"
       : "desktop";
   const browser = /Edg\//.test(ua)
