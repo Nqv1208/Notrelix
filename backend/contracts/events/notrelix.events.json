@@ -3163,6 +3163,11 @@
           "nullable": false
         },
         {
+          "name": "excerpt",
+          "type": "string",
+          "nullable": true
+        },
+        {
           "name": "eventId",
           "type": "Guid",
           "nullable": false

@@ -1,4 +1,5 @@
 using Notrelix.Application.Events.Collaboration;
+using Notrelix.Application.Features.Collaboration.Notifications;
 using Notrelix.Domain.Collaboration.Preferences;
 using Notrelix.Infrastructure.Data.Abstractions;
 using Notrelix.Infrastructure.Data.Notifications;
@@ -54,6 +55,16 @@ public sealed class MentionCreatedNotificationConsumer : IConsumer<MentionCreate
             return;
         }
 
+        if (await _context.NotificationThreadMutes.AsNoTracking().AnyAsync(
+                m => m.UserId == msg.MentionedUserId && m.ResourceKind == msg.TargetType && m.ResourceId == msg.TargetId,
+                context.CancellationToken))
+        {
+            _logger.LogInformation(
+                "Mention {MentionId} -> user {UserId} not notified: the user muted the thread in workspace {WorkspaceId}",
+                msg.MentionId, msg.MentionedUserId, msg.WorkspaceId);
+            return;
+        }
+
         var notificationItem = NotificationItemRecord.Create(
             accountId: msg.AccountId.Value,
             workspaceId: msg.WorkspaceId.Value,
@@ -68,7 +79,7 @@ public sealed class MentionCreatedNotificationConsumer : IConsumer<MentionCreate
             subjectId: msg.MentionId,
             resourceType: msg.TargetType,
             resourceId: msg.TargetId,
-            body: $"You were mentioned in a {msg.TargetType.ToLowerInvariant()}.",
+            body: NotificationExcerpt.From(msg.Excerpt) ?? $"You were mentioned in a {msg.TargetType.ToLowerInvariant()}.",
             deduplicationKey: deduplicationKey);
 
         _context.NotificationItems.Add(notificationItem);

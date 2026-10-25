@@ -1,5 +1,6 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Collaboration.Abstractions;
+using Notrelix.Application.Features.Collaboration.Notifications;
 
 namespace Notrelix.Application.Features.Collaboration.Comments.Commands.CreateComment;
 
@@ -60,6 +61,7 @@ public class CreateCommentCommandHandler : IRequestHandler<CreateCommentCommand,
 
         _context.Comments.Add(comment);
 
+        var excerpt = NotificationExcerpt.From(request.ContentMd);
         foreach (var mentionedUserId in DistinctMentionedUsers(request.MentionedUserIds))
         {
             var mention = Mention.Create(
@@ -69,7 +71,8 @@ public class CreateCommentCommandHandler : IRequestHandler<CreateCommentCommand,
                 MentionType.User,
                 mentionedUserId,
                 userId,
-                now);
+                now,
+                excerpt);
             _context.PageMentions.Add(mention);
         }
 

@@ -14,7 +14,8 @@ public sealed record MentionCreatedIntegrationEvent(
     Guid CorrelationId,
     Guid? ActorUserId = null,
     Guid? CausationId = null,
-    DateTimeOffset OccurredAt = default
+    DateTimeOffset OccurredAt = default,
+    string? Excerpt = null
 ) : IntegrationEvent(
     eventId: EventId,
     messageName: "mention.created",

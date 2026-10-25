@@ -327,6 +327,39 @@ public sealed class MentionCreatedNotificationRuntimeChainIntegrationTests : IAs
             .CountAsync(n => n.SourceEventId == outboxEventId)).Should().Be(1);
     }
 
+    [Fact]
+    public async Task MentionCreated_CarriesAPlainTextExcerptOfTheComment()
+    {
+        var graph = await SeedMentionStackAsync();
+
+        var outboxEventId = await RunMentionChainAsync(graph);
+
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
+        var item = await probe.Set<NotificationItemRecord>().IgnoreQueryFilters()
+            .SingleAsync(n => n.SourceEventId == outboxEventId);
+        item.Body.Should().Be(graph.Content, "the notification stores the plain text that caused it");
+        item.Body!.Length.Should().BeLessThanOrEqualTo(200);
+    }
+
+    [Fact]
+    public async Task MentionCreated_WithTheThreadMutedByTheMentionedPerson_CreatesNoNotificationForThem()
+    {
+        var graph = await SeedMentionStackAsync();
+        await using (var seed = _db.CreateOwnerContext(SystemTenant()))
+        {
+            seed.NotificationThreadMutes.Add(NotificationThreadMuteRecord.Create(
+                graph.AccountId, graph.WorkspaceId, graph.MentionedUserId, "work-management.board-item", graph.ItemId, DateTimeOffset.UtcNow));
+            await seed.SaveChangesAsync();
+        }
+
+        var outboxEventId = await RunMentionChainAsync(graph);
+
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
+        (await probe.Set<NotificationItemRecord>().IgnoreQueryFilters()
+            .CountAsync(n => n.SourceEventId == outboxEventId)).Should().Be(0,
+            "the mentioned person muted the thread");
+    }
+
     private async Task SeedPreferenceAsync(MentionGraph graph, Guid userId, bool inApp, Guid? workspaceId = null)
     {
         await using var seed = _db.CreateOwnerContext(SystemTenant());

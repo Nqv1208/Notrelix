@@ -1,5 +1,9 @@
 using Notrelix.Application.Features.Collaboration.Notifications.Commands.MarkInboxEntryRead;
+using Notrelix.Application.Features.Collaboration.Notifications.Commands.MarkInboxEntryDone;
 using Notrelix.Application.Features.Collaboration.Notifications.Commands.MarkWorkspaceInboxRead;
+using Notrelix.Application.Features.Collaboration.Notifications.Commands.MuteInboxThread;
+using Notrelix.Application.Features.Collaboration.Notifications.Commands.ReopenInboxEntry;
+using Notrelix.Application.Features.Collaboration.Notifications.Commands.SnoozeInboxEntry;
 using Notrelix.Application.Features.Collaboration.Public.Notifications;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetWorkspaceInbox;
 using Notrelix.Testing.Application.Fakes;
@@ -38,7 +42,7 @@ public class WorkspaceInboxTests : WorkManagementHandlerTestBase
         SetupBoardItems(readable, hidden);
         var actorId = Guid.CreateVersion7();
         _inbox
-            .Setup(i => i.ListAsync(TestWorkspaceId, TestUserId, false, null, null, GetWorkspaceInboxQuery.ScanLimit, It.IsAny<CancellationToken>()))
+            .Setup(i => i.ListAsync(TestWorkspaceId, TestUserId, InboxView.Inbox, null, null, GetWorkspaceInboxQuery.ScanLimit, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<InboxNotification>
             {
                 Note(actorId, readable.Id),
@@ -63,7 +67,7 @@ public class WorkspaceInboxTests : WorkManagementHandlerTestBase
     {
         var notes = Enumerable.Range(0, 5).Select(_ => Note(null, null, kind: null)).ToList();
         _inbox
-            .Setup(i => i.ListAsync(TestWorkspaceId, TestUserId, true, null, null, GetWorkspaceInboxQuery.ScanLimit, It.IsAny<CancellationToken>()))
+            .Setup(i => i.ListAsync(TestWorkspaceId, TestUserId, InboxView.Unread, null, null, GetWorkspaceInboxQuery.ScanLimit, It.IsAny<CancellationToken>()))
             .ReturnsAsync(notes);
         var handler = Handler();
 
@@ -73,7 +77,7 @@ public class WorkspaceInboxTests : WorkManagementHandlerTestBase
         first.Data.NextCursor.Should().NotBeNullOrEmpty();
 
         _inbox
-            .Setup(i => i.ListAsync(TestWorkspaceId, TestUserId, true, It.Is<DateTimeOffset?>(d => d == notes[1].CreatedAt), notes[1].NotificationId, GetWorkspaceInboxQuery.ScanLimit, It.IsAny<CancellationToken>()))
+            .Setup(i => i.ListAsync(TestWorkspaceId, TestUserId, InboxView.Unread, It.Is<DateTimeOffset?>(d => d == notes[1].CreatedAt), notes[1].NotificationId, GetWorkspaceInboxQuery.ScanLimit, It.IsAny<CancellationToken>()))
             .ReturnsAsync(notes.Skip(2).ToList());
         var second = await handler.Handle(new GetWorkspaceInboxQuery(TestWorkspaceId, true, first.Data.NextCursor, 2), CancellationToken.None);
 
@@ -86,7 +90,7 @@ public class WorkspaceInboxTests : WorkManagementHandlerTestBase
         var result = await Handler().Handle(new GetWorkspaceInboxQuery(TestWorkspaceId, false, "not-a-cursor", null), CancellationToken.None);
 
         result.Succeeded.Should().BeFalse();
-        _inbox.Verify(i => i.ListAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<DateTimeOffset?>(), It.IsAny<Guid?>(), It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+        _inbox.Verify(i => i.ListAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<InboxView>(), It.IsAny<DateTimeOffset?>(), It.IsAny<Guid?>(), It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -105,5 +109,87 @@ public class WorkspaceInboxTests : WorkManagementHandlerTestBase
         one.Succeeded.Should().BeTrue();
         _inbox.Verify(i => i.MarkReadAsync(TestWorkspaceId, TestUserId, notificationId, TestNow, It.IsAny<CancellationToken>()), Times.Once);
         all.Data!.Marked.Should().Be(3);
+    }
+
+    [Fact]
+    public async Task Inbox_StateDone_ListsTheDoneView_AndCarriesTheNeedsReplyMuteAndSnoozeFacts()
+    {
+        var until = TestNow.AddHours(3);
+        _inbox
+            .Setup(i => i.ListAsync(TestWorkspaceId, TestUserId, InboxView.Done, null, null, GetWorkspaceInboxQuery.ScanLimit, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<InboxNotification>
+            {
+                Note(null, null, kind: null) with { NeedsReply = true, Muted = true, SnoozedUntil = until },
+            });
+
+        var result = await Handler().Handle(new GetWorkspaceInboxQuery(TestWorkspaceId, false, null, null, "done"), CancellationToken.None);
+
+        var entry = result.Data!.Items.Should().ContainSingle().Subject;
+        entry.NeedsReply.Should().BeTrue();
+        entry.Muted.Should().BeTrue();
+        entry.SnoozedUntil.Should().Be(until);
+    }
+
+    [Fact]
+    public async Task Inbox_StateSnoozed_ListsTheSnoozedView()
+    {
+        _inbox
+            .Setup(i => i.ListAsync(TestWorkspaceId, TestUserId, InboxView.Snoozed, null, null, GetWorkspaceInboxQuery.ScanLimit, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<InboxNotification>());
+
+        var result = await Handler().Handle(new GetWorkspaceInboxQuery(TestWorkspaceId, false, null, null, "snoozed"), CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        _inbox.VerifyAll();
+    }
+
+    [Fact]
+    public void InboxQuery_RejectsAnUnknownState()
+    {
+        var validator = new GetWorkspaceInboxQueryValidator();
+
+        validator.Validate(new GetWorkspaceInboxQuery(TestWorkspaceId, false, null, null, "archived")).IsValid.Should().BeFalse();
+        validator.Validate(new GetWorkspaceInboxQuery(TestWorkspaceId, false, null, null, "Done")).IsValid.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Snooze_RefusesATimeInThePastOrBeyondAYear_AndOtherwiseHidesTheEntryUntilThen()
+    {
+        var notificationId = Guid.CreateVersion7();
+        var clock = new Mock<IDateTimeProvider>();
+        clock.Setup(c => c.UtcNow).Returns(TestNow);
+        var handler = new SnoozeInboxEntryCommandHandler(_inbox.Object, RequestContextMock.Object, clock.Object);
+
+        var past = await handler.Handle(new SnoozeInboxEntryCommand(TestWorkspaceId, notificationId, TestNow.AddMinutes(-1)), CancellationToken.None);
+        var tooFar = await handler.Handle(new SnoozeInboxEntryCommand(TestWorkspaceId, notificationId, TestNow.AddDays(400)), CancellationToken.None);
+        var until = TestNow.AddHours(4);
+        var ok = await handler.Handle(new SnoozeInboxEntryCommand(TestWorkspaceId, notificationId, until), CancellationToken.None);
+
+        past.Succeeded.Should().BeFalse();
+        tooFar.Succeeded.Should().BeFalse();
+        ok.Succeeded.Should().BeTrue();
+        _inbox.Verify(i => i.SnoozeAsync(TestWorkspaceId, TestUserId, notificationId, until, TestNow, It.IsAny<CancellationToken>()), Times.Once);
+        _inbox.Verify(i => i.SnoozeAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<DateTimeOffset>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task DoneReopenAndMute_ActOnlyForTheCaller()
+    {
+        var notificationId = Guid.CreateVersion7();
+        var clock = new Mock<IDateTimeProvider>();
+        clock.Setup(c => c.UtcNow).Returns(TestNow);
+
+        await new MarkInboxEntryDoneCommandHandler(_inbox.Object, RequestContextMock.Object, clock.Object)
+            .Handle(new MarkInboxEntryDoneCommand(TestWorkspaceId, notificationId), CancellationToken.None);
+        await new ReopenInboxEntryCommandHandler(_inbox.Object, RequestContextMock.Object, clock.Object)
+            .Handle(new ReopenInboxEntryCommand(TestWorkspaceId, notificationId), CancellationToken.None);
+        var mute = new MuteInboxThreadCommandHandler(_inbox.Object, RequestContextMock.Object, clock.Object);
+        await mute.Handle(new MuteInboxThreadCommand(TestWorkspaceId, notificationId, true), CancellationToken.None);
+        await mute.Handle(new MuteInboxThreadCommand(TestWorkspaceId, notificationId, false), CancellationToken.None);
+
+        _inbox.Verify(i => i.MarkDoneAsync(TestWorkspaceId, TestUserId, notificationId, TestNow, It.IsAny<CancellationToken>()), Times.Once);
+        _inbox.Verify(i => i.ReopenAsync(TestWorkspaceId, TestUserId, notificationId, TestNow, It.IsAny<CancellationToken>()), Times.Once);
+        _inbox.Verify(i => i.MuteThreadAsync(TestWorkspaceId, TestUserId, notificationId, TestNow, It.IsAny<CancellationToken>()), Times.Once);
+        _inbox.Verify(i => i.UnmuteThreadAsync(TestWorkspaceId, TestUserId, notificationId, It.IsAny<CancellationToken>()), Times.Once);
     }
 }

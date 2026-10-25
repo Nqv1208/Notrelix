@@ -286,6 +286,7 @@ public partial class ApplicationDbContext
     public DbSet<NotificationRecipientRecord> NotificationRecipients => Set<NotificationRecipientRecord>();
     public DbSet<NotificationPreferenceSet> NotificationPreferenceSets => Set<NotificationPreferenceSet>();
     public DbSet<NotificationCounterRecord> NotificationCounters => Set<NotificationCounterRecord>();
+    public DbSet<NotificationThreadMuteRecord> NotificationThreadMutes => Set<NotificationThreadMuteRecord>();
 
     // Collaboration read states
     public DbSet<ResourceReadState> ResourceReadStates => Set<ResourceReadState>();

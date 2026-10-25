@@ -409,6 +409,38 @@ public sealed class RlsRuntimeEnforcementTests : IAsyncLifetime
         setsSeenByStranger.Should().BeEmpty("a person never sees another person's preferences");
     }
 
+    /// <summary>
+    /// A thread mute is the muting member's own choice: under the application role a person sees only their
+    /// own mutes, and a co-member of the same workspace sees none.
+    /// </summary>
+    [Fact]
+    public async Task NotificationThreadMutes_AreVisibleOnlyToTheMutingMember()
+    {
+        var userB = Guid.Parse("00000000-0000-0000-0000-00000000BB06");
+        var thread = Guid.Parse("A0000000-0000-0000-0000-00000000EE02");
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using (var context = CreateContext(tenant))
+        {
+            foreach (var user in new[] { UserId, userB })
+            {
+                context.NotificationThreadMutes.Add(NotificationThreadMuteRecord.Create(
+                    AccountA, WsA1, user, "work-management.board-item", thread, FixedTime));
+            }
+
+            await context.SaveChangesAsync();
+        }
+
+        var seenByA = await QueryScalarsAsAppRoleAsync(
+            "SELECT user_id::text FROM notifications.notification_thread_mutes", userId: UserId);
+        var seenByStranger = await QueryScalarsAsAppRoleAsync(
+            "SELECT user_id::text FROM notifications.notification_thread_mutes",
+            userId: Guid.Parse("00000000-0000-0000-0000-00000000BB07"));
+
+        seenByA.Should().BeEquivalentTo([UserId.ToString()]);
+        seenByStranger.Should().BeEmpty("a person never sees another person's mutes");
+    }
+
     private static readonly Guid NotificationSourceEventId =
         Guid.Parse("A0000000-0000-0000-0000-00000000EE01");
 

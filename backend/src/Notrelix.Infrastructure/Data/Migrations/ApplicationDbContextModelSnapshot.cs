@@ -10578,6 +10578,10 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("dismissed_at");
 
+                    b.Property<DateTimeOffset?>("DoneAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("done_at");
+
                     b.Property<Guid>("NotificationId")
                         .HasColumnType("uuid")
                         .HasColumnName("notification_id");
@@ -10599,9 +10603,17 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("recipient_user_id");
 
+                    b.Property<DateTimeOffset?>("RepliedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("replied_at");
+
                     b.Property<DateTimeOffset?>("SeenAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("seen_at");
+
+                    b.Property<DateTimeOffset?>("SnoozedUntil")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("snoozed_until");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -10639,6 +10651,51 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasFilter("\"workspace_id\" IS NOT NULL");
 
                     b.ToTable("notification_recipients", "notifications");
+                });
+
+            modelBuilder.Entity("Notrelix.Infrastructure.Data.Notifications.NotificationThreadMuteRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("ResourceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("resource_id");
+
+                    b.Property<string>("ResourceKind")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("character varying(160)")
+                        .HasColumnName("resource_type");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_notification_thread_mutes");
+
+                    b.HasIndex("ResourceKind", "ResourceId")
+                        .HasDatabaseName("ix_notification_thread_mutes_thread");
+
+                    b.HasIndex("UserId", "ResourceKind", "ResourceId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_notification_thread_mutes_member_thread");
+
+                    b.ToTable("notification_thread_mutes", "notifications");
                 });
 
             modelBuilder.Entity("Notrelix.Infrastructure.Data.Ops.Entities.ExportJobRecord", b =>

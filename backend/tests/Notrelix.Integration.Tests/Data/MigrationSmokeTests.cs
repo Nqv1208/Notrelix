@@ -28,7 +28,7 @@ public class MigrationSmokeTests
               AND table_name <> '__EFMigrationsHistory'";
 
         var count = (long)(await cmd.ExecuteScalarAsync())!;
-        count.Should().Be(157); // +1: notifications.notification_preference_sets (notification preference matrix); +2: workspace.onboarding_drafts, workspace.getting_started_dismissals; +1: governance.resource_access_changes (board sharing log); +1: identity.user_security_activity; +2: workspace.recent_resources, workspace.pinned_resources (WX-BE-001/002); +2: workspace.space_members, workspace.space_paths (ADR-009)
+        count.Should().Be(158); // +1: notifications.notification_thread_mutes (inbox mute); +1: notifications.notification_preference_sets (notification preference matrix); +2: workspace.onboarding_drafts, workspace.getting_started_dismissals; +1: governance.resource_access_changes (board sharing log); +1: identity.user_security_activity; +2: workspace.recent_resources, workspace.pinned_resources (WX-BE-001/002); +2: workspace.space_members, workspace.space_paths (ADR-009)
     }
 
     [Fact]

@@ -17,6 +17,15 @@ public sealed class NotificationRecipientRecord
     public DateTimeOffset? ReadAt { get; private set; }
     public DateTimeOffset? ArchivedAt { get; private set; }
     public DateTimeOffset? DismissedAt { get; private set; }
+
+    /// <summary>When the person finished with the entry; a done entry leaves the default inbox list.</summary>
+    public DateTimeOffset? DoneAt { get; private set; }
+
+    /// <summary>The entry is hidden until this time, then returns unread.</summary>
+    public DateTimeOffset? SnoozedUntil { get; private set; }
+
+    /// <summary>When the person replied on the thread of a mention, which ends "needs your reply".</summary>
+    public DateTimeOffset? RepliedAt { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
     public DateTimeOffset? UpdatedAt { get; private set; }
 

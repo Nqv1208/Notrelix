@@ -203,7 +203,7 @@ public sealed class DerivedScopePolicyTests : IAsyncLifetime
                 await scope.ExecuteNonQueryAsync();
             }
 
-            var result = await act(new PostgresNotificationInbox(db));
+            var result = await act(new PostgresNotificationInbox(db, FakeDateTimeProvider.WithFixedTime(DateTimeOffset.UtcNow)));
             await tx.CommitAsync();
             return result;
         }

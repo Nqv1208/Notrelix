@@ -1,5 +1,5 @@
-using System.Text.RegularExpressions;
 using Notrelix.Application.Features.Collaboration.Abstractions;
+using Notrelix.Application.Features.Collaboration.Notifications;
 using Notrelix.Application.Features.Collaboration.Public.Watchers;
 using Notrelix.Domain.Collaboration.Preferences;
 using Notrelix.Domain.Collaboration.Watchers;
@@ -16,10 +16,7 @@ namespace Notrelix.Infrastructure.Messaging.Consumers.Collaboration;
 public sealed class ItemFollowerNotifier
 {
     public const string BoardItemKind = "work-management.board-item";
-    public const int ExcerptLength = 200;
-
-    private static readonly Regex Markup = new("<[^>]+>", RegexOptions.Compiled);
-    private static readonly Regex Whitespace = new(@"\s+", RegexOptions.Compiled);
+    public const int ExcerptLength = NotificationExcerpt.Length;
 
     private readonly ICollaborationDbContext _collaboration;
     private readonly INotificationDbContext _notifications;
@@ -98,6 +95,14 @@ public sealed class ItemFollowerNotifier
                 .ToListAsync(ct))
             .ToHashSet(StringComparer.Ordinal);
 
+        // A person who muted the thread hears nothing new from it.
+        var mutedBy = (await _notifications.NotificationThreadMutes
+                .AsNoTracking()
+                .Where(m => m.ResourceKind == BoardItemKind && m.ResourceId == itemId && recipients.Contains(m.UserId))
+                .Select(m => m.UserId)
+                .ToListAsync(ct))
+            .ToHashSet();
+
         var preferenceType = NotificationTypes.FromProducedType(producedType)!;
         var sets = await _notifications.NotificationPreferenceSets
             .AsNoTracking()
@@ -109,7 +114,7 @@ public sealed class ItemFollowerNotifier
         foreach (var userId in recipients.Distinct())
         {
             var key = prefix + userId;
-            if (existing.Contains(key)) continue;
+            if (existing.Contains(key) || mutedBy.Contains(userId)) continue;
 
             var set = sets.FirstOrDefault(s => s.UserId == userId);
             var enabled = set?.IsEnabled(preferenceType, NotificationChannels.InApp)
@@ -145,12 +150,29 @@ public sealed class ItemFollowerNotifier
         if (added) await _notifications.SaveChangesAsync(ct);
     }
 
-    /// <summary>The text of a comment without markup, on one line, at most <see cref="ExcerptLength"/> characters.</summary>
-    public static string? Excerpt(string? text)
+    /// <summary>
+    /// A person who comments on a thread has replied to the mentions they hold there: those notifications no
+    /// longer need their reply. Idempotent; only the author's own unanswered mention entries of that thread change.
+    /// </summary>
+    public async Task MarkMentionsRepliedAsync(
+        Guid workspaceId, string threadKind, Guid threadId, Guid authorUserId, DateTimeOffset now, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(text)) return null;
-        var plain = Whitespace.Replace(Markup.Replace(text, " "), " ").Trim();
-        if (plain.Length == 0) return null;
-        return plain.Length <= ExcerptLength ? plain : plain[..(ExcerptLength - 1)] + "…";
+        var mentionIds = _notifications.NotificationItems
+            .Where(n => n.WorkspaceId == workspaceId
+                        && n.NotificationType == NotificationTypes.MentionProducedType
+                        && n.ResourceKind == threadKind
+                        && n.ResourceId == threadId);
+
+        await _notifications.NotificationRecipients
+            .Where(r => r.WorkspaceId == workspaceId
+                        && r.RecipientUserId == authorUserId
+                        && r.RepliedAt == null
+                        && mentionIds.Any(n => n.Id == r.NotificationId))
+            .ExecuteUpdateAsync(calls => calls
+                .SetProperty(r => r.RepliedAt, (DateTimeOffset?)now)
+                .SetProperty(r => r.UpdatedAt, (DateTimeOffset?)now), ct);
     }
+
+    /// <summary>The text of a comment as a plain one-line excerpt of at most <see cref="ExcerptLength"/> characters.</summary>
+    public static string? Excerpt(string? text) => NotificationExcerpt.From(text);
 }

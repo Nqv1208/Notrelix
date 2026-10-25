@@ -285,6 +285,7 @@ collaboration.comment-restored|1|Notrelix.Domain.Collaboration.Comments.Events.C
 collaboration.comment-restored|1|Notrelix.Domain.Collaboration.Comments.Events.CommentRestoredDomainEvent|Workspace|RestoredBy|System.Guid|False
 collaboration.comment-updated|1|Notrelix.Domain.Collaboration.Comments.Events.CommentUpdatedDomainEvent|Workspace|CommentId|System.Guid|False
 collaboration.comment-updated|1|Notrelix.Domain.Collaboration.Comments.Events.CommentUpdatedDomainEvent|Workspace|UpdatedBy|System.Guid|False
+collaboration.mention-created|1|Notrelix.Domain.Collaboration.Mentions.Events.MentionCreatedDomainEvent|Workspace|Excerpt|System.String|True
 collaboration.mention-created|1|Notrelix.Domain.Collaboration.Mentions.Events.MentionCreatedDomainEvent|Workspace|MentionId|System.Guid|False
 collaboration.mention-created|1|Notrelix.Domain.Collaboration.Mentions.Events.MentionCreatedDomainEvent|Workspace|MentionedByUserId|System.Guid|False
 collaboration.mention-created|1|Notrelix.Domain.Collaboration.Mentions.Events.MentionCreatedDomainEvent|Workspace|MentionedId|System.Guid|False
