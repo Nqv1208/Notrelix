@@ -1,5 +1,6 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Automation.Abstractions;
+using Notrelix.Application.Features.Automation.Ports.WorkManagement;
 using Notrelix.Application.Features.Automation.Rules.Services;
 using Notrelix.Application.Features.Billing.Public.Capacity;
 using Notrelix.Application.Features.Billing.Public.Facts;
@@ -13,7 +14,9 @@ public record CreateAutomationRuleCommand(
     string Name,
     string TriggerEvent,
     string ActionType,
-    string Configuration) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IRequireAdditionalPermission, IIdempotentRequest
+    string Configuration,
+    Guid? BoardId = null,
+    string? TriggerConfiguration = null) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IRequireAdditionalPermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageWorkspaceSettings;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("automation.rule"), WorkspaceId, WorkspaceId);
@@ -36,6 +39,25 @@ public class CreateAutomationRuleCommandHandler : IRequestHandler<CreateAutomati
     private readonly IBillingCapabilityFacts _billingCapabilityFacts;
     private readonly IBillingCapacityActions _billingCapacityActions;
     private readonly AutomationExecutorAuthority _executorAuthority;
+    private readonly IWorkActionPort _workActions;
+
+    private static bool TryReadTriggerGroup(string? configuration, out Guid groupId)
+    {
+        groupId = Guid.Empty;
+        if (string.IsNullOrWhiteSpace(configuration)) return false;
+        try
+        {
+            using var document = System.Text.Json.JsonDocument.Parse(configuration);
+            return document.RootElement.ValueKind == System.Text.Json.JsonValueKind.Object
+                && document.RootElement.TryGetProperty("groupId", out var group)
+                && group.ValueKind == System.Text.Json.JsonValueKind.String
+                && Guid.TryParse(group.GetString(), out groupId);
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return false;
+        }
+    }
 
     public CreateAutomationRuleCommandHandler(
         IAutomationDbContext context,
@@ -43,8 +65,10 @@ public class CreateAutomationRuleCommandHandler : IRequestHandler<CreateAutomati
         IDateTimeProvider dateTimeProvider,
         IBillingCapabilityFacts billingCapabilityFacts,
         IBillingCapacityActions billingCapacityActions,
-        AutomationExecutorAuthority executorAuthority)
+        AutomationExecutorAuthority executorAuthority,
+        IWorkActionPort workActions)
     {
+        _workActions = workActions;
         _executorAuthority = executorAuthority;
         _context = context;
         _requestContext = requestContext;
@@ -68,7 +92,11 @@ public class CreateAutomationRuleCommandHandler : IRequestHandler<CreateAutomati
             return Result<Guid>.Failure(
                 "The automation rule limit for this workspace's plan has been reached.");
 
-        var trigger = AutomationTriggerDefinition.Create(request.TriggerEvent, request.Configuration);
+        // AU-2: a board-scoped rule has its own trigger filter; a rule without a board keeps
+        // the single configuration both parts read.
+        var trigger = AutomationTriggerDefinition.Create(
+            request.TriggerEvent,
+            request.BoardId is null ? request.Configuration : request.TriggerConfiguration);
         var action = AutomationActionDefinition.Create(request.ActionType, request.Configuration);
 
         // AUT-028: a Webhook rule's path is allow-listed when the rule is created,
@@ -88,7 +116,19 @@ public class CreateAutomationRuleCommandHandler : IRequestHandler<CreateAutomati
             request.WorkspaceId,
             _requestContext.UserId,
             action,
-            cancellationToken);
+            cancellationToken,
+            request.BoardId);
+
+        // The trigger filter's group must be on the rule's board too.
+        if (request.BoardId is { } boardId
+            && TryReadTriggerGroup(request.TriggerConfiguration, out var triggerGroupId))
+        {
+            await _workActions.EnsureBoardGroupAsync(
+                boardId,
+                triggerGroupId,
+                new AutomationPrincipal(_requestContext.RequireAccountId(), _requestContext.UserId, request.WorkspaceId),
+                cancellationToken);
+        }
 
         var rule = AutomationRule.Create(
             _requestContext.RequireAccountId(),
@@ -96,7 +136,8 @@ public class CreateAutomationRuleCommandHandler : IRequestHandler<CreateAutomati
             request.Name,
             config,
             _requestContext.UserId,
-            _dateTimeProvider.UtcNow);
+            _dateTimeProvider.UtcNow,
+            request.BoardId);
 
         _context.AutomationRules.Add(rule);
 

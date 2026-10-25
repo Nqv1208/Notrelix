@@ -43,7 +43,8 @@ public class CreateAutomationRuleBillingGateTests
             clockMock.Object,
             _billingMock.Object,
             _billingCapacityMock.Object,
-            new AutomationExecutorAuthority(new Mock<IWorkActionPort>().Object));
+            new AutomationExecutorAuthority(new Mock<IWorkActionPort>().Object),
+            new Mock<IWorkActionPort>().Object);
     }
 
     private static CreateAutomationRuleCommand Command() =>

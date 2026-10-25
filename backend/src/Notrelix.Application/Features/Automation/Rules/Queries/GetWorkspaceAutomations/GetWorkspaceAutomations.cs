@@ -49,7 +49,9 @@ public class GetWorkspaceAutomationsQueryHandler : IRequestHandler<GetWorkspaceA
                 item.CreatedAt.DateTime,
                 item.UpdatedAt.HasValue ? item.UpdatedAt.Value.DateTime : null,
                 item.ExecutorUserId,
-                item.DisabledReason))
+                item.DisabledReason,
+                item.BoardId,
+                item.Configuration.Trigger.Configuration))
             .ToList();
 
         return Result<IReadOnlyList<AutomationRuleDto>>.Success(dtos);

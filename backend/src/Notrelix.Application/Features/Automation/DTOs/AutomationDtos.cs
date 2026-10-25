@@ -12,7 +12,9 @@ public record AutomationRuleDto(
     DateTime CreatedAt,
     DateTime? UpdatedAt,
     Guid? ExecutorUserId = null,
-    string? DisabledReason = null);
+    string? DisabledReason = null,
+    Guid? BoardId = null,
+    string? TriggerConfiguration = null);
 
 public record AutomationExecutionDto(
     Guid Id,

@@ -127,6 +127,49 @@ public sealed class WorkItemActions : IWorkItemActions
         }
     }
 
+    public async Task EnsureBoardGroupAsync(
+        WorkItemActionIdentity execution,
+        Guid boardId,
+        Guid? groupId,
+        CancellationToken cancellationToken)
+    {
+        await _authorizer.AuthorizeBoardEditAsync(execution, boardId, cancellationToken);
+
+        var boardInWorkspace = await _context.Boards
+            .AsNoTracking()
+            .AnyAsync(b => b.Id == boardId && b.WorkspaceId == execution.WorkspaceId, cancellationToken);
+        if (!boardInWorkspace)
+        {
+            throw new NotFoundException("Board", boardId);
+        }
+
+        if (groupId is { } group)
+        {
+            var groupOnBoard = await _context.BoardGroups
+                .AsNoTracking()
+                .AnyAsync(g => g.Id == group && g.BoardId == boardId, cancellationToken);
+            if (!groupOnBoard)
+            {
+                throw new NotFoundException("BoardGroup", group);
+            }
+        }
+    }
+
+    public async Task EnsureItemOnBoardAsync(
+        Guid workspaceId,
+        Guid itemId,
+        Guid boardId,
+        CancellationToken cancellationToken)
+    {
+        var onBoard = await _context.BoardItems
+            .AsNoTracking()
+            .AnyAsync(i => i.Id == itemId && i.BoardId == boardId && i.WorkspaceId == workspaceId, cancellationToken);
+        if (!onBoard)
+        {
+            throw new NotFoundException("BoardItem", itemId);
+        }
+    }
+
     private static string Sha256(string value) =>
         Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value)));
 }

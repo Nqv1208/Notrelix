@@ -80,7 +80,19 @@ public sealed class AutomationMoveItemUseCase
             return await startAndFail("Automation rule is not active.");
         }
 
-        if (!AutomationMoveItemConfiguration.TryParse(rule.Configuration.Action.Configuration, out var itemId, out var targetGroupId))
+        // AU-1: the action moves the item the trigger fact was about; a rule made with a
+        // fixed item (before rules were board-scoped) keeps moving that one.
+        Guid itemId;
+        Guid targetGroupId;
+        if (message.ItemId is { } triggeringItemId && triggeringItemId != Guid.Empty)
+        {
+            itemId = triggeringItemId;
+            if (!AutomationMoveItemConfiguration.TryParseTarget(rule.Configuration.Action.Configuration, out targetGroupId))
+            {
+                return await startAndFail("MoveItem action configuration is invalid.");
+            }
+        }
+        else if (!AutomationMoveItemConfiguration.TryParse(rule.Configuration.Action.Configuration, out itemId, out targetGroupId))
         {
             return await startAndFail("MoveItem action configuration is invalid.");
         }
@@ -126,6 +138,21 @@ public sealed class AutomationMoveItemUseCase
             // stay retryable like the move itself.
             try
             {
+                // AU-2: a board-scoped rule only ever moves items of its own board.
+                if (rule.BoardId is { } ruleBoardId)
+                {
+                    try
+                    {
+                        await _workActions.EnsureItemOnBoardAsync(itemId, ruleBoardId, principal, cancellationToken);
+                    }
+                    catch (NotFoundException)
+                    {
+                        execution.Fail("The triggering item is not on the rule's board.", _clock.UtcNow);
+                        await _context.SaveChangesAsync(cancellationToken);
+                        return true;
+                    }
+                }
+
                 await _workActions.EnsureMoveItemAllowedAsync(itemId, targetGroupId, principal, cancellationToken);
             }
             catch (ForbiddenException)

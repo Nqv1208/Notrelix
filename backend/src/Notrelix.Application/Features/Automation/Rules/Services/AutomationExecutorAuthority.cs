@@ -27,9 +27,37 @@ public sealed class AutomationExecutorAuthority
         Guid workspaceId,
         Guid executorUserId,
         AutomationActionDefinition action,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        Guid? boardId = null)
     {
-        if (!string.Equals(action.Type, AutomationMoveItemConfiguration.ActionType, StringComparison.OrdinalIgnoreCase))
+        var principal = new AutomationPrincipal(accountId, executorUserId, workspaceId);
+        var isMoveItem = string.Equals(
+            action.Type, AutomationMoveItemConfiguration.ActionType, StringComparison.OrdinalIgnoreCase);
+
+        // AU-2: a board-scoped rule's board must be in the workspace and editable by its
+        // executor whatever the action is; nothing about the board is trusted from the request.
+        if (boardId is { } board)
+        {
+            Guid? targetGroup = null;
+            if (isMoveItem)
+            {
+                // AU-1: the board-scoped shape moves the triggering item; a fixed item is gone.
+                if (AutomationMoveItemConfiguration.TryParse(action.Configuration, out _, out _)
+                    || !AutomationMoveItemConfiguration.TryParseTarget(action.Configuration, out var group))
+                {
+                    throw new DomainBusinessRuleException(
+                        AutomationRuleCodes.Automation_ActionValidator_InvalidMoveItemJson,
+                        "A board rule's MoveItem action takes a target group only, not a fixed item.");
+                }
+
+                targetGroup = group;
+            }
+
+            await _workActions.EnsureBoardGroupAsync(board, targetGroup, principal, cancellationToken);
+            return;
+        }
+
+        if (!isMoveItem)
         {
             return;
         }
@@ -41,10 +69,6 @@ public sealed class AutomationExecutorAuthority
                 "MoveItem action configuration is invalid.");
         }
 
-        await _workActions.EnsureMoveItemAllowedAsync(
-            itemId,
-            targetGroupId,
-            new AutomationPrincipal(accountId, executorUserId, workspaceId),
-            cancellationToken);
+        await _workActions.EnsureMoveItemAllowedAsync(itemId, targetGroupId, principal, cancellationToken);
     }
 }

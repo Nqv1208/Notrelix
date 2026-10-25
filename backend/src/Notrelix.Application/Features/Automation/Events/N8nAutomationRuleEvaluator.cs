@@ -72,6 +72,18 @@ public sealed class N8nAutomationRuleEvaluator
                 continue;
             }
 
+            // AU-2: a board-scoped rule triggers only for facts of its board, and only when
+            // the fact passes the rule's trigger filter (the group the item moved to).
+            if (rule.BoardId is { } ruleBoardId && trigger.BoardId != ruleBoardId)
+            {
+                continue;
+            }
+
+            if (!PassesTriggerFilter(rule, trigger))
+            {
+                continue;
+            }
+
             // AUT-020: a rule with no bound executor (it predates the binding and
             // had no creator on record) can never run. Fail closed and stop it at
             // its first evaluation, visibly, instead of running as someone else.
@@ -125,7 +137,9 @@ public sealed class N8nAutomationRuleEvaluator
                         trigger.ActorUserId,
                         _clock.UtcNow,
                         trigger.CorrelationId,
-                        trigger.CausationId));
+                        trigger.CausationId,
+                        // AU-1: a board-scoped rule moves the item the fact was about.
+                        rule.BoardId is null ? null : trigger.ItemId));
                     break;
 
                 case "Webhook":
@@ -156,6 +170,35 @@ public sealed class N8nAutomationRuleEvaluator
                     break;
             }
         }
+    }
+
+    /// <summary>
+    /// AU-2: the trigger's runtime filter. <c>{"groupId":"…"}</c> matches when the item moved
+    /// into that group; a trigger without a filter matches every fact of its type.
+    /// </summary>
+    private static bool PassesTriggerFilter(AutomationRule rule, AutomationTriggerContext trigger)
+    {
+        var configuration = rule.Configuration.Trigger.Configuration;
+        if (string.IsNullOrWhiteSpace(configuration)) return true;
+        try
+        {
+            using var document = System.Text.Json.JsonDocument.Parse(configuration);
+            var root = document.RootElement;
+            if (root.ValueKind != System.Text.Json.JsonValueKind.Object) return true;
+
+            return Matches(root, "groupId", trigger.GroupId)
+                && Matches(root, "fromGroupId", trigger.FromGroupId);
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return true;
+        }
+
+        static bool Matches(System.Text.Json.JsonElement root, string name, Guid? actual) =>
+            !root.TryGetProperty(name, out var wanted)
+            || wanted.ValueKind != System.Text.Json.JsonValueKind.String
+            || !Guid.TryParse(wanted.GetString(), out var wantedId)
+            || actual == wantedId;
     }
 
     /// <summary>The chain of Automation executions that caused the trigger fact.</summary>
@@ -315,7 +358,11 @@ public sealed class N8nAutomationRuleEvaluator
             integrationEvent.ActorUserId,
             integrationEvent.CorrelationId,
             integrationEvent.CausationId,
-            integrationEvent.OccurredAt), cancellationToken);
+            integrationEvent.OccurredAt,
+            integrationEvent.BoardId,
+            integrationEvent.ItemId,
+            integrationEvent.NewGroupId,
+            integrationEvent.OldGroupId), cancellationToken);
     }
 
     public Task ExecuteAsync(
@@ -336,6 +383,8 @@ public sealed class N8nAutomationRuleEvaluator
             integrationEvent.ActorUserId,
             integrationEvent.CorrelationId,
             integrationEvent.CausationId,
-            integrationEvent.OccurredAt), cancellationToken);
+            integrationEvent.OccurredAt,
+            integrationEvent.BoardId,
+            integrationEvent.ItemId), cancellationToken);
     }
 }

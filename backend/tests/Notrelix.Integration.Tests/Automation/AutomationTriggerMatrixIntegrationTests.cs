@@ -62,7 +62,8 @@ public sealed class AutomationTriggerMatrixIntegrationTests : IAsyncLifetime
         Guid AccountId,
         Guid WorkspaceId,
         Guid RuleId,
-        Guid ItemId);
+        Guid ItemId,
+        Guid GroupId);
 
     private async Task<TriggerGraph> SeedRuleAsync(
         string triggerType,
@@ -103,7 +104,7 @@ public sealed class AutomationTriggerMatrixIntegrationTests : IAsyncLifetime
         seed.AutomationRules.Add(rule);
         await seed.SaveChangesAsync();
 
-        return new TriggerGraph(account.Id, workspace.Id, rule.Id, item.Id);
+        return new TriggerGraph(account.Id, workspace.Id, rule.Id, item.Id, group.Id);
     }
 
     /// <summary>
@@ -219,7 +220,7 @@ public sealed class AutomationTriggerMatrixIntegrationTests : IAsyncLifetime
 
         var trigger = new AutomationTriggerContext(
             graph.AccountId, graph.WorkspaceId, "ItemMovedToGroup",
-            sourceEventId, Guid.NewGuid(), Guid.NewGuid(), null, Now);
+            sourceEventId, Guid.NewGuid(), Guid.NewGuid(), null, Now, null, null, graph.GroupId);
 
         (await EvaluateAsync(graph, trigger)).Should().Be(1);
         (await CountExecutionsForRuleAsync(graph.RuleId)).Should().Be(1);

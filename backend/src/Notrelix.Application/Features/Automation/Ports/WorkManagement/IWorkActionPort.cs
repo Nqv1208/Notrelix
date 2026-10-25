@@ -42,6 +42,24 @@ public interface IWorkActionPort
         Guid targetGroupId,
         AutomationPrincipal automationPrincipal,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// AU-2: proves the rule's board is in the principal's workspace and its executor may
+    /// edit it, and that the group (when given) is on that board. Raises the target-owned
+    /// Forbidden/NotFound errors.
+    /// </summary>
+    Task EnsureBoardGroupAsync(
+        Guid boardId,
+        Guid? groupId,
+        AutomationPrincipal automationPrincipal,
+        CancellationToken cancellationToken);
+
+    /// <summary>The triggering item is on the rule's board (NotFound otherwise).</summary>
+    Task EnsureItemOnBoardAsync(
+        Guid itemId,
+        Guid boardId,
+        AutomationPrincipal automationPrincipal,
+        CancellationToken cancellationToken);
 }
 
 /// <summary>
