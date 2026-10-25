@@ -54,7 +54,7 @@ public class AutomationMultiActionTests
         context.AutomationRules.Add(rule);
         var execution = AutomationExecution.Create(
             AccountId, WorkspaceId, rule.Id, Guid.NewGuid(), T0, null, 0,
-            snapshot ? rule.Version : null,
+            snapshot ? rule.ConfigurationVersion : null,
             snapshot ? AutomationRuleSnapshot.From(rule).Serialize() : null);
         context.AutomationExecutions.Add(execution);
         await context.SaveChangesAsync();
@@ -160,10 +160,10 @@ public class AutomationMultiActionTests
     {
         using var context = NewContext();
         var (rule, execution) = await StageAsync(context, Config(SetStatus));
-        var oldVersion = rule.Version;
+        var oldVersion = rule.ConfigurationVersion;
         rule.Revise("renamed", Config(Assign), Executor, T0.AddMinutes(1));
         await context.SaveChangesAsync();
-        rule.Version.Should().BeGreaterThan(oldVersion);
+        rule.ConfigurationVersion.Should().Be(oldVersion + 1);
         var port = new Mock<IWorkActionPort>();
 
         await UseCase(context, port).ExecuteAsync(Message(execution, rule), default);
@@ -186,6 +186,32 @@ public class AutomationMultiActionTests
 
         complete.Should().BeTrue();
         (await context.AutomationExecutions.SingleAsync()).Status.Should().Be(AutomationExecutionStatus.Succeeded);
+    }
+
+    [Fact]
+    public async Task DeletingARule_RemovesItFromTheListsAndReleasesItsPlanSlotUnderItsOwnIdentity()
+    {
+        using var context = NewContext();
+        var (rule, _) = await StageAsync(context, Config(SetStatus));
+        var capacity = new Mock<Notrelix.Application.Features.Billing.Public.Capacity.IBillingCapacityActions>();
+        Notrelix.Application.Features.Billing.Public.Capacity.ReleaseCapacityRequest? released = null;
+        capacity.Setup(c => c.ReleaseAsync(It.IsAny<Notrelix.Application.Features.Billing.Public.Capacity.ReleaseCapacityRequest>(), It.IsAny<CancellationToken>()))
+            .Callback<Notrelix.Application.Features.Billing.Public.Capacity.ReleaseCapacityRequest, CancellationToken>((r, _) => released = r)
+            .ReturnsAsync(new Notrelix.Application.Features.Billing.Public.Capacity.ReleaseCapacityResult(false, 1));
+        var requestContext = new Mock<Notrelix.Application.Common.Context.ICurrentRequestContext>();
+        requestContext.SetupGet(r => r.UserId).Returns(Executor);
+        var handler = new Notrelix.Application.Features.Automation.Rules.Commands.DeleteAutomationRule.DeleteAutomationRuleCommandHandler(
+            context, requestContext.Object, new Clock(T0.AddMinutes(1)), capacity.Object);
+
+        await handler.Handle(new Notrelix.Application.Features.Automation.Rules.Commands.DeleteAutomationRule.DeleteAutomationRuleCommand(rule.Id, BoardId), default);
+
+        await context.SaveChangesAsync();
+        rule.IsRemoved.Should().BeTrue();
+        released!.Operation.LogicalOperationId.Should().NotBe(rule.Id);
+        (await new Notrelix.Application.Features.Automation.Rules.Queries.GetWorkspaceAutomations.GetWorkspaceAutomationsQueryHandler(
+            context, Mock.Of<Notrelix.Application.Common.Context.ICurrentUser>())
+            .Handle(new Notrelix.Application.Features.Automation.Rules.Queries.GetWorkspaceAutomations.GetWorkspaceAutomationsQuery(WorkspaceId, BoardId), default))
+            .Data.Should().BeEmpty();
     }
 
     [Fact]
