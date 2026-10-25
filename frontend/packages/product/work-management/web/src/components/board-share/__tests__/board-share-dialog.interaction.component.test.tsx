@@ -200,4 +200,25 @@ describe("BoardShareDialogSurface", () => {
     expect(screen.getByText(copy.people.empty)).toBeTruthy();
     expect(screen.getByText(copy.link.publicOn)).toBeTruthy();
   });
+
+  it("hides the permission list from a reader the producer discloses no entries to and says how many can open the Board", () => {
+    const scenario = shareDefaultScenario();
+    renderShare({
+      ...scenario,
+      view: {
+        ...scenario.view,
+        rows: [],
+        canManage: false,
+        hiddenCounts: { people: 24, guests: 2 },
+      },
+    });
+    const dialog = screen.getByRole("dialog");
+    expect(
+      within(dialog).getByText(
+        "24 người và 2 khách mở được board này. Chỉ thành viên và người quản lý board thấy là ai.",
+      ),
+    ).toBeTruthy();
+    expect(within(dialog).queryByText(/Quyền riêng trên board này/)).toBeNull();
+    expect(within(dialog).queryByText("Nguyễn Thu Hà")).toBeNull();
+  });
 });

@@ -149,6 +149,20 @@ export const endpoints = {
     label: (boardId: string, labelId: string) =>
       `/boards/${boardId}/labels/${labelId}`,
     moveToSpace: (boardId: string) => `/boards/${boardId}/move-to-space`,
+    // WorkManagement.Boards.GetSharing / MakePrivate and the Board member writes.
+    sharing: (boardId: string) => `/boards/${boardId}/sharing`,
+    sharingPrivate: (boardId: string) => `/boards/${boardId}/sharing/private`,
+    member: (boardId: string, userId: string) =>
+      `/boards/${boardId}/members/${userId}`,
+    memberRole: (boardId: string, userId: string) =>
+      `/boards/${boardId}/members/${userId}/role`,
+  },
+  // Governance.ResourcePermissions.*: explicit grants on a resource kind.
+  resourcePermissions: {
+    list: (resourceType: string, resourceId: string) =>
+      `/resources/${resourceType}/${resourceId}/permissions`,
+    detail: (resourceType: string, resourceId: string, permissionId: string) =>
+      `/resources/${resourceType}/${resourceId}/permissions/${permissionId}`,
   },
 
   checklists: {

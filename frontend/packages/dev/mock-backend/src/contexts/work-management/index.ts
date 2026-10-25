@@ -8,6 +8,7 @@
  */
 
 import { boardsOperations } from "./boards.handlers";
+import { boardSharingOperations } from "./board-sharing.handlers";
 import { listsOperations } from "./lists.handlers";
 import { cardsOperations } from "./cards.handlers";
 import { myWorkOperations } from "./my-work.handlers";
@@ -17,6 +18,7 @@ import { itemStatesOperations } from "./item-states.handlers";
 
 export {
   boardAutomationsOperations,
+  boardSharingOperations,
   boardSettingsOperations,
   boardsOperations,
   itemStatesOperations,
@@ -27,6 +29,7 @@ export {
 
 export const workManagementOperations = [
   ...boardsOperations,
+  ...boardSharingOperations,
   ...listsOperations,
   ...cardsOperations,
   ...myWorkOperations,

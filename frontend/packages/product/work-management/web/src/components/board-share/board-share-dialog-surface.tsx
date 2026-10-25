@@ -413,62 +413,76 @@ function ShareBody({
           </div>
         </div>
 
-        <div>
-          <div
-            data-f="lbl"
-            className="mb-1.5 text-xs leading-[1.45] font-semibold text-meta-foreground"
+        {view.hiddenCounts ? (
+          <p
+            data-f="pcounts"
+            className="m-0 text-compact leading-[1.45] text-meta-foreground"
           >
-            {fill(copy.people.label, { count: view.rows.length })}
-          </div>
-          {view.rows.length === 0 ? (
-            <p className="m-0 text-compact leading-[1.45] text-meta-foreground">
-              {copy.people.empty}
-            </p>
-          ) : (
+            {fill(copy.people.counts, {
+              people: view.hiddenCounts.people,
+              guests: view.hiddenCounts.guests,
+            })}
+          </p>
+        ) : (
+          <div>
             <div
-              data-f="pl"
-              role="group"
-              tabIndex={0}
-              aria-label={fill(copy.people.label, { count: view.rows.length })}
-              className={cn(
-                "-mx-2 flex flex-col px-2 outline-none focus-visible:ring-2 focus-visible:ring-focus-ring [@media(max-height:820px)]:overflow-y-auto",
-                expandedRows || view.rows.length <= VISIBLE_ROWS
-                  ? "max-h-[min(248px,max(120px,calc(100vh-573px)))]"
-                  : "max-h-[min(250px,max(120px,calc(100vh-573px)))]",
-              )}
+              data-f="lbl"
+              className="mb-1.5 text-xs leading-[1.45] font-semibold text-meta-foreground"
             >
-              {(expandedRows
-                ? view.rows
-                : view.rows.slice(0, VISIBLE_ROWS)
-              ).map((row) => (
-                <PersonRow
-                  key={row.id}
-                  copy={copy}
-                  row={row}
-                  menuOpen={menuFor === row.id}
-                  setMenu={(open) => setMenuFor(open ? row.id : null)}
-                  onChangeLevel={onChangeLevel}
-                  onRemove={onRemove}
-                />
-              ))}
-              {!expandedRows && view.rows.length > VISIBLE_ROWS ? (
-                <button
-                  data-f="plmore"
-                  type="button"
-                  onClick={() => setExpandedRows(true)}
-                  className={cn(
-                    "mt-1 h-8 rounded-[7px] border-0 bg-transparent text-compact leading-[1.45] font-medium text-state-selected-foreground hover:bg-state-hover-strong",
-                    FOCUS,
-                  )}
-                >
-                  {fill(copy.people.more, {
-                    count: view.rows.length - VISIBLE_ROWS,
-                  })}
-                </button>
-              ) : null}
+              {fill(copy.people.label, { count: view.rows.length })}
             </div>
-          )}
-        </div>
+            {view.rows.length === 0 ? (
+              <p className="m-0 text-compact leading-[1.45] text-meta-foreground">
+                {copy.people.empty}
+              </p>
+            ) : (
+              <div
+                data-f="pl"
+                role="group"
+                tabIndex={0}
+                aria-label={fill(copy.people.label, {
+                  count: view.rows.length,
+                })}
+                className={cn(
+                  "-mx-2 flex flex-col px-2 outline-none focus-visible:ring-2 focus-visible:ring-focus-ring [@media(max-height:820px)]:overflow-y-auto",
+                  expandedRows || view.rows.length <= VISIBLE_ROWS
+                    ? "max-h-[min(248px,max(120px,calc(100vh-573px)))]"
+                    : "max-h-[min(250px,max(120px,calc(100vh-573px)))]",
+                )}
+              >
+                {(expandedRows
+                  ? view.rows
+                  : view.rows.slice(0, VISIBLE_ROWS)
+                ).map((row) => (
+                  <PersonRow
+                    key={row.id}
+                    copy={copy}
+                    row={row}
+                    menuOpen={menuFor === row.id}
+                    setMenu={(open) => setMenuFor(open ? row.id : null)}
+                    onChangeLevel={onChangeLevel}
+                    onRemove={onRemove}
+                  />
+                ))}
+                {!expandedRows && view.rows.length > VISIBLE_ROWS ? (
+                  <button
+                    data-f="plmore"
+                    type="button"
+                    onClick={() => setExpandedRows(true)}
+                    className={cn(
+                      "mt-1 h-8 rounded-[7px] border-0 bg-transparent text-compact leading-[1.45] font-medium text-state-selected-foreground hover:bg-state-hover-strong",
+                      FOCUS,
+                    )}
+                  >
+                    {fill(copy.people.more, {
+                      count: view.rows.length - VISIBLE_ROWS,
+                    })}
+                  </button>
+                ) : null}
+              </div>
+            )}
+          </div>
+        )}
 
         <div
           data-f="lk"

@@ -1,10 +1,13 @@
 /**
- * The Board's own permissions as the share dialog draws them (gap
- * `CTR-GAP-WM-BOARD-SHARING`, see docs/superpowers/be-blockers-2026-10.md,
- * "BE requirement from FE: Share"): only the entries given on the Board itself,
- * beside what its department gives by role; the level and end date of each; the
- * history of the changes; and who loses access when the Board goes Private.
+ * The Board's own permissions as `WorkManagement.Boards.GetSharing` answers:
+ * only the entries given on the Board itself, beside what its department gives
+ * by role; the level of each and how it is held (an explicit grant, a Board
+ * membership, or both); the history of the changes; and who loses access when
+ * the Board goes Private. Entries are disclosed only to a Board manager or a
+ * Board member; any other reader gets the counts. Nothing on a Board expires,
+ * and a Guest is capped at Editor.
  */
+import type { OperationResponse } from "@notrelix/contracts";
 import type { MockStore } from "./mock-store";
 import { ERP_PEOPLE } from "./mock-erp-board";
 import { mockIds } from "./mock-ids";
@@ -12,83 +15,77 @@ import { spaceMembersExtra } from "./mock-space-members";
 
 export type ShareLevel = "viewer" | "commenter" | "editor" | "manager";
 
+/** A Board role a membership can carry. */
+export type MockBoardRoleName =
+  "Owner" | "Admin" | "Member" | "Observer" | "Guest";
+
+const ROLE_LEVEL: Record<MockBoardRoleName, ShareLevel> = {
+  Owner: "manager",
+  Admin: "manager",
+  Member: "editor",
+  Observer: "viewer",
+  Guest: "viewer",
+};
+
+const LEVEL_RANK: Record<ShareLevel, number> = {
+  viewer: 1,
+  commenter: 2,
+  editor: 3,
+  manager: 4,
+};
+
 export interface MockShareEntry {
+  /** The grant id (`permissionId`) of an entry held by grant. */
   id: string;
   kind: "person" | "team";
   userId: string | null;
   teamId: string | null;
+  /** The effective stored level: the higher of the grant and the role's. */
   level: ShareLevel;
+  /** The explicit grant's level, when the entry has one. */
+  grantLevel: ShareLevel | null;
+  /** The Board role, when the person is a Board member. */
+  memberRole: MockBoardRoleName | null;
+  /** A Workspace Guest (a membership fact, never an email domain). */
+  guest: boolean;
+  /** Kept for the department pages; the sharing read always answers null. */
   expiresAt: string | null;
   owner: boolean;
   addedAt: string;
 }
 
+/** The entry's level after its grant or role changed. */
+export function effectiveLevel(entry: MockShareEntry): ShareLevel {
+  const levels = [
+    entry.grantLevel,
+    entry.memberRole ? ROLE_LEVEL[entry.memberRole] : null,
+  ].filter((level): level is ShareLevel => level !== null);
+  return levels.reduce<ShareLevel>(
+    (best, level) => (LEVEL_RANK[level] > LEVEL_RANK[best] ? level : best),
+    "viewer",
+  );
+}
+
+export function levelOfRole(role: MockBoardRoleName): ShareLevel {
+  return ROLE_LEVEL[role];
+}
+
 export interface MockShareLog {
   id: string;
-  kind:
-    | "added"
-    | "changed"
-    | "removed"
-    | "expired"
-    | "public-off"
-    | "created"
-    | "private";
+  kind: "added" | "changed" | "removed" | "private" | "visibility";
   actorId: string | null;
   /** The entry's person or team name at the time. */
   target: string | null;
   from: ShareLevel | null;
   to: ShareLevel | null;
   guest: boolean;
-  expiresAt: string | null;
   at: string;
 }
 
-export interface BoardSharingDto {
-  readonly spaceName: string | null;
-  readonly spacePeople: number | null;
-  readonly canManage: boolean;
-  readonly entries: readonly {
-    readonly id: string;
-    readonly kind: "person" | "team" | "guest";
-    readonly userId: string | null;
-    readonly name: string;
-    readonly email: string | null;
-    readonly you: boolean;
-    readonly owner: boolean;
-    /** The role the person has in the Board's department, when they are in it. */
-    readonly spaceRole: "Admin" | "Member" | "Viewer" | null;
-    /** The person's own department, when it is not the Board's. */
-    readonly department: string | null;
-    readonly teamPeople: number | null;
-    readonly outsideSpace: boolean;
-    readonly outsideCompany: boolean;
-    readonly level: ShareLevel;
-    readonly expiresAt: string | null;
-  }[];
-  readonly log: readonly {
-    readonly id: string;
-    readonly kind: MockShareLog["kind"];
-    readonly actor: { readonly id: string; readonly name: string } | null;
-    readonly target: string | null;
-    readonly from: ShareLevel | null;
-    readonly to: ShareLevel | null;
-    readonly guest: boolean;
-    readonly expiresAt: string | null;
-    readonly at: string;
-  }[];
-  /** Who loses access when the Board goes Private. */
-  readonly privateImpact: {
-    readonly lose: number;
-    readonly people: readonly {
-      readonly userId: string;
-      readonly name: string;
-      readonly items: number;
-      readonly overdue: number;
-    }[];
-    /** Names of the entries that keep their access. */
-    readonly keep: readonly string[];
-  };
-}
+export type BoardSharingDto = OperationResponse<
+  "WorkManagement.Boards.GetSharing",
+  200
+>;
 
 /** The mockup's unfinished-work figures of the people who would lose the Board. */
 const ERP_WORK: Readonly<Record<string, { items: number; overdue: number }>> = {
@@ -144,15 +141,21 @@ export function seedErpSharing(sharing: MockBoardSharing): void {
   const entry = (
     id: string,
     over: Partial<MockShareEntry> & Pick<MockShareEntry, "kind" | "level">,
-  ): MockShareEntry => ({
-    id,
-    userId: null,
-    teamId: null,
-    expiresAt: null,
-    owner: false,
-    addedAt: at,
-    ...over,
-  });
+  ): MockShareEntry => {
+    const base: MockShareEntry = {
+      id,
+      userId: null,
+      teamId: null,
+      grantLevel: over.memberRole ? null : over.level,
+      memberRole: null,
+      guest: false,
+      expiresAt: null,
+      owner: false,
+      addedAt: at,
+      ...over,
+    };
+    return base;
+  };
   sharing.setBoard(
     boardId,
     [
@@ -160,6 +163,7 @@ export function seedErpSharing(sharing: MockBoardSharing): void {
         kind: "person",
         userId: ERP_PEOPLE.HP.id,
         level: "manager",
+        memberRole: "Owner",
         owner: true,
       }),
       entry("share-kt", {
@@ -177,12 +181,14 @@ export function seedErpSharing(sharing: MockBoardSharing): void {
         kind: "person",
         userId: ERP_PEOPLE.DT.id,
         level: "editor",
+        guest: true,
         expiresAt: "2027-01-31T16:59:59.000Z",
       }),
       entry("share-ha", {
         kind: "person",
         userId: mockIds.users.owner,
         level: "manager",
+        memberRole: "Admin",
       }),
     ],
     [
@@ -194,7 +200,6 @@ export function seedErpSharing(sharing: MockBoardSharing): void {
         from: null,
         to: "editor",
         guest: true,
-        expiresAt: "2027-01-31T16:59:59.000Z",
         at: "2026-10-08T07:12:00.000Z",
       },
       {
@@ -205,43 +210,33 @@ export function seedErpSharing(sharing: MockBoardSharing): void {
         from: "editor",
         to: "viewer",
         guest: false,
-        expiresAt: null,
         at: "2026-10-02T03:00:00.000Z",
       },
       {
         id: "share-log-3",
-        kind: "expired",
-        actorId: null,
-        target: "Nguyễn Văn Bình",
-        from: null,
-        to: null,
-        guest: false,
-        expiresAt: null,
-        at: "2026-09-30T03:00:00.000Z",
-      },
-      {
-        id: "share-log-4",
-        kind: "public-off",
-        actorId: null,
-        target: null,
-        from: null,
-        to: null,
-        guest: false,
-        expiresAt: null,
-        at: "2026-09-15T03:00:00.000Z",
-      },
-      {
-        id: "share-log-5",
-        kind: "created",
+        kind: "visibility",
         actorId: ERP_PEOPLE.HP.id,
         target: null,
         from: null,
         to: null,
         guest: false,
-        expiresAt: null,
-        at: "2026-09-01T02:00:00.000Z",
+        at: "2026-09-15T03:00:00.000Z",
       },
     ],
+  );
+}
+
+const SPACE_ROLE_RANK = { Admin: 3, Member: 2, Viewer: 1 } as const;
+
+/** Whether the viewer is shown who holds access: a Board manager or member. */
+function entriesDisclosed(
+  entries: readonly MockShareEntry[],
+  viewerId: string,
+  canManage: boolean,
+): boolean {
+  return (
+    canManage ||
+    entries.some((item) => item.userId === viewerId && item.memberRole !== null)
   );
 }
 
@@ -267,78 +262,67 @@ export function boardSharing(
     for (const entry of store.spaces.membersOf(space.id)) {
       if (entry.subjectType === "User") {
         const current = spaceRoles.get(entry.subjectId);
-        const rank = { Admin: 3, Member: 2, Viewer: 1 } as const;
-        if (!current || rank[entry.role] > rank[current])
+        if (!current || SPACE_ROLE_RANK[entry.role] > SPACE_ROLE_RANK[current])
           spaceRoles.set(entry.subjectId, entry.role);
       }
     }
   }
-  // The department a person belongs to by their own entry.
-  const homeOf = (userId: string): string | null => {
-    for (const candidate of store.spaces.spacesOf(board.workspaceId)) {
-      if (candidate.parentId) continue;
-      if (
-        store.spaces
-          .membersOf(candidate.id)
-          .some(
-            (entry) =>
-              entry.subjectType === "User" && entry.subjectId === userId,
-          )
-      )
-        return candidate.name;
-    }
-    return null;
-  };
-  const entries = store.sharing.entriesOf(boardId).map((item) => {
+  const list = store.sharing.entriesOf(boardId);
+  const disclosed = entriesDisclosed(list, me, canManage);
+  // Email is for a workspace Owner or Admin, and only of people who are not Guests.
+  const role = store.getCurrentMemberRole(board.workspaceId);
+  const seesEmail = role === "owner" || role === "admin";
+
+  const entries = list.map((item) => {
+    const base = {
+      owner: item.owner,
+      level: item.level,
+      expiresAt: null,
+      addedAt: item.addedAt,
+      permissionId: item.grantLevel === null ? null : item.id,
+      memberRole: item.memberRole,
+      source:
+        item.grantLevel !== null && item.memberRole !== null
+          ? "both"
+          : item.memberRole !== null
+            ? "member"
+            : "grant",
+    };
     if (item.kind === "team") {
       const team = store.spaces.getTeam(item.teamId ?? "");
       return {
-        id: item.id,
-        kind: "team" as const,
-        userId: null,
+        ...base,
+        id: item.teamId ?? item.id,
+        kind: "team",
         name: team?.name ?? "",
         email: null,
         you: false,
-        owner: false,
+        levelCapped: false,
         spaceRole: null,
-        department: null,
-        teamPeople: team?.members.length ?? null,
         outsideSpace: true,
-        outsideCompany: false,
-        level: item.level,
-        expiresAt: item.expiresAt,
+        teamPeople: team?.members.length ?? null,
       };
     }
     const user = store.getUser(item.userId ?? "");
-    const email = user?.email ?? null;
-    const role = spaceRoles.get(item.userId ?? "") ?? null;
-    // Somebody in the department works for the company whatever their address.
-    const outsideCompany =
-      role === null && !(email ?? "").endsWith("@minhan.vn");
-    const home = homeOf(item.userId ?? "");
+    const spaceRole = spaceRoles.get(item.userId ?? "") ?? null;
+    const capped = item.guest && item.level === "manager";
     return {
-      id: item.id,
-      kind: outsideCompany ? ("guest" as const) : ("person" as const),
-      userId: item.userId,
+      ...base,
+      id: item.userId ?? item.id,
+      kind: item.guest ? "guest" : "person",
       name: user?.name ?? "",
-      email,
+      email: seesEmail && !item.guest ? (user?.email ?? null) : null,
       you: item.userId === me,
-      owner: item.owner,
-      spaceRole: role,
-      department: role ? null : home,
+      level: capped ? "editor" : item.level,
+      levelCapped: capped,
+      spaceRole,
+      outsideSpace: spaceRole === null,
       teamPeople: null,
-      outsideSpace: role === null,
-      outsideCompany,
-      level: item.level,
-      expiresAt: item.expiresAt,
     };
   });
 
   const kept = new Set(
-    store.sharing
-      .entriesOf(boardId)
-      .map((item) => item.userId)
-      .filter((id): id is string => Boolean(id)),
+    list.map((item) => item.userId).filter((id): id is string => Boolean(id)),
   );
   const extra = space
     ? spaceMembersExtra(store, board.workspaceId, space.id, () => true)
@@ -353,28 +337,38 @@ export function boardSharing(
       name: store.getUser(id)?.name ?? "",
       ...work,
     }));
+  const guests = list.filter((item) => item.guest).length;
   return {
+    boardId,
+    canManage,
+    entriesDisclosed: disclosed,
+    visibility: board.visibility === "private" ? "Private" : "Workspace",
+    spaceId: space?.id ?? null,
     spaceName: space?.name ?? null,
     spacePeople,
-    canManage,
-    entries,
-    log: store.sharing.logOf(boardId).map((item) => ({
-      id: item.id,
-      kind: item.kind,
-      actor: item.actorId
-        ? { id: item.actorId, name: store.getUser(item.actorId)?.name ?? "" }
-        : null,
-      target: item.target,
-      from: item.from,
-      to: item.to,
-      guest: item.guest,
-      expiresAt: item.expiresAt,
-      at: item.at,
-    })),
-    privateImpact: {
-      lose,
-      people,
-      keep: entries.map((item) => item.name),
-    },
+    peopleCount: (spacePeople ?? 0) + list.length - guests,
+    guestCount: guests,
+    peopleCountComplete: true,
+    entries: disclosed ? entries : [],
+    log: canManage
+      ? store.sharing.logOf(boardId).map((item) => ({
+          id: item.id,
+          kind: item.kind,
+          actor: item.actorId
+            ? {
+                userId: item.actorId,
+                name: store.getUser(item.actorId)?.name ?? "",
+              }
+            : undefined,
+          target: item.target,
+          from: item.from,
+          to: item.to,
+          guest: item.guest,
+          at: item.at,
+        }))
+      : [],
+    privateImpact: canManage
+      ? { lose, people, keep: entries.map((item) => item.name) }
+      : undefined,
   };
 }

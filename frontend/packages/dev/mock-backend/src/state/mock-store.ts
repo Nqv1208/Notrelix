@@ -294,7 +294,7 @@ export class MockStore {
   private boardMembersByBoardId = new Map<string, MockBoardMemberRecord[]>();
   /** Explicit board access entries, keyed by board. */
   private boardGrantsByBoardId = new Map<string, MockBoardGrantRecord[]>();
-  /** The Board permissions the share dialog draws (gap `CTR-GAP-WM-BOARD-SHARING`). */
+  /** The Board permissions `WorkManagement.Boards.GetSharing` answers with. */
   readonly sharing = new MockBoardSharing();
   /** Seeded board audiences for the access read, keyed by board. */
   private boardAudienceByBoardId = new Map<string, MockBoardAudienceRecord>();
@@ -1523,6 +1523,9 @@ export class MockStore {
           userId: null,
           teamId: mockIds.teams.oncall,
           level: "viewer",
+          grantLevel: "viewer",
+          memberRole: null,
+          guest: false,
           expiresAt: null,
           owner: false,
           addedAt: "2026-08-20T02:00:00.000Z",

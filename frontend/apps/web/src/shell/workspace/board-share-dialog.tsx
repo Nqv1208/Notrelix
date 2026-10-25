@@ -35,9 +35,11 @@ import { useSpaceHooks } from "./use-workspace-spaces";
 /**
  * The Board share dialog of the board header's Share button: the Board access
  * read (who opens it and through what), the Board's members, and the workspace
- * sharing policy. Inviting, changing a permission or who can open the Board,
- * and the history have no write or read behind them, so the dialog draws them
- * inert; "Copy link" copies the address of the Board, which opens only for
+ * sharing policy, and the Board's sharing read (permissions given on the Board,
+ * the history and who loses the Board on Private). A reader the producer
+ * discloses no entries to sees how many people and guests can open the Board.
+ * Inviting and changing who can open the Board have no write behind them, so
+ * the dialog draws them inert; "Copy link" copies the address of the Board, which opens only for
  * people who already have access (GOV-032).
  */
 export function BoardShareDialog({
@@ -129,14 +131,12 @@ export function BoardShareDialog({
                   role: copy.people.roles[role],
                   space: spaceName,
                 }),
-              department: (name) =>
-                formatCopy(spacesCopy.page.departmentName, { name }),
+              levelCapped: copy.people.levelCapped,
               outsideSpace: space
                 ? fillBoardShareCopy(copy.people.outsideDepartment, {
                     space: lowerFirst(spaceName),
                   })
                 : null,
-              formatDay: shareDay,
             },
             initialsFor,
           )
@@ -160,6 +160,13 @@ export function BoardShareDialog({
           : "off"
         : "unknown",
       canManage: sharing.data?.canManage ?? access.myLevel === "manager",
+      hiddenCounts:
+        sharing.data && !sharing.data.entriesDisclosed
+          ? {
+              people: sharing.data.peopleCount,
+              guests: sharing.data.guestCount,
+            }
+          : null,
     };
   }, [
     access,
@@ -182,7 +189,6 @@ export function BoardShareDialog({
         view: copy.levels.view,
       },
       text: copy.log,
-      expiredNote: copy.log.expiredNote,
       fill: fillBoardShareCopy,
       when: (iso: string) => {
         const date = new Date(iso);
@@ -198,7 +204,7 @@ export function BoardShareDialog({
   );
   const log = useMemo(
     () =>
-      sharing.data
+      sharing.data?.canManage
         ? buildSharingLog(sharing.data, logWords, initialsFor)
         : null,
     [logWords, sharing.data],
@@ -274,10 +280,4 @@ export function BoardShareDialog({
 
 function lowerFirst(value: string): string {
   return value.charAt(0).toLowerCase() + value.slice(1);
-}
-
-function shareDay(iso: string): string {
-  const date = new Date(iso);
-  const pad = (value: number) => String(value).padStart(2, "0");
-  return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}`;
 }
