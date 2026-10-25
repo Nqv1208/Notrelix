@@ -146,6 +146,10 @@ public static class PersistenceRegistration
             Notrelix.Infrastructure.Data.Authz.PostgresResourceVisibility>();
         services.AddScoped<global::Notrelix.Application.Features.Governance.Public.Access.IGuestResourceAccessActions,
             Notrelix.Infrastructure.Data.Authz.GuestResourceAccessActionsAdapter>();
+        services.AddScoped<global::Notrelix.Application.Features.Documents.Pages.Services.IPageBacklinkReader,
+            global::Notrelix.Infrastructure.Documents.Pages.PageBacklinkReader>();
+        services.AddScoped<global::Notrelix.Application.Features.Governance.Public.Access.IResourceCreatorGrant,
+            Notrelix.Infrastructure.Data.Authz.ResourceCreatorGrantAdapter>();
         services.AddScoped<global::Notrelix.Application.Features.Governance.Public.Access.IGuestResourceInvitationFacts,
             Notrelix.Infrastructure.Data.Authz.GuestResourceInvitationFactsAdapter>();
         services.AddScoped<global::Notrelix.Application.Features.Governance.Abstractions.IResourceAccessEntriesReader,

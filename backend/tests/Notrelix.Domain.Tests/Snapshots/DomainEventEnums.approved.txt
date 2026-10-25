@@ -53,6 +53,8 @@ Notrelix.Domain.Documents.Blocks.BlockType|System.Int32|File|12
 Notrelix.Domain.Documents.Blocks.BlockType|System.Int32|Video|13
 Notrelix.Domain.Documents.Blocks.BlockType|System.Int32|Board|14
 Notrelix.Domain.Documents.Blocks.BlockType|System.Int32|Table|15
+Notrelix.Domain.Documents.Blocks.BlockType|System.Int32|Callout|16
+Notrelix.Domain.Documents.Blocks.BlockType|System.Int32|PageReference|17
 Notrelix.Domain.Documents.ResourceLinks.LinkType|System.Int32|Internal|0
 Notrelix.Domain.Documents.ResourceLinks.LinkType|System.Int32|External|1
 Notrelix.Domain.Documents.ResourceLinks.LinkType|System.Int32|Backlink|2

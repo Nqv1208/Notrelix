@@ -16,7 +16,16 @@ using Notrelix.Application.Features.Collaboration.Abstractions;
 using Notrelix.Application.Features.Collaboration.Comments.Commands.CreateComment;
 using Notrelix.Application.Features.Documents.Abstractions;
 using Notrelix.Application.Features.Documents.Pages.Commands.CreatePage;
+using Notrelix.Domain.Documents.Blocks;
+using Notrelix.Application.Features.Documents.Blocks.Commands.CreateBlock;
+using Notrelix.Application.Features.Documents.Blocks.Commands.UpdateBlock;
+using Notrelix.Application.Features.Documents.Pages.Queries.GetPageBacklinks;
 using Notrelix.Application.Features.Documents.Pages.Commands.ArchivePage;
+using Notrelix.Application.Features.Documents.Pages.Commands.DeletePage;
+using Notrelix.Application.Features.Documents.Pages.Commands.RestorePage;
+using Notrelix.Application.Features.Documents.Pages.Commands.UpdatePage;
+using Notrelix.Application.Features.Documents.Pages.Queries.GetTrashedPages;
+using Notrelix.Application.Features.Documents.DTOs;
 using Notrelix.Application.Features.Governance.Abstractions;
 using Notrelix.Application.Features.Governance.DTOs;
 using Notrelix.Application.Features.Governance.ResourcePermissions.Commands.GrantResourcePermission;
@@ -585,6 +594,68 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task CreatePage_GivesTheCreatorAManagerEntry_SoTheyCanDeleteItForGoodFromTheTrash()
+    {
+        var (accountId, _, workspaceId, _, memberId) = await SeedPageStackAsync();
+
+        using var provider = CreateProvider(accountId, memberId);
+        var created = await SendAsync<Result<Guid>>(provider,
+            new CreatePageCommand(workspaceId, "Member Page", null));
+        var pageId = created.Data;
+
+        await using (var probe = _db.CreateContext(SystemTenant()))
+        {
+            var entry = await probe.ResourcePermissions.IgnoreQueryFilters()
+                .SingleAsync(p => p.ResourceId == pageId);
+            entry.SubjectId.Should().Be(memberId);
+            entry.Level.Should().Be(PermissionLevel.Manager, "the creator manages what they made");
+        }
+
+        // Manager of the page: may trash it and then delete it for good.
+        (await SendAsync<Result>(provider, new ArchivePageCommand(pageId))).Succeeded.Should().BeTrue();
+        (await SendAsync<Result>(provider, new DeletePageCommand(pageId))).Succeeded.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Backlinks_ListThePagesThatReferenceOrMentionAPage_AndNothingElse()
+    {
+        var (accountId, _, workspaceId, _, memberId) = await SeedPageStackAsync();
+        using var provider = CreateProvider(accountId, memberId);
+        var target = (await SendAsync<Result<Guid>>(provider, new CreatePageCommand(workspaceId, "Target", null))).Data;
+        var referencing = (await SendAsync<Result<Guid>>(provider, new CreatePageCommand(workspaceId, "Referencing", null))).Data;
+        var mentioning = (await SendAsync<Result<Guid>>(provider, new CreatePageCommand(workspaceId, "Mentioning", null))).Data;
+        var unrelated = (await SendAsync<Result<Guid>>(provider, new CreatePageCommand(workspaceId, "Unrelated", null))).Data;
+
+        await SendAsync<Result<Guid>>(provider, new CreateBlockCommand(
+            referencing, BlockType.PageReference, $"{{\"linkedPageId\":\"{target}\"}}", "a0", null));
+        await SendAsync<Result<Guid>>(provider, new CreateBlockCommand(
+            mentioning, BlockType.Text, $"{{\"text\":\"see\",\"pageMentionIds\":[\"{target}\"]}}", "a0", null));
+        await SendAsync<Result<Guid>>(provider, new CreateBlockCommand(
+            unrelated, BlockType.PageReference, $"{{\"linkedPageId\":\"{Guid.NewGuid()}\"}}", "a0", null));
+
+        var backlinks = await SendAsync<Result<PageBacklinksDto>>(provider, new GetPageBacklinksQuery(target));
+
+        backlinks.Data!.Docs.Select(d => d.Id).Should().BeEquivalentTo([referencing, mentioning]);
+    }
+
+    [Fact]
+    public async Task UpdateBlock_ChangesTheTypeInPlace_KeepingTheBlockAndItsText()
+    {
+        var (accountId, _, workspaceId, _, memberId) = await SeedPageStackAsync();
+        using var provider = CreateProvider(accountId, memberId);
+        var pageId = (await SendAsync<Result<Guid>>(provider, new CreatePageCommand(workspaceId, "Doc", null))).Data;
+        var blockId = (await SendAsync<Result<Guid>>(provider, new CreateBlockCommand(
+            pageId, BlockType.Text, "{\"text\":\"Hello\"}", "a0", null))).Data;
+
+        (await SendAsync<Result>(provider, new UpdateBlockCommand(blockId, "heading_2", null))).Succeeded.Should().BeTrue();
+
+        await using var probe = _db.CreateContext(SystemTenant());
+        var block = await probe.Blocks.IgnoreQueryFilters().SingleAsync(b => b.Id == blockId);
+        block.Type.Should().Be(BlockType.Heading2);
+        block.Content.Data.Value.Should().Be("{\"text\":\"Hello\"}");
+    }
+
+    [Fact]
     public async Task CreatePage_Guest_IsForbidden()
     {
         var (accountId, ownerId, workspaceId, _, _) = await SeedPageStackAsync();
@@ -732,7 +803,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task ArchivePage_WorkspaceMember_OnWorkspaceVisiblePage_IsForbidden()
+    public async Task DeletePage_WorkspaceMember_OnWorkspaceVisiblePage_IsForbidden()
     {
         // M2G extension: page visibility is not lifecycle mutation authority.
         // A workspace-visible page only proves the member can see it —
@@ -742,17 +813,18 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         var pageId = await ResolvePageIdAsync();
 
         using var provider = CreateProvider(accountId, memberId);
-        var act = () => SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+        var act = () => SendAsync<Result>(provider, new DeletePageCommand(pageId));
 
         await act.Should().ThrowAsync<AppForbidden>(
             "visibility grants reading, not page lifecycle mutation authority");
     }
 
     [Fact]
-    public async Task ArchivePage_PageManagerLevelPermission_Allows()
+    public async Task DeletePage_PageManagerLevelPermission_Allows()
     {
         var (accountId, ownerId, workspaceId, _, _) = await SeedPageStackAsync();
         var pageId = await ResolvePageIdAsync();
+        await TrashPageAsync(pageId);
         var manager = Guid.NewGuid();
         await SeedWorkspaceMemberAsync(accountId, workspaceId, manager, WorkspaceRole.Member);
         await SyncAccessGrantsAsync(accountId, workspaceId, (manager, WorkspaceRole.Member));
@@ -760,13 +832,13 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
             accountId, workspaceId, "documents.page", pageId, manager, PermissionLevel.Manager);
 
         using var provider = CreateProvider(accountId, manager);
-        var result = await SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+        var result = await SendAsync<Result>(provider, new DeletePageCommand(pageId));
 
         result.Succeeded.Should().BeTrue();
     }
 
     [Fact]
-    public async Task ArchivePage_PageEditorLevelPermission_IsForbidden()
+    public async Task DeletePage_PageEditorLevelPermission_IsForbidden()
     {
         var (accountId, ownerId, workspaceId, _, _) = await SeedPageStackAsync();
         var pageId = await ResolvePageIdAsync();
@@ -777,14 +849,14 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
             accountId, workspaceId, "documents.page", pageId, editor, PermissionLevel.Editor);
 
         using var provider = CreateProvider(accountId, editor);
-        var act = () => SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+        var act = () => SendAsync<Result>(provider, new DeletePageCommand(pageId));
 
         await act.Should().ThrowAsync<AppForbidden>(
             "Editor rank is below the Manager threshold for page lifecycle authority");
     }
 
     [Fact]
-    public async Task ArchivePage_PageViewerLevelPermission_IsForbidden()
+    public async Task DeletePage_PageViewerLevelPermission_IsForbidden()
     {
         var (accountId, ownerId, workspaceId, _, _) = await SeedPageStackAsync();
         var pageId = await ResolvePageIdAsync();
@@ -795,13 +867,13 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
             accountId, workspaceId, "documents.page", pageId, viewer, PermissionLevel.Viewer);
 
         using var provider = CreateProvider(accountId, viewer);
-        var act = () => SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+        var act = () => SendAsync<Result>(provider, new DeletePageCommand(pageId));
 
         await act.Should().ThrowAsync<AppForbidden>("Viewer rank cannot archive");
     }
 
     [Fact]
-    public async Task ArchivePage_PageCommenterLevelPermission_IsForbidden()
+    public async Task DeletePage_PageCommenterLevelPermission_IsForbidden()
     {
         var (accountId, ownerId, workspaceId, _, _) = await SeedPageStackAsync();
         var pageId = await ResolvePageIdAsync();
@@ -812,13 +884,13 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
             accountId, workspaceId, "documents.page", pageId, commenter, PermissionLevel.Commenter);
 
         using var provider = CreateProvider(accountId, commenter);
-        var act = () => SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+        var act = () => SendAsync<Result>(provider, new DeletePageCommand(pageId));
 
         await act.Should().ThrowAsync<AppForbidden>("Commenter rank cannot archive");
     }
 
     [Fact]
-    public async Task ArchivePage_WorkspaceAdmin_WithoutPageManagerAuthority_IsForbidden()
+    public async Task DeletePage_WorkspaceAdmin_WithoutPageManagerAuthority_IsForbidden()
     {
         var (accountId, ownerId, workspaceId, _, _) = await SeedPageStackAsync();
         var pageId = await ResolvePageIdAsync();
@@ -827,26 +899,27 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         await SyncAccessGrantsAsync(accountId, workspaceId, (admin, WorkspaceRole.Admin));
 
         using var provider = CreateProvider(accountId, admin);
-        var act = () => SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+        var act = () => SendAsync<Result>(provider, new DeletePageCommand(pageId));
 
         await act.Should().ThrowAsync<AppForbidden>(
             "workspace Admin is not a default page lifecycle manager");
     }
 
     [Fact]
-    public async Task ArchivePage_ExplicitAllowRule_Allows()
+    public async Task DeletePage_ExplicitAllowRule_Allows()
     {
         var (accountId, ownerId, workspaceId, _, _) = await SeedPageStackAsync();
         var pageId = await ResolvePageIdAsync();
+        await TrashPageAsync(pageId);
         var member = Guid.NewGuid();
         await SeedWorkspaceMemberAsync(accountId, workspaceId, member, WorkspaceRole.Member);
         await SyncAccessGrantsAsync(accountId, workspaceId, (member, WorkspaceRole.Member));
         await SeedPermissionRuleAsync(
-            accountId, workspaceId, member, PermissionAction.ArchivePage,
+            accountId, workspaceId, member, PermissionAction.DeletePage,
             "documents.page", pageId, PermissionEffect.Allow);
 
         using var provider = CreateProvider(accountId, member);
-        var result = await SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+        var result = await SendAsync<Result>(provider, new DeletePageCommand(pageId));
 
         result.Succeeded.Should().BeTrue(
             "an applicable explicit Allow rule grants the lifecycle authority");
@@ -854,7 +927,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
 
     // WG-DEBT-CERT-005: rule time windows and same-priority tie-break on real Postgres.
     [Fact]
-    public async Task ArchivePage_ExpiredAllowRule_IsIgnored_AndRequestIsForbidden()
+    public async Task DeletePage_ExpiredAllowRule_IsIgnored_AndRequestIsForbidden()
     {
         var (accountId, _, workspaceId, _, _) = await SeedPageStackAsync();
         var pageId = await ResolvePageIdAsync();
@@ -862,18 +935,18 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         await SeedWorkspaceMemberAsync(accountId, workspaceId, member, WorkspaceRole.Member);
         await SyncAccessGrantsAsync(accountId, workspaceId, (member, WorkspaceRole.Member));
         await SeedPermissionRuleAsync(
-            accountId, workspaceId, member, PermissionAction.ArchivePage,
+            accountId, workspaceId, member, PermissionAction.DeletePage,
             "documents.page", pageId, PermissionEffect.Allow,
             startsAt: DateTimeOffset.UtcNow.AddDays(-10), expiresAt: DateTimeOffset.UtcNow.AddDays(-1));
 
         using var provider = CreateProvider(accountId, member);
-        var act = () => SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+        var act = () => SendAsync<Result>(provider, new DeletePageCommand(pageId));
 
         await act.Should().ThrowAsync<AppForbidden>("an expired Allow rule must not grant authority");
     }
 
     [Fact]
-    public async Task ArchivePage_NotYetActiveAllowRule_IsIgnored_AndRequestIsForbidden()
+    public async Task DeletePage_NotYetActiveAllowRule_IsIgnored_AndRequestIsForbidden()
     {
         var (accountId, _, workspaceId, _, _) = await SeedPageStackAsync();
         var pageId = await ResolvePageIdAsync();
@@ -881,39 +954,40 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         await SeedWorkspaceMemberAsync(accountId, workspaceId, member, WorkspaceRole.Member);
         await SyncAccessGrantsAsync(accountId, workspaceId, (member, WorkspaceRole.Member));
         await SeedPermissionRuleAsync(
-            accountId, workspaceId, member, PermissionAction.ArchivePage,
+            accountId, workspaceId, member, PermissionAction.DeletePage,
             "documents.page", pageId, PermissionEffect.Allow,
             startsAt: DateTimeOffset.UtcNow.AddDays(1));
 
         using var provider = CreateProvider(accountId, member);
-        var act = () => SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+        var act = () => SendAsync<Result>(provider, new DeletePageCommand(pageId));
 
         await act.Should().ThrowAsync<AppForbidden>("a future-window Allow rule must not grant authority yet");
     }
 
     [Fact]
-    public async Task ArchivePage_ExpiredDenyRule_IsIgnored_ManagerStillAllowed()
+    public async Task DeletePage_ExpiredDenyRule_IsIgnored_ManagerStillAllowed()
     {
         var (accountId, _, workspaceId, _, _) = await SeedPageStackAsync();
         var pageId = await ResolvePageIdAsync();
+        await TrashPageAsync(pageId);
         var manager = Guid.NewGuid();
         await SeedWorkspaceMemberAsync(accountId, workspaceId, manager, WorkspaceRole.Member);
         await SyncAccessGrantsAsync(accountId, workspaceId, (manager, WorkspaceRole.Member));
         await SeedResourcePermissionAsync(
             accountId, workspaceId, "documents.page", pageId, manager, PermissionLevel.Manager);
         await SeedPermissionRuleAsync(
-            accountId, workspaceId, manager, PermissionAction.ArchivePage,
+            accountId, workspaceId, manager, PermissionAction.DeletePage,
             "documents.page", pageId, PermissionEffect.Deny,
             startsAt: DateTimeOffset.UtcNow.AddDays(-10), expiresAt: DateTimeOffset.UtcNow.AddMinutes(-1));
 
         using var provider = CreateProvider(accountId, manager);
-        var result = await SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+        var result = await SendAsync<Result>(provider, new DeletePageCommand(pageId));
 
         result.Succeeded.Should().BeTrue("an expired Deny rule must not block the Manager-rank authority");
     }
 
     [Fact]
-    public async Task ArchivePage_SamePriorityDenyAndAllowRules_DenyWins()
+    public async Task DeletePage_SamePriorityDenyAndAllowRules_DenyWins()
     {
         var (accountId, _, workspaceId, _, _) = await SeedPageStackAsync();
         var pageId = await ResolvePageIdAsync();
@@ -921,20 +995,20 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         await SeedWorkspaceMemberAsync(accountId, workspaceId, member, WorkspaceRole.Member);
         await SyncAccessGrantsAsync(accountId, workspaceId, (member, WorkspaceRole.Member));
         await SeedPermissionRuleAsync(
-            accountId, workspaceId, member, PermissionAction.ArchivePage,
+            accountId, workspaceId, member, PermissionAction.DeletePage,
             "documents.page", pageId, PermissionEffect.Allow, priority: 50);
         await SeedPermissionRuleAsync(
-            accountId, workspaceId, member, PermissionAction.ArchivePage,
+            accountId, workspaceId, member, PermissionAction.DeletePage,
             "documents.page", pageId, PermissionEffect.Deny, priority: 50);
 
         using var provider = CreateProvider(accountId, member);
-        var act = () => SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+        var act = () => SendAsync<Result>(provider, new DeletePageCommand(pageId));
 
         await act.Should().ThrowAsync<AppForbidden>("at the same priority an active Deny beats an active Allow");
     }
 
     [Fact]
-    public async Task ArchivePage_ExplicitDenyRule_IsForbidden_EvenForManager()
+    public async Task DeletePage_ExplicitDenyRule_IsForbidden_EvenForManager()
     {
         var (accountId, ownerId, workspaceId, _, _) = await SeedPageStackAsync();
         var pageId = await ResolvePageIdAsync();
@@ -944,18 +1018,18 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         await SeedResourcePermissionAsync(
             accountId, workspaceId, "documents.page", pageId, manager, PermissionLevel.Manager);
         await SeedPermissionRuleAsync(
-            accountId, workspaceId, manager, PermissionAction.ArchivePage,
+            accountId, workspaceId, manager, PermissionAction.DeletePage,
             "documents.page", pageId, PermissionEffect.Deny);
 
         using var provider = CreateProvider(accountId, manager);
-        var act = () => SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+        var act = () => SendAsync<Result>(provider, new DeletePageCommand(pageId));
 
         await act.Should().ThrowAsync<AppForbidden>(
             "an applicable explicit Deny rule overrides the Manager-rank authority");
     }
 
     [Fact]
-    public async Task ArchivePage_WrongTenant_IsNotFound_AndTargetStaysActive()
+    public async Task DeletePage_WrongTenant_IsNotFound_AndTargetStaysActive()
     {
         // Cross-tenant resource existence must not leak through Forbidden:
         // a page from workspace B addressed from a workspace-A context is
@@ -965,7 +1039,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         workspaceA.Should().NotBe(workspaceB);
 
         using var provider = CreateProvider(accountA, memberA);
-        var act = () => SendAsync<Result>(provider, new ArchivePageCommand(pageB));
+        var act = () => SendAsync<Result>(provider, new DeletePageCommand(pageB));
 
         await act.Should().ThrowAsync<AppNotFound>(
             "a cross-tenant page must be hidden from lifecycle mutations");
@@ -981,7 +1055,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task ArchivePage_Guest_IsDenied()
+    public async Task DeletePage_Guest_IsDenied()
     {
         var (accountId, ownerId, workspaceId, _, _) = await SeedPageStackAsync();
         var pageId = await ResolvePageIdAsync();
@@ -990,47 +1064,99 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         await SyncAccessGrantsAsync(accountId, workspaceId, (guest, WorkspaceRole.Guest));
 
         using var provider = CreateProvider(accountId, guest);
-        var act = () => SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+        var act = () => SendAsync<Result>(provider, new DeletePageCommand(pageId));
 
         await act.Should().ThrowAsync<AppNotFound>(
             "guests without explicit page access are hidden from the lifecycle mutation");
     }
 
     [Fact]
-    public async Task ArchivePage_Outsider_IsForbidden()
+    public async Task DeletePage_Outsider_IsForbidden()
     {
         var (accountId, _, _, _, _) = await SeedPageStackAsync();
         var pageId = await ResolvePageIdAsync();
         var outsider = Guid.NewGuid();
 
         using var provider = CreateProvider(accountId, outsider);
-        var act = () => SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+        var act = () => SendAsync<Result>(provider, new DeletePageCommand(pageId));
 
         await act.Should().ThrowAsync<AppForbidden>(
             "the canonical pipeline denies non-members before any page mutation");
     }
 
     [Fact]
-    public async Task ArchivePage_AlreadyArchived_IsNotFound_ByResourceLifecycle()
+    public async Task ArchivePage_AlreadyArchived_IsANoOp_ButOtherPageMutationsStayClosed()
     {
-        // The canonical policy engine treats an archived page as a
-        // non-existing resource before any authority fast-path, so a second
-        // archive request fails closed instead of double-mutating. Outward
-        // event evidence lives in PageArchivedOutboxEvidenceTests.
+        // A page in the trash is reachable only for the trash lifecycle
+        // (restore, delete for good): archiving again changes nothing, while
+        // any other page action still fails closed as NotFound. Outward event
+        // evidence lives in PageArchivedOutboxEvidenceTests.
         var (accountId, ownerId, _, _, _) = await SeedPageStackAsync();
         var pageId = await ResolvePageIdAsync();
 
         using var provider = CreateProvider(accountId, ownerId);
         (await SendAsync<Result>(provider, new ArchivePageCommand(pageId))).Succeeded.Should().BeTrue();
+        long version;
+        await using (var before = _db.CreateContext(SystemTenant()))
+            version = (await before.Pages.IgnoreQueryFilters().SingleAsync(p => p.Id == pageId)).Version;
 
-        var act = () => SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+        (await SendAsync<Result>(provider, new ArchivePageCommand(pageId))).Succeeded.Should().BeTrue();
 
+        var act = () => SendAsync<Result>(provider, new UpdatePageCommand(pageId, "Renamed"));
         await act.Should().ThrowAsync<AppNotFound>(
-            "an archived page is a lifecycle-closed resource for further mutations");
+            "a trashed page accepts no edits");
 
         await using var verify = _db.CreateContext(SystemTenant());
-        (await verify.Pages.IgnoreQueryFilters().SingleAsync(p => p.Id == pageId)).Status
-            .Should().Be(PageStatus.Archived);
+        var page = await verify.Pages.IgnoreQueryFilters().SingleAsync(p => p.Id == pageId);
+        page.Status.Should().Be(PageStatus.Archived);
+        page.Version.Should().Be(version, "the repeated archive is a semantic no-op");
+    }
+
+    [Fact]
+    public async Task TrashLifecycle_PageEditor_CanTrashAndRestore_ButNotDeleteForGood()
+    {
+        var (accountId, _, workspaceId, _, _) = await SeedPageStackAsync();
+        var pageId = await ResolvePageIdAsync();
+        var editor = Guid.NewGuid();
+        await SeedWorkspaceMemberAsync(accountId, workspaceId, editor, WorkspaceRole.Member);
+        await SyncAccessGrantsAsync(accountId, workspaceId, (editor, WorkspaceRole.Member));
+        await SeedResourcePermissionAsync(
+            accountId, workspaceId, "documents.page", pageId, editor, PermissionLevel.Editor);
+
+        using var provider = CreateProvider(accountId, editor);
+        (await SendAsync<Result>(provider, new ArchivePageCommand(pageId))).Succeeded.Should().BeTrue("an Editor moves a page to the trash");
+
+        var listed = await SendAsync<Result<List<PageDto>>>(provider, new GetTrashedPagesQuery(workspaceId));
+        listed.Data!.Select(p => p.Id).Should().Contain(pageId, "the trash lists the page for someone who can see it");
+
+        var delete = () => SendAsync<Result>(provider, new DeletePageCommand(pageId));
+        await delete.Should().ThrowAsync<AppForbidden>("deleting for good is Manager only");
+
+        (await SendAsync<Result>(provider, new RestorePageCommand(pageId))).Succeeded.Should().BeTrue("an Editor restores a trashed page");
+        await using var verify = _db.CreateContext(SystemTenant());
+        (await verify.Pages.IgnoreQueryFilters().SingleAsync(p => p.Id == pageId)).Status.Should().Be(PageStatus.Active);
+    }
+
+    [Fact]
+    public async Task DeletePage_OfAPageNotInTheTrash_IsRefused_ForTheManager()
+    {
+        var (accountId, ownerId, _, _, _) = await SeedPageStackAsync();
+        var pageId = await ResolvePageIdAsync();
+
+        using var provider = CreateProvider(accountId, ownerId);
+        var act = () => SendAsync<Result>(provider, new DeletePageCommand(pageId));
+
+        await act.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>();
+        await using var verify = _db.CreateContext(SystemTenant());
+        (await verify.Pages.IgnoreQueryFilters().SingleAsync(p => p.Id == pageId)).DeletedAt.Should().BeNull();
+    }
+
+    private async Task TrashPageAsync(Guid pageId)
+    {
+        await using var context = _db.CreateContext(SystemTenant());
+        var page = await context.Pages.IgnoreQueryFilters().SingleAsync(p => p.Id == pageId);
+        page.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        await context.SaveChangesAsync();
     }
 
     private async Task<Guid> ResolvePageIdAsync()
@@ -1414,6 +1540,33 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         services.AddScoped<
             IRequestHandler<ArchivePageCommand, Result>,
             ArchivePageCommandHandler>();
+        services.AddScoped<
+            IRequestHandler<RestorePageCommand, Result>,
+            RestorePageCommandHandler>();
+        services.AddScoped<
+            IRequestHandler<DeletePageCommand, Result>,
+            DeletePageCommandHandler>();
+        services.AddScoped<
+            IRequestHandler<UpdatePageCommand, Result>,
+            UpdatePageCommandHandler>();
+        services.AddScoped<
+            IRequestHandler<GetTrashedPagesQuery, Result<List<PageDto>>>,
+            GetTrashedPagesQueryHandler>();
+        services.AddScoped<
+            IRequestHandler<CreateBlockCommand, Result<Guid>>,
+            CreateBlockCommandHandler>();
+        services.AddScoped<
+            IRequestHandler<UpdateBlockCommand, Result>,
+            UpdateBlockCommandHandler>();
+        services.AddScoped<
+            IRequestHandler<GetPageBacklinksQuery, Result<PageBacklinksDto>>,
+            GetPageBacklinksQueryHandler>();
+        services.AddScoped<global::Notrelix.Application.Features.Documents.Pages.Services.IPageBacklinkReader,
+            global::Notrelix.Infrastructure.Documents.Pages.PageBacklinkReader>();
+        services.AddScoped<global::Notrelix.Application.Features.Governance.Public.Visibility.IResourceVisibility,
+            global::Notrelix.Infrastructure.Data.Authz.PostgresResourceVisibility>();
+        services.AddScoped<global::Notrelix.Application.Features.Governance.Public.Access.IResourceCreatorGrant,
+            global::Notrelix.Infrastructure.Data.Authz.ResourceCreatorGrantAdapter>();
         services.AddScoped<
             IRequestHandler<CreateCommentCommand, Result<Guid>>,
             CreateCommentCommandHandler>();

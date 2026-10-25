@@ -1667,6 +1667,50 @@
         ]
       }
     },
+    "/api/v1/workspaces/{workspaceId}/pages/trash": {
+      "get": {
+        "tags": [
+          "Documents.Pages",
+          "Documents.Pages"
+        ],
+        "summary": "List the pages in the trash of a workspace",
+        "operationId": "Documents.Pages.ListTrashedPages",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Notrelix.Application.Features.Documents.DTOs.PageDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
     "/api/v1/pages/{pageId}": {
       "get": {
         "tags": [
@@ -1837,6 +1881,47 @@
         ]
       }
     },
+    "/api/v1/pages/{pageId}/restore": {
+      "post": {
+        "tags": [
+          "Documents.Pages",
+          "Documents.Pages"
+        ],
+        "summary": "Restore a page from the trash",
+        "operationId": "Documents.Pages.RestorePage",
+        "parameters": [
+          {
+            "name": "pageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
     "/api/v1/pages/{pageId}/breadcrumb": {
       "get": {
         "tags": [
@@ -1904,6 +1989,47 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/pages/{pageId}/backlinks": {
+      "get": {
+        "tags": [
+          "Documents.Pages",
+          "Documents.Pages"
+        ],
+        "summary": "List the pages that mention a page",
+        "operationId": "Documents.Pages.GetPageBacklinks",
+        "parameters": [
+          {
+            "name": "pageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Documents.DTOs.PageBacklinksDto"
                 }
               }
             }
@@ -19963,6 +20089,42 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/Notrelix.Application.Features.Collaboration.Preferences.DTOs.NotificationPreferenceRowDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Documents.DTOs.PageBacklinkDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "icon": {
+            "type": "string",
+            "nullable": true
+          },
+          "spaceId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Documents.DTOs.PageBacklinksDto": {
+        "type": "object",
+        "properties": {
+          "docs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.Documents.DTOs.PageBacklinkDto"
             },
             "nullable": true
           }

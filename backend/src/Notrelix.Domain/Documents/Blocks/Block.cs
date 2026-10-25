@@ -116,6 +116,29 @@ public class Block : SoftDeletableAggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new BlockContentUpdatedDomainEvent(AccountId, WorkspaceId, Id, PageId, Type, updatedBy, updatedAt));
     }
 
+    /// <summary>
+    /// Changes the block's type in place (the block keeps its id, position and
+    /// parent). Text carries over between text-like types; a change to or from
+    /// any other shape starts with empty content. Same type = no-op.
+    /// </summary>
+    public void ChangeType(BlockType newType, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
+
+        if (Type == newType) return;
+
+        var converted = Rules.BlockContentConversion.Convert(Type, newType, Content);
+        Rules.BlockContentValidator.Validate(newType, converted);
+
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        Type = newType;
+        Content = converted;
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+        RaiseDomainEvent(new BlockContentUpdatedDomainEvent(AccountId, WorkspaceId, Id, PageId, Type, updatedBy, updatedAt));
+    }
+
     public void UpdateProperties(BlockProperties newProperties, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();

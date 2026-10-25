@@ -45,6 +45,14 @@ public sealed record AccessFacts(
     public Guid? ParentBoardId { get; init; }
 
     /// <summary>
+    /// For a Page child resource (a Block), the Page it is decided on: the
+    /// resource, audience, grant and Space facts are then the Page's, so a block
+    /// edit needs the same level on its page as any page edit. Empty id when the
+    /// block does not exist (NotFound). Null for any other resource.
+    /// </summary>
+    public Guid? ParentPageId { get; init; }
+
+    /// <summary>
     /// The resource is of a Board child kind, whether or not its Board could be
     /// resolved; a Board child without <see cref="ParentBoardId"/> is NotFound.
     /// </summary>

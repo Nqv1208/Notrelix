@@ -157,6 +157,13 @@ public static class ResourceVisibilityQuery
         """;
 
     /// <summary>
+    /// The pages in the trash (archived, not deleted) the principal may see: the
+    /// <see cref="VisiblePagesSql"/> rules, unchanged, over archived pages.
+    /// </summary>
+    public static readonly string VisibleTrashedPagesSql =
+        VisiblePagesSql.Replace("res.status <> 'Archived'", "res.status = 'Archived'", StringComparison.Ordinal);
+
+    /// <summary>
     /// Non-deleted Spaces with the principal's effective level on each (1 =
     /// Viewer, 3 = Editor, 4 = Manager); a Space is visible when the level is
     /// above zero (GOV-028/GOV-029).

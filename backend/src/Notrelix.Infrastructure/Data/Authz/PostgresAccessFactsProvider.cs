@@ -61,6 +61,15 @@ public sealed class PostgresAccessFactsProvider : IAccessFactsProvider
             resource = ResourceRef.Create(ResourceKind.Create("accounts.account"), context.AccountId.Value);
         }
 
+        // A Block is decided on its Page: the page stands for it in the facts
+        // below (an unknown block resolves to the empty page, which is NotFound).
+        Guid? parentPageId = null;
+        if (resource?.Kind.Value == "documents.block")
+        {
+            parentPageId = await _pageAuthorizationFacts.ResolveBlockPageIdAsync(resource.ResourceId, cancellationToken) ?? Guid.Empty;
+            resource = ResourceRef.Create(ResourceKind.Create("documents.page"), parentPageId.Value, resource.WorkspaceId);
+        }
+
         var feature = request as IRequireFeature;
 
         // Page lifecycle/visibility/placement are Documents-owned facts, read
@@ -140,6 +149,7 @@ public sealed class PostgresAccessFactsProvider : IAccessFactsProvider
                 SpaceRole = NullableString(reader, 16),
                 SpaceIsOpen = reader.GetBoolean(17),
                 ParentBoardId = boardChild.IsBoardChild ? boardChild.BoardId : null,
+                ParentPageId = parentPageId,
                 IsBoardChild = boardChild.IsBoardChild,
                 TargetBoardMemberRole = NullableString(reader, 18),
             };
@@ -165,7 +175,7 @@ public sealed class PostgresAccessFactsProvider : IAccessFactsProvider
 
         if (resource?.Kind.Value == "documents.page")
         {
-            facts = ComposePageFacts(facts, page, context.WorkspaceId);
+            facts = ComposePageFacts(facts, page, context.WorkspaceId, permission?.Action);
         }
 
         return facts;
@@ -174,17 +184,25 @@ public sealed class PostgresAccessFactsProvider : IAccessFactsProvider
     private static AccessFacts ComposePageFacts(
         AccessFacts facts,
         PageAuthorizationFact? page,
-        Guid? workspaceId)
+        Guid? workspaceId,
+        Domain.Governance.Permissions.PermissionAction? action)
     {
         var pageInScope = page is not null
             && workspaceId.HasValue
             && page.WorkspaceId == workspaceId.Value;
 
+        // A page in the trash is reachable only by the trash lifecycle actions
+        // (restore = ArchivePage, delete for good = DeletePage).
+        var reachable = page is not null
+            && (page.IsActive
+                || (page.IsTrashed && action is Domain.Governance.Permissions.PermissionAction.ArchivePage
+                    or Domain.Governance.Permissions.PermissionAction.DeletePage));
+
         return page is not null && pageInScope && page.Exists
             ? facts with
             {
-                ResourceExists = page.IsActive,
-                ResourceAudience = page.IsActive ? page.Visibility : null,
+                ResourceExists = reachable,
+                ResourceAudience = reachable ? page.Visibility : null,
             }
             : facts with { ResourceExists = false, ResourceAudience = null };
     }

@@ -795,10 +795,11 @@ public sealed class AccessPolicyEngineCharacterizationTests
     }
 
     [Fact]
-    public void PlacedPage_SpaceAdmin_MayArchive_SpaceMember_MayNot()
+    public void PlacedPage_SpaceAdmin_MayDeleteForGood_SpaceMember_MayOnlyTrash()
     {
-        ResourceDecision(Placed("Member", "Admin"), PermissionAction.ArchivePage, PageKind).Should().Be(AccessDecisionKind.Allowed);
-        ResourceDecision(Placed("Member", "Member"), PermissionAction.ArchivePage, PageKind).Should().Be(AccessDecisionKind.Forbidden);
+        ResourceDecision(Placed("Member", "Admin"), PermissionAction.DeletePage, PageKind).Should().Be(AccessDecisionKind.Allowed);
+        ResourceDecision(Placed("Member", "Member"), PermissionAction.DeletePage, PageKind).Should().Be(AccessDecisionKind.Forbidden);
+        ResourceDecision(Placed("Member", "Member"), PermissionAction.ArchivePage, PageKind).Should().Be(AccessDecisionKind.Allowed);
         ResourceDecision(Placed("Member", "Member"), PermissionAction.UpdatePage, PageKind).Should().Be(AccessDecisionKind.Allowed);
     }
 

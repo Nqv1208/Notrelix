@@ -17,5 +17,7 @@ public enum BlockType
     File,
     Video,
     Board,
-    Table
+    Table,
+    Callout,
+    PageReference
 }
