@@ -71,7 +71,7 @@ public sealed class ItemFollowerNotifier
     }
 
     /// <summary>One in-app notification to each listed person who turned the matching preference on.</summary>
-    public async Task NotifyAsync(
+    public Task NotifyAsync(
         Guid accountId,
         Guid workspaceId,
         Guid itemId,
@@ -82,11 +82,33 @@ public sealed class ItemFollowerNotifier
         string? body,
         IReadOnlyCollection<Guid> recipients,
         DateTimeOffset now,
+        CancellationToken ct) =>
+        NotifyAsync(
+            accountId, workspaceId, itemId, actorUserId, sourceEventId, sourceEventId.ToString(),
+            producedType, title, body, recipients, now, ct);
+
+    /// <summary>
+    /// The same, idempotent by <paramref name="deduplicationScope"/> instead of an event: a producer that has no
+    /// source event (the daily due-date job) names its own scope, such as the Item and the due date.
+    /// <paramref name="sourceEventId"/> is stored on the notification as given and may be null.
+    /// </summary>
+    public async Task NotifyAsync(
+        Guid accountId,
+        Guid workspaceId,
+        Guid itemId,
+        Guid? actorUserId,
+        Guid? sourceEventId,
+        string deduplicationScope,
+        string producedType,
+        string title,
+        string? body,
+        IReadOnlyCollection<Guid> recipients,
+        DateTimeOffset now,
         CancellationToken ct)
     {
         if (recipients.Count == 0) return;
 
-        var prefix = $"{producedType}:{sourceEventId}:";
+        var prefix = $"{producedType}:{deduplicationScope}:";
         var keys = recipients.Select(id => prefix + id).ToList();
         var existing = (await _notifications.NotificationItems
                 .AsNoTracking()

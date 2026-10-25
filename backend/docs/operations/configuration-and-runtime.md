@@ -288,6 +288,20 @@ Several API instances may sweep at once (rows are claimed with `FOR UPDATE SKIP 
 under the explicit system (worker) tenant context and RLS worker scope and touches only
 `identity.user_security_activity`.
 
+`Collaboration:DueDateNotifications` (Infrastructure, `DueDateNotificationOptions`, validated on start by
+`DueDateNotificationOptionsValidator`) configures the due-date notifications (`DueDateNotificationService`, a hosted
+service): an assignee of an open, unarchived Item gets one in-app notification that it is due tomorrow and one that it
+became overdue, by the calendar days of the Workspace's own time zone. Each pass reads Items in keyset batches, honours
+the member's `overdue` in-app preference and muted threads, and is idempotent by `{type}:{itemId}:{dueDay}:{userId}`, so
+repeat passes add nothing. It runs under the system (worker) context with the RLS worker scope:
+
+| Key | Default | Meaning |
+|---|---|---|
+| `Enabled` | `true` | When false nobody is notified. |
+| `Interval` | `01:00:00` (1 hour) | Time between passes. Range 10 seconds to 1 day. |
+| `BatchSize` | 500 | Items read per batch. Range 1 to 5000. |
+| `OverdueGraceDays` | 3 | Local days after the due day an Item can still be reported overdue. Range 1 to 14. |
+
 Session cookies: `CookieService` marks the access and refresh cookies `Secure` (and `SameSite=None`)
 only when the environment is `Production`. The staging Compose overlay in this repository serves plain
 HTTP behind its own nginx (default origins `http://localhost`), so staging cookies are intentionally not

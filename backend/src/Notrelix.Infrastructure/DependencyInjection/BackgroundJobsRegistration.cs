@@ -45,6 +45,14 @@ public static class BackgroundJobsRegistration
         services.AddScoped<OnboardingDraftSweeper>();
         services.AddHostedService<OnboardingDraftSweepService>();
 
+        // Collaboration: tell assignees about Items due tomorrow and overdue Items, once per Item and due day.
+        services.AddOptions<DueDateNotificationOptions>()
+            .Bind(configuration.GetSection(DueDateNotificationOptions.SectionName))
+            .ValidateOnStart();
+        services.AddSingleton<IValidateOptions<DueDateNotificationOptions>, DueDateNotificationOptionsValidator>();
+        services.AddScoped<DueDateNotificationSweeper>();
+        services.AddHostedService<DueDateNotificationService>();
+
         return services;
     }
 }
