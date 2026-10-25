@@ -123,3 +123,41 @@ export async function showAllInLane(page: Page, lane: string) {
     .getByRole("button", { name: /^Show \d+ more items?$/ });
   if (await more.count()) await more.click();
 }
+
+/**
+ * A write through the API as the signed-in member: the CSRF token the browser
+ * client would send, an idempotency key and the JSON body. Specs use it to set a
+ * scene up quickly; what the spec is about goes through the page.
+ */
+export async function apiWrite<T = unknown>(
+  page: Page,
+  method: "POST" | "PUT" | "PATCH" | "DELETE",
+  path: string,
+  body?: unknown,
+): Promise<{ status: number; data: T | null }> {
+  const csrf = (await (
+    await page.request.get(`${apiUrl}/auth/csrf`)
+  ).json()) as { token: string };
+  const response = await page.request.fetch(`${apiUrl}${path}`, {
+    method,
+    headers: {
+      "X-CSRF-Token": csrf.token,
+      "Idempotency-Key": crypto.randomUUID(),
+      "Content-Type": "application/json",
+    },
+    data: body === undefined ? undefined : JSON.stringify(body),
+  });
+  const text = await response.text();
+  return {
+    status: response.status(),
+    data: text ? (JSON.parse(text) as T) : null,
+  };
+}
+
+/** A read through the API as the signed-in member. */
+export async function apiRead<T = unknown>(
+  page: Page,
+  path: string,
+): Promise<T> {
+  return readJson<T>(page, path);
+}

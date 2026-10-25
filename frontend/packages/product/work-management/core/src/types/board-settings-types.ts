@@ -35,6 +35,11 @@ export interface BoardSettingsUnavailable {
   readonly locale?: boolean;
   /** Archiving and restoring a field (and the "archived" list). */
   readonly fieldArchive?: boolean;
+  /**
+   * Deleting a field. Unlike the other flags it is offered only when explicitly
+   * `false` (a board Manager confirms first); absent keeps the part hidden.
+   */
+  readonly fieldDelete?: boolean;
   /** Required, guidance, default option and "used in" of a field. */
   readonly fieldRules?: boolean;
   /** Saved and private views of the board. */

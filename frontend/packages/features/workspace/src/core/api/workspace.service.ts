@@ -3,6 +3,7 @@ import type {
   OperationResponse,
 } from "@notrelix/contracts";
 import { parseWorkspaceRole } from "../model/members";
+import { WORKSPACE_TIME_ZONES } from "../types/workspace";
 import { rememberMarkTone } from "../model/navigation";
 import type {
   CreateWorkspaceInput,
@@ -85,6 +86,10 @@ export function parseWorkspaceSettings(payload: unknown): WorkspaceSettings {
     allowGuestInvites: raw.allowGuestInvites === true,
     allowPublicSharing: raw.allowPublicSharing === true,
     enforceMfa: raw.enforceMfa === true,
+    timeZone:
+      WORKSPACE_TIME_ZONES.find((zone) => zone === raw.timeZone) ??
+      "Asia/Ho_Chi_Minh",
+    weekStart: raw.weekStart === "sunday" ? "sunday" : "monday",
   };
 }
 
@@ -151,6 +156,8 @@ export function createWorkspaceSettingsService(
         allowGuestInvites: settings.allowGuestInvites,
         defaultMemberRole: ROLE_NAME[settings.defaultMemberRole],
         invitationExpiryDays: settings.invitationExpiryDays,
+        timeZone: settings.timeZone,
+        weekStart: settings.weekStart,
         expectedVersion,
       };
       await api.put<void>(endpoints.workspaces.settings(workspaceId), body);

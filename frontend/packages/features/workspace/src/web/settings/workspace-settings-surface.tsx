@@ -25,7 +25,10 @@ import {
   cn,
 } from "@notrelix/ui-web";
 import { ASSIGNABLE_ROLES } from "../../core/model/members";
-import type { WorkspaceSettings } from "../../core/types/workspace";
+import {
+  WORKSPACE_TIME_ZONES,
+  type WorkspaceSettings,
+} from "../../core/types/workspace";
 import type { SectionState } from "../home/home-models";
 import { formatCopy } from "../shell/shell-models";
 import type { WorkspaceSettingsCopy } from "./workspace-settings.copy";
@@ -380,6 +383,9 @@ function DefaultsForm({
   const expiryId = React.useId();
   const expiryHelpId = React.useId();
   const expiryErrorId = React.useId();
+  const zoneId = React.useId();
+  const zoneHelpId = React.useId();
+  const weekId = React.useId();
 
   React.useEffect(() => {
     setDraft(values);
@@ -399,6 +405,8 @@ function DefaultsForm({
     next.allowGuestInvites !== values.allowGuestInvites ||
     next.allowPublicSharing !== values.allowPublicSharing ||
     next.enforceMfa !== values.enforceMfa ||
+    next.timeZone !== values.timeZone ||
+    next.weekStart !== values.weekStart ||
     expiryText.trim() !== String(values.invitationExpiryDays);
   const saving = status.state === "saving";
   const disabled = locked || saving;
@@ -466,6 +474,58 @@ function DefaultsForm({
             {copy.defaults.expiryInvalid}
           </FieldError>
         ) : null}
+      </Field>
+      <Field className="gap-2">
+        <FieldLabel htmlFor={zoneId}>{copy.defaults.timeZoneLabel}</FieldLabel>
+        <Select
+          value={draft.timeZone}
+          disabled={disabled}
+          onValueChange={(value) =>
+            setDraft((current) => ({
+              ...current,
+              timeZone: value as WorkspaceSettings["timeZone"],
+            }))
+          }
+        >
+          <SelectTrigger
+            id={zoneId}
+            aria-describedby={zoneHelpId}
+            className="max-w-64"
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {WORKSPACE_TIME_ZONES.map((zone) => (
+              <SelectItem key={zone} value={zone}>
+                {copy.timeZones[zone]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <FieldDescription id={zoneHelpId}>
+          {copy.defaults.timeZoneHelp}
+        </FieldDescription>
+      </Field>
+      <Field className="gap-2">
+        <FieldLabel htmlFor={weekId}>{copy.defaults.weekStartLabel}</FieldLabel>
+        <Select
+          value={draft.weekStart}
+          disabled={disabled}
+          onValueChange={(value) =>
+            setDraft((current) => ({
+              ...current,
+              weekStart: value as WorkspaceSettings["weekStart"],
+            }))
+          }
+        >
+          <SelectTrigger id={weekId} className="max-w-48">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="monday">{copy.weekDays.monday}</SelectItem>
+            <SelectItem value="sunday">{copy.weekDays.sunday}</SelectItem>
+          </SelectContent>
+        </Select>
       </Field>
       <div className="flex max-w-xl flex-col gap-4">
         <SwitchField

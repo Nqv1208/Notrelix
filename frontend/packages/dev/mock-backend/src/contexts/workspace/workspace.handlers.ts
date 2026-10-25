@@ -178,6 +178,13 @@ function workspaceDto(store: MockStore, workspaceId: string) {
   };
 }
 
+/** The time zones a workspace may use, as on the producer. */
+const WORKSPACE_TIME_ZONES = [
+  "Asia/Ho_Chi_Minh",
+  "Asia/Singapore",
+  "Asia/Tokyo",
+] as const;
+
 const SETTINGS_ROLE: Readonly<
   Record<string, MockWorkspaceSettingsRecord["defaultMemberRole"]>
 > = { admin: "Admin", member: "Member", guest: "Guest" };
@@ -366,6 +373,8 @@ export const workspaceOperations = [
       defaultMemberRole?: string;
       invitationExpiryDays?: number;
       expectedVersion?: number;
+      timeZone?: string | null;
+      weekStart?: string | null;
     },
     void
   >({
@@ -389,6 +398,17 @@ export const workspaceOperations = [
           InvitationExpiryDays: ["Must be between 1 and 30 days."],
         });
       }
+      const kept = store.getWorkspaceSettings(params.workspaceId);
+      const timeZone = body?.timeZone
+        ? WORKSPACE_TIME_ZONES.find(
+            (zone) => zone.toLowerCase() === body.timeZone?.toLowerCase(),
+          )
+        : kept.timeZone;
+      if (!timeZone)
+        return validationError({ TimeZone: ["Unknown time zone."] });
+      const weekStart = (body?.weekStart ?? kept.weekStart).toLowerCase();
+      if (weekStart !== "monday" && weekStart !== "sunday")
+        return validationError({ WeekStart: ["Must be monday or sunday."] });
       return versionedWriteResult(
         store.updateWorkspaceSettings(
           params.workspaceId,
@@ -399,6 +419,8 @@ export const workspaceOperations = [
             allowGuestInvites: body?.allowGuestInvites === true,
             defaultMemberRole: role,
             invitationExpiryDays: days,
+            timeZone,
+            weekStart,
           },
         ),
       );

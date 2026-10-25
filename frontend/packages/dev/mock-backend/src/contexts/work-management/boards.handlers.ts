@@ -845,6 +845,8 @@ export const boardsOperations = [
     method: "DELETE",
     route: "/boards/:boardId/fields/:columnId",
     async handle({ params, store }) {
+      // Deleting a field is board management, as on the producer.
+      if (!canManageBoard(params.boardId, store)) return forbidden();
       const deleted = store.deleteColumn(params.columnId);
       if (!deleted) return notFound("Column not found");
       return ok<void>(undefined);

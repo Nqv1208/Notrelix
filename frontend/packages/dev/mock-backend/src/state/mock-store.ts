@@ -164,6 +164,8 @@ export interface MockWorkspaceSettingsRecord {
   allowGuestInvites: boolean;
   defaultMemberRole: "Admin" | "Member" | "Guest";
   invitationExpiryDays: number;
+  timeZone: string;
+  weekStart: "monday" | "sunday";
 }
 
 /** Mirrors the producer's member-rule outcomes (WSP-008). */
@@ -3417,6 +3419,8 @@ export class MockStore {
         allowGuestInvites: true,
         defaultMemberRole: "Member",
         invitationExpiryDays: 7,
+        timeZone: "Asia/Ho_Chi_Minh",
+        weekStart: "monday",
       };
       this.settingsByWorkspaceId.set(workspaceId, settings);
     }

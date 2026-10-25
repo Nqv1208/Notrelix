@@ -4975,6 +4975,7 @@ export interface components {
             description?: string | null;
             background?: string | null;
             visibility?: components["schemas"]["Notrelix.Domain.WorkManagement.Boards.BoardVisibility"];
+            itemKeyPrefix?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.Boards.Requests.UpdateBoardVisibilityRequest": {
             visibility?: components["schemas"]["Notrelix.Domain.WorkManagement.Boards.BoardVisibility"];
@@ -5171,6 +5172,8 @@ export interface components {
             guestDefaultExpiryDays?: number | null;
             size?: string | null;
             language?: string | null;
+            timeZone?: string | null;
+            weekStart?: string | null;
         };
         "Notrelix.API.Contracts.Workspaces.Spaces.Requests.AddSpaceMemberRequest": {
             subjectType?: string | null;
@@ -6413,6 +6416,8 @@ export interface components {
             guestDefaultExpiryDays?: number | null;
             size?: string | null;
             language?: string | null;
+            timeZone?: string | null;
+            weekStart?: string | null;
         };
         "Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpace.SpaceDto": {
             /** Format: uuid */

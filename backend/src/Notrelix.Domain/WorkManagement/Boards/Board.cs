@@ -114,6 +114,40 @@ public class Board : SoftDeletableAggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new BoardBackgroundUpdatedDomainEvent(AccountId, WorkspaceId, Id, oldBackground, Background, updatedBy, updatedAt));
     }
 
+    /// <summary>
+    /// A board Manager changes the prefix of the keys the board gives its items. It is 2 to 6
+    /// uppercase letters or digits and unique within the workspace; the caller supplies whether
+    /// another board of the workspace already uses it. Items keep their keys: only keys issued
+    /// from now on carry the new prefix.
+    /// </summary>
+    public void ChangeItemKeyPrefix(string prefix, bool usedByAnotherBoardOfTheWorkspace, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
+
+        if (IsArchived)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Board_CannotChangeItemKeyPrefixArchived, "Cannot change the item key prefix of an archived board.");
+
+        var normalized = (prefix ?? string.Empty).Trim();
+        if (!IsValidItemKeyPrefix(normalized))
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Board_InvalidItemKeyPrefix, "The item key prefix must be 2 to 6 uppercase letters or digits.");
+
+        if (string.Equals(ItemKeyPrefix, normalized, StringComparison.Ordinal)) return;
+
+        if (usedByAnotherBoardOfTheWorkspace)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Board_ItemKeyPrefixInUse, "Another board of the workspace already uses this item key prefix.");
+
+        var oldPrefix = ItemKeyPrefix;
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        ItemKeyPrefix = normalized;
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+        RaiseDomainEvent(new BoardItemKeyPrefixChangedDomainEvent(AccountId, WorkspaceId, Id, oldPrefix, normalized, updatedBy, updatedAt));
+    }
+
+    public static bool IsValidItemKeyPrefix(string? prefix) =>
+        prefix is { Length: >= 2 and <= 6 } && prefix.All(c => c is (>= 'A' and <= 'Z') or (>= '0' and <= '9'));
+
     public void ChangeVisibility(BoardVisibility visibility, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();

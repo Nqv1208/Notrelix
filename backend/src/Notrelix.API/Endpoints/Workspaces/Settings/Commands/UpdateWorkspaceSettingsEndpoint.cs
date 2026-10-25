@@ -30,7 +30,9 @@ public static class UpdateWorkspaceSettingsEndpoint
             request.ExpectedVersion,
             request.GuestDefaultExpiryDays,
             request.Size,
-            request.Language));
+            request.Language,
+            request.TimeZone,
+            request.WeekStart));
         return result.ToNoContentResult();
     }
 }

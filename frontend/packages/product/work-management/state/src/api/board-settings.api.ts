@@ -33,9 +33,9 @@ const CREATABLE_FIELD_TYPES: readonly BoardSettingsFieldType[] = [
 
 /** What the product has not defined yet: the page hides or locks these. */
 const UNAVAILABLE: BoardSettingsUnavailable = {
-  itemKeyPrefix: true,
   locale: true,
   fieldArchive: true,
+  fieldDelete: false,
   fieldRules: true,
   views: true,
   automations: true,
@@ -43,6 +43,17 @@ const UNAVAILABLE: BoardSettingsUnavailable = {
 };
 
 const DEFAULT_COLOR = "#1E6FD0";
+
+/** What a board inherits from its workspace (`Workspaces.Settings.GetWorkspaceSettings`). */
+interface WorkspaceLocale {
+  readonly timeZone: string;
+  readonly weekStart: "monday" | "sunday";
+}
+
+const DEFAULT_LOCALE: WorkspaceLocale = {
+  timeZone: "Asia/Ho_Chi_Minh",
+  weekStart: "monday",
+};
 
 function fieldType(raw: string | null | undefined): BoardSettingsFieldType {
   const name = (raw ?? "").trim().toLowerCase();
@@ -133,6 +144,7 @@ function mapGroup(group: OverviewGroup): BoardSettingsGroupDto {
 export function mapBoardSettings(
   boardId: string,
   board: Overview,
+  inherited: WorkspaceLocale = DEFAULT_LOCALE,
 ): BoardSettingsDto {
   const columns = byPosition(
     (board.columns ?? []).filter((column) => column.isDeleted !== true),
@@ -152,8 +164,9 @@ export function mapBoardSettings(
       sampleItemKey: null,
       itemKeyPrefix: board.itemKeyPrefix ?? "",
       department: null,
-      timeZone: "Asia/Ho_Chi_Minh",
-      weekStart: "monday",
+      // Time zone and first day of the week are the workspace's; the board inherits them.
+      timeZone: inherited.timeZone,
+      weekStart: inherited.weekStart,
       isArchived: false,
     },
     fields: columns
@@ -222,7 +235,20 @@ export function createBoardSettingsApi(client: NotrelixClient) {
         endpoints.boards.full(boardId),
         quiet,
       );
-      return mapBoardSettings(boardId, board);
+      // The workspace's locale is context, not the page's own data: without it the defaults show.
+      const inherited = board.workspaceId
+        ? await api
+            .get<{ timeZone?: string | null; weekStart?: string | null }>(
+              endpoints.workspaces.settings(board.workspaceId),
+              quiet,
+            )
+            .then((workspace): WorkspaceLocale => ({
+              timeZone: workspace.timeZone || DEFAULT_LOCALE.timeZone,
+              weekStart: workspace.weekStart === "sunday" ? "sunday" : "monday",
+            }))
+            .catch(() => DEFAULT_LOCALE)
+        : DEFAULT_LOCALE;
+      return mapBoardSettings(boardId, board, inherited);
     },
 
     updateGeneral: (s: BoardSettingsDto, changes: BoardSettingsGeneralPatch) =>
@@ -233,6 +259,7 @@ export function createBoardSettingsApi(client: NotrelixClient) {
           title: changes.title,
           description: changes.description,
           background: changes.color,
+          itemKeyPrefix: changes.itemKeyPrefix,
         },
         quiet,
       ),
@@ -255,6 +282,8 @@ export function createBoardSettingsApi(client: NotrelixClient) {
         { name, type },
         quiet,
       ),
+    deleteField: (s: BoardSettingsDto, fieldId: string) =>
+      api.delete<void>(endpoints.boardFields.detail(s.boardId, fieldId), quiet),
     reorderFields: async (s: BoardSettingsDto, ids: readonly string[]) => {
       const moved = movedId(
         s.fields.map((field) => field.id),

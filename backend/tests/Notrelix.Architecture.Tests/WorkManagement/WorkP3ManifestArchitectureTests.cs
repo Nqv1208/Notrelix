@@ -165,6 +165,7 @@ public sealed class WorkP3ManifestArchitectureTests
             "Notrelix.Application/Features/WorkManagement/BoardItems/Services/MoveBoardItemUseCase.cs",
             "Notrelix.Application/Features/WorkManagement/BoardItems/Commands/DuplicateBoardItem/DuplicateBoardItem.cs",
             "Notrelix.Application/Features/WorkManagement/BoardGroups/Commands/DuplicateBoardGroup/DuplicateBoardGroup.cs",
+            "Notrelix.Application/Features/WorkManagement/BoardGroups/Commands/DeleteBoardGroup/DeleteBoardGroup.cs",
             "Notrelix.Infrastructure/Data/Seed/InitDb.cs",
         ],
         ["BoardGroups (board_groups: board_id)"] =

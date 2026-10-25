@@ -9,5 +9,7 @@ public sealed record UpdateWorkspaceSettingsRequest(
     long ExpectedVersion,
     int? GuestDefaultExpiryDays = null,
     string? Size = null,
-    string? Language = null
+    string? Language = null,
+    string? TimeZone = null,
+    string? WeekStart = null
 );

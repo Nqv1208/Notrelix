@@ -13342,6 +13342,16 @@ namespace Notrelix.Infrastructure.Data.Migrations
                                 .HasColumnType("character varying(16)")
                                 .HasColumnName("settings_size");
 
+                            b1.Property<string>("TimeZone")
+                                .HasMaxLength(64)
+                                .HasColumnType("character varying(64)")
+                                .HasColumnName("settings_time_zone");
+
+                            b1.Property<string>("WeekStart")
+                                .HasMaxLength(8)
+                                .HasColumnType("character varying(8)")
+                                .HasColumnName("settings_week_start");
+
                             b1.HasKey("WorkspaceId");
 
                             b1.ToTable("workspaces", "workspace");

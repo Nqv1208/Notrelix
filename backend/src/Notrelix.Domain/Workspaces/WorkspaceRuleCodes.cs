@@ -96,6 +96,8 @@ public static class WorkspaceRuleCodes
     public const string Workspaces_Settings_GuestDefaultExpiryDaysInvalid = "Workspaces_Settings_GuestDefaultExpiryDaysInvalid";
     public const string Workspaces_Settings_SizeInvalid = "Workspaces_Settings_SizeInvalid";
     public const string Workspaces_Settings_LanguageInvalid = "Workspaces_Settings_LanguageInvalid";
+    public const string Workspaces_Settings_TimeZoneInvalid = "Workspaces_Settings_TimeZoneInvalid";
+    public const string Workspaces_Settings_WeekStartInvalid = "Workspaces_Settings_WeekStartInvalid";
 
     // ── Navigation (recents and pins, WX-DEC-011) ─────────────────────────
     public const string Workspaces_Navigation_UnsupportedResourceKind = "Workspaces_Navigation_UnsupportedResourceKind";

@@ -431,6 +431,7 @@ export function noopSettingsActions(
     reorderFields: ok,
     updateField: ok,
     archiveField: ok,
+    deleteField: ok,
     restoreField: ok,
     addOption: ok,
     updateOption: ok,

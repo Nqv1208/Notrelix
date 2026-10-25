@@ -50,6 +50,18 @@ export const en = {
     mfaLabel: "Require two-step verification",
     mfaHelp:
       "Members must turn on two-step verification to open this workspace.",
+    timeZoneLabel: "Time zone",
+    timeZoneHelp: "Every board of the workspace uses it for dates and times.",
+    weekStartLabel: "First day of the week",
+  },
+  timeZones: {
+    "Asia/Ho_Chi_Minh": "(GMT+7) Hanoi, Ho Chi Minh City",
+    "Asia/Singapore": "(GMT+8) Singapore",
+    "Asia/Tokyo": "(GMT+9) Tokyo",
+  },
+  weekDays: {
+    monday: "Monday",
+    sunday: "Sunday",
   },
   roles: {
     admin: "Admin",
@@ -135,6 +147,19 @@ export const vi: WorkspaceSettingsCopy = {
     mfaLabel: "Bắt buộc xác minh hai bước",
     mfaHelp:
       "Thành viên phải bật xác minh hai bước để mở không gian làm việc này.",
+    timeZoneLabel: "Múi giờ",
+    timeZoneHelp:
+      "Mọi bảng của không gian làm việc dùng múi giờ này cho ngày và giờ.",
+    weekStartLabel: "Ngày bắt đầu tuần",
+  },
+  timeZones: {
+    "Asia/Ho_Chi_Minh": "(GMT+7) Hà Nội, TP. Hồ Chí Minh",
+    "Asia/Singapore": "(GMT+8) Singapore",
+    "Asia/Tokyo": "(GMT+9) Tokyo",
+  },
+  weekDays: {
+    monday: "Thứ Hai",
+    sunday: "Chủ nhật",
   },
   roles: {
     admin: "Quản trị viên",

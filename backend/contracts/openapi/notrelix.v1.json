@@ -19713,6 +19713,10 @@
           },
           "visibility": {
             "$ref": "#/components/schemas/Notrelix.Domain.WorkManagement.Boards.BoardVisibility"
+          },
+          "itemKeyPrefix": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -20316,6 +20320,14 @@
             "nullable": true
           },
           "language": {
+            "type": "string",
+            "nullable": true
+          },
+          "timeZone": {
+            "type": "string",
+            "nullable": true
+          },
+          "weekStart": {
             "type": "string",
             "nullable": true
           }
@@ -24024,6 +24036,14 @@
             "nullable": true
           },
           "language": {
+            "type": "string",
+            "nullable": true
+          },
+          "timeZone": {
+            "type": "string",
+            "nullable": true
+          },
+          "weekStart": {
             "type": "string",
             "nullable": true
           }

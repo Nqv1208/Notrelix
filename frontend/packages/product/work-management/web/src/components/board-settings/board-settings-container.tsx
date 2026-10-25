@@ -88,6 +88,7 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
       updateField: (fieldId, changes) =>
         write((api, s) => api.updateField(s, fieldId, changes)),
       archiveField: unsupported,
+      deleteField: (fieldId) => write((api, s) => api.deleteField(s, fieldId)),
       restoreField: unsupported,
       addOption: (fieldId, option) =>
         write((api, s) => api.addOption(s, fieldId, option)),

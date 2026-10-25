@@ -62,11 +62,14 @@ export function FieldPanel({
   field,
   onClose,
   onArchive,
+  onDelete,
 }: {
   field: BoardSettingsFieldDto;
   onClose: () => void;
   /** Absent when the product has no archive of a field yet. */
   onArchive?: () => void;
+  /** Absent when the member may not delete fields; opens the confirmation. */
+  onDelete?: () => void;
 }) {
   const { copy, settings, actions, run } = useSettings();
   const rules = settings.unavailable?.fieldRules !== true;
@@ -292,6 +295,25 @@ export function FieldPanel({
               className={BUTTON_CLASS.ghostDanger}
             >
               {t.archive}
+            </button>
+          </DisabledControl>
+        )}
+        {!onDelete ? null : canArchive ? (
+          <button
+            type="button"
+            onClick={onDelete}
+            className={BUTTON_CLASS.ghostDanger}
+          >
+            {t.delete}
+          </button>
+        ) : (
+          <DisabledControl reason={t.deleteUnavailable}>
+            <button
+              type="button"
+              aria-disabled="true"
+              className={BUTTON_CLASS.ghostDanger}
+            >
+              {t.delete}
             </button>
           </DisabledControl>
         )}

@@ -29,6 +29,8 @@ public class WorkspaceConfiguration : IEntityTypeConfiguration<Workspace>
             settings.Property(s => s.PublicSharingChangedAt).HasColumnName("settings_public_sharing_changed_at");
             settings.Property(s => s.Size).HasColumnName("settings_size").HasMaxLength(16);
             settings.Property(s => s.Language).HasColumnName("settings_language").HasMaxLength(8);
+            settings.Property(s => s.TimeZone).HasColumnName("settings_time_zone").HasMaxLength(64);
+            settings.Property(s => s.WeekStart).HasColumnName("settings_week_start").HasMaxLength(8);
         });
 
         builder.Ignore(x => x.IsDeleted);

@@ -42,6 +42,8 @@ export interface BoardSettingsActions {
     changes: BoardSettingsFieldPatch,
   ): Promise<BoardSettingsWriteResult>;
   archiveField(fieldId: string): Promise<BoardSettingsWriteResult>;
+  /** Deletes a field for good; a board Manager confirms first. */
+  deleteField(fieldId: string): Promise<BoardSettingsWriteResult>;
   restoreField(fieldId: string): Promise<BoardSettingsWriteResult>;
   addOption(
     fieldId: string,

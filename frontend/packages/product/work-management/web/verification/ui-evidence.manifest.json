@@ -2643,6 +2643,7 @@
         "src/components/board-settings/board-settings-automations.tsx",
         "src/components/board-settings/board-settings-context.tsx",
         "src/components/board-settings/board-settings-field-archive.tsx",
+        "src/components/board-settings/board-settings-field-delete.tsx",
         "src/components/board-settings/board-settings-field-panel.tsx",
         "src/components/board-settings/board-settings-field-picker.tsx",
         "src/components/board-settings/board-settings-fields.tsx",

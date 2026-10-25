@@ -29,6 +29,12 @@ public sealed class WorkspaceSettings : ValueObject
     /// <summary>Workspace language <c>vi</c> or <c>en</c> (<see cref="WorkspaceProfile.Languages"/>); null until set.</summary>
     public string? Language { get; }
 
+    /// <summary>IANA time zone of the workspace, inherited by its boards; null until set (<see cref="WorkspaceProfile.DefaultTimeZone"/> applies).</summary>
+    public string? TimeZone { get; }
+
+    /// <summary><c>monday</c> or <c>sunday</c>, inherited by the workspace's boards; null until set (<see cref="WorkspaceProfile.DefaultWeekStart"/> applies).</summary>
+    public string? WeekStart { get; }
+
     /// <summary>The expiry defaults a Workspace may offer for a new Guest entry.</summary>
     public static readonly IReadOnlyList<int> AllowedGuestDefaultExpiryDays = [30, 90, 180];
 
@@ -42,10 +48,14 @@ public sealed class WorkspaceSettings : ValueObject
         int? guestDefaultExpiryDays,
         DateTimeOffset? publicSharingChangedAt,
         string? size,
-        string? language)
+        string? language,
+        string? timeZone,
+        string? weekStart)
     {
         Size = size;
         Language = language;
+        TimeZone = timeZone;
+        WeekStart = weekStart;
         GuestDefaultExpiryDays = guestDefaultExpiryDays;
         PublicSharingChangedAt = publicSharingChangedAt;
         AllowPublicSharing = allowPublicSharing;
@@ -63,7 +73,9 @@ public sealed class WorkspaceSettings : ValueObject
         int invitationExpiryDays = 7,
         int? guestDefaultExpiryDays = null,
         string? size = null,
-        string? language = null)
+        string? language = null,
+        string? timeZone = null,
+        string? weekStart = null)
     {
         if (defaultMemberRole is not WorkspaceRole.Guest and not WorkspaceRole.Member)
             throw new BusinessRuleException(
@@ -89,12 +101,14 @@ public sealed class WorkspaceSettings : ValueObject
             guestDefaultExpiryDays,
             publicSharingChangedAt: null,
             WorkspaceProfile.NormalizeSize(size),
-            WorkspaceProfile.NormalizeLanguage(language));
+            WorkspaceProfile.NormalizeLanguage(language),
+            WorkspaceProfile.NormalizeTimeZone(timeZone),
+            WorkspaceProfile.NormalizeWeekStart(weekStart));
     }
 
     /// <summary>The same settings with the recorded instant of the last sharing-policy change.</summary>
     internal WorkspaceSettings WithPublicSharingChangedAt(DateTimeOffset? changedAt) =>
-        new(AllowPublicSharing, EnforceMfa, AllowGuestInvites, DefaultMemberRole, InvitationExpiryDays, GuestDefaultExpiryDays, changedAt, Size, Language);
+        new(AllowPublicSharing, EnforceMfa, AllowGuestInvites, DefaultMemberRole, InvitationExpiryDays, GuestDefaultExpiryDays, changedAt, Size, Language, TimeZone, WeekStart);
 
     protected override IEnumerable<object?> GetEqualityComponents()
     {
@@ -106,5 +120,7 @@ public sealed class WorkspaceSettings : ValueObject
         yield return GuestDefaultExpiryDays;
         yield return Size;
         yield return Language;
+        yield return TimeZone;
+        yield return WeekStart;
     }
 }

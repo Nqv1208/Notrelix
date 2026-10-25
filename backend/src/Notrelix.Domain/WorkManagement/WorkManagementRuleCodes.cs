@@ -12,6 +12,9 @@ public static class WorkManagementRuleCodes
     public const string WorkManagement_Board_CannotChangeVisibilityArchived = "WorkManagement_Board_CannotChangeVisibilityArchived";
     public const string WorkManagement_Board_CannotGenerateIdentityArchived = "WorkManagement_Board_CannotGenerateIdentityArchived";
     public const string WorkManagement_Board_CannotChangeSpaceArchived = "WorkManagement_Board_CannotChangeSpaceArchived";
+    public const string WorkManagement_Board_CannotChangeItemKeyPrefixArchived = "WorkManagement_Board_CannotChangeItemKeyPrefixArchived";
+    public const string WorkManagement_Board_InvalidItemKeyPrefix = "WorkManagement_Board_InvalidItemKeyPrefix";
+    public const string WorkManagement_Board_ItemKeyPrefixInUse = "WorkManagement_Board_ItemKeyPrefixInUse";
     public const string WorkManagement_Board_CannotDeleteDefaultGroup = "WorkManagement_Board_CannotDeleteDefaultGroup";
     public const string WorkManagement_Group_CannotDeleteLast = "WorkManagement_Group_CannotDeleteLast";
     public const string WorkManagement_Group_ItemsNeedTargetGroup = "WorkManagement_Group_ItemsNeedTargetGroup";

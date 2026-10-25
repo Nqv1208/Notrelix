@@ -13,6 +13,41 @@ public static class WorkspaceProfile
     /// <summary>The workspace languages.</summary>
     public static readonly IReadOnlyList<string> Languages = ["vi", "en"];
 
+    /// <summary>The time zones a workspace may use, as IANA ids; a board inherits the workspace's.</summary>
+    public static readonly IReadOnlyList<string> TimeZones = ["Asia/Ho_Chi_Minh", "Asia/Singapore", "Asia/Tokyo"];
+
+    /// <summary>The time zone a workspace has until one is chosen.</summary>
+    public const string DefaultTimeZone = "Asia/Ho_Chi_Minh";
+
+    /// <summary>The first day of the week a workspace may use.</summary>
+    public static readonly IReadOnlyList<string> WeekStarts = ["monday", "sunday"];
+
+    /// <summary>The first day of the week a workspace has until one is chosen.</summary>
+    public const string DefaultWeekStart = "monday";
+
+    public static string? NormalizeTimeZone(string? timeZone)
+    {
+        if (string.IsNullOrWhiteSpace(timeZone)) return null;
+        var value = timeZone.Trim();
+        var known = TimeZones.FirstOrDefault(zone => string.Equals(zone, value, StringComparison.OrdinalIgnoreCase));
+        if (known is null)
+            throw new BusinessRuleException(
+                WorkspaceRuleCodes.Workspaces_Settings_TimeZoneInvalid,
+                "Workspace time zone must be one of Asia/Ho_Chi_Minh, Asia/Singapore or Asia/Tokyo.");
+        return known;
+    }
+
+    public static string? NormalizeWeekStart(string? weekStart)
+    {
+        if (string.IsNullOrWhiteSpace(weekStart)) return null;
+        var value = weekStart.Trim().ToLowerInvariant();
+        if (!WeekStarts.Contains(value))
+            throw new BusinessRuleException(
+                WorkspaceRuleCodes.Workspaces_Settings_WeekStartInvalid,
+                "Workspace week start must be monday or sunday.");
+        return value;
+    }
+
     public static string? NormalizeSize(string? size)
     {
         if (string.IsNullOrWhiteSpace(size)) return null;

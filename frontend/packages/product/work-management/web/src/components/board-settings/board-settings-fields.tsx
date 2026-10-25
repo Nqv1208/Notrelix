@@ -7,6 +7,7 @@ import type {
 } from "@notrelix/work-management-core";
 import { useSettings } from "./board-settings-context";
 import { FieldArchiveDialog } from "./board-settings-field-archive";
+import { FieldDeleteDialog } from "./board-settings-field-delete";
 import { FieldPanel } from "./board-settings-field-panel";
 import { FieldTypePicker } from "./board-settings-field-picker";
 import {
@@ -53,6 +54,9 @@ export function FieldsSection({
     settings.fields.find((field) => field.id === fieldId) ?? null;
   const archiving =
     settings.fields.find((field) => field.id === archiveId) ?? null;
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const deleting =
+    settings.fields.find((field) => field.id === deleteId) ?? null;
   const archivedRef = useRef<HTMLDivElement>(null);
   const knownIds = useRef<readonly string[] | null>(null);
 
@@ -281,6 +285,22 @@ export function FieldsSection({
               ? undefined
               : () => setArchiveId(selected.id)
           }
+          onDelete={
+            settings.unavailable?.fieldDelete === false
+              ? () => setDeleteId(selected.id)
+              : undefined
+          }
+        />
+      ) : null}
+
+      {deleting ? (
+        <FieldDeleteDialog
+          field={deleting}
+          onClose={() => setDeleteId(null)}
+          onDeleted={() => {
+            setDeleteId(null);
+            if (deleting.id === fieldId) onSelectField(null);
+          }}
         />
       ) : null}
 

@@ -224,8 +224,20 @@ export const en = {
     archive: "Archive field",
     archiveUnavailable:
       "The Status field splits the Kanban and cannot be archived",
+    delete: "Delete field",
+    deleteUnavailable:
+      "The Status field splits the Kanban and cannot be deleted",
     readOnlyColumn:
       "This field is calculated by Notrelix, only its name is shown here.",
+  },
+  deleteDialog: {
+    title: "Delete the field “{{name}}”?",
+    body: "Deleting removes the field and the values items hold in it. This cannot be undone.",
+    values_other: "{{count}} items have a value that will be deleted",
+    values_one: "{{count}} item has a value that will be deleted",
+    cancel: "Cancel",
+    confirm: "Delete field",
+    working: "Deleting…",
   },
   archiveDialog: {
     title: "Archive the field “{{name}}”?",
@@ -641,7 +653,18 @@ export const vi: BoardSettingsCopy = {
     archive: "Lưu trữ trường",
     archiveUnavailable:
       "Trường Trạng thái chia cột Kanban nên không lưu trữ được",
+    delete: "Xoá trường",
+    deleteUnavailable: "Trường Trạng thái chia cột Kanban nên không xoá được",
     readOnlyColumn: "Trường này do Notrelix tự tính, ở đây chỉ hiện tên.",
+  },
+  deleteDialog: {
+    title: 'Xoá trường "{{name}}"?',
+    body: "Xoá sẽ bỏ trường và các giá trị mà việc đang có ở trường này. Không thể hoàn tác.",
+    values_other: "{{count}} việc có giá trị sẽ bị xoá",
+    values_one: "{{count}} việc có giá trị sẽ bị xoá",
+    cancel: "Huỷ",
+    confirm: "Xoá trường",
+    working: "Đang xoá…",
   },
   archiveDialog: {
     title: 'Lưu trữ trường "{{name}}"?',

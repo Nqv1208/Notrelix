@@ -79,7 +79,7 @@ public sealed class WorkPermissionActionMatrixArchitectureTests
 
         ["BoardFields.CreateBoardFieldCommand"] = PermissionAction.CreateField,
         ["BoardFields.UpdateBoardFieldCommand"] = PermissionAction.UpdateField,
-        ["BoardFields.DeleteBoardFieldCommand"] = PermissionAction.DeleteField,
+        ["BoardFields.DeleteBoardFieldCommand"] = PermissionAction.ManageBoard,
         ["BoardFields.MoveBoardFieldCommand"] = PermissionAction.UpdateField,
         ["BoardFields.AddFieldOptionCommand"] = PermissionAction.UpdateField,
         ["BoardFields.UpdateFieldOptionCommand"] = PermissionAction.UpdateField,

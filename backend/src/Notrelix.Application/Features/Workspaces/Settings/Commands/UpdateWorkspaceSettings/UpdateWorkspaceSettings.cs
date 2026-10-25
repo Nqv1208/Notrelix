@@ -13,7 +13,9 @@ public record UpdateWorkspaceSettingsCommand(
     long ExpectedVersion,
     int? GuestDefaultExpiryDays = null,
     string? Size = null,
-    string? Language = null
+    string? Language = null,
+    string? TimeZone = null,
+    string? WeekStart = null
 ) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.ManageWorkspace;
@@ -53,7 +55,9 @@ public class UpdateWorkspaceSettingsCommandHandler : IRequestHandler<UpdateWorks
             request.GuestDefaultExpiryDays,
             // Not sent means keep: a client that predates these fields must not clear them.
             request.Size ?? workspace.Settings.Size,
-            request.Language ?? workspace.Settings.Language);
+            request.Language ?? workspace.Settings.Language,
+            request.TimeZone ?? workspace.Settings.TimeZone,
+            request.WeekStart ?? workspace.Settings.WeekStart);
 
         workspace.UpdateSettings(settings, _requestContext.UserId, _dateTimeProvider.UtcNow);
         return Result.Success();

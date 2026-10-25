@@ -61,4 +61,21 @@ public class UpdateWorkspaceSettingsCommandHandlerTests : WorkspaceHandlerTestBa
         workspace.Version.Should().Be(version);
         workspace.Settings.Size.Should().BeNull();
     }
+
+    [Fact]
+    public async Task Handle_WithTimeZoneAndWeekStart_SetsThem_AndOmittingThemKeepsTheStoredValues()
+    {
+        var workspace = CreateWorkspace();
+        SetupWorkspaces(workspace);
+        var sut = CreateSut();
+
+        await sut.Handle(new UpdateWorkspaceSettingsCommand(workspace.Id, false, false, false, "Member", 7, 1, null, null, null, "Asia/Tokyo", "sunday"), CancellationToken.None);
+        workspace.Settings.TimeZone.Should().Be("Asia/Tokyo");
+        workspace.Settings.WeekStart.Should().Be("sunday");
+
+        await sut.Handle(new UpdateWorkspaceSettingsCommand(workspace.Id, true, false, false, "Member", 7, 2), CancellationToken.None);
+        workspace.Settings.AllowPublicSharing.Should().BeTrue();
+        workspace.Settings.TimeZone.Should().Be("Asia/Tokyo");
+        workspace.Settings.WeekStart.Should().Be("sunday");
+    }
 }

@@ -19,7 +19,10 @@ public record WorkspaceSettingsDto(
     int InvitationExpiryDays,
     int? GuestDefaultExpiryDays,
     string? Size = null,
-    string? Language = null
+    string? Language = null,
+    // What the workspace's boards inherit: the chosen value, else the default.
+    string TimeZone = "Asia/Ho_Chi_Minh",
+    string WeekStart = "monday"
 );
 
 public class GetWorkspaceSettingsQueryHandler : IRequestHandler<GetWorkspaceSettingsQuery, Result<WorkspaceSettingsDto>>
@@ -49,6 +52,8 @@ public class GetWorkspaceSettingsQueryHandler : IRequestHandler<GetWorkspaceSett
             s.InvitationExpiryDays,
             s.GuestDefaultExpiryDays,
             s.Size,
-            s.Language));
+            s.Language,
+            s.TimeZone ?? WorkspaceProfile.DefaultTimeZone,
+            s.WeekStart ?? WorkspaceProfile.DefaultWeekStart));
     }
 }

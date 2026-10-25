@@ -6,7 +6,8 @@ namespace Notrelix.Application.Features.WorkManagement.BoardFields.Commands.Dele
 [IdempotencyOperation("work-management.board-fields.delete-board-field.v1")]
 public record DeleteBoardFieldCommand(Guid BoardId, Guid ColumnId) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
-    public PermissionAction Action => PermissionAction.DeleteField;
+    // A field is a part of the board's shape, so deleting one is Board management (Manager).
+    public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-field"), ColumnId);
 }
 

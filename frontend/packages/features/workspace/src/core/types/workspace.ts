@@ -188,7 +188,18 @@ export interface WorkspaceSettings {
   readonly allowGuestInvites: boolean;
   readonly allowPublicSharing: boolean;
   readonly enforceMfa: boolean;
+  /** IANA time zone the workspace's boards inherit. */
+  readonly timeZone: WorkspaceTimeZone;
+  /** First day of the week the workspace's boards inherit. */
+  readonly weekStart: "monday" | "sunday";
 }
+
+export const WORKSPACE_TIME_ZONES = [
+  "Asia/Ho_Chi_Minh",
+  "Asia/Singapore",
+  "Asia/Tokyo",
+] as const;
+export type WorkspaceTimeZone = (typeof WORKSPACE_TIME_ZONES)[number];
 
 export interface CreateWorkspaceInvitationInput {
   email: string;

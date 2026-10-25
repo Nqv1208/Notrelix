@@ -165,4 +165,38 @@ public class WorkspaceSlugAndProfileTests
         workspace.UpdateSettings(WorkspaceSettings.Create(size: "11-50", language: "vi"), OwnerId, Now);
         workspace.Version.Should().Be(before + 1);
     }
+
+    [Theory]
+    [InlineData("Asia/Singapore", "Asia/Singapore")]
+    [InlineData("asia/tokyo", "Asia/Tokyo")]
+    [InlineData(null, null)]
+    [InlineData("  ", null)]
+    public void TimeZone_AcceptedOrUnset_IsNormalised(string? timeZone, string? expected) =>
+        WorkspaceSettings.Create(timeZone: timeZone).TimeZone.Should().Be(expected);
+
+    [Theory]
+    [InlineData("Mars/Olympus")]
+    [InlineData("GMT+7")]
+    public void TimeZone_OutsideTheList_IsRejected(string timeZone)
+    {
+        var act = () => WorkspaceSettings.Create(timeZone: timeZone);
+
+        act.Should().Throw<BusinessRuleException>().Which.RuleCode
+            .Should().Be(WorkspaceRuleCodes.Workspaces_Settings_TimeZoneInvalid);
+    }
+
+    [Theory]
+    [InlineData("monday", "monday")]
+    [InlineData("SUNDAY", "sunday")]
+    public void WeekStart_MondayOrSunday_IsAccepted(string weekStart, string expected) =>
+        WorkspaceSettings.Create(weekStart: weekStart).WeekStart.Should().Be(expected);
+
+    [Fact]
+    public void WeekStart_AnotherDay_IsRejected()
+    {
+        var act = () => WorkspaceSettings.Create(weekStart: "friday");
+
+        act.Should().Throw<BusinessRuleException>().Which.RuleCode
+            .Should().Be(WorkspaceRuleCodes.Workspaces_Settings_WeekStartInvalid);
+    }
 }

@@ -11,7 +11,8 @@ public record UpdateBoardCommand(
     string? Description,
     string? Background,
     BoardVisibility? Visibility,
-    long ExpectedVersion) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IExpectedVersionRequest, IIdempotentRequest
+    long ExpectedVersion,
+    string? ItemKeyPrefix = null) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IExpectedVersionRequest, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);
@@ -42,6 +43,14 @@ public class UpdateBoardCommandHandler : IRequestHandler<UpdateBoardCommand, Res
         if (request.Title is not null) board.Rename(request.Title, _currentUser.UserId, now);
         if (request.Description is not null) board.UpdateDescription(request.Description, _currentUser.UserId, now);
         if (request.Background is not null) board.UpdateBackground(request.Background, _currentUser.UserId, now);
+        if (request.ItemKeyPrefix is not null)
+        {
+            var prefix = request.ItemKeyPrefix.Trim().ToUpperInvariant();
+            var taken = await _context.Boards.AnyAsync(
+                b => b.Id != board.Id && b.WorkspaceId == board.WorkspaceId && b.DeletedAt == null
+                     && b.ItemKeyPrefix != null && b.ItemKeyPrefix.ToUpper() == prefix, ct);
+            board.ChangeItemKeyPrefix(prefix, taken, _currentUser.UserId, now);
+        }
         if (request.Visibility is not null)
         {
             board.ChangeVisibility(request.Visibility.Value, _currentUser.UserId, now);
