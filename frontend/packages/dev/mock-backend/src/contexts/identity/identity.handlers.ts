@@ -43,6 +43,47 @@ export const identityOperations = [
     },
   }),
 
+  defineMockOperation<Record<string, never>, never, unknown>({
+    id: "identity.bootstrap",
+    contract: { kind: "openapi", operationId: "Identity.Auth.GetBootstrap" },
+    method: "GET",
+    route: "/auth/bootstrap",
+    async handle({ store }) {
+      if (store.isCurrentUserLoggedOut()) {
+        return unauthorized();
+      }
+      const user = store.getCurrentUser();
+      // The mock world has one Account per member.
+      const accountId = `account-${user.id}`;
+      const workspaces = store
+        .getWorkspaces()
+        .filter((workspace) => !store.isWorkspaceArchived(workspace.id));
+      const personal = workspaces.find((workspace) => workspace.isPersonal);
+      return ok({
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          avatarUrl: user.avatarUrl,
+          emailConfirmed: true,
+        },
+        workspaces: workspaces
+          .filter((workspace) => !workspace.isPersonal)
+          .map((workspace) => ({
+            id: workspace.id,
+            name: workspace.name,
+            slug: workspace.slug,
+            role: "Member",
+            accountId,
+          })),
+        personalWorkspace: personal
+          ? { status: "ready", workspaceId: personal.id }
+          : { status: "pending", workspaceId: null },
+        accountId,
+      });
+    },
+  }),
+
   defineMockOperation<
     Record<string, never>,
     { email?: string; password?: string },

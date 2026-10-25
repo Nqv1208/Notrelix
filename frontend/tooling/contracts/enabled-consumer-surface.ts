@@ -1276,13 +1276,20 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
   },
   {
     context: "Workspace",
-    classification: "COMPATIBILITY_GAP_MOCKED",
+    classification: "CANONICAL_MOCKED",
     consumerSymbol: "createOnboardingApi",
     consumerFile: "frontend/apps/web/src/routes/onboarding/onboarding-api.ts",
     capability: "Check that a workspace address is free and suggest another",
-    gapId: "CTR-GAP-ONBOARD-FLOW",
-    method: "GET",
-    pathTemplate: "/onboarding/slug-check",
+    operationId: "Workspaces.Workspaces.CheckWorkspaceSlug",
+    mutation: false,
+  },
+  {
+    context: "Identity",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createOnboardingApi",
+    consumerFile: "frontend/apps/web/src/routes/onboarding/onboarding-api.ts",
+    capability: "Learn the Account the member acts in",
+    operationId: "Identity.Auth.GetBootstrap",
     mutation: false,
   },
   {
@@ -1325,14 +1332,12 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
   },
   {
     context: "Workspace",
-    classification: "COMPATIBILITY_GAP_MOCKED",
+    classification: "CANONICAL_MOCKED",
     consumerSymbol: "createOnboardingApi",
     consumerFile: "frontend/apps/web/src/routes/onboarding/onboarding-api.ts",
     capability:
       "Create the company workspace with its address, size and language",
-    gapId: "CTR-GAP-ONBOARD-FLOW",
-    method: "POST",
-    pathTemplate: "/onboarding/workspace",
+    operationId: "Workspaces.Workspaces.CreateWorkspace",
     mutation: true,
   },
   {

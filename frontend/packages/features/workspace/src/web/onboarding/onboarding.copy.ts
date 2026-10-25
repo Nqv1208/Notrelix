@@ -47,10 +47,11 @@ export const en = {
       "Lowercase letters, digits and dashes. People open the workspace through this address.",
     sizeLabel: "Company size",
     sizes: {
-      s: "1–20 people",
-      m: "21–100 people",
-      l: "101–500 people",
-      xl: "Over 500 people",
+      s: "1–10 people",
+      m: "11–50 people",
+      l: "51–200 people",
+      xl: "201–1,000 people",
+      xxl: "Over 1,000 people",
     },
     sizeHint:
       "Used to suggest departments and board templates. It does not affect the plan.",
@@ -361,10 +362,11 @@ export const vi: OnboardingCopy = {
       "Chữ thường, số và dấu gạch ngang. Mọi người mở workspace qua địa chỉ này.",
     sizeLabel: "Quy mô công ty",
     sizes: {
-      s: "1–20 người",
-      m: "21–100 người",
-      l: "101–500 người",
-      xl: "Trên 500 người",
+      s: "1–10 người",
+      m: "11–50 người",
+      l: "51–200 người",
+      xl: "201–1.000 người",
+      xxl: "Trên 1.000 người",
     },
     sizeHint:
       "Dùng để gợi ý phòng ban và mẫu board. Không ảnh hưởng gói dịch vụ.",

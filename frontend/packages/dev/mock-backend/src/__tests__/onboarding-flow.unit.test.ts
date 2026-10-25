@@ -19,38 +19,40 @@ function client() {
 }
 
 const KEY = { idempotencyKey: "test-key" } as const;
+const ACCOUNT = "account-x";
+const slugCheck = (slug: string) =>
+  `/accounts/${ACCOUNT}/workspaces/slug-check?slug=${slug}`;
+const workspaces = `/accounts/${ACCOUNT}/workspaces`;
 
 describe("workspace address", () => {
   it("is free until a workspace has it, then taken with a suggestion close by", async () => {
     const { api } = client();
-    expect(await api.get("/onboarding/slug-check?slug=saomai")).toMatchObject({
-      available: true,
+    expect(await api.get(slugCheck("saomai"))).toMatchObject({
+      status: "free",
     });
     await api.post(
-      "/onboarding/workspace",
+      workspaces,
       {
         name: "Công ty CP Thực phẩm Sao Mai",
         slug: "saomai",
-        size: "l",
-        locale: "vi",
+        size: "51-200",
+        language: "vi",
       },
       KEY,
     );
-    expect(await api.get("/onboarding/slug-check?slug=saomai")).toEqual({
-      available: false,
+    expect(await api.get(slugCheck("saomai"))).toEqual({
+      status: "taken",
       reason: "taken",
       suggestion: "saomai-food",
     });
-    expect(
-      await api.get("/onboarding/slug-check?slug=Sao%20Mai!"),
-    ).toMatchObject({
-      available: false,
+    expect(await api.get(slugCheck("Sao%20Mai!"))).toMatchObject({
+      status: "invalid",
       reason: "invalid",
     });
     await expect(
       api.post(
-        "/onboarding/workspace",
-        { name: "Sao Mai 2", slug: "saomai", size: "s", locale: "vi" },
+        workspaces,
+        { name: "Sao Mai 2", slug: "saomai", size: "1-10", language: "vi" },
         KEY,
       ),
     ).rejects.toMatchObject({ status: 409 });
@@ -59,12 +61,13 @@ describe("workspace address", () => {
   it("refuses the reserved words and a short or long address", async () => {
     const { api } = client();
     for (const slug of ["admin", "workspaces", "ab", "a".repeat(64)])
-      expect(
-        await api.get(`/onboarding/slug-check?slug=${slug}`),
-      ).toMatchObject({ available: false, reason: "invalid" });
-    expect(
-      await api.get(`/onboarding/slug-check?slug=${"a".repeat(63)}`),
-    ).toMatchObject({ available: true });
+      expect(await api.get(slugCheck(slug))).toMatchObject({
+        status: "invalid",
+        reason: "invalid",
+      });
+    expect(await api.get(slugCheck("a".repeat(63)))).toMatchObject({
+      status: "free",
+    });
   });
 
   it("keeps reserved words and the mock world's own addresses taken", () => {
@@ -98,12 +101,21 @@ describe("suggestions", () => {
 });
 
 describe("the setup through the client", () => {
-  const create = (api: ReturnType<typeof client>["api"], slug: string) =>
-    api.post<{ id: string }>(
-      "/onboarding/workspace",
-      { name: "Công ty CP Thực phẩm Sao Mai", slug, size: "l", locale: "vi" },
+  const create = async (
+    api: ReturnType<typeof client>["api"],
+    slug: string,
+  ) => ({
+    id: await api.post<string>(
+      workspaces,
+      {
+        name: "Công ty CP Thực phẩm Sao Mai",
+        slug,
+        size: "51-200",
+        language: "vi",
+      },
       KEY,
-    );
+    ),
+  });
 
   it("creates private departments, invitations with their entries and the first board, with the producer's operations", async () => {
     const { api, store } = client();

@@ -6,12 +6,10 @@
  *
  * (departments, invitations and the first board go through CreateSpace,
  * InviteMember and Boards.Create.) What has no usable producer stays a gap
- * (`CTR-GAP-ONBOARD-FLOW`): the address check and workspace create (the Account
- * id is unknown to a client), the department and board-template catalogue and
- * the invited person's first-visit read and write.
+ * (`CTR-GAP-ONBOARD-FLOW`): the department and board-template catalogue and
+ * the invited person's first-visit read and write. The address check and the
+ * workspace create are the Account's routes (Workspaces.Workspaces.*).
  *
- *   onboarding.slugCheck          — GET    /onboarding/slug-check?slug=
- *   onboarding.workspace.create   — POST   /onboarding/workspace
    onboarding.catalog            — GET    /onboarding/catalog?size=&name=
  *   onboarding.join.get/save      — GET/PUT /workspaces/:id/onboarding/join
  */
@@ -80,53 +78,58 @@ const sizeOf = (value: string | null | undefined): CompanySize =>
     : "m";
 
 export const onboardingOperations = [
-  // Gap: the real routes are account-scoped and no operation tells a client
-  // its Account id (`Workspaces.Workspaces.CheckWorkspaceSlug` and
-  // `CreateWorkspace` take `/accounts/{accountId}/...`).
   defineMockOperation<Record<string, never>, never, unknown>({
     id: "onboarding.slugCheck",
-    contract: gap,
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Workspaces.CheckWorkspaceSlug",
+    },
     method: "GET",
-    route: "/onboarding/slug-check",
+    route: "/accounts/:accountId/workspaces/slug-check",
     async handle({ request, store }) {
       const slug = (request.searchParams.get("slug") ?? "")
         .trim()
         .toLowerCase();
       if (slugViolation(slug))
-        return ok({ available: false, reason: "invalid", suggestion: null });
+        return ok({ status: "invalid", reason: "invalid", suggestion: null });
       const taken = slugTaken(store);
       return taken(slug)
         ? ok({
-            available: false,
+            status: "taken",
             reason: "taken",
             suggestion: suggestSlug(slug, taken),
           })
-        : ok({ available: true, reason: null, suggestion: null });
+        : ok({ status: "free", reason: null, suggestion: null });
     },
   }),
 
   defineMockOperation<
     Record<string, never>,
-    { name?: string; slug?: string; size?: string; locale?: string },
+    { name?: string; slug?: string; size?: string; language?: string },
     unknown
   >({
     id: "onboarding.workspace.create",
-    contract: gap,
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Workspaces.CreateWorkspace",
+    },
     method: "POST",
-    route: "/onboarding/workspace",
+    route: "/accounts/:accountId/workspaces",
     async handle({ body, store }) {
       const name = (body?.name ?? "").trim();
       const slug = (body?.slug ?? "").trim().toLowerCase();
       const errors: Record<string, string[]> = {};
       if (!name) errors.name = ["Enter the company name."];
       if (slugViolation(slug)) errors.slug = ["The address is not valid."];
+      if (body?.size && !SIZE_BANDS.includes(body.size))
+        errors.size = ["The company size is not one of the offered bands."];
       if (Object.keys(errors).length > 0) return validationError(errors);
       if (slugTaken(store)(slug)) return conflict("Address already taken");
       const { workspace } = store.createWorkspaceForCurrentUser({
         name,
         slug,
       });
-      return created({ id: workspace.id, slug: workspace.slug });
+      return created(workspace.id);
     },
   }),
 

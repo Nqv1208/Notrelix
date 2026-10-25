@@ -90,12 +90,28 @@ type DraftOutput = OperationResponse<
   "Workspaces.Onboarding.GetOnboardingDraft",
   200
 >;
+type BootstrapOutput = OperationResponse<"Identity.Auth.GetBootstrap", 200>;
+type SlugCheckOutput = OperationResponse<
+  "Workspaces.Workspaces.CheckWorkspaceSlug",
+  200
+>;
+type CreateWorkspaceBody =
+  OperationRequestBody<"Workspaces.Workspaces.CreateWorkspace">;
 type GettingStartedOutput = OperationResponse<
   "Workspaces.Onboarding.GetGettingStarted",
   200
 >;
 type SpaceBody = OperationRequestBody<"Workspaces.Spaces.CreateSpace">;
 type InviteBody = OperationRequestBody<"Workspaces.Members.InviteMember">;
+
+/** The producer's company-size bands for the sizes the pages offer. */
+const SIZE_BAND: Record<CompanySize, string> = {
+  s: "1-10",
+  m: "11-50",
+  l: "51-200",
+  xl: "201-1000",
+  xxl: "1000+",
+};
 
 /** A refusal the producer answers for one row of a batch (not a failed call). */
 const isRowRefusal = (failure: unknown): boolean =>
@@ -105,18 +121,39 @@ const isRowRefusal = (failure: unknown): boolean =>
  * The calls behind the onboarding pages. The draft, the departments (one
  * `CreateSpace` each), the invitations (one `InviteMember` each, with the
  * department and its role as an initial entry), the first Board and the
- * getting-started card use the producer's operations. The address check and
- * the workspace create (no operation tells a client its Account id), the
- * catalogue and the invited person's first visit stay gaps.
+ * getting-started card use the producer's operations, and so do the address
+ * check and the workspace create, which run in the Account the bootstrap names.
+ * The catalogue and the invited person's first visit stay gaps.
  */
 export function createOnboardingApi(api: OnboardingApiClient) {
   const key = () => crypto.randomUUID();
+  // The member's Account, read once from the bootstrap (a failure is not kept).
+  let account: Promise<string> | null = null;
+  const accountId = (): Promise<string> => {
+    account ??= api.get<BootstrapOutput>(endpoints.auth.bootstrap, QUIET).then(
+      (bootstrap) => {
+        if (!bootstrap?.accountId) throw new Error("The member has no Account");
+        return bootstrap.accountId;
+      },
+      (failure: unknown) => {
+        account = null;
+        throw failure;
+      },
+    );
+    return account;
+  };
   return {
-    slugCheck(slug: string) {
-      return api.get<SlugCheckDto>(
-        `/onboarding/slug-check?slug=${encodeURIComponent(slug)}`,
+    async slugCheck(slug: string): Promise<SlugCheckDto> {
+      const checked = await api.get<SlugCheckOutput>(
+        `${endpoints.accounts.workspaceSlugCheck(await accountId())}?slug=${encodeURIComponent(slug)}`,
         QUIET,
       );
+      const free = checked?.status === "free";
+      return {
+        available: free,
+        reason: free ? null : checked?.status === "taken" ? "taken" : "invalid",
+        suggestion: checked?.suggestion ?? null,
+      };
     },
     catalog(size: CompanySize, name: string) {
       return api.get<CatalogDto>(
@@ -151,17 +188,24 @@ export function createOnboardingApi(api: OnboardingApiClient) {
     clearDraft() {
       return api.delete<void>(endpoints.onboarding.draft, QUIET);
     },
-    createWorkspace(input: {
+    async createWorkspace(input: {
       name: string;
       slug: string;
       size: CompanySize;
       locale: "vi" | "en";
     }) {
-      return api.post<{ id: string; slug: string }>(
-        "/onboarding/workspace",
-        input,
+      const body: CreateWorkspaceBody = {
+        name: input.name,
+        slug: input.slug,
+        size: SIZE_BAND[input.size],
+        language: input.locale,
+      };
+      const id = await api.post<string>(
+        endpoints.accounts.workspaces(await accountId()),
+        body,
         { ...QUIET, idempotencyKey: key() },
       );
+      return { id, slug: input.slug };
     },
     /**
      * One private Department per entry, in order. The producer has no

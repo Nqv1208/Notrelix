@@ -8,6 +8,7 @@ export const endpoints = {
     forgotPassword: "/auth/forgot-password",
     resetPassword: "/auth/reset-password",
     profile: "/auth/me",
+    bootstrap: "/auth/bootstrap",
     changePassword: "/auth/change-password",
     // Identity.Security.* / Identity.Sessions.* / Identity.Mfa.*
     securitySummary: "/auth/security/summary",
@@ -158,6 +159,12 @@ export const endpoints = {
       `/boards/${boardId}/members/${userId}/role`,
   },
   // Workspaces.Onboarding.* (draft and getting-started card).
+  // Workspaces.Workspaces.* routes under an Account.
+  accounts: {
+    workspaces: (accountId: string) => `/accounts/${accountId}/workspaces`,
+    workspaceSlugCheck: (accountId: string) =>
+      `/accounts/${accountId}/workspaces/slug-check`,
+  },
   onboarding: {
     draft: "/workspaces/onboarding-draft",
     gettingStarted: (workspaceId: string) =>
