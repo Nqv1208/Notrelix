@@ -141,6 +141,9 @@ const KIND: Record<InboxEntryDto["type"], InboxKind> = {
   followed_status: "change",
   followed_comment: "change",
   followed_assignee: "change",
+  automation: "system",
+  due_tomorrow: "overdue",
+  system: "system",
 };
 
 /** The producer's inbox as the Inbox page draws it. */
@@ -192,7 +195,7 @@ export function toInboxEntries(
       case "overdue":
         segments = sentence(
           copy,
-          copy.feed.overdue,
+          entry.dueAt ? copy.feed.overdue : copy.feed.overduePlain,
           {
             title: target.title,
             days: plural(copy, daysOverdue(deps, entry.dueAt)),
@@ -222,6 +225,34 @@ export function toInboxEntries(
         context = { department, label: keyLabel };
         break;
       }
+      case "automation":
+        segments = sentence(
+          copy,
+          entry.excerpt ? copy.feed.automation : copy.feed.automationPlain,
+          { title: target.title, excerpt: entry.excerpt ?? "" },
+          ["title"],
+        );
+        context = { department, label: keyLabel };
+        break;
+      case "due_tomorrow":
+        segments = sentence(
+          copy,
+          copy.feed.dueTomorrow,
+          { title: target.title },
+          ["title"],
+        );
+        context = { department, label: keyLabel };
+        break;
+      case "system":
+        // A type this page does not know: its own text when it has one.
+        segments = sentence(
+          copy,
+          entry.excerpt ? copy.feed.system : copy.feed.systemPlain,
+          { excerpt: entry.excerpt ?? "" },
+          [],
+        );
+        context = null;
+        break;
       case "followed_status":
       case "followed_comment":
       case "followed_assignee": {
@@ -319,7 +350,7 @@ export function toInboxEntries(
       entry.type === "mention" && entry.need === "reply"
         ? copy.feed.needReply
         : null,
-      entry.type === "overdue" ? copy.feed.followingNote : null,
+      entry.type === "overdue" && entry.dueAt ? copy.feed.followingNote : null,
     ]
       .filter(Boolean)
       .join(" · ");
@@ -343,7 +374,7 @@ export function toInboxEntries(
     } else if (entry.type === "overdue") {
       eventSegments = sentence(
         copy,
-        copy.feed.overdueEvent,
+        entry.dueAt ? copy.feed.overdueEvent : copy.feed.overduePlain,
         {
           title: target.title,
           days: plural(copy, daysOverdue(deps, entry.dueAt)),
@@ -420,6 +451,9 @@ export function toInboxEntries(
       context,
       need: entry.need,
       following: entry.following,
+      muted: entry.muted,
+      done: entry.done,
+      itemId: target.kind === "item" ? target.id : null,
       bundle: entry.bundle
         ? {
             count: entry.bundle.children.length,
@@ -433,4 +467,25 @@ export function toInboxEntries(
       detail: entry.type === "changes_bundle" ? null : detail,
     };
   });
+}
+
+/**
+ * When a snoozed notification returns: an hour from now, tomorrow 08:00 or the
+ * next Monday 08:00, in the member's own time zone.
+ */
+export function snoozeUntil(
+  option: "hour" | "tomorrow" | "next-week",
+  now: number,
+): string {
+  if (option === "hour") return new Date(now + 60 * 60 * 1000).toISOString();
+  const date = new Date(now);
+  date.setHours(8, 0, 0, 0);
+  if (option === "tomorrow") {
+    date.setDate(date.getDate() + 1);
+  } else {
+    // Monday is 1; the next Monday is always after today.
+    const ahead = (8 - date.getDay()) % 7 || 7;
+    date.setDate(date.getDate() + ahead);
+  }
+  return date.toISOString();
 }

@@ -1617,6 +1617,16 @@
               "theme": "light"
             }
           ]
+        },
+        {
+          "id": "workspace-inbox--inbox-done",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         }
       ],
       "stateCoverage": {
@@ -1716,6 +1726,26 @@
         },
         {
           "id": "edge",
+          "testFile": "src/web/inbox/__tests__/workspace-inbox.interaction.component.test.tsx"
+        },
+        {
+          "id": "done-filter",
+          "testFile": "src/web/inbox/__tests__/workspace-inbox.interaction.component.test.tsx"
+        },
+        {
+          "id": "done-empty",
+          "testFile": "src/web/inbox/__tests__/workspace-inbox.interaction.component.test.tsx"
+        },
+        {
+          "id": "done-action",
+          "testFile": "src/web/inbox/__tests__/workspace-inbox.interaction.component.test.tsx"
+        },
+        {
+          "id": "mute-toggle",
+          "testFile": "src/web/inbox/__tests__/workspace-inbox.interaction.component.test.tsx"
+        },
+        {
+          "id": "snooze",
           "testFile": "src/web/inbox/__tests__/workspace-inbox.interaction.component.test.tsx"
         },
         {

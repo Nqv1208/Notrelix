@@ -53,6 +53,14 @@ export interface WorkspaceInboxSurfaceProps {
     readonly onLoadMore: () => void;
     readonly loading: boolean;
   } | null;
+  /**
+   * The Done filter: `active` lists the done entries instead of the inbox
+   * (the host loads that list); `null` or omitted draws no toggle.
+   */
+  readonly done?: {
+    readonly active: boolean;
+    readonly onToggle: () => void;
+  } | null;
   /** Approve, reply, handle, snooze and mute; omitted draws them inert. */
   readonly actions?: InboxActions;
   readonly initialView?: InboxInitialView;
@@ -187,10 +195,15 @@ export function WorkspaceInboxSurface(props: WorkspaceInboxSurfaceProps) {
     return { ...derived, ...props.counts };
   }, [items, props.counts]);
 
+  const doneActive = props.done?.active === true;
   const shown = useMemo(
     () =>
-      items.filter((item) => inTab(item, tab) && (!unreadOnly || item.unread)),
-    [items, tab, unreadOnly],
+      doneActive
+        ? items
+        : items.filter(
+            (item) => inTab(item, tab) && (!unreadOnly || item.unread),
+          ),
+    [doneActive, items, tab, unreadOnly],
   );
   const selectable = shown.filter((item) => item.bundle === null);
   const selected =
@@ -290,6 +303,7 @@ export function WorkspaceInboxSurface(props: WorkspaceInboxSurfaceProps) {
           copy={copy}
           unreadOnly={unreadOnly}
           onToggleUnread={() => setUnreadOnly((value) => !value)}
+          done={props.done}
         />
         <div
           id="inbox-panel"
@@ -331,18 +345,22 @@ export function WorkspaceInboxSurface(props: WorkspaceInboxSurfaceProps) {
                 />
               </span>
               <b className="text-base leading-[1.45] font-semibold text-foreground">
-                {allEmpty && tab === "all"
-                  ? copy.allEmpty.title
-                  : unreadOnly && tab === "all"
-                    ? copy.filteredEmpty.title
-                    : copy.empty.title}
+                {doneActive
+                  ? copy.doneEmpty.title
+                  : allEmpty && tab === "all"
+                    ? copy.allEmpty.title
+                    : unreadOnly && tab === "all"
+                      ? copy.filteredEmpty.title
+                      : copy.empty.title}
               </b>
               <p className="m-0 max-w-[44ch] text-nav leading-[1.45] font-normal">
-                {allEmpty && tab === "all"
-                  ? copy.allEmpty.text
-                  : unreadOnly && tab === "all"
-                    ? copy.filteredEmpty.text
-                    : copy.empty.text}
+                {doneActive
+                  ? copy.doneEmpty.text
+                  : allEmpty && tab === "all"
+                    ? copy.allEmpty.text
+                    : unreadOnly && tab === "all"
+                      ? copy.filteredEmpty.text
+                      : copy.empty.text}
               </p>
               {unreadOnly && tab === "all" && !allEmpty ? (
                 <button

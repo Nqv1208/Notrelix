@@ -156,6 +156,9 @@ export interface InboxEntryDto {
   need: InboxNeed | null;
   following: boolean;
   muted: boolean;
+  /** The member marked it done: only the Done list holds it. */
+  done: boolean;
+  snoozedUntil: string | null;
   target: InboxTargetDto;
   excerpt: string | null;
   dueAt: string | null;
@@ -259,6 +262,7 @@ interface InboxRecord {
   permission: "view" | "comment" | "edit" | null;
   mentionId: string | null;
   snoozedUntil: string | null;
+  done: boolean;
   bundle: {
     actorIds: string[];
     moreActors: number;
@@ -455,6 +459,7 @@ export class MockWorkFeedState {
       permission: null,
       mentionId: null,
       snoozedUntil: null,
+      done: false,
       bundle: null,
       ...value,
     });
@@ -907,6 +912,8 @@ function entryDto(
       record.following ||
       (record.itemId ? feed.following.has(record.itemId) : false),
     muted: record.muted,
+    done: record.done,
+    snoozedUntil: record.snoozedUntil,
     target,
     excerpt: record.excerpt,
     dueAt: record.dueAt,
@@ -916,11 +923,25 @@ function entryDto(
   };
 }
 
-export function buildInbox(store: MockStore, workspaceId: string): InboxDto {
+export type InboxListState = "inbox" | "done" | "snoozed";
+
+export function buildInbox(
+  store: MockStore,
+  workspaceId: string,
+  state: InboxListState = "inbox",
+): InboxDto {
   const feed = store.feed;
   const now = store.getClock().isoNow();
+  const snoozed = (record: InboxRecord) =>
+    Boolean(record.snoozedUntil && record.snoozedUntil > now);
   const visible = feed.inbox
-    .filter((record) => !record.snoozedUntil || record.snoozedUntil <= now)
+    .filter((record) =>
+      state === "done"
+        ? record.done
+        : state === "snoozed"
+          ? !record.done && snoozed(record)
+          : !record.done && !snoozed(record),
+    )
     .map((record) => entryDto(store, feed, record))
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const count = (predicate: (entry: InboxEntryDto) => boolean) =>
@@ -1186,8 +1207,10 @@ export function markInbox(
   id: string,
   change:
     | { type: "handled" }
+    | { type: "done" }
+    | { type: "reopen" }
     | { type: "snooze"; until: string }
-    | { type: "mute" }
+    | { type: "mute"; muted?: boolean }
     | { type: "reply"; text: string },
 ): FeedWriteResult {
   const feed = store.feed;
@@ -1198,13 +1221,28 @@ export function markInbox(
       record.unread = false;
       record.need = null;
       break;
+    case "done":
+      record.done = true;
+      record.unread = false;
+      record.need = null;
+      record.snoozedUntil = null;
+      break;
+    case "reopen":
+      record.done = false;
+      record.snoozedUntil = null;
+      break;
     case "snooze":
+      // A snooze hides the entry until its time, then it is back and unread.
       record.snoozedUntil = change.until;
+      record.done = false;
+      record.unread = true;
       break;
     case "mute":
-      record.muted = true;
-      if (record.itemId) feed.mutedItemIds.add(record.itemId);
-      record.unread = false;
+      record.muted = change.muted !== false;
+      if (record.itemId) {
+        if (record.muted) feed.mutedItemIds.add(record.itemId);
+        else feed.mutedItemIds.delete(record.itemId);
+      }
       break;
     case "reply": {
       if (record.mentionId) {
@@ -1226,7 +1264,13 @@ export function markInbox(
 }
 
 export function markAllInboxRead(store: MockStore): void {
-  for (const record of store.feed.inbox) record.unread = false;
+  const now = store.getClock().isoNow();
+  for (const record of store.feed.inbox) {
+    // Done and snoozed entries are not in the inbox, so read-all leaves them.
+    if (record.done || (record.snoozedUntil && record.snoozedUntil > now))
+      continue;
+    record.unread = false;
+  }
 }
 
 export const DAY = DAY_MS;
