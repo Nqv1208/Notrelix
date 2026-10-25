@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { fireEvent, renderPureUi, screen } from "@notrelix/testing";
 
 import { BillingCapabilitiesSurface } from "../../billing/billing-capabilities-surface";
+import { WorkReportSurface } from "../../reports/work-report-surface";
 import { en, vi as copy } from "../feature-availability.copy";
 import { FeatureUnavailableSurface } from "../feature-unavailable-surface";
 
@@ -127,5 +128,96 @@ describe("Feature availability", () => {
       />,
     );
     expect(screen.queryByRole("button", { name: /Switch to/ })).toBeNull();
+  });
+
+  it("FUI[workspace.work-report:report] draws the figures, the status split, the assignees and the weekly bars", () => {
+    renderPureUi(
+      <WorkReportSurface
+        copy={en}
+        onRetry={vi.fn()}
+        onBoard={vi.fn()}
+        onSpace={vi.fn()}
+        scope={{ boards: [], boardId: null, spaceId: null }}
+        state={{
+          status: "ready",
+          data: {
+            total: 10,
+            open: 6,
+            done: 4,
+            overdue: 2,
+            byStatus: [
+              {
+                optionId: null,
+                name: null,
+                color: null,
+                category: "Todo",
+                count: 6,
+              },
+              {
+                optionId: null,
+                name: null,
+                color: null,
+                category: "Done",
+                count: 4,
+              },
+            ],
+            byAssignee: [
+              { userId: "u", name: "An", items: 7, open: 4, overdue: 2 },
+              { userId: null, name: null, items: 3, open: 2, overdue: 0 },
+            ],
+            completedPerWeek: [
+              { weekStart: "2026-10-12T00:00:00.000Z", completed: 3 },
+              { weekStart: "2026-10-19T00:00:00.000Z", completed: 1 },
+            ],
+            averageCompletionSeconds: 2 * 86_400,
+          },
+        }}
+      />,
+    );
+    expect(screen.getByText("2 days")).toBeTruthy();
+    expect(screen.getByRole("meter", { name: "To do" })).toBeTruthy();
+    expect(screen.getByText("7 items, 2 overdue")).toBeTruthy();
+    expect(screen.getByText("Unassigned")).toBeTruthy();
+    expect(screen.getByLabelText("Week of 12/10: 3 finished")).toBeTruthy();
+  });
+
+  it("FUI[workspace.work-report:scope] narrows by board and, for people who may, by department", () => {
+    const onBoard = vi.fn();
+    const onSpace = vi.fn();
+    const view = renderPureUi(
+      <WorkReportSurface
+        copy={en}
+        onRetry={vi.fn()}
+        onBoard={onBoard}
+        onSpace={onSpace}
+        scope={{
+          boards: [{ id: "b1", title: "Roadmap" }],
+          boardId: null,
+          spaces: [{ id: "s1", name: "Engineering" }],
+          spaceId: null,
+        }}
+        state={{ status: "loading" }}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText("Board"), {
+      target: { value: "b1" },
+    });
+    expect(onBoard).toHaveBeenCalledWith("b1");
+    fireEvent.change(screen.getByLabelText("Department"), {
+      target: { value: "s1" },
+    });
+    expect(onSpace).toHaveBeenCalledWith("s1");
+    view.rerender(
+      <WorkReportSurface
+        copy={en}
+        onRetry={vi.fn()}
+        onBoard={onBoard}
+        onSpace={onSpace}
+        scope={{ boards: [], boardId: null, spaceId: null }}
+        state={{ status: "forbidden" }}
+      />,
+    );
+    expect(screen.queryByLabelText("Department")).toBeNull();
+    expect(screen.getByText("This report is not open to you")).toBeTruthy();
   });
 });

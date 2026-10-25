@@ -390,7 +390,8 @@ export const billingOperations = [
       const target = BILLING_PLAN_CATALOG.find(
         (p) => p.code === body?.planCode?.toLowerCase(),
       );
-      if (!target) return validationError({ planCode: ["The plan does not exist."] });
+      if (!target)
+        return validationError({ planCode: ["The plan does not exist."] });
       store.billing.planCode = target.code;
       return ok(planOverview(store, true));
     },

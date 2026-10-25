@@ -1,12 +1,9 @@
 import { useSearch } from "@tanstack/react-router";
-import {
-  FeatureUnavailableSurface,
-  useFeatureAvailabilityCopy,
-} from "@notrelix/features-workspace/web";
 import { backendCapabilities } from "@/config/backend-capabilities";
 import type { ReportsSearch } from "../../../router/schemas/reports-search-schema";
 import { ReportListPage } from "./reports/report-list-page";
 import { ReportPage } from "./reports/report-page";
+import { WorkReportPage } from "./reports/work-report-page";
 
 const ROUTE = "/workspaces/$workspaceId/reports";
 
@@ -16,20 +13,13 @@ const ROUTE = "/workspaces/$workspaceId/reports";
  * current while a report is open.
  */
 export function ReportsPage() {
-  return backendCapabilities.reports ? (
+  const search: ReportsSearch = useSearch({ from: ROUTE });
+  // The report builder needs the mock backend; the read-only work report is served by the real one
+  // and is what the page shows there. `view=work` opens it on the mock backend too.
+  return backendCapabilities.reports && search.view !== "work" ? (
     <AvailableReportsPage />
   ) : (
-    <UnavailableReportsPage />
-  );
-}
-
-/** Reports on a backend that has no producer for them yet. */
-function UnavailableReportsPage() {
-  const copy = useFeatureAvailabilityCopy();
-  return (
-    <div className="p-7">
-      <FeatureUnavailableSurface copy={copy} feature="reports" />
-    </div>
+    <WorkReportPage />
   );
 }
 
