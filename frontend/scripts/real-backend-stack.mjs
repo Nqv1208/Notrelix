@@ -18,7 +18,7 @@ export const realBackend = {
   apiUrl: "http://127.0.0.1:58000/api/v1",
   healthUrl: "http://127.0.0.1:58000/health/live",
   appUrl: "http://127.0.0.1:5173",
-  ports: [55432, 56379, 58000, 5173],
+  ports: [55432, 56379, 55672, 58000, 5173],
 };
 
 const composeEnv = {
@@ -113,27 +113,52 @@ export function start(command, args, options = {}) {
   });
 }
 
+function signalGroup(child, signal) {
+  const target = process.platform === "win32" ? child.pid : -child.pid;
+  try {
+    process.kill(target, signal);
+  } catch (error) {
+    // The group already ended (the child exits with its parent's signal).
+    if (error.code !== "ESRCH") throw error;
+  }
+}
+
 export async function stopProcess(child) {
   if (!child || child.exitCode !== null) return;
-  const signalTarget = process.platform === "win32" ? child.pid : -child.pid;
-  process.kill(signalTarget, "SIGTERM");
+  signalGroup(child, "SIGTERM");
   await Promise.race([
     new Promise((resolve) => child.once("exit", resolve)),
     new Promise((resolve) => setTimeout(resolve, 5_000)),
   ]);
-  if (child.exitCode === null) process.kill(signalTarget, "SIGKILL");
+  if (child.exitCode === null) signalGroup(child, "SIGKILL");
 }
 
 export async function down() {
-  await compose(["down", "-v", "--remove-orphans"]);
+  await compose(["--profile", "messaging", "down", "-v", "--remove-orphans"]);
 }
 
 export async function up() {
-  await compose(["up", "-d", "postgres", "redis", "backend"]);
+  await compose([
+    "--profile",
+    "messaging",
+    "up",
+    "-d",
+    "postgres",
+    "redis",
+    "rabbitmq",
+    "backend",
+  ]);
 }
 
 export async function logs() {
-  await compose(["logs", "--no-color", "postgres", "redis", "backend"]);
+  await compose([
+    "logs",
+    "--no-color",
+    "postgres",
+    "redis",
+    "rabbitmq",
+    "backend",
+  ]);
 }
 
 export function runFrontend(command, args, options = {}) {

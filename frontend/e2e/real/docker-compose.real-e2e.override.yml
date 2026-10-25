@@ -25,6 +25,12 @@ services:
       - --appendonly
       - "no"
 
+  rabbitmq:
+    container_name: notrelix-fe-real-e2e-rabbitmq
+    restart: "no"
+    ports: !override
+      - "127.0.0.1:55672:5672"
+
   backend:
     image: mcr.microsoft.com/dotnet/sdk:9.0.317
     container_name: notrelix-fe-real-e2e-backend
