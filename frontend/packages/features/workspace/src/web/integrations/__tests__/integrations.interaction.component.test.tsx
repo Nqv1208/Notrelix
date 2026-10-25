@@ -11,6 +11,7 @@ import {
 import {
   IntegrationConnectDialog,
   IntegrationDetailSurface,
+  IntegrationSecretDialog,
   IntegrationsListSurface,
 } from "../integrations-surface";
 
@@ -97,5 +98,95 @@ describe("Integrations", () => {
     expect(
       screen.getByRole("button", { name: /Tiếp tục với Google/ }),
     ).toBeTruthy();
+  });
+
+  it("FUI[workspace.integrations:not-configured] shows a provider without a client id and secret as not configured, with no way to connect it", () => {
+    const onConnect = vi.fn();
+    renderPureUi(
+      <IntegrationsListSurface
+        copy={copy}
+        links={links}
+        state={{
+          status: "ready",
+          data: {
+            ...listFixture(),
+            catalog: CATALOG_FIXTURE.map((entry, index) =>
+              index === 0 ? { ...entry, configured: false } : entry,
+            ),
+          },
+        }}
+        onReload={noop}
+        onConnect={onConnect}
+      />,
+    );
+    expect(screen.getByText("Chưa cấu hình")).toBeTruthy();
+    expect(
+      screen.queryByRole("button", { name: "Kết nối Google Drive" }),
+    ).toBeNull();
+  });
+
+  it("FUI[workspace.integrations:webhook-connect] asks for the receiving address and connects only once one is typed", () => {
+    const onChange = vi.fn();
+    const onNext = vi.fn();
+    const props = {
+      copy,
+      links,
+      open: true,
+      item: CATALOG_FIXTURE[0]!,
+      workspaceName: "Minh An Group",
+      scope: "workspace" as const,
+      hideScope: true,
+      submitting: false,
+      onScope: noop,
+      onNext,
+      onClose: noop,
+    };
+    const { rerender } = renderPureUi(
+      <IntegrationConnectDialog
+        {...props}
+        url={{ value: "", error: null, onChange }}
+      />,
+    );
+    expect(screen.queryByRole("radio")).toBeNull();
+    expect(
+      (screen.getByRole("button", { name: "Kết nối" }) as HTMLButtonElement)
+        .disabled,
+    ).toBe(true);
+    fireEvent.change(screen.getByLabelText("Địa chỉ nhận"), {
+      target: { value: "https://hooks.example.com/in" },
+    });
+    expect(onChange).toHaveBeenCalledWith("https://hooks.example.com/in");
+    rerender(
+      <IntegrationConnectDialog
+        {...props}
+        url={{
+          value: "https://hooks.example.com/in",
+          error: "The address must use https.",
+          onChange,
+        }}
+      />,
+    );
+    expect(screen.getByRole("alert").textContent).toBe(
+      "The address must use https.",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Kết nối" }));
+    expect(onNext).toHaveBeenCalled();
+  });
+
+  it("FUI[workspace.integrations:secret] shows the signing secret once, with a way to copy it", () => {
+    const onClose = vi.fn();
+    renderPureUi(
+      <IntegrationSecretDialog
+        copy={copy}
+        links={links}
+        open
+        secret="whsec_example_0000"
+        onClose={onClose}
+      />,
+    );
+    expect(screen.getByText("whsec_example_0000")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Sao chép" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Xong" }));
+    expect(onClose).toHaveBeenCalled();
   });
 });

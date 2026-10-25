@@ -46,22 +46,3 @@ test("billing shows what the workspace's billing grants, with the seeded limit a
   ).toBeVisible();
   expect(errors).toEqual([]);
 });
-
-test("integrations say they are not available yet instead of an error", async ({
-  page,
-}) => {
-  await signIn(page, realUsers.workspaceAdmin);
-  const { workspace } = await openBoard(
-    page,
-    "Workspace 3",
-    "Engineering Tasks",
-  );
-  const errors = watchErrors(page);
-
-  await page.goto(`/workspaces/${workspace.id}/integrations`);
-  await expect(
-    page.getByRole("heading", { name: "Integrations are not available yet" }),
-  ).toBeVisible();
-
-  expect(errors).toEqual([]);
-});

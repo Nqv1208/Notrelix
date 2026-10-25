@@ -44,7 +44,7 @@ export function buildOperationRegistry(): MockOperationRegistry {
     ...workReportOperations,
     // Billing (CTR-GAP-BILLING): the Plans and billing pages
     ...billingOperations,
-    // Integrations (CTR-GAP-INTEGRATIONS): the Integrations pages
+    // Integrations: the connections, the OAuth redirect and the outgoing webhook
     ...integrationsOperations,
     // Note: Search is CONTRACT-BLOCKED (CTR-GAP-SEARCH) until authoritative producer contract lands.
   ]);

@@ -10,10 +10,10 @@ describe("backendCapabilitiesOf", () => {
     });
   });
 
-  it("serves none of the pages without a producer on the real backend", () => {
+  it("serves only the pages with a producer on the real backend", () => {
     expect(backendCapabilitiesOf(false)).toEqual({
       billingPlans: false,
-      integrations: false,
+      integrations: true,
       reports: false,
     });
   });

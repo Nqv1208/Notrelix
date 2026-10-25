@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -6,7 +6,7 @@ import {
   IntegrationConnectDialog,
   IntegrationDetailSurface,
   IntegrationDisconnectDialog,
-  IntegrationUpgradeSheet,
+  IntegrationSecretDialog,
   FeatureUnavailableSurface,
   IntegrationsListSurface,
   WorkspaceSetupFrame,
@@ -19,7 +19,13 @@ import {
 import { backendCapabilities } from "@/config/backend-capabilities";
 import { useWorkspaceContext } from "@/providers/workspace-provider";
 import { useSetupFrame } from "@/shell/workspace/use-setup-frame";
+import { useWorkspaceViewer } from "@/shell/workspace/use-workspace-viewer";
 import type { IntegrationsSearch } from "../../../router/schemas/integrations-search-schema";
+import {
+  detailOf,
+  listOf,
+  memberListOf,
+} from "./integrations/integrations-view";
 import {
   integrationsKeys,
   useIntegrationsApi,
@@ -39,10 +45,20 @@ function stateOf<T>(query: {
       : { status: "loading" };
 }
 
+function isForbidden(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "kind" in error &&
+    error.kind === "forbidden"
+  );
+}
+
 /**
- * Integrations (Final-Integrations): the connections in use and the catalog, or
- * one connection when `item` names it; `connect` opens the connect dialog (or
- * the plan sheet of an Enterprise entry) and `disconnect` the confirmation.
+ * Integrations: the connections in use and the catalog, or one connection when
+ * `item` names it; `connect` opens the connect dialog and `disconnect` the
+ * confirmation. `connected` and `error` are where the provider's redirect
+ * lands the member back.
  */
 export function IntegrationsPage() {
   return backendCapabilities.integrations ? (
@@ -65,7 +81,7 @@ function UnavailableIntegrationsPage() {
 }
 
 function AvailableIntegrationsPage() {
-  const { workspaceId } = useWorkspaceContext();
+  const { workspaceId, workspace } = useWorkspaceContext();
   const copy = useIntegrationsCopy();
   const teamsCopy = useWorkspaceTeamsCopy();
   const frame = useSetupFrame("integrations");
@@ -74,21 +90,56 @@ function AvailableIntegrationsPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const search: IntegrationsSearch = useSearch({ from: ROUTE });
-  const [scope, setScope] = useState<"workspace" | "board">("workspace");
+  const viewer = useWorkspaceViewer(workspaceId);
+  const [pollUntil, setPollUntil] = useState(0);
+  const [url, setUrl] = useState("");
+  const [urlError, setUrlError] = useState<string | null>(null);
+  const [secret, setSecret] = useState<string | null>(null);
+  const locale = document.documentElement.lang || "vi";
 
   const list = useQuery({
     queryKey: integrationsKeys.list(workspaceId),
     queryFn: () => api.list(workspaceId),
     retry: false,
+    // After a test delivery the result lands a moment later: look for it.
+    refetchInterval: () => (Date.now() < pollUntil ? 1000 : false),
   });
-  const canManage = list.data?.canManage ?? true;
+  const forbidden = isForbidden(list.error);
+  const members = useMemo(
+    () =>
+      new Map(
+        (viewer.members.data ?? []).map((member) => [
+          member.userId,
+          member.name,
+        ]),
+      ),
+    [viewer.members.data],
+  );
+  const workspaceName = workspace?.name ?? copy.real.workspaceName;
+  const now = new Date(list.dataUpdatedAt || Date.now());
+  const listDto = useMemo(
+    () =>
+      list.data
+        ? listOf(list.data, copy, { workspaceName, now, locale, members })
+        : forbidden
+          ? memberListOf(workspaceName, now, locale)
+          : undefined,
+    // `now` follows the data it describes.
+    [list.data, forbidden, copy, workspaceName, locale, members],
+  );
+  const canManage = listDto?.canManage ?? true;
   const itemKey = canManage ? search.item : undefined;
-  const detail = useQuery({
-    queryKey: integrationsKeys.detail(workspaceId, itemKey ?? ""),
-    queryFn: () => api.get(workspaceId, itemKey ?? ""),
-    enabled: itemKey !== undefined,
-    retry: false,
-  });
+  const connection = list.data?.connections?.find(
+    (entry) => entry.id === itemKey,
+  );
+  const detailDto = useMemo(
+    () =>
+      connection
+        ? detailOf(connection, copy, { now, locale, members })
+        : undefined,
+    [connection, copy, locale, members],
+  );
+
   const refresh = useCallback(
     () =>
       queryClient.invalidateQueries({
@@ -107,13 +158,31 @@ function AvailableIntegrationsPage() {
     [navigate, workspaceId],
   );
   const failed = () => toast.error(copy.unavailable);
-  const detailName = detail.data?.name ?? "";
 
-  const reauthorize = useMutation({
-    mutationFn: () => api.reauthorize(workspaceId, itemKey ?? ""),
-    onSuccess: async () => {
-      await refresh();
-      toast.success(copy.reauthorized);
+  // The provider's redirect lands here with `connected` or `error`.
+  useEffect(() => {
+    if (search.connected === undefined && search.error === undefined) return;
+    const entry = listDto?.catalog.find(
+      (item) => item.key === search.connected,
+    );
+    if (search.connected !== undefined) {
+      toast.success(
+        formatCopy(copy.connected, {
+          name: entry?.name ?? copy.real.providers["slack"].name,
+        }),
+      );
+      void refresh();
+    } else {
+      toast.error(formatCopy(copy.authFailed, { name: "" }).trim());
+    }
+    setSearch({});
+    // Once per arrival.
+  }, [search.connected, search.error]);
+
+  const goAuthorize = useMutation({
+    mutationFn: async (provider: string) => {
+      const result = await api.authorize(workspaceId, provider);
+      window.location.assign(result.authorizeUrl);
     },
     onError: failed,
   });
@@ -130,66 +199,76 @@ function AvailableIntegrationsPage() {
   });
   const test = useMutation({
     mutationFn: () => api.test(workspaceId, itemKey ?? ""),
-    onSuccess: (result) =>
-      toast.message(formatCopy(copy.testSent, { result: result.result })),
-    onError: failed,
-  });
-  const regenerate = useMutation({
-    mutationFn: () => api.regenerateSecret(workspaceId, itemKey ?? ""),
-    onSuccess: async (result) => {
-      await refresh();
-      toast.message(formatCopy(copy.secretShown, { secret: result.secret }));
+    onSuccess: () => {
+      setPollUntil(Date.now() + 15_000);
+      toast.message(copy.testQueued);
     },
     onError: failed,
   });
   const disconnect = useMutation({
     mutationFn: () => api.disconnect(workspaceId, itemKey ?? ""),
     onSuccess: async () => {
-      toast.success(formatCopy(copy.disconnected, { name: detailName }));
+      toast.success(
+        formatCopy(copy.disconnected, { name: detailDto?.name ?? "" }),
+      );
       await refresh();
       setSearch({}, false);
     },
     onError: failed,
   });
   const connectItem =
-    list.data?.catalog.find((entry) => entry.key === search.connect) ?? null;
-  const connect = useMutation({
-    mutationFn: () => api.connect(workspaceId, connectItem?.key ?? "", scope),
-    onSuccess: async () => {
-      toast.success(
-        formatCopy(copy.connected, { name: connectItem?.name ?? "" }),
-      );
+    listDto?.catalog.find((entry) => entry.key === search.connect) ?? null;
+  const isWebhook = connectItem?.key === "webhook";
+  const connectWebhook = useMutation({
+    mutationFn: () => api.connectWebhook(workspaceId, url.trim()),
+    onSuccess: async (created) => {
+      setSecret(created.signingSecret);
+      setUrl("");
+      setUrlError(null);
       await refresh();
       setSearch({});
     },
-    onError: failed,
-  });
-  const contact = useMutation({
-    mutationFn: () => api.contactSales(workspaceId),
-    onSuccess: () => toast.success(copy.contactSent),
-    onError: failed,
+    onError: (error) =>
+      setUrlError(
+        (error as { message?: string }).message?.trim() || copy.unavailable,
+      ),
   });
 
   const body = itemKey ? (
     <IntegrationDetailSurface
       copy={copy}
       links={links}
-      state={stateOf(detail)}
+      state={
+        detailDto
+          ? { status: "ready", data: detailDto }
+          : list.isError
+            ? { status: "error" }
+            : { status: "loading" }
+      }
       busy={false}
-      onReload={() => void detail.refetch()}
-      onReauthorize={() => reauthorize.mutate()}
+      onReload={() => void list.refetch()}
+      onReauthorize={() =>
+        connection?.provider && goAuthorize.mutate(connection.provider)
+      }
       onDisconnect={() => setSearch({ item: itemKey, disconnect: true })}
       onTest={() => test.mutate()}
       onPause={(paused) => pause.mutate(paused)}
-      onRegenerate={() => regenerate.mutate()}
+      onRegenerate={() => undefined}
     />
   ) : (
     <IntegrationsListSurface
       copy={copy}
       links={links}
-      state={stateOf(list)}
+      state={stateOf({
+        data: listDto,
+        isError: list.isError && !forbidden,
+      })}
       onReload={() => void list.refetch()}
-      onConnect={(key) => setSearch({ connect: key }, false)}
+      onConnect={(key) => {
+        setUrl("");
+        setUrlError(null);
+        setSearch({ connect: key }, false);
+      }}
     />
   );
 
@@ -197,38 +276,42 @@ function AvailableIntegrationsPage() {
     <WorkspaceSetupFrame
       copy={teamsCopy}
       frame={frame}
-      only={list.data && !list.data.canManage ? "integrations" : undefined}
-      title={list.data && !list.data.canManage ? copy.memberTitle : undefined}
+      only={listDto && !listDto.canManage ? "integrations" : undefined}
+      title={listDto && !listDto.canManage ? copy.memberTitle : undefined}
     >
       {body}
       <IntegrationConnectDialog
         copy={copy}
         links={links}
-        open={canManage && connectItem !== null && !connectItem.enterprise}
+        open={canManage && connectItem !== null}
         item={connectItem}
-        workspaceName={list.data?.workspaceName ?? ""}
-        scope={scope}
-        submitting={connect.isPending}
-        onScope={setScope}
-        onNext={() => connect.mutate()}
+        workspaceName={workspaceName}
+        scope="workspace"
+        hideScope
+        submitting={connectWebhook.isPending || goAuthorize.isPending}
+        onScope={() => undefined}
+        onNext={() =>
+          isWebhook
+            ? connectWebhook.mutate()
+            : connectItem && goAuthorize.mutate(connectItem.key)
+        }
         onClose={() => setSearch({})}
+        {...(isWebhook
+          ? { url: { value: url, error: urlError, onChange: setUrl } }
+          : {})}
       />
-      <IntegrationUpgradeSheet
+      <IntegrationSecretDialog
         copy={copy}
         links={links}
-        open={canManage && connectItem !== null && connectItem.enterprise}
-        item={connectItem}
-        plan={
-          list.data?.plan ?? { name: "business", account: "", workspaces: [] }
-        }
-        onContact={() => contact.mutate()}
-        onClose={() => setSearch({})}
+        open={secret !== null}
+        secret={secret}
+        onClose={() => setSecret(null)}
       />
       <IntegrationDisconnectDialog
         copy={copy}
         links={links}
         open={canManage && search.disconnect === true && itemKey !== undefined}
-        detail={detail.data ?? null}
+        detail={detailDto ?? null}
         submitting={disconnect.isPending}
         onConfirm={() => disconnect.mutate()}
         onClose={() => setSearch({ item: itemKey })}

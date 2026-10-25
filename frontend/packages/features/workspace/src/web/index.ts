@@ -410,11 +410,13 @@ export {
   IntegrationConnectDialog,
   IntegrationDetailSurface,
   IntegrationDisconnectDialog,
+  IntegrationSecretDialog,
   IntegrationUpgradeSheet,
   IntegrationsListSurface,
   type IntegrationConnectDialogProps,
   type IntegrationDetailProps,
   type IntegrationDisconnectDialogProps,
+  type IntegrationSecretDialogProps,
   type IntegrationUpgradeSheetProps,
   type IntegrationsListProps,
 } from "./integrations/integrations-surface";
