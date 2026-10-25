@@ -1,10 +1,4 @@
-import {
-  useEffect,
-  useRef,
-  useState,
-  type KeyboardEvent,
-  type ReactNode,
-} from "react";
+import { useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import {
   Building2,
   Check,
@@ -23,6 +17,9 @@ import {
   DialogContent,
   DialogDescription,
   DialogTitle,
+  Popover,
+  PopoverAnchor,
+  PopoverContent,
 } from "@notrelix/ui-web";
 import {
   fillBoardShareCopy as fill,
@@ -844,53 +841,94 @@ function PersonRow({
           {level}
         </span>
       ) : (
-        <button
-          ref={trigger}
-          data-f="lvl-plain"
-          type="button"
-          aria-haspopup="menu"
-          aria-expanded={menuOpen}
-          aria-disabled={editable ? undefined : true}
-          title={editable ? undefined : p.levelUnavailable}
-          aria-label={fill(p.levelOf, { name: row.name, level: level ?? "" })}
-          onClick={editable ? () => setMenu(!menuOpen) : undefined}
-          className={cn(
-            "box-border inline-flex h-[30px] items-center gap-1.5 rounded-[9px] border border-transparent bg-popover px-2.5 text-compact leading-[1.45] font-medium whitespace-nowrap text-foreground hover:border-line-strong aria-disabled:cursor-default dark:bg-card",
-            menuOpen && "border-primary ring-2 ring-state-selected",
-            FOCUS,
-          )}
+        <Popover
+          open={menuOpen && Boolean(onChangeLevel) && Boolean(row.level)}
+          onOpenChange={(open) => {
+            if (!open) {
+              setMenu(false);
+              trigger.current?.focus();
+            }
+          }}
         >
-          {level}
-          <ChevronDown
-            aria-hidden="true"
-            className="size-[13px] text-meta-foreground"
-            strokeWidth={1.8}
-          />
-        </button>
-      )}
-      {menuOpen && onChangeLevel && row.level ? (
-        <LevelMenu
-          copy={copy}
-          row={row}
-          onPick={(next) => {
-            setMenu(false);
-            if (next !== row.level) onChangeLevel(row.id, next);
-            trigger.current?.focus();
-          }}
-          onRemove={
-            onRemove
-              ? () => {
+          <PopoverAnchor asChild>
+            <button
+              ref={trigger}
+              data-f="lvl-plain"
+              type="button"
+              aria-haspopup="menu"
+              aria-expanded={menuOpen}
+              aria-disabled={editable ? undefined : true}
+              title={editable ? undefined : p.levelUnavailable}
+              aria-label={fill(p.levelOf, {
+                name: row.name,
+                level: level ?? "",
+              })}
+              onClick={editable ? () => setMenu(!menuOpen) : undefined}
+              className={cn(
+                "box-border inline-flex h-[30px] items-center gap-1.5 rounded-[9px] border border-transparent bg-popover px-2.5 text-compact leading-[1.45] font-medium whitespace-nowrap text-foreground hover:border-line-strong aria-disabled:cursor-default dark:bg-card",
+                menuOpen && "border-primary ring-2 ring-state-selected",
+                FOCUS,
+              )}
+            >
+              {level}
+              <ChevronDown
+                aria-hidden="true"
+                className="size-[13px] text-meta-foreground"
+                strokeWidth={1.8}
+              />
+            </button>
+          </PopoverAnchor>
+          <PopoverContent
+            side="bottom"
+            align="end"
+            sideOffset={6}
+            collisionPadding={12}
+            onOpenAutoFocus={(event) => {
+              // Focus the checked choice once the popover owns focus, so the
+              // dialog's focus trap does not take it back.
+              event.preventDefault();
+              const list = Array.from(
+                (
+                  event.currentTarget as HTMLElement
+                ).querySelectorAll<HTMLElement>(
+                  '[role="menuitemradio"]:not([aria-disabled="true"]),[role="menuitem"]:not([aria-disabled="true"])',
+                ),
+              );
+              (
+                list.find(
+                  (item) => item.getAttribute("aria-checked") === "true",
+                ) ?? list[0]
+              )?.focus({ preventScroll: true });
+            }}
+            onFocusOutside={(event) => event.preventDefault()}
+            className="w-[300px] gap-0 rounded-none border-0 bg-transparent p-0 shadow-none ring-0"
+          >
+            {onChangeLevel && row.level ? (
+              <LevelMenu
+                copy={copy}
+                row={row}
+                onPick={(next) => {
                   setMenu(false);
-                  onRemove(row.id);
+                  if (next !== row.level) onChangeLevel(row.id, next);
+                  trigger.current?.focus();
+                }}
+                onRemove={
+                  onRemove
+                    ? () => {
+                        setMenu(false);
+                        onRemove(row.id);
+                      }
+                    : null
                 }
-              : null
-          }
-          onClose={() => {
-            setMenu(false);
-            trigger.current?.focus();
-          }}
-        />
-      ) : null}
+                onClose={() => {
+                  setMenu(false);
+                  trigger.current?.focus();
+                }}
+              />
+            ) : null}
+          </PopoverContent>
+        </Popover>
+      )}
     </div>
   );
 }
@@ -916,22 +954,6 @@ function LevelMenu({
         '[role="menuitemradio"]:not([aria-disabled="true"]),[role="menuitem"]:not([aria-disabled="true"])',
       ) ?? [],
     );
-  useEffect(() => {
-    const list = items();
-    (
-      list.find((item) => item.getAttribute("aria-checked") === "true") ??
-      list[0]
-    )?.focus({
-      preventScroll: true,
-    });
-  }, []);
-  useEffect(() => {
-    const away = (event: PointerEvent) => {
-      if (!menu.current?.contains(event.target as Node)) onClose();
-    };
-    window.addEventListener("pointerdown", away);
-    return () => window.removeEventListener("pointerdown", away);
-  }, [onClose]);
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === "Escape") {
       event.stopPropagation();
@@ -955,7 +977,7 @@ function LevelMenu({
       role="menu"
       aria-label={fill(copy.menu.label, { name: row.name })}
       onKeyDown={onKeyDown}
-      className="absolute right-0 bottom-11 z-[5] box-content w-[300px] rounded-[10px] border border-line-strong bg-popover py-1 text-nav font-normal shadow-popover dark:bg-card"
+      className="box-content w-[300px] rounded-[10px] border border-line-strong bg-popover py-1 text-nav font-normal shadow-popover dark:bg-card"
     >
       {LEVELS.map((level) => {
         const disabled = level === "manage" && guest;

@@ -87,11 +87,13 @@ describe("BoardShareDialogSurface", () => {
     expect(props.onClose).toHaveBeenCalledTimes(3);
   });
 
-  it("FUI[wm.board-share:level-menu] changes a permission from the menu and keeps a guest below Manager", () => {
+  it("FUI[wm.board-share:level-menu] changes a permission from the menu and keeps a guest below Manager", async () => {
     const onChangeLevel = vi.fn();
     const onRemove = vi.fn();
     renderShare(shareLevelScenario(), { onChangeLevel, onRemove });
-    const menu = screen.getByRole("menu", { name: "Quyền của Đặng Minh Tuấn" });
+    const menu = await screen.findByRole("menu", {
+      name: "Quyền của Đặng Minh Tuấn",
+    });
     const items = within(menu).getAllByRole("menuitemradio");
     expect(items.map((item) => item.getAttribute("aria-checked"))).toEqual([
       "false",

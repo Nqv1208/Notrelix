@@ -1,8 +1,9 @@
 import { expect, test } from "@playwright/test";
 import { openBoard, realUsers, signIn } from "./support/real-session";
 
-// The permission menu opens inside the people list, which scrolls below 820 px of height.
-test.use({ viewport: { width: 1440, height: 900 } });
+// The people list scrolls below 820 px of height; the permission menu must still open whole, outside it.
+const VIEWPORT_HEIGHT = 700;
+test.use({ viewport: { width: 1440, height: VIEWPORT_HEIGHT } });
 
 test("a board manager adds a workspace member, changes the permission and removes the access", async ({
   page,
@@ -41,6 +42,11 @@ test("a board manager adds a workspace member, changes the permission and remove
       response.request().method() === "POST" &&
       /\/permissions$/.test(response.url()),
   );
+  const menu = page.getByRole("menu");
+  await expect(menu).toBeVisible();
+  const box = (await menu.boundingBox())!;
+  expect(box.y).toBeGreaterThanOrEqual(0);
+  expect(box.y + box.height).toBeLessThanOrEqual(VIEWPORT_HEIGHT);
   await page.getByRole("menuitemradio", { name: /Can view/ }).click();
   expect((await changed).status()).toBeLessThan(300);
   await expect(row.getByRole("button", { name: /Can view/ })).toBeVisible();

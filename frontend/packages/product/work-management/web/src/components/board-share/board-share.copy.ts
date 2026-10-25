@@ -9,7 +9,7 @@ export const en = {
   subtitleWorkspace: "Board in {{workspace}}",
   close: "Close",
   add: {
-    placeholder: "Add people, teams or guest emails",
+    placeholder: "Add workspace members",
     level: "Permission when inviting: {{level}}",
     invite: "Invite",
     levelList: "Permission when inviting",
@@ -142,7 +142,7 @@ export const vi: BoardShareCopy = {
   subtitleWorkspace: "Board trong {{workspace}}",
   close: "Đóng",
   add: {
-    placeholder: "Thêm người, nhóm, hoặc email khách",
+    placeholder: "Thêm thành viên workspace",
     level: "Quyền khi mời: {{level}}",
     invite: "Mời",
     levelList: "Quyền khi mời",
