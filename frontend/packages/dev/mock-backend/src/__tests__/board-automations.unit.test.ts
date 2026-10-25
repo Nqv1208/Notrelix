@@ -17,21 +17,19 @@ function setup(persona: MockPersona = "owner") {
   return {
     store,
     automations: createBoardAutomationsApi(client),
-    // The automations list and the field restore are the mock's own settings
-    // routes (the product page no longer reads them).
+    // The automations list and the field restore are read and done on the
+    // mock's own store: the product page has no route for them.
     settings: {
-      get: (id: string) =>
-        client.api.get<{
-          version: number;
-          automations: { id: string; enabled: boolean; draft?: boolean }[];
-        }>(`/boards/${id}/settings`),
-      restoreField: (id: string, version: number, fieldId: string) =>
-        client.api.post<void>(
-          `/boards/${id}/settings/fields/${fieldId}/restore`,
-          {
-            version,
-          },
-        ),
+      get: (id: string) => ({
+        version: store.settings.registry(id).version,
+        automations: store.automations.listFor(id) as {
+          id: string;
+          enabled: boolean;
+          draft?: boolean;
+        }[],
+      }),
+      restoreField: (id: string, _version: number, fieldId: string) =>
+        store.settings.restoreField(id, fieldId),
     },
   };
 }
@@ -39,7 +37,7 @@ function setup(persona: MockPersona = "owner") {
 describe("board automations in the mock world (CTR-GAP-WM-BOARD-AUTOMATIONS)", () => {
   it("lists the four rules and the two drafts of the settings list", async () => {
     const { settings } = setup();
-    const dto = await settings.get(boardId);
+    const dto = settings.get(boardId);
     expect(
       dto.automations.map((rule) => [rule.id, rule.draft ?? false]),
     ).toEqual([
@@ -90,8 +88,8 @@ describe("board automations in the mock world (CTR-GAP-WM-BOARD-AUTOMATIONS)", (
         "enable",
       ),
     ).rejects.toMatchObject({ kind: "validation" });
-    const read = await settings.get(boardId);
-    await settings.restoreField(boardId, read.version, "sf-handover");
+    const read = settings.get(boardId);
+    settings.restoreField(boardId, read.version, "sf-handover");
     const fixed = await automations.get(boardId, "sa-urgent-copy");
     expect(fixed.blocked).toBe(false);
     await automations.save(
@@ -117,7 +115,7 @@ describe("board automations in the mock world (CTR-GAP-WM-BOARD-AUTOMATIONS)", (
     const after = await automations.get(boardId, "sa-draft");
     expect(after.status).toBe("on");
     expect(after.version).toBe(1);
-    const list = await settings.get(boardId);
+    const list = settings.get(boardId);
     expect(
       list.automations.find((rule) => rule.id === "sa-draft"),
     ).toMatchObject({ enabled: true });

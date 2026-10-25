@@ -12,14 +12,12 @@ import { boardSharingOperations } from "./board-sharing.handlers";
 import { listsOperations } from "./lists.handlers";
 import { cardsOperations } from "./cards.handlers";
 import { myWorkOperations } from "./my-work.handlers";
-import { boardSettingsOperations } from "./board-settings.handlers";
 import { boardAutomationsOperations } from "./board-automations.handlers";
 import { itemStatesOperations } from "./item-states.handlers";
 
 export {
   boardAutomationsOperations,
   boardSharingOperations,
-  boardSettingsOperations,
   boardsOperations,
   itemStatesOperations,
   listsOperations,
@@ -33,7 +31,6 @@ export const workManagementOperations = [
   ...listsOperations,
   ...cardsOperations,
   ...myWorkOperations,
-  ...boardSettingsOperations,
   ...boardAutomationsOperations,
   ...itemStatesOperations,
 ];

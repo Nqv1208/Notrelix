@@ -45,7 +45,6 @@ import { canReadBoard } from "../work-management/boards.handlers";
 
 const MY_WORK_EXT = "CTR-GAP-WS-MYWORK-EXT" as const;
 const HOME_FEED = "CTR-GAP-WS-HOME-FEED" as const;
-const INBOX = "CTR-GAP-WS-INBOX" as const;
 const ITEM_SHEET = "CTR-GAP-WS-ITEM-SHEET" as const;
 
 const PRIORITY_LABELS = {
@@ -470,50 +469,6 @@ export const workFeedOperations = [
       if (!store.isCurrentMemberOf(params.workspaceId)) return notFound();
       markAllInboxRead(store);
       return ok({ marked: 0 });
-    },
-  }),
-  defineMockOperation<{ id: string }>({
-    id: "wsFeed.inbox.handled",
-    contract: { kind: "gap", gapId: INBOX },
-    method: "POST",
-    route: "/inbox/:id/handled",
-    async handle({ params, store }) {
-      return outcome(markInbox(store, params.id, { type: "handled" }));
-    },
-  }),
-  defineMockOperation<{ id: string }, { until?: string }>({
-    id: "wsFeed.inbox.snooze",
-    contract: { kind: "gap", gapId: INBOX },
-    method: "POST",
-    route: "/inbox/:id/snooze",
-    async handle({ params, body, store }) {
-      const until = body?.until;
-      if (typeof until !== "string" || Number.isNaN(Date.parse(until))) {
-        return validationError({ until: ["Give a future ISO time."] });
-      }
-      return outcome(markInbox(store, params.id, { type: "snooze", until }));
-    },
-  }),
-  defineMockOperation<{ id: string }>({
-    id: "wsFeed.inbox.mute",
-    contract: { kind: "gap", gapId: INBOX },
-    method: "POST",
-    route: "/inbox/:id/mute",
-    async handle({ params, store }) {
-      return outcome(markInbox(store, params.id, { type: "mute" }));
-    },
-  }),
-  defineMockOperation<{ id: string }, { text?: string }>({
-    id: "wsFeed.inbox.reply",
-    contract: { kind: "gap", gapId: INBOX },
-    method: "POST",
-    route: "/inbox/:id/reply",
-    async handle({ params, body, store }) {
-      const text = body?.text?.trim() ?? "";
-      if (text.length === 0 || text.length > 4000) {
-        return validationError({ text: ["Write 1 to 4000 characters."] });
-      }
-      return outcome(markInbox(store, params.id, { type: "reply", text }));
     },
   }),
 ];

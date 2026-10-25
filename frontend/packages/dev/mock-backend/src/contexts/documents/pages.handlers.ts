@@ -3,7 +3,6 @@
  *
  * Operations:
  *   pages.list       — GET /workspaces/:workspaceId/pages
- *   pages.tree       — GET /workspaces/:workspaceId/pages/tree
  *   pages.detail     — GET /pages/:id
  *   pages.create     — POST /workspaces/:workspaceId/pages
  *   pages.update     — PATCH /pages/:id
@@ -125,19 +124,6 @@ export const pagesOperations = [
     },
     method: "GET",
     route: "/workspaces/:workspaceId/pages",
-    async handle({ params, store }) {
-      const pages = store.getPages(params.workspaceId);
-      return ok<PageDtoApi[]>(pages.map((page) => mapPageDto(page, store)));
-    },
-  }),
-
-  // ─── GET /workspaces/:workspaceId/pages/tree ──────────────────────────────
-
-  defineMockOperation<{ workspaceId: string }, never, PageDtoApi[]>({
-    id: "pages.tree",
-    contract: { kind: "openapi", operationId: "Documents.Pages.GetPageTree" },
-    method: "GET",
-    route: "/workspaces/:workspaceId/pages/tree",
     async handle({ params, store }) {
       const pages = store.getPages(params.workspaceId);
       return ok<PageDtoApi[]>(pages.map((page) => mapPageDto(page, store)));
