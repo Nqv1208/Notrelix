@@ -444,6 +444,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/pages/trash": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the pages in the trash of a workspace */
+        get: operations["Documents.Pages.ListTrashedPages"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/pages/{pageId}": {
         parameters: {
             query?: never;
@@ -480,6 +497,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/pages/{pageId}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Restore a page from the trash */
+        post: operations["Documents.Pages.RestorePage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/pages/{pageId}/breadcrumb": {
         parameters: {
             query?: never;
@@ -506,6 +540,23 @@ export interface paths {
         };
         /** Get page history */
         get: operations["Documents.Pages.GetPageHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pages/{pageId}/backlinks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the pages that mention a page */
+        get: operations["Documents.Pages.GetPageBacklinks"];
         put?: never;
         post?: never;
         delete?: never;
@@ -5064,6 +5115,17 @@ export interface components {
             version?: number;
             rows?: components["schemas"]["Notrelix.Application.Features.Collaboration.Preferences.DTOs.NotificationPreferenceRowDto"][] | null;
         };
+        "Notrelix.Application.Features.Documents.DTOs.PageBacklinkDto": {
+            /** Format: uuid */
+            id?: string;
+            title?: string | null;
+            icon?: string | null;
+            /** Format: uuid */
+            spaceId?: string | null;
+        };
+        "Notrelix.Application.Features.Documents.DTOs.PageBacklinksDto": {
+            docs?: components["schemas"]["Notrelix.Application.Features.Documents.DTOs.PageBacklinkDto"][] | null;
+        };
         "Notrelix.Application.Features.Documents.DTOs.PageDto": {
             /** Format: uuid */
             id?: string;
@@ -7003,6 +7065,28 @@ export interface operations {
             };
         };
     };
+    "Documents.Pages.ListTrashedPages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Documents.DTOs.PageDto"][];
+                };
+            };
+        };
+    };
     "Documents.Pages.GetPage": {
         parameters: {
             query?: never;
@@ -7095,6 +7179,28 @@ export interface operations {
             };
         };
     };
+    "Documents.Pages.RestorePage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pageId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
     "Documents.Pages.GetPageBreadcrumb": {
         parameters: {
             query?: never;
@@ -7135,6 +7241,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Documents.Pages.GetPageBacklinks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pageId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Documents.DTOs.PageBacklinksDto"];
                 };
             };
         };
