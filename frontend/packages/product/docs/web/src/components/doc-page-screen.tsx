@@ -23,7 +23,6 @@ import {
   blockText,
   dayMonth,
   editedAtLabel,
-  positionAfter,
   referencesOf,
   toBlockViews,
   toCommentViews,
@@ -412,10 +411,8 @@ export function createDocPageScreen({
     const patchBlock = (
       block: Block,
       properties: Partial<Block["properties"]>,
-      type?: BlockType,
     ) =>
       editor.updateBlock(block.id, {
-        ...(type ? { type } : {}),
         properties: { ...block.properties, ...properties },
       });
     const blockById = (id: string) => blocks.find((block) => block.id === id);
@@ -438,9 +435,10 @@ export function createDocPageScreen({
             : current,
         ),
       onFocusBlock: (blockId) => setFocusedId(blockId),
-      onTodoConvert: host.canEdit
-        ? (blockId) => convertTodo.mutate(blockId)
-        : undefined,
+      onTodoConvert:
+        host.canEdit && host.canConvertTodo !== false
+          ? (blockId) => convertTodo.mutate(blockId)
+          : undefined,
       onTodoToggle: host.canEdit
         ? (blockId, checked) => {
             const block = blockById(blockId);
@@ -451,8 +449,21 @@ export function createDocPageScreen({
         const block = blockById(blockId);
         if (!block) return;
         setOverlay(NONE);
-        pendingFocus.current = blockId;
-        patchBlock(block, { text: "" }, type);
+        if (type === block.type) {
+          pendingFocus.current = blockId;
+          patchBlock(block, { text: "" });
+          return;
+        }
+        void editor
+          .convertBlock(
+            block,
+            type,
+            type === "todo" ? { text: "", checked: false } : { text: "" },
+          )
+          .then((created) => {
+            pendingFocus.current = created.id;
+          })
+          .catch(() => undefined);
       },
       onMentionSelect: (blockId, taskId) => {
         const block = blockById(blockId);
@@ -480,7 +491,7 @@ export function createDocPageScreen({
                   nextType === "todo"
                     ? { text: "", checked: false }
                     : { text: "" },
-                position: positionAfter(blocks, after),
+                afterBlockId: after,
               })
               .then((created) => {
                 pendingFocus.current = created.id;
@@ -537,6 +548,7 @@ export function createDocPageScreen({
           }
         : undefined,
       onOpenShare: host.share ? () => setOverlay({ kind: "share" }) : undefined,
+      onShareInvite: host.onShareInvite,
       onPanelTab: setPanelTab,
       onTocSelect: (id) => {
         setActiveTocId(id);
@@ -559,8 +571,13 @@ export function createDocPageScreen({
         });
       },
       onParagraphStyle: (type) => {
-        if (!focused) return;
-        patchBlock(focused, {}, type);
+        if (!focused || focused.type === type) return;
+        void editor
+          .convertBlock(focused, type, focused.properties)
+          .then((created) => {
+            pendingFocus.current = created.id;
+          })
+          .catch(() => undefined);
       },
       onOpenVersions: () => {
         setOverlay(NONE);
@@ -607,6 +624,7 @@ export function createDocPageScreen({
         panelTab={panelTab}
         overlay={overlay}
         mentionTasks={mentionTasks}
+        blockTypes={host.blockTypes}
         toolbar={toolbarCurrent(
           focused ??
             [...blocks].sort((x, y) => x.position - y.position)[0] ??

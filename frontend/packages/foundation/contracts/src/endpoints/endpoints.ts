@@ -8,11 +8,36 @@ export const endpoints = {
     forgotPassword: "/auth/forgot-password",
     resetPassword: "/auth/reset-password",
     profile: "/auth/me",
+    bootstrap: "/auth/bootstrap",
+    changePassword: "/auth/change-password",
+    // Identity.Security.* / Identity.Sessions.* / Identity.Mfa.*
+    securitySummary: "/auth/security/summary",
+    securityActivity: "/auth/security/activity",
+    stepUpRequirement: "/auth/security/step-up/requirement",
+    stepUpCompleteMfa: "/auth/security/step-up/complete-mfa",
+    stepUpCompletePassword: "/auth/security/step-up/complete-password",
+    sessions: "/auth/sessions",
+    sessionRevoke: (sessionId: string) =>
+      `/auth/sessions/${encodeURIComponent(sessionId)}/revoke`,
+    sessionsRevokeOthers: "/auth/sessions/revoke-others",
+    mfaEnrollmentStart: "/auth/mfa/enrollment/start",
+    mfaEnrollmentVerify: "/auth/mfa/enrollment/verify",
+    mfaDisable: "/auth/mfa/disable",
+    mfaRecoveryCodes: "/auth/mfa/recovery-codes/regenerate",
   },
   users: {
     updateProfile: "/profile",
-    preferences: "/account/preferences",
-    security: "/users/security",
+    // Identity.Profile.GetPreferences / UpdatePreferences.
+    preferences: "/profile/preferences",
+    // Identity.Profile.UploadAvatar (PUT, multipart part `file`) / RemoveAvatar (DELETE).
+    avatar: "/profile/avatar",
+  },
+  account: {
+    // Workspaces.Members.ListMyWorkspaces / SetDefaultWorkspace / LeaveWorkspace.
+    workspaces: "/account/workspaces",
+    defaultWorkspace: "/account/default-workspace",
+    leaveWorkspace: (workspaceId: string) =>
+      `/account/workspaces/${encodeURIComponent(workspaceId)}`,
   },
   workspaces: {
     list: "/workspaces",
@@ -29,6 +54,11 @@ export const endpoints = {
       `/workspaces/${workspaceId}/pins/${encodeURIComponent(kind)}/${resourceId}`,
     // Workspace profile, settings and lifecycle (producer: Workspaces.Workspaces.*).
     profile: (workspaceId: string) => `/workspaces/${workspaceId}/profile`,
+    // The signed-in member's own job title (Workspaces.Members.UpdateMyJobTitle).
+    myJobTitle: (workspaceId: string) =>
+      `/workspaces/${workspaceId}/members/me/job-title`,
+    myMembership: (workspaceId: string) =>
+      `/workspaces/${workspaceId}/members/me`,
     settings: (workspaceId: string) => `/workspaces/${workspaceId}/settings`,
     archive: (workspaceId: string) => `/workspaces/${workspaceId}/archive`,
     activity: (workspaceId: string) => `/workspaces/${workspaceId}/activity`,
@@ -105,7 +135,8 @@ export const endpoints = {
     moveToSpace: (pageId: string) => `/pages/${pageId}/move-to-space`,
   },
   blocks: {
-    detail: (blockId: string) => `/blocks/${blockId}`,
+    detail: (pageId: string, blockId: string) =>
+      `/pages/${pageId}/blocks/${blockId}`,
     reorder: "/blocks/reorder",
     batch: (pageId: string) => `/pages/${pageId}/blocks/batch`,
   },
@@ -120,6 +151,34 @@ export const endpoints = {
     label: (boardId: string, labelId: string) =>
       `/boards/${boardId}/labels/${labelId}`,
     moveToSpace: (boardId: string) => `/boards/${boardId}/move-to-space`,
+    // WorkManagement.Boards.GetSharing / MakePrivate and the Board member writes.
+    sharing: (boardId: string) => `/boards/${boardId}/sharing`,
+    sharingPrivate: (boardId: string) => `/boards/${boardId}/sharing/private`,
+    member: (boardId: string, userId: string) =>
+      `/boards/${boardId}/members/${userId}`,
+    memberRole: (boardId: string, userId: string) =>
+      `/boards/${boardId}/members/${userId}/role`,
+  },
+  // Workspaces.Onboarding.* (draft and getting-started card).
+  // Workspaces.Workspaces.* routes under an Account.
+  accounts: {
+    workspaces: (accountId: string) => `/accounts/${accountId}/workspaces`,
+    workspaceSlugCheck: (accountId: string) =>
+      `/accounts/${accountId}/workspaces/slug-check`,
+  },
+  onboarding: {
+    draft: "/workspaces/onboarding-draft",
+    gettingStarted: (workspaceId: string) =>
+      `/workspaces/${workspaceId}/getting-started`,
+    dismissGettingStarted: (workspaceId: string) =>
+      `/workspaces/${workspaceId}/getting-started/dismiss`,
+  },
+  // Governance.ResourcePermissions.*: explicit grants on a resource kind.
+  resourcePermissions: {
+    list: (resourceType: string, resourceId: string) =>
+      `/resources/${resourceType}/${resourceId}/permissions`,
+    detail: (resourceType: string, resourceId: string, permissionId: string) =>
+      `/resources/${resourceType}/${resourceId}/permissions/${permissionId}`,
   },
 
   checklists: {
@@ -136,6 +195,9 @@ export const endpoints = {
     list: "/notifications",
     read: (id: string) => `/notifications/${id}/read`,
     readAll: "/notifications/read-all",
+    // Collaboration.Preferences.*: one member's choices in one workspace.
+    preferences: (workspaceId: string) =>
+      `/workspaces/${workspaceId}/notification-preferences`,
   },
 
   boardGroups: {
@@ -155,7 +217,7 @@ export const endpoints = {
     status: (itemId: string) => `/board-items/${itemId}/status`,
     fieldValues: (itemId: string) => `/board-items/${itemId}/field-values`,
     fieldValue: (itemId: string, fieldId: string) =>
-      `/board-items/${itemId}/field-values/${fieldId}`,
+      `/board-items/${itemId}/values/${fieldId}`,
     comments: (itemId: string) => `/board-items/${itemId}/comments`,
     attachments: (itemId: string) => `/board-items/${itemId}/attachments`,
     attachmentFiles: (itemId: string) =>

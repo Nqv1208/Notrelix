@@ -116,7 +116,7 @@ export function runCreateItemInLane(
   cards: ItemCreator,
   variables: CreateItemInLaneVariables,
 ): Promise<void> {
-  const optimisticId = `optimistic-${cardCommandId("create-item", variables.boardId)}`;
+  const optimisticId = `optimistic-${crypto.randomUUID()}`;
   return runCardCommand({
     queryClient,
     workspaceId: variables.workspaceId,

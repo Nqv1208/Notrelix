@@ -204,6 +204,8 @@ function FollowRow({
     : card.watchers;
   const faces = people.slice(0, 3);
   const more = people.length - faces.length;
+  // Without a producer to follow through, the button is not offered.
+  if (!(known && onToggle) && people.length === 0) return null;
   const button = (
     <button
       type="button"

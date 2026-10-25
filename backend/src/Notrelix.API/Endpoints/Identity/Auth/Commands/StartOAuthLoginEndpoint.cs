@@ -15,7 +15,7 @@ public static class StartOAuthLoginEndpoint
             .WithTags("Identity.Auth")
             .WithSummary("Start OAuth login flow")
             .WithDescription("Redirects user to the OAuth provider's authorization endpoint.")
-            .WithMetadata(new RateLimitPolicyAttribute("AuthStrictByIp"));
+            .WithMetadata(new RateLimitPolicyAttribute("AuthCredentialByIp"));
 
         return group;
     }

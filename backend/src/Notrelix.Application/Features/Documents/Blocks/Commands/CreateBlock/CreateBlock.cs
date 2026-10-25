@@ -8,7 +8,7 @@ public record CreateBlockCommand(
     Guid PageId,
     BlockType Type,
     string Properties,
-    string Position,
+    Guid? AfterBlockId,
     Guid? ParentBlockId
 ) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission
 {
@@ -36,7 +36,7 @@ public class CreateBlockCommandHandler : IRequestHandler<CreateBlockCommand, Res
         if (page is null) throw new NotFoundException(nameof(Page), request.PageId);
 
         var content = BlockContent.Create(JsonValue.Create(request.Properties ?? "{}"));
-        var position = FractionalIndex.Create(request.Position);
+        var position = await PositionAsync(request, ct);
         var accountId = _requestContext.RequireAccountId();
 
         Block block;
@@ -69,5 +69,30 @@ public class CreateBlockCommandHandler : IRequestHandler<CreateBlockCommand, Res
 
         _context.Blocks.Add(block);
         return Result<Guid>.Success(block.Id);
+    }
+
+    /// <summary>
+    /// The new block goes right after <c>AfterBlockId</c> among its siblings, or last when none is named.
+    /// Keys compare ordinally, so the siblings are ordered here rather than by the column collation.
+    /// </summary>
+    private async Task<FractionalIndex> PositionAsync(CreateBlockCommand request, CancellationToken ct)
+    {
+        var siblings = (await _context.Blocks.AsNoTracking()
+                .Where(b => b.PageId == request.PageId && b.DeletedAt == null && b.ParentId == request.ParentBlockId)
+                .Select(b => new { b.Id, Position = b.Position })
+                .ToListAsync(ct))
+            .OrderBy(b => b.Position.Value, StringComparer.Ordinal)
+            .ToList();
+
+        if (request.AfterBlockId is not { } afterId)
+        {
+            return FractionalIndexGenerator.GenerateKeyBetween(siblings.LastOrDefault()?.Position, null);
+        }
+
+        var index = siblings.FindIndex(b => b.Id == afterId);
+        if (index < 0) throw new NotFoundException(nameof(Block), afterId);
+        return FractionalIndexGenerator.GenerateKeyBetween(
+            siblings[index].Position,
+            index + 1 < siblings.Count ? siblings[index + 1].Position : null);
     }
 }

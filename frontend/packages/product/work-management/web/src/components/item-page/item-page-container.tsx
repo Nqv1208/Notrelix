@@ -11,10 +11,10 @@ import {
   useDuplicateCard,
   useFullBoard,
   useItemChildItems,
+  useItemFollowing,
   useItemFileUploads,
   canRetryItemFileUpload,
   useWorkManagementServices,
-  useItemFollowing,
   useItemLifecycle,
   usePeopleDirectory,
   useOfflineWrites,
@@ -309,10 +309,7 @@ function ItemPageReady({
   );
   // Writes the network holds back: what the offline notice counts and marks.
   const { online, paused } = useOfflineWrites();
-  const { directory, invitePerson } = usePeopleDirectory(
-    card.boardId,
-    card.workspaceId,
-  );
+  const { directory } = usePeopleDirectory(card.boardId, card.workspaceId);
 
   // The write the server refused, kept so the viewer can send it again.
   const [refused, setRefused] = useState<RefusedWrite | null>(null);
@@ -565,7 +562,6 @@ function ItemPageReady({
           ? {
               level: access.myLevel,
               grantedBy: access.mySource.grantedBy?.name,
-              expiresAt: access.mySource.expiresAt,
             }
           : null
       }
@@ -579,13 +575,13 @@ function ItemPageReady({
         teams: directory?.teams ?? [],
         loading: directory === null,
         canInvite: directory?.canInvite === true,
-        onInvite: (userId) => invitePerson(userId),
+        onInvite: () => undefined,
       }}
       lifecycle={{
         completed: isItemDone(card) ? (lifecycle?.completed ?? null) : null,
         archived: lifecycle?.archived ?? null,
-        onReopen: () => reopen(),
         onRestore: () => restore(),
+        onReopen: () => reopen(),
       }}
       onResolveConflict={(choice) => {
         const write = refused;

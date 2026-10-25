@@ -67,4 +67,37 @@ public class ItemCompletionFromStatusTests
         item.CompletedAt.Should().BeNull();
         item.Version.Should().Be(version);
     }
+
+    [Fact]
+    public void Completing_RecordsWhoAndWhichStatusItLeft_AndReopeningClearsThem()
+    {
+        var item = Item();
+        var before = Guid.NewGuid();
+
+        item.SyncCompletionWithStatus(Notrelix.Domain.WorkManagement.Fields.WorkStatusCategory.Done, Actor, Now.AddMinutes(5), before);
+
+        item.CompletedBy.Should().Be(Actor);
+        item.StatusBeforeCompletionOptionId.Should().Be(before);
+
+        item.Reopen(Actor, Now.AddMinutes(6));
+
+        item.CompletedBy.Should().BeNull();
+        item.StatusBeforeCompletionOptionId.Should().BeNull();
+    }
+
+    [Fact]
+    public void Archiving_RecordsWhoAndWhen_AndUnarchivingClearsThem()
+    {
+        var item = Item();
+
+        item.Archive(Actor, Now.AddMinutes(5));
+
+        item.ArchivedBy.Should().Be(Actor);
+        item.ArchivedAt.Should().Be(Now.AddMinutes(5));
+
+        item.Unarchive(Actor, Now.AddMinutes(6));
+
+        item.ArchivedBy.Should().BeNull();
+        item.ArchivedAt.Should().BeNull();
+    }
 }

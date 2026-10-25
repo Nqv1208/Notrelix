@@ -10,6 +10,8 @@ public static class MessagingRegistration
     public static IServiceCollection AddMessaging(
         this IServiceCollection services, IConfiguration configuration)
     {
+        services.AddScoped<Notrelix.Infrastructure.Messaging.Consumers.Collaboration.ItemFollowerNotifier>();
+
         // Domain -> integration event mappers (order preserved for composite aggregation).
         services.AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.Identity.UserEventMapper>();
         services.AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.Workspaces.WorkspaceEventMapper>();
@@ -60,6 +62,7 @@ public static class MessagingRegistration
 
                     cfg.UsingInMemory((ctx, mem) =>
                     {
+                        mem.UseConsumeFilter(typeof(WorkerPrincipalConsumeFilter<>), ctx);
                         mem.UseConsumeFilter(typeof(TenantContextConsumeFilter<>), ctx);
                         mem.UseConsumeFilter(typeof(DeduplicationConsumeFilter<>), ctx);
                         mem.ConfigureEndpoints(ctx);
@@ -118,6 +121,7 @@ public static class MessagingRegistration
                             cb.ResetInterval = TimeSpan.FromMinutes(opts.CircuitBreakerResetIntervalMinutes);
                         });
 
+                        rbt.UseConsumeFilter(typeof(WorkerPrincipalConsumeFilter<>), ctx);
                         rbt.UseConsumeFilter(typeof(TenantContextConsumeFilter<>), ctx);
                         rbt.UseConsumeFilter(typeof(DeduplicationConsumeFilter<>), ctx);
 

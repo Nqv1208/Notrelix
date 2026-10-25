@@ -17,6 +17,10 @@
  *   billing.seatPurchaseCheck — POST   /workspaces/:workspaceId/billing/seat-purchases/:purchaseId/check
  *   billing.contactSales      — POST   /workspaces/:workspaceId/billing/contact-sales
  *   billing.seatSummary       — GET    /workspaces/:workspaceId/seat-summary
+ *
+ * and the one read the producer serves (a real contract, not a gap):
+ *
+ *   Billing.Capabilities.List — GET    /workspaces/:workspaceId/billing/capabilities
  */
 import { defineMockOperation } from "../../operations/types";
 import {
@@ -285,7 +289,34 @@ const pdfOf = (invoice: StoredInvoice): string =>
 type Ws = { workspaceId: string };
 type WithInvoice = { workspaceId: string; invoiceId: string };
 
+/** The seeded entitlement of the development stack, mirrored for the mock. */
+const AUTOMATION_RULE_LIMIT = 50;
+
 export const billingOperations = [
+  defineMockOperation<Ws, never, unknown>({
+    id: "billing.capabilities",
+    contract: { kind: "openapi", operationId: "Billing.Capabilities.List" },
+    method: "GET",
+    route: "/workspaces/:workspaceId/billing/capabilities",
+    async handle({ params, store }) {
+      if (!store.getWorkspace(params.workspaceId))
+        return notFound("Workspace not found");
+      const role = store.getCurrentMemberRole(params.workspaceId);
+      if (role !== "owner" && role !== "admin") return forbidden();
+      const used = store.workspaceAutomations.list(params.workspaceId).length;
+      return ok([
+        {
+          code: "AUTOMATION_RULE",
+          isGranted: true,
+          isUnlimited: false,
+          limit: AUTOMATION_RULE_LIMIT,
+          used,
+          remaining: Math.max(0, AUTOMATION_RULE_LIMIT - used),
+        },
+      ]);
+    },
+  }),
+
   defineMockOperation<Ws, never, unknown>({
     id: "billing.overview",
     contract: gap,

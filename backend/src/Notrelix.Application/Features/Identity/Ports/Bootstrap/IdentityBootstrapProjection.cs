@@ -6,7 +6,8 @@ namespace Notrelix.Application.Features.Identity.Ports.Bootstrap;
 public sealed record IdentityBootstrapProjection(
     BootstrapUserProjection User,
     IReadOnlyList<BootstrapWorkspaceProjection> Workspaces,
-    Guid? PersonalWorkspaceId);
+    Guid? PersonalWorkspaceId,
+    Guid? AccountId);
 
 public sealed record BootstrapUserProjection(
     Guid Id,
@@ -19,4 +20,5 @@ public sealed record BootstrapWorkspaceProjection(
     Guid Id,
     string Name,
     string Slug,
-    string Role);
+    string Role,
+    Guid AccountId);

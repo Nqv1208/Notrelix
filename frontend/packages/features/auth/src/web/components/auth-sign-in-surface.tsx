@@ -7,7 +7,7 @@ import {
 } from "react";
 import { Clock, Lock, Mail, Timer } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
-import { fillAuthCopy, pluralAuthCopy } from "../copy/fill-auth-copy";
+import { fillAuthCopy } from "../copy/fill-auth-copy";
 import type { AuthCopy } from "../copy/auth.copy";
 import { GoogleMark } from "./google-mark";
 import { MicrosoftMark } from "./microsoft-mark";
@@ -29,14 +29,18 @@ import {
 export type AuthSignInStep =
   | {
       readonly kind: "email";
-      readonly error?: "invalid" | "unreachable" | null;
+      readonly error?:
+        | "invalid"
+        | "unreachable"
+        /** A provider sign-in was stopped: the account has a second factor, so it signs in with its password. */
+        | "mfa-required"
+        | "provider-failed"
+        | null;
     }
   | {
       readonly kind: "password";
       readonly email: string;
       readonly error?: "wrong" | "unreachable" | null;
-      /** Tries left before the lock; absent when it is not worth saying. */
-      readonly attemptsLeft?: number | null;
       /** Seconds the account stays locked; 0 or absent = open. */
       readonly lockedSeconds?: number;
     }
@@ -53,8 +57,10 @@ export type AuthSignInStep =
   | {
       readonly kind: "otp";
       readonly email: string;
-      readonly error?: "wrong" | "expired" | "unreachable" | null;
-      readonly attemptsLeft?: number | null;
+      readonly error?:
+        "wrong" | "expired" | "inactive" | "locked" | "unreachable" | null;
+      /** Seconds the second step stays locked after too many tries; 0 or absent = open. */
+      readonly lockedSeconds?: number;
       /** Asking for a backup code instead of the app's six digits. */
       readonly backup?: boolean;
     };
@@ -72,7 +78,7 @@ export interface AuthSignInSurfaceProps {
   readonly onSubmitPassword: (password: string) => void;
   readonly onForgot: () => void;
   readonly onSso: () => void;
-  readonly onVerify: (input: { code: string; rememberDevice: boolean }) => void;
+  readonly onVerify: (input: { code: string }) => void;
   readonly onToggleBackup: () => void;
   readonly onBack: () => void;
 }
@@ -151,6 +157,12 @@ function EmailStep({
           ) : null}
           {step.error === "unreachable" ? (
             <FieldError>{t.unreachable}</FieldError>
+          ) : null}
+          {step.error === "mfa-required" ? (
+            <FieldError>{t.mfaRequired}</FieldError>
+          ) : null}
+          {step.error === "provider-failed" ? (
+            <FieldError>{t.providerFailed}</FieldError>
           ) : null}
         </div>
         <button
@@ -255,8 +267,8 @@ function PasswordStep({
   const wrong = step.error === "wrong";
   // A wrong password is not kept: the field starts empty for the next try.
   useEffect(() => {
-    if (wrong) setPassword("");
-  }, [wrong, step.attemptsLeft]);
+    if (wrong && !pending) setPassword("");
+  }, [wrong, pending]);
   return (
     <>
       <AuthHeading title={t.title} lead={t.lead} />
@@ -303,18 +315,6 @@ function PasswordStep({
           />
           {wrong ? (
             <FieldError id="auth-password-error">{t.wrong}</FieldError>
-          ) : null}
-          {wrong &&
-          !locked &&
-          step.attemptsLeft != null &&
-          step.attemptsLeft <= 3 ? (
-            <p className="m-0 text-item-note text-meta-foreground">
-              {pluralAuthCopy(
-                t.attemptsLeft_one,
-                t.attemptsLeft_other,
-                step.attemptsLeft,
-              )}
-            </p>
           ) : null}
           {step.error === "unreachable" ? (
             <FieldError>{t.unreachable}</FieldError>
@@ -457,7 +457,6 @@ function OtpStep({
   const t = copy.otp;
   const [digits, setDigits] = useState<string[]>(Array(6).fill(""));
   const [backup, setBackup] = useState("");
-  const [remember, setRemember] = useState(false);
   const boxes = useRef<(HTMLInputElement | null)[]>([]);
   const code = step.backup ? backup.trim() : digits.join("");
   const ready = step.backup ? code.length >= 8 : code.length === 6;
@@ -498,30 +497,32 @@ function OtpStep({
   const failure =
     step.error === "expired"
       ? t.expired
-      : step.error === "wrong"
-        ? step.attemptsLeft != null && step.attemptsLeft <= 3
-          ? pluralAuthCopy(
-              t.wrongLeft_one,
-              t.wrongLeft_other,
-              step.attemptsLeft,
-            )
-          : t.wrong
-        : step.error === "unreachable"
-          ? copy.password.unreachable
-          : null;
+      : step.error === "inactive"
+        ? t.inactive
+        : step.error === "locked"
+          ? fillAuthCopy(t.locked, { seconds: step.lockedSeconds ?? 0 })
+          : step.error === "wrong"
+            ? t.wrong
+            : step.error === "unreachable"
+              ? copy.password.unreachable
+              : null;
 
   return (
     <>
       <AuthHeading
         title={t.title}
-        lead={fillAuthCopy(t.lead, { email: step.email })}
+        lead={
+          step.email
+            ? fillAuthCopy(t.lead, { email: step.email })
+            : t.leadNoEmail
+        }
       />
       <form
         noValidate
         className="flex flex-col gap-4.5"
         onSubmit={(event) => {
           event.preventDefault();
-          if (ready) onVerify({ code, rememberDevice: remember });
+          if (ready) onVerify({ code });
         }}
       >
         {step.backup ? (
@@ -584,15 +585,6 @@ function OtpStep({
           </fieldset>
         )}
         {failure ? <FieldError>{failure}</FieldError> : null}
-        <label className="flex cursor-pointer items-center gap-2.5 text-item-prose font-medium">
-          <input
-            type="checkbox"
-            checked={remember}
-            onChange={(event) => setRemember(event.target.checked)}
-            className="size-4.5 shrink-0 accent-primary"
-          />
-          {t.remember}
-        </label>
         <button
           type="submit"
           disabled={!ready || pending}

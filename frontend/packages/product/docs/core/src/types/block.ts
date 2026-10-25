@@ -63,15 +63,14 @@ export interface Block {
 export interface CreateBlockPayload {
   type: BlockType;
   properties?: BlockProperties;
-  position?: number;
+  /** The sibling the block goes right after; omitted puts it last. */
+  afterBlockId?: ID | null;
   parentId?: ID | null;
 }
 
+/** A block keeps its type; only its content is edited. */
 export interface UpdateBlockPayload {
-  type?: BlockType;
   properties?: BlockProperties;
-  position?: number;
-  parentId?: ID | null;
 }
 
 export interface ReorderBlocksInput {

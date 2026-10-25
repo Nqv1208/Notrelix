@@ -32,6 +32,7 @@ public class ArchiveBoardViewCommandHandler : IRequestHandler<ArchiveBoardViewCo
             .FirstOrDefaultAsync(v => v.Id == request.ViewId && v.BoardId == request.BoardId, ct);
         if (view is null) throw new NotFoundException(nameof(BoardView), request.ViewId);
 
+        BoardViewAccess.EnsureCanEdit(view, _currentUser.UserId);
         view.Archive(_currentUser.UserId, _dateTimeProvider.UtcNow);
         return Result.Success();
     }

@@ -1,6 +1,7 @@
 import { defineMockOperation } from "../../operations/types";
 import { ok, notFound } from "../../transport/create-response";
 import { INVOICE_DOC_ID, invoiceSnapshot } from "../../state/mock-docs-invoice";
+import { toBlockDto } from "./blocks.handlers";
 type HistoryDtoApi = any;
 
 export const historyOperations = [
@@ -62,20 +63,7 @@ export const historyOperations = [
                   ...(JSON.parse(b.properties || "{}") as object),
                   text: override,
                 });
-          return [
-            {
-              id: b.id,
-              pageId: b.pageId,
-              parentBlockId: b.parentBlockId ?? null,
-              type: b.type,
-              properties,
-              position: b.position,
-              version: b.version,
-              createdByUserId: b.createdByUserId,
-              createdAt: b.createdAt,
-              updatedAt: b.updatedAt ?? null,
-            },
-          ];
+          return [toBlockDto({ ...b, properties })];
         }),
       );
     },

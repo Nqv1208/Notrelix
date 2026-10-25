@@ -96,6 +96,7 @@ const TYPE_ICON: Readonly<Record<BoardSettingsFieldType, LucideIcon>> = {
   rollup: ChartLine,
   progress: ChartPie,
   autonumber: Hash,
+  link: Link2,
   "datetime-system": Clock,
 };
 

@@ -1,4 +1,6 @@
+import type { OperationResponse } from "@notrelix/contracts";
 import type {
+  BillingCapabilityDto,
   BillingDowngradeDto,
   BillingInvoiceDetailDto,
   BillingInvoicesDto,
@@ -34,8 +36,31 @@ const root = (workspaceId: string) =>
   `/workspaces/${encodeURIComponent(workspaceId)}`;
 const billing = (workspaceId: string) => `${root(workspaceId)}/billing`;
 
+type CapabilityRow = NonNullable<
+  OperationResponse<"Billing.Capabilities.List">
+>[number];
+
+function toCapability(row: CapabilityRow): BillingCapabilityDto {
+  return {
+    code: row.code ?? "",
+    isGranted: row.isGranted === true,
+    isUnlimited: row.isUnlimited === true,
+    limit: row.limit ?? null,
+    used: row.used ?? 0,
+    remaining: row.remaining ?? null,
+  };
+}
+
 export function createBillingApi(api: BillingApiClient) {
   return {
+    /** What the workspace's billing grants: the one Billing read the producer serves. */
+    async capabilities(workspaceId: string): Promise<BillingCapabilityDto[]> {
+      const rows = await api.get<CapabilityRow[]>(
+        `${billing(workspaceId)}/capabilities`,
+        QUIET,
+      );
+      return rows.map(toCapability);
+    },
     overview(workspaceId: string) {
       return api.get<BillingOverviewDto>(billing(workspaceId), QUIET);
     },

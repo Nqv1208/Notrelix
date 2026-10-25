@@ -35,14 +35,14 @@ public sealed class OutboxDispatchContractTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_fixture.ConnectionString);
+        _reset = new DatabaseReset(_fixture.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
     public Task DisposeAsync() => Task.CompletedTask;
 
     private ApplicationDbContext CreateContext() =>
-        _fixture.CreateContext(new FakeCurrentTenantContext());
+        _fixture.CreateOwnerContext(new FakeCurrentTenantContext());
 
     private static MessagingOutboxMessage CreateMessage(Guid eventId, DateTimeOffset now)
     {
@@ -251,7 +251,7 @@ public sealed class OutboxDispatchContractTests : IAsyncLifetime
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
 
-        await using (var context = _fixture.CreateContext(tenant, interceptor))
+        await using (var context = _fixture.CreateOwnerContext(tenant, interceptor))
         {
             await using var transaction = await context.Database.BeginTransactionAsync();
 

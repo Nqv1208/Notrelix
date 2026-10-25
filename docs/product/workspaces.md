@@ -247,13 +247,38 @@ Do not hide repository callbacks inside Domain rules.
 
 Leaving is a membership transition, not Identity deletion.
 
-It should define:
+Rules in force:
 
-- last-owner restriction;
+- the person leaves their own participation only; the subject is always the signed-in person, never a
+  request input;
+- any active member may leave, including a Guest;
+- the last active Owner cannot leave: the Workspace would have no owner. The answer is a conflict with the
+  stable code `workspaces.member.last-owner-cannot-leave` and nothing changes. An Owner may leave when
+  another active Owner remains; the account workspace list reports this as `canLeave`;
+- the membership ends exactly like a removal (status Removed), the person's workspace access grant is
+  revoked in the same transaction, and a default Workspace choice (Identity, section 7 of the Identity
+  context) that points at the left Workspace is cleared;
+- work assigned to the person, historical attribution and the person's Identity are untouched.
+
+Still to define before it is a complete policy:
+
 - transfer requirements if any;
-- effect on assigned work;
-- historical attribution;
-- future notifications.
+- future notifications;
+- cleanup of Space and Team entries of the person (a removal does not clean them today).
+
+# 19.1. Account workspace list and default Workspace
+
+The signed-in person has an account-level list of the Workspaces they take part in:
+`GET /api/v1/account/workspaces`. It contains only the person's own active memberships of active
+Workspaces, one row each with the person's own role, whether it is their default, and whether they may
+leave. The member count is shown to every role except Guest; the department count (active Department
+Spaces) is shown only to an Owner or Admin. A Workspace the person left, was removed or suspended from, or
+that is archived or deleted, never appears.
+
+The default Workspace is the person's choice of the Workspace that opens with the app. Workspaces validates
+that the person is an active member before the choice is stored; Identity stores only the Workspace id on
+the person's profile and a reader treats a default the person cannot open as absent. Choosing the current
+default changes nothing.
 
 # 20. Remove Member
 
@@ -587,11 +612,11 @@ The Workspace sharing policy also stores `guestDefaultExpiryDays` (30, 90, 180 o
 
 Authorization (all through the pipeline): the caller needs `ViewMembers` on the Workspace (a Guest is refused, GOV-009) and the Space must be one the caller can see, otherwise it is NotFound exactly like a missing Space (GOV-025, GOV-029). Boards and Pages enter only through the Governance visible id sets (`IResourceVisibility`), so a Board or Page the caller cannot read never appears, is never counted and never contributes to any figure. `?as=member` previews a plain department member and only a Space manager may ask (403 otherwise): Private Boards, Private child Spaces and Board guests are left out and not counted.
 
-**Running board rule.** A Board is *running* when it is not archived, not deleted, readable by the viewer, and has at least one unfinished Item. An Item counts when it is not archived and not deleted; it is unfinished when it has no completion time; it may be a sub-Item. Finished Boards (every Item done) and Boards without Items are not running: they appear only in `boardTotal`, which counts the Boards of the Space that are readable and not archived. `boards` lists the running Boards, most recently changed first, at most six.
+**Running board rule.** A Board is *running* when it is not archived, not deleted, readable by the viewer, and has at least one unfinished Item. An Item counts when it is not archived and not deleted; it is unfinished when it has no completion time; it may be a sub-Item. Finished Boards (every Item done) and Boards without Items are not running: they appear only in `boardTotal`, which counts the Boards of the Space that are readable and not archived. `boards` lists the running Boards, most recently changed first, at most six (`MaxBoards`); `docs` are capped at four (`MaxDocs`); the totals (`boardTotal`, `docTotal`) keep counting past the caps.
 
-Per Board: `kind` is `inbox` for an Intake Board, else `kanban` when its default View is a Kanban View, else `table`; `progress` is done of total on top-level Items (null without any); `attention` is `overdue` (unfinished Items past their due time), `waitingReview` (pending approval requests on the Board or on one of its unfinished Items) and `unclaimed` (unfinished top-level Items nobody is assigned to), null when all are zero; `people` are the up to three people with the most unfinished Items; `updatedAt` is the latest change of the Board or of any of its Items; a Private Board carries `addedCount` (its members).
+Per Board (accepted 2026-10-24): `kind` is `inbox` for an Intake Board, else `kanban` when the Board's default, not archived View is a Kanban View, else `table` (a Board without a default View, or whose default View is not Kanban, is a `table`; a non-default Kanban View never makes a Board a kanban); `progress` is done of total on top-level Items (null without any); `attention` is `overdue` (unfinished Items past their due time), `waitingReview` (unfinished Items with at least one pending approval request, each Item counted once however many requests it has; a request aimed at the Board itself is not an Item) and `unclaimed` (unfinished top-level Items nobody is assigned to), null when all are zero; `people` are the up to three people with the most unfinished Items; `updatedAt` is the latest change of the Board or of any of its Items; a Private Board carries `addedCount` (its members).
 
-The page aside lists only non-zero `attention` entries: `overdue`, `unassigned` (unclaimed Items on inbox Boards), `review` and `stale` (running Boards untouched for 14 days), each with the Board holding most of the count (the stalest Board for `stale`). `workload` is the top five people by unfinished Items across the readable Boards of the Space (most open first, then most overdue). `docTotal` counts readable root Pages of the Space (no parent, not archived) and `docs` lists the four most recently changed with the last editor.
+The page aside lists only non-zero `attention` entries: `overdue`, `unassigned` (unclaimed Items on inbox Boards), `review` and `stale` (running Boards untouched for 14 days), each with the Board holding most of the count (the stalest Board for `stale`). `workload` is the top five (`MaxWorkload`) people by unfinished Items across the readable Boards of the Space (most open first, then most overdue). `docTotal` counts readable root Pages of the Space (no parent, not archived) and `docs` lists the four most recently changed with the last editor.
 
 People: `peopleTotal` counts everyone the Space's User and Team entries reach once, Teams expanded, at the highest role, Guests excluded (WSP-026); `people` are the first four (admins first). `children` lists only child Spaces the caller can read (and, in the preview, only Workspace-visible ones) with their head count and the number of readable Boards in them; a child the caller cannot read is omitted, never zero. `access` carries admins, and members and viewers as a head count plus the Team entries at that role with their head count; `access.guests` are Workspace Guests with access to readable Boards of the Space, taken from the Board sharing read, so only a caller who may see a Board's entries (Board manager or member) gets them.
 
@@ -601,9 +626,12 @@ Not served: templates (the first-step template catalog has no owner yet), the pe
 
 Accepted 2026-10-23. Workspaces owns the pre-workspace onboarding state and the getting-started card; it creates no workspace by itself (creation stays `CreateWorkspace`, departments `CreateSpace`, invitations `InviteMember`, the first Board `Boards.Create`).
 
-- `GET /accounts/{accountId}/workspaces/slug-check?slug=`: `free`, `taken` or `invalid`, plus the next free address (`name-2`, `name-3`, ...) when taken. An address is unique within the Account only, never globally: active (not deleted) workspaces of the Account hold addresses, exactly as the unique index does (`ux_workspaces_account_slug_active`). It is `invalid` when it is not lowercase letters, digits and single hyphens of at most 128 characters after trimming and lower-casing. It needs the permission to create a workspace in the Account, so it never tells another Account's members anything. There is no reserved-word list yet (open decision).
-- `GET|PUT|DELETE /workspaces/onboarding-draft`: the caller's own unfinished onboarding (`step`, optional `workspaceId`, and a JSON-object `data` of at most 64 KB the server does not interpret). One draft per user, 30 days after the last save (an expired draft reads as absent and the next save replaces it); the subject is always the principal and RLS repeats it on the user. It is personal state, never workspace truth, and it holds no secret by contract. There is no scheduled sweep yet: an expired row stays until the user saves or deletes.
-- `GET /workspaces/{workspaceId}/getting-started` and `POST .../getting-started/dismiss`: any member (`ViewWorkspace`). The only served item is `first-item`, derived (never stored): done when a Board the caller can read has an active Item; `boardId` is then the Board of the earliest created Item, otherwise the newest Board the caller can read. `dismissed` is stored per user and Workspace and dismissing again is a no-op. The `invite-more` and `mobile` items have no signal yet.
+- `GET /accounts/{accountId}/workspaces/slug-check?slug=`: `free`, `taken` or `invalid`, plus the next free address (`name-2`, `name-3`, ...) when taken, and a stable `reason` rule code when `invalid`. An address is unique within the Account only, never globally: active (not deleted) workspaces of the Account hold addresses, exactly as the unique index does (`ux_workspaces_account_slug_active`). It needs the permission to create a workspace in the Account, so it never tells another Account's members anything.
+- **Workspace address rule** (accepted 2026-10-24, Domain `WorkspaceSlugRules`, enforced by `Workspace.Create` and so by every creation path and by the slug check): after trimming and lower-casing, lowercase letters, digits and single hyphens (`SharedKernel_Slug_InvalidFormat`), 3 to 63 characters (`Workspaces_Workspace_SlugTooShort`, `Workspaces_Workspace_SlugTooLong`), and not one of the reserved words `admin`, `api`, `app`, `www`, `settings`, `login`, `signup`, `billing`, `support`, `help`, `new`, `invite`, `join`, `onboarding`, `workspaces` (`Workspaces_Workspace_SlugReserved`; only the exact word is reserved, `admin-team` is free). `CreateWorkspace` takes an optional `slug`: a chosen address that breaks the rule is refused with its rule code and one already held in the Account is a conflict (`workspaces.workspace.slug-taken`); neither is silently changed. When no slug is sent the address is derived from the name, and a derived address that is too short, reserved or taken gets a short random suffix instead of failing the creation. The rule applies when an address is chosen. A workspace created before it keeps its address, whatever it is, and every read, resolve and other operation keeps working: no migration rewrites a stored slug and no read re-validates one. There is no slug rename today (`Rename` changes the name only); a future rename must call the same rule.
+- **Workspace size and language** (accepted 2026-10-24, owned by Workspaces): `size` is one of `1-10`, `11-50`, `51-200`, `201-1000`, `1000+` and `language` is `vi` or `en`; both are part of the workspace settings value (columns `settings_size`, `settings_language`, nullable, additive migration), unset (null) on a workspace that never chose them. They are set when the workspace is created (`CreateWorkspace`) and changed afterwards by an Owner or Admin through the Workspace settings write (`PUT .../settings`, the existing `ManageWorkspace` permission; a field left out keeps its stored value). They are returned by the workspace reads (`size`, `language` on the workspace DTO) and the settings read. An invalid value is refused with `Workspaces_Settings_SizeInvalid` or `Workspaces_Settings_LanguageInvalid`.
+- `GET|PUT|DELETE /workspaces/onboarding-draft`: the caller's own unfinished onboarding (`step`, optional `workspaceId`, and a JSON-object `data` of at most 64 KB the server does not interpret). One draft per user, 30 days after the last save (an expired draft reads as absent and the next save replaces it); the subject is always the principal and RLS repeats it on the user. It is personal state, never workspace truth, and it holds no secret by contract. A hosted sweep (`OnboardingDraftSweepService`, options `Workspaces:Onboarding:DraftSweep`: `Enabled`, `Interval` 1 hour, `BatchSize` 500) deletes rows whose `expires_at` has passed in bounded batches under the worker scope with `FOR UPDATE SKIP LOCKED`, so several instances can run it; it only reclaims storage because an expired draft already reads as absent.
+- `GET /workspaces/{workspaceId}/getting-started` and `POST .../getting-started/dismiss`: any member, Guests included (`ViewWorkspace`). Served items (derived, never stored): `first-item`, done when a Board the caller can read has an active Item (`boardId` is then the Board of the earliest created Item, otherwise the newest Board the caller can read), and `invite-more` (accepted 2026-10-24), done once at least one invitation was ever sent in the Workspace, whatever became of it (accepted, revoked or expired still count as sent; another workspace's invitations do not). The `mobile` item is not returned until a signal source exists. `dismissed` is stored per user and Workspace and dismissing again is a no-op. `visible` is derived: the card is shown unless the caller dismissed it or `first-item` is done (`invite-more` alone never hides it).
+- **Join page** (accepted 2026-10-24): the invitation read by token (`GetInvitationByToken`) shows the holder of the token the inviter's display name (`inviterName`, a generic label when the inviter has none) and never the inviter's email or any other inviter fact. The notification preferences a person sets while joining use the existing Collaboration preference matrix (`notifications.notification_preferences`, per workspace and type, in-app and email channels, Guests included); the join flow has no preference contract of its own.
 
 # 49. Organizational containers
 

@@ -14,8 +14,11 @@ const endpoints: PageApiEndpoints = {
     search: (workspaceId) => `/workspaces/${workspaceId}/pages/search`,
     moveToSpace: (pageId) => `/pages/${pageId}/move-to-space`,
   },
+  resourcePermissions: {
+    list: (kind, id) => `/resources/${kind}/${id}/permissions`,
+  },
   blocks: {
-    detail: (blockId) => `/blocks/${blockId}`,
+    detail: (pageId, blockId) => `/pages/${pageId}/blocks/${blockId}`,
     reorder: "/blocks/reorder",
     batch: (pageId) => `/pages/${pageId}/blocks/batch`,
   },
@@ -26,10 +29,6 @@ const dto: PageDtoApi = {
   id: "page-1",
   workspaceId: "ws-1",
   title: "Playbook",
-  position: 0,
-  depth: 0,
-  isTemplate: false,
-  isArchived: false,
   createdAt: "2026-10-01T00:00:00.000Z",
   updatedAt: "2026-10-02T00:00:00.000Z",
   version: 3,

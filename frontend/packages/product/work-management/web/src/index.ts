@@ -32,6 +32,7 @@ export * from "./components/board-share/board-share-models";
 export {
   BoardShareDialogSurface,
   type BoardShareDialogSurfaceProps,
+  type ShareCandidate,
 } from "./components/board-share/board-share-dialog-surface";
 
 // Kanban view

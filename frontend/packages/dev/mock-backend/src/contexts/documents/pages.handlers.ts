@@ -3,7 +3,6 @@
  *
  * Operations:
  *   pages.list       — GET /workspaces/:workspaceId/pages
- *   pages.tree       — GET /workspaces/:workspaceId/pages/tree
  *   pages.detail     — GET /pages/:id
  *   pages.create     — POST /workspaces/:workspaceId/pages
  *   pages.update     — PATCH /pages/:id
@@ -40,9 +39,8 @@ interface PageDtoApi {
   title: string;
   /** Gap `CTR-GAP-DOCS-PAGE-EXT`: the short name the tree and the breadcrumb use. */
   navTitle?: string;
-  iconType?: string | null;
-  iconValue?: string | null;
-  coverUrl?: string | null;
+  icon?: string | null;
+  coverImage?: string | null;
   position: number;
   depth: number;
   isTemplate: boolean;
@@ -65,8 +63,7 @@ interface PageDtoApi {
 interface BreadcrumbDtoApi {
   id: string;
   title: string;
-  iconType?: string | null;
-  iconValue?: string | null;
+  icon?: string | null;
 }
 
 function mapPageDto(p: MockPageRecord, store?: MockStore): PageDtoApi {
@@ -83,9 +80,8 @@ function mapPageDto(p: MockPageRecord, store?: MockStore): PageDtoApi {
     parentId: p.parentId ?? null,
     title: p.title,
     ...(p.navTitle ? { navTitle: p.navTitle } : {}),
-    iconType: null,
-    iconValue: p.icon ?? null,
-    coverUrl: null,
+    icon: p.icon ?? null,
+    coverImage: null,
     position: p.position ?? 0,
     depth: 0,
     isTemplate: false,
@@ -122,22 +118,12 @@ export const pagesOperations = [
 
   defineMockOperation<{ workspaceId: string }, never, PageDtoApi[]>({
     id: "pages.list",
-    contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
+    contract: {
+      kind: "openapi",
+      operationId: "Documents.Pages.ListWorkspacePages",
+    },
     method: "GET",
     route: "/workspaces/:workspaceId/pages",
-    async handle({ params, store }) {
-      const pages = store.getPages(params.workspaceId);
-      return ok<PageDtoApi[]>(pages.map((page) => mapPageDto(page, store)));
-    },
-  }),
-
-  // ─── GET /workspaces/:workspaceId/pages/tree ──────────────────────────────
-
-  defineMockOperation<{ workspaceId: string }, never, PageDtoApi[]>({
-    id: "pages.tree",
-    contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
-    method: "GET",
-    route: "/workspaces/:workspaceId/pages/tree",
     async handle({ params, store }) {
       const pages = store.getPages(params.workspaceId);
       return ok<PageDtoApi[]>(pages.map((page) => mapPageDto(page, store)));
@@ -148,7 +134,7 @@ export const pagesOperations = [
 
   defineMockOperation<{ id: string }, never, PageDtoApi>({
     id: "pages.detail",
-    contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
+    contract: { kind: "openapi", operationId: "Documents.Pages.GetPage" },
     method: "GET",
     route: "/pages/:id",
     async handle({ params, store }) {
@@ -171,7 +157,7 @@ export const pagesOperations = [
     string
   >({
     id: "pages.create",
-    contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
+    contract: { kind: "openapi", operationId: "Documents.Pages.CreatePage" },
     method: "POST",
     route: "/workspaces/:workspaceId/pages",
     async handle({ params, body, store }) {
@@ -220,7 +206,7 @@ export const pagesOperations = [
     PageDtoApi
   >({
     id: "pages.update",
-    contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
+    contract: { kind: "openapi", operationId: "Documents.Pages.UpdatePage" },
     method: "PATCH",
     route: "/pages/:id",
     async handle({ params, body, store }) {
@@ -235,7 +221,7 @@ export const pagesOperations = [
 
   defineMockOperation<{ id: string }, never, void>({
     id: "pages.delete",
-    contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
+    contract: { kind: "openapi", operationId: "Documents.Pages.DeletePage" },
     method: "DELETE",
     route: "/pages/:id",
     async handle({ params, store }) {
@@ -293,7 +279,10 @@ export const pagesOperations = [
 
   defineMockOperation<{ id: string }, never, BreadcrumbDtoApi[]>({
     id: "pages.breadcrumb",
-    contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
+    contract: {
+      kind: "openapi",
+      operationId: "Documents.Pages.GetPageBreadcrumb",
+    },
     method: "GET",
     route: "/pages/:id/breadcrumb",
     async handle({ params, store }) {
@@ -312,8 +301,7 @@ export const pagesOperations = [
         chain.map((entry) => ({
           id: entry.id,
           title: entry.navTitle ?? entry.title,
-          iconType: null,
-          iconValue: entry.icon ?? null,
+          icon: entry.icon ?? null,
         })),
       );
     },

@@ -272,6 +272,18 @@ overridable per environment. The MFA wrong-code budget per challenge (5) is a co
 | `Interval` | `01:00:00` (1 hour) | Time between sweeps. Range 10 seconds to 1 day. |
 | `BatchSize` | 1000 | Rows deleted per transaction. Range 1 to 10000. |
 
+`Workspaces:Onboarding:DraftSweep` (Infrastructure, `OnboardingDraftSweepOptions`, validated on start by
+`OnboardingDraftSweepOptionsValidator`) configures the sweep of expired onboarding drafts
+(`OnboardingDraftSweepService`, a hosted service; the retention itself is the Domain constant of 30 days after the last
+save, `OnboardingDraft.Retention`). The sweep runs under the system context with the RLS worker scope and claims rows
+with `FOR UPDATE SKIP LOCKED`:
+
+| Key | Default | Meaning |
+|---|---|---|
+| `Enabled` | `true` | When false nothing is deleted. |
+| `Interval` | `01:00:00` (1 hour) | Time between sweeps. Range 10 seconds to 1 day. |
+| `BatchSize` | 500 | Rows deleted per transaction. Range 1 to 10000. |
+
 Several API instances may sweep at once (rows are claimed with `FOR UPDATE SKIP LOCKED`). The sweep runs
 under the explicit system (worker) tenant context and RLS worker scope and touches only
 `identity.user_security_activity`.
@@ -280,6 +292,30 @@ Session cookies: `CookieService` marks the access and refresh cookies `Secure` (
 only when the environment is `Production`. The staging Compose overlay in this repository serves plain
 HTTP behind its own nginx (default origins `http://localhost`), so staging cookies are intentionally not
 `Secure`; if staging is published over HTTPS the cookie condition must be changed in the same step.
+
+Database connections and the serving role (`ConnectionStrings`, `Rls:RoleEnforcement`):
+
+| Key | Default | Meaning |
+|---|---|---|
+| `ConnectionStrings:NotrelixDb` | none (required) | The application login (`notrelix_app`): every request. `--rls-apply` takes this login's password from it. |
+| `ConnectionStrings:NotrelixMigrationDb` | none (required while `Rls:RoleEnforcement` is `Enforce`) | The owner connection used only by `--migrate`, `--rls-apply`, `--seed` and the Development startup migrate/seed. A host that opted out of enforcement (`Warn` or `Off`: the test hosts on one privileged login) falls back to the runtime string and the initialiser logs it. |
+| `ConnectionStrings:NotrelixWorkerDb` | none (required while `Rls:RoleEnforcement` is `Enforce`; the host refuses to start without it) | The background login (`notrelix_worker`) used by the outbox and email dispatchers, the deduplication store, message consumers, sweeps, reapers and job locks. Only a host that opted out of enforcement falls back to the application string. The unbounded worker scope is honoured only on a connection logged in as a member of `notrelix_worker`. `--rls-apply` takes this login's password from it. |
+| `Rls:RoleEnforcement` | `Enforce` | `Enforce` fails startup when either login is a superuser, a BYPASSRLS role, a login that can `RESET ROLE` into one, or holds the owner's privileges on the tenant tables; when the application login is a member of `notrelix_worker`; when the background login is not; or when `ConnectionStrings:NotrelixWorkerDb` is unset. `Warn` logs the same findings and continues. `Off` does not inspect the roles (the OpenAPI export and the owner control hosts of the tests only). Every Compose stack (development, staging, production, real-e2e) and the container smoke run `Enforce`. |
+
+Compose variables behind these strings: `POSTGRES_USER` / `POSTGRES_PASSWORD` are the owner,
+`NOTRELIX_APP_DB_PASSWORD` and `NOTRELIX_WORKER_DB_PASSWORD` the two runtime logins (required by the staging overlay;
+production carries full strings in `CONNECTIONSTRINGS_NOTRELIXDB`, `CONNECTIONSTRINGS_NOTRELIXWORKERDB` and
+`CONNECTIONSTRINGS_NOTRELIXMIGRATIONDB`). Passwords must not contain `;` or `=`. `notrelix_app` and `notrelix_worker`
+are LOGIN roles created idempotently by `--rls-apply` (the user name in each string must be exactly the role name and
+the password in each string is the role's password; the server quotes it and it is never logged) and, on a fresh
+compose-managed volume, by `infra/postgres/init/20-create-runtime-logins.sh`. Rotate by changing the secret and
+running `--rls-apply`.
+
+The owner connection must stay a superuser or BYPASSRLS role: data-migration guards such as the item-key
+backfill refuse to run as a plain non-bypass owner under FORCE ROW LEVEL SECURITY. The serving connection is
+meant to be the non-owner `notrelix_app` login. The guard (`RuntimeDatabaseRoleGuard`, a hosted service
+registered before the background workers) does not run in the command modes, which use the owner
+connection. The guard connects at startup, so a host whose database is unreachable does not begin serving.
 
 These values are current executable evidence.
 
@@ -999,6 +1035,27 @@ Validate allowed targets.
 Do not accept arbitrary client-provided post-auth redirect URL without a safe allowlist/contract.
 
 Avoid open redirect.
+
+Current contract (`OAuth` section, `OAuthRedirectOptions`):
+
+```text
+FrontendSuccessUrl   where a completed OAuth sign-in lands (/auth/callback)
+FrontendFailureUrl   where a failed OAuth sign-in lands (/sign-in)
+FrontendMfaUrl       where an OAuth sign-in that needs a second factor lands (/sign-in?step=mfa)
+```
+
+The only client-influenced part is the person's return path. `returnUrl` on `GET /auth/oauth/{provider}/start`
+is validated (an internal root-relative path: one leading slash, no backslash, no control character,
+no percent-encoded variant of those, at most 512 characters) and stored in the OAuth state. The callback
+appends it as `?returnTo=<path>` to the success or MFA URL only when it passes the same check
+(`SafeReturnPath`); otherwise it is dropped. The frontend repeats the check before navigating.
+
+An OAuth sign-in of an MFA-enabled user issues no session. The challenge travels in the `mfaChallenge`
+cookie, never in a URL: httpOnly, SameSite=Lax, Secure when the request is HTTPS, path `/api/v1/auth/mfa`,
+lifetime at most the challenge lifetime and five minutes. `POST /auth/mfa/verify` reads it when the body
+has no challenge (a body challenge wins), clears it on success and when the challenge is expired or
+exhausted, and answers `identity.mfa.challenge-invalid` when neither exists. The five-wrong-codes limit
+per challenge is unchanged.
 
 ---
 

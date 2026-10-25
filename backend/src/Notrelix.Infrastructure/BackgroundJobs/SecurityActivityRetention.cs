@@ -155,7 +155,7 @@ internal sealed class SecurityActivityRetentionService : BackgroundService
         {
             try
             {
-                await using var scope = _scopeFactory.CreateAsyncScope();
+                await using var scope = _scopeFactory.CreateWorkerAsyncScope();
                 var sweeper = scope.ServiceProvider.GetRequiredService<SecurityActivityRetentionSweeper>();
                 await sweeper.RunOnceAsync(stoppingToken);
             }

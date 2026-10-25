@@ -39,7 +39,6 @@ import {
   notFound,
   validationError,
 } from "../../transport/create-response";
-import { boardSharing } from "../../state/mock-board-sharing";
 import type { MockStore } from "../../state/mock-store";
 import type { MockBoardRecord, MockCardRecord } from "../../state/records";
 import {
@@ -381,8 +380,6 @@ export function canWriteBoardItems(boardId: string, store: MockStore): boolean {
 }
 
 /** Whether the caller can read a board (any level of access). */
-const LEVELS = ["viewer", "commenter", "editor", "manager"] as const;
-
 export function canReadBoard(boardId: string, store: MockStore): boolean {
   const board = store.getBoard(boardId);
   return board ? projectBoardAccess(board, store) !== null : false;
@@ -409,7 +406,6 @@ function projectBoardAccess(
         level: grant.level as AccessLevel,
         kind: role === "guest" ? "guest" : "explicit",
         grantedBy: grantor ? { userId: grantor.id, name: grantor.name } : null,
-        expiresAt: grant.expiresAt ?? null,
       }
     : null;
 
@@ -485,9 +481,6 @@ function projectBoardAccess(
       kind: chosen.kind,
       ...("grantedBy" in chosen && chosen.grantedBy
         ? { grantedBy: chosen.grantedBy }
-        : {}),
-      ...("expiresAt" in chosen && chosen.expiresAt
-        ? { expiresAt: chosen.expiresAt }
         : {}),
     },
     peopleCount: sources.reduce((sum, source) => sum + source.count, 0),
@@ -617,162 +610,6 @@ export const boardsOperations = [
     },
   }),
 
-  // ─── Board permissions of the share dialog (CTR-GAP-WM-BOARD-SHARING) ────
-
-  defineMockOperation<{ boardId: string }, never, unknown>({
-    id: "boards.sharing",
-    contract: { kind: "gap", gapId: "CTR-GAP-WM-BOARD-SHARING" },
-    method: "GET",
-    route: "/boards/:boardId/sharing",
-    async handle({ params, store }) {
-      const board = store.getBoard(params.boardId);
-      if (!board || !canReadBoard(board.id, store))
-        return notFound("Board not found");
-      return ok(boardSharing(store, board.id, canManageBoard(board.id, store)));
-    },
-  }),
-
-  defineMockOperation<
-    { boardId: string; entryId: string },
-    { level?: string },
-    void
-  >({
-    id: "boards.sharing.changeLevel",
-    contract: { kind: "gap", gapId: "CTR-GAP-WM-BOARD-SHARING" },
-    method: "PATCH",
-    route: "/boards/:boardId/sharing/:entryId",
-    async handle({ params, body, store }) {
-      const board = store.getBoard(params.boardId);
-      if (!board || !canReadBoard(board.id, store)) return notFound();
-      if (!canManageBoard(board.id, store)) return forbidden();
-      const entry = store.sharing
-        .entriesOf(board.id)
-        .find((item) => item.id === params.entryId);
-      if (!entry) return notFound();
-      const level = LEVELS.find((candidate) => candidate === body?.level);
-      if (!level) return validationError({ level: ["Unknown permission."] });
-      if (entry.owner || entry.userId === store.getCurrentUser().id)
-        return validationError({
-          level: ["The owner's and your own permission cannot be changed."],
-        });
-      const user = entry.userId ? store.getUser(entry.userId) : undefined;
-      const guest =
-        !!user &&
-        !(user.email ?? "").endsWith("@minhan.vn") &&
-        user.id !== store.getCurrentUser().id;
-      if (guest && level === "manager")
-        return validationError({
-          level: ["A guest cannot manage the Board or share it further."],
-        });
-      const from = entry.level;
-      entry.level = level;
-      if (entry.userId)
-        store.setBoardGrant(
-          board.id,
-          entry.userId,
-          level,
-          store.getCurrentUser().id,
-        );
-      store.sharing.pushLog(board.id, {
-        kind: "changed",
-        actorId: store.getCurrentUser().id,
-        target:
-          user?.name ?? store.spaces.getTeam(entry.teamId ?? "")?.name ?? null,
-        from,
-        to: level,
-        guest,
-        expiresAt: entry.expiresAt,
-        at: store.getClock().isoNow(),
-      });
-      return noContent();
-    },
-  }),
-
-  defineMockOperation<{ boardId: string; entryId: string }, never, void>({
-    id: "boards.sharing.remove",
-    contract: { kind: "gap", gapId: "CTR-GAP-WM-BOARD-SHARING" },
-    method: "DELETE",
-    route: "/boards/:boardId/sharing/:entryId",
-    async handle({ params, store }) {
-      const board = store.getBoard(params.boardId);
-      if (!board || !canReadBoard(board.id, store)) return notFound();
-      if (!canManageBoard(board.id, store)) return forbidden();
-      const list = store.sharing.entriesOf(board.id);
-      const entry = list.find((item) => item.id === params.entryId);
-      if (!entry) return notFound();
-      if (entry.owner || entry.userId === store.getCurrentUser().id)
-        return validationError({
-          entry: ["The owner and you keep access to the Board."],
-        });
-      list.splice(list.indexOf(entry), 1);
-      if (entry.userId) store.removeBoardGrant(board.id, entry.userId);
-      const user = entry.userId ? store.getUser(entry.userId) : undefined;
-      store.sharing.pushLog(board.id, {
-        kind: "removed",
-        actorId: store.getCurrentUser().id,
-        target:
-          user?.name ?? store.spaces.getTeam(entry.teamId ?? "")?.name ?? null,
-        from: entry.level,
-        to: null,
-        guest: false,
-        expiresAt: null,
-        at: store.getClock().isoNow(),
-      });
-      return noContent();
-    },
-  }),
-
-  defineMockOperation<{ boardId: string }, { addUserIds?: string[] }, void>({
-    id: "boards.sharing.makePrivate",
-    contract: { kind: "gap", gapId: "CTR-GAP-WM-BOARD-SHARING" },
-    method: "POST",
-    route: "/boards/:boardId/sharing/private",
-    async handle({ params, body, store }) {
-      const board = store.getBoard(params.boardId);
-      if (!board || !canReadBoard(board.id, store)) return notFound();
-      if (!canManageBoard(board.id, store)) return forbidden();
-      const actor = store.getCurrentUser().id;
-      const list = store.sharing.entriesOf(board.id);
-      for (const userId of body?.addUserIds ?? []) {
-        if (list.some((entry) => entry.userId === userId)) continue;
-        list.push({
-          id: store.sharing.nextId(),
-          kind: "person",
-          userId,
-          teamId: null,
-          level: "editor",
-          expiresAt: null,
-          owner: false,
-          addedAt: store.getClock().isoNow(),
-        });
-        store.setBoardGrant(board.id, userId, "editor", actor);
-        store.sharing.pushLog(board.id, {
-          kind: "added",
-          actorId: actor,
-          target: store.getUser(userId)?.name ?? null,
-          from: null,
-          to: "editor",
-          guest: false,
-          expiresAt: null,
-          at: store.getClock().isoNow(),
-        });
-      }
-      store.setBoardVisibility(board.id, "private");
-      store.sharing.pushLog(board.id, {
-        kind: "private",
-        actorId: actor,
-        target: null,
-        from: null,
-        to: null,
-        guest: false,
-        expiresAt: null,
-        at: store.getClock().isoNow(),
-      });
-      return noContent();
-    },
-  }),
-
-  // ─── GET /boards/:boardId/plan-items ──────────────────────────────────────
   // Gap CTR-GAP-WM-PLAN-ITEMS: the phases and milestones the Calendar and the
   // Timeline draw beside the items.
 
@@ -797,7 +634,7 @@ export const boardsOperations = [
     string
   >({
     id: "boards.create",
-    contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
+    contract: { kind: "openapi", operationId: "WorkManagement.Boards.Create" },
     method: "POST",
     route: "/workspaces/:workspaceId/boards",
     async handle({ params, body, store }) {
@@ -1008,6 +845,8 @@ export const boardsOperations = [
     method: "DELETE",
     route: "/boards/:boardId/fields/:columnId",
     async handle({ params, store }) {
+      // Deleting a field is board management, as on the producer.
+      if (!canManageBoard(params.boardId, store)) return forbidden();
       const deleted = store.deleteColumn(params.columnId);
       if (!deleted) return notFound("Column not found");
       return ok<void>(undefined);

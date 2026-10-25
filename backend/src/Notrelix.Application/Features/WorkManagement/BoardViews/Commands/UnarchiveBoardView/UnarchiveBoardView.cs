@@ -32,6 +32,7 @@ public class UnarchiveBoardViewCommandHandler : IRequestHandler<UnarchiveBoardVi
             .FirstOrDefaultAsync(v => v.Id == request.ViewId && v.BoardId == request.BoardId, ct);
         if (view is null) throw new NotFoundException(nameof(BoardView), request.ViewId);
 
+        BoardViewAccess.EnsureCanEdit(view, _currentUser.UserId);
         view.Unarchive(_currentUser.UserId, _dateTimeProvider.UtcNow);
         return Result.Success();
     }

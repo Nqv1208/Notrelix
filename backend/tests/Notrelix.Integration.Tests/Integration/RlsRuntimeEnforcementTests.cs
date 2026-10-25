@@ -252,15 +252,39 @@ public sealed class RlsRuntimeEnforcementTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task WorkerAndSystemScopes_BypassWorkspacePolicies_SeeAll()
+    public async Task TheWorkerScope_IsHonouredOnlyOnAWorkerLogin_AnApplicationLoginSettingItSeesNothing()
     {
         await SeedBoardsAsync();
+        var app = await AppRoleLogin.CreateAsync(_container.GetConnectionString(), "rls_rt_app_login");
+        var worker = await AppRoleLogin.CreateAsync(_container.GetConnectionString(), "rls_rt_worker_login", AppRoleLogin.WorkerRole);
 
-        var asWorker = await QueryBoardTitlesAsAppRoleAsync(requestScope: "worker");
-        asWorker.Should().HaveCount(3, "worker is the explicit background bypass scope");
+        foreach (var scope in new[] { "worker", "system", "migration", "migrator" })
+        {
+            (await QueryAsLoginAsync(app, "SELECT title FROM work.boards", scope)).Should().BeEmpty(
+                $"an application login that sets the '{scope}' scope gains nothing: the scope is not self-declarable");
+        }
 
-        var asSystem = await QueryBoardTitlesAsAppRoleAsync(requestScope: "system");
-        asSystem.Should().HaveCount(3, "system is the explicit system-context bypass scope");
+        (await QueryAsLoginAsync(worker, "SELECT title FROM work.boards", "worker")).Should().HaveCount(3,
+            "the worker login is the explicit background principal and reads all tenants");
+        (await QueryAsLoginAsync(worker, "SELECT ops.is_worker_scope()::text", "worker")).Should().Equal("true");
+        (await QueryAsLoginAsync(app, "SELECT ops.is_worker_scope()::text", "worker")).Should().Equal("false");
+    }
+
+    /// <summary>Runs a query on a real (non-superuser) login with the given request scope set transaction-locally.</summary>
+    private async Task<List<string>> QueryAsLoginAsync(string connectionString, string selectSql, string requestScope)
+    {
+        await using var connection = new NpgsqlConnection(connectionString);
+        await connection.OpenAsync();
+        await using var transaction = await connection.BeginTransactionAsync();
+        await using (var set = new NpgsqlCommand($"SELECT set_config('app.request_scope', '{requestScope}', true)", connection, transaction))
+            await set.ExecuteNonQueryAsync();
+
+        var values = new List<string>();
+        await using var command = new NpgsqlCommand(selectSql, connection, transaction);
+        await using var reader = await command.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+            values.Add(reader.GetValue(0).ToString() ?? "");
+        return values;
     }
 
     [Fact]
@@ -289,10 +313,9 @@ public sealed class RlsRuntimeEnforcementTests : IAsyncLifetime
     /// M7-DC — notification tenant isolation at the RLS runtime layer: a
     /// mention notification belongs to workspace A; the application role
     /// under a workspace-B session context cannot observe it, while a member
-    /// granted workspace A can. On this schema the SELECT policy is
-    /// p_app_select_workspace (ops.has_workspace_access over
-    /// authz.access_grants) because notification_recipients uses
-    /// recipient_user_id, not user_id.
+    /// granted workspace A can. A co-member of the same workspace who is not a recipient cannot
+    /// read it either: the SELECT policy (p_app_select_recipient) binds the read to the
+    /// recipient row (recipient_user_id = the caller).
     /// </summary>
     [Fact]
     public async Task NotificationItems_TenantIsolation_BCannotObserveA()
@@ -319,7 +342,35 @@ public sealed class RlsRuntimeEnforcementTests : IAsyncLifetime
             userId: UserId);
 
         seenByA.Should().BeEquivalentTo(["Mention notification A1"],
-            "a granted workspace-A member observes the workspace notification");
+            "the recipient observes their own notification");
+    }
+
+    /// <summary>
+    /// Notifications are per recipient: another member of the same workspace, with a full workspace
+    /// grant, cannot read the recipient's items, their recipient rows or count them.
+    /// </summary>
+    [Fact]
+    public async Task NotificationItems_CoMemberInTheSameWorkspace_CannotReadAnotherPersonsItems()
+    {
+        await SeedNotificationAsync(AccountA, WsA1, UserId);
+        await SeedGrantAsync(AccountA, WsA1);
+
+        var coMember = Guid.Parse("00000000-0000-0000-0000-00000000AA77");
+        await SeedGrantAsync(AccountA, WsA1, coMember);
+
+        var itemsSeenByCoMember = await QueryScalarsAsAppRoleAsync(
+            $"SELECT title FROM notifications.notification_items WHERE source_event_id = '{NotificationSourceEventId}'",
+            userId: coMember);
+        var recipientsSeenByCoMember = await QueryScalarsAsAppRoleAsync(
+            "SELECT recipient_user_id::text FROM notifications.notification_recipients",
+            userId: coMember);
+        var countSeenByCoMember = await QueryScalarsAsAppRoleAsync(
+            "SELECT count(*)::text FROM notifications.notification_items",
+            userId: coMember);
+
+        itemsSeenByCoMember.Should().BeEmpty("a co-member is not the recipient");
+        recipientsSeenByCoMember.Should().BeEmpty("recipient rows are the recipient's own");
+        countSeenByCoMember.Should().BeEquivalentTo(["0"]);
     }
 
     /// <summary>
@@ -955,8 +1006,9 @@ public sealed class RlsRuntimeEnforcementTests : IAsyncLifetime
 
         intoOtherWorkspaces.Should().Be(0, "the policy hides every other workspace's rows from the update");
         intoOwnWorkspace.Should().Be(1);
-        var titles = await QueryScalarsAsAppRoleAsync(
-            "SELECT job_title FROM workspace.workspace_members ORDER BY job_title", requestScope: "system");
+        var worker = await AppRoleLogin.CreateAsync(_container.GetConnectionString(), "rls_rt_jobtitle_worker", AppRoleLogin.WorkerRole);
+        var titles = await QueryAsLoginAsync(
+            worker, "SELECT job_title FROM workspace.workspace_members ORDER BY job_title", "worker");
         titles.Should().BeEquivalentTo(["Own", "Title A2", "Title B1"]);
     }
 

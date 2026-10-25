@@ -39,8 +39,6 @@ export interface BoardAccess {
       readonly userId: string;
       readonly name: string;
     } | null;
-    /** When an explicit access ends (gap field, CTR-GAP-WS-BOARD-ACCESS); `null` = never. */
-    readonly expiresAt?: string | null;
   };
   readonly peopleCount: number;
   readonly guestCount: number;

@@ -1,4 +1,5 @@
 using Notrelix.Application.Features.Collaboration.Public.ResourceSummary;
+using Notrelix.Application.Features.Collaboration.Public.Watchers;
 using Notrelix.Application.Features.WorkManagement.Ports.Collaboration;
 
 namespace Notrelix.Infrastructure.CrossContext.WorkManagement.Collaboration;
@@ -14,11 +15,17 @@ public sealed class WorkManagementCollaborationReadAdapter : IWorkManagementColl
     private const string BoardItemKindValue = "work-management.board-item";
 
     private readonly ICollaborationResourceSummary _resourceSummary;
+    private readonly IResourceFollowers _followers;
 
-    public WorkManagementCollaborationReadAdapter(ICollaborationResourceSummary resourceSummary)
+    public WorkManagementCollaborationReadAdapter(ICollaborationResourceSummary resourceSummary, IResourceFollowers followers)
     {
         _resourceSummary = resourceSummary;
+        _followers = followers;
     }
+
+    public Task<IReadOnlyList<Guid>> GetFollowedItemIdsAsync(
+        Guid workspaceId, Guid userId, int limit, CancellationToken cancellationToken) =>
+        _followers.FollowedResourceIdsAsync(BoardItemKindValue, workspaceId, userId, limit, cancellationToken);
 
     public async Task<IReadOnlyDictionary<Guid, WorkItemCollaborationCounts>> GetCountsAsync(
         IReadOnlyCollection<Guid> itemIds,

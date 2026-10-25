@@ -1,4 +1,32 @@
 import type { NotrelixClient } from "@notrelix/contracts";
+import { endpoints } from "@notrelix/contracts";
+import { personInitials } from "@notrelix/work-management-core";
+
+/** A member of the workspace (`Workspaces.Members.ListMembers`). */
+interface WorkspaceMember {
+  readonly userId?: string;
+  readonly name?: string | null;
+  readonly status?: string | null;
+}
+
+/** A member of the board (`WorkManagement.Boards.GetOverview`). */
+interface BoardMember {
+  readonly userId?: string;
+  readonly role?: string | null;
+}
+
+/** What a board role lets the person do, or null for a role this page does not know. */
+function boardLevel(
+  role: string | null | undefined,
+): PeopleDirectoryDto["people"][number]["level"] {
+  const name = (role ?? "").trim().toLowerCase();
+  return name === "manager" ||
+    name === "editor" ||
+    name === "commenter" ||
+    name === "viewer"
+    ? name
+    : null;
+}
 
 /**
  * Item sheet reads and writes beyond the generated contract (gap
@@ -19,6 +47,36 @@ export interface ItemChildItemDto {
     readonly name: string;
     readonly initials: string;
   } | null;
+}
+
+/** A child item as `WorkManagement.BoardItems.ListChildren` sends it. */
+interface ChildItemWire {
+  readonly id: string;
+  readonly key?: string | null;
+  readonly title: string;
+  readonly done?: boolean;
+  readonly dueAt?: string | null;
+  readonly assigneeUserId?: string | null;
+  readonly assigneeName?: string | null;
+}
+
+function toChildItem(wire: ChildItemWire): ItemChildItemDto {
+  const name = wire.assigneeName ?? "";
+  return {
+    id: wire.id,
+    key: wire.key ?? null,
+    title: wire.title,
+    done: wire.done === true,
+    dueAt: wire.dueAt ?? null,
+    assignee: wire.assigneeUserId
+      ? {
+          id: wire.assigneeUserId,
+          userId: wire.assigneeUserId,
+          name,
+          initials: personInitials(name),
+        }
+      : null,
+  };
 }
 
 /** A phase or a milestone of a board (gap `CTR-GAP-WM-PLAN-ITEMS`). */
@@ -69,7 +127,7 @@ export interface ItemFollowingDto {
   readonly followers: readonly { userId: string; name: string }[];
 }
 
-/** Who completed or archived an item and when (gap `CTR-GAP-WM-ITEM-STATES`). */
+/** Who completed or archived an item and when. */
 export interface ItemLifecycleDto {
   readonly archived: { readonly at: string; readonly byName: string } | null;
   readonly completed: { readonly at: string; readonly byName: string } | null;
@@ -119,10 +177,10 @@ export function createItemExtrasApi(client: NotrelixClient) {
       };
     },
     async getChildItems(itemId: string): Promise<ItemChildItemDto[]> {
-      const dto = await api.get<{ items?: ItemChildItemDto[] } | null>(
+      const dto = await api.get<{ items?: ChildItemWire[] } | null>(
         `/board-items/${itemId}/child-items`,
       );
-      return dto?.items ?? [];
+      return (dto?.items ?? []).map(toChildItem);
     },
     async getFollowing(itemId: string): Promise<ItemFollowingDto> {
       const dto = await api.get<Partial<ItemFollowingDto> | null>(
@@ -159,22 +217,35 @@ export function createItemExtrasApi(client: NotrelixClient) {
         { idempotencyKey: key(), ...quiet },
       );
     },
+    /**
+     * Read from the item itself (`WorkManagement.BoardItems.Get`): whether it is
+     * archived or completed, when and by whom.
+     */
     async getLifecycle(itemId: string): Promise<ItemLifecycleDto> {
-      const dto = await api.get<Partial<ItemLifecycleDto> | null>(
-        `/board-items/${itemId}/lifecycle`,
-      );
+      const dto = await api.get<{
+        isArchived?: boolean;
+        archivedAt?: string | null;
+        archivedByName?: string | null;
+        completedAt?: string | null;
+        completedByName?: string | null;
+        updatedAt?: string | null;
+      } | null>(`/board-items/${itemId}`);
       return {
-        archived: dto?.archived ?? null,
-        completed: dto?.completed ?? null,
+        archived: dto?.isArchived
+          ? {
+              at: dto.archivedAt ?? dto.updatedAt ?? "",
+              byName: dto.archivedByName ?? "",
+            }
+          : null,
+        completed: dto?.completedAt
+          ? { at: dto.completedAt, byName: dto.completedByName ?? "" }
+          : null,
       };
     },
-    async restoreItem(itemId: string): Promise<void> {
-      await api.post<void>(
-        `/board-items/${itemId}/restore`,
-        {},
-        { idempotencyKey: key(), ...quiet },
-      );
-    },
+    /**
+     * `WorkManagement.BoardItems.Reopen`: a completed item returns to the status
+     * it had before it was completed, else to the board's first open status.
+     */
     async reopenItem(itemId: string): Promise<void> {
       await api.post<void>(
         `/board-items/${itemId}/reopen`,
@@ -182,31 +253,60 @@ export function createItemExtrasApi(client: NotrelixClient) {
         { idempotencyKey: key(), ...quiet },
       );
     },
-    async getPeopleDirectory(boardId: string): Promise<PeopleDirectoryDto> {
-      const dto = await api.get<Partial<PeopleDirectoryDto> | null>(
-        `/boards/${boardId}/people-directory`,
-      );
-      return {
-        people: dto?.people ?? [],
-        teams: dto?.teams ?? [],
-        canInvite: dto?.canInvite === true,
-      };
-    },
-    async invitePerson(boardId: string, userId: string): Promise<void> {
+    /** An archived item comes back with `WorkManagement.BoardItems.Unarchive`. */
+    async restoreItem(itemId: string): Promise<void> {
       await api.post<void>(
-        `/boards/${boardId}/people-directory/invitations`,
-        { userId },
+        `/board-items/${itemId}/unarchive`,
+        {},
         { idempotencyKey: key(), ...quiet },
       );
     },
+    /**
+     * The members of the workspace and which of them see the board, read from
+     * the workspace members and the board itself. The producer has no
+     * department, open-item count or team roll-up, so those stay empty;
+     * adding a person to the board is the board's share dialog.
+     */
+    async getPeopleDirectory(
+      boardId: string,
+      workspaceId: string,
+    ): Promise<PeopleDirectoryDto> {
+      const [members, board] = await Promise.all([
+        api.get<WorkspaceMember[]>(endpoints.workspaces.members(workspaceId)),
+        api.get<{ members?: BoardMember[] | null }>(
+          endpoints.boards.full(boardId),
+        ),
+      ]);
+      const onBoard = new Map(
+        (board.members ?? []).map((member) => [
+          member.userId ?? "",
+          boardLevel(member.role),
+        ]),
+      );
+      return {
+        people: (members ?? [])
+          .filter((member) => member.status?.toLowerCase() !== "suspended")
+          .map((member) => ({
+            userId: member.userId ?? "",
+            name: member.name ?? "",
+            department: null,
+            openCount: 0,
+            onBoard: onBoard.has(member.userId ?? ""),
+            level: onBoard.get(member.userId ?? "") ?? null,
+          })),
+        teams: [],
+        canInvite: false,
+      };
+    },
     async setFollowing(itemId: string, following: boolean): Promise<void> {
+      const options = { idempotencyKey: key(), ...quiet };
       if (following)
         await api.put<void>(
           `/board-items/${itemId}/following`,
           undefined,
-          quiet,
+          options,
         );
-      else await api.delete<void>(`/board-items/${itemId}/following`, quiet);
+      else await api.delete<void>(`/board-items/${itemId}/following`, options);
     },
     /**
      * Moves an item to another board (gap `CTR-GAP-WM-TABLE-BULK`, see

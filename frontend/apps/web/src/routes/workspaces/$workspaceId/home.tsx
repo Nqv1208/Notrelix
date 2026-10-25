@@ -167,7 +167,12 @@ export function HomePage() {
     if (state.status !== "ready") return state;
     return {
       status: "ready",
-      data: toReplyViews(state.data.replies, (at) => relativeTime(at, now)),
+      data: toReplyViews(
+        state.data.replies,
+        (at) => relativeTime(at, now),
+        (title) =>
+          formatCopy(copy.home.replies.mentionedIn, { title: title ?? "" }),
+      ),
     };
   }, [feedQuery, relativeTime, now]);
   const agendaState = useMemo<SectionState<HomeAgenda> | undefined>(() => {

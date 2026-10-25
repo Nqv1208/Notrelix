@@ -17,7 +17,7 @@ public class MigrationSmokeTests
     [Trait("Category", "Integration")]
     public async Task Migrations_WhenApplied_CreatesAll154Tables()
     {
-        await using var conn = _db.CreateConnection();
+        await using var conn = _db.CreateOwnerConnection();
         await conn.OpenAsync();
 
         await using var cmd = conn.CreateCommand();
@@ -35,7 +35,7 @@ public class MigrationSmokeTests
     [Trait("Category", "Integration")]
     public async Task Migrations_WhenApplied_PublicSchemaIsEmpty()
     {
-        await using var conn = _db.CreateConnection();
+        await using var conn = _db.CreateOwnerConnection();
         await conn.OpenAsync();
 
         await using var cmd = conn.CreateCommand();
@@ -51,7 +51,7 @@ public class MigrationSmokeTests
     [Trait("Category", "Integration")]
     public async Task Migrations_WhenApplied_CreatesGinTrigramIndex()
     {
-        await using var conn = _db.CreateConnection();
+        await using var conn = _db.CreateOwnerConnection();
         await conn.OpenAsync();
 
         await using var cmd = conn.CreateCommand();
@@ -69,7 +69,7 @@ public class MigrationSmokeTests
     [Trait("Category", "Integration")]
     public async Task Migrations_WhenApplied_CreatesOutboxTableWithRequiredColumns()
     {
-        await using var conn = _db.CreateConnection();
+        await using var conn = _db.CreateOwnerConnection();
         await conn.OpenAsync();
 
         await using var cmd = conn.CreateCommand();

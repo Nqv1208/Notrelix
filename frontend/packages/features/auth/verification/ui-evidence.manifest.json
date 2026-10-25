@@ -42,6 +42,11 @@
         "path": "src/web/containers/sign-in-flow.tsx",
         "category": "container",
         "reason": "Container holding the sign-in state machine (identify, login, second step, single sign-on) and composing AuthSignInSurface."
+      },
+      {
+        "path": "src/web/containers/verify-email-flow.tsx",
+        "category": "container",
+        "reason": "Container confirming the emailed token and sending a new link, composing AuthVerifyEmailSurface."
       }
     ]
   },
@@ -438,6 +443,74 @@
         },
         {
           "id": "gone",
+          "testFile": "src/web/components/__tests__/auth-form-surfaces.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "auth.verify-email",
+      "owner": "@notrelix/features-auth",
+      "surfaceKind": "form",
+      "pureEntry": "src/web/components/auth-verify-email-surface.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "auth-auth-form-surfaces--verify-email-waiting",
+          "state": "Default",
+          "visualTargets": []
+        },
+        {
+          "id": "auth-auth-form-surfaces--verify-email-confirming",
+          "state": "Loading",
+          "visualTargets": []
+        },
+        {
+          "id": "auth-auth-form-surfaces--verify-email-sending",
+          "state": "Loading",
+          "visualTargets": []
+        },
+        {
+          "id": "auth-auth-form-surfaces--verify-email-invalid",
+          "state": "Error",
+          "visualTargets": []
+        },
+        {
+          "id": "auth-auth-form-surfaces--verify-email-failed",
+          "state": "Error",
+          "visualTargets": []
+        },
+        {
+          "id": "auth-auth-form-surfaces--verify-email-done",
+          "state": "Success",
+          "visualTargets": []
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default", "Loading", "Error", "Success"],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "EdgeData",
+            "reason": "The surface holds one email field and fixed copy.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "ReadOnly",
+            "reason": "Read-only presentation does not apply to a signed-out form.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          }
+        ]
+      },
+      "responsive": false,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "purity"],
+      "interactionCases": [
+        {
+          "id": "confirm",
+          "testFile": "src/web/components/__tests__/auth-form-surfaces.interaction.component.test.tsx"
+        },
+        {
+          "id": "resend",
           "testFile": "src/web/components/__tests__/auth-form-surfaces.interaction.component.test.tsx"
         }
       ]

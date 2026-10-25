@@ -1,4 +1,5 @@
 using Notrelix.API.Extensions;
+using Notrelix.Application.Features.Documents.DTOs;
 using Notrelix.Application.Features.Documents.Blocks.Queries.GetPageBlocks;
 
 namespace Notrelix.API.Endpoints.Documents.Blocks.Queries;
@@ -9,6 +10,7 @@ public static class ListPageBlocksEndpoint
     {
         group.MapResourceGet("/", HandleAsync)
             .WithName("Documents.Blocks.ListPageBlocks")
+            .Produces<List<BlockDto>>(StatusCodes.Status200OK, "application/json")
             .WithTags("Documents.Blocks")
             .WithSummary("List blocks for a page");
         return group;

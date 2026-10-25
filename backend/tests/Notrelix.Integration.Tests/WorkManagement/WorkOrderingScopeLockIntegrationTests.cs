@@ -29,8 +29,8 @@ public sealed class WorkOrderingScopeLockIntegrationTests
     public async Task SameScope_SecondWriterWaitsUntilTheFirstTransactionEnds()
     {
         var scope = new WorkOrderingScope(WorkOrderingScopeKind.GroupItems, Guid.NewGuid());
-        await using var first = _db.CreateContext(SystemTenant());
-        await using var second = _db.CreateContext(SystemTenant());
+        await using var first = _db.CreateOwnerContext(SystemTenant());
+        await using var second = _db.CreateOwnerContext(SystemTenant());
         await using var firstTx = await first.Database.BeginTransactionAsync();
         await using var secondTx = await second.Database.BeginTransactionAsync();
 
@@ -50,8 +50,8 @@ public sealed class WorkOrderingScopeLockIntegrationTests
     [Fact]
     public async Task DifferentScopes_AreNotSerialized()
     {
-        await using var first = _db.CreateContext(SystemTenant());
-        await using var second = _db.CreateContext(SystemTenant());
+        await using var first = _db.CreateOwnerContext(SystemTenant());
+        await using var second = _db.CreateOwnerContext(SystemTenant());
         await using var firstTx = await first.Database.BeginTransactionAsync();
         await using var secondTx = await second.Database.BeginTransactionAsync();
 
@@ -67,7 +67,7 @@ public sealed class WorkOrderingScopeLockIntegrationTests
     [Fact]
     public async Task Acquire_OutsideATransaction_FailsInsteadOfLocking()
     {
-        await using var context = _db.CreateContext(SystemTenant());
+        await using var context = _db.CreateOwnerContext(SystemTenant());
         var act = () => new PostgresWorkOrderingScopeLock(context)
             .AcquireAsync(new WorkOrderingScope(WorkOrderingScopeKind.BoardGroups, Guid.NewGuid()), CancellationToken.None);
 

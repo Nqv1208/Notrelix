@@ -28,6 +28,7 @@ public static class ExpectedVersionInventory
             ["DeleteBoardGroupCommand"] = "work-management.board-group",
             ["UpdateBoardItemCommand"] = "work-management.board-item",
             ["MoveBoardItemCommand"] = "work-management.board-item",
+            ["MoveChildItemCommand"] = "work-management.board-item",
             ["UpdateBoardItemFieldValueCommand"] = "work-management.board-item",
             ["UpdateBoardItemFieldValuesCommand"] = "work-management.board-item",
             ["ClearFieldValueCommand"] = "work-management.board-item",

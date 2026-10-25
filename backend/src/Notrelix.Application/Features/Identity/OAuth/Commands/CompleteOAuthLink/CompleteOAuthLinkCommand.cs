@@ -34,6 +34,7 @@ public sealed class CompleteOAuthLinkCommandHandler
     private readonly ICurrentRequestContext _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ILogger<CompleteOAuthLinkCommandHandler> _logger;
+    private readonly IOAuthIdentityProbe? _identityProbe;
 
     public CompleteOAuthLinkCommandHandler(
         IOAuthStateStore stateStore,
@@ -42,8 +43,10 @@ public sealed class CompleteOAuthLinkCommandHandler
         IIdentityDbContext identityContext,
         ICurrentRequestContext currentUser,
         IDateTimeProvider dateTimeProvider,
-        ILogger<CompleteOAuthLinkCommandHandler> logger)
+        ILogger<CompleteOAuthLinkCommandHandler> logger,
+        IOAuthIdentityProbe? identityProbe = null)
     {
+        _identityProbe = identityProbe;
         _stateStore = stateStore;
         _providerClient = providerClient;
         _optionsProvider = optionsProvider;
@@ -140,6 +143,15 @@ public sealed class CompleteOAuthLinkCommandHandler
             _logger.LogWarning(
                 "OAuth link rejected: provider subject {Subject} already linked to another user {OtherUser}",
                 profile.Subject, existingAccount.UserId);
+            return Result<OAuthLinkResult>.Failure(
+                "This provider identity is already linked to another account.");
+        }
+
+        // Another account's link is not visible to this user's own-row access: ask the boolean probe.
+        if (_identityProbe is not null
+            && await _identityProbe.IsLinkedAsync(profile.Provider.ToString(), profile.Subject, cancellationToken))
+        {
+            _logger.LogWarning("OAuth link rejected: provider subject {Subject} already linked to another user", profile.Subject);
             return Result<OAuthLinkResult>.Failure(
                 "This provider identity is already linked to another account.");
         }

@@ -6,10 +6,8 @@ import { wmQueryKeys } from "./keys";
 
 const childKey = (workspaceId: string, itemId: string) =>
   workspaceQueryKey(workspaceId, "work-management", "item-children", itemId);
-const followKey = (workspaceId: string, itemId: string) =>
-  workspaceQueryKey(workspaceId, "work-management", "item-following", itemId);
 
-/** The child items of an item (gap `CTR-GAP-WS-ITEM-SHEET`). */
+/** The sub-items of an item, with ticking one and adding one. */
 export function useItemChildItems(
   itemId: string,
   workspaceId: string,
@@ -53,7 +51,10 @@ export function useItemChildItems(
   return { ...query, toggle: toggle.mutate, addChild: add.mutate };
 }
 
-/** Whether the member follows the item, and the write (gap `CTR-GAP-WS-ITEM-SHEET`). */
+const followKey = (workspaceId: string, itemId: string) =>
+  workspaceQueryKey(workspaceId, "work-management", "item-following", itemId);
+
+/** Whether the member follows the item, who else does, and the write. */
 export function useItemFollowing(itemId: string, workspaceId: string) {
   const { itemExtras } = useWorkManagementServices();
   const queryClient = useQueryClient();
@@ -153,8 +154,8 @@ const lifecycleKey = (workspaceId: string, itemId: string) =>
   workspaceQueryKey(workspaceId, "work-management", "item-lifecycle", itemId);
 
 /**
- * Who completed or archived an item, and the two writes that undo it: reopen
- * and restore (gap `CTR-GAP-WM-ITEM-STATES`).
+ * Whether an item is completed or archived, read from the item itself, the
+ * restore of an archived one and the reopening of a completed one.
  */
 export function useItemLifecycle(
   itemId: string,
@@ -201,30 +202,19 @@ export function useItemLifecycle(
   };
 }
 
-/** The people an item can name, and the invitation behind "Mời vào" (gap `CTR-GAP-WM-ITEM-STATES`). */
+/** The people an item can name: the workspace members and whether they see the board. */
 export function usePeopleDirectory(boardId: string, workspaceId: string) {
   const { itemExtras } = useWorkManagementServices();
-  const queryClient = useQueryClient();
-  const key = workspaceQueryKey(
-    workspaceId,
-    "work-management",
-    "people-directory",
-    boardId,
-  );
   const query = useQuery({
-    queryKey: key,
-    queryFn: () => itemExtras.getPeopleDirectory(boardId),
-    enabled: Boolean(boardId),
+    queryKey: workspaceQueryKey(
+      workspaceId,
+      "work-management",
+      "people-directory",
+      boardId,
+    ),
+    queryFn: () => itemExtras.getPeopleDirectory(boardId, workspaceId),
+    enabled: Boolean(boardId && workspaceId),
     staleTime: 30_000,
   });
-  const invite = useMutation({
-    mutationFn: (userId: string) => itemExtras.invitePerson(boardId, userId),
-    onSettled: () => {
-      void queryClient.invalidateQueries({ queryKey: key });
-      void queryClient.invalidateQueries({
-        queryKey: wmQueryKeys.fullBoard(workspaceId, boardId),
-      });
-    },
-  });
-  return { directory: query.data ?? null, invitePerson: invite.mutate };
+  return { directory: query.data ?? null };
 }

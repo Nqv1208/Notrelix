@@ -4375,6 +4375,10 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
+                    b.Property<Guid?>("DefaultWorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("default_workspace_id");
+
                     b.Property<string>("DeleteReason")
                         .HasColumnType("text")
                         .HasColumnName("delete_reason");
@@ -4999,6 +5003,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.Property<string>("Avatar")
                         .HasColumnType("text")
                         .HasColumnName("avatar");
+
+                    b.Property<string>("AvatarStorageKey")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("avatar_storage_key");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -6605,6 +6614,18 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("account_id");
 
+                    b.Property<DateTimeOffset?>("ArchivedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("archived_at");
+
+                    b.Property<Guid?>("ArchivedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("archived_by");
+
+                    b.Property<bool>("ArchivedWithParent")
+                        .HasColumnType("boolean")
+                        .HasColumnName("archived_with_parent");
+
                     b.Property<Guid>("BoardId")
                         .HasColumnType("uuid")
                         .HasColumnName("board_id");
@@ -6612,6 +6633,10 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.Property<DateTimeOffset?>("CompletedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("completed_at");
+
+                    b.Property<Guid?>("CompletedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("completed_by");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -6677,6 +6702,10 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("started_at");
 
+                    b.Property<Guid?>("StatusBeforeCompletionOptionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("status_before_completion_option_id");
+
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
@@ -6715,6 +6744,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .IsUnique()
                         .HasDatabaseName("ux_work_board_items_group_position_active")
                         .HasFilter("deleted_at IS NULL AND parent_item_id IS NULL");
+
+                    b.HasIndex("ParentItemId", "Position")
+                        .IsUnique()
+                        .HasDatabaseName("ux_work_board_items_parent_position_active")
+                        .HasFilter("deleted_at IS NULL AND parent_item_id IS NOT NULL");
 
                     b.ToTable("board_items", "work");
                 });
@@ -7629,6 +7663,14 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("bigint")
                         .HasDefaultValue(1L)
                         .HasColumnName("version");
+
+                    b.Property<string>("Visibility")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasDefaultValue("Board")
+                        .HasColumnName("visibility");
 
                     b.Property<Guid>("WorkspaceId")
                         .HasColumnType("uuid")
@@ -13303,9 +13345,29 @@ namespace Notrelix.Infrastructure.Data.Migrations
                                 .HasColumnType("integer")
                                 .HasColumnName("settings_invitation_expiry_days");
 
+                            b1.Property<string>("Language")
+                                .HasMaxLength(8)
+                                .HasColumnType("character varying(8)")
+                                .HasColumnName("settings_language");
+
                             b1.Property<DateTimeOffset?>("PublicSharingChangedAt")
                                 .HasColumnType("timestamp with time zone")
                                 .HasColumnName("settings_public_sharing_changed_at");
+
+                            b1.Property<string>("Size")
+                                .HasMaxLength(16)
+                                .HasColumnType("character varying(16)")
+                                .HasColumnName("settings_size");
+
+                            b1.Property<string>("TimeZone")
+                                .HasMaxLength(64)
+                                .HasColumnType("character varying(64)")
+                                .HasColumnName("settings_time_zone");
+
+                            b1.Property<string>("WeekStart")
+                                .HasMaxLength(8)
+                                .HasColumnType("character varying(8)")
+                                .HasColumnName("settings_week_start");
 
                             b1.HasKey("WorkspaceId");
 

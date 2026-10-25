@@ -41,6 +41,6 @@ public sealed class MemberEmailDisclosure : IMemberEmailDisclosure
             .Select(m => m.UserId)
             .ToListAsync(ct);
 
-        return await _identity.FindEmailsAsync(visibleSubjects, ct);
+        return await _identity.FindEmailsAsync(workspaceId, visibleSubjects, ct);
     }
 }

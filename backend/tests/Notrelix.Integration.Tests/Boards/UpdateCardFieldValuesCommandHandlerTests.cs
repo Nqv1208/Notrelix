@@ -28,7 +28,7 @@ public class UpdateBoardItemFieldValuesCommandHandlerTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -39,7 +39,7 @@ public class UpdateBoardItemFieldValuesCommandHandlerTests : IAsyncLifetime
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
-        await using var context = _db.CreateContext(tenant);
+        await using var context = _db.CreateOwnerContext(tenant);
         var ownerId = Guid.NewGuid();
         var memberId = Guid.NewGuid();
         var (boardItem, statusField, doneOption) = await SeedBoardAsync(context, ownerId, memberId, WorkspaceRole.Member);

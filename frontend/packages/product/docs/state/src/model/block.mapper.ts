@@ -1,28 +1,91 @@
-import type { Block, BlockProperties } from "@notrelix/docs-core";
+import type { Block, BlockProperties, BlockType } from "@notrelix/docs-core";
 import type { BlockDtoApi } from "../dto";
 
 export function parseProperties(
-  value: BlockDtoApi["properties"],
+  value: BlockDtoApi["content"] | BlockProperties | undefined,
 ): BlockProperties {
-  if (typeof value === "object") return value;
+  if (value && typeof value === "object") return value;
+  if (typeof value !== "string") return {};
   try {
-    const parsed = JSON.parse(value);
-    return parsed && typeof parsed === "object" ? parsed : {};
+    const parsed: unknown = JSON.parse(value);
+    return parsed && typeof parsed === "object"
+      ? (parsed as BlockProperties)
+      : {};
   } catch {
     return {};
   }
 }
 
-export function mapBlock(dto: BlockDtoApi): Block {
+/**
+ * The block types the producer stores (`Documents` `BlockType`) and the name
+ * the page uses for each. A callout, an embed and a page reference have no
+ * producer type, so a page cannot create one.
+ */
+const FROM_PRODUCER: Readonly<Record<string, BlockType>> = {
+  Text: "paragraph",
+  Heading1: "heading_1",
+  Heading2: "heading_2",
+  Heading3: "heading_3",
+  BulletList: "bulleted_list",
+  NumberedList: "numbered_list",
+  ToDo: "todo",
+  Toggle: "toggle",
+  Quote: "quote",
+  Divider: "divider",
+  Code: "code",
+  Image: "image",
+  File: "embed",
+  Video: "embed",
+  Board: "board_reference",
+  Table: "table",
+  // Not stored by the producer; only the mock world sends these.
+  Callout: "callout",
+  PageReference: "page_reference",
+};
+
+const TO_PRODUCER: Readonly<Partial<Record<BlockType, string>>> = {
+  paragraph: "Text",
+  heading_1: "Heading1",
+  heading_2: "Heading2",
+  heading_3: "Heading3",
+  bulleted_list: "BulletList",
+  numbered_list: "NumberedList",
+  todo: "ToDo",
+  toggle: "Toggle",
+  quote: "Quote",
+  divider: "Divider",
+  code: "Code",
+  image: "Image",
+  board_reference: "Board",
+  table: "Table",
+};
+
+/** The block types a page can create on the producer. */
+export const CREATABLE_BLOCK_TYPES: readonly BlockType[] = Object.keys(
+  TO_PRODUCER,
+) as BlockType[];
+
+export function toProducerBlockType(type: BlockType): string {
+  const name = TO_PRODUCER[type];
+  if (!name) throw new Error(`Block type ${type} cannot be stored.`);
+  return name;
+}
+
+/**
+ * A block as the page reads it. The producer orders the list and keeps
+ * its position as an opaque key, so the page numbers the blocks by their
+ * place in the list (`position`).
+ */
+export function mapBlock(dto: BlockDtoApi, position: number): Block {
   return {
     id: dto.id,
     pageId: dto.pageId,
-    type: dto.type,
-    properties: parseProperties(dto.properties),
-    position: dto.position,
-    parentId: dto.parentBlockId ?? null,
-    createdById: dto.createdByUserId,
-    updatedById: dto.createdByUserId,
+    type: FROM_PRODUCER[dto.type] ?? "paragraph",
+    properties: parseProperties(dto.content),
+    position,
+    parentId: dto.parentId ?? null,
+    createdById: "",
+    updatedById: "",
     createdAt: dto.createdAt,
     updatedAt: dto.updatedAt ?? dto.createdAt,
   };

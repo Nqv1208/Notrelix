@@ -44,7 +44,7 @@ public class AuthorizationFailClosedFaultInjectionTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -59,7 +59,7 @@ public class AuthorizationFailClosedFaultInjectionTests : IAsyncLifetime
         var account = Account.Create("Fault Account", $"fault-{Guid.NewGuid():N}", AccountType.Team, actorId, now);
         var accountId = account.Id;
 
-        await using (var seed = _db.CreateContext(SystemTenant()))
+        await using (var seed = _db.CreateOwnerContext(SystemTenant()))
         {
             seed.Users.Add(user);
             seed.Accounts.Add(account);
@@ -88,7 +88,7 @@ public class AuthorizationFailClosedFaultInjectionTests : IAsyncLifetime
         faultHost.FactsCalls.Should().Be(1, "the outage is raised when the pipeline resolves datastore facts");
         faultHost.PolicyCalls.Should().Be(0, "no policy evaluation may occur after facts resolution failed");
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         var account = await verify.Accounts.SingleAsync(a => a.Id == graph.AccountId);
         account.Name.Should().Be("Fault Account", "the protected handler must not run, so no durable side effect exists");
     }
@@ -111,7 +111,7 @@ public class AuthorizationFailClosedFaultInjectionTests : IAsyncLifetime
         faultHost.FactsCalls.Should().Be(1, "facts resolve normally before the evaluator fault is raised");
         faultHost.PolicyCalls.Should().Be(1, "the evaluator fault is raised at the single policy decision point");
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         var account = await verify.Accounts.SingleAsync(a => a.Id == graph.AccountId);
         account.Name.Should().Be("Fault Account", "the protected handler must not run, so no durable side effect exists");
     }
@@ -132,7 +132,7 @@ public class AuthorizationFailClosedFaultInjectionTests : IAsyncLifetime
         faultHost.FactsCalls.Should().Be(1, "authorization is evaluated exactly once per request");
         faultHost.PolicyCalls.Should().Be(1, "authorization is evaluated exactly once per request");
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         var account = await verify.Accounts.SingleAsync(a => a.Id == graph.AccountId);
         account.Name.Should().Be("Renamed By Admin", "the un-faulted control proves the negative outcome is fail-closed, not a permanent deny");
     }
@@ -174,7 +174,7 @@ public class AuthorizationFailClosedFaultInjectionTests : IAsyncLifetime
         services.AddSingleton(clockMock.Object);
 
         services.AddScoped<ApplicationDbContext>(sp =>
-            _db.CreateContext(sp.GetRequiredService<ICurrentTenantContext>()));
+            _db.CreateOwnerContext(sp.GetRequiredService<ICurrentTenantContext>()));
         services.AddScoped<IAccountDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IGovernanceDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
 

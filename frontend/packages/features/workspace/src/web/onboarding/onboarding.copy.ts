@@ -23,6 +23,9 @@ export const en = {
     saving: "Saving…",
     unreachable:
       "Could not reach Notrelix. Check the connection and try again.",
+    emailNotConfirmed:
+      "Confirm your email first. We sent you a link when you signed up; open it, then press Continue again.",
+    resendConfirmation: "Send the link again",
     steps: {
       workspace: "Create workspace",
       departments: "Departments",
@@ -47,10 +50,11 @@ export const en = {
       "Lowercase letters, digits and dashes. People open the workspace through this address.",
     sizeLabel: "Company size",
     sizes: {
-      s: "1–20 people",
-      m: "21–100 people",
-      l: "101–500 people",
-      xl: "Over 500 people",
+      s: "1–10 people",
+      m: "11–50 people",
+      l: "51–200 people",
+      xl: "201–1,000 people",
+      xxl: "Over 1,000 people",
     },
     sizeHint:
       "Used to suggest departments and board templates. It does not affect the plan.",
@@ -337,6 +341,9 @@ export const vi: OnboardingCopy = {
     srTodo: "chưa làm",
     saving: "Đang lưu…",
     unreachable: "Chưa kết nối được Notrelix. Kiểm tra mạng rồi thử lại.",
+    emailNotConfirmed:
+      "Hãy xác nhận email trước. Chúng tôi đã gửi liên kết khi bạn đăng ký; mở liên kết đó rồi bấm Tiếp tục lại.",
+    resendConfirmation: "Gửi lại liên kết",
     steps: {
       workspace: "Tạo workspace",
       departments: "Phòng ban",
@@ -361,10 +368,11 @@ export const vi: OnboardingCopy = {
       "Chữ thường, số và dấu gạch ngang. Mọi người mở workspace qua địa chỉ này.",
     sizeLabel: "Quy mô công ty",
     sizes: {
-      s: "1–20 người",
-      m: "21–100 người",
-      l: "101–500 người",
-      xl: "Trên 500 người",
+      s: "1–10 người",
+      m: "11–50 người",
+      l: "51–200 người",
+      xl: "201–1.000 người",
+      xxl: "Trên 1.000 người",
     },
     sizeHint:
       "Dùng để gợi ý phòng ban và mẫu board. Không ảnh hưởng gói dịch vụ.",

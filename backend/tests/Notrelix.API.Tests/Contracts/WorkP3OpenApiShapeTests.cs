@@ -75,7 +75,7 @@ public class WorkP3OpenApiShapeTests
     [InlineData("WorkManagement.BoardFields.Update", "name,settingsJson,expectedVersion")]
     [InlineData("WorkManagement.Checklists.UpdateItem", "expectedVersion,title,isChecked")]
     [InlineData("WorkManagement.Checklists.Update", "expectedVersion,title")]
-    [InlineData("WorkManagement.Boards.Rename", "expectedVersion,title,description,background,visibility")]
+    [InlineData("WorkManagement.Boards.Rename", "expectedVersion,title,description,background,visibility,itemKeyPrefix")]
     public void PatchBodies_HoldExactlyTheirAcceptedFields(string operationId, string fields)
     {
         BodyProperties(operationId).Should().BeEquivalentTo(fields.Split(','));

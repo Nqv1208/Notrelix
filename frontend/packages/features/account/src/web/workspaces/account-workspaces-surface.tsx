@@ -24,6 +24,10 @@ import {
   Tag,
   Toast,
 } from "../shared/account-parts";
+import type {
+  AccountLeaveFailure,
+  AccountWorkspaceRole,
+} from "../../core/types/account";
 import {
   fillCopy,
   pluralCopy,
@@ -31,7 +35,6 @@ import {
 } from "../shared/account-surface-model";
 import type { AccountWorkspacesCopy } from "./account-workspaces.copy";
 
-export type AccountWorkspaceRole = "owner" | "admin" | "member" | "guest";
 export type AccountWorkspaceTone = "blue" | "sage" | "gold" | "coral" | "ember";
 
 export interface AccountWorkspaceView {
@@ -40,13 +43,10 @@ export interface AccountWorkspaceView {
   readonly initials: string;
   readonly tone: AccountWorkspaceTone;
   readonly role: AccountWorkspaceRole;
-  readonly memberCount: number;
+  /** `null` when the person may not see it (a guest). */
+  readonly memberCount: number | null;
+  /** `null` unless the person is an owner or admin. */
   readonly departmentCount: number | null;
-  readonly unreadCount: number | null;
-  /** The one board a guest sees; `null` for everyone else. */
-  readonly guestBoard: string | null;
-  /** Another owner, named for an admin who may leave; else `null`. */
-  readonly otherOwnerName: string | null;
   readonly isDefault: boolean;
   readonly canLeave: boolean;
   readonly open: { readonly href: string; readonly onNavigate: () => void };
@@ -57,7 +57,8 @@ export interface AccountWorkspacesSurfaceProps {
   readonly workspaces: AccountSection<readonly AccountWorkspaceView[]>;
   /** An action is running: its buttons wait. */
   readonly busy: boolean;
-  readonly actionError: boolean;
+  /** Why the last action did not happen; `null` = no error to show. */
+  readonly actionError: AccountLeaveFailure | null;
   /** The text of the toast at the foot of the page; `null` = none. */
   readonly notice: string | null;
   readonly create: { readonly href: string; readonly onNavigate: () => void };
@@ -86,51 +87,28 @@ function isPlainClick(event: React.MouseEvent): boolean {
 
 function metaOf(copy: AccountWorkspacesCopy, view: AccountWorkspaceView) {
   const parts: string[] = [copy.roles[view.role]];
-  if (view.guestBoard)
-    parts.push(fillCopy(copy.guestSees, { board: view.guestBoard }));
-  else {
+  if (view.memberCount !== null)
     parts.push(
       pluralCopy(
         { one: copy.people_one, other: copy.people_other },
         view.memberCount,
       ),
     );
-    if (view.departmentCount !== null)
-      parts.push(
-        pluralCopy(
-          { one: copy.departments_one, other: copy.departments_other },
-          view.departmentCount,
-        ),
-      );
-    if (view.unreadCount)
-      parts.push(
-        pluralCopy(
-          { one: copy.unread_one, other: copy.unread_other },
-          view.unreadCount,
-        ),
-      );
-  }
+  if (view.departmentCount !== null)
+    parts.push(
+      pluralCopy(
+        { one: copy.departments_one, other: copy.departments_other },
+        view.departmentCount,
+      ),
+    );
   return parts.join(" · ");
 }
 
 function noteOf(copy: AccountWorkspacesCopy, view: AccountWorkspaceView) {
-  if (view.guestBoard)
-    return {
-      kind: "hint" as const,
-      text: fillCopy(copy.noteGuest, { board: view.guestBoard }),
-    };
   if (!view.canLeave)
     return {
       kind: "info" as const,
       text: fillCopy(copy.noteSoleOwner, { workspace: view.name }),
-    };
-  if (view.role === "admin" && view.otherOwnerName)
-    return {
-      kind: "info" as const,
-      text: fillCopy(copy.noteAdmin, {
-        workspace: view.name,
-        owner: view.otherOwnerName,
-      }),
     };
   return null;
 }
@@ -227,22 +205,14 @@ function Card({
           </button>
         </div>
       </div>
-      {note?.kind === "info" ? <Note id={noteId}>{note.text}</Note> : null}
-      {note?.kind === "hint" ? (
-        <p
-          id={noteId}
-          className="m-0 ml-[58px] text-xs leading-normal text-meta-foreground"
-        >
-          {note.text}
-        </p>
-      ) : null}
+      {note ? <Note id={noteId}>{note.text}</Note> : null}
     </section>
   );
 }
 
 /**
  * Your workspaces (Final-Account `workspace`): each workspace the member
- * belongs to with the role, what they see there, the default that opens with
+ * belongs to with the role, the people and departments they may see, the default that opens with
  * the app and the way out. Leaving asks first; the host reports the result.
  */
 export function AccountWorkspacesSurface({
@@ -311,7 +281,9 @@ export function AccountWorkspacesSurface({
       )}
       {actionError ? (
         <p role="alert" className="m-0 text-crumb text-danger-text">
-          {copy.actionError}
+          {actionError === "last-owner"
+            ? copy.lastOwnerError
+            : copy.actionError}
         </p>
       ) : null}
       <AlertDialog

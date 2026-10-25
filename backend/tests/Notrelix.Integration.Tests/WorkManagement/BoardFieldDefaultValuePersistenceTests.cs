@@ -22,7 +22,7 @@ public class BoardFieldDefaultValuePersistenceTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -33,7 +33,7 @@ public class BoardFieldDefaultValuePersistenceTests : IAsyncLifetime
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
-        await using var ctx = _db.CreateContext(tenant);
+        await using var ctx = _db.CreateOwnerContext(tenant);
 
         var boardId = await SeedBoardAsync(ctx);
 
@@ -47,7 +47,7 @@ public class BoardFieldDefaultValuePersistenceTests : IAsyncLifetime
         ctx.BoardFields.Add(field);
         await ctx.SaveChangesAsync();
 
-        await using var fresh = _db.CreateContext(tenant);
+        await using var fresh = _db.CreateOwnerContext(tenant);
         var loaded = await fresh.BoardFields
             .IgnoreQueryFilters()
             .FirstAsync(f => f.Id == field.Id);
@@ -61,7 +61,7 @@ public class BoardFieldDefaultValuePersistenceTests : IAsyncLifetime
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
-        await using var ctx = _db.CreateContext(tenant);
+        await using var ctx = _db.CreateOwnerContext(tenant);
 
         var boardId = await SeedBoardAsync(ctx);
 
@@ -73,7 +73,7 @@ public class BoardFieldDefaultValuePersistenceTests : IAsyncLifetime
         ctx.BoardFields.Add(field);
         await ctx.SaveChangesAsync();
 
-        await using var fresh = _db.CreateContext(tenant);
+        await using var fresh = _db.CreateOwnerContext(tenant);
         var loaded = await fresh.BoardFields
             .IgnoreQueryFilters()
             .FirstAsync(f => f.Id == field.Id);

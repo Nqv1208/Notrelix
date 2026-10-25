@@ -2,8 +2,9 @@ import { describe, expect, it } from "vitest";
 import { createNotrelixClient } from "@notrelix/contracts";
 import { createMockFetch } from "../transport/create-mock-fetch";
 import { MockStore } from "../state/mock-store";
+import { MOCK_AUTH } from "../state/mock-auth-directory";
 
-/** The account pages of the Account mockup in the mock world (CTR-GAP-ACC-PAGES). */
+/** The account pages in the mock world: the Identity, Workspaces and Collaboration contracts. */
 function client() {
   const store = new MockStore();
   const { api } = createNotrelixClient({
@@ -13,112 +14,443 @@ function client() {
   return { store, api };
 }
 
-const KEY = { idempotencyKey: "test-key" } as const;
-
-describe("profile details", () => {
-  it("saves what the member changed and refuses what no field can hold", async () => {
+describe("account preferences", () => {
+  it("reads defaults at version 0, saves with the version and refuses a stale or unknown value", async () => {
     const { api } = client();
-    expect(await api.get("/account/profile-details")).toMatchObject({
-      phone: "0912 468 135",
-      timezone: "Asia/Ho_Chi_Minh",
-      avatarUrl: null,
+    expect(await api.get("/profile/preferences")).toMatchObject({
+      locale: "vi",
+      theme: "system",
+      phone: null,
+      phoneVisibleToWorkspaceMembers: false,
+      version: 0,
     });
     expect(
-      await api.patch("/account/profile-details", { phone: "0988 000 111" }),
-    ).toMatchObject({ phone: "0988 000 111" });
+      await api.patch("/profile/preferences", {
+        expectedVersion: 0,
+        theme: "dark",
+        phone: "+84 988 000 111",
+      }),
+    ).toMatchObject({ theme: "dark", phone: "+84988000111", version: 1 });
+    // A no-op keeps the version; a stale version answers 412.
+    expect(
+      await api.patch("/profile/preferences", {
+        expectedVersion: 1,
+        theme: "dark",
+      }),
+    ).toMatchObject({ version: 1 });
     await expect(
-      api.patch("/account/profile-details", { phone: "call me" }),
+      api.patch("/profile/preferences", { expectedVersion: 0, theme: "light" }),
+    ).rejects.toMatchObject({ status: 412 });
+    await expect(
+      api.patch("/profile/preferences", {
+        expectedVersion: 1,
+        phone: "call me",
+      }),
     ).rejects.toBeDefined();
     await expect(
-      api.patch("/account/profile-details", { timezone: "Mars/Base" }),
+      api.patch("/profile/preferences", {
+        expectedVersion: 1,
+        timezone: "Mars/Base",
+      }),
     ).rejects.toBeDefined();
+  });
+});
+
+describe("job title of a member", () => {
+  it("is saved per workspace with the membership version", async () => {
+    const { api } = client();
+    const url = "/workspaces/mock-workspace-primary/members/me/job-title";
+    const mine = (await api.get(
+      "/workspaces/mock-workspace-primary/members/me",
+    )) as { jobTitle: string | null; version: number };
+    expect(mine.version).toBe(0);
+    expect(
+      await api.put(url, { jobTitle: "  Trưởng  phòng ", expectedVersion: 0 }),
+    ).toMatchObject({ jobTitle: "Trưởng phòng", version: 1 });
+    await expect(
+      api.put(url, { jobTitle: "x", expectedVersion: 0 }),
+    ).rejects.toMatchObject({ status: 412 });
   });
 });
 
 describe("security", () => {
-  it("ends one device, then all the others, and never the one that asks", async () => {
+  it("lists sessions, ends one, then all the others, and signs the device out when it ends itself", async () => {
     const { api } = client();
-    const first = (await api.get("/account/security-details")) as {
-      sessions: { id: string }[];
-    };
-    expect(first.sessions).toHaveLength(3);
-    await expect(
-      api.delete("/account/security/sessions/session-macbook"),
-    ).rejects.toBeDefined();
-    await api.delete("/account/security/sessions/session-ipad");
-    await api.post("/account/security/sessions/revoke-others", {}, KEY);
-    const last = (await api.get("/account/security-details")) as {
-      sessions: { id: string }[];
-    };
-    expect(last.sessions.map((session) => session.id)).toEqual([
+    const first = (await api.get("/auth/sessions")) as {
+      id: string;
+      status: number;
+      isCurrent: boolean;
+    }[];
+    expect(first).toHaveLength(3);
+    expect(first.filter((s) => s.isCurrent)).toHaveLength(1);
+    await api.post("/auth/sessions/session-ipad/revoke", {});
+    await api.post("/auth/sessions/revoke-others", {});
+    const after = (await api.get("/auth/sessions")) as typeof first;
+    expect(after.filter((s) => s.status === 0).map((s) => s.id)).toEqual([
       "session-macbook",
     ]);
+    // The current session can be ended: the device is signed out.
+    await api.post("/auth/sessions/session-macbook/revoke", {});
+    await expect(api.get("/auth/me")).rejects.toMatchObject({ status: 401 });
   });
 
-  it("turns two-factor off and on, with fresh backup codes only while it is on", async () => {
+  it("pages the activity by cursor", async () => {
     const { api } = client();
-    await api.put("/account/security/two-factor", { enabled: false });
+    const first = (await api.get("/auth/security/activity")) as {
+      items: unknown[];
+      nextCursor: string | null;
+    };
+    expect(first.items).toHaveLength(20);
+    const second = (await api.get(
+      `/auth/security/activity?cursor=${first.nextCursor}`,
+    )) as typeof first;
+    expect(second.items).toHaveLength(5);
+    expect(second.nextCursor).toBeNull();
+  });
+
+  it("turns two-factor off only with a proof and on again through the enrollment", async () => {
+    const { api } = client();
+    expect(await api.get("/auth/security/summary")).toMatchObject({
+      mfa: { isEnabled: true, recoveryCodesRemaining: 8 },
+    });
+    // No proof, no change.
     await expect(
-      api.post("/account/security/backup-codes", {}, KEY),
-    ).rejects.toBeDefined();
-    expect(
-      await api.put("/account/security/two-factor", { enabled: true }),
-    ).toMatchObject({ twoFactorEnabled: true, backupCodesLeft: 10 });
+      api.post("/auth/mfa/disable", { stepUpToken: "nope" }),
+    ).rejects.toMatchObject({ status: 412 });
+    const requirement = (await api.post("/auth/security/step-up/requirement", {
+      purpose: "DisableMfa",
+    })) as { requiredFactor: number; challengeToken: string };
+    expect(requirement.requiredFactor).toBe(0);
+    const proof = (await api.post("/auth/security/step-up/complete-mfa", {
+      purpose: "DisableMfa",
+      challengeToken: requirement.challengeToken,
+      code: MOCK_AUTH.otpCode,
+    })) as { proofToken: string };
+    await api.post("/auth/mfa/disable", { stepUpToken: proof.proofToken });
+    expect(await api.get("/auth/security/summary")).toMatchObject({
+      mfa: { isEnabled: false },
+    });
+    const enrollment = (await api.post("/auth/mfa/enrollment/start", {})) as {
+      mfaMethodId: string;
+    };
+    await expect(
+      api.post("/auth/mfa/enrollment/verify", {
+        mfaMethodId: enrollment.mfaMethodId,
+        code: "000000",
+      }),
+    ).rejects.toMatchObject({ status: 400 });
+    const done = (await api.post("/auth/mfa/enrollment/verify", {
+      mfaMethodId: enrollment.mfaMethodId,
+      code: MOCK_AUTH.otpCode,
+    })) as { recoveryCodes: string[] };
+    expect(done.recoveryCodes).toHaveLength(10);
+  });
+
+  it("changes the password with the current one and, while two-factor is on, a proof; every session ends", async () => {
+    const { api } = client();
+    const change = (body: Record<string, unknown>) =>
+      api.post("/auth/change-password", body);
+
+    // The producer's rules: 8 characters, different from the current password.
+    await expect(
+      change({
+        currentPassword: MOCK_AUTH.personalPassword,
+        newPassword: "short",
+      }),
+    ).rejects.toMatchObject({
+      status: 400,
+      code: "validation.failed",
+      validationErrors: { NewPassword: [expect.any(String)] },
+    });
+    await expect(
+      change({
+        currentPassword: MOCK_AUTH.personalPassword,
+        newPassword: MOCK_AUTH.personalPassword,
+      }),
+    ).rejects.toMatchObject({ status: 400 });
+    await expect(
+      change({
+        currentPassword: "wrong-password",
+        newPassword: "new-password-2",
+      }),
+    ).rejects.toMatchObject({
+      status: 400,
+      code: "identity.auth.invalid-current-password",
+    });
+    // Two-factor is on: the single-use proof is needed too.
+    await expect(
+      change({
+        currentPassword: MOCK_AUTH.personalPassword,
+        newPassword: "new-password-2",
+      }),
+    ).rejects.toMatchObject({
+      status: 412,
+      code: "identity.security.step-up-required",
+    });
+
+    const requirement = (await api.post("/auth/security/step-up/requirement", {
+      purpose: "ChangePassword",
+    })) as { challengeToken: string };
+    await expect(
+      api.post("/auth/security/step-up/complete-mfa", {
+        purpose: "ChangePassword",
+        challengeToken: requirement.challengeToken,
+        code: "000000",
+      }),
+    ).rejects.toMatchObject({
+      status: 400,
+      code: "identity.security.step-up-invalid-code",
+    });
+    const proof = (await api.post("/auth/security/step-up/complete-mfa", {
+      purpose: "ChangePassword",
+      challengeToken: requirement.challengeToken,
+      code: MOCK_AUTH.otpCode,
+    })) as { proofToken: string };
+    await change({
+      currentPassword: MOCK_AUTH.personalPassword,
+      newPassword: "new-password-2",
+      stepUpToken: proof.proofToken,
+    });
+    // The proof was single-use and this session is over.
+    await expect(
+      change({
+        currentPassword: MOCK_AUTH.personalPassword,
+        newPassword: "new-password-3",
+        stepUpToken: proof.proofToken,
+      }),
+    ).rejects.toMatchObject({ status: 412 });
+  });
+
+  it("throttles a step-up after five wrong proofs", async () => {
+    const { api } = client();
+    for (let i = 0; i < 4; i += 1)
+      await expect(
+        api.post("/auth/security/step-up/complete-password", {
+          purpose: "ChangePassword",
+          password: "wrong",
+        }),
+      ).rejects.toMatchObject({ status: 400 });
+    await expect(
+      api.post("/auth/security/step-up/complete-password", {
+        purpose: "ChangePassword",
+        password: "wrong",
+      }),
+    ).rejects.toMatchObject({ status: 429 });
   });
 });
 
-describe("notification matrix", () => {
-  it("keeps the saved cells and quiet hours and refuses an incomplete matrix", async () => {
+describe("notification preferences", () => {
+  const url = "/workspaces/mock-workspace-primary/notification-preferences";
+
+  it("saves the cells that changed with the version they were read at and keeps the version on a no-op", async () => {
     const { api } = client();
-    const current = (await api.get("/account/notification-matrix")) as {
-      rows: Record<string, { app: boolean; email: boolean; mobile: boolean }>;
-      quietHours: { enabled: boolean; from: string; to: string; days: string };
+    const first = (await api.get(url)) as {
+      version: number;
+      rows: { type: string; inApp: boolean; email: boolean }[];
     };
-    const next = {
-      rows: {
-        ...current.rows,
-        digest: { app: true, email: true, mobile: true },
-      },
-      quietHours: { ...current.quietHours, from: "22:00" },
-    };
-    await api.put("/account/notification-matrix", next);
-    expect(await api.get("/account/notification-matrix")).toEqual(next);
+    expect(first.version).toBe(0);
+    expect(first.rows.map((row) => row.type)).toEqual([
+      "assigned",
+      "mention",
+      "approval",
+      "overdue",
+      "watching",
+      "invitation",
+      "digest",
+    ]);
+    const saved = (await api.patch(url, {
+      expectedVersion: 0,
+      rows: [{ type: "digest", email: true }],
+    })) as typeof first;
+    expect(saved.version).toBe(1);
+    expect(saved.rows.find((row) => row.type === "digest")).toEqual({
+      type: "digest",
+      inApp: true,
+      email: true,
+    });
+    const same = (await api.patch(url, {
+      expectedVersion: 1,
+      rows: [{ type: "digest", email: true }],
+    })) as typeof first;
+    expect(same.version).toBe(1);
+  });
+
+  it("refuses a stale version with 412 and an unknown type", async () => {
+    const { api } = client();
     await expect(
-      api.put("/account/notification-matrix", { rows: {}, quietHours: {} }),
+      api.patch(url, { expectedVersion: 5, rows: [] }),
+    ).rejects.toMatchObject({ status: 412 });
+    await expect(
+      api.patch(url, {
+        expectedVersion: 0,
+        rows: [{ type: "mobile-push", email: true }],
+      }),
     ).rejects.toBeDefined();
   });
+
+  it("is per workspace: a save in one does not touch another", async () => {
+    const { api, store } = client();
+    const other = store
+      .getWorkspaces()
+      .find((workspace) => workspace.id !== "mock-workspace-primary");
+    if (!other) return;
+    await api.patch(url, {
+      expectedVersion: 0,
+      rows: [{ type: "digest", email: true }],
+    });
+    const untouched = (await api.get(
+      `/workspaces/${other.id}/notification-preferences`,
+    )) as { version: number };
+    expect(untouched.version).toBe(0);
+  });
 });
+
+interface MyWorkspace {
+  id: string;
+  name: string;
+  slug: string;
+  role: string;
+  memberCount: number | null;
+  departmentCount: number | null;
+  isDefault: boolean;
+  canLeave: boolean;
+}
 
 describe("workspaces of the member", () => {
-  it("makes another workspace the default and leaves one the member does not own alone", async () => {
+  it("lists only the shape the producer sends: a bare array with a capitalised role and no mock-only fields", async () => {
     const { api } = client();
-    const list = (await api.get("/account/workspaces")) as {
-      workspaces: {
-        id: string;
-        isDefault: boolean;
-        canLeave: boolean;
-        role: string;
-      }[];
-    };
-    expect(list.workspaces).toHaveLength(3);
-    expect(list.workspaces[0]).toMatchObject({
-      isDefault: true,
-      canLeave: false,
-    });
-    expect(list.workspaces[1]).toMatchObject({ role: "member" });
-    expect(list.workspaces[2]).toMatchObject({ role: "guest" });
-    const second = list.workspaces[1]?.id ?? "";
-    const after = (await api.put("/account/default-workspace", {
-      workspaceId: second,
-    })) as typeof list;
-    expect(after.workspaces.find((w) => w.isDefault)?.id).toBe(second);
-    // The only owner cannot leave the primary workspace.
+    const list = (await api.get("/account/workspaces")) as MyWorkspace[];
+    expect(Array.isArray(list)).toBe(true);
+    expect(list).toHaveLength(3);
+    for (const entry of list) {
+      expect(Object.keys(entry).sort()).toEqual([
+        "canLeave",
+        "departmentCount",
+        "id",
+        "isDefault",
+        "memberCount",
+        "name",
+        "role",
+        "slug",
+      ]);
+      expect(["Owner", "Admin", "Member", "Guest"]).toContain(entry.role);
+    }
+    expect(list.map((entry) => entry.name)).toEqual(
+      [...list.map((entry) => entry.name)].sort(),
+    );
+    expect(list.filter((entry) => entry.isDefault)).toHaveLength(1);
+    // An owner sees the department count; the last owner cannot leave.
+    expect(list[0]).toMatchObject({ role: "Owner", canLeave: false });
+    expect(list[0]?.departmentCount).not.toBeNull();
+  });
+
+  it("makes another workspace the default with a 204 and refuses a workspace the member does not belong to", async () => {
+    const { api } = client();
+    const list = (await api.get("/account/workspaces")) as MyWorkspace[];
+    const second = list.find((entry) => !entry.isDefault)?.id ?? "";
+    expect(
+      await api.put("/account/default-workspace", { workspaceId: second }),
+    ).toBeNull();
+    const after = (await api.get("/account/workspaces")) as MyWorkspace[];
+    expect(after.find((entry) => entry.isDefault)?.id).toBe(second);
     await expect(
-      api.delete(`/account/workspaces/${list.workspaces[0]?.id}`),
-    ).rejects.toBeDefined();
-    await api.delete(`/account/workspaces/${second}`);
-    const left = (await api.get("/account/workspaces")) as typeof list;
-    expect(left.workspaces).toHaveLength(2);
-    expect(left.workspaces.some((w) => w.id === second)).toBe(false);
+      api.put("/account/default-workspace", { workspaceId: "nope" }),
+    ).rejects.toMatchObject({ status: 404 });
+    await expect(
+      api.put("/account/default-workspace", { workspaceId: "" }),
+    ).rejects.toMatchObject({ status: 400 });
+  });
+
+  it("refuses the last owner with the dotted code and lets another owner leave, clearing a default that was left", async () => {
+    const { api } = client();
+    const list = (await api.get("/account/workspaces")) as MyWorkspace[];
+    const sole = list.find((entry) => !entry.canLeave);
+    const leavable = list.find((entry) => entry.canLeave);
+    expect(sole && leavable).toBeTruthy();
+    await expect(
+      api.delete(`/account/workspaces/${sole?.id}`),
+    ).rejects.toMatchObject({
+      status: 409,
+      code: "workspaces.member.last-owner-cannot-leave",
+    });
+    await api.put("/account/default-workspace", {
+      workspaceId: leavable?.id,
+    });
+    expect(await api.delete(`/account/workspaces/${leavable?.id}`)).toBeNull();
+    const left = (await api.get("/account/workspaces")) as MyWorkspace[];
+    expect(left.some((entry) => entry.id === leavable?.id)).toBe(false);
+    // Leaving twice: the member no longer belongs there.
+    await expect(
+      api.delete(`/account/workspaces/${leavable?.id}`),
+    ).rejects.toMatchObject({ status: 404 });
+  });
+});
+
+describe("profile photo", () => {
+  const PNG = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0];
+  const form = (bytes: ArrayLike<number> | Uint8Array, name = "me.png") => {
+    const data = new FormData();
+    data.append(
+      "file",
+      new File([Uint8Array.from(bytes)], name, { type: "text/plain" }),
+      name,
+    );
+    return data;
+  };
+
+  it("sends the file as a multipart part, answers a relative versioned address and shows it everywhere the person is read", async () => {
+    const { api } = client();
+    const first = (await api.upload("/profile/avatar", form(PNG), {
+      method: "PUT",
+    })) as { avatarUrl: string };
+    expect(first.avatarUrl).toMatch(/^\/api\/v1\/users\/[^/]+\/avatar\?v=.+/);
+    expect(await api.get("/auth/me")).toMatchObject({
+      avatarUrl: first.avatarUrl,
+    });
+    const second = (await api.upload("/profile/avatar", form(PNG), {
+      method: "PUT",
+    })) as { avatarUrl: string };
+    expect(second.avatarUrl).not.toBe(first.avatarUrl);
+  });
+
+  it("recognises the bytes, not the declared type or name", async () => {
+    const { api } = client();
+    await expect(
+      api.upload("/profile/avatar", form([0x47, 0x49, 0x46, 0x38], "me.png"), {
+        method: "PUT",
+      }),
+    ).rejects.toMatchObject({
+      status: 415,
+      code: "identity.avatar.unsupported-format",
+    });
+    const jpeg = await api.upload(
+      "/profile/avatar",
+      form([0xff, 0xd8, 0xff, 0xe0], "photo.gif"),
+      { method: "PUT" },
+    );
+    expect(jpeg).toMatchObject({ avatarUrl: expect.any(String) });
+  });
+
+  it("refuses a photo over 2,000,000 bytes and a request without the file part", async () => {
+    const { api } = client();
+    const big = new Uint8Array(2_000_001);
+    big.set(PNG);
+    await expect(
+      api.upload("/profile/avatar", form(big), { method: "PUT" }),
+    ).rejects.toMatchObject({
+      status: 413,
+      code: "identity.avatar.too-large",
+    });
+    await expect(
+      api.upload("/profile/avatar", new FormData(), { method: "PUT" }),
+    ).rejects.toMatchObject({ status: 400 });
+  });
+
+  it("removes the photo, also when there is none", async () => {
+    const { api } = client();
+    await api.upload("/profile/avatar", form(PNG), { method: "PUT" });
+    expect(await api.delete("/profile/avatar")).toEqual({ avatarUrl: null });
+    expect(await api.get("/auth/me")).toMatchObject({ avatarUrl: null });
+    expect(await api.delete("/profile/avatar")).toEqual({ avatarUrl: null });
   });
 });

@@ -54,7 +54,7 @@ public class GetWorkspaceMembersQueryHandler : IRequestHandler<GetWorkspaceMembe
         var phoneCandidates = reader is { IsInternalParticipant: true }
             ? members.Where(m => m.IsInternalParticipant).Select(m => m.UserId).ToList()
             : [];
-        var phones = await _phoneLookup.FindSharedPhonesAsync(phoneCandidates, ct);
+        var phones = await _phoneLookup.FindSharedPhonesAsync(request.WorkspaceId, phoneCandidates, ct);
 
         var result = members.Select(m =>
         {

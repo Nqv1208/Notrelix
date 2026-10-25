@@ -37,9 +37,9 @@ function invalidField(error: unknown): string | undefined {
 }
 
 /**
- * The settings of a board (gap `CTR-GAP-WM-BOARD-SETTINGS`) and the writes
- * on them. `forbidden` is true when the caller is not a manager of the
- * board (the server answers 403). A write sends the version of the read it
+ * The settings of a board (read from the board itself) and the writes on
+ * them. `forbidden` is true when the caller is not a manager of the
+ * board (the server answers 403). A write sends the versions of the read it
  * was made from and then refetches the settings and the board itself, since
  * fields, options and groups are the board's own data.
  */
@@ -77,16 +77,20 @@ export function useBoardSettings(boardId: string, workspaceId: string) {
     });
   }, [boardId, queryClient, workspaceId]);
 
-  /** Runs a write with the version of the current read. */
+  /** Runs a write with the current read, which carries the versions to send. */
   const write = useCallback(
     async (
-      send: (api: BoardSettingsApi, version: number) => Promise<unknown>,
+      send: (
+        api: BoardSettingsApi,
+        current: BoardSettingsDto,
+      ) => Promise<unknown>,
     ): Promise<BoardSettingsWriteResult> => {
       const current = queryClient.getQueryData<BoardSettingsDto>(
         settingsKey(workspaceId, boardId),
       );
+      if (!current) return { ok: false, reason: "failed" };
       try {
-        await send(boardSettings, current?.version ?? 0);
+        await send(boardSettings, current);
         await refresh();
         return { ok: true };
       } catch (caught) {

@@ -103,14 +103,17 @@
       "@modelcontextprotocol/sdk": "^1.31.0",
       "tinypool": "^2.1.2",
       "vite@7": "^7.3.7",
-      "vite@8": "~8.2.4"
+      "vite@8": "~8.2.4",
+      "zod@4": "^4.6.6",
+      "body-parser@2": "^2.4.0"
     },
     "auditConfig": {
       "ignoreGhsas": [
         "GHSA-w3rx-r6r6-pgpr",
         "GHSA-5p2g-fcmc-qvqq",
         "GHSA-86w9-cpqp-85rv",
-        "GHSA-vfj7-8cjw-p6xm"
+        "GHSA-vfj7-8cjw-p6xm",
+        "GHSA-mrhx-c7xc-m3w5"
       ]
     }
   },

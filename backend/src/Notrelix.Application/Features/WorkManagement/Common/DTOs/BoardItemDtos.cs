@@ -56,7 +56,14 @@ public record BoardItemDto(
     DateTimeOffset? DueAt = null,
     DateTimeOffset? StartedAt = null,
     DateTimeOffset? CompletedAt = null,
-    BoardItemChildProgressDto? ChildProgress = null
+    BoardItemChildProgressDto? ChildProgress = null,
+    bool IsArchived = false,
+    // Who completed or archived the Item, with the display name resolved at read time.
+    Guid? CompletedBy = null,
+    string? CompletedByName = null,
+    DateTimeOffset? ArchivedAt = null,
+    Guid? ArchivedBy = null,
+    string? ArchivedByName = null
 );
 
 public record BoardItemMemberDto(Guid UserId, string Name, string? Avatar, DateTimeOffset AssignedAt);
@@ -70,3 +77,17 @@ public record BoardItemSlimDto(
     List<Guid> MemberIds,
     List<Guid> LabelIds,
     long Version);
+
+/// <summary>A sub-item as its parent lists it. <see cref="Done"/> is whether it is completed.</summary>
+public record ChildItemDto(
+    Guid Id,
+    string? Key,
+    string Title,
+    bool Done,
+    DateTimeOffset? DueAt,
+    Guid? AssigneeUserId,
+    string? AssigneeName,
+    string Position,
+    long Version);
+
+public record ChildItemListDto(IReadOnlyList<ChildItemDto> Items);

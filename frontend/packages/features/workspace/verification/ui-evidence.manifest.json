@@ -63,27 +63,27 @@
           {
             "state": "Loading",
             "reason": "Invitations render resolved data passed by its parent; query loading presentation is owned by the workspace shell.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "Error",
             "reason": "Invitations render resolved data passed by its parent; query error presentation is owned by the workspace shell.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "HighDensity",
             "reason": "Invitations render a bounded popover list; high-density input is exercised by the EdgeData story.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "ReadOnly",
             "reason": "No product-authoritative read-only contract exists for pending invitations at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "PermissionLimited",
             "reason": "No product-authoritative permission-limited capability contract exists for pending invitations at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "EdgeData",
@@ -1632,7 +1632,7 @@
         "notApplicable": [
           {
             "state": "ReadOnly",
-            "reason": "Reading is the only mode: every write (Đã xử lý, mark all read) is a host callback and is drawn inert without one, covered by the handled-inert and mark-all interaction cases rather than a separate visual state.",
+            "reason": "Reading is the only mode: every write (\u0110\u00e3 x\u1eed l\u00fd, mark all read) is a host callback and is drawn inert without one, covered by the handled-inert and mark-all interaction cases rather than a separate visual state.",
             "authority": "docs/product/collaboration.md"
           },
           {
@@ -4834,6 +4834,112 @@
         {
           "id": "connect",
           "testFile": "src/web/integrations/__tests__/integrations.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "workspace.feature-unavailable",
+      "owner": "@notrelix/features-workspace",
+      "surfaceKind": "feedback",
+      "pureEntry": "src/web/unavailable/feature-unavailable-surface.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "workspace-feature-availability--integrations-unavailable",
+          "state": "Default",
+          "visualTargets": []
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default"],
+        "delegated": [],
+        "notApplicable": []
+      },
+      "responsive": false,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "purity"],
+      "interactionCases": [
+        {
+          "id": "integrations",
+          "testFile": "src/web/unavailable/__tests__/feature-availability.interaction.component.test.tsx"
+        },
+        {
+          "id": "reports",
+          "testFile": "src/web/unavailable/__tests__/feature-availability.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "workspace.billing-capabilities",
+      "owner": "@notrelix/features-workspace",
+      "surfaceKind": "data",
+      "pureEntry": "src/web/billing/billing-capabilities-surface.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "workspace-feature-availability--capabilities-default",
+          "state": "Default",
+          "visualTargets": []
+        },
+        {
+          "id": "workspace-feature-availability--capabilities-loading",
+          "state": "Loading",
+          "visualTargets": []
+        },
+        {
+          "id": "workspace-feature-availability--capabilities-error",
+          "state": "Error",
+          "visualTargets": []
+        },
+        {
+          "id": "workspace-feature-availability--capabilities-edge-data",
+          "state": "EdgeData",
+          "visualTargets": []
+        },
+        {
+          "id": "workspace-feature-availability--capabilities-forbidden",
+          "state": "PermissionLimited",
+          "visualTargets": []
+        }
+      ],
+      "stateCoverage": {
+        "required": [
+          "Default",
+          "EdgeData",
+          "Error",
+          "Loading",
+          "PermissionLimited"
+        ],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "Empty",
+            "reason": "Every workspace lists the capabilities Billing defines, so the list is never empty.",
+            "authority": "docs/product/billing.md"
+          },
+          {
+            "state": "HighDensity",
+            "reason": "The page lists the capabilities Billing defines, a handful of rows.",
+            "authority": "docs/product/billing.md"
+          },
+          {
+            "state": "ReadOnly",
+            "reason": "The page only reads; every change to the plan is said to be not available yet.",
+            "authority": "docs/product/billing.md"
+          }
+        ]
+      },
+      "responsive": false,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "purity"],
+      "interactionCases": [
+        {
+          "id": "capabilities",
+          "testFile": "src/web/unavailable/__tests__/feature-availability.interaction.component.test.tsx"
+        },
+        {
+          "id": "states",
+          "testFile": "src/web/unavailable/__tests__/feature-availability.interaction.component.test.tsx"
         }
       ]
     }

@@ -10,6 +10,7 @@ namespace Notrelix.Testing.Application.Fakes;
 public sealed class InMemoryRateLimitService : IRateLimitService
 {
     private readonly Dictionary<string, int> _counts = new();
+    private readonly object _gate = new();
 
     public Task<bool> IsRateLimitedAsync(string action, string identifier, int maxAttempts, TimeSpan window)
     {
@@ -56,11 +57,19 @@ public sealed class InMemoryRateLimitService : IRateLimitService
     private int Increment(string policyName, string partitionKey)
     {
         var key = $"{policyName}:{partitionKey}";
-        var count = GetCount(policyName, partitionKey) + 1;
-        _counts[key] = count;
-        return count;
+        lock (_gate)
+        {
+            var count = _counts.GetValueOrDefault(key) + 1;
+            _counts[key] = count;
+            return count;
+        }
     }
 
     private int GetCount(string policyName, string partitionKey)
-        => _counts.GetValueOrDefault($"{policyName}:{partitionKey}");
+    {
+        lock (_gate)
+        {
+            return _counts.GetValueOrDefault($"{policyName}:{partitionKey}");
+        }
+    }
 }

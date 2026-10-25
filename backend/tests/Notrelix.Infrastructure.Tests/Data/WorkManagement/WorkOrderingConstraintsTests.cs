@@ -28,9 +28,9 @@ public sealed class WorkOrderingConstraintsTests
     }
 
     [Fact]
-    public void TheSixP3ScopesHaveNamedConstraints()
+    public void TheOrderingScopesHaveNamedConstraints()
     {
-        WorkOrderingConstraints.Names.Should().HaveCount(6);
+        WorkOrderingConstraints.Names.Should().HaveCount(7);
     }
 
     private static DbUpdateException Violation(string sqlState, string? constraintName) =>

@@ -147,6 +147,66 @@ public class WorkspaceInvitationTests
     }
 
     [Fact]
+    public void Decline_WithoutActor_ShouldSucceed_AndRaiseEventWithoutDecliner()
+    {
+        var invitation = WorkspaceInvitation.Create(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "test@example.com",
+            WorkspaceRole.Member,
+            InvitationTokenHash.Create("a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"),
+            1,
+            Guid.NewGuid(),
+            DateTimeOffset.UtcNow);
+
+        invitation.Decline(null, DateTimeOffset.UtcNow);
+
+        invitation.Status.Should().Be(WorkspaceInvitationStatus.Declined);
+        invitation.DomainEvents.OfType<WorkspaceInvitationDeclinedDomainEvent>().Should().ContainSingle()
+            .Which.DeclinedBy.Should().BeNull();
+    }
+
+    [Fact]
+    public void Decline_WithoutActor_ShouldThrow_WhenNotPending_AndKeepVersion()
+    {
+        var invitation = WorkspaceInvitation.Create(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "test@example.com",
+            WorkspaceRole.Member,
+            InvitationTokenHash.Create("a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"),
+            1,
+            Guid.NewGuid(),
+            DateTimeOffset.UtcNow);
+        invitation.Decline(null, DateTimeOffset.UtcNow);
+        var version = invitation.Version;
+
+        var act = () => invitation.Decline(null, DateTimeOffset.UtcNow);
+
+        act.Should().Throw<BusinessRuleException>().WithMessage("Invitation is not pending.");
+        invitation.Version.Should().Be(version);
+    }
+
+    [Fact]
+    public void Decline_WithEmptyActor_ShouldThrow()
+    {
+        var invitation = WorkspaceInvitation.Create(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "test@example.com",
+            WorkspaceRole.Member,
+            InvitationTokenHash.Create("a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"),
+            1,
+            Guid.NewGuid(),
+            DateTimeOffset.UtcNow);
+
+        var act = () => invitation.Decline(Guid.Empty, DateTimeOffset.UtcNow);
+
+        act.Should().Throw<Exception>();
+        invitation.Status.Should().Be(WorkspaceInvitationStatus.Pending);
+    }
+
+    [Fact]
     public void Decline_ShouldThrow_WhenNotPending()
     {
         var invitation = WorkspaceInvitation.Create(

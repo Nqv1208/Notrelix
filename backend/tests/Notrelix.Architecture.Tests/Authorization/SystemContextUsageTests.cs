@@ -40,7 +40,13 @@ public class SystemContextUsageTests
         "ActiveVerificationTokenLocker.cs",
         "WorkspaceOwnerUpdateLocker.cs",
         "PostgresAttachmentReaperStore.cs",
+        "PostgresAvatarReaperStore.cs",
+        "AvatarAudienceReadAdapter.cs",
+        "IdentityBootstrapReadAdapter.cs",
+        "GetUserWorkspaces.cs",
+        "GetMyWorkspaces.cs",
         "CalendarWebhookBindingResolver.cs",
+        "InvitationTokenScope.cs",
     ];
 
     [Fact]

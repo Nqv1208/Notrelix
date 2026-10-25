@@ -4,6 +4,7 @@ import type {
   FullBoardResponse,
 } from "@notrelix/work-management-core";
 import { findBoardCard, restoreBoardCard } from "../cache/card-restore";
+import { workspaceQueryKey } from "@notrelix/query";
 import { wmQueryKeys } from "../queries/keys";
 
 /**
@@ -109,8 +110,17 @@ export async function runCardCommand<T>({
     const left = (pending.get(boardHash) ?? 1) - 1;
     if (left > 0) pending.set(boardHash, left);
     else pending.delete(boardHash);
+    // Whether the item is archived or completed is read again with it.
+    const lifecycleKey = workspaceQueryKey(
+      workspaceId,
+      "work-management",
+      "item-lifecycle",
+      cardId,
+    );
     const keys =
-      left > 0 ? [detailKey, activityKey] : [boardKey, detailKey, activityKey];
+      left > 0
+        ? [detailKey, activityKey, lifecycleKey]
+        : [boardKey, detailKey, activityKey, lifecycleKey];
     await Promise.all(
       keys.map((queryKey) => queryClient.invalidateQueries({ queryKey })),
     );

@@ -280,9 +280,6 @@ export function mapBoardAccessDto(dto: GeneratedBoardAccessDto): BoardAccess {
         grantedBy?.userId && grantedBy.name
           ? { userId: grantedBy.userId, name: grantedBy.name }
           : null,
-      expiresAt:
-        (dto.mySource as { expiresAt?: string | null } | undefined)
-          ?.expiresAt ?? null,
     },
     peopleCount: dto.peopleCount ?? 0,
     guestCount: dto.guestCount ?? 0,

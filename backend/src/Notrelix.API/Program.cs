@@ -51,6 +51,8 @@ else
     builder.Configuration["JwtSettings:SecretKey"] = "export-only-dummy-key-at-least-32-characters-long";
     builder.Configuration["JwtSettings:Issuer"] = "notrelix-export";
     builder.Configuration["JwtSettings:Audience"] = "notrelix-export";
+    // The export never touches a database: the role guard (enforced by default) would connect at startup.
+    builder.Configuration["Rls:RoleEnforcement"] = "Off";
     builder.Services.AddInfrastructure(builder.Configuration, builder.Environment);
 }
 

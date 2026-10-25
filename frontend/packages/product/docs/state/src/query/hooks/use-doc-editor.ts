@@ -52,7 +52,7 @@ export function createUseDocEditor(
 
     const update = useMutation({
       mutationFn: (input: { blockId: string; payload: UpdateBlockPayload }) =>
-        blockApi.update(input.blockId, input.payload),
+        blockApi.update(pageId, input.blockId, input.payload),
       onSuccess: () => {
         setFailed(false);
         void refreshBlocks();
@@ -67,7 +67,7 @@ export function createUseDocEditor(
       },
     });
     const remove = useMutation({
-      mutationFn: (blockId: string) => blockApi.delete(blockId),
+      mutationFn: (blockId: string) => blockApi.delete(pageId, blockId),
       onSuccess: () => {
         setFailed(false);
         void refreshBlocks();
@@ -79,6 +79,29 @@ export function createUseDocEditor(
       onSuccess: () => {
         setFailed(false);
         refreshPage();
+      },
+    });
+
+    // A block keeps its type on the producer, so turning it into another type
+    // adds a block of that type right after it and removes the old one.
+    const convert = useMutation({
+      mutationFn: async (input: {
+        block: Block;
+        type: Block["type"];
+        properties: Block["properties"];
+      }): Promise<Block> => {
+        const created = await blockApi.create(pageId, {
+          type: input.type,
+          properties: input.properties,
+          afterBlockId: input.block.id,
+          parentId: input.block.parentId,
+        });
+        await blockApi.delete(pageId, input.block.id);
+        return created;
+      },
+      onSuccess: () => {
+        setFailed(false);
+        void refreshBlocks();
       },
     });
 
@@ -110,6 +133,24 @@ export function createUseDocEditor(
       },
       [create, run],
     );
+    const convertBlock = useCallback(
+      (
+        block: Block,
+        type: Block["type"],
+        properties: Block["properties"],
+      ): Promise<Block> => {
+        const attempt = () =>
+          convert
+            .mutateAsync({ block, type, properties })
+            .catch((error: unknown) => {
+              setFailed(true);
+              throw error;
+            });
+        run(() => void attempt().catch(() => undefined));
+        return attempt();
+      },
+      [convert, run],
+    );
     const deleteBlock = useCallback(
       (blockId: string) => {
         const attempt = () =>
@@ -137,6 +178,7 @@ export function createUseDocEditor(
       update.isPending ||
       create.isPending ||
       remove.isPending ||
+      convert.isPending ||
       rename.isPending;
     const saveState: DocSaveState = failed
       ? "error"
@@ -148,6 +190,7 @@ export function createUseDocEditor(
       saveState,
       updateBlock,
       createBlock,
+      convertBlock,
       deleteBlock,
       updateTitle,
       retry,

@@ -60,7 +60,8 @@ test.describe("Item page states (owner)", () => {
     await expect(
       page.getByText("Thêm mô tả… gõ / để chèn bảng, việc, tài liệu"),
     ).toBeVisible();
-    await expect(page.getByText("Chưa có việc con.")).toBeVisible();
+    // Sub-items have no producer: the page offers no list and no way to add.
+    await expect(page.getByText("Chưa có việc con.")).toHaveCount(0);
     await expect(page.getByText("vừa xong", { exact: false })).toHaveCount(0);
     const rail = page.getByRole("complementary");
     await expect(
@@ -70,28 +71,22 @@ test.describe("Item page states (owner)", () => {
     await expect(
       rail.getByRole("button", { name: "Hạn chót", exact: true }),
     ).toBeVisible();
-    // The key of this item stays apart from the board's own run of keys.
-    await page.getByRole("button", { name: "Thêm việc con" }).click();
-    await expect(page.getByRole("textbox", { name: "Việc con" })).toBeFocused();
+    await expect(
+      page.getByRole("button", { name: "Thêm việc con" }),
+    ).toHaveCount(0);
   });
 
-  test("a done item says who finished it and how early, and reopens", async ({
+  test("a done item says when it was finished and how early, and offers no reopen", async ({
     page,
   }) => {
     await open(page, "mock-erp-item-131");
     const banner = page.locator("[data-item-banner=completed]");
     await expect(banner).toContainText("Hoàn thành ngày 05/10");
-    await expect(banner).toContainText("Vũ Thanh");
     await expect(
       page.getByRole("complementary").getByText("xong sớm 1 ngày"),
     ).toBeVisible();
-    await banner.getByRole("button", { name: "Mở lại" }).click();
-    await expect(banner).toHaveCount(0);
-    await expect(
-      page.getByRole("complementary").getByRole("button", {
-        name: "Trạng thái",
-      }),
-    ).toContainText("Đang làm");
+    // Reopening has no producer: the banner offers no button for it.
+    await expect(banner.getByRole("button", { name: "Mở lại" })).toHaveCount(0);
   });
 
   test("an archived item is read-only and comes back with Khôi phục", async ({
@@ -100,7 +95,7 @@ test.describe("Item page states (owner)", () => {
     await open(page, "mock-erp-item-118");
     const banner = page.locator("[data-item-banner=archived]");
     await expect(banner).toContainText("Đã lưu trữ ngày 08/10");
-    await expect(banner).toContainText("Nguyễn Thu Hà");
+    await expect(banner).toContainText("Chỉ xem, không sửa");
     await expect(
       page.getByRole("textbox", { name: "Viết bình luận" }),
     ).toBeDisabled();
@@ -116,22 +111,18 @@ test.describe("Item page states (owner)", () => {
     ).toBeEnabled();
   });
 
-  test("a long item folds its description and lists its sub-items in part", async ({
+  test("a long item folds its description and shows its sub-item progress without a list", async ({
     page,
   }) => {
     await open(page, "mock-erp-item-160");
-    await expect(page.getByText("Việc con").first()).toBeVisible();
-    await expect(page.getByText("12/48", { exact: true })).toBeVisible();
+    await expect(page.getByText("12/48", { exact: true })).toHaveCount(0);
     await expect(
       page.getByRole("button", { name: "Xem toàn bộ mô tả" }),
     ).toBeVisible();
-    const more = page.getByRole("button", {
-      name: "Hiện 40 việc con còn lại",
-    });
-    await more.click();
-    await expect(page.getByRole("checkbox")).toHaveCount(48);
-    await page.getByRole("button", { name: "Thu gọn việc con" }).click();
-    await expect(page.getByRole("checkbox")).toHaveCount(8);
+    await expect(
+      page.getByRole("button", { name: "Hiện 40 việc con còn lại" }),
+    ).toHaveCount(0);
+    await expect(page.getByRole("checkbox")).toHaveCount(0);
   });
 
   test("Status: type to filter, Enter chooses, and the notice undoes it", async ({
@@ -168,7 +159,7 @@ test.describe("Item page states (owner)", () => {
     ).toContainText("Hoàn thành");
   });
 
-  test("Assignee: people of the board first, the rest are invited in", async ({
+  test("Assignee: people of the board first, the others say they cannot see the board", async ({
     page,
   }) => {
     await open(page, "mock-erp-item-142");
@@ -176,15 +167,14 @@ test.describe("Item page states (owner)", () => {
       .getByRole("complementary")
       .getByRole("button", { name: "Người phụ trách" })
       .click();
-    const search = page.getByRole("combobox", { name: "Giao việc cho" });
-    await search.fill("ph");
-    await expect(page.getByText("Thành viên board")).toBeVisible();
-    await expect(page.getByText("Chưa vào board")).toBeVisible();
-    const invite = page.getByRole("button", { name: "Mời vào" }).first();
-    await expect(invite).toBeVisible();
-    await invite.click();
-    // Invited: the person now sees the board and moves to the first group.
-    await expect(page.getByRole("button", { name: "Mời vào" })).toHaveCount(3);
+    const dialog = page.getByRole("dialog");
+    await expect(dialog.getByText("Thành viên board")).toBeVisible();
+    await expect(dialog.getByText("Nguyễn Thu Hà")).toBeVisible();
+    await expect(dialog.getByText("Chưa vào board")).toBeVisible();
+    await expect(dialog.getByText("Alex Rivera (Admin)")).toBeVisible();
+    // Adding a person to the board is the board's share dialog, not this list.
+    await expect(dialog.getByText("Nhờ quản lý board mời")).toHaveCount(3);
+    await expect(page.getByRole("button", { name: "Mời vào" })).toHaveCount(0);
   });
 
   test("Due: quick chips and the month with the span from the start date", async ({
@@ -203,22 +193,21 @@ test.describe("Item page states (owner)", () => {
     await expect(due).toContainText("13/10");
   });
 
-  test("@ lists people and teams and warns about who cannot see the item", async ({
+  test("@ lists the workspace's people and warns about who cannot see the item", async ({
     page,
   }) => {
     await open(page, "mock-erp-item-142");
     const field = page.getByRole("textbox", { name: "Viết bình luận" });
     await field.scrollIntoViewIfNeeded();
     await field.click();
-    await field.pressSequentially("Chị @Kh");
+    await field.pressSequentially("Chị @Jo");
     const list = page.getByRole("listbox", {
       name: "Người và nhóm để nhắc tên",
     });
-    await expect(list).toContainText("Đỗ Khánh Linh");
-    await expect(list).toContainText("quyền bình luận");
+    await expect(list).toContainText("Jordan Lee (Member)");
     await expect(list).toContainText("sẽ không báo cho");
     await field.press("Enter");
-    await expect(field).toHaveValue("Chị @Đỗ Khánh Linh ");
+    await expect(field).toHaveValue("Chị @Jordan Lee (Member) ");
   });
 
   test("offline: the notice counts what waits, and goes when the network is back", async ({

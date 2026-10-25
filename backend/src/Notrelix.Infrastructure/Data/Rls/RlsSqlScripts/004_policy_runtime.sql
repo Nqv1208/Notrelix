@@ -131,9 +131,11 @@ BEGIN
 
     v_scope := ops.scope_expression_for_table(p_schema, p_table);
 
+    -- A table without its own account_id/workspace_id must declare how its scope is derived (a parent row,
+    -- an owner column, a catalog policy) in 016_policies_derived_scope.sql. Skipping it silently would leave
+    -- it open to the application login, so this fails the apply instead.
     IF v_scope IS NULL THEN
-        RAISE NOTICE 'RLS skipped %.% because no account_id/workspace_id column exists', p_schema, p_table;
-        RETURN;
+        RAISE EXCEPTION 'RLS table %.% has no account_id/workspace_id column; declare a derived-scope policy for it', p_schema, p_table;
     END IF;
 
     PERFORM ops.apply_scope_expression_policies(p_schema, p_table, v_scope, p_allow_app_write);
@@ -223,14 +225,17 @@ BEGIN
         RETURN;
     END IF;
 
-    v_scope := COALESCE(ops.scope_expression_for_table(p_schema, p_table), 'true');
+    -- No tenant column means no scope to bind an application INSERT to. Such a table (a tenantless internal log)
+    -- is written by the background principal only; a fallback of 'true' here used to admit any application
+    -- insert without a check.
+    v_scope := ops.scope_expression_for_table(p_schema, p_table);
 
     PERFORM ops.drop_all_policies_for_table(p_schema, p_table);
     PERFORM ops.enable_rls_for_table(p_schema, p_table);
     PERFORM ops.create_policy(p_schema, p_table, 'p_worker_all', 'ALL', 'notrelix_worker', 'true', 'true');
     PERFORM ops.create_policy(p_schema, p_table, 'p_support_select', 'SELECT', 'notrelix_support_readonly', 'true', NULL);
 
-    IF p_allow_app_insert THEN
+    IF p_allow_app_insert AND v_scope IS NOT NULL THEN
         PERFORM ops.create_policy(p_schema, p_table, 'p_app_insert', 'INSERT', 'notrelix_app', NULL, v_scope);
     END IF;
 END;
@@ -276,9 +281,10 @@ BEGIN
         RETURN;
     END IF;
 
+    -- An owner column that does not exist would leave the table open to the application login if the
+    -- apply skipped it, so a wrong column name fails the apply.
     IF NOT ops.column_exists(p_schema, p_table, p_user_column) THEN
-        RAISE NOTICE 'RLS skipped %.% because user column % does not exist', p_schema, p_table, p_user_column;
-        RETURN;
+        RAISE EXCEPTION 'RLS table %.% has no owner column %', p_schema, p_table, p_user_column;
     END IF;
 
     v_own := format('%I = ops.current_user_id()', p_user_column);

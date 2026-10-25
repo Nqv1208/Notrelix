@@ -53,6 +53,10 @@ public static class ProblemDetailsWriter
         context.Response.Headers["X-RateLimit-Remaining"] = remaining.ToString();
         context.Response.Headers["X-RateLimit-Reset"] = resetAt.ToUnixTimeSeconds().ToString();
 
-        return context.Response.WriteAsJsonAsync(problemDetails, ct);
+        return context.Response.WriteAsJsonAsync(
+            problemDetails,
+            options: null,
+            contentType: "application/problem+json",
+            cancellationToken: ct);
     }
 }

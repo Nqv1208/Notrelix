@@ -17,7 +17,7 @@ public static class CreateBlockEndpoint
 
     private static async Task<IResult> HandleAsync(Guid pageId, CreateBlockRequest body, ISender sender)
     {
-        var result = await sender.Send(new CreateBlockCommand(pageId, Enum.Parse<BlockType>(body.Type, ignoreCase: true), body.Properties ?? "{}", body.Position?.ToString() ?? "a0", body.ParentId));
+        var result = await sender.Send(new CreateBlockCommand(pageId, Enum.Parse<BlockType>(body.Type, ignoreCase: true), body.Properties ?? "{}", body.AfterBlockId, body.ParentId));
         return result.ToCreatedResult();
     }
 }

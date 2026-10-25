@@ -80,9 +80,20 @@ export function createCardApi(client: NotrelixClient) {
       return created?.id ?? undefined;
     },
 
-    async updateCard(cardId: string, patch: UpdateCardInput): Promise<void> {
-      const body: UpdateItemBody = patch; // mapping fields
-      await api.patch<void>(endpoints.boardItems.detail(cardId), body);
+    async updateCard(
+      cardId: string,
+      patch: UpdateCardInput,
+      options?: ApiRequestOptions & { readonly expectedVersion?: number },
+    ): Promise<void> {
+      const { expectedVersion: known, ...request } = options ?? {};
+      const expectedVersion =
+        known ?? (await this.getCard(cardId)).version ?? undefined;
+      const body: UpdateItemBody = { ...patch, expectedVersion }; // mapping fields
+      await api.patch<void>(
+        endpoints.boardItems.detail(cardId),
+        body,
+        request.idempotencyKey ? request : undefined,
+      );
     },
 
     async deleteCard(cardId: string): Promise<void> {
@@ -133,14 +144,29 @@ export function createCardApi(client: NotrelixClient) {
       return { version: moved?.version ?? undefined };
     },
 
-    async updateFieldValue(payload: UpdateFieldValueInput): Promise<void> {
-      const body: UpdateFieldValueBody = { value: payload.value };
+    /**
+     * `PATCH /board-items/{id}/values/{fieldId}`, based on the item version the
+     * caller last read; without one the item is read first so the write never
+     * runs on a guessed version.
+     */
+    async updateFieldValue(
+      payload: UpdateFieldValueInput,
+      options?: ApiRequestOptions & { readonly expectedVersion?: number },
+    ): Promise<void> {
+      const { expectedVersion: known, ...request } = options ?? {};
+      const expectedVersion =
+        known ?? (await this.getCard(payload.cardId)).version ?? undefined;
+      const body: UpdateFieldValueBody = {
+        value: payload.value,
+        expectedVersion,
+      };
       await api.patch<void>(
         endpoints.boardItems.fieldValue(
           payload.cardId,
           payload.fieldDefinitionId,
         ),
         body,
+        request.idempotencyKey ? request : undefined,
       );
     },
 

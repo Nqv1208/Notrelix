@@ -100,6 +100,15 @@ export function createRouteMatcher(routes: RouteDefinition[]): RouteMatcher {
       throw new MockUnhandledOperationError(method, normalizedPathname);
     }
     if (matches.length > 1) {
+      // A literal segment beats a parameter: `/workspaces/onboarding-draft`
+      // is not the workspace whose id is "onboarding-draft".
+      const fewest = Math.min(
+        ...matches.map((match) => Object.keys(match.params).length),
+      );
+      const specific = matches.filter(
+        (match) => Object.keys(match.params).length === fewest,
+      );
+      if (specific.length === 1) return specific[0]!;
       throw new MockAmbiguousOperationError(
         method,
         normalizedPathname,

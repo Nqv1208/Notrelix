@@ -23,7 +23,7 @@ public class RegisterCommandHandlerTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -32,7 +32,7 @@ public class RegisterCommandHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_WhenEmailExists_ShouldReturnFailure()
     {
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateOwnerContext();
 
         var existing = User.Create("test@example.com", "Old", "hash", DateTimeOffset.UtcNow, hasPasswordCredential: true);
         context.Users.Add(existing);
@@ -64,7 +64,7 @@ public class RegisterCommandHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_WhenValid_ShouldCreateUserAndSession()
     {
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateOwnerContext();
 
         var passwordHasher = new Mock<IPasswordHasher>();
         passwordHasher.Setup(x => x.HashPassword(It.IsAny<string>())).Returns("hashed-password");
@@ -123,7 +123,7 @@ public class RegisterCommandHandlerTests : IAsyncLifetime
         integrationEventCollector.Setup(x => x.CapturePending())
             .Returns(new IntegrationEventBatch(Guid.NewGuid(), []));
         var interceptor = new DomainEventInterceptor(dateTimeProvider.Object, eventTypeRegistry.Object, classificationPolicy.Object, deliveryPolicy.Object, integrationEventMapper.Object, integrationEventCollector.Object);
-        await using var context = _db.CreateContext(tenant, interceptor);
+        await using var context = _db.CreateOwnerContext(tenant, interceptor);
 
         var passwordHasher = new Mock<IPasswordHasher>();
         passwordHasher.Setup(x => x.HashPassword(It.IsAny<string>())).Returns("hashed-password");
@@ -157,7 +157,7 @@ public class RegisterCommandHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_WhenValid_ShouldNotCreateWorkspaceSynchronously()
     {
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateOwnerContext();
 
         var passwordHasher = new Mock<IPasswordHasher>();
         passwordHasher.Setup(x => x.HashPassword(It.IsAny<string>())).Returns("hashed-password");

@@ -203,8 +203,10 @@ function GroupRow({
   onDelete: () => void;
   onDeleteDone: () => void;
 }) {
-  const { copy, actions, run } = useSettings();
+  const { copy, settings, actions, run } = useSettings();
   const t = copy.groups;
+  const keepsItems =
+    settings.unavailable?.nonEmptyGroupDelete === true && group.itemCount > 0;
   const [name, setName] = useState(group.name);
   const [moveTo, setMoveTo] = useState(defaultTargetId);
   const confirmId = useId();
@@ -290,8 +292,8 @@ function GroupRow({
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  {last ? (
-                    <DisabledControl reason={t.lastGroup}>
+                  {last || keepsItems ? (
+                    <DisabledControl reason={last ? t.lastGroup : t.notEmpty}>
                       <DropdownMenuItem
                         aria-disabled="true"
                         onSelect={(event) => event.preventDefault()}

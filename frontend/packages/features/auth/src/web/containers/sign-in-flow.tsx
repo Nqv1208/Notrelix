@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
+  IDENTITY_ERROR,
+  isThrottled,
   readFlowError,
+  safeReturnPath,
   type AuthFlowService,
   type SessionResult,
 } from "../../core";
@@ -34,13 +37,15 @@ function useCountdown(seconds: number | null): number {
   return left;
 }
 
+type EmailError =
+  "invalid" | "unreachable" | "mfa-required" | "provider-failed";
+
 type Phase =
-  | { kind: "email"; error: "invalid" | "unreachable" | null }
+  | { kind: "email"; error: EmailError | null }
   | {
       kind: "password";
       email: string;
       error: "wrong" | "unreachable" | null;
-      attemptsLeft: number | null;
     }
   | {
       kind: "sso";
@@ -48,6 +53,7 @@ type Phase =
       org: {
         name: string;
         initials: string;
+        provider: string;
         providerLabel: string;
         domain: string;
       };
@@ -55,9 +61,9 @@ type Phase =
   | {
       kind: "otp";
       email: string;
-      challengeId: string;
-      error: "wrong" | "expired" | "unreachable" | null;
-      attemptsLeft: number | null;
+      /** Null after a provider sign-in: the challenge is the backend's cookie and the page never holds it. */
+      challengeToken: string | null;
+      error: "wrong" | "expired" | "inactive" | "locked" | "unreachable" | null;
       backup: boolean;
     };
 
@@ -71,16 +77,44 @@ export function SignInFlow({
   navigation,
   redirect,
   initialEmail = "",
+  providerError = null,
+  initialStep = null,
 }: {
   service: AuthFlowService;
   navigation: AuthFlowNavigation;
   /** Where to go after signing in; the home page without it. */
   redirect?: string | null;
   initialEmail?: string;
+  /** The `error` code the backend put on `/sign-in` after a provider sign-in that did not open a session. */
+  providerError?: string | null;
+  /**
+   * `"mfa"` when the backend sent the browser here after a provider sign-in that needs a second
+   * step: the challenge is in its httpOnly cookie, so the page asks for the code alone.
+   */
+  initialStep?: "mfa" | null;
 }) {
   const copy = useAuthCopy();
   const queryClient = useQueryClient();
-  const [phase, setPhase] = useState<Phase>({ kind: "email", error: null });
+  // Only an internal path is ever navigated to or handed to the provider round trip.
+  const returnTo = safeReturnPath(redirect);
+  const [phase, setPhase] = useState<Phase>(() =>
+    !providerError && initialStep === "mfa"
+      ? {
+          kind: "otp",
+          email: "",
+          challengeToken: null,
+          error: null,
+          backup: false,
+        }
+      : {
+          kind: "email",
+          error: providerError
+            ? providerError === IDENTITY_ERROR.oauthMfaRequired
+              ? "mfa-required"
+              : "provider-failed"
+            : null,
+        },
+  );
   const [typedEmail, setTypedEmail] = useState(initialEmail);
   const [lockSeconds, setLockSeconds] = useState<number | null>(null);
   const lockedSeconds = useCountdown(lockSeconds);
@@ -88,9 +122,9 @@ export function SignInFlow({
   const signedIn = useMemo(
     () => (session: SessionResult) => {
       queryClient.setQueryData(authQueryKeys.profile, session.user);
-      navigation.navigate({ to: redirect || "/home", replace: true });
+      navigation.navigate({ to: returnTo ?? "/home", replace: true });
     },
-    [navigation, queryClient, redirect],
+    [navigation, queryClient, returnTo],
   );
 
   const identify = useMutation({
@@ -105,11 +139,12 @@ export function SignInFlow({
               org: {
                 name: result.sso.orgName,
                 initials: result.sso.orgInitials,
+                provider: result.sso.provider,
                 providerLabel: result.sso.providerLabel,
                 domain: email.split("@")[1] ?? "",
               },
             }
-          : { kind: "password", email, error: null, attemptsLeft: null },
+          : { kind: "password", email, error: null },
       );
     },
     onError: (error) =>
@@ -126,13 +161,12 @@ export function SignInFlow({
       service.login(input),
     onSuccess: (result, input) => {
       setLockSeconds(null);
-      if ("requiresOtp" in result)
+      if (result.kind === "mfa")
         setPhase({
           kind: "otp",
           email: input.email,
-          challengeId: result.challengeId,
+          challengeToken: result.challengeToken,
           error: null,
-          attemptsLeft: null,
           backup: false,
         });
       else signedIn(result);
@@ -148,66 +182,53 @@ export function SignInFlow({
           kind: "password",
           email: input.email,
           error: "unreachable",
-          attemptsLeft: null,
         });
         return;
       }
-      setLockSeconds(failure.retryAfterSeconds);
+      const throttled = isThrottled(failure);
+      setLockSeconds(throttled ? failure.retryAfterSeconds : null);
       setPhase({
         kind: "password",
         email: input.email,
-        // A refusal for a locked account says it is locked, not that the password was wrong.
-        error: failure.code === "ACCOUNT_LOCKED" ? null : "wrong",
-        attemptsLeft: failure.attemptsLeft,
+        // A throttled attempt says how long to wait, not that the password was wrong.
+        error: throttled ? null : "wrong",
       });
     },
   });
 
   const verify = useMutation({
-    mutationFn: (input: {
-      challengeId: string;
-      code: string;
-      rememberDevice: boolean;
-    }) => service.verifyOtp(input),
-    onSuccess: signedIn,
+    mutationFn: (input: { challengeToken: string | null; code: string }) =>
+      service.verifyMfa(input),
+    onSuccess: (result) => {
+      if (result.kind === "session") signedIn(result);
+    },
     onError: (error) => {
       const failure = readFlowError(error);
+      setLockSeconds(isThrottled(failure) ? failure.retryAfterSeconds : null);
       setPhase((current) =>
         current.kind === "otp"
           ? {
               ...current,
               error: failure.network
                 ? "unreachable"
-                : failure.code === "OTP_EXPIRED"
-                  ? "expired"
-                  : "wrong",
-              attemptsLeft: failure.attemptsLeft,
+                : isThrottled(failure)
+                  ? "locked"
+                  : failure.code === IDENTITY_ERROR.accountInactive
+                    ? "inactive"
+                    : failure.code === IDENTITY_ERROR.challengeInvalid
+                      ? "expired"
+                      : "wrong",
             }
           : current,
       );
     },
   });
 
-  const provider = useMutation({
-    mutationFn: (input: { email?: string; provider: string }) =>
-      service.ssoStart(input),
-    onSuccess: (result) => {
-      if (result.redirectUrl) window.location.assign(result.redirectUrl);
-      else signedIn(result);
-    },
-    onError: () =>
-      setPhase((current) =>
-        current.kind === "email"
-          ? { kind: "email", error: "unreachable" }
-          : current,
-      ),
-  });
+  /** The provider's page and the way back are the backend's: the browser leaves. */
+  const startProvider = (name: string) =>
+    navigation.startProviderSignIn(service.oauthStartPath(name, returnTo));
 
-  const pending =
-    identify.isPending ||
-    login.isPending ||
-    verify.isPending ||
-    provider.isPending;
+  const pending = identify.isPending || login.isPending || verify.isPending;
 
   const step: AuthSignInStep =
     phase.kind === "password"
@@ -215,7 +236,6 @@ export function SignInFlow({
           kind: "password",
           email: phase.email,
           error: phase.error,
-          attemptsLeft: phase.attemptsLeft,
           lockedSeconds,
         }
       : phase.kind === "otp"
@@ -223,7 +243,7 @@ export function SignInFlow({
             kind: "otp",
             email: phase.email,
             error: phase.error,
-            attemptsLeft: phase.attemptsLeft,
+            lockedSeconds,
             backup: phase.backup,
           }
         : phase;
@@ -240,7 +260,7 @@ export function SignInFlow({
       pending={pending}
       initialEmail={typedEmail}
       onContinue={(email) => identify.mutate(email)}
-      onProvider={(name) => provider.mutate({ provider: name })}
+      onProvider={startProvider}
       onCreateWorkspace={() => navigation.navigate({ to: "/sign-up" })}
       onChangeEmail={backToEmail}
       onSubmitPassword={(password) =>
@@ -253,13 +273,10 @@ export function SignInFlow({
           search: typedEmail ? { email: typedEmail } : undefined,
         })
       }
-      onSso={() =>
-        phase.kind === "sso" &&
-        provider.mutate({ email: phase.email, provider: "microsoft-entra" })
-      }
-      onVerify={({ code, rememberDevice }) =>
+      onSso={() => phase.kind === "sso" && startProvider(phase.org.provider)}
+      onVerify={({ code }) =>
         phase.kind === "otp" &&
-        verify.mutate({ challengeId: phase.challengeId, code, rememberDevice })
+        verify.mutate({ challengeToken: phase.challengeToken, code })
       }
       onToggleBackup={() =>
         setPhase((current) =>

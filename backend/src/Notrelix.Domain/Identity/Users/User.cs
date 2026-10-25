@@ -13,6 +13,13 @@ public sealed class User : SoftDeletableAggregateRoot
     public string? Avatar { get; private set; }
 
     public string? AvatarUrl => Avatar;
+
+    /// <summary>
+    /// Object-store key of the uploaded profile photo, or null when the avatar is absent or is an
+    /// external address (for example one a sign-in provider supplied). When set, <see cref="Avatar"/>
+    /// is the Identity-served address of exactly this object.
+    /// </summary>
+    public string? AvatarStorageKey { get; private set; }
     public string PasswordHash { get; private set; } = null!;
     public bool HasPasswordCredential { get; private set; }
     public UserStatus Status { get; private set; }
@@ -58,6 +65,12 @@ public sealed class User : SoftDeletableAggregateRoot
         return user;
     }
 
+    /// <summary>
+    /// Changes the display name and, only when <paramref name="avatar"/> is supplied, replaces the
+    /// avatar with that external address. A null <paramref name="avatar"/> leaves the avatar alone
+    /// (use <see cref="ChangeUploadedAvatar"/> and <see cref="RemoveAvatar"/> for the photo), so a
+    /// name-only edit can never erase an uploaded photo.
+    /// </summary>
     public void UpdateProfile(
         string name,
         string? avatar,
@@ -70,17 +83,70 @@ public sealed class User : SoftDeletableAggregateRoot
         Guard.MaxLength(name, 100);
 
         var trimmedName = name.Trim();
-        var normalizedAvatar = avatar?.Trim();
+        var normalizedAvatar = avatar is null ? Avatar : avatar.Trim();
 
         if (trimmedName == Name && normalizedAvatar == Avatar)
             return;
 
         var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Name = trimmedName;
-        Avatar = normalizedAvatar;
+        if (normalizedAvatar != Avatar)
+        {
+            Avatar = normalizedAvatar;
+            AvatarStorageKey = null;
+        }
         ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new UserProfileUpdatedDomainEvent(Id, updatedBy, updatedAt));
+    }
+
+    /// <summary>
+    /// Replaces the avatar with an uploaded photo. <paramref name="storageKey"/> identifies the stored
+    /// object and <paramref name="avatarUrl"/> is the address the product serves it from; both are
+    /// server-generated facts supplied by Application. Returns the storage key that was replaced (the
+    /// caller or a sweep removes that object), or null when there was none.
+    /// </summary>
+    public string? ChangeUploadedAvatar(
+        string storageKey,
+        string avatarUrl,
+        Guid updatedBy,
+        DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
+        Guard.NotNullOrWhiteSpace(storageKey);
+        Guard.NotNullOrWhiteSpace(avatarUrl);
+
+        var replaced = AvatarStorageKey;
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        Avatar = avatarUrl.Trim();
+        AvatarStorageKey = storageKey.Trim();
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+        RaiseDomainEvent(new UserProfileUpdatedDomainEvent(Id, updatedBy, updatedAt));
+        return replaced;
+    }
+
+    /// <summary>
+    /// Removes the avatar, uploaded or external. Removing an absent avatar is a semantic no-op (no
+    /// version bump, no event). Returns the storage key of the removed photo, or null when there was none.
+    /// </summary>
+    public string? RemoveAvatar(Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
+
+        if (Avatar is null && AvatarStorageKey is null)
+            return null;
+
+        var removed = AvatarStorageKey;
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        Avatar = null;
+        AvatarStorageKey = null;
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+        RaiseDomainEvent(new UserProfileUpdatedDomainEvent(Id, updatedBy, updatedAt));
+        return removed;
     }
 
     public void UpdateEmail(

@@ -7,6 +7,7 @@ import {
   markToneFor,
 } from "@notrelix/features-workspace/core";
 import {
+  createUseWorkspaceMembers,
   createUseWorkspaceSettings,
   formatCopy,
   useWorkspaceSpacesCopy,
@@ -22,6 +23,8 @@ import {
   buildSharingRows,
   fillBoardShareCopy,
   SHARING_LEVEL_OF,
+  shareToneFor,
+  type ShareCandidate,
   type ShareLevel,
   useBoardShareCopy,
   type BoardShareView,
@@ -35,9 +38,11 @@ import { useSpaceHooks } from "./use-workspace-spaces";
 /**
  * The Board share dialog of the board header's Share button: the Board access
  * read (who opens it and through what), the Board's members, and the workspace
- * sharing policy. Inviting, changing a permission or who can open the Board,
- * and the history have no write or read behind them, so the dialog draws them
- * inert; "Copy link" copies the address of the Board, which opens only for
+ * sharing policy, and the Board's sharing read (permissions given on the Board,
+ * the history and who loses the Board on Private). A reader the producer
+ * discloses no entries to sees how many people and guests can open the Board.
+ * Changing who can open the Board has no write behind it, so the dialog draws
+ * it inert; inviting gives a workspace member a permission on the Board; "Copy link" copies the address of the Board, which opens only for
  * people who already have access (GOV-032).
  */
 export function BoardShareDialog({
@@ -70,8 +75,15 @@ export function BoardShareDialog({
     [runtimeClient],
   );
   const settings = useSettings(workspaceId);
+  const useMembers = useMemo(
+    () => createUseWorkspaceMembers({ api: runtimeClient.api }),
+    [runtimeClient],
+  );
   const spacesCopy = useWorkspaceSpacesCopy();
   const sharing = useBoardSharing(workspaceId, boardId, open);
+  const members = useMembers(workspaceId, {
+    enabled: open && (sharing.data?.canManage ?? false),
+  });
 
   const spaceId =
     placements.data?.find((placement) => placement.id === boardId)?.spaceId ??
@@ -129,14 +141,12 @@ export function BoardShareDialog({
                   role: copy.people.roles[role],
                   space: spaceName,
                 }),
-              department: (name) =>
-                formatCopy(spacesCopy.page.departmentName, { name }),
+              levelCapped: copy.people.levelCapped,
               outsideSpace: space
                 ? fillBoardShareCopy(copy.people.outsideDepartment, {
                     space: lowerFirst(spaceName),
                   })
                 : null,
-              formatDay: shareDay,
             },
             initialsFor,
           )
@@ -160,6 +170,13 @@ export function BoardShareDialog({
           : "off"
         : "unknown",
       canManage: sharing.data?.canManage ?? access.myLevel === "manager",
+      hiddenCounts:
+        sharing.data && !sharing.data.entriesDisclosed
+          ? {
+              people: sharing.data.peopleCount,
+              guests: sharing.data.guestCount,
+            }
+          : null,
     };
   }, [
     access,
@@ -182,7 +199,6 @@ export function BoardShareDialog({
         view: copy.levels.view,
       },
       text: copy.log,
-      expiredNote: copy.log.expiredNote,
       fill: fillBoardShareCopy,
       when: (iso: string) => {
         const date = new Date(iso);
@@ -198,7 +214,7 @@ export function BoardShareDialog({
   );
   const log = useMemo(
     () =>
-      sharing.data
+      sharing.data?.canManage
         ? buildSharingLog(sharing.data, logWords, initialsFor)
         : null,
     [logWords, sharing.data],
@@ -220,6 +236,26 @@ export function BoardShareDialog({
         : null,
     [copy, sharing.data],
   );
+  // The workspace's members the Board is not shared with yet.
+  const candidates = useMemo<readonly ShareCandidate[]>(() => {
+    const listed = new Set(sharing.data?.entries.map((entry) => entry.id));
+    if (user?.id) listed.add(user.id);
+    return (members.data ?? [])
+      .filter(
+        (member) => member.membership !== "suspended" && !listed.has(member.id),
+      )
+      .map((member) => ({
+        id: member.id,
+        name: member.name,
+        person: {
+          id: member.id,
+          name: member.name,
+          initials: initialsFor(member.name),
+          tone: shareToneFor(member.id),
+        },
+      }));
+  }, [members.data, sharing.data, user?.id]);
+
   const write = useCallback(
     (run: () => Promise<void>) => {
       run().catch((error: unknown) =>
@@ -249,6 +285,18 @@ export function BoardShareDialog({
       onCopyLink={copyLink}
       log={log}
       impact={impact}
+      candidates={view.canManage && sharing.data ? candidates : undefined}
+      onInvite={
+        view.canManage && sharing.data
+          ? async (userId: string, level: ShareLevel) => {
+              try {
+                await sharing.invite(userId, SHARING_LEVEL_OF[level]);
+              } catch (error: unknown) {
+                toastFailure(copy.footer.writeFailed, error, "");
+              }
+            }
+          : undefined
+      }
       onChangeLevel={
         view.canManage && sharing.data
           ? (rowId: string, level: ShareLevel) =>
@@ -274,10 +322,4 @@ export function BoardShareDialog({
 
 function lowerFirst(value: string): string {
   return value.charAt(0).toLowerCase() + value.slice(1);
-}
-
-function shareDay(iso: string): string {
-  const date = new Date(iso);
-  const pad = (value: number) => String(value).padStart(2, "0");
-  return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}`;
 }

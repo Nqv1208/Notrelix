@@ -54,7 +54,7 @@ public sealed class WorkExpectedVersionIntegrationTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        await new DatabaseReset(_db.ConnectionString).ResetAsync();
+        await new DatabaseReset(_db.OwnerConnectionString).ResetAsync();
         _accountId = Guid.NewGuid();
         _userId = Guid.NewGuid();
         var workspace = Workspace.Create(_accountId, _userId, "Version WS", $"ver-{Guid.NewGuid():N}", Now);
@@ -67,7 +67,7 @@ public sealed class WorkExpectedVersionIntegrationTests : IAsyncLifetime
         (_workspaceId, _todoId, _doneId, _itemId, _checklistId, _checklistItemId) = (workspace.Id, todo.Id, done.Id, item.Id, checklist.Id, checklistItem.Id);
         _boardId = board.Id;
 
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Workspaces.Add(workspace);
         seed.Boards.Add(board);
         seed.BoardGroups.AddRange(todo, done);
@@ -90,7 +90,7 @@ public sealed class WorkExpectedVersionIntegrationTests : IAsyncLifetime
         var stale = () => MoveAsync(_todoId, readVersion);
 
         (await stale.Should().ThrowAsync<PreconditionFailedException>()).Which.ErrorCode.Should().Be("common.precondition-failed");
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         var item = await verify.BoardItems.SingleAsync(i => i.Id == _itemId);
         item.GroupId.Should().Be(_doneId, "the stale move rolls back entirely");
         item.Version.Should().Be(afterMove);
@@ -119,7 +119,7 @@ public sealed class WorkExpectedVersionIntegrationTests : IAsyncLifetime
         var stale = () => PatchChecklistItemAsync(checklistVersion, isChecked: false);
 
         await stale.Should().ThrowAsync<PreconditionFailedException>();
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.ChecklistItems.SingleAsync(i => i.Id == _checklistItemId)).IsDone.Should().BeTrue();
     }
 
@@ -134,7 +134,7 @@ public sealed class WorkExpectedVersionIntegrationTests : IAsyncLifetime
             new UpdateBoardCommandHandler(context, CurrentUser(), Clock()).Handle(command, CancellationToken.None));
 
         await stale.Should().ThrowAsync<PreconditionFailedException>();
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         var board = await verify.Boards.SingleAsync(b => b.Id == _boardId);
         board.Title.Should().Be("Renamed");
         board.Description.Should().Be("Described");
@@ -153,7 +153,7 @@ public sealed class WorkExpectedVersionIntegrationTests : IAsyncLifetime
     private async Task RunAsync<TCommand, TResponse>(TCommand command, Func<ApplicationDbContext, TCommand, Task<TResponse>> handle)
         where TCommand : IExpectedVersionRequest
     {
-        await using var context = _db.CreateContext(Tenant());
+        await using var context = _db.CreateOwnerContext(Tenant());
         var session = new EfRequestDataSession(context, Mock.Of<IRlsSessionContext>(), Mock.Of<ILogger<EfRequestDataSession>>());
         var constraint = new ExpectedVersionConstraint(typeof(TCommand), command.Resource, command.ExpectedVersion);
         await session.ExecuteAsync(
@@ -164,7 +164,7 @@ public sealed class WorkExpectedVersionIntegrationTests : IAsyncLifetime
 
     private async Task<long> VersionAsync<TAggregate>(Guid id) where TAggregate : AggregateRoot
     {
-        await using var context = _db.CreateContext(SystemTenant());
+        await using var context = _db.CreateOwnerContext(SystemTenant());
         return await context.Set<TAggregate>().Where(a => a.Id == id).Select(a => a.Version).SingleAsync();
     }
 

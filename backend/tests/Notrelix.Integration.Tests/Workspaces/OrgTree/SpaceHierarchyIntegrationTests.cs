@@ -41,7 +41,7 @@ public sealed class SpaceHierarchyIntegrationTests : IAsyncLifetime
         _host = new OrgTreeTestHost(db);
     }
 
-    public async Task InitializeAsync() => await new DatabaseReset(_db.ConnectionString).ResetAsync();
+    public async Task InitializeAsync() => await new DatabaseReset(_db.OwnerConnectionString).ResetAsync();
 
     public Task DisposeAsync() => Task.CompletedTask;
 
@@ -259,7 +259,7 @@ public sealed class SpaceHierarchyIntegrationTests : IAsyncLifetime
         var creator = Guid.NewGuid();
         var (beta, alpha, gamma, other, noCreator) = (Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid());
 
-        await using var connection = new NpgsqlConnection(_db.ConnectionString);
+        await using var connection = new NpgsqlConnection(_db.OwnerConnectionString);
         await connection.OpenAsync();
         await using var tx = await connection.BeginTransactionAsync();
 
@@ -309,7 +309,7 @@ public sealed class SpaceHierarchyIntegrationTests : IAsyncLifetime
         await _host.WithSystemContextAsync(c => { c.Spaces.Add(foreignSpace); return Task.CompletedTask; });
         var board = await _host.SeedBoardAsync(stack, "Misplaced");
 
-        await using var connection = new NpgsqlConnection(_db.ConnectionString);
+        await using var connection = new NpgsqlConnection(_db.OwnerConnectionString);
         await connection.OpenAsync();
         await using var tx = await connection.BeginTransactionAsync();
         await ExecAsync(connection, tx, $"UPDATE work.boards SET space_id = '{foreignSpace.Id}' WHERE id = '{board}'");
@@ -325,7 +325,7 @@ public sealed class SpaceHierarchyIntegrationTests : IAsyncLifetime
     {
         // Space containment is not a cross-context object graph (docs/product/workspaces.md §79):
         // Boards and Pages reference a Space by scalar id only; existence is validated in Application.
-        await using var connection = new NpgsqlConnection(_db.ConnectionString);
+        await using var connection = new NpgsqlConnection(_db.OwnerConnectionString);
         await connection.OpenAsync();
         await using var tx = await connection.BeginTransactionAsync();
 

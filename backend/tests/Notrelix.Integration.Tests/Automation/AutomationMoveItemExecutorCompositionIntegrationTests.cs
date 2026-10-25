@@ -53,7 +53,7 @@ public sealed class AutomationMoveItemExecutorCompositionIntegrationTests : IAsy
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -110,7 +110,7 @@ public sealed class AutomationMoveItemExecutorCompositionIntegrationTests : IAsy
         var rule = AutomationRule.Create(accountId, workspace.Id, "Composition MoveItem", config, executorId, Now);
         rule.Enable(executorId, Now);
 
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Users.Add(executorUser);
         seed.Users.Add(deniedUser);
         seed.Workspaces.Add(workspace);
@@ -127,7 +127,7 @@ public sealed class AutomationMoveItemExecutorCompositionIntegrationTests : IAsy
         seed.AutomationRules.Add(rule);
         await seed.SaveChangesAsync();
 
-        await using var grant = _db.CreateContext(SystemTenant());
+        await using var grant = _db.CreateOwnerContext(SystemTenant());
         var projection = new AccessGrantProjectionService(grant);
         await projection.SyncWorkspaceMemberGrantAsync(
             accountId, workspace.Id, executorUser.Id, WorkspaceRole.Owner, Now, CancellationToken.None);
@@ -151,7 +151,7 @@ public sealed class AutomationMoveItemExecutorCompositionIntegrationTests : IAsy
         CreateComposition(CompositionGraph graph, Func<ApplicationDbContext, IWorkActionPort, IWorkActionPort>? wrapPort = null)
     {
         var tenant = WorkspaceTenant(graph.AccountId, graph.WorkspaceId, graph.OwnerUserId);
-        var context = _db.CreateContext(tenant);
+        var context = _db.CreateOwnerContext(tenant);
         var clockMock = new Moq.Mock<Notrelix.Application.Common.Time.IDateTimeProvider>();
         clockMock.Setup(c => c.UtcNow).Returns(Now);
 
@@ -166,7 +166,8 @@ public sealed class AutomationMoveItemExecutorCompositionIntegrationTests : IAsy
                 new Notrelix.Application.Common.Idempotency.IdempotencyOptions()));
         var authorizer = new Application.Features.WorkManagement.BoardItems.Services.WorkItemActionAuthorizer(
             new ResourceLocator(
-                context, context, context, context, context, context),
+                context, context, context, context, context, context,
+                new Moq.Mock<Notrelix.Application.Common.Data.Rls.IRlsSessionContext>().Object),
             Notrelix.Application.Common.Requests.Execution.RequestDescriptorRegistry
                 .Create(typeof(IWorkItemActions).Assembly),
             new PostgresAccessFactsProvider(
@@ -234,7 +235,7 @@ public sealed class AutomationMoveItemExecutorCompositionIntegrationTests : IAsy
     {
         var execution = AutomationExecution.Create(
             graph.AccountId, graph.WorkspaceId, graph.RuleId, Guid.NewGuid(), Now);
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.AutomationExecutions.Add(execution);
         await seed.SaveChangesAsync();
         ((Notrelix.Domain.Common.IHasDomainEvents)execution).ClearDomainEvents();
@@ -243,7 +244,7 @@ public sealed class AutomationMoveItemExecutorCompositionIntegrationTests : IAsy
 
     private async Task<CompositionOutcome> ReadOutcomeAsync(CompositionGraph graph, Guid executionId)
     {
-        await using var probe = _db.CreateContext(SystemTenant());
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
         var execution = await probe.AutomationExecutions
             .IgnoreQueryFilters()
             .SingleAsync(e => e.Id == executionId);
@@ -279,7 +280,7 @@ public sealed class AutomationMoveItemExecutorCompositionIntegrationTests : IAsy
         // (Viewer) on a Private Board; the protected property is unchanged —
         // the canonical decision denies and nothing else may bypass it.
 
-        await using (var restrict = _db.CreateContext(SystemTenant()))
+        await using (var restrict = _db.CreateOwnerContext(SystemTenant()))
         {
             var restricted = await restrict.Boards.SingleAsync(b => b.Id == graph.BoardId);
             restricted.ChangeVisibility(BoardVisibility.Private, restricted.CreatedBy!.Value, DateTimeOffset.UtcNow);
@@ -301,7 +302,7 @@ public sealed class AutomationMoveItemExecutorCompositionIntegrationTests : IAsy
             "AUT-020: an executor that lost the permission stops the rule");
         deniedRule.DisabledReason.Should().Contain("no longer has permission");
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.IdempotencyRecords
             .AnyAsync(r => r.KeyHash == Sha256($"move-item:{execution.Id:N}")))
             .Should().BeFalse("a deny must never begin a dedup record");
@@ -324,7 +325,7 @@ public sealed class AutomationMoveItemExecutorCompositionIntegrationTests : IAsy
         outcome.ItemGroupId.Should().Be(scopedGraph.SourceGroupId,
             "the primary item must not be touched");
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         var foreignItem = await verify.BoardItems.IgnoreQueryFilters()
             .SingleAsync(i => i.Id == scopedGraph.ForeignItemId);
         foreignItem.GroupId.Should().Be(scopedGraph.ForeignGroupId,
@@ -429,7 +430,7 @@ public sealed class AutomationMoveItemExecutorCompositionIntegrationTests : IAsy
             var result = await inner.MoveItemAsync(itemId, targetGroupId, executionId, automationPrincipal, cancellationToken);
             var resolved = context.ChangeTracker.Entries<BoardItem>().Single(e => e.Entity.Id == itemId).Entity.Position;
 
-            await using var other = db.CreateContext(SystemTenant());
+            await using var other = db.CreateOwnerContext(SystemTenant());
             other.BoardItems.Add(BoardItem.CreateRoot(
                 graph.AccountId, graph.WorkspaceId, graph.BoardId, targetGroupId, "Concurrent", resolved, graph.OwnerUserId, Now));
             await other.SaveChangesAsync(cancellationToken);
@@ -445,13 +446,13 @@ public sealed class AutomationMoveItemExecutorCompositionIntegrationTests : IAsy
 
     private async Task<AutomationRule> ReadRuleAsync(CompositionGraph graph)
     {
-        await using var probe = _db.CreateContext(SystemTenant());
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
         return await probe.AutomationRules.IgnoreQueryFilters().SingleAsync(r => r.Id == graph.RuleId);
     }
 
     private async Task MakeBoardPrivateAsync(CompositionGraph graph, params (Guid UserId, BoardRole Role)[] members)
     {
-        await using var restrict = _db.CreateContext(SystemTenant());
+        await using var restrict = _db.CreateOwnerContext(SystemTenant());
         var board = await restrict.Boards.SingleAsync(b => b.Id == graph.BoardId);
         board.ChangeVisibility(BoardVisibility.Private, board.CreatedBy!.Value, DateTimeOffset.UtcNow);
         foreach (var (userId, role) in members)
@@ -521,7 +522,7 @@ public sealed class AutomationMoveItemExecutorCompositionIntegrationTests : IAsy
     public async Task EnableHandler_ExecutorWithoutAccessToThePrivateBoard_IsRejected_AndRuleStaysDisabled()
     {
         var graph = await SeedGraphAsync(memberExecutor: true);
-        await using (var disable = _db.CreateContext(SystemTenant()))
+        await using (var disable = _db.CreateOwnerContext(SystemTenant()))
         {
             var rule = await disable.AutomationRules.SingleAsync(r => r.Id == graph.RuleId);
             rule.Disable(graph.DeniedUserId, Now);
@@ -562,7 +563,7 @@ public sealed class AutomationMoveItemExecutorCompositionIntegrationTests : IAsy
 
         outcome.Status.Should().Be(AutomationExecutionStatus.Succeeded);
         outcome.ItemGroupId.Should().Be(graph.TargetGroupId);
-        await using var probe = _db.CreateContext(SystemTenant());
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
         var item = await probe.BoardItems.IgnoreQueryFilters().SingleAsync(i => i.Id == graph.ItemId);
         item.UpdatedBy.Should().Be(graph.OwnerUserId, "the audit trail records the executor, not the trigger actor");
         (await ReadRuleAsync(graph)).Status.Should().Be(AutomationRuleStatus.Active);
@@ -589,7 +590,7 @@ public sealed class AutomationMoveItemExecutorCompositionIntegrationTests : IAsy
     public async Task MoveItemComposition_LegacyRuleWithoutExecutor_FailsClosed_AndIsDisabled()
     {
         var graph = await SeedGraphAsync();
-        await using (var legacy = _db.CreateContext(SystemTenant()))
+        await using (var legacy = _db.CreateOwnerContext(SystemTenant()))
         {
             await legacy.Database.ExecuteSqlRawAsync(
                 "UPDATE automation.automation_rules SET executor_user_id = NULL WHERE id = {0}", graph.RuleId);
@@ -611,7 +612,7 @@ public sealed class AutomationMoveItemExecutorCompositionIntegrationTests : IAsy
         CompositionGraph graph, TMessage message, Func<AutomationExecutorLifecycle, IConsumer<TMessage>> create)
         where TMessage : class
     {
-        await using var context = _db.CreateContext(WorkspaceTenant(graph.AccountId, graph.WorkspaceId, graph.OwnerUserId));
+        await using var context = _db.CreateOwnerContext(WorkspaceTenant(graph.AccountId, graph.WorkspaceId, graph.OwnerUserId));
         var clock = new Moq.Mock<Notrelix.Application.Common.Time.IDateTimeProvider>();
         clock.Setup(c => c.UtcNow).Returns(Now);
         var lifecycle = new AutomationExecutorLifecycle(context, clock.Object, NullLogger<AutomationExecutorLifecycle>.Instance);
@@ -625,7 +626,7 @@ public sealed class AutomationMoveItemExecutorCompositionIntegrationTests : IAsy
 
     private async Task AssertNoFurtherExecutionsAsync(CompositionGraph graph)
     {
-        await using var context = _db.CreateContext(WorkspaceTenant(graph.AccountId, graph.WorkspaceId, graph.OwnerUserId));
+        await using var context = _db.CreateOwnerContext(WorkspaceTenant(graph.AccountId, graph.WorkspaceId, graph.OwnerUserId));
         var clock = new Moq.Mock<Notrelix.Application.Common.Time.IDateTimeProvider>();
         clock.Setup(c => c.UtcNow).Returns(Now);
         var evaluator = new Application.Features.Automation.Events.N8nAutomationRuleEvaluator(

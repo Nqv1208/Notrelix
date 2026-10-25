@@ -15,7 +15,7 @@ public static class RegisterEndpoint
             .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status409Conflict, StatusCodes.Status429TooManyRequests)
             .WithTags("Identity.Auth")
             .WithSummary("Register a new account")
-            .WithMetadata(new RateLimitPolicyAttribute("AuthStrictByIp"));
+            .WithMetadata(new RateLimitPolicyAttribute("AuthCredentialByIp"));
         return group;
     }
 

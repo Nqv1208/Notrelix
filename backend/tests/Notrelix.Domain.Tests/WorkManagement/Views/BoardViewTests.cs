@@ -41,6 +41,59 @@ public class BoardViewTests
     }
 
     [Fact]
+    public void APrivateViewIsSeenAndEditedOnlyByItsCreator()
+    {
+        var creator = Guid.NewGuid();
+        var view = BoardView.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Mine", ViewType.Table, TableViewConfig.Create(JsonValue.EmptyObject()), creator, DateTimeOffset.UtcNow, visibility: BoardViewVisibility.Private);
+
+        view.CanBeEditedBy(creator).Should().BeTrue();
+        view.IsVisibleTo(creator).Should().BeTrue();
+        view.CanBeEditedBy(Guid.NewGuid()).Should().BeFalse();
+        view.IsVisibleTo(Guid.NewGuid()).Should().BeFalse();
+    }
+
+    [Fact]
+    public void ABoardViewIsSeenByEveryone()
+    {
+        var view = BoardView.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Shared", ViewType.Table, TableViewConfig.Create(JsonValue.EmptyObject()), Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        view.Visibility.Should().Be(BoardViewVisibility.Board);
+        view.IsVisibleTo(Guid.NewGuid()).Should().BeTrue();
+    }
+
+    [Fact]
+    public void APrivateViewCannotBeTheDefault()
+    {
+        var creator = Guid.NewGuid();
+        var view = BoardView.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Mine", ViewType.Table, TableViewConfig.Create(JsonValue.EmptyObject()), creator, DateTimeOffset.UtcNow, visibility: BoardViewVisibility.Private);
+
+        view.Invoking(v => v.SetDefault(creator, DateTimeOffset.UtcNow)).Should().Throw<BusinessRuleException>();
+    }
+
+    [Fact]
+    public void TheDefaultViewCannotBecomePrivate()
+    {
+        var creator = Guid.NewGuid();
+        var view = BoardView.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Home", ViewType.Table, TableViewConfig.Create(JsonValue.EmptyObject()), creator, DateTimeOffset.UtcNow, isDefault: true);
+
+        view.Invoking(v => v.SetVisibility(BoardViewVisibility.Private, creator, DateTimeOffset.UtcNow)).Should().Throw<BusinessRuleException>();
+    }
+
+    [Fact]
+    public void ChangingVisibilityBumpsTheVersionOnce()
+    {
+        var creator = Guid.NewGuid();
+        var view = BoardView.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Mine", ViewType.Table, TableViewConfig.Create(JsonValue.EmptyObject()), creator, DateTimeOffset.UtcNow, visibility: BoardViewVisibility.Private);
+        var before = view.Version;
+
+        view.SetVisibility(BoardViewVisibility.Board, creator, DateTimeOffset.UtcNow);
+        view.SetVisibility(BoardViewVisibility.Board, creator, DateTimeOffset.UtcNow);
+
+        view.Visibility.Should().Be(BoardViewVisibility.Board);
+        view.Version.Should().Be(before + 1);
+    }
+
+    [Fact]
     public void KanbanViewConfig_ShouldReject_EmptyVisibleFieldIds()
     {
         var field = BoardField.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Status", FieldType.Status, FieldSettings.Create(JsonValue.Create("{\"transitions\":[]}")), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);

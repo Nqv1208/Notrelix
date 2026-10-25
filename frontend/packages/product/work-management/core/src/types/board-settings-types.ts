@@ -1,9 +1,9 @@
 /**
- * "Thiết lập board" reads and writes beyond the generated contract (gap
- * `CTR-GAP-WM-BOARD-SETTINGS`, see docs/superpowers/be-blockers-2026-10.md,
- * "BE requirement from FE: Settings"). Only a manager of the board reads or
- * writes them (403 otherwise). A write may carry the `version` of the read
- * it was made from; a stale one answers 409.
+ * The board settings page model, assembled from the board read
+ * (`GET /boards/{id}/full`): the board, its fields with options and its
+ * groups. Writes go to the board, field, option and group routes, each with
+ * the version of the thing it changes; a stale one answers 409. Parts the
+ * product has no contract for are named in `unavailable`.
  */
 export type BoardSettingsFieldType =
   | "text"
@@ -20,8 +20,37 @@ export type BoardSettingsFieldType =
   | "formula"
   | "rollup"
   | "progress"
+  | "link"
   | "autonumber"
   | "datetime-system";
+
+/**
+ * What the page cannot do yet because the product has no defined contract
+ * for it. Absent or false = available; a true flag hides or locks the part.
+ */
+export interface BoardSettingsUnavailable {
+  /** Changing the item key prefix. */
+  readonly itemKeyPrefix?: boolean;
+  /** Time zone and the first day of the week of the board. */
+  readonly locale?: boolean;
+  /** Archiving and restoring a field (and the "archived" list). */
+  readonly fieldArchive?: boolean;
+  /**
+   * Deleting a field. Unlike the other flags it is offered only when explicitly
+   * `false` (a board Manager confirms first); absent keeps the part hidden.
+   */
+  readonly fieldDelete?: boolean;
+  /** Required, guidance, default option and "used in" of a field. */
+  readonly fieldRules?: boolean;
+  /** Saved and private views of the board. */
+  readonly views?: boolean;
+  /** Board automations. */
+  readonly automations?: boolean;
+  /** Deleting a group that still holds items. */
+  readonly nonEmptyGroupDelete?: boolean;
+  /** The field types a new field can take; absent = every type. */
+  readonly creatableFieldTypes?: readonly BoardSettingsFieldType[];
+}
 
 export interface BoardSettingsOptionDto {
   readonly id: string;
@@ -39,6 +68,8 @@ export interface BoardSettingsUsageDto {
 
 export interface BoardSettingsFieldDto {
   readonly id: string;
+  /** Version of the field, sent back by a write on it. */
+  readonly version?: number;
   readonly key: string;
   readonly type: BoardSettingsFieldType;
   readonly name: string;
@@ -104,6 +135,8 @@ export interface BoardSettingsViewDto {
 
 export interface BoardSettingsGroupDto {
   readonly id: string;
+  /** Version of the group, sent back by a write on it. */
+  readonly version?: number;
   readonly name: string;
   readonly color: string;
   readonly itemCount: number;
@@ -156,6 +189,7 @@ export interface BoardSettingsDto {
   readonly views: readonly BoardSettingsViewDto[];
   readonly groups: readonly BoardSettingsGroupDto[];
   readonly automations: readonly BoardSettingsAutomationDto[];
+  readonly unavailable?: BoardSettingsUnavailable;
 }
 
 export interface BoardSettingsGeneralPatch {
