@@ -13,10 +13,17 @@ export interface BackendCapabilities {
   readonly integrations: boolean;
   /** The reports and their dashboards. */
   readonly reports: boolean;
+  /** The department suggestions of the onboarding (a size and a name in, suggested departments out). */
+  readonly onboardingCatalog: boolean;
 }
 
 export function backendCapabilitiesOf(mockApi: boolean): BackendCapabilities {
-  return { billingPlans: mockApi, integrations: true, reports: mockApi };
+  return {
+    billingPlans: mockApi,
+    integrations: true,
+    reports: mockApi,
+    onboardingCatalog: mockApi,
+  };
 }
 
 export const backendCapabilities: BackendCapabilities = backendCapabilitiesOf(

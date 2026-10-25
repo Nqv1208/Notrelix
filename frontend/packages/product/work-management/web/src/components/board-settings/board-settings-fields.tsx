@@ -373,7 +373,11 @@ function FieldRow({
             {field.key}
           </span>
           <span className="truncate text-crumb text-meta-foreground">
-            {field.accent ? <Tag_>{field.usage}</Tag_> : field.usage}
+            {field.accent && field.usage ? (
+              <Tag_>{field.usage}</Tag_>
+            ) : (
+              field.usage
+            )}
           </span>
         </>
       )}

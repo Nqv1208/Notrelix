@@ -213,11 +213,24 @@ export function createItemExtrasApi(client: NotrelixClient) {
   const { api } = client;
   const quiet = { skipGlobalErrorToast: true } as const;
   const key = () => crypto.randomUUID();
+  // A backend without a plan producer answers 404 once; the calendar and the
+  // timeline then show the board's items alone without asking again.
+  let planProduced = true;
   return {
     async getPlan(boardId: string): Promise<BoardPlanDto> {
-      const dto = await api.get<Partial<BoardPlanDto> | null>(
-        `/boards/${boardId}/plan-items`,
-      );
+      let dto: Partial<BoardPlanDto> | null = null;
+      if (planProduced) {
+        try {
+          dto = await api.get<Partial<BoardPlanDto> | null>(
+            `/boards/${boardId}/plan-items`,
+            quiet,
+          );
+        } catch (error) {
+          const status = (error as { status?: number } | null)?.status;
+          if (status !== 404) throw error;
+          planProduced = false;
+        }
+      }
       return {
         items: dto?.items ?? [],
         links: dto?.links ?? [],

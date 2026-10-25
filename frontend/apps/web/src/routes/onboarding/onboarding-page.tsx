@@ -19,6 +19,7 @@ import {
 } from "@notrelix/features-workspace/web";
 import { clearApplicationCache } from "@/composition/application-lifecycle";
 import { AuthGuard } from "@/shell/guards/auth-guard";
+import { backendCapabilities } from "@/config/backend-capabilities";
 import { useOnboardingApi } from "./use-onboarding-api";
 
 const SLUG_SHAPE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -152,7 +153,9 @@ function SetupFlow() {
       draft.workspace.name,
     ],
     queryFn: () => api.catalog(draft.workspace.size, draft.workspace.name),
-    enabled: step !== "workspace" || created.workspace,
+    enabled:
+      backendCapabilities.onboardingCatalog &&
+      (step !== "workspace" || created.workspace),
     staleTime: 60_000,
     retry: false,
   });
