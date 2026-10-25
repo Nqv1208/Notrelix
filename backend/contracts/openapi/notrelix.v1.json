@@ -187,6 +187,96 @@
         ]
       }
     },
+    "/api/v1/boards/{boardId}/report": {
+      "get": {
+        "tags": [
+          "Analytics",
+          "Analytics"
+        ],
+        "summary": "Get the work report of a board: items by status and assignee, overdue, completions per week and average completion time",
+        "operationId": "Analytics.Reports.GetBoardReport",
+        "parameters": [
+          {
+            "name": "boardId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Analytics.Reports.BoardReportDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspaceId}/work-report": {
+      "get": {
+        "tags": [
+          "Analytics",
+          "Analytics"
+        ],
+        "summary": "Get the work report across the boards the caller can read, optionally narrowed to a department space",
+        "operationId": "Analytics.Reports.GetWorkspaceReport",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "spaceId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Analytics.Reports.WorkspaceReportDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
     "/api/v1/automations/{automationId}/executions": {
       "get": {
         "tags": [
@@ -19416,6 +19506,15 @@
           "configuration": {
             "type": "string",
             "nullable": true
+          },
+          "boardId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "triggerConfiguration": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -21783,6 +21882,161 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.Application.Features.Analytics.Reports.BoardReportDto": {
+        "type": "object",
+        "properties": {
+          "boardId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "report": {
+            "$ref": "#/components/schemas/Notrelix.Application.Features.Analytics.Reports.WorkReportDto"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Analytics.Reports.ReportAssigneeDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "items": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "open": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "overdue": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Analytics.Reports.ReportStatusDto": {
+        "type": "object",
+        "properties": {
+          "optionId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "color": {
+            "type": "string",
+            "nullable": true
+          },
+          "category": {
+            "type": "string",
+            "nullable": true
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Analytics.Reports.ReportWeekDto": {
+        "type": "object",
+        "properties": {
+          "weekStart": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "completed": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Analytics.Reports.WorkReportDto": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "open": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "done": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "overdue": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "byStatus": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.Analytics.Reports.ReportStatusDto"
+            },
+            "nullable": true
+          },
+          "byAssignee": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.Analytics.Reports.ReportAssigneeDto"
+            },
+            "nullable": true
+          },
+          "completedPerWeek": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.Analytics.Reports.ReportWeekDto"
+            },
+            "nullable": true
+          },
+          "averageCompletionSeconds": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Analytics.Reports.WorkspaceReportDto": {
+        "type": "object",
+        "properties": {
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "boardCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "spaceId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "report": {
+            "$ref": "#/components/schemas/Notrelix.Application.Features.Analytics.Reports.WorkReportDto"
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.Application.Features.Automation.DTOs.AutomationExecutionDto": {
         "type": "object",
         "properties": {
@@ -21865,6 +22119,15 @@
             "nullable": true
           },
           "disabledReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "boardId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "triggerConfiguration": {
             "type": "string",
             "nullable": true
           }

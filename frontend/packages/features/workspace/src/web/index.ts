@@ -432,6 +432,16 @@ export {
   type UnavailableFeature,
 } from "./unavailable/feature-unavailable-surface";
 export {
+  WorkReportSurface,
+  type WorkReportAssigneeRow,
+  type WorkReportDto,
+  type WorkReportScope,
+  type WorkReportState,
+  type WorkReportStatusRow,
+  type WorkReportSurfaceProps,
+  type WorkReportWeekRow,
+} from "./reports/work-report-surface";
+export {
   BillingCapabilitiesSurface,
   type BillingCapabilitiesState,
   type BillingCapabilitiesSurfaceProps,

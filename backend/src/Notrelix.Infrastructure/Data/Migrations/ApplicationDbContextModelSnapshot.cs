@@ -1363,6 +1363,10 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("account_id");
 
+                    b.Property<Guid?>("BoardId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("board_id");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -1433,6 +1437,9 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                     b.HasIndex("WorkspaceId")
                         .HasDatabaseName("idx_automation_rules_workspace_id");
+
+                    b.HasIndex("WorkspaceId", "BoardId")
+                        .HasDatabaseName("idx_automation_rules_workspace_board");
 
                     b.HasIndex("WorkspaceId", "ExecutorUserId")
                         .HasDatabaseName("idx_automation_rules_workspace_executor");

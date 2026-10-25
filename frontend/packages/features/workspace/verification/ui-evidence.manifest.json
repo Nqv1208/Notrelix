@@ -4942,6 +4942,80 @@
           "testFile": "src/web/unavailable/__tests__/feature-availability.interaction.component.test.tsx"
         }
       ]
+    },
+    {
+      "surfaceId": "workspace.work-report",
+      "owner": "@notrelix/features-workspace",
+      "surfaceKind": "data",
+      "pureEntry": "src/web/reports/work-report-surface.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "workspace-feature-availability--work-report-default",
+          "state": "Default",
+          "visualTargets": []
+        },
+        {
+          "id": "workspace-feature-availability--work-report-loading",
+          "state": "Loading",
+          "visualTargets": []
+        },
+        {
+          "id": "workspace-feature-availability--work-report-error",
+          "state": "Error",
+          "visualTargets": []
+        },
+        {
+          "id": "workspace-feature-availability--work-report-empty",
+          "state": "Empty",
+          "visualTargets": []
+        },
+        {
+          "id": "workspace-feature-availability--work-report-forbidden",
+          "state": "PermissionLimited",
+          "visualTargets": []
+        }
+      ],
+      "stateCoverage": {
+        "required": [
+          "Default",
+          "Empty",
+          "Error",
+          "Loading",
+          "PermissionLimited"
+        ],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "EdgeData",
+            "reason": "The report draws counts and eight weekly bars; a zero count is the Empty state or a zero-height bar.",
+            "authority": "docs/product/analytics.md"
+          },
+          {
+            "state": "HighDensity",
+            "reason": "The report lists status categories, at most fifty assignees and eight weeks.",
+            "authority": "docs/product/analytics.md"
+          },
+          {
+            "state": "ReadOnly",
+            "reason": "The page only reads; it has no write to withhold.",
+            "authority": "docs/product/analytics.md"
+          }
+        ]
+      },
+      "responsive": false,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "purity"],
+      "interactionCases": [
+        {
+          "id": "report",
+          "testFile": "src/web/unavailable/__tests__/feature-availability.interaction.component.test.tsx"
+        },
+        {
+          "id": "scope",
+          "testFile": "src/web/unavailable/__tests__/feature-availability.interaction.component.test.tsx"
+        }
+      ]
     }
   ]
 }

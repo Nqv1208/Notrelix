@@ -3016,6 +3016,36 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     mutation: false,
   },
   {
+    context: "Analytics",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createWorkReportApi",
+    consumerFile:
+      "frontend/apps/web/src/routes/workspaces/$workspaceId/reports/work-report-api.ts",
+    capability: "Analytics.Reports.GetBoardReport",
+    operationId: "Analytics.Reports.GetBoardReport",
+    mutation: false,
+  },
+  {
+    context: "Analytics",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createWorkReportApi",
+    consumerFile:
+      "frontend/apps/web/src/routes/workspaces/$workspaceId/reports/work-report-api.ts",
+    capability: "Analytics.Reports.GetWorkspaceReport",
+    operationId: "Analytics.Reports.GetWorkspaceReport",
+    mutation: false,
+  },
+  {
+    context: "Billing",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createBillingApi",
+    consumerFile:
+      "frontend/apps/web/src/routes/workspaces/$workspaceId/billing/billing-api.ts",
+    capability: "Billing.Plan.Get",
+    operationId: "Billing.Plan.Get",
+    mutation: false,
+  },
+  {
     context: "Billing",
     classification: "CANONICAL_MOCKED",
     consumerSymbol: "createBillingApi",

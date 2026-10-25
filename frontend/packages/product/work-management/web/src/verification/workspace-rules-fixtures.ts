@@ -21,15 +21,18 @@ export function workspaceRulesPanel(
   overrides: Partial<WorkspaceRulesPanelProps> = {},
 ): WorkspaceRulesPanelProps {
   return {
+    boardId: "b-1",
     status: "ready",
     rules: [
       {
         id: "r-1",
         name: "Cất việc chốt phạm vi khi có việc mới",
-        trigger: "ItemCreated",
+        trigger: "ItemMovedToGroup",
         action: "MoveItem",
-        itemId: "i-1",
+        itemId: null,
         targetGroupId: "g-done",
+        boardId: "b-1",
+        triggerGroupId: "g-todo",
         enabled: true,
         disabledReason: null,
         createdAt: "2026-10-12T03:40:00.000Z",
@@ -41,6 +44,8 @@ export function workspaceRulesPanel(
         action: "Webhook",
         itemId: null,
         targetGroupId: null,
+        boardId: "b-1",
+        triggerGroupId: null,
         enabled: false,
         disabledReason: "Disabled after 5 consecutive failed executions.",
         createdAt: "2026-10-11T03:40:00.000Z",

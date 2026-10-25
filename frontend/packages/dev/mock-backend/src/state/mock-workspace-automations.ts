@@ -10,6 +10,7 @@ import { isoOfMs, wallClockMs } from "./clock";
 export interface MockAutomationRule {
   id: string;
   workspaceId: string;
+  boardId: string | null;
   name: string;
   triggerType: string;
   actionType: string;
@@ -47,6 +48,8 @@ export class MockWorkspaceAutomations {
       triggerEvent: string;
       actionType: string;
       configuration: string;
+      boardId?: string | null;
+      triggerConfiguration?: string | null;
     },
     userId: string,
   ): MockAutomationRule {
@@ -59,13 +62,17 @@ export class MockWorkspaceAutomations {
     const rule: MockAutomationRule = {
       id: `auto-${String(this.sequence).padStart(5, "0")}`,
       workspaceId,
+      boardId: input.boardId ?? null,
       name: input.name.trim(),
       triggerType: input.triggerEvent,
       actionType: input.actionType,
       configuration: JSON.stringify({
         Trigger: {
           Type: input.triggerEvent,
-          Configuration: input.configuration,
+          Configuration:
+            input.boardId && input.triggerConfiguration
+              ? input.triggerConfiguration
+              : input.configuration,
           SchemaVersion: 1,
         },
         Action: JSON.parse(action) as unknown,

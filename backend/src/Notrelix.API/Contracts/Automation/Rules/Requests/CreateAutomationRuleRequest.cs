@@ -4,4 +4,6 @@ public sealed record CreateAutomationRuleRequest(
     string Name,
     string TriggerEvent,
     string ActionType,
-    string? Configuration);
+    string? Configuration,
+    Guid? BoardId = null,
+    string? TriggerConfiguration = null);

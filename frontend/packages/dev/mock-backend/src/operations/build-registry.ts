@@ -15,6 +15,7 @@ import { notificationsOperations } from "../contexts/notifications/notifications
 import { workManagementOperations } from "../contexts/work-management";
 import { documentsOperations } from "../contexts/documents";
 import { reportsOperations } from "../contexts/analytics/reports.handlers";
+import { workReportOperations } from "../contexts/analytics/work-report.handlers";
 import { billingOperations } from "../contexts/billing/billing.handlers";
 import { integrationsOperations } from "../contexts/integrations/integrations.handlers";
 import { workFeedOperations } from "../contexts/work-feed/work-feed.handlers";
@@ -39,6 +40,8 @@ export function buildOperationRegistry(): MockOperationRegistry {
     ...workFeedOperations,
     // Analytics (CTR-GAP-REPORTS): the Reports pages
     ...reportsOperations,
+    // Analytics: the read-only work reports the producer serves
+    ...workReportOperations,
     // Billing (CTR-GAP-BILLING): the Plans and billing pages
     ...billingOperations,
     // Integrations (CTR-GAP-INTEGRATIONS): the Integrations pages

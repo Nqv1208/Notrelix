@@ -174,6 +174,10 @@ public static class DependencyInjection
         // Producer-owned public capability surface (Billing)
         services.AddScoped<IBillingCapabilityFacts, BillingCapabilityFactsProvider>();
         services.AddScoped<Notrelix.Application.Features.Billing.Plans.BillingPlanResolver>();
+        services.AddScoped<Notrelix.Application.Features.WorkManagement.Public.Reports.IWorkReportFacts,
+            Notrelix.Application.Features.WorkManagement.BoardItems.Services.WorkReportFactsService>();
+        services.AddScoped<Notrelix.Application.Features.Workspaces.Public.SpaceSubtree.ISpaceSubtreeFacts,
+            Notrelix.Application.Features.Workspaces.Spaces.Services.SpaceSubtreeFacts>();
         services.AddScoped<Notrelix.Application.Features.Billing.Public.Seats.IBillingSeatGate, BillingSeatGate>();
 
         // Producer-owned public capacity action (Billing hard-quota consume/release)

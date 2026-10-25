@@ -89,6 +89,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/boards/{boardId}/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the work report of a board: items by status and assignee, overdue, completions per week and average completion time */
+        get: operations["Analytics.Reports.GetBoardReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/work-report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the work report across the boards the caller can read, optionally narrowed to a department space */
+        get: operations["Analytics.Reports.GetWorkspaceReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/automations/{automationId}/executions": {
         parameters: {
             query?: never;
@@ -4805,6 +4839,9 @@ export interface components {
             triggerEvent?: string | null;
             actionType?: string | null;
             configuration?: string | null;
+            /** Format: uuid */
+            boardId?: string | null;
+            triggerConfiguration?: string | null;
         };
         "Notrelix.API.Contracts.Automation.Rules.Requests.SetAutomationRuleEnabledRequest": {
             isEnabled?: boolean;
@@ -5572,6 +5609,63 @@ export interface components {
             avatarUrl?: string | null;
             emailConfirmed?: boolean;
         };
+        "Notrelix.Application.Features.Analytics.Reports.BoardReportDto": {
+            /** Format: uuid */
+            boardId?: string;
+            /** Format: date-time */
+            generatedAt?: string;
+            report?: components["schemas"]["Notrelix.Application.Features.Analytics.Reports.WorkReportDto"];
+        };
+        "Notrelix.Application.Features.Analytics.Reports.ReportAssigneeDto": {
+            /** Format: uuid */
+            userId?: string | null;
+            name?: string | null;
+            /** Format: int32 */
+            items?: number;
+            /** Format: int32 */
+            open?: number;
+            /** Format: int32 */
+            overdue?: number;
+        };
+        "Notrelix.Application.Features.Analytics.Reports.ReportStatusDto": {
+            /** Format: uuid */
+            optionId?: string | null;
+            name?: string | null;
+            color?: string | null;
+            category?: string | null;
+            /** Format: int32 */
+            count?: number;
+        };
+        "Notrelix.Application.Features.Analytics.Reports.ReportWeekDto": {
+            /** Format: date-time */
+            weekStart?: string;
+            /** Format: int32 */
+            completed?: number;
+        };
+        "Notrelix.Application.Features.Analytics.Reports.WorkReportDto": {
+            /** Format: int32 */
+            total?: number;
+            /** Format: int32 */
+            open?: number;
+            /** Format: int32 */
+            done?: number;
+            /** Format: int32 */
+            overdue?: number;
+            byStatus?: components["schemas"]["Notrelix.Application.Features.Analytics.Reports.ReportStatusDto"][] | null;
+            byAssignee?: components["schemas"]["Notrelix.Application.Features.Analytics.Reports.ReportAssigneeDto"][] | null;
+            completedPerWeek?: components["schemas"]["Notrelix.Application.Features.Analytics.Reports.ReportWeekDto"][] | null;
+            /** Format: double */
+            averageCompletionSeconds?: number | null;
+        };
+        "Notrelix.Application.Features.Analytics.Reports.WorkspaceReportDto": {
+            /** Format: date-time */
+            generatedAt?: string;
+            /** Format: int32 */
+            boardCount?: number;
+            /** Format: uuid */
+            spaceId?: string | null;
+            report?: components["schemas"]["Notrelix.Application.Features.Analytics.Reports.WorkReportDto"];
+        };
         "Notrelix.Application.Features.Automation.DTOs.AutomationExecutionDto": {
             /** Format: uuid */
             id?: string;
@@ -5604,6 +5698,9 @@ export interface components {
             /** Format: uuid */
             executorUserId?: string | null;
             disabledReason?: string | null;
+            /** Format: uuid */
+            boardId?: string | null;
+            triggerConfiguration?: string | null;
         };
         "Notrelix.Application.Features.Billing.Entitlements.Queries.GetWorkspaceBillingCapabilities.BillingCapabilityDto": {
             code?: string | null;
@@ -7084,6 +7181,52 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Analytics.Reports.GetBoardReport": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                boardId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Analytics.Reports.BoardReportDto"];
+                };
+            };
+        };
+    };
+    "Analytics.Reports.GetWorkspaceReport": {
+        parameters: {
+            query?: {
+                spaceId?: string;
+            };
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Analytics.Reports.WorkspaceReportDto"];
                 };
             };
         };

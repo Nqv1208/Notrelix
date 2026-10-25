@@ -3,6 +3,7 @@ using Notrelix.API.Endpoints.Identity.Users;
 using Notrelix.API.Realtime;
 using Notrelix.API.Endpoints.Automation.Executions;
 using Notrelix.API.Endpoints.Automation.Rules;
+using Notrelix.API.Endpoints.Analytics;
 using Notrelix.API.Endpoints.Billing;
 using Notrelix.API.Endpoints.Collaboration.Activity;
 using Notrelix.API.Endpoints.Collaboration.Attachments;
@@ -137,6 +138,7 @@ public static class EndpointRouteBuilderExtensions
 
         // Billing
         app.MapBillingEndpoints();
+        app.MapAnalyticsEndpoints();
 
         // Admin
         app.MapOutboxDiagnosticsEndpoints();

@@ -112,6 +112,11 @@
           "nullable": false
         },
         {
+          "name": "itemId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
           "name": "eventId",
           "type": "Guid",
           "nullable": false

@@ -39,6 +39,8 @@ interface CreateBody {
   triggerEvent?: string | null;
   actionType?: string | null;
   configuration?: string | null;
+  boardId?: string | null;
+  triggerConfiguration?: string | null;
 }
 
 export const workspaceAutomationsOperations = [
@@ -74,6 +76,8 @@ export const workspaceAutomationsOperations = [
           triggerEvent: body.triggerEvent,
           actionType: body.actionType,
           configuration: body.configuration ?? "{}",
+          boardId: body.boardId ?? null,
+          triggerConfiguration: body.triggerConfiguration ?? null,
         },
         store.getCurrentUser().id,
       );
