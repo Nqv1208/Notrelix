@@ -20,6 +20,8 @@ import {
 import { BoardShareDialog } from "../../../../shell/workspace/board-share-dialog";
 import { useBoardHeaderData } from "../../../../shell/workspace/use-board-header-data";
 
+const OPTIMISTIC_ITEM_ID_PREFIX = "optimistic-";
+
 export function BoardPage() {
   const { workspaceId, boardId } = useParams({
     from: "/workspaces/$workspaceId/boards/$boardId",
@@ -103,6 +105,8 @@ export function BoardPage() {
     item: string | undefined,
     options?: { replace?: boolean },
   ) => {
+    // A card the server has not confirmed yet has no real id to open.
+    if (item?.startsWith(OPTIMISTIC_ITEM_ID_PREFIX)) return;
     navigate({
       search: (prev: BoardSearch) => ({ ...prev, item }),
       replace: options?.replace ?? false,
@@ -158,10 +162,12 @@ export function BoardPage() {
               onGroupByChange={handleGroupByChange}
               onViewChange={handleViewChange}
               onOpenItemPage={(itemId) =>
-                navigate({
-                  to: "/workspaces/$workspaceId/boards/$boardId/items/$itemId",
-                  params: { workspaceId, boardId, itemId },
-                })
+                itemId.startsWith(OPTIMISTIC_ITEM_ID_PREFIX)
+                  ? undefined
+                  : navigate({
+                      to: "/workspaces/$workspaceId/boards/$boardId/items/$itemId",
+                      params: { workspaceId, boardId, itemId },
+                    })
               }
             />
           </BoardViewSelectionProvider>
