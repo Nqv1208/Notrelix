@@ -208,6 +208,8 @@ export function createNotrelixClient(config: NotrelixClientConfig) {
     }
   }
 
+  const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+
   async function apiFetch<TResponse>(
     url: string,
     options: RequestInit & ApiRequestOptions = {},
@@ -215,6 +217,18 @@ export function createNotrelixClient(config: NotrelixClientConfig) {
     retryAfterCsrfRecovery = true,
   ): Promise<TResponse> {
     const correlationId = options.correlationId || createCorrelationId();
+
+    // A write names itself with an Idempotency-Key (the producer requires one on
+    // its idempotent operations). The key is made once and travels with the
+    // retries below, so a retry replays the write instead of repeating it.
+    const namedByCaller =
+      Boolean(options.idempotencyKey) ||
+      Object.keys((options.headers as Record<string, string>) ?? {}).some(
+        (name) => name.toLowerCase() === "idempotency-key",
+      );
+    if (!namedByCaller && MUTATING_METHODS.has(options.method ?? "")) {
+      options = { ...options, idempotencyKey: crypto.randomUUID() };
+    }
 
     const init: RequestInit & ApiRequestOptions = { ...options };
     delete (init as { correlationId?: string }).correlationId;
