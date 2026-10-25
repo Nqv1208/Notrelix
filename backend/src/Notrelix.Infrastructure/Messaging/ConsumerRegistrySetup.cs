@@ -613,6 +613,17 @@ public static class ConsumerRegistrySetup
                 Maturity = ConsumerMaturity.Implemented
             },
 
+            new ConsumerDefinition
+            {
+                ConsumerName = "IntegrationWebhookDispatchRequestedConsumer",
+                EventName = "integrations.webhook-dispatch-requested",
+                EventVersion = 1,
+                EndpointName = "notrelix-integrations-webhook-dispatch-v1",
+                BoundedContext = "Integrations",
+                Description = "Delivers one signed message to an outgoing webhook connection and records the outcome on it",
+                Maturity = ConsumerMaturity.Implemented
+            },
+
             // Billing (stub)
             new ConsumerDefinition
             {

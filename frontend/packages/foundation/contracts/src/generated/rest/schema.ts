@@ -1783,6 +1783,142 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/integrations/{provider}/callback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Where the provider sends the member back; redirects to the app with the outcome */
+        get: operations["Integrations.Connections.Callback"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/integrations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the integration catalog and the workspace's connections */
+        get: operations["Integrations.Connections.List"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/integrations/{provider}/authorize": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The provider's authorization page for the workspace (OAuth redirect flow) */
+        get: operations["Integrations.Connections.Authorize"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/integrations/webhooks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Connect an outgoing webhook; the generated signing secret is returned once */
+        post: operations["Integrations.Webhooks.Connect"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/integrations/{connectionId}/pause": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Pause a connection */
+        post: operations["Integrations.Connections.Pause"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/integrations/{connectionId}/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resume a paused connection */
+        post: operations["Integrations.Connections.Resume"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/integrations/{connectionId}/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send a test delivery to an outgoing webhook */
+        post: operations["Integrations.Connections.Test"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/integrations/{connectionId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Disconnect a connection */
+        delete: operations["Integrations.Connections.Disconnect"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/calendar/connections": {
         parameters: {
             query?: never;
@@ -5114,6 +5250,9 @@ export interface components {
             providerAccountId?: string | null;
             syncDirection?: string | null;
         };
+        "Notrelix.API.Contracts.Integrations.Connections.ConnectWebhookRequest": {
+            url?: string | null;
+        };
         "Notrelix.API.Contracts.WorkManagement.Approvals.Requests.ApprovalStepRequest": {
             /** Format: uuid */
             approverUserId?: string | null;
@@ -6182,6 +6321,41 @@ export interface components {
         "Notrelix.Application.Features.Identity.Verification.Commands.ConfirmEmail.ConfirmEmailResultDto": {
             emailConfirmed?: boolean;
             sessionRefreshRequired?: boolean;
+        };
+        "Notrelix.Application.Features.Integrations.Connections.CreatedWebhookConnectionDto": {
+            connection?: components["schemas"]["Notrelix.Application.Features.Integrations.Connections.IntegrationConnectionDto"];
+            signingSecret?: string | null;
+        };
+        "Notrelix.Application.Features.Integrations.Connections.IntegrationAuthorizationDto": {
+            authorizeUrl?: string | null;
+        };
+        "Notrelix.Application.Features.Integrations.Connections.IntegrationCatalogEntryDto": {
+            provider?: string | null;
+            configured?: boolean;
+        };
+        "Notrelix.Application.Features.Integrations.Connections.IntegrationConnectionDto": {
+            /** Format: uuid */
+            id?: string;
+            provider?: string | null;
+            status?: string | null;
+            /** Format: uuid */
+            connectedBy?: string;
+            /** Format: date-time */
+            connectedAt?: string;
+            /** Format: date-time */
+            lastSuccessAt?: string | null;
+            /** Format: date-time */
+            lastErrorAt?: string | null;
+            lastError?: string | null;
+            targetUrl?: string | null;
+        };
+        "Notrelix.Application.Features.Integrations.Connections.IntegrationTestDto": {
+            /** Format: uuid */
+            deliveryId?: string;
+        };
+        "Notrelix.Application.Features.Integrations.Connections.IntegrationsOverviewDto": {
+            catalog?: components["schemas"]["Notrelix.Application.Features.Integrations.Connections.IntegrationCatalogEntryDto"][] | null;
+            connections?: components["schemas"]["Notrelix.Application.Features.Integrations.Connections.IntegrationConnectionDto"][] | null;
         };
         "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetHomeFeed.HomeCalendarEventDto": {
             /** Format: uuid */
@@ -11161,6 +11335,200 @@ export interface operations {
                 content: {
                     "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
                 };
+            };
+        };
+    };
+    "Integrations.Connections.Callback": {
+        parameters: {
+            query?: {
+                code?: string;
+                state?: string;
+                error?: string;
+            };
+            header?: never;
+            path: {
+                provider: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Found */
+            302: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "Integrations.Connections.List": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Integrations.Connections.IntegrationsOverviewDto"];
+                };
+            };
+        };
+    };
+    "Integrations.Connections.Authorize": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                provider: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Integrations.Connections.IntegrationAuthorizationDto"];
+                };
+            };
+        };
+    };
+    "Integrations.Webhooks.Connect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Integrations.Connections.ConnectWebhookRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Integrations.Connections.CreatedWebhookConnectionDto"];
+                };
+            };
+        };
+    };
+    "Integrations.Connections.Pause": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                connectionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Integrations.Connections.IntegrationConnectionDto"];
+                };
+            };
+        };
+    };
+    "Integrations.Connections.Resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                connectionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Integrations.Connections.IntegrationConnectionDto"];
+                };
+            };
+        };
+    };
+    "Integrations.Connections.Test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                connectionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Integrations.Connections.IntegrationTestDto"];
+                };
+            };
+        };
+    };
+    "Integrations.Connections.Disconnect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                connectionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

@@ -90,6 +90,7 @@ Notrelix.Domain.Integrations.Connections.IntegrationProvider|System.Int32|Slack|
 Notrelix.Domain.Integrations.Connections.IntegrationProvider|System.Int32|Github|3
 Notrelix.Domain.Integrations.Connections.IntegrationProvider|System.Int32|Notion|4
 Notrelix.Domain.Integrations.Connections.IntegrationProvider|System.Int32|Trello|5
+Notrelix.Domain.Integrations.Connections.IntegrationProvider|System.Int32|Webhook|6
 Notrelix.Domain.Integrations.Webhooks.WebhookDeliveryStatus|System.Int32|Pending|0
 Notrelix.Domain.Integrations.Webhooks.WebhookDeliveryStatus|System.Int32|Sent|1
 Notrelix.Domain.Integrations.Webhooks.WebhookDeliveryStatus|System.Int32|Failed|2

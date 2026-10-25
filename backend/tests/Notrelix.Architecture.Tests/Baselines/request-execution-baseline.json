@@ -2875,6 +2875,206 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.Integrations.Connections.Commands.CompleteIntegrationAuthorization.CompleteIntegrationAuthorizationCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Integrations.Connections.Commands.CompleteIntegrationAuthorization.CompleteIntegrationAuthorizationCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Integrations.Connections.Commands.ConnectWebhook.ConnectWebhookCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Integrations.Connections.Commands.ConnectWebhook.ConnectWebhookCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Integrations.Connections.Commands.DisconnectIntegration.DisconnectIntegrationCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Integrations.Connections.Commands.DisconnectIntegration.DisconnectIntegrationCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Integrations.Connections.Commands.PauseIntegration.PauseIntegrationCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Integrations.Connections.Commands.PauseIntegration.PauseIntegrationCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Integrations.Connections.Commands.ResumeIntegration.ResumeIntegrationCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Integrations.Connections.Commands.ResumeIntegration.ResumeIntegrationCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Integrations.Connections.Commands.TestIntegration.TestIntegrationCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Integrations.Connections.Commands.TestIntegration.TestIntegrationCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Integrations.Connections.Queries.ListIntegrations.ListIntegrationsQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Integrations.Connections.Queries.ListIntegrations.ListIntegrationsQueryHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Integrations.Connections.Queries.StartIntegrationAuthorization.StartIntegrationAuthorizationQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Integrations.Connections.Queries.StartIntegrationAuthorization.StartIntegrationAuthorizationQueryHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.WorkManagement.Approvals.Commands.ApproveApprovalRequest.ApproveApprovalRequestCommand",
     "kind": "Command",
     "principalMarkers": [

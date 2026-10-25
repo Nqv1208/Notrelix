@@ -7,5 +7,6 @@ public enum IntegrationProvider
     Slack,
     Github,
     Notion,
-    Trello
+    Trello,
+    Webhook
 }

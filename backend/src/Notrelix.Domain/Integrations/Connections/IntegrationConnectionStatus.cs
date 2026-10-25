@@ -5,5 +5,6 @@ public enum IntegrationConnectionStatus
     Active,
     Expired,
     Revoked,
-    Error
+    Error,
+    Paused
 }

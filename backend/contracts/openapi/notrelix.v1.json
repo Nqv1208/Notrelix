@@ -6317,6 +6317,392 @@
         ]
       }
     },
+    "/api/v1/integrations/{provider}/callback": {
+      "get": {
+        "tags": [
+          "Integrations"
+        ],
+        "summary": "Where the provider sends the member back; redirects to the app with the outcome",
+        "operationId": "Integrations.Connections.Callback",
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "code",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "error",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": { }
+            }
+          },
+          "302": {
+            "description": "Found"
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspaceId}/integrations": {
+      "get": {
+        "tags": [
+          "Integrations"
+        ],
+        "summary": "List the integration catalog and the workspace's connections",
+        "operationId": "Integrations.Connections.List",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Integrations.Connections.IntegrationsOverviewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspaceId}/integrations/{provider}/authorize": {
+      "get": {
+        "tags": [
+          "Integrations"
+        ],
+        "summary": "The provider's authorization page for the workspace (OAuth redirect flow)",
+        "operationId": "Integrations.Connections.Authorize",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "provider",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Integrations.Connections.IntegrationAuthorizationDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspaceId}/integrations/webhooks": {
+      "post": {
+        "tags": [
+          "Integrations"
+        ],
+        "summary": "Connect an outgoing webhook; the generated signing secret is returned once",
+        "operationId": "Integrations.Webhooks.Connect",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Contracts.Integrations.Connections.ConnectWebhookRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Integrations.Connections.CreatedWebhookConnectionDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspaceId}/integrations/{connectionId}/pause": {
+      "post": {
+        "tags": [
+          "Integrations"
+        ],
+        "summary": "Pause a connection",
+        "operationId": "Integrations.Connections.Pause",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "connectionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Integrations.Connections.IntegrationConnectionDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspaceId}/integrations/{connectionId}/resume": {
+      "post": {
+        "tags": [
+          "Integrations"
+        ],
+        "summary": "Resume a paused connection",
+        "operationId": "Integrations.Connections.Resume",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "connectionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Integrations.Connections.IntegrationConnectionDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspaceId}/integrations/{connectionId}/test": {
+      "post": {
+        "tags": [
+          "Integrations"
+        ],
+        "summary": "Send a test delivery to an outgoing webhook",
+        "operationId": "Integrations.Connections.Test",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "connectionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Integrations.Connections.IntegrationTestDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspaceId}/integrations/{connectionId}": {
+      "delete": {
+        "tags": [
+          "Integrations"
+        ],
+        "summary": "Disconnect a connection",
+        "operationId": "Integrations.Connections.Disconnect",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "connectionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
     "/api/v1/workspaces/{workspaceId}/calendar/connections": {
       "post": {
         "tags": [
@@ -20445,6 +20831,16 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.API.Contracts.Integrations.Connections.ConnectWebhookRequest": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.API.Contracts.WorkManagement.Approvals.Requests.ApprovalStepRequest": {
         "type": "object",
         "properties": {
@@ -23670,6 +24066,116 @@
           },
           "sessionRefreshRequired": {
             "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Integrations.Connections.CreatedWebhookConnectionDto": {
+        "type": "object",
+        "properties": {
+          "connection": {
+            "$ref": "#/components/schemas/Notrelix.Application.Features.Integrations.Connections.IntegrationConnectionDto"
+          },
+          "signingSecret": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Integrations.Connections.IntegrationAuthorizationDto": {
+        "type": "object",
+        "properties": {
+          "authorizeUrl": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Integrations.Connections.IntegrationCatalogEntryDto": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "nullable": true
+          },
+          "configured": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Integrations.Connections.IntegrationConnectionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "provider": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "nullable": true
+          },
+          "connectedBy": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "connectedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastSuccessAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "lastErrorAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "lastError": {
+            "type": "string",
+            "nullable": true
+          },
+          "targetUrl": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Integrations.Connections.IntegrationTestDto": {
+        "type": "object",
+        "properties": {
+          "deliveryId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Integrations.Connections.IntegrationsOverviewDto": {
+        "type": "object",
+        "properties": {
+          "catalog": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.Integrations.Connections.IntegrationCatalogEntryDto"
+            },
+            "nullable": true
+          },
+          "connections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.Integrations.Connections.IntegrationConnectionDto"
+            },
+            "nullable": true
           }
         },
         "additionalProperties": false

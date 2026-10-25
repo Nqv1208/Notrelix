@@ -5311,6 +5311,14 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("expires_at");
 
+                    b.Property<DateTimeOffset?>("LastErrorAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_error_at");
+
+                    b.Property<DateTimeOffset?>("LastSuccessAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_success_at");
+
                     b.Property<string>("Provider")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -5331,6 +5339,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
                         .HasColumnName("status");
+
+                    b.Property<string>("TargetUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)")
+                        .HasColumnName("target_url");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
