@@ -40,6 +40,9 @@ public static class NotificationTypes
     /// <summary>An Item the person follows got a comment; maps to <see cref="Watching"/>.</summary>
     public const string ItemCommentedProducedType = "work.item.commented";
 
+    /// <summary>A message an Automation rule sent to a member about an Item; maps to <see cref="Assigned"/>.</summary>
+    public const string AutomationProducedType = "work.item.automation";
+
     /// <summary>
     /// Maps the type literal a producer stores on a notification to the preference type, or null when the
     /// literal has no preference type.
@@ -47,7 +50,7 @@ public static class NotificationTypes
     public static string? FromProducedType(string? producedType) => producedType switch
     {
         MentionProducedType => Mention,
-        ItemAssignedProducedType => Assigned,
+        ItemAssignedProducedType or AutomationProducedType => Assigned,
         ItemAssigneeAddedProducedType or ItemStatusChangedProducedType or ItemCommentedProducedType => Watching,
         _ => null,
     };

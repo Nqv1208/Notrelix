@@ -21,5 +21,6 @@ public sealed class BoardItemMemberAssignedEventMapper
             CorrelationId: domainEvent.EventId,
             SourceEventId: domainEvent.EventId,
             CausationId: null,
-            OccurredAt: domainEvent.OccurredAt);
+            OccurredAt: domainEvent.OccurredAt,
+            BoardId: domainEvent.BoardId);
 }

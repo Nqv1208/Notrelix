@@ -38,6 +38,7 @@ public class GetWorkspaceAutomationsQueryHandler : IRequestHandler<GetWorkspaceA
         var automations = await _context.AutomationRules
             .AsNoTracking()
             .Where(item => item.WorkspaceId == request.WorkspaceId
+                && item.Status != AutomationRuleStatus.Archived
                 && (request.BoardId == null || item.BoardId == request.BoardId))
             .OrderBy(item => item.Name)
             .ToListAsync(cancellationToken);
@@ -55,7 +56,12 @@ public class GetWorkspaceAutomationsQueryHandler : IRequestHandler<GetWorkspaceA
                 item.ExecutorUserId,
                 item.DisabledReason,
                 item.BoardId,
-                item.Configuration.Trigger.Configuration))
+                item.Configuration.Trigger.Configuration,
+                item.Version,
+                item.Configuration.Actions
+                    .Select(action => new AutomationActionDto(action.Type, action.Configuration))
+                    .ToList(),
+                item.Configuration.Condition?.RawJson))
             .ToList();
 
         return Result<IReadOnlyList<AutomationRuleDto>>.Success(dtos);

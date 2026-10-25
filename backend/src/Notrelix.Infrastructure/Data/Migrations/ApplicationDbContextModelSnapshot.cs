@@ -1234,6 +1234,10 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasDefaultValue(0)
                         .HasColumnName("chain_depth");
 
+                    b.Property<string>("ConfigurationSnapshot")
+                        .HasColumnType("text")
+                        .HasColumnName("configuration_snapshot");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -1261,6 +1265,10 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.Property<Guid>("RuleId")
                         .HasColumnType("uuid")
                         .HasColumnName("rule_id");
+
+                    b.Property<long?>("RuleVersion")
+                        .HasColumnType("bigint")
+                        .HasColumnName("rule_version");
 
                     b.Property<DateTimeOffset>("StartedAt")
                         .HasColumnType("timestamp with time zone")
@@ -11495,6 +11503,29 @@ namespace Notrelix.Infrastructure.Data.Migrations
                                 .HasForeignKey("AutomationRuleId")
                                 .HasConstraintName("fk_automation_rules_automation_rules_id");
 
+                            b1.OwnsOne("Notrelix.Domain.Automation.RulesEngine.AutomationConditionDefinition", "Condition", b2 =>
+                                {
+                                    b2.Property<Guid>("AutomationConfigurationAutomationRuleId")
+                                        .HasColumnType("uuid");
+
+                                    b2.Property<string>("RawJson")
+                                        .IsRequired()
+                                        .HasColumnType("text");
+
+                                    b2.Property<int>("SchemaVersion")
+                                        .HasColumnType("integer");
+
+                                    b2.HasKey("AutomationConfigurationAutomationRuleId");
+
+                                    b2.ToTable("automation_rules", "automation");
+
+                                    b2.ToJson("configuration");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("AutomationConfigurationAutomationRuleId")
+                                        .HasConstraintName("fk_automation_rules_automation_rules_id");
+                                });
+
                             b1.OwnsOne("Notrelix.Domain.Automation.RulesEngine.AutomationActionDefinition", "Action", b2 =>
                                 {
                                     b2.Property<Guid>("AutomationConfigurationAutomationRuleId")
@@ -11521,19 +11552,26 @@ namespace Notrelix.Infrastructure.Data.Migrations
                                         .HasConstraintName("fk_automation_rules_automation_rules_id");
                                 });
 
-                            b1.OwnsOne("Notrelix.Domain.Automation.RulesEngine.AutomationConditionDefinition", "Condition", b2 =>
+                            b1.OwnsMany("Notrelix.Domain.Automation.RulesEngine.AutomationActionDefinition", "MoreActions", b2 =>
                                 {
                                     b2.Property<Guid>("AutomationConfigurationAutomationRuleId")
                                         .HasColumnType("uuid");
 
-                                    b2.Property<string>("RawJson")
-                                        .IsRequired()
+                                    b2.Property<int>("__synthesizedOrdinal")
+                                        .ValueGeneratedOnAdd()
+                                        .HasColumnType("integer");
+
+                                    b2.Property<string>("Configuration")
                                         .HasColumnType("text");
 
                                     b2.Property<int>("SchemaVersion")
                                         .HasColumnType("integer");
 
-                                    b2.HasKey("AutomationConfigurationAutomationRuleId");
+                                    b2.Property<string>("Type")
+                                        .IsRequired()
+                                        .HasColumnType("text");
+
+                                    b2.HasKey("AutomationConfigurationAutomationRuleId", "__synthesizedOrdinal");
 
                                     b2.ToTable("automation_rules", "automation");
 
@@ -11541,7 +11579,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                                     b2.WithOwner()
                                         .HasForeignKey("AutomationConfigurationAutomationRuleId")
-                                        .HasConstraintName("fk_automation_rules_automation_rules_id");
+                                        .HasConstraintName("fk_automation_rules_automation_rules_automation_configuration_au");
                                 });
 
                             b1.OwnsOne("Notrelix.Domain.Automation.RulesEngine.AutomationTriggerDefinition", "Trigger", b2 =>
@@ -11574,6 +11612,8 @@ namespace Notrelix.Infrastructure.Data.Migrations
                                 .IsRequired();
 
                             b1.Navigation("Condition");
+
+                            b1.Navigation("MoreActions");
 
                             b1.Navigation("Trigger")
                                 .IsRequired();

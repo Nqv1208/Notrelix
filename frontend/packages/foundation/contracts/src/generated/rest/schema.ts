@@ -175,6 +175,24 @@ export interface paths {
         patch: operations["Automation.Rules.SetEnabled"];
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/automations/{automationId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Edit an automation rule (creates a new version) */
+        put: operations["Automation.Rules.Update"];
+        post?: never;
+        /** Delete an automation rule: it is disabled, in-flight executions finish, its history stays readable for 90 days */
+        delete: operations["Automation.Rules.Delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/billing/capabilities": {
         parameters: {
             query?: never;
@@ -4834,6 +4852,10 @@ export interface components {
         "Notrelix.API.Contracts.Accounts.Requests.RenameAccountRequest": {
             name?: string | null;
         };
+        "Notrelix.API.Contracts.Automation.Rules.Requests.AutomationActionRequest": {
+            type?: string | null;
+            configuration?: string | null;
+        };
         "Notrelix.API.Contracts.Automation.Rules.Requests.CreateAutomationRuleRequest": {
             name?: string | null;
             triggerEvent?: string | null;
@@ -4842,9 +4864,20 @@ export interface components {
             /** Format: uuid */
             boardId?: string | null;
             triggerConfiguration?: string | null;
+            actions?: components["schemas"]["Notrelix.API.Contracts.Automation.Rules.Requests.AutomationActionRequest"][] | null;
+            conditions?: string | null;
         };
         "Notrelix.API.Contracts.Automation.Rules.Requests.SetAutomationRuleEnabledRequest": {
             isEnabled?: boolean;
+            /** Format: uuid */
+            boardId?: string | null;
+        };
+        "Notrelix.API.Contracts.Automation.Rules.Requests.UpdateAutomationRuleRequest": {
+            name?: string | null;
+            triggerEvent?: string | null;
+            actions?: components["schemas"]["Notrelix.API.Contracts.Automation.Rules.Requests.AutomationActionRequest"][] | null;
+            triggerConfiguration?: string | null;
+            conditions?: string | null;
             /** Format: uuid */
             boardId?: string | null;
         };
@@ -5668,6 +5701,10 @@ export interface components {
             spaceId?: string | null;
             report?: components["schemas"]["Notrelix.Application.Features.Analytics.Reports.WorkReportDto"];
         };
+        "Notrelix.Application.Features.Automation.DTOs.AutomationActionDto": {
+            type?: string | null;
+            configuration?: string | null;
+        };
         "Notrelix.Application.Features.Automation.DTOs.AutomationExecutionDto": {
             /** Format: uuid */
             id?: string;
@@ -5682,6 +5719,16 @@ export interface components {
             error?: string | null;
             /** Format: date-time */
             createdAt?: string;
+            /** Format: int64 */
+            ruleVersion?: number | null;
+            steps?: components["schemas"]["Notrelix.Application.Features.Automation.DTOs.AutomationExecutionStepDto"][] | null;
+        };
+        "Notrelix.Application.Features.Automation.DTOs.AutomationExecutionStepDto": {
+            /** Format: int32 */
+            index?: number;
+            type?: string | null;
+            status?: string | null;
+            error?: string | null;
         };
         "Notrelix.Application.Features.Automation.DTOs.AutomationRuleDto": {
             /** Format: uuid */
@@ -5703,6 +5750,10 @@ export interface components {
             /** Format: uuid */
             boardId?: string | null;
             triggerConfiguration?: string | null;
+            /** Format: int64 */
+            version?: number;
+            actions?: components["schemas"]["Notrelix.Application.Features.Automation.DTOs.AutomationActionDto"][] | null;
+            conditions?: string | null;
         };
         "Notrelix.Application.Features.Billing.Entitlements.Queries.GetWorkspaceBillingCapabilities.BillingCapabilityDto": {
             code?: string | null;
@@ -7351,6 +7402,94 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["System.Void"];
                 };
+            };
+        };
+    };
+    "Automation.Rules.Update": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                automationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Automation.Rules.Requests.UpdateAutomationRuleRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "Automation.Rules.Delete": {
+        parameters: {
+            query?: {
+                boardId?: string;
+            };
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                automationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

@@ -3,6 +3,9 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Features.WorkManagement.Common;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.AssignBoardItemMember;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemFieldValue;
 using Notrelix.Application.Features.WorkManagement.Public.ItemMovement;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Services;
@@ -23,13 +26,19 @@ public sealed class WorkItemActions : IWorkItemActions
     private readonly IWorkManagementDbContext _context;
     private readonly IWorkItemActionAuthorizer _authorizer;
     private readonly IIdempotencyStore _idempotencyStore;
+    private readonly IWorkspaceAccessResolver _workspaceAccess;
+    private readonly IDateTimeProvider _clock;
 
     public WorkItemActions(
         MoveBoardItemUseCase useCase,
         IWorkManagementDbContext context,
         IWorkItemActionAuthorizer authorizer,
-        IIdempotencyStore idempotencyStore)
+        IIdempotencyStore idempotencyStore,
+        IWorkspaceAccessResolver workspaceAccess,
+        IDateTimeProvider clock)
     {
+        _workspaceAccess = workspaceAccess;
+        _clock = clock;
         _useCase = useCase;
         _context = context;
         _authorizer = authorizer;
@@ -168,6 +177,168 @@ public sealed class WorkItemActions : IWorkItemActions
         {
             throw new NotFoundException("BoardItem", itemId);
         }
+    }
+
+    public async Task ChangeStatusAsync(
+        WorkItemActionIdentity execution, Guid itemId, Guid optionId, CancellationToken cancellationToken)
+    {
+        await _authorizer.AuthorizeItemCommandAsync(
+            execution, itemId, new UpdateBoardItemFieldValueCommand(itemId, Guid.Empty, null, 0), cancellationToken);
+
+        var item = await LoadItemAsync(execution, itemId, cancellationToken);
+        var statusField = await BoardItemFieldWrites.LoadStatusFieldAsync(_context, item.BoardId, cancellationToken)
+            ?? throw new NotFoundException("BoardField", item.BoardId);
+        if (statusField.Options.All(option => option.Id != optionId))
+        {
+            throw new NotFoundException("BoardFieldOption", optionId);
+        }
+
+        await DedupedAsync("work-management.public.change-status.v1", execution, $"{itemId:N}:{optionId:N}", () =>
+        {
+            var value = FieldValue.Create(Notrelix.Domain.SharedKernel.JsonValue.Create(JsonSerializer.Serialize(optionId.ToString())));
+            BoardItemFieldWrites.Write(item, statusField, value, statusField, execution.ExecutorUserId, _clock.UtcNow);
+            return Task.CompletedTask;
+        }, cancellationToken);
+    }
+
+    public async Task SetFieldValueAsync(
+        WorkItemActionIdentity execution, Guid itemId, Guid fieldId, string valueJson, CancellationToken cancellationToken)
+    {
+        await _authorizer.AuthorizeItemCommandAsync(
+            execution, itemId, new UpdateBoardItemFieldValueCommand(itemId, fieldId, null, 0), cancellationToken);
+
+        var item = await LoadItemAsync(execution, itemId, cancellationToken);
+        var field = await _context.BoardFields
+            .Include(f => f.Options)
+            .FirstOrDefaultAsync(f => f.Id == fieldId && f.BoardId == item.BoardId && f.DeletedAt == null, cancellationToken)
+            ?? throw new NotFoundException("BoardField", fieldId);
+        var statusField = await BoardItemFieldWrites.LoadStatusFieldAsync(_context, item.BoardId, cancellationToken);
+
+        await DedupedAsync("work-management.public.set-field-value.v1", execution, $"{itemId:N}:{fieldId:N}:{valueJson}", () =>
+        {
+            var value = FieldValue.Create(Notrelix.Domain.SharedKernel.JsonValue.Create(valueJson));
+            BoardItemFieldWrites.Write(item, field, value, statusField, execution.ExecutorUserId, _clock.UtcNow);
+            return Task.CompletedTask;
+        }, cancellationToken);
+    }
+
+    public async Task AssignMemberAsync(
+        WorkItemActionIdentity execution, Guid itemId, Guid userId, CancellationToken cancellationToken)
+    {
+        await _authorizer.AuthorizeItemCommandAsync(
+            execution, itemId, new AssignBoardItemMemberCommand(itemId, userId), cancellationToken);
+
+        var item = await LoadItemAsync(execution, itemId, cancellationToken);
+        await EnsureWorkspaceMemberAsync(execution.WorkspaceId, userId, cancellationToken);
+
+        await DedupedAsync("work-management.public.assign-member.v1", execution, $"{itemId:N}:{userId:N}", async () =>
+        {
+            var already = await _context.BoardItemMembers
+                .AnyAsync(m => m.ItemId == item.Id && m.UserId == userId, cancellationToken);
+            if (already) return;
+
+            _context.BoardItemMembers.Add(BoardItemMember.Create(
+                execution.AccountId, item.WorkspaceId, item.BoardId, item.Id, userId, execution.ExecutorUserId, _clock.UtcNow));
+        }, cancellationToken);
+    }
+
+    public async Task<WorkItemFacts> GetItemFactsAsync(
+        Guid workspaceId, Guid itemId, Guid boardId, CancellationToken cancellationToken)
+    {
+        var item = await _context.BoardItems.AsNoTracking()
+            .FirstOrDefaultAsync(i => i.Id == itemId && i.BoardId == boardId && i.WorkspaceId == workspaceId, cancellationToken)
+            ?? throw new NotFoundException("BoardItem", itemId);
+        var statusField = await BoardItemFieldWrites.LoadStatusFieldAsync(_context, boardId, cancellationToken);
+        var values = await _context.BoardItemValues.AsNoTracking()
+            .Where(v => v.ItemId == itemId)
+            .ToListAsync(cancellationToken);
+        var statusOption = statusField is null
+            ? null
+            : WorkItemSemanticFields.ReadOptionId(values.FirstOrDefault(v => v.FieldId == statusField.Id)?.Value);
+        return new WorkItemFacts(
+            item.GroupId,
+            statusOption,
+            item.Name,
+            values.Where(v => !v.Value.IsEmpty).ToDictionary(v => v.FieldId, v => v.Value.Data.Value));
+    }
+
+    public async Task EnsureStatusOptionAsync(
+        Guid workspaceId, Guid boardId, Guid optionId, CancellationToken cancellationToken)
+    {
+        await EnsureBoardInWorkspaceAsync(workspaceId, boardId, cancellationToken);
+        var statusField = await BoardItemFieldWrites.LoadStatusFieldAsync(_context, boardId, cancellationToken)
+            ?? throw new NotFoundException("BoardField", boardId);
+        if (statusField.Options.All(option => option.Id != optionId))
+        {
+            throw new NotFoundException("BoardFieldOption", optionId);
+        }
+    }
+
+    public async Task EnsureFieldValueAsync(
+        Guid workspaceId, Guid boardId, Guid fieldId, string valueJson, CancellationToken cancellationToken)
+    {
+        await EnsureBoardInWorkspaceAsync(workspaceId, boardId, cancellationToken);
+        var field = await _context.BoardFields.AsNoTracking()
+            .FirstOrDefaultAsync(f => f.Id == fieldId && f.BoardId == boardId && f.DeletedAt == null, cancellationToken)
+            ?? throw new NotFoundException("BoardField", fieldId);
+        FieldValueValidator.Validate(
+            FieldValue.Create(Notrelix.Domain.SharedKernel.JsonValue.Create(valueJson)), field.Type, field.Settings);
+    }
+
+    public async Task EnsureWorkspaceMemberAsync(Guid workspaceId, Guid userId, CancellationToken cancellationToken)
+    {
+        var access = await _workspaceAccess.ResolveAsync(workspaceId, userId, cancellationToken);
+        if (!access.CanAccess)
+        {
+            throw new ForbiddenException("The person is not a member of this workspace.");
+        }
+    }
+
+    private async Task EnsureBoardInWorkspaceAsync(Guid workspaceId, Guid boardId, CancellationToken cancellationToken)
+    {
+        var inWorkspace = await _context.Boards.AsNoTracking()
+            .AnyAsync(b => b.Id == boardId && b.WorkspaceId == workspaceId, cancellationToken);
+        if (!inWorkspace)
+        {
+            throw new NotFoundException("Board", boardId);
+        }
+    }
+
+    private async Task<BoardItem> LoadItemAsync(
+        WorkItemActionIdentity execution, Guid itemId, CancellationToken cancellationToken)
+    {
+        var item = await _context.BoardItems
+            .Include(i => i.FieldValues)
+            .FirstOrDefaultAsync(i => i.Id == itemId, cancellationToken)
+            ?? throw new NotFoundException("BoardItem", itemId);
+        if (item.WorkspaceId != execution.WorkspaceId)
+        {
+            throw new ForbiddenException("The item does not belong to the declared workspace.");
+        }
+
+        return item;
+    }
+
+    /// <summary>One logical mutation per operation id: a replay changes nothing, a different payload conflicts.</summary>
+    private async Task DedupedAsync(
+        string operation, WorkItemActionIdentity execution, string payload, Func<Task> mutate, CancellationToken cancellationToken)
+    {
+        var identity = new IdempotencyIdentity(
+            Operation: operation,
+            Scope: $"account:{execution.AccountId:N}:workspace:{execution.WorkspaceId:N}",
+            KeyHash: Sha256($"{operation}:{execution.OperationId:N}"),
+            RequestHash: Sha256($"{payload}:{execution.ExecutorUserId:N}"));
+        var begin = await _idempotencyStore.BeginAsync(identity, cancellationToken);
+        switch (begin.Status)
+        {
+            case IdempotencyBeginStatus.Completed:
+                return;
+            case IdempotencyBeginStatus.PayloadMismatch:
+                throw new WorkItemOperationConflictException(execution.OperationId);
+        }
+
+        await mutate();
+        await _idempotencyStore.CompleteAsync(identity, "true", "bool", cancellationToken);
     }
 
     private static string Sha256(string value) =>

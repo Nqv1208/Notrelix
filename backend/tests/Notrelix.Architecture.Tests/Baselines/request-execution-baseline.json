@@ -200,6 +200,31 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.Automation.Rules.Commands.DeleteAutomationRule.DeleteAutomationRuleCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IResourceScopedRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": true,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Automation.Rules.Commands.DeleteAutomationRule.DeleteAutomationRuleCommandHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.Automation.Rules.Commands.SetAutomationRuleEnabled.SetAutomationRuleEnabledCommand",
     "kind": "Command",
     "principalMarkers": [
@@ -222,6 +247,31 @@
     "publicCache": false,
     "handlerTypes": [
       "Notrelix.Application.Features.Automation.Rules.Commands.SetAutomationRuleEnabled.SetAutomationRuleEnabledCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Automation.Rules.Commands.UpdateAutomationRule.UpdateAutomationRuleCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IResourceScopedRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": true,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Automation.Rules.Commands.UpdateAutomationRule.UpdateAutomationRuleCommandHandler"
     ]
   },
   {

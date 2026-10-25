@@ -40,7 +40,7 @@ public class BoardItemMember : Entity, IWorkspaceScoped
 
         // The fact other contexts react to (followers, automation); a system assignment has no one to name.
         if (assignedByUserId is { } assignedBy)
-            member.RaiseDomainEvent(new Events.BoardItemMemberAssignedDomainEvent(accountId, workspaceId, itemId, userId, assignedBy, assignedAt));
+            member.RaiseDomainEvent(new Events.BoardItemMemberAssignedDomainEvent(accountId, workspaceId, itemId, userId, assignedBy, assignedAt, boardId));
 
         return member;
     }

@@ -144,7 +144,9 @@ public sealed class AutomationWorkActionChainIntegrationTests : IAsyncLifetime
             workItemActions,
             workContext,
             authorizer,
-            idempotencyStore);
+            idempotencyStore,
+            Moq.Mock.Of<Notrelix.Application.Common.Tenancy.IWorkspaceAccessResolver>(),
+            Moq.Mock.Of<Notrelix.Application.Common.Time.IDateTimeProvider>());
         return (new WorkItemActionAdapter(actions), workContext);
     }
 

@@ -131,6 +131,8 @@ public static class PersistenceRegistration
             global::Notrelix.Infrastructure.CrossContext.Collaboration.Watchers.PostgresResourceFollowers>();
         services.AddScoped<global::Notrelix.Application.Features.Collaboration.Public.Notifications.INotificationInbox,
             global::Notrelix.Infrastructure.CrossContext.Collaboration.Notifications.PostgresNotificationInbox>();
+        services.AddScoped<global::Notrelix.Application.Features.Automation.Ports.IAutomationMessagePort,
+            global::Notrelix.Infrastructure.CrossContext.Automation.Messaging.AutomationMessageAdapter>();
         services.AddScoped<IWorkspaceGrantProjectionService, WorkspaceGrantProjectionServiceAdapter>();
         services.AddScoped<Notrelix.Application.Features.Workspaces.Members.Services.IWorkspaceOwnerUpdateLocker,
             Notrelix.Infrastructure.Workspaces.Members.WorkspaceOwnerUpdateLocker>();

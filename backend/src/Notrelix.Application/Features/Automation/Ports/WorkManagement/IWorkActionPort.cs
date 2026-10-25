@@ -54,6 +54,27 @@ public interface IWorkActionPort
         AutomationPrincipal automationPrincipal,
         CancellationToken cancellationToken);
 
+    /// <summary>Sets the triggering item's status to an option of its board's Status field.</summary>
+    Task ChangeStatusAsync(Guid itemId, Guid optionId, Guid operationId, AutomationPrincipal principal, CancellationToken cancellationToken);
+
+    /// <summary>Writes a field value (raw JSON text) of the triggering item.</summary>
+    Task SetFieldValueAsync(Guid itemId, Guid fieldId, string valueJson, Guid operationId, AutomationPrincipal principal, CancellationToken cancellationToken);
+
+    /// <summary>Assigns a workspace member to the triggering item.</summary>
+    Task AssignMemberAsync(Guid itemId, Guid userId, Guid operationId, AutomationPrincipal principal, CancellationToken cancellationToken);
+
+    /// <summary>What a rule condition reads about the item.</summary>
+    Task<WorkActionItemFacts> GetItemFactsAsync(Guid itemId, Guid boardId, AutomationPrincipal principal, CancellationToken cancellationToken);
+
+    /// <summary>The option belongs to the board's Status field (NotFound otherwise).</summary>
+    Task EnsureStatusOptionAsync(Guid boardId, Guid optionId, AutomationPrincipal principal, CancellationToken cancellationToken);
+
+    /// <summary>The field is a writable field of the board and the value fits it.</summary>
+    Task EnsureFieldValueAsync(Guid boardId, Guid fieldId, string valueJson, AutomationPrincipal principal, CancellationToken cancellationToken);
+
+    /// <summary>The user is an active member of the principal's workspace (Forbidden otherwise).</summary>
+    Task EnsureWorkspaceMemberAsync(Guid userId, AutomationPrincipal principal, CancellationToken cancellationToken);
+
     /// <summary>The triggering item is on the rule's board (NotFound otherwise).</summary>
     Task EnsureItemOnBoardAsync(
         Guid itemId,
@@ -69,3 +90,10 @@ public sealed record WorkActionResult(
     Guid ItemId,
     Guid GroupId,
     string Position);
+
+/// <summary>The group, status option, name and raw JSON field values of an item, for rule conditions.</summary>
+public sealed record WorkActionItemFacts(
+    Guid GroupId,
+    Guid? StatusOptionId,
+    string Name,
+    IReadOnlyDictionary<Guid, string> FieldValues);

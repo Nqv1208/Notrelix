@@ -3983,6 +3983,11 @@
           "nullable": false
         },
         {
+          "name": "boardId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
           "name": "eventId",
           "type": "Guid",
           "nullable": false

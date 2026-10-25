@@ -81,7 +81,7 @@ public class AutomationBoardScopeAuthorityTests
 
         await authority.EnsureCanExecuteAsync(
             AccountId, WorkspaceId, Executor,
-            AutomationActionDefinition.Create("SendEmail", """{"subject":"x"}"""),
+            AutomationActionDefinition.Create("SendEmail", $$"""{"userId":"{{Guid.CreateVersion7()}}","subject":"x"}"""),
             CancellationToken.None, BoardId);
 
         port.Verify(p => p.EnsureBoardGroupAsync(BoardId, null, It.IsAny<AutomationPrincipal>(), It.IsAny<CancellationToken>()), Times.Once);

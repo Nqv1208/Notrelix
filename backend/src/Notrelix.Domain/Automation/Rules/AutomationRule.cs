@@ -36,6 +36,9 @@ public class AutomationRule : SoftDeletableAggregateRoot, IWorkspaceScoped
 
     public bool IsEnabled => Status == AutomationRuleStatus.Active;
 
+    /// <summary>A deleted rule: gone from the lists, its in-flight executions finish, its history stays readable for a while.</summary>
+    public bool IsRemoved => Status == AutomationRuleStatus.Archived;
+
     private AutomationRule() : base() { }
 
     public static AutomationRule Create(
@@ -78,6 +81,7 @@ public class AutomationRule : SoftDeletableAggregateRoot, IWorkspaceScoped
         if (Status == AutomationRuleStatus.Active)
             return;
 
+        EnsureNotRemoved();
         AutomationRuleValidator.ValidateForActivation(Name, Configuration);
 
         // AUT-020: a rule without a bound executor can never run, so it cannot be enabled.
@@ -98,7 +102,7 @@ public class AutomationRule : SoftDeletableAggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         Guard.NotEmpty(updatedBy);
-        if (Status == AutomationRuleStatus.Disabled) return;
+        if (Status is AutomationRuleStatus.Disabled or AutomationRuleStatus.Archived) return;
 
         var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Status = AutomationRuleStatus.Disabled;
@@ -147,6 +151,56 @@ public class AutomationRule : SoftDeletableAggregateRoot, IWorkspaceScoped
         ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new AutomationConfigurationChangedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, updatedAt));
+    }
+
+    /// <summary>
+    /// Edits the rule: a new version. The editor becomes the executor (the rule runs as someone who
+    /// holds the permission of its actions now, never as a person who did not choose them).
+    /// Executions already queued or running keep the version they started with.
+    /// </summary>
+    public void Revise(string name, AutomationConfiguration configuration, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
+        Guard.NotNullOrWhiteSpace(name);
+        Guard.NotNull(configuration);
+
+        EnsureNotRemoved();
+        AutomationRuleValidator.ValidateForActivation(name, configuration);
+
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        Name = name.Trim();
+        Configuration = configuration;
+        ExecutorUserId = updatedBy;
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+        RaiseDomainEvent(new AutomationConfigurationChangedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, updatedAt));
+    }
+
+    /// <summary>
+    /// Deletes the rule as a person sees it: it stops triggering and leaves the lists. Executions
+    /// already queued or running finish on the version they started with.
+    /// </summary>
+    public void Remove(Guid removedBy, DateTimeOffset removedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(removedBy);
+        if (IsRemoved) return;
+
+        var pending = PrepareAuditUpdate(removedBy, removedAt);
+        Status = AutomationRuleStatus.Archived;
+        DisabledReason = null;
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+        RaiseDomainEvent(new AutomationRuleDeletedDomainEvent(AccountId, WorkspaceId, Id, removedBy, removedAt));
+    }
+
+    private void EnsureNotRemoved()
+    {
+        if (IsRemoved)
+            throw new BusinessRuleException(
+                AutomationRuleCodes.Automation_Rule_MustHaveConfiguration,
+                "The automation rule was deleted.");
     }
 
     public void Delete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)

@@ -7,7 +7,7 @@ public sealed class AutomationActionDefinition : ValueObject
     private static readonly HashSet<string> ValidActions = new(StringComparer.OrdinalIgnoreCase)
     {
         "SendEmail", "UpdateField", "CreateItem", "MoveItem",
-        "NotifyMember", "Webhook", "SlackMessage"
+        "NotifyMember", "ChangeStatus", "AssignPerson", "Webhook", "SlackMessage"
     };
 
     public string Type { get; private set; } = null!;

@@ -1,6 +1,7 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Automation.Abstractions;
 using Notrelix.Application.Features.Automation.DTOs;
+using Notrelix.Application.Features.Automation.Executions.Services;
 
 namespace Notrelix.Application.Features.Automation.Executions.Queries.GetAutomationExecutions;
 
@@ -20,11 +21,16 @@ public record GetAutomationExecutionsQuery(Guid AutomationRuleId, int Page = 1, 
 
 public class GetAutomationExecutionsQueryHandler : IRequestHandler<GetAutomationExecutionsQuery, Result<IReadOnlyList<AutomationExecutionDto>>>
 {
-    private readonly IAutomationDbContext _context;
+    /// <summary>How long a deleted rule's history stays readable.</summary>
+    public static readonly TimeSpan DeletedRuleRetention = TimeSpan.FromDays(90);
 
-    public GetAutomationExecutionsQueryHandler(IAutomationDbContext context)
+    private readonly IAutomationDbContext _context;
+    private readonly IDateTimeProvider? _clock;
+
+    public GetAutomationExecutionsQueryHandler(IAutomationDbContext context, IDateTimeProvider? clock = null)
     {
         _context = context;
+        _clock = clock;
     }
 
     public async Task<Result<IReadOnlyList<AutomationExecutionDto>>> Handle(GetAutomationExecutionsQuery request, CancellationToken cancellationToken)
@@ -40,13 +46,26 @@ public class GetAutomationExecutionsQueryHandler : IRequestHandler<GetAutomation
             throw new NotFoundException("AutomationRule", request.AutomationRuleId);
         }
 
-        var executions = await _context.AutomationExecutions
+        // A deleted rule's history stays readable for a while, then it is gone.
+        var removed = await _context.AutomationRules.AsNoTracking()
+            .Where(rule => rule.Id == request.AutomationRuleId && rule.Status == AutomationRuleStatus.Archived)
+            .Select(rule => rule.UpdatedAt)
+            .FirstOrDefaultAsync(cancellationToken);
+        var now = _clock?.UtcNow ?? DateTimeOffset.UtcNow;
+        if (removed is { } removedAt && removedAt < now - DeletedRuleRetention)
+        {
+            throw new NotFoundException("AutomationRule", request.AutomationRuleId);
+        }
+
+        var rows = await _context.AutomationExecutions
             .AsNoTracking()
             .Where(item => item.RuleId == request.AutomationRuleId)
             .OrderByDescending(item => item.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(item => new AutomationExecutionDto(
+            .ToListAsync(cancellationToken);
+
+        var executions = rows.Select(item => new AutomationExecutionDto(
                 item.Id,
                 item.WorkspaceId,
                 item.RuleId,
@@ -54,8 +73,10 @@ public class GetAutomationExecutionsQueryHandler : IRequestHandler<GetAutomation
                 item.AttemptCount,
                 item.Payload,
                 item.Error,
-                item.CreatedAt.DateTime))
-            .ToListAsync(cancellationToken);
+                item.CreatedAt.DateTime,
+                item.RuleVersion,
+                AutomationExecutionProgress.Read(item.LastResponse)))
+            .ToList();
 
         return Result<IReadOnlyList<AutomationExecutionDto>>.Success(executions);
     }
