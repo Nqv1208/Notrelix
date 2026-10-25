@@ -17,6 +17,7 @@ import {
   type OnboardingStepId,
   type OnboardingSummary,
 } from "@notrelix/features-workspace/web";
+import { clearApplicationCache } from "@/composition/application-lifecycle";
 import { AuthGuard } from "@/shell/guards/auth-guard";
 import { useOnboardingApi } from "./use-onboarding-api";
 
@@ -339,7 +340,7 @@ function SetupFlow() {
         } satisfies SavedData as unknown as Record<string, unknown>,
       });
       await runtimeClient.api.post(runtimeClient.endpoints.auth.logout, {});
-      queryClient.clear();
+      clearApplicationCache(queryClient, { sessionEnded: true });
       await navigate({ to: "/sign-in", replace: true });
     });
 
