@@ -3042,6 +3042,10 @@
         {
           "id": "automation-log",
           "testFile": "src/components/board-settings/__tests__/board-automation.interaction.component.test.tsx"
+        },
+        {
+          "id": "delete-field",
+          "testFile": "src/components/board-settings/__tests__/board-settings-surface.interaction.component.test.tsx"
         }
       ]
     },

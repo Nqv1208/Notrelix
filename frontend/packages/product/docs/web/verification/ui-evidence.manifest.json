@@ -264,6 +264,18 @@
         {
           "id": "versions",
           "testFile": "src/components/__tests__/doc-page-surfaces.interaction.component.test.tsx"
+        },
+        {
+          "id": "trash",
+          "testFile": "src/components/__tests__/doc-page-surfaces.interaction.component.test.tsx"
+        },
+        {
+          "id": "page-reference",
+          "testFile": "src/components/__tests__/doc-page-surfaces.interaction.component.test.tsx"
+        },
+        {
+          "id": "convert-task",
+          "testFile": "src/components/__tests__/doc-page-surfaces.interaction.component.test.tsx"
         }
       ]
     },

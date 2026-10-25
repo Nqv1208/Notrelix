@@ -305,6 +305,10 @@ function AvailableIntegrationsPage() {
         links={links}
         open={secret !== null}
         secret={secret}
+        onCopy={(value) =>
+          navigator.clipboard?.writeText(value) ??
+          Promise.reject(new Error("no clipboard"))
+        }
         onClose={() => setSecret(null)}
       />
       <IntegrationDisconnectDialog

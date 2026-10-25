@@ -1151,6 +1151,8 @@ export interface IntegrationSecretDialogProps extends Shared {
   readonly open: boolean;
   /** The signing secret, known only now: it is not shown again. */
   readonly secret: string | null;
+  /** Writes the secret to the clipboard (a host side effect); absent = no copy button action. */
+  readonly onCopy?: (secret: string) => Promise<void>;
   readonly onClose: () => void;
 }
 
@@ -1160,8 +1162,8 @@ export function IntegrationSecretDialog(props: IntegrationSecretDialogProps) {
   const [copied, setCopied] = React.useState(false);
   const copy = () => {
     if (!props.secret) return;
-    void navigator.clipboard
-      ?.writeText(props.secret)
+    void props
+      .onCopy?.(props.secret)
       .then(() => setCopied(true))
       .catch(() => undefined);
   };

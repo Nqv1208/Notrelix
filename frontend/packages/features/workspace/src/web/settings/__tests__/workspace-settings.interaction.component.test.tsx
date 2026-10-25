@@ -133,7 +133,7 @@ describe("WorkspaceSettingsSurface", () => {
     );
   });
 
-  it("FUI[workspace.settings:defaults] takes any IANA time zone and refuses an unknown one", () => {
+  it("FUI[workspace.settings:timezone] takes any IANA time zone and refuses an unknown one", () => {
     const props = renderSettings();
     const zone = screen.getByLabelText(copy.defaults.timeZoneLabel);
     const save = () =>
