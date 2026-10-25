@@ -54,6 +54,7 @@ services:
       JwtSettings__Issuer: http://127.0.0.1:58000
       JwtSettings__Audience: http://127.0.0.1:5173
       Cors__AllowedOrigins__0: http://127.0.0.1:5173
+      Frontend__AppBaseUrl: http://127.0.0.1:5173
     command:
       - dotnet
       - run

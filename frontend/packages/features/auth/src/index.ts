@@ -55,6 +55,7 @@ export {
   SignInFlow,
   ForgotFlow,
   InviteFlow,
+  VerifyEmailFlow,
   authCatalog,
   authCopy,
   useAuthCopy,

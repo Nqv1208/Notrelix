@@ -86,7 +86,9 @@ function SetupFlow() {
   const [summary, setSummary] = useState<OnboardingSummary | null>(null);
   const [invitesSent, setInvitesSent] = useState(0);
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState<"unreachable" | null>(null);
+  const [error, setError] = useState<
+    "unreachable" | "emailNotConfirmed" | null
+  >(null);
   const [today] = useState(() => new Date());
 
   // Resume what "Lưu và thoát" kept, once.
@@ -202,8 +204,13 @@ function SetupFlow() {
     setError(null);
     try {
       await work();
-    } catch {
-      setError("unreachable");
+    } catch (failure) {
+      // The backend answers 403 until the address is confirmed.
+      setError(
+        (failure as { status?: number }).status === 403
+          ? "emailNotConfirmed"
+          : "unreachable",
+      );
     } finally {
       setPending(false);
     }
@@ -311,6 +318,11 @@ function SetupFlow() {
       }
     });
 
+  const onResendConfirmation = () =>
+    void run(async () => {
+      await runtimeClient.api.post("/auth/email-verification/request", {});
+    });
+
   const onBack = () => {
     if (step === "departments") setStep("workspace");
     else if (step === "invite") setStep("departments");
@@ -397,6 +409,7 @@ function SetupFlow() {
       onBack={onBack}
       onSkip={onSkip}
       onExit={onExit}
+      onResendConfirmation={onResendConfirmation}
       onEnterHome={() =>
         void navigate({
           to: "/workspaces/$workspaceId",

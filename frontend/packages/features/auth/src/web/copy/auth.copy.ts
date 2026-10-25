@@ -116,6 +116,28 @@ export const en = {
     back: "Back to sign-in",
     other: "Use another email",
   },
+  verifyEmail: {
+    confirmingTitle: "Confirming your email",
+    confirmingLead: "One moment.",
+    doneTitle: "Your email is confirmed",
+    doneLead: "You can set up your company now.",
+    continue: "Continue",
+    failedTitle: "This link no longer works",
+    failedLead:
+      "It may have been used already or it has expired. Enter your email and we send a new one.",
+    waitingTitle: "Confirm your email",
+    waitingLead:
+      "We sent a link to your email. Open it to finish setting up your account.",
+    label: "Email",
+    placeholder: "name@company.com",
+    send: "Send a new link",
+    sending: "Sending…",
+    sentNotice: "A new link is on its way. Check your inbox and spam folder.",
+    invalid: "Enter an email like name@company.com.",
+    unreachable:
+      "Could not reach Notrelix. Check the connection and try again.",
+    back: "Back to sign-in",
+  },
   invite: {
     title: "{{inviter}} invited you to the board {{board}} of {{org}}",
     guest: "Guest",
@@ -273,6 +295,27 @@ export const vi: AuthCopy = {
     resendWaitLabel: ", dùng được sau {{seconds}} giây",
     back: "Quay lại đăng nhập",
     other: "Dùng email khác",
+  },
+  verifyEmail: {
+    confirmingTitle: "Đang xác nhận email của bạn",
+    confirmingLead: "Vui lòng chờ một chút.",
+    doneTitle: "Email của bạn đã được xác nhận",
+    doneLead: "Bạn có thể thiết lập công ty ngay bây giờ.",
+    continue: "Tiếp tục",
+    failedTitle: "Liên kết này không còn dùng được",
+    failedLead:
+      "Liên kết có thể đã được dùng hoặc đã hết hạn. Nhập email để chúng tôi gửi liên kết mới.",
+    waitingTitle: "Xác nhận email của bạn",
+    waitingLead:
+      "Chúng tôi đã gửi một liên kết tới email của bạn. Mở liên kết để hoàn tất tài khoản.",
+    label: "Email",
+    placeholder: "ten@congty.vn",
+    send: "Gửi liên kết mới",
+    sending: "Đang gửi…",
+    sentNotice: "Liên kết mới đang được gửi. Xem hộp thư đến và thư rác.",
+    invalid: "Nhập email dạng ten@congty.vn.",
+    unreachable: "Chưa kết nối được Notrelix. Kiểm tra mạng rồi thử lại.",
+    back: "Quay lại đăng nhập",
   },
   invite: {
     title: "{{inviter}} mời bạn vào board {{board}} của {{org}}",

@@ -29,6 +29,8 @@ export const AUTH_FLOW_PATHS = {
   oauthStart: (provider: string) =>
     `/auth/oauth/${encodeURIComponent(provider)}/start`,
   forgotPassword: "/auth/forgot-password",
+  confirmEmail: "/auth/email-verification/confirm",
+  resendEmailVerification: "/auth/email-verification/resend",
   invitationPreview: "/invitations/preview",
   invitationDecline: "/invitations/decline",
   invitationAcceptWithRegistration: "/invitations/accept-with-registration",
@@ -289,6 +291,18 @@ export function createAuthFlowService(api: AuthFlowApiClient) {
     },
     forgotPassword(email: string) {
       return api.post<void>(AUTH_FLOW_PATHS.forgotPassword, { email }, QUIET);
+    },
+    /** `Identity.Auth.ConfirmEmail`: a token that is used up or expired answers 400. */
+    confirmEmail(token: string) {
+      return api.post<void>(AUTH_FLOW_PATHS.confirmEmail, { token }, QUIET);
+    },
+    /** `Identity.Auth.ResendEmailVerification`: always answers 200, whether or not the email has an account. */
+    resendEmailVerification(email: string) {
+      return api.post<void>(
+        AUTH_FLOW_PATHS.resendEmailVerification,
+        { email },
+        QUIET,
+      );
     },
     /** A token the server does not know answers 404. */
     async getInvite(token: string) {

@@ -120,6 +120,7 @@ services:
       JwtSettings__SecretKey: ${JWT_SECRET:-dev-only-change-me-not-for-production}
       JwtSettings__Issuer: ${JWT_ISSUER:-http://localhost:${BACKEND_PORT:-8000}}
       JwtSettings__Audience: ${JWT_AUDIENCE:-http://localhost:${FRONTEND_PORT:-3000}}
+      Frontend__AppBaseUrl: ${FRONTEND_APP_BASE_URL:-http://localhost:${FRONTEND_PORT:-3000}}
       Email__ApiKey: ${RESEND_API_KEY:-}
       Email__FromEmail: ${EMAIL_FROM:-onboarding@resend.dev}
       Email__FromName: ${EMAIL_FROM_NAME:-Notrelix}

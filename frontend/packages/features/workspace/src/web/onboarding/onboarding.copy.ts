@@ -23,6 +23,9 @@ export const en = {
     saving: "Saving…",
     unreachable:
       "Could not reach Notrelix. Check the connection and try again.",
+    emailNotConfirmed:
+      "Confirm your email first. We sent you a link when you signed up; open it, then press Continue again.",
+    resendConfirmation: "Send the link again",
     steps: {
       workspace: "Create workspace",
       departments: "Departments",
@@ -338,6 +341,9 @@ export const vi: OnboardingCopy = {
     srTodo: "chưa làm",
     saving: "Đang lưu…",
     unreachable: "Chưa kết nối được Notrelix. Kiểm tra mạng rồi thử lại.",
+    emailNotConfirmed:
+      "Hãy xác nhận email trước. Chúng tôi đã gửi liên kết khi bạn đăng ký; mở liên kết đó rồi bấm Tiếp tục lại.",
+    resendConfirmation: "Gửi lại liên kết",
     steps: {
       workspace: "Tạo workspace",
       departments: "Phòng ban",
