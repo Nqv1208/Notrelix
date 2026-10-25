@@ -14,7 +14,7 @@ public class Mention : Entity, IWorkspaceScoped
 
     private Mention() : base() { }
 
-    public static Mention Create(Guid accountId, Guid workspaceId, ResourceRef source, MentionType type, Guid mentionedId, Guid mentionedByUserId, DateTimeOffset createdAt)
+    public static Mention Create(Guid accountId, Guid workspaceId, ResourceRef source, MentionType type, Guid mentionedId, Guid mentionedByUserId, DateTimeOffset createdAt, string? excerpt = null)
     {
         Guard.NotEmpty(accountId);
         Guard.NotEmpty(workspaceId);
@@ -37,7 +37,7 @@ public class Mention : Entity, IWorkspaceScoped
         };
 
         mention.RaiseDomainEvent(new MentionCreatedDomainEvent(
-            accountId, workspaceId, mention.Id, source, mentionedId, mentionedByUserId, createdAt));
+            accountId, workspaceId, mention.Id, source, mentionedId, mentionedByUserId, createdAt, excerpt));
 
         return mention;
     }

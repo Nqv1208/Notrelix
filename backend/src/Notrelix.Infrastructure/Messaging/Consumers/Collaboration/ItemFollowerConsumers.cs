@@ -109,6 +109,12 @@ public sealed class CommentCreatedFollowConsumer : IConsumer<CommentCreatedInteg
     public async Task Consume(ConsumeContext<CommentCreatedIntegrationEvent> context)
     {
         var msg = context.Message;
+        if (msg.WorkspaceId is { } commentWorkspaceId)
+        {
+            await _notifier.MarkMentionsRepliedAsync(
+                commentWorkspaceId, msg.TargetType, msg.TargetId, msg.AuthorId, DateTimeOffset.UtcNow, context.CancellationToken);
+        }
+
         if (msg.TargetType != ItemFollowerNotifier.BoardItemKind
             || msg.AccountId is not { } accountId || accountId == Guid.Empty || msg.WorkspaceId is not { } workspaceId)
             return;

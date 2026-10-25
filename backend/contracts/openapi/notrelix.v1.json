@@ -1530,7 +1530,7 @@
           "Collaboration.Notifications"
         ],
         "summary": "List the caller's own notifications in a workspace",
-        "description": "Newest first, one page at a time (limit 1 to 50, default 20; pass nextCursor to continue). Only the caller's own notifications; one about an Item on a Board the caller can no longer read is not shown. archived and dismissed notifications are not listed.",
+        "description": "Newest first, one page at a time (limit 1 to 50, default 20; pass nextCursor to continue). Only the caller's own notifications; one about an Item on a Board the caller can no longer read is not shown. Archived and dismissed notifications are never listed. state selects the list: inbox (default: not done, not snoozed), done, or snoozed; a snoozed entry whose time has passed is back in inbox, unread. Each entry says whether it still needs the caller's reply (a mention they have not answered or finished), whether its thread is muted and, when snoozed, until when.",
         "operationId": "Collaboration.Notifications.GetWorkspaceInbox",
         "parameters": [
           {
@@ -1562,6 +1562,13 @@
             "schema": {
               "type": "integer",
               "format": "int32"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "schema": {
+              "type": "string"
             }
           }
         ],
@@ -1636,6 +1643,266 @@
         "summary": "Mark one notification of the caller read",
         "description": "A notification that is not the caller's, or already read, changes nothing and still answers success.",
         "operationId": "Collaboration.Notifications.MarkInboxEntryRead",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "notificationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspaceId}/inbox/{notificationId}/done": {
+      "post": {
+        "tags": [
+          "Collaboration.Notifications"
+        ],
+        "summary": "Mark one notification of the caller done",
+        "description": "A done notification is read, leaves the default list (it shows under state=done) and no longer needs a reply. A notification that is not the caller's, or already done, changes nothing and still answers success.",
+        "operationId": "Collaboration.Notifications.MarkInboxEntryDone",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "notificationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspaceId}/inbox/{notificationId}/reopen": {
+      "post": {
+        "tags": [
+          "Collaboration.Notifications"
+        ],
+        "summary": "Take one done or snoozed notification back into the inbox",
+        "description": "Clears done and snooze. A notification that is not the caller's, or already in the inbox, changes nothing and still answers success.",
+        "operationId": "Collaboration.Notifications.ReopenInboxEntry",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "notificationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspaceId}/inbox/{notificationId}/snooze": {
+      "post": {
+        "tags": [
+          "Collaboration.Notifications"
+        ],
+        "summary": "Hide one notification of the caller until a later time",
+        "description": "The entry leaves the default list and returns, unread, once the time has passed. The time must be in the future and within a year.",
+        "operationId": "Collaboration.Notifications.SnoozeInboxEntry",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "notificationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Contracts.Collaboration.Notifications.Requests.SnoozeInboxEntryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspaceId}/inbox/{notificationId}/mute": {
+      "post": {
+        "tags": [
+          "Collaboration.Notifications"
+        ],
+        "summary": "Mute the thread a notification is about",
+        "description": "No new notification from that item or page reaches the caller; earlier ones stay. A repeat changes nothing.",
+        "operationId": "Collaboration.Notifications.MuteInboxThread",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "notificationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspaceId}/inbox/{notificationId}/unmute": {
+      "post": {
+        "tags": [
+          "Collaboration.Notifications"
+        ],
+        "summary": "Lift the mute of the thread a notification is about",
+        "description": "A thread that is not muted changes nothing and still answers success.",
+        "operationId": "Collaboration.Notifications.UnmuteInboxThread",
         "parameters": [
           {
             "name": "workspaceId",
@@ -19840,6 +20107,17 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.API.Contracts.Collaboration.Notifications.Requests.SnoozeInboxEntryRequest": {
+        "type": "object",
+        "properties": {
+          "until": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.API.Contracts.Collaboration.Preferences.Requests.NotificationPreferenceRowRequest": {
         "type": "object",
         "properties": {
@@ -23803,6 +24081,17 @@
           },
           "target": {
             "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetWorkspaceInbox.InboxTargetDto"
+          },
+          "needsReply": {
+            "type": "boolean"
+          },
+          "muted": {
+            "type": "boolean"
+          },
+          "snoozedUntil": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
           }
         },
         "additionalProperties": false

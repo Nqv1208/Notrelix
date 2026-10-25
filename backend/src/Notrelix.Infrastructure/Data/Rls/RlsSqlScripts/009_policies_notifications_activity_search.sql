@@ -34,6 +34,8 @@ END $$;
 SELECT ops.apply_user_owned_policies('notifications', 'notification_preferences', 'user_id', false, true);
 SELECT ops.apply_user_owned_policies('notifications', 'notification_preference_sets', 'user_id', false, true);
 SELECT ops.apply_user_owned_policies('notifications', 'notification_counters', 'user_id', false, true);
+-- A thread mute is the muting member's own; producers read it on the worker login (p_worker_all).
+SELECT ops.apply_user_owned_policies('notifications', 'notification_thread_mutes', 'user_id', false, true);
 SELECT ops.apply_worker_internal_policies('notifications', 'notification_deliveries', true);
 SELECT ops.apply_worker_internal_policies('notifications', 'email_outbox', true);
 SELECT ops.apply_worker_internal_policies('notifications', 'email_delivery_attempts', false);

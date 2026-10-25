@@ -13,12 +13,15 @@ namespace Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetWor
 /// access alive). Each request scans at most <see cref="ScanLimit"/> notifications after the cursor and answers
 /// at most <see cref="Limit"/> readable ones; <c>NextCursor</c> continues the listing, null when it ended.
 /// </summary>
-public record GetWorkspaceInboxQuery(Guid WorkspaceId, bool UnreadOnly, string? Cursor, int? Limit)
+public record GetWorkspaceInboxQuery(Guid WorkspaceId, bool UnreadOnly, string? Cursor, int? Limit, string? State = null)
     : IQuery<Result<WorkspaceInboxDto>>, IAuthenticatedRequest, IReadRequest, IWorkspaceRequest, IRequirePermission
 {
     public const int DefaultLimit = 20;
     public const int MaxLimit = 50;
     public const int ScanLimit = 100;
+
+    /// <summary>The <c>state</c> values a listing accepts: the default list, the done entries, the snoozed entries.</summary>
+    public static readonly string[] States = ["inbox", "done", "snoozed"];
 
     PermissionAction IRequirePermission.Action => PermissionAction.ViewWorkspace;
     ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId);
@@ -35,7 +38,10 @@ public sealed record InboxEntryDto(
     bool Unread,
     InboxPersonDto? Actor,
     string? Excerpt,
-    InboxTargetDto? Target);
+    InboxTargetDto? Target,
+    bool NeedsReply = false,
+    bool Muted = false,
+    DateTimeOffset? SnoozedUntil = null);
 
 public sealed record WorkspaceInboxDto(IReadOnlyList<InboxEntryDto> Items, string? NextCursor);
 
@@ -57,8 +63,14 @@ public class GetWorkspaceInboxQueryHandler(
             return Result<WorkspaceInboxDto>.Failure("The cursor is not one this inbox issued.");
         }
 
+        var view = request.State?.ToLowerInvariant() switch
+        {
+            "done" => InboxView.Done,
+            "snoozed" => InboxView.Snoozed,
+            _ => request.UnreadOnly ? InboxView.Unread : InboxView.Inbox
+        };
         var scanned = await inbox.ListAsync(
-            request.WorkspaceId, userId, request.UnreadOnly, beforeAt, beforeId,
+            request.WorkspaceId, userId, view, beforeAt, beforeId,
             GetWorkspaceInboxQuery.ScanLimit, cancellationToken);
         if (scanned.Count == 0)
         {
@@ -112,7 +124,10 @@ public class GetWorkspaceInboxQueryHandler(
                 n.Unread,
                 n.ActorUserId is { } actorId ? new InboxPersonDto(actorId, people.GetValueOrDefault(actorId, string.Empty)) : null,
                 n.Body,
-                target);
+                target,
+                n.NeedsReply,
+                n.Muted,
+                n.SnoozedUntil);
         }).ToList();
 
         // More may follow when readable ones were left over, or when the scan was full.
@@ -161,5 +176,9 @@ public class GetWorkspaceInboxQueryValidator : AbstractValidator<GetWorkspaceInb
         RuleFor(x => x.WorkspaceId).NotEmpty();
         RuleFor(x => x.Limit).InclusiveBetween(1, GetWorkspaceInboxQuery.MaxLimit).When(x => x.Limit is not null);
         RuleFor(x => x.Cursor).MaximumLength(200);
+        RuleFor(x => x.State)
+            .Must(state => GetWorkspaceInboxQuery.States.Contains(state!, StringComparer.OrdinalIgnoreCase))
+            .When(x => x.State is not null)
+            .WithMessage("The state must be inbox, done or snoozed.");
     }
 }

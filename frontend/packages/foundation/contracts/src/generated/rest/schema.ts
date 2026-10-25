@@ -414,7 +414,7 @@ export interface paths {
         };
         /**
          * List the caller's own notifications in a workspace
-         * @description Newest first, one page at a time (limit 1 to 50, default 20; pass nextCursor to continue). Only the caller's own notifications; one about an Item on a Board the caller can no longer read is not shown. archived and dismissed notifications are not listed.
+         * @description Newest first, one page at a time (limit 1 to 50, default 20; pass nextCursor to continue). Only the caller's own notifications; one about an Item on a Board the caller can no longer read is not shown. Archived and dismissed notifications are never listed. state selects the list: inbox (default: not done, not snoozed), done, or snoozed; a snoozed entry whose time has passed is back in inbox, unread. Each entry says whether it still needs the caller's reply (a mention they have not answered or finished), whether its thread is muted and, when snoozed, until when.
          */
         get: operations["Collaboration.Notifications.GetWorkspaceInbox"];
         put?: never;
@@ -459,6 +459,106 @@ export interface paths {
          * @description A notification that is not the caller's, or already read, changes nothing and still answers success.
          */
         post: operations["Collaboration.Notifications.MarkInboxEntryRead"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/inbox/{notificationId}/done": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark one notification of the caller done
+         * @description A done notification is read, leaves the default list (it shows under state=done) and no longer needs a reply. A notification that is not the caller's, or already done, changes nothing and still answers success.
+         */
+        post: operations["Collaboration.Notifications.MarkInboxEntryDone"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/inbox/{notificationId}/reopen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Take one done or snoozed notification back into the inbox
+         * @description Clears done and snooze. A notification that is not the caller's, or already in the inbox, changes nothing and still answers success.
+         */
+        post: operations["Collaboration.Notifications.ReopenInboxEntry"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/inbox/{notificationId}/snooze": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Hide one notification of the caller until a later time
+         * @description The entry leaves the default list and returns, unread, once the time has passed. The time must be in the future and within a year.
+         */
+        post: operations["Collaboration.Notifications.SnoozeInboxEntry"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/inbox/{notificationId}/mute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mute the thread a notification is about
+         * @description No new notification from that item or page reaches the caller; earlier ones stay. A repeat changes nothing.
+         */
+        post: operations["Collaboration.Notifications.MuteInboxThread"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/inbox/{notificationId}/unmute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Lift the mute of the thread a notification is about
+         * @description A thread that is not muted changes nothing and still answers success.
+         */
+        post: operations["Collaboration.Notifications.UnmuteInboxThread"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4905,6 +5005,10 @@ export interface components {
         "Notrelix.API.Contracts.Collaboration.Comments.Requests.UpdateCommentRequest": {
             contentMd?: string | null;
         };
+        "Notrelix.API.Contracts.Collaboration.Notifications.Requests.SnoozeInboxEntryRequest": {
+            /** Format: date-time */
+            until?: string | null;
+        };
         "Notrelix.API.Contracts.Collaboration.Preferences.Requests.NotificationPreferenceRowRequest": {
             type?: string | null;
             inApp?: boolean | null;
@@ -6221,6 +6325,10 @@ export interface components {
             actor?: components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetWorkspaceInbox.InboxPersonDto"];
             excerpt?: string | null;
             target?: components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetWorkspaceInbox.InboxTargetDto"];
+            needsReply?: boolean;
+            muted?: boolean;
+            /** Format: date-time */
+            snoozedUntil?: string | null;
         };
         "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetWorkspaceInbox.InboxPersonDto": {
             /** Format: uuid */
@@ -7965,6 +8073,7 @@ export interface operations {
                 unreadOnly?: boolean;
                 cursor?: string;
                 limit?: number;
+                state?: string;
             };
             header?: never;
             path: {
@@ -8008,6 +8117,125 @@ export interface operations {
         };
     };
     "Collaboration.Notifications.MarkInboxEntryRead": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                notificationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Collaboration.Notifications.MarkInboxEntryDone": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                notificationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Collaboration.Notifications.ReopenInboxEntry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                notificationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Collaboration.Notifications.SnoozeInboxEntry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                notificationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Collaboration.Notifications.Requests.SnoozeInboxEntryRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Collaboration.Notifications.MuteInboxThread": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                notificationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Collaboration.Notifications.UnmuteInboxThread": {
         parameters: {
             query?: never;
             header?: never;
