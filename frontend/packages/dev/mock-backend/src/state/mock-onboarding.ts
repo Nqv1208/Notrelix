@@ -7,9 +7,15 @@
  * person. Pure data and small state; the handlers compose the store with it.
  */
 
-export type CompanySize = "s" | "m" | "l" | "xl";
+export type CompanySize = "s" | "m" | "l" | "xl" | "xxl";
 
-export const COMPANY_SIZES: readonly CompanySize[] = ["s", "m", "l", "xl"];
+export const COMPANY_SIZES: readonly CompanySize[] = [
+  "s",
+  "m",
+  "l",
+  "xl",
+  "xxl",
+];
 
 /** Addresses nobody may take: reserved words and the ones the mock world uses. */
 const TAKEN_SLUGS = new Set([
@@ -54,31 +60,32 @@ export interface DepartmentSuggestion {
   readonly name: string;
 }
 
-const BY_SIZE: Readonly<Record<CompanySize, readonly DepartmentSuggestion[]>> =
-  {
-    s: [
-      { key: "kinh-doanh", name: "Kinh doanh" },
-      { key: "van-hanh", name: "Vận hành" },
-    ],
-    m: [
-      { key: "kinh-doanh", name: "Kinh doanh" },
-      { key: "ke-toan", name: "Kế toán" },
-      { key: "van-hanh", name: "Vận hành" },
-    ],
-    l: [
-      { key: "kinh-doanh", name: "Kinh doanh" },
-      { key: "ke-toan", name: "Kế toán" },
-      { key: "san-xuat", name: "Sản xuất" },
-      { key: "nhan-su", name: "Nhân sự" },
-    ],
-    xl: [
-      { key: "kinh-doanh", name: "Kinh doanh" },
-      { key: "ke-toan", name: "Kế toán" },
-      { key: "san-xuat", name: "Sản xuất" },
-      { key: "nhan-su", name: "Nhân sự" },
-      { key: "cong-nghe", name: "Công nghệ" },
-    ],
-  };
+const BY_SIZE: Readonly<
+  Record<Exclude<CompanySize, "xxl">, readonly DepartmentSuggestion[]>
+> = {
+  s: [
+    { key: "kinh-doanh", name: "Kinh doanh" },
+    { key: "van-hanh", name: "Vận hành" },
+  ],
+  m: [
+    { key: "kinh-doanh", name: "Kinh doanh" },
+    { key: "ke-toan", name: "Kế toán" },
+    { key: "van-hanh", name: "Vận hành" },
+  ],
+  l: [
+    { key: "kinh-doanh", name: "Kinh doanh" },
+    { key: "ke-toan", name: "Kế toán" },
+    { key: "san-xuat", name: "Sản xuất" },
+    { key: "nhan-su", name: "Nhân sự" },
+  ],
+  xl: [
+    { key: "kinh-doanh", name: "Kinh doanh" },
+    { key: "ke-toan", name: "Kế toán" },
+    { key: "san-xuat", name: "Sản xuất" },
+    { key: "nhan-su", name: "Nhân sự" },
+    { key: "cong-nghe", name: "Công nghệ" },
+  ],
+};
 
 const FOOD_EXTRAS: readonly DepartmentSuggestion[] = [
   { key: "mua-hang", name: "Mua hàng" },
@@ -96,7 +103,7 @@ export function departmentSuggestions(size: CompanySize, companyName: string) {
   const food = /thực phẩm|food|nước chấm/i.test(companyName);
   return {
     industry: food ? "food" : null,
-    departments: BY_SIZE[size],
+    departments: BY_SIZE[size === "xxl" ? "xl" : size],
     extras: food ? FOOD_EXTRAS : GENERAL_EXTRAS,
   };
 }

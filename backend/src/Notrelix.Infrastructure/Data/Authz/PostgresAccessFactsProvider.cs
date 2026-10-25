@@ -61,15 +61,6 @@ public sealed class PostgresAccessFactsProvider : IAccessFactsProvider
             resource = ResourceRef.Create(ResourceKind.Create("accounts.account"), context.AccountId.Value);
         }
 
-        // A Block is decided on its Page: the page stands for it in the facts
-        // below (an unknown block resolves to the empty page, which is NotFound).
-        Guid? parentPageId = null;
-        if (resource?.Kind.Value == "documents.block")
-        {
-            parentPageId = await _pageAuthorizationFacts.ResolveBlockPageIdAsync(resource.ResourceId, cancellationToken) ?? Guid.Empty;
-            resource = ResourceRef.Create(ResourceKind.Create("documents.page"), parentPageId.Value, resource.WorkspaceId);
-        }
-
         var feature = request as IRequireFeature;
 
         // Page lifecycle/visibility/placement are Documents-owned facts, read
@@ -149,7 +140,6 @@ public sealed class PostgresAccessFactsProvider : IAccessFactsProvider
                 SpaceRole = NullableString(reader, 16),
                 SpaceIsOpen = reader.GetBoolean(17),
                 ParentBoardId = boardChild.IsBoardChild ? boardChild.BoardId : null,
-                ParentPageId = parentPageId,
                 IsBoardChild = boardChild.IsBoardChild,
                 TargetBoardMemberRole = NullableString(reader, 18),
             };

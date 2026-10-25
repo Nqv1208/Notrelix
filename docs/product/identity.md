@@ -146,6 +146,19 @@ Job title is NOT an Identity fact: it is a per-Workspace member profile owned by
 (`docs/product/workspaces.md`). Date format, the default view and the sidebar default are client-side
 presentation, not Identity preferences. The notification preference matrix is owned by Collaboration.
 
+The person's profile photo is an Identity fact. It is either an external address or an uploaded image. An
+uploaded image is PNG, JPEG or WebP, recognised from its bytes (never from the declared type or file name),
+at most 2,000,000 bytes; anything else, including SVG and GIF, is refused (`identity.avatar.unsupported-format`
+415, `identity.avatar.too-large` 413). The person replaces or removes only their own photo; changing the
+display name does not touch the photo. A replaced or removed object is not deleted at request time (the
+request could still roll back); a background sweep removes avatar objects older than a grace period that no
+user row references. The photo is served only through an authorised read: the person and people who share an
+active Workspace with them can read it, everyone else, and every user without an uploaded photo, gets the
+same not-found answer.
+
+The person's default Workspace (the one that opens with the app) is an Identity fact stored on the profile;
+the choice is validated and cleared by Workspaces (`docs/product/workspaces.md`).
+
 Changing display profile must not silently change security identity.
 
 # 8. User lifecycle

@@ -21,7 +21,8 @@ export interface GettingStartedCardProps {
   readonly copy: OnboardingCopy;
   readonly name: string;
   readonly items: readonly GettingStartedItem[];
-  readonly onToggle: (key: string) => void;
+  /** Absent: the tasks complete by themselves and the check is not clickable. */
+  readonly onToggle?: (key: string) => void;
   readonly onHide: () => void;
   readonly onOpen?: (item: GettingStartedItem) => void;
 }
@@ -76,8 +77,8 @@ export function GettingStartedCard({
               role="checkbox"
               aria-checked={item.done}
               aria-label={fillOnboarding(t.markDone, { title: item.title })}
-              disabled={item.done}
-              onClick={() => onToggle(item.key)}
+              disabled={item.done || !onToggle}
+              onClick={() => onToggle?.(item.key)}
               className={cn(
                 "grid size-5 shrink-0 cursor-pointer place-items-center rounded-full border p-0 outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
                 item.done

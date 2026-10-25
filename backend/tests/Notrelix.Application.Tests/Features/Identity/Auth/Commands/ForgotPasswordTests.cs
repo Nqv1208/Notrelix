@@ -54,4 +54,39 @@ public class ForgotPasswordTests : IdentityHandlerTestBase
         result.Succeeded.Should().BeFalse();
         result.Errors.Should().Contain(e => e.Contains("Too many requests"));
     }
+
+    [Fact]
+    public async Task Handle_WhenUserNotFound_DoesNotLogTheEmailAddress()
+    {
+        SetupUsers();
+        RateLimitServiceMock.Setup(r => r.IsRateLimitedAsync("forgot-password", TestEmail.ToLowerInvariant(), 3, TimeSpan.FromHours(1)))
+            .ReturnsAsync(false);
+
+        await CreateSut().Handle(new ForgotPasswordCommand { Email = TestEmail }, CancellationToken.None);
+
+        ForgotPasswordLoggerMock.Invocations
+            .SelectMany(i => i.Arguments)
+            .Select(a => a?.ToString() ?? string.Empty)
+            .Should().NotContain(a => a.Contains(TestEmail, StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task Handle_WhenSendFails_DoesNotLogTheEmailAddress()
+    {
+        SetupUsers(CreateUser());
+        RateLimitServiceMock.Setup(r => r.IsRateLimitedAsync("forgot-password", TestEmail.ToLowerInvariant(), 3, TimeSpan.FromHours(1)))
+            .ReturnsAsync(false);
+        OtpServiceMock.Setup(o => o.GenerateAsync("forgot-password", TestEmail.ToLowerInvariant()))
+            .ReturnsAsync("123456");
+        EmailServiceMock.Setup(e => e.SendAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("provider down"));
+
+        var result = await CreateSut().Handle(new ForgotPasswordCommand { Email = TestEmail }, CancellationToken.None);
+
+        result.Succeeded.Should().BeFalse();
+        ForgotPasswordLoggerMock.Invocations
+            .SelectMany(i => i.Arguments)
+            .Select(a => a?.ToString() ?? string.Empty)
+            .Should().NotContain(a => a.Contains(TestEmail, StringComparison.OrdinalIgnoreCase));
+    }
 }

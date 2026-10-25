@@ -23,8 +23,8 @@ public sealed class GetWorkspaceMembersPhoneVisibilityTests : WorkspaceHandlerTe
             .ReturnsAsync((IReadOnlyList<Guid> ids, CancellationToken _) =>
                 ids.Select(id => new ActorSnapshot(id, $"User {id:N}", null)).ToList());
         // The port is the opt-in half only: it answers for whichever ids it is asked about.
-        _phones.Setup(p => p.FindSharedPhonesAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((IReadOnlyCollection<Guid> ids, CancellationToken _) =>
+        _phones.Setup(p => p.FindSharedPhonesAsync(It.IsAny<Guid>(), It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Guid _, IReadOnlyCollection<Guid> ids, CancellationToken _) =>
                 (IReadOnlyDictionary<Guid, string>)ids.ToDictionary(id => id, _ => SharedPhone));
         SetupWorkspaces(CreateWorkspace(TestWorkspaceId));
     }
@@ -51,7 +51,7 @@ public sealed class GetWorkspaceMembersPhoneVisibilityTests : WorkspaceHandlerTe
         var list = await ListAsync();
 
         list.Should().OnlyContain(m => m.Phone == null);
-        _phones.Verify(p => p.FindSharedPhonesAsync(It.Is<IReadOnlyCollection<Guid>>(ids => ids.Count > 0), It.IsAny<CancellationToken>()), Times.Never);
+        _phones.Verify(p => p.FindSharedPhonesAsync(It.IsAny<Guid>(), It.Is<IReadOnlyCollection<Guid>>(ids => ids.Count > 0), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -80,7 +80,7 @@ public sealed class GetWorkspaceMembersPhoneVisibilityTests : WorkspaceHandlerTe
     [Fact]
     public async Task MembersWhoDidNotOptIn_HaveNoPhone()
     {
-        _phones.Setup(p => p.FindSharedPhonesAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+        _phones.Setup(p => p.FindSharedPhonesAsync(It.IsAny<Guid>(), It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Dictionary<Guid, string>());
         SetupMembers(CreateMember(WorkspaceRole.Member), CreateMember(WorkspaceRole.Member, _colleague));
 

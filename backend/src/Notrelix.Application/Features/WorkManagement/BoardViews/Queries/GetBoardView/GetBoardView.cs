@@ -23,7 +23,10 @@ public class GetBoardViewQueryHandler : IRequestHandler<GetBoardViewQuery, Resul
     public async Task<Result<object>> Handle(GetBoardViewQuery request, CancellationToken ct)
     {
         var view = await _context.BoardViews.AsNoTracking()
-            .FirstOrDefaultAsync(v => v.BoardId == request.BoardId && v.CreatedBy == _currentUser.UserId, ct);
+            .Where(v => v.BoardId == request.BoardId && v.DeletedAt == null && v.Visibility == BoardViewVisibility.Board)
+            .OrderByDescending(v => v.IsDefault)
+            .ThenBy(v => v.CreatedAt)
+            .FirstOrDefaultAsync(ct);
 
         if (view is null)
             return Result<object>.Success(new { type = "Table", config = "{}" });

@@ -18,6 +18,8 @@ const endpoints = {
     readAll: "/notifications/read-all",
     unreadCount: "/notifications/unread-count",
     archive: (id: string) => `/notifications/${id}/archive`,
+    preferences: (workspaceId: string) =>
+      `/workspaces/${workspaceId}/notification-preferences`,
   },
 };
 

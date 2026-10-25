@@ -418,3 +418,22 @@ export {
   type IntegrationUpgradeSheetProps,
   type IntegrationsListProps,
 } from "./integrations/integrations-surface";
+
+// Pages whose backend is not available yet, and the billing capabilities page
+export { workspaceFeatureAvailabilityCatalog } from "./unavailable/feature-availability.catalog";
+export {
+  featureAvailabilityCopy,
+  type FeatureAvailabilityCopy,
+} from "./unavailable/feature-availability.copy";
+export { useFeatureAvailabilityCopy } from "./unavailable/use-feature-availability-copy";
+export {
+  FeatureUnavailableSurface,
+  type FeatureUnavailableSurfaceProps,
+  type UnavailableFeature,
+} from "./unavailable/feature-unavailable-surface";
+export {
+  BillingCapabilitiesSurface,
+  type BillingCapabilitiesState,
+  type BillingCapabilitiesSurfaceProps,
+  type BillingCapabilityDto,
+} from "./billing/billing-capabilities-surface";

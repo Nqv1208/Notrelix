@@ -19,7 +19,7 @@ public sealed class WorkspaceAdministrationReadHandlerTests : WorkspaceHandlerTe
 
     public WorkspaceAdministrationReadHandlerTests()
     {
-        _phones.Setup(p => p.FindSharedPhonesAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+        _phones.Setup(p => p.FindSharedPhonesAsync(It.IsAny<Guid>(), It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Dictionary<Guid, string>());
         _actors.Setup(a => a.FindManyAsync(It.IsAny<IReadOnlyList<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((IReadOnlyList<Guid> ids, CancellationToken _) =>

@@ -128,7 +128,7 @@ public class AuthenticatedAuthEndpointTests : IClassFixture<NotrelixApiFactory>
         var response = await client.GetAsync("/api/v1/auth/oauth/notaprovider/link/callback?code=code&state=state");
 
         response.StatusCode.Should().Be(HttpStatusCode.Redirect);
-        response.Headers.Location.Should().Be("/login");
+        response.Headers.Location.Should().Be("/sign-in");
     }
 
     [Fact]

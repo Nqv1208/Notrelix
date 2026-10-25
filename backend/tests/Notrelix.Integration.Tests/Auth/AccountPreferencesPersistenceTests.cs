@@ -31,10 +31,10 @@ public sealed class AccountPreferencesPersistenceTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        await new DatabaseReset(_db.ConnectionString).ResetAsync();
+        await new DatabaseReset(_db.OwnerConnectionString).ResetAsync();
         _alice = User.Create("alice-prefs@example.com", "Alice", "hashed", Now.AddDays(-1), hasPasswordCredential: true);
         _bob = User.Create("bob-prefs@example.com", "Bob", "hashed", Now.AddDays(-1), hasPasswordCredential: true);
-        await using var context = _db.CreateContext(SystemTenant());
+        await using var context = _db.CreateOwnerContext(SystemTenant());
         context.Users.AddRange(_alice, _bob);
         await context.SaveChangesAsync();
     }
@@ -51,7 +51,7 @@ public sealed class AccountPreferencesPersistenceTests : IAsyncLifetime
     private async Task<Notrelix.Application.Common.Models.Result<AccountPreferencesDto>> UpdateAsync(User actor, UpdateAccountPreferencesCommand command)
     {
         var tenant = SystemTenant();
-        var context = _db.CreateContext(tenant);
+        var context = _db.CreateOwnerContext(tenant);
         var session = new EfRequestDataSession(
             context,
             new RlsSessionContext(context, Options.Create(new RlsOptions()), tenant),
@@ -76,7 +76,7 @@ public sealed class AccountPreferencesPersistenceTests : IAsyncLifetime
 
     private async Task<AccountPreferencesDto> ReadAsync(User actor)
     {
-        await using var context = _db.CreateContext(SystemTenant());
+        await using var context = _db.CreateOwnerContext(SystemTenant());
         var handler = new GetAccountPreferencesQueryHandler(context, new FakeCurrentRequestContext().AsUser(actor.Id));
         return (await handler.Handle(new GetAccountPreferencesQuery(), CancellationToken.None)).Data!;
     }
@@ -86,7 +86,7 @@ public sealed class AccountPreferencesPersistenceTests : IAsyncLifetime
     {
         (await ReadAsync(_alice)).Should().Be(AccountPreferencesDto.Defaults);
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.UserProfiles.CountAsync()).Should().Be(0, "a read must not write");
     }
 
@@ -127,7 +127,7 @@ public sealed class AccountPreferencesPersistenceTests : IAsyncLifetime
         var act = async () => await UpdateAsync(_alice, new UpdateAccountPreferencesCommand { ExpectedVersion = 4, Theme = "dark" });
 
         await act.Should().ThrowAsync<PreconditionFailedException>();
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.UserProfiles.CountAsync()).Should().Be(0);
     }
 
@@ -137,7 +137,7 @@ public sealed class AccountPreferencesPersistenceTests : IAsyncLifetime
         var first = (await UpdateAsync(_alice, new UpdateAccountPreferencesCommand { ExpectedVersion = 0, Theme = "dark" })).Data!;
 
         // Writer B loaded the profile at `first.Version`, then writer A commits, then B saves.
-        await using var writerB = _db.CreateContext(SystemTenant());
+        await using var writerB = _db.CreateOwnerContext(SystemTenant());
         var staleCopy = await writerB.UserProfiles.SingleAsync(p => p.UserId == _alice.Id);
         staleCopy.Version.Should().Be(first.Version);
 

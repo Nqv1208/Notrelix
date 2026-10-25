@@ -602,7 +602,7 @@ function LinkPicker({
       <PopoverContent
         align="end"
         aria-label={t.picker.label}
-        className="w-96 gap-0 overflow-hidden rounded-[10px] border border-line-strong bg-popover p-0 shadow-lg ring-0"
+        className="max-h-(--radix-popover-content-available-height) w-96 gap-0 overflow-x-hidden overflow-y-auto rounded-[10px] border border-line-strong bg-popover p-0 shadow-lg ring-0"
       >
         <div
           role="radiogroup"

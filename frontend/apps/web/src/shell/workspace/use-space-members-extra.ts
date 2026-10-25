@@ -40,7 +40,6 @@ export interface SpaceMembersExtraDto {
     readonly boardId: string;
     readonly boardName: string;
     readonly level: "viewer" | "commenter" | "editor" | "manager";
-    readonly expiresAt: string | null;
   }[];
 }
 

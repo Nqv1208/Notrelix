@@ -7,6 +7,7 @@ import {
   type ReactNode,
 } from "react";
 import { useMatches, useNavigate } from "@tanstack/react-router";
+import { resolveApiAssetUrl } from "@notrelix/contracts";
 import { createUsePageList } from "@notrelix/docs-state";
 import { createUseLogout, useCurrentUser } from "@notrelix/features-auth";
 import { createNotificationBell } from "@notrelix/features-notifications";
@@ -410,7 +411,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
         id: user.id,
         name: user.name,
         email: user.email,
-        avatarUrl: user.avatarUrl,
+        avatarUrl: resolveApiAssetUrl(user.avatarUrl),
         identity: identityToneFor(user.id),
       }
     : null;

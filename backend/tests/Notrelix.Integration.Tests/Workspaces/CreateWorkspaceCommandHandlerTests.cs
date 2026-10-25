@@ -27,7 +27,7 @@ public class CreateWorkspaceCommandHandlerTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -43,7 +43,7 @@ public class CreateWorkspaceCommandHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_WhenCreatingTeamWorkspace_ShouldSucceed()
     {
-        await using var context = _db.CreateContext(SystemTenant());
+        await using var context = _db.CreateOwnerContext(SystemTenant());
         var userId = Guid.NewGuid();
         _requestContextMock.Setup(r => r.UserId).Returns(userId);
 
@@ -70,7 +70,7 @@ public class CreateWorkspaceCommandHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_WhenCreatingPersonalWorkspace_ShouldSucceed()
     {
-        await using var context = _db.CreateContext(SystemTenant());
+        await using var context = _db.CreateOwnerContext(SystemTenant());
         var userId = Guid.NewGuid();
         _requestContextMock.Setup(r => r.UserId).Returns(userId);
 
@@ -95,7 +95,7 @@ public class CreateWorkspaceCommandHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_WhenSlugAlreadyExists_ShouldAppendUniqueSuffix()
     {
-        await using var context = _db.CreateContext(SystemTenant());
+        await using var context = _db.CreateOwnerContext(SystemTenant());
         var accountId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
@@ -137,7 +137,7 @@ public class CreateWorkspaceCommandHandlerTests : IAsyncLifetime
         _requestContextMock.Setup(r => r.UserId).Returns(userId);
         _dateTimeMock.Setup(d => d.UtcNow).Returns(now);
 
-        await using var context = _db.CreateContext(SystemTenant());
+        await using var context = _db.CreateOwnerContext(SystemTenant());
         var handler = new CreateWorkspaceCommandHandler(context, _requestContextMock.Object, _dateTimeMock.Object, new WorkspaceGrantProjectionServiceAdapter(new AccessGrantProjectionService(context)));
         var command = new CreateWorkspaceCommand("Grant Project", null, false);
 
@@ -178,8 +178,8 @@ public class CreateWorkspaceCommandHandlerTests : IAsyncLifetime
         var bId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
 
-        await using var contextA = _db.CreateContext(SystemTenant());
-        await using var contextB = _db.CreateContext(SystemTenant());
+        await using var contextA = _db.CreateOwnerContext(SystemTenant());
+        await using var contextB = _db.CreateOwnerContext(SystemTenant());
         var handlerA = new CreateWorkspaceCommandHandler(
             contextA, _requestContextMock.Object, _dateTimeMock.Object,
             new WorkspaceGrantProjectionServiceAdapter(new AccessGrantProjectionService(contextA)));
@@ -211,7 +211,7 @@ public class CreateWorkspaceCommandHandlerTests : IAsyncLifetime
         pg!.ConstraintName.Should().Be("ux_workspaces_account_slug_active",
             "the duplicate concurrent insert must be rejected by the account-scoped active-slug uniqueness guard");
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         var workspaces = await verify.Workspaces
             .Where(w => w.AccountId == accountId && w.Slug == "race-project")
             .ToListAsync();

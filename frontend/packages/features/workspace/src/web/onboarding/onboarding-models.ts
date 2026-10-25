@@ -13,8 +13,14 @@ export const ONBOARDING_STEPS = [
 export type OnboardingFormStep = (typeof ONBOARDING_STEPS)[number];
 export type OnboardingStepId = OnboardingFormStep | "done";
 
-export type CompanySize = "s" | "m" | "l" | "xl";
-export const COMPANY_SIZES: readonly CompanySize[] = ["s", "m", "l", "xl"];
+export type CompanySize = "s" | "m" | "l" | "xl" | "xxl";
+export const COMPANY_SIZES: readonly CompanySize[] = [
+  "s",
+  "m",
+  "l",
+  "xl",
+  "xxl",
+];
 
 /** The six identity colors a department can wear (never a status meaning). */
 export type DepartmentColor =

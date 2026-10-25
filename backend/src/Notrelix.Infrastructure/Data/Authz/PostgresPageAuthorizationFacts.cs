@@ -17,12 +17,6 @@ public sealed class PostgresPageAuthorizationFacts : IPageAuthorizationFacts
         _context = context;
     }
 
-    public async Task<Guid?> ResolveBlockPageIdAsync(Guid blockId, CancellationToken cancellationToken) =>
-        await _context.Blocks
-            .Where(b => b.Id == blockId && b.DeletedAt == null)
-            .Select(b => (Guid?)b.PageId)
-            .FirstOrDefaultAsync(cancellationToken);
-
     public async Task<PageAuthorizationFact?> ResolveAsync(Guid pageId, CancellationToken cancellationToken)
     {
         var row = await _context.Pages

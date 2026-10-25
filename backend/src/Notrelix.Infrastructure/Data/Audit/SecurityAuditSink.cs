@@ -1,4 +1,4 @@
-using Notrelix.Application.Common.SystemOperations;
+using Notrelix.Infrastructure.Data.Rls;
 
 namespace Notrelix.Infrastructure.Data.Audit;
 
@@ -20,15 +20,18 @@ public interface ISecurityAuditSink
 /// Writes audit events in an independent DI scope and transaction. The request's own data session
 /// is never reused: it is closed by the time the middleware sees the status code, and sharing it
 /// would either lose the event (no save) or reopen the request's transaction model. The event has
-/// no tenant (anonymous and pre-authentication failures are common), so the insert runs under an
-/// explicit, logged system (worker) context with the RLS worker scope of <c>audit.security_events</c>;
-/// RLS is not disabled and only that table is written.
+/// no tenant (anonymous and pre-authentication failures are common), which no tenant-scoped policy
+/// admits, so on PostgreSQL the row is always written through the
+/// owner-defined insert-only <c>ops.record_security_event</c> function: no system scope, no read, and the
+/// actor and tenant of the row are derived from the scope the sink enters (the user of the request, or
+/// none), never taken from the caller. Only a provider without that function (the in-memory test provider)
+/// inserts the row directly.
 /// </summary>
+/// <remarks>
+/// A failed write never fails the request, and is never silent: it is logged as an error and counted.
+/// </remarks>
 public sealed class SecurityAuditSink : ISecurityAuditSink
 {
-    private static readonly SystemOperationReason Reason =
-        new("Security", "Persist a security audit event that has no request tenant scope");
-
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<SecurityAuditSink> _logger;
 
@@ -45,20 +48,40 @@ public sealed class SecurityAuditSink : ISecurityAuditSink
             await using var scope = _scopeFactory.CreateAsyncScope();
             var services = scope.ServiceProvider;
             var context = services.GetRequiredService<ApplicationDbContext>();
-            var tenant = services.GetRequiredService<ICurrentTenantContext>();
             var rls = services.GetRequiredService<IRlsSessionContext>();
 
-            using var system = new SystemContextScope(tenant, _logger, "security-audit.write", Reason);
             await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
-            await rls.ApplyAsync(cancellationToken);
 
-            context.EnterpriseSecurityEvents.Add(securityEvent);
-            await context.SaveChangesAsync(cancellationToken);
+            if (context.Database.IsNpgsql())
+            {
+                if (securityEvent.UserId is { } userId && userId != Guid.Empty)
+                {
+                    await rls.ApplyUserScopeAsync(userId, cancellationToken);
+                }
+
+                var metadata = securityEvent.MetadataJson.RootElement.GetRawText();
+                var occurredAt = securityEvent.OccurredAt.ToUniversalTime();
+                await context.Database.ExecuteSqlInterpolatedAsync($"""
+                    SELECT ops.record_security_event(
+                        {securityEvent.EventType}, {securityEvent.Severity}, {securityEvent.Outcome},
+                        {securityEvent.RiskScore}, {securityEvent.IpAddress}, {securityEvent.UserAgent},
+                        {securityEvent.DeviceId}, {securityEvent.SessionId}, {securityEvent.ResourceKind},
+                        {securityEvent.ResourceId}, {securityEvent.CorrelationId}, {metadata}::jsonb, {occurredAt})
+                    """, cancellationToken);
+            }
+            else
+            {
+                context.EnterpriseSecurityEvents.Add(securityEvent);
+                await context.SaveChangesAsync(cancellationToken);
+            }
+
             await transaction.CommitAsync(cancellationToken);
+            RlsScopeMetrics.RecordSecurityAudit(written: true);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             // An audit failure must never fail the request, but it must not be silent either.
+            RlsScopeMetrics.RecordSecurityAudit(written: false);
             _logger.LogError(ex, "Security audit event {EventType} could not be persisted", securityEvent.EventType);
         }
     }

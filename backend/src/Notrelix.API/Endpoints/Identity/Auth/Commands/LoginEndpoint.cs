@@ -15,7 +15,7 @@ public static class LoginEndpoint
             .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status401Unauthorized, StatusCodes.Status429TooManyRequests)
             .WithTags("Identity.Auth")
             .WithSummary("Login with email and password")
-            .WithMetadata(new RateLimitPolicyAttribute("AuthStrictByIp"));
+            .WithMetadata(new RateLimitPolicyAttribute("AuthCredentialByIp"));
         return group;
     }
 

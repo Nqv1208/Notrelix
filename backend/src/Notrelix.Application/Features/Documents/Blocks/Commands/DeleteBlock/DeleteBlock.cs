@@ -3,10 +3,10 @@ using Notrelix.Application.Features.Documents.Abstractions;
 
 namespace Notrelix.Application.Features.Documents.Blocks.Commands.DeleteBlock;
 
-public record DeleteBlockCommand(Guid BlockId) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission
+public record DeleteBlockCommand(Guid PageId, Guid BlockId) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission
 {
-    public PermissionAction Action => PermissionAction.ManageBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("documents.block"), BlockId);
+    public PermissionAction Action => PermissionAction.UpdatePage;
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("documents.page"), PageId);
 }
 
 public class DeleteBlockCommandHandler : IRequestHandler<DeleteBlockCommand, Result>
@@ -23,7 +23,7 @@ public class DeleteBlockCommandHandler : IRequestHandler<DeleteBlockCommand, Res
 
     public async Task<Result> Handle(DeleteBlockCommand request, CancellationToken ct)
     {
-        var block = await _context.Blocks.FirstOrDefaultAsync(block => block.Id == request.BlockId && block.DeletedAt == null, ct);
+        var block = await _context.Blocks.FirstOrDefaultAsync(block => block.Id == request.BlockId && block.PageId == request.PageId && block.DeletedAt == null, ct);
         if (block is null) throw new NotFoundException(nameof(Block), request.BlockId);
 
         block.Delete(_currentUser.UserId, _dateTimeProvider.UtcNow);

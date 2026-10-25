@@ -1,6 +1,7 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Tokens;
 using Notrelix.Application.Features.Identity.Abstractions;
+using Notrelix.Application.Features.Identity.Auth.Services;
 using Notrelix.Domain.Identity.Tokens;
 
 namespace Notrelix.Application.Features.Identity.Verification.Commands.ConfirmEmail;
@@ -22,12 +23,15 @@ public sealed class ConfirmEmailCommandHandler
     private readonly IIdentityDbContext _identityContext;
     private readonly IOneTimeTokenService _oneTimeTokenService;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly CredentialScope? _credentialScope;
 
     public ConfirmEmailCommandHandler(
         IIdentityDbContext identityContext,
         IOneTimeTokenService oneTimeTokenService,
-        IDateTimeProvider dateTimeProvider)
+        IDateTimeProvider dateTimeProvider,
+        CredentialScope? credentialScope = null)
     {
+        _credentialScope = credentialScope;
         _identityContext = identityContext;
         _oneTimeTokenService = oneTimeTokenService;
         _dateTimeProvider = dateTimeProvider;
@@ -49,9 +53,15 @@ public sealed class ConfirmEmailCommandHandler
             return Result<ConfirmEmailResultDto>.Failure("Invalid or expired verification token.");
         }
 
+        // The credential scope is bound to the one user this token digest belongs to.
+        if (_credentialScope is not null)
+            await _credentialScope.EnterByEmailVerificationAsync(
+                presentedHash.TokenHash, presentedHash.HashVersion, cancellationToken);
+
+        var presentedTokenHash = TokenHash.Create(presentedHash.TokenHash);
         var token = await _identityContext.EmailVerificationTokens
             .FirstOrDefaultAsync(
-                t => t.TokenHash.Value == presentedHash.TokenHash
+                t => t.TokenHash == presentedTokenHash
                     && t.HashVersion == presentedHash.HashVersion
                     && t.Status == UserTokenStatus.Active,
                 cancellationToken);

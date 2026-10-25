@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Notrelix.Domain.WorkManagement;
 using Notrelix.Domain.WorkManagement.Boards;
 
 namespace Notrelix.Domain.Tests.WorkManagement;
@@ -280,5 +281,74 @@ public class BoardTests
         Action act = () => board.GenerateNextItemIdentity(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         act.Should().Throw<BusinessRuleException>().WithMessage("Cannot generate item identity for an archived board.");
+    }
+
+    private static Board BoardWithPrefix(string? prefix = "WEB") =>
+        Board.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Valid Title", null, DateTimeOffset.UtcNow, itemKeyPrefix: prefix);
+
+    [Fact]
+    public void ChangeItemKeyPrefix_ChangesThePrefix_AndRaisesTheEvent()
+    {
+        var board = BoardWithPrefix();
+        ((IHasDomainEvents)board).ClearDomainEvents();
+        var version = board.Version;
+
+        board.ChangeItemKeyPrefix("OPS2", false, Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        board.ItemKeyPrefix.Should().Be("OPS2");
+        board.Version.Should().Be(version + 1);
+        board.DomainEvents.Should().ContainSingle(e => e is BoardItemKeyPrefixChangedDomainEvent);
+    }
+
+    [Fact]
+    public void ChangeItemKeyPrefix_IsANoOp_WhenUnchanged()
+    {
+        var board = BoardWithPrefix("WEB");
+        var version = board.Version;
+
+        board.ChangeItemKeyPrefix("WEB", true, Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        board.Version.Should().Be(version);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("A")]
+    [InlineData("ABCDEFG")]
+    [InlineData("web")]
+    [InlineData("WE-B")]
+    [InlineData("WÉB")]
+    public void ChangeItemKeyPrefix_RejectsAnInvalidPrefix_AndLeavesTheBoardUnchanged(string prefix)
+    {
+        var board = BoardWithPrefix("WEB");
+        var version = board.Version;
+
+        var act = () => board.ChangeItemKeyPrefix(prefix, false, Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        act.Should().Throw<BusinessRuleException>().Which.RuleCode.Should().Be(WorkManagementRuleCodes.WorkManagement_Board_InvalidItemKeyPrefix);
+        board.ItemKeyPrefix.Should().Be("WEB");
+        board.Version.Should().Be(version);
+    }
+
+    [Fact]
+    public void ChangeItemKeyPrefix_RejectsAPrefixAnotherBoardUses()
+    {
+        var board = BoardWithPrefix("WEB");
+
+        var act = () => board.ChangeItemKeyPrefix("OPS", true, Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        act.Should().Throw<BusinessRuleException>().Which.RuleCode.Should().Be(WorkManagementRuleCodes.WorkManagement_Board_ItemKeyPrefixInUse);
+        board.ItemKeyPrefix.Should().Be("WEB");
+    }
+
+    [Fact]
+    public void ChangeItemKeyPrefix_Throws_WhenBoardIsArchived()
+    {
+        var board = BoardWithPrefix("WEB");
+        board.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        var act = () => board.ChangeItemKeyPrefix("OPS", false, Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        act.Should().Throw<BusinessRuleException>().Which.RuleCode.Should().Be(WorkManagementRuleCodes.WorkManagement_Board_CannotChangeItemKeyPrefixArchived);
     }
 }

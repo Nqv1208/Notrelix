@@ -43,7 +43,7 @@ public sealed class BoardItemMovedPlacementFailureRecoveryRuntimeTests : IAsyncL
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -63,6 +63,7 @@ public sealed class BoardItemMovedPlacementFailureRecoveryRuntimeTests : IAsyncL
             var tenant = scope.ServiceProvider.GetRequiredService<ICurrentTenantContext>();
             tenant.SetWorkspace(graph.AccountId, graph.WorkspaceId, graph.ExecutorUserId);
             var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            await using var tx = await scope.ServiceProvider.BeginTenantTransactionAsync();
             var item = await context.BoardItems.FirstAsync(i => i.Id == graph.ItemId);
             var targetGroup = await context.BoardGroups.FirstAsync(g => g.Id == graph.TargetGroupId);
             item.MoveToGroup(
@@ -71,6 +72,7 @@ public sealed class BoardItemMovedPlacementFailureRecoveryRuntimeTests : IAsyncL
                 graph.ExecutorUserId,
                 DateTimeOffset.UtcNow);
             await context.SaveChangesAsync();
+            await tx.CommitAsync();
         }
 
         var eventId = await WaitForOutboxEventIdAsync(graph);
@@ -101,7 +103,7 @@ public sealed class BoardItemMovedPlacementFailureRecoveryRuntimeTests : IAsyncL
                 "the injected failure must have been consumed by the crashed first attempt");
 
             // 3. Final projection converged to producer truth.
-            await using (var verify = _db.CreateContext(SystemTenant()))
+            await using (var verify = _db.CreateOwnerContext(SystemTenant()))
             {
                 var projection = await verify.WorkspaceWorkItemPlacements
                     .SingleAsync(p => p.WorkspaceId == graph.WorkspaceId && p.ItemId == graph.ItemId);
@@ -110,7 +112,7 @@ public sealed class BoardItemMovedPlacementFailureRecoveryRuntimeTests : IAsyncL
 
             // 4. Crash-before-commit left no partial durable consumer state:
             //    exactly one consumer claim, in the Succeeded terminal state.
-            await using (var audit = _db.CreateContext(SystemTenant()))
+            await using (var audit = _db.CreateOwnerContext(SystemTenant()))
             {
                 var consumerRows = await audit.Set<MessagingProcessedEvent>()
                     .IgnoreQueryFilters()
@@ -123,7 +125,7 @@ public sealed class BoardItemMovedPlacementFailureRecoveryRuntimeTests : IAsyncL
             }
 
             // 5. Source Work state remained the authoritative, untouched truth.
-            await using (var probe = _db.CreateContext(SystemTenant()))
+            await using (var probe = _db.CreateOwnerContext(SystemTenant()))
             {
                 var workItem = await probe.BoardItems.SingleAsync(i => i.Id == graph.ItemId);
                 workItem.GroupId.Should().Be(graph.TargetGroupId,
@@ -140,7 +142,7 @@ public sealed class BoardItemMovedPlacementFailureRecoveryRuntimeTests : IAsyncL
         }
 
         // A later delivery retry could not move the source either.
-        await using (var recheck = _db.CreateContext(SystemTenant()))
+        await using (var recheck = _db.CreateOwnerContext(SystemTenant()))
         {
             var workItem = await recheck.BoardItems.SingleAsync(i => i.Id == graph.ItemId);
             workItem.GroupId.Should().Be(graph.TargetGroupId);
@@ -160,6 +162,7 @@ public sealed class BoardItemMovedPlacementFailureRecoveryRuntimeTests : IAsyncL
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["ConnectionStrings:NotrelixDb"] = _db.ConnectionString,
+                ["ConnectionStrings:NotrelixWorkerDb"] = _db.WorkerConnectionString,
                 ["Messaging:Transport"] = "InMemory",
                 ["Rls:Enabled"] = "true",
                 ["Rls:SetSessionContext"] = "true",
@@ -227,7 +230,7 @@ public sealed class BoardItemMovedPlacementFailureRecoveryRuntimeTests : IAsyncL
         var targetGroup = BoardGroup.Create(accountId, workspace.Id, board.Id, "Done", Domain.SharedKernel.Color.Create("#00FF00"), FractionalIndex.Create("a1"), executorUser.Id, now);
         var item = BoardItem.CreateRoot(accountId, workspace.Id, board.Id, sourceGroup.Id, "Task", FractionalIndex.Create("a0"), executorUser.Id, now);
 
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Users.Add(executorUser);
         seed.Workspaces.Add(workspace);
         seed.WorkspaceMembers.Add(member);
@@ -237,7 +240,7 @@ public sealed class BoardItemMovedPlacementFailureRecoveryRuntimeTests : IAsyncL
         seed.BoardItems.Add(item);
         await seed.SaveChangesAsync();
 
-        await using var grant = _db.CreateContext(SystemTenant());
+        await using var grant = _db.CreateOwnerContext(SystemTenant());
         var projection = new Notrelix.Infrastructure.Data.Authz.AccessGrantProjectionService(grant);
         await projection.SyncWorkspaceMemberGrantAsync(
             accountId, workspace.Id, executorUser.Id, WorkspaceRole.Member, now, CancellationToken.None);
@@ -253,7 +256,7 @@ public sealed class BoardItemMovedPlacementFailureRecoveryRuntimeTests : IAsyncL
         Guid? eventId = null;
         var completed = await WaitForAsync(async () =>
         {
-            await using var probe = _db.CreateContext(SystemTenant());
+            await using var probe = _db.CreateOwnerContext(SystemTenant());
             var found = await probe.Set<MessagingOutboxMessage>()
                 .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(m => m.MessageName == "board_item.moved" && m.WorkspaceId == graph.WorkspaceId);
@@ -268,7 +271,7 @@ public sealed class BoardItemMovedPlacementFailureRecoveryRuntimeTests : IAsyncL
     {
         return await WaitForAsync(async () =>
         {
-            await using var probe = _db.CreateContext(SystemTenant());
+            await using var probe = _db.CreateOwnerContext(SystemTenant());
             return await probe.WorkspaceWorkItemPlacements
                 .AnyAsync(p => p.WorkspaceId == graph.WorkspaceId
                             && p.ItemId == graph.ItemId

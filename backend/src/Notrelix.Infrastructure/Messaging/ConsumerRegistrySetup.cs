@@ -195,6 +195,46 @@ public static class ConsumerRegistrySetup
                 Description = "Sends notification for mention creation",
                 Maturity = ConsumerMaturity.Implemented
             },
+            new ConsumerDefinition
+            {
+                ConsumerName = "BoardItemCreatedFollowConsumer",
+                EventName = "board.item.created",
+                EventVersion = 2,
+                EndpointName = "notrelix-collab-item-created-follow-v1",
+                BoundedContext = "Collaboration",
+                Description = "Follows a created Item for its creator",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "BoardItemMemberAssignedFollowConsumer",
+                EventName = "work-management.board-item-member-assigned",
+                EventVersion = 1,
+                EndpointName = "notrelix-collab-item-assigned-follow-v1",
+                BoundedContext = "Collaboration",
+                Description = "Follows an assigned Item for its assignee and notifies followers",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "BoardItemStatusChangedFollowConsumer",
+                EventName = "board.item.field_value.changed",
+                EventVersion = 1,
+                EndpointName = "notrelix-collab-item-status-follow-v1",
+                BoundedContext = "Collaboration",
+                Description = "Notifies followers of an Item status change",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "CommentCreatedFollowConsumer",
+                EventName = "comment.created",
+                EventVersion = 1,
+                EndpointName = "notrelix-collab-comment-follow-v1",
+                BoundedContext = "Collaboration",
+                Description = "Notifies followers of a comment on an Item",
+                Maturity = ConsumerMaturity.Implemented
+            },
 
             // ── Billing (1) ──────────────────────────────────────────────
             new ConsumerDefinition

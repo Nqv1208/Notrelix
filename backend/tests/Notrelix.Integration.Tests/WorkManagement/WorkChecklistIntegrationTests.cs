@@ -47,7 +47,7 @@ public sealed class WorkChecklistIntegrationTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        await new DatabaseReset(_db.ConnectionString).ResetAsync();
+        await new DatabaseReset(_db.OwnerConnectionString).ResetAsync();
 
         _accountId = Guid.NewGuid();
         _userId = Guid.NewGuid();
@@ -57,7 +57,7 @@ public sealed class WorkChecklistIntegrationTests : IAsyncLifetime
         var item = BoardItem.CreateRoot(_accountId, workspace.Id, board.Id, group.Id, "Task", FractionalIndex.Create("a0"), _userId, Now);
         (_workspaceId, _boardItemId) = (workspace.Id, item.Id);
 
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Workspaces.Add(workspace);
         seed.Boards.Add(board);
         seed.BoardGroups.Add(group);
@@ -131,7 +131,7 @@ public sealed class WorkChecklistIntegrationTests : IAsyncLifetime
         var dtos = await GetChecklistsAsync();
         dtos.Should().ContainSingle().Which.Id.Should().Be(keep);
         dtos.Single().Items.Should().BeEmpty();
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.Checklists.IgnoreQueryFilters().SingleAsync(c => c.Id == drop)).DeletedAt.Should().NotBeNull(
             "deleting a checklist is the aggregate's soft delete, not a row removal");
     }
@@ -150,7 +150,7 @@ public sealed class WorkChecklistIntegrationTests : IAsyncLifetime
 
     private async Task<List<Notrelix.Application.Features.WorkManagement.Common.DTOs.ChecklistDto>> GetChecklistsAsync()
     {
-        await using var context = _db.CreateContext(Tenant());
+        await using var context = _db.CreateOwnerContext(Tenant());
         return (await new GetChecklistsQueryHandler(context).Handle(new GetChecklistsQuery(_boardItemId), CancellationToken.None)).Data!;
     }
 
@@ -162,13 +162,13 @@ public sealed class WorkChecklistIntegrationTests : IAsyncLifetime
 
     private async Task<long> ChecklistVersionAsync(Guid checklistId)
     {
-        await using var context = _db.CreateContext(SystemTenant());
+        await using var context = _db.CreateOwnerContext(SystemTenant());
         return await context.Checklists.Where(c => c.Id == checklistId).Select(c => c.Version).SingleAsync();
     }
 
     private async Task<T> InTransactionAsync<T>(Func<ApplicationDbContext, Task<T>> work)
     {
-        await using var context = _db.CreateContext(Tenant());
+        await using var context = _db.CreateOwnerContext(Tenant());
         await using var transaction = await context.Database.BeginTransactionAsync();
         var result = await work(context);
         await context.SaveChangesAsync();

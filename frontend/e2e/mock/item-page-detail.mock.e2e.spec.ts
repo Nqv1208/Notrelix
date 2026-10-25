@@ -2,10 +2,11 @@ import { expect, test, type Page } from "@playwright/test";
 
 /**
  * ERP-142 on its full page as Final-Detail draws it, on the mock world: the
- * sub-items (tick, add), the links (list, add, remove), the files (list,
- * upload), the custom fields and the system facts, the follow button and its
- * faces, and the history (older lines folded behind a button, the lines of
- * the changes just made). Geometry lives in
+ * links (list, add, remove), the files (list, upload), the custom fields and
+ * the system facts, and the history (older lines folded behind a button, the lines of
+ * the changes just made). The sub-item list and the follow switch have no
+ * producer, so the page offers neither: the progress still reads from the
+ * item and the follow button says it is unavailable. Geometry lives in
  * `design-fidelity-detail.mock.e2e.spec.ts`.
  */
 const persona = process.env.VITE_MOCK_PERSONA ?? "owner";
@@ -58,30 +59,17 @@ test.describe("Item page data (owner)", () => {
     );
   });
 
-  test("sub-items: five rows, tick one, add one with Enter", async ({
+  test("sub-items: no list is offered, the progress still reads from the item", async ({
     page,
   }) => {
     await open(page);
-    const rows = page.getByRole("list").filter({ hasText: "ERP-142.1" });
-    await expect(rows.getByRole("listitem")).toHaveCount(5);
-    await expect(page.getByText("ERP-142.4")).toBeVisible();
-    await page
-      .getByRole("checkbox", { name: "Đối chiếu công nợ đầu kỳ với Kế toán" })
-      .click();
+    await expect(page.getByText("ERP-142.1")).toHaveCount(0);
+    await expect(page.getByRole("textbox", { name: "Việc con" })).toHaveCount(
+      0,
+    );
     await expect(
-      page.getByRole("checkbox", {
-        name: "Đối chiếu công nợ đầu kỳ với Kế toán",
-      }),
-    ).toHaveAttribute("aria-checked", "true");
-    await expect(
-      page.getByText("Tiến độ 80% tự tính từ việc con"),
+      page.getByRole("complementary").getByText("3/5 việc con"),
     ).toBeVisible();
-    await page.getByRole("textbox", { name: "Việc con" }).fill("Kiểm tra lại");
-    await page.keyboard.press("Enter");
-    await expect(
-      page.getByRole("list").filter({ hasText: "ERP-142.1" }),
-    ).toContainText("ERP-142.6");
-    await expect(page.getByText("Kiểm tra lại").first()).toBeVisible();
   });
 
   test("links: three groups, add one, remove one", async ({ page }) => {
@@ -122,17 +110,19 @@ test.describe("Item page data (owner)", () => {
     await expect(files.getByText("ghi-chu.pdf")).toBeVisible();
   });
 
-  test("follow: the button and the faces", async ({ page }) => {
+  test("follow: the button says it is unavailable and the faces stay", async ({
+    page,
+  }) => {
     await open(page);
-    const follow = page.getByRole("button", { name: "Đang theo dõi" });
-    await expect(follow).toHaveAttribute("aria-pressed", "true");
+    const follow = page.getByRole("button", { name: "Theo dõi", exact: true });
+    await expect(follow).toHaveAttribute("aria-pressed", "false");
+    await expect(follow).toHaveAttribute("aria-disabled", "true");
     await expect(
-      page.getByRole("group", { name: "4 người theo dõi" }),
+      page.getByRole("group", { name: "1 người theo dõi" }),
     ).toBeVisible();
-    await follow.click();
     await expect(
-      page.getByRole("button", { name: "Theo dõi" }),
-    ).toHaveAttribute("aria-pressed", "false");
+      page.getByText("Theo dõi công việc chưa khả dụng"),
+    ).toBeVisible();
   });
 
   test("history: older lines fold and a number field edit is recorded", async ({

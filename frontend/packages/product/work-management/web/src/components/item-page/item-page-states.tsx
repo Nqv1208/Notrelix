@@ -260,11 +260,15 @@ export function ItemPageCompletedBanner({
           ? fillSheetCopy(t.by, { name: completed.byName })
           : null}
       </div>
-      {canReopen && onReopen ? (
-        reopen
-      ) : (
-        <DisabledControl reason={t.reopenUnavailable}>{reopen}</DisabledControl>
-      )}
+      {onReopen ? (
+        canReopen ? (
+          reopen
+        ) : (
+          <DisabledControl reason={t.reopenUnavailable}>
+            {reopen}
+          </DisabledControl>
+        )
+      ) : null}
     </div>
   );
 }

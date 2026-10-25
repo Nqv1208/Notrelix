@@ -38,6 +38,7 @@ public sealed class ResourceLocator : IResourceLocator
     private readonly IGovernanceDbContext _govDb;
     private readonly IAutomationDbContext _autoDb;
     private readonly IIntegrationDbContext _integrationDb;
+    private readonly IRlsSessionContext _rls;
 
     public ResourceLocator(
         IWorkManagementDbContext workDb,
@@ -45,8 +46,10 @@ public sealed class ResourceLocator : IResourceLocator
         ICollaborationDbContext collabDb,
         IGovernanceDbContext govDb,
         IAutomationDbContext autoDb,
-        IIntegrationDbContext integrationDb)
+        IIntegrationDbContext integrationDb,
+        IRlsSessionContext rls)
     {
+        _rls = rls;
         _workDb = workDb;
         _docDb = docDb;
         _collabDb = collabDb;
@@ -55,10 +58,31 @@ public sealed class ResourceLocator : IResourceLocator
         _integrationDb = integrationDb;
     }
 
+    /// <summary>
+    /// Locates the resource by stable identity. Called by the execution-context stage before any tenant is
+    /// known, so with no transaction open it runs in a short transaction in the <c>user</c>
+    /// scope: a row the actor holds no grant on is not found, exactly like a row that does not exist.
+    /// Inside an open data session (handlers that locate a second resource) the session's own scope applies.
+    /// </summary>
     public async Task<ResourceLocation?> LocateAsync(
         ResourceRef resource,
         Guid actorUserId,
         CancellationToken cancellationToken)
+    {
+        var database = (_workDb as DbContext)?.Database;
+        if (database is null || !database.IsRelational() || database.CurrentTransaction is not null)
+        {
+            return await QueryAsync(resource, cancellationToken);
+        }
+
+        await using var transaction = await database.BeginTransactionAsync(cancellationToken);
+        await _rls.ApplyUserScopeAsync(actorUserId, cancellationToken);
+        var location = await QueryAsync(resource, cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+        return location;
+    }
+
+    private async Task<ResourceLocation?> QueryAsync(ResourceRef resource, CancellationToken cancellationToken)
     {
         return resource.Kind.Value switch
         {

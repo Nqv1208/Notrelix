@@ -6,7 +6,6 @@ import {
   type AccountEndpoints,
 } from "../../core/api/account.service";
 import { accountQueryKeys } from "../../query/keys";
-import type { UserProfile } from "../../core/types/account";
 
 interface UseUpdateProfileDeps {
   api: AccountApiClient;
@@ -24,7 +23,7 @@ export function createUseUpdateProfile({
     const queryClient = useQueryClient();
 
     return useMutation({
-      mutationFn: (profile: Partial<UserProfile>) =>
+      mutationFn: (profile: { name?: string }) =>
         service.updateProfile(profile),
       onSuccess: () => {
         queryClient.invalidateQueries({

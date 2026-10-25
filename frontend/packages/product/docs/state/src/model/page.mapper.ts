@@ -8,11 +8,11 @@ export function mapPage(dto: PageDtoApi): Page {
     workspaceSlug: dto.workspaceId,
     title: dto.title,
     ...(dto.navTitle ? { navTitle: dto.navTitle } : {}),
-    icon: dto.iconValue ?? null,
-    coverUrl: dto.coverUrl ?? null,
+    icon: dto.icon ?? null,
+    coverUrl: dto.coverImage ?? null,
     coverColor: "var(--muted)",
     parentId: dto.parentId ?? null,
-    position: dto.position,
+    position: 0,
     deadline: dto.deadline ?? null,
     status: dto.isArchived
       ? "archived"
@@ -50,7 +50,7 @@ export function mapBreadcrumb(dto: BreadcrumbDtoApi): BreadcrumbItem {
   return {
     id: dto.id,
     title: dto.title,
-    icon: dto.iconValue ?? null,
+    icon: dto.icon ?? null,
   };
 }
 

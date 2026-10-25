@@ -56,7 +56,7 @@ test.describe("Board header, lanes and item sheet (owner)", () => {
     ).toBeVisible();
   });
 
-  test("the sheet lists the child items and ticking one moves the progress", async ({
+  test("the sheet shows the child progress and offers no child list", async ({
     page,
   }) => {
     await open(page, "?item=mock-erp-item-142");
@@ -64,27 +64,19 @@ test.describe("Board header, lanes and item sheet (owner)", () => {
     await expect(sheet.getByText("3/5")).toBeVisible();
     await expect(
       sheet.getByRole("checkbox", { name: /^Xuất dữ liệu từ hệ thống cũ/ }),
-    ).toBeChecked();
-    await sheet
-      .getByRole("checkbox", { name: /^Đối chiếu công nợ đầu kỳ với Kế toán/ })
-      .click();
-    await expect(sheet.getByText("4/5")).toBeVisible();
-    await sheet
-      .getByRole("checkbox", { name: /^Đối chiếu công nợ đầu kỳ với Kế toán/ })
-      .click();
-    await expect(sheet.getByText("3/5")).toBeVisible();
+    ).toHaveCount(0);
   });
 
-  test("the follow chip follows and unfollows", async ({ page }) => {
+  test("the sheet offers no follow chip, there is nothing to follow through", async ({
+    page,
+  }) => {
     await open(page, "?item=mock-erp-item-142");
-    const sheet = page.getByRole("dialog");
-    const chip = sheet.locator('[data-f="follow"]');
-    await expect(chip).toContainText("Đang theo dõi");
-    await chip.click();
-    await expect(chip).toContainText("Theo dõi");
-    await expect(chip).not.toContainText("Đang theo dõi");
-    await chip.click();
-    await expect(chip).toContainText("Đang theo dõi");
+    await expect(
+      page.getByRole("dialog").getByText("ERP-142", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("dialog").locator('[data-f="follow"]'),
+    ).toHaveCount(0);
   });
 
   test("comments show the recorded change among them and the composer posts", async ({

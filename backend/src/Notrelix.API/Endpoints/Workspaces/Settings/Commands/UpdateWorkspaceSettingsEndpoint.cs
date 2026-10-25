@@ -28,7 +28,11 @@ public static class UpdateWorkspaceSettingsEndpoint
             request.DefaultMemberRole,
             request.InvitationExpiryDays,
             request.ExpectedVersion,
-            request.GuestDefaultExpiryDays));
+            request.GuestDefaultExpiryDays,
+            request.Size,
+            request.Language,
+            request.TimeZone,
+            request.WeekStart));
         return result.ToNoContentResult();
     }
 }

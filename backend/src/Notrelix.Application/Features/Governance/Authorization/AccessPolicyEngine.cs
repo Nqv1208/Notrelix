@@ -204,9 +204,7 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
             return ManageAwareAllow(permission, request, facts, role, access.EffectiveRank, actorId);
         }
 
-        // A Block is decided on its Page: the facts are the Page's, so the Page
-        // policy applies to the block's action.
-        if (permission.Resource?.Kind.Value == "documents.page" || facts.ParentPageId is not null)
+        if (permission.Resource?.Kind.Value == "documents.page")
         {
             if (!facts.ResourceExists)
             {

@@ -52,7 +52,7 @@ public class GetMyWorkspaceMembershipQueryHandler : IRequestHandler<GetMyWorkspa
         string? phone = null;
         if (member.IsInternalParticipant)
         {
-            var phones = await _phoneLookup.FindSharedPhonesAsync([userId], ct);
+            var phones = await _phoneLookup.FindSharedPhonesAsync(request.WorkspaceId, [userId], ct);
             phones.TryGetValue(userId, out phone);
         }
 

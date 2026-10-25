@@ -104,8 +104,6 @@ vi.mock("@notrelix/work-management-state", async (importOriginal) => {
     useCardFiles: list,
     useCardActivity: list,
     useCardComments: list,
-    useItemChildItems: () => ({ ...list(), toggle: vi.fn() }),
-    useItemFollowing: () => ({ following: null, setFollowing: vi.fn() }),
     useUpdateCard: mutation,
     useDuplicateCard: mutation,
     useAddFieldOption: () => ({ mutate: vi.fn(), isPending: false }),

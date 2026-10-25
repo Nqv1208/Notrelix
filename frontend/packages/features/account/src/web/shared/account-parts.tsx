@@ -219,6 +219,9 @@ export function Avatar({
   url?: string | null;
   className?: string;
 }) {
+  const src = url || null;
+  // A photo the producer will not serve (removed, not allowed) falls back to the initials.
+  const [failedSrc, setFailedSrc] = React.useState<string | null>(null);
   return (
     <span
       aria-hidden="true"
@@ -227,8 +230,13 @@ export function Avatar({
         className,
       )}
     >
-      {url ? (
-        <img src={url} alt="" className="size-full object-cover" />
+      {src && src !== failedSrc ? (
+        <img
+          src={src}
+          alt=""
+          className="size-full object-cover"
+          onError={() => setFailedSrc(src)}
+        />
       ) : (
         initialsOf(name)
       )}

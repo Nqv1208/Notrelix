@@ -2,6 +2,52 @@ import { defineMockOperation } from "../../operations/types";
 import { ok, created, notFound } from "../../transport/create-response";
 type BlockDtoApi = any;
 
+/**
+ * Like the producer (`BlockDto`): the block's type by its producer name, its JSON
+ * body as `content`, and the position as an opaque key (here the zero-padded
+ * number the store orders by). The store keeps the page's own type names.
+ */
+const PRODUCER_TYPE: Record<string, string> = {
+  paragraph: "Text",
+  heading_1: "Heading1",
+  heading_2: "Heading2",
+  heading_3: "Heading3",
+  bulleted_list: "BulletList",
+  numbered_list: "NumberedList",
+  todo: "ToDo",
+  toggle: "Toggle",
+  quote: "Quote",
+  divider: "Divider",
+  code: "Code",
+  image: "Image",
+  embed: "File",
+  board_reference: "Board",
+  table: "Table",
+  callout: "Callout",
+  page_reference: "PageReference",
+};
+const STORE_TYPE: Record<string, string> = Object.fromEntries(
+  Object.entries(PRODUCER_TYPE).map(([key, value]) => [value, key]),
+);
+
+export function toBlockDto(b: any): BlockDtoApi {
+  return {
+    id: b.id,
+    pageId: b.pageId,
+    parentId: b.parentBlockId ?? null,
+    type: PRODUCER_TYPE[b.type] ?? "Text",
+    content:
+      typeof b.properties === "string"
+        ? b.properties
+        : JSON.stringify(b.properties ?? {}),
+    properties: "{}",
+    position: String(Math.round(b.position ?? 0)).padStart(12, "0"),
+    version: b.version,
+    createdAt: b.createdAt,
+    updatedAt: b.updatedAt ?? null,
+  };
+}
+
 export const blocksOperations = [
   // ─── GET /pages/:pageId/blocks ──────────────────────────────────────────
 
@@ -16,21 +62,8 @@ export const blocksOperations = [
     async handle({ params, store }) {
       const page = store.getPage(params.pageId);
       if (!page) return notFound("Page not found");
-
-      const blocks = store.getPageBlocks(params.pageId);
       return ok<BlockDtoApi[]>(
-        blocks.map((b) => ({
-          id: b.id,
-          pageId: b.pageId,
-          parentBlockId: b.parentBlockId ?? null,
-          type: b.type as any,
-          properties: b.properties,
-          position: b.position,
-          version: b.version,
-          createdByUserId: b.createdByUserId,
-          createdAt: b.createdAt,
-          updatedAt: b.updatedAt ?? null,
-        })),
+        store.getPageBlocks(params.pageId).map(toBlockDto),
       );
     },
   }),
@@ -42,10 +75,10 @@ export const blocksOperations = [
     {
       type?: string | null;
       properties?: string | null;
-      parentBlockId?: string | null;
-      position?: number;
+      parentId?: string | null;
+      afterBlockId?: string | null;
     },
-    BlockDtoApi
+    string
   >({
     id: "docs.blocks.create",
     contract: {
@@ -56,46 +89,38 @@ export const blocksOperations = [
     route: "/pages/:pageId/blocks",
     async handle({ params, body, store }) {
       const data = body ?? {};
+      const siblings = store
+        .getPageBlocks(params.pageId)
+        .filter((b) => (b.parentBlockId ?? null) === (data.parentId ?? null));
+      const after = data.afterBlockId
+        ? siblings.findIndex((b) => b.id === data.afterBlockId)
+        : siblings.length - 1;
+      if (data.afterBlockId && after < 0) return notFound("Block not found");
+      const here = siblings[after]?.position ?? 0;
+      const next = siblings[after + 1]?.position;
       const block = store.createBlock(params.pageId, {
-        type: data.type ?? "paragraph",
+        type: STORE_TYPE[data.type ?? ""] ?? "paragraph",
         properties: data.properties ?? "{}",
-        parentBlockId: data.parentBlockId ?? null,
-        position: data.position,
+        parentBlockId: data.parentId ?? null,
+        position: next === undefined ? here + 1000 : (here + next) / 2,
       });
-      // also create history
       store.createPageHistory(
         params.pageId,
         "usr-m-00001",
         "created_block",
         block.type,
       );
-
-      return created<BlockDtoApi>({
-        id: block.id,
-        pageId: block.pageId,
-        parentBlockId: block.parentBlockId ?? null,
-        type: block.type as any,
-        properties: block.properties,
-        position: block.position,
-        version: block.version,
-        createdByUserId: block.createdByUserId,
-        createdAt: block.createdAt,
-        updatedAt: block.updatedAt ?? null,
-      });
+      // Like the producer (`ToCreatedResult`): 201 with the new block's id.
+      return created<string>(block.id);
     },
   }),
 
-  // ─── PATCH /blocks/:blockId ─────────────────────────────────────────────
+  // ─── PATCH /pages/:pageId/blocks/:blockId ───────────────────────────────
 
   defineMockOperation<
-    { blockId: string },
-    {
-      type?: string | null;
-      properties?: string | null;
-      parentBlockId?: string | null;
-      position?: number;
-    },
-    BlockDtoApi
+    { pageId: string; blockId: string },
+    { type?: string | null; properties?: string | null },
+    void
   >({
     id: "docs.blocks.update",
     contract: {
@@ -103,40 +128,46 @@ export const blocksOperations = [
       operationId: "Documents.Blocks.UpdateBlock",
     } as any,
     method: "PATCH",
-    route: "/blocks/:blockId",
+    route: "/pages/:pageId/blocks/:blockId",
     async handle({ params, body, store }) {
-      const data = body ?? {};
-      const block = store.updateBlock(params.blockId, data as any);
-      if (!block) return notFound("Block not found");
-
-      return ok<BlockDtoApi>({
-        id: block.id,
-        pageId: block.pageId,
-        parentBlockId: block.parentBlockId ?? null,
-        type: block.type as any,
-        properties: block.properties,
-        position: block.position,
-        version: block.version,
-        createdByUserId: block.createdByUserId,
-        createdAt: block.createdAt,
-        updatedAt: block.updatedAt ?? null,
-      });
+      const existing = store
+        .getPageBlocks(params.pageId)
+        .find((b) => b.id === params.blockId);
+      if (!existing) return notFound("Block not found");
+      const type = body?.type;
+      if (type && STORE_TYPE[type] !== existing.type) {
+        return {
+          status: 400,
+          body: {
+            title: "Validation failed",
+            errorCode: "validation.failed",
+            errors: { _errors: ["A block keeps its type"] },
+          },
+        };
+      }
+      if (body?.properties != null) {
+        store.updateBlock(params.blockId, { properties: body.properties });
+      }
+      return ok<void>(undefined);
     },
   }),
 
-  // ─── DELETE /blocks/:blockId ────────────────────────────────────────────
+  // ─── DELETE /pages/:pageId/blocks/:blockId ──────────────────────────────
 
-  defineMockOperation<{ blockId: string }, never, void>({
+  defineMockOperation<{ pageId: string; blockId: string }, never, void>({
     id: "docs.blocks.delete",
     contract: {
       kind: "openapi",
       operationId: "Documents.Blocks.DeleteBlock",
     } as any,
     method: "DELETE",
-    route: "/blocks/:blockId",
+    route: "/pages/:pageId/blocks/:blockId",
     async handle({ params, store }) {
-      const deleted = store.deleteBlock(params.blockId);
-      if (!deleted) return notFound("Block not found");
+      const existing = store
+        .getPageBlocks(params.pageId)
+        .find((b) => b.id === params.blockId);
+      if (!existing) return notFound("Block not found");
+      store.deleteBlock(params.blockId);
       return ok<void>(undefined);
     },
   }),

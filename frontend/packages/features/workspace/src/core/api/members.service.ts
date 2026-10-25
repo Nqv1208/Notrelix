@@ -1,4 +1,7 @@
-import type { OperationRequestBody } from "@notrelix/contracts";
+import {
+  resolveApiAssetUrl,
+  type OperationRequestBody,
+} from "@notrelix/contracts";
 import { initialsFor } from "../model/navigation";
 import { parseWorkspaceRole, roleWireValue } from "../model/members";
 import type {
@@ -67,7 +70,7 @@ export function parseMembers(payload: unknown): WorkspaceMember[] {
       userId,
       name,
       role,
-      avatarUrl: avatar || undefined,
+      avatarUrl: resolveApiAssetUrl(avatar) ?? undefined,
       joinedAt: typeof raw.joinedAt === "string" ? raw.joinedAt : undefined,
       membership: parseMembership(raw.status),
       initials: initialsFor(name),

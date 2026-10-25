@@ -45,8 +45,36 @@ import { canReadBoard } from "../work-management/boards.handlers";
 
 const MY_WORK_EXT = "CTR-GAP-WS-MYWORK-EXT" as const;
 const HOME_FEED = "CTR-GAP-WS-HOME-FEED" as const;
-const INBOX = "CTR-GAP-WS-INBOX" as const;
 const ITEM_SHEET = "CTR-GAP-WS-ITEM-SHEET" as const;
+
+const PRIORITY_LABELS = {
+  urgent: "Urgent",
+  high: "High",
+  medium: "Medium",
+  low: "Low",
+} as const;
+
+/**
+ * The producer states a Priority as the option the Item holds (id and label);
+ * the page maps the label. The mock keeps its own priority keys, so each one
+ * is stated here as a stable option.
+ */
+function withPriorityOption(dto: ReturnType<typeof buildMyWorkExtended>) {
+  const convert = (item: (typeof dto.items)[number]) => ({
+    ...item,
+    priority: item.priority
+      ? {
+          optionId: `00000000-0000-4000-8000-00000000000${Object.keys(PRIORITY_LABELS).indexOf(item.priority) + 1}`,
+          label: PRIORITY_LABELS[item.priority],
+        }
+      : null,
+  });
+  return {
+    ...dto,
+    items: dto.items.map(convert),
+    done: dto.done.map(convert),
+  };
+}
 
 const BUCKETS: readonly WorkBucket[] = ["todo", "doing", "review", "done"];
 
@@ -68,7 +96,7 @@ function isBucket(value: unknown): value is WorkBucket {
 }
 
 /**
- * The people who follow an item (gap `CTR-GAP-WS-ITEM-SHEET`): the member when
+ * The people who follow an item: the member when
  * they follow it, the assignees, then the others who chose to.
  */
 function followersOf(store: MockStore, cardId: string, memberFollows: boolean) {
@@ -167,12 +195,17 @@ export const workFeedOperations = [
   // ── My work: extended read ───────────────────────────────────────────────
   defineMockOperation<{ workspaceId: string }>({
     id: "wsFeed.myWork.extended",
-    contract: { kind: "gap", gapId: MY_WORK_EXT },
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardItems.GetMyWorkExtended",
+    },
     method: "GET",
     route: "/workspaces/:workspaceId/my-work/extended",
     async handle({ params, store }) {
       if (!store.isCurrentMemberOf(params.workspaceId)) return notFound();
-      return ok(buildMyWorkExtended(store, params.workspaceId));
+      return ok(
+        withPriorityOption(buildMyWorkExtended(store, params.workspaceId)),
+      );
     },
   }),
 
@@ -201,7 +234,10 @@ export const workFeedOperations = [
   // ── Reopen a completed item ──────────────────────────────────────────────
   defineMockOperation<{ id: string }>({
     id: "wsFeed.items.reopen",
-    contract: { kind: "gap", gapId: MY_WORK_EXT },
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardItems.Reopen",
+    },
     method: "POST",
     route: "/board-items/:id/reopen",
     async handle({ params, store }) {
@@ -228,7 +264,10 @@ export const workFeedOperations = [
   // ── Follow / unfollow ────────────────────────────────────────────────────
   defineMockOperation<{ id: string }>({
     id: "wsFeed.items.follow",
-    contract: { kind: "gap", gapId: MY_WORK_EXT },
+    contract: {
+      kind: "openapi",
+      operationId: "Collaboration.Watchers.FollowBoardItem",
+    },
     method: "PUT",
     route: "/board-items/:id/following",
     async handle({ params, store }) {
@@ -237,7 +276,10 @@ export const workFeedOperations = [
   }),
   defineMockOperation<{ id: string }>({
     id: "wsFeed.items.unfollow",
-    contract: { kind: "gap", gapId: MY_WORK_EXT },
+    contract: {
+      kind: "openapi",
+      operationId: "Collaboration.Watchers.UnfollowBoardItem",
+    },
     method: "DELETE",
     route: "/board-items/:id/following",
     async handle({ params, store }) {
@@ -313,7 +355,10 @@ export const workFeedOperations = [
   // ── Item sheet: child items and following ────────────────────────────────
   defineMockOperation<{ id: string }>({
     id: "wsFeed.items.childItems",
-    contract: { kind: "gap", gapId: ITEM_SHEET },
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardItems.ListChildren",
+    },
     method: "GET",
     route: "/board-items/:id/child-items",
     async handle({ params, store }) {
@@ -323,7 +368,10 @@ export const workFeedOperations = [
   }),
   defineMockOperation<{ id: string }>({
     id: "wsFeed.items.followingState",
-    contract: { kind: "gap", gapId: ITEM_SHEET },
+    contract: {
+      kind: "openapi",
+      operationId: "Collaboration.Watchers.GetBoardItemFollowing",
+    },
     method: "GET",
     route: "/board-items/:id/following",
     async handle({ params, store }) {
@@ -339,7 +387,10 @@ export const workFeedOperations = [
   // ── Home feed ────────────────────────────────────────────────────────────
   defineMockOperation<{ workspaceId: string }>({
     id: "wsFeed.home.feed",
-    contract: { kind: "gap", gapId: HOME_FEED },
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardItems.GetHomeFeed",
+    },
     method: "GET",
     route: "/workspaces/:workspaceId/home/feed",
     async handle({ params, store }) {
@@ -364,7 +415,10 @@ export const workFeedOperations = [
   // ── Inbox ────────────────────────────────────────────────────────────────
   defineMockOperation({
     id: "wsFeed.inbox.summary",
-    contract: { kind: "gap", gapId: INBOX },
+    contract: {
+      kind: "openapi",
+      operationId: "Collaboration.Notifications.GetInboxSummary",
+    },
     method: "GET",
     route: "/inbox/summary",
     async handle({ store }) {
@@ -373,67 +427,63 @@ export const workFeedOperations = [
   }),
   defineMockOperation<{ workspaceId: string }>({
     id: "wsFeed.inbox.list",
-    contract: { kind: "gap", gapId: INBOX },
+    contract: {
+      kind: "openapi",
+      operationId: "Collaboration.Notifications.GetWorkspaceInbox",
+    },
     method: "GET",
     route: "/workspaces/:workspaceId/inbox",
     async handle({ params, store }) {
       if (!store.isCurrentMemberOf(params.workspaceId)) return notFound();
-      return ok(buildInbox(store, params.workspaceId));
+      // The real producer lists notifications: a mention is the one kind it has.
+      const inbox = buildInbox(store, params.workspaceId);
+      return ok({
+        items: inbox.items
+          .filter((entry) => entry.type === "mention")
+          .map((entry) => ({
+            id: entry.id,
+            type: "mention.created",
+            createdAt: entry.createdAt,
+            unread: entry.unread,
+            actor: entry.actor,
+            excerpt: entry.excerpt,
+            target: {
+              kind: "item",
+              id: entry.target.id,
+              boardId: entry.target.boardId,
+              key: entry.target.key,
+              title: entry.target.title,
+            },
+          })),
+        nextCursor: null,
+      });
+    },
+  }),
+  defineMockOperation<{ workspaceId: string; id: string }>({
+    id: "wsFeed.inbox.read",
+    contract: {
+      kind: "openapi",
+      operationId: "Collaboration.Notifications.MarkInboxEntryRead",
+    },
+    method: "POST",
+    route: "/workspaces/:workspaceId/inbox/:id/read",
+    async handle({ params, store }) {
+      if (!store.isCurrentMemberOf(params.workspaceId)) return notFound();
+      return outcome(markInbox(store, params.id, { type: "handled" }));
     },
   }),
   defineMockOperation<{ workspaceId: string }>({
     id: "wsFeed.inbox.readAll",
-    contract: { kind: "gap", gapId: INBOX },
+    contract: {
+      kind: "openapi",
+      operationId: "Collaboration.Notifications.MarkWorkspaceInboxRead",
+    },
     method: "POST",
     route: "/workspaces/:workspaceId/inbox/read-all",
     async handle({ params, store }) {
       if (!store.isCurrentMemberOf(params.workspaceId)) return notFound();
       markAllInboxRead(store);
-      return noContent();
-    },
-  }),
-  defineMockOperation<{ id: string }>({
-    id: "wsFeed.inbox.handled",
-    contract: { kind: "gap", gapId: INBOX },
-    method: "POST",
-    route: "/inbox/:id/handled",
-    async handle({ params, store }) {
-      return outcome(markInbox(store, params.id, { type: "handled" }));
-    },
-  }),
-  defineMockOperation<{ id: string }, { until?: string }>({
-    id: "wsFeed.inbox.snooze",
-    contract: { kind: "gap", gapId: INBOX },
-    method: "POST",
-    route: "/inbox/:id/snooze",
-    async handle({ params, body, store }) {
-      const until = body?.until;
-      if (typeof until !== "string" || Number.isNaN(Date.parse(until))) {
-        return validationError({ until: ["Give a future ISO time."] });
-      }
-      return outcome(markInbox(store, params.id, { type: "snooze", until }));
-    },
-  }),
-  defineMockOperation<{ id: string }>({
-    id: "wsFeed.inbox.mute",
-    contract: { kind: "gap", gapId: INBOX },
-    method: "POST",
-    route: "/inbox/:id/mute",
-    async handle({ params, store }) {
-      return outcome(markInbox(store, params.id, { type: "mute" }));
-    },
-  }),
-  defineMockOperation<{ id: string }, { text?: string }>({
-    id: "wsFeed.inbox.reply",
-    contract: { kind: "gap", gapId: INBOX },
-    method: "POST",
-    route: "/inbox/:id/reply",
-    async handle({ params, body, store }) {
-      const text = body?.text?.trim() ?? "";
-      if (text.length === 0 || text.length > 4000) {
-        return validationError({ text: ["Write 1 to 4000 characters."] });
-      }
-      return outcome(markInbox(store, params.id, { type: "reply", text }));
+      return ok({ marked: 0 });
     },
   }),
 ];

@@ -478,6 +478,8 @@ export interface DocArticleSurfaceProps {
   readonly compare?: boolean;
   readonly overlay: DocOverlay;
   readonly mentionTasks: readonly DocTaskRef[];
+  /** The block types the slash menu offers; omitted offers every type. */
+  readonly blockTypes?: readonly BlockType[];
   readonly callbacks?: DocPageCallbacks;
 }
 
@@ -492,6 +494,7 @@ export function DocArticleSurface({
   compare = false,
   overlay,
   mentionTasks,
+  blockTypes,
   callbacks,
 }: DocArticleSurfaceProps) {
   const titleRef = useRef<HTMLHeadingElement | null>(null);
@@ -509,6 +512,7 @@ export function DocArticleSurface({
         <DocSlashMenuSurface
           copy={copy}
           query={overlay.query}
+          types={blockTypes}
           className="top-9 left-0"
           onSelect={(type: BlockType) =>
             callbacks?.onSlashSelect?.(blockId, type)

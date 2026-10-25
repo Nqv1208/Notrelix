@@ -71,9 +71,11 @@ const SLASH_VISIBLE = 3;
 export function matchSlashTypes(
   copy: DocPageCopy,
   query: string,
+  types?: readonly BlockType[],
 ): ReadonlyArray<(typeof SLASH_TYPES)[number]> {
   const needle = foldText(query.trim());
   return SLASH_TYPES.filter((entry) => {
+    if (types && !types.includes(entry.type)) return false;
     if (needle === "") return true;
     const name = foldText(
       copy.slash.items[entry.type as keyof typeof copy.slash.items],
@@ -133,6 +135,8 @@ function usePopupKeys({
 export interface DocSlashMenuSurfaceProps {
   readonly copy: DocPageCopy;
   readonly query: string;
+  /** The block types offered; omitted offers every type. */
+  readonly types?: readonly BlockType[];
   /** Index of the highlighted entry when the menu is controlled (stories). */
   readonly activeIndex?: number;
   readonly className?: string;
@@ -144,12 +148,13 @@ export interface DocSlashMenuSurfaceProps {
 export function DocSlashMenuSurface({
   copy,
   query,
+  types,
   activeIndex,
   className,
   onSelect,
   onClose,
 }: DocSlashMenuSurfaceProps) {
-  const matches = matchSlashTypes(copy, query);
+  const matches = matchSlashTypes(copy, query, types);
   const shown = matches.slice(0, SLASH_VISIBLE);
   const [keyActive, setKeyActive] = usePopupKeys({
     count: shown.length,

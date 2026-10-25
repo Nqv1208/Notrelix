@@ -14,6 +14,8 @@ import {
   type FullBoardResponse,
   type UpdateFieldValueInput,
 } from "@notrelix/work-management-core";
+import type { ApiRequestOptions } from "@notrelix/contracts";
+import { findBoardCard } from "../cache/card-restore";
 import { withItemStatus } from "../cache/item-status";
 import { wmQueryKeys } from "../queries/keys";
 import { useWorkManagementServices } from "../services";
@@ -21,7 +23,10 @@ import { runCardCommand } from "./card-command";
 import type { CardWriteHookOptions } from "./use-update-item-status";
 
 interface FieldValueWriter {
-  updateFieldValue(payload: UpdateFieldValueInput): Promise<void>;
+  updateFieldValue(
+    payload: UpdateFieldValueInput,
+    options?: ApiRequestOptions & { readonly expectedVersion?: number },
+  ): Promise<void>;
 }
 
 /**
@@ -116,7 +121,12 @@ export function runFieldValueCommand(
         applyFieldValue(card, payload, fields, members),
       ) ?? current,
     applyDetail: (detail) => applyFieldValue(detail, payload, fields, members),
-    send: () => cards.updateFieldValue(payload),
+    send: (context) =>
+      cards.updateFieldValue(payload, {
+        ...context,
+        expectedVersion:
+          findBoardCard(board, payload.cardId)?.version ?? undefined,
+      }),
   });
 }
 

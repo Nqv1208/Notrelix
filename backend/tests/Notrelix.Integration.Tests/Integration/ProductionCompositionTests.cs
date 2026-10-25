@@ -56,6 +56,8 @@ public sealed class ProductionCompositionTests
             ["Messaging:Transport"] = "None",
             ["ConnectionStrings:Redis"] = "localhost:6379,abortConnect=false",
             ["ConnectionStrings:NotrelixDb"] = "Host=localhost;Port=5432;Database=notrelix_test;Username=notrelix;Password=notrelix_test",
+            // Composition only: the host never connects, so it opts out of the login split (the one-login fallback).
+            ["Rls:RoleEnforcement"] = "Off",
             ["JwtSettings:SecretKey"] = "test-secret-key-at-least-32-characters-long",
             ["JwtSettings:Issuer"] = "notrelix-test",
             ["JwtSettings:Audience"] = "notrelix-test",

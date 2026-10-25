@@ -7,9 +7,7 @@ import {
   LoadError,
   Note,
   PageHead,
-  SELECT_SM,
   Toast,
-  Toggle,
 } from "../shared/account-parts";
 import {
   fillCopy,
@@ -28,25 +26,21 @@ export const NOTIFICATION_EVENTS = [
 ] as const;
 export type AccountNotificationEvent = (typeof NOTIFICATION_EVENTS)[number];
 
-export const NOTIFICATION_CHANNELS = ["app", "email", "mobile"] as const;
+/** The channels the producer delivers on; mobile and quiet hours are later decisions. */
+export const NOTIFICATION_CHANNELS = ["inApp", "email"] as const;
 export type AccountNotificationChannel = (typeof NOTIFICATION_CHANNELS)[number];
 
 export type AccountChannelChoice = Record<AccountNotificationChannel, boolean>;
 
-export interface AccountQuietHours {
-  readonly enabled: boolean;
-  /** "21:00": a whole hour. */
-  readonly from: string;
-  readonly to: string;
-  readonly days: "weekdays" | "everyday";
-}
-
-/** The values the notifications page edits and saves. */
+/**
+ * The values the notifications page edits and saves: the member's choices in
+ * one workspace, with the version the save must quote (`expectedVersion`).
+ */
 export interface AccountNotificationValues {
+  readonly version: number;
   readonly rows: Readonly<
     Record<AccountNotificationEvent, Readonly<AccountChannelChoice>>
   >;
-  readonly quietHours: AccountQuietHours;
 }
 
 export type AccountNotificationsState =
@@ -57,8 +51,6 @@ export type AccountNotificationsState =
       readonly values: AccountNotificationValues;
       /** The member's name for the mention note. */
       readonly personName: string;
-      /** "GMT+7": the member's time zone in the quiet-hours hint. */
-      readonly zoneLabel: string;
     };
 
 export interface AccountNotificationsSurfaceProps {
@@ -68,11 +60,6 @@ export interface AccountNotificationsSurfaceProps {
   readonly onSave: (values: AccountNotificationValues) => void;
   readonly onRetry: () => void;
 }
-
-const HOURS = Array.from(
-  { length: 24 },
-  (_, hour) => `${String(hour).padStart(2, "0")}:00`,
-);
 
 function Checkbox({
   checked,
@@ -204,35 +191,23 @@ function Ready({
   copy,
   initial,
   personName,
-  zoneLabel,
   save,
   onSave,
 }: {
   copy: AccountNotificationsCopy;
   initial: AccountNotificationValues;
   personName: string;
-  zoneLabel: string;
   save: AccountSaveStatus;
   onSave: (values: AccountNotificationValues) => void;
 }) {
   const [values, setValues] = React.useState(initial);
   React.useEffect(() => setValues(initial), [initial]);
-  const ids = {
-    title: React.useId(),
-    text: React.useId(),
-    from: React.useId(),
-    to: React.useId(),
-    days: React.useId(),
-  };
   const saving = save.state === "saving";
-  const quiet = values.quietHours;
-  const setQuiet = (patch: Partial<AccountQuietHours>) =>
-    setValues((current) => ({
-      ...current,
-      quietHours: { ...current.quietHours, ...patch },
-    }));
   return (
     <>
+      <p className="m-0 text-crumb leading-[1.55] text-muted-foreground">
+        {copy.workspaceScope}
+      </p>
       <Matrix
         copy={copy}
         values={values}
@@ -248,111 +223,6 @@ function Ready({
           }))
         }
       />
-      <div
-        data-f="set"
-        className="rounded-[12px] border border-line bg-popover dark:bg-card"
-      >
-        <div className="flex items-start gap-[18px] px-[18px] py-4">
-          <div className="min-w-0 flex-1">
-            <b
-              id={ids.title}
-              className="block text-body leading-[1.45] font-semibold text-foreground"
-            >
-              {copy.quiet.title}
-            </b>
-            <p
-              id={ids.text}
-              className="m-0 mt-1 max-w-[64ch] text-crumb leading-[1.55] text-muted-foreground"
-            >
-              {copy.quiet.text}
-            </p>
-            <div className="mt-2.5 flex flex-wrap items-end gap-2.5">
-              <div className="flex flex-col gap-1">
-                <label
-                  htmlFor={ids.from}
-                  className="text-xs leading-[1.45] font-semibold text-muted-foreground"
-                >
-                  {copy.quiet.from}
-                </label>
-                <select
-                  id={ids.from}
-                  value={quiet.from}
-                  disabled={!quiet.enabled || saving}
-                  onChange={(event) => setQuiet({ from: event.target.value })}
-                  className={cn(SELECT_SM, "min-w-[110px]")}
-                >
-                  {HOURS.map((hour) => (
-                    <option key={hour} value={hour}>
-                      {hour}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex flex-col gap-1">
-                <label
-                  htmlFor={ids.to}
-                  className="text-xs leading-[1.45] font-semibold text-muted-foreground"
-                >
-                  {copy.quiet.to}
-                </label>
-                <select
-                  id={ids.to}
-                  value={quiet.to}
-                  disabled={!quiet.enabled || saving}
-                  onChange={(event) => setQuiet({ to: event.target.value })}
-                  className={cn(SELECT_SM, "min-w-[110px]")}
-                >
-                  {HOURS.map((hour) => (
-                    <option key={hour} value={hour}>
-                      {hour}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex flex-col gap-1">
-                <label
-                  htmlFor={ids.days}
-                  className="text-xs leading-[1.45] font-semibold text-muted-foreground"
-                >
-                  {copy.quiet.days}
-                </label>
-                <select
-                  id={ids.days}
-                  value={quiet.days}
-                  disabled={!quiet.enabled || saving}
-                  onChange={(event) =>
-                    setQuiet({
-                      days: event.target.value as AccountQuietHours["days"],
-                    })
-                  }
-                  className={cn(SELECT_SM, "min-w-[180px]")}
-                >
-                  <option value="weekdays">{copy.quiet.weekdays}</option>
-                  <option value="everyday">{copy.quiet.everyday}</option>
-                </select>
-              </div>
-              <span className="pb-[7px] text-xs leading-normal text-meta-foreground">
-                {fillCopy(copy.quiet.zone, { zone: zoneLabel })}
-              </span>
-            </div>
-          </div>
-          <div className="flex shrink-0 items-center gap-2 pt-0.5">
-            <span
-              aria-hidden="true"
-              className="text-crumb leading-[1.45] font-medium text-meta-foreground"
-            >
-              {quiet.enabled ? copy.quiet.on : copy.quiet.off}
-            </span>
-            <Toggle
-              checked={quiet.enabled}
-              disabled={saving}
-              aria-labelledby={ids.title}
-              aria-describedby={ids.text}
-              onChange={(next) => setQuiet({ enabled: next })}
-            />
-          </div>
-        </div>
-      </div>
       {save.state === "error" ? (
         <p
           role="alert"
@@ -379,7 +249,7 @@ function Ready({
 
 /**
  * Account notifications (Final-Account `thong-bao`): the matrix of events by
- * channel (in the app, email, mobile), the quiet hours and the save. The
+ * channel (in the app, email) for one workspace and the save. The
  * container owns the write and reports it through `save`.
  */
 export function AccountNotificationsSurface({
@@ -404,7 +274,6 @@ export function AccountNotificationsSurface({
           className="flex flex-col gap-3"
         >
           <Skeleton className="h-[330px] w-full rounded-[12px]" />
-          <Skeleton className="h-28 w-full rounded-[12px]" />
         </div>
       ) : preferences.status === "error" ? (
         <LoadError
@@ -417,7 +286,6 @@ export function AccountNotificationsSurface({
           copy={copy}
           initial={preferences.values}
           personName={preferences.personName}
-          zoneLabel={preferences.zoneLabel}
           save={save}
           onSave={onSave}
         />

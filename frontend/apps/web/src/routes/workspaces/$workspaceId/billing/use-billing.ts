@@ -18,6 +18,8 @@ export function useBillingApi() {
 /** Workspace-scoped query keys of the Plans and billing pages. */
 export const billingKeys = {
   all: (workspaceId: string) => workspaceQueryKey(workspaceId, "billing"),
+  capabilities: (workspaceId: string) =>
+    workspaceQueryKey(workspaceId, "billing", "capabilities"),
   overview: (workspaceId: string) =>
     workspaceQueryKey(workspaceId, "billing", "overview"),
   plans: (workspaceId: string) =>

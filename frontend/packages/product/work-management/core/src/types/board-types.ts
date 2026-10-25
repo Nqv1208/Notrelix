@@ -71,7 +71,29 @@ export interface FullBoardResponse {
   fieldDefinitions: FieldDefinition[];
 }
 
+/** A saved view of a board: a tab with its layout and config. */
+export interface SavedBoardView {
+  readonly id: string;
+  readonly name: string;
+  readonly viewMode: ViewMode;
+  readonly viewConfig: ViewConfig;
+  readonly isDefault: boolean;
+  /** "board": shared with the board's members. "me": its creator's alone. */
+  readonly visibility: "board" | "me";
+  readonly createdBy: string | null;
+  readonly version: number;
+}
+
 export interface BoardViewDtoApi {
+  id?: string;
+  name?: string;
+  /** The layout of a saved view: Table, Kanban, Calendar or Timeline. */
+  type?: string | null;
+  isDefault?: boolean;
+  /** "Board" (shared with the board's members) or "Private" (its creator's). */
+  visibility?: string;
+  createdBy?: string | null;
+  version?: number;
   viewMode?: string | null;
   filters?: string | Record<string, unknown> | null;
   config?: string | Record<string, unknown> | null;

@@ -7,3 +7,4 @@ export type { ForgotPasswordRequest } from "./forgot-password.schema";
 export { resetPasswordSchema } from "./reset-password.schema";
 export type { ResetPasswordRequest } from "./reset-password.schema";
 export { AUTH_ERROR_KEYS } from "./auth-errors";
+export { PASSWORD_MIN_LENGTH } from "./password-policy";

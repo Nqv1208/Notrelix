@@ -25,7 +25,8 @@ public static class CreateBoardViewEndpoint
             boardId,
             body.Name,
             body.ViewMode,
-            "{}"), cancellationToken);
+            body.Config ?? "{}",
+            body.Visibility), cancellationToken);
         return Results.Ok(result);
     }
 }

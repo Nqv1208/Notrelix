@@ -23,7 +23,7 @@ public class RegisterDuplicateRaceTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -37,8 +37,8 @@ public class RegisterDuplicateRaceTests : IAsyncLifetime
         var passwordHasher = new Mock<IPasswordHasher>();
         passwordHasher.Setup(x => x.HashPassword(It.IsAny<string>())).Returns("hashed-password");
 
-        await using var firstContext = _db.CreateContext();
-        await using var secondContext = _db.CreateContext();
+        await using var firstContext = _db.CreateOwnerContext();
+        await using var secondContext = _db.CreateOwnerContext();
         var first = CreateHandler(firstContext, passwordHasher.Object, dateTimeProvider.Object);
         var second = CreateHandler(secondContext, passwordHasher.Object, dateTimeProvider.Object);
 

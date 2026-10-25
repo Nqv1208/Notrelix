@@ -14,7 +14,7 @@ public static class ForgotPasswordEndpoint
             .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status429TooManyRequests)
             .WithTags("Identity.Auth")
             .WithSummary("Request a password reset email")
-            .WithMetadata(new RateLimitPolicyAttribute("AuthStrictByIp"));
+            .WithMetadata(new RateLimitPolicyAttribute("AuthCredentialByIp"));
         return group;
     }
 

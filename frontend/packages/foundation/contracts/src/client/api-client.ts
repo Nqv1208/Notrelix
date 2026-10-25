@@ -1,6 +1,7 @@
 import { endpoints } from "../endpoints/endpoints";
 import { AppError } from "@notrelix/kernel";
 import { mapStatusToKind } from "@notrelix/kernel";
+import { configureApiAssetOrigin } from "./asset-url";
 import { createCsrfProvider, type CsrfProvider, CSRF_HEADER } from "./csrf";
 import { generateCorrelationId } from "@notrelix/kernel";
 import {
@@ -14,8 +15,10 @@ export type { UploadProgress } from "./upload-transport";
 
 /** A multipart upload: one idempotency key per user action, reused only to retry it. */
 export type ApiUploadOptions = {
-  /** Required: the same key replays the stored result of the same action. */
-  idempotencyKey: string;
+  /** The same key replays the stored result of the same action; omit it for an operation that takes none. */
+  idempotencyKey?: string;
+  /** `POST` by default; `PUT` for an operation that replaces a resource. */
+  method?: "POST" | "PUT";
   signal?: AbortSignal;
   skipAuthRefresh?: boolean;
   correlationId?: string;
@@ -71,6 +74,7 @@ function isCsrfRejection(status: number, body: unknown): boolean {
 
 export function createNotrelixClient(config: NotrelixClientConfig) {
   const customBaseUrl = config.baseUrl;
+  configureApiAssetOrigin(customBaseUrl);
   const fetchImpl = config.fetchImpl ?? globalThis.fetch.bind(globalThis);
   const createCorrelationId =
     config.createCorrelationId ?? generateCorrelationId;
@@ -204,6 +208,8 @@ export function createNotrelixClient(config: NotrelixClientConfig) {
     }
   }
 
+  const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+
   async function apiFetch<TResponse>(
     url: string,
     options: RequestInit & ApiRequestOptions = {},
@@ -211,6 +217,18 @@ export function createNotrelixClient(config: NotrelixClientConfig) {
     retryAfterCsrfRecovery = true,
   ): Promise<TResponse> {
     const correlationId = options.correlationId || createCorrelationId();
+
+    // A write names itself with an Idempotency-Key (the producer requires one on
+    // its idempotent operations). The key is made once and travels with the
+    // retries below, so a retry replays the write instead of repeating it.
+    const namedByCaller =
+      Boolean(options.idempotencyKey) ||
+      Object.keys((options.headers as Record<string, string>) ?? {}).some(
+        (name) => name.toLowerCase() === "idempotency-key",
+      );
+    if (!namedByCaller && MUTATING_METHODS.has(options.method ?? "")) {
+      options = { ...options, idempotencyKey: crypto.randomUUID() };
+    }
 
     const init: RequestInit & ApiRequestOptions = { ...options };
     delete (init as { correlationId?: string }).correlationId;
@@ -300,9 +318,11 @@ export function createNotrelixClient(config: NotrelixClientConfig) {
           : undefined;
 
       console.log("FAILED URL:", url, options.method);
+      const problemCode = (data as Record<string, unknown> | null)?.errorCode;
       throw new AppError({
         kind,
         status: response.status,
+        ...(typeof problemCode === "string" ? { code: problemCode } : {}),
         message,
         details: data,
         validationErrors,
@@ -323,7 +343,7 @@ export function createNotrelixClient(config: NotrelixClientConfig) {
   }
 
   /**
-   * POST multipart/form-data. Same CSRF, auth-refresh and correlation rules as
+   * POST (or PUT) multipart/form-data. Same CSRF, auth-refresh and correlation rules as
    * `apiFetch`; the body is a FormData so no JSON Content-Type is sent (the
    * transport adds the multipart boundary). Retries re-send the same FormData.
    */
@@ -338,7 +358,9 @@ export function createNotrelixClient(config: NotrelixClientConfig) {
     const token = await csrf.ensureCsrfToken();
     const headers: Record<string, string> = {
       "X-Correlation-ID": correlationId,
-      "Idempotency-Key": options.idempotencyKey,
+      ...(options.idempotencyKey
+        ? { "Idempotency-Key": options.idempotencyKey }
+        : {}),
       [CSRF_HEADER]: token,
     };
 
@@ -346,6 +368,7 @@ export function createNotrelixClient(config: NotrelixClientConfig) {
     try {
       raw = await uploadTransport({
         url: `${customBaseUrl}${url}`,
+        method: options.method ?? "POST",
         form,
         headers,
         signal: options.signal,

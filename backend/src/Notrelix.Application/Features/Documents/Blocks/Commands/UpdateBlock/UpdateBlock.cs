@@ -9,13 +9,15 @@ namespace Notrelix.Application.Features.Documents.Blocks.Commands.UpdateBlock;
 /// starts empty); <c>Properties</c> then replaces the authored content.
 /// </summary>
 public record UpdateBlockCommand(
+    Guid PageId,
     Guid BlockId,
     string? Type,
     string? Properties
 ) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission
 {
-    public PermissionAction Action => PermissionAction.ManageBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("documents.block"), BlockId);
+    // A block is edited with the page it belongs to: the page decides who may (Editor level).
+    public PermissionAction Action => PermissionAction.UpdatePage;
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("documents.page"), PageId);
 }
 
 public class UpdateBlockCommandHandler : IRequestHandler<UpdateBlockCommand, Result>
@@ -33,7 +35,7 @@ public class UpdateBlockCommandHandler : IRequestHandler<UpdateBlockCommand, Res
 
     public async Task<Result> Handle(UpdateBlockCommand request, CancellationToken ct)
     {
-        var block = await _context.Blocks.FirstOrDefaultAsync(block => block.Id == request.BlockId && block.DeletedAt == null, ct);
+        var block = await _context.Blocks.FirstOrDefaultAsync(block => block.Id == request.BlockId && block.PageId == request.PageId && block.DeletedAt == null, ct);
         if (block is null) throw new NotFoundException(nameof(Block), request.BlockId);
 
         var now = _dateTimeProvider.UtcNow;

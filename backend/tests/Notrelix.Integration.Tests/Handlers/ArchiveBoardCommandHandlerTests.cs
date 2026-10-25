@@ -19,7 +19,7 @@ public class ArchiveBoardCommandHandlerTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -30,7 +30,7 @@ public class ArchiveBoardCommandHandlerTests : IAsyncLifetime
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
-        await using var context = _db.CreateContext(tenant);
+        await using var context = _db.CreateOwnerContext(tenant);
         var userId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
 
@@ -57,7 +57,7 @@ public class ArchiveBoardCommandHandlerTests : IAsyncLifetime
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
-        await using var context = _db.CreateContext(tenant);
+        await using var context = _db.CreateOwnerContext(tenant);
 
         var handler = new ArchiveBoardCommandHandler(
             context, new FakeCurrentUser(),

@@ -50,7 +50,6 @@ SELECT ops.apply_user_owned_policies('workspace', 'onboarding_drafts', 'user_id'
 SELECT ops.apply_scope_expression_policies('workspace', 'getting_started_dismissals',
     'ops.has_workspace_access(account_id, workspace_id) AND user_id = ops.current_user_id()', true);
 SELECT ops.apply_scoped_business_policies('governance', 'custom_roles', true);
-SELECT ops.apply_scoped_business_policies('governance', 'custom_role_permissions', true);
 SELECT ops.apply_scoped_business_policies('governance', 'workspace_member_role_assignments', true);
 SELECT ops.apply_scoped_business_policies('governance', 'resource_permissions', true);
 SELECT ops.apply_scoped_business_policies('governance', 'resource_access_changes', true);
@@ -77,6 +76,15 @@ BEGIN
 
         PERFORM ops.create_policy('authz', 'access_grants', 'p_app_select_own', 'SELECT', 'notrelix_app', v_own, NULL);
         PERFORM ops.create_policy('authz', 'access_grants', 'p_auth_select_own', 'SELECT', 'notrelix_auth', v_own, NULL);
+        -- A person who leaves a Workspace revokes their OWN grant in the leave transaction. This is the only
+        -- write the application role has on grants: it can end an active grant of its own user and can never
+        -- reactivate, create or touch another person's grant (the row must be active before and revoked after).
+        IF ops.column_exists('authz', 'access_grants', 'user_id')
+           AND ops.column_exists('authz', 'access_grants', 'revoked_at') THEN
+            PERFORM ops.create_policy('authz', 'access_grants', 'p_app_update_revoke_own', 'UPDATE', 'notrelix_app',
+                'user_id = ops.current_user_id() AND revoked_at IS NULL',
+                'user_id = ops.current_user_id() AND revoked_at IS NOT NULL');
+        END IF;
         PERFORM ops.create_policy('authz', 'access_grants', 'p_worker_all', 'ALL', 'notrelix_worker', 'true', 'true');
         PERFORM ops.create_policy('authz', 'access_grants', 'p_support_select', 'SELECT', 'notrelix_support_readonly', 'true', NULL);
     END IF;

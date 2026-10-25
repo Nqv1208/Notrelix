@@ -18,6 +18,12 @@ public sealed class RlsPolicyApplier
         "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.009_policies_notifications_activity_search.sql",
         "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.010_policies_events_messaging_audit_ops.sql",
         "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.011_verification.sql",
+        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.012_principal_scopes.sql",
+        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.013_co_member_profiles.sql",
+        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.014_anonymous_scopes.sql",
+        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.015_internal_principals.sql",
+        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.016_policies_derived_scope.sql",
+        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.017_webhook_scope.sql",
     ];
 
     public RlsPolicyApplier(ApplicationDbContext context, ILogger<RlsPolicyApplier> logger)
@@ -92,28 +98,36 @@ public sealed class RlsPolicyApplier
 
         _logger.LogInformation("Applied {Count} RLS scripts successfully.", appliedCount);
 
-        await VerifyEnforcedSchemasAsync(connection, ct);
+        await VerifyPolicyCoverageAsync(connection, ct);
     }
 
     /// <summary>
-    /// Schemas whose RLS coverage is certified and therefore fails closed: every
-    /// base table must have RLS enabled and at least one policy, or the apply fails.
-    /// A schema is added here once its owning context has classified every table
-    /// (work: WM-V3-DATA-003). Other target schemas are still reported by
-    /// 011_verification.sql without failing the apply.
+    /// Tables that carry no tenant or person data and are intentionally outside row-level security:
+    /// the migration history is read and written by the owner only.
     /// </summary>
-    private static readonly string[] EnforcedSchemas = ["work"];
+    private static readonly string[] UnenforcedTables = ["ops.__EFMigrationsHistory"];
 
-    private async Task VerifyEnforcedSchemasAsync(NpgsqlConnection connection, CancellationToken ct)
+    /// <summary>
+    /// Every base table of every application schema must have row-level security enabled AND forced and at
+    /// least one policy, or the apply fails: a table without a policy is open to the application login
+    /// through the schema grants. The check scans the catalog, so a table added by a later migration cannot
+    /// slip past by living in a schema nobody listed.
+    /// </summary>
+    private async Task VerifyPolicyCoverageAsync(NpgsqlConnection connection, CancellationToken ct)
     {
         const string sql = """
             SELECT n.nspname || '.' || c.relname || ': ' ||
-                   CASE WHEN c.relrowsecurity THEN 'NO_POLICY' ELSE 'RLS_DISABLED' END
+                   CASE WHEN NOT c.relrowsecurity THEN 'RLS_DISABLED'
+                        WHEN NOT c.relforcerowsecurity THEN 'RLS_NOT_FORCED'
+                        ELSE 'NO_POLICY' END
             FROM pg_class c
             JOIN pg_namespace n ON n.oid = c.relnamespace
-            WHERE c.relkind = 'r'
-              AND n.nspname = ANY(@schemas)
+            WHERE c.relkind IN ('r', 'p')
+              AND n.nspname NOT LIKE 'pg\_%'
+              AND n.nspname NOT IN ('information_schema', 'public')
+              AND (n.nspname || '.' || c.relname) <> ALL(@unenforced)
               AND (c.relrowsecurity = false
+                   OR c.relforcerowsecurity = false
                    OR NOT EXISTS (
                        SELECT 1 FROM pg_policies p
                        WHERE p.schemaname = n.nspname AND p.tablename = c.relname))
@@ -121,7 +135,7 @@ public sealed class RlsPolicyApplier
             """;
 
         await using var cmd = new NpgsqlCommand(sql, connection);
-        cmd.Parameters.AddWithValue("schemas", EnforcedSchemas);
+        cmd.Parameters.AddWithValue("unenforced", UnenforcedTables);
 
         var issues = new List<string>();
         await using (var reader = await cmd.ExecuteReaderAsync(ct))
@@ -135,10 +149,10 @@ public sealed class RlsPolicyApplier
         if (issues.Count > 0)
         {
             throw new InvalidOperationException(
-                "RLS verification failed for enforced schemas; every table must have RLS enabled and a policy: " +
+                "RLS verification failed; every application table must have row-level security enabled, forced and a policy: " +
                 string.Join(", ", issues));
         }
 
-        _logger.LogInformation("RLS verification passed for enforced schemas: {Schemas}", string.Join(", ", EnforcedSchemas));
+        _logger.LogInformation("RLS verification passed: every application table has forced row-level security and a policy.");
     }
 }

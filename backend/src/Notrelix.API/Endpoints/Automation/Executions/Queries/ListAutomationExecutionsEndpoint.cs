@@ -1,4 +1,5 @@
 using Notrelix.API.Extensions;
+using Notrelix.Application.Features.Automation.DTOs;
 using Notrelix.Application.Features.Automation.Executions.Queries.GetAutomationExecutions;
 
 namespace Notrelix.API.Endpoints.Automation.Executions.Queries;
@@ -10,7 +11,8 @@ public static class ListAutomationExecutionsEndpoint
         group.MapResourceGet("/{automationId:guid}/executions", HandleAsync)
             .WithName("Automation.Executions.List")
             .WithTags("Automation.Executions")
-            .WithSummary("Get automation execution history");
+            .WithSummary("Get automation execution history")
+            .Produces<IReadOnlyList<AutomationExecutionDto>>();
         return group;
     }
 

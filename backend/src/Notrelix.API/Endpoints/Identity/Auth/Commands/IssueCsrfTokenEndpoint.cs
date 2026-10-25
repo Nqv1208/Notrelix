@@ -19,7 +19,7 @@ public static class IssueCsrfTokenEndpoint
                 "csrf_token cookie, and returns the same value in the response body. " +
                 "Browser clients must echo the body value in the X-CSRF-Token header " +
                 "on state-changing requests (ADR-005).")
-            .WithMetadata(new RateLimitPolicyAttribute("AuthStrictByIp"));
+            .WithMetadata(new RateLimitPolicyAttribute("CsrfByIp"));
         return group;
     }
 

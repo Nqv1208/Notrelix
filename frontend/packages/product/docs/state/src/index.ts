@@ -36,7 +36,11 @@ export type {
 } from "./dto";
 
 export { mapPage, mapBreadcrumb, mapHistory } from "./model/page.mapper";
-export { mapBlock, parseProperties } from "./model/block.mapper";
+export {
+  CREATABLE_BLOCK_TYPES,
+  mapBlock,
+  parseProperties,
+} from "./model/block.mapper";
 export { mapComment } from "./model/comment.mapper";
 
 export { createPageApi } from "./api/page.api";
@@ -55,6 +59,7 @@ export { createPageExtrasApi } from "./api/page-extras.api";
 export type {
   ConvertedTaskDto,
   PageBacklinksDto,
+  PagePermissionLevel,
   PagePermissionsDto,
 } from "./api/page-extras.api";
 

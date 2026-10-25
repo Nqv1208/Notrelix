@@ -86,7 +86,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -140,6 +140,23 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
             "a workspace member without explicit resource-level authority cannot grant permissions");
     }
 
+    [Fact]
+    public async Task Grant_OnBoard_ToUserOutsideTheWorkspace_IsRejected_AndWritesNothing()
+    {
+        var (accountId, ownerId, workspaceId, boardId, _) = await SeedBoardStackAsync();
+        var outsiderId = Guid.CreateVersion7();
+
+        using var provider = CreateProvider(accountId, ownerId);
+        var act = () => SendAsync<Result<ResourcePermissionDto>>(provider,
+            new GrantResourcePermissionCommand("work-management.board", boardId, "User", outsiderId, "Viewer"));
+
+        await act.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>(
+            "a permission cannot be granted to a user who does not belong to the workspace");
+
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
+        (await verify.ResourcePermissions.AnyAsync(p => p.SubjectId == outsiderId)).Should().BeFalse();
+    }
+
     // WG-DEBT-CERT-006: board-specific cross-account gate. A workspace owner of
     // account A addressing a board that belongs to account B is told it does not
     // exist and nothing is written to account B.
@@ -158,7 +175,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         await act.Should().ThrowAsync<AppNotFound>(
             "a board of another account must be hidden, not reported as forbidden");
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.ResourcePermissions.IgnoreQueryFilters()
             .AnyAsync(p => p.ResourceId == boardB && p.SubjectId == ownerB)).Should().BeFalse(
             "the cross-account request must not create an entry on the foreign board");
@@ -249,7 +266,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         async Task<Exception?> InsertWithinTransaction(
             Guid txUserId, TaskCompletionSource<bool> absenceReported)
         {
-            await using var context = _db.CreateContext(SystemTenant());
+            await using var context = _db.CreateOwnerContext(SystemTenant());
             await using var tx = await context.Database.BeginTransactionAsync();
             // Both transactions read the absence of an active row first.
             var absent = !await context.ResourcePermissions
@@ -301,7 +318,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         postgres!.SqlState.Should().Be("23505");
         postgres.ConstraintName.Should().Be("uq_resource_permissions_active_subject");
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.ResourcePermissions.CountAsync(p => p.WorkspaceId == workspaceId
             && p.ResourceId == pageId && p.SubjectId == memberId && p.DeletedAt == null))
             .Should().Be(1, "exactly one active permission row survives the race");
@@ -385,7 +402,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
             new RevokeResourcePermissionCommand("documents.page", pageId, granted.Data.Id));
 
         result.Succeeded.Should().BeTrue();
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         var row = await verify.ResourcePermissions.IgnoreQueryFilters()
             .SingleAsync(p => p.Id == granted.Data.Id);
         row.DeletedAt.Should().NotBeNull("revoke soft-deletes the active permission row");
@@ -432,7 +449,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
 
         await act.Should().ThrowAsync<AppForbidden>(
             "revoke requires authority >= the target's existing rank");
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.ResourcePermissions.IgnoreQueryFilters()
             .SingleAsync(p => p.Id == granted.Data.Id)).DeletedAt
             .Should().BeNull("a denied revoke must leave the permission row untouched");
@@ -491,7 +508,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
 
         await act.Should().ThrowAsync<AppNotFound>(
             "a foreign-account permission must be hidden from the revoke mutation");
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.ResourcePermissions.IgnoreQueryFilters()
             .SingleAsync(p => p.Id == granted.Data.Id)).DeletedAt
             .Should().BeNull("the foreign row must remain active after the hidden attempt");
@@ -528,7 +545,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         // the canonical decision denies and nothing else may bypass it.
         var (accountId, _, _, boardId, memberId) = await SeedBoardStackAsync();
 
-        await using (var restrict = _db.CreateContext(SystemTenant()))
+        await using (var restrict = _db.CreateOwnerContext(SystemTenant()))
         {
             var restricted = await restrict.Boards.SingleAsync(b => b.Id == boardId);
             restricted.ChangeVisibility(BoardVisibility.Private, restricted.CreatedBy!.Value, DateTimeOffset.UtcNow);
@@ -603,7 +620,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
             new CreatePageCommand(workspaceId, "Member Page", null));
         var pageId = created.Data;
 
-        await using (var probe = _db.CreateContext(SystemTenant()))
+        await using (var probe = _db.CreateOwnerContext(SystemTenant()))
         {
             var entry = await probe.ResourcePermissions.IgnoreQueryFilters()
                 .SingleAsync(p => p.ResourceId == pageId);
@@ -627,11 +644,11 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         var unrelated = (await SendAsync<Result<Guid>>(provider, new CreatePageCommand(workspaceId, "Unrelated", null))).Data;
 
         await SendAsync<Result<Guid>>(provider, new CreateBlockCommand(
-            referencing, BlockType.PageReference, $"{{\"linkedPageId\":\"{target}\"}}", "a0", null));
+            referencing, BlockType.PageReference, $"{{\"linkedPageId\":\"{target}\"}}", null, null));
         await SendAsync<Result<Guid>>(provider, new CreateBlockCommand(
-            mentioning, BlockType.Text, $"{{\"text\":\"see\",\"pageMentionIds\":[\"{target}\"]}}", "a0", null));
+            mentioning, BlockType.Text, $"{{\"text\":\"see\",\"pageMentionIds\":[\"{target}\"]}}", null, null));
         await SendAsync<Result<Guid>>(provider, new CreateBlockCommand(
-            unrelated, BlockType.PageReference, $"{{\"linkedPageId\":\"{Guid.NewGuid()}\"}}", "a0", null));
+            unrelated, BlockType.PageReference, $"{{\"linkedPageId\":\"{Guid.NewGuid()}\"}}", null, null));
 
         var backlinks = await SendAsync<Result<PageBacklinksDto>>(provider, new GetPageBacklinksQuery(target));
 
@@ -645,11 +662,11 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         using var provider = CreateProvider(accountId, memberId);
         var pageId = (await SendAsync<Result<Guid>>(provider, new CreatePageCommand(workspaceId, "Doc", null))).Data;
         var blockId = (await SendAsync<Result<Guid>>(provider, new CreateBlockCommand(
-            pageId, BlockType.Text, "{\"text\":\"Hello\"}", "a0", null))).Data;
+            pageId, BlockType.Text, "{\"text\":\"Hello\"}", null, null))).Data;
 
-        (await SendAsync<Result>(provider, new UpdateBlockCommand(blockId, "heading_2", null))).Succeeded.Should().BeTrue();
+        (await SendAsync<Result>(provider, new UpdateBlockCommand(pageId, blockId, "heading_2", null))).Succeeded.Should().BeTrue();
 
-        await using var probe = _db.CreateContext(SystemTenant());
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
         var block = await probe.Blocks.IgnoreQueryFilters().SingleAsync(b => b.Id == blockId);
         block.Type.Should().Be(BlockType.Heading2);
         block.Content.Data.Value.Should().Be("{\"text\":\"Hello\"}");
@@ -797,7 +814,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         var result = await SendAsync<Result>(provider, new ArchivePageCommand(pageId));
 
         result.Succeeded.Should().BeTrue();
-        await using var probe = _db.CreateContext(SystemTenant());
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
         (await probe.Pages.IgnoreQueryFilters().SingleAsync(p => p.Id == pageId)).Status
             .Should().Be(PageStatus.Archived);
     }
@@ -1044,7 +1061,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         await act.Should().ThrowAsync<AppNotFound>(
             "a cross-tenant page must be hidden from lifecycle mutations");
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.Pages.IgnoreQueryFilters().SingleAsync(p => p.Id == pageB)).Status
             .Should().Be(PageStatus.Active,
             "the wrong-tenant mutation must leave the foreign page untouched");
@@ -1097,7 +1114,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         using var provider = CreateProvider(accountId, ownerId);
         (await SendAsync<Result>(provider, new ArchivePageCommand(pageId))).Succeeded.Should().BeTrue();
         long version;
-        await using (var before = _db.CreateContext(SystemTenant()))
+        await using (var before = _db.CreateOwnerContext(SystemTenant()))
             version = (await before.Pages.IgnoreQueryFilters().SingleAsync(p => p.Id == pageId)).Version;
 
         (await SendAsync<Result>(provider, new ArchivePageCommand(pageId))).Succeeded.Should().BeTrue();
@@ -1106,7 +1123,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         await act.Should().ThrowAsync<AppNotFound>(
             "a trashed page accepts no edits");
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         var page = await verify.Pages.IgnoreQueryFilters().SingleAsync(p => p.Id == pageId);
         page.Status.Should().Be(PageStatus.Archived);
         page.Version.Should().Be(version, "the repeated archive is a semantic no-op");
@@ -1133,7 +1150,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         await delete.Should().ThrowAsync<AppForbidden>("deleting for good is Manager only");
 
         (await SendAsync<Result>(provider, new RestorePageCommand(pageId))).Succeeded.Should().BeTrue("an Editor restores a trashed page");
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.Pages.IgnoreQueryFilters().SingleAsync(p => p.Id == pageId)).Status.Should().Be(PageStatus.Active);
     }
 
@@ -1147,13 +1164,13 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         var act = () => SendAsync<Result>(provider, new DeletePageCommand(pageId));
 
         await act.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>();
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.Pages.IgnoreQueryFilters().SingleAsync(p => p.Id == pageId)).DeletedAt.Should().BeNull();
     }
 
     private async Task TrashPageAsync(Guid pageId)
     {
-        await using var context = _db.CreateContext(SystemTenant());
+        await using var context = _db.CreateOwnerContext(SystemTenant());
         var page = await context.Pages.IgnoreQueryFilters().SingleAsync(p => p.Id == pageId);
         page.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
         await context.SaveChangesAsync();
@@ -1161,7 +1178,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
 
     private async Task<Guid> ResolvePageIdAsync()
     {
-        await using var context = _db.CreateContext(SystemTenant());
+        await using var context = _db.CreateOwnerContext(SystemTenant());
         var id = await context.Pages
             .IgnoreQueryFilters()
             .Select(p => p.Id)
@@ -1183,7 +1200,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         await act.Should().ThrowAsync<AppNotFound>(
             "the page section requires its own missing-target proof");
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.Comments.IgnoreQueryFilters()
             .AnyAsync(c => c.WorkspaceId == workspaceId)).Should().BeFalse(
             "no comment may persist for a missing target");
@@ -1206,7 +1223,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         await act.Should().ThrowAsync<AppNotFound>(
             "the board-item section requires its own missing-target proof");
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.Comments.IgnoreQueryFilters()
             .AnyAsync(c => c.WorkspaceId == workspaceId)).Should().BeFalse(
             "no comment may persist for a missing target");
@@ -1232,7 +1249,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
 
         await act.Should().ThrowAsync<AppNotFound>();
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.Comments.IgnoreQueryFilters()
             .AnyAsync(c => c.WorkspaceId == workspaceA)).Should().BeFalse(
             "no comment may persist for a cross-scope target");
@@ -1256,7 +1273,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
 
         long itemVersionBefore;
         string itemNameBefore;
-        await using (var snapshot = _db.CreateContext(SystemTenant()))
+        await using (var snapshot = _db.CreateOwnerContext(SystemTenant()))
         {
             var item = await snapshot.BoardItems.IgnoreQueryFilters().SingleAsync(i => i.Id == itemB);
             itemVersionBefore = item.Version;
@@ -1269,7 +1286,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
 
         await act.Should().ThrowAsync<AppNotFound>();
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.Comments.IgnoreQueryFilters()
             .AnyAsync(c => c.WorkspaceId == workspaceA)).Should().BeFalse(
             "no comment may persist for a cross-scope target");
@@ -1302,7 +1319,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         await act.Should().ThrowAsync<AppNotFound>(
             "a foreign-account board must be invisible to a granted account-A member");
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         var foreignBoard = await verify.Boards.IgnoreQueryFilters().SingleAsync(b => b.Id == boardB);
         foreignBoard.Title.Should().NotBeNull("the foreign board must remain intact");
     }
@@ -1330,7 +1347,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
             account.Id, w2.Id, board.Id, group.Id, "Task",
             FractionalIndex.Create("a0"), ownerId, now);
 
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Accounts.Add(account);
         seed.AccountMembers.Add(AccountMember.Create(account.Id, ownerId, AccountRole.Owner, ownerId, now));
         seed.Workspaces.Add(w1);
@@ -1365,7 +1382,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         result.Succeeded.Should().BeTrue(
             "a W2 member may comment on a W2 item even with W1 selected — the locator is the authority");
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         var stored = await verify.Comments.IgnoreQueryFilters()
             .SingleAsync(c => c.Target.ResourceId == w2ItemId);
         stored.WorkspaceId.Should().Be(w2,
@@ -1388,7 +1405,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         await act.Should().ThrowAsync<AppForbidden>(
             "same-account membership does not imply W2 authority");
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.Comments.IgnoreQueryFilters()
             .AnyAsync(c => c.Target.ResourceId == w2ItemId)).Should().BeFalse(
             "no comment may persist for the denied cross-workspace reference");
@@ -1460,8 +1477,9 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(AccessControlBehavior<,>));
 
         services.AddScoped<ApplicationDbContext>(sp =>
-            _db.CreateContext(sp.GetRequiredService<ICurrentTenantContext>()));
+            _db.CreateOwnerContext(sp.GetRequiredService<ICurrentTenantContext>()));
         services.AddScoped<IWorkspaceDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
+        services.AddScoped<Notrelix.Application.Common.Tenancy.IWorkspaceAccessResolver, WorkspaceAccessResolver>();
         services.AddScoped<IAccountDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IGovernanceDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IWorkManagementDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
@@ -1606,7 +1624,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
             account.Id, workspace.Id, board.Id, group.Id, "Task",
             FractionalIndex.Create("a0"), owner.Id, now);
 
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Users.Add(owner);
         seed.Users.Add(member);
         seed.Accounts.Add(account);
@@ -1637,7 +1655,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         var workspace = Workspace.Create(account.Id, owner.Id, "Gov Page WS", $"gov-page-{Guid.NewGuid():N}", now);
         var page = Page.Create(account.Id, workspace.Id, "Gov Page", owner.Id, now);
 
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Users.Add(owner);
         seed.Users.Add(member);
         seed.Accounts.Add(account);
@@ -1663,7 +1681,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
     private async Task SyncAccessGrantsAsync(Guid accountId, Guid workspaceId, params (Guid UserId, WorkspaceRole Role)[] members)
     {
         var now = DateTimeOffset.UtcNow;
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         var projection = new AccessGrantProjectionService(seed);
         foreach (var (userId, role) in members)
         {
@@ -1685,7 +1703,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         DateTimeOffset? startsAt = null,
         DateTimeOffset? expiresAt = null)
     {
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.PermissionRules.Add(PermissionRule.Create(
             accountId,
             workspaceId,
@@ -1707,7 +1725,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
 
     private async Task SeedWorkspaceMemberAsync(Guid accountId, Guid workspaceId, Guid userId, WorkspaceRole role)
     {
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.WorkspaceMembers.Add(WorkspaceMember.Create(
             accountId, workspaceId, userId, role, userId, DateTimeOffset.UtcNow));
         await seed.SaveChangesAsync();
@@ -1716,7 +1734,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
     private async Task SeedResourcePermissionAsync(
         Guid accountId, Guid workspaceId, string resourceKind, Guid resourceId, Guid subjectId, PermissionLevel level)
     {
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.ResourcePermissions.Add(ResourcePermission.Grant(
             accountId, workspaceId,
             ResourceKind.Create(resourceKind),
@@ -1731,7 +1749,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
 
     private async Task AssertAuditRecordedAsync(Guid workspaceId, Guid actorId, string action)
     {
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.EnterpriseAuditLogs.AnyAsync(a =>
             a.WorkspaceId == workspaceId && a.ActorUserId == actorId && a.Action == action))
             .Should().BeTrue($"an audit row for '{action}' must be committed");
@@ -1739,7 +1757,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
 
     private async Task<Guid> ResolveBoardItemIdAsync(Guid boardId)
     {
-        await using var context = _db.CreateContext(SystemTenant());
+        await using var context = _db.CreateOwnerContext(SystemTenant());
         var id = await context.BoardItems
             .Where(i => i.BoardId == boardId)
             .Select(i => i.Id)
@@ -1750,7 +1768,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
 
     private async Task<Guid> ResolveOtherGroupIdAsync(Guid boardId)
     {
-        await using var context = _db.CreateContext(SystemTenant());
+        await using var context = _db.CreateOwnerContext(SystemTenant());
         var id = await context.BoardGroups
             .Where(g => g.BoardId == boardId)
             .Select(g => g.Id)

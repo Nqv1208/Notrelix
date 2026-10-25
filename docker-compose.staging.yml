@@ -14,9 +14,16 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Staging
       ASPNETCORE_URLS: http://+:8000
+      # Requests run as notrelix_app, background work as notrelix_worker; the owner string is for the
+      # migrate / seed / rls-apply operations only. Passwords must not contain ';' or '='.
       ConnectionStrings__NotrelixDb: >-
+        Host=postgres;Port=5432;Database=${POSTGRES_DB:-notrelix_staging};Username=notrelix_app;Password=${NOTRELIX_APP_DB_PASSWORD:?NOTRELIX_APP_DB_PASSWORD is required}
+      ConnectionStrings__NotrelixWorkerDb: >-
+        Host=postgres;Port=5432;Database=${POSTGRES_DB:-notrelix_staging};Username=notrelix_worker;Password=${NOTRELIX_WORKER_DB_PASSWORD:?NOTRELIX_WORKER_DB_PASSWORD is required}
+      ConnectionStrings__NotrelixMigrationDb: >-
         Host=postgres;Port=5432;Database=${POSTGRES_DB:-notrelix_staging};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD}
       ConnectionStrings__Redis: redis:6379,password=${REDIS_PASSWORD}
+      Rls__RoleEnforcement: Enforce
       SeedData__Enabled: "true"
       SeedData__Profile: Small
       SeedData__ResetBeforeSeed: "false"

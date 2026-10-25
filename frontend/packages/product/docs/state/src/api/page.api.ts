@@ -15,7 +15,7 @@ export interface DocsRequestOptions {
 }
 
 export interface DocsApiClient {
-  get<T>(url: string): Promise<T>;
+  get<T>(url: string, options?: DocsRequestOptions): Promise<T>;
   post<T>(url: string, body: unknown, options?: DocsRequestOptions): Promise<T>;
   patch<T>(url: string, body: unknown): Promise<T>;
   delete<T>(url: string): Promise<T>;
@@ -32,8 +32,11 @@ export interface PageApiEndpoints {
     search: (workspaceId: string) => string;
     moveToSpace: (pageId: string) => string;
   };
+  resourcePermissions: {
+    list: (resourceKind: string, resourceId: string) => string;
+  };
   blocks: {
-    detail: (blockId: string) => string;
+    detail: (pageId: string, blockId: string) => string;
     reorder: string;
     batch: (pageId: string) => string;
   };
@@ -82,10 +85,9 @@ export function createPageApi(api: DocsApiClient, endpoints: PageApiEndpoints) {
       pageId: string,
       payload: UpdatePagePayload,
     ): Promise<PageDetail> {
+      // `Documents.Pages.UpdatePage` renames; the icon and cover are not stored yet.
       await api.patch<void>(endpoints.pages.detail(pageId), {
         title: payload.title,
-        iconValue: payload.icon,
-        coverUrl: payload.coverUrl,
       });
       return this.getDetail(pageId);
     },

@@ -108,6 +108,7 @@ export function toExtGroups(
 export function toReplyViews(
   replies: readonly HomeReplyDto[],
   relativeTime: (value: string) => string,
+  mentionText: (title: string | null) => string,
 ): HomeReplyView[] {
   return replies.map((reply) => ({
     id: reply.id,
@@ -115,7 +116,9 @@ export function toReplyViews(
     actorName: reply.actor.name,
     actorTone: identityToneFor(reply.actor.id),
     when: relativeTime(reply.createdAt),
-    text: reply.text,
+    text:
+      reply.text ||
+      (reply.kind === "mention" ? mentionText(reply.target.title) : ""),
     key: reply.target.key,
     target:
       reply.target.kind === "item" && reply.target.boardId

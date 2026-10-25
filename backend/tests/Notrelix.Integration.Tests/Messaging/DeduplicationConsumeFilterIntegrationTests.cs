@@ -20,7 +20,7 @@ public class DeduplicationConsumeFilterIntegrationTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -30,7 +30,7 @@ public class DeduplicationConsumeFilterIntegrationTests : IAsyncLifetime
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
-        var context = _db.CreateContext(tenant);
+        var context = _db.CreateOwnerContext(tenant);
         var store = new MessageDeduplicationStore(context, new DateTimeProvider(), new MetricsService());
         return (context, store);
     }

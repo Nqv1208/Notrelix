@@ -12,5 +12,13 @@ public sealed class PayloadTooLargeException : Exception
         MaxBytes = maxBytes;
     }
 
+    /// <param name="errorCode">Stable public error code; when absent the API reports the attachment code.</param>
+    public PayloadTooLargeException(long maxBytes, string errorCode) : this(maxBytes)
+    {
+        ErrorCode = errorCode;
+    }
+
     public long MaxBytes { get; }
+
+    public string? ErrorCode { get; }
 }

@@ -1,10 +1,14 @@
 using Notrelix.API.Endpoints.Admin;
+using Notrelix.API.Endpoints.Identity.Users;
 using Notrelix.API.Realtime;
 using Notrelix.API.Endpoints.Automation.Executions;
 using Notrelix.API.Endpoints.Automation.Rules;
+using Notrelix.API.Endpoints.Billing;
 using Notrelix.API.Endpoints.Collaboration.Activity;
 using Notrelix.API.Endpoints.Collaboration.Attachments;
 using Notrelix.API.Endpoints.Collaboration.Comments;
+using Notrelix.API.Endpoints.Collaboration.Watchers;
+using Notrelix.API.Endpoints.Collaboration.Notifications;
 using Notrelix.API.Endpoints.Collaboration.Preferences;
 using Notrelix.API.Endpoints.Accounts;
 using Notrelix.API.Endpoints.Documents.Blocks;
@@ -48,6 +52,7 @@ public static class EndpointRouteBuilderExtensions
         // Auth & Identity
         app.RegisterAuthEndpoints();
         app.RegisterProfileEndpoints();
+        app.RegisterUserAvatarEndpoints();
         app.RegisterApiTokenEndpoints();
         app.MapHealthEndpoints();
 
@@ -118,7 +123,9 @@ public static class EndpointRouteBuilderExtensions
         app.RegisterBoardItemActivityEndpoints();
         app.MapAttachmentsEndpoints();
         app.MapCommentsEndpoints();
+        app.MapWatchersEndpoints();
         app.RegisterNotificationPreferenceEndpoints();
+        app.RegisterInboxEndpoints();
 
         // Governance
         app.MapResourcePermissionsEndpoints();
@@ -127,6 +134,9 @@ public static class EndpointRouteBuilderExtensions
         // Automation
         app.MapRulesEndpoints();
         app.MapExecutionsEndpoints();
+
+        // Billing
+        app.MapBillingEndpoints();
 
         // Admin
         app.MapOutboxDiagnosticsEndpoints();

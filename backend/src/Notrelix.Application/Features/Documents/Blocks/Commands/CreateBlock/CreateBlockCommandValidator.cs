@@ -12,8 +12,5 @@ public class CreateBlockCommandValidator : AbstractValidator<CreateBlockCommand>
 
         RuleFor(x => x.Properties)
             .NotEmpty();
-
-        RuleFor(x => x.Position)
-            .NotEmpty();
     }
 }

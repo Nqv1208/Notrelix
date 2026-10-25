@@ -74,7 +74,7 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -111,7 +111,7 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
                 "the losing request must receive a canonical capacity/concurrency failure");
         var winner = outcomes.Single(o => o.Outcome == CreateRuleOutcome.Succeeded);
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.AutomationRules.IgnoreQueryFilters().CountAsync(r => r.WorkspaceId == workspaceId))
             .Should().Be(1, "a loser that reached SaveChanges must roll back the rule insert atomically");
         (await verify.AutomationRules.IgnoreQueryFilters()
@@ -146,7 +146,7 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
 
         var tenant = new FakeCurrentTenantContext();
         tenant.SetWorkspace(accountId, workspaceId, ownerId);
-        await using var context = _db.CreateContext(tenant);
+        await using var context = _db.CreateOwnerContext(tenant);
         await using var tx = await context.Database.BeginTransactionAsync();
         var capacity = new BillingCapacityActions(
             context,
@@ -186,7 +186,7 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
         releaseReplay.Remaining.Should().Be(5m);
         await tx.CommitAsync();
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         var ledger = await verify.FeatureUsageLedger
             .Where(l => l.AccountId == accountId
                 && l.WorkspaceId == workspaceId
@@ -209,7 +209,7 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
         await SeedEntitlementAsync(accountId, limit: 2);
         await SeedLedgerDeltaAsync(accountId, workspaceId, 1, ownerId); // coherent ledger backing the reserved usage row
 
-        await using (var beforeVerify = _db.CreateContext(SystemTenant()))
+        await using (var beforeVerify = _db.CreateOwnerContext(SystemTenant()))
         {
             (await beforeVerify.FeatureUsageLedger.CountAsync(l =>
                     l.AccountId == accountId && l.WorkspaceId == workspaceId
@@ -224,7 +224,7 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
         {
             var tenant = new FakeCurrentTenantContext();
             tenant.SetWorkspace(accountId, workspaceId, ownerId);
-            await using var ctx = _db.CreateContext(tenant);
+            await using var ctx = _db.CreateOwnerContext(tenant);
             var capacity = new BillingCapacityActions(ctx, new BillingCapabilityFactsProvider(ctx, clock.Object));
             var op = new BillingCapacityOperationIdentity(
                 accountId, workspaceId, BillingCapabilityCode.AutomationRule,
@@ -261,7 +261,7 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
         outcomes.Count(o => o.Won).Should().Be(1, "exactly one transaction wins the single remaining slot");
         var winner = outcomes.Single(o => o.Won);
         var loser = outcomes.Single(o => !o.Won);
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         var usage = await verify.WorkspaceFeatureUsages
             .SingleAsync(w => w.AccountId == accountId && w.WorkspaceId == workspaceId);
         usage.CurrentUsage.Should().Be(2m, "exactly one capacity slot is consumed into the reserved row");
@@ -295,7 +295,7 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
         {
             var tenant = new FakeCurrentTenantContext();
             tenant.SetWorkspace(accountId, workspaceId, ownerId);
-            await using var ctx = _db.CreateContext(tenant);
+            await using var ctx = _db.CreateOwnerContext(tenant);
             var capacity = new BillingCapacityActions(ctx, new BillingCapabilityFactsProvider(ctx, clock.Object));
             var op = new BillingCapacityOperationIdentity(
                 accountId, workspaceId, BillingCapabilityCode.AutomationRule,
@@ -319,7 +319,7 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
         outcomes.Should().OnlyContain(o => o,
             "the atomic first-use seed must serve both consumers up to the limit, never a false unique-scope conflict");
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         var usage = await verify.WorkspaceFeatureUsages
             .SingleAsync(w => w.AccountId == accountId && w.WorkspaceId == workspaceId);
         usage.CurrentUsage.Should().Be(2m, "both consumers succeeded against the finite limit of 2");
@@ -345,7 +345,7 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
 
         var tenant = new FakeCurrentTenantContext();
         tenant.SetWorkspace(accountId, workspaceId, ownerId);
-        await using var context = _db.CreateContext(tenant);
+        await using var context = _db.CreateOwnerContext(tenant);
         await using var tx = await context.Database.BeginTransactionAsync();
         var capacity = new BillingCapacityActions(
             context,
@@ -361,7 +361,7 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
         await context.SaveChangesAsync();
         await tx.CommitAsync();
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         var usage = await verify.WorkspaceFeatureUsages
             .SingleAsync(w => w.AccountId == accountId && w.WorkspaceId == workspaceId);
         usage.CurrentUsage.Should().Be(3m, "the seed materialized the ledger sum (2) and the new consume added 1");
@@ -387,7 +387,7 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
 
         var tenant = new FakeCurrentTenantContext();
         tenant.SetWorkspace(accountId, workspaceId, ownerId);
-        await using var context = _db.CreateContext(tenant);
+        await using var context = _db.CreateOwnerContext(tenant);
         var rls = new RlsSessionContext(
             context,
             Options.Create(new RlsOptions { Enabled = true, SetSessionContext = true }),
@@ -420,7 +420,7 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
 
         await attempt.Should().ThrowAsync<ConflictException>(
             "the downstream failure surfaces to the caller");
-        await using (var verify = _db.CreateContext(SystemTenant()))
+        await using (var verify = _db.CreateOwnerContext(SystemTenant()))
         {
             (await verify.WorkspaceFeatureUsages
                     .CountAsync(w => w.AccountId == accountId && w.WorkspaceId == workspaceId))
@@ -457,7 +457,7 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
 
         (await ReadRemainingAsync(accountId, workspaceId, clock.Object)).Should().Be(0);
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.AutomationRules.IgnoreQueryFilters().CountAsync(r => r.WorkspaceId == workspaceId))
             .Should().Be(3, "no rule is created past the limit");
         (await verify.FeatureUsageLedger.CountAsync(l =>
@@ -480,7 +480,7 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
 
         var tenant = new FakeCurrentTenantContext();
         tenant.SetWorkspace(accountId, workspaceId, ownerId);
-        await using var context = _db.CreateContext(tenant);
+        await using var context = _db.CreateOwnerContext(tenant);
         await using var tx = await context.Database.BeginTransactionAsync();
         var capacity = new BillingCapacityActions(
             context,
@@ -523,7 +523,7 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
         await context.SaveChangesAsync();
         await tx.CommitAsync();
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         var usage = await verify.WorkspaceFeatureUsages
             .SingleAsync(w => w.AccountId == accountId && w.WorkspaceId == workspaceId);
         usage.CurrentUsage.Should().Be(1m);
@@ -565,7 +565,7 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
         (await ReadRemainingAsync(accountId, workspaceId, clock.Object))
             .Should().Be(2, "disabling a rule does not return its slot to the pool");
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         var rule = await verify.AutomationRules.IgnoreQueryFilters()
             .SingleAsync(r => r.Id == created.Data);
         rule.Status.Should().Be(AutomationRuleStatus.Disabled);
@@ -601,7 +601,7 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
         (await ReadRemainingAsync(accountId, workspaceId, clock.Object))
             .Should().Be(2, "the replayed request must not consume a second slot");
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.AutomationRules.IgnoreQueryFilters().CountAsync(r => r.WorkspaceId == workspaceId))
             .Should().Be(1, "the retry must not create a second rule");
         (await verify.FeatureUsageLedger.CountAsync(l =>
@@ -731,7 +731,7 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(IdempotencyBehavior<,>));
 
         services.AddScoped<ApplicationDbContext>(sp =>
-            _db.CreateContext(sp.GetRequiredService<ICurrentTenantContext>()));
+            _db.CreateOwnerContext(sp.GetRequiredService<ICurrentTenantContext>()));
         services.AddScoped<IWorkspaceDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IAccountDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IGovernanceDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
@@ -822,7 +822,7 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetWorkspace(accountId, workspaceId, null);
-        await using var context = _db.CreateContext(tenant);
+        await using var context = _db.CreateOwnerContext(tenant);
         var provider = new BillingCapabilityFactsProvider(context, clock);
         var fact = await provider.GetCapabilityAsync(
             accountId, workspaceId, BillingCapabilityCode.AutomationRule, requestedAmount: 1, CancellationToken.None);
@@ -838,7 +838,7 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
 
         await SeedLedgerDeltaAsync(accountA, workspaceA, 1, ownerA, logicalOperationId);
 
-        await using var context = _db.CreateContext(SystemTenant());
+        await using var context = _db.CreateOwnerContext(SystemTenant());
         context.FeatureUsageLedger.Add(FeatureUsageLedger.Create(
             accountB,
             workspaceB,
@@ -858,7 +858,7 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
         Guid accountId, Guid workspaceId, decimal currentUsage, decimal hardLimit)
     {
         var now = DateTimeOffset.UtcNow;
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.WorkspaceFeatureUsages.Add(WorkspaceFeatureUsage.Create(
             accountId,
             workspaceId,
@@ -876,12 +876,12 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
         var now = DateTimeOffset.UtcNow;
         var workspace = Workspace.Create(accountId, ownerId, name, slug, now);
 
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Workspaces.Add(workspace);
         seed.WorkspaceMembers.Add(WorkspaceMember.Create(accountId, workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, now));
         await seed.SaveChangesAsync();
 
-        await using var grant = _db.CreateContext(SystemTenant());
+        await using var grant = _db.CreateOwnerContext(SystemTenant());
         var projection = new AccessGrantProjectionService(grant);
         await projection.SyncWorkspaceMemberGrantAsync(accountId, workspace.Id, ownerId, WorkspaceRole.Owner, now, CancellationToken.None);
         await grant.SaveChangesAsync();
@@ -891,7 +891,7 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
 
     private async Task SeedEntitlementAsync(Guid accountId, int limit)
     {
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Entitlements.Add(Entitlement.Create(
             accountId,
             FeatureCode.Create(BillingCapabilityCode.AutomationRule),
@@ -908,7 +908,7 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
         Guid actorUserId,
         Guid? logicalOperationId = null)
     {
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.FeatureUsageLedger.Add(FeatureUsageLedger.Create(
             accountId,
             workspaceId,
@@ -930,7 +930,7 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
         var account = Account.Create("Billing Account", $"billing-{Guid.NewGuid():N}", AccountType.Team, owner.Id, now);
         var workspace = Workspace.Create(account.Id, owner.Id, "Billing WS", $"billing-ws-{Guid.NewGuid():N}", now);
 
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Users.Add(owner);
         seed.Accounts.Add(account);
         seed.AccountMembers.Add(AccountMember.Create(account.Id, owner.Id, AccountRole.Owner, owner.Id, now));
@@ -938,7 +938,7 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
         seed.WorkspaceMembers.Add(WorkspaceMember.Create(account.Id, workspace.Id, owner.Id, WorkspaceRole.Owner, owner.Id, now));
         await seed.SaveChangesAsync();
 
-        await using var grant = _db.CreateContext(SystemTenant());
+        await using var grant = _db.CreateOwnerContext(SystemTenant());
         var projection = new AccessGrantProjectionService(grant);
         await projection.SyncWorkspaceMemberGrantAsync(account.Id, workspace.Id, owner.Id, WorkspaceRole.Owner, now, CancellationToken.None);
         await grant.SaveChangesAsync();

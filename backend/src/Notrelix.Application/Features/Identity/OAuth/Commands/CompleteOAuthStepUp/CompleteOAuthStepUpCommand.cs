@@ -1,5 +1,6 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Identity.Abstractions;
+using Notrelix.Application.Features.Identity.Auth.Services;
 using Notrelix.Application.Features.Identity.OAuth.Abstractions;
 using Notrelix.Application.Features.Identity.OAuth.DTOs;
 using Notrelix.Application.Common.Requests.Scoping;
@@ -36,6 +37,7 @@ public sealed class CompleteOAuthStepUpCommandHandler
     private readonly ISecurityStepUpService _stepUpService;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ILogger<CompleteOAuthStepUpCommandHandler> _logger;
+    private readonly CredentialScope? _credentialScope;
 
     public CompleteOAuthStepUpCommandHandler(
         IOAuthStateStore stateStore,
@@ -44,8 +46,10 @@ public sealed class CompleteOAuthStepUpCommandHandler
         IIdentityDbContext identityContext,
         ISecurityStepUpService stepUpService,
         IDateTimeProvider dateTimeProvider,
-        ILogger<CompleteOAuthStepUpCommandHandler> logger)
+        ILogger<CompleteOAuthStepUpCommandHandler> logger,
+        CredentialScope? credentialScope = null)
     {
+        _credentialScope = credentialScope;
         _stateStore = stateStore;
         _providerClient = providerClient;
         _optionsProvider = optionsProvider;
@@ -87,6 +91,10 @@ public sealed class CompleteOAuthStepUpCommandHandler
             _logger.LogWarning("OAuth step-up state missing user/session/purpose binding");
             return Result<StepUpProofResult>.Failure("Invalid or expired OAuth state.");
         }
+
+        // The state record is server-held: the request acts for exactly the user it was bound to.
+        if (_credentialScope is not null)
+            await _credentialScope.EnterForServerBoundUserAsync(userId, cancellationToken);
 
         var user = await _identityContext.Users
             .FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);

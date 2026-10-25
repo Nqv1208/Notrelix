@@ -36,7 +36,7 @@ WORKDIR /app
 # releases; explicitly installing the patched package keeps the runtime image
 # remediated without an ignore, a threshold change, or an unpinned base.
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends wget ca-certificates libpcre2-8-0 perl-base \
+    && apt-get install -y --no-install-recommends wget ca-certificates tzdata libpcre2-8-0 perl-base \
     && rm -rf /var/lib/apt/lists/* \
     && groupadd --system notrelix \
     && useradd --system --gid notrelix --no-create-home --shell /usr/sbin/nologin notrelix

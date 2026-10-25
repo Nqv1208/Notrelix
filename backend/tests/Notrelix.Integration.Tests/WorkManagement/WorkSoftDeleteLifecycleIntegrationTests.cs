@@ -35,7 +35,7 @@ public sealed class WorkSoftDeleteLifecycleIntegrationTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -49,7 +49,7 @@ public sealed class WorkSoftDeleteLifecycleIntegrationTests : IAsyncLifetime
 
         await RestoreItemAsync(stack, stack.ItemId);
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         var item = await verify.BoardItems.IgnoreQueryFilters().SingleAsync(i => i.Id == stack.ItemId);
         item.DeletedAt.Should().BeNull();
         item.IsDeleted.Should().BeFalse();
@@ -61,14 +61,14 @@ public sealed class WorkSoftDeleteLifecycleIntegrationTests : IAsyncLifetime
     {
         var stack = await SeedBoardStackAsync(deleteBoard: true);
 
-        await using (var context = _db.CreateContext(stack.Request.Tenant))
+        await using (var context = _db.CreateOwnerContext(stack.Request.Tenant))
         {
             var handler = new RestoreBoardCommandHandler(context, stack.Request, FakeDateTimeProvider.WithFixedTime(Now.AddMinutes(1)));
             await handler.Handle(new RestoreBoardCommand(stack.BoardId), CancellationToken.None);
             await context.SaveChangesAsync();
         }
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         var board = await verify.Boards.IgnoreQueryFilters().SingleAsync(b => b.Id == stack.BoardId);
         board.DeletedAt.Should().BeNull();
     }
@@ -94,7 +94,7 @@ public sealed class WorkSoftDeleteLifecycleIntegrationTests : IAsyncLifetime
 
         await act.Should().ThrowAsync<NotFoundException>(
             "bypassing the soft-delete filter must not bypass the tenant predicate");
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         var item = await verify.BoardItems.IgnoreQueryFilters().SingleAsync(i => i.Id == foreign.ItemId);
         item.DeletedAt.Should().NotBeNull();
     }
@@ -104,7 +104,7 @@ public sealed class WorkSoftDeleteLifecycleIntegrationTests : IAsyncLifetime
     {
         var stack = await SeedBoardStackAsync(deleteItem: true);
 
-        await using var context = _db.CreateContext(SystemTenant());
+        await using var context = _db.CreateOwnerContext(SystemTenant());
         var item = await context.BoardItems.IgnoreQueryFilters().SingleAsync(i => i.Id == stack.ItemId);
 
         item.IsDeleted.Should().BeTrue("the lifecycle flag must be hydrated from the persisted deleted_at column");
@@ -112,7 +112,7 @@ public sealed class WorkSoftDeleteLifecycleIntegrationTests : IAsyncLifetime
 
     private async Task RestoreItemAsync(BoardStack caller, Guid itemId)
     {
-        await using var context = _db.CreateContext(caller.Request.Tenant);
+        await using var context = _db.CreateOwnerContext(caller.Request.Tenant);
         await using var transaction = await context.Database.BeginTransactionAsync();
         var handler = new RestoreBoardItemCommandHandler(
             context, caller.Request, FakeDateTimeProvider.WithFixedTime(Now.AddMinutes(1)),
@@ -124,7 +124,7 @@ public sealed class WorkSoftDeleteLifecycleIntegrationTests : IAsyncLifetime
 
     private async Task<long> ReadItemVersionAsync(BoardStack stack)
     {
-        await using var context = _db.CreateContext(SystemTenant());
+        await using var context = _db.CreateOwnerContext(SystemTenant());
         return await context.BoardItems.IgnoreQueryFilters()
             .Where(i => i.Id == stack.ItemId)
             .Select(i => i.Version)
@@ -147,7 +147,7 @@ public sealed class WorkSoftDeleteLifecycleIntegrationTests : IAsyncLifetime
         if (deleteItem) item.Delete(ownerId, Now);
         if (deleteBoard) board.Delete(ownerId, Now);
 
-        await using (var seed = _db.CreateContext(SystemTenant()))
+        await using (var seed = _db.CreateOwnerContext(SystemTenant()))
         {
             seed.Workspaces.Add(workspace);
             seed.Boards.Add(board);

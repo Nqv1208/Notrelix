@@ -38,7 +38,7 @@ public sealed class WorkspaceMembershipOutboxEvidenceTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -61,7 +61,7 @@ public sealed class WorkspaceMembershipOutboxEvidenceTests : IAsyncLifetime
         var workspace = Workspace.Create(accountId, ownerId, "WG Workspace", $"wg-{Guid.NewGuid():N}", Now);
         var member = WorkspaceMember.Create(accountId, workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, Now);
 
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Users.Add(user);
         seed.Workspaces.Add(workspace);
         seed.WorkspaceMembers.Add(member);
@@ -101,7 +101,7 @@ public sealed class WorkspaceMembershipOutboxEvidenceTests : IAsyncLifetime
 
     private async Task<int> CountMembershipOutboxAsync(Guid workspaceId)
     {
-        await using var probe = _db.CreateContext(SystemTenant());
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
         return await probe.Set<MessagingOutboxMessage>()
             .IgnoreQueryFilters()
             .CountAsync(message => message.WorkspaceId == workspaceId
@@ -115,7 +115,7 @@ public sealed class WorkspaceMembershipOutboxEvidenceTests : IAsyncLifetime
     {
         var graph = await SeedWorkspaceAsync();
 
-        await using var context = _db.CreateContext(SystemTenant(), CreateOutboxInterceptor());
+        await using var context = _db.CreateOwnerContext(SystemTenant(), CreateOutboxInterceptor());
         var member = WorkspaceMember.Create(
             graph.AccountId, graph.WorkspaceId, Guid.NewGuid(), WorkspaceRole.Member, graph.UserId, Now);
         context.WorkspaceMembers.Add(member);
@@ -130,7 +130,7 @@ public sealed class WorkspaceMembershipOutboxEvidenceTests : IAsyncLifetime
     {
         var graph = await SeedWorkspaceAsync();
 
-        await using var context = _db.CreateContext(SystemTenant(), CreateOutboxInterceptor());
+        await using var context = _db.CreateOwnerContext(SystemTenant(), CreateOutboxInterceptor());
         await using var transaction = await context.Database.BeginTransactionAsync();
         var member = WorkspaceMember.Create(
             graph.AccountId, graph.WorkspaceId, Guid.NewGuid(), WorkspaceRole.Member, graph.UserId, Now);

@@ -39,8 +39,10 @@ public static class DependencyInjection
             options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
         });
 
-        services.Configure<RateLimitingOptions>(
-            configuration.GetSection("RateLimiting:Policies"));
+        services.AddOptions<RateLimitingOptions>()
+            .Bind(configuration.GetSection("RateLimiting"))
+            .ValidateOnStart();
+        services.AddSingleton<IValidateOptions<RateLimitingOptions>, RateLimitingOptionsValidator>();
         services.AddSingleton<IRateLimitPolicyProvider, RateLimitPolicyProvider>();
 
         services.Configure<SecurityHeaderOptions>(

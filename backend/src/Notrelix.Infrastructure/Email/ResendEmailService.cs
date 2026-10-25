@@ -33,12 +33,12 @@ public class ResendEmailService : IEmailService
                 request.IdempotencyKey,
                 message,
                 ct);
-            _logger.LogInformation("Email sent to {To}: {Subject}", request.RecipientEmail, request.Subject);
+            _logger.LogInformation("Email sent: {Subject}", request.Subject);
             return new EmailDeliveryResult("resend", providerMessageId.ToString());
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to send email to {To}: {Subject}", request.RecipientEmail, request.Subject);
+            _logger.LogError(ex, "Failed to send email: {Subject}", request.Subject);
             throw;
         }
     }

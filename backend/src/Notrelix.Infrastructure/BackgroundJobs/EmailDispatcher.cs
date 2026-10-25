@@ -59,7 +59,7 @@ internal sealed class EmailDispatcher : BackgroundService
     private async Task CancelExpiredSensitivePayloadsAsync(
         CancellationToken cancellationToken)
     {
-        await using var scope = _scopeFactory.CreateAsyncScope();
+        await using var scope = _scopeFactory.CreateWorkerAsyncScope();
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var clock = scope.ServiceProvider.GetRequiredService<IDateTimeProvider>();
         var now = clock.UtcNow;
@@ -89,7 +89,7 @@ internal sealed class EmailDispatcher : BackgroundService
     private async Task<IReadOnlyList<EmailClaim>> ClaimBatchAsync(
         CancellationToken cancellationToken)
     {
-        await using var scope = _scopeFactory.CreateAsyncScope();
+        await using var scope = _scopeFactory.CreateWorkerAsyncScope();
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var clock = scope.ServiceProvider.GetRequiredService<IDateTimeProvider>();
         var now = clock.UtcNow;
@@ -154,7 +154,7 @@ internal sealed class EmailDispatcher : BackgroundService
         EmailClaim claim,
         CancellationToken cancellationToken)
     {
-        await using var scope = _scopeFactory.CreateAsyncScope();
+        await using var scope = _scopeFactory.CreateWorkerAsyncScope();
         var services = scope.ServiceProvider;
         var context = services.GetRequiredService<ApplicationDbContext>();
         var materializerRegistry = services.GetRequiredService<IEmailTemplateMaterializerRegistry>();
@@ -257,7 +257,7 @@ internal sealed class EmailDispatcher : BackgroundService
         string reason,
         CancellationToken cancellationToken)
     {
-        await using var scope = _scopeFactory.CreateAsyncScope();
+        await using var scope = _scopeFactory.CreateWorkerAsyncScope();
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var clock = scope.ServiceProvider.GetRequiredService<IDateTimeProvider>();
 
@@ -282,7 +282,7 @@ internal sealed class EmailDispatcher : BackgroundService
         DateTimeOffset completedAt,
         CancellationToken cancellationToken)
     {
-        await using var scope = _scopeFactory.CreateAsyncScope();
+        await using var scope = _scopeFactory.CreateWorkerAsyncScope();
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
         await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
@@ -316,7 +316,7 @@ internal sealed class EmailDispatcher : BackgroundService
         DateTimeOffset failedAt,
         CancellationToken cancellationToken)
     {
-        await using var scope = _scopeFactory.CreateAsyncScope();
+        await using var scope = _scopeFactory.CreateWorkerAsyncScope();
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
         await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);

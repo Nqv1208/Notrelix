@@ -114,10 +114,11 @@ import { MockAccountPages } from "./mock-account-pages";
 import { MockReports } from "./mock-reports";
 import { MockBilling } from "./mock-billing";
 import { MockIntegrations } from "./mock-integrations";
-import { MockBoardAutomations } from "./mock-board-automations";
+import { MockWorkspaceAutomations } from "./mock-workspace-automations";
 import { MockOnboarding } from "./mock-onboarding";
 import { ERP_STATE_ITEMS, erpLongChildTitles } from "./mock-item-states";
 import { MockBoardSharing, seedErpSharing } from "./mock-board-sharing";
+import { MockBoardSavedViews } from "./mock-board-saved-views";
 import { LIBRARY_DOCS, SECONDARY_BOARD_TITLES } from "./mock-docs-library";
 import {
   INVOICE_BLOCKS,
@@ -164,6 +165,8 @@ export interface MockWorkspaceSettingsRecord {
   allowGuestInvites: boolean;
   defaultMemberRole: "Admin" | "Member" | "Guest";
   invitationExpiryDays: number;
+  timeZone: string;
+  weekStart: "monday" | "sunday";
 }
 
 /** Mirrors the producer's member-rule outcomes (WSP-008). */
@@ -223,8 +226,8 @@ export class MockStore {
   readonly reports = new MockReports();
   readonly billing = new MockBilling();
   readonly integrations = new MockIntegrations();
-  /** Automation rules, drafts and run log of a board (gap `CTR-GAP-WM-BOARD-AUTOMATIONS`). */
-  readonly automations = new MockBoardAutomations(this);
+  /** The automation rules of each workspace. */
+  readonly workspaceAutomations = new MockWorkspaceAutomations();
   // Primary Maps
   private usersById = new Map<string, MockUserRecord>();
   private workspacesById = new Map<string, MockWorkspaceRecord>();
@@ -294,8 +297,10 @@ export class MockStore {
   private boardMembersByBoardId = new Map<string, MockBoardMemberRecord[]>();
   /** Explicit board access entries, keyed by board. */
   private boardGrantsByBoardId = new Map<string, MockBoardGrantRecord[]>();
-  /** The Board permissions the share dialog draws (gap `CTR-GAP-WM-BOARD-SHARING`). */
+  /** The Board permissions `WorkManagement.Boards.GetSharing` answers with. */
   readonly sharing = new MockBoardSharing();
+  /** The saved views of the boards (shared with members or private). */
+  readonly savedViews = new MockBoardSavedViews(() => this);
   /** Seeded board audiences for the access read, keyed by board. */
   private boardAudienceByBoardId = new Map<string, MockBoardAudienceRecord>();
 
@@ -506,6 +511,15 @@ export class MockStore {
         this.insertMembership(
           this.factories.membership(w * 10, id, owner.id, { role: "owner" }),
         );
+        // The third workspace has a second owner, so the persona may leave it
+        // while the others still show the last-owner rule.
+        if (w === 2) {
+          this.insertMembership(
+            this.factories.membership(w * 10 + 1, id, admin.id, {
+              role: "owner",
+            }),
+          );
+        }
       }
     }
 
@@ -1395,7 +1409,6 @@ export class MockStore {
         userId: ERP_COMMENTER.id,
         level: "commenter",
         grantedByUserId: ERP_PEOPLE.HP.id,
-        expiresAt: "2026-12-31T16:59:59.000Z",
       },
       // Đặng Minh Tuấn, from a partner company, edits here until 31/01/2027.
       {
@@ -1403,7 +1416,6 @@ export class MockStore {
         userId: ERP_PEOPLE.DT.id,
         level: "editor",
         grantedByUserId: ERP_PEOPLE.HP.id,
-        expiresAt: "2027-01-31T16:59:59.000Z",
       },
       // The viewer persona (a workspace guest) can only view this board.
       {
@@ -1514,7 +1526,9 @@ export class MockStore {
           userId: null,
           teamId: mockIds.teams.oncall,
           level: "viewer",
-          expiresAt: null,
+          grantLevel: "viewer",
+          memberRole: null,
+          guest: false,
           owner: false,
           addedAt: "2026-08-20T02:00:00.000Z",
         },
@@ -1714,6 +1728,7 @@ export class MockStore {
     this.notificationsById.clear();
     this.pagesById.clear();
     this.boardViewsByBoardId.clear();
+    this.savedViews.clear();
     this.columnsById.clear();
     this.labelsById.clear();
     this.checklistsById.clear();
@@ -1728,7 +1743,7 @@ export class MockStore {
     this.reports.reset();
     this.billing.reset();
     this.integrations.reset();
-    this.automations.reset();
+    this.workspaceAutomations.reset();
     this.navigationByMember.clear();
     this.navigationTick = 0;
     this.suspendedMembershipIds.clear();
@@ -3408,6 +3423,8 @@ export class MockStore {
         allowGuestInvites: true,
         defaultMemberRole: "Member",
         invitationExpiryDays: 7,
+        timeZone: "Asia/Ho_Chi_Minh",
+        weekStart: "monday",
       };
       this.settingsByWorkspaceId.set(workspaceId, settings);
     }

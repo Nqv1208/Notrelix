@@ -7,7 +7,12 @@ import {
   BoardWorkspaceViewContent,
   useBoardHeaderCopy,
 } from "@notrelix/work-management-web";
-import { useFullBoard } from "@notrelix/work-management-state";
+import {
+  BoardViewSelectionProvider,
+  pickSavedView,
+  useFullBoard,
+  useSavedViews,
+} from "@notrelix/work-management-state";
 import {
   boardSearchSchema,
   type BoardSearch,
@@ -26,7 +31,14 @@ export function BoardPage() {
     from: "/workspaces/$workspaceId/boards/$boardId",
   });
 
-  const viewType = search.view;
+  // The tabs are the board's saved views; a layout without one keeps its own
+  // tab and shows the defaults until the first change saves a view for it.
+  const saved = useSavedViews(boardId, workspaceId);
+  const activeSaved = pickSavedView(saved.views, {
+    viewId: search.savedView,
+    mode: search.view,
+  });
+  const viewType = activeSaved?.viewMode ?? search.view;
   const view = { type: viewType, name: viewType.toUpperCase() };
 
   const { board } = useFullBoard(boardId, workspaceId);
@@ -46,18 +58,43 @@ export function BoardPage() {
     setShareOpen(true),
   );
 
-  const handleViewChange = (newView: string) => {
-    const nextView = boardSearchSchema.shape.view.safeParse(newView);
-    if (!nextView.success) return;
+  const showView = (mode: BoardSearch["view"], savedView?: string) => {
     // The item belongs to the view it was opened in; filter, sort and
     // groupBy survive the switch.
     navigate({
       search: (prev: BoardSearch) => ({
         ...prev,
-        view: nextView.data,
+        view: mode,
+        savedView,
         item: undefined,
       }),
     });
+  };
+
+  // `viewKey` is a saved view's id, or a layout name when none is saved for it.
+  const handleViewChange = (viewKey: string) => {
+    const savedTarget = saved.views.find((entry) => entry.id === viewKey);
+    const nextView = boardSearchSchema.shape.view.safeParse(
+      savedTarget?.viewMode ?? viewKey,
+    );
+    if (!nextView.success) return;
+    showView(nextView.data, savedTarget?.id);
+  };
+
+  // "Add view" saves a new shared view of the layout and opens it.
+  const handleAddView = async (layout: string) => {
+    const mode = boardSearchSchema.shape.view.safeParse(layout);
+    if (!mode.success) return;
+    const base = headerCopy.views[mode.data];
+    const taken = new Set(saved.views.map((entry) => entry.name));
+    let name = base;
+    for (let n = 2; taken.has(name); n += 1) name = `${base} ${n}`;
+    try {
+      const made = await saved.create({ name, viewMode: mode.data });
+      showView(made.viewMode, made.id);
+    } catch {
+      // The write failed: the error toast already told why.
+    }
   };
 
   // Opening a card pushes history; closing or clearing a stale item passes
@@ -96,8 +133,10 @@ export function BoardPage() {
           workspaceId={workspaceId}
           boardId={boardId}
           boardTitle={board?.title ?? headerCopy.untitledBoard}
-          activeView={viewType}
+          activeView={activeSaved?.id ?? viewType}
           onViewChange={handleViewChange}
+          savedViews={saved.views}
+          onAddView={(layout) => void handleAddView(layout)}
           onOpenSettings={() =>
             navigate({
               to: "/workspaces/$workspaceId/boards/$boardId/settings",
@@ -106,24 +145,26 @@ export function BoardPage() {
             })
           }
         >
-          <BoardWorkspaceViewContent
-            workspaceId={workspaceId}
-            boardId={boardId}
-            view={view}
-            selectedItemId={search.item}
-            onSelectedItemChange={handleSelectedItemChange}
-            filter={search.filter}
-            onFilterChange={handleFilterChange}
-            groupBy={search.groupBy}
-            onGroupByChange={handleGroupByChange}
-            onViewChange={handleViewChange}
-            onOpenItemPage={(itemId) =>
-              navigate({
-                to: "/workspaces/$workspaceId/boards/$boardId/items/$itemId",
-                params: { workspaceId, boardId, itemId },
-              })
-            }
-          />
+          <BoardViewSelectionProvider viewId={activeSaved?.id} mode={viewType}>
+            <BoardWorkspaceViewContent
+              workspaceId={workspaceId}
+              boardId={boardId}
+              view={view}
+              selectedItemId={search.item}
+              onSelectedItemChange={handleSelectedItemChange}
+              filter={search.filter}
+              onFilterChange={handleFilterChange}
+              groupBy={search.groupBy}
+              onGroupByChange={handleGroupByChange}
+              onViewChange={handleViewChange}
+              onOpenItemPage={(itemId) =>
+                navigate({
+                  to: "/workspaces/$workspaceId/boards/$boardId/items/$itemId",
+                  params: { workspaceId, boardId, itemId },
+                })
+              }
+            />
+          </BoardViewSelectionProvider>
         </BoardLayoutShell>
         <BoardShareDialog
           workspaceId={workspaceId}

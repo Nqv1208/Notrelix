@@ -313,27 +313,28 @@ export function ItemPageSurface({
                   />
                 ) : null}
                 {!capabilities.canEditFields && !archived ? (
-                  <ItemPageReadOnlyNotice
-                    access={access}
-                    copy={copy}
-                    timeZone={timeZone}
-                  />
+                  <ItemPageReadOnlyNotice access={access} copy={copy} />
                 ) : null}
                 <ItemPageDescription
                   card={card}
                   copy={copy}
                   editable={capabilities.canEditFields}
                 />
-                <ItemPageChildItems
-                  card={card}
-                  items={detailData.childItems}
-                  capabilities={capabilities}
-                  callbacks={callbacks}
-                  copy={copy}
-                  now={now}
-                  timeZone={timeZone}
-                  pending={offline?.childItems === true}
-                />
+                {/* Sub-items are one level: a sub-item lists none. */}
+                {!card.parentItemId &&
+                (detailData.childItems !== undefined ||
+                  callbacks.onAddChildItem) ? (
+                  <ItemPageChildItems
+                    card={card}
+                    items={detailData.childItems}
+                    capabilities={capabilities}
+                    callbacks={callbacks}
+                    copy={copy}
+                    now={now}
+                    timeZone={timeZone}
+                    pending={offline?.childItems === true}
+                  />
+                ) : null}
                 <div className="grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-6">
                   <ItemPageLinks
                     links={detailData.links}

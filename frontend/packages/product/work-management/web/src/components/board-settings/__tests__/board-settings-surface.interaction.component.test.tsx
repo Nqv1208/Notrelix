@@ -324,6 +324,44 @@ describe.each([
     );
   });
 
+  it(`${fui("wm.board-settings:delete-field", locale)}asks before it deletes a field and offers no delete without the capability (${locale})`, async () => {
+    const without = renderPage(copy, { fieldId: "sf-priority" });
+    const withoutPanel = screen.getByRole("complementary", {
+      name: fillCopy(copy.panel.label, { name: "Mức ưu tiên" }),
+    });
+    expect(
+      within(withoutPanel).queryByRole("button", { name: copy.panel.delete }),
+    ).toBeNull();
+    without.unmount();
+
+    const actions = spyActions();
+    const base = erpBoardSettings();
+    const { props: pageProps } = renderPage(copy, {
+      fieldId: "sf-priority",
+      settings: {
+        ...base,
+        unavailable: { ...base.unavailable, fieldDelete: false },
+      },
+      actions: actions as unknown as BoardSettingsActions,
+    });
+    const panel = screen.getAllByRole("complementary", {
+      name: fillCopy(copy.panel.label, { name: "Mức ưu tiên" }),
+    })[0]!;
+    fireEvent.click(
+      within(panel).getByRole("button", { name: copy.panel.delete }),
+    );
+    const dialog = await screen.findByRole("alertdialog");
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: copy.deleteDialog.confirm }),
+    );
+    await waitFor(() =>
+      expect(actions.deleteField).toHaveBeenCalledWith("sf-priority"),
+    );
+    await waitFor(() =>
+      expect(pageProps.onSelectField).toHaveBeenCalledWith(null),
+    );
+  });
+
   it(`${fui("wm.board-settings:restore-field", locale)}restores an archived field (${locale})`, async () => {
     const actions = spyActions();
     renderPage(copy, { actions: actions as unknown as BoardSettingsActions });

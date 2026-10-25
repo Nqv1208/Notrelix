@@ -38,9 +38,13 @@ public static class MapBoardItemEndpoints
         itemGroup.MapClearFieldValue();
         itemGroup.MapRestoreBoardItem();
         itemGroup.MapCompleteBoardItem();
+        itemGroup.MapReopenBoardItem();
         itemGroup.MapSetBoardItemDueDate();
         itemGroup.MapUpdateBoardItemStatus();
         itemGroup.MapListBoardItemLinks();
+        itemGroup.MapCreateChildItem();
+        itemGroup.MapListChildItems();
+        itemGroup.MapMoveChildItem();
 
         var myWork = app
             .MapGroup("/api/v1/workspaces/{workspaceId:guid}/my-work/items")
@@ -48,6 +52,20 @@ public static class MapBoardItemEndpoints
             .WithOpenApi();
 
         myWork.MapListMyWorkItems();
+
+        var myWorkExtended = app
+            .MapGroup("/api/v1/workspaces/{workspaceId:guid}/my-work/extended")
+            .WithTags("WorkManagement.BoardItems")
+            .WithOpenApi();
+
+        myWorkExtended.MapGetMyWorkExtended();
+
+        var homeFeed = app
+            .MapGroup("/api/v1/workspaces/{workspaceId:guid}/home/feed")
+            .WithTags("WorkManagement.BoardItems")
+            .WithOpenApi();
+
+        homeFeed.MapGetHomeFeed();
 
         return app;
     }
