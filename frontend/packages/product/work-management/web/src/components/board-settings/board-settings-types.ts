@@ -8,6 +8,7 @@ import type {
   BoardSettingsViewPatch,
   BoardSettingsWriteResult,
   CreateWorkspaceAutomationInput,
+  WorkspaceAutomationDefinition,
   WorkspaceAutomationRuleDto,
   WorkspaceAutomationRunDto,
   WorkspaceAutomationWriteResult,
@@ -141,29 +142,38 @@ export interface BoardSettingsSurfaceProps {
   defaultFeedback?: "failed" | "conflict" | null;
 }
 
-/** One choice of the "new rule" form: an item or a group of the board. */
+/** One choice of the rule editor: a group, a status, a person or a field of the board. */
 export interface WorkspaceRuleChoice {
   readonly id: string;
   readonly name: string;
-  /** The group an item sits in (items only). */
-  readonly groupId?: string;
 }
 
 /**
- * The automation rules of the workspace shown in the "Tự động hoá" section: a
- * rule has one trigger and one action, and applies to the whole workspace.
+ * The automation rules of the board shown in the "Tự động hoá" section: a rule
+ * has one trigger, optional conditions that must all hold, and up to five
+ * actions that run in order on the item that triggered it.
  */
 export interface WorkspaceRulesPanelProps {
   /** The board whose rules the panel lists and creates. */
   readonly boardId: string;
   readonly status: "loading" | "error" | "forbidden" | "ready";
   readonly rules: readonly WorkspaceAutomationRuleDto[];
-  /** The items and the groups of this board: what the form offers and what a rule's sentence names. */
-  readonly items: readonly WorkspaceRuleChoice[];
+  /** What the editor offers and what a rule's sentence names: all of this board. */
   readonly groups: readonly WorkspaceRuleChoice[];
+  readonly statuses: readonly WorkspaceRuleChoice[];
+  readonly people: readonly WorkspaceRuleChoice[];
+  /** The fields a rule can write or test (text and number fields). */
+  readonly fields: readonly WorkspaceRuleChoice[];
   readonly onReload: () => void;
   readonly onCreate: (
     input: CreateWorkspaceAutomationInput,
+  ) => Promise<WorkspaceAutomationWriteResult>;
+  readonly onUpdate: (
+    ruleId: string,
+    definition: WorkspaceAutomationDefinition,
+  ) => Promise<WorkspaceAutomationWriteResult>;
+  readonly onDelete: (
+    ruleId: string,
   ) => Promise<WorkspaceAutomationWriteResult>;
   readonly onSetEnabled: (
     ruleId: string,

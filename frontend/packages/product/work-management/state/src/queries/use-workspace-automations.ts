@@ -3,12 +3,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { workspaceQueryKey } from "@notrelix/query";
 import type {
   CreateWorkspaceAutomationInput,
+  WorkspaceAutomationDefinition,
   WorkspaceAutomationWriteResult,
 } from "@notrelix/work-management-core";
 import { useWorkManagementServices } from "../services";
 
-const rulesKey = (workspaceId: string) =>
-  workspaceQueryKey(workspaceId, "automation", "rules");
+const rulesKey = (workspaceId: string, boardId: string) =>
+  workspaceQueryKey(workspaceId, "automation", "rules", boardId);
 const runsKey = (workspaceId: string, ruleId: string) =>
   workspaceQueryKey(workspaceId, "automation", "runs", ruleId);
 
@@ -36,21 +37,21 @@ function failure(error: unknown): WorkspaceAutomationWriteResult {
  * The rules of the workspace, their writes and the runs of the rule that is
  * open. Only a person who manages the workspace reads them (`forbidden`).
  */
-export function useWorkspaceAutomations(workspaceId: string) {
+export function useWorkspaceAutomations(workspaceId: string, boardId: string) {
   const { workspaceAutomations } = useWorkManagementServices();
   const queryClient = useQueryClient();
   const [openRuleId, setOpenRuleId] = useState<string | null>(null);
 
   const rules = useQuery({
-    queryKey: rulesKey(workspaceId),
-    queryFn: () => workspaceAutomations.list(workspaceId),
-    enabled: Boolean(workspaceId),
+    queryKey: rulesKey(workspaceId, boardId),
+    queryFn: () => workspaceAutomations.list(workspaceId, boardId),
+    enabled: Boolean(workspaceId && boardId),
     staleTime: 0,
     retry: false,
   });
   const runs = useQuery({
     queryKey: runsKey(workspaceId, openRuleId ?? "-"),
-    queryFn: () => workspaceAutomations.runs(openRuleId!),
+    queryFn: () => workspaceAutomations.runs(boardId, openRuleId!),
     enabled: Boolean(workspaceId && openRuleId),
     staleTime: 0,
     retry: false,
@@ -70,7 +71,28 @@ export function useWorkspaceAutomations(workspaceId: string) {
   });
   const enabledMutation = useMutation({
     mutationFn: (input: { ruleId: string; enabled: boolean }) =>
-      workspaceAutomations.setEnabled(workspaceId, input.ruleId, input.enabled),
+      workspaceAutomations.setEnabled(
+        workspaceId,
+        boardId,
+        input.ruleId,
+        input.enabled,
+      ),
+  });
+  const updateMutation = useMutation({
+    mutationFn: (input: {
+      ruleId: string;
+      definition: WorkspaceAutomationDefinition;
+    }) =>
+      workspaceAutomations.update(
+        workspaceId,
+        boardId,
+        input.ruleId,
+        input.definition,
+      ),
+  });
+  const removeMutation = useMutation({
+    mutationFn: (ruleId: string) =>
+      workspaceAutomations.remove(workspaceId, boardId, ruleId),
   });
 
   const create = useCallback(
@@ -103,6 +125,35 @@ export function useWorkspaceAutomations(workspaceId: string) {
     [enabledMutation, refresh],
   );
 
+  const update = useCallback(
+    async (
+      ruleId: string,
+      definition: WorkspaceAutomationDefinition,
+    ): Promise<WorkspaceAutomationWriteResult> => {
+      try {
+        await updateMutation.mutateAsync({ ruleId, definition });
+        await refresh();
+        return { ok: true };
+      } catch (error) {
+        return failure(error);
+      }
+    },
+    [updateMutation, refresh],
+  );
+  const remove = useCallback(
+    async (ruleId: string): Promise<WorkspaceAutomationWriteResult> => {
+      try {
+        await removeMutation.mutateAsync(ruleId);
+        setOpenRuleId((open) => (open === ruleId ? null : open));
+        await refresh();
+        return { ok: true };
+      } catch (error) {
+        return failure(error);
+      }
+    },
+    [removeMutation, refresh],
+  );
+
   const forbidden = errorKind(rules.error) === "forbidden";
   return {
     rules: rules.data ?? [],
@@ -111,6 +162,8 @@ export function useWorkspaceAutomations(workspaceId: string) {
     forbidden,
     refetch: refresh,
     create,
+    update,
+    remove,
     setEnabled,
     openRuleId,
     openRuns: setOpenRuleId,

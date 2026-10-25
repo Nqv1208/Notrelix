@@ -2775,6 +2775,26 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     consumerSymbol: "createWorkspaceAutomationsApi",
     consumerFile:
       "frontend/packages/product/work-management/state/src/api/workspace-automations.api.ts",
+    capability: "Automation.Rules.Update",
+    operationId: "Automation.Rules.Update",
+    mutation: true,
+  },
+  {
+    context: "Automation",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createWorkspaceAutomationsApi",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/workspace-automations.api.ts",
+    capability: "Automation.Rules.Delete",
+    operationId: "Automation.Rules.Delete",
+    mutation: true,
+  },
+  {
+    context: "Automation",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createWorkspaceAutomationsApi",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/workspace-automations.api.ts",
     capability: "Automation.Executions.List",
     operationId: "Automation.Executions.List",
     mutation: false,

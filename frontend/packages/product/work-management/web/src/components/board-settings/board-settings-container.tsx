@@ -4,6 +4,7 @@ import {
   useBoardSettings,
   useBoardView,
   useFullBoard,
+  usePeopleDirectory,
   useSavedViews,
   useWorkspaceAutomations,
 } from "@notrelix/work-management-state";
@@ -151,7 +152,8 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
     [copy, savedViews.views, write],
   );
 
-  const rules = useWorkspaceAutomations(workspaceId);
+  const rules = useWorkspaceAutomations(workspaceId, boardId);
+  const { directory } = usePeopleDirectory(boardId, workspaceId);
   const workspaceRules = useMemo<WorkspaceRulesPanelProps>(
     () => ({
       boardId,
@@ -162,17 +164,23 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
           : rules.isLoading
             ? "loading"
             : "ready",
-      rules: rules.rules.filter((rule) => rule.boardId === boardId),
-      items: groups.flatMap((group) =>
-        group.cards.map((card) => ({
-          id: card.id,
-          name: card.title,
-          groupId: group.id,
-        })),
-      ),
+      rules: rules.rules,
       groups: groups.map((group) => ({ id: group.id, name: group.title })),
+      statuses: (settings?.fields ?? [])
+        .filter((field) => field.type === "status")
+        .flatMap((field) => field.options)
+        .map((option) => ({ id: option.id, name: option.name })),
+      people: (directory?.people ?? []).map((person) => ({
+        id: person.userId,
+        name: person.name,
+      })),
+      fields: (settings?.fields ?? [])
+        .filter((field) => field.type === "text" || field.type === "number")
+        .map((field) => ({ id: field.id, name: field.name })),
       onReload: () => void rules.refetch(),
       onCreate: rules.create,
+      onUpdate: rules.update,
+      onDelete: rules.remove,
       onSetEnabled: rules.setEnabled,
       openRuleId: rules.openRuleId,
       onOpenRuns: rules.openRuns,
@@ -185,7 +193,7 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
         data: rules.runs,
       },
     }),
-    [boardId, groups, rules],
+    [boardId, directory, groups, rules, settings],
   );
 
   // Only a manager of the board opens its settings.

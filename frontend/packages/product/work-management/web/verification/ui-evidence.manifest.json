@@ -3050,7 +3050,9 @@
       "owner": "@notrelix/work-management-web",
       "surfaceKind": "composition",
       "pureEntry": "src/components/board-settings/workspace-rules-section.tsx",
-      "coveredSources": [],
+      "coveredSources": [
+        "src/components/board-settings/workspace-rule-editor.tsx"
+      ],
       "stories": [
         {
           "id": "work-management-board-settings-surface--workspace-rules",
@@ -3098,6 +3100,18 @@
         },
         {
           "id": "workspace-rules-create",
+          "testFile": "src/components/board-settings/__tests__/workspace-rules.interaction.component.test.tsx"
+        },
+        {
+          "id": "workspace-rules-limit",
+          "testFile": "src/components/board-settings/__tests__/workspace-rules.interaction.component.test.tsx"
+        },
+        {
+          "id": "workspace-rules-edit",
+          "testFile": "src/components/board-settings/__tests__/workspace-rules.interaction.component.test.tsx"
+        },
+        {
+          "id": "workspace-rules-delete",
           "testFile": "src/components/board-settings/__tests__/workspace-rules.interaction.component.test.tsx"
         },
         {

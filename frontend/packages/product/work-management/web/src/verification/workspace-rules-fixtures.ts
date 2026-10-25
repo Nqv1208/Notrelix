@@ -7,14 +7,21 @@ import type { WorkspaceRulesPanelProps } from "../components/board-settings/boar
 const noop = () => undefined;
 const written = () => Promise.resolve({ ok: true } as const);
 
-const ITEMS = [
-  { id: "i-1", name: "Chốt phạm vi ERP", groupId: "g-todo" },
-  { id: "i-2", name: "Khảo sát kho Hải Phòng", groupId: "g-todo" },
-  { id: "i-3", name: "Nghiệm thu giai đoạn 1", groupId: "g-done" },
-];
 const GROUPS = [
   { id: "g-todo", name: "Cần làm" },
   { id: "g-done", name: "Hoàn thành" },
+];
+const STATUSES = [
+  { id: "s-open", name: "Đang làm" },
+  { id: "s-review", name: "Chờ duyệt" },
+];
+const PEOPLE = [
+  { id: "u-lan", name: "Lan Phạm" },
+  { id: "u-minh", name: "Minh Trần" },
+];
+const FIELDS = [
+  { id: "f-note", name: "Ghi chú" },
+  { id: "f-points", name: "Điểm" },
 ];
 
 export function workspaceRulesPanel(
@@ -26,35 +33,54 @@ export function workspaceRulesPanel(
     rules: [
       {
         id: "r-1",
-        name: "Cất việc chốt phạm vi khi có việc mới",
+        name: "Chuyển việc xong cho người duyệt",
         trigger: "ItemMovedToGroup",
-        action: "MoveItem",
-        itemId: null,
-        targetGroupId: "g-done",
+        actions: [
+          { type: "ChangeStatus", optionId: "s-review" },
+          { type: "AssignPerson", userId: "u-lan" },
+          {
+            type: "NotifyMember",
+            userId: "u-lan",
+            message: "Có việc cần duyệt",
+          },
+        ],
+        conditions: [{ type: "status", optionId: "s-open" }],
         boardId: "b-1",
-        triggerGroupId: "g-todo",
+        triggerGroupId: "g-done",
         enabled: true,
         disabledReason: null,
+        version: 3,
         createdAt: "2026-10-12T03:40:00.000Z",
       },
       {
         id: "r-2",
-        name: "Gọi webhook khi giao việc",
+        name: "Báo khi giao việc",
         trigger: "ItemAssigned",
-        action: "Webhook",
-        itemId: null,
-        targetGroupId: null,
+        actions: [
+          {
+            type: "SendEmail",
+            userId: "u-minh",
+            subject: "Việc mới",
+            body: "",
+          },
+        ],
+        conditions: [],
         boardId: "b-1",
         triggerGroupId: null,
         enabled: false,
         disabledReason: "Disabled after 5 consecutive failed executions.",
+        version: 1,
         createdAt: "2026-10-11T03:40:00.000Z",
       },
     ],
-    items: ITEMS,
     groups: GROUPS,
+    statuses: STATUSES,
+    people: PEOPLE,
+    fields: FIELDS,
     onReload: noop,
     onCreate: written,
+    onUpdate: written,
+    onDelete: written,
     onSetEnabled: written,
     openRuleId: null,
     onOpenRuns: noop,
@@ -70,7 +96,17 @@ export const WORKSPACE_RULE_RUNS: WorkspaceRulesPanelProps["runs"] = {
       id: "x-2",
       status: "failed",
       attempts: 3,
-      error: "The target group was deleted.",
+      error: "Action 2 (AssignPerson): Target action business rejection.",
+      ruleVersion: 2,
+      steps: [
+        { index: 0, type: "ChangeStatus", status: "succeeded", error: null },
+        {
+          index: 1,
+          type: "AssignPerson",
+          status: "failed",
+          error: "Target action business rejection.",
+        },
+      ],
       createdAt: "2026-10-12T04:10:00.000Z",
     },
     {
@@ -78,6 +114,8 @@ export const WORKSPACE_RULE_RUNS: WorkspaceRulesPanelProps["runs"] = {
       status: "succeeded",
       attempts: 1,
       error: null,
+      ruleVersion: 3,
+      steps: [],
       createdAt: "2026-10-12T03:50:00.000Z",
     },
   ],
