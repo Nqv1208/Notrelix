@@ -114,7 +114,7 @@ import { MockAccountPages } from "./mock-account-pages";
 import { MockReports } from "./mock-reports";
 import { MockBilling } from "./mock-billing";
 import { MockIntegrations } from "./mock-integrations";
-import { MockBoardAutomations } from "./mock-board-automations";
+import { MockWorkspaceAutomations } from "./mock-workspace-automations";
 import { MockOnboarding } from "./mock-onboarding";
 import { ERP_STATE_ITEMS, erpLongChildTitles } from "./mock-item-states";
 import { MockBoardSharing, seedErpSharing } from "./mock-board-sharing";
@@ -223,8 +223,8 @@ export class MockStore {
   readonly reports = new MockReports();
   readonly billing = new MockBilling();
   readonly integrations = new MockIntegrations();
-  /** Automation rules, drafts and run log of a board (gap `CTR-GAP-WM-BOARD-AUTOMATIONS`). */
-  readonly automations = new MockBoardAutomations(this);
+  /** The automation rules of each workspace. */
+  readonly workspaceAutomations = new MockWorkspaceAutomations();
   // Primary Maps
   private usersById = new Map<string, MockUserRecord>();
   private workspacesById = new Map<string, MockWorkspaceRecord>();
@@ -1737,7 +1737,7 @@ export class MockStore {
     this.reports.reset();
     this.billing.reset();
     this.integrations.reset();
-    this.automations.reset();
+    this.workspaceAutomations.reset();
     this.navigationByMember.clear();
     this.navigationTick = 0;
     this.suspendedMembershipIds.clear();

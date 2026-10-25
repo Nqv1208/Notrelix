@@ -5359,6 +5359,39 @@ export interface components {
             avatarUrl?: string | null;
             emailConfirmed?: boolean;
         };
+        "Notrelix.Application.Features.Automation.DTOs.AutomationExecutionDto": {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            workspaceId?: string;
+            /** Format: uuid */
+            ruleId?: string;
+            status?: components["schemas"]["Notrelix.Domain.Automation.Executions.AutomationExecutionStatus"];
+            /** Format: int32 */
+            attemptCount?: number;
+            payload?: string | null;
+            error?: string | null;
+            /** Format: date-time */
+            createdAt?: string;
+        };
+        "Notrelix.Application.Features.Automation.DTOs.AutomationRuleDto": {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            workspaceId?: string;
+            name?: string | null;
+            triggerType?: string | null;
+            actionType?: string | null;
+            configuration?: string | null;
+            isEnabled?: boolean;
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: date-time */
+            updatedAt?: string | null;
+            /** Format: uuid */
+            executorUserId?: string | null;
+            disabledReason?: string | null;
+        };
         "Notrelix.Application.Features.Collaboration.Attachments.DTOs.AttachmentDto": {
             /** Format: uuid */
             id?: string;
@@ -6604,6 +6637,11 @@ export interface components {
             admins?: components["schemas"]["Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.TeamsExtAdminDto"][] | null;
             directory?: components["schemas"]["Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.TeamsExtDirectoryDto"][] | null;
         };
+        /**
+         * Format: int32
+         * @enum {integer}
+         */
+        "Notrelix.Domain.Automation.Executions.AutomationExecutionStatus": 0 | 1 | 2 | 3 | 4;
         /** @enum {string} */
         "Notrelix.Domain.Identity.Security.SecurityActivityType": "SignInSucceeded" | "SignInFailed" | "PasswordChanged" | "PasswordReset" | "MfaEnabled" | "MfaDisabled" | "SessionRevoked" | "OtherSessionsRevoked";
         /**
@@ -6794,7 +6832,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Automation.DTOs.AutomationExecutionDto"][];
                 };
             };
         };
@@ -6816,7 +6854,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Automation.DTOs.AutomationRuleDto"][];
                 };
             };
         };

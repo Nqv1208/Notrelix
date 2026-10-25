@@ -16,6 +16,7 @@ import { PageLink } from "../item-page/item-page-parts";
 import { AutomationEditor } from "./automation-editor";
 import { AutomationLog } from "./automation-log";
 import { AutomationsSection } from "./board-settings-automations";
+import { WorkspaceRulesSection } from "./workspace-rules-section";
 import { BoardSettingsProvider, useSettings } from "./board-settings-context";
 import { FieldsSection } from "./board-settings-fields";
 import { fillCopy } from "./board-settings-format";
@@ -228,7 +229,7 @@ function ReadyBody(props: BoardSettingsSurfaceProps) {
   const unavailable = data.unavailable ?? {};
   const hidden: Partial<Record<BoardSettingsSection, boolean>> = {
     views: unavailable.views,
-    automations: unavailable.automations,
+    automations: unavailable.automations && !props.workspaceRules,
   };
   // A section the product has no contract for is not opened by its address.
   const section = hidden[props.section] ? "general" : props.section;
@@ -236,7 +237,12 @@ function ReadyBody(props: BoardSettingsSurfaceProps) {
     (key) => !hidden[key],
   );
   const t = copy.menu;
-  const running = data.automations.filter((rule) => rule.enabled).length;
+  const rules = props.workspaceRules;
+  const running = rules
+    ? rules.status === "ready"
+      ? rules.rules.filter((rule) => rule.enabled).length
+      : undefined
+    : data.automations.filter((rule) => rule.enabled).length;
   const counts: Partial<Record<BoardSettingsSection, number>> = {
     fields: data.fields.length + data.systemFields.length,
     views: data.views.length,
@@ -279,6 +285,8 @@ function ReadyBody(props: BoardSettingsSurfaceProps) {
       />
     );
   else if (section === "groups") content = <GroupsSection />;
+  else if (section === "automations" && props.workspaceRules)
+    content = <WorkspaceRulesSection panel={props.workspaceRules} />;
   else if (section === "automations") {
     const panel = props.automation;
     if (panel?.log)

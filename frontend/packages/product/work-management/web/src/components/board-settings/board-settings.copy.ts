@@ -10,6 +10,7 @@ import {
   automationEditorEn,
   automationEditorVi,
 } from "./board-automation.copy";
+import { workspaceRulesEn, workspaceRulesVi } from "./workspace-rules.copy";
 
 export const en = {
   title: "Board settings",
@@ -417,6 +418,7 @@ export const en = {
     change: "Change who runs it",
     empty: "No rule yet.",
     editor: automationEditorEn,
+    rules: workspaceRulesEn,
   },
 } as const;
 
@@ -830,6 +832,7 @@ export const vi: BoardSettingsCopy = {
     change: "Đổi người chạy",
     empty: "Chưa có quy tắc nào.",
     editor: automationEditorVi,
+    rules: workspaceRulesVi,
   },
 };
 

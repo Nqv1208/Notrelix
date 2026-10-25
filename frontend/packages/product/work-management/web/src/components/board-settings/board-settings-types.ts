@@ -7,6 +7,10 @@ import type {
   BoardSettingsViewDto,
   BoardSettingsViewPatch,
   BoardSettingsWriteResult,
+  CreateWorkspaceAutomationInput,
+  WorkspaceAutomationRuleDto,
+  WorkspaceAutomationRunDto,
+  WorkspaceAutomationWriteResult,
 } from "@notrelix/work-management-core";
 import type { AutomationPanelProps } from "./automation-types";
 import type { BoardSettingsCopy } from "./board-settings.copy";
@@ -113,6 +117,8 @@ export interface BoardSettingsSurfaceProps {
   actions: BoardSettingsActions;
   /** The rule editor and the run log of the automations section. */
   automation?: AutomationPanelProps;
+  /** The workspace's automation rules: when given, the section shows them instead of the rule editor. */
+  workspaceRules?: WorkspaceRulesPanelProps;
   /** The Kanban view's own settings (lane limit, who manages statuses), shown in its panel. */
   kanbanSettings?: ReactNode;
   /** Reads the settings again (after a conflict or an error). */
@@ -129,4 +135,39 @@ export interface BoardSettingsSurfaceProps {
   defaultArchiveFieldId?: string | null;
   /** For stories and tests: show a write failure at the start. */
   defaultFeedback?: "failed" | "conflict" | null;
+}
+
+/** One choice of the "new rule" form: an item or a group of the board. */
+export interface WorkspaceRuleChoice {
+  readonly id: string;
+  readonly name: string;
+  /** The group an item sits in (items only). */
+  readonly groupId?: string;
+}
+
+/**
+ * The automation rules of the workspace shown in the "Tự động hoá" section: a
+ * rule has one trigger and one action, and applies to the whole workspace.
+ */
+export interface WorkspaceRulesPanelProps {
+  readonly status: "loading" | "error" | "forbidden" | "ready";
+  readonly rules: readonly WorkspaceAutomationRuleDto[];
+  /** The items and the groups of this board: what the form offers and what a rule's sentence names. */
+  readonly items: readonly WorkspaceRuleChoice[];
+  readonly groups: readonly WorkspaceRuleChoice[];
+  readonly onReload: () => void;
+  readonly onCreate: (
+    input: CreateWorkspaceAutomationInput,
+  ) => Promise<WorkspaceAutomationWriteResult>;
+  readonly onSetEnabled: (
+    ruleId: string,
+    enabled: boolean,
+  ) => Promise<WorkspaceAutomationWriteResult>;
+  /** The rule whose runs are open, with the runs read for it. */
+  readonly openRuleId: string | null;
+  readonly onOpenRuns: (ruleId: string | null) => void;
+  readonly runs: {
+    readonly status: "loading" | "error" | "ready";
+    readonly data: readonly WorkspaceAutomationRunDto[];
+  };
 }

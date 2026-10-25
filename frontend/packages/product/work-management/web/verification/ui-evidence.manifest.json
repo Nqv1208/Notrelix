@@ -3043,6 +3043,71 @@
           "testFile": "src/components/board-settings/__tests__/board-automation.interaction.component.test.tsx"
         }
       ]
+    },
+    {
+      "surfaceId": "wm.board-settings.workspace-rules",
+      "owner": "@notrelix/work-management-web",
+      "surfaceKind": "composition",
+      "pureEntry": "src/components/board-settings/workspace-rules-section.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "work-management-board-settings-surface--workspace-rules",
+          "state": "Default",
+          "visualTargets": []
+        },
+        {
+          "id": "work-management-board-settings-surface--workspace-rules-loading",
+          "state": "Loading",
+          "visualTargets": []
+        },
+        {
+          "id": "work-management-board-settings-surface--workspace-rules-error",
+          "state": "Error",
+          "visualTargets": []
+        },
+        {
+          "id": "work-management-board-settings-surface--workspace-rules-forbidden",
+          "state": "ReadOnly",
+          "visualTargets": []
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default", "Loading", "Error", "ReadOnly"],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "EdgeData",
+            "reason": "A rule's sentence and name wrap; the list holds the workspace's few rules and the run history is capped at 20.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          }
+        ]
+      },
+      "responsive": false,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "purity"],
+      "interactionCases": [
+        {
+          "id": "workspace-rules",
+          "testFile": "src/components/board-settings/__tests__/workspace-rules.interaction.component.test.tsx"
+        },
+        {
+          "id": "workspace-rules-toggle",
+          "testFile": "src/components/board-settings/__tests__/workspace-rules.interaction.component.test.tsx"
+        },
+        {
+          "id": "workspace-rules-create",
+          "testFile": "src/components/board-settings/__tests__/workspace-rules.interaction.component.test.tsx"
+        },
+        {
+          "id": "workspace-rules-runs",
+          "testFile": "src/components/board-settings/__tests__/workspace-rules.interaction.component.test.tsx"
+        },
+        {
+          "id": "workspace-rules-forbidden",
+          "testFile": "src/components/board-settings/__tests__/workspace-rules.interaction.component.test.tsx"
+        }
+      ]
     }
   ]
 }
