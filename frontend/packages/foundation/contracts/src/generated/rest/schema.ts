@@ -437,7 +437,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/blocks/{blockId}": {
+    "/api/v1/pages/{pageId}/blocks/{blockId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -4665,8 +4665,8 @@ export interface components {
         "Notrelix.API.Contracts.Documents.Blocks.Requests.CreateBlockRequest": {
             type?: string | null;
             properties?: string | null;
-            /** Format: double */
-            position?: number | null;
+            /** Format: uuid */
+            afterBlockId?: string | null;
             /** Format: uuid */
             parentId?: string | null;
         };
@@ -5377,6 +5377,22 @@ export interface components {
             createdAt?: string;
             kind?: string | null;
         };
+        "Notrelix.Application.Features.Collaboration.Comments.DTOs.CommentDto": {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            userId?: string;
+            userName?: string | null;
+            userAvatar?: string | null;
+            contentMd?: string | null;
+            /** Format: uuid */
+            parentCommentId?: string | null;
+            isEdited?: boolean;
+            /** Format: date-time */
+            resolvedAt?: string | null;
+            /** Format: date-time */
+            createdAt?: string;
+        };
         "Notrelix.Application.Features.Collaboration.Notifications.Commands.MarkWorkspaceInboxRead.MarkedReadDto": {
             /** Format: int32 */
             marked?: number;
@@ -5402,6 +5418,30 @@ export interface components {
             version?: number;
             rows?: components["schemas"]["Notrelix.Application.Features.Collaboration.Preferences.DTOs.NotificationPreferenceRowDto"][] | null;
         };
+        "Notrelix.Application.Features.Documents.DTOs.BlockDto": {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            pageId?: string;
+            /** Format: uuid */
+            parentId?: string | null;
+            type?: string | null;
+            content?: string | null;
+            properties?: string | null;
+            position?: string | null;
+            /** Format: int32 */
+            version?: number;
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: date-time */
+            updatedAt?: string | null;
+        };
+        "Notrelix.Application.Features.Documents.DTOs.PageBreadcrumbDto": {
+            /** Format: uuid */
+            id?: string;
+            title?: string | null;
+            icon?: string | null;
+        };
         "Notrelix.Application.Features.Documents.DTOs.PageDto": {
             /** Format: uuid */
             id?: string;
@@ -5420,6 +5460,16 @@ export interface components {
             version?: number;
             /** Format: uuid */
             spaceId?: string | null;
+        };
+        "Notrelix.Application.Features.Documents.DTOs.PageHistoryDto": {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            actorId?: string;
+            action?: string | null;
+            resourceTitle?: string | null;
+            /** Format: date-time */
+            createdAt?: string;
         };
         "Notrelix.Application.Features.Documents.DTOs.PageTreeItemDto": {
             /** Format: uuid */
@@ -7117,7 +7167,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Collaboration.Comments.DTOs.CommentDto"][];
                 };
             };
         };
@@ -7392,7 +7442,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Documents.DTOs.BlockDto"][];
                 };
             };
         };
@@ -7454,6 +7504,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                pageId: string;
                 blockId: string;
             };
             cookie?: never;
@@ -7476,6 +7527,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                pageId: string;
                 blockId: string;
             };
             cookie?: never;
@@ -7724,7 +7776,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Documents.DTOs.PageBreadcrumbDto"][];
                 };
             };
         };
@@ -7746,7 +7798,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Documents.DTOs.PageHistoryDto"][];
                 };
             };
         };

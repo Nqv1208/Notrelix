@@ -901,7 +901,10 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Notrelix.Application.Features.Collaboration.Comments.DTOs.CommentDto"
+                  }
                 }
               }
             }
@@ -1416,7 +1419,10 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Notrelix.Application.Features.Documents.DTOs.BlockDto"
+                  }
                 }
               }
             }
@@ -1532,7 +1538,7 @@
         ]
       }
     },
-    "/api/v1/blocks/{blockId}": {
+    "/api/v1/pages/{pageId}/blocks/{blockId}": {
       "patch": {
         "tags": [
           "Documents.Blocks",
@@ -1541,6 +1547,15 @@
         "summary": "Update a block",
         "operationId": "Documents.Blocks.UpdateBlock",
         "parameters": [
+          {
+            "name": "pageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
           {
             "name": "blockId",
             "in": "path",
@@ -1590,6 +1605,15 @@
         "summary": "Delete a block",
         "operationId": "Documents.Blocks.DeleteBlock",
         "parameters": [
+          {
+            "name": "pageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
           {
             "name": "blockId",
             "in": "path",
@@ -2046,7 +2070,10 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Notrelix.Application.Features.Documents.DTOs.PageBreadcrumbDto"
+                  }
                 }
               }
             }
@@ -2087,7 +2114,10 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Notrelix.Application.Features.Documents.DTOs.PageHistoryDto"
+                  }
                 }
               }
             }
@@ -18735,9 +18765,9 @@
             "type": "string",
             "nullable": true
           },
-          "position": {
-            "type": "number",
-            "format": "double",
+          "afterBlockId": {
+            "type": "string",
+            "format": "uuid",
             "nullable": true
           },
           "parentId": {
@@ -20907,6 +20937,49 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.Application.Features.Collaboration.Comments.DTOs.CommentDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userName": {
+            "type": "string",
+            "nullable": true
+          },
+          "userAvatar": {
+            "type": "string",
+            "nullable": true
+          },
+          "contentMd": {
+            "type": "string",
+            "nullable": true
+          },
+          "parentCommentId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "isEdited": {
+            "type": "boolean"
+          },
+          "resolvedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.Application.Features.Collaboration.Notifications.Commands.MarkWorkspaceInboxRead.MarkedReadDto": {
         "type": "object",
         "properties": {
@@ -20981,6 +21054,72 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.Application.Features.Documents.DTOs.BlockDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "pageId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "parentId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "type": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "type": "string",
+            "nullable": true
+          },
+          "properties": {
+            "type": "string",
+            "nullable": true
+          },
+          "position": {
+            "type": "string",
+            "nullable": true
+          },
+          "version": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Documents.DTOs.PageBreadcrumbDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "icon": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.Application.Features.Documents.DTOs.PageDto": {
         "type": "object",
         "properties": {
@@ -21026,6 +21165,32 @@
             "type": "string",
             "format": "uuid",
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Documents.DTOs.PageHistoryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "actorId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "action": {
+            "type": "string",
+            "nullable": true
+          },
+          "resourceTitle": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
           }
         },
         "additionalProperties": false
