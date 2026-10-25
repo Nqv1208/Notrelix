@@ -638,7 +638,7 @@ export const boardsOperations = [
     string
   >({
     id: "boards.create",
-    contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
+    contract: { kind: "openapi", operationId: "WorkManagement.Boards.Create" },
     method: "POST",
     route: "/workspaces/:workspaceId/boards",
     async handle({ params, body, store }) {

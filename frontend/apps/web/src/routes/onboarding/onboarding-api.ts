@@ -1,3 +1,8 @@
+import { endpoints } from "@notrelix/contracts";
+import type {
+  OperationRequestBody,
+  OperationResponse,
+} from "@notrelix/contracts";
 import type {
   BoardTemplateInfo,
   CompanySize,
@@ -7,12 +12,7 @@ import type {
   OnboardingStepId,
 } from "@notrelix/features-workspace/web";
 
-/**
- * The calls behind the onboarding pages (gap `CTR-GAP-ONBOARD-FLOW`, see
- * docs/superpowers/be-blockers-2026-10.md, "BE requirement from FE:
- * Onboarding"). `api` is the runtime client; every call is quiet: the pages
- * say what went wrong themselves.
- */
+/** `api` is the runtime client; every call is quiet: the pages say what went wrong themselves. */
 export interface OnboardingApiClient {
   get<T>(url: string, options?: { skipGlobalErrorToast?: boolean }): Promise<T>;
   post<T>(
@@ -79,14 +79,36 @@ export interface JoinDto {
 export interface GettingStartedDto {
   readonly visible: boolean;
   readonly items: readonly {
-    key: "first-item" | "invite-more" | "mobile";
+    key: "first-item" | "invite-more";
     done: boolean;
     boardId: string | null;
     boardTitle: string | null;
-    pendingInvites: number | null;
   }[];
 }
 
+type DraftOutput = OperationResponse<
+  "Workspaces.Onboarding.GetOnboardingDraft",
+  200
+>;
+type GettingStartedOutput = OperationResponse<
+  "Workspaces.Onboarding.GetGettingStarted",
+  200
+>;
+type SpaceBody = OperationRequestBody<"Workspaces.Spaces.CreateSpace">;
+type InviteBody = OperationRequestBody<"Workspaces.Members.InviteMember">;
+
+/** A refusal the producer answers for one row of a batch (not a failed call). */
+const isRowRefusal = (failure: unknown): boolean =>
+  [400, 409, 422].includes((failure as { status?: number }).status ?? 0);
+
+/**
+ * The calls behind the onboarding pages. The draft, the departments (one
+ * `CreateSpace` each), the invitations (one `InviteMember` each, with the
+ * department and its role as an initial entry), the first Board and the
+ * getting-started card use the producer's operations. The address check and
+ * the workspace create (no operation tells a client its Account id), the
+ * catalogue and the invited person's first visit stay gaps.
+ */
 export function createOnboardingApi(api: OnboardingApiClient) {
   const key = () => crypto.randomUUID();
   return {
@@ -102,14 +124,32 @@ export function createOnboardingApi(api: OnboardingApiClient) {
         QUIET,
       );
     },
-    getDraft() {
-      return api.get<DraftDto>("/onboarding/draft", QUIET);
+    async getDraft(): Promise<DraftDto> {
+      const found = await api.get<DraftOutput>(
+        endpoints.onboarding.draft,
+        QUIET,
+      );
+      const draft = found?.draft;
+      if (!draft?.step) return { draft: null };
+      return {
+        draft: {
+          step: draft.step as NonNullable<DraftDto["draft"]>["step"],
+          workspaceId: draft.workspaceId ?? null,
+          data: (draft.data ?? {}) as Record<string, unknown>,
+        },
+      };
     },
     saveDraft(draft: NonNullable<DraftDto["draft"]>) {
-      return api.put<void>("/onboarding/draft", draft, QUIET);
+      const body: OperationRequestBody<"Workspaces.Onboarding.SaveOnboardingDraft"> =
+        {
+          step: draft.step,
+          workspaceId: draft.workspaceId,
+          data: draft.data,
+        };
+      return api.put<void>(endpoints.onboarding.draft, body, QUIET);
     },
     clearDraft() {
-      return api.delete<void>("/onboarding/draft", QUIET);
+      return api.delete<void>(endpoints.onboarding.draft, QUIET);
     },
     createWorkspace(input: {
       name: string;
@@ -123,19 +163,32 @@ export function createOnboardingApi(api: OnboardingApiClient) {
         { ...QUIET, idempotencyKey: key() },
       );
     },
-    createDepartments(
+    /**
+     * One private Department per entry, in order. The producer has no
+     * department colour yet, so the colour chosen is not stored.
+     */
+    async createDepartments(
       workspaceId: string,
       departments: readonly { name: string; color: DepartmentColor }[],
     ) {
-      return api.post<{
-        departments: { id: string; name: string; color: DepartmentColor }[];
-      }>(
-        `/workspaces/${workspaceId}/onboarding/departments`,
-        { departments },
-        { ...QUIET, idempotencyKey: key() },
-      );
+      const made: { id: string; name: string; color: DepartmentColor }[] = [];
+      for (const department of departments) {
+        const body: SpaceBody = {
+          name: department.name,
+          visibility: "Private",
+          spaceType: "Department",
+        };
+        const id = await api.post<string>(
+          endpoints.workspaces.spaces(workspaceId),
+          body,
+          QUIET,
+        );
+        made.push({ id, name: department.name, color: department.color });
+      }
+      return { departments: made };
     },
-    sendInvites(
+    /** One workspace invitation as Member each, with the department and role as the initial entry. */
+    async sendInvites(
       workspaceId: string,
       invites: readonly {
         email: string;
@@ -143,21 +196,48 @@ export function createOnboardingApi(api: OnboardingApiClient) {
         role: InviteRole;
       }[],
     ) {
-      return api.post<{ sent: number; skipped: string[] }>(
-        `/workspaces/${workspaceId}/onboarding/invitations`,
-        { invites },
-        { ...QUIET, idempotencyKey: key() },
-      );
+      let sent = 0;
+      const skipped: string[] = [];
+      for (const invite of invites) {
+        const body: InviteBody = {
+          email: invite.email,
+          role: "Member",
+          initialEntries: invite.spaceId
+            ? [{ kind: "Space", targetId: invite.spaceId, role: invite.role }]
+            : [],
+        };
+        try {
+          await api.post<string>(
+            endpoints.workspaces.members(workspaceId),
+            body,
+            QUIET,
+          );
+          sent += 1;
+        } catch (failure) {
+          if (!isRowRefusal(failure)) throw failure;
+          skipped.push(invite.email.toLowerCase());
+        }
+      }
+      return { sent, skipped };
     },
-    createBoard(
+    /** A blank Board: the producer has no onboarding template catalogue, so the template is not applied. */
+    async createBoard(
       workspaceId: string,
       input: { templateId: string; name: string; spaceId: string | null },
     ) {
-      return api.post<{ id: string; templateId: string }>(
-        `/workspaces/${workspaceId}/onboarding/board`,
-        input,
+      const body: OperationRequestBody<"WorkManagement.Boards.Create"> = {
+        title: input.name,
+        ...(input.spaceId ? { spaceId: input.spaceId } : {}),
+      };
+      const id = await api.post<unknown>(
+        endpoints.boards.listByWorkspaceId(workspaceId),
+        body,
         { ...QUIET, idempotencyKey: key() },
       );
+      return {
+        id: typeof id === "string" ? id : "",
+        templateId: input.templateId,
+      };
     },
     getJoin(workspaceId: string) {
       return api.get<JoinDto>(
@@ -175,22 +255,30 @@ export function createOnboardingApi(api: OnboardingApiClient) {
         QUIET,
       );
     },
-    gettingStarted(workspaceId: string) {
-      return api.get<GettingStartedDto>(
-        `/workspaces/${workspaceId}/getting-started`,
+    async gettingStarted(workspaceId: string): Promise<GettingStartedDto> {
+      const card = await api.get<GettingStartedOutput>(
+        endpoints.onboarding.gettingStarted(workspaceId),
         QUIET,
       );
+      return {
+        visible: card?.visible ?? false,
+        items: (card?.items ?? []).flatMap((item) =>
+          item.key === "first-item" || item.key === "invite-more"
+            ? [
+                {
+                  key: item.key,
+                  done: item.done ?? false,
+                  boardId: item.boardId ?? null,
+                  boardTitle: item.boardTitle ?? null,
+                },
+              ]
+            : [],
+        ),
+      };
     },
     dismissGettingStarted(workspaceId: string) {
       return api.post<void>(
-        `/workspaces/${workspaceId}/getting-started/dismiss`,
-        {},
-        { ...QUIET, idempotencyKey: key() },
-      );
-    },
-    completeGettingStarted(workspaceId: string, itemKey: string) {
-      return api.post<void>(
-        `/workspaces/${workspaceId}/getting-started/${itemKey}/done`,
+        endpoints.onboarding.dismissGettingStarted(workspaceId),
         {},
         { ...QUIET, idempotencyKey: key() },
       );

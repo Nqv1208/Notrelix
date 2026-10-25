@@ -157,6 +157,14 @@ export const endpoints = {
     memberRole: (boardId: string, userId: string) =>
       `/boards/${boardId}/members/${userId}/role`,
   },
+  // Workspaces.Onboarding.* (draft and getting-started card).
+  onboarding: {
+    draft: "/workspaces/onboarding-draft",
+    gettingStarted: (workspaceId: string) =>
+      `/workspaces/${workspaceId}/getting-started`,
+    dismissGettingStarted: (workspaceId: string) =>
+      `/workspaces/${workspaceId}/getting-started/dismiss`,
+  },
   // Governance.ResourcePermissions.*: explicit grants on a resource kind.
   resourcePermissions: {
     list: (resourceType: string, resourceId: string) =>
