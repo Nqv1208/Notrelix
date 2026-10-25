@@ -1,5 +1,7 @@
 using Notrelix.Domain.Accounts.Accounts;
 using Notrelix.Domain.Accounts.Members;
+using Notrelix.Domain.Billing.Entitlements;
+using Notrelix.Domain.Billing.Plans;
 using Notrelix.Domain.Collaboration.Comments;
 using Notrelix.Domain.Documents.Blocks;
 using Notrelix.Domain.Documents.Pages;
@@ -67,6 +69,8 @@ internal static class InitDb
 
         var account = await CreateAccountAsync(context, users, ct);
 
+        await GrantSeedEntitlementsAsync(context, account, ct);
+
         var workspaces = await CreateWorkspacesAsync(context, targets, account, users, ct);
         result = result with { WorkspacesCreated = workspaces.Count };
 
@@ -107,6 +111,24 @@ internal static class InitDb
 
         await ClearAndSaveAsync(context, ct);
         return account;
+    }
+
+    /// <summary>
+    /// Development data only: the seeded account may create automation rules, so a
+    /// developer can use Automation without a billing catalog (none is seeded).
+    /// </summary>
+    private static async Task GrantSeedEntitlementsAsync(
+        ApplicationDbContext context, Account account, CancellationToken ct)
+    {
+        var feature = FeatureCode.Create("AUTOMATION_RULE");
+        if (await context.Entitlements.AnyAsync(e => e.AccountId == account.Id && e.Feature == feature, ct))
+        {
+            return;
+        }
+
+        context.Entitlements.Add(Entitlement.Create(
+            account.Id, feature, limit: 50, EntitlementSource.Manual, Epoch));
+        await ClearAndSaveAsync(context, ct);
     }
 
     private static async Task ClearAndSaveAsync(ApplicationDbContext context, CancellationToken ct)
