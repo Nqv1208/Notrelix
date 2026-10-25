@@ -3,6 +3,7 @@ using Microsoft.Extensions.Options;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Rls;
 using Notrelix.Integration.Tests.Containers;
+using Notrelix.Domain.Workspaces.Spaces;
 using Notrelix.Testing.Application.Fakes;
 
 namespace Notrelix.Integration.Tests.Data;
@@ -61,6 +62,27 @@ public class SeedDataInitialiserTests : IAsyncLifetime
         (await context.Labels.CountAsync()).Should().Be(60);
         (await context.BoardItems.CountAsync()).Should().Be(400);
         (await context.Comments.CountAsync()).Should().Be(400);
+    }
+
+    [Fact]
+    public async Task Small_profile_places_every_board_in_a_department_space()
+    {
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = _db.CreateOwnerContext(tenant);
+
+        await CreateInitialiser(context).SeedAsync();
+
+        var departments = await context.Spaces.Where(space => space.SpaceType == SpaceType.Department).ToListAsync();
+        departments.Select(space => space.Name).Distinct().Should().BeEquivalentTo(
+            ["IT", "Accounting", "Marketing", "Sales", "HR", "Customer Support"]);
+        departments.Should().HaveCount(6 * 5);
+
+        var departmentIds = departments.Select(space => space.Id).ToHashSet();
+        var boards = await context.Boards.ToListAsync();
+        boards.Should().OnlyContain(board => board.SpaceId != null && departmentIds.Contains(board.SpaceId.Value));
+        boards.Should().OnlyContain(board =>
+            departments.Single(space => space.Id == board.SpaceId).WorkspaceId == board.WorkspaceId);
     }
 
     [Fact]

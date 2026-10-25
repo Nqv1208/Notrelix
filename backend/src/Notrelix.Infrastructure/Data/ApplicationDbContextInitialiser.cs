@@ -116,6 +116,8 @@ public class ApplicationDbContextInitialiser
         _context.BoardGroups.RemoveRange(await _context.BoardGroups.IgnoreQueryFilters().ToListAsync());
         _context.Labels.RemoveRange(await _context.Labels.IgnoreQueryFilters().ToListAsync());
         _context.Boards.RemoveRange(await _context.Boards.IgnoreQueryFilters().ToListAsync());
+        _context.SpaceMembers.RemoveRange(await _context.SpaceMembers.IgnoreQueryFilters().ToListAsync());
+        _context.Spaces.RemoveRange(await _context.Spaces.IgnoreQueryFilters().ToListAsync());
         _context.WorkspaceMembers.RemoveRange(await _context.WorkspaceMembers.IgnoreQueryFilters().ToListAsync());
         _context.WorkspaceInvitations.RemoveRange(await _context.WorkspaceInvitations.IgnoreQueryFilters().ToListAsync());
         _context.Workspaces.RemoveRange(await _context.Workspaces.IgnoreQueryFilters().ToListAsync());
