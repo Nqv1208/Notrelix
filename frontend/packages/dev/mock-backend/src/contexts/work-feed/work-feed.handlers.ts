@@ -537,7 +537,7 @@ export const workFeedOperations = [
       }
       markInbox(store, params.id, {
         type: "snooze",
-        until: new Date(until).toISOString(),
+        until: store.getClock().offsetSeconds((until - now) / 1000),
       });
       return noContent();
     },
