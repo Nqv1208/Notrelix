@@ -166,6 +166,33 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new BoardItemMovedDomainEvent(AccountId, WorkspaceId, Id, BoardId, oldGroupId, group.GroupId, newPosition.Value, updatedBy, updatedAt, Version));
     }
 
+    /// <summary>
+    /// Moves the Item to another group because its own group is being deleted. Unlike a
+    /// user move this also applies to archived Items, so no Item is left in the deleted
+    /// group. A null <paramref name="newPosition"/> keeps the position (child Items are
+    /// not ordered within the group).
+    /// </summary>
+    public void MoveToGroupOnGroupRemoval(BoardGroupRef group, FractionalIndex? newPosition, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
+        Guard.NotNull(group);
+
+        if (group.WorkspaceId != WorkspaceId)
+            throw new BusinessRuleException(CommonRuleCodes.Common_WorkspaceScopeMismatch, $"Workspace scope mismatch. Expected '{WorkspaceId}', got '{group.WorkspaceId}'.");
+
+        if (group.BoardId != BoardId)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_BoardScopeMismatch, $"Board scope mismatch. Expected '{BoardId}', got '{group.BoardId}'.");
+
+        var oldGroupId = GroupId;
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        GroupId = group.GroupId;
+        if (newPosition is not null) Position = newPosition;
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+        RaiseDomainEvent(new BoardItemMovedDomainEvent(AccountId, WorkspaceId, Id, BoardId, oldGroupId, group.GroupId, Position.Value, updatedBy, updatedAt, Version));
+    }
+
     public void UpdateFieldValue(BoardField field, FieldValue newValue, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();

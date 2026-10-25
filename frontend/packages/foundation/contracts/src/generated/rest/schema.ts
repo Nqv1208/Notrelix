@@ -10989,6 +10989,7 @@ export interface operations {
         parameters: {
             query: {
                 expectedVersion: number;
+                targetGroupId?: string;
             };
             header: {
                 /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */

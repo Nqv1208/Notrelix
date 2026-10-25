@@ -13,6 +13,9 @@ public static class WorkManagementRuleCodes
     public const string WorkManagement_Board_CannotGenerateIdentityArchived = "WorkManagement_Board_CannotGenerateIdentityArchived";
     public const string WorkManagement_Board_CannotChangeSpaceArchived = "WorkManagement_Board_CannotChangeSpaceArchived";
     public const string WorkManagement_Board_CannotDeleteDefaultGroup = "WorkManagement_Board_CannotDeleteDefaultGroup";
+    public const string WorkManagement_Group_CannotDeleteLast = "WorkManagement_Group_CannotDeleteLast";
+    public const string WorkManagement_Group_ItemsNeedTargetGroup = "WorkManagement_Group_ItemsNeedTargetGroup";
+    public const string WorkManagement_Group_InvalidTargetGroup = "WorkManagement_Group_InvalidTargetGroup";
 
     // ── Field ─────────────────────────────────────────────────────────────
     public const string WorkManagement_Field_DoesNotBelongToBoard = "WorkManagement_Field_DoesNotBelongToBoard";

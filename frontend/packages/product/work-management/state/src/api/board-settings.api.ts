@@ -39,7 +39,6 @@ const UNAVAILABLE: BoardSettingsUnavailable = {
   fieldRules: true,
   views: true,
   automations: true,
-  nonEmptyGroupDelete: true,
   creatableFieldTypes: CREATABLE_FIELD_TYPES,
 };
 
@@ -365,9 +364,14 @@ export function createBoardSettingsApi(client: NotrelixClient) {
         },
         quiet,
       ),
-    deleteGroup: (s: BoardSettingsDto, groupId: string) =>
+    /** Items of a group that has some move to `moveToGroupId` (a group of the same board). */
+    deleteGroup: (
+      s: BoardSettingsDto,
+      groupId: string,
+      moveToGroupId: string | null,
+    ) =>
       api.delete<void>(
-        `${endpoints.boardGroups.detail(groupId)}?expectedVersion=${find([...s.groups], groupId).version ?? 0}`,
+        `${endpoints.boardGroups.detail(groupId)}?expectedVersion=${find([...s.groups], groupId).version ?? 0}${moveToGroupId ? `&targetGroupId=${moveToGroupId}` : ""}`,
         quiet,
       ),
   };

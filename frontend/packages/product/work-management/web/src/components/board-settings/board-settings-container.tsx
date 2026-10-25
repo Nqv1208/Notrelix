@@ -106,7 +106,8 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
       reorderGroups: (ids) => write((api, s) => api.reorderGroups(s, ids)),
       updateGroup: (groupId, changes) =>
         write((api, s) => api.updateGroup(s, groupId, changes)),
-      deleteGroup: (groupId) => write((api, s) => api.deleteGroup(s, groupId)),
+      deleteGroup: (groupId, moveToGroupId) =>
+        write((api, s) => api.deleteGroup(s, groupId, moveToGroupId)),
       setAutomationEnabled: unsupported,
     }),
     [copy, write],
