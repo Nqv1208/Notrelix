@@ -134,6 +134,11 @@ export function useBoardSharing(
         const entry = entryOf(entryId);
         if (entry) await runAll(planLevelChange(entry, level));
       },
+      /** Gives a workspace member a permission on the Board (`Governance.ResourcePermissions.Grant`). */
+      invite: (userId: string, level: SharingLevel) =>
+        runAll([
+          { kind: "grant", subjectType: "User", subjectId: userId, level },
+        ]),
       remove: async (entryId: string) => {
         const entry = entryOf(entryId);
         if (entry) await runAll(planRemoval(entry));

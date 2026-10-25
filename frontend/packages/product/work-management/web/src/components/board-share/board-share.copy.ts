@@ -12,6 +12,7 @@ export const en = {
     placeholder: "Add people, teams or guest emails",
     level: "Permission when inviting: {{level}}",
     invite: "Invite",
+    levelList: "Permission when inviting",
     unavailable: "Inviting people to a Board has no write behind it yet.",
   },
   levels: {
@@ -144,6 +145,7 @@ export const vi: BoardShareCopy = {
     placeholder: "Thêm người, nhóm, hoặc email khách",
     level: "Quyền khi mời: {{level}}",
     invite: "Mời",
+    levelList: "Quyền khi mời",
     unavailable: "Mời người vào board chưa có thao tác ghi.",
   },
   levels: {

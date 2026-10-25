@@ -100,6 +100,13 @@ function Avatar({
   );
 }
 
+/** A person the Board can be shared with. */
+export interface ShareCandidate {
+  readonly id: string;
+  readonly name: string;
+  readonly person: SharePersonView;
+}
+
 export interface BoardShareDialogSurfaceProps {
   readonly copy: BoardShareCopy;
   readonly open: boolean;
@@ -113,6 +120,13 @@ export interface BoardShareDialogSurfaceProps {
   readonly onChangeGeneral?: (target: "private") => void;
   /** Confirms the switch to Private, adding the chosen people first; absent: inert. */
   readonly onConfirmPrivate?: (addIds: readonly string[]) => void;
+  /** Workspace members the Board is not shared with yet; with `onInvite` the add field is live. */
+  readonly candidates?: readonly ShareCandidate[];
+  /** Gives the person the chosen permission on the Board; absent: the add field is inert. */
+  readonly onInvite?: (
+    userId: string,
+    level: ShareLevel,
+  ) => Promise<void> | void;
   /** The history; absent: its link is inert. */
   readonly log?: readonly ShareLogEntry[] | null;
   /** People the switch to Private would cut off (stories). */
@@ -253,6 +267,8 @@ function ShareBody({
   onChangeLevel,
   onRemove,
   onChangeGeneral,
+  candidates,
+  onInvite,
   log,
   menuFor,
   setMenuFor,
@@ -267,50 +283,54 @@ function ShareBody({
   return (
     <>
       <div data-f="db" className="flex flex-col gap-4 px-5 pt-4 pb-1.5">
-        <div data-f="add" className="flex gap-2">
-          <label
-            data-f="in"
-            title={copy.add.unavailable}
-            className="box-content flex h-[38px] flex-1 items-center gap-2 rounded-[9px] border border-line-strong px-2.5 text-nav leading-[1.45] font-normal text-meta-foreground"
-          >
-            <UserPlus
-              aria-hidden="true"
-              className="size-4 shrink-0"
-              strokeWidth={1.8}
-            />
-            <input
+        {candidates && onInvite ? (
+          <AddPeople copy={copy} candidates={candidates} onInvite={onInvite} />
+        ) : (
+          <div data-f="add" className="flex gap-2">
+            <label
+              data-f="in"
+              title={copy.add.unavailable}
+              className="box-content flex h-[38px] flex-1 items-center gap-2 rounded-[9px] border border-line-strong px-2.5 text-nav leading-[1.45] font-normal text-meta-foreground"
+            >
+              <UserPlus
+                aria-hidden="true"
+                className="size-4 shrink-0"
+                strokeWidth={1.8}
+              />
+              <input
+                aria-disabled="true"
+                readOnly
+                placeholder={copy.add.placeholder}
+                aria-label={copy.add.placeholder}
+                className="h-full min-w-0 flex-1 cursor-default border-0 bg-transparent text-nav text-foreground outline-none placeholder:text-meta-foreground"
+              />
+            </label>
+            <button
+              data-f="lvl"
+              type="button"
               aria-disabled="true"
-              readOnly
-              placeholder={copy.add.placeholder}
-              aria-label={copy.add.placeholder}
-              className="h-full min-w-0 flex-1 cursor-default border-0 bg-transparent text-nav text-foreground outline-none placeholder:text-meta-foreground"
-            />
-          </label>
-          <button
-            data-f="lvl"
-            type="button"
-            aria-disabled="true"
-            title={copy.add.unavailable}
-            aria-label={fill(copy.add.level, { level: copy.levels.edit })}
-            className={LEVEL}
-          >
-            {copy.levels.edit}
-            <ChevronDown
-              aria-hidden="true"
-              className="size-[13px] text-meta-foreground"
-              strokeWidth={1.8}
-            />
-          </button>
-          <button
-            data-f="invite"
-            type="button"
-            aria-disabled="true"
-            title={copy.add.unavailable}
-            className={cn(BTN_PRIMARY, "h-[38px] aria-disabled:opacity-100")}
-          >
-            {copy.add.invite}
-          </button>
-        </div>
+              title={copy.add.unavailable}
+              aria-label={fill(copy.add.level, { level: copy.levels.edit })}
+              className={LEVEL}
+            >
+              {copy.levels.edit}
+              <ChevronDown
+                aria-hidden="true"
+                className="size-[13px] text-meta-foreground"
+                strokeWidth={1.8}
+              />
+            </button>
+            <button
+              data-f="invite"
+              type="button"
+              aria-disabled="true"
+              title={copy.add.unavailable}
+              className={cn(BTN_PRIMARY, "h-[38px] aria-disabled:opacity-100")}
+            >
+              {copy.add.invite}
+            </button>
+          </div>
+        )}
 
         <div>
           <div
@@ -575,6 +595,168 @@ function ShareBody({
         </button>
       </div>
     </>
+  );
+}
+
+/** The add field: pick a workspace member, choose the permission, give it. */
+function AddPeople({
+  copy,
+  candidates,
+  onInvite,
+}: {
+  copy: BoardShareCopy;
+  candidates: readonly ShareCandidate[];
+  onInvite: (userId: string, level: ShareLevel) => Promise<void> | void;
+}) {
+  const [query, setQuery] = useState("");
+  const [picked, setPicked] = useState<ShareCandidate | null>(null);
+  const [level, setLevel] = useState<ShareLevel>("edit");
+  const [listOpen, setListOpen] = useState(false);
+  const [levelOpen, setLevelOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const needle = query.trim().toLowerCase();
+  const matches = candidates
+    .filter((candidate) => candidate.name.toLowerCase().includes(needle))
+    .slice(0, 6);
+  const invite = async () => {
+    if (!picked || busy) return;
+    setBusy(true);
+    try {
+      await onInvite(picked.id, level);
+      setPicked(null);
+      setQuery("");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div data-f="add" className="relative flex gap-2">
+      <label
+        data-f="in"
+        className="box-content flex h-[38px] flex-1 items-center gap-2 rounded-[9px] border border-line-strong px-2.5 text-nav leading-[1.45] font-normal text-meta-foreground focus-within:ring-2 focus-within:ring-focus-ring"
+      >
+        <UserPlus
+          aria-hidden="true"
+          className="size-4 shrink-0"
+          strokeWidth={1.8}
+        />
+        <input
+          role="combobox"
+          aria-expanded={listOpen && matches.length > 0}
+          aria-controls="board-share-candidates"
+          aria-autocomplete="list"
+          value={picked ? picked.name : query}
+          placeholder={copy.add.placeholder}
+          aria-label={copy.add.placeholder}
+          onChange={(event) => {
+            setPicked(null);
+            setQuery(event.target.value);
+            setListOpen(true);
+          }}
+          onFocus={() => setListOpen(true)}
+          onBlur={() => setTimeout(() => setListOpen(false), 120)}
+          onKeyDown={(event: KeyboardEvent<HTMLInputElement>) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              if (picked) void invite();
+              else if (matches[0]) {
+                setPicked(matches[0]);
+                setListOpen(false);
+              }
+            }
+          }}
+          className="h-full min-w-0 flex-1 border-0 bg-transparent text-nav text-foreground outline-none placeholder:text-meta-foreground"
+        />
+      </label>
+      {listOpen && !picked && matches.length > 0 ? (
+        <ul
+          id="board-share-candidates"
+          role="listbox"
+          className="absolute top-[44px] left-0 z-10 m-0 flex max-h-[220px] w-[60%] list-none flex-col overflow-auto rounded-[9px] border border-line-strong bg-popover p-1 shadow-dialog dark:bg-card"
+        >
+          {matches.map((candidate) => (
+            <li key={candidate.id} role="option" aria-selected="false">
+              <button
+                type="button"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => {
+                  setPicked(candidate);
+                  setListOpen(false);
+                }}
+                className={cn(
+                  "flex w-full items-center gap-2 rounded-[7px] border-0 bg-transparent px-2 py-1.5 text-left text-nav text-foreground hover:bg-state-hover-strong",
+                  FOCUS,
+                )}
+              >
+                <Avatar person={candidate.person} className="size-6" />
+                <span className="truncate">{candidate.name}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      <button
+        data-f="lvl"
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={levelOpen}
+        aria-label={fill(copy.add.level, { level: copy.levels[level] })}
+        onClick={() => setLevelOpen((open) => !open)}
+        className={cn(LEVEL, FOCUS)}
+      >
+        {copy.levels[level]}
+        <ChevronDown
+          aria-hidden="true"
+          className="size-[13px] text-meta-foreground"
+          strokeWidth={1.8}
+        />
+      </button>
+      {levelOpen ? (
+        <ul
+          role="listbox"
+          aria-label={copy.add.levelList}
+          className="absolute top-[44px] right-[92px] z-10 m-0 flex w-[180px] list-none flex-col rounded-[9px] border border-line-strong bg-popover p-1 shadow-dialog dark:bg-card"
+        >
+          {LEVELS.map((option) => (
+            <li key={option} role="option" aria-selected={option === level}>
+              <button
+                type="button"
+                onClick={() => {
+                  setLevel(option);
+                  setLevelOpen(false);
+                }}
+                className={cn(
+                  "flex w-full items-center gap-2 rounded-[7px] border-0 bg-transparent px-2 py-1.5 text-left text-nav text-foreground hover:bg-state-hover-strong",
+                  FOCUS,
+                )}
+              >
+                {copy.levels[option]}
+                {option === level ? (
+                  <Check
+                    aria-hidden="true"
+                    className="ml-auto size-3.5"
+                    strokeWidth={1.8}
+                  />
+                ) : null}
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      <button
+        data-f="invite"
+        type="button"
+        disabled={!picked || busy}
+        onClick={() => void invite()}
+        className={cn(
+          BTN_PRIMARY,
+          "h-[38px] disabled:cursor-default disabled:opacity-60",
+          FOCUS,
+        )}
+      >
+        {copy.add.invite}
+      </button>
+    </div>
   );
 }
 

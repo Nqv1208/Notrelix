@@ -7,6 +7,11 @@ export const realUsers = {
     email: process.env.REAL_E2E_ADMIN_EMAIL ?? "admin@notrelix.com",
     password: process.env.REAL_E2E_ADMIN_PASSWORD ?? "Notrelix@123",
   },
+  /** Admin of Workspace 3, so a manager of its boards. */
+  workspaceAdmin: {
+    email: process.env.REAL_E2E_WORKSPACE_ADMIN_EMAIL ?? "user4@notrelix.io",
+    password: process.env.REAL_E2E_WORKSPACE_ADMIN_PASSWORD ?? "Notrelix@123",
+  },
   guest: {
     email: process.env.REAL_E2E_GUEST_EMAIL ?? "user5@notrelix.io",
     password: process.env.REAL_E2E_GUEST_PASSWORD ?? "Notrelix@123",
