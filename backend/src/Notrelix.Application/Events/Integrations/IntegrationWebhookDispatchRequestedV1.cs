@@ -20,7 +20,8 @@ public sealed record IntegrationWebhookDispatchRequestedV1(
     Guid CorrelationId,
     Guid? ActorUserIdValue = null,
     Guid? SourceEventId = null,
-    Guid? CausationId = null)
+    Guid? CausationId = null,
+    string? PayloadJson = null)
     : IntegrationEvent(
         EventId,
         "integrations.webhook-dispatch-requested",
@@ -35,4 +36,16 @@ public sealed record IntegrationWebhookDispatchRequestedV1(
 {
     /// <summary>The delivery a member asked for to check the connection.</summary>
     public const string TestType = "notrelix.test";
+
+    /// <summary>An Item was created on a Board of the Workspace.</summary>
+    public const string ItemCreatedType = "item.created";
+
+    /// <summary>An Item was renamed or one of its field values changed (other than Status).</summary>
+    public const string ItemUpdatedType = "item.updated";
+
+    /// <summary>An Item's Status field changed.</summary>
+    public const string ItemStatusChangedType = "item.status_changed";
+
+    /// <summary>A comment was added to an Item.</summary>
+    public const string CommentAddedType = "comment.added";
 }

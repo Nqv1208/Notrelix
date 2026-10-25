@@ -87,7 +87,7 @@ public sealed class IntegrationWebhookDispatchRequestedConsumer : IConsumer<Inte
             type = message.DeliveryType,
             createdAt = message.OccurredAt,
             workspaceId = message.WorkspaceIdValue,
-            data = new { },
+            data = ParseData(message.PayloadJson),
         });
 
         var result = await _sender.SendAsync(
@@ -108,6 +108,12 @@ public sealed class IntegrationWebhookDispatchRequestedConsumer : IConsumer<Inte
         }
 
         await _db.SaveChangesAsync(ct);
+    }
+
+    private static JsonElement ParseData(string? payloadJson)
+    {
+        using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(payloadJson) ? "{}" : payloadJson);
+        return document.RootElement.Clone();
     }
 }
 

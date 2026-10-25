@@ -636,6 +636,46 @@ public static class ConsumerRegistrySetup
 
             new ConsumerDefinition
             {
+                ConsumerName = "BoardItemCreatedWebhookFanOutConsumer",
+                EventName = "board.item.created",
+                EventVersion = 2,
+                EndpointName = "notrelix-integrations-webhook-fanout-item-created-v1",
+                BoundedContext = "Integrations",
+                Description = "Delivers item.created to the Workspace's active outgoing webhooks",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "BoardItemRenamedWebhookFanOutConsumer",
+                EventName = "board_item.renamed",
+                EventVersion = 1,
+                EndpointName = "notrelix-integrations-webhook-fanout-item-renamed-v1",
+                BoundedContext = "Integrations",
+                Description = "Delivers item.updated to the Workspace's active outgoing webhooks",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "BoardItemFieldChangedWebhookFanOutConsumer",
+                EventName = "board.item.field_value.changed",
+                EventVersion = 1,
+                EndpointName = "notrelix-integrations-webhook-fanout-item-field-v1",
+                BoundedContext = "Integrations",
+                Description = "Delivers item.updated and item.status_changed to the Workspace's active outgoing webhooks",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "CommentCreatedWebhookFanOutConsumer",
+                EventName = "comment.created",
+                EventVersion = 1,
+                EndpointName = "notrelix-integrations-webhook-fanout-comment-v1",
+                BoundedContext = "Integrations",
+                Description = "Delivers comment.added to the Workspace's active outgoing webhooks",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
                 ConsumerName = "IntegrationWebhookDispatchRequestedConsumer",
                 EventName = "integrations.webhook-dispatch-requested",
                 EventVersion = 1,

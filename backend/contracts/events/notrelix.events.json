@@ -628,6 +628,11 @@
           "name": "BoardItemCreatedFollowConsumer",
           "context": "Collaboration",
           "maturity": "Implemented"
+        },
+        {
+          "name": "BoardItemCreatedWebhookFanOutConsumer",
+          "context": "Integrations",
+          "maturity": "Implemented"
         }
       ]
     },
@@ -724,6 +729,11 @@
       "piiFields": [],
       "sensitiveFields": [],
       "consumers": [
+        {
+          "name": "BoardItemFieldChangedWebhookFanOutConsumer",
+          "context": "Integrations",
+          "maturity": "Implemented"
+        },
         {
           "name": "BoardItemFieldValueChangedConsumer",
           "context": "WorkManagement",
@@ -1641,6 +1651,11 @@
           "name": "BoardItemRenamed",
           "context": "WorkManagement",
           "maturity": "Stub"
+        },
+        {
+          "name": "BoardItemRenamedWebhookFanOutConsumer",
+          "context": "Integrations",
+          "maturity": "Implemented"
         }
       ]
     },
@@ -2120,6 +2135,11 @@
         {
           "name": "CommentCreatedFollowConsumer",
           "context": "Collaboration",
+          "maturity": "Implemented"
+        },
+        {
+          "name": "CommentCreatedWebhookFanOutConsumer",
+          "context": "Integrations",
           "maturity": "Implemented"
         }
       ]
@@ -2990,6 +3010,11 @@
         {
           "name": "actorUserIdValue",
           "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "payloadJson",
+          "type": "string",
           "nullable": true
         },
         {

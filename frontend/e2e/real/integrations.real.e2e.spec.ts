@@ -4,6 +4,7 @@ import type { AddressInfo } from "node:net";
 import { expect, test } from "@playwright/test";
 import {
   apiRead,
+  apiWrite,
   findWorkspace,
   realUsers,
   signIn,
@@ -143,6 +144,47 @@ test("an admin connects an outgoing webhook, sends a test that arrives signed, p
         { timeout: 30_000 },
       )
       .not.toBeNull();
+
+    // A product event reaches the connection: a created item arrives as a signed item.created delivery.
+    const boards = await apiRead<{ id: string; title: string }[]>(
+      page,
+      `/workspaces/${workspace.id}/boards`,
+    );
+    const board = boards.find((candidate) =>
+      candidate.title.startsWith("Engineering Tasks"),
+    )!;
+    const groupId = (
+      await apiRead<{ lists: { id: string }[] }>(
+        page,
+        `/boards/${board.id}/full`,
+      )
+    ).lists[0]!.id;
+    const itemTitle = `Hooked ${Date.now()}`;
+    const created = await apiWrite<{ id: string }>(
+      page,
+      "POST",
+      `/boards/${board.id}/items`,
+      { groupId, title: itemTitle },
+    );
+    expect(created.status).toBeLessThan(300);
+    const isItemCreated = (r: Received) =>
+      (JSON.parse(r.body) as { type: string }).type === "item.created";
+    await expect
+      .poll(() => receiver.received.filter(isItemCreated).length, {
+        timeout: 30_000,
+      })
+      .toBe(1);
+    const itemHit = receiver.received.find(isItemCreated)!;
+    const itemTimestamp = String(itemHit.headers["x-notrelix-timestamp"]);
+    expect(itemHit.headers["x-notrelix-signature"]).toBe(
+      `sha256=${createHmac("sha256", secret)
+        .update(`${itemTimestamp}.${itemHit.body}`)
+        .digest("hex")}`,
+    );
+    expect(JSON.parse(itemHit.body)).toMatchObject({
+      type: "item.created",
+      data: { itemId: created.data!.id, boardId: board.id, title: itemTitle },
+    });
 
     // Pause and resume.
     await page.getByRole("button", { name: "Pause", exact: true }).click();
