@@ -43,14 +43,16 @@ public class GetBootstrapQueryHandler : IRequestHandler<GetBootstrapQuery, Resul
                     Id = workspace.Id,
                     Name = workspace.Name,
                     Slug = workspace.Slug,
-                    Role = workspace.Role
+                    Role = workspace.Role,
+                    AccountId = workspace.AccountId
                 })
                 .ToList(),
             PersonalWorkspace = new PersonalWorkspaceStatus
             {
                 Status = projection.PersonalWorkspaceId is not null ? "ready" : "pending",
                 WorkspaceId = projection.PersonalWorkspaceId
-            }
+            },
+            AccountId = projection.AccountId
         });
     }
 }

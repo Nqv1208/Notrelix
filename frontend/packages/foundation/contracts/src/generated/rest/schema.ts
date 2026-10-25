@@ -5336,6 +5336,8 @@ export interface components {
             user: components["schemas"]["Notrelix.Application.Common.Security.Auth.UserDto"];
             workspaces: components["schemas"]["Notrelix.Application.Features.Identity.Auth.GetBootstrap.WorkspaceInfo"][] | null;
             personalWorkspace: components["schemas"]["Notrelix.Application.Features.Identity.Auth.GetBootstrap.PersonalWorkspaceStatus"];
+            /** Format: uuid */
+            accountId?: string | null;
         };
         "Notrelix.Application.Features.Identity.Auth.GetBootstrap.PersonalWorkspaceStatus": {
             status: string | null;
@@ -5348,6 +5350,8 @@ export interface components {
             name: string | null;
             slug: string | null;
             role: string | null;
+            /** Format: uuid */
+            accountId: string;
         };
         "Notrelix.Application.Features.Identity.Auth.Queries.IdentifySignIn.SignInMethodDto": {
             method?: string | null;

@@ -20880,6 +20880,11 @@
           },
           "personalWorkspace": {
             "$ref": "#/components/schemas/Notrelix.Application.Features.Identity.Auth.GetBootstrap.PersonalWorkspaceStatus"
+          },
+          "accountId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -20904,6 +20909,7 @@
       },
       "Notrelix.Application.Features.Identity.Auth.GetBootstrap.WorkspaceInfo": {
         "required": [
+          "accountId",
           "id",
           "name",
           "role",
@@ -20926,6 +20932,10 @@
           "role": {
             "type": "string",
             "nullable": true
+          },
+          "accountId": {
+            "type": "string",
+            "format": "uuid"
           }
         },
         "additionalProperties": false

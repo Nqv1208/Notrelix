@@ -2,6 +2,7 @@ using Notrelix.Application.Features.Accounts.Abstractions;
 using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.Identity.Ports.Bootstrap;
 using Notrelix.Application.Features.Workspaces.Abstractions;
+using Notrelix.Domain.Accounts.Members;
 using Notrelix.Domain.Workspaces.Members;
 
 namespace Notrelix.Infrastructure.CrossContext.Identity.Bootstrap;
@@ -54,20 +55,39 @@ public sealed class IdentityBootstrapReadAdapter : IIdentityBootstrapReadPort
                     workspace.Id,
                     workspace.Name,
                     workspace.Slug,
-                    member.Role.ToString()))
+                    member.Role.ToString(),
+                    workspace.AccountId))
             .ToListAsync(cancellationToken);
 
-        var accountMember = await _accountContext.AccountMembers
+        var accountMembers = await _accountContext.AccountMembers
             .AsNoTracking()
-            .FirstOrDefaultAsync(m => m.UserId == authenticatedUserId, cancellationToken);
+            .Where(m => m.UserId == authenticatedUserId && m.Status == AccountMemberStatus.Active)
+            .Select(m => new { m.AccountId, m.Role })
+            .ToListAsync(cancellationToken);
 
+        var defaultWorkspaceId = await _identityContext.UserProfiles
+            .AsNoTracking()
+            .Where(p => p.UserId == authenticatedUserId)
+            .Select(p => p.DefaultWorkspaceId)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        // The Account the member acts in: that of the default Workspace, else the one the member
+        // owns, else any Account membership, else the Account of a Workspace the member was invited to.
+        Guid? accountId =
+            workspaces.FirstOrDefault(w => w.Id == defaultWorkspaceId)?.AccountId
+            ?? accountMembers.FirstOrDefault(m => m.Role == AccountRole.Owner)?.AccountId
+            ?? accountMembers.FirstOrDefault()?.AccountId
+            ?? workspaces.FirstOrDefault()?.AccountId;
+
+        var ownAccountId = accountMembers.FirstOrDefault(m => m.Role == AccountRole.Owner)?.AccountId
+            ?? accountMembers.FirstOrDefault()?.AccountId;
         Guid? personalWorkspaceId = null;
-        if (accountMember is not null)
+        if (ownAccountId is not null)
         {
             personalWorkspaceId = (await _workspaceContext.Workspaces
                 .AsNoTracking()
                 .FirstOrDefaultAsync(
-                    w => w.AccountId == accountMember.AccountId && w.IsPersonal,
+                    w => w.AccountId == ownAccountId && w.IsPersonal,
                     cancellationToken))?.Id;
         }
 
@@ -79,6 +99,7 @@ public sealed class IdentityBootstrapReadAdapter : IIdentityBootstrapReadPort
                 user.AvatarUrl,
                 user.EmailConfirmed),
             workspaces,
-            personalWorkspaceId);
+            personalWorkspaceId,
+            accountId);
     }
 }
