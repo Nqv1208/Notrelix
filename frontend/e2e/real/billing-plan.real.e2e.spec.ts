@@ -1,17 +1,19 @@
 import { expect, test } from "@playwright/test";
-import { openBoard, realUsers, signIn } from "./support/real-session";
+import {
+  findWorkspace,
+  openBoard,
+  realUsers,
+  signIn,
+} from "./support/real-session";
 
 test.use({ viewport: { width: 1440, height: 900 } });
 
 test("the account owner switches the plan and the limits follow, then returns to Pro", async ({
   page,
 }) => {
+  // The account owner owns Workspace 1, so they may also view its billing.
   await signIn(page, realUsers.admin);
-  const { workspace } = await openBoard(
-    page,
-    "Workspace 3",
-    "Engineering Tasks",
-  );
+  const workspace = await findWorkspace(page, "Workspace 1");
   await page.goto(`/workspaces/${workspace.id}/billing`);
 
   const limits = page.getByRole("list", {
