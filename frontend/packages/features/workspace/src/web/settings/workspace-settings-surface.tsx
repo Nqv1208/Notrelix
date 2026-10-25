@@ -26,6 +26,8 @@ import {
 } from "@notrelix/ui-web";
 import { ASSIGNABLE_ROLES } from "../../core/model/members";
 import {
+  allTimeZones,
+  resolveTimeZone,
   WORKSPACE_TIME_ZONES,
   type WorkspaceSettings,
 } from "../../core/types/workspace";
@@ -385,6 +387,7 @@ function DefaultsForm({
   const expiryErrorId = React.useId();
   const zoneId = React.useId();
   const zoneHelpId = React.useId();
+  const zoneListId = React.useId();
   const weekId = React.useId();
 
   React.useEffect(() => {
@@ -395,8 +398,11 @@ function DefaultsForm({
   const expiry = Number(expiryText);
   const expiryValid =
     /^\d+$/.test(expiryText.trim()) && expiry >= 1 && expiry <= 30;
+  const resolvedZone = resolveTimeZone(draft.timeZone);
+  const zoneValid = resolvedZone !== null;
   const next: WorkspaceSettings = {
     ...draft,
+    timeZone: resolvedZone ?? draft.timeZone,
     invitationExpiryDays: expiryValid ? expiry : draft.invitationExpiryDays,
   };
   const dirty =
@@ -417,7 +423,7 @@ function DefaultsForm({
       aria-label={copy.defaults.title}
       onSubmit={(event) => {
         event.preventDefault();
-        if (locked || !expiryValid || !dirty || saving) return;
+        if (locked || !expiryValid || !zoneValid || !dirty || saving) return;
         onSave(next);
       }}
       className="flex flex-col gap-5"
@@ -477,31 +483,39 @@ function DefaultsForm({
       </Field>
       <Field className="gap-2">
         <FieldLabel htmlFor={zoneId}>{copy.defaults.timeZoneLabel}</FieldLabel>
-        <Select
+        <Input
+          id={zoneId}
+          list={zoneListId}
           value={draft.timeZone}
           disabled={disabled}
-          onValueChange={(value) =>
+          autoComplete="off"
+          placeholder={copy.defaults.timeZonePlaceholder}
+          aria-describedby={zoneHelpId}
+          aria-invalid={!zoneValid ? true : undefined}
+          className="max-w-64"
+          onChange={(event) =>
             setDraft((current) => ({
               ...current,
-              timeZone: value as WorkspaceSettings["timeZone"],
+              timeZone: event.target.value,
             }))
           }
-        >
-          <SelectTrigger
-            id={zoneId}
-            aria-describedby={zoneHelpId}
-            className="max-w-64"
-          >
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {WORKSPACE_TIME_ZONES.map((zone) => (
-              <SelectItem key={zone} value={zone}>
-                {copy.timeZones[zone]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        />
+        <datalist id={zoneListId}>
+          {allTimeZones().map((zone) => (
+            <option
+              key={zone}
+              value={zone}
+              label={
+                (WORKSPACE_TIME_ZONES as readonly string[]).includes(zone)
+                  ? copy.timeZones[zone as keyof typeof copy.timeZones]
+                  : undefined
+              }
+            />
+          ))}
+        </datalist>
+        {!zoneValid ? (
+          <FieldError>{copy.defaults.timeZoneInvalid}</FieldError>
+        ) : null}
         <FieldDescription id={zoneHelpId}>
           {copy.defaults.timeZoneHelp}
         </FieldDescription>
@@ -561,7 +575,7 @@ function DefaultsForm({
           copy={copy}
           status={status}
           dirty={dirty}
-          invalid={!expiryValid}
+          invalid={!expiryValid || !zoneValid}
           disabled={locked}
           onDiscard={() => {
             setDraft(values);

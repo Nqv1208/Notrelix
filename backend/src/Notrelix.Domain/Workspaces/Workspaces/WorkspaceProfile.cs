@@ -13,7 +13,7 @@ public static class WorkspaceProfile
     /// <summary>The workspace languages.</summary>
     public static readonly IReadOnlyList<string> Languages = ["vi", "en"];
 
-    /// <summary>The time zones a workspace may use, as IANA ids; a board inherits the workspace's.</summary>
+    /// <summary>The time zones the settings page offers first, as IANA ids; any IANA id is accepted and a board inherits the workspace's.</summary>
     public static readonly IReadOnlyList<string> TimeZones = ["Asia/Ho_Chi_Minh", "Asia/Singapore", "Asia/Tokyo"];
 
     /// <summary>The time zone a workspace has until one is chosen.</summary>
@@ -25,16 +25,28 @@ public static class WorkspaceProfile
     /// <summary>The first day of the week a workspace has until one is chosen.</summary>
     public const string DefaultWeekStart = "monday";
 
+    /// <summary>
+    /// A workspace time zone is any IANA id the runtime knows. The id is stored as the runtime names it, so
+    /// a different casing of a known id is accepted and kept in its canonical spelling.
+    /// </summary>
     public static string? NormalizeTimeZone(string? timeZone)
     {
         if (string.IsNullOrWhiteSpace(timeZone)) return null;
         var value = timeZone.Trim();
-        var known = TimeZones.FirstOrDefault(zone => string.Equals(zone, value, StringComparison.OrdinalIgnoreCase));
-        if (known is null)
-            throw new BusinessRuleException(
-                WorkspaceRuleCodes.Workspaces_Settings_TimeZoneInvalid,
-                "Workspace time zone must be one of Asia/Ho_Chi_Minh, Asia/Singapore or Asia/Tokyo.");
-        return known;
+        if (value.Length <= 64 && (value.Contains('/') || string.Equals(value, "UTC", StringComparison.OrdinalIgnoreCase)))
+        {
+            // The runtime's own spelling of the id, whatever casing the caller used.
+            var listed = TimeZoneInfo.GetSystemTimeZones()
+                .FirstOrDefault(candidate => string.Equals(candidate.Id, value, StringComparison.OrdinalIgnoreCase));
+            if (listed is not null) return listed.Id;
+
+            // An alias the runtime resolves but does not list.
+            if (TimeZoneInfo.TryFindSystemTimeZoneById(value, out var zone)) return zone.Id;
+        }
+
+        throw new BusinessRuleException(
+            WorkspaceRuleCodes.Workspaces_Settings_TimeZoneInvalid,
+            "Workspace time zone must be an IANA time zone id such as Asia/Ho_Chi_Minh.");
     }
 
     public static string? NormalizeWeekStart(string? weekStart)

@@ -52,6 +52,8 @@ export const en = {
       "Members must turn on two-step verification to open this workspace.",
     timeZoneLabel: "Time zone",
     timeZoneHelp: "Every board of the workspace uses it for dates and times.",
+    timeZonePlaceholder: "Search a time zone, such as Europe/Paris",
+    timeZoneInvalid: "Choose a time zone from the list.",
     weekStartLabel: "First day of the week",
   },
   timeZones: {
@@ -150,6 +152,8 @@ export const vi: WorkspaceSettingsCopy = {
     timeZoneLabel: "Múi giờ",
     timeZoneHelp:
       "Mọi bảng của không gian làm việc dùng múi giờ này cho ngày và giờ.",
+    timeZonePlaceholder: "Tìm múi giờ, ví dụ Europe/Paris",
+    timeZoneInvalid: "Hãy chọn một múi giờ trong danh sách.",
     weekStartLabel: "Ngày bắt đầu tuần",
   },
   timeZones: {

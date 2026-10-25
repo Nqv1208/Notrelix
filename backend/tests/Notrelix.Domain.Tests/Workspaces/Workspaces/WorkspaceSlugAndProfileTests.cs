@@ -169,6 +169,8 @@ public class WorkspaceSlugAndProfileTests
     [Theory]
     [InlineData("Asia/Singapore", "Asia/Singapore")]
     [InlineData("asia/tokyo", "Asia/Tokyo")]
+    [InlineData("America/New_York", "America/New_York")]
+    [InlineData("Europe/Paris", "Europe/Paris")]
     [InlineData(null, null)]
     [InlineData("  ", null)]
     public void TimeZone_AcceptedOrUnset_IsNormalised(string? timeZone, string? expected) =>
@@ -177,7 +179,8 @@ public class WorkspaceSlugAndProfileTests
     [Theory]
     [InlineData("Mars/Olympus")]
     [InlineData("GMT+7")]
-    public void TimeZone_OutsideTheList_IsRejected(string timeZone)
+    [InlineData("Pacific Standard Time")]
+    public void TimeZone_NotAnIanaId_IsRejected(string timeZone)
     {
         var act = () => WorkspaceSettings.Create(timeZone: timeZone);
 
