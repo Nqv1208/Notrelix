@@ -186,6 +186,10 @@ internal static class InitDb
                 isPersonal: i == 0);
             workspaces.Add(ws);
 
+            // The creator of a workspace is its Owner member, as when a member creates one in the app.
+            context.WorkspaceMembers.Add(WorkspaceMember.Create(
+                account.Id, ws.Id, owner.Id, WorkspaceRole.Owner, owner.Id, Epoch.AddDays(i)));
+
             var addedUserIds = new HashSet<Guid> { owner.Id };
 
             foreach (var uid in defaultUserIds)
@@ -289,6 +293,13 @@ internal static class InitDb
             "Feature Requests"
         };
 
+        // The people a board is shared with: the workspace Owner and Admin manage it and the other
+        // members of the workspace work in it. Guests are on a board only when it is shared with them.
+        var workspaceMembers = (await context.WorkspaceMembers
+                .Where(m => m.Status == WorkspaceMemberStatus.Active && m.Role != WorkspaceRole.Guest)
+                .ToListAsync(ct))
+            .ToLookup(m => m.WorkspaceId);
+
         int boardIndex = 0;
         foreach (var ws in workspaces)
         {
@@ -306,6 +317,18 @@ internal static class InitDb
                     account.Id, ws.Id, creator.Id, $"{boardName} ({wsSuffix})", null,
                     Epoch.AddDays(boardIndex), BoardVisibility.Workspace);
                 context.Boards.Add(board);
+
+                foreach (var member in workspaceMembers[ws.Id])
+                {
+                    var boardRole = member.Role switch
+                    {
+                        WorkspaceRole.Owner => BoardRole.Owner,
+                        WorkspaceRole.Admin => BoardRole.Admin,
+                        _ => BoardRole.Member,
+                    };
+                    context.BoardMembers.Add(BoardMember.Create(
+                        board.Id, member.UserId, boardRole, Epoch.AddDays(boardIndex)));
+                }
 
                 var fields = new List<BoardField>();
 
