@@ -131,6 +131,23 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
             "a workspace member without explicit resource-level authority cannot grant permissions");
     }
 
+    [Fact]
+    public async Task Grant_OnBoard_ToUserOutsideTheWorkspace_IsRejected_AndWritesNothing()
+    {
+        var (accountId, ownerId, workspaceId, boardId, _) = await SeedBoardStackAsync();
+        var outsiderId = Guid.CreateVersion7();
+
+        using var provider = CreateProvider(accountId, ownerId);
+        var act = () => SendAsync<Result<ResourcePermissionDto>>(provider,
+            new GrantResourcePermissionCommand("work-management.board", boardId, "User", outsiderId, "Viewer"));
+
+        await act.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>(
+            "a permission cannot be granted to a user who does not belong to the workspace");
+
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
+        (await verify.ResourcePermissions.AnyAsync(p => p.SubjectId == outsiderId)).Should().BeFalse();
+    }
+
     // WG-DEBT-CERT-006: board-specific cross-account gate. A workspace owner of
     // account A addressing a board that belongs to account B is told it does not
     // exist and nothing is written to account B.
@@ -1336,6 +1353,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         services.AddScoped<ApplicationDbContext>(sp =>
             _db.CreateOwnerContext(sp.GetRequiredService<ICurrentTenantContext>()));
         services.AddScoped<IWorkspaceDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
+        services.AddScoped<Notrelix.Application.Common.Tenancy.IWorkspaceAccessResolver, WorkspaceAccessResolver>();
         services.AddScoped<IAccountDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IGovernanceDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IWorkManagementDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
