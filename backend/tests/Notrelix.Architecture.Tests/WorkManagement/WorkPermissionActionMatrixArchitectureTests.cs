@@ -56,6 +56,8 @@ public sealed class WorkPermissionActionMatrixArchitectureTests
         ["BoardItems.GetBoardItemQuery"] = PermissionAction.ViewBoard,
         ["BoardItems.GetBoardItemsQuery"] = PermissionAction.ViewBoard,
         ["BoardItems.GetMyBoardItemsQuery"] = PermissionAction.ViewWorkspace,
+        ["BoardItems.GetMyWorkExtendedQuery"] = PermissionAction.ViewWorkspace,
+        ["BoardItems.GetHomeFeedQuery"] = PermissionAction.ViewWorkspace,
         ["BoardItems.CreateBoardItemCommand"] = PermissionAction.CreateItem,
         ["BoardItems.DuplicateBoardItemCommand"] = PermissionAction.CreateItem,
         ["BoardItems.MoveBoardItemCommand"] = PermissionAction.MoveItem,

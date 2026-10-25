@@ -48,6 +48,35 @@ const HOME_FEED = "CTR-GAP-WS-HOME-FEED" as const;
 const INBOX = "CTR-GAP-WS-INBOX" as const;
 const ITEM_SHEET = "CTR-GAP-WS-ITEM-SHEET" as const;
 
+const PRIORITY_LABELS = {
+  urgent: "Urgent",
+  high: "High",
+  medium: "Medium",
+  low: "Low",
+} as const;
+
+/**
+ * The producer states a Priority as the option the Item holds (id and label);
+ * the page maps the label. The mock keeps its own priority keys, so each one
+ * is stated here as a stable option.
+ */
+function withPriorityOption(dto: ReturnType<typeof buildMyWorkExtended>) {
+  const convert = (item: (typeof dto.items)[number]) => ({
+    ...item,
+    priority: item.priority
+      ? {
+          optionId: `00000000-0000-4000-8000-00000000000${Object.keys(PRIORITY_LABELS).indexOf(item.priority) + 1}`,
+          label: PRIORITY_LABELS[item.priority],
+        }
+      : null,
+  });
+  return {
+    ...dto,
+    items: dto.items.map(convert),
+    done: dto.done.map(convert),
+  };
+}
+
 const BUCKETS: readonly WorkBucket[] = ["todo", "doing", "review", "done"];
 
 function outcome(result: FeedWriteResult) {
@@ -167,12 +196,17 @@ export const workFeedOperations = [
   // ── My work: extended read ───────────────────────────────────────────────
   defineMockOperation<{ workspaceId: string }>({
     id: "wsFeed.myWork.extended",
-    contract: { kind: "gap", gapId: MY_WORK_EXT },
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardItems.GetMyWorkExtended",
+    },
     method: "GET",
     route: "/workspaces/:workspaceId/my-work/extended",
     async handle({ params, store }) {
       if (!store.isCurrentMemberOf(params.workspaceId)) return notFound();
-      return ok(buildMyWorkExtended(store, params.workspaceId));
+      return ok(
+        withPriorityOption(buildMyWorkExtended(store, params.workspaceId)),
+      );
     },
   }),
 
@@ -339,7 +373,10 @@ export const workFeedOperations = [
   // ── Home feed ────────────────────────────────────────────────────────────
   defineMockOperation<{ workspaceId: string }>({
     id: "wsFeed.home.feed",
-    contract: { kind: "gap", gapId: HOME_FEED },
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardItems.GetHomeFeed",
+    },
     method: "GET",
     route: "/workspaces/:workspaceId/home/feed",
     async handle({ params, store }) {
@@ -364,7 +401,10 @@ export const workFeedOperations = [
   // ── Inbox ────────────────────────────────────────────────────────────────
   defineMockOperation({
     id: "wsFeed.inbox.summary",
-    contract: { kind: "gap", gapId: INBOX },
+    contract: {
+      kind: "openapi",
+      operationId: "Collaboration.Notifications.GetInboxSummary",
+    },
     method: "GET",
     route: "/inbox/summary",
     async handle({ store }) {

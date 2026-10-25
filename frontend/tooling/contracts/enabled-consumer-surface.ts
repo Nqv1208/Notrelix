@@ -717,14 +717,11 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
   },
   {
     context: "Workspace",
-    classification: "COMPATIBILITY_GAP_MOCKED",
+    classification: "CANONICAL_MOCKED",
     consumerSymbol: "useMyWorkExtended",
     consumerFile: "frontend/apps/web/src/shell/workspace/work-feed-bridge.ts",
-    capability:
-      "My work read with key, Status, Priority, relationship, person in charge, approval, done items and who the member waits on",
-    gapId: "CTR-GAP-WS-MYWORK-EXT",
-    method: "GET",
-    pathTemplate: "/workspaces/{workspaceId}/my-work/extended",
+    capability: "WorkManagement.BoardItems.GetMyWorkExtended",
+    operationId: "WorkManagement.BoardItems.GetMyWorkExtended",
     mutation: false,
   },
   {
@@ -817,13 +814,11 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
   },
   {
     context: "Workspace",
-    classification: "COMPATIBILITY_GAP_MOCKED",
+    classification: "CANONICAL_MOCKED",
     consumerSymbol: "useHomeFeed",
     consumerFile: "frontend/apps/web/src/shell/workspace/work-feed-bridge.ts",
-    capability: "Replies waiting for the member and today's schedule",
-    gapId: "CTR-GAP-WS-HOME-FEED",
-    method: "GET",
-    pathTemplate: "/workspaces/{workspaceId}/home/feed",
+    capability: "WorkManagement.BoardItems.GetHomeFeed",
+    operationId: "WorkManagement.BoardItems.GetHomeFeed",
     mutation: false,
   },
   {
@@ -1020,13 +1015,11 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
   },
   {
     context: "Workspace",
-    classification: "COMPATIBILITY_GAP_MOCKED",
+    classification: "CANONICAL_MOCKED",
     consumerSymbol: "useInboxSummary",
     consumerFile: "frontend/apps/web/src/shell/workspace/work-feed-bridge.ts",
-    capability: "Unread inbox entries per workspace and in total",
-    gapId: "CTR-GAP-WS-INBOX",
-    method: "GET",
-    pathTemplate: "/inbox/summary",
+    capability: "Collaboration.Notifications.GetInboxSummary",
+    operationId: "Collaboration.Notifications.GetInboxSummary",
     mutation: false,
   },
   {

@@ -298,6 +298,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/inbox/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the caller's unread notification counts per workspace
+         * @description Unread notifications the caller holds in each workspace they are an active member of, and their total; workspaces with none are omitted. Only the caller's own notifications are counted.
+         */
+        get: operations["Collaboration.Notifications.GetInboxSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/notification-preferences": {
         parameters: {
             query?: never;
@@ -2147,6 +2167,46 @@ export interface paths {
          * @description Cursor-paginated (default 50, max 100). Ordered by due date, earliest first and undated last, so the client can group items into due windows. Pass nextCursor back as cursor for the next page.
          */
         get: operations["WorkManagement.BoardItems.ListMyWork"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/my-work/extended": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the current user's My work in a workspace
+         * @description Open Items assigned to the caller (soonest due first, at most 200) and the 50 most recently completed, each with key, Status (label and category), Priority option and person in charge. Approvals, followed Items, waiting-on and departments are empty: no source exists yet.
+         */
+        get: operations["WorkManagement.BoardItems.GetMyWorkExtended"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/home/feed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get what waits for the current user on Home
+         * @description Unread mentions of Items the caller can still read (replies, newest first, at most 20) with the counts of the Home header. Approval replies, events and the pending-approval count are empty: no source exists yet.
+         */
+        get: operations["WorkManagement.BoardItems.GetHomeFeed"];
         put?: never;
         post?: never;
         delete?: never;
@@ -5257,6 +5317,17 @@ export interface components {
             createdAt?: string;
             kind?: string | null;
         };
+        "Notrelix.Application.Features.Collaboration.Notifications.DTOs.InboxSummaryDto": {
+            perWorkspace?: components["schemas"]["Notrelix.Application.Features.Collaboration.Notifications.DTOs.InboxWorkspaceUnreadDto"][] | null;
+            /** Format: int32 */
+            total?: number;
+        };
+        "Notrelix.Application.Features.Collaboration.Notifications.DTOs.InboxWorkspaceUnreadDto": {
+            /** Format: uuid */
+            workspaceId?: string;
+            /** Format: int32 */
+            unread?: number;
+        };
         "Notrelix.Application.Features.Collaboration.Preferences.DTOs.NotificationPreferenceRowDto": {
             type?: string | null;
             inApp?: boolean;
@@ -5460,6 +5531,53 @@ export interface components {
             emailConfirmed?: boolean;
             sessionRefreshRequired?: boolean;
         };
+        "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetHomeFeed.HomeCalendarEventDto": {
+            /** Format: uuid */
+            id?: string;
+            title?: string | null;
+            /** Format: date-time */
+            startsAt?: string;
+            /** Format: date-time */
+            endsAt?: string;
+            place?: string | null;
+            /** Format: int32 */
+            attendeeCount?: number | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetHomeFeed.HomeFeedDto": {
+            replies?: components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetHomeFeed.HomeReplyDto"][] | null;
+            events?: components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetHomeFeed.HomeCalendarEventDto"][] | null;
+            summary?: components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetHomeFeed.HomeFeedSummaryDto"];
+        };
+        "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetHomeFeed.HomeFeedPersonDto": {
+            /** Format: uuid */
+            id?: string;
+            name?: string | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetHomeFeed.HomeFeedSummaryDto": {
+            /** Format: int32 */
+            approvalsPending?: number;
+            /** Format: int32 */
+            mentionsUnread?: number;
+        };
+        "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetHomeFeed.HomeReplyDto": {
+            /** Format: uuid */
+            id?: string;
+            kind?: string | null;
+            actor?: components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetHomeFeed.HomeFeedPersonDto"];
+            /** Format: date-time */
+            createdAt?: string;
+            text?: string | null;
+            target?: components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetHomeFeed.HomeReplyTargetDto"];
+        };
+        "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetHomeFeed.HomeReplyTargetDto": {
+            kind?: string | null;
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            boardId?: string | null;
+            key?: string | null;
+            title?: string | null;
+        };
         "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetMyBoardItems.MyWorkItemDto": {
             /** Format: uuid */
             id?: string;
@@ -5476,6 +5594,74 @@ export interface components {
             updatedAt?: string | null;
             /** Format: int64 */
             version?: number;
+        };
+        "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetMyWorkExtended.MyWorkApprovalDto": {
+            requestedBy?: components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetMyWorkExtended.MyWorkPersonDto"];
+            /** Format: date-time */
+            requestedAt?: string;
+        };
+        "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetMyWorkExtended.MyWorkExtendedDto": {
+            items?: components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetMyWorkExtended.MyWorkItemExtDto"][] | null;
+            done?: components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetMyWorkExtended.MyWorkItemExtDto"][] | null;
+            waiting?: components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetMyWorkExtended.MyWorkWaitingDto"][] | null;
+            departments?: {
+                [key: string]: string | null;
+            } | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetMyWorkExtended.MyWorkItemExtDto": {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            boardId?: string;
+            /** Format: uuid */
+            groupId?: string;
+            key?: string | null;
+            name?: string | null;
+            /** Format: date-time */
+            dueAt?: string | null;
+            /** Format: date-time */
+            startedAt?: string | null;
+            /** Format: date-time */
+            updatedAt?: string | null;
+            /** Format: int64 */
+            version?: number;
+            status?: components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetMyWorkExtended.MyWorkStatusDto"];
+            priority?: components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetMyWorkExtended.MyWorkPriorityDto"];
+            relations?: string[] | null;
+            assignee?: components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetMyWorkExtended.MyWorkPersonDto"];
+            approval?: components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetMyWorkExtended.MyWorkApprovalDto"];
+            /** Format: date-time */
+            completedAt?: string | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetMyWorkExtended.MyWorkPersonDto": {
+            /** Format: uuid */
+            id?: string;
+            name?: string | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetMyWorkExtended.MyWorkPriorityDto": {
+            /** Format: uuid */
+            optionId?: string;
+            label?: string | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetMyWorkExtended.MyWorkStatusDto": {
+            /** Format: uuid */
+            optionId?: string;
+            label?: string | null;
+            bucket?: string | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetMyWorkExtended.MyWorkWaitingDto": {
+            /** Format: uuid */
+            itemId?: string;
+            /** Format: uuid */
+            boardId?: string;
+            key?: string | null;
+            title?: string | null;
+            owner?: components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetMyWorkExtended.MyWorkPersonDto"];
+            /** Format: date-time */
+            dueAt?: string | null;
+            note?: string | null;
+            /** Format: date-time */
+            lastRemindedAt?: string | null;
         };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardAccessDto": {
             /** Format: uuid */
@@ -6935,6 +7121,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Collaboration.Notifications.GetInboxSummary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Collaboration.Notifications.DTOs.InboxSummaryDto"];
                 };
             };
         };
@@ -11647,6 +11853,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Notrelix.Application.Common.Models.CursorPageOfMyWorkItemDto"];
+                };
+            };
+        };
+    };
+    "WorkManagement.BoardItems.GetMyWorkExtended": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetMyWorkExtended.MyWorkExtendedDto"];
+                };
+            };
+        };
+    };
+    "WorkManagement.BoardItems.GetHomeFeed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetHomeFeed.HomeFeedDto"];
                 };
             };
         };

@@ -86,6 +86,8 @@ public sealed class WorkP3ManifestArchitectureTests
         ["BoardItems.GetBoardItemQuery"] = new(Disposition.Harden, "CONC-002"),
         ["BoardItems.GetBoardItemsQuery"] = new(Disposition.Harden, "CONC-002, QUAL-002"),
         ["BoardItems.GetMyBoardItemsQuery"] = new(Disposition.Keep, "-"),
+        ["BoardItems.GetMyWorkExtendedQuery"] = new(Disposition.Keep, "-"),
+        ["BoardItems.GetHomeFeedQuery"] = new(Disposition.Keep, "-"),
         ["BoardItems.CreateBoardItemCommand"] = new(Disposition.Harden, "APP-ITEM-001"),
         ["BoardItems.MoveBoardItemCommand"] = new(Disposition.Harden, "APP-ITEM-001, CONC-001", VersionedTarget: true),
         ["BoardItems.DuplicateBoardItemCommand"] = new(Disposition.Harden, "APP-ITEM-002"),

@@ -1,14 +1,15 @@
 /**
- * The member's work feed beyond the generated contract (Home, My work, Inbox).
+ * The member's work feed (Home, My work, Inbox).
  *
- * Every read and write here is a registered gap (`CTR-GAP-WS-MYWORK-EXT`,
+ * The My work read (`WorkManagement.BoardItems.GetMyWorkExtended`), the Home
+ * feed (`WorkManagement.BoardItems.GetHomeFeed`) and the inbox summary
+ * (`Collaboration.Notifications.GetInboxSummary`) are bound to the generated
+ * contract and mapped below into the DTO types the pages draw. Every other
+ * read and write here is still a registered gap (`CTR-GAP-WS-MYWORK-EXT`,
  * `CTR-GAP-WS-HOME-FEED`, `CTR-GAP-WS-INBOX` in
- * `tooling/contracts/enabled-consumer-surface.ts`): the shape the pages need,
- * served by the mock backend until the producer builds it from the
- * requirement in `docs/superpowers/be-blockers-2026-10.md` ("BE requirement
- * from FE"). The DTO types below are the frontend's own and the single place
- * the shapes live; nothing under `packages/foundation/contracts/src/generated`
- * is touched.
+ * `tooling/contracts/enabled-consumer-surface.ts`) served by the mock backend.
+ * The DTO types below are the frontend's own and the single place the shapes
+ * live.
  *
  * TRANSITION: like `work-management-bridge.ts`, these adapters stay thin
  * (producer calls and cache effects, no business rules) and move to the owning
@@ -26,7 +27,9 @@ import {
   useAccountId,
   workspaceQueryKey,
 } from "@notrelix/query";
+import type { OperationResponse } from "@notrelix/contracts";
 import { useAppRuntime } from "@notrelix/runtime-web";
+import { priorityFromOptionName } from "@notrelix/work-management-core";
 import { wmQueryKeys } from "@notrelix/work-management-state";
 import { myWorkQueryKey } from "./work-management-bridge";
 
@@ -98,6 +101,7 @@ export interface HomeReplyDto {
     readonly id: string;
     readonly boardId: string | null;
     readonly key: string | null;
+    readonly title: string | null;
   };
 }
 
@@ -228,6 +232,166 @@ export interface BulkResultDto {
   }[];
 }
 
+// ─── Generated contract → page DTOs ─────────────────────────────────────────
+
+type MyWorkExtendedResponse = OperationResponse<
+  "WorkManagement.BoardItems.GetMyWorkExtended",
+  200
+>;
+type HomeFeedResponse = OperationResponse<
+  "WorkManagement.BoardItems.GetHomeFeed",
+  200
+>;
+type InboxSummaryResponse = OperationResponse<
+  "Collaboration.Notifications.GetInboxSummary",
+  200
+>;
+
+const BUCKETS: ReadonlySet<string> = new Set([
+  "todo",
+  "doing",
+  "review",
+  "done",
+]);
+
+function toPerson(
+  raw: { id?: string; name?: string | null } | null | undefined,
+): PersonDto | null {
+  return raw?.id ? { id: raw.id, name: raw.name ?? "" } : null;
+}
+
+function toExtItem(
+  raw: NonNullable<MyWorkExtendedResponse["items"]>[number],
+): MyWorkItemExtDto | null {
+  if (!raw.id || !raw.boardId) return null;
+  const status = raw.status;
+  const priority = raw.priority
+    ? (priorityFromOptionName(raw.priority.label) ?? null)
+    : null;
+  const requestedBy = toPerson(raw.approval?.requestedBy);
+  return {
+    id: raw.id,
+    boardId: raw.boardId,
+    groupId: raw.groupId ?? "",
+    key: raw.key ?? null,
+    name: raw.name ?? "",
+    dueAt: raw.dueAt ?? null,
+    startedAt: raw.startedAt ?? null,
+    updatedAt: raw.updatedAt ?? null,
+    version: raw.version ?? 0,
+    status:
+      status?.optionId && status.bucket && BUCKETS.has(status.bucket)
+        ? {
+            optionId: status.optionId,
+            label: status.label ?? "",
+            bucket: status.bucket as WorkBucketDto,
+          }
+        : null,
+    priority,
+    relations: (raw.relations ?? []).filter(
+      (r): r is MyWorkRelationDto =>
+        r === "assigned" || r === "following" || r === "approver",
+    ),
+    assignee: toPerson(raw.assignee),
+    approval:
+      requestedBy && raw.approval?.requestedAt
+        ? { requestedBy, requestedAt: raw.approval.requestedAt }
+        : null,
+    completedAt: raw.completedAt ?? null,
+  };
+}
+
+export function toMyWorkExtended(
+  dto: MyWorkExtendedResponse | null,
+): MyWorkExtendedDto {
+  const items = (list: MyWorkExtendedResponse["items"]) =>
+    (list ?? []).flatMap((raw) => toExtItem(raw) ?? []);
+  const departments: Record<string, string | null> = {};
+  for (const [boardId, departmentId] of Object.entries(
+    dto?.departments ?? {},
+  )) {
+    departments[boardId] = departmentId;
+  }
+  return {
+    items: items(dto?.items),
+    done: items(dto?.done),
+    waiting: (dto?.waiting ?? []).flatMap((raw) => {
+      const owner = toPerson(raw.owner);
+      return raw.itemId && raw.boardId && owner
+        ? [
+            {
+              itemId: raw.itemId,
+              boardId: raw.boardId,
+              key: raw.key ?? null,
+              title: raw.title ?? "",
+              owner,
+              dueAt: raw.dueAt ?? null,
+              note: raw.note ?? "",
+              lastRemindedAt: raw.lastRemindedAt ?? null,
+            },
+          ]
+        : [];
+    }),
+    departments,
+  };
+}
+
+export function toHomeFeed(dto: HomeFeedResponse | null): HomeFeedDto {
+  return {
+    replies: (dto?.replies ?? []).flatMap((raw) => {
+      const actor = toPerson(raw.actor);
+      const target = raw.target;
+      if (!raw.id || !actor || !raw.createdAt || !target?.id) return [];
+      const reply: HomeReplyDto = {
+        id: raw.id,
+        kind: raw.kind === "approval" ? "approval" : "mention",
+        actor,
+        createdAt: raw.createdAt,
+        text: raw.text ?? "",
+        target: {
+          kind: target.kind === "doc" ? "doc" : "item",
+          id: target.id,
+          boardId: target.boardId ?? null,
+          key: target.key ?? null,
+          title: target.title ?? null,
+        },
+      };
+      return [reply];
+    }),
+    events: (dto?.events ?? []).flatMap((raw) =>
+      raw.id && raw.startsAt && raw.endsAt
+        ? [
+            {
+              id: raw.id,
+              title: raw.title ?? "",
+              startsAt: raw.startsAt,
+              endsAt: raw.endsAt,
+              place: raw.place ?? null,
+              attendeeCount: raw.attendeeCount ?? null,
+            },
+          ]
+        : [],
+    ),
+    summary: {
+      approvalsPending: dto?.summary?.approvalsPending ?? 0,
+      mentionsUnread: dto?.summary?.mentionsUnread ?? 0,
+    },
+  };
+}
+
+export function toInboxSummary(
+  dto: InboxSummaryResponse | null,
+): InboxSummaryDto {
+  return {
+    perWorkspace: (dto?.perWorkspace ?? []).flatMap((raw) =>
+      raw.workspaceId
+        ? [{ workspaceId: raw.workspaceId, unread: raw.unread ?? 0 }]
+        : [],
+    ),
+    total: dto?.total ?? 0,
+  };
+}
+
 // ─── Paths ───────────────────────────────────────────────────────────────────
 
 const path = {
@@ -267,12 +431,12 @@ export function useMyWorkExtended(workspaceId: string) {
     queryKey: myWorkExtendedQueryKey(workspaceId),
     enabled: Boolean(workspaceId),
     staleTime: 30_000,
-    queryFn: async () => {
-      const dto = await client.api.get<MyWorkExtendedDto | null>(
-        path.myWorkExtended(workspaceId),
-      );
-      return dto ?? { items: [], done: [], waiting: [], departments: {} };
-    },
+    queryFn: async () =>
+      toMyWorkExtended(
+        await client.api.get<MyWorkExtendedResponse | null>(
+          path.myWorkExtended(workspaceId),
+        ),
+      ),
   });
 }
 
@@ -282,18 +446,12 @@ export function useHomeFeed(workspaceId: string) {
     queryKey: homeFeedQueryKey(workspaceId),
     enabled: Boolean(workspaceId),
     staleTime: 30_000,
-    queryFn: async () => {
-      const dto = await client.api.get<HomeFeedDto | null>(
-        path.homeFeed(workspaceId),
-      );
-      return (
-        dto ?? {
-          replies: [],
-          events: [],
-          summary: { approvalsPending: 0, mentionsUnread: 0 },
-        }
-      );
-    },
+    queryFn: async () =>
+      toHomeFeed(
+        await client.api.get<HomeFeedResponse | null>(
+          path.homeFeed(workspaceId),
+        ),
+      ),
   });
 }
 
@@ -303,12 +461,12 @@ export function useInboxSummary() {
   const accountId = useAccountId();
   return useQuery({
     queryKey: accountQueryKey(accountId, "workspace-feed", "inbox-summary"),
+    enabled: Boolean(accountId),
     staleTime: 15_000,
     queryFn: async () =>
-      (await client.api.get<InboxSummaryDto | null>("/inbox/summary")) ?? {
-        perWorkspace: [],
-        total: 0,
-      },
+      toInboxSummary(
+        await client.api.get<InboxSummaryResponse | null>("/inbox/summary"),
+      ),
   });
 }
 

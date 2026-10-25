@@ -49,6 +49,20 @@ public static class MapBoardItemEndpoints
 
         myWork.MapListMyWorkItems();
 
+        var myWorkExtended = app
+            .MapGroup("/api/v1/workspaces/{workspaceId:guid}/my-work/extended")
+            .WithTags("WorkManagement.BoardItems")
+            .WithOpenApi();
+
+        myWorkExtended.MapGetMyWorkExtended();
+
+        var homeFeed = app
+            .MapGroup("/api/v1/workspaces/{workspaceId:guid}/home/feed")
+            .WithTags("WorkManagement.BoardItems")
+            .WithOpenApi();
+
+        homeFeed.MapGetHomeFeed();
+
         return app;
     }
 }
