@@ -31,6 +31,9 @@ public sealed record InboxPersonDto(Guid Id, string Name);
 
 public sealed record InboxTargetDto(string Kind, Guid Id, Guid? BoardId, string? Key, string? Title);
 
+/// <summary>The approval request an "approval requested" entry is about and where it stands (Pending, Approved, Rejected, Cancelled).</summary>
+public sealed record InboxApprovalDto(Guid RequestId, string Status);
+
 public sealed record InboxEntryDto(
     Guid Id,
     string Type,
@@ -41,7 +44,8 @@ public sealed record InboxEntryDto(
     InboxTargetDto? Target,
     bool NeedsReply = false,
     bool Muted = false,
-    DateTimeOffset? SnoozedUntil = null);
+    DateTimeOffset? SnoozedUntil = null,
+    InboxApprovalDto? Approval = null);
 
 public sealed record WorkspaceInboxDto(IReadOnlyList<InboxEntryDto> Items, string? NextCursor);
 
@@ -53,6 +57,9 @@ public class GetWorkspaceInboxQueryHandler(
     IActorLookupService actors) : IRequestHandler<GetWorkspaceInboxQuery, Result<WorkspaceInboxDto>>
 {
     private const string BoardItemKind = "work-management.board-item";
+
+    /// <summary>The notification type Collaboration stores for "someone asked you to approve an item".</summary>
+    private const string ApprovalRequestedType = "approval.requested";
 
     public async Task<Result<WorkspaceInboxDto>> Handle(GetWorkspaceInboxQuery request, CancellationToken cancellationToken)
     {
@@ -109,6 +116,33 @@ public class GetWorkspaceInboxQueryHandler(
         var actorIds = page.Select(n => n.ActorUserId).OfType<Guid>().Distinct().ToList();
         var people = (await actors.FindManyAsync(actorIds, cancellationToken)).ToDictionary(a => a.UserId, a => a.Name);
 
+        // An "approval requested" entry carries the caller's own request on that Item and its state, so the
+        // reading pane can decide it while it is pending.
+        var approvalItemIds = page
+            .Where(n => n.NotificationType == ApprovalRequestedType && n.ResourceId is not null)
+            .Select(n => n.ResourceId!.Value)
+            .Distinct()
+            .ToList();
+        var approvalByItem = new Dictionary<Guid, InboxApprovalDto>();
+        if (approvalItemIds.Count > 0)
+        {
+            var itemKind = ResourceKind.Create(BoardItemKind);
+            var requests = await context.ApprovalRequests
+                .AsNoTracking()
+                .Where(r => r.WorkspaceId == request.WorkspaceId
+                            && r.DeletedAt == null
+                            && r.Target.Kind == itemKind
+                            && approvalItemIds.Contains(r.Target.ResourceId)
+                            && r.Steps.Any(step => step.ApproverUserId == userId))
+                .OrderByDescending(r => r.CreatedAt)
+                .Select(r => new { r.Id, r.Status, ItemId = r.Target.ResourceId })
+                .ToListAsync(cancellationToken);
+            foreach (var r in requests)
+            {
+                approvalByItem.TryAdd(r.ItemId, new InboxApprovalDto(r.Id, r.Status.ToString()));
+            }
+        }
+
         var items = page.Select(n =>
         {
             InboxTargetDto? target = null;
@@ -127,7 +161,12 @@ public class GetWorkspaceInboxQueryHandler(
                 target,
                 n.NeedsReply,
                 n.Muted,
-                n.SnoozedUntil);
+                n.SnoozedUntil,
+                n.NotificationType == ApprovalRequestedType
+                    && n.ResourceId is { } approvalItemId
+                    && approvalByItem.TryGetValue(approvalItemId, out var approval)
+                        ? approval
+                        : null);
         }).ToList();
 
         // More may follow when readable ones were left over, or when the scan was full.

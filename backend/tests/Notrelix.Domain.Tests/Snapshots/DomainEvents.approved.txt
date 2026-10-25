@@ -650,6 +650,8 @@ integrations.webhook-subscription-secret-rotated|1|Notrelix.Domain.Integrations.
 work-management.approval-request-approved|1|Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalRequestApprovedDomainEvent|Workspace|DecidedBy|System.Guid|False
 work-management.approval-request-approved|1|Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalRequestApprovedDomainEvent|Workspace|Note|System.String|True
 work-management.approval-request-approved|1|Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalRequestApprovedDomainEvent|Workspace|RequestId|System.Guid|False
+work-management.approval-request-approved|1|Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalRequestApprovedDomainEvent|Workspace|RequestedBy|System.Guid|True
+work-management.approval-request-approved|1|Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalRequestApprovedDomainEvent|Workspace|Target|Notrelix.Domain.SharedKernel.ResourceRef|True
 work-management.approval-request-cancelled|1|Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalRequestCancelledDomainEvent|Workspace|CancelledBy|System.Guid|False
 work-management.approval-request-cancelled|1|Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalRequestCancelledDomainEvent|Workspace|RequestId|System.Guid|False
 work-management.approval-request-created|1|Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalRequestCreatedDomainEvent|Workspace|RequestId|System.Guid|False
@@ -659,8 +661,17 @@ work-management.approval-request-deleted|1|Notrelix.Domain.WorkManagement.Approv
 work-management.approval-request-rejected|1|Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalRequestRejectedDomainEvent|Workspace|DecidedBy|System.Guid|False
 work-management.approval-request-rejected|1|Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalRequestRejectedDomainEvent|Workspace|Note|System.String|True
 work-management.approval-request-rejected|1|Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalRequestRejectedDomainEvent|Workspace|RequestId|System.Guid|False
+work-management.approval-request-rejected|1|Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalRequestRejectedDomainEvent|Workspace|RequestedBy|System.Guid|True
+work-management.approval-request-rejected|1|Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalRequestRejectedDomainEvent|Workspace|Target|Notrelix.Domain.SharedKernel.ResourceRef|True
 work-management.approval-request-restored|1|Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalRequestRestoredDomainEvent|Workspace|RequestId|System.Guid|False
 work-management.approval-request-restored|1|Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalRequestRestoredDomainEvent|Workspace|RestoredBy|System.Guid|False
+work-management.approval-step-assigned|1|Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalStepAssignedDomainEvent|Workspace|ApproverUserId|System.Guid|False
+work-management.approval-step-assigned|1|Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalStepAssignedDomainEvent|Workspace|Note|System.String|True
+work-management.approval-step-assigned|1|Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalStepAssignedDomainEvent|Workspace|RequestId|System.Guid|False
+work-management.approval-step-assigned|1|Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalStepAssignedDomainEvent|Workspace|RequestedBy|System.Guid|False
+work-management.approval-step-assigned|1|Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalStepAssignedDomainEvent|Workspace|StepId|System.Guid|False
+work-management.approval-step-assigned|1|Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalStepAssignedDomainEvent|Workspace|Target|Notrelix.Domain.SharedKernel.ResourceRef|False
+work-management.approval-step-assigned|1|Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalStepAssignedDomainEvent|Workspace|Title|System.String|False
 work-management.board-archived|1|Notrelix.Domain.WorkManagement.Boards.Events.BoardArchivedDomainEvent|Workspace|ArchivedBy|System.Guid|False
 work-management.board-archived|1|Notrelix.Domain.WorkManagement.Boards.Events.BoardArchivedDomainEvent|Workspace|BoardId|System.Guid|False
 work-management.board-background-updated|1|Notrelix.Domain.WorkManagement.Boards.Events.BoardBackgroundUpdatedDomainEvent|Workspace|BoardId|System.Guid|False

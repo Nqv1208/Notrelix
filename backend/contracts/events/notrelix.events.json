@@ -4054,6 +4054,246 @@
       ]
     },
     {
+      "name": "work-management.approval-decided",
+      "version": 1,
+      "clrType": "Notrelix.Application.Events.WorkManagement.ApprovalDecidedIntegrationEvent",
+      "producerContext": "WorkManagement",
+      "classification": "Business",
+      "compatibility": "Backward",
+      "deprecated": false,
+      "scope": {
+        "tenantScope": "Workspace",
+        "carriesAccountId": true,
+        "carriesWorkspaceId": true
+      },
+      "serializedProperties": [
+        {
+          "name": "accountIdValue",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "workspaceIdValue",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "requestId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "targetKind",
+          "type": "string",
+          "nullable": false
+        },
+        {
+          "name": "targetId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "requestedBy",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "decidedBy",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "approved",
+          "type": "bool",
+          "nullable": false
+        },
+        {
+          "name": "note",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "eventId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "sourceEventId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "messageName",
+          "type": "string",
+          "nullable": false
+        },
+        {
+          "name": "schemaVersion",
+          "type": "int",
+          "nullable": false
+        },
+        {
+          "name": "accountId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "workspaceId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "actorUserId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "correlationId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "causationId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "occurredAt",
+          "type": "DateTimeOffset",
+          "nullable": false
+        }
+      ],
+      "piiFields": [],
+      "sensitiveFields": [],
+      "consumers": [
+        {
+          "name": "ApprovalDecidedNotificationConsumer",
+          "context": "Collaboration",
+          "maturity": "Implemented"
+        }
+      ]
+    },
+    {
+      "name": "work-management.approval-requested",
+      "version": 1,
+      "clrType": "Notrelix.Application.Events.WorkManagement.ApprovalRequestedIntegrationEvent",
+      "producerContext": "WorkManagement",
+      "classification": "Business",
+      "compatibility": "Backward",
+      "deprecated": false,
+      "scope": {
+        "tenantScope": "Workspace",
+        "carriesAccountId": true,
+        "carriesWorkspaceId": true
+      },
+      "serializedProperties": [
+        {
+          "name": "accountIdValue",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "workspaceIdValue",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "requestId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "targetKind",
+          "type": "string",
+          "nullable": false
+        },
+        {
+          "name": "targetId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "approverUserId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "requestedBy",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "title",
+          "type": "string",
+          "nullable": false
+        },
+        {
+          "name": "note",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "eventId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "sourceEventId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "messageName",
+          "type": "string",
+          "nullable": false
+        },
+        {
+          "name": "schemaVersion",
+          "type": "int",
+          "nullable": false
+        },
+        {
+          "name": "accountId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "workspaceId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "actorUserId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "correlationId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "causationId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "occurredAt",
+          "type": "DateTimeOffset",
+          "nullable": false
+        }
+      ],
+      "piiFields": [],
+      "sensitiveFields": [],
+      "consumers": [
+        {
+          "name": "ApprovalRequestedNotificationConsumer",
+          "context": "Collaboration",
+          "maturity": "Implemented"
+        }
+      ]
+    },
+    {
       "name": "work-management.board-item-member-assigned",
       "version": 1,
       "clrType": "Notrelix.Application.Events.WorkManagement.BoardItemMemberAssignedIntegrationEvent",

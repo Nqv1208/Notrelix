@@ -1,6 +1,7 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Governance.Public.Visibility;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Features.WorkManagement.Approvals.Services;
 using Notrelix.Application.Features.WorkManagement.Common;
 using Notrelix.Application.Features.WorkManagement.Ports.Collaboration;
 
@@ -11,8 +12,8 @@ namespace Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetMyW
 /// last) and the Items the caller recently completed, each with its key, Status (label and work-status
 /// category), Priority option and the person in charge when it is someone else. Both lists are bounded and come only from Boards the
 /// caller may read (the single-read ViewBoard decision, GOV-029). The open Items the caller follows are listed
-/// too, with the "following" relation. Approvals and "waiting on" have no source yet and are returned empty; <c>departments</c> is empty because no Board-to-department
-/// mapping exists.
+/// too, with the "following" relation, and so are the open Items the caller is asked to approve (a pending
+/// approval request names them), with the "approver" relation and the request. "Waiting on" has no source yet and is returned empty.
 /// </summary>
 public record GetMyWorkExtendedQuery(Guid WorkspaceId)
     : IQuery<Result<MyWorkExtendedDto>>, IAuthenticatedRequest, IReadRequest, IWorkspaceRequest, IRequirePermission
@@ -32,7 +33,7 @@ public sealed record MyWorkStatusDto(Guid OptionId, string Label, string Bucket)
 /// <summary>A Priority option held by an Item; the label is the option's own name.</summary>
 public sealed record MyWorkPriorityDto(Guid OptionId, string Label);
 
-public sealed record MyWorkApprovalDto(MyWorkPersonDto RequestedBy, DateTimeOffset RequestedAt);
+public sealed record MyWorkApprovalDto(Guid RequestId, MyWorkPersonDto RequestedBy, DateTimeOffset RequestedAt);
 
 public sealed record MyWorkItemExtDto(
     Guid Id,
@@ -74,10 +75,6 @@ public class GetMyWorkExtendedQueryHandler(
     IActorLookupService actors,
     IWorkManagementCollaborationReadPort collaboration) : IRequestHandler<GetMyWorkExtendedQuery, Result<MyWorkExtendedDto>>
 {
-    private static readonly IReadOnlyList<string> AssignedRelation = ["assigned"];
-    private static readonly IReadOnlyList<string> FollowingRelation = ["following"];
-    private static readonly IReadOnlyList<string> AssignedAndFollowingRelations = ["assigned", "following"];
-
     public async Task<Result<MyWorkExtendedDto>> Handle(GetMyWorkExtendedQuery request, CancellationToken cancellationToken)
     {
         var userId = requestContext.UserId;
@@ -139,6 +136,20 @@ public class GetMyWorkExtendedQueryHandler(
         var openIds = open.Select(i => i.Id).ToHashSet();
         followedOnly = followedOnly.Where(i => !openIds.Contains(i.Id)).ToList();
 
+        // The Items the caller is asked to approve; those not already listed are added as approver-only rows.
+        var approvals = (await PendingApprovals.ListAsync(
+                context, request.WorkspaceId, userId, visibleBoardIds, cancellationToken))
+            .GroupBy(a => a.ItemId)
+            .ToDictionary(g => g.Key, g => g.First());
+        var listedIds = open.Concat(followedOnly).Select(i => i.Id).ToHashSet();
+        var approvalOnlyIds = approvals.Keys.Where(id => !listedIds.Contains(id)).ToList();
+        var approverOnly = approvalOnlyIds.Count == 0
+            ? []
+            : await context.BoardItems.AsNoTracking()
+                .Where(i => approvalOnlyIds.Contains(i.Id) && i.DeletedAt == null && !i.IsArchived)
+                .ToListAsync(cancellationToken);
+        followedOnly = followedOnly.Concat(approverOnly).ToList();
+
         var all = open.Concat(followedOnly).Concat(done).ToList();
         if (all.Count == 0)
         {
@@ -173,7 +184,8 @@ public class GetMyWorkExtendedQueryHandler(
             .GroupBy(m => m.ItemId)
             .ToDictionary(g => g.Key, g => g.OrderBy(m => m.AssignedAt).ThenBy(m => m.UserId).First().UserId);
 
-        var people = (await actors.FindManyAsync(firstAssignee.Values.Distinct().ToList(), cancellationToken))
+        var people = (await actors.FindManyAsync(
+                firstAssignee.Values.Concat(approvals.Values.Select(a => a.RequestedBy)).Distinct().ToList(), cancellationToken))
             .ToDictionary(a => a.UserId, a => new MyWorkPersonDto(a.UserId, a.Name));
 
         var assignedIds = open.Concat(done).Select(i => i.Id).ToHashSet();
@@ -193,12 +205,26 @@ public class GetMyWorkExtendedQueryHandler(
                 item.Version,
                 StatusOf(item, fields?.Status, optionByItemField),
                 PriorityOf(item, fields?.Priority, optionByItemField),
-                followedSet.Contains(item.Id)
-                    ? (assignedIds.Contains(item.Id) ? AssignedAndFollowingRelations : FollowingRelation)
-                    : AssignedRelation,
+                RelationsOf(item.Id),
                 firstAssignee.TryGetValue(item.Id, out var assigneeId) && people.TryGetValue(assigneeId, out var person) ? person : null,
-                null,
+                approvals.TryGetValue(item.Id, out var approval)
+                    ? new MyWorkApprovalDto(
+                        approval.RequestId,
+                        people.TryGetValue(approval.RequestedBy, out var requester)
+                            ? requester
+                            : new MyWorkPersonDto(approval.RequestedBy, string.Empty),
+                        approval.RequestedAt)
+                    : null,
                 item.CompletedAt);
+        }
+
+        IReadOnlyList<string> RelationsOf(Guid itemId)
+        {
+            var relations = new List<string>();
+            if (assignedIds.Contains(itemId)) relations.Add("assigned");
+            if (followedSet.Contains(itemId)) relations.Add("following");
+            if (approvals.ContainsKey(itemId)) relations.Add("approver");
+            return relations;
         }
 
         var shownBoardIds = open.Concat(followedOnly).Concat(done).Select(i => i.BoardId).Distinct().ToList();

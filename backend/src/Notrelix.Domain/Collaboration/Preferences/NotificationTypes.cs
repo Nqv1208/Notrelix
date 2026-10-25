@@ -49,6 +49,15 @@ public static class NotificationTypes
     /// <summary>An Item assigned to the person became overdue (daily job); maps to <see cref="Overdue"/>.</summary>
     public const string ItemOverdueProducedType = "work.item.overdue";
 
+    /// <summary>The person is asked to approve or reject something; maps to <see cref="Approval"/>.</summary>
+    public const string ApprovalRequestedProducedType = "approval.requested";
+
+    /// <summary>An approval the person asked for was approved; maps to <see cref="Approval"/>.</summary>
+    public const string ApprovalApprovedProducedType = "approval.approved";
+
+    /// <summary>An approval the person asked for was rejected; maps to <see cref="Approval"/>.</summary>
+    public const string ApprovalRejectedProducedType = "approval.rejected";
+
     /// <summary>
     /// Maps the type literal a producer stores on a notification to the preference type, or null when the
     /// literal has no preference type.
@@ -58,6 +67,7 @@ public static class NotificationTypes
         MentionProducedType => Mention,
         ItemAssignedProducedType or AutomationProducedType => Assigned,
         ItemDueTomorrowProducedType or ItemOverdueProducedType => Overdue,
+        ApprovalRequestedProducedType or ApprovalApprovedProducedType or ApprovalRejectedProducedType => Approval,
         ItemAssigneeAddedProducedType or ItemStatusChangedProducedType or ItemCommentedProducedType => Watching,
         _ => null,
     };

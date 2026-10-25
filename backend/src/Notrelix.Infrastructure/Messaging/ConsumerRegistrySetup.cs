@@ -236,6 +236,27 @@ public static class ConsumerRegistrySetup
                 Maturity = ConsumerMaturity.Implemented
             },
 
+            new ConsumerDefinition
+            {
+                ConsumerName = "ApprovalRequestedNotificationConsumer",
+                EventName = "work-management.approval-requested",
+                EventVersion = 1,
+                EndpointName = "notrelix-collab-approval-requested-notification-v1",
+                BoundedContext = "Collaboration",
+                Description = "Tells an approver they were asked to decide an approval request",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "ApprovalDecidedNotificationConsumer",
+                EventName = "work-management.approval-decided",
+                EventVersion = 1,
+                EndpointName = "notrelix-collab-approval-decided-notification-v1",
+                BoundedContext = "Collaboration",
+                Description = "Tells a requester their approval request was decided",
+                Maturity = ConsumerMaturity.Implemented
+            },
+
             // ── Billing (1) ──────────────────────────────────────────────
             new ConsumerDefinition
             {

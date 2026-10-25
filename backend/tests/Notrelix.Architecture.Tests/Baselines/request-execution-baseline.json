@@ -3150,6 +3150,31 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.WorkManagement.Approvals.Commands.DecideApproval.DecideApprovalCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": true,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.WorkManagement.Approvals.Commands.DecideApproval.DecideApprovalCommandHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.WorkManagement.Approvals.Commands.DeleteApprovalRequest.DeleteApprovalRequestCommand",
     "kind": "Command",
     "principalMarkers": [
@@ -3197,6 +3222,31 @@
     "publicCache": false,
     "handlerTypes": [
       "Notrelix.Application.Features.WorkManagement.Approvals.Commands.RejectApprovalRequest.RejectApprovalRequestCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.WorkManagement.Approvals.Commands.RequestItemApproval.RequestItemApprovalCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IResourceScopedRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": true,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.WorkManagement.Approvals.Commands.RequestItemApproval.RequestItemApprovalCommandHandler"
     ]
   },
   {

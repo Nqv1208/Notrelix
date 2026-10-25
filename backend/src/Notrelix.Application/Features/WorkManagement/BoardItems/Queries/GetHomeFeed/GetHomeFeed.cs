@@ -2,6 +2,7 @@ using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Collaboration.Public.Notifications;
 using Notrelix.Application.Features.Governance.Public.Visibility;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Features.WorkManagement.Approvals.Services;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetHomeFeed;
 
@@ -10,8 +11,8 @@ namespace Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetHom
 /// still read, newest first (at most <see cref="ReplyLimit"/>), and the counts the Home header shows. A mention
 /// of an Item on a Board the caller can no longer read is not shown and not counted (COL-023: a historical
 /// notification never keeps access alive). Mentions are counted over the newest <see cref="MentionScanLimit"/>
-/// unread ones. Approvals and today's schedule have no source yet: no approval replies, no events, zero
-/// pending approvals.
+/// unread ones. The approval requests that wait for the member (a pending step names them) are replies of kind
+/// "approval", counted in <c>approvalsPending</c>. Today's schedule has no source yet: no events.
 /// </summary>
 public record GetHomeFeedQuery(Guid WorkspaceId)
     : IQuery<Result<HomeFeedDto>>, IAuthenticatedRequest, IReadRequest, IWorkspaceRequest, IRequirePermission
@@ -64,39 +65,46 @@ public class GetHomeFeedQueryHandler(
     {
         var userId = requestContext.UserId;
 
-        var mentions = (await inbox.RecentUnreadMentionsAsync(
-                request.WorkspaceId, userId, GetHomeFeedQuery.MentionScanLimit, cancellationToken))
-            .Where(m => m.ResourceKind == BoardItemKind && m.ResourceId is not null)
-            .ToList();
-        if (mentions.Count == 0)
-        {
-            return Result<HomeFeedDto>.Success(Empty());
-        }
-
         var visibleBoardIds = await visibility.VisibleBoardIdsAsync(request.WorkspaceId, userId, cancellationToken);
         if (visibleBoardIds.Count == 0)
         {
             return Result<HomeFeedDto>.Success(Empty());
         }
 
+        var mentions = (await inbox.RecentUnreadMentionsAsync(
+                request.WorkspaceId, userId, GetHomeFeedQuery.MentionScanLimit, cancellationToken))
+            .Where(m => m.ResourceKind == BoardItemKind && m.ResourceId is not null)
+            .ToList();
+        var approvals = await PendingApprovals.ListAsync(
+            context, request.WorkspaceId, userId, visibleBoardIds, cancellationToken);
+        if (mentions.Count == 0 && approvals.Count == 0)
+        {
+            return Result<HomeFeedDto>.Success(Empty());
+        }
+
         var itemIds = mentions.Select(m => m.ResourceId!.Value).Distinct().ToList();
-        var items = await context.BoardItems
-            .AsNoTracking()
-            .Where(i => itemIds.Contains(i.Id)
-                        && i.WorkspaceId == request.WorkspaceId
-                        && i.DeletedAt == null
-                        && visibleBoardIds.Contains(i.BoardId))
-            .Select(i => new { i.Id, i.BoardId, i.ItemKey, i.Name })
-            .ToDictionaryAsync(i => i.Id, cancellationToken);
+        var items = itemIds.Count == 0
+            ? []
+            : await context.BoardItems
+                .AsNoTracking()
+                .Where(i => itemIds.Contains(i.Id)
+                            && i.WorkspaceId == request.WorkspaceId
+                            && i.DeletedAt == null
+                            && visibleBoardIds.Contains(i.BoardId))
+                .Select(i => new { i.Id, i.BoardId, i.ItemKey, i.Name })
+                .ToDictionaryAsync(i => i.Id, cancellationToken);
 
         var readable = mentions.Where(m => items.ContainsKey(m.ResourceId!.Value)).ToList();
         var shown = readable.Take(GetHomeFeedQuery.ReplyLimit).ToList();
 
-        var actorIds = shown.Select(m => m.ActorUserId).OfType<Guid>().Distinct().ToList();
+        var actorIds = shown.Select(m => m.ActorUserId).OfType<Guid>()
+            .Concat(approvals.Select(a => a.RequestedBy))
+            .Distinct()
+            .ToList();
         var people = (await actors.FindManyAsync(actorIds, cancellationToken))
             .ToDictionary(a => a.UserId, a => a.Name);
 
-        var replies = shown
+        var mentionReplies = shown
             .Where(m => m.ActorUserId is not null)
             .Select(m =>
             {
@@ -109,10 +117,22 @@ public class GetHomeFeedQueryHandler(
                     m.CreatedAt,
                     null,
                     new HomeReplyTargetDto("item", item.Id, item.BoardId, item.ItemKey, item.Name));
-            })
+            });
+        var approvalReplies = approvals.Select(a => new HomeReplyDto(
+            a.RequestId,
+            "approval",
+            new HomeFeedPersonDto(a.RequestedBy, people.GetValueOrDefault(a.RequestedBy, string.Empty)),
+            a.RequestedAt,
+            a.Note,
+            new HomeReplyTargetDto("item", a.ItemId, a.BoardId, a.ItemKey, a.ItemName)));
+
+        var replies = approvalReplies
+            .Concat(mentionReplies)
+            .OrderByDescending(r => r.CreatedAt)
+            .Take(GetHomeFeedQuery.ReplyLimit)
             .ToList();
 
-        return Result<HomeFeedDto>.Success(new HomeFeedDto(replies, [], new HomeFeedSummaryDto(0, readable.Count)));
+        return Result<HomeFeedDto>.Success(new HomeFeedDto(replies, [], new HomeFeedSummaryDto(approvals.Count, readable.Count)));
     }
 
     private static HomeFeedDto Empty() => new([], [], new HomeFeedSummaryDto(0, 0));
