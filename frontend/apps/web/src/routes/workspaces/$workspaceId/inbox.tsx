@@ -110,6 +110,14 @@ export function InboxPage() {
           .catch(() => toast.error(copy.toasts.markFailed))
       }
       onRetry={() => void query.refetch()}
+      loadMore={
+        query.hasNextPage
+          ? {
+              onLoadMore: () => void query.fetchNextPage(),
+              loading: query.isFetchingNextPage,
+            }
+          : null
+      }
     />
   );
 }

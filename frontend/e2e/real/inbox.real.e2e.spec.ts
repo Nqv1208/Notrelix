@@ -70,7 +70,7 @@ test("a member mentioned in a comment finds it in the inbox and marks it read", 
       /\/inbox\/[^/]+\/read$/.test(response.url()),
   );
   await reader
-    .getByRole("button", { name: /^Handled/ })
+    .getByRole("button", { name: /^Mark as read/ })
     .first()
     .click();
   expect((await read).status()).toBeLessThan(300);

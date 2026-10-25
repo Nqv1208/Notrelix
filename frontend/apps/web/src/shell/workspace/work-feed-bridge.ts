@@ -17,6 +17,7 @@
  */
 import { useCallback, useMemo } from "react";
 import {
+  useInfiniteQuery,
   useMutation,
   useQuery,
   useQueryClient,
@@ -475,7 +476,7 @@ type WorkspaceInboxResponse =
   OperationResponse<"Collaboration.Notifications.GetWorkspaceInbox">;
 
 /** The most notifications the Inbox page loads; the producer pages beyond it. */
-const INBOX_PAGE_LIMIT = 50;
+const INBOX_PAGE_LIMIT = 30;
 
 /**
  * The producer's notifications as the Inbox page lists them. Only a mention
@@ -530,20 +531,43 @@ export function toInboxDto(
   };
 }
 
+/** The pages of the inbox loaded so far, newest first, as one list. */
 export function useWorkspaceInbox(workspaceId: string) {
   const { api: client } = useAppRuntime();
-  return useQuery({
+  const query = useInfiniteQuery({
     queryKey: inboxQueryKey(workspaceId),
     enabled: Boolean(workspaceId),
     staleTime: 15_000,
-    queryFn: async () =>
-      toInboxDto(
-        workspaceId,
-        await client.api.get<WorkspaceInboxResponse | null>(
-          `${path.inbox(workspaceId)}?limit=${INBOX_PAGE_LIMIT}`,
-        ),
+    initialPageParam: "",
+    queryFn: async ({ pageParam }) =>
+      client.api.get<WorkspaceInboxResponse | null>(
+        `${path.inbox(workspaceId)}?limit=${INBOX_PAGE_LIMIT}${
+          pageParam ? `&cursor=${encodeURIComponent(pageParam)}` : ""
+        }`,
       ),
+    getNextPageParam: (last) => last?.nextCursor || undefined,
   });
+  const data = useMemo(
+    () =>
+      query.data
+        ? toInboxDto(workspaceId, {
+            items: query.data.pages.flatMap((page) => page?.items ?? []),
+          })
+        : undefined,
+    [query.data, workspaceId],
+  );
+  return {
+    data,
+    isPending: query.isPending,
+    isError: query.isError,
+    isSuccess: query.isSuccess,
+    status: query.status,
+    error: query.error,
+    refetch: query.refetch,
+    hasNextPage: query.hasNextPage,
+    isFetchingNextPage: query.isFetchingNextPage,
+    fetchNextPage: query.fetchNextPage,
+  };
 }
 
 // ─── Writes ──────────────────────────────────────────────────────────────────

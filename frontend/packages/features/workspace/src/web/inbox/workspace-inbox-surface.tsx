@@ -48,6 +48,11 @@ export interface WorkspaceInboxSurfaceProps {
   /** Marks every notification read; `null` draws the button inert. */
   readonly onMarkAllRead: (() => void) | null;
   readonly onRetry: () => void;
+  /** Older notifications the producer still holds; `null` or omitted draws no button. */
+  readonly loadMore?: {
+    readonly onLoadMore: () => void;
+    readonly loading: boolean;
+  } | null;
   /** Approve, reply, handle, snooze and mute; omitted draws them inert. */
   readonly actions?: InboxActions;
   readonly initialView?: InboxInitialView;
@@ -389,6 +394,19 @@ export function WorkspaceInboxSurface(props: WorkspaceInboxSurfaceProps) {
                   ))}
                 </div>
               ))}
+              {props.loadMore ? (
+                <div className="flex justify-center p-3">
+                  <button
+                    data-f="more"
+                    type="button"
+                    disabled={props.loadMore.loading}
+                    onClick={props.loadMore.onLoadMore}
+                    className="inline-flex h-8 cursor-pointer items-center rounded-[7px] border border-line-strong bg-popover px-3 text-compact font-medium text-foreground outline-none hover:bg-state-hover focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-not-allowed disabled:opacity-60 dark:bg-card"
+                  >
+                    {props.loadMore.loading ? copy.loadingMore : copy.loadMore}
+                  </button>
+                </div>
+              ) : null}
             </div>
           )}
         </div>
