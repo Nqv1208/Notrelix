@@ -10,11 +10,14 @@ namespace Notrelix.Application.Features.Automation.Rules.Queries.GetWorkspaceAut
 /// management data, so listing Rules needs the same permission that manages them
 /// (ManageWorkspaceSettings), not workspace-wide ViewWorkspace.
 /// </summary>
-public record GetWorkspaceAutomationsQuery(Guid WorkspaceId)
+public record GetWorkspaceAutomationsQuery(Guid WorkspaceId, Guid? BoardId = null)
     : IQuery<Result<IReadOnlyList<AutomationRuleDto>>>, IAuthenticatedRequest, IReadRequest, IWorkspaceRequest, IRequirePermission
 {
-    public PermissionAction Action => PermissionAction.ManageWorkspaceSettings;
-    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("automation.rule"), WorkspaceId, WorkspaceId);
+    // AU-6: with a board the caller is a board Manager (or workspace Owner/Admin) and sees that board's rules.
+    public PermissionAction Action => BoardId is null ? PermissionAction.ManageWorkspaceSettings : PermissionAction.ManageBoard;
+    public ResourceRef Resource => BoardId is { } board
+        ? ResourceRef.Create(ResourceKind.Create("work-management.board"), board, WorkspaceId)
+        : ResourceRef.Create(ResourceKind.Create("automation.rule"), WorkspaceId, WorkspaceId);
 }
 
 public class GetWorkspaceAutomationsQueryHandler : IRequestHandler<GetWorkspaceAutomationsQuery, Result<IReadOnlyList<AutomationRuleDto>>>
@@ -34,7 +37,8 @@ public class GetWorkspaceAutomationsQueryHandler : IRequestHandler<GetWorkspaceA
     {
         var automations = await _context.AutomationRules
             .AsNoTracking()
-            .Where(item => item.WorkspaceId == request.WorkspaceId)
+            .Where(item => item.WorkspaceId == request.WorkspaceId
+                && (request.BoardId == null || item.BoardId == request.BoardId))
             .OrderBy(item => item.Name)
             .ToListAsync(cancellationToken);
 

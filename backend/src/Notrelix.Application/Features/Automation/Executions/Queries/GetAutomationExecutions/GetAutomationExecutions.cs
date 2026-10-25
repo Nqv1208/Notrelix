@@ -9,11 +9,13 @@ namespace Notrelix.Application.Features.Automation.Executions.Queries.GetAutomat
 /// management data and needs the permission that manages the Rule
 /// (ManageWorkspaceSettings), never a board-view permission on the rule resource.
 /// </summary>
-public record GetAutomationExecutionsQuery(Guid AutomationRuleId, int Page = 1, int PageSize = 20)
+public record GetAutomationExecutionsQuery(Guid AutomationRuleId, int Page = 1, int PageSize = 20, Guid? BoardId = null)
     : IQuery<Result<IReadOnlyList<AutomationExecutionDto>>>, IAuthenticatedRequest, IReadRequest, IResourceScopedRequest, IRequirePermission
 {
-    public PermissionAction Action => PermissionAction.ManageWorkspaceSettings;
-    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("automation.rule"), AutomationRuleId);
+    public PermissionAction Action => BoardId is null ? PermissionAction.ManageWorkspaceSettings : PermissionAction.ManageBoard;
+    public ResourceRef Resource => BoardId is { } board
+        ? ResourceRef.Create(ResourceKind.Create("work-management.board"), board)
+        : ResourceRef.Create(ResourceKind.Create("automation.rule"), AutomationRuleId);
 }
 
 public class GetAutomationExecutionsQueryHandler : IRequestHandler<GetAutomationExecutionsQuery, Result<IReadOnlyList<AutomationExecutionDto>>>
@@ -29,6 +31,14 @@ public class GetAutomationExecutionsQueryHandler : IRequestHandler<GetAutomation
     {
         var page = Math.Max(1, request.Page);
         var pageSize = Math.Clamp(request.PageSize, 1, 100);
+
+        // AU-6: authority on a named board covers only that board's rules.
+        if (request.BoardId is { } claimedBoard
+            && !await _context.AutomationRules.AsNoTracking()
+                .AnyAsync(rule => rule.Id == request.AutomationRuleId && rule.BoardId == claimedBoard, cancellationToken))
+        {
+            throw new NotFoundException("AutomationRule", request.AutomationRuleId);
+        }
 
         var executions = await _context.AutomationExecutions
             .AsNoTracking()

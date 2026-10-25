@@ -16,9 +16,9 @@ public static class ListAutomationRulesEndpoint
         return group;
     }
 
-    private static async Task<IResult> HandleAsync(Guid workspaceId, ISender sender)
+    private static async Task<IResult> HandleAsync(Guid workspaceId, ISender sender, Guid? boardId = null)
     {
-        var result = await sender.Send(new GetWorkspaceAutomationsQuery(workspaceId));
+        var result = await sender.Send(new GetWorkspaceAutomationsQuery(workspaceId, boardId));
         return result.ToApiResult();
     }
 }

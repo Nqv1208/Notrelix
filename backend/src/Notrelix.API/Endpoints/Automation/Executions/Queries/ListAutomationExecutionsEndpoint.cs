@@ -20,9 +20,10 @@ public static class ListAutomationExecutionsEndpoint
         Guid automationId,
         ISender sender,
         int page = 1,
-        int pageSize = 20)
+        int pageSize = 20,
+        Guid? boardId = null)
     {
-        var result = await sender.Send(new GetAutomationExecutionsQuery(automationId, page, pageSize));
+        var result = await sender.Send(new GetAutomationExecutionsQuery(automationId, page, pageSize, boardId));
         return result.ToApiResult();
     }
 }
