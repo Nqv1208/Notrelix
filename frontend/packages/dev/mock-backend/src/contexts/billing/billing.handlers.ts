@@ -33,6 +33,8 @@ import {
 } from "../../transport/create-response";
 import {
   BILLING_MANAGER_IDS,
+  BILLING_PLAN_CATALOG,
+  type BillingPlanCode,
   BILLING_PERIOD_END,
   BILLING_PERIOD_START,
   BILLING_UNIT_PRICE,
@@ -289,8 +291,42 @@ const pdfOf = (invoice: StoredInvoice): string =>
 type Ws = { workspaceId: string };
 type WithInvoice = { workspaceId: string; invoiceId: string };
 
-/** The seeded entitlement of the development stack, mirrored for the mock. */
-const AUTOMATION_RULE_LIMIT = 50;
+const planOf = (code: BillingPlanCode) =>
+  BILLING_PLAN_CATALOG.find((p) => p.code === code) ?? BILLING_PLAN_CATALOG[0];
+
+const planDto = (plan: (typeof BILLING_PLAN_CATALOG)[number]) => ({
+  code: plan.code,
+  name: plan.name,
+  limits: Object.entries(plan.limits).map(([code, limit]) => ({
+    code,
+    isUnlimited: limit === null,
+    limit,
+  })),
+});
+
+/** Account-wide usage the capabilities report: distinct members and guests, rules in the workspace. */
+function usageOf(store: MockStore, workspaceId: string) {
+  const members = new Set<string>();
+  const guests = new Set<string>();
+  for (const workspace of store.getWorkspaces()) {
+    for (const member of store.getWorkspaceMembers(workspace.id)) {
+      if (store.isMembershipSuspended(member.id)) continue;
+      (member.role === "guest" ? guests : members).add(member.userId);
+    }
+  }
+  return {
+    AUTOMATION_RULE: store.workspaceAutomations.list(workspaceId).length,
+    MEMBER_SEAT: members.size,
+    GUEST_SEAT: guests.size,
+    STORAGE_GB: 0,
+  } as Record<string, number>;
+}
+
+const planOverview = (store: MockStore, canChange: boolean) => ({
+  currentPlan: planDto(planOf(store.billing.planCode)),
+  availablePlans: BILLING_PLAN_CATALOG.map(planDto),
+  canChangePlan: canChange,
+});
 
 export const billingOperations = [
   defineMockOperation<Ws, never, unknown>({
@@ -303,17 +339,60 @@ export const billingOperations = [
         return notFound("Workspace not found");
       const role = store.getCurrentMemberRole(params.workspaceId);
       if (role !== "owner" && role !== "admin") return forbidden();
-      const used = store.workspaceAutomations.list(params.workspaceId).length;
-      return ok([
-        {
-          code: "AUTOMATION_RULE",
-          isGranted: true,
-          isUnlimited: false,
-          limit: AUTOMATION_RULE_LIMIT,
-          used,
-          remaining: Math.max(0, AUTOMATION_RULE_LIMIT - used),
-        },
-      ]);
+      const usage = usageOf(store, params.workspaceId);
+      const limits = planOf(store.billing.planCode).limits as Record<
+        string,
+        number | null
+      >;
+      return ok(
+        ["AUTOMATION_RULE", "MEMBER_SEAT", "GUEST_SEAT", "STORAGE_GB"].map(
+          (code) => {
+            const limit = limits[code] ?? null;
+            const used = usage[code] ?? 0;
+            return {
+              code,
+              isGranted: true,
+              isUnlimited: limit === null,
+              limit,
+              used,
+              remaining: limit === null ? null : Math.max(0, limit - used),
+            };
+          },
+        ),
+      );
+    },
+  }),
+
+  defineMockOperation<Ws, never, unknown>({
+    id: "billing.plan",
+    contract: { kind: "openapi", operationId: "Billing.Plan.Get" },
+    method: "GET",
+    route: "/workspaces/:workspaceId/billing/plan",
+    async handle({ params, store }) {
+      if (!store.getWorkspace(params.workspaceId))
+        return notFound("Workspace not found");
+      const role = store.getCurrentMemberRole(params.workspaceId);
+      if (role !== "owner" && role !== "admin") return forbidden();
+      return ok(planOverview(store, role === "owner"));
+    },
+  }),
+
+  defineMockOperation<Ws, { planCode?: string }, unknown>({
+    id: "billing.planChange",
+    contract: { kind: "openapi", operationId: "Billing.Plan.Change" },
+    method: "PUT",
+    route: "/workspaces/:workspaceId/billing/plan",
+    async handle({ params, body, store }) {
+      if (!store.getWorkspace(params.workspaceId))
+        return notFound("Workspace not found");
+      if (store.getCurrentMemberRole(params.workspaceId) !== "owner")
+        return forbidden();
+      const target = BILLING_PLAN_CATALOG.find(
+        (p) => p.code === body?.planCode?.toLowerCase(),
+      );
+      if (!target) return validationError({ planCode: ["The plan does not exist."] });
+      store.billing.planCode = target.code;
+      return ok(planOverview(store, true));
     },
   }),
 

@@ -29,12 +29,30 @@ export const en = {
     notGranted: "Not granted",
     remaining: "{{count}} left",
     full: "Limit reached",
+    usedGb: "{{used}} of {{limit}} GB used",
+    usedUnlimitedGb: "{{used}} GB used",
+    remainingGb: "{{count}} GB left",
     capabilities: {
       AUTOMATION_RULE: "Automation rules",
+      MEMBER_SEAT: "Member seats",
+      GUEST_SEAT: "Guest seats",
+      STORAGE_GB: "Storage",
     } as Readonly<Record<string, string>>,
+    plan: {
+      title: "Current plan",
+      lede: "The plan applies to every workspace of the account.",
+      current: "Current plan",
+      switchTitle: "Switch plan",
+      switchNote:
+        "Development only. No payment is taken; only the account owner can switch.",
+      switchTo: "Switch to {{plan}}",
+      changing: "Switching the plan",
+      failed: "The plan could not be switched.",
+      ownerOnly: "Only the account owner can switch the plan.",
+    },
     unavailableTitle: "Not available yet",
     unavailableBody:
-      "Buying or changing a plan, invoices and payment methods are not available yet.",
+      "Buying a plan, invoices and payment methods are not available yet.",
   },
 };
 
@@ -70,12 +88,30 @@ export const vi: FeatureAvailabilityCopy = {
     notGranted: "Chưa được cấp",
     remaining: "Còn {{count}}",
     full: "Đã hết hạn mức",
+    usedGb: "Đã dùng {{used}} trên {{limit}} GB",
+    usedUnlimitedGb: "Đã dùng {{used}} GB",
+    remainingGb: "Còn {{count}} GB",
     capabilities: {
       AUTOMATION_RULE: "Quy tắc tự động hoá",
+      MEMBER_SEAT: "Chỗ thành viên",
+      GUEST_SEAT: "Chỗ khách",
+      STORAGE_GB: "Dung lượng lưu trữ",
+    },
+    plan: {
+      title: "Gói hiện tại",
+      lede: "Gói áp dụng cho mọi workspace của tài khoản.",
+      current: "Gói hiện tại",
+      switchTitle: "Đổi gói",
+      switchNote:
+        "Chỉ dùng khi phát triển. Không thu tiền; chỉ chủ tài khoản được đổi.",
+      switchTo: "Chuyển sang {{plan}}",
+      changing: "Đang đổi gói",
+      failed: "Không đổi được gói.",
+      ownerOnly: "Chỉ chủ tài khoản được đổi gói.",
     },
     unavailableTitle: "Chưa khả dụng",
     unavailableBody:
-      "Mua hoặc đổi gói, hoá đơn và phương thức thanh toán chưa khả dụng.",
+      "Mua gói, hoá đơn và phương thức thanh toán chưa khả dụng.",
   },
 };
 

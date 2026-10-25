@@ -3007,6 +3007,26 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
   },
   {
     context: "Billing",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createBillingApi",
+    consumerFile:
+      "frontend/apps/web/src/routes/workspaces/$workspaceId/billing/billing-api.ts",
+    capability: "Billing.Plan.Get",
+    operationId: "Billing.Plan.Get",
+    mutation: false,
+  },
+  {
+    context: "Billing",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createBillingApi",
+    consumerFile:
+      "frontend/apps/web/src/routes/workspaces/$workspaceId/billing/billing-api.ts",
+    capability: "Billing.Plan.Change",
+    operationId: "Billing.Plan.Change",
+    mutation: true,
+  },
+  {
+    context: "Billing",
     classification: "COMPATIBILITY_GAP_MOCKED",
     consumerSymbol: "createBillingApi",
     consumerFile:

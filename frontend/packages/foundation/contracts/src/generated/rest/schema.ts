@@ -158,6 +158,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/billing/plan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the plan the workspace's account is on, the plan catalog and whether the caller may change the plan */
+        get: operations["Billing.Plan.Get"];
+        /** Move the workspace's account to another plan (account owner, development environments only) */
+        put: operations["Billing.Plan.Change"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/board-items/{boardItemId}/activity": {
         parameters: {
             query?: never;
@@ -4743,6 +4761,9 @@ export interface components {
         "Notrelix.API.Contracts.Automation.Rules.Requests.SetAutomationRuleEnabledRequest": {
             isEnabled?: boolean;
         };
+        "Notrelix.API.Contracts.Billing.ChangeWorkspaceBillingPlanRequest": {
+            planCode?: string | null;
+        };
         "Notrelix.API.Contracts.Collaboration.Attachments.Requests.CreateBoardItemAttachmentRequest": {
             filename?: string | null;
             url?: string | null;
@@ -5545,10 +5566,26 @@ export interface components {
             isUnlimited?: boolean;
             /** Format: int32 */
             limit?: number | null;
-            /** Format: int32 */
+            /** Format: double */
             used?: number;
             /** Format: int32 */
             remaining?: number | null;
+        };
+        "Notrelix.Application.Features.Billing.Plans.Queries.GetWorkspaceBillingPlan.BillingPlanDto": {
+            code?: string | null;
+            name?: string | null;
+            limits?: components["schemas"]["Notrelix.Application.Features.Billing.Plans.Queries.GetWorkspaceBillingPlan.BillingPlanLimitDto"][] | null;
+        };
+        "Notrelix.Application.Features.Billing.Plans.Queries.GetWorkspaceBillingPlan.BillingPlanLimitDto": {
+            code?: string | null;
+            isUnlimited?: boolean;
+            /** Format: int32 */
+            limit?: number | null;
+        };
+        "Notrelix.Application.Features.Billing.Plans.Queries.GetWorkspaceBillingPlan.WorkspaceBillingPlanDto": {
+            currentPlan?: components["schemas"]["Notrelix.Application.Features.Billing.Plans.Queries.GetWorkspaceBillingPlan.BillingPlanDto"];
+            availablePlans?: components["schemas"]["Notrelix.Application.Features.Billing.Plans.Queries.GetWorkspaceBillingPlan.BillingPlanDto"][] | null;
+            canChangePlan?: boolean;
         };
         "Notrelix.Application.Features.Collaboration.Attachments.DTOs.AttachmentDto": {
             /** Format: uuid */
@@ -7131,6 +7168,54 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Notrelix.Application.Features.Billing.Entitlements.Queries.GetWorkspaceBillingCapabilities.BillingCapabilityDto"][];
+                };
+            };
+        };
+    };
+    "Billing.Plan.Get": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Billing.Plans.Queries.GetWorkspaceBillingPlan.WorkspaceBillingPlanDto"];
+                };
+            };
+        };
+    };
+    "Billing.Plan.Change": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Billing.ChangeWorkspaceBillingPlanRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Billing.Plans.Queries.GetWorkspaceBillingPlan.WorkspaceBillingPlanDto"];
                 };
             };
         };

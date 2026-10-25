@@ -80,6 +80,10 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
 
     public Task DisposeAsync() => Task.CompletedTask;
 
+    private static BillingCapabilityFactsProvider NewFacts(IBillingDbContext ctx, IDateTimeProvider clock) =>
+        new(ctx, clock, new Notrelix.Infrastructure.Billing.BillingUsageReader((ApplicationDbContext)ctx),
+            new Notrelix.Application.Features.Billing.Plans.BillingPlanResolver(ctx, clock));
+
     [Fact(DisplayName = "TAC-XPK-BILLING-LAST-SLOT - two concurrent creates, one remaining slot")]
     public async Task TwoConcurrentCreateRuleCommands_OneRemainingSlot_ExactlyOneWins_AndOneSloteConsumed()
     {
@@ -150,7 +154,7 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
         await using var tx = await context.Database.BeginTransactionAsync();
         var capacity = new BillingCapacityActions(
             context,
-            new BillingCapabilityFactsProvider(context, clock.Object));
+            NewFacts(context, clock.Object));
 
         var op = new BillingCapacityOperationIdentity(
             accountId, workspaceId, BillingCapabilityCode.AutomationRule,
@@ -225,7 +229,7 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
             var tenant = new FakeCurrentTenantContext();
             tenant.SetWorkspace(accountId, workspaceId, ownerId);
             await using var ctx = _db.CreateOwnerContext(tenant);
-            var capacity = new BillingCapacityActions(ctx, new BillingCapabilityFactsProvider(ctx, clock.Object));
+            var capacity = new BillingCapacityActions(ctx, NewFacts(ctx, clock.Object));
             var op = new BillingCapacityOperationIdentity(
                 accountId, workspaceId, BillingCapabilityCode.AutomationRule,
                 Amount: 1, LogicalOperationId: logicalOperationId, SourceResource: sourceResource,
@@ -296,7 +300,7 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
             var tenant = new FakeCurrentTenantContext();
             tenant.SetWorkspace(accountId, workspaceId, ownerId);
             await using var ctx = _db.CreateOwnerContext(tenant);
-            var capacity = new BillingCapacityActions(ctx, new BillingCapabilityFactsProvider(ctx, clock.Object));
+            var capacity = new BillingCapacityActions(ctx, NewFacts(ctx, clock.Object));
             var op = new BillingCapacityOperationIdentity(
                 accountId, workspaceId, BillingCapabilityCode.AutomationRule,
                 Amount: 1, LogicalOperationId: Guid.CreateVersion7(), SourceResource: sourceResource,
@@ -349,7 +353,7 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
         await using var tx = await context.Database.BeginTransactionAsync();
         var capacity = new BillingCapacityActions(
             context,
-            new BillingCapabilityFactsProvider(context, clock.Object));
+            NewFacts(context, clock.Object));
         var op = new BillingCapacityOperationIdentity(
             accountId, workspaceId, BillingCapabilityCode.AutomationRule,
             Amount: 1, LogicalOperationId: Guid.CreateVersion7(), SourceResource: "materialized-history",
@@ -412,7 +416,7 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
             {
                 var capacity = new BillingCapacityActions(
                     context,
-                    new BillingCapabilityFactsProvider(context, clock.Object));
+                    NewFacts(context, clock.Object));
                 await capacity.ConsumeAsync(new ConsumeCapacityRequest(op), ct);
                 throw new ConflictException("simulated AutomationRule persistence failure");
             },
@@ -484,7 +488,7 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
         await using var tx = await context.Database.BeginTransactionAsync();
         var capacity = new BillingCapacityActions(
             context,
-            new BillingCapabilityFactsProvider(context, clock.Object));
+            NewFacts(context, clock.Object));
 
         // Drive the two-unit grant to full capacity through the real production
         // capacity action: two distinct consumes journal +1 each in the ledger.
@@ -506,7 +510,7 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
         // reports Used == Limit, so requesting another unit is unavailable. This is
         // exactly the state the regressed branch must preserve — release must keep
         // the finite ceiling instead of collapsing it to zero.
-        var exhausted = await new BillingCapabilityFactsProvider(context, clock.Object)
+        var exhausted = await NewFacts(context, clock.Object)
             .GetCapabilityAsync(accountId, workspaceId, BillingCapabilityCode.AutomationRule, requestedAmount: 1, CancellationToken.None);
         exhausted.Should().NotBeNull();
         exhausted!.IsAvailable.Should().BeFalse("at full capacity the requested unit no longer fits the grant");
@@ -797,7 +801,7 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
         else
         {
             services.AddScoped<IBillingCapabilityFacts>(sp =>
-                new BillingCapabilityFactsProvider(
+                NewFacts(
                     sp.GetRequiredService<IBillingDbContext>(),
                     sp.GetRequiredService<IDateTimeProvider>()));
         }
@@ -823,7 +827,7 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
         var tenant = new FakeCurrentTenantContext();
         tenant.SetWorkspace(accountId, workspaceId, null);
         await using var context = _db.CreateOwnerContext(tenant);
-        var provider = new BillingCapabilityFactsProvider(context, clock);
+        var provider = NewFacts(context, clock);
         var fact = await provider.GetCapabilityAsync(
             accountId, workspaceId, BillingCapabilityCode.AutomationRule, requestedAmount: 1, CancellationToken.None);
         return fact?.Remaining;

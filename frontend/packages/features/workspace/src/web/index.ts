@@ -436,4 +436,5 @@ export {
   type BillingCapabilitiesState,
   type BillingCapabilitiesSurfaceProps,
   type BillingCapabilityDto,
+  type BillingPlanCardState,
 } from "./billing/billing-capabilities-surface";
