@@ -14,6 +14,7 @@ public class AutomationRuleConfiguration : IEntityTypeConfiguration<AutomationRu
         builder.Property(x => x.AccountId).HasColumnName("account_id").IsRequired();
         builder.Property(x => x.WorkspaceId).HasColumnName("workspace_id").IsRequired();
         builder.Property(x => x.BoardId).HasColumnName("board_id");
+        builder.Property(x => x.ConfigurationVersion).HasColumnName("configuration_version").HasDefaultValue(1).IsRequired();
         builder.Property(x => x.Name).HasColumnName("name").IsRequired().HasMaxLength(256);
         builder.Property(x => x.Description).HasColumnName("description").HasMaxLength(1024);
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<string>().IsRequired().HasMaxLength(50);

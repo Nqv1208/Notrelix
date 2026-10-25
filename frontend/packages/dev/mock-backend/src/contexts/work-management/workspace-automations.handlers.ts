@@ -6,6 +6,8 @@
  * Operations:
  *   Automation.Rules.List         GET   /workspaces/:workspaceId/automations
  *   Automation.Rules.Create       POST  /workspaces/:workspaceId/automations
+ *   Automation.Rules.Update       PUT   /workspaces/:workspaceId/automations/:automationId
+ *   Automation.Rules.Delete       DELETE /workspaces/:workspaceId/automations/:automationId
  *   Automation.Rules.SetEnabled   PATCH /workspaces/:workspaceId/automations/:automationId/enabled
  *   Automation.Executions.List    GET   /automations/:automationId/executions
  */
@@ -26,21 +28,60 @@ function mayManage(store: MockStore, workspaceId: string): boolean {
   return role === "owner" || role === "admin";
 }
 
-function guard(
-  store: MockStore,
-  workspaceId: string,
-): MockHttpResult<unknown> | null {
-  if (!store.getWorkspace(workspaceId)) return notFound("Workspace not found");
-  return mayManage(store, workspaceId) ? null : forbidden();
-}
-
-interface CreateBody {
+interface DefinitionBody {
   name?: string | null;
   triggerEvent?: string | null;
-  actionType?: string | null;
-  configuration?: string | null;
-  boardId?: string | null;
   triggerConfiguration?: string | null;
+  actions?: { type?: string | null; configuration?: string | null }[] | null;
+  conditions?: string | null;
+  boardId?: string | null;
+}
+
+const MAX_ACTIONS = 5;
+const RUNNABLE = new Set([
+  "MoveItem",
+  "ChangeStatus",
+  "AssignPerson",
+  "UpdateField",
+  "NotifyMember",
+  "SendEmail",
+]);
+
+/** The definition the body describes, or null when it is not a valid rule. */
+function definitionOf(body: DefinitionBody | undefined) {
+  const name = (body?.name ?? "").trim();
+  const actions = (body?.actions ?? []).map((action) => ({
+    type: action.type ?? "",
+    configuration: action.configuration ?? null,
+  }));
+  if (
+    !name ||
+    !body?.triggerEvent ||
+    actions.length === 0 ||
+    actions.length > MAX_ACTIONS ||
+    actions.some((action) => !RUNNABLE.has(action.type))
+  ) {
+    return null;
+  }
+  return {
+    name,
+    triggerEvent: body.triggerEvent,
+    triggerConfiguration: body.triggerConfiguration ?? null,
+    actions,
+    conditions: body.conditions ?? null,
+  };
+}
+
+/** A board Manager or a workspace Owner/Admin may manage the rules of a board. */
+function mayManageBoard(
+  store: MockStore,
+  workspaceId: string,
+  boardId: string | null | undefined,
+): boolean {
+  if (mayManage(store, workspaceId)) return true;
+  // A board Manager is a member of the workspace who names the board they manage.
+  const role = store.getCurrentMemberRole(workspaceId);
+  return Boolean(boardId) && role === "member";
 }
 
 export const workspaceAutomationsOperations = [
@@ -49,36 +90,34 @@ export const workspaceAutomationsOperations = [
     contract: { kind: "openapi", operationId: "Automation.Rules.List" },
     method: "GET",
     route: "/workspaces/:workspaceId/automations",
-    async handle({ params, store }) {
-      const denied = guard(store, params.workspaceId);
-      if (denied) return denied;
-      return ok(store.workspaceAutomations.list(params.workspaceId));
+    async handle({ params, query, store }) {
+      if (!store.getWorkspace(params.workspaceId))
+        return notFound("Workspace not found");
+      const boardId = query.boardId ?? null;
+      if (!mayManageBoard(store, params.workspaceId, boardId))
+        return forbidden();
+      return ok(store.workspaceAutomations.list(params.workspaceId, boardId));
     },
   }),
-  defineMockOperation<{ workspaceId: string }, CreateBody, unknown>({
+  defineMockOperation<{ workspaceId: string }, DefinitionBody, unknown>({
     id: "automation.rules.create",
     contract: { kind: "openapi", operationId: "Automation.Rules.Create" },
     method: "POST",
     route: "/workspaces/:workspaceId/automations",
     async handle({ params, body, store }) {
-      const denied = guard(store, params.workspaceId);
-      if (denied) return denied;
-      const name = (body?.name ?? "").trim();
-      if (!name || !body?.triggerEvent || !body.actionType) {
+      if (!store.getWorkspace(params.workspaceId))
+        return notFound("Workspace not found");
+      if (!mayManageBoard(store, params.workspaceId, body?.boardId))
+        return forbidden();
+      const definition = definitionOf(body);
+      if (!definition) {
         return validationError({
           _errors: ["Invalid automation trigger and/or action configuration."],
         });
       }
       const rule = store.workspaceAutomations.create(
         params.workspaceId,
-        {
-          name,
-          triggerEvent: body.triggerEvent,
-          actionType: body.actionType,
-          configuration: body.configuration ?? "{}",
-          boardId: body.boardId ?? null,
-          triggerConfiguration: body.triggerConfiguration ?? null,
-        },
+        { ...definition, boardId: body?.boardId ?? null },
         store.getCurrentUser().id,
       );
       return created<string>(rule.id);
@@ -86,7 +125,66 @@ export const workspaceAutomationsOperations = [
   }),
   defineMockOperation<
     { workspaceId: string; automationId: string },
-    { isEnabled?: boolean },
+    DefinitionBody,
+    void
+  >({
+    id: "automation.rules.update",
+    contract: { kind: "openapi", operationId: "Automation.Rules.Update" },
+    method: "PUT",
+    route: "/workspaces/:workspaceId/automations/:automationId",
+    async handle({ params, body, store }) {
+      if (!mayManageBoard(store, params.workspaceId, body?.boardId))
+        return forbidden() as MockHttpResult<void>;
+      const rule = store.workspaceAutomations.find(params.automationId);
+      if (
+        !rule ||
+        rule.removed ||
+        rule.workspaceId !== params.workspaceId ||
+        (body?.boardId && rule.boardId !== body.boardId)
+      )
+        return notFound("Automation rule not found");
+      const definition = definitionOf(body);
+      if (!definition) {
+        return validationError({
+          _errors: ["Invalid automation trigger and/or action configuration."],
+        }) as MockHttpResult<void>;
+      }
+      store.workspaceAutomations.update(
+        rule,
+        definition,
+        store.getCurrentUser().id,
+      );
+      return noContent();
+    },
+  }),
+  defineMockOperation<
+    { workspaceId: string; automationId: string },
+    never,
+    void
+  >({
+    id: "automation.rules.delete",
+    contract: { kind: "openapi", operationId: "Automation.Rules.Delete" },
+    method: "DELETE",
+    route: "/workspaces/:workspaceId/automations/:automationId",
+    async handle({ params, query, store }) {
+      const boardId = query.boardId ?? null;
+      if (!mayManageBoard(store, params.workspaceId, boardId))
+        return forbidden() as MockHttpResult<void>;
+      const rule = store.workspaceAutomations.find(params.automationId);
+      if (
+        !rule ||
+        rule.removed ||
+        rule.workspaceId !== params.workspaceId ||
+        (boardId && rule.boardId !== boardId)
+      )
+        return notFound("Automation rule not found");
+      store.workspaceAutomations.remove(rule);
+      return noContent();
+    },
+  }),
+  defineMockOperation<
+    { workspaceId: string; automationId: string },
+    { isEnabled?: boolean; boardId?: string | null },
     void
   >({
     id: "automation.rules.setEnabled",
@@ -94,10 +192,15 @@ export const workspaceAutomationsOperations = [
     method: "PATCH",
     route: "/workspaces/:workspaceId/automations/:automationId/enabled",
     async handle({ params, body, store }) {
-      const denied = guard(store, params.workspaceId);
-      if (denied) return denied as MockHttpResult<void>;
+      if (!mayManageBoard(store, params.workspaceId, body?.boardId))
+        return forbidden() as MockHttpResult<void>;
       const rule = store.workspaceAutomations.find(params.automationId);
-      if (!rule || rule.workspaceId !== params.workspaceId)
+      if (
+        !rule ||
+        rule.removed ||
+        rule.workspaceId !== params.workspaceId ||
+        (body?.boardId && rule.boardId !== body.boardId)
+      )
         return notFound("Automation rule not found");
       store.workspaceAutomations.setEnabled(rule, body?.isEnabled === true);
       return noContent();
@@ -108,10 +211,11 @@ export const workspaceAutomationsOperations = [
     contract: { kind: "openapi", operationId: "Automation.Executions.List" },
     method: "GET",
     route: "/automations/:automationId/executions",
-    async handle({ params, store }) {
+    async handle({ params, query, store }) {
       const rule = store.workspaceAutomations.find(params.automationId);
       if (!rule) return notFound("Automation rule not found");
-      if (!mayManage(store, rule.workspaceId)) return forbidden();
+      if (!mayManageBoard(store, rule.workspaceId, query.boardId ?? null))
+        return forbidden();
       return ok([]);
     },
   }),

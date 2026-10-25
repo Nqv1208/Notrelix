@@ -14,6 +14,12 @@ public class AutomationRule : SoftDeletableAggregateRoot, IWorkspaceScoped
     /// </summary>
     public Guid? BoardId { get; private set; }
 
+    /// <summary>
+    /// The version of the rule's definition a person sees: 1 when created, raised by every edit
+    /// (<see cref="Revise"/>). Switching the rule on or off does not change it.
+    /// </summary>
+    public int ConfigurationVersion { get; private set; } = 1;
+
     public string Name { get; private set; } = null!;
     public string? Description { get; private set; }
     public AutomationRuleStatus Status { get; private set; }
@@ -171,6 +177,7 @@ public class AutomationRule : SoftDeletableAggregateRoot, IWorkspaceScoped
         var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Name = name.Trim();
         Configuration = configuration;
+        ConfigurationVersion++;
         ExecutorUserId = updatedBy;
         ApplyAuditUpdate(pending);
         IncrementVersion();

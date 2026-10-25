@@ -59,7 +59,7 @@ public class DeleteAutomationRuleCommandHandler : IRequestHandler<DeleteAutomati
                 WorkspaceId: rule.WorkspaceId,
                 CapabilityCode: BillingCapabilityCode.AutomationRule,
                 Amount: 1,
-                LogicalOperationId: rule.Id,
+                LogicalOperationId: ReleaseOperationId(rule.Id),
                 SourceResource: rule.Id.ToString(),
                 ActorUserId: user,
                 OccurredAt: now)),
@@ -67,4 +67,12 @@ public class DeleteAutomationRuleCommandHandler : IRequestHandler<DeleteAutomati
 
         return Result.Success();
     }
+
+    /// <summary>
+    /// The identity of the release: stable per rule (a retry never releases twice) and different
+    /// from the rule's own id, which names the consume the rule's creation made.
+    /// </summary>
+    public static Guid ReleaseOperationId(Guid ruleId) =>
+        new(System.Security.Cryptography.MD5.HashData(
+            System.Text.Encoding.UTF8.GetBytes($"automation-rule-release:{ruleId:N}")));
 }

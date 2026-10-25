@@ -57,7 +57,7 @@ public class GetWorkspaceAutomationsQueryHandler : IRequestHandler<GetWorkspaceA
                 item.DisabledReason,
                 item.BoardId,
                 item.Configuration.Trigger.Configuration,
-                item.Version,
+                item.ConfigurationVersion,
                 item.Configuration.Actions
                     .Select(action => new AutomationActionDto(action.Type, action.Configuration))
                     .ToList(),

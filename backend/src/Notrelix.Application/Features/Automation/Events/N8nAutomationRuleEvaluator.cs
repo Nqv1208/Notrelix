@@ -135,7 +135,7 @@ public sealed class N8nAutomationRuleEvaluator
                 ancestry?.ParentExecutionId,
                 ancestry is null ? 0 : ancestry.ParentDepth + 1,
                 // AU-4: the execution finishes on the version it started with.
-                rule.Version,
+                rule.ConfigurationVersion,
                 AutomationRuleSnapshot.From(rule).Serialize());
 
             _context.AutomationExecutions.Add(execution);

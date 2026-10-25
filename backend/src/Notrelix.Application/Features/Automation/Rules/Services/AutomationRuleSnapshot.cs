@@ -10,7 +10,7 @@ public sealed record AutomationActionSnapshot(string Type, string? Configuration
 /// not from the rule's current configuration.
 /// </summary>
 public sealed record AutomationRuleSnapshot(
-    long Version,
+    int Version,
     string Name,
     Guid? ExecutorUserId,
     Guid? BoardId,
@@ -20,7 +20,7 @@ public sealed record AutomationRuleSnapshot(
     IReadOnlyList<AutomationActionSnapshot> Actions)
 {
     public static AutomationRuleSnapshot From(AutomationRule rule) => new(
-        rule.Version,
+        rule.ConfigurationVersion,
         rule.Name,
         rule.ExecutorUserId,
         rule.BoardId,
