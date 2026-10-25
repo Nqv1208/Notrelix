@@ -1050,7 +1050,8 @@ export function decideApproval(
 export function reopenItem(store: MockStore, cardId: string): FeedWriteResult {
   const card = store.getCard(cardId);
   if (!card) return "not-found";
-  if (!card.completedAt) return "invalid";
+  // Reopening an item that is not completed changes nothing, as on the producer.
+  if (!card.completedAt) return "ok";
   const result = setItemBucket(store, cardId, "doing");
   if (result !== "ok") return result;
   store.reopenCard(cardId);

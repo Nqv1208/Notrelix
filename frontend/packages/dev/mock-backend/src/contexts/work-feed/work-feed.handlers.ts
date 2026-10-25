@@ -234,7 +234,10 @@ export const workFeedOperations = [
   // ── Reopen a completed item ──────────────────────────────────────────────
   defineMockOperation<{ id: string }>({
     id: "wsFeed.items.reopen",
-    contract: { kind: "gap", gapId: MY_WORK_EXT },
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardItems.Reopen",
+    },
     method: "POST",
     route: "/board-items/:id/reopen",
     async handle({ params, store }) {

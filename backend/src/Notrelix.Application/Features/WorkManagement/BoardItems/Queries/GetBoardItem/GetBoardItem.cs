@@ -37,9 +37,12 @@ public class GetBoardItemQueryHandler : IRequestHandler<GetBoardItemQuery, Resul
             .ToListAsync(ct);
 
         var memberUserIds = memberEntities.Select(m => m.UserId).Distinct().ToList();
+        var lifecycleUserIds = new[] { card.CompletedBy, card.ArchivedBy }.Where(id => id.HasValue).Select(id => id!.Value);
+        memberUserIds = memberUserIds.Concat(lifecycleUserIds).Distinct().ToList();
         var actors = await _actorLookup.FindManyAsync(memberUserIds, ct);
         var actorMap = actors.ToDictionary(a => a.UserId);
 
+        string? NameOf(Guid? userId) => userId.HasValue && actorMap.TryGetValue(userId.Value, out var who) ? who.Name : null;
         var members = memberEntities
             .Select(m => new BoardItemMemberDto(
                 m.UserId,
@@ -100,7 +103,12 @@ public class GetBoardItemQueryHandler : IRequestHandler<GetBoardItemQuery, Resul
             card.StartedAt,
             card.CompletedAt,
             values.ChildProgress,
-            card.IsArchived
+            card.IsArchived,
+            card.CompletedBy,
+            NameOf(card.CompletedBy),
+            card.ArchivedAt,
+            card.ArchivedBy,
+            NameOf(card.ArchivedBy)
         ));
     }
 }

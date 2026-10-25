@@ -57,7 +57,13 @@ public record BoardItemDto(
     DateTimeOffset? StartedAt = null,
     DateTimeOffset? CompletedAt = null,
     BoardItemChildProgressDto? ChildProgress = null,
-    bool IsArchived = false
+    bool IsArchived = false,
+    // Who completed or archived the Item, with the display name resolved at read time.
+    Guid? CompletedBy = null,
+    string? CompletedByName = null,
+    DateTimeOffset? ArchivedAt = null,
+    Guid? ArchivedBy = null,
+    string? ArchivedByName = null
 );
 
 public record BoardItemMemberDto(Guid UserId, string Name, string? Avatar, DateTimeOffset AssignedAt);

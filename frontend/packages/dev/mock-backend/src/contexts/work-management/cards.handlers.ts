@@ -171,6 +171,8 @@ function projectCardDto(c: MockCardRecord, store: MockStore): CardDtoApi {
   const comments = store.getCardComments(c.id);
   const fieldValues = store.getFieldValues(c.id);
   const { completedAt, ...readValues } = projectItemReadValues(c, store);
+  const nameOf = (userId: string | null | undefined) =>
+    (userId ? store.getUser(userId)?.name : null) ?? null;
 
   return {
     id: c.id,
@@ -195,7 +197,14 @@ function projectCardDto(c: MockCardRecord, store: MockStore): CardDtoApi {
     fieldValues: Object.keys(fieldValues).length > 0 ? fieldValues : null,
     createdAt: c.createdAt,
     updatedAt: c.updatedAt ?? null,
-    ...{ name: c.title, groupId: c.listId, isArchived: c.isArchived === true },
+    ...{
+      name: c.title,
+      groupId: c.listId,
+      isArchived: c.isArchived === true,
+      archivedAt: c.isArchived ? (c.archivedAt ?? null) : null,
+      archivedByName: c.isArchived ? nameOf(c.archivedByUserId) : null,
+      completedByName: completedAt ? nameOf(c.assigneeUserIds?.[0]) : null,
+    },
     ...readValues,
   };
 }

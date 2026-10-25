@@ -96,7 +96,7 @@ export interface ItemFollowingDto {
   readonly followers: readonly { userId: string; name: string }[];
 }
 
-/** Who completed or archived an item and when (gap `CTR-GAP-WM-ITEM-STATES`). */
+/** Who completed or archived an item and when. */
 export interface ItemLifecycleDto {
   readonly archived: { readonly at: string; readonly byName: string } | null;
   readonly completed: { readonly at: string; readonly byName: string } | null;
@@ -187,25 +187,40 @@ export function createItemExtrasApi(client: NotrelixClient) {
       );
     },
     /**
-     * Read from the item itself (`WorkManagement.BoardItems.Get`): whether it
-     * is archived and when it was completed. The producer keeps no record of who
-     * archived or completed it, so the name is empty and the page words the state
-     * without one.
+     * Read from the item itself (`WorkManagement.BoardItems.Get`): whether it is
+     * archived or completed, when and by whom.
      */
     async getLifecycle(itemId: string): Promise<ItemLifecycleDto> {
       const dto = await api.get<{
         isArchived?: boolean;
+        archivedAt?: string | null;
+        archivedByName?: string | null;
         completedAt?: string | null;
+        completedByName?: string | null;
         updatedAt?: string | null;
       } | null>(`/board-items/${itemId}`);
       return {
         archived: dto?.isArchived
-          ? { at: dto.updatedAt ?? "", byName: "" }
+          ? {
+              at: dto.archivedAt ?? dto.updatedAt ?? "",
+              byName: dto.archivedByName ?? "",
+            }
           : null,
         completed: dto?.completedAt
-          ? { at: dto.completedAt, byName: "" }
+          ? { at: dto.completedAt, byName: dto.completedByName ?? "" }
           : null,
       };
+    },
+    /**
+     * `WorkManagement.BoardItems.Reopen`: a completed item returns to the status
+     * it had before it was completed, else to the board's first open status.
+     */
+    async reopenItem(itemId: string): Promise<void> {
+      await api.post<void>(
+        `/board-items/${itemId}/reopen`,
+        {},
+        { idempotencyKey: key(), ...quiet },
+      );
     },
     /** An archived item comes back with `WorkManagement.BoardItems.Unarchive`. */
     async restoreItem(itemId: string): Promise<void> {

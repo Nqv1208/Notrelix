@@ -297,7 +297,7 @@ function ItemPageReady({
         }),
       );
   };
-  const { lifecycle, restore } = useItemLifecycle(
+  const { lifecycle, restore, reopen } = useItemLifecycle(
     card.id,
     card.workspaceId,
     card.boardId,
@@ -575,6 +575,7 @@ function ItemPageReady({
         completed: isItemDone(card) ? (lifecycle?.completed ?? null) : null,
         archived: lifecycle?.archived ?? null,
         onRestore: () => restore(),
+        onReopen: () => reopen(),
       }}
       onResolveConflict={(choice) => {
         const write = refused;

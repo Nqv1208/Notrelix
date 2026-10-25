@@ -20,7 +20,16 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
     public DateTimeOffset? StartedAt { get; private set; }
     public DateTimeOffset? DueAt { get; private set; }
     public DateTimeOffset? CompletedAt { get; private set; }
+    public Guid? CompletedBy { get; private set; }
+
+    /// <summary>
+    /// The Status option the Item held when it was completed, so that reopening can
+    /// return it there. Null when none was recorded; cleared on reopen.
+    /// </summary>
+    public Guid? StatusBeforeCompletionOptionId { get; private set; }
     public bool IsArchived { get; private set; }
+    public DateTimeOffset? ArchivedAt { get; private set; }
+    public Guid? ArchivedBy { get; private set; }
 
     private readonly List<BoardItemValue> _fieldValues = new();
     public IReadOnlyCollection<BoardItemValue> FieldValues => _fieldValues.AsReadOnly();
@@ -326,7 +335,7 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new BoardItemTimelineSetDomainEvent(AccountId, WorkspaceId, BoardId, Id, startedAt, dueAt, updatedBy, updatedAt));
     }
 
-    public void Complete(DateTimeOffset completedAt, Guid updatedBy, DateTimeOffset updatedAt)
+    public void Complete(DateTimeOffset completedAt, Guid updatedBy, DateTimeOffset updatedAt, Guid? statusBeforeCompletionOptionId = null)
     {
         EnsureNotDeleted();
         EnsureNotArchived();
@@ -339,6 +348,8 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
 
         var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         CompletedAt = completedAt;
+        CompletedBy = updatedBy;
+        StatusBeforeCompletionOptionId = statusBeforeCompletionOptionId;
         ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BoardItemCompletedDomainEvent(AccountId, WorkspaceId, BoardId, Id, completedAt, updatedBy, updatedAt));
@@ -351,10 +362,10 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
     /// or no status, reopens it. The category is supplied by the caller from the
     /// Board's Status field.
     /// </summary>
-    public void SyncCompletionWithStatus(WorkStatusCategory? category, Guid changedBy, DateTimeOffset changedAt)
+    public void SyncCompletionWithStatus(WorkStatusCategory? category, Guid changedBy, DateTimeOffset changedAt, Guid? statusBeforeCompletionOptionId = null)
     {
         if (category == WorkStatusCategory.Done)
-            Complete(changedAt, changedBy, changedAt);
+            Complete(changedAt, changedBy, changedAt, statusBeforeCompletionOptionId);
         else
             Reopen(changedBy, changedAt);
     }
@@ -369,6 +380,8 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
 
         var pending = PrepareAuditUpdate(reopenedBy, reopenedAt);
         CompletedAt = null;
+        CompletedBy = null;
+        StatusBeforeCompletionOptionId = null;
         ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BoardItemReopenedDomainEvent(AccountId, WorkspaceId, BoardId, Id, reopenedBy, reopenedAt));
@@ -391,6 +404,8 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
         if (IsArchived) return;
         var pending = PrepareAuditUpdate(archivedBy, archivedAt);
         IsArchived = true;
+        ArchivedAt = archivedAt;
+        ArchivedBy = archivedBy;
         ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BoardItemArchivedDomainEvent(AccountId, WorkspaceId, BoardId, Id, archivedBy, archivedAt, Version));
@@ -403,6 +418,8 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
         if (!IsArchived) return;
         var pending = PrepareAuditUpdate(unarchivedBy, unarchivedAt);
         IsArchived = false;
+        ArchivedAt = null;
+        ArchivedBy = null;
         ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BoardItemUnarchivedDomainEvent(AccountId, WorkspaceId, BoardId, Id, unarchivedBy, unarchivedAt));

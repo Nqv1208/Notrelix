@@ -71,6 +71,7 @@ public sealed class WorkPermissionActionMatrixArchitectureTests
         ["BoardItems.UpdateBoardItemStatusCommand"] = PermissionAction.UpdateItem,
         ["BoardItems.SetBoardItemDueDateCommand"] = PermissionAction.UpdateItem,
         ["BoardItems.CompleteBoardItemCommand"] = PermissionAction.UpdateItem,
+        ["BoardItems.ReopenBoardItemCommand"] = PermissionAction.UpdateItem,
         ["BoardItems.ArchiveBoardItemCommand"] = PermissionAction.UpdateItem,
         ["BoardItems.UnarchiveBoardItemCommand"] = PermissionAction.UpdateItem,
         ["BoardItems.DeleteBoardItemCommand"] = PermissionAction.UpdateItem,

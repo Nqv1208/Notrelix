@@ -38,6 +38,7 @@ public static class MapBoardItemEndpoints
         itemGroup.MapClearFieldValue();
         itemGroup.MapRestoreBoardItem();
         itemGroup.MapCompleteBoardItem();
+        itemGroup.MapReopenBoardItem();
         itemGroup.MapSetBoardItemDueDate();
         itemGroup.MapUpdateBoardItemStatus();
         itemGroup.MapListBoardItemLinks();

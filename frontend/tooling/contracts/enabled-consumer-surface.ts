@@ -737,13 +737,21 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
   },
   {
     context: "Workspace",
-    classification: "COMPATIBILITY_GAP_MOCKED",
+    classification: "CANONICAL_MOCKED",
     consumerSymbol: "useReopenItem",
     consumerFile: "frontend/apps/web/src/shell/workspace/work-feed-bridge.ts",
-    capability: "Reopen a completed item",
-    gapId: "CTR-GAP-WS-MYWORK-EXT",
-    method: "POST",
-    pathTemplate: "/board-items/{id}/reopen",
+    capability: "WorkManagement.BoardItems.Reopen",
+    operationId: "WorkManagement.BoardItems.Reopen",
+    mutation: true,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "useItemLifecycle",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/item-extras.api.ts",
+    capability: "WorkManagement.BoardItems.Reopen",
+    operationId: "WorkManagement.BoardItems.Reopen",
     mutation: true,
   },
   {

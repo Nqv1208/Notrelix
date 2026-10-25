@@ -71,8 +71,8 @@ const lifecycleKey = (workspaceId: string, itemId: string) =>
   workspaceQueryKey(workspaceId, "work-management", "item-lifecycle", itemId);
 
 /**
- * Whether an item is completed or archived, read from the item itself, and
- * the restore of an archived one. Reopening a done item has no contract yet.
+ * Whether an item is completed or archived, read from the item itself, the
+ * restore of an archived one and the reopening of a completed one.
  */
 export function useItemLifecycle(
   itemId: string,
@@ -108,9 +108,14 @@ export function useItemLifecycle(
     mutationFn: () => itemExtras.restoreItem(itemId),
     onSettled: refresh,
   });
+  const reopen = useMutation({
+    mutationFn: () => itemExtras.reopenItem(itemId),
+    onSettled: refresh,
+  });
   return {
     lifecycle: query.data ?? null,
     restore: restore.mutate,
+    reopen: reopen.mutate,
   };
 }
 

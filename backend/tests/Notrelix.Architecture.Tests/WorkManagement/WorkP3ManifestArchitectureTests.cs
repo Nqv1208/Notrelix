@@ -99,6 +99,7 @@ public sealed class WorkP3ManifestArchitectureTests
         ["BoardItems.UpdateBoardItemStatusCommand"] = new(Disposition.Keep, "-"),
         ["BoardItems.SetBoardItemDueDateCommand"] = new(Disposition.Keep, "-"),
         ["BoardItems.CompleteBoardItemCommand"] = new(Disposition.Keep, "-"),
+        ["BoardItems.ReopenBoardItemCommand"] = new(Disposition.Keep, "-"),
         ["BoardItems.AssignBoardItemMemberCommand"] = new(Disposition.Keep, "-"),
         ["BoardItems.UnassignBoardItemMemberCommand"] = new(Disposition.Keep, "-"),
         ["BoardItems.ArchiveBoardItemCommand"] = new(Disposition.Keep, "-"),
