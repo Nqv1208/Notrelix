@@ -113,7 +113,11 @@ export function FieldsSection({
                 sideOffset={15}
                 className="w-[520px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-line-strong bg-popover p-0 shadow-popover"
               >
-                <FieldTypePicker copy={copy} onPick={addField} />
+                <FieldTypePicker
+                  copy={copy}
+                  allowed={settings.unavailable?.creatableFieldTypes}
+                  onPick={addField}
+                />
               </PopoverContent>
             </Popover>
           }
@@ -209,60 +213,62 @@ export function FieldsSection({
           ))}
         </div>
 
-        <div ref={archivedRef} id="bs-archived">
-          <SectionLine
-            title={t.archived}
-            count={settings.archivedFields.length}
-            note={t.archivedNote}
-          />
-          {settings.archivedFields.length === 0 ? null : (
-            <div
-              role="list"
-              className="overflow-hidden rounded-[10px] border border-line bg-popover"
-            >
-              {settings.archivedFields.map((field) => (
-                <div
-                  key={field.id}
-                  role="listitem"
-                  className={cn(
-                    ROW_GRID,
-                    "border-t border-line text-meta-foreground first:border-t-0",
-                  )}
-                >
-                  <span />
-                  <span className="flex min-w-0 items-center gap-[9px] font-medium">
-                    <TypeMark icon={fieldIcon(field.type, field.key)} />
-                    <span className="truncate">{field.name}</span>
-                  </span>
-                  <span className="text-muted-foreground">
-                    {typeName(copy, field.type)}
-                    <small className="block text-[11.5px] leading-[1.45] text-meta-foreground">
-                      {fillCopy(t.archivedMeta, {
-                        date: shortDay(field.archivedAt, timeZone),
-                        name: field.archivedByName,
-                      })}
-                    </small>
-                  </span>
-                  <span className="truncate font-mono text-[12px] text-meta-foreground">
-                    {field.key}
-                  </span>
-                  <span>
-                    <button
-                      type="button"
-                      aria-label={fillCopy(t.restoreLabel, {
-                        name: field.name,
-                      })}
-                      onClick={() => void run(actions.restoreField(field.id))}
-                      className={BUTTON_CLASS.ghostBrand}
-                    >
-                      {t.restore}
-                    </button>
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        {settings.unavailable?.fieldArchive ? null : (
+          <div ref={archivedRef} id="bs-archived">
+            <SectionLine
+              title={t.archived}
+              count={settings.archivedFields.length}
+              note={t.archivedNote}
+            />
+            {settings.archivedFields.length === 0 ? null : (
+              <div
+                role="list"
+                className="overflow-hidden rounded-[10px] border border-line bg-popover"
+              >
+                {settings.archivedFields.map((field) => (
+                  <div
+                    key={field.id}
+                    role="listitem"
+                    className={cn(
+                      ROW_GRID,
+                      "border-t border-line text-meta-foreground first:border-t-0",
+                    )}
+                  >
+                    <span />
+                    <span className="flex min-w-0 items-center gap-[9px] font-medium">
+                      <TypeMark icon={fieldIcon(field.type, field.key)} />
+                      <span className="truncate">{field.name}</span>
+                    </span>
+                    <span className="text-muted-foreground">
+                      {typeName(copy, field.type)}
+                      <small className="block text-[11.5px] leading-[1.45] text-meta-foreground">
+                        {fillCopy(t.archivedMeta, {
+                          date: shortDay(field.archivedAt, timeZone),
+                          name: field.archivedByName,
+                        })}
+                      </small>
+                    </span>
+                    <span className="truncate font-mono text-[12px] text-meta-foreground">
+                      {field.key}
+                    </span>
+                    <span>
+                      <button
+                        type="button"
+                        aria-label={fillCopy(t.restoreLabel, {
+                          name: field.name,
+                        })}
+                        onClick={() => void run(actions.restoreField(field.id))}
+                        className={BUTTON_CLASS.ghostBrand}
+                      >
+                        {t.restore}
+                      </button>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </section>
 
       {selected ? (
@@ -270,7 +276,11 @@ export function FieldsSection({
           key={selected.id}
           field={selected}
           onClose={() => onSelectField(null)}
-          onArchive={() => setArchiveId(selected.id)}
+          onArchive={
+            settings.unavailable?.fieldArchive
+              ? undefined
+              : () => setArchiveId(selected.id)
+          }
         />
       ) : null}
 

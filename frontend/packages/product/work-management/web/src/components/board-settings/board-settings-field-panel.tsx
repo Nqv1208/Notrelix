@@ -65,9 +65,11 @@ export function FieldPanel({
 }: {
   field: BoardSettingsFieldDto;
   onClose: () => void;
-  onArchive: () => void;
+  /** Absent when the product has no archive of a field yet. */
+  onArchive?: () => void;
 }) {
-  const { copy, actions, run } = useSettings();
+  const { copy, settings, actions, run } = useSettings();
+  const rules = settings.unavailable?.fieldRules !== true;
   const t = copy.panel;
   const nameId = useId();
   const guidanceId = useId();
@@ -211,62 +213,70 @@ export function FieldPanel({
         {hasOptions ? (
           <>
             <OptionsEditor field={field} />
-            <FormGroup label={t.default}>
-              <DefaultSelect
-                options={field.options}
-                value={defaultId}
-                onChange={setDefaultId}
+            {rules ? (
+              <FormGroup label={t.default}>
+                <DefaultSelect
+                  options={field.options}
+                  value={defaultId}
+                  onChange={setDefaultId}
+                />
+                <Callout icon={Info}>
+                  <span>
+                    {fillCopy(t.defaultHint, { count: field.valueCount })}
+                  </span>
+                </Callout>
+              </FormGroup>
+            ) : null}
+          </>
+        ) : null}
+
+        {rules ? (
+          <>
+            <div className="flex items-center gap-2.5 text-item-small">
+              <span className="flex-1">
+                <span id={`${nameId}-req`}>{t.required}</span>
+                <small className="block text-metadata text-meta-foreground">
+                  {t.requiredHint}
+                </small>
+              </span>
+              <SwitchControl
+                checked={required}
+                onChange={setRequired}
+                label={t.required}
               />
-              <Callout icon={Info}>
-                <span>
-                  {fillCopy(t.defaultHint, { count: field.valueCount })}
-                </span>
-              </Callout>
+            </div>
+
+            <FormGroup label={t.guidance} htmlFor={guidanceId}>
+              <textarea
+                id={guidanceId}
+                value={guidance}
+                rows={2}
+                placeholder={t.guidancePlaceholder}
+                onChange={(event) => setGuidance(event.target.value)}
+                className={TEXTAREA_CLASS}
+              />
             </FormGroup>
           </>
         ) : null}
 
-        <div className="flex items-center gap-2.5 text-item-small">
-          <span className="flex-1">
-            <span id={`${nameId}-req`}>{t.required}</span>
-            <small className="block text-metadata text-meta-foreground">
-              {t.requiredHint}
-            </small>
-          </span>
-          <SwitchControl
-            checked={required}
-            onChange={setRequired}
-            label={t.required}
-          />
-        </div>
-
-        <FormGroup label={t.guidance} htmlFor={guidanceId}>
-          <textarea
-            id={guidanceId}
-            value={guidance}
-            rows={2}
-            placeholder={t.guidancePlaceholder}
-            onChange={(event) => setGuidance(event.target.value)}
-            className={TEXTAREA_CLASS}
-          />
-        </FormGroup>
-
-        <div className="flex flex-col gap-1.5">
-          <span className={FIELD_LABEL_CLASS}>{t.usedIn}</span>
-          {field.usedIn.length === 0 ? (
-            <span className={HINT_CLASS}>{t.usedNone}</span>
-          ) : (
-            <ul className="m-0 flex list-none flex-col gap-1 p-0">
-              {field.usedIn.map((usage) => (
-                <UsageRow key={`${usage.kind}:${usage.name}`} usage={usage} />
-              ))}
-            </ul>
-          )}
-        </div>
+        {rules ? (
+          <div className="flex flex-col gap-1.5">
+            <span className={FIELD_LABEL_CLASS}>{t.usedIn}</span>
+            {field.usedIn.length === 0 ? (
+              <span className={HINT_CLASS}>{t.usedNone}</span>
+            ) : (
+              <ul className="m-0 flex list-none flex-col gap-1 p-0">
+                {field.usedIn.map((usage) => (
+                  <UsageRow key={`${usage.kind}:${usage.name}`} usage={usage} />
+                ))}
+              </ul>
+            )}
+          </div>
+        ) : null}
       </div>
 
       <div className="flex items-center gap-2 border-t border-line px-[18px] py-3">
-        {canArchive ? (
+        {!onArchive ? null : canArchive ? (
           <button
             type="button"
             onClick={onArchive}

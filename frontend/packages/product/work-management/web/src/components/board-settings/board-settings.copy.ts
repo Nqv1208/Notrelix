@@ -180,6 +180,7 @@ export const en = {
     progress: "Progress",
     autonumber: "Auto number",
     "datetime-system": "Date time",
+    link: "Link",
   },
   typeLong: {
     select: "Select (one value)",
@@ -340,6 +341,8 @@ export const en = {
     keyHint: "Prefix of the automatic number",
     keyNote:
       "Changing the key does not change old keys; {{example}} still opens.",
+    keyReadOnly:
+      "The key is set when the board is created; it cannot be changed yet.",
     timeZone: "Deadline time zone",
     timeZoneHint: "Applies to everyone viewing",
     timeZones: {
@@ -391,6 +394,7 @@ export const en = {
     footnote:
       "Deleting a group never deletes items. The last group of a board cannot be deleted.",
     lastGroup: "The last group of a board cannot be deleted",
+    notEmpty: "Move the items out of the group first; then it can be deleted",
   },
   automations: {
     title: "Automations",
@@ -593,6 +597,7 @@ export const vi: BoardSettingsCopy = {
     progress: "Tiến độ",
     autonumber: "Mã tự tăng",
     "datetime-system": "Ngày giờ",
+    link: "Liên kết",
   },
   typeLong: {
     select: "Lựa chọn (một giá trị)",
@@ -751,6 +756,7 @@ export const vi: BoardSettingsCopy = {
     key: "Mã việc",
     keyHint: "Tiền tố của mã tự tăng",
     keyNote: "Đổi mã không đổi mã việc cũ; {{example}} vẫn mở được.",
+    keyReadOnly: "Mã được đặt khi tạo board; chưa đổi được.",
     timeZone: "Múi giờ hạn chót",
     timeZoneHint: "Áp dụng cho mọi người xem",
     timeZones: {
@@ -801,6 +807,7 @@ export const vi: BoardSettingsCopy = {
     footnote:
       "Xoá nhóm không bao giờ xoá việc. Nhóm cuối cùng của board không xoá được.",
     lastGroup: "Nhóm cuối cùng của board không xoá được",
+    notEmpty: "Chuyển hết việc ra khỏi nhóm trước, rồi mới xoá được",
   },
   automations: {
     title: "Tự động hoá",

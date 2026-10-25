@@ -222,9 +222,19 @@ function ErrorBody({ copy, onReload }: BoardSettingsSurfaceProps) {
 }
 
 function ReadyBody(props: BoardSettingsSurfaceProps) {
-  const { copy, settings, section, onSelectSection } = props;
+  const { copy, settings, onSelectSection } = props;
   const { feedback, clearFeedback } = useSettings();
   const data = settings!;
+  const unavailable = data.unavailable ?? {};
+  const hidden: Partial<Record<BoardSettingsSection, boolean>> = {
+    views: unavailable.views,
+    automations: unavailable.automations,
+  };
+  // A section the product has no contract for is not opened by its address.
+  const section = hidden[props.section] ? "general" : props.section;
+  const menu = BOARD_SETTINGS_SECTIONS.slice(0, 4).filter(
+    (key) => !hidden[key],
+  );
   const t = copy.menu;
   const running = data.automations.filter((rule) => rule.enabled).length;
   const counts: Partial<Record<BoardSettingsSection, number>> = {
@@ -318,7 +328,7 @@ function ReadyBody(props: BoardSettingsSurfaceProps) {
         aria-label={t.aria}
         className="flex w-[212px] shrink-0 flex-col gap-0.5 border-r border-line px-3 py-4"
       >
-        {BOARD_SETTINGS_SECTIONS.slice(0, 4).map((key) => {
+        {menu.map((key) => {
           const Icon = SECTION_ICON[key];
           return (
             <button
@@ -343,25 +353,29 @@ function ReadyBody(props: BoardSettingsSurfaceProps) {
           <Lock aria-hidden="true" />
           {t.access}
         </button>
-        <button
-          type="button"
-          aria-current={section === "automations" ? "page" : undefined}
-          onClick={() => onSelectSection("automations")}
-          className={linkClass(section === "automations")}
-        >
-          <Zap aria-hidden="true" />
-          {t.automations}
-          {count(counts.automations)}
-        </button>
-        <button
-          type="button"
-          onClick={openArchived}
-          className={linkClass(false)}
-        >
-          <Archive aria-hidden="true" />
-          {t.archived}
-          {count(data.archivedFields.length)}
-        </button>
+        {hidden.automations ? null : (
+          <button
+            type="button"
+            aria-current={section === "automations" ? "page" : undefined}
+            onClick={() => onSelectSection("automations")}
+            className={linkClass(section === "automations")}
+          >
+            <Zap aria-hidden="true" />
+            {t.automations}
+            {count(counts.automations)}
+          </button>
+        )}
+        {unavailable.fieldArchive ? null : (
+          <button
+            type="button"
+            onClick={openArchived}
+            className={linkClass(false)}
+          >
+            <Archive aria-hidden="true" />
+            {t.archived}
+            {count(data.archivedFields.length)}
+          </button>
+        )}
       </nav>
       <div className="relative flex min-h-0 min-w-0 flex-1">
         {content}

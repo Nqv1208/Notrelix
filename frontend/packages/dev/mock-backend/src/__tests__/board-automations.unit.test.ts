@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createNotrelixClient } from "@notrelix/contracts";
 import { createBoardAutomationsApi } from "../../../../product/work-management/state/src/api/board-automations.api";
-import { createBoardSettingsApi } from "../../../../product/work-management/state/src/api/board-settings.api";
 import { defaultConfig, type MockPersona } from "../config/mock-config";
 import { MockStore } from "../state/mock-store";
 import { mockIds } from "../state/mock-ids";
@@ -18,7 +17,22 @@ function setup(persona: MockPersona = "owner") {
   return {
     store,
     automations: createBoardAutomationsApi(client),
-    settings: createBoardSettingsApi(client),
+    // The automations list and the field restore are the mock's own settings
+    // routes (the product page no longer reads them).
+    settings: {
+      get: (id: string) =>
+        client.api.get<{
+          version: number;
+          automations: { id: string; enabled: boolean; draft?: boolean }[];
+        }>(`/boards/${id}/settings`),
+      restoreField: (id: string, version: number, fieldId: string) =>
+        client.api.post<void>(
+          `/boards/${id}/settings/fields/${fieldId}/restore`,
+          {
+            version,
+          },
+        ),
+    },
   };
 }
 
