@@ -44,7 +44,8 @@ public sealed class WorkReportFactsIntegrationTests : IAsyncLifetime
         var otherGroup = Group(_other);
 
         _status = BoardField.Create(
-            _accountId, _workspace.Id, _board.Id, "Status", FieldType.Status, FieldSettings.Empty(),
+            _accountId, _workspace.Id, _board.Id, "Status", FieldType.Status,
+            FieldSettings.Create(JsonValue.Create("{\"transitions\":[]}")),
             FractionalIndex.Create("a0"), _userId, Now.AddDays(-30), isSystem: true);
         _status.AddDefaultStatusOptions(_userId, Now.AddDays(-30));
         var todo = _status.Options.First(o => o.Category == WorkStatusCategory.Todo);
