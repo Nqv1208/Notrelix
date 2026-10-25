@@ -31,6 +31,12 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
     public DateTimeOffset? ArchivedAt { get; private set; }
     public Guid? ArchivedBy { get; private set; }
 
+    /// <summary>
+    /// True when this sub-item was archived because its parent was archived, so that
+    /// restoring the parent restores exactly the sub-items it archived.
+    /// </summary>
+    public bool ArchivedWithParent { get; private set; }
+
     private readonly List<BoardItemValue> _fieldValues = new();
     public IReadOnlyCollection<BoardItemValue> FieldValues => _fieldValues.AsReadOnly();
 
@@ -73,6 +79,30 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
             parentPath.AccountId, parentPath.WorkspaceId, parentPath.BoardId, groupId, name, position, createdBy, createdAt,
             parentPath.ParentItemId, parentPath.ChildLevel,
             itemKey, itemSequence, startedAt, dueAt);
+    }
+
+    /// <summary>
+    /// Creates a sub-item of <paramref name="parent"/>. Sub-items are one level only
+    /// and live in their parent's board and group.
+    /// </summary>
+    public static BoardItem CreateSubItem(
+        BoardItem parent,
+        string name,
+        FractionalIndex position,
+        Guid createdBy,
+        DateTimeOffset createdAt,
+        string? itemKey = null,
+        long? itemSequence = null)
+    {
+        Guard.NotNull(parent);
+        parent.EnsureNotDeleted();
+        parent.EnsureNotArchived();
+
+        if (parent.ParentItemId is not null || parent.ItemLevel != 0)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Item_SubItemsAreOneLevel, "A sub-item cannot have sub-items.");
+
+        var path = ItemParentPath.Create(parent.AccountId, parent.WorkspaceId, parent.BoardId, parent.Id, parent.ItemLevel, []);
+        return CreateChild(path, parent.GroupId, name, position, createdBy, createdAt, itemKey, itemSequence);
     }
 
     private static BoardItem CreateCore(
@@ -310,6 +340,26 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new BoardItemParentChangedDomainEvent(AccountId, WorkspaceId, BoardId, Id, previousParentItemId, null, previousLevel, 0, updatedBy, updatedAt));
     }
 
+    /// <summary>Places a sub-item among its parent's sub-items.</summary>
+    public void RepositionWithinParent(FractionalIndex newPosition, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        EnsureNotArchived();
+        Guard.NotEmpty(updatedBy);
+        Guard.NotNull(newPosition);
+
+        if (ParentItemId is null)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Item_NotASubItem, "Only a sub-item is ordered under a parent.");
+
+        if (Position == newPosition) return;
+
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        Position = newPosition;
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+        RaiseDomainEvent(new BoardItemMovedDomainEvent(AccountId, WorkspaceId, Id, BoardId, GroupId, GroupId, newPosition.Value, updatedBy, updatedAt, Version));
+    }
+
     public void MoveUnder(ItemParentPath parentPath, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
@@ -433,6 +483,7 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
         IsArchived = true;
         ArchivedAt = archivedAt;
         ArchivedBy = archivedBy;
+        ArchivedWithParent = false;
         ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BoardItemArchivedDomainEvent(AccountId, WorkspaceId, BoardId, Id, archivedBy, archivedAt, Version));
@@ -447,9 +498,30 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
         IsArchived = false;
         ArchivedAt = null;
         ArchivedBy = null;
+        ArchivedWithParent = false;
         ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BoardItemUnarchivedDomainEvent(AccountId, WorkspaceId, BoardId, Id, unarchivedBy, unarchivedAt));
+    }
+
+    /// <summary>
+    /// Archives a sub-item because its parent was archived. A sub-item that is already
+    /// archived on its own stays as it is, so restoring the parent does not restore it.
+    /// </summary>
+    public void ArchiveWithParent(Guid archivedBy, DateTimeOffset archivedAt)
+    {
+        if (ParentItemId is null)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Item_NotASubItem, "Only a sub-item is archived with its parent.");
+        if (IsDeleted || IsArchived) return;
+        Archive(archivedBy, archivedAt);
+        ArchivedWithParent = true;
+    }
+
+    /// <summary>Restores a sub-item that was archived with its parent; any other sub-item is left alone.</summary>
+    public void UnarchiveWithParent(Guid unarchivedBy, DateTimeOffset unarchivedAt)
+    {
+        if (!ArchivedWithParent) return;
+        Unarchive(unarchivedBy, unarchivedAt);
     }
 
     /// <param name="replacementPosition">

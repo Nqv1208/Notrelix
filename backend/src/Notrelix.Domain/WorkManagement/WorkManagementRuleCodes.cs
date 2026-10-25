@@ -75,6 +75,9 @@ public static class WorkManagementRuleCodes
     public const string WorkManagement_Item_ParentPathContainsTargetParent = "WorkManagement_Item_ParentPathContainsTargetParent";
     public const string WorkManagement_Item_CannotBeOwnParent = "WorkManagement_Item_CannotBeOwnParent";
     public const string WorkManagement_Item_ParentAssignmentWouldCreateCycle = "WorkManagement_Item_ParentAssignmentWouldCreateCycle";
+    public const string WorkManagement_Item_SubItemsAreOneLevel = "WorkManagement_Item_SubItemsAreOneLevel";
+    public const string WorkManagement_Item_NotASubItem = "WorkManagement_Item_NotASubItem";
+    public const string WorkManagement_Item_SubItemFollowsParentGroup = "WorkManagement_Item_SubItemFollowsParentGroup";
     public const string WorkManagement_Item_CompletedAtRequired = "WorkManagement_Item_CompletedAtRequired";
     public const string WorkManagement_Item_DueDateMustBeAfterStartDate = "WorkManagement_Item_DueDateMustBeAfterStartDate";
     public const string WorkManagement_Item_CannotModifyArchived = "WorkManagement_Item_CannotModifyArchived";

@@ -993,14 +993,12 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
   },
   {
     context: "WorkManagement",
-    classification: "COMPATIBILITY_GAP_MOCKED",
+    classification: "CANONICAL_MOCKED",
     consumerSymbol: "useItemChildItems",
     consumerFile:
       "frontend/packages/product/work-management/state/src/api/item-extras.api.ts",
-    capability: "Child items of an item with their done state",
-    gapId: "CTR-GAP-WS-ITEM-SHEET",
-    method: "GET",
-    pathTemplate: "/board-items/{id}/child-items",
+    capability: "WorkManagement.BoardItems.ListChildren",
+    operationId: "WorkManagement.BoardItems.ListChildren",
     mutation: false,
   },
   {
@@ -1077,14 +1075,12 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
   },
   {
     context: "WorkManagement",
-    classification: "COMPATIBILITY_GAP_MOCKED",
+    classification: "CANONICAL_MOCKED",
     consumerSymbol: "useItemChildItems",
     consumerFile:
       "frontend/packages/product/work-management/state/src/api/item-extras.api.ts",
-    capability: "Add a child item under an item",
-    gapId: "CTR-GAP-WM-ITEM-DETAIL",
-    method: "POST",
-    pathTemplate: "/board-items/{id}/child-items",
+    capability: "WorkManagement.BoardItems.CreateChild",
+    operationId: "WorkManagement.BoardItems.CreateChild",
     mutation: true,
   },
   {

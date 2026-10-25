@@ -320,8 +320,10 @@ export function ItemPageSurface({
                   copy={copy}
                   editable={capabilities.canEditFields}
                 />
-                {detailData.childItems !== undefined ||
-                callbacks.onAddChildItem ? (
+                {/* Sub-items are one level: a sub-item lists none. */}
+                {!card.parentItemId &&
+                (detailData.childItems !== undefined ||
+                  callbacks.onAddChildItem) ? (
                   <ItemPageChildItems
                     card={card}
                     items={detailData.childItems}

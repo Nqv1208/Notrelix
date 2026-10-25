@@ -12,7 +12,7 @@
  *   cards.move              — POST /board-items/:id/move
 
  *   cards.links             — GET/POST /board-items/:id/links, DELETE .../links/:linkId (gap)
- *   cards.childItems.add    — POST /board-items/:id/child-items (gap)
+ *   cards.childItems.add    — POST /board-items/:id/child-items
  *   cards.attachments.uploadFile — POST /board-items/:id/attachments/files (Collaboration.Attachments.UploadFile)
  *   cards.attachments.content    — GET /board-items/:id/attachments/:attachmentId/content (Collaboration.Attachments.GetContent)
  *   cards.moveToBoard       — POST /board-items/:id/move-to-board (gap)
@@ -54,6 +54,8 @@ import {
 import { preconditionFailed } from "../workspace/space-target";
 import type { MockStore } from "../../state/mock-store";
 import type { MockAttachmentRecord, MockCardRecord } from "../../state/records";
+import { childItemDto } from "../../state/mock-work-feed";
+import type { ChildItemDto } from "../../state/mock-work-feed";
 import {
   canReadBoard,
   canWriteBoardItems,
@@ -756,11 +758,14 @@ export const cardsOperations = [
   }),
 
   // ─── POST /board-items/:id/child-items ──────────────────────────────────────────
-  // Gap CTR-GAP-WM-ITEM-DETAIL: adds a child item (sub-item) under an item.
+  // Adds a child item (sub-item) under an item.
 
-  defineMockOperation<{ id: string }, { title?: string }, void>({
+  defineMockOperation<{ id: string }, { title?: string }, ChildItemDto>({
     id: "cards.childItems.add",
-    contract: { kind: "gap", gapId: "CTR-GAP-WM-ITEM-DETAIL" },
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardItems.CreateChild",
+    },
     method: "POST",
     route: "/board-items/:id/child-items",
     async handle({ params, body, store, request }) {
@@ -771,8 +776,9 @@ export const cardsOperations = [
       if (!canWriteBoardItems(item.boardId, store)) return forbidden();
       const title = body?.title?.trim();
       if (!title) return badRequest({ title: ["The title is required."] });
-      return store.createChildItem(params.id, title)
-        ? noContent()
+      const child = store.createChildItem(params.id, title);
+      return child
+        ? ok(childItemDto(store, child))
         : badRequest({ title: ["A child item cannot have child items."] });
     },
   }),

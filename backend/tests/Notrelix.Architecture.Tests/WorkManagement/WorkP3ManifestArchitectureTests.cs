@@ -100,6 +100,9 @@ public sealed class WorkP3ManifestArchitectureTests
         ["BoardItems.SetBoardItemDueDateCommand"] = new(Disposition.Keep, "-"),
         ["BoardItems.CompleteBoardItemCommand"] = new(Disposition.Keep, "-"),
         ["BoardItems.ReopenBoardItemCommand"] = new(Disposition.Keep, "-"),
+        ["BoardItems.CreateChildItemCommand"] = new(Disposition.Keep, "-"),
+        ["BoardItems.MoveChildItemCommand"] = new(Disposition.Keep, "-", VersionedTarget: true),
+        ["BoardItems.ListChildItemsQuery"] = new(Disposition.Keep, "-"),
         ["BoardItems.AssignBoardItemMemberCommand"] = new(Disposition.Keep, "-"),
         ["BoardItems.UnassignBoardItemMemberCommand"] = new(Disposition.Keep, "-"),
         ["BoardItems.ArchiveBoardItemCommand"] = new(Disposition.Keep, "-"),
@@ -167,6 +170,11 @@ public sealed class WorkP3ManifestArchitectureTests
             "Notrelix.Application/Features/WorkManagement/BoardGroups/Commands/DuplicateBoardGroup/DuplicateBoardGroup.cs",
             "Notrelix.Application/Features/WorkManagement/BoardGroups/Commands/DeleteBoardGroup/DeleteBoardGroup.cs",
             "Notrelix.Infrastructure/Data/Seed/InitDb.cs",
+        ],
+        ["ChildItems (board_items: parent_item_id, sub-items)"] =
+        [
+            "Notrelix.Application/Features/WorkManagement/BoardItems/Commands/CreateChildItem/CreateChildItem.cs",
+            "Notrelix.Application/Features/WorkManagement/BoardItems/Commands/MoveChildItem/MoveChildItem.cs",
         ],
         ["BoardGroups (board_groups: board_id)"] =
         [
@@ -323,8 +331,8 @@ public sealed class WorkP3ManifestArchitectureTests
             .Where(v => v.Validated is not null)
             .ToLookup(v => v.Validated!, v => v.Validator);
 
-        // 22 from SPEC WM-V3-DEC-007 + MoveBoardToSpaceCommand (ADR-009 Space placement).
-        targets.Should().HaveCount(23, "the P3 versioned-request manifest (SPEC WM-V3-DEC-007) is closed-world");
+        // 22 from SPEC WM-V3-DEC-007 + MoveBoardToSpaceCommand (ADR-009 Space placement) + MoveChildItemCommand.
+        targets.Should().HaveCount(24, "the P3 versioned-request manifest (SPEC WM-V3-DEC-007) is closed-world");
         var violations = new List<string>();
         foreach (var key in targets)
         {

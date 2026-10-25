@@ -4,6 +4,53 @@ import type { ItemLinkDto } from "../api/item-extras.api";
 import { useWorkManagementServices } from "../services";
 import { wmQueryKeys } from "./keys";
 
+const childKey = (workspaceId: string, itemId: string) =>
+  workspaceQueryKey(workspaceId, "work-management", "item-children", itemId);
+
+/** The sub-items of an item, with ticking one and adding one. */
+export function useItemChildItems(
+  itemId: string,
+  workspaceId: string,
+  boardId: string,
+) {
+  const { itemExtras } = useWorkManagementServices();
+  const queryClient = useQueryClient();
+  const query = useQuery({
+    queryKey: childKey(workspaceId, itemId),
+    queryFn: () => itemExtras.getChildItems(itemId),
+    enabled: Boolean(itemId),
+    staleTime: 15_000,
+  });
+  const refresh = () => {
+    void queryClient.invalidateQueries({
+      queryKey: childKey(workspaceId, itemId),
+    });
+    void queryClient.invalidateQueries({
+      queryKey: wmQueryKeys.fullBoard(workspaceId, boardId),
+    });
+    void queryClient.invalidateQueries({
+      queryKey: workspaceQueryKey(workspaceId, "work-management", "cards"),
+    });
+    // The parent's history and detail change with its children.
+    void queryClient.invalidateQueries({
+      queryKey: wmQueryKeys.cardActivity(workspaceId, itemId),
+    });
+    void queryClient.invalidateQueries({
+      queryKey: wmQueryKeys.cardDetail(workspaceId, itemId),
+    });
+  };
+  const toggle = useMutation({
+    mutationFn: (input: { childId: string; done: boolean }) =>
+      itemExtras.setChildDone(input.childId, input.done),
+    onSettled: refresh,
+  });
+  const add = useMutation({
+    mutationFn: (title: string) => itemExtras.addChildItem(itemId, title),
+    onSettled: refresh,
+  });
+  return { ...query, toggle: toggle.mutate, addChild: add.mutate };
+}
+
 /** The plan of a board: phases, milestones, dependencies (gap `CTR-GAP-WM-PLAN-ITEMS`). */
 export function useBoardPlanItems(boardId: string, workspaceId: string) {
   const { itemExtras } = useWorkManagementServices();

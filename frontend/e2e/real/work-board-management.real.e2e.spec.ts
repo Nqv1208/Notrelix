@@ -15,7 +15,10 @@ interface FullBoard {
   readonly lists: readonly {
     readonly id: string;
     readonly title: string;
-    readonly boardItems: readonly { readonly id: string; readonly name: string }[];
+    readonly boardItems: readonly {
+      readonly id: string;
+      readonly name: string;
+    }[];
   }[];
 }
 
@@ -37,9 +40,15 @@ test("a board manager deletes a group that has items by choosing where they go",
 
   // The scene: a group with one item in it.
   expect(
-    (await apiWrite(page, "POST", `/boards/${board.id}/groups`, { title: groupTitle })).status,
+    (
+      await apiWrite(page, "POST", `/boards/${board.id}/groups`, {
+        title: groupTitle,
+      })
+    ).status,
   ).toBeLessThan(300);
-  const group = (await full(page, board.id)).lists.find((list) => list.title === groupTitle)!;
+  const group = (await full(page, board.id)).lists.find(
+    (list) => list.title === groupTitle,
+  )!;
   expect(
     (
       await apiWrite(page, "POST", `/boards/${board.id}/items`, {
@@ -88,7 +97,12 @@ test("a board manager deletes a group that has items by choosing where they go",
   // The server refuses to drop a group with items and no target.
   const other = after.lists.find((list) => list.title !== targetTitle)!;
   expect(
-    (await apiWrite(page, "POST", `/boards/${board.id}/items`, { groupId: other.id, title: `Stays ${unique}` })).status,
+    (
+      await apiWrite(page, "POST", `/boards/${board.id}/items`, {
+        groupId: other.id,
+        title: `Stays ${unique}`,
+      })
+    ).status,
   ).toBeLessThan(300);
 });
 
@@ -101,7 +115,10 @@ test("a board manager changes the item key prefix, which another board of the wo
     "Workspace 3",
     "Engineering Tasks",
   );
-  const stamp = Date.now().toString(36).toUpperCase().replace(/[^A-Z0-9]/g, "");
+  const stamp = Date.now()
+    .toString(36)
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "");
   const prefix = `K${stamp.slice(-4)}`;
 
   await page.goto(`/workspaces/${workspace.id}/boards/${board.id}/settings`);
@@ -115,7 +132,9 @@ test("a board manager changes the item key prefix, which another board of the wo
   );
   await page.getByRole("button", { name: "Save changes" }).click();
   expect((await saved).status()).toBeLessThan(300);
-  await expect.poll(async () => (await full(page, board.id)).itemKeyPrefix).toBe(prefix);
+  await expect
+    .poll(async () => (await full(page, board.id)).itemKeyPrefix)
+    .toBe(prefix);
 
   // Another board of the workspace takes the same prefix only when it is free.
   const boards = await apiRead<{ id: string; title: string }[]>(
@@ -142,7 +161,11 @@ test("a workspace owner sets the workspace time zone and first day of the week t
   page,
 }) => {
   await signIn(page, realUsers.workspaceOwner);
-  const { workspace } = await openBoard(page, "Workspace 3", "Engineering Tasks");
+  const { workspace } = await openBoard(
+    page,
+    "Workspace 3",
+    "Engineering Tasks",
+  );
 
   // Pick values that differ from the stored ones so the form is dirty.
   const before = await apiRead<{ timeZone: string; weekStart: string }>(
@@ -192,27 +215,48 @@ test("a manager reopens a completed item to the status it had and the banner nam
   const unique = Date.now().toString(36);
   const itemTitle = `Reopen me ${unique}`;
   const lists = (await full(page, board.id)).lists;
-  const created = await apiWrite<{ id: string }>(page, "POST", `/boards/${board.id}/items`, {
-    groupId: lists[0]!.id,
-    title: itemTitle,
-  });
+  const created = await apiWrite<{ id: string }>(
+    page,
+    "POST",
+    `/boards/${board.id}/items`,
+    {
+      groupId: lists[0]!.id,
+      title: itemTitle,
+    },
+  );
   expect(created.status).toBeLessThan(300);
   const itemId = created.data!.id;
 
-  const fields = await apiRead<{ columns: { id: string; fieldType: string; options?: { id: string; name: string; category?: string }[] }[] }>(
-    page,
-    `/boards/${board.id}/full`,
-  );
-  const status = fields.columns.find((column) => column.fieldType.toLowerCase() === "status")!;
-  const open = status.options!.find((option) => option.category?.toLowerCase() === "inprogress")
-    ?? status.options!.find((option) => option.category?.toLowerCase() !== "done")!;
-  const done = status.options!.find((option) => option.category?.toLowerCase() === "done")!;
+  const fields = await apiRead<{
+    columns: {
+      id: string;
+      fieldType: string;
+      options?: { id: string; name: string; category?: string }[];
+    }[];
+  }>(page, `/boards/${board.id}/full`);
+  const status = fields.columns.find(
+    (column) => column.fieldType.toLowerCase() === "status",
+  )!;
+  const open =
+    status.options!.find(
+      (option) => option.category?.toLowerCase() === "inprogress",
+    ) ??
+    status.options!.find(
+      (option) => option.category?.toLowerCase() !== "done",
+    )!;
+  const done = status.options!.find(
+    (option) => option.category?.toLowerCase() === "done",
+  )!;
   const move = (optionId: string) =>
-    apiWrite(page, "PATCH", `/board-items/${itemId}/status`, { status: optionId });
+    apiWrite(page, "PATCH", `/board-items/${itemId}/status`, {
+      status: optionId,
+    });
   expect((await move(open.id)).status).toBeLessThan(300);
   expect((await move(done.id)).status).toBeLessThan(300);
 
-  await page.goto(`/workspaces/${workspace.id}/boards/${board.id}/items/${itemId}`);
+  await page.goto(
+    `/workspaces/${workspace.id}/boards/${board.id}/items/${itemId}`,
+  );
   const banner = page.locator('[data-item-banner="completed"]');
   await expect(banner).toBeVisible();
   await expect(banner).toContainText(/Completed/i);
@@ -225,15 +269,17 @@ test("a manager reopens a completed item to the status it had and the banner nam
   expect((await reopened).status()).toBeLessThan(300);
   await expect(banner).toHaveCount(0);
 
-  const item = await apiRead<{ completedAt: string | null; statusOptionId: string | null }>(
-    page,
-    `/board-items/${itemId}`,
-  );
+  const item = await apiRead<{
+    completedAt: string | null;
+    statusOptionId: string | null;
+  }>(page, `/board-items/${itemId}`);
   expect(item.completedAt).toBeNull();
   expect(item.statusOptionId).toBe(open.id);
 });
 
-test("a board manager deletes a field after confirming it", async ({ page }) => {
+test("a board manager deletes a field after confirming it", async ({
+  page,
+}) => {
   await signIn(page, realUsers.workspaceAdmin);
   const { workspace, board } = await openBoard(
     page,
@@ -242,10 +288,17 @@ test("a board manager deletes a field after confirming it", async ({ page }) => 
   );
   const name = `Scratch ${Date.now().toString(36)}`;
   expect(
-    (await apiWrite(page, "POST", `/boards/${board.id}/fields`, { name, type: "text" })).status,
+    (
+      await apiWrite(page, "POST", `/boards/${board.id}/fields`, {
+        name,
+        type: "text",
+      })
+    ).status,
   ).toBeLessThan(300);
 
-  await page.goto(`/workspaces/${workspace.id}/boards/${board.id}/settings?section=fields`);
+  await page.goto(
+    `/workspaces/${workspace.id}/boards/${board.id}/settings?section=fields`,
+  );
   await page.getByRole("button", { name: `Edit the field ${name}` }).click();
   await page.getByRole("button", { name: "Delete field" }).click();
   const dialog = page.getByRole("alertdialog");
@@ -257,5 +310,7 @@ test("a board manager deletes a field after confirming it", async ({ page }) => 
   );
   await dialog.getByRole("button", { name: "Delete field" }).click();
   expect((await deleted).status()).toBeLessThan(300);
-  await expect(page.getByRole("button", { name: `Edit the field ${name}` })).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: `Edit the field ${name}` }),
+  ).toHaveCount(0);
 });

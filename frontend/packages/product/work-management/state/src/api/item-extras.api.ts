@@ -1,5 +1,6 @@
 import type { NotrelixClient } from "@notrelix/contracts";
 import { endpoints } from "@notrelix/contracts";
+import { personInitials } from "@notrelix/work-management-core";
 
 /** A member of the workspace (`Workspaces.Members.ListMembers`). */
 interface WorkspaceMember {
@@ -46,6 +47,36 @@ export interface ItemChildItemDto {
     readonly name: string;
     readonly initials: string;
   } | null;
+}
+
+/** A child item as `WorkManagement.BoardItems.ListChildren` sends it. */
+interface ChildItemWire {
+  readonly id: string;
+  readonly key?: string | null;
+  readonly title: string;
+  readonly done?: boolean;
+  readonly dueAt?: string | null;
+  readonly assigneeUserId?: string | null;
+  readonly assigneeName?: string | null;
+}
+
+function toChildItem(wire: ChildItemWire): ItemChildItemDto {
+  const name = wire.assigneeName ?? "";
+  return {
+    id: wire.id,
+    key: wire.key ?? null,
+    title: wire.title,
+    done: wire.done === true,
+    dueAt: wire.dueAt ?? null,
+    assignee: wire.assigneeUserId
+      ? {
+          id: wire.assigneeUserId,
+          userId: wire.assigneeUserId,
+          name,
+          initials: personInitials(name),
+        }
+      : null,
+  };
 }
 
 /** A phase or a milestone of a board (gap `CTR-GAP-WM-PLAN-ITEMS`). */
@@ -146,10 +177,10 @@ export function createItemExtrasApi(client: NotrelixClient) {
       };
     },
     async getChildItems(itemId: string): Promise<ItemChildItemDto[]> {
-      const dto = await api.get<{ items?: ItemChildItemDto[] } | null>(
+      const dto = await api.get<{ items?: ChildItemWire[] } | null>(
         `/board-items/${itemId}/child-items`,
       );
-      return dto?.items ?? [];
+      return (dto?.items ?? []).map(toChildItem);
     },
     async getFollowing(itemId: string): Promise<ItemFollowingDto> {
       const dto = await api.get<Partial<ItemFollowingDto> | null>(

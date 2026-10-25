@@ -42,6 +42,9 @@ public static class MapBoardItemEndpoints
         itemGroup.MapSetBoardItemDueDate();
         itemGroup.MapUpdateBoardItemStatus();
         itemGroup.MapListBoardItemLinks();
+        itemGroup.MapCreateChildItem();
+        itemGroup.MapListChildItems();
+        itemGroup.MapMoveChildItem();
 
         var myWork = app
             .MapGroup("/api/v1/workspaces/{workspaceId:guid}/my-work/items")

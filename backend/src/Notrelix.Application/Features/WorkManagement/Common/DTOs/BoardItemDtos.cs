@@ -77,3 +77,17 @@ public record BoardItemSlimDto(
     List<Guid> MemberIds,
     List<Guid> LabelIds,
     long Version);
+
+/// <summary>A sub-item as its parent lists it. <see cref="Done"/> is whether it is completed.</summary>
+public record ChildItemDto(
+    Guid Id,
+    string? Key,
+    string Title,
+    bool Done,
+    DateTimeOffset? DueAt,
+    Guid? AssigneeUserId,
+    string? AssigneeName,
+    string Position,
+    long Version);
+
+public record ChildItemListDto(IReadOnlyList<ChildItemDto> Items);

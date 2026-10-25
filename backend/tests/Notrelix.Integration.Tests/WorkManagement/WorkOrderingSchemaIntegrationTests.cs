@@ -134,6 +134,12 @@ public sealed class WorkOrderingSchemaIntegrationTests : IAsyncLifetime
         {
             [WorkOrderingConstraints.GroupItems] = await DuplicateAsync(c => c.BoardItems.Add(
                 BoardItem.CreateRoot(AccountId, _workspace.Id, _board.Id, _group.Id, "Dup", Key("a0"), UserId, Now))),
+            [WorkOrderingConstraints.ChildItems] = await DuplicateAsync(c =>
+            {
+                var path = ItemParentPath.Create(AccountId, _workspace.Id, _board.Id, _item.Id, 0, []);
+                c.BoardItems.Add(BoardItem.CreateChild(path, _group.Id, "One", Key("a0"), UserId, Now));
+                c.BoardItems.Add(BoardItem.CreateChild(path, _group.Id, "Two", Key("a0"), UserId, Now));
+            }),
             [WorkOrderingConstraints.BoardGroups] = await DuplicateAsync(c => c.BoardGroups.Add(
                 BoardGroup.Create(AccountId, _workspace.Id, _board.Id, "Dup", Color.Create("#808080"), Key("a0"), UserId, Now))),
             [WorkOrderingConstraints.BoardFields] = await DuplicateAsync(c => c.BoardFields.Add(

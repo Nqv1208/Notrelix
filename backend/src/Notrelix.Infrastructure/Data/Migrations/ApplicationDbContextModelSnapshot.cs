@@ -6622,6 +6622,10 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("archived_by");
 
+                    b.Property<bool>("ArchivedWithParent")
+                        .HasColumnType("boolean")
+                        .HasColumnName("archived_with_parent");
+
                     b.Property<Guid>("BoardId")
                         .HasColumnType("uuid")
                         .HasColumnName("board_id");
@@ -6740,6 +6744,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .IsUnique()
                         .HasDatabaseName("ux_work_board_items_group_position_active")
                         .HasFilter("deleted_at IS NULL AND parent_item_id IS NULL");
+
+                    b.HasIndex("ParentItemId", "Position")
+                        .IsUnique()
+                        .HasDatabaseName("ux_work_board_items_parent_position_active")
+                        .HasFilter("deleted_at IS NULL AND parent_item_id IS NOT NULL");
 
                     b.ToTable("board_items", "work");
                 });

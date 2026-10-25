@@ -10,6 +10,7 @@ import {
   useDeleteCardUpdate,
   useDuplicateCard,
   useFullBoard,
+  useItemChildItems,
   useItemFileUploads,
   canRetryItemFileUpload,
   useWorkManagementServices,
@@ -276,6 +277,7 @@ function ItemPageReady({
   const createUpdate = useCreateCardUpdate(card.id, card.workspaceId);
   const updateUpdate = useUpdateCardUpdate(card.id, card.workspaceId);
   const deleteUpdate = useDeleteCardUpdate(card.id, card.workspaceId);
+  const children = useItemChildItems(card.id, card.workspaceId, card.boardId);
   const links = useItemLinks(card.id, card.workspaceId, card.boardId);
   const uploads: ItemPageUpload[] = fileUploads.uploads.map((upload) => ({
     ...upload,
@@ -488,8 +490,10 @@ function ItemPageReady({
     onClose: onBack,
     onRenameTitle: (cardId, patch) => updateCard.mutate({ cardId, patch }),
     onUpdateItem: patchItem,
-    // Following and sub-items have no producer yet: the page offers neither.
+    // Following has no producer yet: the page does not offer it.
     onToggleWatch: () => undefined,
+    onToggleChildItem: (childId, done) => children.toggle({ childId, done }),
+    onAddChildItem: (title) => children.addChild(title),
     onAddLink: (itemId, relation) => links.addLink({ itemId, relation }),
     onRemoveLink: (linkId) => links.removeLink(linkId),
     onAddFile: fileUploads.start,
@@ -592,6 +596,10 @@ function ItemPageReady({
         activityFetching: activity.isFetching,
         updates: updates.data ?? card.updates,
         updatesLoading: updates.isLoading,
+        childItems: children.data?.map((child) => ({
+          ...child,
+          itemKey: child.key,
+        })),
         links: links.data,
         linkCandidates,
       }}

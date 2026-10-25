@@ -349,7 +349,10 @@ export const workFeedOperations = [
   // ── Item sheet: child items and following ────────────────────────────────
   defineMockOperation<{ id: string }>({
     id: "wsFeed.items.childItems",
-    contract: { kind: "gap", gapId: ITEM_SHEET },
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardItems.ListChildren",
+    },
     method: "GET",
     route: "/board-items/:id/child-items",
     async handle({ params, store }) {

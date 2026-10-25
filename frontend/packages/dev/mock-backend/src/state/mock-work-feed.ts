@@ -1271,12 +1271,10 @@ export interface ChildItemDto {
   title: string;
   done: boolean;
   dueAt: string | null;
-  assignee: {
-    id: string;
-    userId: string;
-    name: string;
-    initials: string;
-  } | null;
+  assigneeUserId: string | null;
+  assigneeName: string | null;
+  position: string;
+  version: number;
 }
 
 /** The child items of an item ("Việc con"), in position order. */
@@ -1285,29 +1283,26 @@ export function listChildItems(
   itemId: string,
 ): ChildItemDto[] | "not-found" {
   if (!store.getCard(itemId)) return "not-found";
-  return store.getChildCards(itemId).map((child) => {
-    const owner = person(store, child.assigneeUserIds?.[0]);
-    return {
-      id: child.id,
-      key: child.itemKey ?? null,
-      title: child.title,
-      done: statusOf(store, child.id)?.bucket === "done" || !!child.completedAt,
-      dueAt: child.dueAt ?? null,
-      assignee: owner
-        ? {
-            id: owner.id,
-            userId: owner.id,
-            name: owner.name,
-            initials: owner.name
-              .split(/\s+/)
-              .slice(-2)
-              .map((word) => Array.from(word)[0] ?? "")
-              .join("")
-              .toUpperCase(),
-          }
-        : null,
-    };
-  });
+  return store.getChildCards(itemId).map((child) => childItemDto(store, child));
+}
+
+/** A child item as the contract lists it. */
+export function childItemDto(
+  store: MockStore,
+  child: ReturnType<MockStore["getChildCards"]>[number],
+): ChildItemDto {
+  const owner = person(store, child.assigneeUserIds?.[0]);
+  return {
+    id: child.id,
+    key: child.itemKey ?? null,
+    title: child.title,
+    done: statusOf(store, child.id)?.bucket === "done" || !!child.completedAt,
+    dueAt: child.dueAt ?? null,
+    assigneeUserId: owner?.id ?? null,
+    assigneeName: owner?.name ?? null,
+    position: String(child.position),
+    version: 1,
+  };
 }
 
 /** Whether the member follows an item (the sheet's "Đang theo dõi" chip). */
