@@ -1,15 +1,19 @@
 import { expect, type Page } from "@playwright/test";
 
+// The seeded development accounts (`InitDb`): the admin is a Member of
+// Workspace 2, user5 is a Guest of it.
 export const realUsers = {
   admin: {
-    email: process.env.REAL_E2E_ADMIN_EMAIL ?? "admin@notrelix.test",
-    password: process.env.REAL_E2E_ADMIN_PASSWORD ?? "real-e2e-admin-password",
+    email: process.env.REAL_E2E_ADMIN_EMAIL ?? "admin@notrelix.com",
+    password: process.env.REAL_E2E_ADMIN_PASSWORD ?? "Notrelix@123",
   },
   guest: {
-    email: process.env.REAL_E2E_GUEST_EMAIL ?? "guest@notrelix.test",
-    password: process.env.REAL_E2E_GUEST_PASSWORD ?? "real-e2e-guest-password",
+    email: process.env.REAL_E2E_GUEST_EMAIL ?? "user5@notrelix.io",
+    password: process.env.REAL_E2E_GUEST_PASSWORD ?? "Notrelix@123",
   },
 } as const;
+
+const apiUrl = process.env.VITE_API_URL ?? "http://127.0.0.1:58000/api/v1";
 
 export async function signIn(
   page: Page,
@@ -18,23 +22,89 @@ export async function signIn(
   await page.goto("/sign-in");
   await page.waitForLoadState("networkidle");
   await page.getByLabel("Email").fill(user.email);
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
   await page.locator('input[name="password"]').fill(user.password);
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page).toHaveURL(/\/home$/);
-  await page.reload();
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(page).toHaveURL(/\/workspaces\/[^/]+/);
+}
+
+interface Workspace {
+  readonly id: string;
+  readonly name: string;
+}
+interface Board {
+  readonly id: string;
+  readonly title: string;
+}
+
+async function readJson<T>(page: Page, path: string): Promise<T> {
+  const response = await page.request.get(`${apiUrl}${path}`);
+  expect(response.ok(), `GET ${path}`).toBe(true);
+  return (await response.json()) as T;
+}
+
+/** The workspace the signed-in member sees under this name. */
+export async function findWorkspace(page: Page, name: string) {
+  const workspaces = await readJson<Workspace[]>(page, "/workspaces");
+  const found = workspaces.find((workspace) => workspace.name === name);
+  expect(found, `workspace ${name}`).toBeDefined();
+  return found!;
+}
+
+/** Opens a board of the workspace by its title prefix (the boards are not listed in the shell yet). */
+export async function openBoard(
+  page: Page,
+  workspaceName: string,
+  titlePrefix: string,
+) {
+  const workspace = await findWorkspace(page, workspaceName);
+  const boards = await readJson<Board[]>(
+    page,
+    `/workspaces/${workspace.id}/boards`,
+  );
+  const board = boards.find((candidate) =>
+    candidate.title.startsWith(titlePrefix),
+  );
+  expect(board, `board ${titlePrefix}`).toBeDefined();
+  await page.goto(`/workspaces/${workspace.id}/boards/${board!.id}`);
   await expect(
-    page.getByRole("heading", { name: "Your workspaces" }),
+    page.getByRole("heading", { level: 1, name: board!.title }),
   ).toBeVisible();
+  return { workspace, board: board! };
 }
 
-export async function openWorkspace(page: Page, name: string) {
-  await page.getByRole("heading", { name }).click();
-  await expect(page).toHaveURL(/\/workspaces\/[^/]+$/);
-  await expect(page.getByText("Active Boards", { exact: true })).toBeVisible();
+/**
+ * Adds an item to a lane through the lane's composer and returns the create
+ * response status. A created item then gets the lane's status; the item is
+ * settled (real id and version) once that write is answered.
+ */
+export async function addItemToLane(page: Page, lane: string, title: string) {
+  await page
+    .getByRole("button", { name: `Add to ${lane}`, exact: true })
+    .click();
+  await page
+    .getByRole("textbox", { name: `New item title in ${lane}` })
+    .fill(title);
+  const created = page.waitForResponse(
+    (response) =>
+      response.request().method() === "POST" &&
+      /\/boards\/[^/]+\/items$/.test(response.url()),
+  );
+  const settled = page.waitForResponse(
+    (response) =>
+      response.request().method() === "PATCH" &&
+      /\/board-items\/[^/]+\/status$/.test(response.url()),
+  );
+  await page.keyboard.press("Enter");
+  const status = (await created).status();
+  if (status < 300) await settled;
+  return status;
 }
 
-export async function openBoard(page: Page, title: RegExp) {
-  await page.getByText(title).first().click();
-  await expect(page).toHaveURL(/\/workspaces\/[^/]+\/boards\/[^/]+$/);
-  await expect(page.getByRole("button", { name: "Board" })).toBeVisible();
+/** The lane shows only its first items; opens the rest. */
+export async function showAllInLane(page: Page, lane: string) {
+  const more = page
+    .getByRole("region", { name: lane, exact: true })
+    .getByRole("button", { name: /^Show \d+ more items?$/ });
+  if (await more.count()) await more.click();
 }
