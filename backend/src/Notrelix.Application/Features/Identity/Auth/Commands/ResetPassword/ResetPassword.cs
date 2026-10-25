@@ -115,7 +115,7 @@ public class ResetPasswordCommandHandler : IRequestHandler<ResetPasswordCommand,
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to send password changed notification to {Email}", email);
+            _logger.LogError(ex, "Failed to send password changed notification");
         }
 
         return Result.Success();

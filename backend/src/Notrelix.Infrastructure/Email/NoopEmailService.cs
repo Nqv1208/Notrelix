@@ -8,8 +8,7 @@ namespace Notrelix.Infrastructure.Email
             CancellationToken cancellationToken = default)
         {
             logger.LogInformation(
-                "Email delivery disabled. Skipped email to {ToEmail} with subject {Subject}",
-                request.RecipientEmail,
+                "Email delivery disabled. Skipped email with subject {Subject}",
                 request.Subject);
 
             return Task.FromResult(new EmailDeliveryResult("noop", request.IdempotencyKey));
