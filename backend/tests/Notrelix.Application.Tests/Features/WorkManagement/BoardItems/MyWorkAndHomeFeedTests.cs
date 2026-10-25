@@ -79,7 +79,35 @@ public class MyWorkAndHomeFeedTests : WorkManagementHandlerTestBase
         dto.Assignee!.Id.Should().Be(colleague);
         result.Data.Done.Should().ContainSingle(d => d.Id == done.Id && d.CompletedAt != null && d.Assignee == null);
         result.Data.Waiting.Should().BeEmpty();
-        result.Data.Departments.Should().BeEmpty();
+        result.Data.Departments.Should().Equal(new Dictionary<string, string?> { [board.Id.ToString()] = null });
+    }
+
+    [Fact]
+    public async Task MyWork_NamesTheSpaceEachShownBoardIsPlacedIn()
+    {
+        var placed = CreateBoard();
+        var spaceId = Guid.CreateVersion7();
+        placed.PlaceInSpace(spaceId, TestUserId, TestNow);
+        var loose = CreateBoard();
+        var unused = CreateBoard();
+        SetupBoards(placed, loose, unused);
+        _visibility.Boards.Add(placed.Id);
+        _visibility.Boards.Add(loose.Id);
+        _visibility.Boards.Add(unused.Id);
+        var inPlaced = CreateBoardItem(boardId: placed.Id);
+        var inLoose = CreateBoardItem(boardId: loose.Id);
+        SetupBoardItems(inPlaced, inLoose);
+        SetupBoardItemMembers(
+            CreateBoardItemMember(itemId: inPlaced.Id, userId: TestUserId),
+            CreateBoardItemMember(itemId: inLoose.Id, userId: TestUserId));
+
+        var result = await MyWork().Handle(new GetMyWorkExtendedQuery(TestWorkspaceId), CancellationToken.None);
+
+        result.Data!.Departments.Should().Equal(new Dictionary<string, string?>
+        {
+            [placed.Id.ToString()] = spaceId.ToString(),
+            [loose.Id.ToString()] = null,
+        });
     }
 
     [Fact]

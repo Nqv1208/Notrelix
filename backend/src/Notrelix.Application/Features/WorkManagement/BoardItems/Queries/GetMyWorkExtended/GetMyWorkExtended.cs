@@ -201,11 +201,20 @@ public class GetMyWorkExtendedQueryHandler(
                 item.CompletedAt);
         }
 
+        var shownBoardIds = open.Concat(followedOnly).Concat(done).Select(i => i.BoardId).Distinct().ToList();
+        // The Space each shown Board is placed in (WM-10); null for a Board at the workspace level.
+        var departments = (await context.Boards
+                .AsNoTracking()
+                .Where(b => shownBoardIds.Contains(b.Id) && b.WorkspaceId == request.WorkspaceId)
+                .Select(b => new { b.Id, b.SpaceId })
+                .ToListAsync(cancellationToken))
+            .ToDictionary(b => b.Id.ToString(), b => b.SpaceId?.ToString());
+
         return Result<MyWorkExtendedDto>.Success(new MyWorkExtendedDto(
             open.Concat(followedOnly).Select(Map).ToList(),
             done.Select(Map).ToList(),
             [],
-            new Dictionary<string, string?>()));
+            departments));
     }
 
     private static MyWorkExtendedDto Empty() => new([], [], [], new Dictionary<string, string?>());
