@@ -154,6 +154,7 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
   const rules = useWorkspaceAutomations(workspaceId);
   const workspaceRules = useMemo<WorkspaceRulesPanelProps>(
     () => ({
+      boardId,
       status: rules.forbidden
         ? "forbidden"
         : rules.isError
@@ -161,7 +162,7 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
           : rules.isLoading
             ? "loading"
             : "ready",
-      rules: rules.rules,
+      rules: rules.rules.filter((rule) => rule.boardId === boardId),
       items: groups.flatMap((group) =>
         group.cards.map((card) => ({
           id: card.id,
@@ -184,7 +185,7 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
         data: rules.runs,
       },
     }),
-    [groups, rules],
+    [boardId, groups, rules],
   );
 
   // Only a manager of the board opens its settings.

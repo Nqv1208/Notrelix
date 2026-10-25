@@ -72,4 +72,22 @@ public interface IWorkItemActions
     Task EnsureMoveItemAllowedAsync(
         WorkItemMoveRequest request,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// The board is in the declared scope and the executor may edit it, and the group, when
+    /// given, is on that board (semantic not-found / forbidden otherwise). Used to validate a
+    /// board-scoped rule.
+    /// </summary>
+    Task EnsureBoardGroupAsync(
+        WorkItemActionIdentity execution,
+        Guid boardId,
+        Guid? groupId,
+        CancellationToken cancellationToken);
+
+    /// <summary>The item is on the board (semantic not-found otherwise).</summary>
+    Task EnsureItemOnBoardAsync(
+        Guid workspaceId,
+        Guid itemId,
+        Guid boardId,
+        CancellationToken cancellationToken);
 }

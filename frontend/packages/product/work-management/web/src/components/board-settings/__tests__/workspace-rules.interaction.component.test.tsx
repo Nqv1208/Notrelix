@@ -67,7 +67,7 @@ describe.each([
 ] as const)("workspace automation rules (%s)", (locale, copy) => {
   const t = copy.automations.rules;
 
-  it(`${fui("wm.board-settings.workspace-rules:workspace-rules", locale)}lists the rules in a sentence with the item and the group named, and the system's reason for a rule turned off (${locale})`, () => {
+  it(`${fui("wm.board-settings.workspace-rules:workspace-rules", locale)}lists the rules in a sentence with the groups named, and the system's reason for a rule turned off (${locale})`, () => {
     renderRules(copy);
     expect(
       screen.getByRole("heading", { level: 2, name: t.title }),
@@ -75,11 +75,8 @@ describe.each([
     expect(
       screen.getByText(
         fillCopy(t.line, {
-          trigger: t.triggers.ItemCreated,
-          action: fillCopy(t.actions.move, {
-            item: "“Chốt phạm vi ERP”",
-            group: "“Hoàn thành”",
-          }),
+          trigger: fillCopy(t.triggerMovedTo, { group: "“Cần làm”" }),
+          action: fillCopy(t.actions.move, { group: "“Hoàn thành”" }),
         }),
       ),
     ).toBeTruthy();
@@ -114,7 +111,7 @@ describe.each([
     );
   });
 
-  it(`${fui("wm.board-settings.workspace-rules:workspace-rules-create", locale)}creates a rule from a name, a trigger, an item and a group of the board (${locale})`, async () => {
+  it(`${fui("wm.board-settings.workspace-rules:workspace-rules-create", locale)}creates a rule from a name, a trigger, the group it watches and a group of the board (${locale})`, async () => {
     const onCreate = vi.fn().mockResolvedValue({ ok: true });
     renderRules(copy, { onCreate });
     fireEvent.click(screen.getByRole("button", { name: t.create }));
@@ -125,10 +122,10 @@ describe.each([
       target: { value: "Cất việc" },
     });
     fireEvent.change(within(form).getByLabelText(t.form.trigger), {
-      target: { value: "ItemAssigned" },
+      target: { value: "ItemMovedToGroup" },
     });
-    fireEvent.change(within(form).getByLabelText(t.form.item), {
-      target: { value: "i-2" },
+    fireEvent.change(within(form).getByLabelText(t.form.triggerGroup), {
+      target: { value: "g-todo" },
     });
     fireEvent.change(within(form).getByLabelText(t.form.group), {
       target: { value: "g-done" },
@@ -137,8 +134,9 @@ describe.each([
     await waitFor(() =>
       expect(onCreate).toHaveBeenCalledWith({
         name: "Cất việc",
-        trigger: "ItemAssigned",
-        itemId: "i-2",
+        trigger: "ItemMovedToGroup",
+        boardId: "b-1",
+        triggerGroupId: "g-todo",
         targetGroupId: "g-done",
       }),
     );

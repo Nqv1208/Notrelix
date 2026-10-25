@@ -6,6 +6,14 @@ public class AutomationRule : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
+
+    /// <summary>
+    /// AU-2: the board the rule belongs to; it triggers only for facts of that board and
+    /// its actions act on the triggering item. Null only for rules made before rules were
+    /// board-scoped, which keep running workspace-wide until they are edited.
+    /// </summary>
+    public Guid? BoardId { get; private set; }
+
     public string Name { get; private set; } = null!;
     public string? Description { get; private set; }
     public AutomationRuleStatus Status { get; private set; }
@@ -36,7 +44,8 @@ public class AutomationRule : SoftDeletableAggregateRoot, IWorkspaceScoped
         string name,
         AutomationConfiguration configuration,
         Guid createdBy,
-        DateTimeOffset createdAt)
+        DateTimeOffset createdAt,
+        Guid? boardId = null)
     {
         Guard.NotEmpty(accountId);
         Guard.NotEmpty(workspaceId);
@@ -48,6 +57,7 @@ public class AutomationRule : SoftDeletableAggregateRoot, IWorkspaceScoped
         {
             AccountId = accountId,
             WorkspaceId = workspaceId,
+            BoardId = boardId,
             Name = name.Trim(),
             Configuration = configuration,
             ExecutorUserId = createdBy,

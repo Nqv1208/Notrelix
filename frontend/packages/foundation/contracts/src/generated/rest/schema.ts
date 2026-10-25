@@ -4788,6 +4788,9 @@ export interface components {
             triggerEvent?: string | null;
             actionType?: string | null;
             configuration?: string | null;
+            /** Format: uuid */
+            boardId?: string | null;
+            triggerConfiguration?: string | null;
         };
         "Notrelix.API.Contracts.Automation.Rules.Requests.SetAutomationRuleEnabledRequest": {
             isEnabled?: boolean;
@@ -5644,6 +5647,9 @@ export interface components {
             /** Format: uuid */
             executorUserId?: string | null;
             disabledReason?: string | null;
+            /** Format: uuid */
+            boardId?: string | null;
+            triggerConfiguration?: string | null;
         };
         "Notrelix.Application.Features.Billing.Entitlements.Queries.GetWorkspaceBillingCapabilities.BillingCapabilityDto": {
             code?: string | null;

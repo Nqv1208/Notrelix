@@ -27,7 +27,9 @@ public static class CreateAutomationRuleEndpoint
             request.Name,
             request.TriggerEvent,
             request.ActionType,
-            request.Configuration ?? "{}"));
+            request.Configuration ?? "{}",
+            request.BoardId,
+            request.TriggerConfiguration));
 
         return result.ToCreatedResult($"/api/v1/automations/{result.Data}");
     }

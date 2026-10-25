@@ -9,6 +9,30 @@ public static class AutomationMoveItemConfiguration
 {
     public const string ActionType = "MoveItem";
 
+    /// <summary>
+    /// AU-1: the board-scoped form, <c>{"targetGroupId":"…"}</c>; the item is the one the
+    /// trigger fact is about. Rules made before that carry a fixed <c>itemId</c> too.
+    /// </summary>
+    public static bool TryParseTarget(string? configuration, out Guid targetGroupId)
+    {
+        targetGroupId = Guid.Empty;
+        if (string.IsNullOrWhiteSpace(configuration)) return false;
+        try
+        {
+            using var document = System.Text.Json.JsonDocument.Parse(configuration);
+            var root = document.RootElement;
+            return root.ValueKind == System.Text.Json.JsonValueKind.Object
+                && root.TryGetProperty("targetGroupId", out var group)
+                && group.ValueKind == System.Text.Json.JsonValueKind.String
+                && Guid.TryParse(group.GetString(), out targetGroupId)
+                && targetGroupId != Guid.Empty;
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return false;
+        }
+    }
+
     public static bool TryParse(string? configuration, out Guid itemId, out Guid targetGroupId)
     {
         itemId = Guid.Empty;

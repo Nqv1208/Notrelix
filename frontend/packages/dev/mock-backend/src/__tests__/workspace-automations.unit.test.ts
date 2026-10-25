@@ -25,7 +25,7 @@ describe("workspace automation rules in the mock world", () => {
     const id = await api.create(workspaceId, {
       name: "Park the scope item",
       trigger: "ItemCreated",
-      itemId: "item-1",
+      boardId: "board-1",
       targetGroupId: "group-1",
     });
     const [rule] = await api.list(workspaceId);
@@ -34,7 +34,7 @@ describe("workspace automation rules in the mock world", () => {
       name: "Park the scope item",
       trigger: "ItemCreated",
       action: "MoveItem",
-      itemId: "item-1",
+      boardId: "board-1",
       targetGroupId: "group-1",
       enabled: false,
     });

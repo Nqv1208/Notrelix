@@ -19380,6 +19380,15 @@
           "configuration": {
             "type": "string",
             "nullable": true
+          },
+          "boardId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "triggerConfiguration": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -21984,6 +21993,15 @@
             "nullable": true
           },
           "disabledReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "boardId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "triggerConfiguration": {
             "type": "string",
             "nullable": true
           }

@@ -45,7 +45,6 @@ import { canReadBoard } from "../work-management/boards.handlers";
 
 const MY_WORK_EXT = "CTR-GAP-WS-MYWORK-EXT" as const;
 const HOME_FEED = "CTR-GAP-WS-HOME-FEED" as const;
-const ITEM_SHEET = "CTR-GAP-WS-ITEM-SHEET" as const;
 
 const PRIORITY_LABELS = {
   urgent: "Urgent",

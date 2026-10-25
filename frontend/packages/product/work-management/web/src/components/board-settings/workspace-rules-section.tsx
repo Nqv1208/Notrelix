@@ -26,8 +26,8 @@ import type {
 import type { WorkspaceRulesCopy } from "./workspace-rules.copy";
 
 const TRIGGERS: readonly WorkspaceAutomationTrigger[] = [
+  "ItemMovedToGroup",
   "ItemCreated",
-  "ItemAssigned",
 ];
 
 /** "When an item is created, move X to Y" in the words of the copy. */
@@ -38,13 +38,17 @@ function ruleSentence(
   groups: readonly WorkspaceRuleChoice[],
 ): string {
   const triggers: Readonly<Record<string, string>> = copy.triggers;
-  const trigger = triggers[rule.trigger] ?? rule.trigger;
+  const triggerGroup = rule.triggerGroupId
+    ? groups.find((choice) => choice.id === rule.triggerGroupId)
+    : undefined;
+  const trigger =
+    rule.trigger === "ItemMovedToGroup" && triggerGroup
+      ? fillCopy(copy.triggerMovedTo, { group: `“${triggerGroup.name}”` })
+      : (triggers[rule.trigger] ?? rule.trigger);
   let action: string;
-  if (rule.action === "MoveItem" && rule.itemId && rule.targetGroupId) {
-    const item = items.find((choice) => choice.id === rule.itemId);
+  if (rule.action === "MoveItem" && rule.targetGroupId) {
     const group = groups.find((choice) => choice.id === rule.targetGroupId);
     action = fillCopy(copy.actions.move, {
-      item: item ? `“${item.name}”` : copy.itemUnknown,
       group: group ? `“${group.name}”` : copy.groupUnknown,
     });
   } else if (rule.action === "MoveItem") {
@@ -375,11 +379,15 @@ function NewRuleForm({
   const id = useId();
   const [name, setName] = useState("");
   const [trigger, setTrigger] =
-    useState<WorkspaceAutomationTrigger>("ItemCreated");
-  const [itemId, setItemId] = useState("");
+    useState<WorkspaceAutomationTrigger>("ItemMovedToGroup");
+  const [triggerGroupId, setTriggerGroupId] = useState("");
   const [groupId, setGroupId] = useState("");
   const [busy, setBusy] = useState(false);
-  const ready = name.trim() !== "" && itemId !== "" && groupId !== "";
+  const needsTriggerGroup = trigger === "ItemMovedToGroup";
+  const ready =
+    name.trim() !== "" &&
+    groupId !== "" &&
+    (!needsTriggerGroup || triggerGroupId !== "");
 
   function submit(event: FormEvent) {
     event.preventDefault();
@@ -389,7 +397,8 @@ function NewRuleForm({
       .onCreate({
         name: name.trim(),
         trigger,
-        itemId,
+        boardId: panel.boardId,
+        ...(needsTriggerGroup ? { triggerGroupId } : {}),
         targetGroupId: groupId,
       })
       .then(onDone)
@@ -434,27 +443,23 @@ function NewRuleForm({
             <option>{t.actionMove}</option>
           </select>
         </FormGroup>
-        <FormGroup label={t.item} htmlFor={`${id}-item`}>
-          <select
-            id={`${id}-item`}
-            value={itemId}
-            onChange={(event) => setItemId(event.target.value)}
-            className={INPUT_CLASS}
-          >
-            <option value="">{t.choose}</option>
-            {panel.groups.map((group) => (
-              <optgroup key={group.id} label={group.name}>
-                {panel.items
-                  .filter((item) => item.groupId === group.id)
-                  .map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.name}
-                    </option>
-                  ))}
-              </optgroup>
-            ))}
-          </select>
-        </FormGroup>
+        {needsTriggerGroup ? (
+          <FormGroup label={t.triggerGroup} htmlFor={`${id}-trigger-group`}>
+            <select
+              id={`${id}-trigger-group`}
+              value={triggerGroupId}
+              onChange={(event) => setTriggerGroupId(event.target.value)}
+              className={INPUT_CLASS}
+            >
+              <option value="">{t.choose}</option>
+              {panel.groups.map((group) => (
+                <option key={group.id} value={group.id}>
+                  {group.name}
+                </option>
+              ))}
+            </select>
+          </FormGroup>
+        ) : null}
         <FormGroup label={t.group} htmlFor={`${id}-group`}>
           <select
             id={`${id}-group`}

@@ -440,6 +440,14 @@ public sealed class AutomationMoveItemExecutorCompositionIntegrationTests : IAsy
         public Task EnsureMoveItemAllowedAsync(
             Guid itemId, Guid targetGroupId, AutomationPrincipal automationPrincipal, CancellationToken cancellationToken) =>
             inner.EnsureMoveItemAllowedAsync(itemId, targetGroupId, automationPrincipal, cancellationToken);
+
+        public Task EnsureBoardGroupAsync(
+            Guid boardId, Guid? groupId, AutomationPrincipal automationPrincipal, CancellationToken cancellationToken) =>
+            inner.EnsureBoardGroupAsync(boardId, groupId, automationPrincipal, cancellationToken);
+
+        public Task EnsureItemOnBoardAsync(
+            Guid itemId, Guid boardId, AutomationPrincipal automationPrincipal, CancellationToken cancellationToken) =>
+            inner.EnsureItemOnBoardAsync(itemId, boardId, automationPrincipal, cancellationToken);
     }
 
     // --- AUT-020: executor identity ------------------------------------------

@@ -60,6 +60,17 @@ function moveTarget(configuration: string | null | undefined): {
   };
 }
 
+/** The group a trigger filters on: the saved trigger's own JSON text. */
+function triggerGroup(configuration: string | null | undefined): string | null {
+  const root = parse(configuration) as {
+    Trigger?: { Configuration?: string | null };
+  } | null;
+  const trigger = parse(root?.Trigger?.Configuration) as {
+    groupId?: unknown;
+  } | null;
+  return text(trigger?.groupId);
+}
+
 function toRule(row: RuleRow): WorkspaceAutomationRuleDto {
   const action = row.actionType ?? "";
   const target =
@@ -73,6 +84,8 @@ function toRule(row: RuleRow): WorkspaceAutomationRuleDto {
     action,
     itemId: target.itemId,
     targetGroupId: target.targetGroupId,
+    boardId: row.boardId ?? null,
+    triggerGroupId: triggerGroup(row.configuration),
     enabled: row.isEnabled === true,
     disabledReason: row.disabledReason ?? null,
     createdAt: row.createdAt ?? "",
@@ -100,10 +113,13 @@ export function createWorkspaceAutomationsApi(client: NotrelixClient) {
           name: input.name,
           triggerEvent: input.trigger,
           actionType: "MoveItem",
+          boardId: input.boardId,
           configuration: JSON.stringify({
-            itemId: input.itemId,
             targetGroupId: input.targetGroupId,
           }),
+          triggerConfiguration: JSON.stringify(
+            input.triggerGroupId ? { groupId: input.triggerGroupId } : {},
+          ),
         },
         { idempotencyKey: crypto.randomUUID(), ...quiet },
       );

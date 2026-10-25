@@ -6,8 +6,8 @@
 export const workspaceRulesEn = {
   title: "Automations",
   intro:
-    "A rule does a step for you when something happens. It applies to the whole workspace, not to one board, and runs with the permission of the person who created it.",
-  scope: "Applies to the whole workspace",
+    "A rule does a step for you when something happens on this board. It acts on the item that triggered it and runs with the permission of the person who created it.",
+  scope: "Applies to this board",
   create: "New rule",
   loading: "Loading the rules",
   error: "The rules could not be loaded.",
@@ -27,11 +27,11 @@ export const workspaceRulesEn = {
     ItemMovedToGroup: "an item is moved to a group",
   },
   actions: {
-    move: "move {{item}} to {{group}}",
+    move: "move it to {{group}}",
     moveUnknown: "move an item to a group",
     other: "run the action {{action}}",
   },
-  itemUnknown: "an item of another board",
+  triggerMovedTo: "an item is moved to {{group}}",
   groupUnknown: "a group of another board",
   disabledBy: "Turned off by the system: {{reason}}",
   form: {
@@ -41,12 +41,12 @@ export const workspaceRulesEn = {
     trigger: "When",
     action: "Then",
     actionMove: "Move an item to a group",
-    item: "Item to move",
-    group: "To the group",
+    triggerGroup: "Moved to the group",
+    group: "Move it to the group",
     choose: "Choose",
     submit: "Create rule",
     cancel: "Cancel",
-    hint: "A new rule is off until you turn it on. The item and the group are of this board.",
+    hint: "A new rule is off until you turn it on. The groups are of this board.",
   },
   history: {
     show: "Run history",
@@ -65,7 +65,7 @@ export const workspaceRulesEn = {
   },
   feedback: {
     limit: "The limit of automation rules in this workspace's plan is reached.",
-    invalid: "The rule is not valid. Check the name, the item and the group.",
+    invalid: "The rule is not valid. Check the name and the groups.",
     forbidden: "Only workspace admins change automations.",
     failed: "The change could not be saved. Try again.",
   },
@@ -74,8 +74,8 @@ export const workspaceRulesEn = {
 export const workspaceRulesVi: WorkspaceRulesCopy = {
   title: "Tự động hoá",
   intro:
-    "Quy tắc làm thay một bước khi có việc xảy ra. Quy tắc áp dụng cho cả workspace, không riêng một board, và chạy với quyền của người tạo ra nó.",
-  scope: "Áp dụng cho cả workspace",
+    "Quy tắc làm thay một bước khi có việc xảy ra trên board này. Quy tắc tác động lên việc đã kích hoạt nó và chạy với quyền của người tạo ra nó.",
+  scope: "Áp dụng cho board này",
   create: "Quy tắc mới",
   loading: "Đang tải các quy tắc",
   error: "Không tải được các quy tắc.",
@@ -95,11 +95,11 @@ export const workspaceRulesVi: WorkspaceRulesCopy = {
     ItemMovedToGroup: "một việc được chuyển sang nhóm khác",
   },
   actions: {
-    move: "chuyển {{item}} sang {{group}}",
+    move: "chuyển việc đó sang {{group}}",
     moveUnknown: "chuyển một việc sang một nhóm",
     other: "chạy hành động {{action}}",
   },
-  itemUnknown: "một việc của board khác",
+  triggerMovedTo: "một việc được chuyển sang {{group}}",
   groupUnknown: "một nhóm của board khác",
   disabledBy: "Hệ thống đã tắt: {{reason}}",
   form: {
@@ -109,12 +109,12 @@ export const workspaceRulesVi: WorkspaceRulesCopy = {
     trigger: "Khi",
     action: "Thì",
     actionMove: "Chuyển một việc sang một nhóm",
-    item: "Việc cần chuyển",
-    group: "Sang nhóm",
+    triggerGroup: "Được chuyển sang nhóm",
+    group: "Chuyển việc sang nhóm",
     choose: "Chọn",
     submit: "Tạo quy tắc",
     cancel: "Huỷ",
-    hint: "Quy tắc mới đang tắt cho đến khi bạn bật. Việc và nhóm thuộc board này.",
+    hint: "Quy tắc mới đang tắt cho đến khi bạn bật. Các nhóm thuộc board này.",
   },
   history: {
     show: "Lịch sử chạy",
@@ -133,7 +133,7 @@ export const workspaceRulesVi: WorkspaceRulesCopy = {
   },
   feedback: {
     limit: "Gói của workspace đã hết số quy tắc tự động hoá được tạo.",
-    invalid: "Quy tắc chưa hợp lệ. Kiểm tra tên, việc và nhóm.",
+    invalid: "Quy tắc chưa hợp lệ. Kiểm tra tên và các nhóm.",
     forbidden: "Chỉ quản trị viên workspace đổi được tự động hoá.",
     failed: "Chưa lưu được thay đổi. Hãy thử lại.",
   },

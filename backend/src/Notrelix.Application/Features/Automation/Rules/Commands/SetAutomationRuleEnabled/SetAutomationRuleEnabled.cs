@@ -57,7 +57,8 @@ public class SetAutomationRuleEnabledCommandHandler : IRequestHandler<SetAutomat
                     rule.WorkspaceId,
                     executor,
                     rule.Configuration.Action,
-                    cancellationToken);
+                    cancellationToken,
+                    rule.BoardId);
             }
 
             rule.Enable(_currentUser.UserId, _dateTimeProvider.UtcNow);

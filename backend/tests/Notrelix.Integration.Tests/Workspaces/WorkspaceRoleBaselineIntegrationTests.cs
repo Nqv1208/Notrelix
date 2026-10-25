@@ -358,6 +358,8 @@ public sealed class WorkspaceRoleBaselineIntegrationTests : IAsyncLifetime
             RegisterServices(services);
             services.AddScoped<Notrelix.Application.Features.Collaboration.Public.ResourceSummary.ICollaborationResourceSummary,
                 Notrelix.Infrastructure.CrossContext.Collaboration.ResourceSummary.PostgresCollaborationResourceSummary>();
+            services.AddScoped<Notrelix.Application.Features.Collaboration.Public.Watchers.IResourceFollowers,
+                Notrelix.Infrastructure.CrossContext.Collaboration.Watchers.PostgresResourceFollowers>();
             services.AddScoped<Notrelix.Application.Features.WorkManagement.Ports.Collaboration.IWorkManagementCollaborationReadPort,
                 Notrelix.Infrastructure.CrossContext.WorkManagement.Collaboration.WorkManagementCollaborationReadAdapter>();
         });

@@ -5,7 +5,8 @@
  */
 
 /** The triggers the runtime evaluates and a rule may be created with. */
-export type WorkspaceAutomationTrigger = "ItemCreated" | "ItemAssigned";
+export type WorkspaceAutomationTrigger =
+  "ItemCreated" | "ItemAssigned" | "ItemMovedToGroup";
 
 export interface WorkspaceAutomationRuleDto {
   readonly id: string;
@@ -17,6 +18,10 @@ export interface WorkspaceAutomationRuleDto {
   /** What a "MoveItem" rule moves and where; null for other actions. */
   readonly itemId: string | null;
   readonly targetGroupId: string | null;
+  /** The board the rule belongs to; null for a rule made before rules were board-scoped. */
+  readonly boardId: string | null;
+  /** The trigger's group filter ("an item is moved to this group"). */
+  readonly triggerGroupId: string | null;
   readonly enabled: boolean;
   /** Why the platform turned the rule off, when it did. */
   readonly disabledReason: string | null;
@@ -37,7 +42,10 @@ export interface WorkspaceAutomationRunDto {
 export interface CreateWorkspaceAutomationInput {
   readonly name: string;
   readonly trigger: WorkspaceAutomationTrigger;
-  readonly itemId: string;
+  readonly boardId: string;
+  /** For "an item is moved to a group": the group it moves into. */
+  readonly triggerGroupId?: string;
+  /** The rule moves the item that triggered it to this group of the board. */
   readonly targetGroupId: string;
 }
 

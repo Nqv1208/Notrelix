@@ -154,6 +154,8 @@ export interface WorkspaceRuleChoice {
  * rule has one trigger and one action, and applies to the whole workspace.
  */
 export interface WorkspaceRulesPanelProps {
+  /** The board whose rules the panel lists and creates. */
+  readonly boardId: string;
   readonly status: "loading" | "error" | "forbidden" | "ready";
   readonly rules: readonly WorkspaceAutomationRuleDto[];
   /** The items and the groups of this board: what the form offers and what a rule's sentence names. */
