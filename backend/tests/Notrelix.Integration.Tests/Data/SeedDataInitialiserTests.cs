@@ -131,7 +131,8 @@ public class SeedDataInitialiserTests : IAsyncLifetime
             var membershipCount = await context.WorkspaceMembers
                 .CountAsync(member => member.UserId == user.Id);
 
-            membershipCount.Should().Be(workspaceCount - 1);
+            // A workspace the account owns is also one of its memberships: the creator is its Owner member.
+            membershipCount.Should().Be(workspaceCount);
         }
     }
 
