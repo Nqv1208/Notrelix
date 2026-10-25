@@ -104,16 +104,26 @@ test.describe("Board share dialog (owner)", () => {
     await expect(dialog.getByText("Trần Minh Quân")).toHaveCount(0);
   });
 
-  test("inviting has no write: the button looks live, says why and changes nothing", async ({
+  test("inviting waits for a chosen member, then gives them the permission", async ({
     page,
   }) => {
     await open(page);
     await share(page).click();
     const invite = page.locator('[data-f="invite"]');
-    await expect(invite).toHaveAttribute("aria-disabled", "true");
-    await expect(invite).toHaveAttribute("title", /.+/);
-    await invite.click({ force: true });
-    await expect(page.getByRole("dialog", { name: /^Chia sẻ/ })).toBeVisible();
+    await expect(invite).toBeDisabled();
+    const dialog = page.getByRole("dialog", { name: /^Chia sẻ/ });
+    const field = dialog.getByRole("combobox");
+    await field.click();
+    const candidate = dialog.getByRole("option").first();
+    await expect(candidate).toBeVisible();
+    const name = (await candidate.innerText()).trim().split("\n").pop() ?? "";
+    await candidate.click();
+    await expect(invite).toBeEnabled();
+    await invite.click();
+    await expect(dialog).toBeVisible();
+    await expect(field).toHaveValue("");
+    await expect(invite).toBeDisabled();
+    expect(name).not.toBe("");
   });
 
   test("changes a permission, and removes one", async ({ page }) => {
