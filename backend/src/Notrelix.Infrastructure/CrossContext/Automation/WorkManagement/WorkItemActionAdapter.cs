@@ -67,4 +67,44 @@ public sealed class WorkItemActionAdapter : IWorkActionPort
         var request = WorkActionAcl.ToWorkMoveRequest(itemId, targetGroupId, Guid.CreateVersion7(), automationPrincipal);
         return _workItemActions.EnsureMoveItemAllowedAsync(request, cancellationToken);
     }
+
+    private static WorkItemActionIdentity Identity(Guid operationId, AutomationPrincipal principal) =>
+        new(
+            OperationId: operationId,
+            AccountId: principal.AccountId,
+            WorkspaceId: principal.WorkspaceId,
+            ExecutorUserId: principal.ExecutorUserId,
+            CorrelationId: principal.CorrelationId ?? operationId,
+            CausationId: principal.CausationId);
+
+    public Task ChangeStatusAsync(
+        Guid itemId, Guid optionId, Guid operationId, AutomationPrincipal principal, CancellationToken cancellationToken) =>
+        _workItemActions.ChangeStatusAsync(Identity(operationId, principal), itemId, optionId, cancellationToken);
+
+    public Task SetFieldValueAsync(
+        Guid itemId, Guid fieldId, string valueJson, Guid operationId, AutomationPrincipal principal, CancellationToken cancellationToken) =>
+        _workItemActions.SetFieldValueAsync(Identity(operationId, principal), itemId, fieldId, valueJson, cancellationToken);
+
+    public Task AssignMemberAsync(
+        Guid itemId, Guid userId, Guid operationId, AutomationPrincipal principal, CancellationToken cancellationToken) =>
+        _workItemActions.AssignMemberAsync(Identity(operationId, principal), itemId, userId, cancellationToken);
+
+    public async Task<WorkActionItemFacts> GetItemFactsAsync(
+        Guid itemId, Guid boardId, AutomationPrincipal principal, CancellationToken cancellationToken)
+    {
+        var facts = await _workItemActions.GetItemFactsAsync(principal.WorkspaceId, itemId, boardId, cancellationToken);
+        return new WorkActionItemFacts(facts.GroupId, facts.StatusOptionId, facts.Name, facts.FieldValues);
+    }
+
+    public Task EnsureStatusOptionAsync(
+        Guid boardId, Guid optionId, AutomationPrincipal principal, CancellationToken cancellationToken) =>
+        _workItemActions.EnsureStatusOptionAsync(principal.WorkspaceId, boardId, optionId, cancellationToken);
+
+    public Task EnsureFieldValueAsync(
+        Guid boardId, Guid fieldId, string valueJson, AutomationPrincipal principal, CancellationToken cancellationToken) =>
+        _workItemActions.EnsureFieldValueAsync(principal.WorkspaceId, boardId, fieldId, valueJson, cancellationToken);
+
+    public Task EnsureWorkspaceMemberAsync(
+        Guid userId, AutomationPrincipal principal, CancellationToken cancellationToken) =>
+        _workItemActions.EnsureWorkspaceMemberAsync(principal.WorkspaceId, userId, cancellationToken);
 }

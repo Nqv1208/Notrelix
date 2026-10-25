@@ -180,7 +180,9 @@ public sealed class AutomationMoveItemExecutorCompositionIntegrationTests : IAsy
             moveUseCase,
             context,
             authorizer,
-            idempotencyStore);
+            idempotencyStore,
+            Moq.Mock.Of<Notrelix.Application.Common.Tenancy.IWorkspaceAccessResolver>(),
+            Moq.Mock.Of<Notrelix.Application.Common.Time.IDateTimeProvider>());
         IWorkActionPort port = new WorkItemActionAdapter(actions);
         if (wrapPort is not null) port = wrapPort(context, port);
         var useCase = new AutomationMoveItemUseCase(context, port, clockMock.Object, new Notrelix.Infrastructure.Data.WorkManagement.PostgresOrderingConflictClassifier());
@@ -448,6 +450,27 @@ public sealed class AutomationMoveItemExecutorCompositionIntegrationTests : IAsy
         public Task EnsureItemOnBoardAsync(
             Guid itemId, Guid boardId, AutomationPrincipal automationPrincipal, CancellationToken cancellationToken) =>
             inner.EnsureItemOnBoardAsync(itemId, boardId, automationPrincipal, cancellationToken);
+
+        public Task ChangeStatusAsync(Guid itemId, Guid optionId, Guid operationId, AutomationPrincipal principal, CancellationToken cancellationToken) =>
+            inner.ChangeStatusAsync(itemId, optionId, operationId, principal, cancellationToken);
+
+        public Task SetFieldValueAsync(Guid itemId, Guid fieldId, string valueJson, Guid operationId, AutomationPrincipal principal, CancellationToken cancellationToken) =>
+            inner.SetFieldValueAsync(itemId, fieldId, valueJson, operationId, principal, cancellationToken);
+
+        public Task AssignMemberAsync(Guid itemId, Guid userId, Guid operationId, AutomationPrincipal principal, CancellationToken cancellationToken) =>
+            inner.AssignMemberAsync(itemId, userId, operationId, principal, cancellationToken);
+
+        public Task<WorkActionItemFacts> GetItemFactsAsync(Guid itemId, Guid boardId, AutomationPrincipal principal, CancellationToken cancellationToken) =>
+            inner.GetItemFactsAsync(itemId, boardId, principal, cancellationToken);
+
+        public Task EnsureStatusOptionAsync(Guid boardId, Guid optionId, AutomationPrincipal principal, CancellationToken cancellationToken) =>
+            inner.EnsureStatusOptionAsync(boardId, optionId, principal, cancellationToken);
+
+        public Task EnsureFieldValueAsync(Guid boardId, Guid fieldId, string valueJson, AutomationPrincipal principal, CancellationToken cancellationToken) =>
+            inner.EnsureFieldValueAsync(boardId, fieldId, valueJson, principal, cancellationToken);
+
+        public Task EnsureWorkspaceMemberAsync(Guid userId, AutomationPrincipal principal, CancellationToken cancellationToken) =>
+            inner.EnsureWorkspaceMemberAsync(userId, principal, cancellationToken);
     }
 
     // --- AUT-020: executor identity ------------------------------------------

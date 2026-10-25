@@ -48,7 +48,7 @@ public class SetAutomationRuleEnabledCommandHandler : IRequestHandler<SetAutomat
     {
         var rule = await _context.AutomationRules
             .FirstOrDefaultAsync(item => item.Id == request.AutomationRuleId, cancellationToken);
-        if (rule is null) throw new NotFoundException(nameof(AutomationRule), request.AutomationRuleId);
+        if (rule is null || rule.IsRemoved) throw new NotFoundException(nameof(AutomationRule), request.AutomationRuleId);
 
         // Fail closed: authority was proven on the named board, so the rule must be that board's.
         if (request.BoardId is { } claimedBoard && rule.BoardId != claimedBoard)

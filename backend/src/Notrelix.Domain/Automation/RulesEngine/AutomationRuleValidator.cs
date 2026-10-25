@@ -31,7 +31,8 @@ public static class AutomationRuleValidator
                 "Automation rule must have an action.");
 
         AutomationTriggerValidator.Validate(configuration.Trigger);
-        AutomationActionValidator.Validate(configuration.Action);
+        foreach (var action in configuration.Actions)
+            AutomationActionValidator.Validate(action);
     }
 
     /// <summary>

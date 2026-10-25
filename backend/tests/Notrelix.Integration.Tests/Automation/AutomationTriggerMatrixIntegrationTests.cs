@@ -246,10 +246,10 @@ public sealed class AutomationTriggerMatrixIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task UnsupportedActionType_FailsClosed_TerminalFailure_NoDispatchIntent()
     {
-        // SendEmail is valid rule vocabulary (configuration accepts it) but has
-        // no M8 runtime executor — it must fail the execution closed, never be
+        // CreateItem is valid rule vocabulary (configuration accepts it) but has
+        // no runtime executor — it must fail the execution closed, never be
         // silently rerouted to the n8n webhook dispatcher.
-        var graph = await SeedRuleAsync("ItemCreated", "SendEmail", """{"templateId":"t-1","subject":"Hi"}""");
+        var graph = await SeedRuleAsync("ItemCreated", "CreateItem", """{"targetGroupId":"00000000-0000-0000-0000-000000000001"}""");
         var sourceEventId = Guid.NewGuid();
 
         var trigger = new AutomationTriggerContext(
@@ -266,8 +266,8 @@ public sealed class AutomationTriggerMatrixIntegrationTests : IAsyncLifetime
             .SingleAsync(e => e.RuleId == graph.RuleId);
         execution.Status.Should().Be(AutomationExecutionStatus.Failed,
             "an action without a runtime executor is a visible terminal failure");
-        execution.Error.Should().Contain("SendEmail");
-        execution.Error.Should().Contain("M8-AUTOMATION-ACTION-PARITY");
+        execution.Error.Should().Contain("CreateItem");
+        execution.Error.Should().Contain("no runtime executor");
     }
 
     [Fact]

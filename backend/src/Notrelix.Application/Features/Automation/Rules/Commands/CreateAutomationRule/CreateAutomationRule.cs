@@ -4,7 +4,6 @@ using Notrelix.Application.Features.Automation.Ports.WorkManagement;
 using Notrelix.Application.Features.Automation.Rules.Services;
 using Notrelix.Application.Features.Billing.Public.Capacity;
 using Notrelix.Application.Features.Billing.Public.Facts;
-using Notrelix.Domain.Automation.RulesEngine;
 
 namespace Notrelix.Application.Features.Automation.Rules.Commands.CreateAutomationRule;
 
@@ -16,7 +15,9 @@ public record CreateAutomationRuleCommand(
     string ActionType,
     string Configuration,
     Guid? BoardId = null,
-    string? TriggerConfiguration = null) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IRequireAdditionalPermission, IIdempotentRequest
+    string? TriggerConfiguration = null,
+    IReadOnlyList<RuleActionInput>? Actions = null,
+    string? Conditions = null) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IRequireAdditionalPermission, IIdempotentRequest
 {
     // Board-scoped rules are managed by the board's Managers (and workspace Owners/Admins, who are
     // Managers everywhere); a rule without a board stays workspace settings.
@@ -30,7 +31,9 @@ public record CreateAutomationRuleCommand(
     /// Rule also needs ManageIntegrations. Pipeline authorization only.
     /// </summary>
     public IReadOnlyList<string> AdditionalActionNames =>
-        BoardId is null && string.Equals(ActionType, "Webhook", StringComparison.Ordinal)
+        BoardId is null && (Actions is { Count: > 0 }
+            ? Actions.Any(a => string.Equals(a.Type, "Webhook", StringComparison.Ordinal))
+            : string.Equals(ActionType, "Webhook", StringComparison.Ordinal))
             ? [nameof(PermissionAction.ManageIntegrations)]
             : [];
 }
@@ -44,24 +47,6 @@ public class CreateAutomationRuleCommandHandler : IRequestHandler<CreateAutomati
     private readonly IBillingCapacityActions _billingCapacityActions;
     private readonly AutomationExecutorAuthority _executorAuthority;
     private readonly IWorkActionPort _workActions;
-
-    private static bool TryReadTriggerGroup(string? configuration, out Guid groupId)
-    {
-        groupId = Guid.Empty;
-        if (string.IsNullOrWhiteSpace(configuration)) return false;
-        try
-        {
-            using var document = System.Text.Json.JsonDocument.Parse(configuration);
-            return document.RootElement.ValueKind == System.Text.Json.JsonValueKind.Object
-                && document.RootElement.TryGetProperty("groupId", out var group)
-                && group.ValueKind == System.Text.Json.JsonValueKind.String
-                && Guid.TryParse(group.GetString(), out groupId);
-        }
-        catch (System.Text.Json.JsonException)
-        {
-            return false;
-        }
-    }
 
     public CreateAutomationRuleCommandHandler(
         IAutomationDbContext context,
@@ -96,41 +81,27 @@ public class CreateAutomationRuleCommandHandler : IRequestHandler<CreateAutomati
             return Result<Guid>.Failure(
                 "The automation rule limit for this workspace's plan has been reached.");
 
-        // AU-2: a board-scoped rule has its own trigger filter; a rule without a board keeps
-        // the single configuration both parts read.
-        var trigger = AutomationTriggerDefinition.Create(
-            request.TriggerEvent,
-            request.BoardId is null ? request.Configuration : request.TriggerConfiguration);
-        var action = AutomationActionDefinition.Create(request.ActionType, request.Configuration);
+        // One trigger, optional AND conditions and up to five ordered actions (no branching).
+        IReadOnlyList<RuleActionInput> actions = request.Actions is { Count: > 0 }
+            ? request.Actions
+            : [new RuleActionInput(request.ActionType, request.Configuration)];
+        var config = AutomationRuleAssembler.Assemble(
+            request.TriggerEvent, request.TriggerConfiguration, request.BoardId, actions, request.Conditions);
 
-        // AUT-028: a Webhook rule's path is allow-listed when the rule is created,
-        // not only when it is enabled (the Domain rejects url and unsafe paths).
-        if (string.Equals(action.Type, "Webhook", StringComparison.OrdinalIgnoreCase))
-        {
-            AutomationActionValidator.Validate(action);
-        }
-
-        // A Webhook reaches the workspace's n8n integration (ManageIntegrations), which a board
-        // Manager does not hold, so board rules do not offer it.
-        if (request.BoardId is not null && AutomationActionKinds.IsIntegration(action.Type))
-            return Result<Guid>.Failure("A board rule cannot use an integration action.");
-
-        var config = AutomationConfiguration.Create(trigger, action);
-
-        // AUT-020: the rule runs as its creator, so the creator must hold the
-        // action's permission on the target now (a Private board the creator
-        // cannot see is rejected here, never bound).
-        await _executorAuthority.EnsureCanExecuteAsync(
+        // AUT-020: the rule runs as its creator, so the creator must hold every action's
+        // permission on its targets now (a Private board the creator cannot see is rejected
+        // here, never bound), and every condition must name things of the rule's board.
+        await _executorAuthority.EnsureRuleAsync(
             _requestContext.RequireAccountId(),
             request.WorkspaceId,
             _requestContext.UserId,
-            action,
-            cancellationToken,
-            request.BoardId);
+            config,
+            request.BoardId,
+            cancellationToken);
 
         // The trigger filter's group must be on the rule's board too.
         if (request.BoardId is { } boardId
-            && TryReadTriggerGroup(request.TriggerConfiguration, out var triggerGroupId))
+            && AutomationTriggerFilter.TryReadGroup(request.TriggerConfiguration, out var triggerGroupId))
         {
             await _workActions.EnsureBoardGroupAsync(
                 boardId,

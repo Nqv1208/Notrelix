@@ -20,6 +20,17 @@ public interface IWorkItemActionAuthorizer
         Guid newGroupId,
         CancellationToken cancellationToken);
 
+    /// <summary>
+    /// The executor holds the canonical decision of <typeparamref name="TCommand"/> on the item
+    /// (the same request contract the HTTP pipeline evaluates).
+    /// </summary>
+    Task AuthorizeItemCommandAsync<TCommand>(
+        WorkItemActionIdentity execution,
+        Guid itemId,
+        TCommand request,
+        CancellationToken cancellationToken)
+        where TCommand : IRequirePermission;
+
     /// <summary>The executor may edit the board (an Editor change), in the declared scope.</summary>
     Task AuthorizeBoardEditAsync(
         WorkItemActionIdentity execution,
@@ -79,6 +90,38 @@ public sealed class WorkItemActionAuthorizer : IWorkItemActionAuthorizer
         if (decision.Kind != AccessDecisionKind.Allowed)
         {
             throw new ForbiddenException(decision.Message ?? "You do not have permission to edit this board.");
+        }
+    }
+
+    public async Task AuthorizeItemCommandAsync<TCommand>(
+        WorkItemActionIdentity execution,
+        Guid itemId,
+        TCommand request,
+        CancellationToken cancellationToken)
+        where TCommand : IRequirePermission
+    {
+        var resource = ResourceRef.Create(BoardItemKind, itemId, execution.WorkspaceId);
+        var location = await _resourceLocator.LocateAsync(resource, execution.ExecutorUserId, cancellationToken)
+            ?? throw new NotFoundException("BoardItem", itemId);
+        if (location.AccountId != execution.AccountId || location.WorkspaceId != execution.WorkspaceId)
+        {
+            throw new ForbiddenException("The item does not belong to the declared execution scope.");
+        }
+
+        var descriptor = _descriptors.GetRequired(typeof(TCommand));
+        var snapshot = new ExecutionContextSnapshot(
+            execution.ExecutorUserId,
+            location.AccountId,
+            location.WorkspaceId,
+            resource,
+            ApplicationPrincipalKind.Authenticated,
+            ApplicationScopeKind.Resource,
+            (execution.CorrelationId ?? execution.OperationId).ToString("D"));
+        var facts = await _factsProvider.ResolveAsync(descriptor, snapshot, request, cancellationToken);
+        var decision = _policy.Evaluate(descriptor, snapshot, facts, request);
+        if (decision.Kind != AccessDecisionKind.Allowed)
+        {
+            throw new ForbiddenException(decision.Message ?? "You do not have permission to perform this action.");
         }
     }
 

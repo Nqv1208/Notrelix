@@ -771,6 +771,7 @@ work-management.board-item-linked|1|Notrelix.Domain.WorkManagement.Items.Events.
 work-management.board-item-linked|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemLinkedDomainEvent|Workspace|SourceItemId|System.Guid|False
 work-management.board-item-linked|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemLinkedDomainEvent|Workspace|Target|Notrelix.Domain.SharedKernel.ResourceRef|False
 work-management.board-item-member-assigned|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemMemberAssignedDomainEvent|Workspace|AssignedBy|System.Guid|False
+work-management.board-item-member-assigned|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemMemberAssignedDomainEvent|Workspace|BoardId|System.Guid|True
 work-management.board-item-member-assigned|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemMemberAssignedDomainEvent|Workspace|ItemId|System.Guid|False
 work-management.board-item-member-assigned|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemMemberAssignedDomainEvent|Workspace|UserId|System.Guid|False
 work-management.board-item-member-unassigned|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemMemberUnassignedDomainEvent|Workspace|ItemId|System.Guid|False
