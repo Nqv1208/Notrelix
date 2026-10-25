@@ -88,7 +88,7 @@ function FileType({ label, className }: { label: string; className: string }) {
 
 /**
  * The File menu and its Download submenu (Final-Docs `.menu` and `.sub`).
- * Entries with no producer yet are disabled with the stated reason; Word
+ * Move to trash and the trash list are enabled for editors; entries with no producer yet are disabled with the stated reason; Word
  * export carries the design's "Sắp có" tag.
  */
 export function DocFileMenuSurface({
@@ -144,7 +144,17 @@ export function DocFileMenuSurface({
         />
         <Item label={f.info} unavailable={f.unavailable} />
         <Separator />
-        <Item label={f.trash} danger unavailable={f.unavailable} />
+        <Item
+          label={f.openTrash}
+          onClick={callbacks?.onOpenTrash}
+          unavailable={f.unavailable}
+        />
+        <Item
+          label={f.trash}
+          danger
+          onClick={callbacks?.onTrashPage}
+          unavailable={f.unavailable}
+        />
       </div>
       {downloadOpen ? (
         <div

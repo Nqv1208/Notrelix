@@ -133,6 +133,10 @@ export const endpoints = {
     search: (workspaceId: string) => `/workspaces/${workspaceId}/pages/search`,
     move: (pageId: string) => `/pages/${pageId}/move`,
     moveToSpace: (pageId: string) => `/pages/${pageId}/move-to-space`,
+    archive: (pageId: string) => `/pages/${pageId}/archive`,
+    restore: (pageId: string) => `/pages/${pageId}/restore`,
+    trash: (workspaceId: string) => `/workspaces/${workspaceId}/pages/trash`,
+    backlinks: (pageId: string) => `/pages/${pageId}/backlinks`,
   },
   blocks: {
     detail: (pageId: string, blockId: string) =>
@@ -211,6 +215,7 @@ export const endpoints = {
     create: (boardId: string) => `/boards/${boardId}/items`,
     detail: (itemId: string) => `/board-items/${itemId}`,
     move: (itemId: string) => `/board-items/${itemId}/move`,
+    linkPage: (itemId: string) => `/board-items/${itemId}/link-page`,
     duplicate: (itemId: string) => `/board-items/${itemId}/duplicate`,
     archive: (itemId: string) => `/board-items/${itemId}/archive`,
     complete: (itemId: string) => `/board-items/${itemId}/complete`,

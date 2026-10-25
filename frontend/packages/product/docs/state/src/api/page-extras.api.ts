@@ -1,26 +1,19 @@
-import type { Block } from "@notrelix/docs-core";
+import type { Block, BlockProperties } from "@notrelix/docs-core";
 import type { BlockDtoApi } from "../dto";
 import { mapBlock } from "../model/block.mapper";
 import type { DocsApiClient, PageApiEndpoints } from "./page.api";
 
 /**
- * Reads and writes beyond the generated contract (gap
- * `CTR-GAP-DOCS-PAGE-EXT`, see docs/superpowers/be-blockers-2026-10.md,
- * "BE requirement from FE: Docs"): what mentions a page, and turning a
- * checklist line into a work item.
+ * `Documents.Pages.GetPageBacklinks`: the pages that name this page (a page
+ * reference block or a page mention), already filtered to what the caller may
+ * see. The Space is masked when the caller cannot see it.
  */
 export interface PageBacklinksDto {
-  /** Documents that link the page. */
   readonly docs: readonly {
     readonly id: string;
     readonly title: string;
-    readonly spaceName: string | null;
-  }[];
-  /** Work items that have the page attached. */
-  readonly tasks: readonly {
-    readonly id: string;
-    readonly key: string;
-    readonly title: string;
+    readonly icon: string | null;
+    readonly spaceId: string | null;
   }[];
 }
 
@@ -41,9 +34,14 @@ export interface PagePermissionsDto {
   }[];
 }
 
+/** Where a checklist line becomes a work item: a board the caller can add to and one of its groups. */
+export interface ConvertTodoTarget {
+  readonly boardId: string;
+  readonly groupId: string;
+}
+
 export interface ConvertedTaskDto {
   readonly id: string;
-  readonly key: string;
   readonly title: string;
 }
 
@@ -83,14 +81,11 @@ export function createPageExtrasApi(
 ) {
   return {
     async getBacklinks(pageId: string): Promise<PageBacklinksDto> {
-      // A producer without the read answers 404: the page then lists none.
-      const dto = await api
-        .get<Partial<PageBacklinksDto> | null>(
-          `${endpoints.pages.detail(pageId)}/backlinks`,
-          QUIET,
-        )
-        .catch(() => null);
-      return { docs: dto?.docs ?? [], tasks: dto?.tasks ?? [] };
+      const dto = await api.get<Partial<PageBacklinksDto> | null>(
+        endpoints.pages.backlinks(pageId),
+        QUIET,
+      );
+      return { docs: dto?.docs ?? [] };
     },
     /**
      * The page's own grants (`Governance.ResourcePermissions.Get`, readable by
@@ -154,13 +149,37 @@ export function createPageExtrasApi(
       );
       return dtos.map((dto, index) => mapBlock(dto, (index + 1) * 1000));
     },
-    /** Creates a work item from a checklist line and links the line to it. */
-    convertTodo(pageId: string, blockId: string): Promise<ConvertedTaskDto> {
-      return api.post<ConvertedTaskDto>(
-        `${endpoints.pages.detail(pageId)}/blocks/${blockId}/convert-to-task`,
-        {},
-        { skipGlobalErrorToast: true },
+    /**
+     * Turns a checklist line into a work item: creates the item in the chosen
+     * board group (`WorkManagement.BoardItems.Create`), attaches the page to it
+     * (`LinkPage`) and marks the line with the item (`UpdateBlock`). Each step is
+     * its own write; a failure after the item exists leaves the line unlinked, and
+     * a retry creates another item.
+     */
+    async convertTodo(
+      pageId: string,
+      block: Block,
+      target: ConvertTodoTarget,
+    ): Promise<ConvertedTaskDto> {
+      const title = (block.properties.text ?? "").trim();
+      const created = await api.post<{ id: string }>(
+        endpoints.boardItems.create(target.boardId),
+        { groupId: target.groupId, title },
+        QUIET,
       );
+      await api.post<unknown>(
+        endpoints.boardItems.linkPage(created.id),
+        { pageId },
+        QUIET,
+      );
+      const properties: BlockProperties = {
+        ...block.properties,
+        linkedTaskId: created.id,
+      };
+      await api.patch<void>(endpoints.blocks.detail(pageId, block.id), {
+        properties: JSON.stringify(properties),
+      });
+      return { id: created.id, title };
     },
   };
 }

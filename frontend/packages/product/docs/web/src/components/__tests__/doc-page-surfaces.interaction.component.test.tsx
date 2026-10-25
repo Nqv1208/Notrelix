@@ -12,15 +12,18 @@ import {
   VERSIONS,
   docsCopy,
   docsPageScreenDefaultScenario,
+  docsPageScreenConvertScenario,
   docsPageScreenEmptyScenario,
   docsPageScreenFileMenuScenario,
   docsPageScreenLoadingScenario,
   docsPageScreenMentionScenario,
   docsPageScreenNotFoundScenario,
+  docsPageScreenPagePickerScenario,
   docsPageScreenReadOnlyScenario,
   docsPageScreenSaveErrorScenario,
   docsPageScreenShareScenario,
   docsPageScreenSlashScenario,
+  docsPageScreenTrashScenario,
   docsPageScreenVersionsScenario,
 } from "../../verification/docs-ui-fixtures";
 import {
@@ -425,5 +428,90 @@ describe("docs web pure surfaces", () => {
     );
     fireEvent.keyDown(dialog, { key: "Escape" });
     expect(onCloseOverlay).toHaveBeenCalledTimes(2);
+  });
+
+  it("FUI[docs.page.screen:trash] lists trashed pages with Restore and a two-step Delete permanently", () => {
+    const onRestorePage = vi.fn();
+    const onDeletePage = vi.fn();
+    const onCloseOverlay = vi.fn();
+    renderPureUi(
+      <DocPageScreenSurface
+        {...docsPageScreenTrashScenario()}
+        callbacks={{ onRestorePage, onDeletePage, onCloseOverlay }}
+      />,
+    );
+    const dialog = screen.getByRole("dialog", { name: docsCopy.trash.title });
+    fireEvent.click(
+      within(dialog).getByRole("button", {
+        name: "Khôi phục: Quy trình chi tạm ứng (bản cũ)",
+      }),
+    );
+    expect(onRestorePage).toHaveBeenCalledWith("t1");
+
+    fireEvent.click(
+      within(dialog).getByRole("button", {
+        name: "Xoá vĩnh viễn: Biên bản họp kiểm kê",
+      }),
+    );
+    expect(onDeletePage).not.toHaveBeenCalled();
+    fireEvent.click(
+      within(dialog).getByRole("button", {
+        name: docsCopy.trash.confirmDelete,
+      }),
+    );
+    expect(onDeletePage).toHaveBeenCalledWith("t2");
+
+    fireEvent.keyDown(dialog, { key: "Escape" });
+    expect(onCloseOverlay).toHaveBeenCalled();
+  });
+
+  it("FUI[docs.page.screen:page-reference] filters the page picker and routes the chosen page", () => {
+    const onPickPage = vi.fn();
+    renderPureUi(
+      <DocPageScreenSurface
+        {...docsPageScreenPagePickerScenario()}
+        callbacks={{ onPickPage }}
+      />,
+    );
+    const dialog = screen.getByRole("dialog", { name: docsCopy.picker.title });
+    fireEvent.change(within(dialog).getByRole("searchbox"), {
+      target: { value: "cong no" },
+    });
+    expect(within(dialog).getAllByRole("option")).toHaveLength(1);
+    fireEvent.click(
+      within(dialog).getByRole("option", {
+        name: /Quy trình đối chiếu công nợ/,
+      }),
+    );
+    expect(onPickPage).toHaveBeenCalledWith("ref-1", "p2");
+  });
+
+  it("FUI[docs.page.screen:convert-task] needs a board and a group before it creates the task", () => {
+    const onConvertConfirm = vi.fn();
+    const onConvertBoard = vi.fn();
+    renderPureUi(
+      <DocPageScreenSurface
+        {...docsPageScreenConvertScenario()}
+        callbacks={{ onConvertConfirm, onConvertBoard }}
+      />,
+    );
+    const dialog = screen.getByRole("dialog", { name: docsCopy.convert.title });
+    const create = within(dialog).getByRole("button", {
+      name: docsCopy.convert.confirm,
+    });
+    expect((create as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.change(within(dialog).getByLabelText(docsCopy.convert.group), {
+      target: { value: "g2" },
+    });
+    expect((create as HTMLButtonElement).disabled).toBe(false);
+    fireEvent.click(create);
+    expect(onConvertConfirm).toHaveBeenCalledWith("b1", {
+      boardId: "board-1",
+      groupId: "g2",
+    });
+    fireEvent.change(within(dialog).getByLabelText(docsCopy.convert.board), {
+      target: { value: "board-2" },
+    });
+    expect(onConvertBoard).toHaveBeenCalledWith("board-2");
   });
 });

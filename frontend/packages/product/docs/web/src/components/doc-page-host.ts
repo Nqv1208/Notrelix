@@ -40,6 +40,18 @@ export interface DocPageHost {
   readonly onShareInvite?: (userId: string) => Promise<void>;
   /** Whether a checklist line can become a work item; omitted offers it. */
   readonly canConvertTodo?: boolean;
+  /** Boards the viewer may add items to (the convert-to-task dialog); omitted lists none. */
+  readonly convertBoards?: readonly {
+    readonly id: string;
+    readonly title: string;
+  }[];
+  /** Groups of the board chosen in the convert dialog; `null` while they load. */
+  readonly convertGroups?:
+    readonly { readonly id: string; readonly name: string }[] | null;
+  /** The name of a department (Space) by id, for lists of pages. */
+  readonly spaceNameFor?: (spaceId: string) => string | null;
+  /** Leaves the open page (after it moved to the trash). */
+  readonly leaveDoc?: () => void;
   /** The workspace's own locale-independent "now" (tests fix the clock). */
   readonly now: Date;
   /** Opens another page (host routing). */
@@ -58,6 +70,8 @@ export interface DocPageHostInput {
   readonly boardIds: readonly string[];
   /** The text after "@" while the mention list is open, else `null`. */
   readonly mentionQuery: string | null;
+  /** The board chosen in the convert-to-task dialog, else `null`. */
+  readonly convertBoardId: string | null;
 }
 
 export type UseDocPageHost = (input: DocPageHostInput) => DocPageHost;

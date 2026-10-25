@@ -43,7 +43,6 @@ import {
   wmQueryKeys,
 } from "@notrelix/work-management-state";
 import type { CardDetail } from "@notrelix/work-management-core";
-import { env as appEnv } from "@/config/env";
 import { useWorkspaceContext } from "@/providers/workspace-provider";
 import { destinationHref } from "../workspace/workspace-destinations";
 import { useSpaceHooks } from "../workspace/use-workspace-spaces";
@@ -112,7 +111,15 @@ function toTaskRef(card: CardDetail, now: Date, href: string): DocTaskRef {
 export const useDocPageHost: UseDocPageHost = (
   input: DocPageHostInput,
 ): DocPageHost => {
-  const { workspaceId, pageId, page, taskIds, boardIds, mentionQuery } = input;
+  const {
+    workspaceId,
+    pageId,
+    page,
+    taskIds,
+    boardIds,
+    mentionQuery,
+    convertBoardId,
+  } = input;
   const navigate = useNavigate();
   const user = useCurrentUser();
   const featureDeps = useFeatureRuntimeDependencies();
@@ -265,6 +272,34 @@ export const useDocPageHost: UseDocPageHost = (
     };
   }, [boardId, boards.data, workspaceId]);
 
+  // The convert-to-task dialog: boards the viewer may add to, and the chosen
+  // board's groups (read like the board screen reads them).
+  const convertBoards = useMemo(
+    () =>
+      (boards.data ?? [])
+        .filter((candidate) => candidate.canAddItems && !candidate.isArchived)
+        .map((candidate) => ({ id: candidate.id, title: candidate.title })),
+    [boards.data],
+  );
+  const convertBoard = useFullBoard(convertBoardId ?? undefined, workspaceId);
+  const convertGroups = useMemo(
+    () =>
+      convertBoardId === null || convertBoard.isLoading
+        ? null
+        : convertBoard.groups.map((group) => ({
+            id: group.id,
+            name: group.title,
+          })),
+    [convertBoard.groups, convertBoard.isLoading, convertBoardId],
+  );
+  const spaceNameFor = useCallback(
+    (spaceId: string): string | null =>
+      spaceTree.data
+        ? (buildSpaceIndex(spaceTree.data).byId.get(spaceId)?.name ?? null)
+        : null,
+    [spaceTree.data],
+  );
+
   // Mention suggestions come from the board the page already reads.
   const fullBoard = useFullBoard(boardId ?? undefined, workspaceId);
   const suggestTasks = useCallback(
@@ -412,8 +447,15 @@ export const useDocPageHost: UseDocPageHost = (
       `/workspaces/${workspaceId}/docs/${encodeURIComponent(targetId)}`,
     canEdit: role !== "guest",
     blockTypes: CREATABLE_BLOCK_TYPES,
-    // TRANSITION: no producer turns a checklist line into a work item; only the mock world does.
-    canConvertTodo: appEnv.mockApi,
+    canConvertTodo: convertBoards.length > 0,
+    convertBoards,
+    convertGroups,
+    spaceNameFor,
+    leaveDoc: () =>
+      void navigate({
+        to: "/workspaces/$workspaceId/home",
+        params: { workspaceId },
+      }),
     onShareInvite: candidates
       ? (userId) => sharePage.mutateAsync({ userId, level: "edit" })
       : undefined,

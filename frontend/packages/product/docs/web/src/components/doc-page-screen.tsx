@@ -6,8 +6,13 @@ import {
   createUseVersionSnapshot,
   createUsePage,
   createUsePageBlocks,
+  createUseArchivePage,
   createUseConvertTodo,
+  createUseDeletePage,
   createUsePageBacklinks,
+  createUsePageList,
+  createUseRestorePage,
+  createUseTrashedPages,
   createUsePageBreadcrumb,
   createUsePageComments,
   createUsePageHistory,
@@ -105,6 +110,11 @@ export function createDocPageScreen({
   const usePageBacklinks = createUsePageBacklinks(api, endpoints);
   const useConvertTodo = createUseConvertTodo(api, endpoints);
   const useVersionSnapshot = createUseVersionSnapshot(api, endpoints);
+  const usePageList = createUsePageList(api, endpoints);
+  const useArchivePage = createUseArchivePage(api, endpoints);
+  const useRestorePage = createUseRestorePage(api, endpoints);
+  const useDeletePage = createUseDeletePage(api, endpoints);
+  const useTrashedPages = createUseTrashedPages(api, endpoints);
 
   return function DocPageScreen({
     workspaceId,
@@ -127,6 +137,10 @@ export function createDocPageScreen({
     const createPage = useCreatePage(workspaceId);
     const backlinksQuery = usePageBacklinks(workspaceId, pageId);
     const convertTodo = useConvertTodo(workspaceId, pageId);
+    const pageListQuery = usePageList(workspaceId);
+    const archivePage = useArchivePage(workspaceId);
+    const restorePage = useRestorePage(workspaceId);
+    const deletePage = useDeletePage(workspaceId);
 
     const page = pageQuery.data ?? null;
     const blocks = useMemo(() => blocksQuery.data ?? [], [blocksQuery.data]);
@@ -183,7 +197,9 @@ export function createDocPageScreen({
       taskIds,
       boardIds,
       mentionQuery: overlay.kind === "mention" ? overlay.query : null,
+      convertBoardId: overlay.kind === "convertTask" ? overlay.boardId : null,
     });
+    const trashQuery = useTrashedPages(workspaceId, overlay.kind === "trash");
     const now = host.now;
 
     // A block created or retyped takes the caret once it is on screen.
@@ -253,9 +269,37 @@ export function createDocPageScreen({
       selectedVersionId,
     );
 
+    // The pages the viewer can read (a page reference to any other reads as unavailable).
+    const readablePages = useMemo(
+      () =>
+        new Map(
+          (pageListQuery.data ?? []).map((entry) => [
+            entry.id,
+            { title: entry.title, icon: entry.icon },
+          ]),
+        ),
+      [pageListQuery.data],
+    );
+    const pickerPages = useMemo(
+      () =>
+        (pageListQuery.data ?? [])
+          .filter((entry) => entry.id !== pageId)
+          .map((entry) => ({
+            id: entry.id,
+            title: entry.title,
+            icon: entry.icon,
+            detail: entry.spaceId
+              ? (host.spaceNameFor?.(entry.spaceId) ?? null)
+              : null,
+          })),
+      [host, pageId, pageListQuery.data],
+    );
+
     const blockViews = useMemo(() => {
       const views = toBlockViews(blocks, {
         resolveTask,
+        pages: readablePages,
+        pageHref: host.pageHref,
         board: host.board,
         quotes:
           panelTab === "comments" && !versions
@@ -271,7 +315,9 @@ export function createDocPageScreen({
       blocks,
       comments,
       host.board,
+      host.pageHref,
       panelTab,
+      readablePages,
       resolveTask,
       snapshotQuery.data,
       versions,
@@ -280,10 +326,7 @@ export function createDocPageScreen({
     // The tasks the page mentions: the ones that have the page attached are
     // listed under "Được nhắc tới ở"; open work reads before finished work and
     // a task the viewer cannot read comes last.
-    const backlinkTaskIds = useMemo(
-      () => new Set((backlinksQuery.data?.tasks ?? []).map((task) => task.id)),
-      [backlinksQuery.data],
-    );
+    const backlinkTaskIds = useMemo(() => new Set<string>(), []);
     const mentionedTasks = useMemo(() => {
       const rank = (task: DocTaskResolution): number =>
         isRestrictedTask(task)
@@ -298,21 +341,20 @@ export function createDocPageScreen({
     }, [backlinkTaskIds, resolveTask, taskIds]);
     const relatedDocs = useMemo<readonly DocRelatedDoc[]>(
       () => [
-        ...(backlinksQuery.data?.docs ?? []).map((doc) => ({
-          id: doc.id,
-          kind: "doc" as const,
-          title: doc.title,
-          detail: doc.spaceName
-            ? fillDocCopy(copy.panel.relatedDocDetail, { space: doc.spaceName })
-            : copy.panel.relatedDocDetailNoSpace,
-          href: host.pageHref?.(doc.id),
-        })),
-        ...(backlinksQuery.data?.tasks ?? []).map((task) => ({
-          id: task.id,
-          kind: "task" as const,
-          title: `${task.key} ${task.title}`,
-          detail: copy.panel.relatedTaskDetail,
-        })),
+        ...(backlinksQuery.data?.docs ?? []).map((doc) => {
+          const space = doc.spaceId
+            ? (host.spaceNameFor?.(doc.spaceId) ?? null)
+            : null;
+          return {
+            id: doc.id,
+            kind: "doc" as const,
+            title: doc.title,
+            detail: space
+              ? fillDocCopy(copy.panel.relatedDocDetail, { space })
+              : copy.panel.relatedDocDetailNoSpace,
+            href: host.pageHref?.(doc.id),
+          };
+        }),
       ],
       [backlinksQuery.data, copy, host],
     );
@@ -336,7 +378,6 @@ export function createDocPageScreen({
     const header: DocHeaderView = {
       title,
       crumbs,
-      status: page.status,
       editedBy: latestActivity
         ? host.personFor(latestActivity.actorId).name
         : null,
@@ -437,8 +478,38 @@ export function createDocPageScreen({
       onFocusBlock: (blockId) => setFocusedId(blockId),
       onTodoConvert:
         host.canEdit && host.canConvertTodo !== false
-          ? (blockId) => convertTodo.mutate(blockId)
+          ? (blockId) =>
+              setOverlay({ kind: "convertTask", blockId, boardId: null })
           : undefined,
+      onConvertBoard: (boardId) =>
+        setOverlay((current) =>
+          current.kind === "convertTask" ? { ...current, boardId } : current,
+        ),
+      onConvertConfirm: (blockId, target) => {
+        const block = blockById(blockId);
+        if (!block) return;
+        convertTodo.mutate(
+          { block, target },
+          { onSuccess: () => setOverlay(NONE) },
+        );
+      },
+      onTrashPage: host.canEdit
+        ? () => {
+            setOverlay(NONE);
+            archivePage.mutate(pageId, { onSuccess: () => host.leaveDoc?.() });
+          }
+        : undefined,
+      onOpenTrash: () => setOverlay({ kind: "trash" }),
+      onRestorePage: (id) => restorePage.mutate(id),
+      onDeletePage: (id) => deletePage.mutate(id),
+      onOpenPagePicker: host.canEdit
+        ? (blockId) => setOverlay({ kind: "pagePicker", blockId })
+        : undefined,
+      onPickPage: (blockId, target) => {
+        const block = blockById(blockId);
+        setOverlay(NONE);
+        if (block) patchBlock(block, { linkedPageId: target });
+      },
       onTodoToggle: host.canEdit
         ? (blockId, checked) => {
             const block = blockById(blockId);
@@ -461,6 +532,10 @@ export function createDocPageScreen({
             type === "todo" ? { text: "", checked: false } : { text: "" },
           )
           .then((created) => {
+            if (type === "page_reference") {
+              setOverlay({ kind: "pagePicker", blockId: created.id });
+              return;
+            }
             pendingFocus.current = created.id;
           })
           .catch(() => undefined);
@@ -658,6 +733,31 @@ export function createDocPageScreen({
               }
             : undefined
         }
+        trash={{
+          pages: (trashQuery.data ?? []).map((entry) => ({
+            id: entry.id,
+            title: entry.title,
+            icon: entry.icon,
+          })),
+          loading: trashQuery.isLoading,
+          failed: restorePage.isError || deletePage.isError,
+          busyId:
+            (restorePage.isPending ? restorePage.variables : null) ??
+            (deletePage.isPending ? deletePage.variables : null) ??
+            null,
+        }}
+        pickerPages={pickerPages}
+        convert={{
+          boards: host.convertBoards ?? [],
+          groups: host.convertGroups ?? null,
+          boardId: overlay.kind === "convertTask" ? overlay.boardId : null,
+          lineText:
+            overlay.kind === "convertTask"
+              ? (blockById(overlay.blockId)?.properties.text ?? "")
+              : "",
+          busy: convertTodo.isPending,
+          failed: convertTodo.isError,
+        }}
         readOnly={!host.canEdit}
         canComment
         canFormat={host.canEdit}
@@ -674,7 +774,6 @@ const EMPTY = {
   header: {
     title: "",
     crumbs: [],
-    status: "draft",
     editedBy: null,
     editedAt: null,
     presence: [],

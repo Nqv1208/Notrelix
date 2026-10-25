@@ -16,7 +16,10 @@ import {
   docsPageScreenEmptyScenario,
   docsPageScreenFileMenuScenario,
   docsPageScreenLoadingScenario,
+  docsPageScreenConvertScenario,
   docsPageScreenMentionScenario,
+  docsPageScreenPagePickerScenario,
+  docsPageScreenTrashScenario,
   docsPageScreenNotFoundScenario,
   docsPageScreenReadOnlyScenario,
   docsPageScreenSaveErrorScenario,
@@ -166,6 +169,33 @@ export const PageScreenShare: Story = {
   render: () => (
     <Frame>
       <DocPageScreenSurface {...docsPageScreenShareScenario()} />
+    </Frame>
+  ),
+  tags: ["fui-surface--docs.page.screen", "fui-state--Default"],
+};
+
+export const PageScreenTrash: Story = {
+  render: () => (
+    <Frame>
+      <DocPageScreenSurface {...docsPageScreenTrashScenario()} />
+    </Frame>
+  ),
+  tags: ["fui-surface--docs.page.screen", "fui-state--Default"],
+};
+
+export const PageScreenPagePicker: Story = {
+  render: () => (
+    <Frame>
+      <DocPageScreenSurface {...docsPageScreenPagePickerScenario()} />
+    </Frame>
+  ),
+  tags: ["fui-surface--docs.page.screen", "fui-state--Default"],
+};
+
+export const PageScreenConvertTask: Story = {
+  render: () => (
+    <Frame>
+      <DocPageScreenSurface {...docsPageScreenConvertScenario()} />
     </Frame>
   ),
   tags: ["fui-surface--docs.page.screen", "fui-state--Default"],

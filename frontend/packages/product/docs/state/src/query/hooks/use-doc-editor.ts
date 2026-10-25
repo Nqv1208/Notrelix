@@ -1,10 +1,11 @@
 import { useCallback, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type {
-  Block,
-  CreateBlockPayload,
-  UpdateBlockPayload,
-  UpdatePagePayload,
+import {
+  convertBlockProperties,
+  type Block,
+  type CreateBlockPayload,
+  type UpdateBlockPayload,
+  type UpdatePagePayload,
 } from "@notrelix/docs-core";
 import { createBlockApi } from "../../api/block.api";
 import {
@@ -82,22 +83,24 @@ export function createUseDocEditor(
       },
     });
 
-    // A block keeps its type on the producer, so turning it into another type
-    // adds a block of that type right after it and removes the old one.
+    // The producer retypes a block in place: it keeps its id, position and
+    // parent, and converts the content the way `convertBlockProperties` does.
     const convert = useMutation({
       mutationFn: async (input: {
         block: Block;
         type: Block["type"];
         properties: Block["properties"];
       }): Promise<Block> => {
-        const created = await blockApi.create(pageId, {
+        const properties = convertBlockProperties(
+          input.block.type,
+          input.type,
+          input.properties,
+        );
+        await blockApi.update(pageId, input.block.id, {
           type: input.type,
-          properties: input.properties,
-          afterBlockId: input.block.id,
-          parentId: input.block.parentId,
+          properties,
         });
-        await blockApi.delete(pageId, input.block.id);
-        return created;
+        return { ...input.block, type: input.type, properties };
       },
       onSuccess: () => {
         setFailed(false);

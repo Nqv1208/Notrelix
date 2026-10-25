@@ -18,8 +18,8 @@ export function parseProperties(
 
 /**
  * The block types the producer stores (`Documents` `BlockType`) and the name
- * the page uses for each. A callout, an embed and a page reference have no
- * producer type, so a page cannot create one.
+ * the page uses for each. A file or video block has no editor type; the page
+ * reads it as an empty paragraph.
  */
 const FROM_PRODUCER: Readonly<Record<string, BlockType>> = {
   Text: "paragraph",
@@ -34,11 +34,8 @@ const FROM_PRODUCER: Readonly<Record<string, BlockType>> = {
   Divider: "divider",
   Code: "code",
   Image: "image",
-  File: "embed",
-  Video: "embed",
   Board: "board_reference",
   Table: "table",
-  // Not stored by the producer; only the mock world sends these.
   Callout: "callout",
   PageReference: "page_reference",
 };
@@ -58,6 +55,8 @@ const TO_PRODUCER: Readonly<Partial<Record<BlockType, string>>> = {
   image: "Image",
   board_reference: "Board",
   table: "Table",
+  callout: "Callout",
+  page_reference: "PageReference",
 };
 
 /** The block types a page can create on the producer. */

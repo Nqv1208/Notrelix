@@ -45,13 +45,17 @@ export function createBlockApi(
       };
     },
 
-    /** `Documents.Blocks.UpdateBlock` rewrites the block's content. */
+    /**
+     * `Documents.Blocks.UpdateBlock`: a `type` retypes the block in place (it
+     * keeps its id, position and parent), `properties` rewrites its content.
+     */
     async update(
       pageId: string,
       blockId: string,
       payload: UpdateBlockPayload,
     ): Promise<void> {
       await api.patch<void>(endpoints.blocks.detail(pageId, blockId), {
+        ...(payload.type ? { type: toProducerBlockType(payload.type) } : {}),
         ...(payload.properties
           ? { properties: JSON.stringify(payload.properties) }
           : {}),
