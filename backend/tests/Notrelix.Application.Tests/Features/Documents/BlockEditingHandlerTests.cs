@@ -3,6 +3,7 @@ using Notrelix.Application.Features.Documents.Blocks.Commands.CreateBlock;
 using Notrelix.Application.Features.Documents.Blocks.Commands.UpdateBlock;
 using Notrelix.Domain.Documents.Blocks;
 using Notrelix.Domain.Documents.Pages;
+using Notrelix.Domain.Governance.Permissions;
 using Notrelix.Domain.SharedKernel.Ordering;
 using Notrelix.Testing.Application.Fakes;
 using TestDbSet = Notrelix.Application.Tests.Features.Collaboration.TestDbSet;
@@ -61,6 +62,18 @@ public sealed class BlockEditingHandlerTests
 
         await act.Should().ThrowAsync<NotFoundException>();
         context.Added.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void CreatingABlock_NeedsOnlyTheEditLevelOnThePage_LikeUpdatingAndDeletingOne()
+    {
+        var pageId = Guid.CreateVersion7();
+        var create = new CreateBlockCommand(pageId, BlockType.Text, "{}", null, null);
+        var update = new Notrelix.Application.Features.Documents.Blocks.Commands.DeleteBlock.DeleteBlockCommand(pageId, Guid.CreateVersion7());
+
+        create.Action.Should().Be(PermissionAction.UpdatePage);
+        create.Action.Should().Be(update.Action);
+        create.Resource.ResourceId.Should().Be(pageId);
     }
 
     [Fact]

@@ -12,7 +12,7 @@ public record CreateBlockCommand(
     Guid? ParentBlockId
 ) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission
 {
-    public PermissionAction Action => PermissionAction.ManageBoard;
+    public PermissionAction Action => PermissionAction.UpdatePage;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("documents.page"), PageId);
 }
 
