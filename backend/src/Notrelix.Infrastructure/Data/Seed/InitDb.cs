@@ -17,6 +17,7 @@ using Notrelix.Domain.WorkManagement.Items;
 using Notrelix.Domain.WorkManagement.Labels;
 using Notrelix.Domain.WorkManagement.Views;
 using Notrelix.Domain.Workspaces.Members;
+using Notrelix.Domain.Workspaces.Spaces;
 using Notrelix.Domain.Workspaces.Workspaces;
 using Notrelix.Infrastructure.Data.Authz;
 
@@ -41,6 +42,12 @@ internal static class InitDb
         ("High",     "#EF6C00"),
         ("Critical", "#E53935"),
     ];
+
+    private static readonly string[] DepartmentNames = ["IT", "Accounting", "Marketing", "Sales", "HR", "Customer Support"];
+
+    // The department of each seeded board, in the order of the board names.
+    private static readonly string[] DepartmentOfBoard =
+        ["IT", "IT", "Marketing", "Marketing", "IT", "Marketing", "Sales", "HR", "Customer Support", "IT"];
 
     private static readonly (string Name, string Color)[] LabelTemplates = [
         ("Bug",        "#E53935"),
@@ -325,6 +332,21 @@ internal static class InitDb
         int boardIndex = 0;
         foreach (var ws in workspaces)
         {
+            // Each workspace gets the departments a company has; a board sits in the department that owns its work.
+            var spaceOwnerId = workspaceMembers[ws.Id].FirstOrDefault(m => m.Role == WorkspaceRole.Owner)?.UserId ?? users[0].Id;
+            var departments = new Dictionary<string, Space>(DepartmentNames.Length);
+            var departmentNames = new List<string>(DepartmentNames.Length);
+            for (int d = 0; d < DepartmentNames.Length; d++)
+            {
+                var department = Space.Create(
+                    account.Id, ws.Id, DepartmentNames[d], SpaceVisibility.Workspace, spaceOwnerId,
+                    Epoch, SpaceType.Department,
+                    placement: SpacePlacement.Root(FractionalIndex.Create($"a{d}"), departmentNames.ToList()));
+                departmentNames.Add(DepartmentNames[d]);
+                departments[DepartmentNames[d]] = department;
+                context.Spaces.Add(department);
+            }
+
             int boardsForWorkspace = targets.BoardCount / workspaces.Count;
             int remaining = targets.BoardCount % workspaces.Count;
             var count = boardsForWorkspace + (boardIndex < remaining ? 1 : 0);
@@ -337,7 +359,8 @@ internal static class InitDb
 
                 var board = Board.Create(
                     account.Id, ws.Id, creator.Id, $"{boardName} ({wsSuffix})", null,
-                    Epoch.AddDays(boardIndex), BoardVisibility.Workspace);
+                    Epoch.AddDays(boardIndex), BoardVisibility.Workspace,
+                    spaceId: departments[DepartmentOfBoard[boardIndex % boardNames.Length]].Id);
                 context.Boards.Add(board);
 
                 foreach (var member in workspaceMembers[ws.Id])
