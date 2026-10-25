@@ -883,6 +883,10 @@ function PersonRow({
             align="end"
             sideOffset={6}
             collisionPadding={12}
+            aria-label={fill(p.levelOf, {
+              name: row.name,
+              level: level ?? "",
+            })}
             onOpenAutoFocus={(event) => {
               // Focus the checked choice once the popover owns focus, so the
               // dialog's focus trap does not take it back.
