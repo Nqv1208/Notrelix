@@ -92,6 +92,7 @@ public static class WorkManagementRuleCodes
     public const string WorkManagement_View_TableMustUseTableConfig = "WorkManagement_View_TableMustUseTableConfig";
     public const string WorkManagement_View_CalendarMustUseCalendarConfig = "WorkManagement_View_CalendarMustUseCalendarConfig";
     public const string WorkManagement_View_TimelineMustUseTimelineConfig = "WorkManagement_View_TimelineMustUseTimelineConfig";
+    public const string WorkManagement_View_PrivateCannotBeDefault = "WorkManagement_View_PrivateCannotBeDefault";
     public const string WorkManagement_View_CannotDeleteDefault = "WorkManagement_View_CannotDeleteDefault";
     public const string WorkManagement_View_DuplicateFilterRules = "WorkManagement_View_DuplicateFilterRules";
     public const string WorkManagement_View_DuplicateSortRules = "WorkManagement_View_DuplicateSortRules";

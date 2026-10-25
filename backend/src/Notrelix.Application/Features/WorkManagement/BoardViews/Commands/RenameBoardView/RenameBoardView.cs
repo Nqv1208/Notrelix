@@ -35,6 +35,7 @@ public class RenameBoardViewCommandHandler : IRequestHandler<RenameBoardViewComm
             .FirstOrDefaultAsync(v => v.Id == request.ViewId, ct);
         if (view is null) throw new NotFoundException(nameof(BoardView), request.ViewId);
 
+        BoardViewAccess.EnsureCanEdit(view, _requestContext.UserId);
         view.Rename(request.Name, _requestContext.UserId, _dateTimeProvider.UtcNow);
         return Result.Success();
     }

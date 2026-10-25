@@ -7664,6 +7664,14 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasDefaultValue(1L)
                         .HasColumnName("version");
 
+                    b.Property<string>("Visibility")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasDefaultValue("Board")
+                        .HasColumnName("visibility");
+
                     b.Property<Guid>("WorkspaceId")
                         .HasColumnType("uuid")
                         .HasColumnName("workspace_id");
