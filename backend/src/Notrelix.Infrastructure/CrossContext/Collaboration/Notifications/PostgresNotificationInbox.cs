@@ -173,6 +173,8 @@ public sealed class PostgresNotificationInbox : INotificationInbox
             .ExecuteUpdateAsync(calls => calls
                 .SetProperty(r => r.DoneAt, (DateTimeOffset?)null)
                 .SetProperty(r => r.SnoozedUntil, (DateTimeOffset?)null)
+                .SetProperty(r => r.Status, RecipientStatus.Unread)
+                .SetProperty(r => r.ReadAt, (DateTimeOffset?)null)
                 .SetProperty(r => r.UpdatedAt, (DateTimeOffset?)at), cancellationToken);
         return changed > 0;
     }

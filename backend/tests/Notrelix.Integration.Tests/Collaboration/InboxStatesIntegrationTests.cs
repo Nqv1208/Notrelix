@@ -74,6 +74,8 @@ public sealed class InboxStatesIntegrationTests : IAsyncLifetime
         (await inbox.ReopenAsync(ws, user, finished, T0.AddMinutes(2), CancellationToken.None)).Should().BeTrue();
         (await IdsAsync(inbox, ws, user, InboxView.Done)).Should().BeEmpty();
         (await IdsAsync(inbox, ws, user, InboxView.Inbox)).Should().BeEquivalentTo([keep, finished]);
+        (await inbox.UnreadByWorkspaceAsync(user, CancellationToken.None))
+            .Should().ContainSingle(c => c.WorkspaceId == ws && c.Unread == 2, "a reopened entry is unread again");
     }
 
     [Fact]
