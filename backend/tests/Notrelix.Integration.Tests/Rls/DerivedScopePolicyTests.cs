@@ -1,4 +1,6 @@
+using Microsoft.EntityFrameworkCore.Storage;
 using Notrelix.Domain.Workspaces.Members;
+using Notrelix.Infrastructure.CrossContext.Collaboration.Notifications;
 using Notrelix.Infrastructure.Data.Notifications;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
@@ -157,6 +159,84 @@ public sealed class DerivedScopePolicyTests : IAsyncLifetime
                 .Should().Be(1, "a person reads only their own recipient rows");
             return 0;
         });
+    }
+
+    [Fact]
+    public async Task InboxMarkRead_ChangesOnlyTheCallersOwnRecipientRows_NeverAnotherRecipients()
+    {
+        var coMember = await AppRoleMembers.AddAsync(
+            _fixture, _a, "InboxPeer", WorkspaceRole.Admin, WorkspaceMemberStatus.Active, "hash");
+
+        var system = new FakeCurrentTenantContext();
+        system.SetSystem();
+        var ownersNotification = Guid.NewGuid();
+        var peersNotification = Guid.NewGuid();
+        await using (var ctx = _fixture.CreateOwnerContext(system))
+        {
+            foreach (var (recipient, title) in new[] { (_a.User.Id, "inbox-owner"), (coMember.Id, "inbox-peer") })
+            {
+                var item = NotificationItemRecord.Create(
+                    accountId: _a.AccountId, workspaceId: _a.WorkspaceId, sourceContext: "collaboration",
+                    notificationType: "mention.created", severity: NotificationSeverity.Info, title: title,
+                    createdAt: DateTimeOffset.UtcNow, deduplicationKey: $"dedup-{title}");
+                ctx.NotificationItems.Add(item);
+                ctx.NotificationRecipients.Add(NotificationRecipientRecord.Create(
+                    _a.AccountId, item.Id, _a.WorkspaceId, recipient, DateTimeOffset.UtcNow));
+                if (recipient == _a.User.Id) ownersNotification = item.Id; else peersNotification = item.Id;
+            }
+
+            await ctx.SaveChangesAsync();
+        }
+
+        async Task<T> InboxAsAsync<T>(AppRoleTenant who, Func<PostgresNotificationInbox, Task<T>> act)
+        {
+            await using var db = _fixture.CreateAppContext(new FakeCurrentTenantContext());
+            await using var tx = await db.Database.BeginTransactionAsync();
+            await using (var scope = new NpgsqlCommand(
+                "SELECT set_config('app.current_user_id', @u, true), set_config('app.current_account_id', @a, true), " +
+                "set_config('app.current_workspace_id', @w, true), set_config('app.request_scope', 'app', true)",
+                (NpgsqlConnection)db.Database.GetDbConnection(), (NpgsqlTransaction)tx.GetDbTransaction()))
+            {
+                scope.Parameters.AddWithValue("u", who.User.Id.ToString());
+                scope.Parameters.AddWithValue("a", who.AccountId.ToString());
+                scope.Parameters.AddWithValue("w", who.WorkspaceId.ToString());
+                await scope.ExecuteNonQueryAsync();
+            }
+
+            var result = await act(new PostgresNotificationInbox(db));
+            await tx.CommitAsync();
+            return result;
+        }
+
+        async Task<long> UnreadOfAsync(Guid recipient)
+        {
+            await using var connection = new NpgsqlConnection(_fixture.OwnerConnectionString);
+            await connection.OpenAsync();
+            await using var command = new NpgsqlCommand(
+                "SELECT count(*) FROM notifications.notification_recipients WHERE recipient_user_id = @u AND read_at IS NULL", connection);
+            command.Parameters.AddWithValue("u", recipient);
+            return (long)(await command.ExecuteScalarAsync())!;
+        }
+
+        (await InboxAsAsync(_a, i => i.MarkReadAsync(_a.WorkspaceId, _a.User.Id, peersNotification, DateTimeOffset.UtcNow, default)))
+            .Should().BeFalse("a notification addressed to someone else is not the caller's to mark");
+        (await InboxAsAsync(_a, i => i.MarkReadAsync(_a.WorkspaceId, coMember.Id, peersNotification, DateTimeOffset.UtcNow, default)))
+            .Should().BeFalse("naming another recipient does not widen the row policy");
+        (await UnreadOfAsync(coMember.Id)).Should().Be(1, "the peer's notification is still unread");
+
+        (await InboxAsAsync(_a, i => i.MarkAllReadAsync(_a.WorkspaceId, coMember.Id, DateTimeOffset.UtcNow, default)))
+            .Should().Be(0, "read-all as the owner cannot reach the peer's rows even when the peer is named");
+        (await UnreadOfAsync(coMember.Id)).Should().Be(1);
+
+        (await InboxAsAsync(_a, i => i.MarkReadAsync(_a.WorkspaceId, _a.User.Id, ownersNotification, DateTimeOffset.UtcNow, default)))
+            .Should().BeTrue();
+        (await UnreadOfAsync(_a.User.Id)).Should().Be(0);
+        (await UnreadOfAsync(coMember.Id)).Should().Be(1, "the owner's own mark leaves the peer untouched");
+
+        var peerTenant = _a with { User = coMember };
+        (await InboxAsAsync(peerTenant, i => i.MarkAllReadAsync(_a.WorkspaceId, coMember.Id, DateTimeOffset.UtcNow, default)))
+            .Should().Be(1);
+        (await UnreadOfAsync(coMember.Id)).Should().Be(0);
     }
 
     [Fact]
