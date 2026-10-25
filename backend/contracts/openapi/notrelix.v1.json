@@ -312,6 +312,14 @@
               "format": "int32",
               "default": 20
             }
+          },
+          {
+            "name": "boardId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         ],
         "responses": {
@@ -352,6 +360,14 @@
             "name": "workspaceId",
             "in": "path",
             "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "boardId",
+            "in": "query",
             "schema": {
               "type": "string",
               "format": "uuid"
@@ -19524,6 +19540,11 @@
         "properties": {
           "isEnabled": {
             "type": "boolean"
+          },
+          "boardId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
           }
         },
         "additionalProperties": false

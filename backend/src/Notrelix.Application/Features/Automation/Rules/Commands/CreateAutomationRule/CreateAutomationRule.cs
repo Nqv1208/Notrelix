@@ -18,15 +18,19 @@ public record CreateAutomationRuleCommand(
     Guid? BoardId = null,
     string? TriggerConfiguration = null) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IRequireAdditionalPermission, IIdempotentRequest
 {
-    public PermissionAction Action => PermissionAction.ManageWorkspaceSettings;
-    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("automation.rule"), WorkspaceId, WorkspaceId);
+    // Board-scoped rules are managed by the board's Managers (and workspace Owners/Admins, who are
+    // Managers everywhere); a rule without a board stays workspace settings.
+    public PermissionAction Action => BoardId is null ? PermissionAction.ManageWorkspaceSettings : PermissionAction.ManageBoard;
+    public ResourceRef Resource => BoardId is { } board
+        ? ResourceRef.Create(ResourceKind.Create("work-management.board"), board, WorkspaceId)
+        : ResourceRef.Create(ResourceKind.Create("automation.rule"), WorkspaceId, WorkspaceId);
 
     /// <summary>
     /// AUT-020: a Webhook action reaches the n8n integration, so creating such a
     /// Rule also needs ManageIntegrations. Pipeline authorization only.
     /// </summary>
     public IReadOnlyList<string> AdditionalActionNames =>
-        string.Equals(ActionType, "Webhook", StringComparison.Ordinal)
+        BoardId is null && string.Equals(ActionType, "Webhook", StringComparison.Ordinal)
             ? [nameof(PermissionAction.ManageIntegrations)]
             : [];
 }
@@ -105,6 +109,11 @@ public class CreateAutomationRuleCommandHandler : IRequestHandler<CreateAutomati
         {
             AutomationActionValidator.Validate(action);
         }
+
+        // A Webhook reaches the workspace's n8n integration (ManageIntegrations), which a board
+        // Manager does not hold, so board rules do not offer it.
+        if (request.BoardId is not null && AutomationActionKinds.IsIntegration(action.Type))
+            return Result<Guid>.Failure("A board rule cannot use an integration action.");
 
         var config = AutomationConfiguration.Create(trigger, action);
 

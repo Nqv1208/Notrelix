@@ -4845,6 +4845,8 @@ export interface components {
         };
         "Notrelix.API.Contracts.Automation.Rules.Requests.SetAutomationRuleEnabledRequest": {
             isEnabled?: boolean;
+            /** Format: uuid */
+            boardId?: string | null;
         };
         "Notrelix.API.Contracts.Billing.ChangeWorkspaceBillingPlanRequest": {
             planCode?: string | null;
@@ -7236,6 +7238,7 @@ export interface operations {
             query?: {
                 page?: number;
                 pageSize?: number;
+                boardId?: string;
             };
             header?: never;
             path: {
@@ -7258,7 +7261,9 @@ export interface operations {
     };
     "Automation.Rules.List": {
         parameters: {
-            query?: never;
+            query?: {
+                boardId?: string;
+            };
             header?: never;
             path: {
                 workspaceId: string;
