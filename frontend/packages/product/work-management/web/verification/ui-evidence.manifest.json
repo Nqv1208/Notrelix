@@ -1093,7 +1093,8 @@
         "src/components/views/table/table-parts.tsx",
         "src/components/views/table/table-row.tsx",
         "src/components/views/table/table-states.tsx",
-        "src/components/views/table/table-status-picker.tsx"
+        "src/components/views/table/table-status-picker.tsx",
+        "src/components/views/table/table-sub-items.tsx"
       ],
       "stories": [
         {
@@ -2137,6 +2138,7 @@
       "pureEntry": "src/components/item-page/item-page-surface.tsx",
       "coveredSources": [
         "src/components/item-page/item-page-activity.tsx",
+        "src/components/item-page/item-page-approval.tsx",
         "src/components/item-page/item-page-header.tsx",
         "src/components/item-page/item-page-mention.tsx",
         "src/components/item-page/item-page-parts.tsx",
@@ -2431,6 +2433,10 @@
         },
         {
           "id": "mention",
+          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "request-approval",
           "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
         },
         {

@@ -2,6 +2,7 @@ using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Governance.Public.Visibility;
 using Notrelix.Application.Features.WorkManagement.Approvals.Commands.DecideApproval;
 using Notrelix.Application.Features.WorkManagement.Approvals.Commands.RequestItemApproval;
+using Notrelix.Application.Features.WorkManagement.Approvals.Queries.ListItemApprovalRequests;
 
 namespace Notrelix.Application.Tests.Features.WorkManagement.Approvals;
 
@@ -168,5 +169,23 @@ public class ItemApprovalTests : WorkManagementHandlerTestBase
 
         request.DomainEvents.OfType<Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalRequestApprovedDomainEvent>()
             .Should().ContainSingle(e => e.RequestedBy == TestUserId && e.Target!.ResourceId == _item.Id);
+    }
+
+    [Fact]
+    public async Task List_ShowsThePendingAndTheDecidedRequestsOfTheItemWithWhoWasAsked()
+    {
+        var first = await Requested();
+        await Decide(_approver, first, "approve", "Fine");
+        RequestContextMock.Setup(c => c.UserId).Returns(TestUserId);
+        var other = Guid.CreateVersion7();
+        (await Request(other, "Second look")).Succeeded.Should().BeTrue();
+
+        var result = await new ListItemApprovalRequestsQueryHandler(DbContextMock.Object)
+            .Handle(new ListItemApprovalRequestsQuery(_item.Id), CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        result.Data!.Should().HaveCount(2);
+        result.Data.Single(r => r.Status == "Approved").Steps.Should().ContainSingle(s => s.ApproverUserId == _approver && s.Note == "Fine");
+        result.Data.Single(r => r.Status == "Pending").Steps.Should().ContainSingle(s => s.ApproverUserId == other);
     }
 }

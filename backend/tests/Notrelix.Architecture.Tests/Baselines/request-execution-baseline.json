@@ -3300,6 +3300,31 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.WorkManagement.Approvals.Queries.ListItemApprovalRequests.ListItemApprovalRequestsQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IResourceScopedRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.WorkManagement.Approvals.Queries.ListItemApprovalRequests.ListItemApprovalRequestsQueryHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardFields.Commands.AddFieldOption.AddFieldOptionCommand",
     "kind": "Command",
     "principalMarkers": [

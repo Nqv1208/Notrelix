@@ -1977,7 +1977,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** List the approval requests asked about a board item */
+        get: operations["WorkManagement.Approvals.ListForItem"];
         put?: never;
         /** Ask a person to approve a board item */
         post: operations["WorkManagement.Approvals.RequestForItem"];
@@ -11643,6 +11644,28 @@ export interface operations {
             path: {
                 provider: string;
                 webhookPath: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "WorkManagement.Approvals.ListForItem": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                itemId: string;
             };
             cookie?: never;
         };

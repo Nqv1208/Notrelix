@@ -87,6 +87,37 @@ export function useItemFollowing(itemId: string, workspaceId: string) {
   };
 }
 
+const approvalsKey = (workspaceId: string, itemId: string) =>
+  workspaceQueryKey(workspaceId, "work-management", "item-approvals", itemId);
+
+/** The approvals asked about the item, and the write that asks a person for one. */
+export function useItemApprovals(itemId: string, workspaceId: string) {
+  const { itemExtras } = useWorkManagementServices();
+  const queryClient = useQueryClient();
+  const query = useQuery({
+    queryKey: approvalsKey(workspaceId, itemId),
+    queryFn: () => itemExtras.getApprovals(itemId),
+    enabled: Boolean(itemId),
+    staleTime: 15_000,
+  });
+  const request = useMutation({
+    mutationFn: (input: { approverUserId: string; note: string | null }) =>
+      itemExtras.requestApproval(itemId, input.approverUserId, input.note),
+    onSettled: () => {
+      void queryClient.invalidateQueries({
+        queryKey: approvalsKey(workspaceId, itemId),
+      });
+    },
+  });
+  return {
+    approvals: query.data,
+    request: request.mutate,
+    requesting: request.isPending,
+    /** The server's refusal of the last request (a person already asked, an approver who cannot read the item). */
+    error: request.error,
+  };
+}
+
 /** The plan of a board: phases, milestones, dependencies (gap `CTR-GAP-WM-PLAN-ITEMS`). */
 export function useBoardPlanItems(boardId: string, workspaceId: string) {
   const { itemExtras } = useWorkManagementServices();

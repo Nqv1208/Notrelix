@@ -725,6 +725,26 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     mutation: false,
   },
   {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "useItemApprovals",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/item-extras.api.ts",
+    capability: "WorkManagement.Approvals.ListForItem",
+    operationId: "WorkManagement.Approvals.ListForItem",
+    mutation: false,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "useItemApprovals",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/item-extras.api.ts",
+    capability: "WorkManagement.Approvals.RequestForItem",
+    operationId: "WorkManagement.Approvals.RequestForItem",
+    mutation: true,
+  },
+  {
     context: "Workspace",
     classification: "CANONICAL_MOCKED",
     consumerSymbol: "useDecideApproval",

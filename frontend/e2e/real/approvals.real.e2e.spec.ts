@@ -263,3 +263,99 @@ test("an approver can reject with a comment and the requester hears it", async (
     .toBe(`Needs a budget ${unique}`);
   await approverContext.close();
 });
+
+test("a requester asks a board member to approve from the item page, sees it waiting, then sees the decision", async ({
+  browser,
+  page,
+}) => {
+  const unique = Date.now().toString(36);
+  const approverContext = await browser.newContext();
+  const approver = await approverContext.newPage();
+  await signIn(approver, realUsers.admin);
+  const approverWorkspace = await findWorkspace(approver, "Workspace 3");
+  const approverSelf = await apiRead<{ userId: string }>(
+    approver,
+    `/workspaces/${approverWorkspace.id}/members/me`,
+  );
+
+  await signIn(page, realUsers.workspaceAdmin);
+  const { workspace, board } = await openBoard(
+    page,
+    "Workspace 3",
+    "Engineering Tasks",
+  );
+  const members = await apiRead<{ userId: string; name: string }[]>(
+    page,
+    `/workspaces/${workspace.id}/members`,
+  );
+  const approverName = members.find(
+    (member) => member.userId === approverSelf.userId,
+  )!.name;
+  const groupId = (
+    await apiRead<{ lists: { id: string }[] }>(page, `/boards/${board.id}/full`)
+  ).lists[0]!.id;
+  const itemId = (
+    await apiWrite<{ id: string }>(page, "POST", `/boards/${board.id}/items`, {
+      groupId,
+      title: `Ask from the page ${unique}`,
+    })
+  ).data!.id;
+
+  const itemPage = `/workspaces/${workspace.id}/boards/${board.id}/items/${itemId}`;
+  await page.goto(itemPage);
+  const approval = page.locator('[data-f="item-approval"]');
+  await expect(approval).toBeVisible();
+  await expect(approval.getByRole("list")).toHaveCount(0);
+
+  // The person who asks is not offered; a board member is.
+  await approval.getByRole("button", { name: "Request approval" }).click();
+  const search = page.getByRole("combobox", {
+    name: "Who should approve this item",
+  });
+  await search.fill(approverName);
+  const sent = page.waitForResponse(
+    (response) =>
+      response.request().method() === "POST" &&
+      response.url().includes(`/board-items/${itemId}/approval-requests`),
+  );
+  await page.getByRole("option", { name: approverName }).click();
+  expect((await sent).status()).toBeLessThan(300);
+  await expect(approval.getByText(`Waiting for ${approverName}`)).toBeVisible();
+
+  // Asking the same person again is refused with a notice, not a second request.
+  await approval.getByRole("button", { name: "Request approval" }).click();
+  await page
+    .getByRole("combobox", { name: "Who should approve this item" })
+    .fill(approverName);
+  await page.getByRole("option", { name: approverName }).click();
+  await expect(approval.getByRole("alert")).toHaveText(
+    "That person was already asked about this item.",
+  );
+  await expect(approval.getByRole("listitem")).toHaveCount(1);
+
+  // The approver decides; the item page shows the outcome.
+  const requests = await apiRead<{ id: string }[]>(
+    approver,
+    `/board-items/${itemId}/approval-requests`,
+  );
+  expect(requests).toHaveLength(1);
+  expect(
+    (
+      await apiWrite(
+        approver,
+        "POST",
+        `/workspaces/${workspace.id}/approvals/${requests[0]!.id}/decision`,
+        { decision: "approve", comment: `Go ahead ${unique}` },
+      )
+    ).status,
+  ).toBeLessThan(300);
+  await page.reload();
+  await expect(
+    page
+      .locator('[data-f="item-approval"]')
+      .getByText(`Approved by ${approverName}`),
+  ).toBeVisible();
+  await expect(
+    page.locator('[data-f="item-approval"]').getByText(`Go ahead ${unique}`),
+  ).toBeVisible();
+});

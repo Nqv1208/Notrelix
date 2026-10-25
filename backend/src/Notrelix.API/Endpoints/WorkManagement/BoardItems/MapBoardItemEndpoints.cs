@@ -1,4 +1,5 @@
 using Notrelix.API.Endpoints.WorkManagement.Approvals.Commands;
+using Notrelix.API.Endpoints.WorkManagement.Approvals.Queries;
 using Notrelix.API.Endpoints.WorkManagement.BoardItems.Commands;
 using Notrelix.API.Endpoints.WorkManagement.BoardItems.Queries;
 
@@ -47,6 +48,7 @@ public static class MapBoardItemEndpoints
         itemGroup.MapListChildItems();
         itemGroup.MapMoveChildItem();
         itemGroup.MapRequestItemApproval();
+        itemGroup.MapListItemApprovalRequests();
 
         var myWork = app
             .MapGroup("/api/v1/workspaces/{workspaceId:guid}/my-work/items")

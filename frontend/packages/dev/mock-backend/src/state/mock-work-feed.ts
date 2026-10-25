@@ -229,6 +229,15 @@ interface ApprovalRecord {
   changes: { label: string; value: string; changed?: string }[];
 }
 
+/** An approval the member asked a person for (the producer's request with one step). */
+interface RequestedApprovalRecord {
+  id: string;
+  itemId: string;
+  approverId: string;
+  note: string | null;
+  requestedAt: string;
+}
+
 interface MentionRecord {
   id: string;
   actorId: string;
@@ -314,6 +323,8 @@ export class MockWorkFeedState {
   assigned = new Set<string>();
   following = new Set<string>();
   approvals = new Map<string, ApprovalRecord>();
+  /** What the member asked others to approve; always pending in the mock. */
+  requestedApprovals: RequestedApprovalRecord[] = [];
   mentions: MentionRecord[] = [];
   waiting: WaitingRecord[] = [];
   events: EventRecord[] = [];
@@ -325,6 +336,7 @@ export class MockWorkFeedState {
     this.assigned.clear();
     this.following.clear();
     this.approvals.clear();
+    this.requestedApprovals = [];
     this.mentions = [];
     this.waiting = [];
     this.events = [];
@@ -1087,6 +1099,125 @@ export function decideApproval(
     }
   }
   return "ok";
+}
+
+/** The approval request of the producer for an item: one step naming the approver. */
+export interface ItemApprovalWire {
+  id: string;
+  title: string;
+  description: string | null;
+  status: "Pending";
+  requestedByUserId: string;
+  createdAt: string;
+  steps: {
+    id: string;
+    approverUserId: string;
+    approverTeamId: null;
+    status: "Pending";
+    position: number;
+    decidedAt: null;
+    note: null;
+  }[];
+}
+
+function approvalWire(
+  store: MockStore,
+  record: {
+    id: string;
+    itemId: string;
+    requestedById: string;
+    approverId: string;
+    note: string | null;
+    requestedAt: string;
+  },
+): ItemApprovalWire {
+  return {
+    id: record.id,
+    title: store.getCard(record.itemId)?.title ?? "",
+    description: record.note,
+    status: "Pending",
+    requestedByUserId: record.requestedById,
+    createdAt: record.requestedAt,
+    steps: [
+      {
+        id: `${record.id}:step`,
+        approverUserId: record.approverId,
+        approverTeamId: null,
+        status: "Pending",
+        position: 1,
+        decidedAt: null,
+        note: null,
+      },
+    ],
+  };
+}
+
+/** The approvals asked about an item, newest first (the seeded one waits for the member). */
+export function listItemApprovals(
+  store: MockStore,
+  itemId: string,
+): ItemApprovalWire[] | "not-found" {
+  if (!store.getCard(itemId)) return "not-found";
+  const feed = store.feed;
+  const me = store.getCurrentUser().id;
+  const asked = feed.requestedApprovals
+    .filter((record) => record.itemId === itemId)
+    .map((record) => approvalWire(store, { ...record, requestedById: me }));
+  const seeded = feed.approvals.get(itemId);
+  const waiting = seeded
+    ? [
+        approvalWire(store, {
+          id: approvalRequestId(itemId),
+          itemId,
+          requestedById: seeded.requestedById,
+          approverId: me,
+          note: seeded.note,
+          requestedAt: seeded.requestedAt,
+        }),
+      ]
+    : [];
+  return [...asked, ...waiting].sort((a, b) =>
+    b.createdAt.localeCompare(a.createdAt),
+  );
+}
+
+export type RequestApprovalResult =
+  | { kind: "ok"; id: string }
+  | { kind: "not-found" }
+  | { kind: "invalid"; message: string }
+  | { kind: "conflict" };
+
+/** Asks a board member other than the caller to approve the item. */
+export function requestItemApproval(
+  store: MockStore,
+  itemId: string,
+  approverUserId: string,
+  note: string | null,
+): RequestApprovalResult {
+  const card = store.getCard(itemId);
+  if (!card) return { kind: "not-found" };
+  const me = store.getCurrentUser().id;
+  if (approverUserId === me)
+    return { kind: "invalid", message: "Ask someone else to approve." };
+  if (!store.getUser(approverUserId))
+    return { kind: "invalid", message: "The approver cannot read this item." };
+  const feed = store.feed;
+  if (
+    feed.requestedApprovals.some(
+      (record) =>
+        record.itemId === itemId && record.approverId === approverUserId,
+    )
+  )
+    return { kind: "conflict" };
+  const id = `item-approval:${itemId}:${feed.requestedApprovals.length + 1}`;
+  feed.requestedApprovals.push({
+    id,
+    itemId,
+    approverId: approverUserId,
+    note: note?.trim() ? note.trim() : null,
+    requestedAt: store.getClock().isoNow(),
+  });
+  return { kind: "ok", id };
 }
 
 export function reopenItem(store: MockStore, cardId: string): FeedWriteResult {

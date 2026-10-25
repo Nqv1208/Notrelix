@@ -27,6 +27,7 @@ import {
   formatItemDate,
   itemLabelTone,
 } from "../shared/item-display";
+import { ItemApprovalSection } from "./item-page-approval";
 import { PendingMark } from "./item-page-states";
 import {
   ItemAssigneePicker,
@@ -584,6 +585,16 @@ export function ItemPageRail({
         card={card}
         data={data}
         onToggle={callbacks.onToggleWatch}
+        copy={copy}
+      />
+
+      <ItemApprovalSection
+        board={board}
+        people={people}
+        viewerUserId={viewerUserId}
+        data={data}
+        canRequest={editable}
+        onRequest={callbacks.onRequestApproval}
         copy={copy}
       />
 

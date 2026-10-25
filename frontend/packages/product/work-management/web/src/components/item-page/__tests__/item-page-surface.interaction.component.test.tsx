@@ -819,6 +819,53 @@ describe.each([
     );
   });
 
+  it(`${fui("wm.item-page.surface:request-approval", locale)}lists the approvals asked, offers the board members but not the viewer, and asks the chosen one (${locale})`, () => {
+    const item = erpPageItem();
+    const data = erpPageDetailData(item);
+    const board = erpPageBoard();
+    const asked = board.members.find(
+      (member) => member.userId !== erpPageViewer.userId,
+    )!;
+    const onRequestApproval = vi.fn();
+    renderPage(copy, {
+      card: item,
+      callbacks: { ...callbacksMock(), onRequestApproval },
+      detailData: {
+        ...data,
+        approvals: [
+          {
+            id: "approval-1",
+            status: "approved",
+            approverUserId: asked.userId,
+            approverName: asked.name,
+            decisionNote: "Looks good",
+          },
+        ],
+      },
+    });
+    const section = screen.getByRole("region", { name: copy.approval.heading });
+    expect(
+      within(section).getByText(
+        copy.approval.approved.replace("{{name}}", asked.name),
+      ),
+    ).toBeTruthy();
+    expect(within(section).getByText("Looks good")).toBeTruthy();
+    fireEvent.click(
+      within(section).getByRole("button", { name: copy.approval.request }),
+    );
+    const viewer = board.members.find(
+      (member) => member.userId === erpPageViewer.userId,
+    );
+    if (viewer)
+      expect(
+        screen.queryByRole("option", { name: new RegExp(viewer.name) }),
+      ).toBeNull();
+    fireEvent.click(
+      screen.getByRole("option", { name: new RegExp(asked.name) }),
+    );
+    expect(onRequestApproval).toHaveBeenCalledWith(asked.userId);
+  });
+
   it(`${fui("wm.item-page.surface:link-picker", locale)}picks the relation, lists linked items as taken and explains a loop (${locale})`, () => {
     const item = erpPageItem();
     const data = erpPageDetailData(item);

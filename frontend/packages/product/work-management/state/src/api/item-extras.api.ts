@@ -127,6 +127,55 @@ export interface ItemFollowingDto {
   readonly followers: readonly { userId: string; name: string }[];
 }
 
+/**
+ * An approval asked about an item (`WorkManagement.Approvals.ListForItem`): who was asked and what they
+ * answered. The status is the one of the request: pending until the named person decides.
+ */
+export interface ItemApprovalDto {
+  readonly id: string;
+  readonly status: "pending" | "approved" | "rejected" | "cancelled";
+  readonly requestedByUserId: string;
+  readonly approverUserId: string | null;
+  readonly note: string | null;
+  readonly requestedAt: string;
+  readonly decidedAt: string | null;
+  /** The approver's comment with the decision. */
+  readonly decisionNote: string | null;
+}
+
+interface ItemApprovalWire {
+  readonly id: string;
+  readonly status?: string | null;
+  readonly description?: string | null;
+  readonly requestedByUserId: string;
+  readonly createdAt: string;
+  readonly steps?:
+    | readonly {
+        readonly approverUserId?: string | null;
+        readonly decidedAt?: string | null;
+        readonly note?: string | null;
+      }[]
+    | null;
+}
+
+function toItemApproval(wire: ItemApprovalWire): ItemApprovalDto {
+  const status = (wire.status ?? "").toLowerCase();
+  const step = wire.steps?.[0];
+  return {
+    id: wire.id,
+    status:
+      status === "approved" || status === "rejected" || status === "cancelled"
+        ? status
+        : "pending",
+    requestedByUserId: wire.requestedByUserId,
+    approverUserId: step?.approverUserId ?? null,
+    note: wire.description ?? null,
+    requestedAt: wire.createdAt,
+    decidedAt: step?.decidedAt ?? null,
+    decisionNote: step?.note ?? null,
+  };
+}
+
 /** Who completed or archived an item and when. */
 export interface ItemLifecycleDto {
   readonly archived: { readonly at: string; readonly byName: string } | null;
@@ -190,6 +239,24 @@ export function createItemExtrasApi(client: NotrelixClient) {
         following: dto?.following === true,
         followers: dto?.followers ?? [],
       };
+    },
+    async getApprovals(itemId: string): Promise<ItemApprovalDto[]> {
+      const dto = await api.get<ItemApprovalWire[] | null>(
+        `/board-items/${itemId}/approval-requests`,
+      );
+      return (dto ?? []).map(toItemApproval);
+    },
+    /** Asks a person to approve the item (`WorkManagement.Approvals.RequestForItem`). */
+    async requestApproval(
+      itemId: string,
+      approverUserId: string,
+      note: string | null,
+    ): Promise<void> {
+      await api.post<unknown>(
+        `/board-items/${itemId}/approval-requests`,
+        { approverUserId, note },
+        { idempotencyKey: key(), ...quiet },
+      );
     },
     async getLinks(itemId: string): Promise<ItemLinkDto[]> {
       const dto = await api.get<{ links?: ItemLinkDto[] } | null>(

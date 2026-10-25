@@ -21,6 +21,8 @@ import {
   buildInboxSummary,
   isFollowing,
   listChildItems,
+  listItemApprovals,
+  requestItemApproval,
   buildMyWorkExtended,
   bulkWrite,
   createAssignedItem,
@@ -229,6 +231,59 @@ export const workFeedOperations = [
         });
       }
       return outcome(decideApproval(store, params.requestId, decision));
+    },
+  }),
+
+  // ── Approvals asked about an item ────────────────────────────────────────
+  defineMockOperation<{ id: string }>({
+    id: "wsFeed.items.approvals",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.Approvals.ListForItem",
+    },
+    method: "GET",
+    route: "/board-items/:id/approval-requests",
+    async handle({ params, store }) {
+      const approvals = listItemApprovals(store, params.id);
+      return approvals === "not-found" ? notFound() : ok(approvals);
+    },
+  }),
+  defineMockOperation<
+    { id: string },
+    { approverUserId?: string; note?: string | null }
+  >({
+    id: "wsFeed.items.requestApproval",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.Approvals.RequestForItem",
+    },
+    method: "POST",
+    route: "/board-items/:id/approval-requests",
+    async handle({ params, body, store }) {
+      const approver = body?.approverUserId;
+      if (typeof approver !== "string" || approver === "") {
+        return validationError({
+          approverUserId: ["Choose who should approve."],
+        });
+      }
+      const result = requestItemApproval(
+        store,
+        params.id,
+        approver,
+        body?.note ?? null,
+      );
+      switch (result.kind) {
+        case "ok":
+          return ok({ id: result.id });
+        case "not-found":
+          return notFound();
+        case "invalid":
+          return validationError({ approverUserId: [result.message] });
+        default:
+          return conflict(
+            "This person was already asked to approve this item.",
+          );
+      }
     },
   }),
 

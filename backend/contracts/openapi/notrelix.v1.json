@@ -6900,6 +6900,45 @@
             "Cookie": [ ]
           }
         ]
+      },
+      "get": {
+        "tags": [
+          "WorkManagement.BoardItems",
+          "WorkManagement.Approvals"
+        ],
+        "summary": "List the approval requests asked about a board item",
+        "operationId": "WorkManagement.Approvals.ListForItem",
+        "parameters": [
+          {
+            "name": "itemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
       }
     },
     "/api/v1/boards/{boardId}/approvals": {

@@ -11,6 +11,7 @@ import {
   useDuplicateCard,
   useFullBoard,
   useItemChildItems,
+  useItemApprovals,
   useItemFollowing,
   useItemFileUploads,
   canRetryItemFileUpload,
@@ -281,6 +282,7 @@ function ItemPageReady({
   const deleteUpdate = useDeleteCardUpdate(card.id, card.workspaceId);
   const children = useItemChildItems(card.id, card.workspaceId, card.boardId);
   const follow = useItemFollowing(card.id, card.workspaceId);
+  const approvals = useItemApprovals(card.id, card.workspaceId);
   const links = useItemLinks(card.id, card.workspaceId, card.boardId);
   const uploads: ItemPageUpload[] = fileUploads.uploads.map((upload) => ({
     ...upload,
@@ -494,6 +496,8 @@ function ItemPageReady({
     onRenameTitle: (cardId, patch) => updateCard.mutate({ cardId, patch }),
     onUpdateItem: patchItem,
     onToggleWatch: (watched) => follow.setFollowing(watched),
+    onRequestApproval: (approverUserId) =>
+      approvals.request({ approverUserId, note: null }),
     onToggleChildItem: (childId, done) => children.toggle({ childId, done }),
     onAddChildItem: (title) => children.addChild(title),
     onAddLink: (itemId, relation) => links.addLink({ itemId, relation }),
@@ -608,6 +612,25 @@ function ItemPageReady({
           name: person.name,
           initials: personInitials(person.name),
         })),
+        approvals: approvals.approvals?.map((approval) => ({
+          id: approval.id,
+          status: approval.status,
+          approverUserId: approval.approverUserId,
+          approverName:
+            directory?.people.find(
+              (person) => person.userId === approval.approverUserId,
+            )?.name ??
+            board.members.find(
+              (member) => member.userId === approval.approverUserId,
+            )?.name ??
+            null,
+          decisionNote: approval.decisionNote,
+        })),
+        approvalError: approvals.error
+          ? isConflictError(approvals.error)
+            ? "alreadyAsked"
+            : "failed"
+          : null,
         links: links.data,
         linkCandidates,
       }}
