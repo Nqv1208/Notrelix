@@ -133,7 +133,10 @@ export type InboxTypeDto =
   | "board_invited"
   | "followed_status"
   | "followed_comment"
-  | "followed_assignee";
+  | "followed_assignee"
+  | "automation"
+  | "due_tomorrow"
+  | "system";
 
 export interface InboxTargetDto {
   readonly kind: "item" | "doc" | "board";
@@ -165,6 +168,10 @@ export interface InboxEntryDto {
   readonly need: "approve" | "reply" | "overdue" | null;
   readonly following: boolean;
   readonly muted: boolean;
+  /** The member marked it done; only the Done list holds such entries. */
+  readonly done: boolean;
+  /** When a snoozed entry returns, if it is snoozed. */
+  readonly snoozedUntil: string | null;
   readonly target: InboxTargetDto;
   readonly excerpt: string | null;
   readonly dueAt: string | null;
@@ -417,6 +424,17 @@ const path = {
     `/workspaces/${workspaceId}/inbox/read-all`,
   inboxEntryRead: (workspaceId: string, id: string) =>
     `/workspaces/${workspaceId}/inbox/${id}/read`,
+  inboxEntryDone: (workspaceId: string, id: string) =>
+    `/workspaces/${workspaceId}/inbox/${id}/done`,
+  inboxEntryReopen: (workspaceId: string, id: string) =>
+    `/workspaces/${workspaceId}/inbox/${id}/reopen`,
+  inboxEntrySnooze: (workspaceId: string, id: string) =>
+    `/workspaces/${workspaceId}/inbox/${id}/snooze`,
+  inboxEntryMute: (workspaceId: string, id: string) =>
+    `/workspaces/${workspaceId}/inbox/${id}/mute`,
+  inboxEntryUnmute: (workspaceId: string, id: string) =>
+    `/workspaces/${workspaceId}/inbox/${id}/unmute`,
+  itemComments: (itemId: string) => `/board-items/${itemId}/comments`,
 };
 
 export const myWorkExtendedQueryKey = (workspaceId: string) =>
@@ -425,6 +443,9 @@ export const homeFeedQueryKey = (workspaceId: string) =>
   workspaceQueryKey(workspaceId, "workspace-feed", "home");
 export const inboxQueryKey = (workspaceId: string) =>
   workspaceQueryKey(workspaceId, "workspace-feed", "inbox");
+
+/** Which list of the inbox the page shows: the default one or the done entries. */
+export type InboxListView = "inbox" | "done";
 
 const QUIET = { skipGlobalErrorToast: true } as const;
 
@@ -488,56 +509,65 @@ const INBOX_TYPES: Readonly<Record<string, InboxTypeDto>> = {
   "work.item.assignee-added": "followed_assignee",
   "work.item.status-changed": "followed_status",
   "work.item.commented": "followed_comment",
+  "work.item.automation": "automation",
+  "work.item.due-tomorrow": "due_tomorrow",
+  "work.item.overdue": "overdue",
 };
 
 /**
- * The producer's notifications as the Inbox page lists them. A mention, an
- * assignment and the changes of an item the member follows are drawn; the
- * need, approval, bundle and detail parts of an entry have no source and
- * stay empty.
+ * The producer's notifications as the Inbox page lists them. A type this
+ * page does not know is drawn as a generic system row, never dropped. A
+ * mention the member has not answered carries the "reply" need; the bundle and
+ * detail parts of an entry have no source and stay empty.
  */
 export function toInboxDto(
   workspaceId: string,
   dto: WorkspaceInboxResponse | null,
+  view: InboxListView = "inbox",
 ): InboxDto {
-  const items = (dto?.items ?? [])
-    .filter((entry) => INBOX_TYPES[entry.type ?? ""] !== undefined)
-    .map((entry): InboxEntryDto => {
-      const type = INBOX_TYPES[entry.type ?? ""] ?? "mention";
-      return {
-        id: entry.id ?? "",
-        createdAt: entry.createdAt ?? "",
-        unread: entry.unread === true,
-        type,
-        actor: entry.actor?.id
-          ? { id: entry.actor.id, name: entry.actor.name ?? "" }
-          : null,
-        need: null,
-        following: type.startsWith("followed_"),
-        muted: false,
-        target: {
-          kind: "item",
-          id: entry.target?.id ?? null,
-          key: entry.target?.key ?? null,
-          title: entry.target?.title ?? "",
-          boardId: entry.target?.boardId ?? null,
-          boardName: null,
-          departmentId: null,
-          owner: null,
-        },
-        excerpt: entry.excerpt ?? null,
-        dueAt: null,
-        permission: null,
-        bundle: null,
-        detail: null,
-      };
-    });
+  const items = (dto?.items ?? []).map((entry): InboxEntryDto => {
+    const type = INBOX_TYPES[entry.type ?? ""] ?? "system";
+    return {
+      id: entry.id ?? "",
+      createdAt: entry.createdAt ?? "",
+      unread: entry.unread === true,
+      type,
+      actor: entry.actor?.id
+        ? { id: entry.actor.id, name: entry.actor.name ?? "" }
+        : null,
+      need:
+        entry.needsReply === true
+          ? "reply"
+          : type === "overdue"
+            ? "overdue"
+            : null,
+      following: type.startsWith("followed_"),
+      muted: entry.muted === true,
+      done: view === "done",
+      snoozedUntil: entry.snoozedUntil ?? null,
+      target: {
+        kind: "item",
+        id: entry.target?.id ?? null,
+        key: entry.target?.key ?? null,
+        title: entry.target?.title ?? "",
+        boardId: entry.target?.boardId ?? null,
+        boardName: null,
+        departmentId: null,
+        owner: null,
+      },
+      excerpt: entry.excerpt ?? null,
+      dueAt: null,
+      permission: null,
+      bundle: null,
+      detail: null,
+    };
+  });
   const unread = items.filter((entry) => entry.unread).length;
   return {
     workspace: { id: workspaceId, name: "" },
     items,
     counts: {
-      need: 0,
+      need: items.filter((entry) => entry.need !== null).length,
       mention: items.filter((entry) => entry.type === "mention").length,
       assigned: items.filter((entry) => entry.type === "assigned").length,
       follow: items.filter((entry) => entry.following).length,
@@ -548,29 +578,36 @@ export function toInboxDto(
 }
 
 /** The pages of the inbox loaded so far, newest first, as one list. */
-export function useWorkspaceInbox(workspaceId: string) {
+export function useWorkspaceInbox(
+  workspaceId: string,
+  view: InboxListView = "inbox",
+) {
   const { api: client } = useAppRuntime();
   const query = useInfiniteQuery({
-    queryKey: inboxQueryKey(workspaceId),
+    queryKey: [...inboxQueryKey(workspaceId), view] as const,
     enabled: Boolean(workspaceId),
     staleTime: 15_000,
     initialPageParam: "",
     queryFn: async ({ pageParam }) =>
       client.api.get<WorkspaceInboxResponse | null>(
         `${path.inbox(workspaceId)}?limit=${INBOX_PAGE_LIMIT}${
-          pageParam ? `&cursor=${encodeURIComponent(pageParam)}` : ""
-        }`,
+          view === "done" ? "&state=done" : ""
+        }${pageParam ? `&cursor=${encodeURIComponent(pageParam)}` : ""}`,
       ),
     getNextPageParam: (last) => last?.nextCursor || undefined,
   });
   const data = useMemo(
     () =>
       query.data
-        ? toInboxDto(workspaceId, {
-            items: query.data.pages.flatMap((page) => page?.items ?? []),
-          })
+        ? toInboxDto(
+            workspaceId,
+            {
+              items: query.data.pages.flatMap((page) => page?.items ?? []),
+            },
+            view,
+          )
         : undefined,
-    [query.data, workspaceId],
+    [query.data, view, workspaceId],
   );
   return {
     data,
@@ -650,6 +687,12 @@ export interface WorkFeedWrites {
   readonly inbox: {
     readonly markRead: (id: string) => Promise<void>;
     readonly readAll: () => Promise<void>;
+    readonly done: (id: string) => Promise<void>;
+    readonly reopen: (id: string) => Promise<void>;
+    readonly snooze: (id: string, until: string) => Promise<void>;
+    readonly mute: (id: string, muted: boolean) => Promise<void>;
+    /** Posts a comment on the item the entry is about (the existing comment write). */
+    readonly reply: (itemId: string, text: string) => Promise<void>;
   };
 }
 
@@ -780,6 +823,40 @@ export function useWorkFeedWrites(workspaceId: string): WorkFeedWrites {
           perform(() =>
             api.post<void>(path.inboxReadAll(workspaceId), {}, QUIET),
           ),
+        done: (id) =>
+          perform(() =>
+            api.post<void>(path.inboxEntryDone(workspaceId, id), {}, QUIET),
+          ),
+        reopen: (id) =>
+          perform(() =>
+            api.post<void>(path.inboxEntryReopen(workspaceId, id), {}, QUIET),
+          ),
+        snooze: (id, until) =>
+          perform(() =>
+            api.post<void>(
+              path.inboxEntrySnooze(workspaceId, id),
+              { until },
+              QUIET,
+            ),
+          ),
+        mute: (id, muted) =>
+          perform(() =>
+            api.post<void>(
+              muted
+                ? path.inboxEntryMute(workspaceId, id)
+                : path.inboxEntryUnmute(workspaceId, id),
+              {},
+              QUIET,
+            ),
+          ),
+        reply: (itemId, text) =>
+          perform(async () => {
+            await api.post<string>(
+              path.itemComments(itemId),
+              { contentMd: text, parentCommentId: null },
+              { idempotencyKey: attemptKey(), ...QUIET },
+            );
+          }),
       },
     }),
     [api, perform, unfollowEach, workspaceId],

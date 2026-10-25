@@ -366,6 +366,31 @@ export function InboxRead({
           <Check aria-hidden="true" className="size-4" strokeWidth={1.8} />
           {copy.read.handled}
         </button>
+        <button
+          data-f="done"
+          type="button"
+          aria-disabled={
+            (item.done ? actions?.onReopen : actions?.onDone) && !busy
+              ? undefined
+              : true
+          }
+          title={actions ? undefined : copy.read.actionUnavailable}
+          onClick={
+            actions && !busy
+              ? item.done
+                ? actions.onReopen
+                  ? () => actions.onReopen?.(item)
+                  : undefined
+                : actions.onDone
+                  ? () => actions.onDone?.(item)
+                  : undefined
+              : undefined
+          }
+          className={OUTLINE_CLASS}
+        >
+          <Check aria-hidden="true" className="size-4" strokeWidth={1.8} />
+          {item.done ? copy.read.reopen : copy.read.done}
+        </button>
         <SnoozeMenu
           copy={copy}
           open={snoozeOpen}
@@ -383,7 +408,7 @@ export function InboxRead({
           onClick={actions && !busy ? () => actions.onMute(item) : undefined}
           className={QUIET_CLASS}
         >
-          {copy.read.mute}
+          {item.muted ? copy.read.unmute : copy.read.mute}
         </button>
         <div
           data-f="hint"

@@ -120,7 +120,12 @@ export interface InboxActions {
   readonly onReply: (item: InboxItemView, text: string) => void;
   readonly onHandled: (item: InboxItemView) => void;
   readonly onSnooze: (item: InboxItemView, until: InboxSnooze) => void;
+  /** Mutes the item's thread, or lifts the mute when it is already muted. */
   readonly onMute: (item: InboxItemView) => void;
+  /** Moves the notification to Done; omitted draws the button inert. */
+  readonly onDone?: (item: InboxItemView) => void;
+  /** Takes a done notification back into the inbox. */
+  readonly onReopen?: (item: InboxItemView) => void;
 }
 
 export interface InboxItemView {
@@ -139,6 +144,12 @@ export interface InboxItemView {
   /** The member follows the item (the Following tab). */
   readonly following: boolean;
   readonly bundle: InboxBundle | null;
+  /** The member muted this notification's thread. */
+  readonly muted?: boolean;
+  /** The member marked it done (it lives in the Done list). */
+  readonly done?: boolean;
+  /** The item the notification is about, when the reply can go to it. */
+  readonly itemId?: string | null;
   /** Where the row leads when it is a link; `null` selects it in place. */
   readonly href: string | null;
   readonly detail: InboxDetailView | null;

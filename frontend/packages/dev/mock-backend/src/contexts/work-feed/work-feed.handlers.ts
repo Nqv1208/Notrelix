@@ -432,10 +432,23 @@ export const workFeedOperations = [
     },
     method: "GET",
     route: "/workspaces/:workspaceId/inbox",
-    async handle({ params, store }) {
+    async handle({ params, query, store }) {
       if (!store.isCurrentMemberOf(params.workspaceId)) return notFound();
+      const state = query["state"]?.toLowerCase();
+      if (
+        state !== undefined &&
+        !["inbox", "done", "snoozed"].includes(state)
+      ) {
+        return validationError({
+          state: ["The state must be inbox, done or snoozed."],
+        });
+      }
       // The real producer lists notifications: a mention is the one kind it has.
-      const inbox = buildInbox(store, params.workspaceId);
+      const inbox = buildInbox(
+        store,
+        params.workspaceId,
+        (state as "inbox" | "done" | "snoozed" | undefined) ?? "inbox",
+      );
       return ok({
         items: inbox.items
           .filter((entry) => entry.type === "mention")
@@ -446,6 +459,9 @@ export const workFeedOperations = [
             unread: entry.unread,
             actor: entry.actor,
             excerpt: entry.excerpt,
+            needsReply: entry.need === "reply",
+            muted: entry.muted,
+            snoozedUntil: entry.snoozedUntil,
             target: {
               kind: "item",
               id: entry.target.id,
@@ -469,6 +485,89 @@ export const workFeedOperations = [
     async handle({ params, store }) {
       if (!store.isCurrentMemberOf(params.workspaceId)) return notFound();
       return outcome(markInbox(store, params.id, { type: "handled" }));
+    },
+  }),
+  defineMockOperation<{ workspaceId: string; id: string }>({
+    id: "wsFeed.inbox.done",
+    contract: {
+      kind: "openapi",
+      operationId: "Collaboration.Notifications.MarkInboxEntryDone",
+    },
+    method: "POST",
+    route: "/workspaces/:workspaceId/inbox/:id/done",
+    async handle({ params, store }) {
+      if (!store.isCurrentMemberOf(params.workspaceId)) return notFound();
+      markInbox(store, params.id, { type: "done" });
+      return noContent();
+    },
+  }),
+  defineMockOperation<{ workspaceId: string; id: string }>({
+    id: "wsFeed.inbox.reopen",
+    contract: {
+      kind: "openapi",
+      operationId: "Collaboration.Notifications.ReopenInboxEntry",
+    },
+    method: "POST",
+    route: "/workspaces/:workspaceId/inbox/:id/reopen",
+    async handle({ params, store }) {
+      if (!store.isCurrentMemberOf(params.workspaceId)) return notFound();
+      markInbox(store, params.id, { type: "reopen" });
+      return noContent();
+    },
+  }),
+  defineMockOperation<{ workspaceId: string; id: string }, { until?: string }>({
+    id: "wsFeed.inbox.snooze",
+    contract: {
+      kind: "openapi",
+      operationId: "Collaboration.Notifications.SnoozeInboxEntry",
+    },
+    method: "POST",
+    route: "/workspaces/:workspaceId/inbox/:id/snooze",
+    async handle({ params, body, store }) {
+      if (!store.isCurrentMemberOf(params.workspaceId)) return notFound();
+      const until = Date.parse(body?.until ?? "");
+      const now = Date.parse(store.getClock().isoNow());
+      if (Number.isNaN(until) || until <= now) {
+        return validationError({ until: ["A snooze must end in the future."] });
+      }
+      if (until > now + 365 * 24 * 60 * 60 * 1000) {
+        return validationError({
+          until: ["A snooze can last at most 365 days."],
+        });
+      }
+      markInbox(store, params.id, {
+        type: "snooze",
+        until: new Date(until).toISOString(),
+      });
+      return noContent();
+    },
+  }),
+  defineMockOperation<{ workspaceId: string; id: string }>({
+    id: "wsFeed.inbox.mute",
+    contract: {
+      kind: "openapi",
+      operationId: "Collaboration.Notifications.MuteInboxThread",
+    },
+    method: "POST",
+    route: "/workspaces/:workspaceId/inbox/:id/mute",
+    async handle({ params, store }) {
+      if (!store.isCurrentMemberOf(params.workspaceId)) return notFound();
+      markInbox(store, params.id, { type: "mute", muted: true });
+      return noContent();
+    },
+  }),
+  defineMockOperation<{ workspaceId: string; id: string }>({
+    id: "wsFeed.inbox.unmute",
+    contract: {
+      kind: "openapi",
+      operationId: "Collaboration.Notifications.UnmuteInboxThread",
+    },
+    method: "POST",
+    route: "/workspaces/:workspaceId/inbox/:id/unmute",
+    async handle({ params, store }) {
+      if (!store.isCurrentMemberOf(params.workspaceId)) return notFound();
+      markInbox(store, params.id, { type: "mute", muted: false });
+      return noContent();
     },
   }),
   defineMockOperation<{ workspaceId: string }>({
