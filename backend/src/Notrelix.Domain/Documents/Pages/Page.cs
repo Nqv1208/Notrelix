@@ -141,6 +141,23 @@ public class Page : SoftDeletableAggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new PageArchivedDomainEvent(AccountId, WorkspaceId, Id, archivedBy, archivedAt));
     }
 
+    /// <summary>
+    /// Takes an archived (trashed) page back out of the trash. An active page is
+    /// a semantic no-op (no version bump, no second event).
+    /// </summary>
+    public void Unarchive(Guid restoredBy, DateTimeOffset restoredAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(restoredBy);
+        if (Status == PageStatus.Active) return;
+
+        var pending = PrepareAuditUpdate(restoredBy, restoredAt);
+        Status = PageStatus.Active;
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+        RaiseDomainEvent(new PageRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
+    }
+
     public void Delete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         Guard.NotEmpty(deletedBy);

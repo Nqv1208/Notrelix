@@ -3,9 +3,13 @@ using Notrelix.Application.Features.Documents.Abstractions;
 
 namespace Notrelix.Application.Features.Documents.Pages.Commands.DeletePage;
 
+/// <summary>
+/// Deletes a page for good. Only a page already in the trash can be deleted,
+/// and only by a Manager of the page (<c>DeletePage</c>).
+/// </summary>
 public record DeletePageCommand(Guid PageId) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission
 {
-    public PermissionAction Action => PermissionAction.ManageBoard;
+    public PermissionAction Action => PermissionAction.DeletePage;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("documents.page"), PageId);
 }
 
@@ -25,6 +29,9 @@ public class DeletePageCommandHandler : IRequestHandler<DeletePageCommand, Resul
     {
         var page = await _context.Pages.FirstOrDefaultAsync(page => page.Id == request.PageId && page.DeletedAt == null, ct);
         if (page is null) throw new NotFoundException(nameof(Page), request.PageId);
+
+        if (page.Status != PageStatus.Archived)
+            throw new Notrelix.Domain.Common.Exceptions.BusinessRuleException(Notrelix.Domain.Documents.DocumentRuleCodes.Documents_Page_NotInTrash, "Only a page in the trash can be deleted for good.");
 
         page.Delete(_currentUser.UserId, _dateTimeProvider.UtcNow);
         return Result.Success();

@@ -79,17 +79,35 @@ public sealed class BlockEditingHandlerTests
     }
 
     [Fact]
-    public async Task UpdatingABlockToADifferentType_IsRefusedWithoutChange()
+    public async Task UpdatingABlockToADifferentType_ChangesItInPlace()
     {
         var page = NewPage();
         var block = NewBlock(page, "a0");
+        var id = block.Id;
         var sut = CreateUpdateSut([block]);
 
         var result = await sut.Handle(
-            new UpdateBlockCommand(page.Id, block.Id, "Heading1", "{\"text\":\"x\"}"), CancellationToken.None);
+            new UpdateBlockCommand(page.Id, block.Id, "heading_1", "{\"text\":\"x\"}"), CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        block.Id.Should().Be(id);
+        block.Type.Should().Be(BlockType.Heading1);
+        block.Content.Data.Value.Should().Be("{\"text\":\"x\"}");
+    }
+
+    [Fact]
+    public async Task UpdatingABlockToAnUnknownType_IsRefusedWithoutChange()
+    {
+        var page = NewPage();
+        var block = NewBlock(page, "a0");
+        var version = block.Version;
+        var sut = CreateUpdateSut([block]);
+
+        var result = await sut.Handle(
+            new UpdateBlockCommand(page.Id, block.Id, "Embed", "{\"text\":\"x\"}"), CancellationToken.None);
 
         result.Succeeded.Should().BeFalse();
-        block.Version.Should().Be(1);
+        block.Version.Should().Be(version);
     }
 
     [Fact]
