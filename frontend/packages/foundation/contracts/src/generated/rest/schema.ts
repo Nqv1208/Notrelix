@@ -1970,6 +1970,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/board-items/{itemId}/approval-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Ask a person to approve a board item */
+        post: operations["WorkManagement.Approvals.RequestForItem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/boards/{boardId}/approvals": {
         parameters: {
             query?: never;
@@ -2067,6 +2084,26 @@ export interface paths {
         put?: never;
         /** Restore a soft-deleted approval request */
         post: operations["WorkManagement.Approvals.Restore"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/approvals/{requestId}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve or reject an approval request as its named approver
+         * @description Only the person named on a step of the request may decide it, and only once: a second decision is a conflict. The decision is approve or reject; the comment is optional.
+         */
+        post: operations["WorkManagement.Approvals.Decide"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5269,10 +5306,19 @@ export interface components {
             description?: string | null;
             steps?: components["schemas"]["Notrelix.API.Contracts.WorkManagement.Approvals.Requests.ApprovalStepRequest"][] | null;
         };
+        "Notrelix.API.Contracts.WorkManagement.Approvals.Requests.DecideApprovalRequest": {
+            decision?: string | null;
+            comment?: string | null;
+        };
         "Notrelix.API.Contracts.WorkManagement.Approvals.Requests.RejectApprovalRequestRequest": {
             note?: string | null;
             /** Format: int64 */
             expectedVersion?: number;
+        };
+        "Notrelix.API.Contracts.WorkManagement.Approvals.Requests.RequestItemApprovalRequest": {
+            /** Format: uuid */
+            approverUserId?: string;
+            note?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.BoardFields.Requests.CreateBoardFieldRequest": {
             name?: string | null;
@@ -6357,6 +6403,10 @@ export interface components {
             catalog?: components["schemas"]["Notrelix.Application.Features.Integrations.Connections.IntegrationCatalogEntryDto"][] | null;
             connections?: components["schemas"]["Notrelix.Application.Features.Integrations.Connections.IntegrationConnectionDto"][] | null;
         };
+        "Notrelix.Application.Features.WorkManagement.Approvals.Commands.RequestItemApproval.ApprovalRequestIdDto": {
+            /** Format: uuid */
+            id?: string;
+        };
         "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetHomeFeed.HomeCalendarEventDto": {
             /** Format: uuid */
             id?: string;
@@ -6422,6 +6472,8 @@ export interface components {
             version?: number;
         };
         "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetMyWorkExtended.MyWorkApprovalDto": {
+            /** Format: uuid */
+            requestId?: string;
             requestedBy?: components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetMyWorkExtended.MyWorkPersonDto"];
             /** Format: date-time */
             requestedAt?: string;
@@ -6489,6 +6541,11 @@ export interface components {
             /** Format: date-time */
             lastRemindedAt?: string | null;
         };
+        "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetWorkspaceInbox.InboxApprovalDto": {
+            /** Format: uuid */
+            requestId?: string;
+            status?: string | null;
+        };
         "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetWorkspaceInbox.InboxEntryDto": {
             /** Format: uuid */
             id?: string;
@@ -6503,6 +6560,7 @@ export interface components {
             muted?: boolean;
             /** Format: date-time */
             snoozedUntil?: string | null;
+            approval?: components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetWorkspaceInbox.InboxApprovalDto"];
         };
         "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetWorkspaceInbox.InboxPersonDto": {
             /** Format: uuid */
@@ -11601,6 +11659,51 @@ export interface operations {
             };
         };
     };
+    "WorkManagement.Approvals.RequestForItem": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                itemId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.Approvals.Requests.RequestItemApprovalRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Approvals.Commands.RequestItemApproval.ApprovalRequestIdDto"];
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     "WorkManagement.Approvals.List": {
         parameters: {
             query?: never;
@@ -11853,6 +11956,52 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "WorkManagement.Approvals.Decide": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                workspaceId: string;
+                requestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.Approvals.Requests.DecideApprovalRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {

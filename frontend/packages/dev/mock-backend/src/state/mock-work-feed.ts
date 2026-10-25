@@ -58,7 +58,11 @@ export interface MyWorkItemExtDto {
   relations: MyWorkRelation[];
   /** The person in charge when it is not the member; `null` = the member or nobody. */
   assignee: PersonDto | null;
-  approval: { requestedBy: PersonDto; requestedAt: string } | null;
+  approval: {
+    requestId: string;
+    requestedBy: PersonDto;
+    requestedAt: string;
+  } | null;
   completedAt: string | null;
 }
 
@@ -154,6 +158,8 @@ export interface InboxEntryDto {
   type: InboxType;
   actor: PersonDto | null;
   need: InboxNeed | null;
+  /** The approval request an "approval requested" entry is about (status as the producer names it). */
+  approval: { requestId: string; status: "Pending" } | null;
   following: boolean;
   muted: boolean;
   /** The member marked it done: only the Done list holds it. */
@@ -205,6 +211,11 @@ export interface InboxDto {
 }
 
 // ─── Records ─────────────────────────────────────────────────────────────────
+
+/** The id of the approval request of an item (one request per item in the mock). */
+export function approvalRequestId(itemId: string): string {
+  return `approval:${itemId}`;
+}
 
 interface ApprovalRecord {
   itemId: string;
@@ -714,7 +725,11 @@ function itemDto(
     assignee,
     approval:
       approval && requester
-        ? { requestedBy: requester, requestedAt: approval.requestedAt }
+        ? {
+            requestId: approvalRequestId(approval.itemId),
+            requestedBy: requester,
+            requestedAt: approval.requestedAt,
+          }
         : null,
     completedAt: card.completedAt ?? null,
   };
@@ -908,6 +923,10 @@ function entryDto(
     type: record.type,
     actor: person(store, record.actorId),
     need: record.need,
+    approval:
+      record.type === "approval_requested" && approval && record.itemId
+        ? { requestId: approvalRequestId(record.itemId), status: "Pending" }
+        : null,
     following:
       record.following ||
       (record.itemId ? feed.following.has(record.itemId) : false),
@@ -971,7 +990,7 @@ export function buildHomeFeed(store: MockStore): HomeFeedDto {
     const actor = person(store, approval.requestedById);
     if (!card || !actor || card.completedAt) continue;
     replies.push({
-      id: `approval:${approval.itemId}`,
+      id: approvalRequestId(approval.itemId),
       kind: "approval",
       actor,
       createdAt: approval.requestedAt,
@@ -1041,29 +1060,28 @@ export function setItemBucket(
   return store.updateItemStatus(cardId, optionId);
 }
 
-/** Approve or ask for changes on an item the member must approve. */
+/**
+ * Approve or reject the approval request the member is named on. As on the producer, a decision records the
+ * answer and ends the request; it does not change the item's status.
+ */
 export function decideApproval(
   store: MockStore,
-  cardId: string,
-  decision: "approve" | "request-changes",
-  comment: string | null,
+  requestId: string,
+  decision: "approve" | "reject",
 ): FeedWriteResult {
   const feed = store.feed;
-  const approval = feed.approvals.get(cardId);
-  if (!store.getCard(cardId)) return "not-found";
-  if (!approval) return "invalid";
-  const result = setItemBucket(
-    store,
-    cardId,
-    decision === "approve" ? "done" : "doing",
+  const approval = [...feed.approvals.values()].find(
+    (candidate) => approvalRequestId(candidate.itemId) === requestId,
   );
-  if (result !== "ok") return result;
-  feed.approvals.delete(cardId);
-  if (comment && comment.trim()) {
-    store.createCardComment(cardId, store.getCurrentUser().id, comment.trim());
-  }
+  if (!approval) return "not-found";
+  if (!store.getCard(approval.itemId)) return "not-found";
+  void decision;
+  feed.approvals.delete(approval.itemId);
   for (const record of feed.inbox) {
-    if (record.itemId === cardId && record.type === "approval_requested") {
+    if (
+      record.itemId === approval.itemId &&
+      record.type === "approval_requested"
+    ) {
       record.need = null;
       record.unread = false;
     }

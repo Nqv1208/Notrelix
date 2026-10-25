@@ -133,6 +133,8 @@ function childView(
 
 const KIND: Record<InboxEntryDto["type"], InboxKind> = {
   approval_requested: "approve",
+  approval_approved: "change",
+  approval_rejected: "change",
   mention: "mention",
   overdue: "overdue",
   assigned: "assign",
@@ -174,6 +176,28 @@ export function toInboxEntries(
         );
         context = { department, label: keyLabel };
         break;
+      case "approval_approved":
+      case "approval_rejected": {
+        const approved = entry.type === "approval_approved";
+        segments = sentence(
+          copy,
+          entry.excerpt
+            ? approved
+              ? copy.feed.approvalApprovedNote
+              : copy.feed.approvalRejectedNote
+            : approved
+              ? copy.feed.approvalApproved
+              : copy.feed.approvalRejected,
+          {
+            actor: actorName,
+            title: target.title,
+            excerpt: entry.excerpt ?? "",
+          },
+          ["actor", "title"],
+        );
+        context = { department, label: keyLabel };
+        break;
+      }
       case "mention":
         segments = sentence(
           copy,
@@ -384,23 +408,27 @@ export function toInboxEntries(
     }
 
     const item = detailDto?.item;
+    // The request decides whether the buttons show: while it is pending only.
+    const approvable = entry.approval
+      ? entry.approval.status === "pending"
+      : Boolean(detailDto?.approval);
     const card =
-      entry.type === "approval_requested" && item
+      entry.type === "approval_requested" && (item || entry.approval)
         ? {
             title: target.title,
-            status: item.status
+            status: item?.status
               ? {
                   bucket: item.status.bucket as WorkStatusBucket,
                   label: item.status.label,
                 }
               : undefined,
-            priority: item.priority
+            priority: item?.priority
               ? copy.read.priorities[item.priority]
               : undefined,
-            due: item.dueAt ? shortDate(item.dueAt) : undefined,
-            comments: item.commentCount,
+            due: item?.dueAt ? shortDate(item.dueAt) : undefined,
+            comments: item?.commentCount,
             changes: detailDto?.approval?.changes ?? [],
-            approvable: Boolean(detailDto?.approval),
+            approvable,
           }
         : null;
     const latest =

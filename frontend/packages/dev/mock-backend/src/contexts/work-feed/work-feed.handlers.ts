@@ -210,23 +210,25 @@ export const workFeedOperations = [
 
   // ── Approval decision ────────────────────────────────────────────────────
   defineMockOperation<
-    { id: string },
+    { workspaceId: string; requestId: string },
     { decision?: string; comment?: string | null }
   >({
-    id: "wsFeed.items.approval",
-    contract: { kind: "gap", gapId: MY_WORK_EXT },
+    id: "wsFeed.approvals.decide",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.Approvals.Decide",
+    },
     method: "POST",
-    route: "/board-items/:id/approval",
+    route: "/workspaces/:workspaceId/approvals/:requestId/decision",
     async handle({ params, body, store }) {
+      if (!store.isCurrentMemberOf(params.workspaceId)) return notFound();
       const decision = body?.decision;
-      if (decision !== "approve" && decision !== "request-changes") {
+      if (decision !== "approve" && decision !== "reject") {
         return validationError({
-          decision: ["Use approve or request-changes."],
+          decision: ["The decision must be approve or reject."],
         });
       }
-      return outcome(
-        decideApproval(store, params.id, decision, body?.comment ?? null),
-      );
+      return outcome(decideApproval(store, params.requestId, decision));
     },
   }),
 

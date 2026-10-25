@@ -726,13 +726,11 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
   },
   {
     context: "Workspace",
-    classification: "COMPATIBILITY_GAP_MOCKED",
+    classification: "CANONICAL_MOCKED",
     consumerSymbol: "useDecideApproval",
     consumerFile: "frontend/apps/web/src/shell/workspace/work-feed-bridge.ts",
-    capability: "Approve or ask for changes",
-    gapId: "CTR-GAP-WS-MYWORK-EXT",
-    method: "POST",
-    pathTemplate: "/board-items/{id}/approval",
+    capability: "WorkManagement.Approvals.Decide",
+    operationId: "WorkManagement.Approvals.Decide",
     mutation: true,
   },
   {

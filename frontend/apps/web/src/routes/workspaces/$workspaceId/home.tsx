@@ -220,7 +220,7 @@ export function HomePage() {
           reply.id,
           () =>
             writes.decideApproval({
-              itemId: dto.target.id,
+              requestId: dto.id,
               boardId: dto.target.boardId!,
               decision: "approve",
             }),
@@ -236,9 +236,9 @@ export function HomePage() {
           reply.id,
           () =>
             writes.decideApproval({
-              itemId: dto.target.id,
+              requestId: dto.id,
               boardId: dto.target.boardId!,
-              decision: "request-changes",
+              decision: "reject",
             }),
           formatCopy(copy.home.toasts.changesRequested, {
             name: dto.target.key ?? reply.actorName,

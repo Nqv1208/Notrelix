@@ -26,8 +26,8 @@ import { sectionState } from "@/shell/workspace/section-state";
  * Inbox (Final-Inbox): the member's own notifications in the workspace with
  * the selected entry in the reading pane. The member marks one or all of them
  * read, marks one done (the Done filter lists those), snoozes it until a time,
- * mutes or unmutes its thread and replies on its item. Approving has no
- * contract here yet, so those buttons stay inert.
+ * mutes or unmutes its thread, replies on its item and approves or rejects an
+ * approval request that names them.
  */
 export function InboxPage() {
   const { workspaceId, workspace } = useWorkspaceContext();
@@ -97,12 +97,35 @@ export function InboxPage() {
     [copy],
   );
 
+  const decide = useCallback(
+    (item: InboxItemView, decision: "approve" | "reject") => {
+      const entry = query.data?.items.find(
+        (candidate) => candidate.id === item.id,
+      );
+      if (!entry?.approval || entry.approval.status !== "pending") return;
+      const requestId = entry.approval.requestId;
+      const boardId = entry.target.boardId ?? "";
+      act(
+        item.id,
+        async () => {
+          await writes.decideApproval({ requestId, boardId, decision });
+          // Deciding handles the entry: it is read and no longer waits for the member.
+          await writes.inbox.markRead(item.id);
+        },
+        decision === "approve"
+          ? formatCopy(copy.toasts2.approved, { name: item.person?.name ?? "" })
+          : formatCopy(copy.toasts2.changesRequested, {
+              name: item.person?.name ?? "",
+            }),
+      );
+    },
+    [act, copy, query.data, writes],
+  );
   const actions = useMemo<InboxActions>(
     () => ({
       pendingIds: pending,
-      // Approving has no contract here yet.
-      onApprove: () => undefined,
-      onRequestChanges: () => undefined,
+      onApprove: (item) => decide(item, "approve"),
+      onRequestChanges: (item) => decide(item, "reject"),
       onReply: (item, text) => {
         if (!item.itemId) return;
         const itemId = item.itemId;
@@ -137,7 +160,7 @@ export function InboxPage() {
           item.muted === true ? copy.toasts2.unmuted : copy.toasts2.muted,
         ),
     }),
-    [act, copy, now, pending, writes],
+    [act, copy, decide, now, pending, writes],
   );
 
   const settingsHref = `/workspaces/${encodeURIComponent(workspaceId)}/account/notifications`;

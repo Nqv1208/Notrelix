@@ -21,6 +21,7 @@ const base: InboxEntryDto = {
   type: "approval_requested",
   actor: { id: "u1", name: "Trần Minh Quân" },
   need: "approve",
+  approval: null,
   following: false,
   muted: false,
   done: false,
@@ -153,6 +154,64 @@ describe("unknown and automation notifications", () => {
     expect(entry?.muted).toBe(true);
     expect(entry?.done).toBe(true);
     expect(dto.counts.need).toBe(1);
+  });
+});
+
+describe("approval notifications", () => {
+  const requested = (status: string) =>
+    toInboxDto("w1", {
+      items: [
+        {
+          id: "n6",
+          type: "approval.requested",
+          createdAt: "2026-10-12T03:28:00.000Z",
+          unread: true,
+          actor: { id: "u1", name: "Quân" },
+          excerpt: "Please look",
+          target: { kind: "item", id: "i1", title: "Thiết lập SSO" },
+          approval: { requestId: "r1", status },
+        },
+      ],
+    } as never);
+
+  it("lets the named approver decide while the request is pending", () => {
+    const dto = requested("Pending");
+    expect(dto.items[0]?.type).toBe("approval_requested");
+    expect(dto.items[0]?.need).toBe("approve");
+    expect(dto.items[0]?.approval).toEqual({
+      requestId: "r1",
+      status: "pending",
+    });
+    const [row] = toInboxEntries(dto.items, deps);
+    expect(row?.detail?.card?.approvable).toBe(true);
+  });
+
+  it("offers no decision once the request was decided", () => {
+    const dto = requested("Approved");
+    expect(dto.items[0]?.need).toBeNull();
+    const [row] = toInboxEntries(dto.items, deps);
+    expect(row?.detail?.card?.approvable).toBe(false);
+  });
+
+  it("tells the requester about the decision with the approver's words", () => {
+    const dto = toInboxDto("w1", {
+      items: [
+        {
+          id: "n5",
+          type: "approval.rejected",
+          createdAt: "2026-10-12T03:28:00.000Z",
+          unread: true,
+          actor: { id: "u2", name: "Lan" },
+          excerpt: "Needs a budget",
+          target: { kind: "item", id: "i1", title: "Thiết lập SSO" },
+        },
+      ],
+    } as never);
+    expect(dto.items[0]?.type).toBe("approval_rejected");
+    const [row] = toInboxEntries(dto.items, deps);
+    expect(row?.segments.map((s) => s.text).join("")).toBe(
+      "Lan yêu cầu sửa Thiết lập SSO: “Needs a budget”",
+    );
   });
 });
 

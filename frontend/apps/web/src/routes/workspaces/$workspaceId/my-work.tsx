@@ -207,33 +207,45 @@ export function MyWorkPage() {
       ),
     [copy, run, writes],
   );
+  const approvalRequestOf = useCallback(
+    (itemId: string) =>
+      query.data?.items.find((entry) => entry.id === itemId)?.approval
+        ?.requestId ?? null,
+    [query.data],
+  );
   const actions = useMemo<MyWorkActions>(
     () => ({
       pendingIds,
-      onApprove: (item) =>
+      onApprove: (item) => {
+        const requestId = approvalRequestOf(item.id);
+        if (!requestId) return;
         void run(
           [item.id],
           () =>
             writes.decideApproval({
-              itemId: item.id,
+              requestId,
               boardId: item.boardId,
               decision: "approve",
             }),
           formatCopy(copy.toasts.approved, { name: item.key ?? item.name }),
-        ),
-      onRequestChanges: (item) =>
+        );
+      },
+      onRequestChanges: (item) => {
+        const requestId = approvalRequestOf(item.id);
+        if (!requestId) return;
         void run(
           [item.id],
           () =>
             writes.decideApproval({
-              itemId: item.id,
+              requestId,
               boardId: item.boardId,
-              decision: "request-changes",
+              decision: "reject",
             }),
           formatCopy(copy.toasts.changesRequested, {
             name: item.key ?? item.name,
           }),
-        ),
+        );
+      },
       onReopen: (item) =>
         void run(
           [item.id],

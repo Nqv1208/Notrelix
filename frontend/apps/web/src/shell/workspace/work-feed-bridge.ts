@@ -67,6 +67,7 @@ export interface MyWorkItemExtDto {
   readonly relations: readonly MyWorkRelationDto[];
   readonly assignee: PersonDto | null;
   readonly approval: {
+    readonly requestId: string;
     readonly requestedBy: PersonDto;
     readonly requestedAt: string;
   } | null;
@@ -126,6 +127,8 @@ export interface HomeFeedDto {
 
 export type InboxTypeDto =
   | "approval_requested"
+  | "approval_approved"
+  | "approval_rejected"
   | "mention"
   | "overdue"
   | "assigned"
@@ -166,6 +169,11 @@ export interface InboxEntryDto {
   readonly type: InboxTypeDto;
   readonly actor: PersonDto | null;
   readonly need: "approve" | "reply" | "overdue" | null;
+  /** The approval request an "approval requested" entry is about, and where it stands. */
+  readonly approval: {
+    readonly requestId: string;
+    readonly status: "pending" | "approved" | "rejected" | "cancelled";
+  } | null;
   readonly following: boolean;
   readonly muted: boolean;
   /** The member marked it done; only the Done list holds such entries. */
@@ -305,8 +313,12 @@ function toExtItem(
     ),
     assignee: toPerson(raw.assignee),
     approval:
-      requestedBy && raw.approval?.requestedAt
-        ? { requestedBy, requestedAt: raw.approval.requestedAt }
+      requestedBy && raw.approval?.requestId && raw.approval.requestedAt
+        ? {
+            requestId: raw.approval.requestId,
+            requestedBy,
+            requestedAt: raw.approval.requestedAt,
+          }
         : null,
     completedAt: raw.completedAt ?? null,
   };
@@ -412,7 +424,8 @@ const path = {
     `/workspaces/${workspaceId}/my-work/bulk`,
   myWorkItems: (workspaceId: string) =>
     `/workspaces/${workspaceId}/my-work/items`,
-  approval: (itemId: string) => `/board-items/${itemId}/approval`,
+  approvalDecision: (workspaceId: string, requestId: string) =>
+    `/workspaces/${workspaceId}/approvals/${requestId}/decision`,
   reopen: (itemId: string) => `/board-items/${itemId}/reopen`,
   statusBucket: (itemId: string) => `/board-items/${itemId}/status-bucket`,
   following: (itemId: string) => `/board-items/${itemId}/following`,
@@ -512,7 +525,17 @@ const INBOX_TYPES: Readonly<Record<string, InboxTypeDto>> = {
   "work.item.automation": "automation",
   "work.item.due-tomorrow": "due_tomorrow",
   "work.item.overdue": "overdue",
+  "approval.requested": "approval_requested",
+  "approval.approved": "approval_approved",
+  "approval.rejected": "approval_rejected",
 };
+
+const APPROVAL_STATUSES = {
+  pending: "pending",
+  approved: "approved",
+  rejected: "rejected",
+  cancelled: "cancelled",
+} as const;
 
 /**
  * The producer's notifications as the Inbox page lists them. A type this
@@ -527,6 +550,16 @@ export function toInboxDto(
 ): InboxDto {
   const items = (dto?.items ?? []).map((entry): InboxEntryDto => {
     const type = INBOX_TYPES[entry.type ?? ""] ?? "system";
+    const status =
+      APPROVAL_STATUSES[
+        (
+          entry.approval?.status ?? ""
+        ).toLowerCase() as keyof typeof APPROVAL_STATUSES
+      ];
+    const approval =
+      entry.approval?.requestId && status
+        ? { requestId: entry.approval.requestId, status }
+        : null;
     return {
       id: entry.id ?? "",
       createdAt: entry.createdAt ?? "",
@@ -538,9 +571,12 @@ export function toInboxDto(
       need:
         entry.needsReply === true
           ? "reply"
-          : type === "overdue"
-            ? "overdue"
-            : null,
+          : type === "approval_requested" && approval?.status === "pending"
+            ? "approve"
+            : type === "overdue"
+              ? "overdue"
+              : null,
+      approval,
       following: type.startsWith("followed_"),
       muted: entry.muted === true,
       done: view === "done",
@@ -656,9 +692,9 @@ function attemptKey(): string {
 
 export interface WorkFeedWrites {
   readonly decideApproval: (input: {
-    itemId: string;
+    requestId: string;
     boardId: string;
-    decision: "approve" | "request-changes";
+    decision: "approve" | "reject";
     comment?: string;
   }) => Promise<void>;
   readonly reopen: (input: {
@@ -741,11 +777,11 @@ export function useWorkFeedWrites(workspaceId: string): WorkFeedWrites {
 
   return useMemo<WorkFeedWrites>(
     () => ({
-      decideApproval: ({ itemId, boardId, decision, comment }) =>
+      decideApproval: ({ requestId, boardId, decision, comment }) =>
         perform(
           () =>
             api.post<void>(
-              path.approval(itemId),
+              path.approvalDecision(workspaceId, requestId),
               { decision, comment: comment ?? null },
               { idempotencyKey: attemptKey(), ...QUIET },
             ),
