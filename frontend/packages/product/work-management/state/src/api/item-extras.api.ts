@@ -1,4 +1,31 @@
 import type { NotrelixClient } from "@notrelix/contracts";
+import { endpoints } from "@notrelix/contracts";
+
+/** A member of the workspace (`Workspaces.Members.ListMembers`). */
+interface WorkspaceMember {
+  readonly userId?: string;
+  readonly name?: string | null;
+  readonly status?: string | null;
+}
+
+/** A member of the board (`WorkManagement.Boards.GetOverview`). */
+interface BoardMember {
+  readonly userId?: string;
+  readonly role?: string | null;
+}
+
+/** What a board role lets the person do, or null for a role this page does not know. */
+function boardLevel(
+  role: string | null | undefined,
+): PeopleDirectoryDto["people"][number]["level"] {
+  const name = (role ?? "").trim().toLowerCase();
+  return name === "manager" ||
+    name === "editor" ||
+    name === "commenter" ||
+    name === "viewer"
+    ? name
+    : null;
+}
 
 /**
  * Item sheet reads and writes beyond the generated contract (gap
@@ -188,29 +215,42 @@ export function createItemExtrasApi(client: NotrelixClient) {
         { idempotencyKey: key(), ...quiet },
       );
     },
-    async reopenItem(itemId: string): Promise<void> {
-      await api.post<void>(
-        `/board-items/${itemId}/reopen`,
-        {},
-        { idempotencyKey: key(), ...quiet },
-      );
-    },
-    async getPeopleDirectory(boardId: string): Promise<PeopleDirectoryDto> {
-      const dto = await api.get<Partial<PeopleDirectoryDto> | null>(
-        `/boards/${boardId}/people-directory`,
+    /**
+     * The members of the workspace and which of them see the board, read from
+     * the workspace members and the board itself. The producer has no
+     * department, open-item count or team roll-up, so those stay empty;
+     * adding a person to the board is the board's share dialog.
+     */
+    async getPeopleDirectory(
+      boardId: string,
+      workspaceId: string,
+    ): Promise<PeopleDirectoryDto> {
+      const [members, board] = await Promise.all([
+        api.get<WorkspaceMember[]>(endpoints.workspaces.members(workspaceId)),
+        api.get<{ members?: BoardMember[] | null }>(
+          endpoints.boards.full(boardId),
+        ),
+      ]);
+      const onBoard = new Map(
+        (board.members ?? []).map((member) => [
+          member.userId ?? "",
+          boardLevel(member.role),
+        ]),
       );
       return {
-        people: dto?.people ?? [],
-        teams: dto?.teams ?? [],
-        canInvite: dto?.canInvite === true,
+        people: (members ?? [])
+          .filter((member) => member.status?.toLowerCase() !== "suspended")
+          .map((member) => ({
+            userId: member.userId ?? "",
+            name: member.name ?? "",
+            department: null,
+            openCount: 0,
+            onBoard: onBoard.has(member.userId ?? ""),
+            level: onBoard.get(member.userId ?? "") ?? null,
+          })),
+        teams: [],
+        canInvite: false,
       };
-    },
-    async invitePerson(boardId: string, userId: string): Promise<void> {
-      await api.post<void>(
-        `/boards/${boardId}/people-directory/invitations`,
-        { userId },
-        { idempotencyKey: key(), ...quiet },
-      );
     },
     async setFollowing(itemId: string, following: boolean): Promise<void> {
       if (following)

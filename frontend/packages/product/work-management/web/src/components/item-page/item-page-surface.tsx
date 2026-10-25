@@ -320,16 +320,19 @@ export function ItemPageSurface({
                   copy={copy}
                   editable={capabilities.canEditFields}
                 />
-                <ItemPageChildItems
-                  card={card}
-                  items={detailData.childItems}
-                  capabilities={capabilities}
-                  callbacks={callbacks}
-                  copy={copy}
-                  now={now}
-                  timeZone={timeZone}
-                  pending={offline?.childItems === true}
-                />
+                {detailData.childItems !== undefined ||
+                callbacks.onAddChildItem ? (
+                  <ItemPageChildItems
+                    card={card}
+                    items={detailData.childItems}
+                    capabilities={capabilities}
+                    callbacks={callbacks}
+                    copy={copy}
+                    now={now}
+                    timeZone={timeZone}
+                    pending={offline?.childItems === true}
+                  />
+                ) : null}
                 <div className="grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-6">
                   <ItemPageLinks
                     links={detailData.links}

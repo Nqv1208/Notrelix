@@ -10,11 +10,9 @@ import {
   useDeleteCardUpdate,
   useDuplicateCard,
   useFullBoard,
-  useItemChildItems,
   useItemFileUploads,
   canRetryItemFileUpload,
   useWorkManagementServices,
-  useItemFollowing,
   useItemLifecycle,
   usePeopleDirectory,
   useOfflineWrites,
@@ -27,7 +25,6 @@ import {
 import {
   groupCardsByStatus,
   MAX_ITEM_FILE_BYTES,
-  personInitials,
   type Board,
   type CardDetail,
   type CardFile,
@@ -279,8 +276,6 @@ function ItemPageReady({
   const createUpdate = useCreateCardUpdate(card.id, card.workspaceId);
   const updateUpdate = useUpdateCardUpdate(card.id, card.workspaceId);
   const deleteUpdate = useDeleteCardUpdate(card.id, card.workspaceId);
-  const children = useItemChildItems(card.id, card.workspaceId, card.boardId);
-  const follow = useItemFollowing(card.id, card.workspaceId);
   const links = useItemLinks(card.id, card.workspaceId, card.boardId);
   const uploads: ItemPageUpload[] = fileUploads.uploads.map((upload) => ({
     ...upload,
@@ -302,17 +297,14 @@ function ItemPageReady({
         }),
       );
   };
-  const { lifecycle, restore, reopen } = useItemLifecycle(
+  const { lifecycle, restore } = useItemLifecycle(
     card.id,
     card.workspaceId,
     card.boardId,
   );
   // Writes the network holds back: what the offline notice counts and marks.
   const { online, paused } = useOfflineWrites();
-  const { directory, invitePerson } = usePeopleDirectory(
-    card.boardId,
-    card.workspaceId,
-  );
+  const { directory } = usePeopleDirectory(card.boardId, card.workspaceId);
 
   // The write the server refused, kept so the viewer can send it again.
   const [refused, setRefused] = useState<RefusedWrite | null>(null);
@@ -496,9 +488,8 @@ function ItemPageReady({
     onClose: onBack,
     onRenameTitle: (cardId, patch) => updateCard.mutate({ cardId, patch }),
     onUpdateItem: patchItem,
-    onToggleWatch: (watched) => follow.setFollowing(watched),
-    onToggleChildItem: (childId, done) => children.toggle({ childId, done }),
-    onAddChildItem: (title) => children.addChild(title),
+    // Following and sub-items have no producer yet: the page offers neither.
+    onToggleWatch: () => undefined,
     onAddLink: (itemId, relation) => links.addLink({ itemId, relation }),
     onRemoveLink: (linkId) => links.removeLink(linkId),
     onAddFile: fileUploads.start,
@@ -578,12 +569,11 @@ function ItemPageReady({
         teams: directory?.teams ?? [],
         loading: directory === null,
         canInvite: directory?.canInvite === true,
-        onInvite: (userId) => invitePerson(userId),
+        onInvite: () => undefined,
       }}
       lifecycle={{
         completed: isItemDone(card) ? (lifecycle?.completed ?? null) : null,
         archived: lifecycle?.archived ?? null,
-        onReopen: () => reopen(),
         onRestore: () => restore(),
       }}
       onResolveConflict={(choice) => {
@@ -601,16 +591,6 @@ function ItemPageReady({
         activityFetching: activity.isFetching,
         updates: updates.data ?? card.updates,
         updatesLoading: updates.isLoading,
-        childItems: children.data?.map((child) => ({
-          ...child,
-          itemKey: child.key,
-        })),
-        following: follow.following,
-        followers: follow.followers.map((person) => ({
-          userId: person.userId,
-          name: person.name,
-          initials: personInitials(person.name),
-        })),
         links: links.data,
         linkCandidates,
       }}
