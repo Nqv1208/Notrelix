@@ -93,6 +93,10 @@ app.UseExceptionHandler();
 // 3. Correlation ID (request tracing)
 app.UseMiddleware<CorrelationIdMiddleware>();
 
+// 3b. CORS (before CSRF and rate limiting, so their 4xx answers carry the CORS headers and the
+// browser lets the frontend read the problem instead of reporting an opaque network failure)
+app.UseCors("Frontend");
+
 // 4. CSRF validation (before rate limiting, after correlation)
 app.UseMiddleware<CsrfValidationMiddleware>();
 
@@ -114,9 +118,6 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
-// 8. CORS
-app.UseCors("Frontend");
 
 // 9. HTTPS redirection (conditional)
 if (app.Configuration.GetValue<bool>("HttpsRedirection:Enabled"))
