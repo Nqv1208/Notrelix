@@ -313,11 +313,7 @@ export function ItemPageSurface({
                   />
                 ) : null}
                 {!capabilities.canEditFields && !archived ? (
-                  <ItemPageReadOnlyNotice
-                    access={access}
-                    copy={copy}
-                    timeZone={timeZone}
-                  />
+                  <ItemPageReadOnlyNotice access={access} copy={copy} />
                 ) : null}
                 <ItemPageDescription
                   card={card}

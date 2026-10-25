@@ -1404,7 +1404,6 @@ export class MockStore {
         userId: ERP_COMMENTER.id,
         level: "commenter",
         grantedByUserId: ERP_PEOPLE.HP.id,
-        expiresAt: "2026-12-31T16:59:59.000Z",
       },
       // Đặng Minh Tuấn, from a partner company, edits here until 31/01/2027.
       {
@@ -1412,7 +1411,6 @@ export class MockStore {
         userId: ERP_PEOPLE.DT.id,
         level: "editor",
         grantedByUserId: ERP_PEOPLE.HP.id,
-        expiresAt: "2027-01-31T16:59:59.000Z",
       },
       // The viewer persona (a workspace guest) can only view this board.
       {
@@ -1526,7 +1524,6 @@ export class MockStore {
           grantLevel: "viewer",
           memberRole: null,
           guest: false,
-          expiresAt: null,
           owner: false,
           addedAt: "2026-08-20T02:00:00.000Z",
         },

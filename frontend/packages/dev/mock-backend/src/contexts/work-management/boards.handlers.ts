@@ -406,7 +406,6 @@ function projectBoardAccess(
         level: grant.level as AccessLevel,
         kind: role === "guest" ? "guest" : "explicit",
         grantedBy: grantor ? { userId: grantor.id, name: grantor.name } : null,
-        expiresAt: grant.expiresAt ?? null,
       }
     : null;
 
@@ -482,9 +481,6 @@ function projectBoardAccess(
       kind: chosen.kind,
       ...("grantedBy" in chosen && chosen.grantedBy
         ? { grantedBy: chosen.grantedBy }
-        : {}),
-      ...("expiresAt" in chosen && chosen.expiresAt
-        ? { expiresAt: chosen.expiresAt }
         : {}),
     },
     peopleCount: sources.reduce((sum, source) => sum + source.count, 0),

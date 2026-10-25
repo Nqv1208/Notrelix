@@ -565,7 +565,6 @@ function ItemPageReady({
           ? {
               level: access.myLevel,
               grantedBy: access.mySource.grantedBy?.name,
-              expiresAt: access.mySource.expiresAt,
             }
           : null
       }

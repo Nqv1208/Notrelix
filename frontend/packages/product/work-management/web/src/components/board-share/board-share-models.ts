@@ -33,7 +33,6 @@ export interface ShareRowView {
   readonly fixed: boolean;
   readonly badge: "guest" | "outside" | null;
   /** "31/01/2027"; `null` when the entry does not expire or the read has none. */
-  readonly expires: string | null;
 }
 
 export type ShareGeneral =
@@ -152,7 +151,6 @@ export function buildShareRows(
       level: levelOfBoardRole(member.role),
       fixed: member.role === "owner",
       badge: null,
-      expires: null,
     });
   }
   for (const source of access?.sources ?? []) {
@@ -167,7 +165,6 @@ export function buildShareRows(
         level: null,
         fixed: false,
         badge: null,
-        expires: null,
       });
     } else if (source.kind === "user" && source.name) {
       if (source.id && seen.has(source.id)) continue;
@@ -186,7 +183,6 @@ export function buildShareRows(
         level: null,
         fixed: false,
         badge: null,
-        expires: null,
       });
     } else if (source.kind === "guest") {
       rows.push({
@@ -206,7 +202,6 @@ export function buildShareRows(
         level: null,
         fixed: false,
         badge: "guest",
-        expires: null,
       });
     }
   }
@@ -577,7 +572,6 @@ export function buildSharingRows(
       level: shareLevelOf(entry.level),
       fixed: entry.owner || entry.you,
       badge: entry.kind === "guest" ? "outside" : null,
-      expires: null,
     } satisfies ShareRowView;
   });
 }

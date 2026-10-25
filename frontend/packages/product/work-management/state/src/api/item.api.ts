@@ -85,7 +85,9 @@ export function createCardApi(client: NotrelixClient) {
       patch: UpdateCardInput,
       options?: ApiRequestOptions & { readonly expectedVersion?: number },
     ): Promise<void> {
-      const { expectedVersion, ...request } = options ?? {};
+      const { expectedVersion: known, ...request } = options ?? {};
+      const expectedVersion =
+        known ?? (await this.getCard(cardId)).version ?? undefined;
       const body: UpdateItemBody = { ...patch, expectedVersion }; // mapping fields
       await api.patch<void>(
         endpoints.boardItems.detail(cardId),

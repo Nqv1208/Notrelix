@@ -139,7 +139,6 @@ describe("toBoardSharingData", () => {
           source: "both",
           permissionId: "perm-1",
           memberRole: "Guest",
-          expiresAt: null,
         } as never,
       ],
       log: [
@@ -210,7 +209,7 @@ describe("buildSharingRows", () => {
       ],
     ]);
     expect(rows[0]).toMatchObject({ fixed: true, badge: null });
-    expect(rows[3]).toMatchObject({ badge: "outside", expires: null });
+    expect(rows[3]).toMatchObject({ badge: "outside" });
   });
 });
 

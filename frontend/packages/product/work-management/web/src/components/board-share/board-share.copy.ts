@@ -61,7 +61,6 @@ export const en = {
     guests: "{{count}} guests",
     guestOnly: "guest, sees only this Board",
     outside: "Outside the company",
-    expires: "access ends {{date}}",
     levelCapped: "a guest is capped at Can edit",
     counts:
       "{{people}} people and {{guests}} guests can open this Board. Only Board members and managers see who.",
@@ -76,7 +75,6 @@ export const en = {
   },
   menu: {
     label: "Permission of {{name}}",
-    expiry: "Access ends",
     remove: "Remove access",
     removeHint: "{{name}} no longer sees this Board",
   },
@@ -194,7 +192,6 @@ export const vi: BoardShareCopy = {
     guests: "{{count}} khách",
     guestOnly: "khách, chỉ thấy board này",
     outside: "Ngoài công ty",
-    expires: "hết quyền {{date}}",
     levelCapped: "khách tối đa Có thể sửa",
     counts:
       "{{people}} người và {{guests}} khách mở được board này. Chỉ thành viên và người quản lý board thấy là ai.",
@@ -209,7 +206,6 @@ export const vi: BoardShareCopy = {
   },
   menu: {
     label: "Quyền của {{name}}",
-    expiry: "Hết quyền",
     remove: "Gỡ quyền",
     removeHint: "{{name}} không còn thấy board này",
   },

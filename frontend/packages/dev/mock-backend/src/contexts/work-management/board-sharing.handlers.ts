@@ -162,7 +162,6 @@ export const boardSharingOperations = [
           grantLevel: null,
           memberRole: "Member",
           guest: false,
-          expiresAt: null,
           owner: false,
           addedAt: store.getClock().isoNow(),
         };
@@ -294,7 +293,6 @@ export const boardSharingOperations = [
         grantLevel: level,
         memberRole: null,
         guest: false,
-        expiresAt: null,
         owner: false,
         addedAt: store.getClock().isoNow(),
       };

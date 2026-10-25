@@ -42,7 +42,6 @@ function row(
     level: null,
     fixed: false,
     badge: null,
-    expires: null,
     ...over,
   };
 }
@@ -69,7 +68,6 @@ export const MOCKUP_ROWS: ShareRowView[] = [
     person: KL,
     detail: "Phòng Kế toán · ngoài phòng Công nghệ",
     level: "comment",
-    expires: "31/12/2026",
   }),
   row({
     id: "u-tuan",
@@ -79,7 +77,6 @@ export const MOCKUP_ROWS: ShareRowView[] = [
     detail: "tuan@doitac-erp.vn · khách, chỉ thấy board này",
     level: "edit",
     badge: "outside",
-    expires: "31/01/2027",
   }),
   row({
     id: "u-ha",
@@ -191,7 +188,7 @@ export function shareProducedOnlyScenario(): BoardShareScenario {
     view: {
       ...VIEW,
       rows: MOCKUP_ROWS.map((entry) =>
-        entry.fixed ? entry : { ...entry, level: null, expires: null },
+        entry.fixed ? entry : { ...entry, level: null },
       ),
     },
     log: null,

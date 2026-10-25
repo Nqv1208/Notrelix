@@ -208,10 +208,14 @@ describe("BoardCalendarView on the ERP board", () => {
     fireEvent.dragOver(target, { dataTransfer: dataTransfer() });
     fireEvent.drop(target, { dataTransfer: dataTransfer() });
     await waitFor(() => expect(cards.updateCard).toHaveBeenCalledTimes(1));
-    expect(cards.updateCard).toHaveBeenCalledWith(erpItemId("ERP-146"), {
-      dueDate: "2026-10-20T10:00:00.000Z",
-      startDate: "2026-10-17T02:00:00.000Z",
-    });
+    expect(cards.updateCard).toHaveBeenCalledWith(
+      erpItemId("ERP-146"),
+      {
+        dueDate: "2026-10-20T10:00:00.000Z",
+        startDate: "2026-10-17T02:00:00.000Z",
+      },
+      expect.objectContaining({ expectedVersion: expect.any(Number) }),
+    );
   });
 
   it("puts the item back and says so when the write fails", async () => {
@@ -249,9 +253,11 @@ describe("BoardCalendarView on the ERP board", () => {
     fireEvent.dragOver(target, { dataTransfer: dataTransfer() });
     fireEvent.drop(target, { dataTransfer: dataTransfer() });
     await waitFor(() => expect(cards.updateCard).toHaveBeenCalledTimes(1));
-    expect(cards.updateCard).toHaveBeenLastCalledWith(erpItemId("ERP-153"), {
-      dueDate: "2026-10-22T10:00:00.000Z",
-    });
+    expect(cards.updateCard).toHaveBeenLastCalledWith(
+      erpItemId("ERP-153"),
+      { dueDate: "2026-10-22T10:00:00.000Z" },
+      expect.objectContaining({ expectedVersion: expect.any(Number) }),
+    );
   });
 
   it("creates an item with its due day from the quick create", async () => {

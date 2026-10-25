@@ -48,8 +48,6 @@ export interface MockShareEntry {
   memberRole: MockBoardRoleName | null;
   /** A Workspace Guest (a membership fact, never an email domain). */
   guest: boolean;
-  /** Kept for the department pages; the sharing read always answers null. */
-  expiresAt: string | null;
   owner: boolean;
   addedAt: string;
 }
@@ -149,7 +147,6 @@ export function seedErpSharing(sharing: MockBoardSharing): void {
       grantLevel: over.memberRole ? null : over.level,
       memberRole: null,
       guest: false,
-      expiresAt: null,
       owner: false,
       addedAt: at,
       ...over,
@@ -175,14 +172,12 @@ export function seedErpSharing(sharing: MockBoardSharing): void {
         kind: "person",
         userId: mockIds.users.commenter,
         level: "commenter",
-        expiresAt: "2026-12-31T16:59:59.000Z",
       }),
       entry("share-dt", {
         kind: "person",
         userId: ERP_PEOPLE.DT.id,
         level: "editor",
         guest: true,
-        expiresAt: "2027-01-31T16:59:59.000Z",
       }),
       entry("share-ha", {
         kind: "person",
@@ -277,7 +272,6 @@ export function boardSharing(
     const base = {
       owner: item.owner,
       level: item.level,
-      expiresAt: null,
       addedAt: item.addedAt,
       permissionId: item.grantLevel === null ? null : item.id,
       memberRole: item.memberRole,

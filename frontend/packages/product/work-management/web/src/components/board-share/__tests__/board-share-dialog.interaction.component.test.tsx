@@ -51,7 +51,7 @@ describe("BoardShareDialogSurface", () => {
     ).toBeTruthy();
     expect(within(dialog).getByText("Nguyễn Thu Hà")).toBeTruthy();
     expect(within(dialog).getByText("Ngoài công ty")).toBeTruthy();
-    expect(within(dialog).getByText(/hết quyền 31\/01\/2027/)).toBeTruthy();
+    expect(within(dialog).queryByText(/hết quyền/)).toBeNull();
     expect(within(dialog).getByText(copy.link.publicOff)).toBeTruthy();
   });
 
@@ -100,7 +100,7 @@ describe("BoardShareDialogSurface", () => {
       "false",
     ]);
     expect(items[3]?.getAttribute("aria-disabled")).toBe("true");
-    expect(within(menu).getByText("31/01/2027")).toBeTruthy();
+    expect(within(menu).queryByText("31/01/2027")).toBeNull();
     fireEvent.click(items[3]!);
     expect(onChangeLevel).not.toHaveBeenCalled();
     fireEvent.keyDown(menu, { key: "ArrowUp" });

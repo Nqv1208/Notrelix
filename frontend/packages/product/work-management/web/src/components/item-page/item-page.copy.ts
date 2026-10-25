@@ -176,7 +176,6 @@ export const en = {
   readOnly: {
     body: "You have {{level}} access on this board{{source}}.",
     source: ", added by {{name}}",
-    expires: ", expires {{date}}",
     detail:
       " You can read, comment and send a file with a comment. Only people with edit access change the properties, sub-items and files of the item.",
     levels: {
@@ -550,7 +549,6 @@ export const vi: ItemPageCopy = {
   readOnly: {
     body: "Bạn có quyền {{level}} trên board này{{source}}.",
     source: ", được {{name}} thêm riêng",
-    expires: ", hết hạn {{date}}",
     detail:
       " Bạn xem, bình luận và gửi tệp kèm bình luận được. Thuộc tính, việc con và danh sách tệp của việc chỉ người có quyền sửa thay đổi được.",
     levels: {

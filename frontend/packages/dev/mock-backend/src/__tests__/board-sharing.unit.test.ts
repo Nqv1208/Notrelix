@@ -58,19 +58,14 @@ describe("Board sharing in the mock world (WorkManagement.Boards.GetSharing)", (
       kind: "person",
       outsideSpace: true,
       level: "commenter",
-      expiresAt: null,
     });
     expect(tuan).toMatchObject({
       kind: "guest",
       level: "editor",
       levelCapped: false,
       email: null,
-      expiresAt: null,
     });
     expect(ha).toMatchObject({ you: true, memberRole: "Admin" });
-    expect(sharing.entries!.every((entry) => entry.expiresAt === null)).toBe(
-      true,
-    );
   });
 
   it("shows the email to a workspace Owner or Admin, never of a Guest", () => {

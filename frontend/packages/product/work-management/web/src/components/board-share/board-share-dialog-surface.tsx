@@ -16,7 +16,6 @@ import {
   UserPlus,
   X,
   ArrowLeft,
-  Calendar,
 } from "lucide-react";
 import {
   cn,
@@ -597,12 +596,7 @@ function PersonRow({
   const p = copy.people;
   const trigger = useRef<HTMLButtonElement>(null);
   const level = row.level ? copy.levels[row.level] : null;
-  const detail = [
-    row.detail,
-    row.expires ? fill(p.expires, { date: row.expires }) : null,
-  ]
-    .filter(Boolean)
-    .join(" · ");
+  const detail = row.detail ?? "";
   const editable = Boolean(onChangeLevel) && !row.fixed && row.level !== null;
   return (
     <div
@@ -832,22 +826,6 @@ function LevelMenu({
         );
       })}
       <div data-f="lsep" role="separator" className="my-1 h-px bg-line" />
-      {row.expires ? (
-        <div
-          data-f="exp"
-          className="mx-1 flex items-center gap-2 px-3 py-2 text-compact leading-[1.45]"
-        >
-          <Calendar
-            aria-hidden="true"
-            className="size-4 text-meta-foreground"
-            strokeWidth={1.8}
-          />
-          {copy.menu.expiry}
-          <span className="ml-auto text-crumb font-medium text-foreground">
-            {row.expires}
-          </span>
-        </div>
-      ) : null}
       <div
         data-f="lo"
         role="menuitem"

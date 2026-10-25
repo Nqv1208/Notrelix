@@ -246,10 +246,14 @@ describe("BoardTimelineView on the ERP board", () => {
     )[1]!;
     fireEvent.keyDown(title, { key: "ArrowRight", altKey: true });
     await waitFor(() => expect(cards.updateCard).toHaveBeenCalledTimes(1));
-    expect(cards.updateCard).toHaveBeenLastCalledWith(erpItemId("ERP-146"), {
-      dueDate: "2026-10-17T10:00:00.000Z",
-      startDate: "2026-10-14T02:00:00.000Z",
-    });
+    expect(cards.updateCard).toHaveBeenLastCalledWith(
+      erpItemId("ERP-146"),
+      {
+        dueDate: "2026-10-17T10:00:00.000Z",
+        startDate: "2026-10-14T02:00:00.000Z",
+      },
+      expect.objectContaining({ expectedVersion: expect.any(Number) }),
+    );
     // Alt and Shift change only the due day (the fake board does not keep the
     // first write, so it shifts from 16/10 again).
     fireEvent.keyDown(title, {
