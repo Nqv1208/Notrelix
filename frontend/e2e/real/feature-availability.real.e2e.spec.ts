@@ -47,7 +47,7 @@ test("billing shows what the workspace's billing grants, with the seeded limit a
   expect(errors).toEqual([]);
 });
 
-test("integrations and reports say they are not available yet instead of an error", async ({
+test("integrations say they are not available yet instead of an error", async ({
   page,
 }) => {
   await signIn(page, realUsers.workspaceAdmin);
@@ -61,11 +61,6 @@ test("integrations and reports say they are not available yet instead of an erro
   await page.goto(`/workspaces/${workspace.id}/integrations`);
   await expect(
     page.getByRole("heading", { name: "Integrations are not available yet" }),
-  ).toBeVisible();
-
-  await page.goto(`/workspaces/${workspace.id}/reports`);
-  await expect(
-    page.getByRole("heading", { name: "Reports are not available yet" }),
   ).toBeVisible();
 
   expect(errors).toEqual([]);

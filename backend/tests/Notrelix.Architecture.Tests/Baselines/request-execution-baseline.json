@@ -75,6 +75,56 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.Analytics.Reports.Queries.GetBoardReport.GetBoardReportQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IResourceScopedRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Analytics.Reports.Queries.GetBoardReport.GetBoardReportQueryHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Analytics.Reports.Queries.GetWorkspaceReport.GetWorkspaceReportQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Analytics.Reports.Queries.GetWorkspaceReport.GetWorkspaceReportQueryHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.Automation.Executions.Commands.HandleN8nCallback.HandleN8nCallbackCommand",
     "kind": "Command",
     "principalMarkers": [

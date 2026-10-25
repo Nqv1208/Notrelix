@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
 import { BillingCapabilitiesSurface } from "../billing/billing-capabilities-surface";
+import { WorkReportSurface } from "../reports/work-report-surface";
 import { vi as copy } from "./feature-availability.copy";
 import { FeatureUnavailableSurface } from "./feature-unavailable-surface";
 
@@ -162,4 +163,89 @@ export const CapabilitiesWithPlan: Story = {
     </Page>
   ),
   tags: ["fui-surface--workspace.billing-capabilities", "fui-state--Default"],
+};
+
+const REPORT = {
+  total: 42,
+  open: 27,
+  done: 15,
+  overdue: 4,
+  byStatus: [
+    { optionId: null, name: null, color: null, category: "Todo", count: 12 },
+    {
+      optionId: null,
+      name: null,
+      color: null,
+      category: "InProgress",
+      count: 11,
+    },
+    { optionId: null, name: null, color: null, category: "Review", count: 4 },
+    { optionId: null, name: null, color: null, category: "Done", count: 15 },
+  ],
+  byAssignee: [
+    { userId: "u1", name: "Minh Anh", items: 18, open: 11, overdue: 3 },
+    { userId: "u2", name: "Quốc Hưng", items: 14, open: 9, overdue: 1 },
+    { userId: null, name: null, items: 10, open: 7, overdue: 0 },
+  ],
+  completedPerWeek: [2, 3, 1, 4, 2, 0, 5, 3].map((completed, i) => ({
+    weekStart: new Date(Date.UTC(2026, 8, 7 + i * 7)).toISOString(),
+    completed,
+  })),
+  averageCompletionSeconds: 4.5 * 86_400,
+};
+const scope = {
+  boards: [
+    { id: "b1", title: "Roadmap" },
+    { id: "b2", title: "Vận hành" },
+  ],
+  boardId: null,
+  spaces: [{ id: "s1", name: "Phòng Công nghệ" }],
+  spaceId: null,
+};
+const workReport = (
+  state: Parameters<typeof WorkReportSurface>[0]["state"],
+) => (
+  <Page>
+    <WorkReportSurface
+      copy={copy}
+      state={state}
+      scope={scope}
+      onBoard={noop}
+      onSpace={noop}
+      onRetry={noop}
+    />
+  </Page>
+);
+
+export const WorkReportDefault: Story = {
+  render: () => workReport({ status: "ready", data: REPORT }),
+  tags: ["fui-surface--workspace.work-report", "fui-state--Default"],
+};
+export const WorkReportLoading: Story = {
+  render: () => workReport({ status: "loading" }),
+  tags: ["fui-surface--workspace.work-report", "fui-state--Loading"],
+};
+export const WorkReportError: Story = {
+  render: () => workReport({ status: "error" }),
+  tags: ["fui-surface--workspace.work-report", "fui-state--Error"],
+};
+export const WorkReportEmpty: Story = {
+  render: () =>
+    workReport({
+      status: "ready",
+      data: {
+        ...REPORT,
+        total: 0,
+        open: 0,
+        done: 0,
+        overdue: 0,
+        byAssignee: [],
+        averageCompletionSeconds: null,
+      },
+    }),
+  tags: ["fui-surface--workspace.work-report", "fui-state--Empty"],
+};
+export const WorkReportForbidden: Story = {
+  render: () => workReport({ status: "forbidden" }),
+  tags: ["fui-surface--workspace.work-report", "fui-state--PermissionLimited"],
 };
