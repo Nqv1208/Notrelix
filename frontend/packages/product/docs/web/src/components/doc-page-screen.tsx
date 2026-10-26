@@ -74,6 +74,7 @@ import type {
   DocTaskRef,
   DocTaskResolution,
   DocPerson,
+  DocMarkTargets,
 } from "./doc-page-models";
 import { isRestrictedTask } from "./doc-page-models";
 import { readImportFile } from "../import/read-import-file";
@@ -745,6 +746,15 @@ export function createDocPageScreen({
         ? host.suggestMembers(overlay.query)
         : [];
 
+    const markTargets = useMemo<DocMarkTargets>(
+      () => ({
+        person: host.personFor,
+        page: (id) => readablePages.get(id) ?? null,
+        openPage: host.openPage,
+      }),
+      [host.personFor, host.openPage, readablePages],
+    );
+
     const patchBlock = (
       block: Block,
       properties: Partial<Block["properties"]>,
@@ -1259,6 +1269,7 @@ export function createDocPageScreen({
         overlay={overlay}
         mentionTasks={mentionTasks}
         mentionPeople={mentionPeople}
+        markTargets={markTargets}
         blockTypes={host.blockTypes}
         toolbar={toolbarCurrent(
           focused ??

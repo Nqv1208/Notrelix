@@ -344,6 +344,10 @@ export const vi = {
     footer: "↵ chèn · ⇧↵ tạo việc mới từ chữ đang gõ",
     none: "Không có công việc nào khớp.",
   },
+  chips: {
+    member: "Thành viên không gian làm việc",
+    unknownMember: "Thành viên không khả dụng",
+  },
   panel: {
     label: "Bảng bên của tài liệu",
     tabs: "Bảng bên",
@@ -873,6 +877,10 @@ export const en: DocPageCopy = {
     heading: 'Tasks matching "{{query}}"',
     footer: "↵ insert · ⇧↵ create a new task from the typed text",
     none: "No task matches.",
+  },
+  chips: {
+    member: "Workspace member",
+    unknownMember: "Member not available",
   },
   panel: {
     label: "Document side panel",

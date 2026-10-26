@@ -16,6 +16,7 @@ import {
   type DocChip,
   type DocOverlay,
   type DocPageCallbacks,
+  type DocMarkTargets,
   type DocPerson,
   type DocRecoveryView,
   type DocSegment,
@@ -615,6 +616,7 @@ export interface DocArticleSurfaceProps {
   readonly overlay: DocOverlay;
   readonly mentionTasks: readonly DocTaskRef[];
   readonly mentionPeople?: readonly DocPerson[];
+  readonly markTargets?: DocMarkTargets;
   /** The block types the slash menu offers; omitted offers every type. */
   readonly blockTypes?: readonly BlockType[];
   /** The page's editor; absent renders the plain per-block surface. */
@@ -637,6 +639,7 @@ export function DocArticleSurface({
   overlay,
   mentionTasks,
   mentionPeople,
+  markTargets,
   blockTypes,
   editor,
   recoveries,
@@ -1014,6 +1017,7 @@ export function DocArticleSurface({
           copy={copy}
           mentionTasks={mentionTasks}
           mentionPeople={mentionPeople}
+          markTargets={markTargets}
           callbacks={callbacks}
         />
       ) : null}

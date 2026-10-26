@@ -1,12 +1,14 @@
 import { EditorContent, type Editor } from "@tiptap/react";
 import type { DocPageCopy } from "../components/doc-page.copy";
 import type {
+  DocMarkTargets,
   DocPageCallbacks,
   DocPerson,
   DocTaskRef,
 } from "../components/doc-page-models";
 import { EditorBubbleMenu } from "./bubble-menu";
 import { FindPanel } from "./find-panel";
+import { MarkChips } from "./mark-chips";
 import { MentionTrigger } from "./mention-trigger";
 import { SlashMenu } from "./slash-menu";
 import { TableMenu } from "./table-menu";
@@ -20,6 +22,7 @@ export interface DocEditorSurfaceProps {
   readonly copy: DocPageCopy;
   readonly mentionTasks: readonly DocTaskRef[];
   readonly mentionPeople?: readonly DocPerson[];
+  readonly markTargets?: DocMarkTargets;
   readonly callbacks?: DocPageCallbacks;
 }
 
@@ -29,6 +32,7 @@ export function DocEditorSurface({
   copy,
   mentionTasks,
   mentionPeople,
+  markTargets,
   callbacks,
 }: DocEditorSurfaceProps) {
   return (
@@ -40,6 +44,7 @@ export function DocEditorSurface({
         className={CONTENT}
         aria-label={copy.blockPlaceholder}
       />
+      <MarkChips editor={editor} copy={copy} targets={markTargets} />
       {editor.isEditable ? (
         <>
           <EditorBubbleMenu

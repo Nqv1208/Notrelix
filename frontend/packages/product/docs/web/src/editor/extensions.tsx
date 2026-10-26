@@ -231,7 +231,7 @@ export const MentionUser = Mark.create({
       {
         "data-user-id": String(HTMLAttributes.userId),
         class:
-          "rounded-[4px] bg-brand-subtle px-0.5 text-brand-subtle-foreground",
+          "cursor-pointer rounded-[4px] bg-brand-subtle px-0.5 text-brand-subtle-foreground",
       },
       0,
     ];
@@ -257,7 +257,8 @@ export const PageRefMark = Mark.create({
       "span",
       {
         "data-page-id": String(HTMLAttributes.pageId),
-        class: "text-brand-subtle-foreground underline decoration-dotted",
+        class:
+          "cursor-pointer text-brand-subtle-foreground underline decoration-dotted",
       },
       0,
     ];

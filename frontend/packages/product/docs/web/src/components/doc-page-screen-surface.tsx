@@ -13,6 +13,7 @@ import type {
   DocChip,
   DocCommentView,
   DocConvertView,
+  DocMarkTargets,
   DocPerson,
   DocPickerPageView,
   DocTrashView,
@@ -87,6 +88,8 @@ export interface DocPageScreenSurfaceProps {
   readonly mentionTasks: readonly DocTaskRef[];
   /** Members the typed "@" may mention. */
   readonly mentionPeople?: readonly DocPerson[];
+  /** Where mention chips and page references in the text lead. */
+  readonly markTargets?: DocMarkTargets;
   readonly blockTypes?: readonly BlockType[];
   readonly toolbar?: DocToolbarCurrent;
   /** The page's editor; absent keeps the plain per-block surface. */
@@ -170,6 +173,7 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
     overlay,
     mentionTasks,
     mentionPeople,
+    markTargets,
     blockTypes,
     toolbar = DEFAULT_TOOLBAR_CURRENT,
     editor,
@@ -241,6 +245,7 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
     overlay,
     mentionTasks,
     mentionPeople,
+    markTargets,
     blockTypes,
     editor,
     recoveries,

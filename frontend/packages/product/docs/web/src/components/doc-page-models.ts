@@ -192,6 +192,15 @@ export interface DocTocEntry {
   readonly active?: boolean;
 }
 
+/** What a mention chip or a page reference in the text points at, from the host. */
+export interface DocMarkTargets {
+  /** The member behind a mention (a neutral entry when not known). */
+  readonly person: (userId: string) => DocPerson;
+  /** The page when the viewer can read it; `null` reads as unavailable. */
+  readonly page: (pageId: string) => { readonly title: string } | null;
+  readonly openPage?: (pageId: string) => void;
+}
+
 export interface DocCommentView {
   readonly id: string;
   readonly author: DocPerson;
