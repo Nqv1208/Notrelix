@@ -74,10 +74,16 @@ public static class ResourceVisibilityQuery
            GROUP BY m.space_id),
         space_access AS MATERIALIZED (
           SELECT s.id AS space_id,
-                 NOT EXISTS (
+                 -- Open only when the closure knows the Space (AccessFactsQuery reads
+                 -- SpaceIsOpen as EXISTS(path) AND NOT EXISTS(Private ancestor)): a
+                 -- Space without closure rows must not read as open here while the
+                 -- single read denies it.
+                 (EXISTS (
+                   SELECT 1 FROM workspace.space_paths p0 WHERE p0.descendant_id = s.id)
+                  AND NOT EXISTS (
                    SELECT 1 FROM workspace.space_paths p
                      JOIN workspace.spaces ps ON ps.id = p.ancestor_id
-                    WHERE p.descendant_id = s.id AND ps.visibility = 'Private') AS is_open,
+                    WHERE p.descendant_id = s.id AND ps.visibility = 'Private')) AS is_open,
                  (SELECT max(e.role_rank)
                     FROM workspace.space_paths a
                     JOIN user_entries e ON e.space_id = a.ancestor_id
