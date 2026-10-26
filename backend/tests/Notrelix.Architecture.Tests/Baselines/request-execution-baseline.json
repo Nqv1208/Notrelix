@@ -425,6 +425,31 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.Collaboration.Attachments.Commands.CreatePageAttachment.CreatePageAttachmentCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IResourceScopedRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Collaboration.Attachments.Commands.CreatePageAttachment.CreatePageAttachmentCommandHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.Collaboration.Attachments.Commands.DeleteAttachment.DeleteAttachmentCommand",
     "kind": "Command",
     "principalMarkers": [
@@ -450,6 +475,31 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.Collaboration.Attachments.Commands.DeletePageAttachment.DeletePageAttachmentCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IResourceScopedRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Collaboration.Attachments.Commands.DeletePageAttachment.DeletePageAttachmentCommandHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.Collaboration.Attachments.Commands.UploadBoardItemAttachment.UploadBoardItemAttachmentCommand",
     "kind": "Command",
     "principalMarkers": [
@@ -472,6 +522,31 @@
     "publicCache": false,
     "handlerTypes": [
       "Notrelix.Application.Features.Collaboration.Attachments.Commands.UploadBoardItemAttachment.UploadBoardItemAttachmentCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Collaboration.Attachments.Commands.UploadPageAttachment.UploadPageAttachmentCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IResourceScopedRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": true,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Collaboration.Attachments.Commands.UploadPageAttachment.UploadPageAttachmentCommandHandler"
     ]
   },
   {
@@ -522,6 +597,56 @@
     "publicCache": false,
     "handlerTypes": [
       "Notrelix.Application.Features.Collaboration.Attachments.Queries.GetBoardItemAttachments.GetBoardItemAttachmentsQueryHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Collaboration.Attachments.Queries.GetPageAttachmentContent.GetPageAttachmentContentQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IResourceScopedRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Collaboration.Attachments.Queries.GetPageAttachmentContent.GetPageAttachmentContentQueryHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Collaboration.Attachments.Queries.GetPageAttachments.GetPageAttachmentsQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IResourceScopedRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Collaboration.Attachments.Queries.GetPageAttachments.GetPageAttachmentsQueryHandler"
     ]
   },
   {

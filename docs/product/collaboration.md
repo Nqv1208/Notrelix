@@ -327,6 +327,15 @@ Upload/download/delete uses target authorization plus file policy.
 
 Possession of object key alone is not permission.
 
+Attachment target kinds today:
+
+```text
+work-management.board-item   view: ViewBoard,  upload/link/delete: UpdateItem
+documents.page               view: ViewPage,   upload/link/delete: UpdatePage
+```
+
+A page attachment backs an image or file block. It is listed, read, uploaded and deleted only through the page's own routes, authorised by the page's view/edit permission; an attachment id of another target (another page, a board item) is not found through those routes. The file policy (size cap, blocked extensions, sniffed content type, inline only for png/jpeg/gif/webp) is the same for every target, and there is no public address. Deleting a block does not delete the attachment; retention follows section 90.
+
 # 34. COL-011 — Attachment download capability is scoped and short-lived where appropriate
 
 Provider URL/token is not durable public credential in Domain/events.

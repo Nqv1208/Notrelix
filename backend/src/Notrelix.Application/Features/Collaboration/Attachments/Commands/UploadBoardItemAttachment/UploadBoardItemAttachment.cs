@@ -38,8 +38,6 @@ public class UploadBoardItemAttachmentCommandValidator : AbstractValidator<Uploa
 
 public class UploadBoardItemAttachmentCommandHandler : IRequestHandler<UploadBoardItemAttachmentCommand, Result<AttachmentDto>>
 {
-    private static readonly ResourceKind BoardItemKind = ResourceKind.Create("work-management.board-item");
-
     private readonly ICollaborationDbContext _context;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
@@ -66,83 +64,10 @@ public class UploadBoardItemAttachmentCommandHandler : IRequestHandler<UploadBoa
         _options = options.Value;
     }
 
-    public async Task<Result<AttachmentDto>> Handle(UploadBoardItemAttachmentCommand request, CancellationToken ct)
-    {
+    public Task<Result<AttachmentDto>> Handle(UploadBoardItemAttachmentCommand request, CancellationToken ct) =>
         // Resource existence, tenant ownership and UpdateItem permission were established by
         // the pipeline before this handler runs; nothing below is reached by an unauthorized caller.
-        var accountId = _requestContext.RequireAccountId();
-        var workspaceId = _requestContext.RequireWorkspaceId();
-
-        var fileName = AttachmentFileName.Sanitize(request.FileName);
-        if (AttachmentContentClassifier.IsBlockedExtension(fileName, _options.BlockedExtensions))
-        {
-            throw new UnsupportedMediaTypeException("Files of this type cannot be attached.");
-        }
-
-        // Fail fast, before any byte is written. This early check is advisory only: concurrent
-        // uploads can all pass it, so the authoritative check is repeated under the target lock
-        // right before the row is added (see below).
-        var currentCount = await _context.Attachments
-            .CountAsync(a => a.Target.Kind == BoardItemKind && a.Target.ResourceId == request.BoardItemId, ct);
-        AttachmentRules.EnsureMaxAttachments(currentCount, _options.MaxAttachmentsPerItem);
-
-        var head = new byte[AttachmentContentClassifier.SniffLength];
-        var headLength = await request.Content.ReadAtLeastAsync(head, head.Length, throwOnEndOfStream: false, ct);
-        if (headLength == 0)
-        {
-            AttachmentRules.EnsureValidFileSize(0, _options.MaxFileSizeBytes);
-        }
-
-        var headSpan = head.AsSpan(0, headLength);
-        if (AttachmentContentClassifier.LooksExecutable(headSpan))
-        {
-            throw new UnsupportedMediaTypeException("Files of this type cannot be attached.");
-        }
-
-        var classified = AttachmentContentClassifier.Classify(headSpan, fileName);
-        var storageKey = AttachmentStorageKey.Create(accountId, workspaceId);
-
-        // Register the compensation before the write so a partial or later-rolled-back object
-        // is removed by the data session when the request fails before commit.
-        _compensations.Register(
-            $"delete attachment object {storageKey}",
-            token => _storage.DeleteAsync(storageKey, token));
-
-        using var body = new SizeLimitedReadStream(
-            new PrefixedReadStream(head.AsMemory(0, headLength), request.Content),
-            _options.MaxFileSizeBytes);
-        await _storage.WriteAsync(storageKey, body, classified.ContentType, ct);
-
-        var now = _dateTimeProvider.UtcNow;
-        var target = ResourceRef.Create(BoardItemKind, request.BoardItemId, workspaceId);
-
-        // Authoritative cap check at the commit point. The lock is taken only now, after the
-        // (possibly minutes long) stream, and is held until the request transaction ends, so
-        // concurrent uploads and links to this item serialize only over this short window.
-        // The recount sees every row committed by earlier lock holders. When the cap is exceeded
-        // the Domain factory throws; the compensation registered above then deletes the object
-        // and no row remains.
-        await _targetLock.AcquireAsync(target, ct);
-        currentCount = await _context.Attachments
-            .CountAsync(a => a.Target.Kind == BoardItemKind && a.Target.ResourceId == request.BoardItemId, ct);
-
-        var attachment = Attachment.CreateStoredFile(
-            accountId,
-            workspaceId,
-            target,
-            classified.Type,
-            fileName,
-            body.BytesRead,
-            classified.ContentType,
-            storageKey,
-            _options.MaxFileSizeBytes,
-            currentCount,
-            _options.MaxAttachmentsPerItem,
-            _requestContext.UserId,
-            now);
-
-        _context.Attachments.Add(attachment);
-
-        return Result<AttachmentDto>.Success(AttachmentDto.From(attachment));
-    }
+        AttachmentTargetOperations.UploadFileAsync(
+            _context, _requestContext, _dateTimeProvider, _storage, _compensations, _targetLock, _options,
+            AttachmentTargets.BoardItem, request.BoardItemId, request.FileName, request.Content, ct);
 }

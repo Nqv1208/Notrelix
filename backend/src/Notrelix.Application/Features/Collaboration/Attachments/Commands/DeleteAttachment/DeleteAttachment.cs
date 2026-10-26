@@ -1,5 +1,6 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Collaboration.Abstractions;
+using Notrelix.Application.Features.Collaboration.Attachments.Services;
 
 namespace Notrelix.Application.Features.Collaboration.Attachments.Commands.DeleteAttachment;
 
@@ -27,8 +28,11 @@ public class DeleteAttachmentCommandHandler : IRequestHandler<DeleteAttachmentCo
 
     public async Task<Result> Handle(DeleteAttachmentCommand request, CancellationToken ct)
     {
+        // This use case is authorised as a board item attachment; an attachment of any other
+        // target (a Documents page) is removed only through that target's own use case.
+        var boardItem = AttachmentTargets.BoardItem;
         var attachment = await _context.Attachments
-            .FirstOrDefaultAsync(a => a.Id == request.AttachmentId, ct);
+            .FirstOrDefaultAsync(a => a.Id == request.AttachmentId && a.Target.Kind == boardItem, ct);
 
         if (attachment is null)
             throw new NotFoundException(nameof(Attachment), request.AttachmentId);

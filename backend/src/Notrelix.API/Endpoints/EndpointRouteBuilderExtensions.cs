@@ -125,6 +125,7 @@ public static class EndpointRouteBuilderExtensions
         // Collaboration
         app.RegisterBoardItemActivityEndpoints();
         app.MapAttachmentsEndpoints();
+        app.MapPageAttachmentsEndpoints();
         app.MapCommentsEndpoints();
         app.MapWatchersEndpoints();
         app.RegisterNotificationPreferenceEndpoints();
