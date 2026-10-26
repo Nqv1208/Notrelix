@@ -19,21 +19,21 @@ import type {
 } from "./doc-page-models";
 import { useModalFocus } from "./doc-share-dialog-surface";
 
-const OUTLINE =
+export const OUTLINE =
   "inline-flex h-8 items-center gap-1.5 rounded-[7px] border border-line-strong bg-doc-panel px-3 text-compact leading-[1.45] font-medium text-foreground outline-none hover:bg-state-hover-strong focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-default disabled:opacity-60";
 
-const PRIMARY = cn(
+export const PRIMARY = cn(
   OUTLINE,
   "border-primary bg-brand-solid font-semibold text-brand-solid-foreground hover:bg-brand-solid",
 );
 
 const DANGER = cn(OUTLINE, "border-danger-text font-semibold text-danger-text");
 
-const FIELD =
+export const FIELD =
   "box-border h-9.5 w-full rounded-[9px] border border-line-strong bg-doc-panel px-2.5 text-compact leading-[1.45] text-foreground outline-none focus-visible:ring-2 focus-visible:ring-focus-ring";
 
 /** A modal frame: scrim, titled dialog and a close button; Escape and Tab stay inside. */
-function DialogFrame({
+export function DialogFrame({
   title,
   closeLabel,
   width = 520,

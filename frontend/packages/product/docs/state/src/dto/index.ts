@@ -90,3 +90,56 @@ export type BatchBlockItemApi = {
   parentId?: string;
   expectedVersion?: number;
 };
+
+/** `Documents.Versions.ListPageVersions` (`PageVersionDto`). */
+export type PageVersionDtoApi = {
+  id: string;
+  pageId: string;
+  versionNumber: number;
+  /** `automatic`, `named` or `restore`. */
+  kind: string;
+  name?: string | null;
+  createdBy?: string | null;
+  createdAt: string;
+};
+
+/** A block as a version captured it: no concurrency version, since a snapshot is never edited. */
+export type VersionBlockDtoApi = {
+  id: string;
+  parentId?: string | null;
+  type: string;
+  content: Record<string, unknown>;
+  properties: Record<string, unknown>;
+  position: string;
+};
+
+/** `Documents.Versions.GetPageVersion`. */
+export type PageVersionDetailDtoApi = {
+  version: PageVersionDtoApi;
+  title: string;
+  blocks: VersionBlockDtoApi[];
+};
+
+/** `Documents.Versions.RestorePageVersion`. */
+export type RestorePageVersionResultDtoApi = {
+  version: PageVersionDtoApi;
+  blocks: BlockDtoApi[];
+};
+
+/** `Documents.Templates.ListPageTemplates` (`PageTemplateDto`). */
+export type PageTemplateDtoApi = {
+  id: string;
+  name: string;
+  description?: string | null;
+  title: string;
+  icon: string;
+  blockCount: number;
+  createdBy?: string | null;
+  createdAt: string;
+};
+
+/** `Documents.Templates.CreatePageFromTemplate`. */
+export type PageFromTemplateDtoApi = {
+  pageId: string;
+  droppedBlockCount: number;
+};

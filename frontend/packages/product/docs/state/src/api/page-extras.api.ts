@@ -1,6 +1,4 @@
 import type { Block } from "@notrelix/docs-core";
-import type { BlockDtoApi } from "../dto";
-import { mapBlock } from "../model/block.mapper";
 import type { DocsApiClient, PageApiEndpoints } from "./page.api";
 
 /**
@@ -137,17 +135,6 @@ export function createPageExtrasApi(
         { subjectType: "User", subjectId: userId, level: TO_LEVEL[level] },
         QUIET,
       );
-    },
-    /** The blocks as they stood after a history entry (for the version compare). */
-    async getVersionSnapshot(
-      pageId: string,
-      entryId: string,
-    ): Promise<Block[]> {
-      const dtos = await api.get<BlockDtoApi[]>(
-        `${endpoints.pages.detail(pageId)}/history/${entryId}/snapshot`,
-        QUIET,
-      );
-      return dtos.map((dto, index) => mapBlock(dto, (index + 1) * 1000));
     },
     /**
      * Turns a checklist line into a work item: creates the item in the chosen

@@ -282,6 +282,7 @@ export const COMMENTS: readonly DocCommentView[] = [
 export const VERSIONS: readonly DocVersionView[] = [
   {
     id: "v1",
+    kind: "automatic",
     author: KL,
     time: "16:40",
     day: "Hôm qua",
@@ -291,6 +292,7 @@ export const VERSIONS: readonly DocVersionView[] = [
   },
   {
     id: "v2",
+    kind: "automatic",
     author: KL,
     time: "15:05",
     day: "Hôm qua",
@@ -299,6 +301,7 @@ export const VERSIONS: readonly DocVersionView[] = [
   },
   {
     id: "v3",
+    kind: "automatic",
     author: LT,
     time: "15:42",
     day: "10/10",
@@ -307,6 +310,7 @@ export const VERSIONS: readonly DocVersionView[] = [
   },
   {
     id: "v4",
+    kind: "named",
     author: KL,
     time: "11:20",
     day: "10/10",
@@ -316,6 +320,7 @@ export const VERSIONS: readonly DocVersionView[] = [
   },
   {
     id: "v5",
+    kind: "restore",
     author: KL,
     time: "17:05",
     day: "08/10",
@@ -324,6 +329,7 @@ export const VERSIONS: readonly DocVersionView[] = [
   },
   {
     id: "v6",
+    kind: "automatic",
     author: LT,
     time: "09:40",
     day: "08/10",
@@ -332,6 +338,7 @@ export const VERSIONS: readonly DocVersionView[] = [
   },
   {
     id: "v7",
+    kind: "automatic",
     author: KL,
     time: "14:20",
     day: "05/10",

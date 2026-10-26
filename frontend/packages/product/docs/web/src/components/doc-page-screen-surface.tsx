@@ -29,6 +29,9 @@ import type {
   DocTaskResolution,
   DocTocEntry,
   DocVersionView,
+  DocHistoryActionView,
+  DocImportView,
+  DocTemplateActionView,
 } from "./doc-page-models";
 import {
   DocBoardPickerDialogSurface,
@@ -36,6 +39,12 @@ import {
   DocPagePickerDialogSurface,
   DocTrashDialogSurface,
 } from "./doc-dialogs-surface";
+import {
+  DocImportDialogSurface,
+  DocRestoreVersionDialogSurface,
+  DocSaveTemplateDialogSurface,
+  DocSaveVersionDialogSurface,
+} from "./doc-history-dialogs-surface";
 import { DocShareDialogSurface } from "./doc-share-dialog-surface";
 import { DocSidePanelSurface } from "./doc-side-panel-surface";
 import {
@@ -85,6 +94,12 @@ export interface DocPageScreenSurfaceProps {
   readonly recoveries?: readonly DocRecoveryView[];
   readonly copiedRecoveryId?: string | null;
   readonly versions?: DocVersionsState;
+  /** The history dialogs' write state (save version, restore). */
+  readonly history?: DocHistoryActionView;
+  /** The "Save as template" dialog's write state. */
+  readonly templateAction?: DocTemplateActionView;
+  /** The import dialog's state. */
+  readonly importState?: DocImportView;
   readonly share?: DocShareView;
   /** The trash list the trash dialog shows. */
   readonly trash?: DocTrashView;
@@ -161,6 +176,9 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
     recoveries,
     copiedRecoveryId,
     versions,
+    history,
+    templateAction,
+    importState,
     share,
     trash,
     pickerPages,
@@ -205,6 +223,10 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
   const dialogOpen =
     shareOpen ||
     (overlay.kind === "trash" && trash !== undefined) ||
+    (overlay.kind === "saveVersion" && history !== undefined) ||
+    (overlay.kind === "restoreVersion" && history !== undefined) ||
+    (overlay.kind === "saveTemplate" && templateAction !== undefined) ||
+    (overlay.kind === "importPage" && importState !== undefined) ||
     (overlay.kind === "pagePicker" && pickerPages !== undefined) ||
     (overlay.kind === "boardPicker" && pickerBoards !== undefined) ||
     (overlay.kind === "convertTask" && convert !== undefined);
@@ -248,6 +270,7 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
             <DocVersionBarSurface
               copy={copy}
               version={viewing}
+              canRestore={history?.canRestore ?? false}
               callbacks={callbacks}
             />
           ) : null
@@ -301,6 +324,35 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
         <DocTrashDialogSurface
           copy={copy}
           trash={trash}
+          callbacks={callbacks}
+        />
+      ) : null}
+      {overlay.kind === "saveVersion" && history ? (
+        <DocSaveVersionDialogSurface
+          copy={copy}
+          action={history}
+          callbacks={callbacks}
+        />
+      ) : null}
+      {overlay.kind === "restoreVersion" && history && viewing ? (
+        <DocRestoreVersionDialogSurface
+          copy={copy}
+          stamp={viewing.stamp}
+          action={history}
+          callbacks={callbacks}
+        />
+      ) : null}
+      {overlay.kind === "saveTemplate" && templateAction ? (
+        <DocSaveTemplateDialogSurface
+          copy={copy}
+          action={templateAction}
+          callbacks={callbacks}
+        />
+      ) : null}
+      {overlay.kind === "importPage" && importState ? (
+        <DocImportDialogSurface
+          copy={copy}
+          state={importState}
           callbacks={callbacks}
         />
       ) : null}

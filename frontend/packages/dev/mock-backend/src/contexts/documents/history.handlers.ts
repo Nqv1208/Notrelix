@@ -1,8 +1,5 @@
 import { defineMockOperation } from "../../operations/types";
 import { ok, notFound } from "../../transport/create-response";
-import { INVOICE_DOC_ID, invoiceSnapshot } from "../../state/mock-docs-invoice";
-import { toBlockDto } from "./blocks.handlers";
-import { readBlockBody, writeBlockBody } from "./block-body";
 type HistoryDtoApi = any;
 
 export const historyOperations = [
@@ -30,45 +27,6 @@ export const historyOperations = [
           ...(h.versionName ? { versionName: h.versionName } : {}),
           createdAt: h.createdAt,
         })),
-      );
-    },
-  }),
-
-  // ─── GET /pages/:pageId/history/:entryId/snapshot ───────────────────────
-  // Gap `CTR-GAP-DOCS-PAGE-EXT`: the blocks as they stood after the entry.
-
-  defineMockOperation<{ pageId: string; entryId: string }, never, unknown>({
-    id: "docs.history.snapshot",
-    contract: { kind: "gap", gapId: "CTR-GAP-DOCS-PAGE-EXT" },
-    method: "GET",
-    route: "/pages/:pageId/history/:entryId/snapshot",
-    async handle({ params, store }) {
-      const page = store.getPage(params.pageId);
-      if (!page) return notFound("Page not found");
-      const entries = [...store.getPageHistory(params.pageId)].sort((a, b) =>
-        b.createdAt.localeCompare(a.createdAt),
-      );
-      const index = entries.findIndex((entry) => entry.id === params.entryId);
-      if (index < 0) return notFound("Version not found");
-      const blocks = store.getPageBlocks(params.pageId);
-      const snapshot =
-        params.pageId === INVOICE_DOC_ID ? invoiceSnapshot(index) : null;
-      return ok(
-        blocks.flatMap((b, position) => {
-          if (snapshot?.without.has(position)) return [];
-          const override = snapshot?.text.get(position);
-          const properties =
-            override === undefined
-              ? b.properties
-              : writeBlockBody({
-                  content: {
-                    v: 1,
-                    runs: [{ text: override, marks: [] }],
-                  },
-                  properties: readBlockBody(b).properties,
-                });
-          return [toBlockDto({ ...b, properties })];
-        }),
       );
     },
   }),

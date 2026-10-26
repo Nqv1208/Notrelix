@@ -209,6 +209,8 @@ export interface DocCommentView {
 
 export interface DocVersionView {
   readonly id: string;
+  /** Why the entry exists; names it when it has no name of its own. */
+  readonly kind: "automatic" | "named" | "restore";
   readonly author: DocPerson;
   readonly time: string;
   /** Day group heading ("Hôm qua", "10/10"). */
@@ -291,6 +293,33 @@ export interface DocConvertView {
   readonly failed: boolean;
 }
 
+/** What the history dialogs show while a write runs or after it failed. */
+export interface DocHistoryActionView {
+  /** The compared version can be restored (the viewer may edit). */
+  readonly canRestore: boolean;
+  readonly saving: boolean;
+  readonly saveFailed: boolean;
+  readonly restoring: boolean;
+  /** `conflict` = the page changed since it was read (nothing was restored). */
+  readonly restoreFailed: "conflict" | "failed" | null;
+}
+
+/** The "Save as template" dialog's write state. */
+export interface DocTemplateActionView {
+  readonly saving: boolean;
+  readonly failed: boolean;
+}
+
+/** The import dialog's state: reading and cleaning the file, then creating the page. */
+export interface DocImportView {
+  readonly busy: boolean;
+  /** Why the chosen file was refused or could not be imported. */
+  readonly error: "unsupported" | "tooLarge" | "empty" | "failed" | null;
+  readonly fileName: string | null;
+  /** Images of a Word file that were not imported. */
+  readonly imagesDropped: number;
+}
+
 export type DocPanelTab = "links" | "toc" | "comments";
 
 export type DocOverlay =
@@ -298,6 +327,10 @@ export type DocOverlay =
   | { readonly kind: "fileMenu"; readonly downloadOpen?: boolean }
   | { readonly kind: "share" }
   | { readonly kind: "trash" }
+  | { readonly kind: "saveVersion" }
+  | { readonly kind: "restoreVersion" }
+  | { readonly kind: "saveTemplate" }
+  | { readonly kind: "importPage" }
   | { readonly kind: "pagePicker"; readonly blockId: string }
   | { readonly kind: "boardPicker"; readonly blockId: string }
   | {
@@ -371,7 +404,7 @@ export interface DocPageCallbacks {
   readonly onOpenFileMenu?: () => void;
   readonly onNewDoc?: () => void;
   readonly onToggleDownload?: () => void;
-  readonly onDownload?: (format: "pdf" | "markdown") => void;
+  readonly onDownload?: (format: "pdf" | "markdown" | "html") => void;
   readonly onCloseOverlay?: () => void;
   readonly onOpenShare?: () => void;
   readonly onPanelTab?: (tab: DocPanelTab) => void;
@@ -387,6 +420,16 @@ export interface DocPageCallbacks {
   readonly onOpenVersions?: () => void;
   readonly onCloseVersions?: () => void;
   readonly onSelectVersion?: (id: string) => void;
+  /** "Save version": opens the name dialog. */
+  readonly onSaveVersionOpen?: () => void;
+  readonly onSaveVersion?: (name: string) => void;
+  /** Asks to restore the compared version (the dialog confirms). */
+  readonly onRestoreVersionOpen?: () => void;
+  readonly onRestoreVersion?: () => void;
+  readonly onSaveTemplateOpen?: () => void;
+  readonly onSaveTemplate?: (name: string, description: string) => void;
+  readonly onImportOpen?: () => void;
+  readonly onImportFile?: (file: File) => void;
   readonly onCommentCreate?: (body: string) => void;
   /** Starts a comment on the selected text (the panel then asks for the words). */
   readonly onCommentStart?: () => void;

@@ -29,3 +29,11 @@ export type {
 } from "./comment";
 export { COMMENT_ANCHOR_MAX_QUOTE, resolveCommentAnchor } from "./comment";
 export type { PageTreeNode, SearchResult } from "./tree";
+export type {
+  PageVersionKind,
+  PageVersion,
+  PageTemplate,
+  CreatePageTemplatePayload,
+  CreatePageFromTemplatePayload,
+  PageFromTemplate,
+} from "./version";

@@ -1,7 +1,7 @@
 import type {
   Block,
   BlockType,
-  PageActivity,
+  PageVersion,
   PageComment,
 } from "@notrelix/docs-core";
 import { fillDocCopy, type DocPageCopy } from "./doc-page.copy";
@@ -296,20 +296,20 @@ export function toCommentViews(
 
 /** Version entries from the page's history, newest first; the first is current. */
 export function toVersionViews(
-  history: readonly PageActivity[],
+  versions: readonly PageVersion[],
   copy: DocPageCopy,
   now: Date,
   personFor: (userId: string) => DocPerson,
 ): DocVersionView[] {
-  return [...history]
+  return [...versions]
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-    .map((entry, index) => {
+    .map((entry) => {
       const date = new Date(entry.createdAt);
       const day = relativeDay(date, now);
-      const action = copy.versions.actions[entry.action];
       return {
         id: entry.id,
-        author: personFor(entry.actorId),
+        kind: entry.kind,
+        author: personFor(entry.createdBy ?? ""),
         time: clock(date),
         day:
           day === "today"
@@ -318,9 +318,9 @@ export function toVersionViews(
               ? copy.versions.yesterday
               : dayMonth(date),
         stamp: `${dayMonth(date)} ${clock(date)}`,
-        summary: entry.targetLabel || action,
-        ...(entry.versionName ? { name: entry.versionName } : {}),
-        current: index === 0,
+        // Only a version a person named carries that name; the others read by kind.
+        summary: copy.versions.kinds[entry.kind],
+        ...(entry.kind === "named" && entry.name ? { name: entry.name } : {}),
       };
     });
 }

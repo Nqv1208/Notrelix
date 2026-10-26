@@ -60,6 +60,13 @@ export interface PageApiEndpoints {
     restore: (pageId: string) => string;
     trash: (workspaceId: string) => string;
     backlinks: (pageId: string) => string;
+    versions: (pageId: string) => string;
+    version: (pageId: string, versionId: string) => string;
+    restoreVersion: (pageId: string, versionId: string) => string;
+  };
+  pageTemplates: {
+    list: (workspaceId: string) => string;
+    createPage: (workspaceId: string, templateId: string) => string;
   };
   resourcePermissions: {
     list: (resourceKind: string, resourceId: string) => string;

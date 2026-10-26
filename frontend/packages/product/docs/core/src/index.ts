@@ -44,6 +44,12 @@ export type {
   CreateCommentPayload,
   PageTreeNode,
   SearchResult,
+  PageVersionKind,
+  PageVersion,
+  PageTemplate,
+  CreatePageTemplatePayload,
+  CreatePageFromTemplatePayload,
+  PageFromTemplate,
 } from "./types";
 
 export {

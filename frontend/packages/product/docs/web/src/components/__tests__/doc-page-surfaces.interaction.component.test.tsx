@@ -272,7 +272,9 @@ describe("docs web pure surfaces", () => {
       />,
     );
     fireEvent.click(screen.getByRole("menuitem", { name: /Tài liệu mới/ }));
-    fireEvent.click(screen.getByRole("menuitem", { name: /Markdown/ }));
+    fireEvent.click(
+      screen.getByRole("menuitem", { name: /^Markdown \(\.md\)/ }),
+    );
     fireEvent.click(
       screen.getByRole("menuitem", { name: /Lịch sử phiên bản/ }),
     );
@@ -283,9 +285,9 @@ describe("docs web pure surfaces", () => {
     expect(onToggleDownload).toHaveBeenCalledTimes(1);
     expect(
       screen
-        .getByRole("menuitem", { name: /Word/ })
+        .getByRole("menuitem", { name: /^HTML \(\.html\)/ })
         .getAttribute("aria-disabled"),
-    ).toBe("true");
+    ).not.toBe("true");
   });
 
   it("FUI[docs.page.article:editing] commits text on blur, toggles a checklist item and picks a block from the slash menu", () => {

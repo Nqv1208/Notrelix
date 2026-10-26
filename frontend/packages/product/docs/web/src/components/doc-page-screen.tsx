@@ -13,6 +13,10 @@ import {
   createUseDocSaver,
   useRefreshPageBlocks,
   createUseVersionSnapshot,
+  createUsePageVersions,
+  createUseCreateVersion,
+  createUseRestoreVersion,
+  createUseCreatePageTemplate,
   createUsePage,
   createUsePageBlocks,
   createUseArchivePage,
@@ -152,6 +156,10 @@ export function createDocPageScreen({
   const usePageBacklinks = createUsePageBacklinks(api, endpoints);
   const useConvertTodo = createUseConvertTodo(api, endpoints);
   const useVersionSnapshot = createUseVersionSnapshot(api, endpoints);
+  const usePageVersions = createUsePageVersions(api, endpoints);
+  const useCreateVersion = createUseCreateVersion(api, endpoints);
+  const useRestoreVersion = createUseRestoreVersion(api, endpoints);
+  const useCreatePageTemplate = createUseCreatePageTemplate(api, endpoints);
   const usePageList = createUsePageList(api, endpoints);
   const useArchivePage = createUseArchivePage(api, endpoints);
   const useRestorePage = createUseRestorePage(api, endpoints);
@@ -183,6 +191,9 @@ export function createDocPageScreen({
     const archivePage = useArchivePage(workspaceId);
     const restorePage = useRestorePage(workspaceId);
     const deletePage = useDeletePage(workspaceId);
+    const createVersion = useCreateVersion(workspaceId, pageId);
+    const restoreVersion = useRestoreVersion(workspaceId, pageId);
+    const createTemplate = useCreatePageTemplate(workspaceId);
 
     const page = pageQuery.data ?? null;
     const blocks = useMemo(() => blocksQuery.data ?? [], [blocksQuery.data]);
@@ -272,18 +283,18 @@ export function createDocPageScreen({
       [commentsQuery.data, copy, host.personFor, now],
     );
 
-    const versionList = useMemo(
-      () => toVersionViews(historyQuery.data ?? [], copy, now, host.personFor),
-      [copy, historyQuery.data, host.personFor, now],
+    const versionsQuery = usePageVersions(
+      workspaceId,
+      pageId,
+      versions !== null,
     );
-    // The version compared with the page: the newest one from an earlier day
-    // unless another is chosen.
+    const versionList = useMemo(
+      () => toVersionViews(versionsQuery.data ?? [], copy, now, host.personFor),
+      [copy, versionsQuery.data, host.personFor, now],
+    );
+    // The version compared with the page: the newest one unless another is chosen.
     const selectedVersionId = versions
-      ? (versions.selectedId ??
-        versionList.find((entry) => entry.day !== versionList[0]?.day)?.id ??
-        versionList[1]?.id ??
-        versionList[0]?.id ??
-        null)
+      ? (versions.selectedId ?? versionList[0]?.id ?? null)
       : null;
     const snapshotQuery = useVersionSnapshot(
       workspaceId,
@@ -334,7 +345,7 @@ export function createDocPageScreen({
             : [],
       });
       return versions && snapshotQuery.data
-        ? markVersionDiff(views, blocks, snapshotQuery.data)
+        ? markVersionDiff(views, blocks, snapshotQuery.data.blocks)
         : views;
     }, [
       blocks,
@@ -876,6 +887,64 @@ export function createDocPageScreen({
             ? { kind: "fileMenu", downloadOpen: !current.downloadOpen }
             : current,
         ),
+      onSaveVersionOpen: host.canEdit
+        ? () => {
+            createVersion.reset();
+            setOverlay({ kind: "saveVersion" });
+          }
+        : undefined,
+      onSaveVersion: (name) => {
+        void saver.flush().then(() =>
+          createVersion.mutate(name, {
+            onSuccess: () => {
+              setOverlay(NONE);
+              host.notify?.(fillDocCopy(copy.versions.saved, { name }));
+            },
+          }),
+        );
+      },
+      onRestoreVersionOpen: host.canEdit
+        ? () => {
+            restoreVersion.reset();
+            setOverlay({ kind: "restoreVersion" });
+          }
+        : undefined,
+      onRestoreVersion: () => {
+        if (!selectedVersionId) return;
+        const stamp = versionList.find(
+          (entry) => entry.id === selectedVersionId,
+        )?.stamp;
+        void saver.flush().then(() =>
+          restoreVersion.mutate(selectedVersionId, {
+            onSuccess: () => {
+              setOverlay(NONE);
+              setVersions(null);
+              host.notify?.(
+                fillDocCopy(copy.versions.restored, { stamp: stamp ?? "" }),
+              );
+            },
+          }),
+        );
+      },
+      onSaveTemplateOpen: host.canEdit
+        ? () => {
+            createTemplate.reset();
+            setOverlay({ kind: "saveTemplate" });
+          }
+        : undefined,
+      onSaveTemplate: (name, description) => {
+        void saver.flush().then(() =>
+          createTemplate.mutate(
+            { pageId, name, description: description || undefined },
+            {
+              onSuccess: () => {
+                setOverlay(NONE);
+                host.notify?.(fillDocCopy(copy.template.saved, { name }));
+              },
+            },
+          ),
+        );
+      },
       onDownload: (format) => {
         setOverlay(NONE);
         if (format === "pdf") {
@@ -1106,6 +1175,21 @@ export function createDocPageScreen({
               }
             : undefined
         }
+        history={{
+          canRestore: host.canEdit,
+          saving: createVersion.isPending,
+          saveFailed: createVersion.isError,
+          restoring: restoreVersion.isPending,
+          restoreFailed: restoreVersion.isError
+            ? (restoreVersion.error as { status?: unknown }).status === 412
+              ? "conflict"
+              : "failed"
+            : null,
+        }}
+        templateAction={{
+          saving: createTemplate.isPending,
+          failed: createTemplate.isError,
+        }}
         share={
           host.share
             ? {

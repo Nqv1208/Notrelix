@@ -10,6 +10,15 @@ export { createUsePageComments } from "./hooks/use-page-comments";
 export { createUsePageHistory } from "./hooks/use-page-history";
 export { createUsePageBacklinks } from "./hooks/use-page-backlinks";
 export { createUseVersionSnapshot } from "./hooks/use-version-snapshot";
+export { createUsePageVersions } from "./hooks/use-page-versions";
+export { createUseCreateVersion } from "./hooks/use-create-version";
+export {
+  createUseRestoreVersion,
+  RestoreNeedsBlocks,
+} from "./hooks/use-restore-version";
+export { createUsePageTemplates } from "./hooks/use-page-templates";
+export { createUseCreatePageTemplate } from "./hooks/use-create-page-template";
+export { createUseCreatePageFromTemplate } from "./hooks/use-create-page-from-template";
 export { createUsePagePermissions } from "./hooks/use-page-permissions";
 export { createUseSharePage } from "./hooks/use-share-page";
 export { createUseConvertTodo } from "./hooks/use-convert-todo";

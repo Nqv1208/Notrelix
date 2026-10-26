@@ -86,37 +86,6 @@ describe("Documents page extras in the mock world (CTR-GAP-DOCS-PAGE-EXT)", () =
     ).toEqual([]);
   });
 
-  it("serves the blocks as they stood after each version", async () => {
-    const { store, extras } = setup();
-    const current = store.getPageBlocks(INVOICE_DOC_ID);
-    const entries = [...store.getPageHistory(INVOICE_DOC_ID)].sort((a, b) =>
-      b.createdAt.localeCompare(a.createdAt),
-    );
-    expect(entries[4]?.versionName ?? entries[3]?.versionName).toBe(
-      "Bản trình Ban giám đốc",
-    );
-    // The newest version is the page itself.
-    expect(
-      (await extras.getVersionSnapshot(INVOICE_DOC_ID, entries[0]!.id)).length,
-    ).toBe(current.length);
-    // 10/10 15:42: step 3 as it read, and without the two lines added later.
-    const older = await extras.getVersionSnapshot(
-      INVOICE_DOC_ID,
-      entries[2]!.id,
-    );
-    expect(older.length).toBe(current.length - 2);
-    expect(
-      older.find((block) =>
-        String(block.properties.text).startsWith("Hoá đơn sai lệch"),
-      )?.properties.text,
-    ).toBe("Hoá đơn sai lệch quá 1% chuyển cho kế toán trưởng duyệt.");
-    await expect(
-      extras.getVersionSnapshot(INVOICE_DOC_ID, "nope"),
-    ).rejects.toMatchObject({
-      kind: "not_found",
-    });
-  });
-
   it("turns a checklist line into a work item in the chosen group and links the line to it", async () => {
     const { store, extras } = setup();
     const line = store

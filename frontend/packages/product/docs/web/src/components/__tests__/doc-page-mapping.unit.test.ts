@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Block, PageActivity, PageComment } from "@notrelix/docs-core";
+import type { Block, PageComment, PageVersion } from "@notrelix/docs-core";
 
 import { docPageCopy } from "../doc-page.copy";
 import {
@@ -167,29 +167,49 @@ describe("document page mapping", () => {
       body: "> not a quote\nWhy?",
     });
 
-    const history: PageActivity[] = [
+    const history: PageVersion[] = [
       {
         id: "a1",
         pageId: "page-1",
-        actorId: "user-kl",
-        action: "created",
-        targetLabel: "",
+        versionNumber: 1,
+        kind: "automatic",
+        name: null,
+        createdBy: "user-kl",
         createdAt: "2026-10-05T07:20:00.000Z",
       },
       {
         id: "a2",
         pageId: "page-1",
-        actorId: "user-kl",
-        action: "edited",
-        targetLabel: "Sửa bước 3",
+        versionNumber: 2,
+        kind: "named",
+        name: "Bản trình Ban giám đốc",
+        createdBy: "user-kl",
         createdAt: "2026-10-11T08:05:00.000Z",
+      },
+      {
+        id: "a3",
+        pageId: "page-1",
+        versionNumber: 3,
+        kind: "restore",
+        name: "Restored from version 1",
+        createdBy: "user-kl",
+        createdAt: "2026-10-11T09:05:00.000Z",
       },
     ];
     const versions = toVersionViews(history, copy, NOW, () => KL);
-    expect(versions.map((version) => version.id)).toEqual(["a2", "a1"]);
-    expect(versions[0]?.current).toBe(true);
-    expect(versions[0]?.summary).toBe("Sửa bước 3");
-    expect(versions[1]?.summary).toBe(copy.versions.actions.created);
+    expect(versions.map((version) => version.id)).toEqual(["a3", "a2", "a1"]);
+    // Only a version a person named carries a name; the others read by kind.
+    expect(versions.map((version) => version.name)).toEqual([
+      undefined,
+      "Bản trình Ban giám đốc",
+      undefined,
+    ]);
+    expect(versions.map((version) => version.summary)).toEqual([
+      copy.versions.kinds.restore,
+      copy.versions.kinds.named,
+      copy.versions.kinds.automatic,
+    ]);
+    expect(versions[0]?.stamp).toMatch(/11\/10 /);
   });
 
   it("places a new block after another one, between neighbours or at the end", () => {
@@ -240,24 +260,7 @@ describe("version compare", () => {
     ]);
   });
 
-  it("names a version the member named and links a converted checklist line", () => {
-    const named = toVersionViews(
-      [
-        {
-          id: "h1",
-          pageId: "page-1",
-          actorId: "user-kl",
-          action: "edited",
-          targetLabel: "Thêm mục",
-          versionName: "Bản trình Ban giám đốc",
-          createdAt: "2026-10-10T04:20:00.000Z",
-        },
-      ],
-      copy,
-      NOW,
-      () => KL,
-    );
-    expect(named[0]?.name).toBe("Bản trình Ban giám đốc");
+  it("links a converted checklist line to its task", () => {
     const linked = toBlockViews(
       [
         block("c1", "todo", 1, {

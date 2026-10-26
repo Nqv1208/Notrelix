@@ -88,8 +88,9 @@ function FileType({ label, className }: { label: string; className: string }) {
 
 /**
  * The File menu and its Download submenu (Final-Docs `.menu` and `.sub`).
- * Move to trash and the trash list are enabled for editors; entries with no producer yet are disabled with the stated reason; Word
- * export carries the design's "Sắp có" tag.
+ * Move to trash and the trash list are enabled for editors; entries with no producer yet are disabled with the stated reason.
+ * Download offers HTML, PDF (the browser's print) and Markdown; Save version, Save as template and Import
+ * open their dialogs and are offered to people who may edit.
  */
 export function DocFileMenuSurface({
   copy,
@@ -142,6 +143,24 @@ export function DocFileMenuSurface({
           onClick={callbacks?.onOpenVersions}
           unavailable={f.unavailable}
         />
+        <Item
+          label={f.saveVersion}
+          popup="dialog"
+          onClick={callbacks?.onSaveVersionOpen}
+          unavailable={f.unavailable}
+        />
+        <Item
+          label={f.saveTemplate}
+          popup="dialog"
+          onClick={callbacks?.onSaveTemplateOpen}
+          unavailable={f.unavailable}
+        />
+        <Item
+          label={f.importPage}
+          popup="dialog"
+          onClick={callbacks?.onImportOpen}
+          unavailable={f.unavailable}
+        />
         <Item label={f.info} unavailable={f.unavailable} />
         <Separator />
         <Item
@@ -163,15 +182,10 @@ export function DocFileMenuSurface({
           className={cn(PANEL, "top-[150px] left-[282px] w-[250px]")}
         >
           <Item
-            label={f.word}
-            active
+            label={f.html}
+            onClick={() => callbacks?.onDownload?.("html")}
             unavailable={f.unavailable}
-            leading={<FileType label="DOC" className="bg-doc-file-word" />}
-            trailing={
-              <span className="ml-auto rounded-full bg-doc-chip-review px-[7px] py-px text-mark-md leading-[1.45] font-semibold text-warning-text">
-                {f.soon}
-              </span>
-            }
+            leading={<FileType label="HTM" className="bg-doc-file-word" />}
           />
           <Item
             label={f.pdf}

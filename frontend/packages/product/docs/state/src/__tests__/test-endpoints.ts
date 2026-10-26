@@ -15,6 +15,15 @@ export const testEndpoints: PageApiEndpoints = {
     restore: (pageId) => `/pages/${pageId}/restore`,
     trash: (workspaceId) => `/workspaces/${workspaceId}/pages/trash`,
     backlinks: (pageId) => `/pages/${pageId}/backlinks`,
+    versions: (pageId) => `/pages/${pageId}/versions`,
+    version: (pageId, versionId) => `/pages/${pageId}/versions/${versionId}`,
+    restoreVersion: (pageId, versionId) =>
+      `/pages/${pageId}/versions/${versionId}/restore`,
+  },
+  pageTemplates: {
+    list: (workspaceId) => `/workspaces/${workspaceId}/page-templates`,
+    createPage: (workspaceId, templateId) =>
+      `/workspaces/${workspaceId}/page-templates/${templateId}/pages`,
   },
   resourcePermissions: {
     list: (kind, id) => `/resources/${kind}/${id}/permissions`,

@@ -36,14 +36,18 @@ export const docsQueryKeys = {
     workspaceQueryKey(workspaceId, "documents", "permissions", pageId),
   backlinks: (workspaceId: string, pageId: string) =>
     workspaceQueryKey(workspaceId, "documents", "backlinks", pageId),
-  versionSnapshot: (workspaceId: string, pageId: string, entryId: string) =>
+  versions: (workspaceId: string, pageId: string) =>
+    workspaceQueryKey(workspaceId, "documents", "versions", pageId),
+  versionSnapshot: (workspaceId: string, pageId: string, versionId: string) =>
     workspaceQueryKey(
       workspaceId,
       "documents",
       "version-snapshot",
       pageId,
-      entryId,
+      versionId,
     ),
+  templates: (workspaceId: string) =>
+    workspaceQueryKey(workspaceId, "documents", "templates"),
   search: (workspaceId: string, query: string) =>
     workspaceQueryKey(workspaceId, "documents", "search", query),
   favorites: (workspaceId: string) =>

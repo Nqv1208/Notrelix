@@ -25,6 +25,12 @@ export type {
   CreateCommentPayload,
   PageTreeNode,
   SearchResult,
+  PageVersionKind,
+  PageVersion,
+  PageTemplate,
+  CreatePageTemplatePayload,
+  CreatePageFromTemplatePayload,
+  PageFromTemplate,
 } from "@notrelix/docs-core";
 
 export type {
@@ -33,6 +39,11 @@ export type {
   CommentDtoApi,
   HistoryDtoApi,
   BlockDtoApi,
+  PageVersionDtoApi,
+  PageVersionDetailDtoApi,
+  RestorePageVersionResultDtoApi,
+  PageTemplateDtoApi,
+  PageFromTemplateDtoApi,
 } from "./dto";
 
 export { mapPage, mapBreadcrumb, mapHistory } from "./model/page.mapper";
@@ -60,6 +71,11 @@ export type { PageAttachmentDtoApi } from "./api/attachment.api";
 export { createBlockApi } from "./api/block.api";
 export { createCommentApi } from "./api/comment.api";
 export { createHistoryApi } from "./api/history.api";
+export { createVersionApi } from "./api/version.api";
+export type { RestoredPageVersion, SeenBlockVersion } from "./api/version.api";
+export { createTemplateApi } from "./api/template.api";
+export { mapVersion, mapVersionContent } from "./model/version.mapper";
+export type { PageVersionContent } from "./model/version.mapper";
 export { createPageExtrasApi } from "./api/page-extras.api";
 export type {
   ConvertedTaskDto,

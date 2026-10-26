@@ -137,6 +137,18 @@ export const endpoints = {
     restore: (pageId: string) => `/pages/${pageId}/restore`,
     trash: (workspaceId: string) => `/workspaces/${workspaceId}/pages/trash`,
     backlinks: (pageId: string) => `/pages/${pageId}/backlinks`,
+    // Documents.Versions.*: the page's history entries.
+    versions: (pageId: string) => `/pages/${pageId}/versions`,
+    version: (pageId: string, versionId: string) =>
+      `/pages/${pageId}/versions/${versionId}`,
+    restoreVersion: (pageId: string, versionId: string) =>
+      `/pages/${pageId}/versions/${versionId}/restore`,
+  },
+  // Documents.Templates.*: workspace page templates.
+  pageTemplates: {
+    list: (workspaceId: string) => `/workspaces/${workspaceId}/page-templates`,
+    createPage: (workspaceId: string, templateId: string) =>
+      `/workspaces/${workspaceId}/page-templates/${templateId}/pages`,
   },
   pageAttachments: {
     list: (pageId: string) => `/pages/${pageId}/attachments`,

@@ -330,3 +330,30 @@ export interface MockPageHistoryRecord {
   versionName?: string | null;
   createdAt: string;
 }
+
+/** A history entry of a page: the blocks and title the page had when it was taken. */
+export interface MockPageVersionRecord {
+  id: string;
+  pageId: string;
+  versionNumber: number;
+  kind: "automatic" | "named" | "restore";
+  name: string | null;
+  createdBy: string | null;
+  createdAt: string;
+  title: string;
+  /** The page's blocks as they were (a copy; never edited). */
+  blocks: MockBlockRecord[];
+}
+
+/** A workspace page template: a copy of a page's title, icon and blocks. */
+export interface MockPageTemplateRecord {
+  id: string;
+  workspaceId: string;
+  name: string;
+  description: string | null;
+  title: string;
+  icon: string;
+  createdBy: string | null;
+  createdAt: string;
+  blocks: MockBlockRecord[];
+}

@@ -50,6 +50,7 @@ import {
   erpSettingsRegistry,
 } from "./mock-board-settings";
 import { MockSpaceState, type MockSpaceViewer } from "./mock-spaces";
+import { MockDocsHistoryState } from "./mock-docs-history";
 import { MockWorkFeedState } from "./mock-work-feed";
 import {
   defaultStatusOptions,
@@ -330,6 +331,8 @@ export class MockStore {
 
   /** Space org tree, Space members and Teams (OT-5). */
   readonly spaces = new MockSpaceState();
+  /** The pages' history entries and the workspace page templates. */
+  readonly docsHistory = new MockDocsHistoryState(this);
 
   /** The member's work feed: relationships, approvals, mentions, inbox. */
   readonly feed = new MockWorkFeedState();
@@ -374,6 +377,11 @@ export class MockStore {
     const next = current + 1;
     this.sequenceCounters.set(entity, next);
     return next;
+  }
+
+  /** The clock's current time as an ISO string. */
+  now(): string {
+    return this.clock.isoNow();
   }
 
   nextId(entity: string): string {
@@ -1058,6 +1066,7 @@ export class MockStore {
         entry.versionName,
       );
     });
+    this.docsHistory.seedInvoiceHistory();
   }
 
   /**
@@ -1776,6 +1785,7 @@ export class MockStore {
     this.sharing.clear();
     this.boardAudienceByBoardId.clear();
     this.spaces.clear();
+    this.docsHistory.clear();
     this.feed.clear();
     this.completedCardIds.clear();
     this.activityByCardId.clear();
@@ -4477,6 +4487,7 @@ export class MockStore {
       blocks: Array.from(this.blocksById.values()),
       pageComments: Array.from(this.pageCommentsById.values()),
       pageHistory: Array.from(this.pageHistoryById.values()),
+      ...this.docsHistory.snapshot(),
       boardMembers: Array.from(this.boardMembersByBoardId.values()).flat(),
       boardGrants: Array.from(this.boardGrantsByBoardId.values()).flat(),
       boardAudiences: Array.from(this.boardAudienceByBoardId.values()),
