@@ -31,6 +31,8 @@ import {
 } from "../components/doc-article-surface";
 import { newBlockId, nodeToDraft } from "./block-mapping";
 import { createCodeBlock } from "./code-block";
+import { DocMedia, FileBlock, ImageBlock, UploadPlaceholder } from "./media";
+import type { DocMediaHost } from "./media-host";
 import { COLOR_CLASS, HIGHLIGHT_CLASS } from "./mark-classes";
 import { TABLE_EXTENSIONS } from "./table";
 
@@ -42,6 +44,8 @@ export interface DocEditorContext {
   resolveTask: (taskId: string) => DocTaskResolution;
   /** The read model of a reference block (live table, page link). */
   viewOf: (draft: BlockDraft) => DocBlockView | undefined;
+  /** Image and file blocks; absent, the page offers none. */
+  media?: DocMediaHost;
 }
 
 export interface ContextHolder {
@@ -79,6 +83,9 @@ const BLOCK_NODES = [
   "boardReference",
   "pageReference",
   "table",
+  "imageBlock",
+  "fileBlock",
+  "uploadPlaceholder",
   "unsupportedBlock",
 ];
 
@@ -744,6 +751,10 @@ export function createDocExtensions({
     ...TABLE_EXTENSIONS,
     BoardReference.configure({ context }),
     PageReference.configure({ context }),
+    ImageBlock.configure({ context }),
+    FileBlock.configure({ context }),
+    UploadPlaceholder.configure({ context }),
+    DocMedia.configure({ context }),
     UnsupportedBlock.configure({ context }),
     TaskRef.configure({ context }),
     NumberedRuns,

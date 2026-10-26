@@ -1,6 +1,12 @@
 import { useDocLive } from "./use-doc-live";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  AttachmentUploads,
+  createAttachmentApi,
+  createUseAttachmentContent,
+  createUsePageAttachments,
+  useRememberPageAttachment,
+  type DocsFileClient,
   createUseCreateComment,
   createUseCreatePage,
   createUseDocEditor,
@@ -30,6 +36,7 @@ import {
   draftOfBlock,
   plainTextOf,
   type BlockDraft,
+  type PageAttachment,
 } from "@notrelix/docs-core";
 import { fillDocCopy } from "./doc-page.copy";
 import { useDocPageCopy } from "./use-doc-page-copy";
@@ -60,11 +67,12 @@ import type {
 import { isRestrictedTask } from "./doc-page-models";
 import { DocPageScreenSurface } from "./doc-page-screen-surface";
 import { useDocPanelOpen } from "./use-doc-panel-open";
+import type { DocMediaHost } from "../editor/media-host";
 import { useDocRichEditor } from "../editor/use-doc-rich-editor";
 import { taskToken } from "./doc-page-text";
 
 interface CreateDocPageScreenDeps {
-  api: DocsApiClient;
+  api: DocsApiClient & DocsFileClient;
   endpoints: PageApiEndpoints;
   /** Host-composed facts (department, people, tasks, viewer). */
   useHost: UseDocPageHost;
@@ -78,6 +86,15 @@ const REPEATING: ReadonlySet<BlockType> = new Set([
   "bulleted_list",
   "todo",
 ]);
+
+function saveBlob(name: string, blob: Blob): void {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = name;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
 
 function saveFile(name: string, mime: string, content: string): void {
   const url = URL.createObjectURL(new Blob([content], { type: mime }));
@@ -111,6 +128,9 @@ export function createDocPageScreen({
   endpoints,
   useHost,
 }: CreateDocPageScreenDeps) {
+  const attachmentApi = createAttachmentApi(api, endpoints);
+  const usePageAttachments = createUsePageAttachments(api, endpoints);
+  const useAttachmentContent = createUseAttachmentContent(api, endpoints);
   const usePage = createUsePage(api, endpoints);
   const usePageBlocks = createUsePageBlocks(api, endpoints);
   const usePageBreadcrumb = createUsePageBreadcrumb(api, endpoints);
@@ -388,6 +408,10 @@ export function createDocPageScreen({
     // by a debounced diff. The callbacks it needs are filled in below.
     const callbacksRef = useRef<DocPageCallbacks | undefined>(undefined);
     const richRef = useRef<{
+      completeUpload: (
+        upload: Parameters<(typeof richEditor)["completeUpload"]>[0],
+        attachment: PageAttachment,
+      ) => void;
       applyDrafts: (drafts: readonly BlockDraft[]) => void;
       currentDrafts: () => BlockDraft[];
     } | null>(null);
@@ -424,6 +448,72 @@ export function createDocPageScreen({
       () => ({}),
       [host.tasks, host.tasksReady, host.board, host.boards, readablePages],
     );
+    // The page's files: uploads in flight, the stored files and their bytes.
+    const rememberAttachment = useRememberPageAttachment(workspaceId, pageId);
+    const mediaRef = useRef({ copy, notify: host.notify });
+    mediaRef.current = { copy, notify: host.notify };
+    const uploads = useMemo(
+      () =>
+        new AttachmentUploads({
+          upload: (file, options) =>
+            attachmentApi.upload(pageId, file, options),
+          onUploaded: (upload, attachment) => {
+            rememberAttachment(attachment);
+            richRef.current?.completeUpload(upload, attachment);
+          },
+          onFailed: (_upload, failure) => {
+            const { copy: current, notify } = mediaRef.current;
+            notify?.(
+              fillDocCopy(current.media.upload.failed, {
+                reason: current.media.upload.reasons[failure],
+              }),
+            );
+          },
+        }),
+      [pageId, rememberAttachment],
+    );
+    useEffect(() => () => uploads.dispose(), [uploads]);
+    const media = useMemo<DocMediaHost>(
+      () => ({
+        uploads,
+        onRefused: (file, refusal) => {
+          const { copy: current, notify } = mediaRef.current;
+          notify?.(
+            fillDocCopy(current.media.upload.refused[refusal], {
+              name: file.name,
+            }),
+          );
+        },
+        useFiles: () => {
+          const query = usePageAttachments(workspaceId, pageId);
+          const files = useMemo(
+            () => new Map((query.data ?? []).map((file) => [file.id, file])),
+            [query.data],
+          );
+          return { files, loading: query.isLoading };
+        },
+        useContent: (attachmentId) => {
+          const query = useAttachmentContent(workspaceId, pageId, attachmentId);
+          return {
+            status: query.isError ? "error" : query.data ? "ready" : "loading",
+            blob: query.data ?? null,
+            retry: () => void query.refetch(),
+          };
+        },
+        download: async (attachment) => {
+          try {
+            saveBlob(
+              attachment.fileName,
+              await attachmentApi.content(pageId, attachment.id),
+            );
+          } catch {
+            const { copy: current, notify } = mediaRef.current;
+            notify?.(current.media.file.downloadFailed);
+          }
+        },
+      }),
+      [pageId, uploads, workspaceId],
+    );
     const richEditor = useDocRichEditor({
       pageId,
       ready: !pageQuery.isLoading && !blocksQuery.isLoading && page !== null,
@@ -436,6 +526,7 @@ export function createDocPageScreen({
       context: {
         copy,
         readOnly: !host.canEdit,
+        media,
         callbacks: {
           onOpenPagePicker: (blockId) =>
             callbacksRef.current?.onOpenPagePicker?.(blockId),

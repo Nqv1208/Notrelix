@@ -30,14 +30,16 @@ function deferred<T>() {
 
 function setup(upload = vi.fn()) {
   const onUploaded = vi.fn();
+  const onFailed = vi.fn();
   const revoked: string[] = [];
   const uploads = new AttachmentUploads({
     upload,
     onUploaded,
+    onFailed,
     createPreviewUrl: () => "blob:preview",
     revokePreviewUrl: (url) => revoked.push(url),
   });
-  return { uploads, onUploaded, revoked, upload };
+  return { uploads, onUploaded, onFailed, revoked, upload };
 }
 
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
@@ -105,13 +107,17 @@ describe("AttachmentUploads", () => {
       .fn()
       .mockRejectedValueOnce({ kind: "network" })
       .mockResolvedValueOnce(STORED);
-    const { uploads, onUploaded } = setup(upload);
+    const { uploads, onUploaded, onFailed } = setup(upload);
     const { id } = uploads.add(png()) as { id: string };
     await settle();
     expect(uploads.get(id)).toMatchObject({
       status: "failed",
       failure: "failed",
     });
+    expect(onFailed).toHaveBeenCalledWith(
+      expect.objectContaining({ id }),
+      "failed",
+    );
     expect(onUploaded).not.toHaveBeenCalled();
 
     uploads.retry(id);
@@ -156,6 +162,9 @@ describe("AttachmentUploads", () => {
     expect(signals[0]?.aborted).toBe(true);
     uploads.dispose();
     expect(signals[1]?.aborted).toBe(true);
+    // A spurious dispose (a dev double mount) leaves it usable.
+    const again = uploads.add(png("c.png"));
+    expect(again.ok).toBe(true);
   });
 
   it("notifies subscribers with a new snapshot on each change", () => {

@@ -2,7 +2,9 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useEditor, type Editor } from "@tiptap/react";
 import { draftEquals, type BlockDraft } from "@notrelix/docs-core";
 import { TextSelection } from "@tiptap/pm/state";
-import { docToDrafts, draftsToDoc } from "./block-mapping";
+import { Fragment, type Node as PmNode } from "@tiptap/pm/model";
+import { UPLOAD_PLACEHOLDER, docToDrafts, draftsToDoc } from "./block-mapping";
+import { completeUpload } from "./media-commands";
 import {
   createDocExtensions,
   type ContextHolder,
@@ -38,6 +40,11 @@ export interface DocRichEditor {
   readonly applyDrafts: (drafts: readonly BlockDraft[]) => void;
   /** The editor's blocks now. */
   readonly currentDrafts: () => BlockDraft[];
+  /** An upload is stored: its placeholder becomes the image or file block. */
+  readonly completeUpload: (
+    upload: Parameters<typeof completeUpload>[1],
+    attachment: Parameters<typeof completeUpload>[2],
+  ) => void;
   /** Sets properties of one top-level block node (page link, checklist...). */
   readonly updateBlockAttrs: (
     blockId: string,
@@ -115,13 +122,18 @@ export function useDocRichEditor(input: UseDocRichEditorInput): DocRichEditor {
       const { schema, doc } = editor.state;
       const current = docToDrafts(editor.getJSON());
       const nodes = draftsToDoc(drafts).content ?? [];
+      // Upload placeholders are not blocks: they stay where they are.
+      const stored: { offset: number; node: PmNode }[] = [];
+      const waiting: PmNode[] = [];
+      doc.forEach((node, offset) => {
+        if (node.type.name === UPLOAD_PLACEHOLDER) waiting.push(node);
+        else stored.push({ offset, node });
+      });
       const sameOrder =
         current.length === drafts.length &&
         current.every((draft, index) => draft.id === drafts[index]?.id);
       const tr = editor.state.tr.setMeta("addToHistory", false);
       if (sameOrder) {
-        const offsets: number[] = [];
-        doc.forEach((_node, offset) => offsets.push(offset));
         // From the end, so earlier offsets stay valid.
         for (let index = current.length - 1; index >= 0; index -= 1) {
           if (
@@ -132,8 +144,8 @@ export function useDocRichEditor(input: UseDocRichEditorInput): DocRichEditor {
           ) {
             continue;
           }
-          const at = offsets[index] as number;
-          const old = doc.child(index);
+          const at = stored[index]?.offset as number;
+          const old = stored[index]?.node as PmNode;
           tr.replaceWith(
             at,
             at + old.nodeSize,
@@ -142,10 +154,13 @@ export function useDocRichEditor(input: UseDocRichEditorInput): DocRichEditor {
         }
       } else {
         const { from } = editor.state.selection;
+        const replacement = schema.nodeFromJSON(draftsToDoc(drafts)).content;
         tr.replaceWith(
           0,
           doc.content.size,
-          schema.nodeFromJSON(draftsToDoc(drafts)).content,
+          waiting.length
+            ? replacement.append(Fragment.from(waiting))
+            : replacement,
         );
         const at = Math.min(from, tr.doc.content.size);
         tr.setSelection(TextSelection.near(tr.doc.resolve(at)));
@@ -171,9 +186,17 @@ export function useDocRichEditor(input: UseDocRichEditorInput): DocRichEditor {
     [editor],
   );
 
+  const finishUpload = useCallback<DocRichEditor["completeUpload"]>(
+    (upload, attachment) => {
+      if (editor) completeUpload(editor, upload, attachment);
+    },
+    [editor],
+  );
+
   return {
     editor: input.ready ? editor : null,
     applyDrafts,
+    completeUpload: finishUpload,
     currentDrafts,
     updateBlockAttrs,
   };

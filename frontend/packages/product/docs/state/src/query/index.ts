@@ -4,6 +4,7 @@ export { createUsePage } from "./hooks/use-page";
 export { createUsePageBreadcrumb } from "./hooks/use-page-breadcrumb";
 export { createUsePageBlocks } from "./hooks/use-page-blocks";
 export { createUsePageAttachments } from "./hooks/use-page-attachments";
+export { useRememberPageAttachment } from "./hooks/use-remember-page-attachment";
 export { createUseAttachmentContent } from "./hooks/use-attachment-content";
 export { createUsePageComments } from "./hooks/use-page-comments";
 export { createUsePageHistory } from "./hooks/use-page-history";

@@ -16,6 +16,7 @@ import {
   Code,
   Eraser,
   Highlighter,
+  ImageIcon,
   Italic,
   Link2,
   List,
@@ -23,6 +24,7 @@ import {
   MessageCircle,
   Minus,
   Palette,
+  Paperclip,
   Printer,
   Redo2,
   Strikethrough,
@@ -60,6 +62,7 @@ import {
 } from "./editor-commands";
 import { selectToolbarState } from "./editor-state";
 import { COLOR_SWATCH, HIGHLIGHT_CLASS } from "./mark-classes";
+import { mediaOf, pickMedia } from "./media-commands";
 import { insertTableBlock } from "./table-commands";
 
 const TOOL =
@@ -558,6 +561,24 @@ export function EditorToolbar({
       >
         <Table2 aria-hidden="true" className={ICON} />
       </ToolButton>
+      {mediaOf(editor) ? (
+        <>
+          <ToolButton
+            label={t.image}
+            disabled={disabled}
+            onClick={() => void pickMedia(editor, "image")}
+          >
+            <ImageIcon aria-hidden="true" className={ICON} />
+          </ToolButton>
+          <ToolButton
+            label={t.file}
+            disabled={disabled}
+            onClick={() => void pickMedia(editor, "file")}
+          >
+            <Paperclip aria-hidden="true" className={ICON} />
+          </ToolButton>
+        </>
+      ) : null}
       <Separator />
       <ToolButton
         label={t.clearFormat}

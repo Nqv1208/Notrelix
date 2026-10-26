@@ -1,6 +1,8 @@
 import type { JSONContent } from "@tiptap/core";
 import {
   HIGHLIGHT_TOKENS,
+  IMAGE_MAX_ALT_LENGTH,
+  clampImageWidth,
   TABLE_MAX_COL_WIDTH,
   TABLE_MIN_COL_WIDTH,
   emptyTable,
@@ -41,8 +43,8 @@ const NODE_OF: Readonly<Record<BlockType, string>> = {
   divider: "horizontalRule",
   board_reference: "boardReference",
   page_reference: "pageReference",
-  image: "unsupportedBlock",
-  file: "unsupportedBlock",
+  image: "imageBlock",
+  file: "fileBlock",
   table: "table",
 };
 
@@ -53,6 +55,8 @@ const OWN_KEYS: Readonly<Partial<Record<BlockType, readonly string[]>>> = {
   toggle: ["collapsed"],
   board_reference: ["linkedBoardId", "title", "caption", "items"],
   page_reference: ["linkedPageId"],
+  image: ["attachmentId", "width", "alt", "caption"],
+  file: ["attachmentId"],
 };
 
 /** Types whose text takes alignment. */
@@ -74,6 +78,7 @@ const ATOM_TYPES: ReadonlySet<BlockType> = new Set<BlockType>([
   "board_reference",
   "page_reference",
   "image",
+  "file",
 ]);
 
 export function newBlockId(): string {
@@ -324,6 +329,10 @@ function blockTypeOf(node: JSONContent): BlockType {
       return "board_reference";
     case "pageReference":
       return "page_reference";
+    case "imageBlock":
+      return "image";
+    case "fileBlock":
+      return "file";
     case "table":
       return "table";
     default:
@@ -355,6 +364,14 @@ export function nodeToDraft(node: JSONContent): BlockDraft {
     const value = attrs[key];
     if (value !== undefined && value !== null && value !== "") {
       properties[key] = value;
+    }
+  }
+  if (type === "image") {
+    if (typeof properties.width === "number") {
+      properties.width = clampImageWidth(properties.width);
+    }
+    if (typeof properties.alt === "string") {
+      properties.alt = properties.alt.slice(0, IMAGE_MAX_ALT_LENGTH);
     }
   }
   if (type === "todo") properties.checked = Boolean(attrs.checked);
@@ -390,7 +407,12 @@ export function nodeToDraft(node: JSONContent): BlockDraft {
   };
 }
 
-/** The blocks of an editor document, in order. */
+/** The node a file is waiting in while it uploads; it is never a stored block. */
+export const UPLOAD_PLACEHOLDER = "uploadPlaceholder";
+
+/** The blocks of an editor document, in order (upload placeholders are not blocks). */
 export function docToDrafts(doc: JSONContent): BlockDraft[] {
-  return (doc.content ?? []).map(nodeToDraft);
+  return (doc.content ?? [])
+    .filter((node) => node.type !== UPLOAD_PLACEHOLDER)
+    .map(nodeToDraft);
 }

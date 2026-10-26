@@ -38,6 +38,7 @@ const PRODUCER_TYPE: Record<string, string> = {
   divider: "Divider",
   code: "Code",
   image: "Image",
+  file: "File",
   board_reference: "Board",
   table: "Table",
   callout: "Callout",

@@ -3,11 +3,13 @@ import { useEditorState, type Editor } from "@tiptap/react";
 import {
   Code2,
   FileText,
+  ImageIcon,
   LayoutList,
   List,
   ListChecks,
   ListOrdered,
   Minus,
+  Paperclip,
   Pilcrow,
   Quote,
   Table2,
@@ -20,6 +22,7 @@ import type { BlockType } from "@notrelix/docs-core";
 import { fillDocCopy, type DocPageCopy } from "../components/doc-page.copy";
 import { foldText } from "../components/doc-popups-surface";
 import { setBlockType } from "./editor-commands";
+import { mediaOf, pickMedia } from "./media-commands";
 import { insertTableBlock } from "./table-commands";
 
 interface SlashItem {
@@ -78,6 +81,16 @@ export const SLASH_ITEMS: readonly SlashItem[] = [
     keywords: "duong ke divider",
   },
   { type: "table", icon: Table2, keywords: "bang table" },
+  {
+    type: "image",
+    icon: ImageIcon,
+    keywords: "hinh anh image picture photo",
+  },
+  {
+    type: "file",
+    icon: Paperclip,
+    keywords: "tep dinh kem file attachment document",
+  },
   {
     type: "page_reference",
     icon: FileText,
@@ -159,7 +172,9 @@ export function SlashMenu({
   });
   const [dismissed, setDismissed] = useState<number | null>(null);
   const items = (match ? matchSlashItems(copy, match.query) : []).filter(
-    (item) => item.type !== "board_reference" || onPickBoard,
+    (item) =>
+      (item.type !== "board_reference" || onPickBoard) &&
+      ((item.type !== "image" && item.type !== "file") || mediaOf(editor)),
   );
   const [active, setActive] = useState(0);
   const latest = useRef({ items, match, active, dismissed });
@@ -198,6 +213,10 @@ export function SlashMenu({
     }
     if (item.type === "table") {
       insertTableBlock(editor);
+      return;
+    }
+    if (item.type === "image" || item.type === "file") {
+      void pickMedia(editor, item.type);
       return;
     }
     setBlockType(editor, item.type);

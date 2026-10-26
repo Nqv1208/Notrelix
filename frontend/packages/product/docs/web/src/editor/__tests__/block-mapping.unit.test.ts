@@ -76,6 +76,14 @@ describe("block mapping", () => {
     ),
     draft("pr", "page_reference", { linkedPageId: "pg1" }, richText()),
     draft("img", "image", { url: "x", attachmentId: "a1" }, richText()),
+    draft(
+      "img2",
+      "image",
+      { attachmentId: "a2", width: 640, alt: "Sơ đồ", caption: "Hình 1" },
+      richText(),
+    ),
+    draft("img3", "image", { attachmentId: "a3" }, richText()),
+    draft("file", "file", { attachmentId: "f1" }, richText()),
     draft("e", "paragraph", {}, richText()),
   ];
 

@@ -58,6 +58,13 @@ export {
   refusePageFile,
 } from "./types/attachment-rules";
 export type { PageAttachment, PageFileRefusal } from "./types/attachment-rules";
+export { canRetryUpload } from "./types/attachment-uploads";
+export type {
+  AddUploadResult,
+  AttachmentUploadsView,
+  PendingUpload,
+  UploadFailure,
+} from "./types/attachment-uploads";
 
 export {
   COLOR_TOKENS,

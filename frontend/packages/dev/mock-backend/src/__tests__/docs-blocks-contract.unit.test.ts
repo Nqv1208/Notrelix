@@ -128,3 +128,36 @@ describe("Documents blocks keep the producer's final shapes in the mock world", 
     ).toBe(false);
   });
 });
+
+describe("Documents image and file blocks in the mock world", () => {
+  it("stores an image and a file block that point at an attachment and reads them back", async () => {
+    const { api } = setup();
+    const image = await api.post<BlockDto>(BLOCKS, {
+      type: "Image",
+      content: {},
+      properties: {
+        attachmentId: "a1",
+        width: 320,
+        alt: "Sơ đồ",
+        caption: [{ text: "Hình 1", marks: [] }],
+      },
+    });
+    const file = await api.post<BlockDto>(BLOCKS, {
+      type: "File",
+      content: {},
+      properties: { attachmentId: "f1" },
+    });
+    expect(image.type).toBe("Image");
+    expect(file.type).toBe("File");
+    const blocks = await api.get<BlockDto[]>(BLOCKS);
+    expect(blocks.find((block) => block.id === image.id)?.properties).toEqual({
+      attachmentId: "a1",
+      width: 320,
+      alt: "Sơ đồ",
+      caption: [{ text: "Hình 1", marks: [] }],
+    });
+    expect(blocks.find((block) => block.id === file.id)?.properties).toEqual({
+      attachmentId: "f1",
+    });
+  });
+});

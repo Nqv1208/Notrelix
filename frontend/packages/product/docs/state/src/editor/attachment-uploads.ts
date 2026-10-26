@@ -1,33 +1,14 @@
 import {
+  canRetryUpload,
   isPageImage,
   refusePageFile,
+  type AddUploadResult,
+  type AttachmentUploadsView,
   type PageAttachment,
-  type PageFileRefusal,
+  type PendingUpload,
+  type UploadFailure,
 } from "@notrelix/docs-core";
 import type { DocsUploadOptions } from "../api/page.api";
-
-/** Why a file did not make it onto the page (the server's answer). */
-export type UploadFailure =
-  /** 413: over the size limit. */
-  | "serverTooLarge"
-  /** 415: a type the server does not store. */
-  | "unsupportedType"
-  /** 409: the page holds the most files it can. */
-  | "limitReached"
-  | "forbidden"
-  | "notFound"
-  /** The network or the server broke the transfer: retryable. */
-  | "failed";
-
-/** Reasons a retry can change; the rest need another file or another page. */
-const RETRYABLE: ReadonlySet<UploadFailure> = new Set([
-  "failed",
-  "limitReached",
-]);
-
-export function canRetryUpload(failure: UploadFailure | null): boolean {
-  return failure !== null && RETRYABLE.has(failure);
-}
 
 /** Maps what the API answered (an `AppError`) to the reason shown to the member. */
 export function classifyUploadFailure(error: unknown): UploadFailure {
@@ -57,25 +38,6 @@ function isAborted(error: unknown): boolean {
   );
 }
 
-/** A file on its way to the page, or one that did not make it. */
-export interface PendingUpload {
-  readonly id: string;
-  readonly fileName: string;
-  readonly size: number;
-  /** An image becomes an image block, any other file a file block. */
-  readonly kind: "image" | "file";
-  readonly status: "uploading" | "failed";
-  /** 0 to 100 while uploading; null when the transfer reports none. */
-  readonly progress: number | null;
-  readonly failure: UploadFailure | null;
-  /** A local preview of an image while it uploads; never stored. */
-  readonly previewUrl: string | null;
-}
-
-export type AddUploadResult =
-  | { readonly ok: true; readonly id: string }
-  | { readonly ok: false; readonly refusal: PageFileRefusal };
-
 export interface AttachmentUploadsOptions {
   readonly upload: (
     file: File,
@@ -86,6 +48,8 @@ export interface AttachmentUploadsOptions {
     upload: PendingUpload,
     attachment: PageAttachment,
   ) => void;
+  /** An upload failed for good or until retried: the member is told once. */
+  readonly onFailed?: (upload: PendingUpload, failure: UploadFailure) => void;
   /** A local preview address for an image (the editor shows it while uploading). */
   readonly createPreviewUrl?: (file: File) => string | null;
   readonly revokePreviewUrl?: (url: string) => void;
@@ -117,11 +81,10 @@ function browserRevoke(url: string): void {
  * editor then swaps in the block) or removed. The server owns the attachment;
  * nothing but its id ever reaches the page's content.
  */
-export class AttachmentUploads {
+export class AttachmentUploads implements AttachmentUploadsView {
   private readonly entries = new Map<string, Entry>();
   private readonly listeners = new Set<() => void>();
   private snapshotValue: readonly PendingUpload[] = [];
-  private disposed = false;
 
   constructor(private readonly options: AttachmentUploadsOptions) {}
 
@@ -183,11 +146,10 @@ export class AttachmentUploads {
   /** The uploads now; a new array only when something changed. */
   snapshot = (): readonly PendingUpload[] => this.snapshotValue;
 
+  /** Cancels every transfer and forgets the uploads; the object stays usable. */
   dispose(): void {
-    this.disposed = true;
     for (const entry of this.entries.values()) entry.controller?.abort();
     for (const id of [...this.entries.keys()]) this.forget(id);
-    this.listeners.clear();
   }
 
   private forget(id: string): void {
@@ -229,17 +191,20 @@ export class AttachmentUploads {
         },
       })
       .then((attachment) => {
-        if (this.disposed || !this.entries.has(id)) return;
+        if (!this.entries.has(id)) return;
         const done = entry.upload;
         this.options.onUploaded(done, attachment);
         this.forget(id);
       })
       .catch((error: unknown) => {
         if (isAborted(error) || !this.entries.has(id)) return;
-        this.patch(id, {
-          status: "failed",
-          failure: classifyUploadFailure(error),
-        });
+        const failure = classifyUploadFailure(error);
+        this.patch(id, { status: "failed", failure });
+        const failed = this.entries.get(id)?.upload;
+        if (failed) this.options.onFailed?.(failed, failure);
       });
   }
 }
+
+export { canRetryUpload };
+export type { AddUploadResult, PendingUpload, UploadFailure };
