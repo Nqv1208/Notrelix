@@ -118,4 +118,22 @@ export const commentsOperations = [
       return ok<void>(undefined);
     },
   }),
+
+  // ─── POST /comments/:commentId/reopen ───────────────────────────────────
+
+  defineMockOperation<{ commentId: string }, never, void>({
+    id: "docs.comments.reopen",
+    contract: {
+      kind: "openapi",
+      operationId: "Collaboration.Comments.Reopen",
+    } as any,
+    method: "POST",
+    route: "/comments/:commentId/reopen",
+    async handle({ params, store }) {
+      if (!store.reopenPageComment(params.commentId)) {
+        return notFound("Comment not found");
+      }
+      return ok<void>(undefined);
+    },
+  }),
 ];

@@ -9,6 +9,7 @@ import {
   type DocsFileClient,
   createUseCreateComment,
   createUseDeleteComment,
+  createUseReopenComment,
   createUseResolveComment,
   createUseCreatePage,
   createUseDocEditor,
@@ -161,6 +162,7 @@ export function createDocPageScreen({
   const useCreateComment = createUseCreateComment(api, endpoints);
   const useDeleteComment = createUseDeleteComment(api, endpoints);
   const useResolveComment = createUseResolveComment(api, endpoints);
+  const useReopenComment = createUseReopenComment(api, endpoints);
   const useCreatePage = createUseCreatePage(api, endpoints);
   const usePageBacklinks = createUsePageBacklinks(api, endpoints);
   const useConvertTodo = createUseConvertTodo(api, endpoints);
@@ -196,6 +198,7 @@ export function createDocPageScreen({
     const createComment = useCreateComment(workspaceId, pageId);
     const deleteComment = useDeleteComment(workspaceId, pageId);
     const resolveComment = useResolveComment(workspaceId, pageId);
+    const reopenComment = useReopenComment(workspaceId, pageId);
     const createPage = useCreatePage(workspaceId);
     const backlinksQuery = usePageBacklinks(workspaceId, pageId);
     const convertTodo = useConvertTodo(workspaceId, pageId);
@@ -1203,6 +1206,9 @@ export function createDocPageScreen({
       onCommentResolve: (id) => {
         resolveComment.mutate(id);
         if (id === activeCommentId) setActiveCommentId(null);
+      },
+      onCommentReopen: (id) => {
+        reopenComment.mutate(id);
       },
       onCommentDelete: (id) => {
         deleteComment.mutate(id);

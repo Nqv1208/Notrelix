@@ -1,5 +1,13 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
-import { Check, CheckSquare, FileText, Lock, Trash2, X } from "lucide-react";
+import {
+  Check,
+  CheckSquare,
+  FileText,
+  Lock,
+  RotateCcw,
+  Trash2,
+  X,
+} from "lucide-react";
 import { cn } from "@notrelix/ui-web";
 import { fillDocCopy, type DocPageCopy } from "./doc-page.copy";
 import {
@@ -356,6 +364,17 @@ function CommentsPanel({
                     className="grid size-6 place-items-center rounded-[6px] border-0 bg-transparent text-meta-foreground outline-none hover:bg-state-hover focus-visible:ring-2 focus-visible:ring-focus-ring"
                   >
                     <Check aria-hidden="true" className="size-3.5" />
+                  </button>
+                ) : null}
+                {comment.resolved && canComment ? (
+                  <button
+                    type="button"
+                    aria-label={c.reopenThread}
+                    title={c.reopenThread}
+                    onClick={() => callbacks?.onCommentReopen?.(comment.id)}
+                    className="grid size-6 place-items-center rounded-[6px] border-0 bg-transparent text-meta-foreground outline-none hover:bg-state-hover focus-visible:ring-2 focus-visible:ring-focus-ring"
+                  >
+                    <RotateCcw aria-hidden="true" className="size-3.5" />
                   </button>
                 ) : null}
                 {comment.mine ? (

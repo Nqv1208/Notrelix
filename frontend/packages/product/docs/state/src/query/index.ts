@@ -40,6 +40,7 @@ export { createUseReorderBlocks } from "./hooks/use-reorder-blocks";
 export { createUseCreateComment } from "./hooks/use-create-comment";
 export { createUseDeleteComment } from "./hooks/use-delete-comment";
 export { createUseResolveComment } from "./hooks/use-resolve-comment";
+export { createUseReopenComment } from "./hooks/use-reopen-comment";
 export { createUseToggleFavorite } from "./hooks/use-toggle-favorite";
 export { createUseDocEditor } from "./hooks/use-doc-editor";
 export type { DocSaveState } from "./hooks/use-doc-editor";

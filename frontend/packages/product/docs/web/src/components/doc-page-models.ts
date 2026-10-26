@@ -455,6 +455,8 @@ export interface DocPageCallbacks {
   readonly onCommentDelete?: (id: string) => void;
   /** Marks a comment thread resolved. */
   readonly onCommentResolve?: (id: string) => void;
+  /** Makes a resolved comment thread active again. */
+  readonly onCommentReopen?: (id: string) => void;
   readonly onMentionInsert?: () => void;
   readonly onOpenComments?: () => void;
   readonly onAddBlock?: (type: BlockType) => void;

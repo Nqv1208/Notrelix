@@ -70,6 +70,23 @@ describe("docs comment threads", () => {
     expect(onCommentResolve).toHaveBeenCalledWith("open");
   });
 
+  it("FUI[docs.page.side-panel:comment-reopen] offers Reopen only on a resolved thread and reports it", () => {
+    const onCommentReopen = vi.fn();
+    panel({ onCommentReopen });
+    expect(
+      screen.queryByRole("button", { name: docsCopy.comments.reopenThread }),
+    ).toBeNull();
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: /Hiện bình luận đã xử lý/ }),
+    );
+    const buttons = screen.getAllByRole("button", {
+      name: docsCopy.comments.reopenThread,
+    });
+    expect(buttons).toHaveLength(1);
+    fireEvent.click(buttons[0]!);
+    expect(onCommentReopen).toHaveBeenCalledWith("done");
+  });
+
   it("FUI[docs.page.side-panel:comment-delete] asks before deleting and only the author is offered Delete", () => {
     const onCommentDelete = vi.fn();
     panel({ onCommentDelete });

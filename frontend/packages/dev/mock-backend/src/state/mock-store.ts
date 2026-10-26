@@ -4225,6 +4225,14 @@ export class MockStore {
     return comment;
   }
 
+  /** A resolved thread becomes active again; reopening an active one changes nothing. */
+  reopenPageComment(id: string): MockPageCommentRecord | null {
+    const comment = this.pageCommentsById.get(id);
+    if (!comment) return null;
+    comment.resolvedAt = null;
+    return comment;
+  }
+
   deletePageComment(id: string): boolean {
     return this.pageCommentsById.delete(id);
   }

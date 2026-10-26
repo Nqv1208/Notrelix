@@ -14,6 +14,8 @@ describe("page comment resolve and delete", () => {
     const comments = createCommentApi(api, testEndpoints);
     await comments.resolve("c1");
     expect(api.post).toHaveBeenCalledWith("/comments/c1/resolve", {});
+    await comments.reopen("c1");
+    expect(api.post).toHaveBeenCalledWith("/comments/c1/reopen", {});
     await comments.delete("c1");
     expect(api.delete).toHaveBeenCalledWith("/comments/c1");
   });

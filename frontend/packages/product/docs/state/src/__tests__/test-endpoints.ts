@@ -42,6 +42,7 @@ export const testEndpoints: PageApiEndpoints = {
   comments: {
     detail: (commentId) => `/comments/${commentId}`,
     resolve: (commentId) => `/comments/${commentId}/resolve`,
+    reopen: (commentId) => `/comments/${commentId}/reopen`,
   },
   boardItems: {
     create: (boardId) => `/boards/${boardId}/items`,

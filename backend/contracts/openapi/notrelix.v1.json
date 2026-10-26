@@ -1494,6 +1494,47 @@
         ]
       }
     },
+    "/api/v1/comments/{commentId}/reopen": {
+      "post": {
+        "tags": [
+          "Collaboration.Comments",
+          "Collaboration.Comments"
+        ],
+        "summary": "Reopen a resolved comment thread",
+        "operationId": "Collaboration.Comments.Reopen",
+        "parameters": [
+          {
+            "name": "commentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
     "/api/v1/inbox/summary": {
       "get": {
         "tags": [
