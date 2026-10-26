@@ -222,7 +222,11 @@ services:
       NODE_ENV: development
       WATCHPACK_POLLING: "true"
       CHOKIDAR_USEPOLLING: "true"
-      VITE_API_URL: ${VITE_API_URL:-/api}
+      # The web runtime needs absolute URLs; the browser reaches the backend through the gateway.
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:${GATEWAY_PORT:-3080}/api/v1}
+      VITE_WS_URL: ${VITE_WS_URL:-ws://localhost:${GATEWAY_PORT:-3080}/api/v1/realtime}
+      VITE_APP_URL: ${VITE_APP_URL:-http://localhost:${GATEWAY_PORT:-3080}}
+      VITE_MOCK_API: "false"
     volumes:
       - ./frontend:/app
       - frontend_web_node_modules:/app/node_modules
