@@ -3,7 +3,6 @@
  *
  * Operations with official contracts:
  *   workspace.list         — GET /workspaces
- *   workspace.create       — POST /workspaces
  *   workspace.get          — GET /workspaces/:id
  *
  * Operations with COMPATIBILITY-GAP (temporary legacy behavior):
@@ -243,40 +242,6 @@ export const workspaceOperations = [
           .filter((w) => !store.isWorkspaceArchived(w.id))
           .map((w) => workspaceDto(store, w.id)),
       );
-    },
-  }),
-
-  // ─── POST /workspaces ─────────────────────────────────────────────────────
-
-  defineMockOperation<
-    Record<string, never>,
-    { name?: string; slug?: string; isPersonal?: boolean },
-    WorkspaceSummary
-  >({
-    id: "workspace.create",
-    contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
-    method: "POST",
-    route: "/workspaces",
-    async handle({ body, store }) {
-      const data = (body ?? {}) as {
-        name?: string;
-        slug?: string;
-        isPersonal?: boolean;
-      };
-      const { workspace } = store.createWorkspaceForCurrentUser({
-        name: data.name,
-        slug: data.slug,
-        isPersonal: data.isPersonal,
-      });
-      return created<WorkspaceSummary>({
-        id: workspace.id,
-        name: workspace.name,
-        slug: workspace.slug,
-        plan: workspace.plan,
-        icon: workspace.icon,
-        memberCount: store.getWorkspaceMembers(workspace.id).length,
-        isPersonal: workspace.isPersonal,
-      });
     },
   }),
 
