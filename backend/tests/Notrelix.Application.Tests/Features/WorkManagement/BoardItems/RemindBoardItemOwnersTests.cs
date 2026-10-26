@@ -1,12 +1,11 @@
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.RemindBoardItemOwners;
-using Notrelix.Application.Features.WorkManagement.Ports.Collaboration;
 using Notrelix.Domain.Governance.Permissions;
+using Notrelix.Domain.WorkManagement.Items.Events;
 
 namespace Notrelix.Application.Tests.Features.WorkManagement.BoardItems;
 
 public class RemindBoardItemOwnersTests : WorkManagementHandlerTestBase
 {
-    private readonly Mock<IItemReminderNotifier> _notifier = new();
     private readonly InMemoryBoardItemReminders _reminders = new();
     private readonly RemindBoardItemOwnersCommandHandler _handler;
     private readonly Guid _colleague = Guid.CreateVersion7();
@@ -14,7 +13,7 @@ public class RemindBoardItemOwnersTests : WorkManagementHandlerTestBase
     public RemindBoardItemOwnersTests()
     {
         _handler = new RemindBoardItemOwnersCommandHandler(
-            DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object, _reminders, _notifier.Object);
+            DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object, _reminders);
     }
 
     private BoardItem ItemInCharge(params Guid[] assignees)
@@ -24,6 +23,9 @@ public class RemindBoardItemOwnersTests : WorkManagementHandlerTestBase
         SetupBoardItemMembers(assignees.Select(a => CreateBoardItemMember(itemId: item.Id, userId: a)).ToArray());
         return item;
     }
+
+    private static List<BoardItemOwnersRemindedDomainEvent> Reminded(BoardItem item) =>
+        item.DomainEvents.OfType<BoardItemOwnersRemindedDomainEvent>().ToList();
 
     [Fact]
     public async Task Authorization_NeedsOnlyToSeeTheItem()
@@ -46,10 +48,10 @@ public class RemindBoardItemOwnersTests : WorkManagementHandlerTestBase
         result.Succeeded.Should().BeTrue();
         result.Data!.Recipients.Should().Be(2);
         result.Data.NextRemindAt.Should().Be(TestNow.AddHours(24));
-        _notifier.Verify(n => n.NotifyAsync(
-            TestAccountId, TestWorkspaceId, item.Id, TestUserId, TestNow,
-            It.Is<IReadOnlyCollection<Guid>>(r => r.Count == 2 && r.Contains(_colleague) && r.Contains(other) && !r.Contains(TestUserId)),
-            It.IsAny<CancellationToken>()), Times.Once);
+        var fact = Reminded(item).Should().ContainSingle().Which;
+        fact.SenderUserId.Should().Be(TestUserId);
+        fact.OccurredAt.Should().Be(TestNow);
+        fact.RecipientUserIds.Should().BeEquivalentTo([_colleague, other]);
         _reminders.RemindedAt(item.Id, TestUserId).Should().Be(TestNow);
     }
 
@@ -64,7 +66,7 @@ public class RemindBoardItemOwnersTests : WorkManagementHandlerTestBase
         var thrown = (await act.Should().ThrowAsync<ConflictException>()).Which;
         thrown.ErrorCode.Should().Be(RemindBoardItemOwnersCommand.TooSoonErrorCode);
         thrown.Message.Should().Contain(TestNow.AddHours(1).ToString("O"));
-        _notifier.VerifyNoOtherCalls();
+        Reminded(item).Should().BeEmpty();
     }
 
     [Fact]
@@ -77,9 +79,7 @@ public class RemindBoardItemOwnersTests : WorkManagementHandlerTestBase
 
         result.Succeeded.Should().BeTrue();
         _reminders.RemindedAt(item.Id, TestUserId).Should().Be(TestNow);
-        _notifier.Verify(n => n.NotifyAsync(
-            It.IsAny<Guid>(), It.IsAny<Guid>(), item.Id, TestUserId, TestNow,
-            It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()), Times.Once);
+        Reminded(item).Should().ContainSingle();
     }
 
     [Fact]
@@ -101,7 +101,7 @@ public class RemindBoardItemOwnersTests : WorkManagementHandlerTestBase
         var act = () => _handler.Handle(new RemindBoardItemOwnersCommand(item.Id), CancellationToken.None);
 
         await act.Should().ThrowAsync<BusinessRuleException>();
-        _notifier.VerifyNoOtherCalls();
+        Reminded(item).Should().BeEmpty();
         _reminders.Count.Should().Be(0);
     }
 
@@ -125,7 +125,7 @@ public class RemindBoardItemOwnersTests : WorkManagementHandlerTestBase
     }
 
     [Fact]
-    public async Task Handle_SimultaneousPresses_ExactlyOneWinsAndOnlyTheWinnerNotifies()
+    public async Task Handle_SimultaneousPresses_ExactlyOneWinsAndOnlyTheWinnerRecordsTheFact()
     {
         var item = ItemInCharge(_colleague);
 
@@ -142,8 +142,6 @@ public class RemindBoardItemOwnersTests : WorkManagementHandlerTestBase
         }));
 
         attempts.Count(won => won).Should().Be(1);
-        _notifier.Verify(n => n.NotifyAsync(
-            It.IsAny<Guid>(), It.IsAny<Guid>(), item.Id, TestUserId, It.IsAny<DateTimeOffset>(),
-            It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()), Times.Once);
+        Reminded(item).Should().ContainSingle();
     }
 }

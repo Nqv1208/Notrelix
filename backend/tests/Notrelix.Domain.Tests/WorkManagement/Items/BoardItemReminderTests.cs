@@ -12,16 +12,4 @@ public class BoardItemReminderTests
     {
         BoardItemReminder.NextAfter(Start).Should().Be(Start.AddHours(24));
     }
-
-    [Fact]
-    public void WindowOf_IsSharedByARetryAndNeverByTwoRemindersAtLeastADayApart()
-    {
-        BoardItemReminder.WindowOf(Start).Should().Be(BoardItemReminder.WindowOf(Start.AddSeconds(30)));
-
-        foreach (var offset in new[] { 0, 1, 7, 13, 23 })
-        {
-            var first = Start.AddHours(offset).AddMinutes(17);
-            BoardItemReminder.WindowOf(first).Should().NotBe(BoardItemReminder.WindowOf(first.Add(BoardItemReminder.Cooldown)));
-        }
-    }
 }

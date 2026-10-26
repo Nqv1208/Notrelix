@@ -129,6 +129,7 @@ public static class WorkManagementRuleCodes
 
     // ── Reminder ──────────────────────────────────────────────────────────
     public const string WorkManagement_Reminder_TooSoon = "WorkManagement_Reminder_TooSoon";
+    public const string WorkManagement_Reminder_NobodyToRemind = "WorkManagement_Reminder_NobodyToRemind";
 
     // ── Approval ──────────────────────────────────────────────────────────
     public const string WorkManagement_Approval_StepNotFound = "WorkManagement_Approval_StepNotFound";

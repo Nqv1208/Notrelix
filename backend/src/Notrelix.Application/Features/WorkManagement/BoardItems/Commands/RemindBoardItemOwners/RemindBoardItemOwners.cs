@@ -2,13 +2,12 @@ using Notrelix.Application.Common.Exceptions;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Services;
-using Notrelix.Application.Features.WorkManagement.Ports.Collaboration;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.RemindBoardItemOwners;
 
 /// <summary>
 /// "Nhắc": the caller, who waits on an Item, asks each person in charge of it for an update. Everyone assigned
-/// except the caller gets an Inbox notification naming the caller. The caller may do this once per Item per 24
+/// except the caller is told in their Inbox, naming the caller (Collaboration reacts to the recorded fact). The caller may do this once per Item per 24
 /// hours (a durable rule of <see cref="BoardItemReminder"/>). Seeing the Item is enough to ask.
 /// </summary>
 [IdempotencyOperation("work-management.board-items.remind-owners.v1")]
@@ -28,8 +27,7 @@ public class RemindBoardItemOwnersCommandHandler(
     IWorkManagementDbContext context,
     ICurrentRequestContext requestContext,
     IDateTimeProvider clock,
-    IBoardItemReminders reminders,
-    IItemReminderNotifier notifier) : IRequestHandler<RemindBoardItemOwnersCommand, Result<RemindBoardItemOwnersResult>>
+    IBoardItemReminders reminders) : IRequestHandler<RemindBoardItemOwnersCommand, Result<RemindBoardItemOwnersResult>>
 {
     public async Task<Result<RemindBoardItemOwnersResult>> Handle(RemindBoardItemOwnersCommand request, CancellationToken cancellationToken)
     {
@@ -49,7 +47,8 @@ public class RemindBoardItemOwnersCommandHandler(
 
         var now = clock.UtcNow;
         // One atomic step decides the 24 hour limit: of simultaneous presses exactly one claims it and the rest
-        // lose without notifying anyone. The claim and the notifications below share the request transaction.
+        // lose without telling anyone. The claim and the fact recorded below (which reaches Collaboration through
+        // the outbox, to be turned into Inbox entries) share the request transaction.
         var claim = await reminders.TryClaimAsync(
             item.AccountId, item.WorkspaceId, item.BoardId, item.Id, senderId, now, cancellationToken);
         if (!claim.Claimed)
@@ -59,8 +58,7 @@ public class RemindBoardItemOwnersCommandHandler(
                 RemindBoardItemOwnersCommand.TooSoonErrorCode);
         }
 
-        await notifier.NotifyAsync(
-            item.AccountId, item.WorkspaceId, item.Id, senderId, now, recipients, cancellationToken);
+        item.RecordOwnersReminded(senderId, recipients, now);
 
         return Result<RemindBoardItemOwnersResult>.Success(new(now, claim.NextRemindAt, recipients.Count));
     }

@@ -25,10 +25,4 @@ public class BoardItemReminder : Entity, IWorkspaceScoped
 
     /// <summary>The first moment a sender may remind again after a reminder sent at <paramref name="remindedAt"/>.</summary>
     public static DateTimeOffset NextAfter(DateTimeOffset remindedAt) => remindedAt + Cooldown;
-
-    /// <summary>
-    /// The cooldown window a reminder time falls in. Two reminders by one sender on one Item are always at least a
-    /// full cooldown apart, so they never share a window; a retried request shares its window with the original.
-    /// </summary>
-    public static long WindowOf(DateTimeOffset remindedAt) => remindedAt.UtcTicks / Cooldown.Ticks;
 }

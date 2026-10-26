@@ -128,3 +128,24 @@ public sealed class CommentCreatedFollowConsumer : IConsumer<CommentCreatedInteg
             ItemFollowerNotifier.Excerpt(msg.Body), [], DateTimeOffset.UtcNow, context.CancellationToken);
     }
 }
+
+[OrderingNotApplicable("Each reminder notifies independently, keyed by the reminder event and person; notifications never supersede each other.")]
+public sealed class BoardItemOwnersRemindedNotificationConsumer : IConsumer<BoardItemOwnersRemindedIntegrationEvent>
+{
+    public const string Title = "Asked for an update";
+
+    private readonly ItemFollowerNotifier _notifier;
+
+    public BoardItemOwnersRemindedNotificationConsumer(ItemFollowerNotifier notifier) => _notifier = notifier;
+
+    public async Task Consume(ConsumeContext<BoardItemOwnersRemindedIntegrationEvent> context)
+    {
+        var msg = context.Message;
+
+        // Each person in charge is told who waits on them; the sender never hears their own reminder.
+        await _notifier.NotifyAsync(
+            msg.AccountIdValue, msg.WorkspaceIdValue, msg.ItemId, msg.SenderUserId, msg.EventId,
+            NotificationTypes.ItemReminderProducedType, Title, null,
+            msg.RecipientUserIds.Where(id => id != msg.SenderUserId).ToList(), msg.OccurredAt, context.CancellationToken);
+    }
+}
