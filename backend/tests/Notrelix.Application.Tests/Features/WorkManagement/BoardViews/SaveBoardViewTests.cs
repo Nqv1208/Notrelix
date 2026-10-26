@@ -64,6 +64,64 @@ public class SaveBoardViewTests : WorkManagementHandlerTestBase
         result.Succeeded.Should().BeTrue();
     }
 
+    [Theory]
+    [InlineData(ViewType.Table)]
+    [InlineData(ViewType.Kanban)]
+    public async Task Handle_ExistingView_SavesWipLimits_AndKeepsOtherKeys(ViewType existingType)
+    {
+        var board = CreateBoard();
+        SetupBoards(board);
+        var view = BoardView.Create(
+            TestAccountId, TestWorkspaceId, board.Id, "View", existingType,
+            BoardViewConfig.Create(JsonValue.Create("{\"laneCardLimit\":3}")), TestUserId, TestNow);
+        SetupBoardViews(view);
+        var lane = Guid.CreateVersion7().ToString();
+        var config = "{\"laneCardLimit\":5,\"wipLimits\":{\"" + lane + "\":2}}";
+
+        var result = await _handler.Handle(new SaveBoardViewCommand(board.Id, ViewMode.Kanban, config), CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        view.Config.Data.Value.Should().Be(JsonValue.Create(config).Value);
+        KanbanWipLimits.FromConfig(view.Config.Data).LimitFor(lane).Should().Be(2);
+    }
+
+    [Fact]
+    public async Task Handle_ExistingView_ConfigWithoutWipLimits_StillSaves()
+    {
+        var board = CreateBoard();
+        SetupBoards(board);
+        var view = BoardView.Create(
+            TestAccountId, TestWorkspaceId, board.Id, "View", ViewType.Kanban,
+            BoardViewConfig.Create(JsonValue.EmptyObject()), TestUserId, TestNow);
+        SetupBoardViews(view);
+
+        var result = await _handler.Handle(new SaveBoardViewCommand(board.Id, ViewMode.Kanban, "{\"groupBy\":\"status\"}"), CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        view.Config.Data.Value.Should().Be("{\"groupBy\":\"status\"}");
+        KanbanWipLimits.FromConfig(view.Config.Data).Should().Be(KanbanWipLimits.None);
+    }
+
+    [Fact]
+    public async Task Handle_WipLimitOutOfRange_IsRejected_AndViewUnchanged()
+    {
+        var board = CreateBoard();
+        SetupBoards(board);
+        var view = BoardView.Create(
+            TestAccountId, TestWorkspaceId, board.Id, "View", ViewType.Kanban,
+            BoardViewConfig.Create(JsonValue.EmptyObject()), TestUserId, TestNow);
+        SetupBoardViews(view);
+        var versionBefore = view.Version;
+
+        var act = () => _handler.Handle(
+            new SaveBoardViewCommand(board.Id, ViewMode.Kanban, "{\"wipLimits\":{\"lane\":1000}}"), CancellationToken.None);
+
+        (await act.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>())
+            .Which.RuleCode.Should().Be(Notrelix.Domain.WorkManagement.WorkManagementRuleCodes.WorkManagement_Kanban_WipLimitOutOfRange);
+        view.Config.Data.Value.Should().Be("{}");
+        view.Version.Should().Be(versionBefore);
+    }
+
     [Fact]
     public async Task Handle_ListMode_CreatesTableView()
     {

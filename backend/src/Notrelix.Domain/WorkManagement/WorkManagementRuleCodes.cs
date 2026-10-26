@@ -92,6 +92,8 @@ public static class WorkManagementRuleCodes
     public const string WorkManagement_Kanban_MustHaveVisibleField = "WorkManagement_Kanban_MustHaveVisibleField";
     public const string WorkManagement_Kanban_VisibleFieldIdsCannotBeEmpty = "WorkManagement_Kanban_VisibleFieldIdsCannotBeEmpty";
     public const string WorkManagement_Kanban_SwimlaneFieldIdCannotBeEmpty = "WorkManagement_Kanban_SwimlaneFieldIdCannotBeEmpty";
+    public const string WorkManagement_Kanban_WipLimitOutOfRange = "WorkManagement_Kanban_WipLimitOutOfRange";
+    public const string WorkManagement_Kanban_WipLimitsInvalid = "WorkManagement_Kanban_WipLimitsInvalid";
 
     // ── Form ──────────────────────────────────────────────────────────────
     public const string WorkManagement_Form_CannotPublishClosed = "WorkManagement_Form_CannotPublishClosed";

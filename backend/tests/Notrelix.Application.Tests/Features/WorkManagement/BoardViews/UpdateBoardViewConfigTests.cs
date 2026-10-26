@@ -36,6 +36,23 @@ public class UpdateBoardViewConfigTests : WorkManagementHandlerTestBase
     }
 
     [Fact]
+    public async Task Handle_KanbanView_WipLimits_RoundTripInResponse()
+    {
+        var board = CreateBoard();
+        var view = BoardView.Create(
+            TestAccountId, TestWorkspaceId, board.Id, "Kanban",
+            ViewType.Kanban, BoardViewConfig.Create(JsonValue.EmptyObject()),
+            TestUserId, TestNow);
+        SetupBoardViews(view);
+        var config = "{\"wipLimits\":{\"lane-a\":4}}";
+
+        var result = await _handler.Handle(new UpdateBoardViewConfigCommand(board.Id, view.Id, config), CancellationToken.None);
+
+        result.Config.Should().Be(config);
+        KanbanWipLimits.FromConfig(view.Config.Data).LimitFor("lane-a").Should().Be(4);
+    }
+
+    [Fact]
     public async Task Handle_BoardViewNotFound_ThrowsNotFoundException()
     {
         var command = new UpdateBoardViewConfigCommand(

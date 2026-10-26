@@ -56,15 +56,11 @@ public class BoardView : SoftDeletableAggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(updatedBy);
         Guard.NotNull(config);
 
-        // Ensure the config type matches the view type
-        if (Type == ViewType.Kanban && config is not KanbanViewConfig)
-            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_View_KanbanMustUseKanbanConfig, "Kanban view must use KanbanViewConfig");
-        if (Type == ViewType.Table && config is not TableViewConfig)
-            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_View_TableMustUseTableConfig, "Table view must use TableViewConfig");
-        if (Type == ViewType.Calendar && config is not CalendarViewConfig)
-            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_View_CalendarMustUseCalendarConfig, "Calendar view must use CalendarViewConfig");
-        if (Type == ViewType.Timeline && config is not TimelineViewConfig)
-            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_View_TimelineMustUseTimelineConfig, "Timeline view must use TimelineViewConfig");
+        // A typed config must match the view type. The untyped presentation
+        // config (the JSON document the shared-view routes send, and what is
+        // read back from storage) fits every view type.
+        if (config.GetType() != typeof(BoardViewConfig))
+            EnsureConfigFitsType(config);
 
         if (Config == config) return;
 
@@ -73,6 +69,18 @@ public class BoardView : SoftDeletableAggregateRoot, IWorkspaceScoped
         ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BoardViewConfigUpdatedDomainEvent(AccountId, WorkspaceId, Id, BoardId, updatedBy, updatedAt));
+    }
+
+    private void EnsureConfigFitsType(BoardViewConfig config)
+    {
+        if (Type == ViewType.Kanban && config is not KanbanViewConfig)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_View_KanbanMustUseKanbanConfig, "Kanban view must use KanbanViewConfig");
+        if (Type == ViewType.Table && config is not TableViewConfig)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_View_TableMustUseTableConfig, "Table view must use TableViewConfig");
+        if (Type == ViewType.Calendar && config is not CalendarViewConfig)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_View_CalendarMustUseCalendarConfig, "Calendar view must use CalendarViewConfig");
+        if (Type == ViewType.Timeline && config is not TimelineViewConfig)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_View_TimelineMustUseTimelineConfig, "Timeline view must use TimelineViewConfig");
     }
 
     public void Rename(string name, Guid updatedBy, DateTimeOffset updatedAt)
