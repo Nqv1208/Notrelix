@@ -96,11 +96,13 @@ for (const viewport of VIEWPORTS) {
       const errors = trackErrors(page);
       await openBoard(page);
       await expect.poll(() => laneCounts(page)).toEqual(["6", "3", "2", "5"]);
+      // A lane scrolls and shows all its cards: paging starts only after 20.
       await expect(
-        lane(page, "Cần làm").getByRole("button", {
-          name: /^Xem thêm 3 việc$/,
-        }),
-      ).toBeVisible();
+        lane(page, "Cần làm").locator("button[data-card-id]"),
+      ).toHaveCount(6);
+      await expect(
+        lane(page, "Cần làm").getByRole("button", { name: /^Xem thêm/ }),
+      ).toHaveCount(0);
       expect(errors).toEqual([]);
     });
 
@@ -123,12 +125,7 @@ for (const viewport of VIEWPORTS) {
         await sheet.getByRole("button", { name: "Đóng (Esc)" }).click();
       }
       await expect.poll(() => laneCounts(page)).toEqual(["5", "4", "2", "5"]);
-      // Three cards show before "Xem thêm": a card that arrived by the sheet
-      // is the fourth.
-      const more = lane(page, "Đang làm").getByRole("button", {
-        name: /^Xem thêm/,
-      });
-      if (await more.count()) await more.click();
+      // The lane shows every card, so the card that arrived is already there.
       await expect(
         lane(page, "Đang làm").getByRole("button", {
           name: ERP_149,

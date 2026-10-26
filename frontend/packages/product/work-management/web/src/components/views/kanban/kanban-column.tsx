@@ -38,6 +38,7 @@ import {
 import type { StatusOptionFormCopy } from "../../status-option/status-option-form.copy";
 import { KanbanAddCard } from "./kanban-add-card";
 import { KanbanCard } from "./kanban-card";
+import type { KanbanCardActions } from "./kanban-card-quick-actions";
 import { fillCopy, pluralCopy, type KanbanCardCopy } from "./kanban-card.copy";
 import { KANBAN_LANE_TYPE } from "./kanban-collision";
 import {
@@ -100,6 +101,8 @@ export interface KanbanColumnProps {
   draggedCardId?: string;
   /** Alt+Arrow moves a card; absent when the view has it off or the viewer cannot move. */
   onMoveCardByKey?: (cardId: string, direction: KanbanMoveDirection) => void;
+  /** Hover and focus actions of the cards. */
+  cardActions?: KanbanCardActions;
   /** Rename and recolour from the lane menu; absent when the viewer cannot. */
   edit?: KanbanLaneEdit;
   collapsed: boolean;
@@ -141,6 +144,7 @@ export function KanbanColumn({
   laneCardLimit = DEFAULT_KANBAN_LANE_CARD_LIMIT,
   draggedCardId,
   onMoveCardByKey,
+  cardActions,
   edit,
   collapsed,
   openAddRequest,
@@ -328,7 +332,7 @@ export function KanbanColumn({
         }}
       >
         <PopoverAnchor asChild>
-          <div className="flex h-7.5 items-center gap-2 px-1.5">
+          <div className="flex min-h-8 items-center gap-1.5 pr-0 pl-1.5">
             <span
               aria-hidden="true"
               className={cn("size-2.25 shrink-0 rounded-full", dot)}
@@ -548,7 +552,7 @@ export function KanbanColumn({
         {visibleCards.length > 0 ? (
           <div
             data-lane-cards=""
-            className="-mx-1 flex max-h-[calc(100dvh-17rem)] min-h-12 flex-col gap-2 overflow-y-auto px-1 py-0.5 [scrollbar-width:thin]"
+            className="-mx-1 -my-0.5 flex max-h-[calc(100dvh-17rem)] min-h-12 flex-col gap-2 overflow-y-auto px-1 py-0.5 [scrollbar-width:thin]"
           >
             {visibleCards.map((card) => (
               <KanbanCard
@@ -561,6 +565,7 @@ export function KanbanColumn({
                 selected={card.id === selectedItemId}
                 dragDisabled={!canDrag}
                 onMoveKey={onMoveCardByKey}
+                actions={cardActions}
                 onOpenDetails={onOpenDetails}
               />
             ))}
@@ -572,7 +577,7 @@ export function KanbanColumn({
         filterActive && lane.total > 0 ? (
           <div
             data-lane-empty="filtered"
-            className="flex flex-col items-center gap-1 rounded-[11px] border-[1.5px] border-dashed border-line-strong px-3 py-5 text-center text-crumb text-meta-foreground"
+            className="flex flex-col items-center gap-2 rounded-[11px] border-[1.5px] border-dashed border-line-strong px-3 py-[22px] text-center text-crumb text-meta-foreground"
           >
             <b className="text-label font-semibold text-muted-foreground">
               {copy.emptyFiltered}
@@ -588,7 +593,7 @@ export function KanbanColumn({
         ) : (
           <div
             data-lane-empty="empty"
-            className="flex flex-col items-center gap-2 rounded-[11px] border-[1.5px] border-dashed border-line-strong px-3 py-5 text-center text-crumb text-meta-foreground"
+            className="flex flex-col items-center gap-2 rounded-[11px] border-[1.5px] border-dashed border-line-strong px-3 py-[22px] text-center text-crumb text-meta-foreground"
           >
             <Inbox aria-hidden="true" className="size-5.5" />
             <b className="text-label font-semibold text-muted-foreground">

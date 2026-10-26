@@ -4,7 +4,6 @@ using Notrelix.Application.Features.Collaboration.Abstractions;
 using Notrelix.Application.Features.Collaboration.Comments.Commands.CreateComment;
 using Notrelix.Application.Features.Documents.Public.PageBlocks;
 using Notrelix.Domain.Collaboration;
-using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.Collaboration.Comments;
 using Notrelix.Domain.Collaboration.Mentions;
 

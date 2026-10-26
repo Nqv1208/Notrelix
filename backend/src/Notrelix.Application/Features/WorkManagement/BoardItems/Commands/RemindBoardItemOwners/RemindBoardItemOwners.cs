@@ -1,4 +1,3 @@
-using Notrelix.Application.Common.Exceptions;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Services;

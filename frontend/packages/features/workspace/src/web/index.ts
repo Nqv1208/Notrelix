@@ -135,10 +135,6 @@ export {
   type WorkspaceHomeSurfaceProps,
 } from "./home/workspace-home-surface";
 export {
-  AddItemDialog,
-  type AddItemDialogProps,
-} from "./home/create-resource-dialog";
-export {
   WorkspaceMyWorkSurface,
   type WorkspaceMyWorkSurfaceProps,
 } from "./home/workspace-my-work-surface";
@@ -347,6 +343,11 @@ export {
   type OnboardingSummary,
 } from "./onboarding/onboarding-models";
 export { newInviteRow } from "./onboarding/onboarding-steps";
+export {
+  onboardingSuggestions,
+  type DepartmentSuggestion,
+  type OnboardingSuggestions,
+} from "./onboarding/onboarding-suggestions";
 
 // Reports (the Reports mockup)
 export { workspaceReportsCatalog } from "./reports/reports.catalog";

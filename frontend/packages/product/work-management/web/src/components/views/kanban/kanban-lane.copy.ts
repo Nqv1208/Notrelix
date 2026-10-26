@@ -43,6 +43,8 @@ export const en = {
   archiveFailed: "Couldn't archive “{{title}}”.",
   linkCopied: "Item link copied",
   linkCopyFailed: "Couldn't copy the item link",
+  scrollRight: "Scroll to the next columns",
+  scrollLeft: "Scroll to the previous columns",
   /** Live announcement after Alt+Arrow moves the focused card. */
   keyboardMoved: "Moved “{{title}}” to {{lane}}",
   keyboardReordered:
@@ -121,6 +123,8 @@ export const vi: KanbanLaneCopy = {
   archiveFailed: "Không lưu trữ được “{{title}}”.",
   linkCopied: "Đã sao chép liên kết",
   linkCopyFailed: "Không sao chép được liên kết",
+  scrollRight: "Cuộn sang các cột tiếp theo",
+  scrollLeft: "Cuộn về các cột trước",
   keyboardMoved: "Đã chuyển “{{title}}” sang {{lane}}",
   keyboardReordered:
     "Đã chuyển “{{title}}” đến vị trí {{position}}/{{total}} trong {{lane}}",

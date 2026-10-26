@@ -362,6 +362,7 @@ internal static class InitDb
                 departmentNames.Add(DepartmentNames[d]);
                 departments[DepartmentNames[d]] = department;
                 context.Spaces.Add(department);
+                context.SpacePaths.Add(new Notrelix.Infrastructure.Data.Workspaces.SpacePathRecord(account.Id, ws.Id, department.Id, department.Id, 0));
             }
 
             int boardsForWorkspace = targets.BoardCount / workspaces.Count;

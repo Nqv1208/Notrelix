@@ -1,6 +1,5 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Search;
-using Notrelix.Application.Common.Tenancy;
 using Notrelix.Application.Features.Documents.Public.PageSearch;
 using Notrelix.Application.Features.Governance.Public.Visibility;
 using Notrelix.Application.Features.WorkManagement.Public.CommandSearch;

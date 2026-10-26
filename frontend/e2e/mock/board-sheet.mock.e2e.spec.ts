@@ -2,8 +2,8 @@ import { expect, test, type Page } from "@playwright/test";
 
 /**
  * The ERP board's Kanban header, lanes and item side sheet as Final-Board draws
- * them, on the mock world: three cards before "Xem thêm" (two in the Done
- * lane), the department crumb, and the sheet's child items, follow chip,
+ * them, on the mock world: every card of a lane (six in Cần làm, five in the
+ * Done lane) with no "Xem thêm" before 20, the department crumb, and the sheet's child items, follow chip,
  * comments with the recorded changes among them, and the composer.
  */
 const persona = process.env.VITE_MOCK_PERSONA ?? "owner";
@@ -34,18 +34,20 @@ test.describe("Board header, lanes and item sheet (owner)", () => {
   );
   test.use({ viewport: { width: 1440, height: 900 } });
 
-  test("three cards before Xem thêm, two in the Done lane", async ({
+  test("a lane shows all its cards: six in Cần làm, five in Hoàn thành, no Xem thêm", async ({
     page,
   }) => {
     await open(page);
     const todo = page.getByRole("region", { name: "Cần làm", exact: true });
-    await expect(
-      todo.getByRole("button", { name: /^Xem thêm 3 việc$/ }),
-    ).toBeVisible();
+    await expect(todo.locator("button[data-card-id]")).toHaveCount(6);
+    await expect(todo.getByRole("button", { name: /^Xem thêm/ })).toHaveCount(
+      0,
+    );
     const done = page.getByRole("region", { name: "Hoàn thành", exact: true });
-    await expect(
-      done.getByRole("button", { name: /^Xem thêm 3 việc$/ }),
-    ).toBeVisible();
+    await expect(done.locator("button[data-card-id]")).toHaveCount(5);
+    await expect(done.getByRole("button", { name: /^Xem thêm/ })).toHaveCount(
+      0,
+    );
   });
 
   test("the header names the department", async ({ page }) => {

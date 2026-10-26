@@ -12,7 +12,6 @@ global using Notrelix.API.Idempotency;
 global using Notrelix.Domain.WorkManagement;
 global using Notrelix.Domain.WorkManagement.Boards;
 global using Notrelix.Domain.Workspaces.Members;
-global using Notrelix.Domain.Documents.Blocks;
 
 // Application Common (capability folders)
 global using Notrelix.Application.Common.Context;

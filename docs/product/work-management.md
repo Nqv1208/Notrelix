@@ -817,6 +817,10 @@ Kanban emphasizes field-driven grouping and ordering.
 
 Column identity is derived/configured from grouping semantics, not a permanent duplicate Board schema.
 
+A Kanban view may hold an optional work-in-progress limit per lane in its shared configuration (`wipLimits`: lane value id, i.e. the Status option id or the option id of the Select field it is grouped by, to a whole number 1..999; a lane without an entry has no limit). It is presentation configuration edited by whoever may edit the view: going over a limit is a warning in the view and never blocks an Item write. A lane id that no longer names a lane is ignored by the view.
+
+The card's comment count is a read-projection fact: the number of non-deleted comments Collaboration holds for the Item, read in one batch for the board. It is not stored on the Item.
+
 ---
 
 # 52. Calendar view

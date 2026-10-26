@@ -33,6 +33,11 @@ export interface BoardScreenProps {
   onOpenItemPage?: (itemId: string) => void;
   /** Switches the board to another view by type (the Timeline's undated link). */
   onViewChange?: (view: string) => void;
+  /**
+   * The signed-in member, read by the host from its session: the views offer
+   * "Giao cho tôi" with it. Absent: the shortcut is not offered.
+   */
+  currentUserId?: string | null;
 }
 
 type KanbanParams = Pick<
@@ -55,6 +60,7 @@ export function BoardWorkspaceViewContent({
   view,
   onOpenItemPage,
   onViewChange,
+  currentUserId,
   ...kanbanParams
 }: BoardScreenProps) {
   if (view.type === "table")
@@ -62,6 +68,7 @@ export function BoardWorkspaceViewContent({
       <MainTableView
         boardId={boardId}
         workspaceId={workspaceId}
+        currentUserId={currentUserId}
         {...kanbanParams}
       />
     );
@@ -72,6 +79,7 @@ export function BoardWorkspaceViewContent({
         boardId={boardId}
         mode="kanban"
         kanbanParams={kanbanParams}
+        currentUserId={currentUserId}
         onOpenItemPage={onOpenItemPage}
       />
     );
@@ -82,6 +90,7 @@ export function BoardWorkspaceViewContent({
         boardId={boardId}
         mode="calendar"
         kanbanParams={kanbanParams}
+        currentUserId={currentUserId}
       />
     );
   if (view.type === "timeline")
@@ -91,6 +100,7 @@ export function BoardWorkspaceViewContent({
         boardId={boardId}
         mode="timeline"
         kanbanParams={kanbanParams}
+        currentUserId={currentUserId}
         onOpenCalendar={
           onViewChange ? () => onViewChange("calendar") : undefined
         }
@@ -109,6 +119,7 @@ function BoardFullDataView({
   boardId,
   mode,
   kanbanParams,
+  currentUserId,
   onOpenItemPage,
   onOpenCalendar,
 }: {
@@ -116,6 +127,7 @@ function BoardFullDataView({
   boardId: string;
   mode: "kanban" | "calendar" | "timeline";
   kanbanParams?: KanbanParams;
+  currentUserId?: string | null;
   onOpenItemPage?: (itemId: string) => void;
   onOpenCalendar?: () => void;
 }) {
@@ -141,6 +153,7 @@ function BoardFullDataView({
             boardId={board.id}
             workspaceId={workspaceId}
             {...kanbanParams}
+            currentUserId={currentUserId}
             onOpenItemPage={onOpenItemPage}
           />
         ) : mode === "calendar" ? (
@@ -151,6 +164,7 @@ function BoardFullDataView({
             onSelectedItemChange={kanbanParams?.onSelectedItemChange}
             filter={kanbanParams?.filter}
             onFilterChange={kanbanParams?.onFilterChange}
+            currentUserId={currentUserId}
           />
         ) : (
           <BoardTimelineView
@@ -158,6 +172,7 @@ function BoardFullDataView({
             workspaceId={workspaceId}
             selectedItemId={kanbanParams?.selectedItemId}
             onSelectedItemChange={kanbanParams?.onSelectedItemChange}
+            currentUserId={currentUserId}
             onOpenCalendar={onOpenCalendar}
           />
         )

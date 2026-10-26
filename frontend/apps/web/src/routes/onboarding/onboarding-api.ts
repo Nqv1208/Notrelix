@@ -8,7 +8,6 @@ import type {
   CompanySize,
   DepartmentColor,
   InviteRole,
-  OnboardingCatalog,
   OnboardingStepId,
 } from "@notrelix/features-workspace/web";
 
@@ -21,6 +20,11 @@ export interface OnboardingApiClient {
     options?: { skipGlobalErrorToast?: boolean; idempotencyKey?: string },
   ): Promise<T>;
   put<T>(
+    url: string,
+    body?: unknown,
+    options?: { skipGlobalErrorToast?: boolean },
+  ): Promise<T>;
+  patch<T>(
     url: string,
     body?: unknown,
     options?: { skipGlobalErrorToast?: boolean },
@@ -39,12 +43,6 @@ export interface SlugCheckDto {
   readonly suggestion: string | null;
 }
 
-export interface CatalogDto extends OnboardingCatalog {
-  readonly size: CompanySize;
-  readonly departments: readonly { key: string; name: string }[];
-  readonly colors: readonly DepartmentColor[];
-}
-
 export interface DraftDto {
   readonly draft: {
     readonly step: Exclude<OnboardingStepId, "done">;
@@ -55,14 +53,15 @@ export interface DraftDto {
 
 export interface JoinDto {
   readonly workspace: { id: string; name: string; memberCount: number };
-  readonly inviterName: string;
+  /** Null: the producer does not say who invited the person (the page words it without a name). */
+  readonly inviterName: string | null;
   readonly role: string;
   readonly spaces: readonly {
     id: string;
     name: string;
     color: DepartmentColor | null;
     open: boolean;
-    access: "Manager" | "Editor" | "Commenter" | "Viewer" | string | null;
+    access: string | null;
     boards: readonly {
       id: string;
       title: string;
@@ -97,6 +96,24 @@ type SlugCheckOutput = OperationResponse<
 >;
 type CreateWorkspaceBody =
   OperationRequestBody<"Workspaces.Workspaces.CreateWorkspace">;
+type WorkspaceOutput = OperationResponse<
+  "Workspaces.Workspaces.GetWorkspace",
+  200
+>;
+type MembershipOutput = OperationResponse<
+  "Workspaces.Members.GetMyMembership",
+  200
+>;
+type SpaceTreeOutput = OperationResponse<"Workspaces.Spaces.GetSpaceTree", 200>;
+type BoardsOutput = OperationResponse<
+  "WorkManagement.Boards.ListWorkspaceBoards",
+  200
+>;
+type CurrentUserOutput = OperationResponse<"Identity.Auth.GetCurrentUser", 200>;
+type PreferencesOutput = OperationResponse<
+  "Collaboration.Preferences.GetNotificationPreferences",
+  200
+>;
 type GettingStartedOutput = OperationResponse<
   "Workspaces.Onboarding.GetGettingStarted",
   200
@@ -113,6 +130,25 @@ const SIZE_BAND: Record<CompanySize, string> = {
   xxl: "1000+",
 };
 
+/** What a person's role in a Space lets them do on its Boards. */
+function boardLevelOf(access: string | null | undefined) {
+  switch (access?.toLowerCase()) {
+    case "manager":
+    case "editor":
+      return "editor" as const;
+    case "commenter":
+      return "commenter" as const;
+    default:
+      return "viewer" as const;
+  }
+}
+
+/** The join page's two email choices, read from the member's own notification matrix. */
+function notifyChoiceOf(preferences: PreferencesOutput | undefined) {
+  const digest = preferences?.rows?.find((row) => row.type === "digest");
+  return digest?.email === false ? "mentions" : "digest";
+}
+
 /** A refusal the producer answers for one row of a batch (not a failed call). */
 const isRowRefusal = (failure: unknown): boolean =>
   [400, 409, 422].includes((failure as { status?: number }).status ?? 0);
@@ -123,7 +159,11 @@ const isRowRefusal = (failure: unknown): boolean =>
  * department and its role as an initial entry), the first Board and the
  * getting-started card use the producer's operations, and so do the address
  * check and the workspace create, which run in the Account the bootstrap names.
- * The catalogue and the invited person's first visit stay gaps.
+ * The first visit of an invited person is composed from the producer's reads
+ * (workspace, membership, Space tree, Boards, notification preferences) and
+ * its writes (profile name, notification preferences); it has no contract of
+ * its own. The department suggestions are the page's starting points, not a
+ * server read (see `onboardingSuggestions`).
  */
 export function createOnboardingApi(api: OnboardingApiClient) {
   const key = () => crypto.randomUUID();
@@ -154,12 +194,6 @@ export function createOnboardingApi(api: OnboardingApiClient) {
         reason: free ? null : checked?.status === "taken" ? "taken" : "invalid",
         suggestion: checked?.suggestion ?? null,
       };
-    },
-    catalog(size: CompanySize, name: string) {
-      return api.get<CatalogDto>(
-        `/onboarding/catalog?size=${size}&name=${encodeURIComponent(name)}`,
-        QUIET,
-      );
     },
     async getDraft(): Promise<DraftDto> {
       const found = await api.get<DraftOutput>(
@@ -283,19 +317,97 @@ export function createOnboardingApi(api: OnboardingApiClient) {
         templateId: input.templateId,
       };
     },
-    getJoin(workspaceId: string) {
-      return api.get<JoinDto>(
-        `/workspaces/${workspaceId}/onboarding/join`,
-        QUIET,
-      );
+    async getJoin(workspaceId: string): Promise<JoinDto> {
+      const [workspace, membership, tree, boards, user, preferences] =
+        await Promise.all([
+          api.get<WorkspaceOutput>(
+            endpoints.workspaces.detail(workspaceId),
+            QUIET,
+          ),
+          api.get<MembershipOutput>(
+            endpoints.workspaces.myMembership(workspaceId),
+            QUIET,
+          ),
+          api.get<SpaceTreeOutput>(
+            endpoints.workspaces.spaceTree(workspaceId),
+            QUIET,
+          ),
+          api.get<BoardsOutput>(
+            endpoints.boards.listByWorkspaceId(workspaceId),
+            QUIET,
+          ),
+          api.get<CurrentUserOutput>(endpoints.auth.profile, QUIET),
+          // The matrix is optional: without it the page offers the default.
+          api
+            .get<PreferencesOutput>(
+              endpoints.notifications.preferences(workspaceId),
+              QUIET,
+            )
+            .catch(() => undefined),
+        ]);
+      const readable = (boards ?? []).filter((board) => !board.isArchived);
+      const spaces = (tree ?? [])
+        .filter((space) => !space.parentSpaceId && !space.isArchived)
+        .map((space) => {
+          const level = boardLevelOf(space.accessLevel);
+          return {
+            id: space.id ?? "",
+            name: space.name ?? "",
+            color: null,
+            open: space.visibility !== "Private",
+            access: space.accessLevel ?? null,
+            boards: readable
+              .filter((board) => board.spaceId === space.id)
+              .map((board) => ({
+                id: board.id ?? "",
+                title: board.title ?? "",
+                level,
+              })),
+          };
+        });
+      return {
+        workspace: {
+          id: workspace?.id ?? workspaceId,
+          name: workspace?.name ?? "",
+          memberCount: workspace?.memberCount ?? 0,
+        },
+        inviterName: null,
+        role: (membership?.role ?? "member").toLowerCase(),
+        spaces,
+        profile: {
+          displayName: user?.name ?? "",
+          notifyEmail: notifyChoiceOf(preferences),
+        },
+        companyAccent: "blue",
+      };
     },
-    saveJoin(
+    /**
+     * The name goes to the person's profile and the email choice to their
+     * notification matrix of this workspace: "digest" keeps the daily digest
+     * email, "mentions" turns it off; a mention always emails.
+     */
+    async saveJoin(
       workspaceId: string,
       input: { displayName: string; notifyEmail: "digest" | "mentions" },
     ) {
-      return api.put<void>(
-        `/workspaces/${workspaceId}/onboarding/join`,
-        input,
+      const current = await api.get<PreferencesOutput>(
+        endpoints.notifications.preferences(workspaceId),
+        QUIET,
+      );
+      await api.patch<unknown>(
+        endpoints.users.updateProfile,
+        { name: input.displayName },
+        QUIET,
+      );
+      await api.patch<unknown>(
+        endpoints.notifications.preferences(workspaceId),
+        {
+          expectedVersion: current?.version ?? 0,
+          rows: [
+            { type: "digest", email: input.notifyEmail === "digest" },
+            { type: "mention", email: true },
+          ],
+        },
         QUIET,
       );
     },

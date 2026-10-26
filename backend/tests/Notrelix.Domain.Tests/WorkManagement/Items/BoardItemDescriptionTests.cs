@@ -1,7 +1,5 @@
 using FluentAssertions;
-using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.WorkManagement;
-using Notrelix.Domain.WorkManagement.BoardGroups;
 using Notrelix.Domain.WorkManagement.Items;
 
 namespace Notrelix.Domain.Tests.WorkManagement;

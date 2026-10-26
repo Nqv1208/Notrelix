@@ -1,4 +1,3 @@
-using Microsoft.Net.Http.Headers;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Collaboration.Attachments.Queries.GetBoardItemAttachmentContent;
 

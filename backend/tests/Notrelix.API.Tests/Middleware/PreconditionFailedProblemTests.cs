@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Http;
 using Notrelix.API.ErrorHandling;
-using Notrelix.Application.Common.Exceptions;
 
 namespace Notrelix.API.Tests.Middleware;
 

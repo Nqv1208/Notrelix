@@ -7,7 +7,6 @@ describe("backendCapabilitiesOf", () => {
       billingPlans: true,
       integrations: true,
       reports: true,
-      onboardingCatalog: true,
       planItems: true,
     });
   });
@@ -17,7 +16,6 @@ describe("backendCapabilitiesOf", () => {
       billingPlans: false,
       integrations: true,
       reports: false,
-      onboardingCatalog: false,
       planItems: false,
     });
   });

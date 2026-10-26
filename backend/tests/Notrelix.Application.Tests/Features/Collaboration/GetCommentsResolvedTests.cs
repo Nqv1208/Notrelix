@@ -1,5 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-using Notrelix.Application.Common.Tenancy;
 using Notrelix.Application.Features.Collaboration.Abstractions;
 using Notrelix.Application.Features.Collaboration.Comments.Queries.GetComments;
 using Notrelix.Domain.Collaboration.Comments;

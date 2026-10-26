@@ -2,13 +2,9 @@ import { describe, expect, it } from "vitest";
 import { createNotrelixClient } from "@notrelix/contracts";
 import { createMockFetch } from "../transport/create-mock-fetch";
 import { MockStore } from "../state/mock-store";
-import {
-  departmentSuggestions,
-  isSlugTaken,
-  suggestSlug,
-} from "../state/mock-onboarding";
+import { isSlugTaken, suggestSlug } from "../state/mock-onboarding";
 
-/** Onboarding of the Onboarding mockup in the mock world (CTR-GAP-ONBOARD-FLOW). */
+/** Onboarding of the Onboarding mockup in the mock world. */
 function client() {
   const store = new MockStore();
   const { api } = createNotrelixClient({
@@ -77,26 +73,6 @@ describe("workspace address", () => {
     expect(suggestSlug("congty", (slug) => slug === "congty-vn")).toBe(
       "congty-co",
     );
-  });
-});
-
-describe("suggestions", () => {
-  it("follow the size and the line of business read from the name", () => {
-    expect(
-      departmentSuggestions(
-        "l",
-        "Công ty CP Thực phẩm Sao Mai",
-      ).departments.map((entry) => entry.name),
-    ).toEqual(["Kinh doanh", "Kế toán", "Sản xuất", "Nhân sự"]);
-    expect(
-      departmentSuggestions("l", "Công ty CP Thực phẩm Sao Mai"),
-    ).toMatchObject({
-      industry: "food",
-    });
-    expect(departmentSuggestions("s", "Studio Hoa").departments).toHaveLength(
-      2,
-    );
-    expect(departmentSuggestions("s", "Studio Hoa").industry).toBeNull();
   });
 });
 
@@ -216,31 +192,29 @@ describe("the setup through the client", () => {
 });
 
 describe("what an invited person sees", () => {
-  it("lists the departments they can open with their boards, and saves the profile", async () => {
+  it("is composed from operations that exist: workspace, membership, spaces, boards, profile and notification preferences", async () => {
     const { api } = client();
-    const join = await api.get<{
-      workspace: { name: string };
-      spaces: { name: string; boards: unknown[] }[];
-      profile: { displayName: string; notifyEmail: string };
-    }>("/workspaces/mock-workspace-primary/onboarding/join");
-    expect(join.workspace.name).toBe("Minh An Group");
-    expect(join.spaces.length).toBeGreaterThan(0);
-    expect(join.profile.notifyEmail).toBe("digest");
-    await api.put("/workspaces/mock-workspace-primary/onboarding/join", {
-      displayName: "Lý Thu Trang",
-      notifyEmail: "mentions",
+    const id = "mock-workspace-primary";
+    expect(await api.get(`/workspaces/${id}`)).toMatchObject({
+      name: "Minh An Group",
     });
-    const again = await api.get<typeof join>(
-      "/workspaces/mock-workspace-primary/onboarding/join",
+    expect(await api.get(`/workspaces/${id}/members/me`)).toMatchObject({
+      role: expect.any(String),
+    });
+    const tree = await api.get<{ parentSpaceId: string | null }[]>(
+      `/workspaces/${id}/spaces/tree`,
     );
-    expect(again.profile).toEqual({
-      displayName: "Lý Thu Trang",
-      notifyEmail: "mentions",
+    expect(tree.some((space) => !space.parentSpaceId)).toBe(true);
+    expect(
+      (await api.get<unknown[]>(`/workspaces/${id}/boards`)).length,
+    ).toBeGreaterThan(0);
+    expect(await api.get("/auth/me")).toMatchObject({
+      name: expect.any(String),
     });
-    await expect(
-      api.put("/workspaces/mock-workspace-primary/onboarding/join", {
-        displayName: " ",
-      }),
-    ).rejects.toMatchObject({ status: 422 });
+    const preferences = await api.get<{
+      version: number;
+      rows: { type: string; email: boolean }[];
+    }>(`/workspaces/${id}/notification-preferences`);
+    expect(preferences.rows.find((row) => row.type === "digest")).toBeDefined();
   });
 });

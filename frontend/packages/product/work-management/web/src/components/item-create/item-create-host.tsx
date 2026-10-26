@@ -44,6 +44,7 @@ export function ItemCreateHost({
   focusDescription,
   defaultAssigneeIds,
   currentUserId,
+  laneValue,
   context,
   boardSlot,
   onCreated,
@@ -67,6 +68,11 @@ export function ItemCreateHost({
   readonly focusDescription?: boolean;
   readonly defaultAssigneeIds?: readonly string[];
   readonly currentUserId?: string | null;
+  /** Lane of a board not grouped by Status: written as a follow-up value. */
+  readonly laneValue?: {
+    readonly fieldDefinitionId: string;
+    readonly value: string;
+  } | null;
   readonly context?: ItemCreateContext;
   readonly boardSlot?: ReactNode;
   /** After the item exists (also when a detail could not be saved). */
@@ -120,6 +126,7 @@ export function ItemCreateHost({
             : null,
         assigneeIds: draft.assigneeIds,
         labelIds: draft.labelIds,
+        laneValue: laneValue ?? null,
       },
       {
         onSuccess: ({ failed, itemId }) => {

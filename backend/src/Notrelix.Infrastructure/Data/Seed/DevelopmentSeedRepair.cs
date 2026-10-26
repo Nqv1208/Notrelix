@@ -1,6 +1,4 @@
 using System.Text.RegularExpressions;
-using Notrelix.Domain.Accounts.Accounts;
-using Notrelix.Domain.Identity.Users;
 using Notrelix.Domain.SharedKernel.Ordering;
 using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.WorkManagement.Fields;
@@ -8,6 +6,7 @@ using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Domain.Workspaces.Spaces;
 using Notrelix.Domain.Workspaces.Workspaces;
 using Notrelix.Infrastructure.Data.Authz;
+using Notrelix.Infrastructure.Data.Workspaces;
 
 namespace Notrelix.Infrastructure.Data.Seed;
 
@@ -37,6 +36,7 @@ internal static partial class DevelopmentSeedRepair
         var emailsConfirmed = await ConfirmSeedEmailsAsync(context, now, ct);
         var ownersRepaired = await EnsureSeedOwnersAsync(context, now, ct);
         var (spacesCreated, boardsPlaced) = await EnsureSeedSpacesAsync(context, now, ct);
+        await EnsureSeedSpacePathsAsync(context, ct);
         var fieldsRenamed = await RenameDuplicateSeedFieldsAsync(context, now, ct);
         var dueDatesMarked = await MarkSeedDueDateFieldsSystemAsync(context, ct);
         return new SeedRepairResult(
@@ -168,6 +168,42 @@ internal static partial class DevelopmentSeedRepair
             {
                 boardMember.UpdateRole(BoardRole.Owner);
             }
+        }
+    }
+
+    /// <summary>
+    /// The seeded departments were added without their closure rows, so the
+    /// access facts could not tell an open Space from an unknown one. Every root
+    /// seed Space gets its own row (depth 0), like the production store stages.
+    /// </summary>
+    private static async Task EnsureSeedSpacePathsAsync(ApplicationDbContext context, CancellationToken ct)
+    {
+        if (await LoadSeedWorkspacesAsync(context, ct) is not { } workspaces)
+        {
+            return;
+        }
+
+        var added = false;
+        foreach (var workspace in workspaces)
+        {
+            var roots = await context.Spaces
+                .Where(s => s.WorkspaceId == workspace.Id && s.ParentSpaceId == null)
+                .ToListAsync(ct);
+            var withPath = (await context.SpacePaths
+                    .Where(p => p.WorkspaceId == workspace.Id)
+                    .Select(p => p.DescendantId)
+                    .ToListAsync(ct))
+                .ToHashSet();
+            foreach (var root in roots.Where(s => !withPath.Contains(s.Id)))
+            {
+                context.SpacePaths.Add(new SpacePathRecord(root.AccountId, root.WorkspaceId, root.Id, root.Id, 0));
+                added = true;
+            }
+        }
+
+        if (added)
+        {
+            await SaveAsync(context, ct);
         }
     }
 

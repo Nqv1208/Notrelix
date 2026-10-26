@@ -1,6 +1,5 @@
 using FluentAssertions;
 using Notrelix.Domain.Documents.Pages;
-using Notrelix.Domain.Documents.Pages.Events;
 
 namespace Notrelix.Domain.Tests.Documents;
 

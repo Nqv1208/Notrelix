@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useSearch, useNavigate } from "@tanstack/react-router";
+import { useCurrentUser } from "@notrelix/features-auth";
 import {
   BoardHeaderCopyContext,
   BoardHeaderDataContext,
@@ -44,6 +45,7 @@ export function BoardPage() {
   const view = { type: viewType, name: viewType.toUpperCase() };
 
   const { board } = useFullBoard(boardId, workspaceId);
+  const currentUser = useCurrentUser();
   const headerCopy = useBoardHeaderCopy();
   // `share` in the address opens the share dialog (the settings page's
   // "Quyền truy cập" lands here); the dialog also opens from the header.
@@ -155,6 +157,7 @@ export function BoardPage() {
               boardId={boardId}
               view={view}
               selectedItemId={search.item}
+              currentUserId={currentUser?.id ?? null}
               onSelectedItemChange={handleSelectedItemChange}
               filter={search.filter}
               onFilterChange={handleFilterChange}

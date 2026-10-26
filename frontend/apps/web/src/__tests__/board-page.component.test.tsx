@@ -22,6 +22,10 @@ vi.mock("@notrelix/work-management-state", () => ({
     children,
 }));
 
+vi.mock("@notrelix/features-auth", () => ({
+  useCurrentUser: () => ({ id: "user-1" }),
+}));
+
 vi.mock("../shell/workspace/board-share-dialog", () => ({
   BoardShareDialog: () => null,
 }));

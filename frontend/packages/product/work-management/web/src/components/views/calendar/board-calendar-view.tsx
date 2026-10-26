@@ -69,6 +69,8 @@ export interface BoardCalendarViewProps {
   workspaceId: string;
   /** The item the board route's `item` parameter names; its sheet opens. */
   selectedItemId?: string;
+  /** The signed-in member (from the host's session): offers "Giao cho tôi". */
+  currentUserId?: string | null;
   /**
    * Opening passes the id (push). Closing passes `replace` so Back does not
    * step through every item.
@@ -101,6 +103,7 @@ export function BoardCalendarView({
   boardId,
   workspaceId,
   selectedItemId,
+  currentUserId,
   onSelectedItemChange,
   filter: filterParam,
   onFilterChange,
@@ -330,6 +333,7 @@ export function BoardCalendarView({
           defaultGroupId={kanban.groups[0]?.id ?? ""}
           defaultStatusId={null}
           defaultDueDay={createDay ?? undefined}
+          currentUserId={currentUserId}
         />
       ) : null}
       {selectedItemId && board ? (

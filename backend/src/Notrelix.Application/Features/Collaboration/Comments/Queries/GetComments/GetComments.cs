@@ -1,7 +1,6 @@
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.Collaboration.Comments.DTOs;
 using Notrelix.Application.Features.Collaboration.Abstractions;
-using Notrelix.Domain.Collaboration.Comments;
 
 namespace Notrelix.Application.Features.Collaboration.Comments.Queries.GetComments;
 

@@ -1,8 +1,14 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
 /**
- * Board Kanban geometry against the October 2026 mockup. Every number comes
- * from `docs/design/mockups/2026-10/src/Final-Board.dc.html` rendered at
+ * Board Kanban geometry. The header, tabs and toolbar come from the October
+ * 2026 mockup (`docs/design/mockups/2026-10/src/Final-Board.dc.html`); the
+ * lanes, cards and lane footer from the Kanban canvas artboards
+ * (`Kanban-Board.dc.html`, `Kanban-Card-States.dc.html`), whose CSS gives the
+ * numbers: lane 256 wide with 8 padding and 8 gap, header min-height 32, cards
+ * 11/12/10 padding with an 8 gap, tag 20 high with a 5 radius, due chip 22
+ * high pulled 6 left, the add row 34 high. The first numbers came from
+ * `Final-Board.dc.html` rendered at
  * 1440x900 with `nav=an` and measured with the box dump (position, size,
  * padding, gap, font, radius). Boxes are read relative to the main area's
  * top-left, so the checks hold whatever sits left of or above the main area
@@ -53,29 +59,30 @@ const MOCK = {
     primary: { x: 1010, y: 119, width: 150, height: 32 },
   },
   lane: {
-    first: { x: 24, y: 165, width: 264 },
-    pitch: 276,
+    first: { x: 24, y: 165, width: 256 },
+    pitch: 268,
     padding: 8,
     gap: 8,
     radius: 14,
-    header: { x: 32, y: 173, height: 30 },
+    header: { x: 32, y: 173, height: 32 },
     count: { height: 22, minWidth: 22 },
     menu: { width: 28, height: 28 },
   },
   card: {
     x: 32,
-    y: 211,
-    width: 248,
+    y: 213,
+    width: 240,
     padding: 12,
-    gap: 9,
+    paddingTop: 11,
+    gap: 8,
     radius: 11,
-    tag: { x: 44, y: 223, height: 22, radius: 6 },
-    track: { x: 44, y: 307, width: 195, height: 5, radius: 3 },
-    due: { x: 44, y: 327, height: 22, radius: 6 },
-    assignee: { x: 246, y: 327, size: 22 },
+    tag: { x: 44, y: 225, height: 20, radius: 5 },
+    track: { x: 44, y: 306, width: 187, height: 5, radius: 3 },
+    // The date text is pulled 6 px left so it lines up with the title.
+    due: { x: 38, y: 326, height: 22, radius: 6 },
+    assignee: { x: 238, y: 326, size: 22 },
   },
-  seeMore: { width: 248, height: 30, radius: 8 },
-  add: { width: 248, height: 34, radius: 9 },
+  add: { width: 240, height: 34, radius: 9 },
   banner: { x: 24, y: 73, height: 37, radius: 9 },
   noResults: { x: 24, y: 161, height: 54, radius: 10 },
   /** Final-Board detail=side, in viewport coordinates (the sheet hugs the right edge). */
@@ -208,7 +215,10 @@ test.describe("Board Kanban geometry at 1440 px (owner)", () => {
       "Chia sẻ",
     );
     expectRect(
-      await rel(page, page.getByRole("button", { name: "Thêm tuỳ chọn" })),
+      await rel(
+        page,
+        page.getByRole("button", { name: "Thêm tuỳ chọn" }).first(),
+      ),
       h.more,
       "more options",
     );
@@ -267,7 +277,10 @@ test.describe("Board Kanban geometry at 1440 px (owner)", () => {
       "the grouped field is set in semibold",
     ).toBe("600");
 
-    const primary = page.getByRole("button", { name: "Thêm công việc" });
+    const primary = page.getByRole("button", {
+      name: "Thêm công việc",
+      exact: true,
+    });
     expectRect(await rel(page, primary), b.primary, "Thêm công việc");
     expect(await style(primary, "font-size")).toBe(TYPE.control.size);
     expect(await style(primary, "font-weight")).toBe("600");
@@ -299,7 +312,7 @@ test.describe("Board Kanban geometry at 1440 px (owner)", () => {
     const head = title.locator("xpath=..");
     expectRect(await rel(page, head), l.header, "lane header");
     expect(await style(head, "padding-left")).toBe("6px");
-    expect(await style(head, "column-gap")).toBe("8px");
+    expect(await style(head, "column-gap")).toBe("6px");
 
     const count = head.locator("span", { hasText: /^6$/ });
     const countBox = await rel(page, count);
@@ -325,9 +338,9 @@ test.describe("Board Kanban geometry at 1440 px (owner)", () => {
     const card = lane(page, "Cần làm").locator("article").first();
     const box = await rel(page, card);
     expectRect(box, { x: c.x, y: c.y, width: c.width }, "card");
-    expect(box.height).toBeGreaterThanOrEqual(148);
-    expect(box.height).toBeLessThanOrEqual(151);
-    expect(await style(card, "padding-top")).toBe(`${c.padding}px`);
+    expect(box.height).toBeGreaterThanOrEqual(144);
+    expect(box.height).toBeLessThanOrEqual(147);
+    expect(await style(card, "padding-top")).toBe(`${c.paddingTop}px`);
     expect(await style(card, "padding-left")).toBe(`${c.padding}px`);
     expect(await style(card, "row-gap")).toBe(`${c.gap}px`);
     expect(await style(card, "border-radius")).toBe(`${c.radius}px`);
@@ -338,7 +351,7 @@ test.describe("Board Kanban geometry at 1440 px (owner)", () => {
     expect(await style(tag, "font-size")).toBe(TYPE.tag.size);
     expect(await style(tag, "font-weight")).toBe(TYPE.tag.weight);
     expect(await style(tag, "border-radius")).toBe(`${c.tag.radius}px`);
-    expect(await style(tag, "padding-left")).toBe("8px");
+    expect(await style(tag, "padding-left")).toBe("7px");
 
     const key = card.getByText("ERP-151", { exact: true });
     expect(await style(key, "font-size")).toBe(TYPE.key.size);
@@ -388,26 +401,22 @@ test.describe("Board Kanban geometry at 1440 px (owner)", () => {
     );
   });
 
-  test("lane footer: Xem thêm and Thêm vào", async ({ page }) => {
+  test("lane footer: Thêm vào, and no Xem thêm while the lane holds fewer than 20 cards", async ({
+    page,
+  }) => {
     await openBoard(page);
     const todo = lane(page, "Cần làm");
-    const cards = todo.locator("article");
-    const last = await rel(page, cards.last());
-    const more = todo.getByRole("button", { name: /^Xem thêm \d+ việc$/ });
-    const moreBox = await rel(page, more);
-    expectRect(moreBox, MOCK.seeMore, "Xem thêm");
-    expect(
-      Math.abs(moreBox.y - (last.y + last.height + 8)),
-    ).toBeLessThanOrEqual(1);
-    expect(await style(more, "border-radius")).toBe(`${MOCK.seeMore.radius}px`);
-    expect(await style(more, "font-size")).toBe("12.5px");
-    expect(await style(more, "font-weight")).toBe("500");
-
+    await expect(todo.getByRole("button", { name: /^Xem thêm/ })).toHaveCount(
+      0,
+    );
+    const cards = await rel(page, todo.locator("[data-lane-cards]"));
     const add = todo.getByRole("button", { name: "Thêm vào Cần làm" });
     const addBox = await rel(page, add);
     expectRect(addBox, MOCK.add, "Thêm vào");
+    // The cards scroll inside the lane; the add row sits right under them
+    // (8 px lane gap, less the 2 px the card box keeps for shadows).
     expect(
-      Math.abs(addBox.y - (moreBox.y + moreBox.height + 8)),
+      Math.abs(addBox.y - (cards.y + cards.height + 6)),
     ).toBeLessThanOrEqual(1);
     expect(await style(add, "border-radius")).toBe(`${MOCK.add.radius}px`);
     expect(await style(add, "font-size")).toBe(TYPE.control.size);
@@ -422,7 +431,7 @@ test.describe("Board Kanban geometry at 1440 px (owner)", () => {
     expect(first.x).toBeCloseTo(24, 0);
     const primary = await rel(
       page,
-      page.getByRole("button", { name: "Thêm công việc" }),
+      page.getByRole("button", { name: "Thêm công việc", exact: true }),
     );
     expect(
       Math.abs(origin.width - 24 - (primary.x + primary.width)),
@@ -449,8 +458,17 @@ test.describe("Board Kanban geometry at 1440 px (owner)", () => {
     expect(await style(bar, "border-radius")).toBe(`${n.radius}px`);
     expect(await style(bar, "padding-left")).toBe("12px");
     const todo = lane(page, "Cần làm");
-    // Header 30 + gap 8 + dashed box 48 + 2 x 8 padding = 102.
-    expect((await rel(page, todo)).height).toBeCloseTo(102, 0);
+    // Header 32 + gap 8 + the dashed box + 2 x 8 padding; the box keeps 22/12 padding.
+    const empty = todo.locator("[data-lane-empty]");
+    expect(await style(empty, "padding-top")).toBe("22px");
+    expect(await style(empty, "padding-left")).toBe("12px");
+    expect(await style(empty, "border-radius")).toBe("11px");
+    expect(
+      Math.abs(
+        (await rel(page, todo)).height -
+          (16 + 32 + 8 + (await rel(page, empty)).height),
+      ),
+    ).toBeLessThanOrEqual(1);
   });
 
   test("item sheet: full height at the right edge, header, title, pills and composer", async ({
@@ -534,7 +552,7 @@ test.describe("Board Kanban geometry at 1440 px (viewer)", () => {
     expect(await style(banner, "margin-top")).toBe("12px");
     // The viewer sees no add action in the toolbar or in a lane.
     await expect(
-      page.getByRole("button", { name: "Thêm công việc" }),
+      page.getByRole("button", { name: "Thêm công việc", exact: true }),
     ).toHaveCount(0);
     await expect(page.getByRole("button", { name: /^Thêm vào / })).toHaveCount(
       0,

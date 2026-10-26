@@ -1,5 +1,3 @@
-using Notrelix.Domain.WorkManagement.Items;
-
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItem;
 
 public class UpdateBoardItemCommandValidator : AbstractValidator<UpdateBoardItemCommand>

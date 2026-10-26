@@ -9,6 +9,7 @@ import {
   OnboardingSurface,
   emptyDraft,
   newInviteRow,
+  onboardingSuggestions,
   slugFromName,
   useOnboardingCopy,
   type AddressCheck,
@@ -19,7 +20,6 @@ import {
 } from "@notrelix/features-workspace/web";
 import { clearApplicationCache } from "@/composition/application-lifecycle";
 import { AuthGuard } from "@/shell/guards/auth-guard";
-import { backendCapabilities } from "@/config/backend-capabilities";
 import { useOnboardingApi } from "./use-onboarding-api";
 
 const SLUG_SHAPE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -145,35 +145,40 @@ function SetupFlow() {
     };
   }, [api, slug, step, created.workspace]);
 
-  const catalog = useQuery({
-    queryKey: [
-      "onboarding",
-      "catalog",
+  // The suggestions are starting points the page computes (no server owns
+  // them); only what the person confirms is stored.
+  const suggestionsOpen = step !== "workspace" || created.workspace;
+  const catalog = useMemo(
+    () =>
+      suggestionsOpen
+        ? onboardingSuggestions(
+            draft.workspace.size,
+            draft.workspace.name,
+            draft.workspace.locale,
+          )
+        : null,
+    [
+      suggestionsOpen,
       draft.workspace.size,
       draft.workspace.name,
+      draft.workspace.locale,
     ],
-    queryFn: () => api.catalog(draft.workspace.size, draft.workspace.name),
-    enabled:
-      backendCapabilities.onboardingCatalog &&
-      (step !== "workspace" || created.workspace),
-    staleTime: 60_000,
-    retry: false,
-  });
+  );
 
   // The first visit to the departments step starts from the suggestions.
   useEffect(() => {
-    if (step !== "departments" || !catalog.data) return;
+    if (step !== "departments" || !catalog) return;
     if (draft.departments.length > 0 || created.departments) return;
     setDraft((current) => ({
       ...current,
-      departments: catalog.data.departments.map((entry, index) => ({
+      departments: catalog.departments.map((entry, index) => ({
         key: entry.key,
         name: entry.name,
         color:
           DEFAULT_COLOR_CYCLE[index % DEFAULT_COLOR_CYCLE.length] ?? "blue",
       })),
     }));
-  }, [step, catalog.data]);
+  }, [step, catalog]);
 
   // The invitation step starts with empty rows to type into.
   useEffect(() => {
@@ -368,7 +373,7 @@ function SetupFlow() {
       email: user?.email ?? "",
       ownerName,
       address,
-      catalog: catalog.data ?? null,
+      catalog,
       summary,
       pending,
       error,
@@ -386,7 +391,7 @@ function SetupFlow() {
       user?.email,
       ownerName,
       address,
-      catalog.data,
+      catalog,
       summary,
       pending,
       error,

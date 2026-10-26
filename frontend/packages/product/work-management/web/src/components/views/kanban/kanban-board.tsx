@@ -1,3 +1,4 @@
+import type { KanbanCardActions } from "./kanban-card-quick-actions";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   DndContext,
@@ -93,6 +94,8 @@ export interface KanbanBoardProps {
    * needs `canDrag`. Off: those keys do nothing.
    */
   keyboardMove?: boolean;
+  /** Hover and focus actions of the cards; absent: none. */
+  cardActions?: KanbanCardActions;
   /** Lane value id to its WIP limit (a warning number); absent: no limits. */
   wipLimits?: Readonly<Record<string, number>>;
   /** Set or (null) remove a lane's limit; absent: the viewer cannot. */
@@ -157,6 +160,7 @@ export function KanbanBoard({
   lanePending = false,
   laneCardLimit = DEFAULT_KANBAN_LANE_CARD_LIMIT,
   keyboardMove = true,
+  cardActions,
   wipLimits,
   onWipLimitChange,
   onRequestCreate,
@@ -455,6 +459,7 @@ export function KanbanBoard({
               dropTarget={drag !== null && currentLaneKey === key}
               laneCardLimit={laneCardLimit}
               draggedCardId={drag?.cardId ?? movedId ?? undefined}
+              cardActions={cardActions}
               onMoveCardByKey={
                 canDrag && keyboardMove ? handleMoveByKey : undefined
               }
