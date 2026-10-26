@@ -1,6 +1,8 @@
 import * as React from "react";
 import {
   BarChart3,
+  ChevronLeft,
+  ChevronRight,
   ChevronsUpDown,
   File,
   House,
@@ -142,6 +144,35 @@ interface NavItem {
   readonly icon: LucideIcon;
   readonly destination: WorkspaceDestination;
   readonly count?: CountKind;
+}
+
+/**
+ * The round arrow on the sidebar's right edge (desktop and tablet): it shows
+ * while the pointer is over the open sidebar or the button has keyboard
+ * focus, and stays visible on the collapsed icon column so the sidebar can
+ * always be opened again. ⌘B / Ctrl B toggles the same state.
+ */
+function SidebarEdgeToggle({ copy }: { copy: WorkspaceShellCopy }) {
+  const { open, toggleSidebar } = useSidebar();
+  const label = open ? copy.sidebar.collapse : copy.sidebar.expand;
+  return (
+    <button
+      type="button"
+      data-slot="sidebar-edge-toggle"
+      onClick={toggleSidebar}
+      aria-expanded={open}
+      aria-label={label}
+      aria-keyshortcuts="Meta+B Control+B"
+      title={label}
+      className="absolute top-6 -right-3.5 z-20 grid size-7 place-items-center rounded-full border border-line-strong bg-surface-panel text-muted-foreground opacity-0 shadow-sm outline-none transition-opacity duration-150 group-hover:opacity-100 group-data-[state=collapsed]:opacity-100 hover:text-foreground focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-focus-ring motion-reduce:transition-none"
+    >
+      {open ? (
+        <ChevronLeft aria-hidden="true" className="size-4" />
+      ) : (
+        <ChevronRight aria-hidden="true" className="size-4" />
+      )}
+    </button>
+  );
 }
 
 function useCloseMobileDrawer(): () => void {
@@ -350,11 +381,14 @@ function CommandRow({
     <button
       type="button"
       onClick={onOpenCommand}
-      className="mt-1.5 mb-2.5 flex h-8.5 w-full group-data-[tablet=true]:hidden items-center gap-2 rounded-md border border-line bg-surface-panel px-2.5 text-left text-compact text-meta-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-focus-ring"
+      title={copy.sidebar.search}
+      className="mt-1.5 mb-2.5 flex h-8.5 w-full items-center gap-2 rounded-md border border-line bg-surface-panel px-2.5 text-left text-compact text-meta-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-focus-ring group-data-[tablet=true]:h-11 group-data-[tablet=true]:rounded-[10px] group-data-[collapsible=icon]:size-11 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0"
     >
       <Search aria-hidden="true" className="size-4 shrink-0 stroke-[1.8]" />
-      <span className="min-w-0 flex-1 truncate">{copy.sidebar.search}</span>
-      <kbd className="shrink-0 rounded-[4px] border border-line-strong bg-keycap px-[5px] font-mono text-key text-muted-foreground">
+      <span className={cn("min-w-0 flex-1 truncate", LABEL_HIDE)}>
+        {copy.sidebar.search}
+      </span>
+      <kbd className="shrink-0 rounded-[4px] border border-line-strong bg-keycap px-[5px] font-mono text-key text-muted-foreground group-data-[collapsible=icon]:hidden">
         {commandShortcut}
       </kbd>
     </button>
@@ -815,11 +849,12 @@ export function WorkspaceSidebarSurface(props: WorkspaceSidebarSurfaceProps) {
 
   return (
     <Sidebar
+      collapsible="icon"
       mobileTitle={copy.nav.label}
       mobileDescription={props.workspace?.name ?? copy.switcher.loading}
       className="border-line"
     >
-      {isMobile ? props.mobileSystemRail : null}
+      {isMobile ? props.mobileSystemRail : <SidebarEdgeToggle copy={copy} />}
       <SidebarHeader className="gap-0.5 p-0 px-2.5 pt-2.5">
         <SidebarMenu>
           <SidebarMenuItem>

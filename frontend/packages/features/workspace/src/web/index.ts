@@ -58,7 +58,6 @@ export {
   type WorkspaceSidebarSurfaceProps,
 } from "./shell/workspace-sidebar-surface";
 export {
-  WorkspaceTabletTopbar,
   WorkspaceTopbarSurface,
   type WorkspaceTopbarSurfaceProps,
 } from "./shell/workspace-topbar-surface";

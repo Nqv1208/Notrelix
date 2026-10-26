@@ -82,8 +82,8 @@ export const en = {
     setupMembers: "Members",
     setupTeams: "Teams",
     setupBilling: "Plan and billing",
-    tabletToggleClose: "Collapse the sidebar",
-    tabletToggleOpen: "Open the sidebar",
+    collapse: "Collapse the sidebar",
+    expand: "Expand the sidebar",
     roles: {
       owner: "Workspace owner",
       admin: "Workspace admin",
@@ -240,8 +240,8 @@ export const vi: WorkspaceShellCopy = {
     setupMembers: "Thành viên",
     setupTeams: "Nhóm",
     setupBilling: "Gói và thanh toán",
-    tabletToggleClose: "Thu gọn thanh bên",
-    tabletToggleOpen: "Mở thanh bên",
+    collapse: "Thu gọn thanh bên",
+    expand: "Mở rộng thanh bên",
     roles: {
       owner: "Chủ sở hữu workspace",
       admin: "Quản trị workspace",

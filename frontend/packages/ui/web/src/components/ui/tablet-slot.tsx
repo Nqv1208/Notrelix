@@ -2,12 +2,8 @@ import * as React from "react";
 import { createPortal } from "react-dom";
 import { useIsTablet } from "../../hooks/use-tablet";
 
-/** The slots the tablet shell and the page toolbars expose (Final-T-*). */
+/** The slots the page toolbars expose in the tablet band (Final-T-*). */
 export const TABLET_SLOT = {
-  /** Left of the shell top bar, after the sidebar toggle (crumb, views). */
-  topbarMain: "tablet-topbar-main",
-  /** Right of the shell top bar, after the search button (add, share, more). */
-  topbarActions: "tablet-topbar-actions",
   /** Start of a view's toolbar row (access chip). */
   toolbarLead: "tablet-toolbar-lead",
   /** End of a view's toolbar row (avatar stack). */
@@ -56,8 +52,8 @@ function useSlotElement(slot: TabletSlotId, enabled: boolean) {
 
 /**
  * Renders its children into a tablet slot (768-1279 px only), so a page
- * contributes controls to the shell top bar or to a sibling toolbar without
- * the shell knowing the page. Nothing renders outside the tablet band or
+ * contributes controls to a sibling toolbar without that toolbar knowing
+ * the page. Nothing renders outside the tablet band or
  * while the slot is absent.
  */
 export function TabletPortal({

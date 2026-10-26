@@ -4,6 +4,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
   type ReactNode,
 } from "react";
 import { useMatches, useNavigate } from "@tanstack/react-router";
@@ -43,7 +44,6 @@ import {
   WorkspaceCommandPaletteSurface,
   WorkspaceShortcutSheetSurface,
   WorkspaceSidebarSurface,
-  WorkspaceTabletTopbar,
   WorkspaceTopbarSurface,
   workspaceBreadcrumbLabels,
   type NavigationListState,
@@ -654,13 +654,15 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
       tabletOpen={tabletSidebar.open}
       onTabletOpenChange={tabletSidebar.setOpen}
       data-system-rail={desktopRail}
+      // The collapsed sidebar keeps a 64 px icon column on desktop as on
+      // tablet, so its edge arrow stays reachable.
+      style={{ "--sidebar-width-icon": "4rem" } as CSSProperties}
       className={cn(
         "h-svh overflow-hidden bg-surface-canvas",
-        // A pinned rail sits in flow before the sidebar; the expanded
-        // sidebar's fixed container moves right by the rail width (w-19).
-        // Scoped to data-state=expanded so the collapsed off-screen rule wins.
+        // A pinned rail sits in flow before the sidebar; the sidebar's fixed
+        // container (open or icon column) moves right by the rail width (w-19).
         desktopRail === "pinned" &&
-          "[&_[data-state=expanded]_[data-slot=sidebar-container]]:left-19",
+          "[&_[data-state=expanded]_[data-slot=sidebar-container]]:left-19 [&_[data-collapsible=icon]_[data-slot=sidebar-container]]:left-19",
       )}
     >
       {desktopRail === "hidden" ? null : railSurface(desktopRail)}
@@ -710,17 +712,11 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
         onSignOut={() => logout.mutate()}
       />
       <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
-        {/* The desktop design has no top bar: the workspace starts at the top
-            edge and search, notifications and appearance live in the sidebar,
-            the rail and the account pages. Narrow screens keep the bar, which
-            owns the navigation drawer trigger. */}
-        {isMobile ? null : (
-          <WorkspaceTabletTopbar
-            copy={copy}
-            commandShortcut={commandShortcut}
-            onOpenCommand={() => setPaletteOpen(true)}
-          />
-        )}
+        {/* Desktop and tablet have no top bar: the workspace starts at the
+            top edge, the sidebar collapses with the arrow on its edge, and
+            search, notifications and appearance live in the sidebar, the rail
+            and the account pages. Phones keep the bar, which owns the
+            navigation drawer trigger. */}
         {isMobile ? (
           <WorkspaceTopbarSurface
             copy={copy}
