@@ -1,5 +1,4 @@
 using System.Text.Json;
-using Notrelix.Application.Common.Exceptions;
 using Notrelix.Application.Features.Documents.Common;
 using Notrelix.Domain.SharedKernel.Ordering;
 

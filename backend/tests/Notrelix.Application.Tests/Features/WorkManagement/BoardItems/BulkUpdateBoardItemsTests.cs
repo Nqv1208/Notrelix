@@ -1,4 +1,5 @@
-using Notrelix.Domain.Governance.Permissions;using Notrelix.Application.Common.Models;
+using Notrelix.Domain.Governance.Permissions;
+using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.ArchiveBoardItem;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.AssignBoardItemMember;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.BulkUpdateBoardItems;

@@ -1,5 +1,4 @@
 using System.Text.Json;
-using Notrelix.Application.Common.Exceptions;
 using Notrelix.Application.Features.Documents.Abstractions;
 using Notrelix.Application.Features.Documents.Blocks.Commands.BatchUpdateBlocks;
 using Notrelix.Domain.Documents.Blocks;

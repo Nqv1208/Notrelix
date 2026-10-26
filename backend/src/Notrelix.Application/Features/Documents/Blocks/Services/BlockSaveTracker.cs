@@ -1,4 +1,3 @@
-using Notrelix.Domain.Documents.Pages.Events;
 using Notrelix.Domain.Documents.Rules;
 
 namespace Notrelix.Application.Features.Documents.Blocks.Services;

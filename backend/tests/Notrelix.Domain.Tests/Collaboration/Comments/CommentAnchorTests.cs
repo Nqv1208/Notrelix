@@ -1,7 +1,6 @@
 using FluentAssertions;
 using Notrelix.Domain.Collaboration;
 using Notrelix.Domain.Collaboration.Comments;
-using Notrelix.Domain.Common.Exceptions;
 
 namespace Notrelix.Domain.Tests.Collaboration;
 

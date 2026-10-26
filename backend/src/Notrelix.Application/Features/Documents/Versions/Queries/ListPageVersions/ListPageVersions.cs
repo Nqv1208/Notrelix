@@ -2,8 +2,6 @@ using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Documents.Abstractions;
 using Notrelix.Application.Features.Documents.Common;
 using Notrelix.Application.Features.Documents.DTOs;
-using Notrelix.Application.Features.Documents.Versions.Services;
-using Notrelix.Domain.Documents.Versions;
 
 namespace Notrelix.Application.Features.Documents.Versions.Queries.ListPageVersions;
 

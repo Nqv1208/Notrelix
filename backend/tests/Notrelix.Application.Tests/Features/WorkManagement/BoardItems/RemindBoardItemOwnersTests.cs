@@ -1,6 +1,5 @@
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.RemindBoardItemOwners;
 using Notrelix.Domain.Governance.Permissions;
-using Notrelix.Domain.WorkManagement.Items.Events;
 
 namespace Notrelix.Application.Tests.Features.WorkManagement.BoardItems;
 

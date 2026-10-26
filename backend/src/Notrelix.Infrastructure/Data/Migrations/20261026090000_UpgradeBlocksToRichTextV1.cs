@@ -1,5 +1,3 @@
-using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Notrelix.Infrastructure.Data.Documents;
 
 #nullable disable

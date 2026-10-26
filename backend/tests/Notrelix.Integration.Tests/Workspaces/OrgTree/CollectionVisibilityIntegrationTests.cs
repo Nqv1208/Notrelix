@@ -69,6 +69,28 @@ public sealed class CollectionVisibilityIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task BoardLists_HideABoardInASpaceWithoutClosureRows_ThatTheSingleReadHides()
+    {
+        var stack = await _host.SeedWorkspaceAsync();
+        var member = await _host.AddMemberAsync(stack, WorkspaceRole.Member);
+        var space = await _host.SeedSpaceAsync(stack, "Accounting", SpaceVisibility.Workspace, stack.OwnerId, type: SpaceType.Department);
+        var board = await _host.SeedBoardAsync(stack, "Ledger", spaceId: space);
+        await _host.WithSystemContextAsync(async seed =>
+        {
+            var paths = seed.SpacePaths.Where(p => p.DescendantId == space);
+            seed.SpacePaths.RemoveRange(paths);
+            await Task.CompletedTask;
+        });
+
+        using var memberProvider = _host.CreateProvider(stack.AccountId, member);
+        var byWorkspace = await OrgTreeTestHost.QueryAsync(memberProvider, new GetBoardsQuery(stack.WorkspaceId));
+        var single = () => OrgTreeTestHost.SendAsync(memberProvider, new GetBoardQuery(board));
+
+        byWorkspace.Select(b => b.Id).Should().NotContain(board, "the list must not show what the single read hides");
+        await single.Should().ThrowAsync<AppNotFound>();
+    }
+
+    [Fact]
     public async Task BoardLists_AreDeniedToANonMember()
     {
         var stack = await _host.SeedWorkspaceAsync();
