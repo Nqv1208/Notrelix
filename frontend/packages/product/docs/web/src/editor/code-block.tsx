@@ -61,6 +61,10 @@ function CodeBlockView({
           </SelectTrigger>
           <SelectContent align="end">
             <SelectItem value={PLAIN}>{copy.blocks.codePlain}</SelectItem>
+            {language !== PLAIN &&
+              !CODE_LANGUAGES.some((item) => item.value === language) && (
+                <SelectItem value={language}>{language}</SelectItem>
+              )}
             {CODE_LANGUAGES.map((item) => (
               <SelectItem key={item.value} value={item.value}>
                 {item.label}
