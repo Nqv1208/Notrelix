@@ -89,9 +89,9 @@ public static class ProblemDetailsMapper
                 exception.Message,
                 null
             ),
-            AppForbiddenException => (
+            AppForbiddenException forbidden => (
                 StatusCodes.Status403Forbidden,
-                ErrorCodes.Forbidden,
+                forbidden.Code ?? ErrorCodes.Forbidden,
                 "Forbidden",
                 exception.Message,
                 null

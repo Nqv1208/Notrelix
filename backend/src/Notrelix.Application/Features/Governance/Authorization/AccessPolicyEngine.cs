@@ -67,7 +67,8 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
             {
                 return AccessDecision.Deny(
                     AccessDecisionKind.Forbidden,
-                    "Email must be confirmed before using this feature.");
+                    "Email must be confirmed before using this feature.",
+                    AccessDenialCodes.EmailNotConfirmed);
             }
         }
 

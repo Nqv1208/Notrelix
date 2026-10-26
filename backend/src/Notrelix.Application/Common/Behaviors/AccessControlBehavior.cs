@@ -94,7 +94,8 @@ public sealed class AccessControlBehavior<TRequest, TResponse> : IPipelineBehavi
                 throw new SecurityMisconfigurationException(decision.Message ?? "Invalid access contract.");
             default:
                 throw new ForbiddenException(
-                    decision.Message ?? "You do not have permission to perform this action.");
+                    decision.Message ?? "You do not have permission to perform this action.",
+                    decision.Code);
         }
     }
 
