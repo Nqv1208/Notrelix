@@ -58,6 +58,14 @@ function item(id: string, dueAt: string | null): MyWorkItem {
   };
 }
 
+const WORKSPACE_ENDPOINTS = {
+  workspaces: {
+    list: "/workspaces",
+    detail: (id: string) => `/workspaces/${id}`,
+  },
+  accounts: { workspaces: (id: string) => `/accounts/${id}/workspaces` },
+};
+
 describe("My work grouping (WX-HOME-001)", () => {
   it("assigns calendar-day due windows", () => {
     expect(myWorkWindow(iso(-2 * DAY), NOW)).toBe("overdue");
@@ -488,13 +496,28 @@ describe("Producer adapters", () => {
       patch: vi.fn(),
       delete: vi.fn(),
     };
-    const service = createWorkspaceService(api, {
-      workspaces: { list: "/workspaces", detail: (id) => `/workspaces/${id}` },
-    });
+    const service = createWorkspaceService(api, WORKSPACE_ENDPOINTS);
     const list = await service.getList();
     expect(list.map((workspace) => workspace.version)).toEqual([3, undefined]);
     api.get.mockResolvedValueOnce(null);
     await expect(service.getList()).resolves.toEqual([]);
+  });
+
+  it("creates a workspace in the Account and reads it back by the id the producer answers", async () => {
+    const api = {
+      get: vi.fn().mockResolvedValue({ id: "w-new", name: "Acme", version: 1 }),
+      post: vi.fn().mockResolvedValue("w-new"),
+      put: vi.fn(),
+      patch: vi.fn(),
+      delete: vi.fn(),
+    };
+    const service = createWorkspaceService(api, WORKSPACE_ENDPOINTS);
+    const input = { name: "Acme", slug: "acme", isPersonal: false };
+    const made = await service.create("acc-1", input);
+    expect(api.post).toHaveBeenCalledWith("/accounts/acc-1/workspaces", input);
+    expect(api.post).not.toHaveBeenCalledWith("/workspaces", expect.anything());
+    expect(api.get).toHaveBeenCalledWith("/workspaces/w-new");
+    expect(made).toMatchObject({ id: "w-new", name: "Acme" });
   });
 
   it("keeps the workspace version only when the producer reports a positive number", () => {
@@ -521,6 +544,34 @@ describe("describeWorkspaceFailure", () => {
       kind: "rule",
       detail: "Cannot downgrade the last owner of the workspace.",
     });
+    // A 403 that carries the stable "email not confirmed" code is still
+    // forbidden, with a reason the recovery can branch on (never the prose).
+    expect(
+      describeWorkspaceFailure({
+        kind: "forbidden",
+        status: 403,
+        details: {
+          errorCode: "auth.email_not_confirmed",
+          detail: "Email must be confirmed before using this feature.",
+        },
+      }),
+    ).toMatchObject({ kind: "forbidden", reason: "email-not-confirmed" });
+    expect(
+      describeWorkspaceFailure({
+        kind: "forbidden",
+        status: 403,
+        details: { errorCode: "auth.forbidden", detail: "Forbidden access." },
+      }).reason,
+    ).toBeNull();
+    expect(
+      describeWorkspaceFailure({
+        kind: "forbidden",
+        status: 403,
+        details: {
+          detail: "Email must be confirmed before using this feature.",
+        },
+      }).reason,
+    ).toBeNull();
     expect(
       describeWorkspaceFailure({ kind: "conflict", status: 409 }).kind,
     ).toBe("conflict");

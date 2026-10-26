@@ -15,8 +15,19 @@ export type WorkspaceFailureKind =
   | "network"
   | "unknown";
 
+/** The producer's stable code for a denial because the member's email is not confirmed. */
+export const EMAIL_NOT_CONFIRMED_CODE = "auth.email_not_confirmed";
+
+/**
+ * A reason that refines a failure without changing its kind: the request is
+ * `forbidden`, and the recovery is not "ask an owner" but "confirm your email".
+ */
+export type WorkspaceFailureReason = "email-not-confirmed";
+
 export interface WorkspaceFailure {
   readonly kind: WorkspaceFailureKind;
+  /** Why the producer refused, when it gave a stable code for it. */
+  readonly reason: WorkspaceFailureReason | null;
   /** The producer's `errorCode` extension, when present. */
   readonly errorCode: string | null;
   /** The producer's human-readable `detail`, when present. */
@@ -81,5 +92,10 @@ export function describeWorkspaceFailure(error: unknown): WorkspaceFailure {
     kind = "network";
   else kind = "unknown";
 
-  return { kind, errorCode, detail, fieldErrors };
+  const reason: WorkspaceFailureReason | null =
+    kind === "forbidden" && errorCode === EMAIL_NOT_CONFIRMED_CODE
+      ? "email-not-confirmed"
+      : null;
+
+  return { kind, reason, errorCode, detail, fieldErrors };
 }

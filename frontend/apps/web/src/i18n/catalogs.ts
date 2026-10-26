@@ -42,6 +42,7 @@ import {
   timelineCatalog,
 } from "@notrelix/work-management-web";
 import { routerStatesCatalog } from "../router/router-states.catalog";
+import { emailConfirmationCatalog } from "../shell/workspace/email-confirmation.catalog";
 
 /**
  * Catalogs composed into the web host's I18nProvider. Packages export their
@@ -85,4 +86,5 @@ export const webCatalogs: readonly MessageCatalog[] = [
   accountNotificationsCatalog,
   accountWorkspacesCatalog,
   routerStatesCatalog,
+  emailConfirmationCatalog,
 ];
