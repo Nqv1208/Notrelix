@@ -349,7 +349,8 @@ export function toMyWorkExtended(
               title: raw.title ?? "",
               owner,
               dueAt: raw.dueAt ?? null,
-              note: raw.note ?? "",
+              // The real waiting-on read carries no note yet.
+              note: "",
               lastRemindedAt: raw.lastRemindedAt ?? null,
             },
           ]
