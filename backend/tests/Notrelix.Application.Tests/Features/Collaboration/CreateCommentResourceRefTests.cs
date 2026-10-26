@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Features.Collaboration.Abstractions;
 using Notrelix.Application.Features.Collaboration.Comments.Commands.CreateComment;
 using Notrelix.Application.Features.Documents.Public.PageBlocks;
+using Notrelix.Application.Features.Governance.Public.Visibility;
+using Notrelix.Application.Features.WorkManagement.Public.ItemNotifications;
 using Notrelix.Domain.Collaboration;
 using Notrelix.Domain.Collaboration.Comments;
 using Notrelix.Domain.Collaboration.Mentions;
@@ -22,6 +24,9 @@ public class CreateCommentResourceRefTests
     private readonly Mock<ICurrentRequestContext> _requestContextMock = new();
     private readonly Mock<IDateTimeProvider> _clockMock = new();
     private readonly Mock<IPageBlockFacts> _pageBlocksMock = new();
+    private readonly Mock<IWorkItemNotificationFacts> _itemFactsMock = new();
+    private readonly Mock<IResourceVisibility> _visibilityMock = new();
+    private readonly Guid _boardId = Guid.CreateVersion7();
 
     public CreateCommentResourceRefTests()
     {
@@ -30,6 +35,12 @@ public class CreateCommentResourceRefTests
         _requestContextMock.Setup(c => c.RequireWorkspaceId()).Returns(Guid.CreateVersion7());
         _requestContextMock.Setup(c => c.IsAuthenticated).Returns(true);
         _clockMock.Setup(c => c.UtcNow).Returns(TestNow);
+        _itemFactsMock
+            .Setup(f => f.FindAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new WorkItemNotificationFacts(_boardId, "Item", false, null));
+        _visibilityMock
+            .Setup(v => v.VisibleBoardIdsAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([_boardId]);
     }
 
     private (CreateCommentCommandHandler Handler, Mock<DbSet<Comment>> Comments, Mock<DbSet<Mention>> Mentions, Mock<ICollaborationDbContext> ContextMock) CreateSut()
@@ -39,7 +50,7 @@ public class CreateCommentResourceRefTests
         var contextMock = new Mock<ICollaborationDbContext>();
         contextMock.Setup(c => c.Comments).Returns(comments.Object);
         contextMock.Setup(c => c.PageMentions).Returns(mentions.Object);
-        return (new CreateCommentCommandHandler(contextMock.Object, _requestContextMock.Object, _clockMock.Object, _pageBlocksMock.Object), comments, mentions, contextMock);
+        return (new CreateCommentCommandHandler(contextMock.Object, _requestContextMock.Object, _clockMock.Object, _pageBlocksMock.Object, _itemFactsMock.Object, _visibilityMock.Object), comments, mentions, contextMock);
     }
 
     [Fact]
@@ -61,6 +72,42 @@ public class CreateCommentResourceRefTests
             mention.MentionedByUserId == authorId &&
             mention.WorkspaceId == workspaceId &&
             mention.Type == MentionType.User)), Times.Once);
+    }
+
+    [Fact]
+    public async Task ItemCommentMentioningSomeoneWhoCannotViewTheBoard_KeepsTheCommentAndCreatesNoMention()
+    {
+        var (sut, comments, mentions, _) = CreateSut();
+        var outsider = Guid.CreateVersion7();
+        var insider = Guid.CreateVersion7();
+        _visibilityMock
+            .Setup(v => v.VisibleBoardIdsAsync(It.IsAny<Guid>(), outsider, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([Guid.CreateVersion7()]);
+
+        var result = await sut.Handle(
+            CreateCommentCommand.ForBoardItem(Guid.CreateVersion7(), "hi @outsider @insider", null, [outsider, insider]),
+            CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        comments.Verify(c => c.Add(It.IsAny<Comment>()), Times.Once);
+        mentions.Verify(m => m.Add(It.Is<Mention>(x => x.MentionedId == outsider)), Times.Never);
+        mentions.Verify(m => m.Add(It.Is<Mention>(x => x.MentionedId == insider)), Times.Once);
+    }
+
+    [Fact]
+    public async Task ItemCommentWhoseItemIsGone_CreatesNoMention()
+    {
+        var (sut, _, mentions, _) = CreateSut();
+        _itemFactsMock
+            .Setup(f => f.FindAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((WorkItemNotificationFacts?)null);
+
+        var result = await sut.Handle(
+            CreateCommentCommand.ForBoardItem(Guid.CreateVersion7(), "hello", null, [Guid.CreateVersion7()]),
+            CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        mentions.Verify(m => m.Add(It.IsAny<Mention>()), Times.Never);
     }
 
     [Fact]
