@@ -28,7 +28,6 @@ import {
   markInbox,
   remindOwner,
   reopenItem,
-  replyToMention,
   setFollowing,
   type FeedWriteResult,
 } from "../../state/mock-work-feed";
@@ -40,7 +39,6 @@ import { securityExt, teamsExt } from "../../state/mock-teams-ext";
 import { canReadBoard } from "../work-management/boards.handlers";
 
 const MY_WORK_EXT = "CTR-GAP-WS-MYWORK-EXT" as const;
-const HOME_FEED = "CTR-GAP-WS-HOME-FEED" as const;
 
 const PRIORITY_LABELS = {
   urgent: "Urgent",
@@ -375,20 +373,6 @@ export const workFeedOperations = [
       return ok(buildHomeFeed(store));
     },
   }),
-  defineMockOperation<{ id: string }, { text?: string }>({
-    id: "wsFeed.mentions.reply",
-    contract: { kind: "gap", gapId: HOME_FEED },
-    method: "POST",
-    route: "/mentions/:id/reply",
-    async handle({ params, body, store }) {
-      const text = body?.text?.trim() ?? "";
-      if (text.length === 0 || text.length > 4000) {
-        return validationError({ text: ["Write 1 to 4000 characters."] });
-      }
-      return outcome(replyToMention(store, params.id, text));
-    },
-  }),
-
   // ── Inbox ────────────────────────────────────────────────────────────────
   defineMockOperation({
     id: "wsFeed.inbox.summary",

@@ -332,6 +332,22 @@ export class MockWorkFeedState {
   /** Items whose notifications the member turned off. */
   mutedItemIds = new Set<string>();
 
+  /**
+   * The member commented on a thread: the mention entries they held there no
+   * longer wait for their reply (the producer clears the need the same way).
+   */
+  noteReplyOn(thread: { itemId?: string; docId?: string }): void {
+    for (const record of this.inbox) {
+      if (record.need !== "reply") continue;
+      if (
+        (thread.itemId && record.itemId === thread.itemId) ||
+        (thread.docId && record.docId === thread.docId)
+      ) {
+        record.need = null;
+      }
+    }
+  }
+
   clear(): void {
     this.assigned.clear();
     this.following.clear();
@@ -1018,8 +1034,10 @@ export function buildHomeFeed(store: MockStore): HomeFeedDto {
   for (const mention of feed.mentions) {
     const actor = person(store, mention.actorId);
     if (mention.handled || !actor) continue;
+    // The reply is the mention's notification: its id is the inbox entry's.
+    const entry = feed.inbox.find((record) => record.mentionId === mention.id);
     replies.push({
-      id: `mention:${mention.id}`,
+      id: entry?.id ?? mention.id,
       kind: "mention",
       actor,
       createdAt: mention.createdAt,
@@ -1286,26 +1304,14 @@ export function unassignMember(
   return "ok";
 }
 
-export function replyToMention(
-  store: MockStore,
-  mentionId: string,
-  text: string,
-): FeedWriteResult {
-  const feed = store.feed;
+/** Home lists the mentions whose notification is unread: reading one handles it, reopening or snoozing it brings it back. */
+function setMentionHandled(
+  feed: MockStore["feed"],
+  mentionId: string | null,
+  handled: boolean,
+) {
   const mention = feed.mentions.find((entry) => entry.id === mentionId);
-  if (!mention) return "not-found";
-  const page = store.getPage(mention.docId);
-  if (page) {
-    store.createPageComment(page.id, store.getCurrentUser().id, text);
-  }
-  mention.handled = true;
-  for (const record of feed.inbox) {
-    if (record.mentionId === mentionId) {
-      record.need = null;
-      record.unread = false;
-    }
-  }
-  return "ok";
+  if (mention) mention.handled = handled;
 }
 
 export function markInbox(
@@ -1316,8 +1322,7 @@ export function markInbox(
     | { type: "done" }
     | { type: "reopen" }
     | { type: "snooze"; until: string }
-    | { type: "mute"; muted?: boolean }
-    | { type: "reply"; text: string },
+    | { type: "mute"; muted?: boolean },
 ): FeedWriteResult {
   const feed = store.feed;
   const record = feed.inbox.find((entry) => entry.id === id);
@@ -1326,12 +1331,14 @@ export function markInbox(
     case "handled":
       record.unread = false;
       record.need = null;
+      setMentionHandled(feed, record.mentionId, true);
       break;
     case "done":
       record.done = true;
       record.unread = false;
       record.need = null;
       record.snoozedUntil = null;
+      setMentionHandled(feed, record.mentionId, true);
       break;
     case "reopen":
       record.done = false;
@@ -1342,6 +1349,7 @@ export function markInbox(
       record.snoozedUntil = change.until;
       record.done = false;
       record.unread = true;
+      setMentionHandled(feed, record.mentionId, false);
       break;
     case "mute":
       record.muted = change.muted !== false;
@@ -1350,21 +1358,6 @@ export function markInbox(
         else feed.mutedItemIds.delete(record.itemId);
       }
       break;
-    case "reply": {
-      if (record.mentionId) {
-        const outcome = replyToMention(store, record.mentionId, change.text);
-        if (outcome !== "ok") return outcome;
-      } else if (record.itemId) {
-        store.createCardComment(
-          record.itemId,
-          store.getCurrentUser().id,
-          change.text,
-        );
-        record.need = record.need === "reply" ? null : record.need;
-      } else return "invalid";
-      record.unread = false;
-      break;
-    }
   }
   return "ok";
 }
@@ -1376,6 +1369,7 @@ export function markAllInboxRead(store: MockStore): void {
     if (record.done || (record.snoozedUntil && record.snoozedUntil > now))
       continue;
     record.unread = false;
+    setMentionHandled(store.feed, record.mentionId, true);
   }
 }
 

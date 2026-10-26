@@ -425,7 +425,6 @@ const path = {
   reopen: (itemId: string) => `/board-items/${itemId}/reopen`,
   remind: (itemId: string) => `/board-items/${itemId}/remind`,
   homeFeed: (workspaceId: string) => `/workspaces/${workspaceId}/home/feed`,
-  mentionReply: (mentionId: string) => `/mentions/${mentionId}/reply`,
   inbox: (workspaceId: string) => `/workspaces/${workspaceId}/inbox`,
   inboxReadAll: (workspaceId: string) =>
     `/workspaces/${workspaceId}/inbox/read-all`,
@@ -727,8 +726,14 @@ export interface WorkFeedWrites {
     descriptionMd?: string;
     dueDay?: string;
   }) => Promise<{ id: string; key: string | null }>;
+  /**
+   * Answers a mention shown on Home: the reply is the member's comment on the
+   * thread they were mentioned in (the existing item or page comment write),
+   * then the mention's notification is read, which takes it off Home.
+   */
   readonly replyToMention: (input: {
-    mentionId: string;
+    notificationId: string;
+    target: { readonly kind: "item" | "doc"; readonly id: string };
     text: string;
   }) => Promise<void>;
   readonly inbox: {
@@ -832,17 +837,23 @@ export function useWorkFeedWrites(workspaceId: string): WorkFeedWrites {
             dueDay,
           });
         }, [boardId]),
-      replyToMention: ({ mentionId, text }) =>
-        perform(() =>
-          api.post<void>(
-            path.mentionReply(mentionId),
-            { text },
-            {
-              idempotencyKey: attemptKey(),
-              ...QUIET,
-            },
-          ),
-        ),
+      replyToMention: ({ notificationId, target, text }) =>
+        perform(async () => {
+          await api.post<string>(
+            target.kind === "item"
+              ? path.itemComments(target.id)
+              : path.pageComments(target.id),
+            target.kind === "item"
+              ? { contentMd: text, parentCommentId: null }
+              : { contentMd: text },
+            { idempotencyKey: attemptKey(), ...QUIET },
+          );
+          await api.post<void>(
+            path.inboxEntryRead(workspaceId, notificationId),
+            {},
+            QUIET,
+          );
+        }),
       inbox: {
         markRead: (id) =>
           perform(() =>

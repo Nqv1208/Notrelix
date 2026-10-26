@@ -832,17 +832,6 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
   },
   {
     context: "Workspace",
-    classification: "COMPATIBILITY_GAP_MOCKED",
-    consumerSymbol: "useReplyToMention",
-    consumerFile: "frontend/apps/web/src/shell/workspace/work-feed-bridge.ts",
-    capability: "Reply to a mention",
-    gapId: "CTR-GAP-WS-HOME-FEED",
-    method: "POST",
-    pathTemplate: "/mentions/{id}/reply",
-    mutation: true,
-  },
-  {
-    context: "Workspace",
     classification: "CANONICAL_MOCKED",
     consumerSymbol: "useCommandSearch",
     consumerFile: "frontend/apps/web/src/shell/workspace/use-command-search.ts",

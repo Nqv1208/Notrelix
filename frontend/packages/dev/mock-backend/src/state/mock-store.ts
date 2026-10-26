@@ -3088,6 +3088,7 @@ export class MockStore {
       createdAt: this.clock.isoNow(),
     };
     this.insertComment(cmt);
+    this.feed.noteReplyOn({ itemId: cardId });
     return cmt;
   }
 
@@ -4204,6 +4205,7 @@ export class MockStore {
       ...(anchor ? { anchor } : {}),
     };
     this.pageCommentsById.set(id, comment);
+    this.feed.noteReplyOn({ docId: pageId });
     return comment;
   }
 

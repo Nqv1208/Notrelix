@@ -247,10 +247,16 @@ export function HomePage() {
         );
       },
       onReply: (reply, text) => {
-        const mentionId = reply.id.replace(/^mention:/, "");
+        const dto = replyById.get(reply.id);
+        if (!dto) return;
         void withPending(
           reply.id,
-          () => writes.replyToMention({ mentionId, text }),
+          () =>
+            writes.replyToMention({
+              notificationId: dto.id,
+              target: { kind: dto.target.kind, id: dto.target.id },
+              text,
+            }),
           formatCopy(copy.home.toasts.replied, { name: reply.actorName }),
         );
       },
