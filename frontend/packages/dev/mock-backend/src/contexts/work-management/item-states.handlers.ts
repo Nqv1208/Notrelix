@@ -5,8 +5,6 @@
  *
  *   itemStates.lifecycle    — GET  /board-items/:id/lifecycle
  *   itemStates.restore      — POST /board-items/:id/unarchive
- *   itemStates.people       — GET  /boards/:boardId/people-directory
- *   itemStates.invitePerson — POST /boards/:boardId/people-directory/invitations
  */
 import { defineMockOperation } from "../../operations/types";
 import {
@@ -16,15 +14,7 @@ import {
   ok,
   validationError,
 } from "../../transport/create-response";
-import {
-  peopleDirectory,
-  type PeopleDirectoryDto,
-} from "../../state/mock-people-directory";
-import {
-  canManageBoard,
-  canReadBoard,
-  canWriteBoardItems,
-} from "./boards.handlers";
+import { canReadBoard, canWriteBoardItems } from "./boards.handlers";
 
 interface ItemLifecycleDto {
   readonly archived: { readonly at: string; readonly byName: string } | null;
@@ -76,42 +66,6 @@ export const itemStatesOperations = [
       if (!item) return notFound();
       if (!canWriteBoardItems(item.boardId, store)) return forbidden();
       store.restoreCard(params.id);
-      return noContent();
-    },
-  }),
-
-  defineMockOperation<{ boardId: string }, never, PeopleDirectoryDto>({
-    id: "itemStates.people",
-    contract: gap,
-    method: "GET",
-    route: "/boards/:boardId/people-directory",
-    async handle({ params, store }) {
-      if (!canReadBoard(params.boardId, store)) return notFound();
-      const directory = peopleDirectory(
-        store,
-        params.boardId,
-        canManageBoard(params.boardId, store),
-      );
-      return directory ? ok(directory) : notFound();
-    },
-  }),
-
-  defineMockOperation<{ boardId: string }, { userId?: string }, void>({
-    id: "itemStates.invitePerson",
-    contract: gap,
-    method: "POST",
-    route: "/boards/:boardId/people-directory/invitations",
-    async handle({ params, body, store, request }) {
-      if (!request.headers.get("Idempotency-Key"))
-        return validationError({
-          "Idempotency-Key": ["The header is required."],
-        });
-      if (!canReadBoard(params.boardId, store)) return notFound();
-      if (!canManageBoard(params.boardId, store)) return forbidden();
-      const userId = body?.userId;
-      if (!userId || !store.getUser(userId))
-        return validationError({ userId: ["Choose a person."] });
-      store.addBoardMember(params.boardId, userId);
       return noContent();
     },
   }),
