@@ -102,9 +102,17 @@ export interface WorkspaceMyWorkSurfaceProps {
   readonly calendarHref?: string | null;
   /** Boards the member can add an item to. */
   readonly createBoards: readonly MyWorkCreateBoard[];
-  /** Creates an item already assigned to the member; `null` = no write yet. */
+  /** Creates an item assigned to the member; `null` leaves the action inert. */
   readonly onCreate:
     ((input: { boardId: string; name: string }) => void) | null;
+  /**
+   * Opens the full item form (status, priority, people, dates, description)
+   * with the name and Board the popover holds; absent hides "More details".
+   */
+  readonly onOpenCreateForm?: (input: {
+    boardId: string;
+    name: string;
+  }) => void;
   /** The row open in the sheet. */
   readonly openItemId: string | null;
   /** A plain click on a title: open the item (the host shows its sheet). */
@@ -574,6 +582,18 @@ export function WorkspaceMyWorkSurface(props: WorkspaceMyWorkSurfaceProps) {
           props.onCreate && createBoardId && createName.trim()
             ? () => {
                 props.onCreate?.({
+                  boardId: createBoardId,
+                  name: createName.trim(),
+                });
+                setCreateName("");
+                setMenu(null);
+              }
+            : null
+        }
+        onOpenForm={
+          props.onOpenCreateForm && createBoardId
+            ? () => {
+                props.onOpenCreateForm?.({
                   boardId: createBoardId,
                   name: createName.trim(),
                 });

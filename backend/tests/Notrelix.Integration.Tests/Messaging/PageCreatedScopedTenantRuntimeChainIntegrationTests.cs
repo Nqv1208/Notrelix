@@ -43,7 +43,7 @@ public sealed class PageCreatedScopedTenantRuntimeChainIntegrationTests : IAsync
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -59,11 +59,13 @@ public sealed class PageCreatedScopedTenantRuntimeChainIntegrationTests : IAsync
         var now = DateTimeOffset.UtcNow;
         var workspace = Workspace.Create(accountId, ownerId, "DC Page Chain WS", $"pagechain-{Guid.NewGuid():N}", now);
 
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Workspaces.Add(workspace);
         seed.WorkspaceMembers.Add(Domain.Workspaces.Members.WorkspaceMember.Create(
             accountId, workspace.Id, ownerId, Domain.Workspaces.Members.WorkspaceRole.Owner, ownerId, now));
         await seed.SaveChangesAsync();
+        await AccessGrantSeed.WorkspaceMemberAsync(
+            _db, accountId, workspace.Id, ownerId, Domain.Workspaces.Members.WorkspaceRole.Owner);
 
         return new PageGraph(accountId, workspace.Id, ownerId, title);
     }
@@ -145,6 +147,7 @@ public sealed class PageCreatedScopedTenantRuntimeChainIntegrationTests : IAsync
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["ConnectionStrings:NotrelixDb"] = _db.ConnectionString,
+                ["ConnectionStrings:NotrelixWorkerDb"] = _db.WorkerConnectionString,
                 ["ConnectionStrings:Redis"] = "localhost:6379,abortConnect=false",
                 ["Messaging:Transport"] = "InMemory",
                 ["Rls:Enabled"] = "true",
@@ -162,6 +165,7 @@ public sealed class PageCreatedScopedTenantRuntimeChainIntegrationTests : IAsync
         builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
         {
             ["ConnectionStrings:NotrelixDb"] = _db.ConnectionString,
+            ["ConnectionStrings:NotrelixWorkerDb"] = _db.WorkerConnectionString,
             ["ConnectionStrings:Redis"] = "localhost:6379,abortConnect=false",
             ["Messaging:Transport"] = "InMemory",
             ["Rls:Enabled"] = "true",
@@ -209,7 +213,7 @@ public sealed class PageCreatedScopedTenantRuntimeChainIntegrationTests : IAsync
         MessagingOutboxMessage? found = null;
         var completed = await WaitForAsync(async () =>
         {
-            await using var probe = _db.CreateContext(SystemTenant());
+            await using var probe = _db.CreateOwnerContext(SystemTenant());
             found = await probe.Set<MessagingOutboxMessage>()
                 .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(m => m.MessageName == "page.created"
@@ -225,7 +229,7 @@ public sealed class PageCreatedScopedTenantRuntimeChainIntegrationTests : IAsync
     {
         return await WaitForAsync(async () =>
         {
-            await using var probe = _db.CreateContext(SystemTenant());
+            await using var probe = _db.CreateOwnerContext(SystemTenant());
             return await probe.Set<MessagingOutboxMessage>()
                 .IgnoreQueryFilters()
                 .AnyAsync(m => m.Id == outboxId && m.Status == "Processed");
@@ -236,7 +240,7 @@ public sealed class PageCreatedScopedTenantRuntimeChainIntegrationTests : IAsync
     {
         return await WaitForAsync(async () =>
         {
-            await using var probe = _db.CreateContext(SystemTenant());
+            await using var probe = _db.CreateOwnerContext(SystemTenant());
             return await probe.Set<MessagingProcessedEvent>()
                 .IgnoreQueryFilters()
                 .AnyAsync(p => p.EventId == eventId

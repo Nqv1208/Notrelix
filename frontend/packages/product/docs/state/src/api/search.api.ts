@@ -16,7 +16,7 @@ export function createSearchApi(
         type: "page" as const,
         title: page.title,
         excerpt: page.title,
-        icon: page.iconValue ?? null,
+        icon: page.icon ?? null,
         pageId: page.id,
         score: 1,
         group: "Pages" as const,

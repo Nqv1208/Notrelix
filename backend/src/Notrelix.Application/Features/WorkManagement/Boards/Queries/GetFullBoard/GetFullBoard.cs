@@ -112,6 +112,19 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
             .Include(field => field.Options)
             .Where(field => field.BoardId == request.BoardId)
             .ToListAsync(cancellationToken);
+        var emptyValue = JsonValue.Null();
+        // One grouped count for the whole Board: live Items holding a non-empty value, by field.
+        var valueCounts = await _context.BoardItemValues
+            .AsNoTracking()
+            .Where(value => value.Value.Data != emptyValue)
+            .Join(
+                _context.BoardItems.AsNoTracking().Where(item => item.BoardId == request.BoardId && item.DeletedAt == null && !item.IsArchived),
+                value => value.ItemId,
+                item => item.Id,
+                (value, item) => value.FieldId)
+            .GroupBy(fieldId => fieldId)
+            .Select(group => new { FieldId = group.Key, Count = group.Count() })
+            .ToDictionaryAsync(row => row.FieldId, row => row.Count, cancellationToken);
         var readValues = await BoardItemReadValues.LoadAsync(_context, fields, cardIds, cancellationToken);
 
         var membersByCardId = cardMembers
@@ -190,7 +203,8 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
                 column.IsSystem,
                 column.DeletedAt != null,
                 column.Version,
-                OptionsOf(column)
+                OptionsOf(column),
+                valueCounts.GetValueOrDefault(column.Id)
             ))
             .ToList();
 

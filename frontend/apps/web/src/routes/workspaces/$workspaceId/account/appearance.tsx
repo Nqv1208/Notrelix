@@ -1,9 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useCallback, useMemo, useState } from "react";
 import {
   AccountAppearanceSurface,
   createUsePreferences,
-  createUseUpdatePreferences,
   useAccountAppearanceCopy,
   type AccountSaveStatus,
   type AccountSection,
@@ -12,14 +10,15 @@ import {
 import { useLocale } from "@notrelix/i18n";
 import { useAppRuntime } from "@notrelix/runtime-web";
 import { useTheme, type ThemeMode } from "@notrelix/ui-web";
-import {
-  useAccountPagesKeys,
-  useAccountPagesApi,
-  useToast,
-} from "./use-account-pages";
+import { useRouteWorkspaceName, useToast } from "./use-account-pages";
+import { useClientPreference } from "./use-client-preference";
 
+/**
+ * The look of the app. The theme mode is the device's and is mirrored to the
+ * account preference (`light` / `dark` / `system`; one value, no separate
+ * colour theme); the sidebar default is this browser's alone.
+ */
 export function AccountAppearancePage() {
-  const accountPagesKeys = useAccountPagesKeys();
   const { api: runtimeClient } = useAppRuntime();
   const copy = useAccountAppearanceCopy();
   const theme = useTheme();
@@ -34,54 +33,20 @@ export function AccountAppearancePage() {
     [runtimeClient],
   );
 
-  const useUpdatePreferences = useMemo(
-    () =>
-      createUseUpdatePreferences({
-        api: runtimeClient.api,
-        endpoints: runtimeClient.endpoints,
-      }),
-    [runtimeClient],
-  );
-
-  const accountApi = useAccountPagesApi();
-  const details = useQuery({
-    queryKey: accountPagesKeys.details,
-    queryFn: () => accountApi.getDetails(),
-    retry: false,
-  });
+  const workspaceName = useRouteWorkspaceName();
   const [toast, showToast] = useToast();
-  const { preferences, isError, refetch } = usePreferences();
-  const updateMutation = useUpdatePreferences();
+  const { save } = usePreferences();
+  const [collapsed, setCollapsed] = useClientPreference<boolean>(
+    "notrelix-sidebar-collapsed",
+    false,
+  );
   const [sidebarSave, setSidebarSave] = useState<AccountSaveStatus>({
     state: "idle",
   });
-  // The value just sent, shown until the refetched preference confirms it.
-  const [pendingCollapsed, setPendingCollapsed] = useState<boolean | null>(
-    null,
-  );
-
-  useEffect(() => {
-    if (
-      pendingCollapsed !== null &&
-      preferences?.sidebarCollapsed === pendingCollapsed
-    ) {
-      setPendingCollapsed(null);
-    }
-  }, [preferences?.sidebarCollapsed, pendingCollapsed]);
 
   const sidebar = useMemo<AccountSection<AccountSidebarPreference>>(
-    () =>
-      preferences
-        ? {
-            status: "ready",
-            data: {
-              collapsed: pendingCollapsed ?? preferences.sidebarCollapsed,
-            },
-          }
-        : isError
-          ? { status: "error" }
-          : { status: "loading" },
-    [preferences, isError, pendingCollapsed],
+    () => ({ status: "ready", data: { collapsed } }),
+    [collapsed],
   );
 
   // Mirror the device mode to account preferences; the preference contract
@@ -92,28 +57,21 @@ export function AccountAppearancePage() {
       showToast(copy.sidebar.saved);
       if (mode === "high-contrast") return;
       try {
-        await updateMutation.mutateAsync({ theme: mode });
+        await save({ theme: mode });
       } catch {
         // The device mode is already applied; the account mirror is best effort.
       }
     },
-    [theme, updateMutation, showToast, copy.sidebar.saved],
+    [theme, save, showToast, copy.sidebar.saved],
   );
 
   const handleSidebarCollapsedChange = useCallback(
-    async (collapsed: boolean) => {
-      setPendingCollapsed(collapsed);
-      setSidebarSave({ state: "saving" });
-      try {
-        await updateMutation.mutateAsync({ sidebarCollapsed: collapsed });
-        setSidebarSave({ state: "saved" });
-        showToast(copy.sidebar.saved);
-      } catch {
-        setPendingCollapsed(null);
-        setSidebarSave({ state: "error" });
-      }
+    (next: boolean) => {
+      setCollapsed(next);
+      setSidebarSave({ state: "saved" });
+      showToast(copy.sidebar.saved);
     },
-    [updateMutation, showToast, copy.sidebar.saved],
+    [setCollapsed, showToast, copy.sidebar.saved],
   );
 
   return (
@@ -122,7 +80,7 @@ export function AccountAppearancePage() {
       mode={theme.mode}
       accent={theme.accent}
       locale={locale}
-      workspaceName={details.data?.workspaceName ?? ""}
+      workspaceName={workspaceName}
       toast={toast !== null}
       sidebar={sidebar}
       sidebarSave={sidebarSave}
@@ -134,11 +92,11 @@ export function AccountAppearancePage() {
       onLocaleChange={(next) => {
         setLocale(next);
         showToast(copy.sidebar.saved);
+        // The account keeps the language too; the device already switched.
+        void save({ locale: next }).catch(() => undefined);
       }}
-      onSidebarCollapsedChange={(collapsed) =>
-        void handleSidebarCollapsedChange(collapsed)
-      }
-      onRetryPreferences={() => void refetch()}
+      onSidebarCollapsedChange={handleSidebarCollapsedChange}
+      onRetryPreferences={() => undefined}
     />
   );
 }

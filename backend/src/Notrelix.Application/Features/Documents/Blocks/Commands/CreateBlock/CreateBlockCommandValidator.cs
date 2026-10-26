@@ -8,12 +8,10 @@ public class CreateBlockCommandValidator : AbstractValidator<CreateBlockCommand>
             .NotEmpty();
 
         RuleFor(x => x.Type)
-            .IsInEnum();
-
-        RuleFor(x => x.Properties)
             .NotEmpty();
 
-        RuleFor(x => x.Position)
-            .NotEmpty();
+        RuleFor(x => x.Id)
+            .NotEqual(Guid.Empty)
+            .When(x => x.Id.HasValue);
     }
 }

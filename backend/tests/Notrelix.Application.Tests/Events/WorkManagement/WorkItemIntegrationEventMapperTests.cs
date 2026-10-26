@@ -64,6 +64,27 @@ public class WorkItemIntegrationEventMapperTests
     }
 
     [Fact]
+    public void BoardItemOwnersRemindedDomainEvent_Maps_WorkOwnedContract_WithEnvelopeAndRecipients()
+    {
+        var recipients = new[] { Guid.CreateVersion7(), Guid.CreateVersion7() };
+        var domainEvent = new BoardItemOwnersRemindedDomainEvent(
+            Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(),
+            Guid.CreateVersion7(), recipients, DateTimeOffset.UtcNow);
+
+        var mapped = new BoardItemOwnersRemindedEventMapper().Map(domainEvent);
+
+        mapped.AccountIdValue.Should().Be(domainEvent.AccountId);
+        mapped.WorkspaceIdValue.Should().Be(domainEvent.WorkspaceId);
+        mapped.ItemId.Should().Be(domainEvent.ItemId);
+        mapped.BoardId.Should().Be(domainEvent.BoardId);
+        mapped.SenderUserId.Should().Be(domainEvent.SenderUserId);
+        mapped.RecipientUserIds.Should().BeEquivalentTo(recipients);
+        mapped.CorrelationId.Should().Be(domainEvent.EventId);
+        mapped.SourceEventId.Should().Be(domainEvent.EventId);
+        mapped.OccurredAt.Should().Be(domainEvent.OccurredAt);
+    }
+
+    [Fact]
     public void MappedContracts_ArePinnedWorkManagementOwned_Events()
     {
         var moved = _boardMapper.Map(new BoardItemMovedDomainEvent(

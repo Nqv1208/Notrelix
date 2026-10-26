@@ -31,7 +31,7 @@ review_on:
 > This file is generated discovery evidence.
 > Rule meaning remains owned by the canonical source document in which the rule is declared.
 
-Rule count: 2689
+Rule count: 2690
 
 ## Namespace summary
 
@@ -101,7 +101,7 @@ Rule count: 2689
 | `SYS-NOTIF` | 1 |
 | `SYS-OBS` | 1 |
 | `SYS-RT` | 4 |
-| `WM` | 43 |
+| `WM` | 44 |
 | `WSP` | 26 |
 
 ## Rule inventory
@@ -2771,6 +2771,7 @@ Rule count: 2689
 | `WM-041` | `WM` | Progress of an Item with child Items is derived | [`docs/product/work-management.md`](../product/work-management.md) |
 | `WM-042` | `WM` | Status options carry a work-status category | [`docs/product/work-management.md`](../product/work-management.md) |
 | `WM-043` | `WM` | Item key | [`docs/product/work-management.md`](../product/work-management.md) |
+| `WM-044` | `WM` | Item description and create-time facts | [`docs/product/work-management.md`](../product/work-management.md) |
 | `WSP-001` | `WSP` | Workspace is a collaboration tenant, not a generic global scope | [`docs/product/workspaces.md`](../product/workspaces.md) |
 | `WSP-002` | `WSP` | Workspace scope is explicit | [`docs/product/workspaces.md`](../product/workspaces.md) |
 | `WSP-003` | `WSP` | Workspace lifecycle is not Account lifecycle | [`docs/product/workspaces.md`](../product/workspaces.md) |

@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import type { Editor } from "@tiptap/react";
+import type { BlockType } from "@notrelix/docs-core";
 import { Skeleton } from "@notrelix/ui-web";
 import type { DocPageCopy } from "./doc-page.copy";
 import {
@@ -10,9 +12,16 @@ import type {
   DocBlockView,
   DocChip,
   DocCommentView,
+  DocConvertView,
+  DocMarkTargets,
+  DocPerson,
+  DocPickerPageView,
+  DocTrashView,
   DocHeaderView,
   DocOverlay,
   DocPageCallbacks,
+  DocPickerBoardView,
+  DocRecoveryView,
   DocPanelTab,
   DocRelatedDoc,
   DocSaveState,
@@ -21,7 +30,22 @@ import type {
   DocTaskResolution,
   DocTocEntry,
   DocVersionView,
+  DocHistoryActionView,
+  DocImportView,
+  DocTemplateActionView,
 } from "./doc-page-models";
+import {
+  DocBoardPickerDialogSurface,
+  DocConvertTaskDialogSurface,
+  DocPagePickerDialogSurface,
+  DocTrashDialogSurface,
+} from "./doc-dialogs-surface";
+import {
+  DocImportDialogSurface,
+  DocRestoreVersionDialogSurface,
+  DocSaveTemplateDialogSurface,
+  DocSaveVersionDialogSurface,
+} from "./doc-history-dialogs-surface";
 import { DocShareDialogSurface } from "./doc-share-dialog-surface";
 import { DocSidePanelSurface } from "./doc-side-panel-surface";
 import {
@@ -52,13 +76,42 @@ export interface DocPageScreenSurfaceProps {
   readonly tasks: readonly DocTaskResolution[];
   readonly relatedDocs: readonly DocRelatedDoc[];
   readonly toc: readonly DocTocEntry[];
+  /** Word and character counts of the page, shown by the document bar. */
+  readonly stats?: { readonly words: number; readonly characters: number };
   readonly comments: readonly DocCommentView[];
+  /** The selected text a comment is being written on. */
+  readonly pendingQuote?: string | null;
   readonly panelTab: DocPanelTab;
+  /** Whether the side panel shows; the host owns and remembers it. */
+  readonly panelOpen?: boolean;
   readonly overlay: DocOverlay;
   readonly mentionTasks: readonly DocTaskRef[];
+  /** Members the typed "@" may mention. */
+  readonly mentionPeople?: readonly DocPerson[];
+  /** Where mention chips and page references in the text lead. */
+  readonly markTargets?: DocMarkTargets;
+  readonly blockTypes?: readonly BlockType[];
   readonly toolbar?: DocToolbarCurrent;
+  /** The page's editor; absent keeps the plain per-block surface. */
+  readonly editor?: Editor | null;
+  readonly recoveries?: readonly DocRecoveryView[];
+  readonly copiedRecoveryId?: string | null;
   readonly versions?: DocVersionsState;
+  /** The history dialogs' write state (save version, restore). */
+  readonly history?: DocHistoryActionView;
+  /** The "Save as template" dialog's write state. */
+  readonly templateAction?: DocTemplateActionView;
+  /** The import dialog's state. */
+  readonly importState?: DocImportView;
   readonly share?: DocShareView;
+  /** The trash list the trash dialog shows. */
+  readonly trash?: DocTrashView;
+  /** The pages the page picker offers. */
+  readonly pickerPages?: readonly DocPickerPageView[];
+  /** The boards the board picker offers. */
+  readonly pickerBoards?: readonly DocPickerBoardView[];
+  /** The convert-to-task dialog's boards and groups. */
+  readonly convert?: DocConvertView;
   readonly readOnly?: boolean;
   readonly canComment?: boolean;
   readonly canFormat?: boolean;
@@ -112,13 +165,29 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
     tasks,
     relatedDocs,
     toc,
+    stats,
     comments,
+    pendingQuote,
     panelTab,
+    panelOpen = true,
     overlay,
     mentionTasks,
+    mentionPeople,
+    markTargets,
+    blockTypes,
     toolbar = DEFAULT_TOOLBAR_CURRENT,
+    editor,
+    recoveries,
+    copiedRecoveryId,
     versions,
+    history,
+    templateAction,
+    importState,
     share,
+    trash,
+    pickerPages,
+    pickerBoards,
+    convert,
     readOnly = false,
     canComment = false,
     canFormat = false,
@@ -155,6 +224,16 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
     ? (versions.list.find((entry) => entry.id === versions.selectedId) ?? null)
     : null;
   const shareOpen = overlay.kind === "share" && share !== undefined;
+  const dialogOpen =
+    shareOpen ||
+    (overlay.kind === "trash" && trash !== undefined) ||
+    (overlay.kind === "saveVersion" && history !== undefined) ||
+    (overlay.kind === "restoreVersion" && history !== undefined) ||
+    (overlay.kind === "saveTemplate" && templateAction !== undefined) ||
+    (overlay.kind === "importPage" && importState !== undefined) ||
+    (overlay.kind === "pagePicker" && pickerPages !== undefined) ||
+    (overlay.kind === "boardPicker" && pickerBoards !== undefined) ||
+    (overlay.kind === "convertTask" && convert !== undefined);
   const articleProps: DocArticleSurfaceProps = {
     copy,
     title: header.title,
@@ -165,6 +244,12 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
     compare: versions !== undefined,
     overlay,
     mentionTasks,
+    mentionPeople,
+    markTargets,
+    blockTypes,
+    editor,
+    recoveries,
+    copiedRecoveryId,
     callbacks,
   };
 
@@ -172,15 +257,17 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
     <>
       <div
         className="flex h-full min-h-0 min-w-0 flex-1 flex-col bg-doc-page text-body leading-[1.45] text-foreground"
-        aria-hidden={shareOpen || undefined}
-        inert={shareOpen || undefined}
+        aria-hidden={dialogOpen || undefined}
+        inert={dialogOpen || undefined}
       >
         <DocPageBarSurface
           copy={copy}
           header={header}
           saveState={saveState}
+          stats={stats}
           shareOpen={shareOpen}
           canShare={share !== undefined}
+          panelOpen={versions ? undefined : panelOpen}
           callbacks={callbacks}
         />
         {versions ? (
@@ -188,6 +275,7 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
             <DocVersionBarSurface
               copy={copy}
               version={viewing}
+              canRestore={history?.canRestore ?? false}
               callbacks={callbacks}
             />
           ) : null
@@ -199,6 +287,7 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
             downloadOpen={overlay.kind === "fileMenu" && overlay.downloadOpen}
             canShare={share !== undefined}
             canFormat={canFormat && !readOnly}
+            editor={editor}
             callbacks={callbacks}
           />
         )}
@@ -218,7 +307,7 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
               onNamedOnlyChange={versions.onNamedOnlyChange}
               callbacks={callbacks}
             />
-          ) : (
+          ) : panelOpen ? (
             <DocSidePanelSurface
               copy={copy}
               tab={panelTab}
@@ -229,12 +318,73 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
                 active: entry.active ?? (entry.id === spyId || undefined),
               }))}
               comments={comments}
+              pendingQuote={pendingQuote}
               canComment={canComment && !readOnly}
               callbacks={callbacks}
             />
-          )}
+          ) : null}
         </div>
       </div>
+      {overlay.kind === "trash" && trash ? (
+        <DocTrashDialogSurface
+          copy={copy}
+          trash={trash}
+          callbacks={callbacks}
+        />
+      ) : null}
+      {overlay.kind === "saveVersion" && history ? (
+        <DocSaveVersionDialogSurface
+          copy={copy}
+          action={history}
+          callbacks={callbacks}
+        />
+      ) : null}
+      {overlay.kind === "restoreVersion" && history && viewing ? (
+        <DocRestoreVersionDialogSurface
+          copy={copy}
+          stamp={viewing.stamp}
+          action={history}
+          callbacks={callbacks}
+        />
+      ) : null}
+      {overlay.kind === "saveTemplate" && templateAction ? (
+        <DocSaveTemplateDialogSurface
+          copy={copy}
+          action={templateAction}
+          callbacks={callbacks}
+        />
+      ) : null}
+      {overlay.kind === "importPage" && importState ? (
+        <DocImportDialogSurface
+          copy={copy}
+          state={importState}
+          callbacks={callbacks}
+        />
+      ) : null}
+      {overlay.kind === "pagePicker" && pickerPages ? (
+        <DocPagePickerDialogSurface
+          copy={copy}
+          blockId={overlay.blockId}
+          pages={pickerPages}
+          callbacks={callbacks}
+        />
+      ) : null}
+      {overlay.kind === "boardPicker" && pickerBoards ? (
+        <DocBoardPickerDialogSurface
+          copy={copy}
+          blockId={overlay.blockId}
+          boards={pickerBoards}
+          callbacks={callbacks}
+        />
+      ) : null}
+      {overlay.kind === "convertTask" && convert ? (
+        <DocConvertTaskDialogSurface
+          copy={copy}
+          blockId={overlay.blockId}
+          convert={convert}
+          callbacks={callbacks}
+        />
+      ) : null}
       {shareOpen && share ? (
         <DocShareDialogSurface
           copy={copy}

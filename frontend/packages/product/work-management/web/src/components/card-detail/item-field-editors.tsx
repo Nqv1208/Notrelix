@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import {
   Avatar,
   AvatarFallback,
@@ -17,6 +17,7 @@ import {
   findStatusField,
   type Board,
   type CardDetail,
+  type CardLabel,
   type FieldDefinition,
 } from "@notrelix/work-management-core";
 
@@ -213,6 +214,136 @@ export function ItemDuePopover({
             </Button>
           </div>
         ) : null}
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+/** The fields of the board beyond the item's own properties: selects and numbers. */
+export function customItemFields(board: Board): FieldDefinition[] {
+  const own = findItemFields(board);
+  const ids = new Set(
+    [own.status, own.priority, own.person, own.due].flatMap((field) =>
+      field ? [field.id] : [],
+    ),
+  );
+  return board.fieldDefinitions
+    .filter(
+      (field) =>
+        !ids.has(field.id) &&
+        !field.isHidden &&
+        (field.fieldType === "select" || field.fieldType === "number"),
+    )
+    .sort((a, b) => a.position - b.position);
+}
+
+/** The board's labels as a toggle list; a pick adds or removes that label. */
+export function ItemLabelsPopover({
+  labels,
+  selectedIds,
+  label,
+  emptyText,
+  readOnly,
+  onToggle,
+  children,
+}: {
+  labels: readonly CardLabel[];
+  selectedIds: ReadonlySet<string>;
+  label: string;
+  /** Said when the board has no labels. */
+  emptyText: string;
+  readOnly: boolean;
+  onToggle: (labelId: string, on: boolean) => void;
+  children: ReactNode;
+}) {
+  if (readOnly) return <>{children}</>;
+  return (
+    <Popover>
+      <PopoverTrigger asChild>{children}</PopoverTrigger>
+      <PopoverContent align="start" className="w-64 p-1">
+        {labels.length === 0 ? (
+          <p className="m-0 px-2 py-1.5 text-sm text-muted-foreground">
+            {emptyText}
+          </p>
+        ) : (
+          <ul aria-label={label} className="flex flex-col gap-0.5">
+            {labels.map((entry) => {
+              const selected = selectedIds.has(entry.id);
+              return (
+                <li key={entry.id}>
+                  <button
+                    type="button"
+                    aria-pressed={selected}
+                    className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-state-hover aria-pressed:bg-state-selected"
+                    onClick={() => onToggle(entry.id, !selected)}
+                  >
+                    <span
+                      aria-hidden="true"
+                      className="size-3 shrink-0 rounded-full"
+                      style={{ backgroundColor: entry.color }}
+                    />
+                    <span className="min-w-0 flex-1 truncate">
+                      {entry.name || entry.color}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+/** A number typed into a small popover; Enter or leaving the box saves it. */
+export function ItemNumberPopover({
+  value,
+  label,
+  readOnly,
+  onChange,
+  children,
+}: {
+  value: number | null;
+  label: string;
+  readOnly: boolean;
+  onChange: (value: number) => void;
+  children: ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState("");
+  if (readOnly) return <>{children}</>;
+  const commit = () => {
+    const next = Number(draft.replace(",", "."));
+    if (draft.trim() !== "" && Number.isFinite(next) && next !== value) {
+      onChange(next);
+    }
+    setOpen(false);
+  };
+  return (
+    <Popover
+      open={open}
+      onOpenChange={(next) => {
+        if (next) setDraft(value === null ? "" : String(value));
+        setOpen(next);
+      }}
+    >
+      <PopoverTrigger asChild>{children}</PopoverTrigger>
+      <PopoverContent align="start" aria-label={label} className="w-44 p-2">
+        <input
+          type="number"
+          autoFocus
+          value={draft}
+          aria-label={label}
+          onChange={(event) => setDraft(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key !== "Enter") return;
+            event.preventDefault();
+            commit();
+          }}
+          onBlur={commit}
+          className="h-8 w-full rounded-[7px] border border-line-strong bg-background px-2 text-item-ui text-foreground"
+        />
       </PopoverContent>
     </Popover>
   );

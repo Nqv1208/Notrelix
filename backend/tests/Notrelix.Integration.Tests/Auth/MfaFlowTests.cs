@@ -62,7 +62,7 @@ public sealed class MfaFlowTests : IAsyncLifetime
     private async Task SeedUserAsync()
     {
         await _fixture.ResetAsync();
-        await using var context = _fixture.CreatePostgresContext();
+        await using var context = _fixture.CreatePostgresOwnerContext();
         _user = User.Create(Email, "MFA User", "hashed", DateTimeOffset.UtcNow, hasPasswordCredential: true);
         context.Users.Add(_user);
         await context.SaveChangesAsync();
@@ -90,7 +90,7 @@ public sealed class MfaFlowTests : IAsyncLifetime
         challenge.Data!.AccessToken.Should().NotBeNullOrWhiteSpace();
         challenge.Data.MfaRequired.Should().BeFalse();
 
-        await using (var context = _fixture.CreatePostgresContext())
+        await using (var context = _fixture.CreatePostgresOwnerContext())
         {
             context.Sessions.Where(s => s.UserId == _user.Id && s.RevokedAt == null).Count().Should().Be(1);
         }
@@ -130,7 +130,7 @@ public sealed class MfaFlowTests : IAsyncLifetime
         var second = await _services.SendCompleteChallenge(secondLogin.Data!.MfaChallengeToken!, recoveryCode);
         second.Succeeded.Should().BeFalse();
 
-        await using (var context = _fixture.CreatePostgresContext())
+        await using (var context = _fixture.CreatePostgresOwnerContext())
         {
             var consumed = context.MfaRecoveryBatches
                 .Include(b => b.Codes)
@@ -187,7 +187,7 @@ public sealed class MfaFlowTests : IAsyncLifetime
         var disabled = await _services.SendDisableMfa(_user.Id, sessionId, stepUpProof.Data!.ProofToken);
         disabled.Succeeded.Should().BeTrue();
 
-        await using (var context = _fixture.CreatePostgresContext())
+        await using (var context = _fixture.CreatePostgresOwnerContext())
         {
             var methods = context.UserMfaMethods.Where(m => m.UserId == _user.Id).ToList();
             methods.Should().OnlyContain(m => m.Status == MfaMethodStatus.Disabled);
@@ -227,7 +227,7 @@ public sealed class MfaFlowTests : IAsyncLifetime
         var disabled = await _services.SendDisableMfa(_user.Id, sessionId, requirement.Data!.ChallengeToken!);
         disabled.Succeeded.Should().BeFalse();
 
-        await using (var context = _fixture.CreatePostgresContext())
+        await using (var context = _fixture.CreatePostgresOwnerContext())
         {
             context.UserMfaMethods.Where(m => m.UserId == _user.Id)
                 .Should().OnlyContain(m => m.Status == MfaMethodStatus.Active);
@@ -250,7 +250,7 @@ public sealed class MfaFlowTests : IAsyncLifetime
         var regenerated = await _services.SendRegenerateRecoveryCodes(_user.Id, sessionId, requirement.Data!.ChallengeToken!);
         regenerated.Succeeded.Should().BeFalse();
 
-        await using (var context = _fixture.CreatePostgresContext())
+        await using (var context = _fixture.CreatePostgresOwnerContext())
         {
             context.MfaRecoveryBatches.Where(b => b.UserId == _user.Id)
                 .Should().OnlyContain(b => b.InvalidatedAt == null);
@@ -271,7 +271,7 @@ public sealed class MfaFlowTests : IAsyncLifetime
         var disabled = await _services.SendDisableMfa(_user.Id, sessionId, proof.Data!.ProofToken);
         disabled.Succeeded.Should().BeFalse();
 
-        await using (var context = _fixture.CreatePostgresContext())
+        await using (var context = _fixture.CreatePostgresOwnerContext())
         {
             context.UserMfaMethods.Where(m => m.UserId == _user.Id)
                 .Should().OnlyContain(m => m.Status == MfaMethodStatus.Active);
@@ -293,7 +293,7 @@ public sealed class MfaFlowTests : IAsyncLifetime
         var disabled = await _services.SendDisableMfa(_user.Id, sessionB, proof.Data!.ProofToken);
         disabled.Succeeded.Should().BeFalse();
 
-        await using (var context = _fixture.CreatePostgresContext())
+        await using (var context = _fixture.CreatePostgresOwnerContext())
         {
             context.UserMfaMethods.Where(m => m.UserId == _user.Id)
                 .Should().OnlyContain(m => m.Status == MfaMethodStatus.Active);
@@ -304,7 +304,7 @@ public sealed class MfaFlowTests : IAsyncLifetime
     public async Task ProofForAnotherUser_CannotAuthorizeMutation()
     {
         var other = User.Create("mfa-other@example.com", "MFA Other", "hashed", DateTimeOffset.UtcNow, hasPasswordCredential: true);
-        await using (var seed = _fixture.CreatePostgresContext())
+        await using (var seed = _fixture.CreatePostgresOwnerContext())
         {
             seed.Users.Add(other);
             await seed.SaveChangesAsync();
@@ -323,7 +323,7 @@ public sealed class MfaFlowTests : IAsyncLifetime
         var disabled = await _services.SendDisableMfa(other.Id, sessionId, proof.Data!.ProofToken);
         disabled.Succeeded.Should().BeFalse();
 
-        await using (var context = _fixture.CreatePostgresContext())
+        await using (var context = _fixture.CreatePostgresOwnerContext())
         {
             context.UserMfaMethods.Where(m => m.UserId == other.Id)
                 .Should().OnlyContain(m => m.Status == MfaMethodStatus.Active);
@@ -395,7 +395,7 @@ public sealed class MfaFlowTests : IAsyncLifetime
         complete.Succeeded.Should().BeFalse();
         complete.Data.Should().BeNull();
 
-        await using (var context = _fixture.CreatePostgresContext())
+        await using (var context = _fixture.CreatePostgresOwnerContext())
         {
             context.Sessions.Where(s => s.UserId == _user.Id && s.RevokedAt == null).Should().BeEmpty();
             context.Users.Single(u => u.Id == _user.Id).LastLoginAt.Should().BeNull();
@@ -502,7 +502,7 @@ public sealed class MfaFlowTests : IAsyncLifetime
 
         results.Count(r => r.Succeeded).Should().Be(1);
 
-        await using (var context = _fixture.CreatePostgresContext())
+        await using (var context = _fixture.CreatePostgresOwnerContext())
         {
             context.Sessions.Where(s => s.UserId == _user.Id && s.RevokedAt == null).Count().Should().Be(1);
         }
@@ -571,7 +571,7 @@ public sealed class MfaFlowTests : IAsyncLifetime
 
     private async Task SeedActiveSessionAsync()
     {
-        await using var context = _fixture.CreatePostgresContext();
+        await using var context = _fixture.CreatePostgresOwnerContext();
         var session = UserSession.Create(
             _user.Id, RefreshTokenHash.Create($"refresh-{Guid.NewGuid()}"),
             DateTimeOffset.UtcNow.AddDays(30), DateTimeOffset.UtcNow);
@@ -581,7 +581,7 @@ public sealed class MfaFlowTests : IAsyncLifetime
 
     private async Task AssertPasswordUnchangedAsync()
     {
-        await using var context = _fixture.CreatePostgresContext();
+        await using var context = _fixture.CreatePostgresOwnerContext();
         context.Users.Single(u => u.Id == _user.Id).PasswordHash.Should().Be("hashed");
     }
 
@@ -591,7 +591,7 @@ public sealed class MfaFlowTests : IAsyncLifetime
         var result = await _services.SendChangePassword(_user.Id, null, "Password1!", null);
         result.Succeeded.Should().BeTrue();
 
-        await using (var context = _fixture.CreatePostgresContext())
+        await using (var context = _fixture.CreatePostgresOwnerContext())
         {
             context.Users.Single(u => u.Id == _user.Id).PasswordHash.Should().Be("new-hashed-password");
         }
@@ -680,7 +680,7 @@ public sealed class MfaFlowTests : IAsyncLifetime
         var changed = await _services.SendChangePassword(_user.Id, sessionId, "Password1!", proof.Data!.ProofToken);
         changed.Succeeded.Should().BeTrue();
 
-        await using (var context = _fixture.CreatePostgresContext())
+        await using (var context = _fixture.CreatePostgresOwnerContext())
         {
             context.Users.Single(u => u.Id == _user.Id).PasswordHash.Should().Be("new-hashed-password");
             context.Sessions.Where(s => s.UserId == _user.Id)
@@ -706,7 +706,7 @@ public sealed class MfaFlowTests : IAsyncLifetime
         var second = await _services.SendChangePassword(_user.Id, sessionId, "Password1!", proof.Data!.ProofToken);
         second.Succeeded.Should().BeTrue();
 
-        await using (var context = _fixture.CreatePostgresContext())
+        await using (var context = _fixture.CreatePostgresOwnerContext())
         {
             context.Users.Single(u => u.Id == _user.Id).PasswordHash.Should().Be("new-hashed-password");
         }
@@ -854,7 +854,7 @@ public sealed class MfaFlowTests : IAsyncLifetime
 
         public async Task<Result<MfaEnrollmentStartResult>> SendStartEnrollment(Guid userId)
         {
-            await using var context = _fixture.CreatePostgresContext();
+            await using var context = _fixture.CreatePostgresOwnerContext();
             var handler = new StartMfaEnrollmentCommandHandler(
                 context, Actor(userId).Object, _totp, _time.Object, NullLogger<StartMfaEnrollmentCommandHandler>.Instance);
             var result = await handler.Handle(new StartMfaEnrollmentCommand(), CancellationToken.None);
@@ -864,7 +864,7 @@ public sealed class MfaFlowTests : IAsyncLifetime
 
         public async Task<Result<MfaEnrollmentVerifyResult>> SendVerifyEnrollment(Guid userId, Guid methodId, string code)
         {
-            await using var context = _fixture.CreatePostgresContext();
+            await using var context = _fixture.CreatePostgresOwnerContext();
             var handler = new VerifyMfaEnrollmentCommandHandler(
                 context, Actor(userId).Object, _totp, _recoveryGenerator, _time.Object, Mock.Of<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityActivityRecorder>(),
                 NullLogger<VerifyMfaEnrollmentCommandHandler>.Instance);
@@ -875,7 +875,7 @@ public sealed class MfaFlowTests : IAsyncLifetime
 
         public async Task<Result<MfaEnrollmentVerifyResult>> SendRegenerateRecoveryCodes(Guid userId, Guid sessionId, string stepUpToken)
         {
-            await using var context = _fixture.CreatePostgresContext();
+            await using var context = _fixture.CreatePostgresOwnerContext();
             var handler = new RegenerateRecoveryCodesCommandHandler(
                 context, Actor(userId, sessionId).Object, _recoveryGenerator, StepUp(context), _time.Object,
                 NullLogger<RegenerateRecoveryCodesCommandHandler>.Instance);
@@ -886,7 +886,7 @@ public sealed class MfaFlowTests : IAsyncLifetime
 
         public async Task<Result> SendDisableMfa(Guid userId, Guid sessionId, string stepUpToken)
         {
-            await using var context = _fixture.CreatePostgresContext();
+            await using var context = _fixture.CreatePostgresOwnerContext();
             var handler = new DisableMfaCommandHandler(
                 context, Actor(userId, sessionId).Object, _jwtBlacklist.Object, StepUp(context), _time.Object, Mock.Of<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityActivityRecorder>(),
                 NullLogger<DisableMfaCommandHandler>.Instance);
@@ -907,21 +907,21 @@ public sealed class MfaFlowTests : IAsyncLifetime
 
         public async Task<Result<StepUpRequirementResult>> SendStepUpRequirement(Guid userId, Guid sessionId, StepUpPurpose purpose)
         {
-            await using var context = _fixture.CreatePostgresContext();
+            await using var context = _fixture.CreatePostgresOwnerContext();
             return await StepUp(context).GetRequirementAsync(userId, sessionId, purpose, CancellationToken.None);
         }
 
         public async Task<Result<StepUpProofResult>> SendCompleteStepUpMfa(
             Guid userId, Guid sessionId, StepUpPurpose purpose, string challengeToken, string code)
         {
-            await using var context = _fixture.CreatePostgresContext();
+            await using var context = _fixture.CreatePostgresOwnerContext();
             return await StepUp(context).CompleteMfaAsync(
                 userId, sessionId, purpose, challengeToken, code, CancellationToken.None);
         }
 
         public async Task<Result<AuthResult>> SendLogin(string email)
         {
-            await using var context = _fixture.CreatePostgresContext();
+            await using var context = _fixture.CreatePostgresOwnerContext();
             var passwordHasher = new Mock<IPasswordHasher>();
             passwordHasher.Setup(x => x.VerifyPassword(It.IsAny<string>(), It.IsAny<string>())).Returns(true);
             var handler = new LoginCommandHandler(
@@ -934,7 +934,7 @@ public sealed class MfaFlowTests : IAsyncLifetime
 
         public async Task<Result> SendChangePassword(Guid userId, Guid? sessionId, string currentPassword, string? stepUpToken)
         {
-            await using var context = _fixture.CreatePostgresContext();
+            await using var context = _fixture.CreatePostgresOwnerContext();
             var passwordHasher = new Mock<IPasswordHasher>();
             passwordHasher.Setup(x => x.VerifyPassword("Password1!", It.IsAny<string>())).Returns(true);
             passwordHasher.Setup(x => x.HashPassword(It.IsAny<string>())).Returns("new-hashed-password");
@@ -954,7 +954,7 @@ public sealed class MfaFlowTests : IAsyncLifetime
 
         public async Task<Result<AuthResult>> SendCompleteChallenge(string token, string code)
         {
-            await using var context = _fixture.CreatePostgresContext();
+            await using var context = _fixture.CreatePostgresOwnerContext();
             var handler = new CompleteMfaChallengeCommandHandler(
                 context, _challengeStore, new MfaCodeVerifier(context, _totp, _recoveryGenerator),
                 Mock.Of<ILoginThrottle>(), Mock.Of<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityActivityRecorder>(), SessionIssuer(context), _time.Object,

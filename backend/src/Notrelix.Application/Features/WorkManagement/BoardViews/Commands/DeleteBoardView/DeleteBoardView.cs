@@ -35,6 +35,7 @@ public class DeleteBoardViewCommandHandler : IRequestHandler<DeleteBoardViewComm
         if (view is null)
             throw new NotFoundException(nameof(BoardView), request.ViewId);
 
+        BoardViewAccess.EnsureCanEdit(view, _currentUser.UserId);
         var now = _dateTimeProvider.UtcNow;
         view.Delete(_currentUser.UserId, now);
         return Result.Success();

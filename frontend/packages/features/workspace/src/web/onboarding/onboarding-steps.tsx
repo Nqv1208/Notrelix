@@ -8,7 +8,14 @@ import {
   X,
   CircleAlert,
 } from "lucide-react";
-import { cn } from "@notrelix/ui-web";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  cn,
+} from "@notrelix/ui-web";
 import type { OnboardingCopy } from "./onboarding.copy";
 import { fillOnboarding, pluralOnboarding } from "./fill-copy";
 import {
@@ -37,6 +44,9 @@ import {
   type OnboardingCatalog,
   type OnboardingDraftData,
 } from "./onboarding-models";
+
+/** Radix items cannot carry an empty value, so "none" is a sentinel. */
+const NONE = "__none__";
 
 /** The bodies of the four setup steps (the Onboarding mockup). */
 
@@ -331,7 +341,9 @@ export function DepartmentsStep({
     <>
       <StepTitle
         title={t.title}
-        lead={fillOnboarding(t.lead, { size: sizeLabel })}
+        lead={
+          catalog ? fillOnboarding(t.lead, { size: sizeLabel }) : t.leadNeutral
+        }
       />
       {locked ? <Hint>{t.lockedNote}</Hint> : null}
       <ul
@@ -596,41 +608,51 @@ export function InviteStep({
                   }
                   className={FIELD_INPUT_CLASS}
                 />
-                <select
-                  aria-label={`${t.department} ${index + 1}`}
-                  value={row.departmentKey ?? ""}
-                  onChange={(event) =>
+                <Select
+                  value={row.departmentKey ?? NONE}
+                  onValueChange={(value) =>
                     change(row.id, {
-                      departmentKey: event.target.value || null,
+                      departmentKey: value === NONE ? null : value,
                     })
                   }
-                  className={cn(FIELD_INPUT_CLASS, "cursor-pointer pr-2")}
                 >
-                  {draft.departments.length === 0 ? (
-                    <option value="">{t.noDepartments}</option>
-                  ) : null}
-                  {draft.departments.map((department) => (
-                    <option key={department.key} value={department.key}>
-                      {department.name}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  aria-label={`${t.role} ${index + 1}`}
+                  <SelectTrigger
+                    aria-label={`${t.department} ${index + 1}`}
+                    className="w-full"
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {draft.departments.length === 0 ? (
+                      <SelectItem value={NONE}>{t.noDepartments}</SelectItem>
+                    ) : null}
+                    {draft.departments.map((department) => (
+                      <SelectItem key={department.key} value={department.key}>
+                        {department.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select
                   value={row.role}
-                  onChange={(event) =>
-                    change(row.id, {
-                      role: event.target.value as InviteRowDraft["role"],
-                    })
+                  onValueChange={(value) =>
+                    change(row.id, { role: value as InviteRowDraft["role"] })
                   }
-                  className={cn(FIELD_INPUT_CLASS, "cursor-pointer pr-2")}
                 >
-                  {INVITE_ROLES.map((role) => (
-                    <option key={role} value={role}>
-                      {t.roles[role]}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger
+                    aria-label={`${t.role} ${index + 1}`}
+                    className="w-full"
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {INVITE_ROLES.map((role) => (
+                      <SelectItem key={role} value={role}>
+                        {t.roles[role]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 {rows.length > 1 ? (
                   <button
                     type="button"
@@ -951,21 +973,24 @@ export function BoardStep({
         </div>
         <div className="flex flex-col gap-1.5">
           <FieldLabel htmlFor="onb-board-dept">{t.departmentLabel}</FieldLabel>
-          <select
-            id="onb-board-dept"
-            value={board.departmentKey ?? ""}
-            onChange={(event) =>
-              patch({ departmentKey: event.target.value || null })
+          <Select
+            value={board.departmentKey ?? NONE}
+            onValueChange={(value) =>
+              patch({ departmentKey: value === NONE ? null : value })
             }
-            className={cn(FIELD_INPUT_CLASS, "cursor-pointer")}
           >
-            <option value="">{t.noDepartment}</option>
-            {draft.departments.map((entry) => (
-              <option key={entry.key} value={entry.key}>
-                {entry.name}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger id="onb-board-dept" className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={NONE}>{t.noDepartment}</SelectItem>
+              {draft.departments.map((entry) => (
+                <SelectItem key={entry.key} value={entry.key}>
+                  {entry.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
       <Hint>

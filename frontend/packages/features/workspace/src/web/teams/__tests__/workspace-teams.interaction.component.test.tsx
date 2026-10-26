@@ -39,6 +39,12 @@ function renderTeams(
   return { props, view };
 }
 
+/** Opens the styled Select behind a label and picks one option by its text. */
+function choose(trigger: HTMLElement, option: string | RegExp) {
+  fireEvent.keyDown(trigger, { key: "Enter" });
+  fireEvent.click(screen.getByRole("option", { name: option }));
+}
+
 describe("WorkspaceTeamsSurface", () => {
   it("FUI[workspace.teams:render] lists the Teams with people, lead and where each is used, the archived one apart", () => {
     renderTeams();
@@ -169,9 +175,7 @@ describe("CreateTeamDialog", () => {
     fireEvent.change(screen.getByLabelText("Tên nhóm"), {
       target: { value: "Nhóm Triển khai kho" },
     });
-    fireEvent.change(screen.getByLabelText(/Trưởng nhóm/), {
-      target: { value: "u-bao" },
-    });
+    choose(screen.getByLabelText(/Trưởng nhóm/), /Đặng Quốc Bảo/);
     const input = screen.getByPlaceholderText("Gõ tên hoặc email");
     fireEvent.change(input, { target: { value: "minh.lam" } });
     fireEvent.keyDown(input, { key: "Enter" });

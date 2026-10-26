@@ -109,7 +109,7 @@ test.describe("Sign-in pages (owner)", () => {
   }) => {
     await toPassword(page);
     const password = page.getByLabel("Mật khẩu", { exact: true });
-    for (let attempt = 1; attempt <= 5; attempt += 1) {
+    for (let attempt = 1; attempt <= 4; attempt += 1) {
       await password.fill(`sai-mat-khau-${attempt}`);
       await page.locator("form button[type=submit]").click();
       // The answer clears the field: the next try starts from an empty one.
@@ -117,9 +117,12 @@ test.describe("Sign-in pages (owner)", () => {
       await expect(page.getByRole("alert").first()).toContainText(
         "Email hoặc mật khẩu chưa đúng.",
       );
-      if (attempt === 4)
-        await expect(page.getByText(/Còn 1 lần thử/)).toBeVisible();
+      // No answer counts the tries left.
+      await expect(page.getByText(/lần thử/)).toHaveCount(0);
     }
+    // The fifth wrong try is throttled: the wait time shows, not a counter.
+    await password.fill("sai-mat-khau-5");
+    await page.locator("form button[type=submit]").click();
     await expect(page.getByText(/Thử lại sau \d+ giây/)).toBeVisible();
     const wait = page.locator("form button[type=submit]");
     await expect(wait).toBeDisabled();
@@ -160,6 +163,101 @@ test.describe("Sign-in pages (owner)", () => {
     ).toBeVisible();
     await page.getByRole("button", { name: "Tiếp tục với Google" }).click();
     await expect(page).toHaveURL(/\/workspaces\/mock-workspace-primary/);
+  });
+
+  test("a provider sign-in stopped for a second step says to use the password; the callback route signs in", async ({
+    page,
+  }) => {
+    await open(page, "/sign-in?error=identity.oauth.mfa-required");
+    await expect(page.getByRole("alert")).toContainText("xác minh hai bước");
+    await open(page, "/auth/callback");
+    await expect(page).toHaveURL(/\/workspaces\/mock-workspace-primary/);
+  });
+
+  test("a provider sign-in goes back to the page the person was on", async ({
+    page,
+  }) => {
+    await open(
+      page,
+      "/sign-in?redirect=%2Fworkspaces%2Fmock-workspace-primary%2Fboards%2Fmock-board-erp",
+    );
+    await page.getByRole("button", { name: "Tiếp tục với Google" }).click();
+    await expect(page).toHaveURL(
+      /\/workspaces\/mock-workspace-primary\/boards\/mock-board-erp/,
+    );
+  });
+
+  test("the callback returns to a safe internal path and ignores any other", async ({
+    page,
+  }) => {
+    await open(
+      page,
+      "/auth/callback?returnTo=%2Fworkspaces%2Fmock-workspace-primary%2Fboards%2Fmock-board-erp",
+    );
+    await expect(page).toHaveURL(
+      /\/workspaces\/mock-workspace-primary\/boards\/mock-board-erp/,
+    );
+    for (const unsafe of [
+      "//evil.com",
+      "/\\evil.com",
+      "https://evil.com",
+      "%2F%2Fevil.com",
+      "%2F%5Cevil.com",
+    ]) {
+      await open(page, `/auth/callback?returnTo=${unsafe}`);
+      await expect(page).toHaveURL(/\/workspaces\/mock-workspace-primary/);
+      expect(page.url()).not.toContain("evil.com");
+    }
+  });
+
+  test("a provider sign-in that needs a second step lands on the code step and signs in without a challenge in the URL", async ({
+    page,
+  }) => {
+    await open(page, "/sign-in");
+    await page
+      .getByRole("button", { name: "Tiếp tục với Microsoft", exact: true })
+      .click();
+    await expect(page).toHaveURL(/\/sign-in\?step=mfa/);
+    expect(page.url()).not.toContain("challenge");
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Xác minh hai bước" }),
+    ).toBeVisible();
+    for (const [index, digit] of MOCK_AUTH.otpCode.split("").entries())
+      await page.getByLabel(`Số ${index + 1} trên 6`).fill(digit);
+    await page.getByRole("button", { name: "Xác minh" }).click();
+    await expect(page).toHaveURL(/\/workspaces\/mock-workspace-primary/);
+  });
+
+  test("the second step after a provider sign-in keeps the return path", async ({
+    page,
+  }) => {
+    await open(
+      page,
+      "/sign-in?redirect=%2Fworkspaces%2Fmock-workspace-primary%2Fboards%2Fmock-board-erp",
+    );
+    await page
+      .getByRole("button", { name: "Tiếp tục với Microsoft", exact: true })
+      .click();
+    await expect(page).toHaveURL(/\/sign-in\?step=mfa&returnTo=/);
+    for (const [index, digit] of MOCK_AUTH.otpCode.split("").entries())
+      await page.getByLabel(`Số ${index + 1} trên 6`).fill(digit);
+    await page.getByRole("button", { name: "Xác minh" }).click();
+    await expect(page).toHaveURL(
+      /\/workspaces\/mock-workspace-primary\/boards\/mock-board-erp/,
+    );
+  });
+
+  test("the second step without the challenge cookie says the verification expired", async ({
+    page,
+  }) => {
+    await open(page, "/sign-in?step=mfa");
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Xác minh hai bước" }),
+    ).toBeVisible();
+    for (const [index, digit] of MOCK_AUTH.otpCode.split("").entries())
+      await page.getByLabel(`Số ${index + 1} trên 6`).fill(digit);
+    await page.getByRole("button", { name: "Xác minh" }).click();
+    await expect(page.getByRole("alert")).toContainText("hết hạn");
   });
 
   test("the language switch changes the copy", async ({ page }) => {
@@ -211,11 +309,37 @@ test.describe("Sign-in pages (owner)", () => {
     await page
       .getByRole("button", { name: "Chấp nhận và tạo tài khoản" })
       .click();
-    await expect(page.getByText("Dùng ít nhất 12 ký tự.")).toBeVisible();
+    await expect(page.getByText("Dùng ít nhất 8 ký tự.")).toBeVisible();
+    await page.getByLabel("Họ và tên").fill("Đặng Minh Tuấn");
     await page.getByLabel("Tạo mật khẩu").fill("mot-mat-khau-du-dai");
     await page
       .getByRole("button", { name: "Chấp nhận và tạo tài khoản" })
       .click();
+    await expect(page).toHaveURL(
+      /\/workspaces\/mock-workspace-primary\/boards\/mock-board-erp/,
+    );
+  });
+
+  test("a guest whose email already has an account signs in, comes back to the link and accepts", async ({
+    page,
+  }) => {
+    await open(page, "/invite/invite-erp-existing");
+    await expect(page.getByLabel("Tạo mật khẩu")).toHaveCount(0);
+    await page.getByRole("button", { name: "Đăng nhập để chấp nhận" }).click();
+    await expect(page).toHaveURL(
+      /\/sign-in\?redirect=%2Finvite%2Finvite-erp-existing/,
+    );
+    await page.getByLabel("Email").fill(MOCK_AUTH.personalEmail);
+    await page.getByRole("button", { name: "Tiếp tục", exact: true }).click();
+    await page
+      .getByLabel("Mật khẩu", { exact: true })
+      .fill(MOCK_AUTH.personalPassword);
+    await page.locator("form button[type=submit]").click();
+    for (const [index, digit] of MOCK_AUTH.otpCode.split("").entries())
+      await page.getByLabel(`Số ${index + 1} trên 6`).fill(digit);
+    await page.getByRole("button", { name: "Xác minh" }).click();
+    await expect(page).toHaveURL(/\/invite\/invite-erp-existing/);
+    await page.getByRole("button", { name: /^Chấp nhận/ }).click();
     await expect(page).toHaveURL(
       /\/workspaces\/mock-workspace-primary\/boards\/mock-board-erp/,
     );

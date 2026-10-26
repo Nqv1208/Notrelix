@@ -1,13 +1,17 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Application.Features.Workspaces.Members.Services;
+using Notrelix.Domain.Workspaces.Rules;
 
 namespace Notrelix.Application.Features.Workspaces.Workspaces.Commands.CreateWorkspace;
 
 public record CreateWorkspaceCommand(
     string Name,
     string? Description,
-    bool IsPersonal
+    bool IsPersonal,
+    string? Slug = null,
+    string? Size = null,
+    string? Language = null
 ) : ICommand<Result<Guid>>, IAuthenticatedRequest, IAccountRequest, IRequirePermission, IRequireVerifiedEmail, IWriteRequest
 {
     public PermissionAction Action => PermissionAction.CreateWorkspace;
@@ -16,6 +20,8 @@ public record CreateWorkspaceCommand(
 
 public class CreateWorkspaceCommandHandler : IRequestHandler<CreateWorkspaceCommand, Result<Guid>>
 {
+    public const string SlugTakenErrorCode = "workspaces.workspace.slug-taken";
+
     private readonly IWorkspaceDbContext _context;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
@@ -32,27 +38,17 @@ public class CreateWorkspaceCommandHandler : IRequestHandler<CreateWorkspaceComm
     public async Task<Result<Guid>> Handle(CreateWorkspaceCommand request, CancellationToken ct)
     {
         var accountId = _requestContext.RequireAccountId();
-        var slug = Slug.GenerateFromName(request.Name);
-        const int maxSlugLength = 128;
-        const int suffixLength = 7;
-
-        // Pre-check for UX — DB unique constraint is source of truth
-        var slugExists = await _context.Workspaces
-            .AnyAsync(w => w.AccountId == accountId && w.Slug == slug.Value, ct);
-
-        var finalSlug = slugExists
-            ? slug.Value.Length > maxSlugLength - suffixLength
-                ? slug.Value[..(maxSlugLength - suffixLength)] + "-" + Guid.NewGuid().ToString("N")[..6]
-                : slug.Value + "-" + Guid.NewGuid().ToString("N")[..6]
-            : slug.Value.Length > maxSlugLength
-                ? slug.Value[..maxSlugLength]
-                : slug.Value;
+        var finalSlug = string.IsNullOrWhiteSpace(request.Slug)
+            ? await DeriveSlugAsync(accountId, request.Name, ct)
+            : await EnsureChosenSlugFreeAsync(accountId, request.Slug, ct);
 
         var creationResult = WorkspaceFactory.CreateWithOwner(
             accountId,
             _requestContext.UserId, request.Name, finalSlug,
             _dateTimeProvider.UtcNow, request.IsPersonal,
-            request.Description);
+            request.Description,
+            request.Size,
+            request.Language);
 
         _context.Workspaces.Add(creationResult.Workspace);
         _context.WorkspaceMembers.Add(creationResult.OwnerMember);
@@ -66,5 +62,40 @@ public class CreateWorkspaceCommandHandler : IRequestHandler<CreateWorkspaceComm
             ct);
 
         return Result<Guid>.Success(creationResult.Workspace.Id);
+    }
+
+    // The slug is derived from the name when the caller chose none. The derived address must satisfy the
+    // same rule as a chosen one (3 to 63 characters, not reserved), so a name that yields a short or
+    // reserved word, or an address another workspace of the Account holds, gets a short random suffix.
+    // The unique index stays the source of truth for races.
+    private async Task<string> DeriveSlugAsync(Guid accountId, string name, CancellationToken ct)
+    {
+        const int suffixLength = 7;
+        var slug = Slug.GenerateFromName(name).Value;
+        if (slug.Length > WorkspaceSlugRules.MaxLength)
+            slug = slug[..WorkspaceSlugRules.MaxLength].TrimEnd('-');
+
+        var needsSuffix = slug.Length < WorkspaceSlugRules.MinLength
+            || WorkspaceSlugRules.Reserved.Contains(slug)
+            || await _context.Workspaces.AnyAsync(w => w.AccountId == accountId && w.Slug == slug, ct);
+        if (!needsSuffix)
+            return slug;
+
+        var stem = slug.Length > WorkspaceSlugRules.MaxLength - suffixLength
+            ? slug[..(WorkspaceSlugRules.MaxLength - suffixLength)].TrimEnd('-')
+            : slug;
+        return stem + "-" + Guid.NewGuid().ToString("N")[..6];
+    }
+
+    // A chosen address is never silently changed: it breaks the rule (rejected by the Domain with its
+    // stable rule code) or is taken in the Account (conflict).
+    private async Task<string> EnsureChosenSlugFreeAsync(Guid accountId, string chosen, CancellationToken ct)
+    {
+        WorkspaceSlugRules.Validate(chosen);
+        var slug = WorkspaceSlugRules.Normalize(chosen);
+        var taken = await _context.Workspaces.AnyAsync(w => w.AccountId == accountId && w.Slug == slug, ct);
+        if (taken)
+            throw new ConflictException("The workspace address is already taken in this account.", SlugTakenErrorCode);
+        return slug;
     }
 }

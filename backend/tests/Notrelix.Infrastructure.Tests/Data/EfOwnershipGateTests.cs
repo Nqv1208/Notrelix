@@ -64,6 +64,7 @@ public sealed class EfOwnershipGateTests
         [typeof(NotificationItemRecord)] = "ReadModels/Notifications",
         [typeof(NotificationRecipientRecord)] = "ReadModels/Notifications",
         [typeof(NotificationCounterRecord)] = "ReadModels/Notifications",
+        [typeof(NotificationThreadMuteRecord)] = "ReadModels/Notifications",
 
         // ReadModels/Activity
         [typeof(WorkspaceActivityLogRecord)] = "ReadModels/Activity",

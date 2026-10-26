@@ -1,15 +1,23 @@
 using Notrelix.API.Endpoints.Admin;
+using Notrelix.API.Endpoints.Identity.Users;
 using Notrelix.API.Realtime;
 using Notrelix.API.Endpoints.Automation.Executions;
 using Notrelix.API.Endpoints.Automation.Rules;
+using Notrelix.API.Endpoints.Analytics;
+using Notrelix.API.Endpoints.Billing;
 using Notrelix.API.Endpoints.Collaboration.Activity;
 using Notrelix.API.Endpoints.Collaboration.Attachments;
 using Notrelix.API.Endpoints.Collaboration.Comments;
+using Notrelix.API.Endpoints.Collaboration.Watchers;
+using Notrelix.API.Endpoints.Collaboration.Notifications;
 using Notrelix.API.Endpoints.Collaboration.Preferences;
 using Notrelix.API.Endpoints.Accounts;
 using Notrelix.API.Endpoints.Documents.Blocks;
 using Notrelix.API.Endpoints.Documents.Pages;
+using Notrelix.API.Endpoints.Documents.Templates;
+using Notrelix.API.Endpoints.Documents.Versions;
 using Notrelix.API.Endpoints.Integrations.Calendar;
+using Notrelix.API.Endpoints.Integrations.Connections;
 using Notrelix.API.Endpoints.Governance.ResourcePermissions;
 using Notrelix.API.Endpoints.Governance.ShareLinks;
 using Notrelix.API.Endpoints.Health;
@@ -34,6 +42,7 @@ using Notrelix.API.Endpoints.Workspaces.Invitations;
 using Notrelix.API.Endpoints.Workspaces.Members;
 using Notrelix.API.Endpoints.Workspaces.Navigation;
 using Notrelix.API.Endpoints.Workspaces.Onboarding;
+using Notrelix.API.Endpoints.Workspaces.Search;
 using Notrelix.API.Endpoints.Workspaces.Settings;
 using Notrelix.API.Endpoints.Workspaces.Spaces;
 using Notrelix.API.Endpoints.Workspaces.Teams;
@@ -48,6 +57,7 @@ public static class EndpointRouteBuilderExtensions
         // Auth & Identity
         app.RegisterAuthEndpoints();
         app.RegisterProfileEndpoints();
+        app.RegisterUserAvatarEndpoints();
         app.RegisterApiTokenEndpoints();
         app.MapHealthEndpoints();
 
@@ -66,14 +76,18 @@ public static class EndpointRouteBuilderExtensions
         app.RegisterTeamEndpoints();
         app.RegisterWorkspaceActivityEndpoints();
         app.RegisterWorkspaceNavigationEndpoints();
+        app.RegisterWorkspaceSearchEndpoints();
         app.RegisterWorkspaceOnboardingEndpoints();
 
         // Document
         app.AddPageEndpoints();
         app.AddBlockEndpoints();
+        app.AddVersionEndpoints();
+        app.AddTemplateEndpoints();
 
         // Integrations - Calendar
         app.AddCalendarEndpoints();
+        app.AddIntegrationConnectionEndpoints();
 
         // WorkManagement - Boards
         app.RegisterWorkManagementBoardEndpoints();
@@ -117,8 +131,11 @@ public static class EndpointRouteBuilderExtensions
         // Collaboration
         app.RegisterBoardItemActivityEndpoints();
         app.MapAttachmentsEndpoints();
+        app.MapPageAttachmentsEndpoints();
         app.MapCommentsEndpoints();
+        app.MapWatchersEndpoints();
         app.RegisterNotificationPreferenceEndpoints();
+        app.RegisterInboxEndpoints();
 
         // Governance
         app.MapResourcePermissionsEndpoints();
@@ -127,6 +144,10 @@ public static class EndpointRouteBuilderExtensions
         // Automation
         app.MapRulesEndpoints();
         app.MapExecutionsEndpoints();
+
+        // Billing
+        app.MapBillingEndpoints();
+        app.MapAnalyticsEndpoints();
 
         // Admin
         app.MapOutboxDiagnosticsEndpoints();

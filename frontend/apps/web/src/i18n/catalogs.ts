@@ -14,6 +14,7 @@ import {
   workspaceReportsCatalog,
   workspaceBillingCatalog,
   workspaceIntegrationsCatalog,
+  workspaceFeatureAvailabilityCatalog,
 } from "@notrelix/features-workspace/web";
 import {
   accountNavCatalog,
@@ -28,6 +29,7 @@ import { notificationBellCatalog } from "@notrelix/features-notifications";
 import { docPageCatalog } from "@notrelix/docs-web";
 import {
   boardHeaderCatalog,
+  itemCreateCatalog,
   boardSettingsCatalog,
   boardShareCatalog,
   calendarCatalog,
@@ -41,6 +43,7 @@ import {
   timelineCatalog,
 } from "@notrelix/work-management-web";
 import { routerStatesCatalog } from "../router/router-states.catalog";
+import { emailConfirmationCatalog } from "../shell/workspace/email-confirmation.catalog";
 
 /**
  * Catalogs composed into the web host's I18nProvider. Packages export their
@@ -61,6 +64,7 @@ export const webCatalogs: readonly MessageCatalog[] = [
   workspaceReportsCatalog,
   workspaceBillingCatalog,
   workspaceIntegrationsCatalog,
+  workspaceFeatureAvailabilityCatalog,
   kanbanCardCatalog,
   kanbanLaneCatalog,
   kanbanToolbarCatalog,
@@ -71,6 +75,7 @@ export const webCatalogs: readonly MessageCatalog[] = [
   itemSheetCatalog,
   itemPageCatalog,
   boardHeaderCatalog,
+  itemCreateCatalog,
   boardSettingsCatalog,
   boardShareCatalog,
   notificationBellCatalog,
@@ -83,4 +88,5 @@ export const webCatalogs: readonly MessageCatalog[] = [
   accountNotificationsCatalog,
   accountWorkspacesCatalog,
   routerStatesCatalog,
+  emailConfirmationCatalog,
 ];

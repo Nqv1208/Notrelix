@@ -12,7 +12,7 @@ function search(
   return commandSearch(store, mockIds.workspaces.primary, query, canRead);
 }
 
-describe("command search in the mock world (CTR-GAP-WS-COMMAND-SEARCH)", () => {
+describe("command search in the mock world", () => {
   it("folds diacritics and đ", () => {
     expect(foldText("Đối chiếu HOÁ đơn")).toBe("doi chieu hoa don");
   });

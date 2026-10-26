@@ -32,7 +32,14 @@ public class UnarchiveBoardItemCommandHandler : IRequestHandler<UnarchiveBoardIt
             .FirstOrDefaultAsync(i => i.Id == request.BoardItemId, ct);
         if (item is null) throw new NotFoundException(nameof(BoardItem), request.BoardItemId);
 
-        item.Unarchive(_currentUser.UserId, _timeProvider.UtcNow);
+        var now = _timeProvider.UtcNow;
+        item.Unarchive(_currentUser.UserId, now);
+
+        // Only the sub-items the parent's archive took come back.
+        var children = await _context.BoardItems
+            .Where(child => child.ParentItemId == item.Id && child.DeletedAt == null && child.ArchivedWithParent)
+            .ToListAsync(ct);
+        foreach (var child in children) child.UnarchiveWithParent(_currentUser.UserId, now);
         return Result.Success();
     }
 }

@@ -43,7 +43,7 @@ public class RegistrationProvisioningTransactionEvidenceTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -59,7 +59,7 @@ public class RegistrationProvisioningTransactionEvidenceTests : IAsyncLifetime
     private (EfRequestDataSession Session, ApplicationDbContext Context) Create()
     {
         var tenant = SystemTenant();
-        var context = _db.CreateContext(tenant);
+        var context = _db.CreateOwnerContext(tenant);
         var session = new EfRequestDataSession(
             context,
             new RlsSessionContext(context, Options.Create(new RlsOptions()), tenant),

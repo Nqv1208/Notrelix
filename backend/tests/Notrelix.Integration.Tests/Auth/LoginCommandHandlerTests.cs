@@ -20,7 +20,7 @@ public class LoginCommandHandlerTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -29,7 +29,7 @@ public class LoginCommandHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_WhenUserNotFound_ShouldReturnFailure()
     {
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateOwnerContext();
 
         var passwordHasher = new Mock<IPasswordHasher>();
         var sessionIssuer = new Mock<IAuthSessionIssuer>();
@@ -51,7 +51,7 @@ public class LoginCommandHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_WhenValid_ShouldGenerateTokensAndUpdateLastLogin()
     {
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateOwnerContext();
 
         var user = User.Create("login@example.com", "User", "hashed", DateTimeOffset.UtcNow, hasPasswordCredential: true);
         // Status default is Active

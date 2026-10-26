@@ -58,7 +58,6 @@ export {
   type WorkspaceSidebarSurfaceProps,
 } from "./shell/workspace-sidebar-surface";
 export {
-  WorkspaceTabletTopbar,
   WorkspaceTopbarSurface,
   type WorkspaceTopbarSurfaceProps,
 } from "./shell/workspace-topbar-surface";
@@ -148,6 +147,7 @@ export {
 export {
   CreateResourceDialog,
   type CreateResourceDialogProps,
+  type CreateResourceTemplate,
   type CreatableResource,
 } from "./home/create-resource-dialog";
 
@@ -410,11 +410,43 @@ export {
   IntegrationConnectDialog,
   IntegrationDetailSurface,
   IntegrationDisconnectDialog,
+  IntegrationSecretDialog,
   IntegrationUpgradeSheet,
   IntegrationsListSurface,
   type IntegrationConnectDialogProps,
   type IntegrationDetailProps,
   type IntegrationDisconnectDialogProps,
+  type IntegrationSecretDialogProps,
   type IntegrationUpgradeSheetProps,
   type IntegrationsListProps,
 } from "./integrations/integrations-surface";
+
+// Pages whose backend is not available yet, and the billing capabilities page
+export { workspaceFeatureAvailabilityCatalog } from "./unavailable/feature-availability.catalog";
+export {
+  featureAvailabilityCopy,
+  type FeatureAvailabilityCopy,
+} from "./unavailable/feature-availability.copy";
+export { useFeatureAvailabilityCopy } from "./unavailable/use-feature-availability-copy";
+export {
+  FeatureUnavailableSurface,
+  type FeatureUnavailableSurfaceProps,
+  type UnavailableFeature,
+} from "./unavailable/feature-unavailable-surface";
+export {
+  WorkReportSurface,
+  type WorkReportAssigneeRow,
+  type WorkReportDto,
+  type WorkReportScope,
+  type WorkReportState,
+  type WorkReportStatusRow,
+  type WorkReportSurfaceProps,
+  type WorkReportWeekRow,
+} from "./reports/work-report-surface";
+export {
+  BillingCapabilitiesSurface,
+  type BillingCapabilitiesState,
+  type BillingCapabilitiesSurfaceProps,
+  type BillingCapabilityDto,
+  type BillingPlanCardState,
+} from "./billing/billing-capabilities-surface";

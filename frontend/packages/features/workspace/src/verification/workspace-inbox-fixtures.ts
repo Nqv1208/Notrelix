@@ -411,3 +411,16 @@ export function inboxHighDensityScenario(): InboxScenario {
     initialView: { tab: "all", unreadOnly: false },
   };
 }
+
+/** The Done filter on: the entries the member finished, each with "move back to inbox". */
+export function inboxDoneScenario(): InboxScenario {
+  const done = inboxReadItems()
+    .slice(0, 2)
+    .map((item) => ({ ...item, done: true, unread: false }));
+  return {
+    ...inboxDefaultScenario(),
+    state: { status: "ready", data: done },
+    done: { active: true, onToggle: () => undefined },
+    initialView: { tab: "all", unreadOnly: false },
+  };
+}

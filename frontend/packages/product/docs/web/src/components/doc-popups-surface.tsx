@@ -1,6 +1,13 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import {
   Code2,
+  FileText,
   List,
   ListChecks,
   ListOrdered,
@@ -15,8 +22,8 @@ import {
 import { cn } from "@notrelix/ui-web";
 import type { BlockType } from "@notrelix/docs-core";
 import { fillDocCopy, type DocPageCopy } from "./doc-page.copy";
-import type { DocTaskRef } from "./doc-page-models";
-import { DocStatusDot, ICON_CLASS } from "./doc-page-ui";
+import type { DocPerson, DocTaskRef } from "./doc-page-models";
+import { DocAvatar, DocStatusDot, ICON_CLASS } from "./doc-page-ui";
 
 const POPUP =
   "absolute box-content z-10 w-[320px] rounded-[12px] border border-line-strong bg-doc-panel p-1.5 leading-[1.4] shadow-popover";
@@ -51,6 +58,11 @@ export const SLASH_TYPES: ReadonlyArray<{
   { type: "heading_3", icon: Type, keywords: "tieu de heading h3" },
   { type: "quote", icon: Quote, keywords: "trich dan quote" },
   { type: "callout", icon: TextQuote, keywords: "ghi chu noi bat callout" },
+  {
+    type: "page_reference",
+    icon: FileText,
+    keywords: "lien ket trang page link",
+  },
   { type: "code", icon: Code2, keywords: "ma code" },
   { type: "divider", icon: Minus, keywords: "duong ke divider" },
 ];
@@ -71,9 +83,11 @@ const SLASH_VISIBLE = 3;
 export function matchSlashTypes(
   copy: DocPageCopy,
   query: string,
+  types?: readonly BlockType[],
 ): ReadonlyArray<(typeof SLASH_TYPES)[number]> {
   const needle = foldText(query.trim());
   return SLASH_TYPES.filter((entry) => {
+    if (types && !types.includes(entry.type)) return false;
     if (needle === "") return true;
     const name = foldText(
       copy.slash.items[entry.type as keyof typeof copy.slash.items],
@@ -133,6 +147,8 @@ function usePopupKeys({
 export interface DocSlashMenuSurfaceProps {
   readonly copy: DocPageCopy;
   readonly query: string;
+  /** The block types offered; omitted offers every type. */
+  readonly types?: readonly BlockType[];
   /** Index of the highlighted entry when the menu is controlled (stories). */
   readonly activeIndex?: number;
   readonly className?: string;
@@ -144,12 +160,13 @@ export interface DocSlashMenuSurfaceProps {
 export function DocSlashMenuSurface({
   copy,
   query,
+  types,
   activeIndex,
   className,
   onSelect,
   onClose,
 }: DocSlashMenuSurfaceProps) {
-  const matches = matchSlashTypes(copy, query);
+  const matches = matchSlashTypes(copy, query, types);
   const shown = matches.slice(0, SLASH_VISIBLE);
   const [keyActive, setKeyActive] = usePopupKeys({
     count: shown.length,
@@ -214,28 +231,43 @@ export function DocSlashMenuSurface({
 export interface DocMentionMenuSurfaceProps {
   readonly copy: DocPageCopy;
   readonly query: string;
+  /** Workspace members the typed text may mention; listed before the tasks. */
+  readonly people?: readonly DocPerson[];
   readonly tasks: readonly DocTaskRef[];
   readonly activeIndex?: number;
   readonly className?: string;
+  readonly style?: CSSProperties;
   readonly onSelect?: (taskId: string) => void;
+  readonly onSelectPerson?: (person: DocPerson) => void;
   readonly onClose?: () => void;
 }
 
-/** The task mention list (Final-Docs `nhac-viec`): key, title and a footer hint. */
+/**
+ * The mention list (Final-Docs `nhac-viec`): people, then tasks, with a footer
+ * hint. Arrow keys move through both groups as one list.
+ */
 export function DocMentionMenuSurface({
   copy,
   query,
+  people = [],
   tasks,
   activeIndex,
   className,
+  style,
   onSelect,
+  onSelectPerson,
   onClose,
 }: DocMentionMenuSurfaceProps): ReactNode {
   const m = copy.mention;
   const [keyActive, setKeyActive] = usePopupKeys({
-    count: tasks.length,
+    count: people.length + tasks.length,
     onPick: (index) => {
-      const task = tasks[index];
+      const person = people[index];
+      if (person) {
+        onSelectPerson?.(person);
+        return;
+      }
+      const task = tasks[index - people.length];
       if (task) onSelect?.(task.id);
     },
     onClose: () => onClose?.(),
@@ -243,31 +275,65 @@ export function DocMentionMenuSurface({
   const active = activeIndex ?? keyActive;
 
   return (
-    <div role="listbox" aria-label={m.label} className={cn(POPUP, className)}>
+    <div
+      role="listbox"
+      aria-label={m.label}
+      style={style}
+      className={cn(POPUP, className)}
+    >
+      {people.length > 0 ? (
+        <>
+          <span className={HEADING}>{m.people}</span>
+          {people.map((person, index) => (
+            <button
+              key={person.id}
+              type="button"
+              role="option"
+              aria-selected={index === active}
+              onMouseDown={(event) => event.preventDefault()}
+              onMouseEnter={() => setKeyActive(index)}
+              onClick={() => onSelectPerson?.(person)}
+              className={cn(
+                OPTION,
+                index === active && "bg-state-hover-strong",
+              )}
+            >
+              <DocAvatar person={person} />
+              <span className="min-w-0 truncate">{person.name}</span>
+            </button>
+          ))}
+        </>
+      ) : null}
       <span className={HEADING}>
         {fillDocCopy(m.heading, { query: query.trim() })}
       </span>
       {tasks.length === 0 ? (
         <span className={HEADING}>{m.none}</span>
       ) : (
-        tasks.map((task, index) => (
-          <button
-            key={task.id}
-            type="button"
-            role="option"
-            aria-selected={index === active}
-            onMouseDown={(event) => event.preventDefault()}
-            onMouseEnter={() => setKeyActive(index)}
-            onClick={() => onSelect?.(task.id)}
-            className={cn(OPTION, index === active && "bg-state-hover-strong")}
-          >
-            <DocStatusDot status={task.status} />
-            <span className="font-mono text-metadata leading-[1.4] tracking-normal text-meta-foreground">
-              {task.key}
-            </span>
-            {task.title}
-          </button>
-        ))
+        tasks.map((task, offset) => {
+          const index = people.length + offset;
+          return (
+            <button
+              key={task.id}
+              type="button"
+              role="option"
+              aria-selected={index === active}
+              onMouseDown={(event) => event.preventDefault()}
+              onMouseEnter={() => setKeyActive(index)}
+              onClick={() => onSelect?.(task.id)}
+              className={cn(
+                OPTION,
+                index === active && "bg-state-hover-strong",
+              )}
+            >
+              <DocStatusDot status={task.status} />
+              <span className="font-mono text-metadata leading-[1.4] tracking-normal text-meta-foreground">
+                {task.key}
+              </span>
+              {task.title}
+            </button>
+          );
+        })
       )}
       <span className={cn(HEADING, "mt-2")}>{m.footer}</span>
     </div>

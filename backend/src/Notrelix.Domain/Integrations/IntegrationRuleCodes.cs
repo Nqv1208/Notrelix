@@ -16,6 +16,7 @@ public static class IntegrationRuleCodes
     public const string Integrations_Connection_SecretVersionAlreadyExists = "Integrations_Connection_SecretVersionAlreadyExists";
     public const string Integrations_Connection_AlreadyActive = "Integrations_Connection_AlreadyActive";
     public const string Integrations_Connection_ExpirationMustBeFuture = "Integrations_Connection_ExpirationMustBeFuture";
+    public const string Integrations_Connection_NotUsable = "Integrations_Connection_NotUsable";
 
     // ── Calendar ──────────────────────────────────────────────────────────
     public const string Integrations_Calendar_ConnectionMustBeActive = "Integrations_Calendar_ConnectionMustBeActive";

@@ -20,11 +20,10 @@ describe("notificationsQueryKeys", () => {
   });
 
   it("should generate preferences query key", () => {
-    expect(notificationsQueryKeys.preferences("acc-1")).toEqual([
-      "account",
-      "acc-1",
-      "notifications",
-      "preferences",
+    expect(notificationsQueryKeys.preferences("ws-1")).toEqual([
+      "workspace",
+      "ws-1",
+      "notification-preferences",
     ]);
   });
 });

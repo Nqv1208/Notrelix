@@ -22,4 +22,17 @@ public interface IWorkspaceGrantProjectionService
         Guid userId,
         DateTimeOffset now,
         CancellationToken ct);
+
+    /// <summary>
+    /// Revokes the grant of a member who ends their own participation. The member's workspace grant is
+    /// also what lets that same person write the membership row, so the pending membership change is
+    /// persisted (flushed inside the request transaction, not committed) before the grant is revoked;
+    /// revoking first would make the membership update invisible to the person leaving.
+    /// </summary>
+    Task RevokeLeavingMemberGrantAsync(
+        Guid accountId,
+        Guid workspaceId,
+        Guid userId,
+        DateTimeOffset now,
+        CancellationToken ct);
 }

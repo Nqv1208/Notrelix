@@ -51,13 +51,8 @@ public class CreateApprovalRequestCommandHandler : IRequestHandler<CreateApprova
             target,
             request.Title,
             _requestContext.UserId,
-            now);
-
-        if (request.Description is not null)
-        {
-            approvalRequest.GetType().GetProperty(nameof(ApprovalRequest.Description))!
-                .SetValue(approvalRequest, request.Description);
-        }
+            now,
+            request.Description);
 
         if (request.Steps is { Count: > 0 })
         {

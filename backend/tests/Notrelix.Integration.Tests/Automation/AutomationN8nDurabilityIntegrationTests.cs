@@ -64,7 +64,7 @@ public sealed class AutomationN8nDurabilityIntegrationTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -79,7 +79,7 @@ public sealed class AutomationN8nDurabilityIntegrationTests : IAsyncLifetime
         var executionsBefore = await CountExecutionsAsync();
 
         var collector = new IntegrationEventCollector();
-        await using var context = _db.CreateContext(SystemTenant(), CreateOutboxInterceptor(collector));
+        await using var context = _db.CreateOwnerContext(SystemTenant(), CreateOutboxInterceptor(collector));
         var evaluator = new N8nAutomationRuleEvaluator(
             context,
             collector,
@@ -100,7 +100,7 @@ public sealed class AutomationN8nDurabilityIntegrationTests : IAsyncLifetime
         var executionsBefore = await CountExecutionsAsync();
 
         var collector = new IntegrationEventCollector();
-        await using var context = _db.CreateContext(SystemTenant(), CreateOutboxInterceptor(collector));
+        await using var context = _db.CreateOwnerContext(SystemTenant(), CreateOutboxInterceptor(collector));
         await using var transaction =
             await context.Database.BeginTransactionAsync(CancellationToken.None);
         var evaluator = new N8nAutomationRuleEvaluator(
@@ -126,7 +126,7 @@ public sealed class AutomationN8nDurabilityIntegrationTests : IAsyncLifetime
 
         // First accepted delivery persists normally through the evaluator.
         var collector = new IntegrationEventCollector();
-        await using (var context = _db.CreateContext(SystemTenant(), CreateOutboxInterceptor(collector)))
+        await using (var context = _db.CreateOwnerContext(SystemTenant(), CreateOutboxInterceptor(collector)))
         {
             var evaluator = new N8nAutomationRuleEvaluator(
                 context,
@@ -138,7 +138,7 @@ public sealed class AutomationN8nDurabilityIntegrationTests : IAsyncLifetime
 
         // A racing writer that bypasses the application-level existence check is
         // still rejected by ux_automation_executions_rule_trigger at the database.
-        await using (var racyContext = _db.CreateContext(SystemTenant()))
+        await using (var racyContext = _db.CreateOwnerContext(SystemTenant()))
         {
             var duplicate = AutomationExecution.Create(
                 graph.AccountId, graph.WorkspaceId, graph.RuleId,
@@ -389,7 +389,7 @@ public sealed class AutomationN8nDurabilityIntegrationTests : IAsyncLifetime
                 return new N8nWebhookDispatchResult(N8nWebhookOutcome.Succeeded, null);
             });
 
-        await using var activeContext = _db.CreateContext(SystemTenant());
+        await using var activeContext = _db.CreateOwnerContext(SystemTenant());
         var (activeConsumer, _) = BuildDispatchConsumer(activeContext, adapter.Object);
         var consumeActive = activeConsumer.Consume(NewConsumeContext(message).Object);
 
@@ -403,7 +403,7 @@ public sealed class AutomationN8nDurabilityIntegrationTests : IAsyncLifetime
         midClaim!.Status.Should().Be("Processing",
             "the active attempt committed the Processing claim atomically with Running");
 
-        await using var duplicateContext = _db.CreateContext(SystemTenant());
+        await using var duplicateContext = _db.CreateOwnerContext(SystemTenant());
         var (duplicateConsumer, _) = BuildDispatchConsumer(duplicateContext, adapter.Object);
         await duplicateConsumer.Consume(NewConsumeContext(message).Object);
 
@@ -544,7 +544,7 @@ public sealed class AutomationN8nDurabilityIntegrationTests : IAsyncLifetime
         var rule = AutomationRule.Create(accountId, workspace.Id, "Card assigned alert", config, ownerId, Now);
         rule.Enable(ownerId, Now);
 
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Users.Add(user);
         seed.Accounts.Add(account);
         seed.Workspaces.Add(workspace);
@@ -562,7 +562,7 @@ public sealed class AutomationN8nDurabilityIntegrationTests : IAsyncLifetime
     {
         var execution = AutomationExecution.Create(
             graph.AccountId, graph.WorkspaceId, graph.RuleId, Guid.NewGuid(), Now);
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.AutomationExecutions.Add(execution);
         await seed.SaveChangesAsync();
         ((IHasDomainEvents)execution).ClearDomainEvents();
@@ -574,7 +574,7 @@ public sealed class AutomationN8nDurabilityIntegrationTests : IAsyncLifetime
         var execution = AutomationExecution.Create(
             graph.AccountId, graph.WorkspaceId, graph.RuleId, Guid.NewGuid(), Now);
         execution.Start(Now);
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.AutomationExecutions.Add(execution);
         await seed.SaveChangesAsync();
         ((IHasDomainEvents)execution).ClearDomainEvents();
@@ -587,7 +587,7 @@ public sealed class AutomationN8nDurabilityIntegrationTests : IAsyncLifetime
             graph.AccountId, graph.WorkspaceId, graph.RuleId, Guid.NewGuid(), Now);
         execution.Start(Now);
         execution.RecordRetryableDispatchFailure("n8n unreachable", Now);
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.AutomationExecutions.Add(execution);
         await seed.SaveChangesAsync();
         ((IHasDomainEvents)execution).ClearDomainEvents();
@@ -600,7 +600,7 @@ public sealed class AutomationN8nDurabilityIntegrationTests : IAsyncLifetime
             graph.AccountId, graph.WorkspaceId, graph.RuleId, Guid.NewGuid(), Now);
         execution.Start(Now);
         execution.Succeed(Now);
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.AutomationExecutions.Add(execution);
         await seed.SaveChangesAsync();
         ((IHasDomainEvents)execution).ClearDomainEvents();
@@ -611,7 +611,7 @@ public sealed class AutomationN8nDurabilityIntegrationTests : IAsyncLifetime
     {
         var execution = AutomationExecution.Create(
             graph.AccountId, graph.WorkspaceId, graph.RuleId, Guid.NewGuid(), Now);
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.AutomationExecutions.Add(execution);
         await seed.SaveChangesAsync();
         ((IHasDomainEvents)execution).ClearDomainEvents();
@@ -641,14 +641,14 @@ public sealed class AutomationN8nDurabilityIntegrationTests : IAsyncLifetime
     private async Task SeedProcessingClaimAsync(
         N8nDispatchRequestedV1 message, Guid workspaceId, DateTimeOffset claimedAt)
     {
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Set<MessagingProcessedEvent>().Add(NewClaim(message, workspaceId, claimedAt));
         await seed.SaveChangesAsync();
     }
 
     private async Task SeedSucceededClaimAsync(N8nDispatchRequestedV1 message, Guid workspaceId)
     {
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         var claim = NewClaim(message, workspaceId, Now);
         claim.MarkSucceeded(Now);
         seed.Set<MessagingProcessedEvent>().Add(claim);
@@ -657,7 +657,7 @@ public sealed class AutomationN8nDurabilityIntegrationTests : IAsyncLifetime
 
     private async Task<MessagingProcessedEvent?> LoadClaimAsync(Guid eventId)
     {
-        await using var probe = _db.CreateContext(SystemTenant());
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
         return await probe.Set<MessagingProcessedEvent>().IgnoreQueryFilters()
             .FirstOrDefaultAsync(e => e.EventId == eventId
                 && e.ConsumerName == N8nDispatchProtocolEndpoints.DispatchEndpointName);
@@ -681,7 +681,7 @@ public sealed class AutomationN8nDurabilityIntegrationTests : IAsyncLifetime
         IN8nClient adapter,
         N8nDispatchRequestedV1 message)
     {
-        await using var context = _db.CreateContext(SystemTenant());
+        await using var context = _db.CreateOwnerContext(SystemTenant());
         var (consumer, _) = BuildDispatchConsumer(context, adapter);
         await consumer.Consume(NewConsumeContext(message).Object);
     }
@@ -745,13 +745,13 @@ public sealed class AutomationN8nDurabilityIntegrationTests : IAsyncLifetime
 
     private async Task<int> CountExecutionsAsync()
     {
-        await using var probe = _db.CreateContext(SystemTenant());
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
         return await probe.AutomationExecutions.IgnoreQueryFilters().CountAsync();
     }
 
     private async Task<int> CountOutboxIntentsAsync(Guid workspaceId)
     {
-        await using var probe = _db.CreateContext(SystemTenant());
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
         return await probe.Set<MessagingOutboxMessage>()
             .IgnoreQueryFilters()
             .CountAsync(message => message.WorkspaceId == workspaceId
@@ -760,7 +760,7 @@ public sealed class AutomationN8nDurabilityIntegrationTests : IAsyncLifetime
 
     private async Task<AutomationExecution> LoadExecutionAsync(Guid id)
     {
-        await using var probe = _db.CreateContext(SystemTenant());
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
         return await probe.AutomationExecutions.IgnoreQueryFilters().SingleAsync(x => x.Id == id);
     }
 

@@ -77,7 +77,7 @@ public sealed class WorkspaceNavigationIntegrationTests : IAsyncLifetime
         _db = db;
     }
 
-    public async Task InitializeAsync() => await new DatabaseReset(_db.ConnectionString).ResetAsync();
+    public async Task InitializeAsync() => await new DatabaseReset(_db.OwnerConnectionString).ResetAsync();
 
     public Task DisposeAsync() => Task.CompletedTask;
 
@@ -126,7 +126,7 @@ public sealed class WorkspaceNavigationIntegrationTests : IAsyncLifetime
         (await ListPinsAsync(member, stack.WorkspaceId)).Should().ContainSingle();
 
         // The owner makes the board private; the member has no explicit access to it.
-        await using (var change = _db.CreateContext(SystemTenant()))
+        await using (var change = _db.CreateOwnerContext(SystemTenant()))
         {
             var stored = await change.Boards.SingleAsync(b => b.Id == board);
             stored.ChangeVisibility(BoardVisibility.Private, stack.OwnerId, BaseTime);
@@ -250,7 +250,7 @@ public sealed class WorkspaceNavigationIntegrationTests : IAsyncLifetime
     {
         var stack = await SeedWorkspaceStackAsync();
         var boards = await SeedBoardsAsync(stack.AccountId, stack.WorkspaceId, stack.OwnerId, WorkspaceNavigationRules.PinLimit + 1);
-        await using (var seed = _db.CreateContext(SystemTenant()))
+        await using (var seed = _db.CreateOwnerContext(SystemTenant()))
         {
             for (var i = 0; i < WorkspaceNavigationRules.PinLimit - 1; i++)
             {
@@ -361,7 +361,7 @@ public sealed class WorkspaceNavigationIntegrationTests : IAsyncLifetime
         var someoneElses = Item("member's", 1);
         var foreign = Item("foreign", 1, foreignWorkspace, foreignBoard, foreignGroup);
 
-        await using (var seed = _db.CreateContext(SystemTenant()))
+        await using (var seed = _db.CreateOwnerContext(SystemTenant()))
         {
             seed.Boards.AddRange(board, foreignBoard);
             seed.BoardGroups.AddRange(group, foreignGroup);
@@ -441,7 +441,7 @@ public sealed class WorkspaceNavigationIntegrationTests : IAsyncLifetime
 
     private async Task<(int Recents, int Pins)> CountRowsAsync()
     {
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         return (await verify.RecentResources.CountAsync(), await verify.PinnedResources.CountAsync());
     }
 
@@ -453,7 +453,7 @@ public sealed class WorkspaceNavigationIntegrationTests : IAsyncLifetime
         var boards = Enumerable.Range(0, count)
             .Select(i => Board.Create(accountId, workspaceId, ownerId, $"Board {i}", null, BaseTime))
             .ToList();
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Boards.AddRange(boards);
         await seed.SaveChangesAsync();
         return boards.Select(b => b.Id).ToList();
@@ -462,7 +462,7 @@ public sealed class WorkspaceNavigationIntegrationTests : IAsyncLifetime
     private async Task<Guid> SeedPageAsync(Guid accountId, Guid workspaceId, Guid ownerId)
     {
         var page = Page.Create(accountId, workspaceId, "Navigation Doc", ownerId, BaseTime);
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Pages.Add(page);
         await seed.SaveChangesAsync();
         return page.Id;
@@ -471,7 +471,7 @@ public sealed class WorkspaceNavigationIntegrationTests : IAsyncLifetime
     private async Task<Guid> SeedForeignWorkspaceAsync(Guid accountId)
     {
         var foreign = Workspace.Create(accountId, Guid.NewGuid(), "Foreign WS", $"wx-f-{Guid.NewGuid():N}", BaseTime);
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Workspaces.Add(foreign);
         await seed.SaveChangesAsync();
         return foreign.Id;
@@ -481,7 +481,7 @@ public sealed class WorkspaceNavigationIntegrationTests : IAsyncLifetime
     {
         var user = User.Create($"wx-{Guid.NewGuid():N}@example.com", "WX Outsider", "hashed", BaseTime, true);
         user.ConfirmEmail(user.Id, BaseTime);
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Users.Add(user);
         await seed.SaveChangesAsync();
         return user.Id;
@@ -497,7 +497,7 @@ public sealed class WorkspaceNavigationIntegrationTests : IAsyncLifetime
         var account = Account.Create("WX Account", $"wx-{Guid.NewGuid():N}", AccountType.Team, owner.Id, now);
         var workspace = Workspace.Create(account.Id, owner.Id, "WX Workspace", $"wx-ws-{Guid.NewGuid():N}", now);
 
-        await using (var seed = _db.CreateContext(SystemTenant()))
+        await using (var seed = _db.CreateOwnerContext(SystemTenant()))
         {
             seed.Users.Add(owner);
             seed.Users.Add(member);
@@ -510,7 +510,7 @@ public sealed class WorkspaceNavigationIntegrationTests : IAsyncLifetime
             await seed.SaveChangesAsync();
         }
 
-        await using var grant = _db.CreateContext(SystemTenant());
+        await using var grant = _db.CreateOwnerContext(SystemTenant());
         var projection = new AccessGrantProjectionService(grant);
         await projection.SyncWorkspaceMemberGrantAsync(account.Id, workspace.Id, owner.Id, WorkspaceRole.Owner, now, CancellationToken.None);
         await projection.SyncWorkspaceMemberGrantAsync(account.Id, workspace.Id, member.Id, WorkspaceRole.Member, now, CancellationToken.None);
@@ -576,7 +576,7 @@ public sealed class WorkspaceNavigationIntegrationTests : IAsyncLifetime
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(IdempotencyBehavior<,>));
 
         services.AddScoped<ApplicationDbContext>(sp =>
-            _db.CreateContext(sp.GetRequiredService<ICurrentTenantContext>()));
+            _db.CreateOwnerContext(sp.GetRequiredService<ICurrentTenantContext>()));
         services.AddScoped<IWorkspaceDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IAccountDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IGovernanceDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());

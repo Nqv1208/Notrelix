@@ -17,6 +17,7 @@ import {
   erpItemId,
   erpOwnerAccess,
 } from "@notrelix/work-management-testing";
+import { itemCreateCatalog } from "../../../item-create/item-create.catalog";
 import { itemSheetCatalog } from "../../../card-detail/item-sheet.catalog";
 import { kanbanLaneCatalog } from "../../kanban/kanban-lane.catalog";
 import { kanbanToolbarCatalog } from "../../kanban/kanban-toolbar.catalog";
@@ -103,6 +104,7 @@ function Providers({
           kanbanLaneCatalog,
           kanbanToolbarCatalog,
           itemSheetCatalog,
+          itemCreateCatalog,
         ]}
         initialLocale="vi"
       >
@@ -208,10 +210,14 @@ describe("BoardCalendarView on the ERP board", () => {
     fireEvent.dragOver(target, { dataTransfer: dataTransfer() });
     fireEvent.drop(target, { dataTransfer: dataTransfer() });
     await waitFor(() => expect(cards.updateCard).toHaveBeenCalledTimes(1));
-    expect(cards.updateCard).toHaveBeenCalledWith(erpItemId("ERP-146"), {
-      dueDate: "2026-10-20T10:00:00.000Z",
-      startDate: "2026-10-17T02:00:00.000Z",
-    });
+    expect(cards.updateCard).toHaveBeenCalledWith(
+      erpItemId("ERP-146"),
+      {
+        dueDate: "2026-10-20T10:00:00.000Z",
+        startDate: "2026-10-17T02:00:00.000Z",
+      },
+      expect.objectContaining({ expectedVersion: expect.any(Number) }),
+    );
   });
 
   it("puts the item back and says so when the write fails", async () => {
@@ -249,9 +255,11 @@ describe("BoardCalendarView on the ERP board", () => {
     fireEvent.dragOver(target, { dataTransfer: dataTransfer() });
     fireEvent.drop(target, { dataTransfer: dataTransfer() });
     await waitFor(() => expect(cards.updateCard).toHaveBeenCalledTimes(1));
-    expect(cards.updateCard).toHaveBeenLastCalledWith(erpItemId("ERP-153"), {
-      dueDate: "2026-10-22T10:00:00.000Z",
-    });
+    expect(cards.updateCard).toHaveBeenLastCalledWith(
+      erpItemId("ERP-153"),
+      { dueDate: "2026-10-22T10:00:00.000Z" },
+      expect.objectContaining({ expectedVersion: expect.any(Number) }),
+    );
   });
 
   it("creates an item with its due day from the quick create", async () => {
@@ -272,6 +280,25 @@ describe("BoardCalendarView on the ERP board", () => {
         dueDate: "2026-10-23T10:00:00.000Z",
       }),
     );
+  });
+
+  it("opens the full form with the shown day when Add item is pressed, and creates the item with that due day", async () => {
+    const { cards } = renderCalendar();
+    await ready();
+    fireEvent.click(screen.getByRole("button", { name: "Thêm công việc" }));
+    const due = (await screen.findByLabelText(
+      "Hạn hoàn thành",
+    )) as HTMLInputElement;
+    expect(due.value).toBe("12/10/2026");
+    fireEvent.change(screen.getByRole("textbox", { name: /^Tên công việc/ }), {
+      target: { value: "Chốt lịch tuần" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Thêm công việc" }));
+    await waitFor(() => expect(cards.createCard).toHaveBeenCalledTimes(1));
+    expect(cards.createCard.mock.calls[0]?.[1]).toMatchObject({
+      title: "Chốt lịch tuần",
+      dueDate: "2026-10-12T00:00:00.000Z",
+    });
   });
 
   it("opens an item and its sheet, and closes it again", async () => {

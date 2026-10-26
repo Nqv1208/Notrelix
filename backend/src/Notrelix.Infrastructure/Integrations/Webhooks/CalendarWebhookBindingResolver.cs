@@ -1,3 +1,4 @@
+using Notrelix.Application.Common.SystemOperations;
 using Notrelix.Application.Features.Integrations.Abstractions;
 using Notrelix.Domain.Integrations;
 using Notrelix.Domain.Integrations.Connections;
@@ -27,6 +28,10 @@ public sealed class CalendarWebhookBindingResolver : ICalendarWebhookBindingReso
     private readonly IIntegrationDbContext _context;
     private readonly ICurrentTenantContext _tenant;
     private readonly RlsSessionContext _rls;
+    private string? _resolvedWebhookPath;
+
+    private static readonly SystemOperationReason WebhookReason = new(
+        "CalendarWebhook", "a provider callback with a verified signature is recorded for the tenant of its binding");
 
     public CalendarWebhookBindingResolver(
         IIntegrationDbContext context,
@@ -42,6 +47,8 @@ public sealed class CalendarWebhookBindingResolver : ICalendarWebhookBindingReso
         string webhookPath,
         CancellationToken cancellationToken)
     {
+        _resolvedWebhookPath = webhookPath;
+
         // IgnoreQueryFilters only affects EF. The explicit locator context is
         // applied on the same physical connection so PostgreSQL FORCE RLS
         // permits exactly the route-matched bootstrap row and nothing broader.
@@ -101,10 +108,26 @@ public sealed class CalendarWebhookBindingResolver : ICalendarWebhookBindingReso
         CancellationToken cancellationToken)
     {
         _tenant.SetWorkspace(binding.AccountId, binding.WorkspaceId, null);
-        // AdoptDerivedTenant changes the in-memory context; this explicit call
-        // applies the complete Account/Workspace scope to the active database
-        // transaction before receipt/outbox writes continue.
-        await _rls.ApplyAsync(cancellationToken);
+
+        if (!_rls.IsSessionContextEnabled)
+        {
+            return;
+        }
+
+        // The callback authenticates by signature, so there is no person whose grants a policy could read.
+        // The database derives the tenant from the webhook path again and binds the transaction to it: the
+        // receipt claim and the processing message that follow can land only in that account and workspace.
+        var bound = await _rls.EnterWebhookScopeAsync(
+            _resolvedWebhookPath
+                ?? throw new InvalidOperationException("The webhook binding must be resolved before its tenant is adopted."),
+            WebhookReason,
+            cancellationToken);
+
+        if (bound is null || bound.AccountId != binding.AccountId || bound.WorkspaceId != binding.WorkspaceId)
+        {
+            throw new InvalidOperationException(
+                "The webhook scope could not be bound to the tenant of the resolved calendar binding.");
+        }
     }
 
     private static bool MatchesCalendarProvider(IntegrationProvider connectionProvider, CalendarProvider calendarProvider)

@@ -16,30 +16,21 @@ export function notificationsCopyFixture(
   return accountNotificationsCopy(locale);
 }
 
-const choice = (app: boolean, email: boolean, mobile: boolean) => ({
-  app,
-  email,
-  mobile,
-});
+const choice = (inApp: boolean, email: boolean) => ({ inApp, email });
 
 export function notificationValuesFixture(
   overrides: Partial<AccountNotificationValues> = {},
 ): AccountNotificationValues {
   return {
+    version: 3,
     rows: {
-      assigned: choice(true, true, true),
-      mention: choice(true, true, true),
-      approval: choice(true, true, true),
-      overdue: choice(true, true, false),
-      watching: choice(true, false, false),
-      invitation: choice(true, true, false),
-      digest: choice(false, true, false),
-    },
-    quietHours: {
-      enabled: true,
-      from: "21:00",
-      to: "07:00",
-      days: "weekdays",
+      assigned: choice(true, true),
+      mention: choice(true, true),
+      approval: choice(true, true),
+      overdue: choice(true, false),
+      watching: choice(true, false),
+      invitation: choice(true, true),
+      digest: choice(false, false),
     },
     ...overrides,
   };
@@ -59,7 +50,6 @@ export function notificationsDefaultScenario(
       status: "ready",
       values: notificationValuesFixture(),
       personName: "Ada Lovelace",
-      zoneLabel: "GMT+7",
     },
     save: { state: "idle" },
   };
@@ -101,7 +91,7 @@ export function notificationsSaveErrorScenario(
   return { ...notificationsDefaultScenario(locale), save: { state: "error" } };
 }
 
-/** Quiet hours off, every channel off for one event, a long Vietnamese name. */
+/** Every channel off for one event, a long Vietnamese name. */
 export function notificationsEdgeDataScenario(): NotificationsScenario {
   const values = notificationValuesFixture();
   return {
@@ -109,11 +99,10 @@ export function notificationsEdgeDataScenario(): NotificationsScenario {
     preferences: {
       status: "ready",
       values: {
-        rows: { ...values.rows, assigned: choice(false, false, false) },
-        quietHours: { ...values.quietHours, enabled: false },
+        ...values,
+        rows: { ...values.rows, assigned: choice(false, false) },
       },
       personName: "Nguyễn Thị Phương Anh Trần Hoàng Bảo Ngọc Lê Văn Đức Minh",
-      zoneLabel: "GMT+7",
     },
     save: { state: "error" },
   };

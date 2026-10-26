@@ -5,6 +5,11 @@ import {
   DialogDescription,
   DialogTitle,
   cn,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@notrelix/ui-web";
 import { formatCopy } from "../shell/shell-models";
 import type { SectionState } from "../home/home-models";
@@ -508,19 +513,20 @@ export function BillingSeatInviteDialog(props: BillingSeatInviteDialogProps) {
             <label htmlFor="inv-role" className={FIELD_LABEL}>
               {c.role}
             </label>
-            <select
-              id="inv-role"
+            <Select
               value={props.role}
-              onChange={(event) =>
-                props.onRole(
-                  event.target.value === "guest" ? "guest" : "member",
-                )
+              onValueChange={(value) =>
+                props.onRole(value === "guest" ? "guest" : "member")
               }
-              className="box-border h-9 w-full rounded-[8px] border border-line-strong bg-popover px-2.5 text-nav leading-[1.45] text-foreground dark:bg-card"
             >
-              <option value="member">{c.roles.member}</option>
-              <option value="guest">{c.roles.guest}</option>
-            </select>
+              <SelectTrigger id="inv-role" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="member">{c.roles.member}</SelectItem>
+                <SelectItem value="guest">{c.roles.guest}</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           {over && seats ? (
             <div

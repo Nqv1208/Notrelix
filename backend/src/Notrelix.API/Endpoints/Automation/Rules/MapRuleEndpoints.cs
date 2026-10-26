@@ -15,6 +15,8 @@ public static class MapRuleEndpoints
         group.MapListAutomationRules();
         group.MapCreateAutomationRule();
         group.MapSetAutomationRuleEnabled();
+        group.MapUpdateAutomationRule();
+        group.MapDeleteAutomationRule();
 
         return app;
     }

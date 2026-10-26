@@ -1,0 +1,94 @@
+{
+  "item": {
+    "approval": {
+      "place": "above-end",
+      "left": 78.542,
+      "top": 12.333,
+      "width": 20.764,
+      "height": 6.694
+    },
+    "comments": {
+      "place": "above-end",
+      "left": 23.958,
+      "top": 73.469,
+      "width": 50.556,
+      "height": 20.104
+    },
+    "properties": {
+      "place": "below-end",
+      "left": 78.542,
+      "top": 19.472,
+      "width": 20.764,
+      "height": 30.757
+    }
+  },
+  "reports": {
+    "summary": {
+      "place": "right",
+      "left": 19.167,
+      "top": 15.917,
+      "width": 45.602,
+      "height": 4
+    },
+    "pace": {
+      "place": "above-end",
+      "left": 20.347,
+      "top": 42.057,
+      "width": 45.523,
+      "height": 31.632
+    },
+    "workload": {
+      "place": "above-end",
+      "left": 68.926,
+      "top": 55.964,
+      "width": 18.338,
+      "height": 37.458
+    }
+  },
+  "docs": {
+    "chip": {
+      "place": "right",
+      "left": 24.826,
+      "top": 45.701,
+      "width": 24.567,
+      "height": 3.222
+    },
+    "links": {
+      "place": "below-end",
+      "left": 79.167,
+      "top": 22.667,
+      "width": 20.278,
+      "height": 63.069
+    },
+    "approve": {
+      "place": "below-end",
+      "left": 85.017,
+      "top": 0.222,
+      "width": 11.51,
+      "height": 5.111
+    }
+  },
+  "automation": {
+    "rule": {
+      "place": "below-end",
+      "left": 37.431,
+      "top": 25.191,
+      "width": 47.222,
+      "height": 10.821
+    },
+    "history": {
+      "place": "right",
+      "left": 34.653,
+      "top": 40.568,
+      "width": 22.001,
+      "height": 9.778
+    },
+    "failure": {
+      "place": "below-end",
+      "left": 34.653,
+      "top": 49.234,
+      "width": 52.471,
+      "height": 9.778
+    }
+  }
+}

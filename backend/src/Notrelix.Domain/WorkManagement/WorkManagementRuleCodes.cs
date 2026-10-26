@@ -12,7 +12,13 @@ public static class WorkManagementRuleCodes
     public const string WorkManagement_Board_CannotChangeVisibilityArchived = "WorkManagement_Board_CannotChangeVisibilityArchived";
     public const string WorkManagement_Board_CannotGenerateIdentityArchived = "WorkManagement_Board_CannotGenerateIdentityArchived";
     public const string WorkManagement_Board_CannotChangeSpaceArchived = "WorkManagement_Board_CannotChangeSpaceArchived";
+    public const string WorkManagement_Board_CannotChangeItemKeyPrefixArchived = "WorkManagement_Board_CannotChangeItemKeyPrefixArchived";
+    public const string WorkManagement_Board_InvalidItemKeyPrefix = "WorkManagement_Board_InvalidItemKeyPrefix";
+    public const string WorkManagement_Board_ItemKeyPrefixInUse = "WorkManagement_Board_ItemKeyPrefixInUse";
     public const string WorkManagement_Board_CannotDeleteDefaultGroup = "WorkManagement_Board_CannotDeleteDefaultGroup";
+    public const string WorkManagement_Group_CannotDeleteLast = "WorkManagement_Group_CannotDeleteLast";
+    public const string WorkManagement_Group_ItemsNeedTargetGroup = "WorkManagement_Group_ItemsNeedTargetGroup";
+    public const string WorkManagement_Group_InvalidTargetGroup = "WorkManagement_Group_InvalidTargetGroup";
 
     // ── Field ─────────────────────────────────────────────────────────────
     public const string WorkManagement_Field_DoesNotBelongToBoard = "WorkManagement_Field_DoesNotBelongToBoard";
@@ -69,8 +75,12 @@ public static class WorkManagementRuleCodes
     public const string WorkManagement_Item_ParentPathContainsTargetParent = "WorkManagement_Item_ParentPathContainsTargetParent";
     public const string WorkManagement_Item_CannotBeOwnParent = "WorkManagement_Item_CannotBeOwnParent";
     public const string WorkManagement_Item_ParentAssignmentWouldCreateCycle = "WorkManagement_Item_ParentAssignmentWouldCreateCycle";
+    public const string WorkManagement_Item_SubItemsAreOneLevel = "WorkManagement_Item_SubItemsAreOneLevel";
+    public const string WorkManagement_Item_NotASubItem = "WorkManagement_Item_NotASubItem";
+    public const string WorkManagement_Item_SubItemFollowsParentGroup = "WorkManagement_Item_SubItemFollowsParentGroup";
     public const string WorkManagement_Item_CompletedAtRequired = "WorkManagement_Item_CompletedAtRequired";
     public const string WorkManagement_Item_DueDateMustBeAfterStartDate = "WorkManagement_Item_DueDateMustBeAfterStartDate";
+    public const string WorkManagement_Item_DescriptionTooLong = "WorkManagement_Item_DescriptionTooLong";
     public const string WorkManagement_Item_CannotModifyArchived = "WorkManagement_Item_CannotModifyArchived";
     public const string WorkManagement_Item_FieldValueMustBeNumber = "WorkManagement_Item_FieldValueMustBeNumber";
 
@@ -83,6 +93,7 @@ public static class WorkManagementRuleCodes
     public const string WorkManagement_View_TableMustUseTableConfig = "WorkManagement_View_TableMustUseTableConfig";
     public const string WorkManagement_View_CalendarMustUseCalendarConfig = "WorkManagement_View_CalendarMustUseCalendarConfig";
     public const string WorkManagement_View_TimelineMustUseTimelineConfig = "WorkManagement_View_TimelineMustUseTimelineConfig";
+    public const string WorkManagement_View_PrivateCannotBeDefault = "WorkManagement_View_PrivateCannotBeDefault";
     public const string WorkManagement_View_CannotDeleteDefault = "WorkManagement_View_CannotDeleteDefault";
     public const string WorkManagement_View_DuplicateFilterRules = "WorkManagement_View_DuplicateFilterRules";
     public const string WorkManagement_View_DuplicateSortRules = "WorkManagement_View_DuplicateSortRules";
@@ -115,6 +126,10 @@ public static class WorkManagementRuleCodes
     public const string WorkManagement_FormSubmission_CannotMarkSpamUnlessAccepted = "WorkManagement_FormSubmission_CannotMarkSpamUnlessAccepted";
     public const string WorkManagement_FormSubmission_CannotProcessUnlessAccepted = "WorkManagement_FormSubmission_CannotProcessUnlessAccepted";
     public const string WorkManagement_FormSubmission_AlreadyDeleted = "WorkManagement_FormSubmission_AlreadyDeleted";
+
+    // ── Reminder ──────────────────────────────────────────────────────────
+    public const string WorkManagement_Reminder_TooSoon = "WorkManagement_Reminder_TooSoon";
+    public const string WorkManagement_Reminder_NobodyToRemind = "WorkManagement_Reminder_NobodyToRemind";
 
     // ── Approval ──────────────────────────────────────────────────────────
     public const string WorkManagement_Approval_StepNotFound = "WorkManagement_Approval_StepNotFound";

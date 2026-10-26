@@ -17,6 +17,11 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
   cn,
 } from "@notrelix/ui-web";
 import { formatCopy } from "../shell/shell-models";
@@ -439,23 +444,16 @@ function SelectBox({
           className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-meta-foreground"
         />
       ) : null}
-      <select
-        id={id}
-        value={value}
-        aria-describedby={describedBy}
-        onChange={(event) => onChange(event.target.value)}
-        className={cn(
-          INPUT,
-          "cursor-pointer appearance-none pr-8",
-          icon && "pl-[30px]",
-        )}
-      >
-        {children}
-      </select>
-      <ReportGlyph
-        name="chevron"
-        className="pointer-events-none absolute top-1/2 right-2.5 size-3.5 -translate-y-1/2 text-meta-foreground"
-      />
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger
+          id={id}
+          aria-describedby={describedBy}
+          className={cn("w-full", icon && "pl-[30px]")}
+        >
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>{children}</SelectContent>
+      </Select>
     </span>
   );
 }
@@ -706,9 +704,9 @@ export function ReportAddWidgetDialog({
                           onChange={setBoardId}
                         >
                           {boards.map((item) => (
-                            <option key={item.id} value={item.id}>
+                            <SelectItem key={item.id} value={item.id}>
                               {formatCopy(c.sourceBoard, { name: item.name })}
-                            </option>
+                            </SelectItem>
                           ))}
                         </SelectBox>
                       )}
@@ -728,9 +726,9 @@ export function ReportAddWidgetDialog({
                             ? options.data.metrics
                             : (["count"] as const)
                           ).map((item) => (
-                            <option key={item} value={item}>
+                            <SelectItem key={item} value={item}>
                               {c.metrics[item]}
-                            </option>
+                            </SelectItem>
                           ))}
                         </SelectBox>
                       </div>
@@ -749,9 +747,9 @@ export function ReportAddWidgetDialog({
                             }}
                           >
                             {dimensions.map((item) => (
-                              <option key={item} value={item}>
+                              <SelectItem key={item} value={item}>
                                 {c.groups[item]}
-                              </option>
+                              </SelectItem>
                             ))}
                           </SelectBox>
                         </div>

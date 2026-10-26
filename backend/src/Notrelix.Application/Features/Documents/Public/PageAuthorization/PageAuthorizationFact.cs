@@ -14,4 +14,7 @@ public sealed record PageAuthorizationFact(
     bool Exists,
     bool IsActive,
     string? Visibility,
-    Guid? SpaceId = null);
+    Guid? SpaceId = null,
+    // Archived (in the trash) and not deleted: still reachable for the trash
+    // lifecycle actions (restore, delete for good), invisible to everything else.
+    bool IsTrashed = false);

@@ -3,7 +3,6 @@
  *
  * Operations with official contracts:
  *   workspace.list         — GET /workspaces
- *   workspace.create       — POST /workspaces
  *   workspace.get          — GET /workspaces/:id
  *
  * Operations with COMPATIBILITY-GAP (temporary legacy behavior):
@@ -85,6 +84,11 @@ function memberWire(store: MockStore, m: MockMembershipRecord) {
     role: ROLE_NAME[m.role],
     joinedAt: m.joinedAt,
     status: store.isMembershipSuspended(m.id) ? "Suspended" : "Active",
+    // The member's own profile in this workspace (D15): job title and version.
+    jobTitle: store.accountPages.memberProfileOf(m.workspaceId, m.userId)
+      .jobTitle,
+    version: store.accountPages.memberProfileOf(m.workspaceId, m.userId)
+      .version,
   };
 }
 
@@ -173,6 +177,13 @@ function workspaceDto(store: MockStore, workspaceId: string) {
   };
 }
 
+/** The time zones a workspace may use, as on the producer. */
+const WORKSPACE_TIME_ZONES = [
+  "Asia/Ho_Chi_Minh",
+  "Asia/Singapore",
+  "Asia/Tokyo",
+] as const;
+
 const SETTINGS_ROLE: Readonly<
   Record<string, MockWorkspaceSettingsRecord["defaultMemberRole"]>
 > = { admin: "Admin", member: "Member", guest: "Guest" };
@@ -231,40 +242,6 @@ export const workspaceOperations = [
           .filter((w) => !store.isWorkspaceArchived(w.id))
           .map((w) => workspaceDto(store, w.id)),
       );
-    },
-  }),
-
-  // ─── POST /workspaces ─────────────────────────────────────────────────────
-
-  defineMockOperation<
-    Record<string, never>,
-    { name?: string; slug?: string; isPersonal?: boolean },
-    WorkspaceSummary
-  >({
-    id: "workspace.create",
-    contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
-    method: "POST",
-    route: "/workspaces",
-    async handle({ body, store }) {
-      const data = (body ?? {}) as {
-        name?: string;
-        slug?: string;
-        isPersonal?: boolean;
-      };
-      const { workspace } = store.createWorkspaceForCurrentUser({
-        name: data.name,
-        slug: data.slug,
-        isPersonal: data.isPersonal,
-      });
-      return created<WorkspaceSummary>({
-        id: workspace.id,
-        name: workspace.name,
-        slug: workspace.slug,
-        plan: workspace.plan,
-        icon: workspace.icon,
-        memberCount: store.getWorkspaceMembers(workspace.id).length,
-        isPersonal: workspace.isPersonal,
-      });
     },
   }),
 
@@ -361,6 +338,8 @@ export const workspaceOperations = [
       defaultMemberRole?: string;
       invitationExpiryDays?: number;
       expectedVersion?: number;
+      timeZone?: string | null;
+      weekStart?: string | null;
     },
     void
   >({
@@ -384,6 +363,19 @@ export const workspaceOperations = [
           InvitationExpiryDays: ["Must be between 1 and 30 days."],
         });
       }
+      const kept = store.getWorkspaceSettings(params.workspaceId);
+      const timeZone = body?.timeZone
+        ? [
+            ...WORKSPACE_TIME_ZONES,
+            ...Intl.supportedValuesOf("timeZone"),
+            "UTC",
+          ].find((zone) => zone.toLowerCase() === body.timeZone?.toLowerCase())
+        : kept.timeZone;
+      if (!timeZone)
+        return validationError({ TimeZone: ["Unknown time zone."] });
+      const weekStart = (body?.weekStart ?? kept.weekStart).toLowerCase();
+      if (weekStart !== "monday" && weekStart !== "sunday")
+        return validationError({ WeekStart: ["Must be monday or sunday."] });
       return versionedWriteResult(
         store.updateWorkspaceSettings(
           params.workspaceId,
@@ -394,6 +386,8 @@ export const workspaceOperations = [
             allowGuestInvites: body?.allowGuestInvites === true,
             defaultMemberRole: role,
             invitationExpiryDays: days,
+            timeZone,
+            weekStart,
           },
         ),
       );
@@ -460,6 +454,54 @@ export const workspaceOperations = [
         .find((m) => m.userId === userId);
       if (!mine) return notFound();
       return ok(memberWire(store, mine));
+    },
+  }),
+
+  // `Workspaces.Members.UpdateMyJobTitle`: the member's own title, guarded by
+  // the version of their membership (412 when stale; unchanged = no-op).
+  defineMockOperation<
+    { workspaceId: string },
+    { jobTitle?: string | null; expectedVersion?: number },
+    unknown
+  >({
+    id: "workspace.members.myJobTitle",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Members.UpdateMyJobTitle",
+    },
+    method: "PUT",
+    route: "/workspaces/:workspaceId/members/me/job-title",
+    async handle({ params, body, store }) {
+      const userId = store.getCurrentUser().id;
+      if (!store.isCurrentMemberOf(params.workspaceId)) return notFound();
+      const profile = store.accountPages.memberProfileOf(
+        params.workspaceId,
+        userId,
+      );
+      const title = (body?.jobTitle ?? "").replace(/\s+/g, " ").trim();
+      if (title.length > 100)
+        return ruleViolation("A job title has at most 100 characters.");
+      if (body?.expectedVersion !== profile.version)
+        return {
+          status: 412,
+          body: {
+            type: "https://notrelix.dev/problems/common.precondition-failed",
+            title: "Precondition failed",
+            status: 412,
+            detail: "The profile changed since it was read.",
+            errorCode: "common.precondition-failed",
+          },
+        };
+      const next = title === "" ? null : title;
+      if (next !== profile.jobTitle) {
+        profile.jobTitle = next;
+        profile.version += 1;
+      }
+      return ok({
+        userId,
+        jobTitle: profile.jobTitle,
+        version: profile.version,
+      });
     },
   }),
 

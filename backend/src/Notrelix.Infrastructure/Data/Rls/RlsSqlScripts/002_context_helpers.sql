@@ -80,6 +80,12 @@ AS $$
     SELECT COALESCE(ops.current_setting_text('app.request_scope'), 'app');
 $$;
 
+-- The unbounded background principal. Two things must hold: the request scope names it AND the login of
+-- the connection is a member of notrelix_worker. The scope value is a session setting that any
+-- connection can write, so it alone proves nothing; the login is chosen by the connection string and
+-- cannot be changed from inside a session. session_user (not current_user) is read because inside this
+-- SECURITY DEFINER function current_user is the function owner. The application login is never a member
+-- of notrelix_worker, so setting the scope on an application connection grants nothing.
 CREATE OR REPLACE FUNCTION ops.is_worker_scope()
 RETURNS boolean
 LANGUAGE sql
@@ -87,7 +93,8 @@ STABLE
 SECURITY DEFINER
 SET search_path = pg_catalog, ops, pg_temp
 AS $$
-    SELECT ops.current_request_scope() IN ('worker', 'system', 'migration', 'migrator');
+    SELECT ops.current_request_scope() = 'worker'
+       AND pg_has_role(session_user, 'notrelix_worker', 'MEMBER');
 $$;
 
 CREATE OR REPLACE FUNCTION ops.is_support_scope()

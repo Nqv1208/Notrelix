@@ -13,7 +13,8 @@ public sealed record RequestDataSessionOptions(
     RequestDataAccess Access,
     bool ApplyTenantScope,
     bool ApplyResourceScope,
-    ExpectedVersionConstraint? ExpectedVersion = null);
+    ExpectedVersionConstraint? ExpectedVersion = null,
+    Guid? UserScopeUserId = null);
 
 /// <summary>
 /// Fail-closed optimistic-concurrency identity. The concrete request type and the

@@ -1,8 +1,10 @@
+using Notrelix.Application.Common.Data.Rls;
 using Notrelix.Application.Common.Tokens;
 using Notrelix.Application.Features.Accounts.Public.Membership;
 using Notrelix.Application.Features.Identity.Public.Facts;
 using Notrelix.Application.Features.Identity.Public.Queries;
 using Notrelix.Application.Features.Workspaces.Invitations.Commands.AcceptInvitation;
+using Notrelix.Application.Features.Workspaces.Invitations.Services;
 using Notrelix.Domain.Workspaces.Invitations;
 
 namespace Notrelix.Application.Tests.Features.Workspaces.Invitations.Commands.AcceptInvitation;
@@ -23,6 +25,11 @@ public abstract class AcceptInvitationHandlerTestBase : WorkspaceHandlerTestBase
     protected readonly Mock<IAccountMembershipActions> AccountMembershipActionsMock = new();
     protected readonly Mock<IAccountMembershipFacts> AccountMembershipFactsMock = new();
     protected readonly Mock<IOneTimeTokenService> OneTimeTokenServiceMock = new();
+    protected readonly Mock<ICurrentTenantContext> TenantMock = new();
+    protected readonly Mock<IRlsSessionContext> RlsMock = new();
+
+    /// <summary>The token bootstrap: locates the invitation across tenants, then adopts its Workspace scope.</summary>
+    protected InvitationTokenScope CreateTokenScope() => new(DbContextMock.Object, TenantMock.Object, RlsMock.Object);
 
     /// <summary>A syntactically-valid SHA-256 hex digest (64 lower-case hex chars).</summary>
     protected const string ValidTokenHash =
@@ -99,6 +106,7 @@ public abstract class AcceptInvitationHandlerTestBase : WorkspaceHandlerTestBase
             new Notrelix.Application.Features.Workspaces.Invitations.Services.InvitationInitialEntries(
                 DbContextMock.Object, new Mock<Notrelix.Application.Features.Workspaces.Spaces.Services.ISpaceStore>().Object),
             new Mock<Notrelix.Application.Features.Governance.Public.Access.IGuestResourceAccessActions>().Object,
-            new Mock<Notrelix.Application.Common.Auditing.IAuditService>().Object);
+            new Mock<Notrelix.Application.Common.Auditing.IAuditService>().Object,
+            CreateTokenScope());
     }
 }

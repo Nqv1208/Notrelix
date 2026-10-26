@@ -12,46 +12,39 @@ public record ResolveSlugQuery(
 
 public class ResolveSlugQueryHandler : IRequestHandler<ResolveSlugQuery, Result<WorkspaceDto>>
 {
-    private readonly IWorkspaceDbContext _context;
+    private readonly IWorkspaceSlugResolver _resolver;
 
-    public ResolveSlugQueryHandler(IWorkspaceDbContext context)
+    public ResolveSlugQueryHandler(IWorkspaceSlugResolver resolver)
     {
-        _context = context;
+        _resolver = resolver;
     }
 
     public async Task<Result<WorkspaceDto>> Handle(ResolveSlugQuery request, CancellationToken ct)
     {
-        var workspace = await _context.Workspaces
-            .AsNoTracking()
-            .FirstOrDefaultAsync(
-                w => w.AccountId == request.AccountId
-                    && w.Slug == request.Slug
-                    && w.Status == WorkspaceStatus.Active
-                    && w.DeletedAt == null,
-                ct);
+        // The caller is anonymous and has no tenant: the card is read through the Workspaces read port, which
+        // answers one active workspace by account and slug and nothing else.
+        var card = await _resolver.ResolveAsync(request.AccountId, request.Slug, ct);
 
-        if (workspace is null)
+        if (card is null)
             return Result<WorkspaceDto>.Failure("Workspace not found.");
 
-        var memberCount = await _context.WorkspaceMembers
-            .AsNoTracking()
-            .CountAsync(m => m.WorkspaceId == workspace.Id && m.Status != WorkspaceMemberStatus.Removed, ct);
-
         return Result<WorkspaceDto>.Success(new WorkspaceDto(
-            workspace.Id,
-            workspace.Name,
-            workspace.Slug,
-            workspace.Description,
-            workspace.IsPersonal,
+            card.Id,
+            card.Name,
+            card.Slug,
+            card.Description,
+            card.IsPersonal,
             "free",
             null,
             null,
             null,
             false,
-            memberCount,
-            workspace.CreatedAt.DateTime,
+            card.MemberCount,
+            card.CreatedAt.DateTime,
             null,
-            workspace.Version
+            card.Version,
+            card.Size,
+            card.Language
         ));
     }
 }

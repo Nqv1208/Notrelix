@@ -1,10 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
+import type { InboxActions } from "../inbox-models";
 import { fireEvent, renderPureUi, screen, within } from "@notrelix/testing";
 
 import {
   inboxAllScenario,
   inboxCopyFixture,
   inboxDefaultScenario,
+  inboxDoneScenario,
   inboxEdgeDataScenario,
   inboxEmptyScenario,
   inboxErrorScenario,
@@ -314,5 +316,76 @@ describe("WorkspaceInboxSurface", () => {
   it("FUI[workspace.inbox:high-density] renders 150 rows", () => {
     renderInbox(inboxHighDensityScenario());
     expect(rows()).toHaveLength(150);
+  });
+
+  const actionsFixture = (): InboxActions => ({
+    pendingIds: new Set(),
+    onApprove: vi.fn(),
+    onRequestChanges: vi.fn(),
+    onReply: vi.fn(),
+    onHandled: vi.fn(),
+    onSnooze: vi.fn(),
+    onMute: vi.fn(),
+    onDone: vi.fn(),
+    onReopen: vi.fn(),
+  });
+
+  it("FUI[workspace.inbox:done-filter] lists the done entries under the Done toggle and moves one back to the inbox", () => {
+    const actions = actionsFixture();
+    const onToggle = vi.fn();
+    renderInbox(inboxDoneScenario(), {
+      actions,
+      done: { active: true, onToggle },
+    });
+    const toggle = screen.getByRole("button", { name: copy.doneFilter });
+    expect(toggle.getAttribute("aria-pressed")).toBe("true");
+    expect(rows()).toHaveLength(2);
+    fireEvent.click(toggle);
+    expect(onToggle).toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: copy.read.reopen }));
+    expect(actions.onReopen).toHaveBeenCalledTimes(1);
+  });
+
+  it("FUI[workspace.inbox:done-empty] says nothing is done yet when the Done list is empty", () => {
+    renderInbox(inboxDoneScenario(), {
+      state: { status: "ready", data: [] },
+    });
+    expect(screen.getByText(copy.doneEmpty.title)).toBeTruthy();
+  });
+
+  it("FUI[workspace.inbox:done-action] marks the open notification done from the reading pane", () => {
+    const actions = actionsFixture();
+    renderInbox(inboxDefaultScenario(), { actions });
+    fireEvent.click(screen.getByRole("button", { name: copy.read.done }));
+    expect(actions.onDone).toHaveBeenCalledTimes(1);
+  });
+
+  it("FUI[workspace.inbox:mute-toggle] offers to turn notifications back on for a muted thread", () => {
+    const actions = actionsFixture();
+    const scenario = inboxDefaultScenario();
+    const data =
+      scenario.state.status === "ready"
+        ? scenario.state.data.map((item, index) =>
+            index === 0 ? { ...item, muted: true } : item,
+          )
+        : [];
+    renderInbox(scenario, { actions, state: { status: "ready", data } });
+    fireEvent.click(screen.getByRole("button", { name: copy.read.unmute }));
+    expect(actions.onMute).toHaveBeenCalledTimes(1);
+  });
+
+  it("FUI[workspace.inbox:snooze] picks a time to be reminded from the snooze menu", () => {
+    const actions = actionsFixture();
+    renderInbox(inboxDefaultScenario(), { actions });
+    fireEvent.click(
+      screen.getByRole("button", { name: new RegExp(copy.read.snooze) }),
+    );
+    fireEvent.click(
+      screen.getByRole("menuitem", { name: copy.read.snoozeOptions.tomorrow }),
+    );
+    expect(actions.onSnooze).toHaveBeenCalledWith(
+      expect.anything(),
+      "tomorrow",
+    );
   });
 });

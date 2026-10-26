@@ -44,7 +44,7 @@ public sealed class WorkspaceMembershipConcurrencyEvidenceTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -65,7 +65,7 @@ public sealed class WorkspaceMembershipConcurrencyEvidenceTests : IAsyncLifetime
         var workspace = Workspace.Create(accountId, ownerId, "WG Concurrency", $"wg-conc-{Guid.NewGuid():N}", Now);
         var member = WorkspaceMember.Create(accountId, workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, Now);
 
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Users.Add(owner);
         seed.Workspaces.Add(workspace);
         seed.WorkspaceMembers.Add(member);
@@ -83,8 +83,8 @@ public sealed class WorkspaceMembershipConcurrencyEvidenceTests : IAsyncLifetime
         // Both transactions observe "not a member" before either commits; each
         // stages the member row and its authz grant projection just as the
         // production AddMember handler does.
-        await using var contextA = _db.CreateContext(SystemTenant());
-        await using var contextB = _db.CreateContext(SystemTenant());
+        await using var contextA = _db.CreateOwnerContext(SystemTenant());
+        await using var contextB = _db.CreateOwnerContext(SystemTenant());
         var addedBy = Guid.CreateVersion7();
 
         StageMembership(contextA, accountId, workspaceId, userId, addedBy);
@@ -120,7 +120,7 @@ public sealed class WorkspaceMembershipConcurrencyEvidenceTests : IAsyncLifetime
             "the concurrent duplicate must be rejected by WorkspaceMember uniqueness or " +
             "the workspace grant projection uniqueness — never an unrelated constraint");
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         var members = await verify.WorkspaceMembers
             .Where(m => m.WorkspaceId == workspaceId && m.UserId == userId)
             .ToListAsync();
@@ -177,7 +177,7 @@ public sealed class WorkspaceMembershipConcurrencyEvidenceTests : IAsyncLifetime
         var memberA = WorkspaceMember.Create(accountId, workspace.Id, ownerAId, WorkspaceRole.Owner, ownerAId, Now);
         var memberB = WorkspaceMember.Create(accountId, workspace.Id, ownerBId, WorkspaceRole.Owner, ownerBId, Now);
 
-        await using (var seed = _db.CreateContext(SystemTenant()))
+        await using (var seed = _db.CreateOwnerContext(SystemTenant()))
         {
             seed.Users.AddRange(ownerA, ownerB);
             seed.Workspaces.Add(workspace);
@@ -190,8 +190,8 @@ public sealed class WorkspaceMembershipConcurrencyEvidenceTests : IAsyncLifetime
         // lock (SELECT ... FOR UPDATE) is held from the handler's first read until
         // the transaction commits, which is what serializes the two owner-affecting
         // operations.
-        await using var contextA = _db.CreateContext(SystemTenant());
-        await using var contextB = _db.CreateContext(SystemTenant());
+        await using var contextA = _db.CreateOwnerContext(SystemTenant());
+        await using var contextB = _db.CreateOwnerContext(SystemTenant());
         await using var txA = await contextA.Database.BeginTransactionAsync();
         await using var txB = await contextB.Database.BeginTransactionAsync();
 
@@ -225,7 +225,7 @@ public sealed class WorkspaceMembershipConcurrencyEvidenceTests : IAsyncLifetime
                 WorkspaceRuleCodes.Workspaces_Owner_CannotRemoveLastOwner,
                 "removing the last remaining owner must be rejected after the demote commits");
 
-        var verify = await _db.CreateContext(SystemTenant()).WorkspaceMembers
+        var verify = await _db.CreateOwnerContext(SystemTenant()).WorkspaceMembers
             .CountAsync(m => m.WorkspaceId == workspace.Id && m.Role == WorkspaceRole.Owner && m.Status == WorkspaceMemberStatus.Active);
 
         verify.Should().Be(1,
@@ -251,7 +251,7 @@ public sealed class WorkspaceMembershipConcurrencyEvidenceTests : IAsyncLifetime
         var owner = User.Create($"wg-tr-a-{Guid.NewGuid():N}@example.com", "Owner", "hashed", Now, true);
         var incoming = User.Create($"wg-tr-b-{Guid.NewGuid():N}@example.com", "Incoming", "hashed", Now, true);
 
-        await using (var seed = _db.CreateContext(SystemTenant()))
+        await using (var seed = _db.CreateOwnerContext(SystemTenant()))
         {
             seed.Users.AddRange(owner, incoming);
             seed.Workspaces.Add(workspace);
@@ -261,8 +261,8 @@ public sealed class WorkspaceMembershipConcurrencyEvidenceTests : IAsyncLifetime
             await seed.SaveChangesAsync();
         }
 
-        await using var contextA = _db.CreateContext(SystemTenant());
-        await using var contextB = _db.CreateContext(SystemTenant());
+        await using var contextA = _db.CreateOwnerContext(SystemTenant());
+        await using var contextB = _db.CreateOwnerContext(SystemTenant());
         await using var txA = await contextA.Database.BeginTransactionAsync();
         await using var txB = await contextB.Database.BeginTransactionAsync();
 
@@ -283,7 +283,7 @@ public sealed class WorkspaceMembershipConcurrencyEvidenceTests : IAsyncLifetime
         (await removing.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>())
             .Which.RuleCode.Should().Be(WorkspaceRuleCodes.Workspaces_Member_ActorCannotActOnMember);
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.WorkspaceMembers.CountAsync(m =>
             m.WorkspaceId == workspace.Id && m.Role == WorkspaceRole.Owner && m.Status == WorkspaceMemberStatus.Active))
             .Should().Be(1);

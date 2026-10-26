@@ -385,6 +385,7 @@ describe("priorityFromOptionName", () => {
     ["Trung bình", "medium"],
     ["Thấp", "low"],
     ["Urgent", "urgent"],
+    ["Critical", "urgent"],
     ["High", "high"],
     ["Medium", "medium"],
     ["low", "low"],
@@ -527,7 +528,6 @@ describe("mapBoardAccessDto", () => {
       mySource: {
         kind: "explicit",
         grantedBy: { userId: "user-phuc", name: "Lê Hoàng Phúc" },
-        expiresAt: null,
       },
       peopleCount: 32,
       guestCount: 1,
@@ -552,7 +552,6 @@ describe("mapBoardAccessDto", () => {
     expect(mapped.mySource).toEqual({
       kind: "workspace",
       grantedBy: null,
-      expiresAt: null,
     });
     expect(mapped.peopleCount).toBe(0);
     expect(mapped.peopleCountComplete).toBe(false);

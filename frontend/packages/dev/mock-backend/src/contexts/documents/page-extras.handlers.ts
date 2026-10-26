@@ -4,26 +4,19 @@
  * "BE requirement from FE: Docs").
  *
  * Operations:
- *   docs.pages.backlinks     GET  /pages/:pageId/backlinks
- *   docs.blocks.convertTask  POST /pages/:pageId/blocks/:blockId/convert-to-task
+ *   docs.pages.permissions   GET  /pages/:pageId/permissions
+ *
+ * Backlinks (`Documents.Pages.GetPageBacklinks`) are served by the pages
+ * handlers' neighbour below: they follow the producer's contract.
  */
 import { defineMockOperation } from "../../operations/types";
-import {
-  created,
-  notFound,
-  ok,
-  validationError,
-} from "../../transport/create-response";
+import { notFound, ok } from "../../transport/create-response";
+import { readBlockBody } from "./block-body";
 import {
   INVOICE_BACKLINKS,
   INVOICE_DOC_ID,
   INVOICE_PERMISSIONS,
 } from "../../state/mock-docs-invoice";
-import {
-  erpItemId,
-  ERP_STATUS_COLUMN_ID,
-  erpStatusOptionId,
-} from "../../state/mock-erp-board";
 
 const GAP = { kind: "gap", gapId: "CTR-GAP-DOCS-PAGE-EXT" } as const;
 
@@ -54,73 +47,57 @@ export const pageExtrasOperations = [
     },
   }),
 
+  // `Documents.Pages.GetPageBacklinks`: the pages that name this page, found
+  // the way the producer derives them (a page reference block or a page mention).
   defineMockOperation<{ pageId: string }, never, unknown>({
     id: "docs.pages.backlinks",
-    contract: GAP,
+    contract: {
+      kind: "openapi",
+      operationId: "Documents.Pages.GetPageBacklinks",
+    },
     method: "GET",
     route: "/pages/:pageId/backlinks",
     async handle({ params, store }) {
       const page = store.getPage(params.pageId);
-      if (!page) return notFound("Page not found");
-      if (page.id !== INVOICE_DOC_ID) return ok({ docs: [], tasks: [] });
-      const docs = INVOICE_BACKLINKS.docIds.flatMap((id) => {
+      if (!page || page.trashedAt) return notFound("Page not found");
+      const ids = new Set<string>(
+        page.id === INVOICE_DOC_ID ? INVOICE_BACKLINKS.docIds : [],
+      );
+      for (const other of store.getPages(page.workspaceId)) {
+        if (other.id === page.id) continue;
+        const names = store.getPageBlocks(other.id).some((block) => {
+          try {
+            const content = JSON.parse(block.properties || "{}") as {
+              linkedPageId?: string;
+              pageMentionIds?: string[];
+            };
+            return (
+              content.linkedPageId === page.id ||
+              readBlockBody(block).properties.pageId === page.id ||
+              (content.pageMentionIds ?? []).includes(page.id)
+            );
+          } catch {
+            return false;
+          }
+        });
+        if (names) ids.add(other.id);
+      }
+      const docs = [...ids].flatMap((id) => {
         const doc = store.getPage(id);
-        if (!doc) return [];
-        const space = doc.spaceId ? store.spaces.getSpace(doc.spaceId) : null;
+        if (!doc || doc.trashedAt) return [];
+        const spaceId =
+          doc.spaceId &&
+          store.spaces.accessFor(
+            doc.spaceId,
+            store.spaceViewer(doc.workspaceId),
+          ) !== null
+            ? doc.spaceId
+            : null;
         return [
-          { id: doc.id, title: doc.title, spaceName: space?.name ?? null },
+          { id: doc.id, title: doc.title, icon: doc.icon ?? "", spaceId },
         ];
       });
-      const tasks = INVOICE_BACKLINKS.itemKeys.flatMap((key) => {
-        const card = store.getCard(erpItemId(key));
-        return card
-          ? [{ id: card.id, key: card.itemKey ?? key, title: card.title }]
-          : [];
-      });
-      return ok({ docs, tasks });
-    },
-  }),
-
-  defineMockOperation<{ pageId: string; blockId: string }, never, unknown>({
-    id: "docs.blocks.convertTask",
-    contract: GAP,
-    method: "POST",
-    route: "/pages/:pageId/blocks/:blockId/convert-to-task",
-    async handle({ params, store }) {
-      const blocks = store.getPageBlocks(params.pageId);
-      const block = blocks.find((entry) => entry.id === params.blockId);
-      if (!block) return notFound("Block not found");
-      const properties = JSON.parse(block.properties || "{}") as Record<
-        string,
-        unknown
-      >;
-      const text = String(properties.text ?? "").trim();
-      if (block.type !== "todo" || !text || properties.linkedTaskId)
-        return validationError({ blockId: ["not convertible"] });
-      // The item goes to the board the page's task table reads from.
-      const reference = blocks
-        .map(
-          (entry) =>
-            JSON.parse(entry.properties || "{}") as Record<string, unknown>,
-        )
-        .find((entry) => typeof entry.linkedBoardId === "string");
-      const boardId = reference?.linkedBoardId as string | undefined;
-      const list = boardId ? store.getLists(boardId)[0] : undefined;
-      if (!boardId || !list) return validationError({ board: ["none"] });
-      const card = store.createCard(boardId, list.id, { title: text });
-      store.updateFieldValue(
-        card.id,
-        ERP_STATUS_COLUMN_ID,
-        erpStatusOptionId("todo"),
-      );
-      store.updateBlock(block.id, {
-        properties: JSON.stringify({ ...properties, linkedTaskId: card.id }),
-      });
-      return created({
-        id: card.id,
-        key: card.itemKey ?? card.id,
-        title: card.title,
-      });
+      return ok({ docs });
     },
   }),
 ];

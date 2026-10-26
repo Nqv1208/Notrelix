@@ -47,7 +47,9 @@ public sealed class ResourceLevelEnforcementMatrixTests
         (PermissionAction.UpdatePage, 3),
         (PermissionAction.ManageBoard, 3),
         (PermissionAction.ManagePagePermission, 4),
-        (PermissionAction.ArchivePage, 4),
+        // Trash and restore are Editor level; deleting for good needs Manager.
+        (PermissionAction.ArchivePage, 3),
+        (PermissionAction.DeletePage, 4),
     ];
 
     public static TheoryData<string, string, int> BoardSources() => new()

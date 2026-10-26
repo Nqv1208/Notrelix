@@ -26,6 +26,9 @@ public class AutomationExecutionConfiguration : IEntityTypeConfiguration<Automat
         builder.Property(x => x.CausationExecutionId).HasColumnName("causation_execution_id");
         builder.Property(x => x.ChainDepth).HasColumnName("chain_depth").HasDefaultValue(0).IsRequired();
 
+        builder.Property(x => x.RuleVersion).HasColumnName("rule_version");
+        builder.Property(x => x.ConfigurationSnapshot).HasColumnName("configuration_snapshot");
+
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");

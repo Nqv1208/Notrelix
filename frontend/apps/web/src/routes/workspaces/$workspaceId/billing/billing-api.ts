@@ -1,4 +1,6 @@
+import type { OperationResponse } from "@notrelix/contracts";
 import type {
+  BillingCapabilityDto,
   BillingDowngradeDto,
   BillingInvoiceDetailDto,
   BillingInvoicesDto,
@@ -22,6 +24,11 @@ export interface BillingApiClient {
     body?: unknown,
     options?: { skipGlobalErrorToast?: boolean; idempotencyKey?: string },
   ): Promise<T>;
+  put<T>(
+    url: string,
+    body?: unknown,
+    options?: { skipGlobalErrorToast?: boolean },
+  ): Promise<T>;
   delete<T>(
     url: string,
     options?: { skipGlobalErrorToast?: boolean },
@@ -34,8 +41,68 @@ const root = (workspaceId: string) =>
   `/workspaces/${encodeURIComponent(workspaceId)}`;
 const billing = (workspaceId: string) => `${root(workspaceId)}/billing`;
 
+type CapabilityRow = NonNullable<
+  OperationResponse<"Billing.Capabilities.List">
+>[number];
+
+function toCapability(row: CapabilityRow): BillingCapabilityDto {
+  return {
+    code: row.code ?? "",
+    isGranted: row.isGranted === true,
+    isUnlimited: row.isUnlimited === true,
+    limit: row.limit ?? null,
+    used: row.used ?? 0,
+    remaining: row.remaining ?? null,
+  };
+}
+
+type PlanRow = NonNullable<OperationResponse<"Billing.Plan.Get">>;
+
+/** The plan card's data: the current plan code, the catalog and the caller's right to switch. */
+export interface BillingPlanSummary {
+  readonly currentCode: string;
+  readonly plans: readonly { code: string; name: string }[];
+  readonly canChange: boolean;
+}
+
+function toPlanSummary(row: PlanRow): BillingPlanSummary {
+  return {
+    currentCode: row.currentPlan?.code ?? "free",
+    plans: (row.availablePlans ?? []).map((p) => ({
+      code: p.code ?? "",
+      name: p.name ?? p.code ?? "",
+    })),
+    canChange: row.canChangePlan === true,
+  };
+}
+
 export function createBillingApi(api: BillingApiClient) {
   return {
+    /** What the workspace's billing grants: the one Billing read the producer serves. */
+    async capabilities(workspaceId: string): Promise<BillingCapabilityDto[]> {
+      const rows = await api.get<CapabilityRow[]>(
+        `${billing(workspaceId)}/capabilities`,
+        QUIET,
+      );
+      return rows.map(toCapability);
+    },
+    /** The plan the account is on, the catalog and whether the caller may switch. */
+    async plan(workspaceId: string): Promise<BillingPlanSummary> {
+      const row = await api.get<PlanRow>(`${billing(workspaceId)}/plan`, QUIET);
+      return toPlanSummary(row);
+    },
+    /** Moves the account to another catalog plan (development only, account owner). */
+    async changePlan(
+      workspaceId: string,
+      planCode: string,
+    ): Promise<BillingPlanSummary> {
+      const row = await api.put<PlanRow>(
+        `${billing(workspaceId)}/plan`,
+        { planCode },
+        QUIET,
+      );
+      return toPlanSummary(row);
+    },
     overview(workspaceId: string) {
       return api.get<BillingOverviewDto>(billing(workspaceId), QUIET);
     },

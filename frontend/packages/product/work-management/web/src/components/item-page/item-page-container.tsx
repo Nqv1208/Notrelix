@@ -5,16 +5,19 @@ import {
   useCard,
   useCardActivity,
   useCardComments,
+  useBoardLabels,
   useCardFiles,
+  useCardLabelWrites,
   useCreateCardUpdate,
   useDeleteCardUpdate,
   useDuplicateCard,
   useFullBoard,
   useItemChildItems,
+  useItemApprovals,
+  useItemFollowing,
   useItemFileUploads,
   canRetryItemFileUpload,
   useWorkManagementServices,
-  useItemFollowing,
   useItemLifecycle,
   usePeopleDirectory,
   useOfflineWrites,
@@ -274,6 +277,12 @@ function ItemPageReady({
   const activity = useCardActivity(card.id, card.workspaceId);
   const updates = useCardComments(card.id, card.workspaceId);
   const updateCard = useUpdateCard(card.boardId, card.workspaceId);
+  const boardLabels = useBoardLabels(card.boardId, card.workspaceId);
+  const labelWrites = useCardLabelWrites(
+    card.id,
+    card.boardId,
+    card.workspaceId,
+  );
   const archiveCard = useArchiveCard(card.boardId, card.workspaceId);
   const duplicateCard = useDuplicateCard(card.boardId, card.workspaceId);
   const createUpdate = useCreateCardUpdate(card.id, card.workspaceId);
@@ -281,6 +290,7 @@ function ItemPageReady({
   const deleteUpdate = useDeleteCardUpdate(card.id, card.workspaceId);
   const children = useItemChildItems(card.id, card.workspaceId, card.boardId);
   const follow = useItemFollowing(card.id, card.workspaceId);
+  const approvals = useItemApprovals(card.id, card.workspaceId);
   const links = useItemLinks(card.id, card.workspaceId, card.boardId);
   const uploads: ItemPageUpload[] = fileUploads.uploads.map((upload) => ({
     ...upload,
@@ -309,10 +319,7 @@ function ItemPageReady({
   );
   // Writes the network holds back: what the offline notice counts and marks.
   const { online, paused } = useOfflineWrites();
-  const { directory, invitePerson } = usePeopleDirectory(
-    card.boardId,
-    card.workspaceId,
-  );
+  const { directory } = usePeopleDirectory(card.boardId, card.workspaceId);
 
   // The write the server refused, kept so the viewer can send it again.
   const [refused, setRefused] = useState<RefusedWrite | null>(null);
@@ -496,7 +503,10 @@ function ItemPageReady({
     onClose: onBack,
     onRenameTitle: (cardId, patch) => updateCard.mutate({ cardId, patch }),
     onUpdateItem: patchItem,
+    onToggleLabel: (labelId, on) => labelWrites.mutate({ labelId, on }),
     onToggleWatch: (watched) => follow.setFollowing(watched),
+    onRequestApproval: (approverUserId) =>
+      approvals.request({ approverUserId, note: null }),
     onToggleChildItem: (childId, done) => children.toggle({ childId, done }),
     onAddChildItem: (title) => children.addChild(title),
     onAddLink: (itemId, relation) => links.addLink({ itemId, relation }),
@@ -565,7 +575,6 @@ function ItemPageReady({
           ? {
               level: access.myLevel,
               grantedBy: access.mySource.grantedBy?.name,
-              expiresAt: access.mySource.expiresAt,
             }
           : null
       }
@@ -579,13 +588,13 @@ function ItemPageReady({
         teams: directory?.teams ?? [],
         loading: directory === null,
         canInvite: directory?.canInvite === true,
-        onInvite: (userId) => invitePerson(userId),
+        onInvite: () => undefined,
       }}
       lifecycle={{
         completed: isItemDone(card) ? (lifecycle?.completed ?? null) : null,
         archived: lifecycle?.archived ?? null,
-        onReopen: () => reopen(),
         onRestore: () => restore(),
+        onReopen: () => reopen(),
       }}
       onResolveConflict={(choice) => {
         const write = refused;
@@ -612,8 +621,28 @@ function ItemPageReady({
           name: person.name,
           initials: personInitials(person.name),
         })),
+        approvals: approvals.approvals?.map((approval) => ({
+          id: approval.id,
+          status: approval.status,
+          approverUserId: approval.approverUserId,
+          approverName:
+            directory?.people.find(
+              (person) => person.userId === approval.approverUserId,
+            )?.name ??
+            board.members.find(
+              (member) => member.userId === approval.approverUserId,
+            )?.name ??
+            null,
+          decisionNote: approval.decisionNote,
+        })),
+        approvalError: approvals.error
+          ? isConflictError(approvals.error)
+            ? "alreadyAsked"
+            : "failed"
+          : null,
         links: links.data,
         linkCandidates,
+        boardLabels: boardLabels.data,
       }}
     />
   );

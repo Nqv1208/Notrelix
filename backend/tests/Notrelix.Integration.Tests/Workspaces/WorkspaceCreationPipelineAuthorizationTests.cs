@@ -44,7 +44,7 @@ public class WorkspaceCreationPipelineAuthorizationTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -68,7 +68,7 @@ public class WorkspaceCreationPipelineAuthorizationTests : IAsyncLifetime
         var account = Account.Create("Pipeline Account", $"pipeline-{Guid.NewGuid():N}", AccountType.Team, actorId, now);
         var accountId = account.Id;
 
-        await using (var seed = _db.CreateContext(SystemTenant()))
+        await using (var seed = _db.CreateOwnerContext(SystemTenant()))
         {
             seed.Users.Add(user);
             seed.Accounts.Add(account);
@@ -93,7 +93,7 @@ public class WorkspaceCreationPipelineAuthorizationTests : IAsyncLifetime
             evaluations.EvaluationCount.Should().Be(1,
                 "pipeline-owned authorization must be evaluated exactly once per request");
 
-            await using var verify = _db.CreateContext(SystemTenant());
+            await using var verify = _db.CreateOwnerContext(SystemTenant());
             var workspace = await verify.Workspaces.FirstOrDefaultAsync(w => w.Id == result.Data);
             workspace.Should().NotBeNull("the handler must have executed after pipeline authorization succeeded");
         }
@@ -109,7 +109,7 @@ public class WorkspaceCreationPipelineAuthorizationTests : IAsyncLifetime
                 "a pipeline denial performs one evaluation and never reaches the handler");
 
             // No workspace may exist after the denied request.
-            await using var verify = _db.CreateContext(SystemTenant());
+            await using var verify = _db.CreateOwnerContext(SystemTenant());
             verify.Workspaces.Any(w => w.Name == $"WS {role}").Should().BeFalse(
                 "a denied request must leave no durable side effects");
         }
@@ -128,7 +128,7 @@ public class WorkspaceCreationPipelineAuthorizationTests : IAsyncLifetime
         var account = Account.Create("Unconfirmed Account", $"unconfirmed-{Guid.NewGuid():N}", AccountType.Team, actorId, now);
         var accountId = account.Id;
 
-        await using (var seed = _db.CreateContext(SystemTenant()))
+        await using (var seed = _db.CreateOwnerContext(SystemTenant()))
         {
             seed.Users.Add(user);
             seed.Accounts.Add(account);
@@ -149,7 +149,7 @@ public class WorkspaceCreationPipelineAuthorizationTests : IAsyncLifetime
         evaluations.EvaluationCount.Should().Be(1,
             "the verified-email denial performs one evaluation and never reaches the handler");
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         verify.Workspaces.Any(w => w.Name == "Unconfirmed Owner WS").Should().BeFalse(
             "a denied request must leave no durable side effects");
     }
@@ -194,7 +194,7 @@ public class WorkspaceCreationPipelineAuthorizationTests : IAsyncLifetime
         // Production data graph: one scoped DbContext serves the request session,
         // the evaluator and the handler exactly as the production composition does.
         services.AddScoped<ApplicationDbContext>(sp =>
-            _db.CreateContext(sp.GetRequiredService<ICurrentTenantContext>()));
+            _db.CreateOwnerContext(sp.GetRequiredService<ICurrentTenantContext>()));
         services.AddScoped<IWorkspaceDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IAccountDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IGovernanceDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());

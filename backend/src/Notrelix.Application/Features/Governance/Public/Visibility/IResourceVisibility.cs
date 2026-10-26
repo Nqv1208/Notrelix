@@ -19,6 +19,12 @@ public interface IResourceVisibility
 
     Task<IReadOnlyList<Guid>> VisiblePageIdsAsync(Guid workspaceId, Guid userId, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// The archived (trashed, not deleted) pages the principal may see: the same
+    /// rules as <see cref="VisiblePageIdsAsync"/> applied to pages in the trash.
+    /// </summary>
+    Task<IReadOnlyList<Guid>> VisibleTrashedPageIdsAsync(Guid workspaceId, Guid userId, CancellationToken cancellationToken);
+
     /// <summary>Non-deleted Spaces (active and archived) the principal may see.</summary>
     Task<IReadOnlyList<Guid>> VisibleSpaceIdsAsync(Guid workspaceId, Guid userId, CancellationToken cancellationToken);
 

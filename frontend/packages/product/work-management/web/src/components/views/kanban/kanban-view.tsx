@@ -1,3 +1,4 @@
+import { ItemCreateHost } from "../../item-create/item-create-host";
 import {
   useCallback,
   useContext,
@@ -5,10 +6,13 @@ import {
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
 } from "react";
 import { toast } from "sonner";
 import { useIsMobile } from "@notrelix/ui-web";
 import {
+  useBoardLabels,
+  useCardLabelWrites,
   dropUnknownFilterIds,
   useBoardAccess,
   useBoardKanban,
@@ -17,8 +21,6 @@ import {
   useCardActivity,
   useCardComments,
   useCardFiles,
-  useItemChildItems,
-  useItemFollowing,
   useAddFieldOption,
   useArchiveCard,
   useCreateCardUpdate,
@@ -66,6 +68,10 @@ import {
   boardCapabilities,
   canManageStatuses,
 } from "../../shared/board-capabilities";
+import {
+  kanbanCollapsedLanesKey,
+  useKanbanCollapsedLanes,
+} from "./use-kanban-collapsed-lanes";
 import { useKanbanCardCopy } from "./use-kanban-card-copy";
 import { useKanbanLaneCopy } from "./use-kanban-lane-copy";
 import { useKanbanToolbarCopy } from "./use-kanban-toolbar-copy";
@@ -111,6 +117,36 @@ function laneName(
   isStatus: boolean,
 ) {
   return lane.name || (isStatus ? copy.noStatus : copy.noValue);
+}
+
+/** What opened the full form: the toolbar, a lane's "+", or a lane's quick add. */
+type CreateRequest =
+  | { readonly kind: "toolbar" }
+  | {
+      readonly kind: "lane" | "quick";
+      readonly lane: KanbanStatusLane;
+      readonly title: string;
+    };
+
+/** The colour of a lane's dot, as the lane header draws it. */
+function laneDot(lane: KanbanStatusLane): {
+  dotClassName: string;
+  dotStyle?: CSSProperties;
+} {
+  const base =
+    lane.category === "todo"
+      ? "border-2 border-work-status-todo"
+      : lane.category === "in_progress"
+        ? "bg-work-status-doing"
+        : lane.category === "review"
+          ? "bg-work-status-review"
+          : lane.category === "done"
+            ? "bg-work-status-done"
+            : "bg-muted-foreground";
+  if (!lane.color) return { dotClassName: base };
+  return lane.category === "todo"
+    ? { dotClassName: "border-2", dotStyle: { borderColor: lane.color } }
+    : { dotClassName: "", dotStyle: { backgroundColor: lane.color } };
 }
 
 /** The board group a new item of a lane goes into: the lane's last card's. */
@@ -210,7 +246,11 @@ export function KanbanView({
   // keyboard move). A view saved without them gives today's behaviour. The
   // role setting only shapes the controls: the server still decides every
   // write, so a viewer the setting hides them from is not made safer by it.
-  const { viewConfig } = useBoardView(boardId, workspaceId);
+  const {
+    viewConfig,
+    viewId: savedViewId,
+    updateViewConfig,
+  } = useBoardView(boardId, workspaceId);
   const kanbanSettings = useMemo(
     () => resolveKanbanSettings(viewConfig),
     [viewConfig],
@@ -272,7 +312,40 @@ export function KanbanView({
 
   const boardRef = useRef<HTMLDivElement>(null);
   const pendingOptionName = useRef("");
+  // The toolbar's "Add item" opens the create dialog; the per-lane composers open from their own rows.
   const [addRequest, setAddRequest] = useState(0);
+  // The full form: from the toolbar (no lane), a lane's "+" or a lane's quick add.
+  const [create, setCreate] = useState<CreateRequest | null>(null);
+  const createOpen = create !== null;
+  const canCreate = capabilities.canCreateCard;
+  const collapsedLanes = useKanbanCollapsedLanes(
+    kanbanCollapsedLanesKey(workspaceId, savedViewId ?? boardId),
+  );
+
+  // C opens the full form, N the quick add of the first open lane; neither
+  // fires while typing, with a modifier, or while a dialog is already open.
+  useEffect(() => {
+    if (!canCreate) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      const key = event.key.toLowerCase();
+      if (key !== "c" && key !== "n") return;
+      const target = event.target as HTMLElement | null;
+      if (
+        target?.closest(
+          "input, textarea, select, [contenteditable=''], [contenteditable='true'], [role='dialog'], [role='menu'], [role='listbox']",
+        )
+      ) {
+        return;
+      }
+      if (document.querySelector("[role='dialog'][data-state='open']")) return;
+      event.preventDefault();
+      if (key === "c") setCreate({ kind: "toolbar" });
+      else setAddRequest((current) => current + 1);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [canCreate]);
 
   const handleOpenDetail = useCallback(
     (cardId: string) => onSelectedItemChange?.(cardId),
@@ -408,6 +481,18 @@ export function KanbanView({
     });
   };
 
+  /** Sets or removes one lane's WIP limit on the view (a warning, never a rule). */
+  const handleWipLimitChange = (
+    lane: KanbanStatusLane,
+    limit: number | null,
+  ) => {
+    if (!lane.optionId) return;
+    const next = { ...kanbanSettings.wipLimits };
+    if (limit === null) delete next[lane.optionId];
+    else next[lane.optionId] = limit;
+    updateViewConfig({ wipLimits: next });
+  };
+
   const handleSheetFieldValue = (payload: UpdateFieldValueInput) => {
     // The Status pill writes through the status endpoint, like a drag, so the
     // card moves to its lane at once (the keyboard alternative to dragging).
@@ -502,7 +587,7 @@ export function KanbanView({
             else setLocalGroupBy(fieldId);
           }}
           canAdd={capabilities.canCreateCard}
-          onAddItem={() => setAddRequest((count) => count + 1)}
+          onAddItem={() => setCreate({ kind: "toolbar" })}
           noResults={
             kanban.filterActive && kanban.visibleCount === 0
               ? { hiddenCount: kanban.totalCount }
@@ -544,9 +629,66 @@ export function KanbanView({
           lanePending={addOption.isPending}
           laneCardLimit={kanbanSettings.laneCardLimit}
           keyboardMove={kanbanSettings.keyboardMove}
+          wipLimits={kanbanSettings.wipLimits}
+          onWipLimitChange={
+            showStatusControls ? handleWipLimitChange : undefined
+          }
+          onRequestCreate={
+            isStatusGrouping && capabilities.canCreateCard
+              ? (lane) => setCreate({ kind: "lane", lane, title: "" })
+              : undefined
+          }
+          onExpandCreate={
+            isStatusGrouping && capabilities.canCreateCard
+              ? (lane, title) => setCreate({ kind: "quick", lane, title })
+              : undefined
+          }
+          initialCollapsed={collapsedLanes.initial}
+          onCollapsedChange={collapsedLanes.onChange}
         />
       </div>
 
+      {board && capabilities.canCreateCard ? (
+        <ItemCreateHost
+          open={createOpen}
+          onOpenChange={(next) => {
+            if (!next) setCreate(null);
+          }}
+          workspaceId={workspaceId}
+          board={board}
+          groups={kanban.groups}
+          defaultGroupId={
+            create && create.kind !== "toolbar"
+              ? (groupForNewItem(create.lane, kanban.groups) ??
+                kanban.groups[0]?.id ??
+                "")
+              : (kanban.groups[0]?.id ?? "")
+          }
+          hideGroup={isStatusGrouping}
+          defaultStatusId={
+            create && create.kind !== "toolbar" ? create.lane.optionId : null
+          }
+          defaultTitle={
+            create && create.kind !== "toolbar" ? create.title : undefined
+          }
+          focusDescription={create?.kind === "quick"}
+          context={
+            create && create.kind !== "toolbar"
+              ? {
+                  kind: create.kind,
+                  name:
+                    create.lane.name ||
+                    (isStatusGrouping ? laneCopy.noStatus : laneCopy.noValue),
+                  ...laneDot(create.lane),
+                }
+              : undefined
+          }
+          onOpenItem={(itemId) => {
+            setCreate(null);
+            onSelectedItemChange?.(itemId);
+          }}
+        />
+      ) : null}
       {selectedItemId ? (
         <KanbanSelectedItem
           board={board}
@@ -662,11 +804,15 @@ function KanbanSelectedItemReady({
   const activity = useCardActivity(card.id, card.workspaceId);
   const updates = useCardComments(card.id, card.workspaceId);
   const updateCard = useUpdateCard(card.boardId, card.workspaceId);
+  const boardLabels = useBoardLabels(card.boardId, card.workspaceId);
+  const labelWrites = useCardLabelWrites(
+    card.id,
+    card.boardId,
+    card.workspaceId,
+  );
   const createUpdate = useCreateCardUpdate(card.id, card.workspaceId);
   const updateUpdate = useUpdateCardUpdate(card.id, card.workspaceId);
   const deleteUpdate = useDeleteCardUpdate(card.id, card.workspaceId);
-  const children = useItemChildItems(card.id, card.workspaceId, card.boardId);
-  const follow = useItemFollowing(card.id, card.workspaceId);
 
   return (
     <KanbanCardDetailPanel
@@ -684,15 +830,14 @@ function KanbanSelectedItemReady({
         activityFetching: activity.isFetching,
         updates: updates.data ?? card.updates,
         updatesLoading: updates.isLoading,
-        childItems: children.data,
-        following: follow.following,
+        boardLabels: boardLabels.data,
       }}
       callbacks={{
         onClose,
         onRenameTitle: (cardId, patch) => updateCard.mutate({ cardId, patch }),
-        onToggleWatch: (watched) => follow.setFollowing(watched),
-        onToggleChildItem: (childId, done) =>
-          children.toggle({ childId, done }),
+        onUpdateItem: (cardId, patch) => updateCard.mutate({ cardId, patch }),
+        onToggleLabel: (labelId, on) => labelWrites.mutate({ labelId, on }),
+        onToggleWatch: () => undefined,
         onDuplicate,
         onArchive: (cardId) => {
           onArchive(cardId);

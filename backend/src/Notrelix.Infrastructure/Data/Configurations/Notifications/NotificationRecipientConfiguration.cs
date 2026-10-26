@@ -30,6 +30,9 @@ public sealed class NotificationRecipientConfiguration : IEntityTypeConfiguratio
         builder.Property(x => x.ReadAt).HasColumnName("read_at");
         builder.Property(x => x.ArchivedAt).HasColumnName("archived_at");
         builder.Property(x => x.DismissedAt).HasColumnName("dismissed_at");
+        builder.Property(x => x.DoneAt).HasColumnName("done_at");
+        builder.Property(x => x.SnoozedUntil).HasColumnName("snoozed_until");
+        builder.Property(x => x.RepliedAt).HasColumnName("replied_at");
 
         builder.Property(x => x.CreatedAt).HasColumnName("created_at").IsRequired();
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");

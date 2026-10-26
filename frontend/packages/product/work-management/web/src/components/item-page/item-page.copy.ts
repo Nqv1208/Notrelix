@@ -49,7 +49,7 @@ export const en = {
       pending: "waiting to save",
     },
     empty: {
-      description: "Add a description… type / to insert a table, item or doc",
+      description: "Add a description…",
       children: "No sub-items yet.",
       addChild: "Add a sub-item",
       created: "{{name}} created this item",
@@ -176,7 +176,6 @@ export const en = {
   readOnly: {
     body: "You have {{level}} access on this board{{source}}.",
     source: ", added by {{name}}",
-    expires: ", expires {{date}}",
     detail:
       " You can read, comment and send a file with a comment. Only people with edit access change the properties, sub-items and files of the item.",
     levels: {
@@ -192,6 +191,11 @@ export const en = {
     heading: "Description",
     empty: "This item has no description yet.",
     editUnavailable: "Editing the description is not available yet",
+    edit: "Edit description",
+    save: "Save",
+    cancel: "Cancel",
+    hint: "Ctrl+Enter saves · Esc cancels · - for a list, **bold**",
+    tooLong: "The description is longer than 20,000 characters",
   },
   children: {
     heading: "Sub-items",
@@ -330,6 +334,19 @@ export const en = {
     mentionTeamSome: "{{count}} people · {{viewable}} can see the item",
     mentionList: "People and teams to mention",
   },
+  approval: {
+    heading: "Approval",
+    request: "Request approval",
+    searchLabel: "Who should approve this item",
+    list: "Approval requests",
+    pending: "Waiting for {{name}}",
+    approved: "Approved by {{name}}",
+    rejected: "{{name}} asked for changes",
+    cancelled: "Request to {{name}} cancelled",
+    unknownPerson: "someone",
+    alreadyAsked: "That person was already asked about this item.",
+    failed: "The request could not be sent. Try again.",
+  },
   rail: {
     label: "Item properties",
     follow: "Follow",
@@ -422,7 +439,7 @@ export const vi: ItemPageCopy = {
       pending: "chờ lưu",
     },
     empty: {
-      description: "Thêm mô tả… gõ / để chèn bảng, việc, tài liệu",
+      description: "Thêm mô tả…",
       children: "Chưa có việc con.",
       addChild: "Thêm việc con",
       created: "{{name}} tạo việc này",
@@ -550,7 +567,6 @@ export const vi: ItemPageCopy = {
   readOnly: {
     body: "Bạn có quyền {{level}} trên board này{{source}}.",
     source: ", được {{name}} thêm riêng",
-    expires: ", hết hạn {{date}}",
     detail:
       " Bạn xem, bình luận và gửi tệp kèm bình luận được. Thuộc tính, việc con và danh sách tệp của việc chỉ người có quyền sửa thay đổi được.",
     levels: {
@@ -566,6 +582,11 @@ export const vi: ItemPageCopy = {
     heading: "Mô tả",
     empty: "Công việc này chưa có mô tả.",
     editUnavailable: "Chưa sửa được mô tả ở đây",
+    edit: "Sửa mô tả",
+    save: "Lưu",
+    cancel: "Huỷ",
+    hint: "Ctrl+Enter để lưu · Esc để huỷ · - cho danh sách, **đậm**",
+    tooLong: "Mô tả dài hơn 20.000 ký tự",
   },
   children: {
     heading: "Việc con",
@@ -701,6 +722,19 @@ export const vi: ItemPageCopy = {
     mentionTeamAll: "{{count}} người · cả {{count}} xem được việc",
     mentionTeamSome: "{{count}} người · {{viewable}} xem được việc",
     mentionList: "Người và nhóm để nhắc tên",
+  },
+  approval: {
+    heading: "Phê duyệt",
+    request: "Yêu cầu phê duyệt",
+    searchLabel: "Ai sẽ duyệt công việc này",
+    list: "Yêu cầu phê duyệt",
+    pending: "Đang chờ {{name}}",
+    approved: "{{name}} đã duyệt",
+    rejected: "{{name}} yêu cầu chỉnh sửa",
+    cancelled: "Đã hủy yêu cầu gửi {{name}}",
+    unknownPerson: "một người",
+    alreadyAsked: "Người này đã được yêu cầu duyệt công việc này.",
+    failed: "Không gửi được yêu cầu. Hãy thử lại.",
   },
   rail: {
     label: "Thuộc tính công việc",

@@ -1,3 +1,4 @@
+using Notrelix.Testing.Core;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -57,7 +58,7 @@ public sealed class SecurityActivityHttpFlowTests : IAsyncLifetime
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
-        return _fixture.CreatePostgresContext(tenant);
+        return _fixture.CreatePostgresOwnerContext(tenant);
     }
 
     private WebApplicationFactory<Program> CreateFactory() =>
@@ -70,10 +71,16 @@ public sealed class SecurityActivityHttpFlowTests : IAsyncLifetime
             });
             builder.UseEnvironment("Testing");
 
+            foreach (var (rateLimitKey, rateLimitValue) in RateLimitTestSettings.Generous)
+            {
+                builder.UseSetting(rateLimitKey, rateLimitValue);
+            }
+
             var keysPath = Path.Combine(Path.GetTempPath(), "notrelix-activity-http-keys", Guid.NewGuid().ToString("N"));
             var settings = new Dictionary<string, string?>
             {
                 ["ConnectionStrings:NotrelixDb"] = _fixture.PostgresConnectionString,
+                ["ConnectionStrings:NotrelixWorkerDb"] = _fixture.PostgresWorkerConnectionString,
                 ["ConnectionStrings:Redis"] = _fixture.RedisConnectionString,
                 ["JwtSettings:SecretKey"] = "activity-http-test-signing-key-ThisIsNotASecret-0123456789",
                 ["JwtSettings:Issuer"] = "https://notrelix.test",

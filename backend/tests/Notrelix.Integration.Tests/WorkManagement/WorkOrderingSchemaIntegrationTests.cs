@@ -54,7 +54,7 @@ public sealed class WorkOrderingSchemaIntegrationTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        await new DatabaseReset(_db.ConnectionString).ResetAsync();
+        await new DatabaseReset(_db.OwnerConnectionString).ResetAsync();
         var accountId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         UserId = userId;
@@ -65,7 +65,7 @@ public sealed class WorkOrderingSchemaIntegrationTests : IAsyncLifetime
         _field = BoardField.Create(accountId, _workspace.Id, _board.Id, "Priority", FieldType.Select, FieldSettings.Empty(), Key("a0"), userId, Now);
         _checklist = Checklist.Create(accountId, _workspace.Id, _item.Id, "Checklist", Key("a0"), userId, Now);
 
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Workspaces.Add(_workspace);
         seed.Boards.Add(_board);
         seed.BoardGroups.Add(_group);
@@ -96,7 +96,7 @@ public sealed class WorkOrderingSchemaIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task DatabaseOrderBy_EqualsDomainCompareTo_ForTheBoundaryCorpus()
     {
-        await using (var context = _db.CreateContext(SystemTenant()))
+        await using (var context = _db.CreateOwnerContext(SystemTenant()))
         {
             var field = await context.BoardFields.Include(f => f.Options).SingleAsync(f => f.Id == _field.Id);
             for (var i = 0; i < Corpus.Length; i++)
@@ -134,6 +134,12 @@ public sealed class WorkOrderingSchemaIntegrationTests : IAsyncLifetime
         {
             [WorkOrderingConstraints.GroupItems] = await DuplicateAsync(c => c.BoardItems.Add(
                 BoardItem.CreateRoot(AccountId, _workspace.Id, _board.Id, _group.Id, "Dup", Key("a0"), UserId, Now))),
+            [WorkOrderingConstraints.ChildItems] = await DuplicateAsync(c =>
+            {
+                var path = ItemParentPath.Create(AccountId, _workspace.Id, _board.Id, _item.Id, 0, []);
+                c.BoardItems.Add(BoardItem.CreateChild(path, _group.Id, "One", Key("a0"), UserId, Now));
+                c.BoardItems.Add(BoardItem.CreateChild(path, _group.Id, "Two", Key("a0"), UserId, Now));
+            }),
             [WorkOrderingConstraints.BoardGroups] = await DuplicateAsync(c => c.BoardGroups.Add(
                 BoardGroup.Create(AccountId, _workspace.Id, _board.Id, "Dup", Color.Create("#808080"), Key("a0"), UserId, Now))),
             [WorkOrderingConstraints.BoardFields] = await DuplicateAsync(c => c.BoardFields.Add(
@@ -161,7 +167,7 @@ public sealed class WorkOrderingSchemaIntegrationTests : IAsyncLifetime
     public async Task SoftDeletedAndChildItems_DoNotHoldTheActiveRootKey()
     {
         var active = BoardItem.CreateRoot(AccountId, _workspace.Id, _board.Id, _group.Id, "Active", Key("a5"), UserId, Now);
-        await using (var context = _db.CreateContext(SystemTenant()))
+        await using (var context = _db.CreateOwnerContext(SystemTenant()))
         {
             var deleted = BoardItem.CreateRoot(AccountId, _workspace.Id, _board.Id, _group.Id, "Deleted", Key("a5"), UserId, Now);
             deleted.Delete(UserId, Now);
@@ -181,7 +187,7 @@ public sealed class WorkOrderingSchemaIntegrationTests : IAsyncLifetime
 
     private async Task<string?> DuplicateAsync(Func<ApplicationDbContext, Task> arrange)
     {
-        await using var context = _db.CreateContext(SystemTenant());
+        await using var context = _db.CreateOwnerContext(SystemTenant());
         await arrange(context);
         try
         {
@@ -200,7 +206,7 @@ public sealed class WorkOrderingSchemaIntegrationTests : IAsyncLifetime
 
     private async Task<List<string>> QueryAsync(string sql)
     {
-        await using var connection = _db.CreateConnection();
+        await using var connection = _db.CreateOwnerConnection();
         await connection.OpenAsync();
         await using var command = new NpgsqlCommand(sql, connection);
         var values = new List<string>();

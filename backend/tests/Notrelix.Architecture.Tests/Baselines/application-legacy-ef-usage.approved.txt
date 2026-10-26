@@ -15,6 +15,7 @@ Features/Collaboration/Attachments/Commands/DeleteAttachment/DeleteAttachment.cs
 Features/Collaboration/Attachments/Queries/GetBoardItemAttachments/GetBoardItemAttachments.cs
 Features/Collaboration/Comments/Commands/CreateComment/CreateComment.cs
 Features/Collaboration/Comments/Commands/DeleteComment/DeleteComment.cs
+Features/Collaboration/Comments/Commands/ReopenComment/ReopenComment.cs
 Features/Collaboration/Comments/Commands/ResolveComment/ResolveComment.cs
 Features/Collaboration/Comments/Commands/UpdateComment/UpdateComment.cs
 Features/Collaboration/Comments/Queries/GetComments/GetComments.cs
@@ -90,6 +91,7 @@ Features/WorkManagement/BoardItems/Commands/DeleteBoardItem/DeleteBoardItem.cs
 Features/WorkManagement/BoardItems/Commands/DuplicateBoardItem/DuplicateBoardItem.cs
 Features/WorkManagement/BoardItems/Commands/LinkPageToBoardItem/LinkPageToBoardItem.cs
 Features/WorkManagement/BoardItems/Commands/MoveBoardItem/MoveBoardItem.cs
+Features/WorkManagement/BoardItems/Commands/RemindBoardItemOwners/RemindBoardItemOwners.cs
 Features/WorkManagement/BoardItems/Commands/RestoreBoardItem/RestoreBoardItem.cs
 Features/WorkManagement/BoardItems/Commands/SetBoardItemDueDate/SetBoardItemDueDate.cs
 Features/WorkManagement/BoardItems/Commands/UnarchiveBoardItem/UnarchiveBoardItem.cs

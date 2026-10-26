@@ -4,7 +4,7 @@
  * "BE requirement from FE: States"):
  *
  *   itemStates.lifecycle    — GET  /board-items/:id/lifecycle
- *   itemStates.restore      — POST /board-items/:id/restore
+ *   itemStates.restore      — POST /board-items/:id/unarchive
  *   itemStates.people       — GET  /boards/:boardId/people-directory
  *   itemStates.invitePerson — POST /boards/:boardId/people-directory/invitations
  */
@@ -66,7 +66,7 @@ export const itemStatesOperations = [
     id: "itemStates.restore",
     contract: gap,
     method: "POST",
-    route: "/board-items/:id/restore",
+    route: "/board-items/:id/unarchive",
     async handle({ params, store, request }) {
       if (!request.headers.get("Idempotency-Key"))
         return validationError({

@@ -78,6 +78,123 @@ test.describe("Marketing Smoke", () => {
     await expect(signUpCta).toHaveAttribute("href", /\/sign-up$/);
   });
 
+  test("hero preview view tabs sit over the screenshot and switch it", async ({
+    page,
+  }) => {
+    await page.goto("/");
+
+    const tablist = page.locator("#hero").getByRole("tablist", {
+      name: "Product views",
+    });
+    await expect(tablist.getByRole("tab")).toHaveText([
+      "Table",
+      "Kanban",
+      "Calendar",
+      "Timeline",
+    ]);
+
+    const visibleImage = page.locator(
+      "#hero .shot-layer.is-active .shot-img--light",
+    );
+    await expect(visibleImage).toHaveAttribute("alt", /Table view/);
+    await expect(visibleImage).toHaveAttribute("src", /table-light/);
+
+    await tablist.getByRole("tab", { name: "Timeline" }).click();
+    await expect(visibleImage).toHaveAttribute("alt", /Timeline view/);
+    await expect(visibleImage).toHaveAttribute("src", /timeline-light/);
+
+    await tablist.getByRole("tab", { name: "Timeline" }).focus();
+    await page.keyboard.press("ArrowLeft");
+    await expect(
+      tablist.getByRole("tab", { name: "Calendar" }),
+    ).toHaveAttribute("aria-selected", "true");
+    await expect(visibleImage).toHaveAttribute("alt", /Calendar view/);
+
+    await page.keyboard.press("ArrowRight");
+    await expect(
+      tablist.getByRole("tab", { name: "Timeline" }),
+    ).toHaveAttribute("aria-selected", "true");
+    await expect(visibleImage).toHaveAttribute("alt", /Timeline view/);
+  });
+
+  test("showcase tabs switch the screen and pin notes to it", async ({
+    page,
+  }) => {
+    await page.goto("/");
+
+    const showcase = page.locator("#showcase");
+    const tablist = showcase.getByRole("tablist", {
+      name: "How work gets done",
+    });
+    await expect(tablist.getByRole("tab")).toHaveText([
+      "Item",
+      "Docs",
+      "Automation",
+      "Reports",
+    ]);
+    // no browser chrome and no "live preview" claim around the screenshots
+    await expect(showcase.locator(".shot-chrome")).toHaveCount(0);
+    await expect(showcase).not.toContainText(/live preview/i);
+
+    const visibleImage = showcase.locator(
+      ".shot-layer.is-active .shot-img--light",
+    );
+    await expect(visibleImage).toHaveAttribute("src", /showcase-item-light/);
+    await expect(visibleImage).toHaveAttribute("alt", /item page/i);
+    await expect(showcase.locator(".shot-note")).toHaveCount(3);
+
+    await tablist.getByRole("tab", { name: "Automation" }).click();
+    await expect(visibleImage).toHaveAttribute(
+      "src",
+      /showcase-automation-light/,
+    );
+    await expect(showcase.locator(".shot-note")).toHaveCount(3);
+    await expect(
+      showcase.getByRole("list", { name: "Automation" }).getByRole("listitem"),
+    ).toHaveText([
+      /One sentence, a version per edit/,
+      /Every run, with the result of each action/,
+      /A failed action says why/,
+    ]);
+
+    await tablist.getByRole("tab", { name: "Automation" }).focus();
+    await page.keyboard.press("ArrowRight");
+    await expect(tablist.getByRole("tab", { name: "Reports" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await expect(visibleImage).toHaveAttribute("src", /showcase-reports-light/);
+
+    await page.keyboard.press("ArrowRight");
+    await expect(tablist.getByRole("tab", { name: "Item" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+  });
+
+  test("story rows show cropped product screens and link to real places", async ({
+    page,
+  }) => {
+    await page.goto("/");
+
+    const rows = page.locator("#features .story-row");
+    await expect(rows).toHaveCount(3);
+    await expect(page.locator("#features .eyebrow")).toHaveCount(0);
+    for (const id of ["inbox", "sharing", "departments"]) {
+      await expect(
+        page.locator(`#features img[src*="story-${id}-light"]`),
+      ).toHaveCount(1);
+    }
+    const hrefs = await rows
+      .locator(".story-copy a")
+      .evaluateAll((links) => links.map((a) => a.getAttribute("href")));
+    expect(hrefs).toEqual([
+      expect.stringMatching(/\/sign-up$/),
+      "/legal/privacy",
+      "#pricing",
+    ]);
+  });
+
   test("header nav anchors navigate to sections", async ({ page }) => {
     await page.goto("/");
 

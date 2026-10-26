@@ -17,7 +17,7 @@ export function createUseUpdateBlock(
     const queryClient = useQueryClient();
     return useMutation({
       mutationFn: (payload: UpdateBlockPayload) =>
-        blockApi.update(blockId, payload),
+        blockApi.update(pageId, blockId, payload),
       onSuccess: () => {
         queryClient.invalidateQueries({
           queryKey: docsQueryKeys.blocks(workspaceId, pageId),

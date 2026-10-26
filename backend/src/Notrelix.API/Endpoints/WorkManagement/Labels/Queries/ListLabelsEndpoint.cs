@@ -1,4 +1,5 @@
 using Notrelix.API.Extensions;
+using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 using Notrelix.Application.Features.WorkManagement.Labels.Queries.GetLabels;
 
 namespace Notrelix.API.Endpoints.WorkManagement.Labels.Queries;
@@ -9,6 +10,7 @@ public static class ListLabelsEndpoint
     {
         group.MapResourceGet("/", HandleAsync)
             .WithName("WorkManagement.Labels.List")
+            .Produces<List<BoardItemLabelDto>>(StatusCodes.Status200OK, "application/json")
             .WithTags("WorkManagement.Labels")
             .WithSummary("Get all labels for a board");
         return group;

@@ -37,7 +37,7 @@ test.describe("Document page (owner)", () => {
     "Owner checks need the default owner world without faults",
   );
 
-  test("the header says the page is in review, who edited it last and who is on it", async ({
+  test("the header says who edited the page last and who is on it (a page has no review status)", async ({
     page,
   }) => {
     await openDoc(page);
@@ -47,7 +47,7 @@ test.describe("Document page (owner)", () => {
       .first();
     await expect(crumb).toContainText("Quy trình");
     await expect(crumb).toContainText("Nhập hoá đơn đầu vào");
-    await expect(page.getByText("Chờ duyệt").first()).toBeVisible();
+    await expect(page.getByText("Chờ duyệt")).toHaveCount(0);
     await expect(
       page.getByText("Đỗ Khánh Linh sửa lúc 16:40 hôm qua"),
     ).toBeVisible();
@@ -92,16 +92,16 @@ test.describe("Document page (owner)", () => {
     );
   });
 
-  test("links: four mentioned work items in reading order and the private one, then what mentions the page", async ({
+  test("links: the mentioned work items in reading order and the private one, then what mentions the page", async ({
     page,
   }) => {
     await openDoc(page);
-    await expect(tab(page, /^Liên kết 5/)).toBeVisible();
+    await expect(tab(page, /^Liên kết 6/)).toBeVisible();
     const panel = page.getByRole("tabpanel");
     await expect(panel).toContainText("ERP-129");
     const text = await panel.innerText();
-    const order = ["ERP-144", "ERP-142", "ERP-151", "ERP-129"].map((key) =>
-      text.indexOf(key),
+    const order = ["ERP-144", "ERP-142", "ERP-151", "ERP-149", "ERP-129"].map(
+      (key) => text.indexOf(key),
     );
     expect(order.every((index) => index >= 0)).toBe(true);
     expect([...order].sort((a, b) => a - b)).toEqual(order);
@@ -109,14 +109,6 @@ test.describe("Document page (owner)", () => {
     await expect(panel.getByText("Được nhắc tới ở")).toBeVisible();
     await expect(panel.getByText("Đặc tả triển khai ERP")).toBeVisible();
     await expect(panel.getByText("Tài liệu · Công nghệ")).toBeVisible();
-    await expect(
-      panel.getByText("ERP-149 Viết tài liệu quy trình nhập hoá đơn đầu vào"),
-    ).toBeVisible();
-    await expect(
-      panel.getByText("Công việc · đính kèm tài liệu này"),
-    ).toBeVisible();
-    // ERP-149 has the page attached, so it is not among the mentioned work.
-    await expect(panel.getByText("ERP-149", { exact: true })).toHaveCount(0);
   });
 
   test("a checklist line turns into a work item that joins the links", async ({
@@ -132,7 +124,16 @@ test.describe("Document page (owner)", () => {
     });
     await expect(convert).toBeVisible();
     await convert.click();
-    await expect(tab(page, /^Liên kết 6/)).toBeVisible();
+    // The writer picks a board they can edit and a group; the item is created there.
+    const dialog = page.getByRole("dialog", { name: "Chuyển thành việc" });
+    await dialog.getByRole("combobox", { name: "Board" }).selectOption({
+      label: "Triển khai ERP Q4",
+    });
+    const group = dialog.getByRole("combobox", { name: "Nhóm" });
+    await expect(group).toBeEnabled();
+    await group.selectOption({ index: 1 });
+    await dialog.getByRole("button", { name: "Tạo việc" }).click();
+    await expect(tab(page, /^Liên kết 7/)).toBeVisible();
     await expect(
       page
         .getByRole("tabpanel")

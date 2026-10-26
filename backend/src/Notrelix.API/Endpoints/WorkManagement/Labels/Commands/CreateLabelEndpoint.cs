@@ -11,6 +11,7 @@ public static class CreateLabelEndpoint
         group.MapResourcePost("/", HandleAsync)
             .WithIdempotencyKey()
             .WithName("WorkManagement.Labels.Create")
+            .Produces<Guid>(StatusCodes.Status201Created, "application/json")
             .WithTags("WorkManagement.Labels")
             .WithSummary("Create a new label");
         return group;

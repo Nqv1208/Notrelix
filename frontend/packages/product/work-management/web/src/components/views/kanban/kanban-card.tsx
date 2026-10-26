@@ -1,7 +1,7 @@
 import { useId, useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Flag } from "lucide-react";
+import { Flag, MessageCircle } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
 import type { Card, CardMember } from "@notrelix/work-management-core";
 import {
@@ -67,9 +67,16 @@ function cardParts(
         ? copy.dueToday
         : (due?.text ?? null);
 
-  const label = card.labels?.[0];
+  // Up to two labels, then "+N"; the first one still names the card's tone.
+  const allLabels = card.labels ?? [];
+  const label = allLabels[0];
   const labelTone = label ? itemLabelTone(label) : null;
-  const itemKey = card.itemKey?.trim() || null;
+  const shownLabels = allLabels.slice(0, 2);
+  const moreLabels = Math.max(allLabels.length - shownLabels.length, 0);
+  // A board with a key shows "ERP-142"; one without shows its number as "#142".
+  const rawKey = card.itemKey?.trim() || null;
+  const itemKey = rawKey && /^\d+$/.test(rawKey) ? `#${rawKey}` : rawKey;
+  const commentCount = Math.max(card._count?.comments ?? 0, 0);
 
   const progress =
     card.childProgress && card.childProgress.total > 0
@@ -88,7 +95,12 @@ function cardParts(
       : null;
 
   const assignee = card.members?.[0];
+  const shownAssignees = (card.members ?? []).slice(0, 2);
   const moreAssignees = Math.max((card.members?.length ?? 0) - 1, 0);
+  const hiddenAssignees = Math.max(
+    (card.members?.length ?? 0) - shownAssignees.length,
+    0,
+  );
   const assigneeLabel = assignee
     ? moreAssignees > 0
       ? fillCopy(copy.assignedToMore, {
@@ -104,14 +116,23 @@ function cardParts(
     dueText,
     label,
     labelTone,
+    shownLabels,
+    moreLabels,
     itemKey,
     progress,
     progressPercent,
     priority,
     assignee,
+    shownAssignees,
+    hiddenAssignees,
     assigneeLabel,
-    hasTop: Boolean(label && labelTone) || itemKey !== null,
-    hasMeta: dueText !== null || priority !== null || Boolean(assignee),
+    commentCount,
+    hasTop: shownLabels.length > 0 || itemKey !== null,
+    hasMeta:
+      dueText !== null ||
+      priority !== null ||
+      commentCount > 0 ||
+      Boolean(assignee),
   };
 }
 
@@ -136,14 +157,17 @@ function KanbanCardContent({
     isDone,
     due,
     dueText,
-    label,
-    labelTone,
+    shownLabels,
+    moreLabels,
     itemKey,
     progress,
     progressPercent,
     priority,
     assignee,
+    shownAssignees,
+    hiddenAssignees,
     assigneeLabel,
+    commentCount,
     hasTop,
     hasMeta,
   } = parts;
@@ -154,19 +178,34 @@ function KanbanCardContent({
           id={`${idPrefix}-top`}
           className="flex min-w-0 items-center gap-1.5 text-metadata text-meta-foreground"
         >
-          {label && labelTone ? (
-            <>
-              <span className="sr-only">{copy.label} </span>
-              <span
-                data-label-tone={labelTone}
-                className={cn(
-                  "inline-flex h-5.5 min-w-0 items-center truncate rounded-sm px-2 text-micro font-semibold",
-                  ITEM_LABEL_TONE_CLASS[labelTone],
-                )}
-              >
-                {label.name}
+          {shownLabels.map((label, index) => {
+            const tone = itemLabelTone(label);
+            return (
+              <span key={label.id} className="inline-flex min-w-0">
+                {index === 0 ? (
+                  <span className="sr-only">{copy.label} </span>
+                ) : null}
+                <span
+                  data-label-tone={tone ?? undefined}
+                  className={cn(
+                    "inline-flex h-5.5 min-w-0 items-center truncate rounded-sm px-2 text-micro font-semibold",
+                    tone
+                      ? ITEM_LABEL_TONE_CLASS[tone]
+                      : "bg-state-hover-strong text-muted-foreground",
+                  )}
+                >
+                  {label.name}
+                </span>
               </span>
-            </>
+            );
+          })}
+          {moreLabels > 0 ? (
+            <span
+              title={fillCopy(copy.moreLabels, { count: moreLabels })}
+              className="inline-flex h-5.5 shrink-0 items-center rounded-sm bg-state-hover-strong px-1.5 text-micro font-semibold text-muted-foreground"
+            >
+              +{moreLabels}
+            </span>
           ) : null}
           {itemKey ? (
             <span className="ml-auto shrink-0 font-mono text-metadata leading-[1.45]">
@@ -246,21 +285,45 @@ function KanbanCardContent({
               {copy.priority[priority]}
             </span>
           ) : null}
+          {commentCount > 0 ? (
+            <span
+              data-comment-count={commentCount}
+              className="inline-flex items-center gap-1 tabular-nums"
+            >
+              <MessageCircle aria-hidden="true" className="size-3.25" />
+              <span aria-hidden="true">{commentCount}</span>
+              <span className="sr-only">
+                {fillCopy(copy.commentCount, { count: commentCount })}
+              </span>
+            </span>
+          ) : null}
           {assignee ? (
             <span
               role="group"
               aria-label={assigneeLabel}
               className="ml-auto flex shrink-0 items-center"
             >
-              <span
-                aria-hidden="true"
-                className={cn(
-                  "flex size-5.5 items-center justify-center rounded-full text-mark-xs select-none",
-                  identityMarkClass(assignee.userId || assignee.id),
-                )}
-              >
-                {markFor(assignee)}
-              </span>
+              {shownAssignees.map((member, index) => (
+                <span
+                  key={member.id}
+                  aria-hidden="true"
+                  className={cn(
+                    "flex size-5.5 items-center justify-center rounded-full text-mark-xs ring-2 ring-popover select-none dark:ring-card",
+                    index > 0 && "-ml-1.5",
+                    identityMarkClass(member.userId || member.id),
+                  )}
+                >
+                  {markFor(member)}
+                </span>
+              ))}
+              {hiddenAssignees > 0 ? (
+                <span
+                  aria-hidden="true"
+                  className="-ml-1.5 flex size-5.5 items-center justify-center rounded-full bg-state-hover-strong text-mark-xs text-muted-foreground ring-2 ring-popover select-none dark:ring-card"
+                >
+                  +{hiddenAssignees}
+                </span>
+              ) : null}
             </span>
           ) : null}
         </div>

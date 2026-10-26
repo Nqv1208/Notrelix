@@ -51,7 +51,7 @@ describe("BoardShareDialogSurface", () => {
     ).toBeTruthy();
     expect(within(dialog).getByText("Nguyễn Thu Hà")).toBeTruthy();
     expect(within(dialog).getByText("Ngoài công ty")).toBeTruthy();
-    expect(within(dialog).getByText(/hết quyền 31\/01\/2027/)).toBeTruthy();
+    expect(within(dialog).queryByText(/hết quyền/)).toBeNull();
     expect(within(dialog).getByText(copy.link.publicOff)).toBeTruthy();
   });
 
@@ -87,11 +87,13 @@ describe("BoardShareDialogSurface", () => {
     expect(props.onClose).toHaveBeenCalledTimes(3);
   });
 
-  it("FUI[wm.board-share:level-menu] changes a permission from the menu and keeps a guest below Manager", () => {
+  it("FUI[wm.board-share:level-menu] changes a permission from the menu and keeps a guest below Manager", async () => {
     const onChangeLevel = vi.fn();
     const onRemove = vi.fn();
     renderShare(shareLevelScenario(), { onChangeLevel, onRemove });
-    const menu = screen.getByRole("menu", { name: "Quyền của Đặng Minh Tuấn" });
+    const menu = await screen.findByRole("menu", {
+      name: "Quyền của Đặng Minh Tuấn",
+    });
     const items = within(menu).getAllByRole("menuitemradio");
     expect(items.map((item) => item.getAttribute("aria-checked"))).toEqual([
       "false",
@@ -100,7 +102,7 @@ describe("BoardShareDialogSurface", () => {
       "false",
     ]);
     expect(items[3]?.getAttribute("aria-disabled")).toBe("true");
-    expect(within(menu).getByText("31/01/2027")).toBeTruthy();
+    expect(within(menu).queryByText("31/01/2027")).toBeNull();
     fireEvent.click(items[3]!);
     expect(onChangeLevel).not.toHaveBeenCalled();
     fireEvent.keyDown(menu, { key: "ArrowUp" });
@@ -199,5 +201,26 @@ describe("BoardShareDialogSurface", () => {
     expect(screen.getByText(copy.general.private)).toBeTruthy();
     expect(screen.getByText(copy.people.empty)).toBeTruthy();
     expect(screen.getByText(copy.link.publicOn)).toBeTruthy();
+  });
+
+  it("hides the permission list from a reader the producer discloses no entries to and says how many can open the Board", () => {
+    const scenario = shareDefaultScenario();
+    renderShare({
+      ...scenario,
+      view: {
+        ...scenario.view,
+        rows: [],
+        canManage: false,
+        hiddenCounts: { people: 24, guests: 2 },
+      },
+    });
+    const dialog = screen.getByRole("dialog");
+    expect(
+      within(dialog).getByText(
+        "24 người và 2 khách mở được board này. Chỉ thành viên và người quản lý board thấy là ai.",
+      ),
+    ).toBeTruthy();
+    expect(within(dialog).queryByText(/Quyền riêng trên board này/)).toBeNull();
+    expect(within(dialog).queryByText("Nguyễn Thu Hà")).toBeNull();
   });
 });

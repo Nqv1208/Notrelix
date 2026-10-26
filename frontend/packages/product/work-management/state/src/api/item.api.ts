@@ -47,6 +47,19 @@ type MoveItemResponse = OperationResponse<MoveItemOp, 200>;
 type UpdateFieldValueOp = "WorkManagement.BoardItems.UpdateFieldValue";
 type UpdateFieldValueBody = OperationRequestBody<UpdateFieldValueOp>;
 
+type BulkUpdateOp = "WorkManagement.BoardItems.BulkUpdate";
+type BulkUpdateBody = OperationRequestBody<BulkUpdateOp>;
+type BulkUpdateResponse = OperationResponse<BulkUpdateOp, 200>;
+
+/** The one change a bulk request applies to every item it names. */
+export type BulkItemChange =
+  | { readonly type: "set-status"; readonly statusOptionId: string }
+  | { readonly type: "set-due-date"; readonly dueDate: string }
+  | { readonly type: "clear-due-date" }
+  | { readonly type: "assign"; readonly userId: string }
+  | { readonly type: "unassign-all" }
+  | { readonly type: "archive" };
+
 type UpdateStatusOp = "WorkManagement.BoardItems.UpdateStatus";
 type UpdateStatusBody = OperationRequestBody<UpdateStatusOp>;
 
@@ -69,6 +82,11 @@ export function createCardApi(client: NotrelixClient) {
       const body: CreateItemBody = {
         groupId: payload.listId, // canonical uses groupId!
         title: payload.title,
+        ...(payload.descriptionMd
+          ? { descriptionMd: payload.descriptionMd }
+          : {}),
+        ...(payload.startDate ? { startDate: payload.startDate } : {}),
+        ...(payload.dueDate ? { dueDate: payload.dueDate } : {}),
         // Backend-first cut-over (SPEC WM-V3-DEC-017): the server now owns placement
         // and expects neighbor ids; until WM-V3-FE-001 maps them, omitting both appends.
       };
@@ -80,9 +98,36 @@ export function createCardApi(client: NotrelixClient) {
       return created?.id ?? undefined;
     },
 
-    async updateCard(cardId: string, patch: UpdateCardInput): Promise<void> {
-      const body: UpdateItemBody = patch; // mapping fields
-      await api.patch<void>(endpoints.boardItems.detail(cardId), body);
+    async updateCard(
+      cardId: string,
+      patch: UpdateCardInput,
+      options?: ApiRequestOptions & { readonly expectedVersion?: number },
+    ): Promise<void> {
+      const { expectedVersion: known, ...request } = options ?? {};
+      const expectedVersion =
+        known ?? (await this.getCard(cardId)).version ?? undefined;
+      // A null date means "remove it": the server reads an omitted/null date as
+      // "unchanged", so a removal is sent as its own flag.
+      const { dueDate, startDate, ...rest } = patch;
+      const body: UpdateItemBody = {
+        ...rest,
+        ...(dueDate === null
+          ? { clearDueDate: true }
+          : dueDate !== undefined
+            ? { dueDate }
+            : {}),
+        ...(startDate === null
+          ? { clearStartDate: true }
+          : startDate !== undefined
+            ? { startDate }
+            : {}),
+        expectedVersion,
+      };
+      await api.patch<void>(
+        endpoints.boardItems.detail(cardId),
+        body,
+        request.idempotencyKey ? request : undefined,
+      );
     },
 
     async deleteCard(cardId: string): Promise<void> {
@@ -133,15 +178,87 @@ export function createCardApi(client: NotrelixClient) {
       return { version: moved?.version ?? undefined };
     },
 
-    async updateFieldValue(payload: UpdateFieldValueInput): Promise<void> {
-      const body: UpdateFieldValueBody = { value: payload.value };
+    /**
+     * `PATCH /board-items/{id}/values/{fieldId}`, based on the item version the
+     * caller last read; without one the item is read first so the write never
+     * runs on a guessed version.
+     */
+    async updateFieldValue(
+      payload: UpdateFieldValueInput,
+      options?: ApiRequestOptions & { readonly expectedVersion?: number },
+    ): Promise<void> {
+      const { expectedVersion: known, ...request } = options ?? {};
+      const expectedVersion =
+        known ?? (await this.getCard(payload.cardId)).version ?? undefined;
+      const body: UpdateFieldValueBody = {
+        value: payload.value,
+        expectedVersion,
+      };
       await api.patch<void>(
         endpoints.boardItems.fieldValue(
           payload.cardId,
           payload.fieldDefinitionId,
         ),
         body,
+        request.idempotencyKey ? request : undefined,
       );
+    },
+
+    /**
+     * Makes `next` the item's assignees. The Assignee system field mirrors the
+     * item's own members, so the backend refuses a field value for it: each
+     * added person is `POST /board-items/{id}/assignees` and each removed one
+     * `DELETE /board-items/{id}/assignees/{userId}`.
+     */
+    async setAssignees(
+      cardId: string,
+      next: readonly string[],
+      current: readonly string[],
+    ): Promise<void> {
+      const wanted = new Set(next);
+      const held = new Set(current);
+      for (const userId of current) {
+        if (wanted.has(userId)) continue;
+        await api.delete<void>(endpoints.boardItems.assignee(cardId, userId), {
+          idempotencyKey: crypto.randomUUID(),
+        });
+      }
+      for (const userId of next) {
+        if (held.has(userId)) continue;
+        await api.post<void>(
+          endpoints.boardItems.assignees(cardId),
+          { userId },
+          { idempotencyKey: crypto.randomUUID() },
+        );
+      }
+    },
+
+    /**
+     * One change for several items of a board as one request
+     * (`POST /boards/{id}/items/bulk`): every item changes or none does, so a
+     * refusal leaves the board as it was. Returns how many items changed.
+     */
+    async bulkUpdate(
+      boardId: string,
+      itemIds: readonly string[],
+      change: BulkItemChange,
+      options?: ApiRequestOptions,
+    ): Promise<number> {
+      const body: BulkUpdateBody = {
+        operation: change.type,
+        itemIds: [...itemIds],
+        ...(change.type === "set-status"
+          ? { status: change.statusOptionId }
+          : {}),
+        ...(change.type === "set-due-date" ? { dueDate: change.dueDate } : {}),
+        ...(change.type === "assign" ? { assigneeUserId: change.userId } : {}),
+      };
+      const result = await api.post<BulkUpdateResponse | null | undefined>(
+        endpoints.boardItems.bulk(boardId),
+        body,
+        options ?? { idempotencyKey: crypto.randomUUID() },
+      );
+      return result?.updated ?? itemIds.length;
     },
 
     /**

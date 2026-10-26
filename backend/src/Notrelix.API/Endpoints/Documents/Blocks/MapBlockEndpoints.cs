@@ -15,14 +15,8 @@ public static class MapBlockEndpoints
         pageBlocksGroup.MapListPageBlocks();
         pageBlocksGroup.MapCreateBlock();
         pageBlocksGroup.MapBatchUpdateBlocks();
-
-        var blockByIdGroup = app
-            .MapGroup("/api/v1/blocks/{blockId:guid}")
-            .WithTags("Documents.Blocks")
-            .WithOpenApi();
-
-        blockByIdGroup.MapUpdateBlock();
-        blockByIdGroup.MapDeleteBlock();
+        pageBlocksGroup.MapUpdateBlock();
+        pageBlocksGroup.MapDeleteBlock();
 
         var blocksGroup = app
             .MapGroup("/api/v1/blocks")

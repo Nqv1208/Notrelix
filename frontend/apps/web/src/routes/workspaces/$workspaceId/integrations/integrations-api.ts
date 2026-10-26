@@ -1,12 +1,8 @@
-import type {
-  IntegrationDetailDto,
-  IntegrationsListDto,
-} from "@notrelix/features-workspace/web";
+import type { OperationResponse } from "@notrelix/contracts";
 
 /**
- * The calls behind the Integrations pages (gap `CTR-GAP-INTEGRATIONS`, see
- * docs/superpowers/be-blockers-2026-10.md, "BE requirement from FE:
- * Integrations"). Every call is quiet: the pages say what went wrong.
+ * The calls behind the Integrations pages: the producer's `Integrations.*`
+ * contract. Every call is quiet: the pages say what went wrong themselves.
  */
 export interface IntegrationsApiClient {
   get<T>(url: string, options?: { skipGlobalErrorToast?: boolean }): Promise<T>;
@@ -21,59 +17,63 @@ export interface IntegrationsApiClient {
   ): Promise<T>;
 }
 
+export type IntegrationsOverview = NonNullable<
+  OperationResponse<"Integrations.Connections.List">
+>;
+export type IntegrationConnection = NonNullable<
+  IntegrationsOverview["connections"]
+>[number];
+
+/** A new webhook and its signing secret, known only in this answer. */
+export interface CreatedWebhook {
+  readonly connection: IntegrationConnection;
+  readonly signingSecret: string;
+}
+
 const QUIET = { skipGlobalErrorToast: true } as const;
 const root = (workspaceId: string) =>
   `/workspaces/${encodeURIComponent(workspaceId)}/integrations`;
-const one = (workspaceId: string, key: string) =>
-  `${root(workspaceId)}/${encodeURIComponent(key)}`;
+const one = (workspaceId: string, connectionId: string) =>
+  `${root(workspaceId)}/${encodeURIComponent(connectionId)}`;
 
 export function createIntegrationsApi(api: IntegrationsApiClient) {
-  const act = (workspaceId: string, key: string, verb: string) =>
-    api.post<unknown>(
-      `${one(workspaceId, key)}/${verb}`,
+  const act = (workspaceId: string, connectionId: string, verb: string) =>
+    api.post<IntegrationConnection>(
+      `${one(workspaceId, connectionId)}/${verb}`,
       {},
       { ...QUIET, idempotencyKey: crypto.randomUUID() },
     );
   return {
     list(workspaceId: string) {
-      return api.get<IntegrationsListDto>(root(workspaceId), QUIET);
+      return api.get<IntegrationsOverview>(root(workspaceId), QUIET);
     },
-    get(workspaceId: string, key: string) {
-      return api.get<IntegrationDetailDto>(one(workspaceId, key), QUIET);
-    },
-    reauthorize: (workspaceId: string, key: string) =>
-      act(workspaceId, key, "reauthorize"),
-    pause: (workspaceId: string, key: string) => act(workspaceId, key, "pause"),
-    resume: (workspaceId: string, key: string) =>
-      act(workspaceId, key, "resume"),
-    test: (workspaceId: string, key: string) =>
-      api.post<{ result: string }>(`${one(workspaceId, key)}/test`, {}, QUIET),
-    regenerateSecret: (workspaceId: string, key: string) =>
-      api.post<{ secret: string }>(
-        `${one(workspaceId, key)}/secret`,
-        {},
+    /** The provider's authorization page the member's browser goes to. */
+    authorize(workspaceId: string, provider: string) {
+      return api.get<{ authorizeUrl: string }>(
+        `${root(workspaceId)}/${encodeURIComponent(provider)}/authorize`,
         QUIET,
-      ),
-    disconnect(workspaceId: string, key: string) {
-      return api.delete<void>(one(workspaceId, key), QUIET);
+      );
     },
-    connect(
-      workspaceId: string,
-      provider: string,
-      scope: "workspace" | "board",
-    ) {
-      return api.post<{ key: string }>(
-        root(workspaceId),
-        { provider, scope },
+    connectWebhook(workspaceId: string, url: string) {
+      return api.post<CreatedWebhook>(
+        `${root(workspaceId)}/webhooks`,
+        { url },
         { ...QUIET, idempotencyKey: crypto.randomUUID() },
       );
     },
-    contactSales(workspaceId: string) {
-      return api.post<{ requestedAt: string }>(
-        `${root(workspaceId)}/contact-sales`,
+    pause: (workspaceId: string, connectionId: string) =>
+      act(workspaceId, connectionId, "pause"),
+    resume: (workspaceId: string, connectionId: string) =>
+      act(workspaceId, connectionId, "resume"),
+    test(workspaceId: string, connectionId: string) {
+      return api.post<{ deliveryId: string }>(
+        `${one(workspaceId, connectionId)}/test`,
         {},
         { ...QUIET, idempotencyKey: crypto.randomUUID() },
       );
+    },
+    disconnect(workspaceId: string, connectionId: string) {
+      return api.delete<void>(one(workspaceId, connectionId), QUIET);
     },
   };
 }

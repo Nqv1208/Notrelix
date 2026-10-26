@@ -577,3 +577,42 @@
     scroll-behavior: auto !important;
   }
 }
+
+/*
+ * Printing a Doc ("PDF" in the File menu uses the browser's print): only the
+ * page text prints. Everything that is neither the page nor one of its
+ * ancestors steps aside, and the ancestors stop clipping so the page flows
+ * over as many sheets as it needs.
+ */
+@media print {
+  body:has([data-doc-print-root]) {
+    overflow: visible;
+    background: white;
+  }
+
+  body:has([data-doc-print-root])
+    :is(div, main, section, aside, nav, header, footer, ol, ul):not(
+      :has([data-doc-print-root])
+    ):not([data-doc-print-root], [data-doc-print-root] *) {
+    display: none !important;
+  }
+
+  body:has([data-doc-print-root]) :has([data-doc-print-root]) {
+    display: block !important;
+    position: static !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    width: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: 0 !important;
+    transform: none !important;
+  }
+
+  [data-doc-print-root] {
+    max-width: none !important;
+    margin: 0 auto;
+  }
+}

@@ -32,7 +32,8 @@ export function profileFixture(
     name: "Ada Lovelace",
     jobTitle: "Implementation lead",
     email: "ada@example.com",
-    phone: "0912 468 135",
+    phone: "+84912468135",
+    phoneVisibleToWorkspaceMembers: false,
     timezone: "Asia/Ho_Chi_Minh",
     dateFormat: "dd/mm/yyyy",
     joinedAt: "2024-03-04T00:00:00.000Z",
@@ -45,7 +46,7 @@ export function profileFixture(
 
 export type ProfileScenario = Omit<
   AccountProfileSurfaceProps,
-  "onSave" | "onRetry" | "onPhotoChange"
+  "onSave" | "onRetry" | "onPhotoChange" | "onPhotoRemove"
 >;
 
 export function profileDefaultScenario(
@@ -109,7 +110,7 @@ export function profileEdgeDataScenario(): ProfileScenario {
         managedBy: null,
       }),
     },
-    photoError: true,
+    photoError: "unsupported",
     save: { state: "error" },
   };
 }

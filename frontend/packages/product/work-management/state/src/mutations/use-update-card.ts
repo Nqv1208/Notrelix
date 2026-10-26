@@ -6,13 +6,23 @@ import {
 import {
   updateCardInFullBoard,
   type Card,
+  type CardDetail,
+  type FullBoardResponse,
   type UpdateCardInput,
 } from "@notrelix/work-management-core";
+import type { ApiRequestOptions } from "@notrelix/contracts";
+import { findBoardCard } from "../cache/card-restore";
+import { wmQueryKeys } from "../queries/keys";
 import { useWorkManagementServices } from "../services";
 import { runCardCommand } from "./card-command";
+import { UnknownItemVersionError } from "./use-move-card";
 
 interface CardUpdater {
-  updateCard(cardId: string, patch: UpdateCardInput): Promise<void>;
+  updateCard(
+    cardId: string,
+    patch: UpdateCardInput,
+    options?: ApiRequestOptions & { readonly expectedVersion?: number },
+  ): Promise<void>;
 }
 
 /** A card with the patch applied (title, description, priority, dates). */
@@ -66,6 +76,21 @@ export function runUpdateCardCommand(
     patch: UpdateCardInput;
   },
 ): Promise<void> {
+  // The write is based on the item version the member last read.
+  const expectedVersion = (
+    findBoardCard(
+      queryClient.getQueryData<FullBoardResponse>(
+        wmQueryKeys.fullBoard(workspaceId, boardId),
+      ),
+      cardId,
+    ) ??
+    queryClient.getQueryData<CardDetail>(
+      wmQueryKeys.cardDetail(workspaceId, cardId),
+    )
+  )?.version;
+  if (!expectedVersion || expectedVersion <= 0) {
+    return Promise.reject(new UnknownItemVersionError(cardId));
+  }
   return runCardCommand({
     queryClient,
     workspaceId,
@@ -77,7 +102,8 @@ export function runUpdateCardCommand(
         applyCardPatch(card, patch),
       ) ?? current,
     applyDetail: (detail) => applyCardPatch(detail, patch),
-    send: () => cards.updateCard(cardId, patch),
+    send: (context) =>
+      cards.updateCard(cardId, patch, { ...context, expectedVersion }),
   });
 }
 

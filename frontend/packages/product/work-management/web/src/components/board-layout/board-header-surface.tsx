@@ -52,8 +52,6 @@ export interface BoardHeaderAccess {
       readonly userId: string;
       readonly name: string;
     } | null;
-    /** When the access ends (ISO); absent or `null` = never. */
-    readonly expiresAt?: string | null;
   };
   readonly peopleCount: number;
   /**
@@ -264,16 +262,6 @@ function bannerText(
   if (!level) return null;
   const grantedBy = access.mySource.grantedBy;
   if (access.mySource.kind === "explicit" && grantedBy) {
-    const expires = access.mySource.expiresAt;
-    if (expires) {
-      const date = new Date(expires);
-      const pad = (value: number) => String(value).padStart(2, "0");
-      return fillBoardHeaderCopy(banner.grantedByUntil, {
-        level,
-        name: grantedBy.name,
-        date: `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()}`,
-      });
-    }
     return fillBoardHeaderCopy(banner.grantedBy, {
       level,
       name: grantedBy.name,

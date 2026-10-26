@@ -38,6 +38,7 @@ public class RestoreBoardViewCommandHandler : IRequestHandler<RestoreBoardViewCo
             .FirstOrDefaultAsync(v => v.Id == request.ViewId && v.AccountId == accountId && v.WorkspaceId == workspaceId, ct);
         if (view is null) throw new NotFoundException(nameof(BoardView), request.ViewId);
 
+        BoardViewAccess.EnsureCanEdit(view, _requestContext.UserId);
         view.Restore(_requestContext.UserId, _dateTimeProvider.UtcNow);
         return Result.Success();
     }

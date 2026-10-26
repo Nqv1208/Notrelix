@@ -53,7 +53,7 @@ public sealed class MentionCreatedNotificationRuntimeChainIntegrationTests : IAs
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -89,7 +89,7 @@ public sealed class MentionCreatedNotificationRuntimeChainIntegrationTests : IAs
             accountId, workspace.Id, board.Id, group.Id, "Task",
             FractionalIndex.Create("a0"), ownerId, now);
 
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Users.Add(mentionedUser);
         seed.Workspaces.Add(workspace);
         seed.WorkspaceMembers.Add(Domain.Workspaces.Members.WorkspaceMember.Create(
@@ -100,6 +100,10 @@ public sealed class MentionCreatedNotificationRuntimeChainIntegrationTests : IAs
         seed.BoardGroups.Add(group);
         seed.BoardItems.Add(item);
         await seed.SaveChangesAsync();
+        await AccessGrantSeed.WorkspaceMemberAsync(
+            _db, accountId, workspace.Id, ownerId, Domain.Workspaces.Members.WorkspaceRole.Owner);
+        await AccessGrantSeed.WorkspaceMemberAsync(
+            _db, accountId, workspace.Id, mentionedUserId, Domain.Workspaces.Members.WorkspaceRole.Member);
 
         return new MentionGraph(accountId, workspace.Id, ownerId, mentionedUserId, item.Id, content);
     }
@@ -189,7 +193,7 @@ public sealed class MentionCreatedNotificationRuntimeChainIntegrationTests : IAs
             }
         }
 
-        await using var probe = _db.CreateContext(SystemTenant());
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
         (await probe.Set<NotificationItemRecord>()
             .IgnoreQueryFilters()
             .CountAsync(n => n.SourceEventId == outboxEventId
@@ -246,7 +250,7 @@ public sealed class MentionCreatedNotificationRuntimeChainIntegrationTests : IAs
         // The consumer adopts only the event's own tenant: the owning
         // workspace holds exactly one notification with the authoritative
         // envelope, and the foreign workspace/account identity holds nothing.
-        await using var probe = _db.CreateContext(SystemTenant());
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
         (await probe.Set<NotificationItemRecord>()
             .IgnoreQueryFilters()
             .CountAsync(n => n.SourceEventId == outboxEventId
@@ -280,7 +284,7 @@ public sealed class MentionCreatedNotificationRuntimeChainIntegrationTests : IAs
 
         var outboxEventId = await RunMentionChainAsync(graph);
 
-        await using var probe = _db.CreateContext(SystemTenant());
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
         (await probe.Set<NotificationItemRecord>().IgnoreQueryFilters()
             .CountAsync(n => n.SourceEventId == outboxEventId)).Should().Be(0,
             "the mentioned person turned the mention in-app preference off in this workspace");
@@ -297,7 +301,7 @@ public sealed class MentionCreatedNotificationRuntimeChainIntegrationTests : IAs
 
         var outboxEventId = await RunMentionChainAsync(graph);
 
-        await using var probe = _db.CreateContext(SystemTenant());
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
         (await probe.Set<NotificationItemRecord>().IgnoreQueryFilters()
             .CountAsync(n => n.SourceEventId == outboxEventId)).Should().Be(1,
             "a preference is the mentioned person's own and per workspace");
@@ -307,7 +311,7 @@ public sealed class MentionCreatedNotificationRuntimeChainIntegrationTests : IAs
     public async Task MentionCreated_WithOnlyTheEmailPreferenceOff_StillCreatesTheInAppNotification()
     {
         var graph = await SeedMentionStackAsync();
-        await using (var seed = _db.CreateContext(SystemTenant()))
+        await using (var seed = _db.CreateOwnerContext(SystemTenant()))
         {
             seed.NotificationPreferenceSets.Add(NotificationPreferenceSet.Create(
                 graph.AccountId, graph.WorkspaceId, graph.MentionedUserId,
@@ -318,14 +322,47 @@ public sealed class MentionCreatedNotificationRuntimeChainIntegrationTests : IAs
 
         var outboxEventId = await RunMentionChainAsync(graph);
 
-        await using var probe = _db.CreateContext(SystemTenant());
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
         (await probe.Set<NotificationItemRecord>().IgnoreQueryFilters()
             .CountAsync(n => n.SourceEventId == outboxEventId)).Should().Be(1);
     }
 
+    [Fact]
+    public async Task MentionCreated_CarriesAPlainTextExcerptOfTheComment()
+    {
+        var graph = await SeedMentionStackAsync();
+
+        var outboxEventId = await RunMentionChainAsync(graph);
+
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
+        var item = await probe.Set<NotificationItemRecord>().IgnoreQueryFilters()
+            .SingleAsync(n => n.SourceEventId == outboxEventId);
+        item.Body.Should().Be(graph.Content, "the notification stores the plain text that caused it");
+        item.Body!.Length.Should().BeLessThanOrEqualTo(200);
+    }
+
+    [Fact]
+    public async Task MentionCreated_WithTheThreadMutedByTheMentionedPerson_CreatesNoNotificationForThem()
+    {
+        var graph = await SeedMentionStackAsync();
+        await using (var seed = _db.CreateOwnerContext(SystemTenant()))
+        {
+            seed.NotificationThreadMutes.Add(NotificationThreadMuteRecord.Create(
+                graph.AccountId, graph.WorkspaceId, graph.MentionedUserId, "work-management.board-item", graph.ItemId, DateTimeOffset.UtcNow));
+            await seed.SaveChangesAsync();
+        }
+
+        var outboxEventId = await RunMentionChainAsync(graph);
+
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
+        (await probe.Set<NotificationItemRecord>().IgnoreQueryFilters()
+            .CountAsync(n => n.SourceEventId == outboxEventId)).Should().Be(0,
+            "the mentioned person muted the thread");
+    }
+
     private async Task SeedPreferenceAsync(MentionGraph graph, Guid userId, bool inApp, Guid? workspaceId = null)
     {
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.NotificationPreferenceSets.Add(NotificationPreferenceSet.Create(
             graph.AccountId, workspaceId ?? graph.WorkspaceId, userId,
             [new NotificationPreferenceChange(NotificationTypes.Mention, NotificationChannels.InApp, inApp)],
@@ -381,6 +418,7 @@ public sealed class MentionCreatedNotificationRuntimeChainIntegrationTests : IAs
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["ConnectionStrings:NotrelixDb"] = _db.ConnectionString,
+                ["ConnectionStrings:NotrelixWorkerDb"] = _db.WorkerConnectionString,
                 ["ConnectionStrings:Redis"] = "localhost:6379,abortConnect=false",
                 ["Messaging:Transport"] = "InMemory",
                 ["Rls:Enabled"] = "true",
@@ -398,6 +436,7 @@ public sealed class MentionCreatedNotificationRuntimeChainIntegrationTests : IAs
         builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
         {
             ["ConnectionStrings:NotrelixDb"] = _db.ConnectionString,
+            ["ConnectionStrings:NotrelixWorkerDb"] = _db.WorkerConnectionString,
             ["ConnectionStrings:Redis"] = "localhost:6379,abortConnect=false",
             ["Messaging:Transport"] = "InMemory",
             ["Rls:Enabled"] = "true",
@@ -474,7 +513,7 @@ public sealed class MentionCreatedNotificationRuntimeChainIntegrationTests : IAs
         MessagingOutboxMessage? found = null;
         var completed = await WaitForAsync(async () =>
         {
-            await using var probe = _db.CreateContext(SystemTenant());
+            await using var probe = _db.CreateOwnerContext(SystemTenant());
             found = await probe.Set<MessagingOutboxMessage>()
                 .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(m => m.MessageName == messageName
@@ -491,7 +530,7 @@ public sealed class MentionCreatedNotificationRuntimeChainIntegrationTests : IAs
         NotificationItemRecord? found = null;
         var completed = await WaitForAsync(async () =>
         {
-            await using var probe = _db.CreateContext(SystemTenant());
+            await using var probe = _db.CreateOwnerContext(SystemTenant());
             found = await probe.Set<NotificationItemRecord>()
                 .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(n => n.SourceEventId == sourceEventId
@@ -506,7 +545,7 @@ public sealed class MentionCreatedNotificationRuntimeChainIntegrationTests : IAs
     {
         return await WaitForAsync(async () =>
         {
-            await using var probe = _db.CreateContext(SystemTenant());
+            await using var probe = _db.CreateOwnerContext(SystemTenant());
             return await probe.Set<MessagingOutboxMessage>()
                 .IgnoreQueryFilters()
                 .AnyAsync(m => m.Id == outboxId && m.Status == "Processed");
@@ -517,7 +556,7 @@ public sealed class MentionCreatedNotificationRuntimeChainIntegrationTests : IAs
     {
         return await WaitForAsync(async () =>
         {
-            await using var probe = _db.CreateContext(SystemTenant());
+            await using var probe = _db.CreateOwnerContext(SystemTenant());
             return await probe.Set<MessagingProcessedEvent>()
                 .IgnoreQueryFilters()
                 .AnyAsync(p => p.EventId == eventId

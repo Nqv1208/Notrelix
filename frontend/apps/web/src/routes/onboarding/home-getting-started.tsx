@@ -37,56 +37,40 @@ export function HomeGettingStarted({
     mutationFn: () => api.dismissGettingStarted(workspaceId),
     onSuccess: refresh,
   });
-  const complete = useMutation({
-    mutationFn: (itemKey: string) =>
-      api.completeGettingStarted(workspaceId, itemKey),
-    onSuccess: refresh,
-  });
 
   const data = list.data;
   if (!data?.visible) return null;
   const t = copy.done.items;
-  const items: GettingStartedItem[] = data.items.map((item) => {
-    if (item.key === "first-item")
-      return {
-        key: item.key,
-        title: t.firstItem,
-        note: item.boardTitle
-          ? t.firstItemNote.replace("{{board}}", item.boardTitle)
-          : t.firstItemNoBoard,
-        done: item.done,
-        href: item.boardId
-          ? `/workspaces/${workspaceId}/boards/${item.boardId}`
-          : null,
-      };
-    if (item.key === "invite-more")
-      return {
-        key: item.key,
-        title: t.inviteMore,
-        note:
-          item.pendingInvites && item.pendingInvites > 0
-            ? t.inviteMoreWaiting.replace(
-                "{{count}}",
-                String(item.pendingInvites),
-              )
-            : t.inviteMoreNoneNote,
-        done: item.done,
-        href: `/workspaces/${workspaceId}/members`,
-      };
-    return {
-      key: item.key,
-      title: t.mobile,
-      note: t.mobileNote,
-      done: item.done,
-      href: null,
-    };
-  });
+  const items: GettingStartedItem[] = data.items.map(
+    (item): GettingStartedItem => {
+      if (item.key === "first-item")
+        return {
+          key: item.key,
+          title: t.firstItem,
+          note: item.boardTitle
+            ? t.firstItemNote.replace("{{board}}", item.boardTitle)
+            : t.firstItemNoBoard,
+          done: item.done,
+          href: item.boardId
+            ? `/workspaces/${workspaceId}/boards/${item.boardId}`
+            : null,
+        };
+      if (item.key === "invite-more")
+        return {
+          key: item.key,
+          title: t.inviteMore,
+          note: t.inviteMoreNoneNote,
+          done: item.done,
+          href: `/workspaces/${workspaceId}/members`,
+        };
+      throw new Error("Unknown getting-started item");
+    },
+  );
   return (
     <GettingStartedCard
       copy={copy}
       name={shortCompanyName(workspaceName)}
       items={items}
-      onToggle={(itemKey) => complete.mutate(itemKey)}
       onHide={() => dismiss.mutate()}
       onOpen={(item) => {
         if (item.href) void navigate({ to: item.href });

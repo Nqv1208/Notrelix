@@ -32,4 +32,12 @@ if (typeof window !== "undefined") {
       disconnect() {}
     };
   }
+
+  // jsdom lacks the layout and pointer-capture APIs the Radix listbox calls
+  // when it opens; stub them so the shared Select can be driven in tests.
+  if (typeof Element !== "undefined") {
+    Element.prototype.scrollIntoView ??= () => undefined;
+    Element.prototype.hasPointerCapture ??= () => false;
+    Element.prototype.releasePointerCapture ??= () => undefined;
+  }
 }

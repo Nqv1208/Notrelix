@@ -56,7 +56,7 @@ public sealed class ExpectedVersionConcurrencyIntegrationTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -67,7 +67,7 @@ public sealed class ExpectedVersionConcurrencyIntegrationTests : IAsyncLifetime
     {
         var (workspace, ownerId) = await SeedWorkspaceAsync();
 
-        await using var context = _db.CreateContext(SystemTenant());
+        await using var context = _db.CreateOwnerContext(SystemTenant());
         var tracked = await context.Workspaces.IgnoreQueryFilters().SingleAsync(w => w.Id == workspace.Id);
         var originalVersion = tracked.Version;
 
@@ -94,8 +94,8 @@ public sealed class ExpectedVersionConcurrencyIntegrationTests : IAsyncLifetime
     {
         var (workspace, ownerId) = await SeedWorkspaceAsync();
 
-        await using var firstContext = _db.CreateContext(SystemTenant());
-        await using var secondContext = _db.CreateContext(SystemTenant());
+        await using var firstContext = _db.CreateOwnerContext(SystemTenant());
+        await using var secondContext = _db.CreateOwnerContext(SystemTenant());
         var first = await firstContext.Workspaces.IgnoreQueryFilters().SingleAsync(w => w.Id == workspace.Id);
         var second = await secondContext.Workspaces.IgnoreQueryFilters().SingleAsync(w => w.Id == workspace.Id);
         var winningVersion = first.Version;
@@ -136,7 +136,7 @@ public sealed class ExpectedVersionConcurrencyIntegrationTests : IAsyncLifetime
 
         var tasks = Enumerable.Range(0, 4).Select(async index =>
         {
-            await using var context = _db.CreateContext(SystemTenant());
+            await using var context = _db.CreateOwnerContext(SystemTenant());
             var tracked = await context.Workspaces.IgnoreQueryFilters().SingleAsync(w => w.Id == workspace.Id);
             var session = CreateSession(context);
             try
@@ -170,7 +170,7 @@ public sealed class ExpectedVersionConcurrencyIntegrationTests : IAsyncLifetime
     public async Task RequestMissingFromTargetMap_FailsClosedAsMisconfiguration()
     {
         var (workspace, _) = await SeedWorkspaceAsync();
-        await using var context = _db.CreateContext(SystemTenant());
+        await using var context = _db.CreateOwnerContext(SystemTenant());
 
         var constraint = new ExpectedVersionConstraint(
             typeof(UnmappedProbeRequest),
@@ -190,7 +190,7 @@ public sealed class ExpectedVersionConcurrencyIntegrationTests : IAsyncLifetime
     public async Task DeclaredKindMismatch_FailsClosedAsMisconfiguration()
     {
         var (workspace, _) = await SeedWorkspaceAsync();
-        await using var context = _db.CreateContext(SystemTenant());
+        await using var context = _db.CreateOwnerContext(SystemTenant());
         var tracked = await context.Workspaces.IgnoreQueryFilters().SingleAsync(w => w.Id == workspace.Id);
 
         // The mapped request type declares workspaces.workspace; feed it a board kind.
@@ -212,7 +212,7 @@ public sealed class ExpectedVersionConcurrencyIntegrationTests : IAsyncLifetime
     public async Task MappedTargetNotTracked_FailsClosedInsteadOfSilentSkip()
     {
         var (workspace, _) = await SeedWorkspaceAsync();
-        await using var freshContext = _db.CreateContext(SystemTenant());
+        await using var freshContext = _db.CreateOwnerContext(SystemTenant());
         // No tracking: the aggregate exists in the database but was never loaded.
 
         var constraint = Constraint<UpdateWorkspaceProfileCommand>(workspace.Id, workspace.Version);
@@ -229,7 +229,7 @@ public sealed class ExpectedVersionConcurrencyIntegrationTests : IAsyncLifetime
     public async Task SameGuidTrackedUnderDifferentAggregateType_FailsClosed()
     {
         var (workspace, _) = await SeedWorkspaceAsync();
-        await using var context = _db.CreateContext(SystemTenant());
+        await using var context = _db.CreateOwnerContext(SystemTenant());
 
         // Track a Form whose identity collides with the workspace id while the
         // map binds this request type to the Workspace aggregate.
@@ -282,7 +282,7 @@ public sealed class ExpectedVersionConcurrencyIntegrationTests : IAsyncLifetime
         persisted.Name.Should().Be("Renamed by pipeline",
             "the losing write must not overwrite the committed state");
 
-        await using var probe = _db.CreateContext(SystemTenant());
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
         (await probe.Set<MessagingOutboxMessage>().CountAsync(m => m.AggregateId == seeded.WorkspaceId))
             .Should().Be(0, "a rolled-back request must not leave durable side-effect intents");
     }
@@ -306,7 +306,7 @@ public sealed class ExpectedVersionConcurrencyIntegrationTests : IAsyncLifetime
 
     private async Task<Domain.Workspaces.Workspaces.Workspace> PersistedWorkspace(Guid id)
     {
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         return await verify.Workspaces.IgnoreQueryFilters().SingleAsync(w => w.Id == id);
     }
 
@@ -322,7 +322,7 @@ public sealed class ExpectedVersionConcurrencyIntegrationTests : IAsyncLifetime
         var member = Domain.Workspaces.Members.WorkspaceMember.Create(
             account.Id, workspace.Id, ownerId, Domain.Workspaces.Members.WorkspaceRole.Owner, ownerId, now);
 
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Users.Add(user);
         seed.Accounts.Add(account);
         seed.AccountMembers.Add(AccountMember.Create(account.Id, ownerId, AccountRole.Owner, ownerId, now));
@@ -346,7 +346,7 @@ public sealed class ExpectedVersionConcurrencyIntegrationTests : IAsyncLifetime
         var member = Domain.Workspaces.Members.WorkspaceMember.Create(
             account.Id, workspace.Id, ownerId, Domain.Workspaces.Members.WorkspaceRole.Owner, ownerId, now);
 
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Users.Add(user);
         seed.Accounts.Add(account);
         seed.AccountMembers.Add(AccountMember.Create(account.Id, ownerId, AccountRole.Owner, ownerId, now));
@@ -354,7 +354,7 @@ public sealed class ExpectedVersionConcurrencyIntegrationTests : IAsyncLifetime
         seed.WorkspaceMembers.Add(member);
         await seed.SaveChangesAsync();
 
-        await using var grants = _db.CreateContext(SystemTenant());
+        await using var grants = _db.CreateOwnerContext(SystemTenant());
         var projection = new AccessGrantProjectionService(grants);
         await projection.SyncWorkspaceMemberGrantAsync(
             account.Id, workspace.Id, ownerId, Domain.Workspaces.Members.WorkspaceRole.Owner, now, CancellationToken.None);
@@ -411,7 +411,7 @@ public sealed class ExpectedVersionConcurrencyIntegrationTests : IAsyncLifetime
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(IdempotencyBehavior<,>));
 
         services.AddScoped<ApplicationDbContext>(sp =>
-            _db.CreateContext(sp.GetRequiredService<ICurrentTenantContext>()));
+            _db.CreateOwnerContext(sp.GetRequiredService<ICurrentTenantContext>()));
         services.AddScoped<IWorkspaceDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IAccountDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IGovernanceDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());

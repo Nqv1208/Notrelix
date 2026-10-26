@@ -58,7 +58,11 @@ export interface MyWorkItemExtDto {
   relations: MyWorkRelation[];
   /** The person in charge when it is not the member; `null` = the member or nobody. */
   assignee: PersonDto | null;
-  approval: { requestedBy: PersonDto; requestedAt: string } | null;
+  approval: {
+    requestId: string;
+    requestedBy: PersonDto;
+    requestedAt: string;
+  } | null;
   completedAt: string | null;
 }
 
@@ -116,7 +120,10 @@ export type InboxType =
   | "overdue"
   | "assigned"
   | "changes_bundle"
-  | "board_invited";
+  | "board_invited"
+  | "followed_status"
+  | "followed_comment"
+  | "followed_assignee";
 
 export type InboxNeed = "approve" | "reply" | "overdue";
 
@@ -151,8 +158,13 @@ export interface InboxEntryDto {
   type: InboxType;
   actor: PersonDto | null;
   need: InboxNeed | null;
+  /** The approval request an "approval requested" entry is about (status as the producer names it). */
+  approval: { requestId: string; status: "Pending" } | null;
   following: boolean;
   muted: boolean;
+  /** The member marked it done: only the Done list holds it. */
+  done: boolean;
+  snoozedUntil: string | null;
   target: InboxTargetDto;
   excerpt: string | null;
   dueAt: string | null;
@@ -200,6 +212,11 @@ export interface InboxDto {
 
 // ─── Records ─────────────────────────────────────────────────────────────────
 
+/** The id of the approval request of an item (one request per item in the mock). */
+export function approvalRequestId(itemId: string): string {
+  return `approval:${itemId}`;
+}
+
 interface ApprovalRecord {
   itemId: string;
   requestedById: string;
@@ -210,6 +227,15 @@ interface ApprovalRecord {
   /** What is approved, as a phrase after "gửi bạn duyệt" ("cấu hình đăng nhập một lần"). */
   summary: string;
   changes: { label: string; value: string; changed?: string }[];
+}
+
+/** An approval the member asked a person for (the producer's request with one step). */
+interface RequestedApprovalRecord {
+  id: string;
+  itemId: string;
+  approverId: string;
+  note: string | null;
+  requestedAt: string;
 }
 
 interface MentionRecord {
@@ -256,6 +282,7 @@ interface InboxRecord {
   permission: "view" | "comment" | "edit" | null;
   mentionId: string | null;
   snoozedUntil: string | null;
+  done: boolean;
   bundle: {
     actorIds: string[];
     moreActors: number;
@@ -296,6 +323,8 @@ export class MockWorkFeedState {
   assigned = new Set<string>();
   following = new Set<string>();
   approvals = new Map<string, ApprovalRecord>();
+  /** What the member asked others to approve; always pending in the mock. */
+  requestedApprovals: RequestedApprovalRecord[] = [];
   mentions: MentionRecord[] = [];
   waiting: WaitingRecord[] = [];
   events: EventRecord[] = [];
@@ -303,10 +332,27 @@ export class MockWorkFeedState {
   /** Items whose notifications the member turned off. */
   mutedItemIds = new Set<string>();
 
+  /**
+   * The member commented on a thread: the mention entries they held there no
+   * longer wait for their reply (the producer clears the need the same way).
+   */
+  noteReplyOn(thread: { itemId?: string; docId?: string }): void {
+    for (const record of this.inbox) {
+      if (record.need !== "reply") continue;
+      if (
+        (thread.itemId && record.itemId === thread.itemId) ||
+        (thread.docId && record.docId === thread.docId)
+      ) {
+        record.need = null;
+      }
+    }
+  }
+
   clear(): void {
     this.assigned.clear();
     this.following.clear();
     this.approvals.clear();
+    this.requestedApprovals = [];
     this.mentions = [];
     this.waiting = [];
     this.events = [];
@@ -452,6 +498,7 @@ export class MockWorkFeedState {
       permission: null,
       mentionId: null,
       snoozedUntil: null,
+      done: false,
       bundle: null,
       ...value,
     });
@@ -706,7 +753,11 @@ function itemDto(
     assignee,
     approval:
       approval && requester
-        ? { requestedBy: requester, requestedAt: approval.requestedAt }
+        ? {
+            requestId: approvalRequestId(approval.itemId),
+            requestedBy: requester,
+            requestedAt: approval.requestedAt,
+          }
         : null,
     completedAt: card.completedAt ?? null,
   };
@@ -900,10 +951,16 @@ function entryDto(
     type: record.type,
     actor: person(store, record.actorId),
     need: record.need,
+    approval:
+      record.type === "approval_requested" && approval && record.itemId
+        ? { requestId: approvalRequestId(record.itemId), status: "Pending" }
+        : null,
     following:
       record.following ||
       (record.itemId ? feed.following.has(record.itemId) : false),
     muted: record.muted,
+    done: record.done,
+    snoozedUntil: record.snoozedUntil,
     target,
     excerpt: record.excerpt,
     dueAt: record.dueAt,
@@ -913,11 +970,25 @@ function entryDto(
   };
 }
 
-export function buildInbox(store: MockStore, workspaceId: string): InboxDto {
+export type InboxListState = "inbox" | "done" | "snoozed";
+
+export function buildInbox(
+  store: MockStore,
+  workspaceId: string,
+  state: InboxListState = "inbox",
+): InboxDto {
   const feed = store.feed;
   const now = store.getClock().isoNow();
+  const snoozed = (record: InboxRecord) =>
+    Boolean(record.snoozedUntil && record.snoozedUntil > now);
   const visible = feed.inbox
-    .filter((record) => !record.snoozedUntil || record.snoozedUntil <= now)
+    .filter((record) =>
+      state === "done"
+        ? record.done
+        : state === "snoozed"
+          ? !record.done && snoozed(record)
+          : !record.done && !snoozed(record),
+    )
     .map((record) => entryDto(store, feed, record))
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const count = (predicate: (entry: InboxEntryDto) => boolean) =>
@@ -947,7 +1018,7 @@ export function buildHomeFeed(store: MockStore): HomeFeedDto {
     const actor = person(store, approval.requestedById);
     if (!card || !actor || card.completedAt) continue;
     replies.push({
-      id: `approval:${approval.itemId}`,
+      id: approvalRequestId(approval.itemId),
       kind: "approval",
       actor,
       createdAt: approval.requestedAt,
@@ -963,8 +1034,10 @@ export function buildHomeFeed(store: MockStore): HomeFeedDto {
   for (const mention of feed.mentions) {
     const actor = person(store, mention.actorId);
     if (mention.handled || !actor) continue;
+    // The reply is the mention's notification: its id is the inbox entry's.
+    const entry = feed.inbox.find((record) => record.mentionId === mention.id);
     replies.push({
-      id: `mention:${mention.id}`,
+      id: entry?.id ?? mention.id,
       kind: "mention",
       actor,
       createdAt: mention.createdAt,
@@ -1017,29 +1090,28 @@ export function setItemBucket(
   return store.updateItemStatus(cardId, optionId);
 }
 
-/** Approve or ask for changes on an item the member must approve. */
+/**
+ * Approve or reject the approval request the member is named on. As on the producer, a decision records the
+ * answer and ends the request; it does not change the item's status.
+ */
 export function decideApproval(
   store: MockStore,
-  cardId: string,
-  decision: "approve" | "request-changes",
-  comment: string | null,
+  requestId: string,
+  decision: "approve" | "reject",
 ): FeedWriteResult {
   const feed = store.feed;
-  const approval = feed.approvals.get(cardId);
-  if (!store.getCard(cardId)) return "not-found";
-  if (!approval) return "invalid";
-  const result = setItemBucket(
-    store,
-    cardId,
-    decision === "approve" ? "done" : "doing",
+  const approval = [...feed.approvals.values()].find(
+    (candidate) => approvalRequestId(candidate.itemId) === requestId,
   );
-  if (result !== "ok") return result;
-  feed.approvals.delete(cardId);
-  if (comment && comment.trim()) {
-    store.createCardComment(cardId, store.getCurrentUser().id, comment.trim());
-  }
+  if (!approval) return "not-found";
+  if (!store.getCard(approval.itemId)) return "not-found";
+  void decision;
+  feed.approvals.delete(approval.itemId);
   for (const record of feed.inbox) {
-    if (record.itemId === cardId && record.type === "approval_requested") {
+    if (
+      record.itemId === approval.itemId &&
+      record.type === "approval_requested"
+    ) {
       record.need = null;
       record.unread = false;
     }
@@ -1047,10 +1119,130 @@ export function decideApproval(
   return "ok";
 }
 
+/** The approval request of the producer for an item: one step naming the approver. */
+export interface ItemApprovalWire {
+  id: string;
+  title: string;
+  description: string | null;
+  status: "Pending";
+  requestedByUserId: string;
+  createdAt: string;
+  steps: {
+    id: string;
+    approverUserId: string;
+    approverTeamId: null;
+    status: "Pending";
+    position: number;
+    decidedAt: null;
+    note: null;
+  }[];
+}
+
+function approvalWire(
+  store: MockStore,
+  record: {
+    id: string;
+    itemId: string;
+    requestedById: string;
+    approverId: string;
+    note: string | null;
+    requestedAt: string;
+  },
+): ItemApprovalWire {
+  return {
+    id: record.id,
+    title: store.getCard(record.itemId)?.title ?? "",
+    description: record.note,
+    status: "Pending",
+    requestedByUserId: record.requestedById,
+    createdAt: record.requestedAt,
+    steps: [
+      {
+        id: `${record.id}:step`,
+        approverUserId: record.approverId,
+        approverTeamId: null,
+        status: "Pending",
+        position: 1,
+        decidedAt: null,
+        note: null,
+      },
+    ],
+  };
+}
+
+/** The approvals asked about an item, newest first (the seeded one waits for the member). */
+export function listItemApprovals(
+  store: MockStore,
+  itemId: string,
+): ItemApprovalWire[] | "not-found" {
+  if (!store.getCard(itemId)) return "not-found";
+  const feed = store.feed;
+  const me = store.getCurrentUser().id;
+  const asked = feed.requestedApprovals
+    .filter((record) => record.itemId === itemId)
+    .map((record) => approvalWire(store, { ...record, requestedById: me }));
+  const seeded = feed.approvals.get(itemId);
+  const waiting = seeded
+    ? [
+        approvalWire(store, {
+          id: approvalRequestId(itemId),
+          itemId,
+          requestedById: seeded.requestedById,
+          approverId: me,
+          note: seeded.note,
+          requestedAt: seeded.requestedAt,
+        }),
+      ]
+    : [];
+  return [...asked, ...waiting].sort((a, b) =>
+    b.createdAt.localeCompare(a.createdAt),
+  );
+}
+
+export type RequestApprovalResult =
+  | { kind: "ok"; id: string }
+  | { kind: "not-found" }
+  | { kind: "invalid"; message: string }
+  | { kind: "conflict" };
+
+/** Asks a board member other than the caller to approve the item. */
+export function requestItemApproval(
+  store: MockStore,
+  itemId: string,
+  approverUserId: string,
+  note: string | null,
+): RequestApprovalResult {
+  const card = store.getCard(itemId);
+  if (!card) return { kind: "not-found" };
+  const me = store.getCurrentUser().id;
+  if (approverUserId === me)
+    return { kind: "invalid", message: "Ask someone else to approve." };
+  if (!store.getUser(approverUserId))
+    return { kind: "invalid", message: "The approver cannot read this item." };
+  const feed = store.feed;
+  if (
+    feed.requestedApprovals.some(
+      (record) =>
+        record.itemId === itemId && record.approverId === approverUserId,
+    )
+  )
+    return { kind: "conflict" };
+  const id = `item-approval:${itemId}:${feed.requestedApprovals.length + 1}`;
+  feed.requestedApprovals.push({
+    id,
+    itemId,
+    approverId: approverUserId,
+    note: note?.trim() ? note.trim() : null,
+    requestedAt: store.getClock().isoNow(),
+  });
+  return { kind: "ok", id };
+}
+
 export function reopenItem(store: MockStore, cardId: string): FeedWriteResult {
   const card = store.getCard(cardId);
   if (!card) return "not-found";
-  if (!card.completedAt) return "invalid";
+  // Reopening an item that is not completed changes nothing, as on the producer.
+  if (!card.completedAt) return "ok";
   const result = setItemBucket(store, cardId, "doing");
   if (result !== "ok") return result;
   store.reopenCard(cardId);
@@ -1082,99 +1274,44 @@ export function remindOwner(store: MockStore, cardId: string): FeedWriteResult {
   return "ok";
 }
 
-export type BulkAction =
-  | { type: "set-due"; dueAt: string | null }
-  | { type: "set-status"; bucket: WorkBucket }
-  | { type: "unfollow" }
-  | { type: "assign"; assigneeId: string };
-
-export interface BulkResult {
-  itemId: string;
-  ok: boolean;
-  error: "not-found" | "invalid" | null;
-}
-
-export function bulkWrite(
+/** Adds a member to the item's assignees; the member's own items are the My work set. */
+export function assignMember(
   store: MockStore,
-  itemIds: readonly string[],
-  action: BulkAction,
-): BulkResult[] {
-  return itemIds.map((itemId): BulkResult => {
-    const card = store.getCard(itemId);
-    if (!card) return { itemId, ok: false, error: "not-found" };
-    let outcome: FeedWriteResult = "ok";
-    switch (action.type) {
-      case "set-due":
-        store.updateCard(itemId, { dueAt: action.dueAt });
-        break;
-      case "set-status":
-        outcome = setItemBucket(store, itemId, action.bucket);
-        break;
-      case "unfollow":
-        outcome = setFollowing(store, itemId, false);
-        break;
-      case "assign": {
-        if (!store.getUser(action.assigneeId)) {
-          outcome = "invalid";
-          break;
-        }
-        const feed = store.feed;
-        feed.assigned.delete(itemId);
-        store.updateCard(itemId, { assigneeUserIds: [action.assigneeId] });
-        if (action.assigneeId === store.getCurrentUser().id)
-          feed.assigned.add(itemId);
-        break;
-      }
-    }
-    return outcome === "ok"
-      ? { itemId, ok: true, error: null }
-      : {
-          itemId,
-          ok: false,
-          error: outcome === "not-found" ? "not-found" : "invalid",
-        };
-  });
-}
-
-/** Creates an item assigned to the member in the first group of a board. */
-export function createAssignedItem(
-  store: MockStore,
-  boardId: string,
-  name: string,
-): { id: string; key: string | null } | "not-found" {
-  const lists = store.getLists(boardId);
-  const group = lists[0];
-  if (!group) return "not-found";
-  const card = store.createCard(boardId, group.id, { title: name });
-  store.updateCard(card.id, {
-    assigneeUserIds: [store.getCurrentUser().id],
-  });
-  const optionId = optionIdFor(store, card.id, "todo");
-  if (optionId) store.updateItemStatus(card.id, optionId);
-  store.feed.assigned.add(card.id);
-  return { id: card.id, key: card.itemKey ?? null };
-}
-
-export function replyToMention(
-  store: MockStore,
-  mentionId: string,
-  text: string,
+  cardId: string,
+  userId: string,
 ): FeedWriteResult {
-  const feed = store.feed;
-  const mention = feed.mentions.find((entry) => entry.id === mentionId);
-  if (!mention) return "not-found";
-  const page = store.getPage(mention.docId);
-  if (page) {
-    store.createPageComment(page.id, store.getCurrentUser().id, text);
-  }
-  mention.handled = true;
-  for (const record of feed.inbox) {
-    if (record.mentionId === mentionId) {
-      record.need = null;
-      record.unread = false;
-    }
-  }
+  const card = store.getCard(cardId);
+  if (!card) return "not-found";
+  if (!store.getUser(userId)) return "invalid";
+  store.updateCard(cardId, {
+    assigneeUserIds: [...new Set([...(card.assigneeUserIds ?? []), userId])],
+  });
+  if (userId === store.getCurrentUser().id) store.feed.assigned.add(cardId);
   return "ok";
+}
+
+/** Removes a member from the item's assignees. */
+export function unassignMember(
+  store: MockStore,
+  cardId: string,
+  userId: string,
+): FeedWriteResult {
+  const card = store.getCard(cardId);
+  if (!card) return "not-found";
+  store.updateCard(cardId, {
+    assigneeUserIds: (card.assigneeUserIds ?? []).filter((id) => id !== userId),
+  });
+  return "ok";
+}
+
+/** Home lists the mentions whose notification is unread: reading one handles it, reopening or snoozing it brings it back. */
+function setMentionHandled(
+  feed: MockStore["feed"],
+  mentionId: string | null,
+  handled: boolean,
+) {
+  const mention = feed.mentions.find((entry) => entry.id === mentionId);
+  if (mention) mention.handled = handled;
 }
 
 export function markInbox(
@@ -1182,9 +1319,10 @@ export function markInbox(
   id: string,
   change:
     | { type: "handled" }
+    | { type: "done" }
+    | { type: "reopen" }
     | { type: "snooze"; until: string }
-    | { type: "mute" }
-    | { type: "reply"; text: string },
+    | { type: "mute"; muted?: boolean },
 ): FeedWriteResult {
   const feed = store.feed;
   const record = feed.inbox.find((entry) => entry.id === id);
@@ -1193,36 +1331,46 @@ export function markInbox(
     case "handled":
       record.unread = false;
       record.need = null;
+      setMentionHandled(feed, record.mentionId, true);
+      break;
+    case "done":
+      record.done = true;
+      record.unread = false;
+      record.need = null;
+      record.snoozedUntil = null;
+      setMentionHandled(feed, record.mentionId, true);
+      break;
+    case "reopen":
+      record.done = false;
+      record.snoozedUntil = null;
       break;
     case "snooze":
+      // A snooze hides the entry until its time, then it is back and unread.
       record.snoozedUntil = change.until;
+      record.done = false;
+      record.unread = true;
+      setMentionHandled(feed, record.mentionId, false);
       break;
     case "mute":
-      record.muted = true;
-      if (record.itemId) feed.mutedItemIds.add(record.itemId);
-      record.unread = false;
+      record.muted = change.muted !== false;
+      if (record.itemId) {
+        if (record.muted) feed.mutedItemIds.add(record.itemId);
+        else feed.mutedItemIds.delete(record.itemId);
+      }
       break;
-    case "reply": {
-      if (record.mentionId) {
-        const outcome = replyToMention(store, record.mentionId, change.text);
-        if (outcome !== "ok") return outcome;
-      } else if (record.itemId) {
-        store.createCardComment(
-          record.itemId,
-          store.getCurrentUser().id,
-          change.text,
-        );
-        record.need = record.need === "reply" ? null : record.need;
-      } else return "invalid";
-      record.unread = false;
-      break;
-    }
   }
   return "ok";
 }
 
 export function markAllInboxRead(store: MockStore): void {
-  for (const record of store.feed.inbox) record.unread = false;
+  const now = store.getClock().isoNow();
+  for (const record of store.feed.inbox) {
+    // Done and snoozed entries are not in the inbox, so read-all leaves them.
+    if (record.done || (record.snoozedUntil && record.snoozedUntil > now))
+      continue;
+    record.unread = false;
+    setMentionHandled(store.feed, record.mentionId, true);
+  }
 }
 
 export const DAY = DAY_MS;
@@ -1270,12 +1418,10 @@ export interface ChildItemDto {
   title: string;
   done: boolean;
   dueAt: string | null;
-  assignee: {
-    id: string;
-    userId: string;
-    name: string;
-    initials: string;
-  } | null;
+  assigneeUserId: string | null;
+  assigneeName: string | null;
+  position: string;
+  version: number;
 }
 
 /** The child items of an item ("Việc con"), in position order. */
@@ -1284,29 +1430,26 @@ export function listChildItems(
   itemId: string,
 ): ChildItemDto[] | "not-found" {
   if (!store.getCard(itemId)) return "not-found";
-  return store.getChildCards(itemId).map((child) => {
-    const owner = person(store, child.assigneeUserIds?.[0]);
-    return {
-      id: child.id,
-      key: child.itemKey ?? null,
-      title: child.title,
-      done: statusOf(store, child.id)?.bucket === "done" || !!child.completedAt,
-      dueAt: child.dueAt ?? null,
-      assignee: owner
-        ? {
-            id: owner.id,
-            userId: owner.id,
-            name: owner.name,
-            initials: owner.name
-              .split(/\s+/)
-              .slice(-2)
-              .map((word) => Array.from(word)[0] ?? "")
-              .join("")
-              .toUpperCase(),
-          }
-        : null,
-    };
-  });
+  return store.getChildCards(itemId).map((child) => childItemDto(store, child));
+}
+
+/** A child item as the contract lists it. */
+export function childItemDto(
+  store: MockStore,
+  child: ReturnType<MockStore["getChildCards"]>[number],
+): ChildItemDto {
+  const owner = person(store, child.assigneeUserIds?.[0]);
+  return {
+    id: child.id,
+    key: child.itemKey ?? null,
+    title: child.title,
+    done: statusOf(store, child.id)?.bucket === "done" || !!child.completedAt,
+    dueAt: child.dueAt ?? null,
+    assigneeUserId: owner?.id ?? null,
+    assigneeName: owner?.name ?? null,
+    position: String(child.position),
+    version: 1,
+  };
 }
 
 /** Whether the member follows an item (the sheet's "Đang theo dõi" chip). */

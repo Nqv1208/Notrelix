@@ -1,3 +1,4 @@
+using Notrelix.Domain.Workspaces.Rules;
 using Notrelix.Domain.Workspaces.Workspaces.Events;
 namespace Notrelix.Domain.Workspaces.Workspaces;
 
@@ -15,7 +16,7 @@ public sealed class Workspace :
 
     private Workspace() : base() { }
 
-    public static Workspace Create(Guid accountId, Guid ownerId, string name, string slug, DateTimeOffset createdAt, string? description = null, bool isPersonal = false)
+    public static Workspace Create(Guid accountId, Guid ownerId, string name, string slug, DateTimeOffset createdAt, string? description = null, bool isPersonal = false, string? size = null, string? language = null)
     {
         Guard.NotEmpty(accountId);
         Guard.NotEmpty(ownerId);
@@ -23,6 +24,8 @@ public sealed class Workspace :
         Guard.NotNullOrWhiteSpace(slug);
         Guard.MaxLength(name, 160);
 
+        // The address rule (3-63 characters, not reserved) applies to every newly chosen slug.
+        WorkspaceSlugRules.Validate(slug);
         var slugValue = SharedKernel.Slug.Create(slug);
 
         var normalizedDescription = string.IsNullOrWhiteSpace(description)
@@ -39,7 +42,7 @@ public sealed class Workspace :
             Slug = slugValue.Value,
             Description = normalizedDescription,
             Status = WorkspaceStatus.Active,
-            Settings = WorkspaceSettings.Create(),
+            Settings = WorkspaceSettings.Create(size: size, language: language),
             IsPersonal = isPersonal
         };
 

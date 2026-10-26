@@ -19,7 +19,7 @@ public class GetUserWorkspacesQueryHandlerTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -30,7 +30,7 @@ public class GetUserWorkspacesQueryHandlerTests : IAsyncLifetime
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
-        await using var context = _db.CreateContext(tenant);
+        await using var context = _db.CreateOwnerContext(tenant);
         var userId = Guid.NewGuid();
         var teammateId = Guid.NewGuid();
         var otherOwnerId = Guid.NewGuid();
@@ -88,7 +88,7 @@ public class GetUserWorkspacesQueryHandlerTests : IAsyncLifetime
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
-        await using var context = _db.CreateContext(tenant);
+        await using var context = _db.CreateOwnerContext(tenant);
         var requestContextMock = new Mock<ICurrentRequestContext>();
         requestContextMock.Setup(r => r.UserId).Returns(Guid.Empty);
         var handler = new GetUserWorkspacesQueryHandler(context, requestContextMock.Object);

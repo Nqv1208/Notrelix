@@ -13,15 +13,17 @@ public class PageTemplate : AggregateRoot
 
     private PageTemplate() : base() { }
 
-    public static PageTemplate Create(string name, JsonValue pageSnapshot, JsonValue blocksSnapshot, DateTimeOffset createdAt, Guid? workspaceId = null, Guid? createdBy = null)
+    public static PageTemplate Create(string name, JsonValue pageSnapshot, JsonValue blocksSnapshot, DateTimeOffset createdAt, Guid? workspaceId = null, Guid? createdBy = null, string? description = null)
     {
         Guard.NotNullOrWhiteSpace(name);
+        Guard.MaxLength(name.Trim(), 256);
         Guard.NotNull(pageSnapshot);
 
         var template = new PageTemplate
         {
             WorkspaceId = workspaceId,
             Name = name.Trim(),
+            Description = string.IsNullOrWhiteSpace(description) ? null : description.Trim(),
             PageSnapshot = pageSnapshot,
             BlocksSnapshot = blocksSnapshot,
             Status = PageTemplateStatus.Draft

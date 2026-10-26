@@ -116,16 +116,38 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
 
     const boardId = mockIds.boards.roadmap;
 
-    // 1. Board View read/save
+    // 1. Saved views: the default shared view, a private one, and their writes
     const initialView = await boardApi.getBoardView(boardId);
     expect(initialView.viewMode).toBe("table");
-    await boardApi.saveBoardView(boardId, {
-      viewMode: "kanban",
-      viewConfig: { ...initialView.viewConfig, groupBy: "status" },
+    const [defaultView] = await boardApi.listSavedViews(boardId);
+    expect(defaultView?.isDefault).toBe(true);
+    await boardApi.updateSavedViewConfig(boardId, defaultView!.id, {
+      ...initialView.viewConfig,
+      groupBy: "status",
     });
-    const updatedView = await boardApi.getBoardView(boardId);
-    expect(updatedView.viewMode).toBe("kanban");
-    expect(updatedView.viewConfig.groupBy).toBe("status");
+    expect((await boardApi.getBoardView(boardId)).viewConfig.groupBy).toBe(
+      "status",
+    );
+    const mine = await boardApi.createSavedView(boardId, {
+      name: "Mine",
+      viewMode: "kanban",
+      viewConfig: initialView.viewConfig,
+      visibility: "me",
+    });
+    expect(mine.viewMode).toBe("kanban");
+    expect(mine.visibility).toBe("me");
+    await boardApi.renameSavedView(boardId, mine.id, "Mine 2");
+    await boardApi.setSavedViewVisibility(boardId, mine.id, "board");
+    await boardApi.setDefaultSavedView(boardId, mine.id);
+    const listed = await boardApi.listSavedViews(boardId);
+    expect(listed[0]).toMatchObject({
+      id: mine.id,
+      name: "Mine 2",
+      visibility: "board",
+      isDefault: true,
+    });
+    await boardApi.deleteSavedView(boardId, defaultView!.id);
+    expect(await boardApi.listSavedViews(boardId)).toHaveLength(1);
 
     // 2. Group / List CRUD + Reorder
     await groupApi.createGroup({
@@ -296,37 +318,34 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
       fetchImpl: mockFetch,
     });
 
-    const accountService = createAccountService(client.api, {
-      auth: { profile: endpoints.auth.profile },
-      users: {
-        updateProfile: endpoints.users.updateProfile,
-        preferences: "/account/preferences",
-        security: "/users/security",
-      },
-    });
+    const accountService = createAccountService(client.api, endpoints);
 
     // Profile update
-    const updatedProfile = await accountService.updateProfile({
-      name: "Jane Doe (Updated)",
-    });
-    expect(updatedProfile.name).toBe("Jane Doe (Updated)");
+    await accountService.updateProfile({ name: "Jane Doe (Updated)" });
     const fetchedProfile = await accountService.getProfile();
     expect(fetchedProfile.name).toBe("Jane Doe (Updated)");
 
-    // Preferences update
-    const updatedPrefs = await accountService.updatePreferences({
+    // Preferences: saved with the version they were read at (0 before the first save)
+    const initial = await accountService.getPreferences();
+    expect(initial.version).toBe(0);
+    const updatedPrefs = await accountService.updatePreferences(
+      { theme: "dark", phone: "+84 912 468 135" },
+      initial.version,
+    );
+    expect(updatedPrefs).toMatchObject({
       theme: "dark",
-      colorTheme: "emerald",
+      phone: "+84912468135",
+      version: 1,
     });
-    expect(updatedPrefs.theme).toBe("dark");
-    expect(updatedPrefs.colorTheme).toBe("emerald");
-    const fetchedPrefs = await accountService.getPreferences();
-    expect(fetchedPrefs.theme).toBe("dark");
-    expect(fetchedPrefs.colorTheme).toBe("emerald");
+    expect((await accountService.getPreferences()).theme).toBe("dark");
+    // A stale version is refused with 412.
+    await expect(
+      accountService.updatePreferences({ theme: "light" }, 0),
+    ).rejects.toMatchObject({ status: 412 });
 
-    // Security settings
-    const security = await accountService.getSecuritySettings();
-    expect(security.twoFactorEnabled).toBe(false);
+    // Security summary of the sign-in
+    const security = await accountService.getSecuritySummary();
+    expect(security.twoFactorEnabled).toBe(true);
 
     // Relational Invariants preserved
     store.assertInvariants();

@@ -78,7 +78,7 @@ public sealed class PipelineTelemetryIntegrationTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -125,7 +125,7 @@ public sealed class PipelineTelemetryIntegrationTests : IAsyncLifetime
         recorder.Started.Should().ContainSingle(a => a.OperationName == "handler.execute")
             .Which.Parent!.OperationName.Should().Be("data_session.open");
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.Workspaces.CountAsync(w => w.AccountId == accountId)).Should().Be(1,
             "the handler mutation must be committed when the pipeline succeeds");
     }
@@ -151,7 +151,7 @@ public sealed class PipelineTelemetryIntegrationTests : IAsyncLifetime
         root.Tags.Should().Contain(tag =>
             tag.Key == "pipeline.outcome" && (string?)tag.Value == "failure:forbidden");
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.Workspaces.CountAsync(w => w.AccountId == accountId)).Should().Be(0,
             "a rejected request must not leave committed business state");
     }
@@ -252,7 +252,11 @@ public sealed class PipelineTelemetryIntegrationTests : IAsyncLifetime
         services.AddSingleton<ICurrentTenantContext>(tenant);
         services.AddSingleton(clockMock.Object);
         services.AddScoped<ApplicationDbContext>(sp =>
-            _db.CreateContext(sp.GetRequiredService<ICurrentTenantContext>()));
+            _db.CreateOwnerContext(sp.GetRequiredService<ICurrentTenantContext>()));
+        // The consume pipeline and the dispatcher choose the worker principal per scope; this host supplies
+        // its own context, so the principal only needs to exist.
+        services.AddSingleton(new Notrelix.Infrastructure.Data.DatabaseConnectionStrings(null, null, true));
+        services.AddScoped<Notrelix.Infrastructure.Data.DatabasePrincipal>();
 
         services.AddMessaging(configuration);
         services.AddObservability(configuration);
@@ -285,7 +289,7 @@ public sealed class PipelineTelemetryIntegrationTests : IAsyncLifetime
             // happens strictly after the durable write.
             var change = NewRealtimeChange(DateTimeOffset.UtcNow.AddMinutes(-1));
             MessagingOutboxMessage message;
-            await using (var seed = _db.CreateContext(SystemTenant()))
+            await using (var seed = _db.CreateOwnerContext(SystemTenant()))
             {
                 message = MessagingOutboxMessage.FromIntegrationEvent(
                     change, DateTimeOffset.UtcNow.AddMinutes(-1));
@@ -298,7 +302,7 @@ public sealed class PipelineTelemetryIntegrationTests : IAsyncLifetime
             var processed = await WaitForAsync(
                 async () =>
                 {
-                    await using var probe = _db.CreateContext(SystemTenant());
+                    await using var probe = _db.CreateOwnerContext(SystemTenant());
                     return await probe.Set<MessagingOutboxMessage>()
                         .AnyAsync(m => m.Id == message.Id && m.Status == "Processed");
                 },
@@ -404,7 +408,7 @@ public sealed class PipelineTelemetryIntegrationTests : IAsyncLifetime
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(IdempotencyBehavior<,>));
 
         services.AddScoped<ApplicationDbContext>(sp =>
-            _db.CreateContext(sp.GetRequiredService<ICurrentTenantContext>()));
+            _db.CreateOwnerContext(sp.GetRequiredService<ICurrentTenantContext>()));
         services.AddScoped<IWorkspaceDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IAccountDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IGovernanceDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
@@ -480,7 +484,7 @@ public sealed class PipelineTelemetryIntegrationTests : IAsyncLifetime
         user.ConfirmEmail(user.Id, now);
         var account = Account.Create("Telemetry Account", $"telemetry-{Guid.NewGuid():N}", AccountType.Team, user.Id, now);
 
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Users.Add(user);
         seed.Accounts.Add(account);
         seed.AccountMembers.Add(AccountMember.Create(account.Id, user.Id, role, user.Id, now));
@@ -509,7 +513,7 @@ public sealed class PipelineTelemetryIntegrationTests : IAsyncLifetime
             account.Id, workspace.Id, board.Id, group.Id, "Task",
             FractionalIndex.Create("a0"), ownerId, now);
 
-        await using (var seed = _db.CreateContext(SystemTenant()))
+        await using (var seed = _db.CreateOwnerContext(SystemTenant()))
         {
             seed.Users.Add(user);
             seed.Accounts.Add(account);
@@ -522,7 +526,7 @@ public sealed class PipelineTelemetryIntegrationTests : IAsyncLifetime
             await seed.SaveChangesAsync();
         }
 
-        await using (var grant = _db.CreateContext(SystemTenant()))
+        await using (var grant = _db.CreateOwnerContext(SystemTenant()))
         {
             var projection = new AccessGrantProjectionService(grant);
             await projection.SyncWorkspaceMemberGrantAsync(
@@ -535,7 +539,7 @@ public sealed class PipelineTelemetryIntegrationTests : IAsyncLifetime
 
     private async Task<Guid> ResolveBoardItemIdAsync(Guid workspaceId)
     {
-        await using var context = _db.CreateContext(SystemTenant());
+        await using var context = _db.CreateOwnerContext(SystemTenant());
         var ids = await context.BoardItems
             .Where(i => i.WorkspaceId == workspaceId)
             .Select(i => i.Id)

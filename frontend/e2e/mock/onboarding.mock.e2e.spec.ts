@@ -51,7 +51,7 @@ test("a new company goes through all four steps and lands on Home with its check
   );
   await page.getByRole("button", { name: "Vào Trang chủ" }).click();
   await expect(page).toHaveURL(/\/workspaces\/[^/]+/);
-  await expect(page.getByText(/0\/3|1\/3/).first()).toBeVisible();
+  await expect(page.getByText(/[01]\/2/).first()).toBeVisible();
 });
 
 test("the invited person sets a name and the look and starts", async ({

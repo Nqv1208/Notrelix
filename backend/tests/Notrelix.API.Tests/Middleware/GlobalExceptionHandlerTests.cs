@@ -116,6 +116,20 @@ public class GlobalExceptionHandlerTests
     }
 
     [Fact]
+    public async Task ForbiddenException_WithDenialCode_ShouldExposeItAsErrorCode()
+    {
+        var exception = new Notrelix.Application.Common.Exceptions.ForbiddenException(
+            "Email must be confirmed before using this feature.",
+            Notrelix.Application.Common.Security.AccessDenialCodes.EmailNotConfirmed);
+
+        await _handler.TryHandleAsync(_context, exception, default);
+
+        var pd = await ReadProblemDetailsAsync(_context);
+        pd.Status.Should().Be(StatusCodes.Status403Forbidden);
+        pd.Extensions!["errorCode"].ToString().Should().Be("auth.email_not_confirmed");
+    }
+
+    [Fact]
     public async Task DomainForbiddenException_ShouldReturn403()
     {
         var exception = new DomainForbiddenException("No permission");

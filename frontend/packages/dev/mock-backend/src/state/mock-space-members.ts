@@ -43,7 +43,6 @@ export interface SpaceMembersExtraDto {
     readonly boardId: string;
     readonly boardName: string;
     readonly level: "viewer" | "commenter" | "editor" | "manager";
-    readonly expiresAt: string | null;
   }[];
 }
 
@@ -126,7 +125,6 @@ export function spaceMembersExtra(
         boardId: board.id,
         boardName: board.title,
         level: grant?.level ?? "viewer",
-        expiresAt: grant?.expiresAt ?? null,
       });
     }
   }

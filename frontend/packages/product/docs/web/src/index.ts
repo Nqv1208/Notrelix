@@ -5,7 +5,9 @@ export type {
   UseDocPageHost,
 } from "./components/doc-page-host";
 export type {
+  DocBoardEmbed,
   DocPerson,
+  DocPickerBoardView,
   DocShareView,
   DocSpaceView,
   DocTaskRef,

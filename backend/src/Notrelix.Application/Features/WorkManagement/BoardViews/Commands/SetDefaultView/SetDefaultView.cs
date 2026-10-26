@@ -34,6 +34,7 @@ public class SetDefaultViewCommandHandler : IRequestHandler<SetDefaultViewComman
             .FirstOrDefaultAsync(v => v.Id == request.ViewId && v.BoardId == request.BoardId, ct);
         if (view is null) throw new NotFoundException(nameof(BoardView), request.ViewId);
 
+        BoardViewAccess.EnsureCanEdit(view, _currentUser.UserId);
         var now = _dateTimeProvider.UtcNow;
 
         var otherDefaults = await _context.BoardViews

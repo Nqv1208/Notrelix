@@ -6,6 +6,7 @@ SELECT ops.apply_scoped_business_policies('work', 'board_groups', true);
 SELECT ops.apply_scoped_business_policies('work', 'board_fields', true);
 SELECT ops.apply_scoped_business_policies('work', 'board_items', true);
 SELECT ops.apply_scoped_business_policies('work', 'board_item_members', true);
+SELECT ops.apply_scoped_business_policies('work', 'board_item_reminders', true);
 SELECT ops.apply_scoped_business_policies('work', 'labels', true);
 SELECT ops.apply_scoped_business_policies('work', 'board_item_labels', true);
 SELECT ops.apply_scoped_business_policies('work', 'board_views', true);
@@ -70,18 +71,13 @@ SELECT ops.apply_scoped_business_policies('collab', 'resource_read_states', true
 SELECT ops.apply_scoped_business_policies('automation', 'automation_rules', true);
 SELECT ops.apply_scoped_business_policies('automation', 'automation_executions', true);
 SELECT ops.apply_scoped_business_policies('automation', 'scheduled_jobs', true);
-SELECT ops.apply_scoped_business_policies('automation', 'automation_templates', true);
 SELECT ops.apply_scoped_business_policies('automation', 'ai_agents', true);
 SELECT ops.apply_scoped_business_policies('automation', 'ai_agent_runs', true);
 SELECT ops.apply_scoped_business_policies('integration', 'integration_connections', true);
-SELECT ops.apply_scoped_business_policies('integration', 'integration_scopes', true);
-SELECT ops.apply_scoped_business_policies('integration', 'integration_secret_versions', true);
 SELECT ops.apply_scoped_business_policies('integration', 'webhook_subscriptions', true);
 SELECT ops.apply_scoped_business_policies('integration', 'webhook_deliveries', true);
 SELECT ops.apply_scoped_business_policies('integration', 'inbound_webhook_events', true);
 SELECT ops.apply_scoped_business_policies('integration', 'calendar_integrations', true);
-SELECT ops.apply_scoped_business_policies('integration', 'calendar_event_links', true);
-SELECT ops.apply_scoped_business_policies('integration', 'integration_sync_cursors', true);
 
 -- Anonymous provider webhook bootstrap is a deliberately narrow exception to
 -- tenant-scoped app SELECT. The request must set app.webhook_path before the
@@ -121,13 +117,10 @@ SELECT ops.apply_catalog_policies('billing', 'plans');
 SELECT ops.apply_catalog_policies('billing', 'plan_prices');
 SELECT ops.apply_catalog_policies('billing', 'plan_limits');
 SELECT ops.apply_scoped_business_policies('billing', 'subscriptions', true);
-SELECT ops.apply_scoped_business_policies('billing', 'subscription_items', true);
 SELECT ops.apply_scoped_business_policies('billing', 'payment_methods', true);
 SELECT ops.apply_scoped_business_policies('billing', 'invoices', true);
-SELECT ops.apply_scoped_business_policies('billing', 'invoice_line_items', true);
 SELECT ops.apply_scoped_business_policies('billing', 'entitlements', true);
 SELECT ops.apply_scoped_business_policies('billing', 'usage_metrics', true);
-SELECT ops.apply_scoped_business_policies('billing', 'usage_metric_history', true);
 SELECT ops.apply_scoped_business_policies('billing', 'feature_usage_ledger', true);
 SELECT ops.apply_scoped_business_policies('billing', 'workspace_feature_usages', true);
 SELECT ops.apply_worker_internal_policies('billing', 'billing_events', true);

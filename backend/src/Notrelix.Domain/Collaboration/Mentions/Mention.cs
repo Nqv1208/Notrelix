@@ -13,8 +13,9 @@ public class Mention : Entity, IWorkspaceScoped
     public DateTimeOffset CreatedAt { get; private set; }
 
     private Mention() : base() { }
+    private Mention(Guid id) : base(id) { }
 
-    public static Mention Create(Guid accountId, Guid workspaceId, ResourceRef source, MentionType type, Guid mentionedId, Guid mentionedByUserId, DateTimeOffset createdAt)
+    public static Mention Create(Guid accountId, Guid workspaceId, ResourceRef source, MentionType type, Guid mentionedId, Guid mentionedByUserId, DateTimeOffset createdAt, string? excerpt = null, Guid? id = null)
     {
         Guard.NotEmpty(accountId);
         Guard.NotEmpty(workspaceId);
@@ -25,7 +26,7 @@ public class Mention : Entity, IWorkspaceScoped
         if (source.WorkspaceId.HasValue && source.WorkspaceId.Value != workspaceId)
             throw new BusinessRuleException(CommonRuleCodes.Common_WorkspaceScopeMismatch, $"Workspace scope mismatch. Expected '{workspaceId}', got '{source.WorkspaceId.Value}'.");
 
-        var mention = new Mention
+        var mention = new Mention(id ?? Guid.CreateVersion7())
         {
             AccountId = accountId,
             WorkspaceId = workspaceId,
@@ -37,7 +38,7 @@ public class Mention : Entity, IWorkspaceScoped
         };
 
         mention.RaiseDomainEvent(new MentionCreatedDomainEvent(
-            accountId, workspaceId, mention.Id, source, mentionedId, mentionedByUserId, createdAt));
+            accountId, workspaceId, mention.Id, source, mentionedId, mentionedByUserId, createdAt, excerpt));
 
         return mention;
     }

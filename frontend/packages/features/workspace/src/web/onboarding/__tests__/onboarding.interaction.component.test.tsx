@@ -21,6 +21,12 @@ import { onboardingCopy } from "../onboarding.copy";
 
 const copy = onboardingCopy("vi");
 
+/** Opens the styled Select behind a label and picks one option by its text. */
+function choose(trigger: HTMLElement, option: string | RegExp) {
+  fireEvent.keyDown(trigger, { key: "Enter" });
+  fireEvent.click(screen.getByRole("option", { name: option }));
+}
+
 describe("onboarding: workspace step", () => {
   it("FUI[workspace.setup-flow:workspace] writes the name and size into the draft and waits for a free address", () => {
     const onDraft = vi.fn();
@@ -338,9 +344,7 @@ describe("onboarding: board step", () => {
     );
     fireEvent.click(screen.getByRole("radio", { name: /Tuyển dụng/ }));
     expect(onDraft.mock.calls.at(-1)?.[0].board.templateId).toBe("hiring");
-    fireEvent.change(screen.getByLabelText(copy.board.departmentLabel), {
-      target: { value: "san-xuat" },
-    });
+    choose(screen.getByLabelText(copy.board.departmentLabel), "Sản xuất");
     expect(onDraft.mock.calls.at(-1)?.[0].board.departmentKey).toBe("san-xuat");
     // No name: the board is not made.
     fireEvent.click(screen.getByRole("button", { name: copy.board.create }));

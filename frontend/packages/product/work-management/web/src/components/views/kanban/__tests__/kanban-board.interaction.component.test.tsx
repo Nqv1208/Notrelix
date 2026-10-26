@@ -55,6 +55,7 @@ function renderBoard(
       filterActive={false}
       canAdd
       canDrag
+      laneCardLimit={3}
       onOpenDetails={onOpenDetails}
       onDropCard={onDropCard}
       onCreateItem={onCreateItem}

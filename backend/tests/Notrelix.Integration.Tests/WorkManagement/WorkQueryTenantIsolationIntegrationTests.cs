@@ -60,7 +60,7 @@ public sealed class WorkQueryTenantIsolationIntegrationTests : IAsyncLifetime
         _db = db;
     }
 
-    public async Task InitializeAsync() => await new DatabaseReset(_db.ConnectionString).ResetAsync();
+    public async Task InitializeAsync() => await new DatabaseReset(_db.OwnerConnectionString).ResetAsync();
 
     public Task DisposeAsync() => Task.CompletedTask;
 
@@ -70,7 +70,7 @@ public sealed class WorkQueryTenantIsolationIntegrationTests : IAsyncLifetime
         var (accountId, ownerId, workspaceId) = await SeedWorkspaceStackAsync();
         var (ownBoard, ownItem) = await SeedBoardAsync(accountId, workspaceId, ownerId, "Own");
         var foreignWorkspace = Workspace.Create(accountId, Guid.NewGuid(), "Foreign WS", $"wm-f-{Guid.NewGuid():N}", DateTimeOffset.UtcNow);
-        await using (var seed = _db.CreateContext(SystemTenant()))
+        await using (var seed = _db.CreateOwnerContext(SystemTenant()))
         {
             seed.Workspaces.Add(foreignWorkspace);
             await seed.SaveChangesAsync();
@@ -103,7 +103,7 @@ public sealed class WorkQueryTenantIsolationIntegrationTests : IAsyncLifetime
         var board = Board.Create(accountId, workspaceId, ownerId, title, null, now);
         var group = BoardGroup.Create(accountId, workspaceId, board.Id, "Todo", Color.Create("#808080"), FractionalIndex.Create("a0"), ownerId, now);
         var item = BoardItem.CreateRoot(accountId, workspaceId, board.Id, group.Id, $"{title} task", FractionalIndex.Create("a0"), ownerId, now);
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Boards.Add(board);
         seed.BoardGroups.Add(group);
         seed.BoardItems.Add(item);
@@ -156,7 +156,7 @@ public sealed class WorkQueryTenantIsolationIntegrationTests : IAsyncLifetime
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(AccessControlBehavior<,>));
 
         services.AddScoped<ApplicationDbContext>(sp =>
-            _db.CreateContext(sp.GetRequiredService<ICurrentTenantContext>()));
+            _db.CreateOwnerContext(sp.GetRequiredService<ICurrentTenantContext>()));
         services.AddScoped<IWorkspaceDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IAccountDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IGovernanceDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
@@ -228,7 +228,7 @@ public sealed class WorkQueryTenantIsolationIntegrationTests : IAsyncLifetime
         var account = Account.Create("WM Account", $"wm-{Guid.NewGuid():N}", AccountType.Team, owner.Id, now);
         var workspace = Workspace.Create(account.Id, owner.Id, "WM Workspace", $"wm-ws-{Guid.NewGuid():N}", now);
 
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Users.Add(owner);
         seed.Users.Add(member);
         seed.Accounts.Add(account);
@@ -238,7 +238,7 @@ public sealed class WorkQueryTenantIsolationIntegrationTests : IAsyncLifetime
         seed.WorkspaceMembers.Add(WorkspaceMember.Create(account.Id, workspace.Id, member.Id, WorkspaceRole.Member, owner.Id, now));
         await seed.SaveChangesAsync();
 
-        await using var grant = _db.CreateContext(SystemTenant());
+        await using var grant = _db.CreateOwnerContext(SystemTenant());
         var projection = new AccessGrantProjectionService(grant);
         await projection.SyncWorkspaceMemberGrantAsync(account.Id, workspace.Id, owner.Id, WorkspaceRole.Owner, now, CancellationToken.None);
         await projection.SyncWorkspaceMemberGrantAsync(account.Id, workspace.Id, member.Id, WorkspaceRole.Member, now, CancellationToken.None);

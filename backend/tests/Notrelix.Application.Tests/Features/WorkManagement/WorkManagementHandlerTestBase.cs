@@ -190,7 +190,7 @@ public abstract class WorkManagementHandlerTestBase
         return board;
     }
 
-    protected BoardItem CreateBoardItem(Guid? id = null, Guid? boardId = null, Guid? groupId = null)
+    protected BoardItem CreateBoardItem(Guid? id = null, Guid? boardId = null, Guid? groupId = null, string position = "a0")
     {
         var item = BoardItem.CreateRoot(
             TestAccountId,
@@ -198,7 +198,7 @@ public abstract class WorkManagementHandlerTestBase
             boardId ?? Guid.CreateVersion7(),
             groupId ?? Guid.CreateVersion7(),
             "Test Item",
-            FractionalIndex.Create("a0"),
+            FractionalIndex.Create(position),
             TestUserId,
             TestNow);
         if (id.HasValue)

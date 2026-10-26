@@ -1,6 +1,6 @@
 import type { BillingLink } from "../billing/billing-models";
 
-/** What the Integrations surfaces read (gap `CTR-GAP-INTEGRATIONS`). Free-text lines arrive composed; time labels are Hanoi time. */
+/** What the Integrations surfaces read (the producer's `Integrations.*` contract is composed into them by the web app). Free-text lines arrive composed; time labels are Hanoi time. */
 export type IntegrationTone = "ok" | "warn" | "off";
 export interface IntegrationStatus {
   readonly tone: IntegrationTone;
@@ -31,6 +31,8 @@ export interface IntegrationCatalogDto {
   readonly will: readonly string[];
   readonly wont: readonly string[];
   readonly gate: { can: readonly string[]; alsoHas: readonly string[] } | null;
+  /** False when the provider has no client id and secret in configuration: it cannot be connected. Absent means connectable. */
+  readonly configured?: boolean;
 }
 export interface IntegrationsListDto {
   readonly serverTime: string;

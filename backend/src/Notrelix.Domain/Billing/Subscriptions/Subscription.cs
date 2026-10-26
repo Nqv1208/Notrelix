@@ -56,6 +56,29 @@ public class Subscription : AggregateRoot, IAccountScoped
         RaiseDomainEvent(new SubscriptionChangedDomainEvent(AccountId, WorkspaceId, Id, oldPlanId, newPlanId, updatedAt));
     }
 
+    /// <summary>
+    /// Moves the subscription to another plan together with that plan's tier, so the tier the
+    /// subscription reports always matches the plan it references.
+    /// </summary>
+    public void ChangePlan(Guid newPlanId, SubscriptionTier newTier, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        Guard.NotEmpty(newPlanId);
+        Guard.NotEmpty(updatedBy);
+
+        if (Status is SubscriptionStatus.Canceled or SubscriptionStatus.Expired)
+            throw new BusinessRuleException(BillingRuleCodes.Billing_Subscription_CannotChangePlanOfInactive, "Cannot change plan of an inactive subscription.");
+
+        if (PlanId == newPlanId && Tier == newTier) return;
+
+        var oldPlanId = PlanId;
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        PlanId = newPlanId;
+        Tier = newTier;
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+        RaiseDomainEvent(new SubscriptionChangedDomainEvent(AccountId, WorkspaceId, Id, oldPlanId, newPlanId, updatedAt));
+    }
+
     public void ScheduleCancellation(Guid updatedBy, DateTimeOffset occurredAt)
     {
         Guard.NotEmpty(updatedBy);

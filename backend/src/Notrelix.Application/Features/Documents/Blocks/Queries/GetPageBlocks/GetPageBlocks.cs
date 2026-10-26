@@ -24,9 +24,13 @@ public class GetPageBlocksQueryHandler : IRequestHandler<GetPageBlocksQuery, Res
 
         var blockEntities = await _context.Blocks.AsNoTracking()
             .Where(block => block.PageId == request.PageId && block.DeletedAt == null)
-            .OrderBy(block => block.Position)
             .ToListAsync(ct);
 
-        return Result<List<BlockDto>>.Success(blockEntities.Select(DocumentDtoMapper.ToBlockDto).ToList());
+        // A fractional index orders by ordinal comparison, which the column collation does not
+        // guarantee, so the order is applied here (a page holds a bounded number of blocks).
+        return Result<List<BlockDto>>.Success(blockEntities
+            .OrderBy(block => block.Position.Value, StringComparer.Ordinal)
+            .Select(DocumentDtoMapper.ToBlockDto)
+            .ToList());
     }
 }

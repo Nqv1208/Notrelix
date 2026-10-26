@@ -2,6 +2,7 @@ using Notrelix.API.Extensions;
 using Microsoft.Extensions.Options;
 using Notrelix.API.Options;
 using Notrelix.API.RateLimiting;
+using Notrelix.Application.Features.Identity.OAuth;
 using Notrelix.Application.Features.Identity.OAuth.Abstractions;
 using Notrelix.Application.Features.Identity.OAuth.Commands.CompleteOAuthLogin;
 using Notrelix.Application.Features.Identity.OAuth.DTOs;
@@ -19,7 +20,7 @@ public static class CompleteOAuthLoginEndpoint
             .WithTags("Identity.Auth")
             .WithSummary("Complete OAuth login callback")
             .WithDescription("Handles the OAuth provider callback, validates state, exchanges code, and sets auth cookies.")
-            .WithMetadata(new RateLimitPolicyAttribute("AuthStrictByIp"));
+            .WithMetadata(new RateLimitPolicyAttribute("AuthCredentialByIp"));
 
         return group;
     }
@@ -40,15 +41,20 @@ public static class CompleteOAuthLoginEndpoint
             return Results.Redirect(redirectOptions.Value.FrontendFailureUrl);
         }
 
+        OAuthLoginState? storedState = null;
         if (!string.IsNullOrWhiteSpace(state))
         {
-            var storedState = await stateStore.PeekAsync(state, CancellationToken.None);
+            storedState = await stateStore.PeekAsync(state, CancellationToken.None);
             if (storedState is not null && storedState.Flow != OAuthFlowKind.Login)
             {
                 return Results.Redirect(BuildFlowHandoffUrl(
                     redirectOptions.Value.FrontendSuccessUrl, code, state, error, error_description));
             }
         }
+
+        // The login command consumes the state, so the return path is read from the peeked copy.
+        // Only an internal root-relative path ever leaves the API; anything else is dropped.
+        var returnTo = SafeReturnPath.OrNull(storedState?.ReturnUrl);
 
         var command = new CompleteOAuthLoginCommand
         {
@@ -66,11 +72,42 @@ public static class CompleteOAuthLoginEndpoint
             return Results.Redirect(redirectOptions.Value.FrontendFailureUrl);
         }
 
+        // An MFA-enabled user has no session yet: the result carries a challenge, not tokens. The
+        // challenge travels in a short-lived httpOnly cookie scoped to the MFA endpoints, never in
+        // the URL; the browser lands on the sign-in second step and the verify endpoint reads it.
+        if (result.Data.MfaRequired)
+        {
+            if (string.IsNullOrEmpty(result.Data.MfaChallengeToken) || result.Data.MfaExpiresAt is null)
+            {
+                return Results.Redirect(AppendErrorCode(redirectOptions.Value.FrontendFailureUrl, MfaRequiredErrorCode));
+            }
+
+            cookieService.SetMfaChallengeCookie(
+                result.Data.MfaChallengeToken,
+                new DateTimeOffset(DateTime.SpecifyKind(result.Data.MfaExpiresAt.Value, DateTimeKind.Utc)));
+
+            return Results.Redirect(AppendReturnTo(redirectOptions.Value.FrontendMfaUrl, returnTo));
+        }
+
+        if (string.IsNullOrEmpty(result.Data.AccessToken) || string.IsNullOrEmpty(result.Data.RefreshToken))
+        {
+            return Results.Redirect(AppendErrorCode(redirectOptions.Value.FrontendFailureUrl, MfaRequiredErrorCode));
+        }
+
         cookieService.SetTokenCookie(result.Data.AccessToken, result.Data.RefreshToken);
 
-        var returnUrl = redirectOptions.Value.FrontendSuccessUrl;
-        return Results.Redirect(returnUrl);
+        return Results.Redirect(AppendReturnTo(redirectOptions.Value.FrontendSuccessUrl, returnTo));
     }
+
+    internal const string MfaRequiredErrorCode = "identity.oauth.mfa-required";
+
+    internal static string AppendReturnTo(string baseUrl, string? safeReturnTo) =>
+        safeReturnTo is null
+            ? baseUrl
+            : $"{baseUrl}{(baseUrl.Contains('?') ? '&' : '?')}returnTo={Uri.EscapeDataString(safeReturnTo)}";
+
+    internal static string AppendErrorCode(string baseUrl, string errorCode) =>
+        $"{baseUrl}{(baseUrl.Contains('?') ? '&' : '?')}error={Uri.EscapeDataString(errorCode)}";
 
     private static string BuildFlowHandoffUrl(
         string baseUrl, string? code, string state, string? error, string? errorDescription)

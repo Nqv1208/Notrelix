@@ -13,6 +13,7 @@ public static class MapBoardViewEndpoints
             .WithOpenApi();
 
         group.MapGetBoardView();
+        group.MapListBoardViews();
         group.MapSaveBoardView();
         group.MapCreateBoardView();
         group.MapUpdateBoardViewConfig();
@@ -22,6 +23,7 @@ public static class MapBoardViewEndpoints
         group.MapRestoreBoardView();
         group.MapRenameBoardView();
         group.MapSetDefaultView();
+        group.MapSetBoardViewVisibility();
 
         return app;
     }

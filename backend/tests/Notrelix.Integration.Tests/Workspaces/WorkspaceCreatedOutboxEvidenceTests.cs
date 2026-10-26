@@ -32,7 +32,7 @@ public sealed class WorkspaceCreatedOutboxEvidenceTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -66,7 +66,7 @@ public sealed class WorkspaceCreatedOutboxEvidenceTests : IAsyncLifetime
 
     private async Task<int> CountWorkspaceCreatedOutboxAsync(Guid workspaceId)
     {
-        await using var probe = _db.CreateContext(SystemTenant());
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
         return await probe.Set<MessagingOutboxMessage>()
             .IgnoreQueryFilters()
             .CountAsync(message => message.WorkspaceId == workspaceId
@@ -75,7 +75,7 @@ public sealed class WorkspaceCreatedOutboxEvidenceTests : IAsyncLifetime
 
     private async Task<int> CountMemberAddedOutboxAsync(Guid workspaceId)
     {
-        await using var probe = _db.CreateContext(SystemTenant());
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
         return await probe.Set<MessagingOutboxMessage>()
             .IgnoreQueryFilters()
             .CountAsync(message => message.WorkspaceId == workspaceId
@@ -90,7 +90,7 @@ public sealed class WorkspaceCreatedOutboxEvidenceTests : IAsyncLifetime
         var creation = WorkspaceFactory.CreateWithOwner(
             accountId, ownerId, "Created WS", $"created-{Guid.NewGuid():N}", Now);
 
-        await using var context = _db.CreateContext(SystemTenant(), CreateOutboxInterceptor());
+        await using var context = _db.CreateOwnerContext(SystemTenant(), CreateOutboxInterceptor());
         context.Workspaces.Add(creation.Workspace);
         context.WorkspaceMembers.Add(creation.OwnerMember);
         await context.SaveChangesAsync();
@@ -109,7 +109,7 @@ public sealed class WorkspaceCreatedOutboxEvidenceTests : IAsyncLifetime
         var creation = WorkspaceFactory.CreateWithOwner(
             accountId, ownerId, "Rolled Back WS", $"rolled-{Guid.NewGuid():N}", Now);
 
-        await using var context = _db.CreateContext(SystemTenant(), CreateOutboxInterceptor());
+        await using var context = _db.CreateOwnerContext(SystemTenant(), CreateOutboxInterceptor());
         await using var transaction = await context.Database.BeginTransactionAsync();
         context.Workspaces.Add(creation.Workspace);
         context.WorkspaceMembers.Add(creation.OwnerMember);

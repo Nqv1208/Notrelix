@@ -1,4 +1,5 @@
 using Notrelix.API.Extensions;
+using Notrelix.Application.Features.Documents.DTOs;
 using Notrelix.Application.Features.Documents.Pages.Queries.GetPageBreadcrumb;
 
 namespace Notrelix.API.Endpoints.Documents.Pages.Queries;
@@ -9,6 +10,7 @@ public static class GetPageBreadcrumbEndpoint
     {
         group.MapResourceGet("/breadcrumb", HandleAsync)
             .WithName("Documents.Pages.GetPageBreadcrumb")
+            .Produces<List<PageBreadcrumbDto>>(StatusCodes.Status200OK, "application/json")
             .WithTags("Documents.Pages")
             .WithSummary("Get breadcrumb for a page");
         return group;

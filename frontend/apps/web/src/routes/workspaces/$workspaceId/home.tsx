@@ -11,7 +11,6 @@ import {
   createUseWorkspaceRecents,
   useWorkspaceHomeCopy,
   WorkspaceHomeSurface,
-  AddItemDialog,
   formatCopy,
   type ContinueEntry,
   type HomeAgenda,
@@ -22,6 +21,7 @@ import {
   type SectionState,
 } from "@notrelix/features-workspace/web";
 import { useCurrentUser } from "@notrelix/features-auth";
+import { BoardItemCreateDialog } from "@notrelix/work-management-web";
 import { useFormatters } from "@notrelix/i18n";
 import { useAppRuntime } from "@notrelix/runtime-web";
 import { HomeGettingStarted } from "@/routes/onboarding/home-getting-started";
@@ -46,6 +46,7 @@ import {
 import {
   useHomeFeed,
   useMyWorkExtended,
+  useRefreshWorkFeed,
   useWorkFeedWrites,
 } from "@/shell/workspace/work-feed-bridge";
 
@@ -85,8 +86,8 @@ export function HomePage() {
   const feedQuery = useHomeFeed(workspaceId);
   const departmentsById = useDepartmentsById(workspaceId);
   const writes = useWorkFeedWrites(workspaceId);
+  const refreshFeed = useRefreshWorkFeed(workspaceId);
   const [addOpen, setAddOpen] = useState(false);
-  const [addPending, setAddPending] = useState(false);
   const [pendingReplyIds, setPendingReplyIds] = useState<ReadonlySet<string>>(
     () => new Set(),
   );
@@ -167,7 +168,12 @@ export function HomePage() {
     if (state.status !== "ready") return state;
     return {
       status: "ready",
-      data: toReplyViews(state.data.replies, (at) => relativeTime(at, now)),
+      data: toReplyViews(
+        state.data.replies,
+        (at) => relativeTime(at, now),
+        (title) =>
+          formatCopy(copy.home.replies.mentionedIn, { title: title ?? "" }),
+      ),
     };
   }, [feedQuery, relativeTime, now]);
   const agendaState = useMemo<SectionState<HomeAgenda> | undefined>(() => {
@@ -215,7 +221,7 @@ export function HomePage() {
           reply.id,
           () =>
             writes.decideApproval({
-              itemId: dto.target.id,
+              requestId: dto.id,
               boardId: dto.target.boardId!,
               decision: "approve",
             }),
@@ -231,9 +237,9 @@ export function HomePage() {
           reply.id,
           () =>
             writes.decideApproval({
-              itemId: dto.target.id,
+              requestId: dto.id,
               boardId: dto.target.boardId!,
-              decision: "request-changes",
+              decision: "reject",
             }),
           formatCopy(copy.home.toasts.changesRequested, {
             name: dto.target.key ?? reply.actorName,
@@ -241,10 +247,16 @@ export function HomePage() {
         );
       },
       onReply: (reply, text) => {
-        const mentionId = reply.id.replace(/^mention:/, "");
+        const dto = replyById.get(reply.id);
+        if (!dto) return;
         void withPending(
           reply.id,
-          () => writes.replyToMention({ mentionId, text }),
+          () =>
+            writes.replyToMention({
+              notificationId: dto.id,
+              target: { kind: dto.target.kind, id: dto.target.id },
+              text,
+            }),
           formatCopy(copy.home.toasts.replied, { name: reply.actorName }),
         );
       },
@@ -323,32 +335,18 @@ export function HomePage() {
         onRetryMyWork={() => void myWorkQuery.refetch()}
       />
       {create.dialog}
-      <AddItemDialog
-        copy={copy}
+      <BoardItemCreateDialog
         open={addOpen}
-        boards={createBoards}
-        pending={addPending}
-        error={null}
         onOpenChange={setAddOpen}
-        onSubmit={(input) => {
-          setAddPending(true);
-          void writes
-            .createItem(input)
-            .then(() => {
-              setAddOpen(false);
-              toast.success(
-                formatCopy(copy.home.toasts.itemCreated, { name: input.name }),
-              );
-            })
-            .catch((error: unknown) =>
-              toastFailure(
-                copy.home.toasts.failed,
-                error,
-                copy.home.toasts.failedHint,
-              ),
-            )
-            .finally(() => setAddPending(false));
-        }}
+        workspaceId={workspaceId}
+        boards={createBoards.map((board) => ({
+          id: board.id,
+          label: board.departmentName
+            ? `${board.name} · ${board.departmentName}`
+            : board.name,
+        }))}
+        assigneeId={user?.id ?? null}
+        onCreated={({ boardId }) => refreshFeed([boardId])}
       />
     </>
   );

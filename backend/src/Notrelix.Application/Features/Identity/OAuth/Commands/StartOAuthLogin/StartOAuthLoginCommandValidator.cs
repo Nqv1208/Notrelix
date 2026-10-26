@@ -10,14 +10,8 @@ public class StartOAuthLoginCommandValidator : AbstractValidator<StartOAuthLogin
         RuleFor(x => x.ReturnUrl)
             .Must(BeSafeReturnUrl)
             .When(x => !string.IsNullOrWhiteSpace(x.ReturnUrl))
-            .WithMessage("ReturnUrl must be a relative path.");
+            .WithMessage("ReturnUrl must be an internal path that starts with a single slash.");
     }
 
-    private static bool BeSafeReturnUrl(string? returnUrl)
-    {
-        if (string.IsNullOrWhiteSpace(returnUrl))
-            return true;
-
-        return returnUrl.StartsWith('/') && !returnUrl.Contains("//");
-    }
+    private static bool BeSafeReturnUrl(string? returnUrl) => SafeReturnPath.IsSafe(returnUrl);
 }

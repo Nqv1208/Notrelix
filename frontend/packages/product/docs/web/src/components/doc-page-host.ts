@@ -1,6 +1,9 @@
-import type { Page } from "@notrelix/docs-core";
+import type { BlockType, Page } from "@notrelix/docs-core";
+import type { DocsRealtime } from "@notrelix/docs-collaboration";
 import type {
+  DocBoardEmbed,
   DocPerson,
+  DocPickerBoardView,
   DocShareView,
   DocSpaceView,
   DocTaskRef,
@@ -24,8 +27,14 @@ export interface DocPageHost {
   readonly tasksReady: boolean;
   /** The board the page's task table reads from. */
   readonly board: { readonly name: string; readonly href?: string } | null;
+  /** Embedded boards by id, read with the viewer's own access; omitted shows none. */
+  readonly boards?: ReadonlyMap<string, DocBoardEmbed>;
+  /** Boards the viewer may embed; omitted offers no board reference. */
+  readonly boardChoices?: readonly DocPickerBoardView[];
   /** Tasks matching a typed key or title, for the mention list. */
   readonly suggestTasks: (query: string) => readonly DocTaskRef[];
+  /** Workspace members matching a typed name, for the mention list; omitted offers none. */
+  readonly suggestMembers?: (query: string) => readonly DocPerson[];
   /** The share dialog's facts; `null` keeps Share disabled. */
   readonly share: DocShareView | null;
   /** Why the viewer sees a private department's page, when they do. */
@@ -34,6 +43,28 @@ export interface DocPageHost {
   readonly viewerId?: string;
   /** Whether the viewer may edit the page. */
   readonly canEdit: boolean;
+  /** The block types the producer stores; omitted offers every type. */
+  readonly blockTypes?: readonly BlockType[];
+  /** Gives a workspace member access to the page; omitted offers no invite. */
+  readonly onShareInvite?: (userId: string) => Promise<void>;
+  /** Whether a checklist line can become a work item; omitted offers it. */
+  readonly canConvertTodo?: boolean;
+  /** Boards the viewer may add items to (the convert-to-task dialog); omitted lists none. */
+  readonly convertBoards?: readonly {
+    readonly id: string;
+    readonly title: string;
+  }[];
+  /** Groups of the board chosen in the convert dialog; `null` while they load. */
+  readonly convertGroups?:
+    readonly { readonly id: string; readonly name: string }[] | null;
+  /** The name of a department (Space) by id, for lists of pages. */
+  readonly spaceNameFor?: (spaceId: string) => string | null;
+  /** Tells the viewer something that happened outside their action (a toast). */
+  readonly notify?: (message: string) => void;
+  /** Leaves the open page (after it moved to the trash). */
+  readonly leaveDoc?: () => void;
+  /** The realtime transport; omitted, the page does not follow others' changes. */
+  readonly realtime?: DocsRealtime;
   /** The workspace's own locale-independent "now" (tests fix the clock). */
   readonly now: Date;
   /** Opens another page (host routing). */
@@ -52,6 +83,8 @@ export interface DocPageHostInput {
   readonly boardIds: readonly string[];
   /** The text after "@" while the mention list is open, else `null`. */
   readonly mentionQuery: string | null;
+  /** The board chosen in the convert-to-task dialog, else `null`. */
+  readonly convertBoardId: string | null;
 }
 
 export type UseDocPageHost = (input: DocPageHostInput) => DocPageHost;

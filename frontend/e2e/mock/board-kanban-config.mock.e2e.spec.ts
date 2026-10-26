@@ -1,12 +1,13 @@
 import { expect, test, type Page } from "@playwright/test";
 
 /**
- * The Kanban view's own settings, on the mock world (owner persona = board
- * manager): items per lane, who sees the status controls, and Alt+Arrow card
- * move. The settings are stored on the view config; the mock keeps a saved
- * config in session storage, so a reload shows it again. (The mock world's
- * cards are rebuilt on every load, so a moved card itself does not survive a
- * reload here.)
+ * The Kanban view on the mock world (owner persona = board manager). The
+ * board has no producer for a view's own settings (items per lane, who sees
+ * the status controls, the card-move shortcut), so the settings page offers no
+ * view section and the Kanban keeps its defaults: three cards before "Xem
+ * thêm", the status controls for the manager, Alt+Arrow card move on. (The
+ * mock world's cards are rebuilt on every load, so a moved card itself does
+ * not survive a reload here.)
  */
 const BOARD = "/workspaces/mock-workspace-primary/boards/mock-board-erp";
 const NOW = new Date("2026-10-12T10:40:00+07:00");
@@ -34,86 +35,47 @@ function cardButtons(page: Page, laneName: string) {
   return lane(page, laneName).locator("button[data-card-id]");
 }
 
-/** The board's "Thiết lập" opens the settings page; the Kanban view's own settings sit in its panel. */
+/** The board's "Thiết lập" opens the settings page. */
 async function openSettings(page: Page) {
   await page.getByRole("button", { name: "Thiết lập", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Thiết lập board" }),
   ).toBeVisible();
-  await page.getByRole("button", { name: /^Chế độ xem/ }).click();
-  await page.getByRole("button", { name: "Sửa chế độ xem Kanban" }).click();
-  const panel = page.getByRole("complementary", {
-    name: "Sửa chế độ xem Kanban",
-  });
-  await expect(panel).toBeVisible();
-  return panel;
-}
-
-/** "Về board" returns to the Kanban the page was opened from. */
-async function closeSettings(page: Page) {
-  await page.getByRole("link", { name: "Về board" }).click();
-  await expect(lane(page, "Cần làm")).toBeVisible();
 }
 
 test.describe("Kanban view settings", () => {
-  test("the lane limit decides how many cards a lane shows, and a reload keeps it", async ({
+  test("the settings page offers no view settings, and a lane keeps three cards before Xem thêm", async ({
     page,
   }) => {
     await openBoard(page);
-    // Three cards before "Xem thêm" (Final-Board).
     await expect(cardButtons(page, "Cần làm")).toHaveCount(3);
-
-    const panel = await openSettings(page);
-    await panel
-      .getByRole("spinbutton", { name: "Số việc hiện trong mỗi cột" })
-      .fill("2");
-    await closeSettings(page);
-    await expect(cardButtons(page, "Cần làm")).toHaveCount(2);
+    await openSettings(page);
+    await expect(page.getByRole("button", { name: /^Chế độ xem/ })).toHaveCount(
+      0,
+    );
     await expect(
-      lane(page, "Cần làm").getByRole("button", { name: "Xem thêm 4 việc" }),
-    ).toBeVisible();
-
-    await page.reload();
+      page.getByRole("button", { name: "Sửa chế độ xem Kanban" }),
+    ).toHaveCount(0);
+    await page.getByRole("link", { name: "Về board" }).click();
     await expect(lane(page, "Cần làm")).toBeVisible();
-    await expect(cardButtons(page, "Cần làm")).toHaveCount(2);
-
-    // The stepper writes too.
-    const again = await openSettings(page);
-    await again
-      .getByRole("button", { name: "Hiện nhiều việc hơn trong mỗi cột" })
-      .click();
-    await closeSettings(page);
     await expect(cardButtons(page, "Cần làm")).toHaveCount(3);
+    await expect(
+      lane(page, "Cần làm").getByRole("button", { name: "Xem thêm 3 việc" }),
+    ).toBeVisible();
   });
 
-  test("the role setting never takes the status controls from a manager", async ({
+  test("the manager keeps the status controls after a reload", async ({
     page,
   }) => {
     await openBoard(page);
     await expect(
       page.getByRole("button", { name: "Thêm trạng thái" }),
     ).toBeVisible();
-
-    const panel = await openSettings(page);
-    const manager = panel.getByRole("checkbox", { name: "Quản lý (luôn có)" });
-    await expect(manager).toBeChecked();
-    await expect(manager).toBeDisabled();
-    const editor = panel.getByRole("checkbox", { name: "Người chỉnh sửa" });
-    await expect(editor).toBeChecked();
-    await editor.click();
-    await expect(editor).not.toBeChecked();
-    await closeSettings(page);
-
-    // Editors are off, the manager keeps the controls.
+    await page.reload();
+    await expect(lane(page, "Cần làm")).toBeVisible();
     await expect(
       page.getByRole("button", { name: "Thêm trạng thái" }),
     ).toBeVisible();
-    await page.reload();
-    await expect(lane(page, "Cần làm")).toBeVisible();
-    const after = await openSettings(page);
-    await expect(
-      after.getByRole("checkbox", { name: "Người chỉnh sửa" }),
-    ).not.toBeChecked();
   });
 
   test("Alt+Arrow moves the focused card to the next lane, announces it and keeps focus", async ({
@@ -157,39 +119,18 @@ test.describe("Kanban view settings", () => {
     ).toBeFocused();
   });
 
-  test("the switch turns Alt+Arrow off, and a reload keeps it off", async ({
+  test("Alt+Arrow card move is on for a card, before and after a reload", async ({
     page,
   }) => {
     await openBoard(page);
-    const panel = await openSettings(page);
-    const keys = panel.getByRole("switch", {
-      name: "Chuyển thẻ bằng bàn phím",
-    });
-    await expect(keys).toBeChecked();
-    await keys.click();
-    await expect(keys).not.toBeChecked();
-    await closeSettings(page);
-
     for (const reload of [false, true]) {
       if (reload) {
         await page.reload();
         await expect(lane(page, "Cần làm")).toBeVisible();
       }
-      const card = page.getByRole("button", { name: ERP_149, exact: true });
-      await expect(card).not.toHaveAttribute("aria-keyshortcuts");
-      await card.focus();
-      await page.keyboard.press("Alt+ArrowRight");
-      await page.waitForTimeout(300);
       await expect(
-        lane(page, "Cần làm").getByRole("button", {
-          name: ERP_149,
-          exact: true,
-        }),
-      ).toBeVisible();
-      await expect(lane(page, "Cần làm")).toHaveAttribute(
-        "data-lane-count",
-        "6",
-      );
+        page.getByRole("button", { name: ERP_149, exact: true }),
+      ).toHaveAttribute("aria-keyshortcuts", /Alt/);
     }
   });
 });

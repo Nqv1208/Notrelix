@@ -8,6 +8,7 @@ const DEFAULTS: KanbanViewSettings = {
   laneCardLimit: 4,
   statusManageRoles: ["manager", "editor"],
   keyboardMove: true,
+  wipLimits: {},
 };
 
 function renderPanel(settings: Partial<KanbanViewSettings> = {}) {

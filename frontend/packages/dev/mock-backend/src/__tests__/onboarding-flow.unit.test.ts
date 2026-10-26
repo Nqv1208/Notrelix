@@ -19,41 +19,55 @@ function client() {
 }
 
 const KEY = { idempotencyKey: "test-key" } as const;
+const ACCOUNT = "account-x";
+const slugCheck = (slug: string) =>
+  `/accounts/${ACCOUNT}/workspaces/slug-check?slug=${slug}`;
+const workspaces = `/accounts/${ACCOUNT}/workspaces`;
 
 describe("workspace address", () => {
   it("is free until a workspace has it, then taken with a suggestion close by", async () => {
     const { api } = client();
-    expect(await api.get("/onboarding/slug-check?slug=saomai")).toMatchObject({
-      available: true,
+    expect(await api.get(slugCheck("saomai"))).toMatchObject({
+      status: "free",
     });
     await api.post(
-      "/onboarding/workspace",
+      workspaces,
       {
         name: "Công ty CP Thực phẩm Sao Mai",
         slug: "saomai",
-        size: "l",
-        locale: "vi",
+        size: "51-200",
+        language: "vi",
       },
       KEY,
     );
-    expect(await api.get("/onboarding/slug-check?slug=saomai")).toEqual({
-      available: false,
+    expect(await api.get(slugCheck("saomai"))).toEqual({
+      status: "taken",
       reason: "taken",
       suggestion: "saomai-food",
     });
-    expect(
-      await api.get("/onboarding/slug-check?slug=Sao%20Mai!"),
-    ).toMatchObject({
-      available: false,
+    expect(await api.get(slugCheck("Sao%20Mai!"))).toMatchObject({
+      status: "invalid",
       reason: "invalid",
     });
     await expect(
       api.post(
-        "/onboarding/workspace",
-        { name: "Sao Mai 2", slug: "saomai", size: "s", locale: "vi" },
+        workspaces,
+        { name: "Sao Mai 2", slug: "saomai", size: "1-10", language: "vi" },
         KEY,
       ),
     ).rejects.toMatchObject({ status: 409 });
+  });
+
+  it("refuses the reserved words and a short or long address", async () => {
+    const { api } = client();
+    for (const slug of ["admin", "workspaces", "ab", "a".repeat(64)])
+      expect(await api.get(slugCheck(slug))).toMatchObject({
+        status: "invalid",
+        reason: "invalid",
+      });
+    expect(await api.get(slugCheck("a".repeat(63)))).toMatchObject({
+      status: "free",
+    });
   });
 
   it("keeps reserved words and the mock world's own addresses taken", () => {
@@ -87,147 +101,117 @@ describe("suggestions", () => {
 });
 
 describe("the setup through the client", () => {
-  it("creates the workspace, its private departments, invitations and first board", async () => {
-    const { api, store } = client();
-    const made = await api.post<{ id: string }>(
-      "/onboarding/workspace",
+  const create = async (
+    api: ReturnType<typeof client>["api"],
+    slug: string,
+  ) => ({
+    id: await api.post<string>(
+      workspaces,
       {
         name: "Công ty CP Thực phẩm Sao Mai",
-        slug: "saomai",
-        size: "l",
-        locale: "vi",
+        slug,
+        size: "51-200",
+        language: "vi",
       },
       KEY,
-    );
-    const departments = await api.post<{
-      departments: { id: string; name: string; color: string }[];
-    }>(
-      `/workspaces/${made.id}/onboarding/departments`,
-      {
-        departments: [
-          { name: "Kinh doanh", color: "coral" },
-          { name: "Sản xuất", color: "blue" },
-        ],
-      },
-      KEY,
-    );
-    expect(departments.departments.map((entry) => entry.name)).toEqual([
-      "Kinh doanh",
-      "Sản xuất",
-    ]);
-    const spaces = store.spaces.spacesOf(made.id);
-    expect(
-      spaces.map((space) => [space.name, space.visibility, space.color]),
-    ).toEqual([
-      ["Kinh doanh", "Private", "coral"],
-      ["Sản xuất", "Private", "blue"],
-    ]);
-
-    const invites = await api.post<{ sent: number; skipped: string[] }>(
-      `/workspaces/${made.id}/onboarding/invitations`,
-      {
-        invites: [
-          {
-            email: "khoa@saomaifood.vn",
-            spaceId: departments.departments[1]?.id,
-            role: "Admin",
-          },
-          {
-            email: "lan@saomaifood.vn",
-            spaceId: departments.departments[0]?.id,
-            role: "Member",
-          },
-          { email: "khoa@saomaifood.vn", spaceId: null, role: "Viewer" },
-        ],
-      },
-      KEY,
-    );
-    // The same email twice is sent once.
-    expect(invites).toEqual({ sent: 2, skipped: ["khoa@saomaifood.vn"] });
-
-    const board = await api.post<{ id: string }>(
-      `/workspaces/${made.id}/onboarding/board`,
-      {
-        templateId: "project",
-        name: "Ra mắt nước chấm Sao Mai",
-        spaceId: departments.departments[1]?.id,
-      },
-      KEY,
-    );
-    expect(store.getBoard(board.id)?.title).toBe("Ra mắt nước chấm Sao Mai");
-    expect(store.getBoard(board.id)?.spaceId).toBe(
-      departments.departments[1]?.id,
-    );
-
-    const list = await api.get<{
-      visible: boolean;
-      items: { key: string; done: boolean; pendingInvites: number | null }[];
-    }>(`/workspaces/${made.id}/getting-started`);
-    expect(list.visible).toBe(true);
-    expect(list.items.map((item) => item.key)).toEqual([
-      "first-item",
-      "invite-more",
-      "mobile",
-    ]);
-    expect(list.items[1]?.pendingInvites).toBe(2);
-    await api.post(
-      `/workspaces/${made.id}/getting-started/mobile/done`,
-      {},
-      KEY,
-    );
-    await api.post(`/workspaces/${made.id}/getting-started/dismiss`, {}, KEY);
-    expect(
-      (
-        await api.get<{ visible: boolean }>(
-          `/workspaces/${made.id}/getting-started`,
-        )
-      ).visible,
-    ).toBe(false);
+    ),
   });
 
-  it("refuses an unnamed department, a bad email and a missing template", async () => {
-    const { api } = client();
-    const made = await api.post<{ id: string }>(
-      "/onboarding/workspace",
-      { name: "Studio Hoa", slug: "studiohoa", size: "s", locale: "en" },
+  it("creates private departments, invitations with their entries and the first board, with the producer's operations", async () => {
+    const { api, store } = client();
+    const made = await create(api, "saomai");
+    const space = (name: string) =>
+      api.post<string>(
+        `/workspaces/${made.id}/spaces`,
+        { name, visibility: "Private", spaceType: "Department" },
+        KEY,
+      );
+    const sales = await space("Kinh doanh");
+    const factory = await space("Sản xuất");
+    expect(
+      store.spaces
+        .spacesOf(made.id)
+        .map((entry) => [entry.name, entry.visibility, entry.type]),
+    ).toEqual([
+      ["Kinh doanh", "Private", "Department"],
+      ["Sản xuất", "Private", "Department"],
+    ]);
+
+    const invite = (email: string, targetId: string | null, role: string) =>
+      api.post(
+        `/workspaces/${made.id}/members`,
+        {
+          email,
+          role: "Member",
+          initialEntries: targetId ? [{ kind: "Space", targetId, role }] : [],
+        },
+        KEY,
+      );
+    await invite("khoa@saomaifood.vn", factory, "Admin");
+    await invite("lan@saomaifood.vn", sales, "Member");
+    // The same address twice is refused the second time: the page counts it as skipped.
+    await expect(
+      invite("khoa@saomaifood.vn", null, "Viewer"),
+    ).rejects.toMatchObject({ status: 422 });
+
+    const boardId = await api.post<string>(
+      `/workspaces/${made.id}/boards`,
+      { title: "Ra mắt nước chấm Sao Mai", spaceId: factory },
       KEY,
     );
-    await expect(
-      api.post(
-        `/workspaces/${made.id}/onboarding/departments`,
-        { departments: [{ name: " " }] },
-        KEY,
-      ),
-    ).rejects.toMatchObject({ status: 422 });
-    await expect(
-      api.post(
-        `/workspaces/${made.id}/onboarding/invitations`,
-        { invites: [{ email: "khong-phai-email", role: "Member" }] },
-        KEY,
-      ),
-    ).rejects.toMatchObject({ status: 422 });
-    await expect(
-      api.post(
-        `/workspaces/${made.id}/onboarding/board`,
-        { templateId: "nope", name: "" },
-        KEY,
-      ),
-    ).rejects.toMatchObject({ status: 422 });
+    expect(store.getBoard(boardId)?.title).toBe("Ra mắt nước chấm Sao Mai");
+    expect(store.getBoard(boardId)?.spaceId).toBe(factory);
+  });
+
+  it("derives the getting-started card and lets a member hide it", async () => {
+    const { api } = client();
+    const made = await create(api, "saomai2");
+    const card = () =>
+      api.get<{
+        visible: boolean;
+        dismissed: boolean;
+        items: { key: string; done: boolean }[];
+      }>(`/workspaces/${made.id}/getting-started`);
+    expect(await card()).toMatchObject({
+      visible: true,
+      items: [
+        { key: "first-item", done: false },
+        { key: "invite-more", done: false },
+      ],
+    });
+    await api.post(
+      `/workspaces/${made.id}/members`,
+      { email: "khoa@saomaifood.vn", role: "Member" },
+      KEY,
+    );
+    expect((await card()).items[1]).toMatchObject({
+      key: "invite-more",
+      done: true,
+    });
+    await api.post(`/workspaces/${made.id}/getting-started/dismiss`, {}, KEY);
+    expect(await card()).toMatchObject({ visible: false, dismissed: true });
   });
 
   it("keeps a draft per person and clears it", async () => {
     const { api } = client();
-    expect(await api.get("/onboarding/draft")).toEqual({ draft: null });
-    await api.put("/onboarding/draft", {
+    expect(await api.get("/workspaces/onboarding-draft")).toEqual({
+      draft: null,
+    });
+    await expect(
+      api.put("/workspaces/onboarding-draft", { workspaceId: null, data: {} }),
+    ).rejects.toMatchObject({ status: 422 });
+    await api.put("/workspaces/onboarding-draft", {
       step: "departments",
       workspaceId: "w1",
       data: { draft: { workspace: { name: "A" } } },
     });
-    expect(await api.get("/onboarding/draft")).toMatchObject({
+    expect(await api.get("/workspaces/onboarding-draft")).toMatchObject({
       draft: { step: "departments", workspaceId: "w1" },
     });
-    await api.delete("/onboarding/draft");
-    expect(await api.get("/onboarding/draft")).toEqual({ draft: null });
+    await api.delete("/workspaces/onboarding-draft");
+    expect(await api.get("/workspaces/onboarding-draft")).toEqual({
+      draft: null,
+    });
   });
 });
 

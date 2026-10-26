@@ -178,38 +178,52 @@ jobs:
           postgres_ref="$(jq -r '.postgres' <<<"$SMOKE_DEPS")"
           redis_ref="$(jq -r '.redis' <<<"$SMOKE_DEPS")"
           rabbitmq_ref="$(jq -r '.rabbitmq' <<<"$SMOKE_DEPS")"
-          docker run -d --name notrelix-ci-postgres --network "$network" -e POSTGRES_PASSWORD=ci -e POSTGRES_DB=notrelix "$postgres_ref" >/dev/null
-          docker run -d --name notrelix-ci-redis --network "$network" "$redis_ref" redis-server --requirepass ci >/dev/null
-          docker run -d --name notrelix-ci-rabbitmq --network "$network" -e RABBITMQ_DEFAULT_USER=rabbitmq -e RABBITMQ_DEFAULT_PASS=ci "$rabbitmq_ref" >/dev/null
-          for _ in $(seq 1 45); do docker exec notrelix-ci-postgres pg_isready -U postgres -d notrelix >/dev/null 2>&1 && break; sleep 1; done
-          for _ in $(seq 1 60); do docker exec notrelix-ci-rabbitmq rabbitmq-diagnostics -q ping >/dev/null 2>&1 && break; sleep 1; done
           scripts/ci/generate-test-credentials.sh > "$creds"
           # shellcheck source=/dev/null
           source "$creds"
-          docker run -d --name notrelix-ci-backend-http -p 8080:8080 --network "$network" \
-            -e ASPNETCORE_ENVIRONMENT=Production \
-            -e ASPNETCORE_URLS=http://+:8080 \
-            -e HttpsRedirection__Enabled=false \
-            -e ForwardedHeaders__RequireKnownProxyInProduction=false \
-            -e Rls__Enabled=true \
-            -e Rls__SetSessionContext=true \
-            -e DataProtection__PersistKeys=true \
-            -e DataProtection__KeysPath=/tmp/dataprotection-keys \
-            -e ConnectionStrings__NotrelixDb="Host=notrelix-ci-postgres;Port=5432;Database=notrelix;Username=postgres;Password=ci" \
-            -e ConnectionStrings__Redis="notrelix-ci-redis:6379,password=ci" \
-            -e Messaging__Transport=RabbitMQ \
-            -e Messaging__RabbitMQ__Host=notrelix-ci-rabbitmq \
-            -e Messaging__RabbitMQ__Port=5672 \
-            -e Messaging__RabbitMQ__VHost=/ \
-            -e Messaging__RabbitMQ__Username=rabbitmq \
-            -e Messaging__RabbitMQ__Password=ci \
-            -e JwtSettings__SecretKey="$JWT_SECRET" \
-            -e JwtSettings__Issuer=https://ci.notrelix.invalid \
-            -e JwtSettings__Audience=https://ci.notrelix.invalid \
-            -e Email__ApiKey="$EMAIL_API_KEY" \
-            -e Email__FromEmail=noreply@notrelix.invalid \
-            -e Cors__AllowedOrigins__0=https://ci.notrelix.invalid \
-            -e Frontend__AppBaseUrl=https://ci.notrelix.invalid \
+          # The runtime logins are created by the init script on this fresh data directory, exactly as in the stack.
+          docker run -d --name notrelix-ci-postgres --network "$network" \
+            -e POSTGRES_PASSWORD=ci -e POSTGRES_DB=notrelix \
+            -e NOTRELIX_APP_DB_PASSWORD="$NOTRELIX_APP_DB_PASSWORD" \
+            -e NOTRELIX_WORKER_DB_PASSWORD="$NOTRELIX_WORKER_DB_PASSWORD" \
+            -v "$PWD/infra/postgres/init/20-create-runtime-logins.sh:/docker-entrypoint-initdb.d/20-create-runtime-logins.sh:ro" \
+            "$postgres_ref" >/dev/null
+          docker run -d --name notrelix-ci-redis --network "$network" "$redis_ref" redis-server --requirepass ci >/dev/null
+          docker run -d --name notrelix-ci-rabbitmq --network "$network" -e RABBITMQ_DEFAULT_USER=rabbitmq -e RABBITMQ_DEFAULT_PASS=ci "$rabbitmq_ref" >/dev/null
+          for _ in $(seq 1 45); do docker exec notrelix-ci-postgres pg_isready -h 127.0.0.1 -U postgres -d notrelix >/dev/null 2>&1 && break; sleep 1; done
+          for _ in $(seq 1 60); do docker exec notrelix-ci-rabbitmq rabbitmq-diagnostics -q ping >/dev/null 2>&1 && break; sleep 1; done
+          # Requests run as notrelix_app, background work as notrelix_worker; migrate and rls-apply use the owner.
+          backend_env=(
+            -e ASPNETCORE_ENVIRONMENT=Production
+            -e ASPNETCORE_URLS=http://+:8080
+            -e HttpsRedirection__Enabled=false
+            -e ForwardedHeaders__RequireKnownProxyInProduction=false
+            -e Rls__Enabled=true
+            -e Rls__SetSessionContext=true
+            -e Rls__RoleEnforcement=Enforce
+            -e DataProtection__PersistKeys=true
+            -e DataProtection__KeysPath=/tmp/dataprotection-keys
+            -e ConnectionStrings__NotrelixDb="Host=notrelix-ci-postgres;Port=5432;Database=notrelix;Username=notrelix_app;Password=$NOTRELIX_APP_DB_PASSWORD"
+            -e ConnectionStrings__NotrelixWorkerDb="Host=notrelix-ci-postgres;Port=5432;Database=notrelix;Username=notrelix_worker;Password=$NOTRELIX_WORKER_DB_PASSWORD"
+            -e ConnectionStrings__NotrelixMigrationDb="Host=notrelix-ci-postgres;Port=5432;Database=notrelix;Username=postgres;Password=ci"
+            -e ConnectionStrings__Redis="notrelix-ci-redis:6379,password=ci"
+            -e Messaging__Transport=RabbitMQ
+            -e Messaging__RabbitMQ__Host=notrelix-ci-rabbitmq
+            -e Messaging__RabbitMQ__Port=5672
+            -e Messaging__RabbitMQ__VHost=/
+            -e Messaging__RabbitMQ__Username=rabbitmq
+            -e Messaging__RabbitMQ__Password=ci
+            -e JwtSettings__SecretKey="$JWT_SECRET"
+            -e JwtSettings__Issuer=https://ci.notrelix.invalid
+            -e JwtSettings__Audience=https://ci.notrelix.invalid
+            -e Email__ApiKey="$EMAIL_API_KEY"
+            -e Email__FromEmail=noreply@notrelix.invalid
+            -e Cors__AllowedOrigins__0=https://ci.notrelix.invalid
+            -e Frontend__AppBaseUrl=https://ci.notrelix.invalid
+          )
+          docker run --rm --network "$network" "${backend_env[@]}" notrelix-ci/backend:${{ github.sha }} --migrate
+          docker run --rm --network "$network" "${backend_env[@]}" notrelix-ci/backend:${{ github.sha }} --rls-apply
+          docker run -d --name notrelix-ci-backend-http -p 8080:8080 --network "$network" "${backend_env[@]}" \
             notrelix-ci/backend:${{ github.sha }}
           if [[ "$(docker exec notrelix-ci-backend-http id -u)" == 0 ]]; then docker logs notrelix-ci-backend-http; exit 1; fi
           code=000; attempts=0
