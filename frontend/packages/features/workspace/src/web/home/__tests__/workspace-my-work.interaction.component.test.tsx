@@ -506,6 +506,21 @@ describe("WorkspaceMyWorkSurface", () => {
     );
   });
 
+  it("FUI[workspace.my-work:waiting-bare] draws a waiting-on entry without a note or due date with no dangling separators", () => {
+    const scenario = myWorkDefaultScenario();
+    const entry = scenario.waiting![0]!;
+    renderMyWork({
+      ...scenario,
+      waiting: [{ ...entry, note: "", dueNote: "" }],
+    });
+
+    const keyInRail = screen
+      .getAllByText(entry.key)
+      .find((node) => !node.hasAttribute("data-f"))!;
+    const line = keyInRail.parentElement!;
+    expect(line.textContent?.trim()).toBe(entry.key);
+  });
+
   it("FUI[workspace.my-work:edge] keeps long titles and a Board the member cannot open readable", () => {
     renderMyWork(myWorkEdgeDataScenario());
     const row = rowOf("VH-1204");

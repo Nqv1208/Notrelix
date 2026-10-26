@@ -6,6 +6,7 @@ import { DocEditorSurface } from "../doc-editor-surface";
 import { EditorToolbar } from "../editor-toolbar";
 import { matchSlashItems } from "../slash-menu";
 import { docToDrafts } from "../block-mapping";
+import type { DocPageCallbacks } from "../../components/doc-page-models";
 import { useDocRichEditor } from "../use-doc-rich-editor";
 import { stubLayout } from "./headless-editor";
 
@@ -38,7 +39,7 @@ const onDrafts = vi.fn((d: BlockDraft[]) => {
   lastDrafts = d;
 });
 
-function Harness() {
+function Harness({ callbacks }: { callbacks?: DocPageCallbacks } = {}) {
   const { editor } = useDocRichEditor({
     pageId: "p",
     ready: true,
@@ -53,7 +54,7 @@ function Harness() {
   if (!editor) return null;
   return (
     <>
-      <EditorToolbar editor={editor} copy={docsCopy} />
+      <EditorToolbar editor={editor} copy={docsCopy} callbacks={callbacks} />
       <DocEditorSurface editor={editor} copy={docsCopy} mentionTasks={[]} />
       <button
         type="button"
@@ -103,6 +104,31 @@ describe("doc editor", () => {
     });
     expect(lastDrafts.find((d) => d.id === "b")?.properties.checked).toBe(true);
     expect(docToDrafts).toBeTruthy();
+  });
+});
+
+describe("toolbar comment button", () => {
+  it("anchors the comment to the selected text, and only opens the panel without a selection", async () => {
+    const onCommentStart = vi.fn();
+    const onOpenComments = vi.fn();
+    renderPureUi(<Harness callbacks={{ onCommentStart, onOpenComments }} />);
+    const comment = await screen.findByRole("button", {
+      name: docsCopy.toolbar.comment,
+    });
+
+    await act(async () => {
+      fireEvent.click(comment);
+    });
+    expect(onOpenComments).toHaveBeenCalledTimes(1);
+    expect(onCommentStart).not.toHaveBeenCalled();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "select" }));
+    });
+    await act(async () => {
+      fireEvent.click(comment);
+    });
+    expect(onCommentStart).toHaveBeenCalledTimes(1);
   });
 });
 

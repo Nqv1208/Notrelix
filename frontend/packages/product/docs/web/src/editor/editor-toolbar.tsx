@@ -485,7 +485,17 @@ export function EditorToolbar({
           />
         </PopoverContent>
       </Popover>
-      <ToolButton label={t.comment} onClick={callbacks?.onOpenComments}>
+      <ToolButton
+        label={t.comment}
+        onClick={() => {
+          // With text selected the comment is anchored to it; otherwise the panel just opens.
+          if (!editor.state.selection.empty && callbacks?.onCommentStart) {
+            callbacks.onCommentStart();
+          } else {
+            callbacks?.onOpenComments?.();
+          }
+        }}
+      >
         <MessageCircle aria-hidden="true" className={ICON} />
       </ToolButton>
       <Separator />

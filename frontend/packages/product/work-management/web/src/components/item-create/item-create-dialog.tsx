@@ -431,7 +431,11 @@ export function ItemCreateDialog({
               {groups.length > 1 && !hideGroup ? (
                 <Field>
                   <FieldLabel htmlFor={ids.group}>{copy.group}</FieldLabel>
-                  <Select value={listId} onValueChange={setListId}>
+                  <Select
+                    value={listId}
+                    // The select reports "" while its options register: not a choice.
+                    onValueChange={(value) => value && setListId(value)}
+                  >
                     <SelectTrigger id={ids.group} className="h-10 w-full">
                       <SelectValue />
                     </SelectTrigger>
@@ -451,7 +455,7 @@ export function ItemCreateDialog({
                   <Select
                     value={statusId ?? NONE}
                     onValueChange={(value) =>
-                      setStatusId(value === NONE ? null : value)
+                      value && setStatusId(value === NONE ? null : value)
                     }
                   >
                     <SelectTrigger id={ids.status} className="h-10 w-full">
