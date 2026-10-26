@@ -1,15 +1,23 @@
 #!/usr/bin/env node
 /**
- * Captures the product screenshots the marketing hero shows.
+ * Captures the product screenshots the marketing site shows.
  *
  * Starts the web app in mock mode (same env as playwright.mock.config.ts, port
- * 5174, reusing a server that is already running), opens the ERP board in each
- * view and each theme, and writes
- * apps/marketing/public/product/{table,kanban,timeline,calendar}-{light,dark}.png
- * at 1440x900 @2x. Run `pnpm marketing:previews` after the web UI changes.
+ * 5174, reusing a server that is already running) and writes, at 1440x900 @2x,
+ * light and dark, to apps/marketing/public/product/:
+ *  - {table,kanban,timeline,calendar}-{theme}.png: the hero (the ERP board in
+ *    each view; the boxes of the app's own view tabs go to
+ *    hero-preview-hotspots.json);
+ *  - showcase-{item,docs,automation,reports}-{theme}.png: the Showcase screens
+ *    (the boxes of the regions its notes point at go to
+ *    showcase-annotations.json);
+ *  - story-{inbox,sharing,departments}-{theme}.png: crops of one region each
+ *    (their sizes go to story-crops.json).
+ * `--only=hero|showcase|story|<id>` captures a part. Run
+ * `pnpm marketing:previews` after the web UI changes.
  */
 import { spawn } from "node:child_process";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "@playwright/test";
@@ -90,9 +98,9 @@ const HIDE_CSS = `
   .tsqd-parent-container, [class*="ReactQueryDevtools"] { display: none !important; }
 `;
 
-async function capture(browser, theme, view) {
+async function openContext(browser, theme) {
   const context = await browser.newContext({
-    viewport: { width: 1440, height: 900 },
+    viewport: VIEWPORT,
     deviceScaleFactor: 2,
     timezoneId: "Asia/Ho_Chi_Minh",
     colorScheme: theme,
@@ -109,6 +117,18 @@ async function capture(browser, theme, view) {
     },
     [theme],
   );
+  return context;
+}
+
+async function settle(page) {
+  await page.waitForLoadState("networkidle");
+  await page.addStyleTag({ content: HIDE_CSS });
+  await page.evaluate(() => document.fonts.ready);
+  await page.waitForTimeout(700);
+}
+
+async function capture(browser, theme, view) {
+  const context = await openContext(browser, theme);
   const page = await context.newPage();
   await page.clock.setFixedTime(NOW);
   await page.goto(`${ORIGIN}${BOARD}?view=${view}`);
@@ -116,10 +136,7 @@ async function capture(browser, theme, view) {
     .getByText(/ERP-\d+/)
     .first()
     .waitFor({ state: "visible", timeout: 30_000 });
-  await page.waitForLoadState("networkidle");
-  await page.addStyleTag({ content: HIDE_CSS });
-  await page.evaluate(() => document.fonts.ready);
-  await page.waitForTimeout(600);
+  await settle(page);
   const boxes = {};
   for (const [id, name] of Object.entries(TAB_NAMES)) {
     const box = await page
@@ -138,6 +155,270 @@ async function capture(browser, theme, view) {
   recorded.push({ key: `${view}-${theme}`, boxes });
   const file = resolve(outDir, `${view}-${theme}.png`);
   await page.screenshot({ path: file });
+  await context.close();
+  console.log(`wrote ${file}`);
+}
+
+/* ------------------------------------------------------------------ */
+/* Showcase screens and story crops                                    */
+/* ------------------------------------------------------------------ */
+
+const W = "/workspaces/mock-workspace-primary";
+const r3 = (n) => Math.round(n * 1000) / 1000;
+
+/** The box that spans every located element, in px of the page. */
+async function unionBox(locators) {
+  let box = null;
+  for (const locator of locators) {
+    const b = await locator.first().boundingBox();
+    if (!b) throw new Error("annotation target not found");
+    box = box
+      ? {
+          x: Math.min(box.x, b.x),
+          y: Math.min(box.y, b.y),
+          right: Math.max(box.right, b.x + b.width),
+          bottom: Math.max(box.bottom, b.y + b.height),
+        }
+      : { x: b.x, y: b.y, right: b.x + b.width, bottom: b.y + b.height };
+  }
+  return box;
+}
+
+/** Scrolls the nearest scrollable ancestor so the element sits `top` px from its top. */
+async function scrollTo(locator, top) {
+  await locator.first().evaluate((element, offset) => {
+    let node = element.parentElement;
+    while (
+      node &&
+      !(
+        /(auto|scroll)/.test(getComputedStyle(node).overflowY) &&
+        node.scrollHeight > node.clientHeight + 1
+      )
+    ) {
+      node = node.parentElement;
+    }
+    if (!node) return;
+    const delta =
+      element.getBoundingClientRect().top - node.getBoundingClientRect().top;
+    node.scrollTop += delta - offset;
+  }, top);
+  await locator.page().waitForTimeout(300);
+}
+
+const SHOWCASE = {
+  item: {
+    path: `${W}/boards/mock-board-erp/items/mock-erp-item-142`,
+    async prepare(page) {
+      await page.getByRole("heading", { name: /Sub-items/ }).waitFor();
+    },
+    async afterSettle(page) {
+      await scrollTo(page.getByRole("heading", { name: /Sub-items/ }), 20);
+    },
+    places: {
+      properties: "above-end",
+      subitems: "above-start",
+      links: "above-end",
+    },
+    notes: (page) => ({
+      properties: [
+        page.getByText("Manage fields"),
+        page.getByText("Phòng ban yêu cầu"),
+      ],
+      subitems: [
+        page.getByRole("heading", { name: /Sub-items/ }),
+        page.getByPlaceholder(/Add a sub-item/),
+      ],
+      links: [
+        page.getByRole("heading", { name: /^Links/ }),
+        page.getByText("Cấu hình quyền truy cập theo ph"),
+        page.getByText("Drag files here or"),
+      ],
+    }),
+  },
+  docs: {
+    path: `${W}/docs/mock-doc-invoice-process`,
+    async prepare(page) {
+      await page.getByRole("heading", { level: 1 }).waitFor();
+      await page.getByText("Tasks mentioned").waitFor();
+    },
+    places: { chip: "right", links: "below-end", approve: "below-end" },
+    notes: (page) => ({
+      chip: [
+        page.getByText("ERP-144", { exact: true }).first(),
+        page.getByText(/Kiểm thử phân hệ công nợ với số liệu tháng 9/).first(),
+      ],
+      links: [
+        page.getByText("Tasks mentioned"),
+        page.getByText("Document · Công nghệ"),
+      ],
+      approve: [page.getByRole("button", { name: "Approve document" })],
+    }),
+  },
+  automation: {
+    path: `${W}/boards/mock-board-erp/settings?section=automations`,
+    async prepare(page) {
+      await page.getByRole("button", { name: /New rule/ }).click();
+      await page
+        .getByLabel("Rule name")
+        .fill("Hand a tested item to the approver");
+      await page
+        .locator('select[id$="-trigger-group"]')
+        .selectOption({ label: "Kiểm thử" });
+      await page.getByRole("button", { name: "The status is" }).click();
+      await page
+        .locator('select[id*="-c"][id$="-status"]')
+        .selectOption({ label: "Đang làm" });
+      await page
+        .locator('select[id$="-a1-type"]')
+        .selectOption({ label: "Change its status" });
+      await page
+        .locator('select[id$="-a1-status"]')
+        .selectOption({ label: "Chờ duyệt" });
+      await page.getByRole("button", { name: "Add action" }).click();
+      await page
+        .locator('select[id$="-type"]')
+        .nth(1)
+        .selectOption({ label: "Notify a person in the app" });
+      await page
+        .locator('select[id$="-person"]')
+        .selectOption({ label: "Nguyễn Thu Hà" });
+      await page.locator('input[id$="-message"]').fill("Ready for approval");
+      await page.locator('input[id$="-message"]').blur();
+    },
+    places: {
+      trigger: "above-end",
+      conditions: "inside-end",
+      actions: "below-end",
+    },
+    notes: (page) => ({
+      trigger: [
+        page.getByText("When", { exact: true }),
+        page.locator('select[id$="-trigger-group"]'),
+      ],
+      conditions: [
+        page.getByText("Only if (all must hold)"),
+        page.getByRole("button", { name: "A field equals" }),
+      ],
+      actions: [
+        page.getByText("Then, in this order"),
+        page.locator('input[id$="-message"]'),
+      ],
+    }),
+  },
+  reports: {
+    path: `${W}/reports?report=mock-report-erp`,
+    async prepare(page) {
+      await page
+        .getByRole("heading", { name: "Tổng quan triển khai ERP Q4" })
+        .waitFor();
+      await page.getByText("Go-live may slip.").waitFor();
+    },
+    places: { summary: "right", pace: "above-end", workload: "above-end" },
+    notes: (page) => ({
+      summary: [
+        page.getByText(/5\/16 items done/),
+        page.getByText(/days to go-live/).first(),
+      ],
+      pace: [
+        page.getByRole("heading", { name: "Completion pace" }),
+        page.getByText(/This compares paces/),
+      ],
+      workload: [
+        page.getByRole("heading", { name: "Workload by assignee" }),
+        page.getByText("Unassigned", { exact: true }).last(),
+      ],
+    }),
+  },
+};
+
+/**
+ * Story crops: each captures one screen and keeps only the region that proves
+ * the claim (css px of the viewport; the file is that region at 2x).
+ */
+const STORY = {
+  inbox: {
+    path: `${W}/inbox`,
+    viewport: { width: 1440, height: 420 },
+    clip: { x: 696, y: 0, width: 744, height: 420 },
+    async prepare(page) {
+      await page.getByRole("button", { name: "Mark as done" }).waitFor();
+    },
+  },
+  sharing: {
+    path: `${W}/boards/mock-board-erp?view=table`,
+    viewport: { width: 1440, height: 900 },
+    viewport: { width: 1440, height: 1000 },
+    async clipOf(page) {
+      const box = await page.getByRole("dialog").boundingBox();
+      // the top of the dialog: access and the permission list
+      return { x: box.x, y: box.y, width: box.width, height: 580 };
+    },
+    async prepare(page) {
+      await page
+        .getByText(/ERP-\d+/)
+        .first()
+        .waitFor();
+      await page
+        .getByRole("button", { name: /^Share/ })
+        .first()
+        .click();
+      await page.getByRole("dialog").waitFor();
+    },
+  },
+  departments: {
+    path: `${W}/spaces/mock-space-engineering`,
+    viewport: { width: 1440, height: 640 },
+    clip: { x: 1100, y: 160, width: 340, height: 450 },
+    async prepare(page) {
+      await page.getByText("Running Boards").waitFor();
+    },
+  },
+};
+
+function writeJson(file, data) {
+  writeFileSync(file, `${JSON.stringify(data, null, 2)}\n`);
+  console.log(`wrote ${file}`);
+}
+
+async function captureScreen(browser, theme, kind, id, def, annotations) {
+  const context = await openContext(browser, theme);
+  const page = await context.newPage();
+  await page.clock.setFixedTime(NOW);
+  if (def.viewport) await page.setViewportSize(def.viewport);
+  await page.goto(`${ORIGIN}${def.path}`);
+  await page.waitForLoadState("domcontentloaded");
+  await def.prepare(page);
+  await settle(page);
+  if (def.afterSettle) await def.afterSettle(page);
+  if (def.notes && theme === "light") {
+    const found = {};
+    for (const [key, locators] of Object.entries(def.notes(page))) {
+      const raw = await unionBox(locators);
+      // a little air around the region, kept inside the screenshot
+      const pad = 8;
+      const x = Math.max(raw.x - pad, 2);
+      const y = Math.max(raw.y - pad, 2);
+      const right = Math.min(raw.right + pad, VIEWPORT.width - 2);
+      const bottom = Math.min(raw.bottom + pad, VIEWPORT.height - 2);
+      found[key] = {
+        ...(def.places?.[key] ? { place: def.places[key] } : {}),
+        left: r3((x / VIEWPORT.width) * 100),
+        top: r3((y / VIEWPORT.height) * 100),
+        width: r3(((right - x) / VIEWPORT.width) * 100),
+        height: r3(((bottom - y) / VIEWPORT.height) * 100),
+      };
+    }
+    annotations[id] = found;
+  }
+  const file = resolve(outDir, `${kind}-${id}-${theme}.png`);
+  const clip = def.clipOf ? await def.clipOf(page) : def.clip;
+  await page.screenshot({ path: file, ...(clip ? { clip } : {}) });
+  if (clip && theme === "light") {
+    annotations[id] = {
+      width: Math.round(clip.width * 2),
+      height: Math.round(clip.height * 2),
+    };
+  }
   await context.close();
   console.log(`wrote ${file}`);
 }
@@ -172,16 +453,51 @@ function writeHotspots() {
   console.log(`wrote ${hotspotsFile}`);
 }
 
+const only = process.argv.find((a) => a.startsWith("--only="))?.slice(7);
+const cropsFile = resolve(root, "apps/marketing/src/sections/story-crops.json");
+const annotationsFile = resolve(
+  root,
+  "apps/marketing/src/sections/showcase-annotations.json",
+);
+
 mkdirSync(outDir, { recursive: true });
 const server = await startServer();
 let failed = false;
 try {
   const browser = await chromium.launch();
   try {
-    for (const theme of THEMES) {
-      for (const view of VIEWS) await capture(browser, theme, view);
+    if (!only || only === "hero") {
+      for (const theme of THEMES) {
+        for (const view of VIEWS) await capture(browser, theme, view);
+      }
+      writeHotspots();
     }
-    writeHotspots();
+    const crops = {};
+    for (const [id, def] of Object.entries(STORY)) {
+      if (only && only !== "story" && only !== id) continue;
+      for (const theme of THEMES) {
+        await captureScreen(browser, theme, "story", id, def, crops);
+      }
+    }
+    if (Object.keys(crops).length > 0) {
+      const previous = existsSync(cropsFile)
+        ? JSON.parse(readFileSync(cropsFile, "utf8"))
+        : {};
+      writeJson(cropsFile, { ...previous, ...crops });
+    }
+    const annotations = {};
+    for (const [id, def] of Object.entries(SHOWCASE)) {
+      if (only !== "showcase" && only !== id && only) continue;
+      for (const theme of THEMES) {
+        await captureScreen(browser, theme, "showcase", id, def, annotations);
+      }
+    }
+    if (Object.keys(annotations).length > 0) {
+      const previous = existsSync(annotationsFile)
+        ? JSON.parse(readFileSync(annotationsFile, "utf8"))
+        : {};
+      writeJson(annotationsFile, { ...previous, ...annotations });
+    }
   } finally {
     await browser.close();
   }
