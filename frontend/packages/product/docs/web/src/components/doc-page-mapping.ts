@@ -1,8 +1,10 @@
-import type {
-  Block,
-  BlockType,
-  PageVersion,
-  PageComment,
+import {
+  exportHtml,
+  exportMarkdown,
+  type Block,
+  type BlockType,
+  type PageVersion,
+  type PageComment,
 } from "@notrelix/docs-core";
 import { fillDocCopy, type DocPageCopy } from "./doc-page.copy";
 import type {
@@ -362,76 +364,48 @@ export function toolbarCurrent(block: Block | null): DocToolbarCurrent {
   };
 }
 
+/** The text of a task a page names: its key and title, nothing when the viewer cannot read it. */
+function taskLabel(task: DocTaskResolution): string {
+  return "restricted" in task ? "" : `${task.key} ${task.title}`;
+}
+
+const TASK_TOKEN = /\[\[task:([^\]]+)\]\]/g;
+
+/** What a download writes for the page: the core export with the page's task references resolved. */
+function exportOptions(resolveTask: (taskId: string) => DocTaskResolution) {
+  return {
+    mapText: (text: string) =>
+      text.replace(TASK_TOKEN, (_match, id: string) =>
+        taskLabel(resolveTask(id)),
+      ),
+    boardReferenceLines: (block: Block) =>
+      (block.properties.items ?? [])
+        .map((id) => taskLabel(resolveTask(id)))
+        .filter((label) => label !== "")
+        .map((label) => `- ${label}`),
+  };
+}
+
 /** Markdown of the page for the download action. */
 export function toMarkdown(
   title: string,
   blocks: readonly Block[],
   resolveTask: (taskId: string) => DocTaskResolution,
 ): string {
-  const lines: string[] = [`# ${title}`, ""];
-  let number = 0;
-  const text = (block: Block) =>
-    parseSegments(blockText(block), resolveTask)
-      .map((segment) =>
-        segment.kind === "task"
-          ? "restricted" in segment.task
-            ? ""
-            : `${segment.task.key} ${segment.task.title}`
-          : segment.kind === "del"
-            ? ""
-            : segment.text,
-      )
-      .join("");
-  for (const block of [...blocks].sort((a, b) => a.position - b.position)) {
-    if (block.type !== "numbered_list") number = 0;
-    switch (block.type) {
-      case "heading_1":
-        lines.push(`## ${blockText(block)}`, "");
-        break;
-      case "heading_2":
-        lines.push(`## ${blockText(block)}`, "");
-        break;
-      case "heading_3":
-        lines.push(`### ${blockText(block)}`, "");
-        break;
-      case "numbered_list":
-        number += 1;
-        lines.push(`${number}. ${text(block)}`);
-        break;
-      case "bulleted_list":
-        lines.push(`- ${text(block)}`);
-        break;
-      case "todo":
-        lines.push(
-          `- [${block.properties.checked ? "x" : " "}] ${blockText(block)}`,
-        );
-        break;
-      case "quote":
-      case "callout":
-        lines.push(`> ${text(block)}`, "");
-        break;
-      case "code":
-        lines.push("```", blockText(block), "```", "");
-        break;
-      case "divider":
-        lines.push("---", "");
-        break;
-      case "board_reference":
-        for (const id of block.properties.items ?? []) {
-          const task = resolveTask(id);
-          if (!("restricted" in task))
-            lines.push(`- ${task.key} ${task.title}`);
-        }
-        lines.push("");
-        break;
-      default:
-        lines.push(text(block), "");
-    }
-  }
-  return `${lines
-    .join("\n")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim()}\n`;
+  return exportMarkdown(title, blocks, exportOptions(resolveTask));
+}
+
+/** One self-contained, sanitised HTML document of the page for the download action. */
+export function toHtml(
+  title: string,
+  blocks: readonly Block[],
+  resolveTask: (taskId: string) => DocTaskResolution,
+  lang: string,
+): string {
+  return exportHtml(title, blocks, {
+    lang,
+    mapText: exportOptions(resolveTask).mapText,
+  });
 }
 
 /** The position that puts a new block right after `after` (or at the end). */

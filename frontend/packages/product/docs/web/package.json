@@ -32,6 +32,7 @@
     "@tiptap/starter-kit": "3.31.4",
     "lowlight": "3.3.0",
     "lucide-react": "^0.562.0",
+    "mammoth": "1.13.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

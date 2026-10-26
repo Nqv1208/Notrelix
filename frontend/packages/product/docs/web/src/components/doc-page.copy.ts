@@ -470,7 +470,7 @@ export const vi = {
     cancel: "Hủy",
     close: "Đóng hộp thoại nhập",
     failed: "Chưa nhập được tệp. Thử lại hoặc chọn tệp khác.",
-    imagesDropped: "{{count}} ảnh trong tệp Word chưa được nhập.",
+    imagesDropped: "{{count}} ảnh trong tệp chưa được nhập.",
     done: "Đã nhập “{{name}}” thành trang mới.",
   },
   share: {
@@ -996,7 +996,7 @@ export const en: DocPageCopy = {
     cancel: "Cancel",
     close: "Close import",
     failed: "The file could not be imported. Try again or choose another.",
-    imagesDropped: "{{count}} images in the Word file were not imported.",
+    imagesDropped: "{{count}} images in the file were not imported.",
     done: "Imported “{{name}}” as a new page.",
   },
   share: {

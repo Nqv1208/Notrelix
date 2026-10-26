@@ -116,3 +116,20 @@ export type {
   BlockDraft,
   BlockDraftPatch,
 } from "./types/block-content";
+
+export {
+  MAX_IMPORT_BLOCKS,
+  escapeHtml,
+  exportHtml,
+  exportMarkdown,
+  orderedBlocks,
+  parseMarkdown,
+  sanitizeImport,
+} from "./transfer";
+export type {
+  HtmlExportOptions,
+  ImportedBlock,
+  ImportedPage,
+  MarkdownExportOptions,
+  OrderedBlock,
+} from "./transfer";

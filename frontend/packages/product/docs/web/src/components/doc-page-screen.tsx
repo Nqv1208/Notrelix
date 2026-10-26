@@ -17,6 +17,7 @@ import {
   createUseCreateVersion,
   createUseRestoreVersion,
   createUseCreatePageTemplate,
+  createUseImportPage,
   createUsePage,
   createUsePageBlocks,
   createUseArchivePage,
@@ -54,6 +55,7 @@ import {
   toBlockViews,
   toCommentViews,
   toMarkdown,
+  toHtml,
   toTocEntries,
   toVersionViews,
   markVersionDiff,
@@ -62,6 +64,7 @@ import {
 import type {
   DocChip,
   DocHeaderView,
+  DocImportView,
   DocOverlay,
   DocPageCallbacks,
   DocPanelTab,
@@ -71,6 +74,7 @@ import type {
   DocPerson,
 } from "./doc-page-models";
 import { isRestrictedTask } from "./doc-page-models";
+import { readImportFile } from "../import/read-import-file";
 import { DocPageScreenSurface } from "./doc-page-screen-surface";
 import { useDocPanelOpen } from "./use-doc-panel-open";
 import type { DocMediaHost } from "../editor/media-host";
@@ -160,6 +164,7 @@ export function createDocPageScreen({
   const useCreateVersion = createUseCreateVersion(api, endpoints);
   const useRestoreVersion = createUseRestoreVersion(api, endpoints);
   const useCreatePageTemplate = createUseCreatePageTemplate(api, endpoints);
+  const useImportPage = createUseImportPage(api, endpoints);
   const usePageList = createUsePageList(api, endpoints);
   const useArchivePage = createUseArchivePage(api, endpoints);
   const useRestorePage = createUseRestorePage(api, endpoints);
@@ -194,6 +199,8 @@ export function createDocPageScreen({
     const createVersion = useCreateVersion(workspaceId, pageId);
     const restoreVersion = useRestoreVersion(workspaceId, pageId);
     const createTemplate = useCreatePageTemplate(workspaceId);
+    const importPage = useImportPage(workspaceId);
+    const [importing, setImporting] = useState<DocImportView>(IDLE_IMPORT);
 
     const page = pageQuery.data ?? null;
     const blocks = useMemo(() => blocksQuery.data ?? [], [blocksQuery.data]);
@@ -945,10 +952,82 @@ export function createDocPageScreen({
           ),
         );
       },
+      onImportOpen: host.canEdit
+        ? () => {
+            setImporting(IDLE_IMPORT);
+            setOverlay({ kind: "importPage" });
+          }
+        : undefined,
+      onImportFile: (file) => {
+        setImporting({
+          busy: true,
+          error: null,
+          fileName: file.name,
+          imagesDropped: 0,
+        });
+        void readImportFile(file).then((read) => {
+          if (!read.ok) {
+            setImporting({
+              busy: false,
+              error: read.error,
+              fileName: file.name,
+              imagesDropped: 0,
+            });
+            return;
+          }
+          importPage.mutate(
+            {
+              title: read.title,
+              blocks: read.page.blocks,
+              spaceId: page.spaceId ?? null,
+            },
+            {
+              onSuccess: (createdId) => {
+                setOverlay(NONE);
+                setImporting(IDLE_IMPORT);
+                const dropped = read.page.imagesDropped;
+                host.notify?.(
+                  [
+                    fillDocCopy(copy.importDialog.done, { name: read.title }),
+                    dropped > 0
+                      ? fillDocCopy(copy.importDialog.imagesDropped, {
+                          count: String(dropped),
+                        })
+                      : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" "),
+                );
+                host.openPage?.(createdId);
+              },
+              onError: () =>
+                setImporting({
+                  busy: false,
+                  error: "failed",
+                  fileName: file.name,
+                  imagesDropped: read.page.imagesDropped,
+                }),
+            },
+          );
+        });
+      },
       onDownload: (format) => {
         setOverlay(NONE);
         if (format === "pdf") {
           window.print();
+          return;
+        }
+        if (format === "html") {
+          saveFile(
+            `${title}.html`,
+            "text/html",
+            toHtml(
+              title,
+              blocks,
+              resolveTask,
+              document.documentElement.lang || "en",
+            ),
+          );
           return;
         }
         saveFile(
@@ -1186,6 +1265,7 @@ export function createDocPageScreen({
               : "failed"
             : null,
         }}
+        importState={importing}
         templateAction={{
           saving: createTemplate.isPending,
           failed: createTemplate.isError,
@@ -1242,6 +1322,13 @@ export function createDocPageScreen({
     );
   };
 }
+
+const IDLE_IMPORT: DocImportView = {
+  busy: false,
+  error: null,
+  fileName: null,
+  imagesDropped: 0,
+};
 
 const EMPTY = {
   header: {

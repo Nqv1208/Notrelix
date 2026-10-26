@@ -19,6 +19,8 @@ export {
 export { createUsePageTemplates } from "./hooks/use-page-templates";
 export { createUseCreatePageTemplate } from "./hooks/use-create-page-template";
 export { createUseCreatePageFromTemplate } from "./hooks/use-create-page-from-template";
+export { createUseImportPage } from "./hooks/use-import-page";
+
 export { createUsePagePermissions } from "./hooks/use-page-permissions";
 export { createUseSharePage } from "./hooks/use-share-page";
 export { createUseConvertTodo } from "./hooks/use-convert-todo";

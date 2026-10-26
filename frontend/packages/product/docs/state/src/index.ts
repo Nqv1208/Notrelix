@@ -74,6 +74,8 @@ export { createHistoryApi } from "./api/history.api";
 export { createVersionApi } from "./api/version.api";
 export type { RestoredPageVersion, SeenBlockVersion } from "./api/version.api";
 export { createTemplateApi } from "./api/template.api";
+export { createImportApi } from "./api/import.api";
+export type { ImportPageInput } from "./api/import.api";
 export { mapVersion, mapVersionContent } from "./model/version.mapper";
 export type { PageVersionContent } from "./model/version.mapper";
 export { createPageExtrasApi } from "./api/page-extras.api";

@@ -954,7 +954,10 @@ export function DocArticleSurface({
   }
 
   return (
-    <article className="relative w-full max-w-[700px] self-start">
+    <article
+      data-doc-print-root
+      className="relative w-full max-w-[700px] self-start"
+    >
       <h1
         ref={titleRef}
         aria-label={copy.titlePlaceholder}
