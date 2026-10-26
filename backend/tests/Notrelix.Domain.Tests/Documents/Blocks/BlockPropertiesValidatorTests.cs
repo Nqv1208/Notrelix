@@ -205,6 +205,57 @@ public class BlockPropertiesValidatorTests
         Normalised(BlockType.Table, json).Should().Be(json);
     }
 
+    [Theory]
+    [InlineData(BlockType.Text)]
+    [InlineData(BlockType.BulletList)]
+    [InlineData(BlockType.NumberedList)]
+    [InlineData(BlockType.ToDo)]
+    [InlineData(BlockType.Quote)]
+    public void TextLikeType_AcceptsIndentAndLineSpacing(BlockType type)
+    {
+        Normalised(type, "{\"lineSpacing\":\"relaxed\",\"indent\":3,\"align\":\"center\"}")
+            .Should().Be("{\"align\":\"center\",\"indent\":3,\"lineSpacing\":\"relaxed\"}");
+    }
+
+    [Theory]
+    [InlineData("{\"indent\":-1}")]
+    [InlineData("{\"indent\":9}")]
+    [InlineData("{\"indent\":\"2\"}")]
+    [InlineData("{\"indent\":1.5}")]
+    [InlineData("{\"lineSpacing\":\"double\"}")]
+    [InlineData("{\"lineSpacing\":2}")]
+    public void IndentAndLineSpacing_OutsideTheirSets_AreRejected(string json)
+    {
+        Rejected(BlockType.Text, json).RuleCode.Should().Be(DocumentRuleCodes.Documents_Block_PropertiesInvalid);
+    }
+
+    [Theory]
+    [InlineData(BlockType.Divider)]
+    [InlineData(BlockType.Image)]
+    [InlineData(BlockType.Table)]
+    public void IndentAndLineSpacing_AreNotForOtherTypes(BlockType type)
+    {
+        Rejected(type, "{\"indent\":1}").RuleCode.Should().Be(DocumentRuleCodes.Documents_Block_PropertiesInvalid);
+        Rejected(type, "{\"lineSpacing\":\"tight\"}").RuleCode.Should().Be(DocumentRuleCodes.Documents_Block_PropertiesInvalid);
+    }
+
+    [Fact]
+    public void Table_MergedCells_KeepTheirSpans_AndDropSpansOfOne()
+    {
+        Normalised(BlockType.Table, "{\"rows\":[[{\"runs\":[],\"rowSpan\":2,\"colSpan\":3},{\"colSpan\":1,\"rowSpan\":1,\"runs\":[]}]]}")
+            .Should().Be("{\"rows\":[[{\"colSpan\":3,\"rowSpan\":2,\"runs\":[]},{\"runs\":[]}]]}");
+    }
+
+    [Theory]
+    [InlineData("{\"rows\":[[{\"runs\":[],\"colSpan\":0}]]}")]
+    [InlineData("{\"rows\":[[{\"runs\":[],\"colSpan\":51}]]}")]
+    [InlineData("{\"rows\":[[{\"runs\":[],\"rowSpan\":501}]]}")]
+    [InlineData("{\"rows\":[[{\"runs\":[],\"rowSpan\":\"2\"}]]}")]
+    public void Table_SpansOutOfRange_AreRejected(string json)
+    {
+        Rejected(BlockType.Table, json).RuleCode.Should().Be(DocumentRuleCodes.Documents_Block_PropertiesInvalid);
+    }
+
     [Fact]
     public void Table_CellRuns_AreNormalised()
     {

@@ -27,7 +27,13 @@ export const HIGHLIGHT_TOKENS = [
 export type HighlightToken = (typeof HIGHLIGHT_TOKENS)[number];
 
 export type SimpleMarkType =
-  "bold" | "italic" | "underline" | "strike" | "code";
+  | "bold"
+  | "italic"
+  | "underline"
+  | "strike"
+  | "code"
+  | "superscript"
+  | "subscript";
 
 export type Mark =
   | { type: SimpleMarkType }
@@ -79,6 +85,8 @@ const MARK_ORDER: readonly MarkType[] = [
   "mention",
   "pageRef",
   "strike",
+  "subscript",
+  "superscript",
   "underline",
 ];
 
@@ -91,6 +99,8 @@ function isMark(value: unknown): value is Mark {
     case "underline":
     case "strike":
     case "code":
+    case "superscript":
+    case "subscript":
       return true;
     case "link":
       return typeof mark.href === "string" && isSafeHref(mark.href);
@@ -109,7 +119,8 @@ function isMark(value: unknown): value is Mark {
 
 /**
  * The canonical mark set: unknown or unsafe marks dropped, one mark per type
- * (the last wins), sorted by type, and `code` keeps only a link beside it.
+ * (the last wins), sorted by type, `code` keeps only a link beside it and
+ * `superscript` excludes `subscript`.
  */
 export function normalizeMarks(marks: readonly Mark[]): Mark[] {
   const byType = new Map<MarkType, Mark>();
@@ -117,6 +128,10 @@ export function normalizeMarks(marks: readonly Mark[]): Mark[] {
   let result = [...byType.values()];
   if (byType.has("code")) {
     result = result.filter((m) => m.type === "code" || m.type === "link");
+  }
+  // Raised and lowered text exclude each other; raised wins.
+  if (byType.has("superscript")) {
+    result = result.filter((m) => m.type !== "subscript");
   }
   return result.sort(
     (a, b) => MARK_ORDER.indexOf(a.type) - MARK_ORDER.indexOf(b.type),

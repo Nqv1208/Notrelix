@@ -624,6 +624,8 @@ export interface DocArticleSurfaceProps {
   /** Edits a stored change replaced, kept for the member. */
   readonly recoveries?: readonly DocRecoveryView[];
   readonly copiedRecoveryId?: string | null;
+  /** The sheet fills the window's width instead of the reading column. */
+  readonly fullWidth?: boolean;
   readonly callbacks?: DocPageCallbacks;
 }
 
@@ -645,6 +647,7 @@ export function DocArticleSurface({
   recoveries,
   copiedRecoveryId,
   callbacks,
+  fullWidth = false,
 }: DocArticleSurfaceProps) {
   const titleRef = useRef<HTMLHeadingElement | null>(null);
   const common = { copy, callbacks, readOnly };
@@ -959,7 +962,10 @@ export function DocArticleSurface({
   return (
     <article
       data-doc-print-root
-      className="relative w-full max-w-[700px] self-start"
+      className={cn(
+        "relative w-full self-start",
+        fullWidth ? "max-w-none" : "max-w-[700px]",
+      )}
     >
       <h1
         ref={titleRef}

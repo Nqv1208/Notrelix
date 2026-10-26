@@ -53,7 +53,9 @@ function inlineRuns(node: Node, marks: Mark[], walk: Walk): Run[] {
     } else if (tag === "u") next = [...marks, { type: "underline" }];
     else if (tag === "s" || tag === "strike" || tag === "del") {
       next = [...marks, { type: "strike" }];
-    } else if (tag === "code") next = [...marks, { type: "code" }];
+    } else if (tag === "sup") next = [...marks, { type: "superscript" }];
+    else if (tag === "sub") next = [...marks, { type: "subscript" }];
+    else if (tag === "code") next = [...marks, { type: "code" }];
     else if (tag === "a") {
       const href = element.getAttribute("href") ?? "";
       if (isSafeHref(href)) next = [...marks, { type: "link", href }];

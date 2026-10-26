@@ -6,6 +6,7 @@ import {
   TABLE_MAX_COL_WIDTH,
   TABLE_MIN_COL_WIDTH,
   emptyTable,
+  tableColumnCount,
   normalizeRuns,
   plainTextOfRuns,
   richText,
@@ -58,6 +59,13 @@ const OWN_KEYS: Readonly<Partial<Record<BlockType, readonly string[]>>> = {
   image: ["attachmentId", "width", "alt", "caption", "captionRuns"],
   file: ["attachmentId"],
 };
+
+/** Text-block properties the node edits as attributes (not carried in `rest`). */
+const TEXT_ATTRS: ReadonlySet<string> = new Set([
+  "align",
+  "indent",
+  "lineSpacing",
+]);
 
 /** Types whose text takes alignment. */
 const ALIGNABLE: ReadonlySet<BlockType> = new Set<BlockType>([
@@ -113,6 +121,8 @@ function markFromJson(json: {
     case "underline":
     case "strike":
     case "code":
+    case "superscript":
+    case "subscript":
       return { type: json.type };
     case "link":
       return typeof attrs.href === "string"
@@ -185,23 +195,51 @@ function runsToCell(runs: readonly Run[]): JSONContent {
 
 /** A table block as the editor's table: header cells on the first row when flagged. */
 export function tableToNode(table: TableData): JSONContent[] {
-  const columns = Math.max(1, ...table.rows.map((row) => row.length));
+  const columns = Math.max(1, tableColumnCount(table.rows));
   const source = table.rows.length ? table.rows : emptyTable(1, 1).rows;
-  return source.map((row, rowIndex) => ({
-    type: "tableRow",
-    content: Array.from({ length: columns }, (_, column) => {
-      const cell = row[column];
-      const width = table.colWidths[column];
-      return {
+  // Grid columns still covered by a cell merged from a row above.
+  const covered: number[] = [];
+  return source.map((row, rowIndex) => {
+    const cells: JSONContent[] = [];
+    let column = 0;
+    const place = (cell: TableData["rows"][number][number] | undefined) => {
+      while ((covered[column] ?? 0) > 0) column += 1;
+      const colSpan = cell?.colSpan && cell.colSpan > 1 ? cell.colSpan : 1;
+      const rowSpan = cell?.rowSpan && cell.rowSpan > 1 ? cell.rowSpan : 1;
+      const widths = Array.from(
+        { length: colSpan },
+        (_, offset) => table.colWidths[column + offset],
+      );
+      cells.push({
         type: table.headerRow && rowIndex === 0 ? "tableHeader" : "tableCell",
         attrs: {
-          colwidth: typeof width === "number" ? [width] : null,
+          colspan: colSpan,
+          rowspan: rowSpan,
+          colwidth: widths.every((width) => typeof width === "number")
+            ? widths
+            : null,
           bg: cell?.bg ?? null,
         },
         content: [runsToCell(cell?.runs ?? [])],
-      };
-    }),
-  }));
+      });
+      for (let at = column; at < column + colSpan; at += 1) {
+        covered[at] = rowSpan;
+      }
+      column += colSpan;
+    };
+    for (const cell of row) place(cell);
+    // A short row is padded with empty cells up to the grid's width.
+    while (true) {
+      while ((covered[column] ?? 0) > 0) column += 1;
+      if (column >= columns) break;
+      place(undefined);
+    }
+    // This row is done: every covered column has one row fewer to go.
+    for (let at = 0; at < covered.length; at += 1) {
+      if ((covered[at] ?? 0) > 0) covered[at] = (covered[at] as number) - 1;
+    }
+    return { type: "tableRow", content: cells };
+  });
 }
 
 function cellToRuns(cell: JSONContent): Run[] {
@@ -216,27 +254,45 @@ function cellToRuns(cell: JSONContent): Run[] {
 /** The editor's table back to the block's cells, header flag and column widths. */
 export function nodeToTable(node: JSONContent): TableData {
   const rows = node.content ?? [];
-  const columns = Math.max(0, ...rows.map((row) => row.content?.length ?? 0));
-  const widths: (number | null)[] = Array.from({ length: columns }, () => null);
+  const widths: (number | null)[] = [];
+  const covered: number[] = [];
   const table: TableData = {
     rows: rows.map((row) => {
-      const cells = (row.content ?? []).map((cell, column) => {
-        const width = (
-          cell.attrs?.colwidth as number[] | null | undefined
-        )?.[0];
-        if (typeof width === "number" && width > 0 && widths[column] === null) {
-          widths[column] = Math.min(
-            TABLE_MAX_COL_WIDTH,
-            Math.max(TABLE_MIN_COL_WIDTH, Math.round(width)),
-          );
+      let column = 0;
+      const cells = (row.content ?? []).map((cell) => {
+        while ((covered[column] ?? 0) > 0) column += 1;
+        const colSpan = Math.max(1, Number(cell.attrs?.colspan) || 1);
+        const rowSpan = Math.max(1, Number(cell.attrs?.rowspan) || 1);
+        const widthList = (cell.attrs?.colwidth ?? null) as number[] | null;
+        for (let offset = 0; offset < colSpan; offset += 1) {
+          const width = widthList?.[offset];
+          if (widths[column + offset] === undefined) {
+            widths[column + offset] = null;
+          }
+          if (
+            typeof width === "number" &&
+            width > 0 &&
+            widths[column + offset] === null
+          ) {
+            widths[column + offset] = Math.min(
+              TABLE_MAX_COL_WIDTH,
+              Math.max(TABLE_MIN_COL_WIDTH, Math.round(width)),
+            );
+          }
+          covered[column + offset] = rowSpan;
         }
+        column += colSpan;
         const bg = HIGHLIGHT_TOKENS.find((token) => token === cell.attrs?.bg);
         return {
           runs: cellToRuns(cell),
           ...(bg && bg !== "none" ? { bg } : {}),
+          ...(colSpan > 1 ? { colSpan } : {}),
+          ...(rowSpan > 1 ? { rowSpan } : {}),
         };
       });
-      while (cells.length < columns) cells.push({ runs: [] });
+      for (let at = 0; at < covered.length; at += 1) {
+        if ((covered[at] ?? 0) > 0) covered[at] = (covered[at] as number) - 1;
+      }
       return cells;
     }),
     headerRow: rows[0]?.content?.[0]?.type === "tableHeader",
@@ -250,7 +306,7 @@ export function draftToNode(draft: BlockDraft): JSONContent {
   const own = new Set(OWN_KEYS[draft.type] ?? []);
   const rest: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(props)) {
-    if (key === "align" && ALIGNABLE.has(draft.type)) continue;
+    if (TEXT_ATTRS.has(key) && ALIGNABLE.has(draft.type)) continue;
     if (key === "table" && draft.type === "table") continue;
     if (!own.has(key) && value !== undefined) rest[key] = value;
   }
@@ -258,7 +314,11 @@ export function draftToNode(draft: BlockDraft): JSONContent {
     blockId: draft.id,
     rest: Object.keys(rest).length ? rest : null,
   };
-  if (ALIGNABLE.has(draft.type)) attrs.align = props.align ?? null;
+  if (ALIGNABLE.has(draft.type)) {
+    attrs.align = props.align ?? null;
+    attrs.indent = props.indent ?? 0;
+    attrs.lineSpacing = props.lineSpacing ?? null;
+  }
   for (const key of own) attrs[key] = (props as Record<string, unknown>)[key];
 
   const name = NODE_OF[draft.type];
@@ -378,6 +438,12 @@ export function nodeToDraft(node: JSONContent): BlockDraft {
   if (type === "toggle" && !attrs.collapsed) delete properties.collapsed;
   if (ALIGNABLE.has(type) && attrs.align && attrs.align !== "left") {
     properties.align = attrs.align;
+  }
+  if (ALIGNABLE.has(type) && Number(attrs.indent) > 0) {
+    properties.indent = Math.min(8, Math.floor(Number(attrs.indent)));
+  }
+  if (ALIGNABLE.has(type) && attrs.lineSpacing) {
+    properties.lineSpacing = attrs.lineSpacing;
   }
   if (ATOM_TYPES.has(type)) {
     return { id, type, content: richText(), properties };

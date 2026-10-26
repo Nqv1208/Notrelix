@@ -56,6 +56,13 @@ export function BlockHandle({
     (clientX: number, clientY: number) => {
       const root = surface.current;
       if (!root || editor.isDestroyed || !editor.isEditable) return;
+      // A text selection owns the space above it (the bubble menu): no grip.
+      if (
+        !editor.state.selection.empty &&
+        !(editor.state.selection instanceof NodeSelection)
+      ) {
+        return setHovered(null);
+      }
       const box = editor.view.dom.getBoundingClientRect();
       const found = editor.view.posAtCoords({
         left: Math.min(Math.max(clientX, box.left + 1), box.right - 1),
@@ -115,7 +122,13 @@ export function BlockHandle({
           }),
         );
       }
-      if (transaction.docChanged) setHovered(null);
+      if (
+        transaction.docChanged ||
+        (!editor.state.selection.empty &&
+          !(editor.state.selection instanceof NodeSelection))
+      ) {
+        setHovered(null);
+      }
     };
     editor.on("transaction", onTransaction);
     return () => {

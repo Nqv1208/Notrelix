@@ -27,13 +27,15 @@ public static class RichText
     public const string Underline = "underline";
     public const string Strike = "strike";
     public const string Code = "code";
+    public const string Superscript = "superscript";
+    public const string Subscript = "subscript";
     public const string Link = "link";
     public const string Color = "color";
     public const string Highlight = "highlight";
     public const string Mention = "mention";
     public const string PageRef = "pageRef";
 
-    private static readonly HashSet<string> SimpleMarks = [Bold, Italic, Underline, Strike, Code];
+    private static readonly HashSet<string> SimpleMarks = [Bold, Italic, Underline, Strike, Code, Superscript, Subscript];
 
     public static readonly IReadOnlySet<string> ColorTokens = new HashSet<string>
         { "default", "muted", "primary", "accent", "success", "warning", "danger" };
@@ -171,7 +173,7 @@ public static class RichText
 
     /// <summary>
     /// Canonical form: empty runs dropped, duplicate mark types collapsed (last wins), marks ordered by type,
-    /// <c>code</c> excludes every mark but <c>link</c>, adjacent runs with the same marks merged.
+    /// <c>code</c> excludes every mark but <c>link</c>, <c>superscript</c> excludes <c>subscript</c>, adjacent runs with the same marks merged.
     /// </summary>
     public static IReadOnlyList<RichTextRun> Normalize(IEnumerable<RichTextRun> runs)
     {
@@ -187,6 +189,9 @@ public static class RichText
                 foreach (var type in byType.Keys.Where(t => t != Code && t != Link).ToList())
                     byType.Remove(type);
             }
+
+            // Raised and lowered text exclude each other; raised wins.
+            if (byType.ContainsKey(Superscript)) byType.Remove(Subscript);
 
             var marks = byType.Values.OrderBy(m => m.Type, StringComparer.Ordinal).ToList();
             if (result.Count > 0 && result[^1].Marks.SequenceEqual(marks))

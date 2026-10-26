@@ -98,8 +98,10 @@ public static class BlockContentValidator
 public static class BlockPropertiesValidator
 {
     private static readonly HashSet<string> Align = ["left", "center", "right", "justify"];
+    private static readonly HashSet<string> LineSpacings = ["tight", "normal", "relaxed", "loose"];
     private static readonly HashSet<string> Tones = ["info", "success", "warning", "danger", "neutral"];
 
+    private const int MaxIndent = 8;
     private const int MaxTableColumns = 50;
     private const int MaxTableRows = 500;
     private const int MaxTableTextLength = 200_000;
@@ -107,7 +109,7 @@ public static class BlockPropertiesValidator
     public static IReadOnlySet<string> AllowedKeys(BlockType type)
     {
         var keys = new HashSet<string>(StringComparer.Ordinal);
-        if (BlockContentConversion.IsTextLike(type)) keys.Add("align");
+        if (BlockContentConversion.IsTextLike(type)) keys.UnionWith(["align", "indent", "lineSpacing"]);
         switch (type)
         {
             case BlockType.ToDo: keys.Add("checked"); break;
@@ -206,6 +208,12 @@ public static class BlockPropertiesValidator
             case "tone":
                 writer.WriteStringValue(OneOf(key, value, Tones));
                 break;
+            case "lineSpacing":
+                writer.WriteStringValue(OneOf(key, value, LineSpacings));
+                break;
+            case "indent":
+                writer.WriteNumberValue(Int(key, value, 0, MaxIndent));
+                break;
             case "checked":
             case "collapsed":
             case "headerRow":
@@ -280,10 +288,18 @@ public static class BlockPropertiesValidator
 
                 IReadOnlyList<RichTextRun>? runs = null;
                 string? background = null;
+                var columnSpan = 1;
+                var rowSpan = 1;
                 foreach (var member in cell.EnumerateObject())
                 {
                     switch (member.Name)
                     {
+                        case "colSpan":
+                            columnSpan = Int("colSpan", member.Value, 1, MaxTableColumns);
+                            break;
+                        case "rowSpan":
+                            rowSpan = Int("rowSpan", member.Value, 1, MaxTableRows);
+                            break;
                         case "runs":
                             runs = RichText.ParseRuns(member.Value, allowMarks: true, "A table cell's runs");
                             break;
@@ -302,6 +318,8 @@ public static class BlockPropertiesValidator
 
                 writer.WriteStartObject();
                 if (background is not null) writer.WriteString("bg", background);
+                if (columnSpan > 1) writer.WriteNumber("colSpan", columnSpan);
+                if (rowSpan > 1) writer.WriteNumber("rowSpan", rowSpan);
                 writer.WritePropertyName("runs");
                 RichText.WriteRuns(writer, runs);
                 writer.WriteEndObject();
