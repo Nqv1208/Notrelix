@@ -187,7 +187,7 @@ export type DocSaveState = "saved" | "saving" | "error";
 
 export interface DocTocEntry {
   readonly id: string;
-  readonly level: 1 | 2;
+  readonly level: 1 | 2 | 3 | 4;
   readonly text: string;
   readonly active?: boolean;
 }

@@ -12,6 +12,8 @@ export interface DocPageBarSurfaceProps {
   readonly copy: DocPageCopy;
   readonly header: DocHeaderView;
   readonly saveState: DocSaveState;
+  /** Word and character counts of the page. */
+  readonly stats?: { readonly words: number; readonly characters: number };
   readonly shareOpen?: boolean;
   /** Absent: Share stays disabled with the stated reason. */
   readonly canShare?: boolean;
@@ -33,6 +35,7 @@ export function DocPageBarSurface({
   copy,
   header,
   saveState,
+  stats,
   shareOpen = false,
   canShare = false,
   panelOpen,
@@ -110,6 +113,14 @@ export function DocPageBarSurface({
           {saveState === "saving" ? h.saving : h.saved}
         </span>
       )}
+      {stats ? (
+        <span className="text-crumb text-meta-foreground tabular-nums">
+          {fillDocCopy(h.stats, {
+            words: stats.words.toLocaleString(),
+            characters: stats.characters.toLocaleString(),
+          })}
+        </span>
+      ) : null}
       <span className="flex-1" />
       {header.presence.length > 0 ? (
         <div

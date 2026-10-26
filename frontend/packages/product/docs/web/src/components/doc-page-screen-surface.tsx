@@ -65,6 +65,8 @@ export interface DocPageScreenSurfaceProps {
   readonly tasks: readonly DocTaskResolution[];
   readonly relatedDocs: readonly DocRelatedDoc[];
   readonly toc: readonly DocTocEntry[];
+  /** Word and character counts of the page, shown by the document bar. */
+  readonly stats?: { readonly words: number; readonly characters: number };
   readonly comments: readonly DocCommentView[];
   readonly panelTab: DocPanelTab;
   /** Whether the side panel shows; the host owns and remembers it. */
@@ -140,6 +142,7 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
     tasks,
     relatedDocs,
     toc,
+    stats,
     comments,
     panelTab,
     panelOpen = true,
@@ -226,6 +229,7 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
           copy={copy}
           header={header}
           saveState={saveState}
+          stats={stats}
           shareOpen={shareOpen}
           canShare={share !== undefined}
           panelOpen={versions ? undefined : panelOpen}

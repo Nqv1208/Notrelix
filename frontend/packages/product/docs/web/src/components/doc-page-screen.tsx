@@ -68,6 +68,7 @@ import { isRestrictedTask } from "./doc-page-models";
 import { DocPageScreenSurface } from "./doc-page-screen-surface";
 import { useDocPanelOpen } from "./use-doc-panel-open";
 import type { DocMediaHost } from "../editor/media-host";
+import { revealHeading, useDocSummary } from "../editor/outline";
 import { useDocRichEditor } from "../editor/use-doc-rich-editor";
 import { taskToken } from "./doc-page-text";
 
@@ -187,39 +188,6 @@ export function createDocPageScreen({
     } | null>(null);
     const [activeTocId, setActiveTocId] = useState<string | null>(null);
 
-    // The contents follow the reading position: the heading nearest the middle
-    // of the visible page is the current one.
-    useEffect(() => {
-      if (panelTab !== "toc") return;
-      const article = document.querySelector("article");
-      let scroller: HTMLElement | null = article?.parentElement ?? null;
-      while (scroller && scroller.scrollHeight <= scroller.clientHeight) {
-        scroller = scroller.parentElement;
-      }
-      const target: HTMLElement | Window = scroller ?? window;
-      const update = () => {
-        const box = scroller?.getBoundingClientRect();
-        const top = box?.top ?? 0;
-        const middle = top + (box?.height ?? window.innerHeight) / 2;
-        let best: { id: string; distance: number } | null = null;
-        for (const block of blocks) {
-          if (!block.type.startsWith("heading")) continue;
-          const element = document.querySelector(
-            `[data-block="${CSS.escape(block.id)}"]`,
-          );
-          if (!element) continue;
-          const distance = Math.abs(
-            element.getBoundingClientRect().top - middle,
-          );
-          if (!best || distance < best.distance)
-            best = { id: block.id, distance };
-        }
-        if (best) setActiveTocId(best.id);
-      };
-      update();
-      target.addEventListener("scroll", update, { passive: true });
-      return () => target.removeEventListener("scroll", update);
-    }, [blocks, panelTab]);
     const pendingFocus = useRef<string | null>(null);
 
     const { taskIds, boardIds } = useMemo(() => referencesOf(blocks), [blocks]);
@@ -567,6 +535,43 @@ export function createDocPageScreen({
       onDrafts: saver.change,
     });
     richRef.current = richEditor;
+    const summary = useDocSummary(richEditor.editor);
+    const outlineIds = (summary?.outline ?? [])
+      .map((entry) => entry.id)
+      .join("|");
+
+    // The contents follow the reading position: the heading nearest the middle
+    // of the visible page is the current one.
+    useEffect(() => {
+      if (panelTab !== "toc") return;
+      const ids = outlineIds ? outlineIds.split("|") : [];
+      const article = document.querySelector("article");
+      let scroller: HTMLElement | null = article?.parentElement ?? null;
+      while (scroller && scroller.scrollHeight <= scroller.clientHeight) {
+        scroller = scroller.parentElement;
+      }
+      const target: HTMLElement | Window = scroller ?? window;
+      const update = () => {
+        const box = scroller?.getBoundingClientRect();
+        const top = box?.top ?? 0;
+        const middle = top + (box?.height ?? window.innerHeight) / 2;
+        let best: { id: string; distance: number } | null = null;
+        for (const id of ids) {
+          const element = document.querySelector(
+            `[data-block="${CSS.escape(id)}"]`,
+          );
+          if (!element) continue;
+          const distance = Math.abs(
+            element.getBoundingClientRect().top - middle,
+          );
+          if (!best || distance < best.distance) best = { id, distance };
+        }
+        if (best) setActiveTocId(best.id);
+      };
+      update();
+      target.addEventListener("scroll", update, { passive: true });
+      return () => target.removeEventListener("scroll", update);
+    }, [outlineIds, panelTab]);
 
     const recoveryViews = recoveries.map((entry) => ({
       id: entry.id,
@@ -866,6 +871,13 @@ export function createDocPageScreen({
       onPanelOpenChange: setPanelOpen,
       onTocSelect: (id) => {
         setActiveTocId(id);
+        if (
+          id !== "title" &&
+          richEditor.editor &&
+          revealHeading(richEditor.editor, id)
+        ) {
+          return;
+        }
         const target =
           id === "title"
             ? document.querySelector("article h1")
@@ -974,10 +986,21 @@ export function createDocPageScreen({
         blocks={blockViews}
         tasks={mentionedTasks}
         relatedDocs={relatedDocs}
-        toc={toTocEntries(title, blocks).map((entry) => ({
+        toc={(summary
+          ? [
+              { id: "title", level: 1 as const, text: title },
+              ...summary.outline.map((entry) => ({
+                id: entry.id,
+                level: (entry.level + 1) as 2 | 3 | 4,
+                text: entry.text,
+              })),
+            ]
+          : toTocEntries(title, blocks)
+        ).map((entry) => ({
           ...entry,
           active: activeTocId ? entry.id === activeTocId : undefined,
         }))}
+        stats={summary?.stats}
         comments={comments}
         panelTab={panelTab}
         panelOpen={panelOpen}

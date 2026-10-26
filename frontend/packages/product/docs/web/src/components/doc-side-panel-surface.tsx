@@ -187,6 +187,8 @@ function TocPanel({
               !entry.active && "hover:bg-state-hover hover:text-foreground",
               entry.level === 1 && "font-semibold text-foreground",
               entry.level === 2 && "pl-5",
+              entry.level === 3 && "pl-8",
+              entry.level === 4 && "pl-11",
               entry.active &&
                 "bg-state-selected font-semibold text-state-selected-foreground",
             )}
