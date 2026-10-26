@@ -169,10 +169,10 @@ export const messages = {
         benefits: [
           "Can view, can comment, can edit or Manager, per person or team",
           "Guests outside the company are marked and see one Board",
-          "Permission history for every change",
+          "Board managers can read the permission history",
         ],
         link: "How we protect your data",
-        alt: "The Share dialog of a Board: access through the department, five permissions with their levels, a guest marked as outside the company, the Board link and the permission history",
+        alt: "The Share dialog of a Board: access through the department, the permissions given on the Board with their levels, a team, and a guest marked as outside the company",
       },
       {
         id: "departments",
@@ -198,11 +198,11 @@ export const messages = {
       {
         id: "item",
         label: "Item",
-        alt: "An item page: the description with a linked doc, sub-items with their progress, links and files, and every field of the item in a side panel",
+        alt: "An item page: the comments on the item, one of them mentioning a person, and a side panel with the approval the item is waiting on and every field of the item",
         notes: {
-          properties: "Every field of the item, in one panel",
-          subitems: "Sub-items roll their progress up",
-          links: "Dependencies and files stay on the item",
+          approval: "Approval status",
+          comments: "Comment on the item and @mention a person",
+          properties: "Every field here",
         },
       },
       {
@@ -218,11 +218,11 @@ export const messages = {
       {
         id: "automation",
         label: "Automation",
-        alt: "The Automations settings of a Board with a rule being written: a trigger, a condition and two actions that run in order",
+        alt: "The Automations settings of a Board: a rule that moves an item to approval and notifies the approver, with its run history: each run, the rule version it ran on and the result of every action, including one that failed with its reason",
         notes: {
-          trigger: "Start from something that happens on the Board",
-          conditions: "Narrow it with conditions",
-          actions: "Up to five actions, in the order you choose",
+          rule: "One sentence, a version per edit",
+          history: "Every run, with the result of each action",
+          failure: "A failed action says why",
         },
       },
       {

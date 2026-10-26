@@ -15,7 +15,7 @@ type StoryId = keyof typeof crops;
 const storyMeta: Record<StoryId, { card?: number; href: string }> = {
   inbox: { href: `${env.webAppUrl}/sign-up` },
   sharing: { card: 576, href: "/legal/privacy" },
-  departments: { card: 384, href: "#pricing" },
+  departments: { card: 460, href: "#pricing" },
 };
 
 /**

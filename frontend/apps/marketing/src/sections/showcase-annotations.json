@@ -1,25 +1,25 @@
 {
   "item": {
-    "properties": {
+    "approval": {
       "place": "above-end",
       "left": 78.542,
       "top": 12.333,
       "width": 20.764,
-      "height": 47.934
+      "height": 6.694
     },
-    "subitems": {
-      "place": "above-start",
-      "left": 20.139,
-      "top": 7.168,
-      "width": 55.278,
-      "height": 35.446
-    },
-    "links": {
+    "comments": {
       "place": "above-end",
-      "left": 20.139,
-      "top": 45.488,
-      "width": 43.764,
-      "height": 30.849
+      "left": 23.958,
+      "top": 73.469,
+      "width": 50.556,
+      "height": 20.104
+    },
+    "properties": {
+      "place": "below-end",
+      "left": 78.542,
+      "top": 19.472,
+      "width": 20.764,
+      "height": 30.757
     }
   },
   "reports": {
@@ -69,26 +69,26 @@
     }
   },
   "automation": {
-    "trigger": {
-      "place": "above-end",
-      "left": 34.653,
-      "top": 30.302,
-      "width": 53.194,
-      "height": 8.236
+    "rule": {
+      "place": "below-end",
+      "left": 37.431,
+      "top": 25.191,
+      "width": 47.222,
+      "height": 10.821
     },
-    "conditions": {
-      "place": "inside-end",
+    "history": {
+      "place": "right",
       "left": 34.653,
-      "top": 38.316,
-      "width": 34.083,
-      "height": 18.108
+      "top": 40.568,
+      "width": 22.001,
+      "height": 9.778
     },
-    "actions": {
+    "failure": {
       "place": "below-end",
       "left": 34.653,
-      "top": 56.201,
-      "width": 44.861,
-      "height": 22.233
+      "top": 49.234,
+      "width": 52.471,
+      "height": 9.778
     }
   }
 }

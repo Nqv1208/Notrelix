@@ -152,9 +152,9 @@ test.describe("Marketing Smoke", () => {
     await expect(
       showcase.getByRole("list", { name: "Automation" }).getByRole("listitem"),
     ).toHaveText([
-      /Start from something that happens on the Board/,
-      /Narrow it with conditions/,
-      /Up to five actions/,
+      /One sentence, a version per edit/,
+      /Every run, with the result of each action/,
+      /A failed action says why/,
     ]);
 
     await tablist.getByRole("tab", { name: "Automation" }).focus();

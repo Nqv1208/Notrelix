@@ -207,31 +207,34 @@ async function scrollTo(locator, top) {
 
 const SHOWCASE = {
   item: {
-    path: `${W}/boards/mock-board-erp/items/mock-erp-item-142`,
+    path: `${W}/boards/mock-board-erp/items/mock-erp-item-138`,
     async prepare(page) {
-      await page.getByRole("heading", { name: /Sub-items/ }).waitFor();
+      await page
+        .getByText(/^Waiting for /)
+        .first()
+        .waitFor();
+      await page.getByText("Cần duyệt trước thứ Tư").waitFor();
     },
     async afterSettle(page) {
-      await scrollTo(page.getByRole("heading", { name: /Sub-items/ }), 20);
+      await scrollTo(page.getByText("Activity", { exact: true }).first(), 20);
     },
     places: {
-      properties: "above-end",
-      subitems: "above-start",
-      links: "above-end",
+      approval: "above-end",
+      comments: "above-end",
+      properties: "below-end",
     },
     notes: (page) => ({
+      approval: [
+        page.getByText("Approval", { exact: true }),
+        page.getByText(/^Waiting for /).first(),
+      ],
+      comments: [
+        page.getByText("Cần duyệt trước thứ Tư"),
+        page.getByPlaceholder(/Write a comment/),
+      ],
       properties: [
         page.getByText("Manage fields"),
-        page.getByText("Phòng ban yêu cầu"),
-      ],
-      subitems: [
-        page.getByRole("heading", { name: /Sub-items/ }),
-        page.getByPlaceholder(/Add a sub-item/),
-      ],
-      links: [
-        page.getByRole("heading", { name: /^Links/ }),
-        page.getByText("Cấu hình quyền truy cập theo ph"),
-        page.getByText("Drag files here or"),
+        page.getByText("Show 3 empty fields"),
       ],
     }),
   },
@@ -257,53 +260,39 @@ const SHOWCASE = {
   automation: {
     path: `${W}/boards/mock-board-erp/settings?section=automations`,
     async prepare(page) {
-      await page.getByRole("button", { name: /New rule/ }).click();
-      await page
-        .getByLabel("Rule name")
-        .fill("Hand a tested item to the approver");
-      await page
-        .locator('select[id$="-trigger-group"]')
-        .selectOption({ label: "Kiểm thử" });
-      await page.getByRole("button", { name: "The status is" }).click();
-      await page
-        .locator('select[id*="-c"][id$="-status"]')
-        .selectOption({ label: "Đang làm" });
-      await page
-        .locator('select[id$="-a1-type"]')
-        .selectOption({ label: "Change its status" });
-      await page
-        .locator('select[id$="-a1-status"]')
-        .selectOption({ label: "Chờ duyệt" });
-      await page.getByRole("button", { name: "Add action" }).click();
-      await page
-        .locator('select[id$="-type"]')
-        .nth(1)
-        .selectOption({ label: "Notify a person in the app" });
-      await page
-        .locator('select[id$="-person"]')
-        .selectOption({ label: "Nguyễn Thu Hà" });
-      await page.locator('input[id$="-message"]').fill("Ready for approval");
-      await page.locator('input[id$="-message"]').blur();
+      const card = page.getByRole("listitem", {
+        name: "Hand a tested item to the approver",
+      });
+      await card.waitFor();
+      await card.getByRole("button", { name: "Run history" }).click();
+      await page.getByText("Stopped at action 2").waitFor();
     },
     places: {
-      trigger: "above-end",
-      conditions: "inside-end",
-      actions: "below-end",
+      rule: "below-end",
+      history: "right",
+      failure: "below-end",
     },
-    notes: (page) => ({
-      trigger: [
-        page.getByText("When", { exact: true }),
-        page.locator('select[id$="-trigger-group"]'),
-      ],
-      conditions: [
-        page.getByText("Only if (all must hold)"),
-        page.getByRole("button", { name: "A field equals" }),
-      ],
-      actions: [
-        page.getByText("Then, in this order"),
-        page.locator('input[id$="-message"]'),
-      ],
-    }),
+    notes: (page) => {
+      const card = page.getByRole("listitem", {
+        name: "Hand a tested item to the approver",
+      });
+      return {
+        rule: [
+          card.getByText("Hand a tested item to the approver"),
+          card.getByText("Version 2", { exact: true }),
+        ],
+        history: [
+          card.getByText("Succeeded", { exact: true }).first(),
+          card.getByText(/^10\/12\/2026/),
+          card.getByText("Version 2", { exact: true }).nth(1),
+          card.getByText("Action 2: Notify a person in the app").first(),
+        ],
+        failure: [
+          card.getByText("Failed", { exact: true }).first(),
+          card.getByText(/can no longer see this Board/),
+        ],
+      };
+    },
   },
   reports: {
     path: `${W}/reports?report=mock-report-erp`,
@@ -338,15 +327,14 @@ const SHOWCASE = {
 const STORY = {
   inbox: {
     path: `${W}/inbox`,
-    viewport: { width: 1440, height: 420 },
-    clip: { x: 696, y: 0, width: 744, height: 420 },
+    viewport: { width: 1440, height: 290 },
+    clip: { x: 696, y: 0, width: 744, height: 290 },
     async prepare(page) {
       await page.getByRole("button", { name: "Mark as done" }).waitFor();
     },
   },
   sharing: {
     path: `${W}/boards/mock-board-erp?view=table`,
-    viewport: { width: 1440, height: 900 },
     viewport: { width: 1440, height: 1000 },
     async clipOf(page) {
       const box = await page.getByRole("dialog").boundingBox();
@@ -368,7 +356,7 @@ const STORY = {
   departments: {
     path: `${W}/spaces/mock-space-engineering`,
     viewport: { width: 1440, height: 640 },
-    clip: { x: 1100, y: 160, width: 340, height: 450 },
+    clip: { x: 1100, y: 160, width: 340, height: 440 },
     async prepare(page) {
       await page.getByText("Running Boards").waitFor();
     },
