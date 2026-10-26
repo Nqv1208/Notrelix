@@ -8,7 +8,10 @@ import type { CardLabel } from "@notrelix/work-management-core";
 
 type CreateLabelOp = "WorkManagement.Labels.Create";
 type CreateLabelBody = OperationRequestBody<CreateLabelOp>;
-type CreateLabelResponse = OperationResponse<CreateLabelOp, 200>;
+type CreateLabelResponse = OperationResponse<CreateLabelOp, 201>;
+
+type ListLabelsOp = "WorkManagement.Labels.List";
+type ListLabelsResponse = OperationResponse<ListLabelsOp, 200>;
 
 type UpdateLabelOp = "WorkManagement.Labels.Update";
 type UpdateLabelBody = OperationRequestBody<UpdateLabelOp>;
@@ -33,12 +36,20 @@ export function createLabelApi(client: NotrelixClient) {
   const api = client.api;
   return {
     async getBoardLabels(boardId: string): Promise<CardLabel[]> {
-      const labels = await api.get<any>(endpoints.boards.labels(boardId));
-      return (labels || []).map((l: any) => ({
-        id: l.id,
-        name: l.name,
-        color: l.color,
-      }));
+      const labels = await api.get<ListLabelsResponse>(
+        endpoints.boards.labels(boardId),
+      );
+      return (labels ?? []).flatMap((label) =>
+        label.labelId
+          ? [
+              {
+                id: label.labelId,
+                name: label.name ?? "",
+                color: label.color ?? "",
+              },
+            ]
+          : [],
+      );
     },
 
     async createLabel(input: CreateLabelInput): Promise<CardLabel> {
@@ -46,20 +57,13 @@ export function createLabelApi(client: NotrelixClient) {
         color: input.color,
         name: input.name,
       };
-      // Canonical response might be just ID or the full label?
-      // WorkManagement.Labels.Create response type will tell us.
-      // Wait, if it returns void, we can't return CardLabel! Let's check `CreateLabelResponse`.
       const res = await api.post<CreateLabelResponse>(
         endpoints.boards.labels(input.boardId),
         body,
         { headers: { "Idempotency-Key": crypto.randomUUID() } },
       );
-      // For now, let's cast as any and assume it returns what it used to. If it fails typecheck, I'll fix it.
-      return {
-        id: (res as any).id,
-        name: (res as any).name,
-        color: (res as any).color,
-      };
+      // The server answers with the new label's id only.
+      return { id: res, name: input.name ?? "", color: input.color };
     },
 
     async updateLabel(input: UpdateLabelInput): Promise<void> {

@@ -15578,8 +15578,8 @@
           "required": true
         },
         "responses": {
-          "200": {
-            "description": "OK",
+          "201": {
+            "description": "Created",
             "headers": {
               "Idempotency-Replayed": {
                 "description": "true when this response is a replay of a stored result",
@@ -15591,7 +15591,8 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -15636,7 +15637,10 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemLabelDto"
+                  }
                 }
               }
             }

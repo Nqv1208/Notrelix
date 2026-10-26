@@ -1006,7 +1006,7 @@ export const boardsOperations = [
   defineMockOperation<
     { boardId: string },
     never,
-    { id: string; name: string; color: string }[]
+    { labelId: string; name: string; color: string }[]
   >({
     id: "boards.labels.list",
     contract: {
@@ -1019,7 +1019,7 @@ export const boardsOperations = [
       const labels = store.getBoardLabels(params.boardId);
       return ok(
         labels.map((l) => ({
-          id: l.id,
+          labelId: l.id,
           name: l.name,
           color: l.color,
         })),
@@ -1032,7 +1032,7 @@ export const boardsOperations = [
   defineMockOperation<
     { boardId: string },
     { name?: string; color: string },
-    { id: string; name: string; color: string }
+    string
   >({
     id: "boards.labels.create",
     contract: {
@@ -1047,11 +1047,7 @@ export const boardsOperations = [
         color: string;
       };
       const label = store.createLabel(params.boardId, data);
-      return created<{ id: string; name: string; color: string }>({
-        id: label.id,
-        name: label.name,
-        color: label.color,
-      });
+      return created<string>(label.id);
     },
   }),
 
