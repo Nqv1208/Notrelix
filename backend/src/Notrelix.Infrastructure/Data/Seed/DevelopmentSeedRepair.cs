@@ -3,6 +3,7 @@ using Notrelix.Domain.Accounts.Accounts;
 using Notrelix.Domain.Identity.Users;
 using Notrelix.Domain.SharedKernel.Ordering;
 using Notrelix.Domain.WorkManagement.Boards;
+using Notrelix.Domain.WorkManagement.Fields;
 using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Domain.Workspaces.Spaces;
 using Notrelix.Domain.Workspaces.Workspaces;
@@ -37,7 +38,9 @@ internal static partial class DevelopmentSeedRepair
         var ownersRepaired = await EnsureSeedOwnersAsync(context, now, ct);
         var (spacesCreated, boardsPlaced) = await EnsureSeedSpacesAsync(context, now, ct);
         var fieldsRenamed = await RenameDuplicateSeedFieldsAsync(context, now, ct);
-        return new SeedRepairResult(emailsConfirmed, ownersRepaired, spacesCreated, boardsPlaced, fieldsRenamed);
+        var dueDatesMarked = await MarkSeedDueDateFieldsSystemAsync(context, ct);
+        return new SeedRepairResult(
+            emailsConfirmed, ownersRepaired, spacesCreated, boardsPlaced, fieldsRenamed, dueDatesMarked);
     }
 
     private static async Task<int> ConfirmSeedEmailsAsync(
@@ -295,6 +298,38 @@ internal static partial class DevelopmentSeedRepair
         return renamed;
     }
 
+    /// <summary>
+    /// A board made through the product has the system Due Date field, the one that writes the Item's own due
+    /// date; the seed once made it an ordinary date field, so editing it never changed the Item's due date.
+    /// </summary>
+    private static async Task<int> MarkSeedDueDateFieldsSystemAsync(ApplicationDbContext context, CancellationToken ct)
+    {
+        if (await LoadSeedWorkspacesAsync(context, ct) is not { } workspaces)
+        {
+            return 0;
+        }
+
+        var workspaceIds = workspaces.Select(w => w.Id).ToList();
+        var seedBoardIds = (await context.Boards.Where(b => workspaceIds.Contains(b.WorkspaceId)).ToListAsync(ct))
+            .Where(b => InitDb.DepartmentForBoardName(b.Title) is not null)
+            .Select(b => b.Id)
+            .ToList();
+        var fields = await context.BoardFields
+            .Where(f => seedBoardIds.Contains(f.BoardId) && !f.IsSystem && f.Name == "Due Date" && f.Type == FieldType.Date)
+            .ToListAsync(ct);
+        foreach (var field in fields)
+        {
+            context.Entry(field).Property(f => f.IsSystem).CurrentValue = true;
+        }
+
+        if (fields.Count > 0)
+        {
+            await SaveAsync(context, ct);
+        }
+
+        return fields.Count;
+    }
+
     private static async Task SaveAsync(ApplicationDbContext context, CancellationToken ct)
     {
         // Seed repair applies no product use case, so the domain events its changes raise are dropped,
@@ -312,7 +347,8 @@ internal static partial class DevelopmentSeedRepair
 }
 
 internal sealed record SeedRepairResult(
-    int EmailsConfirmed, int OwnersRepaired, int SpacesCreated, int BoardsPlaced, int FieldsRenamed = 0)
+    int EmailsConfirmed, int OwnersRepaired, int SpacesCreated, int BoardsPlaced, int FieldsRenamed = 0, int DueDatesMarked = 0)
 {
-    public bool ChangedAnything => EmailsConfirmed + OwnersRepaired + SpacesCreated + BoardsPlaced + FieldsRenamed > 0;
+    public bool ChangedAnything =>
+        EmailsConfirmed + OwnersRepaired + SpacesCreated + BoardsPlaced + FieldsRenamed + DueDatesMarked > 0;
 }
