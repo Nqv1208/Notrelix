@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { EditorContent, type Editor } from "@tiptap/react";
 import type { DocPageCopy } from "../components/doc-page.copy";
 import type {
@@ -6,6 +7,7 @@ import type {
   DocPerson,
   DocTaskRef,
 } from "../components/doc-page-models";
+import { BlockHandle } from "./block-handle";
 import { EditorBubbleMenu } from "./bubble-menu";
 import { FindPanel } from "./find-panel";
 import { MarkChips } from "./mark-chips";
@@ -35,8 +37,9 @@ export function DocEditorSurface({
   markTargets,
   callbacks,
 }: DocEditorSurfaceProps) {
+  const surface = useRef<HTMLDivElement | null>(null);
   return (
-    <div className="relative">
+    <div ref={surface} className="relative">
       <FindPanel editor={editor} copy={copy} />
       <EditorContent
         editor={editor}
@@ -47,6 +50,7 @@ export function DocEditorSurface({
       <MarkChips editor={editor} copy={copy} targets={markTargets} />
       {editor.isEditable ? (
         <>
+          <BlockHandle editor={editor} copy={copy} surface={surface} />
           <EditorBubbleMenu
             editor={editor}
             copy={copy}

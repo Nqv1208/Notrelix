@@ -345,6 +345,10 @@ export const vi = {
     footer: "↵ chèn · ⇧↵ tạo việc mới từ chữ đang gõ",
     none: "Không có công việc nào khớp.",
   },
+  blockHandle: {
+    label: "Kéo để di chuyển khối (Alt+Shift+↑/↓)",
+    moved: "Đã chuyển khối đến vị trí {{position}} trên {{total}}",
+  },
   chips: {
     member: "Thành viên không gian làm việc",
     unknownMember: "Thành viên không khả dụng",
@@ -879,6 +883,10 @@ export const en: DocPageCopy = {
     heading: 'Tasks matching "{{query}}"',
     footer: "↵ insert · ⇧↵ create a new task from the typed text",
     none: "No task matches.",
+  },
+  blockHandle: {
+    label: "Drag to move block (Alt+Shift+↑/↓)",
+    moved: "Block moved to position {{position}} of {{total}}",
   },
   chips: {
     member: "Workspace member",

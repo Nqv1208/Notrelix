@@ -34,6 +34,7 @@ import { createCodeBlock } from "./code-block";
 import { DocMedia, FileBlock, ImageBlock, UploadPlaceholder } from "./media";
 import type { DocMediaHost } from "./media-host";
 import { COLOR_CLASS, HIGHLIGHT_CLASS } from "./mark-classes";
+import { BlockMove } from "./block-move";
 import { CommentAnchors } from "./comment-anchors";
 import { FindReplace } from "./find-replace";
 import { TABLE_EXTENSIONS } from "./table";
@@ -741,6 +742,7 @@ export function createDocExtensions({
     }),
     createCodeBlock(context),
     BlockId,
+    BlockMove,
     FindReplace,
     CommentAnchors.configure({
       onOpen: (id) => context.current.callbacks?.onOpenComment?.(id),
