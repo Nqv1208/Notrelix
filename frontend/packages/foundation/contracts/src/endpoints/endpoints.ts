@@ -258,6 +258,9 @@ export const endpoints = {
     labels: (itemId: string) => `/board-items/${itemId}/labels`,
     label: (itemId: string, labelId: string) =>
       `/board-items/${itemId}/labels/${labelId}`,
+    assignees: (itemId: string) => `/board-items/${itemId}/assignees`,
+    assignee: (itemId: string, userId: string) =>
+      `/board-items/${itemId}/assignees/${userId}`,
   },
   boardFields: {
     create: (boardId: string) => `/boards/${boardId}/fields`,

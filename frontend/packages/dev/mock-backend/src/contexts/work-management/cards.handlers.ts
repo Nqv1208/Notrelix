@@ -54,7 +54,11 @@ import {
 import { preconditionFailed } from "../workspace/space-target";
 import type { MockStore } from "../../state/mock-store";
 import type { MockAttachmentRecord, MockCardRecord } from "../../state/records";
-import { assignMember, childItemDto } from "../../state/mock-work-feed";
+import {
+  assignMember,
+  childItemDto,
+  unassignMember,
+} from "../../state/mock-work-feed";
 import type { ChildItemDto } from "../../state/mock-work-feed";
 import {
   canReadBoard,
@@ -584,6 +588,27 @@ export const cardsOperations = [
       if (result === "invalid") {
         return badRequest({ userId: ["That person is not a member."] });
       }
+      return noContent();
+    },
+  }),
+
+  // ─── DELETE /board-items/:itemId/assignees/:userId ─────────────────────────────
+
+  defineMockOperation<{ id: string; userId: string }, never, void>({
+    id: "wm.boardItems.unassignMember",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardItems.UnassignMember",
+    },
+    method: "DELETE",
+    route: "/board-items/:id/assignees/:userId",
+    async handle({ params, store, request }) {
+      const missingKey = missingIdempotencyKey(request);
+      if (missingKey) return missingKey;
+      const item = store.getCard(params.id);
+      if (!item) return notFound("Card not found");
+      if (!canWriteBoardItems(item.boardId, store)) return forbidden();
+      unassignMember(store, params.id, params.userId);
       return noContent();
     },
   }),

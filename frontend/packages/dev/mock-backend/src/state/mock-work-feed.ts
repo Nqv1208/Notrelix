@@ -1272,6 +1272,20 @@ export function assignMember(
   return "ok";
 }
 
+/** Removes a member from the item's assignees. */
+export function unassignMember(
+  store: MockStore,
+  cardId: string,
+  userId: string,
+): FeedWriteResult {
+  const card = store.getCard(cardId);
+  if (!card) return "not-found";
+  store.updateCard(cardId, {
+    assigneeUserIds: (card.assigneeUserIds ?? []).filter((id) => id !== userId),
+  });
+  return "ok";
+}
+
 export function replyToMention(
   store: MockStore,
   mentionId: string,

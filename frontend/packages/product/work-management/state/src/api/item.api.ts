@@ -171,6 +171,35 @@ export function createCardApi(client: NotrelixClient) {
     },
 
     /**
+     * Makes `next` the item's assignees. The Assignee system field mirrors the
+     * item's own members, so the backend refuses a field value for it: each
+     * added person is `POST /board-items/{id}/assignees` and each removed one
+     * `DELETE /board-items/{id}/assignees/{userId}`.
+     */
+    async setAssignees(
+      cardId: string,
+      next: readonly string[],
+      current: readonly string[],
+    ): Promise<void> {
+      const wanted = new Set(next);
+      const held = new Set(current);
+      for (const userId of current) {
+        if (wanted.has(userId)) continue;
+        await api.delete<void>(endpoints.boardItems.assignee(cardId, userId), {
+          idempotencyKey: crypto.randomUUID(),
+        });
+      }
+      for (const userId of next) {
+        if (held.has(userId)) continue;
+        await api.post<void>(
+          endpoints.boardItems.assignees(cardId),
+          { userId },
+          { idempotencyKey: crypto.randomUUID() },
+        );
+      }
+    },
+
+    /**
      * Sets the item's Status option (`PATCH /board-items/{id}/status`). The
      * server resolves the board's Status field; the value is the option id.
      */

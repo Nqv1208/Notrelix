@@ -27,6 +27,12 @@ interface FieldValueWriter {
     payload: UpdateFieldValueInput,
     options?: ApiRequestOptions & { readonly expectedVersion?: number },
   ): Promise<void>;
+  /** Writes the item's own assignee members (the Assignee system field). */
+  setAssignees?(
+    cardId: string,
+    next: readonly string[],
+    current: readonly string[],
+  ): Promise<void>;
 }
 
 /**
@@ -121,12 +127,31 @@ export function runFieldValueCommand(
         applyFieldValue(card, payload, fields, members),
       ) ?? current,
     applyDetail: (detail) => applyFieldValue(detail, payload, fields, members),
-    send: (context) =>
-      cards.updateFieldValue(payload, {
+    send: (context) => {
+      const field = fields.find(
+        (candidate) => candidate.id === payload.fieldDefinitionId,
+      );
+      // The Assignee system field mirrors the item's members; the backend
+      // writes it through the item's assignees, never as a field value.
+      if (
+        field?.isSystemField &&
+        field.fieldType === "person" &&
+        cards.setAssignees
+      ) {
+        const next = Array.isArray(payload.value)
+          ? (payload.value as string[])
+          : [];
+        const current = (findBoardCard(board, payload.cardId)?.members ?? [])
+          .map((member) => member.userId)
+          .filter((id): id is string => typeof id === "string");
+        return cards.setAssignees(payload.cardId, next, current);
+      }
+      return cards.updateFieldValue(payload, {
         ...context,
         expectedVersion:
           findBoardCard(board, payload.cardId)?.version ?? undefined,
-      }),
+      });
+    },
   });
 }
 
