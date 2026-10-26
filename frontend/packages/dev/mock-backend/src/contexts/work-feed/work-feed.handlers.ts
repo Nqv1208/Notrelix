@@ -10,7 +10,6 @@ import {
   noContent,
   notFound,
   ok,
-  created,
   validationError,
   forbidden,
   conflict,
@@ -24,8 +23,6 @@ import {
   listItemApprovals,
   requestItemApproval,
   buildMyWorkExtended,
-  bulkWrite,
-  createAssignedItem,
   decideApproval,
   markAllInboxRead,
   markInbox,
@@ -33,10 +30,7 @@ import {
   reopenItem,
   replyToMention,
   setFollowing,
-  setItemBucket,
-  type BulkAction,
   type FeedWriteResult,
-  type WorkBucket,
 } from "../../state/mock-work-feed";
 import type { MockStore } from "../../state/mock-store";
 import { commandSearch } from "../../state/mock-command-search";
@@ -77,8 +71,6 @@ function withPriorityOption(dto: ReturnType<typeof buildMyWorkExtended>) {
   };
 }
 
-const BUCKETS: readonly WorkBucket[] = ["todo", "doing", "review", "done"];
-
 function outcome(result: FeedWriteResult) {
   switch (result) {
     case "ok":
@@ -90,10 +82,6 @@ function outcome(result: FeedWriteResult) {
     default:
       return conflict("The item is not in a state that allows this.");
   }
-}
-
-function isBucket(value: unknown): value is WorkBucket {
-  return BUCKETS.includes(value as WorkBucket);
 }
 
 /**
@@ -301,22 +289,6 @@ export const workFeedOperations = [
     },
   }),
 
-  // ── Status by bucket ─────────────────────────────────────────────────────
-  defineMockOperation<{ id: string }, { bucket?: string }>({
-    id: "wsFeed.items.setBucket",
-    contract: { kind: "gap", gapId: MY_WORK_EXT },
-    method: "PUT",
-    route: "/board-items/:id/status-bucket",
-    async handle({ params, body, store }) {
-      if (!isBucket(body?.bucket)) {
-        return validationError({
-          bucket: ["Use todo, doing, review or done."],
-        });
-      }
-      return outcome(setItemBucket(store, params.id, body.bucket));
-    },
-  }),
-
   // ── Follow / unfollow ────────────────────────────────────────────────────
   defineMockOperation<{ id: string }>({
     id: "wsFeed.items.follow",
@@ -351,60 +323,6 @@ export const workFeedOperations = [
     route: "/board-items/:id/remind",
     async handle({ params, store }) {
       return outcome(remindOwner(store, params.id));
-    },
-  }),
-
-  // ── Bulk write ───────────────────────────────────────────────────────────
-  defineMockOperation<
-    { workspaceId: string },
-    { itemIds?: string[]; action?: Record<string, unknown> }
-  >({
-    id: "wsFeed.myWork.bulk",
-    contract: { kind: "gap", gapId: MY_WORK_EXT },
-    method: "POST",
-    route: "/workspaces/:workspaceId/my-work/bulk",
-    async handle({ params, body, store }) {
-      if (!store.isCurrentMemberOf(params.workspaceId)) return notFound();
-      const ids = body?.itemIds;
-      const action = body?.action as BulkAction | undefined;
-      if (!Array.isArray(ids) || ids.length === 0 || ids.length > 100) {
-        return validationError({ itemIds: ["Give 1 to 100 item ids."] });
-      }
-      if (
-        !action ||
-        !(
-          (action.type === "set-due" &&
-            (action.dueAt === null || typeof action.dueAt === "string")) ||
-          (action.type === "set-status" && isBucket(action.bucket)) ||
-          action.type === "unfollow" ||
-          (action.type === "assign" && typeof action.assigneeId === "string")
-        )
-      ) {
-        return validationError({ action: ["The action is not valid."] });
-      }
-      return ok({ results: bulkWrite(store, ids, action) });
-    },
-  }),
-
-  // ── Create an item assigned to the member ────────────────────────────────
-  defineMockOperation<
-    { workspaceId: string },
-    { boardId?: string; name?: string }
-  >({
-    id: "wsFeed.myWork.createItem",
-    contract: { kind: "gap", gapId: MY_WORK_EXT },
-    method: "POST",
-    route: "/workspaces/:workspaceId/my-work/items",
-    async handle({ params, body, store }) {
-      if (!store.isCurrentMemberOf(params.workspaceId)) return notFound();
-      const name = body?.name?.trim() ?? "";
-      if (!body?.boardId || name.length === 0 || name.length > 300) {
-        return validationError({
-          name: ["Give a name of 1 to 300 characters."],
-        });
-      }
-      const made = createAssignedItem(store, body.boardId, name);
-      return made === "not-found" ? notFound("Board not found") : created(made);
     },
   }),
 

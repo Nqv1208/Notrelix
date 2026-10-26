@@ -230,8 +230,7 @@ export const en = {
       "The new item is assigned to you, set to To do, with no due date. Only Boards you can add items to are shown.",
     addCancel: "Cancel",
     addSubmit: "Create item",
-    addUnavailable:
-      "An item cannot be created already assigned to you yet, so nothing is created here.",
+    addUnavailable: "Enter a name and choose a Board to create the item.",
     windows: {
       overdue: "Overdue",
       today: "Today",
@@ -595,8 +594,7 @@ export const vi: WorkspaceHomeCopy = {
       "Việc mới giao cho bạn, trạng thái Cần làm, chưa có hạn. Chỉ hiện các board bạn được thêm việc.",
     addCancel: "Huỷ",
     addSubmit: "Tạo việc",
-    addUnavailable:
-      "Chưa tạo được việc đã giao sẵn cho bạn, nên chưa tạo gì ở đây.",
+    addUnavailable: "Nhập tên việc và chọn board để tạo việc.",
     windows: {
       overdue: "Quá hạn",
       today: "Hôm nay",

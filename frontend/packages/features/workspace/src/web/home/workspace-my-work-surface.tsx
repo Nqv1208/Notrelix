@@ -102,7 +102,7 @@ export interface WorkspaceMyWorkSurfaceProps {
   readonly calendarHref?: string | null;
   /** Boards the member can add an item to. */
   readonly createBoards: readonly MyWorkCreateBoard[];
-  /** Creates an item already assigned to the member; `null` = no write yet. */
+  /** Creates an item assigned to the member; `null` leaves the action inert. */
   readonly onCreate:
     ((input: { boardId: string; name: string }) => void) | null;
   /** The row open in the sheet. */

@@ -4,9 +4,11 @@
  * The My work read (`WorkManagement.BoardItems.GetMyWorkExtended`), the Home
  * feed (`WorkManagement.BoardItems.GetHomeFeed`) and the inbox summary
  * (`Collaboration.Notifications.GetInboxSummary`) are bound to the generated
- * contract and mapped below into the DTO types the pages draw. Every other
- * read and write here is still a registered gap (`CTR-GAP-WS-MYWORK-EXT`,
- * `CTR-GAP-WS-HOME-FEED`, `CTR-GAP-WS-INBOX` in
+ * contract and mapped below into the DTO types the pages draw. Creating an
+ * item, changing status or due date, assigning and unfollowing are per-item
+ * writes on the Work Management contract (`work-feed-item-writes.ts`). The
+ * remaining reads and writes here are still registered gaps
+ * (`CTR-GAP-WS-MYWORK-EXT`, `CTR-GAP-WS-HOME-FEED`, `CTR-GAP-WS-INBOX` in
  * `tooling/contracts/enabled-consumer-surface.ts`) served by the mock backend.
  * The DTO types below are the frontend's own and the single place the shapes
  * live.
@@ -32,11 +34,20 @@ import type { OperationResponse } from "@notrelix/contracts";
 import { useAppRuntime } from "@notrelix/runtime-web";
 import { priorityFromOptionName } from "@notrelix/work-management-core";
 import { wmQueryKeys } from "@notrelix/work-management-state";
+import { useCurrentUser } from "@notrelix/features-auth";
 import { myWorkQueryKey } from "./work-management-bridge";
+import {
+  bulkEach,
+  createAssignedItem,
+  setItemBucket,
+  type BulkAction,
+  type BulkResult,
+  type WorkBucket,
+} from "./work-feed-item-writes";
 
 // ─── DTOs (frontend-owned; see the BE requirement log for the contract) ──────
 
-export type WorkBucketDto = "todo" | "doing" | "review" | "done";
+export type WorkBucketDto = WorkBucket;
 export type WorkPriorityDto = "urgent" | "high" | "medium" | "low";
 
 export interface PersonDto {
@@ -237,19 +248,8 @@ export interface InboxSummaryDto {
   readonly total: number;
 }
 
-export type BulkActionDto =
-  | { readonly type: "set-due"; readonly dueAt: string | null }
-  | { readonly type: "set-status"; readonly bucket: WorkBucketDto }
-  | { readonly type: "unfollow" }
-  | { readonly type: "assign"; readonly assigneeId: string };
-
-export interface BulkResultDto {
-  readonly results: readonly {
-    readonly itemId: string;
-    readonly ok: boolean;
-    readonly error: "not-found" | "invalid" | null;
-  }[];
-}
+export type BulkActionDto = BulkAction;
+export type BulkResultDto = BulkResult;
 
 // ─── Generated contract → page DTOs ─────────────────────────────────────────
 
@@ -420,15 +420,9 @@ export function toInboxSummary(
 const path = {
   myWorkExtended: (workspaceId: string) =>
     `/workspaces/${workspaceId}/my-work/extended`,
-  myWorkBulk: (workspaceId: string) =>
-    `/workspaces/${workspaceId}/my-work/bulk`,
-  myWorkItems: (workspaceId: string) =>
-    `/workspaces/${workspaceId}/my-work/items`,
   approvalDecision: (workspaceId: string, requestId: string) =>
     `/workspaces/${workspaceId}/approvals/${requestId}/decision`,
   reopen: (itemId: string) => `/board-items/${itemId}/reopen`,
-  statusBucket: (itemId: string) => `/board-items/${itemId}/status-bucket`,
-  following: (itemId: string) => `/board-items/${itemId}/following`,
   remind: (itemId: string) => `/board-items/${itemId}/remind`,
   homeFeed: (workspaceId: string) => `/workspaces/${workspaceId}/home/feed`,
   mentionReply: (mentionId: string) => `/mentions/${mentionId}/reply`,
@@ -743,6 +737,7 @@ export function useWorkFeedWrites(workspaceId: string): WorkFeedWrites {
   const { api: client } = useAppRuntime();
   const queryClient = useQueryClient();
   const accountId = useAccountId();
+  const userId = useCurrentUser()?.id ?? null;
   const api = client.api;
 
   const run = useMutation({
@@ -757,25 +752,6 @@ export function useWorkFeedWrites(workspaceId: string): WorkFeedWrites {
     async <T>(send: () => Promise<T>, boardIds: readonly string[] = []) =>
       (await run.mutateAsync({ send, boardIds })).value as T,
     [run],
-  );
-
-  const unfollowEach = useCallback(
-    async (itemIds: readonly string[]): Promise<BulkResultDto> => ({
-      results: await Promise.all(
-        itemIds.map(async (itemId) => {
-          try {
-            await api.delete<void>(path.following(itemId), {
-              idempotencyKey: attemptKey(),
-              ...QUIET,
-            });
-            return { itemId, ok: true, error: null } as const;
-          } catch {
-            return { itemId, ok: false, error: "invalid" } as const;
-          }
-        }),
-      ),
-    }),
-    [api],
   );
 
   return useMemo<WorkFeedWrites>(
@@ -805,7 +781,7 @@ export function useWorkFeedWrites(workspaceId: string): WorkFeedWrites {
         ),
       setStatus: ({ itemId, boardId, bucket }) =>
         perform(
-          () => api.put<void>(path.statusBucket(itemId), { bucket }, QUIET),
+          () => setItemBucket(api, { itemId, boardId, bucket }),
           [boardId],
         ),
       remind: (itemId) =>
@@ -820,28 +796,20 @@ export function useWorkFeedWrites(workspaceId: string): WorkFeedWrites {
           ),
         ),
       bulk: ({ itemIds, boardIds, action }) =>
-        perform(
-          () =>
-            // Stopping to follow is one write per item on the follow route.
-            action.type === "unfollow"
-              ? unfollowEach(itemIds)
-              : api.post<BulkResultDto>(
-                  path.myWorkBulk(workspaceId),
-                  { itemIds, action },
-                  { idempotencyKey: attemptKey(), ...QUIET },
-                ),
-          boardIds,
-        ),
+        perform(() => {
+          // The items and their Boards are parallel lists.
+          const boardOf = new Map(itemIds.map((id, i) => [id, boardIds[i]]));
+          return bulkEach(api, {
+            itemIds,
+            boardIdOf: (itemId) => boardOf.get(itemId) ?? null,
+            action,
+          });
+        }, boardIds),
       createItem: ({ boardId, name }) =>
-        perform(
-          () =>
-            api.post<{ id: string; key: string | null }>(
-              path.myWorkItems(workspaceId),
-              { boardId, name },
-              { idempotencyKey: attemptKey(), ...QUIET },
-            ),
-          [boardId],
-        ),
+        perform(() => {
+          if (!userId) throw new Error("Not signed in.");
+          return createAssignedItem(api, { boardId, name, userId });
+        }, [boardId]),
       replyToMention: ({ mentionId, text }) =>
         perform(() =>
           api.post<void>(
@@ -906,6 +874,6 @@ export function useWorkFeedWrites(workspaceId: string): WorkFeedWrites {
           }),
       },
     }),
-    [api, perform, unfollowEach, workspaceId],
+    [api, perform, userId, workspaceId],
   );
 }

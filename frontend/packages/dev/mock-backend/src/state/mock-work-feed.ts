@@ -1256,77 +1256,20 @@ export function remindOwner(store: MockStore, cardId: string): FeedWriteResult {
   return "ok";
 }
 
-export type BulkAction =
-  | { type: "set-due"; dueAt: string | null }
-  | { type: "set-status"; bucket: WorkBucket }
-  | { type: "unfollow" }
-  | { type: "assign"; assigneeId: string };
-
-export interface BulkResult {
-  itemId: string;
-  ok: boolean;
-  error: "not-found" | "invalid" | null;
-}
-
-export function bulkWrite(
+/** Adds a member to the item's assignees; the member's own items are the My work set. */
+export function assignMember(
   store: MockStore,
-  itemIds: readonly string[],
-  action: BulkAction,
-): BulkResult[] {
-  return itemIds.map((itemId): BulkResult => {
-    const card = store.getCard(itemId);
-    if (!card) return { itemId, ok: false, error: "not-found" };
-    let outcome: FeedWriteResult = "ok";
-    switch (action.type) {
-      case "set-due":
-        store.updateCard(itemId, { dueAt: action.dueAt });
-        break;
-      case "set-status":
-        outcome = setItemBucket(store, itemId, action.bucket);
-        break;
-      case "unfollow":
-        outcome = setFollowing(store, itemId, false);
-        break;
-      case "assign": {
-        if (!store.getUser(action.assigneeId)) {
-          outcome = "invalid";
-          break;
-        }
-        const feed = store.feed;
-        feed.assigned.delete(itemId);
-        store.updateCard(itemId, { assigneeUserIds: [action.assigneeId] });
-        if (action.assigneeId === store.getCurrentUser().id)
-          feed.assigned.add(itemId);
-        break;
-      }
-    }
-    return outcome === "ok"
-      ? { itemId, ok: true, error: null }
-      : {
-          itemId,
-          ok: false,
-          error: outcome === "not-found" ? "not-found" : "invalid",
-        };
+  cardId: string,
+  userId: string,
+): FeedWriteResult {
+  const card = store.getCard(cardId);
+  if (!card) return "not-found";
+  if (!store.getUser(userId)) return "invalid";
+  store.updateCard(cardId, {
+    assigneeUserIds: [...new Set([...(card.assigneeUserIds ?? []), userId])],
   });
-}
-
-/** Creates an item assigned to the member in the first group of a board. */
-export function createAssignedItem(
-  store: MockStore,
-  boardId: string,
-  name: string,
-): { id: string; key: string | null } | "not-found" {
-  const lists = store.getLists(boardId);
-  const group = lists[0];
-  if (!group) return "not-found";
-  const card = store.createCard(boardId, group.id, { title: name });
-  store.updateCard(card.id, {
-    assigneeUserIds: [store.getCurrentUser().id],
-  });
-  const optionId = optionIdFor(store, card.id, "todo");
-  if (optionId) store.updateItemStatus(card.id, optionId);
-  store.feed.assigned.add(card.id);
-  return { id: card.id, key: card.itemKey ?? null };
+  if (userId === store.getCurrentUser().id) store.feed.assigned.add(cardId);
+  return "ok";
 }
 
 export function replyToMention(

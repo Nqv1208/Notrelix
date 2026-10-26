@@ -262,7 +262,7 @@ export function MyWorkBar({
   onCreateBoard: (id: string) => void;
   createName: string;
   onCreateName: (value: string) => void;
-  /** `null`: creating an item already assigned to the member has no write yet. */
+  /** `null`: no name or no Board chosen yet, so nothing can be created. */
   onCreate: (() => void) | null;
   groupAvailable: Record<MyWorkGroupBy, boolean>;
 }) {

@@ -54,7 +54,7 @@ import {
 import { preconditionFailed } from "../workspace/space-target";
 import type { MockStore } from "../../state/mock-store";
 import type { MockAttachmentRecord, MockCardRecord } from "../../state/records";
-import { childItemDto } from "../../state/mock-work-feed";
+import { assignMember, childItemDto } from "../../state/mock-work-feed";
 import type { ChildItemDto } from "../../state/mock-work-feed";
 import {
   canReadBoard,
@@ -559,6 +559,56 @@ export const cardsOperations = [
         });
       }
       // The real endpoint answers 204 No Content.
+      return noContent();
+    },
+  }),
+
+  // ─── POST /board-items/:itemId/assignees ───────────────────────────────────────
+
+  defineMockOperation<{ id: string }, { userId?: string }, void>({
+    id: "wm.boardItems.assignMember",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardItems.AssignMember",
+    },
+    method: "POST",
+    route: "/board-items/:id/assignees",
+    async handle({ params, body, store, request }) {
+      const missingKey = missingIdempotencyKey(request);
+      if (missingKey) return missingKey;
+      const item = store.getCard(params.id);
+      if (!item) return notFound("Card not found");
+      if (!canWriteBoardItems(item.boardId, store)) return forbidden();
+      if (!body?.userId) return badRequest({ userId: ["Choose a member."] });
+      const result = assignMember(store, params.id, body.userId);
+      if (result === "invalid") {
+        return badRequest({ userId: ["That person is not a member."] });
+      }
+      return noContent();
+    },
+  }),
+
+  // ─── PATCH /board-items/:id/due-date ───────────────────────────────────────────
+
+  defineMockOperation<
+    { id: string },
+    { dueDate?: string | null; startDate?: string | null },
+    void
+  >({
+    id: "wm.boardItems.setDueDate",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardItems.SetDueDate",
+    },
+    method: "PATCH",
+    route: "/board-items/:id/due-date",
+    async handle({ params, body, store, request }) {
+      const missingKey = missingIdempotencyKey(request);
+      if (missingKey) return missingKey;
+      const item = store.getCard(params.id);
+      if (!item) return notFound("Card not found");
+      if (!canWriteBoardItems(item.boardId, store)) return forbidden();
+      store.updateCard(params.id, { dueAt: body?.dueDate ?? null });
       return noContent();
     },
   }),
