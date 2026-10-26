@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import {
   useCreateItemWithDetails,
@@ -33,22 +33,35 @@ export function ItemCreateHost({
   defaultStatusId,
   defaultStartDay,
   defaultDueDay,
+  defaultTitle,
+  defaultAssigneeIds,
+  boardSlot,
+  onCreated,
 }: {
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
   readonly workspaceId: string;
-  readonly board: Board;
+  /** Undefined while a board chosen in `boardSlot` loads: the form cannot be submitted yet. */
+  readonly board: Board | undefined;
   readonly groups: readonly BoardGroup[];
   readonly defaultGroupId: string;
   readonly defaultStatusId: string | null;
   /** `YYYY-MM-DD` prefilled in the dates (Calendar and Timeline). */
   readonly defaultStartDay?: string;
   readonly defaultDueDay?: string;
+  readonly defaultTitle?: string;
+  readonly defaultAssigneeIds?: readonly string[];
+  readonly boardSlot?: ReactNode;
+  /** After the item exists (also when a detail could not be saved). */
+  readonly onCreated?: (result: {
+    readonly boardId: string;
+    readonly itemId: string | undefined;
+  }) => void;
 }) {
   const copy = useItemCreateCopy();
-  const create = useCreateItemWithDetails(board.id, workspaceId);
+  const create = useCreateItemWithDetails(board?.id ?? "", workspaceId);
   const [error, setError] = useState<string | null>(null);
-  const fields = findItemFields(board);
+  const fields = board ? findItemFields(board) : null;
   const labels = useMemo<ItemCreateLabel[]>(() => {
     const seen = new Map<string, ItemCreateLabel>();
     for (const group of groups) {
@@ -68,6 +81,7 @@ export function ItemCreateHost({
   }, [groups]);
 
   const submit = (draft: ItemCreateDraft) => {
+    if (!board) return;
     setError(null);
     create.mutate(
       {
@@ -78,7 +92,7 @@ export function ItemCreateHost({
         dueDate: dayInstant(draft.dueDay),
         statusOptionId: draft.statusOptionId,
         priority:
-          fields.priority && draft.priorityOptionId
+          fields?.priority && draft.priorityOptionId
             ? {
                 fieldDefinitionId: fields.priority.id,
                 value: draft.priorityOptionId,
@@ -88,7 +102,8 @@ export function ItemCreateHost({
         labelIds: draft.labelIds,
       },
       {
-        onSuccess: ({ failed }) => {
+        onSuccess: ({ failed, itemId }) => {
+          if (board) onCreated?.({ boardId: board.id, itemId });
           if (failed.length > 0) {
             toast.warning(
               copy.createdWithout.replace(
@@ -114,18 +129,24 @@ export function ItemCreateHost({
       open={open}
       groups={groups.map((group) => ({ id: group.id, label: group.title }))}
       defaultGroupId={defaultGroupId}
-      statuses={(fields.status?.options ?? []).map((option) => ({
+      statuses={(fields?.status?.options ?? []).map((option) => ({
         id: option.id,
         label: option.label,
       }))}
-      defaultStatusId={defaultStatusId ?? fields.status?.options[0]?.id ?? null}
+      defaultStatusId={
+        defaultStatusId ?? fields?.status?.options[0]?.id ?? null
+      }
       defaultStartDay={defaultStartDay}
       defaultDueDay={defaultDueDay}
-      priorities={(fields.priority?.options ?? []).map((option) => ({
+      defaultTitle={defaultTitle}
+      defaultAssigneeIds={defaultAssigneeIds}
+      boardSlot={boardSlot}
+      unavailable={!board}
+      priorities={(fields?.priority?.options ?? []).map((option) => ({
         id: option.id,
         label: option.label,
       }))}
-      members={board.members.map((member) => ({
+      members={(board?.members ?? []).map((member) => ({
         userId: member.userId,
         name: member.name,
         initials: member.initials,

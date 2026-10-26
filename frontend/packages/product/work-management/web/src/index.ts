@@ -17,6 +17,10 @@ export { BoardHeaderDataContext } from "./components/board-layout/board-header-d
 export { boardHeaderCatalog } from "./components/board-layout/board-header.catalog";
 export { itemCreateCatalog } from "./components/item-create/item-create.catalog";
 export {
+  BoardItemCreateDialog,
+  type BoardItemCreateBoard,
+} from "./components/item-create/board-item-create-dialog";
+export {
   boardHeaderCopy,
   type BoardHeaderCopy,
 } from "./components/board-layout/board-header.copy";

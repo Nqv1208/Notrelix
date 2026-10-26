@@ -680,6 +680,20 @@ function invalidateFeed(
   }
 }
 
+/**
+ * Refreshes My work, Home, the Inbox and the Boards named, for a write the
+ * work feed did not make itself (the board's own "Add item" form).
+ */
+export function useRefreshWorkFeed(workspaceId: string) {
+  const queryClient = useQueryClient();
+  const accountId = useAccountId();
+  return useCallback(
+    (boardIds: readonly string[] = []) =>
+      invalidateFeed(queryClient, accountId, workspaceId, boardIds),
+    [queryClient, accountId, workspaceId],
+  );
+}
+
 /** One idempotency key per user-initiated attempt. */
 function attemptKey(): string {
   return crypto.randomUUID();

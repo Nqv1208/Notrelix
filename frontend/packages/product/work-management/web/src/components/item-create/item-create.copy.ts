@@ -7,6 +7,7 @@ export type ItemCreateCopy = {
   readonly nameRequired: string;
   readonly description: string;
   readonly descriptionPlaceholder: string;
+  readonly board: string;
   readonly group: string;
   readonly status: string;
   readonly priority: string;
@@ -38,6 +39,7 @@ export const en: ItemCreateCopy = {
   nameRequired: "Give the item a name",
   description: "Description",
   descriptionPlaceholder: "Add a description…",
+  board: "Add to board",
   group: "Group",
   status: "Status",
   priority: "Priority",
@@ -73,6 +75,7 @@ export const vi: ItemCreateCopy = {
   nameRequired: "Hãy đặt tên cho công việc",
   description: "Mô tả",
   descriptionPlaceholder: "Thêm mô tả…",
+  board: "Thêm vào board",
   group: "Nhóm",
   status: "Trạng thái",
   priority: "Mức ưu tiên",

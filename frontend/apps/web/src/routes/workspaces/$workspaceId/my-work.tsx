@@ -19,7 +19,11 @@ import {
   type WorkStatusBucket,
 } from "@notrelix/features-workspace/web";
 import { useFormatters } from "@notrelix/i18n";
-import { BoardItemSheetHost } from "@notrelix/work-management-web";
+import { useCurrentUser } from "@notrelix/features-auth";
+import {
+  BoardItemCreateDialog,
+  BoardItemSheetHost,
+} from "@notrelix/work-management-web";
 import { useWorkspaceContext } from "@/providers/workspace-provider";
 import { toastFailure } from "@/shell/workspace/failure-toast";
 import {
@@ -33,6 +37,7 @@ import { useShellNavigation } from "@/shell/workspace/use-shell-navigation";
 import { useWorkspaceResources } from "@/shell/workspace/use-workspace-resources";
 import {
   useMyWorkExtended,
+  useRefreshWorkFeed,
   useWorkFeedWrites,
   type MyWorkWaitingDto,
 } from "@/shell/workspace/work-feed-bridge";
@@ -74,6 +79,11 @@ export function MyWorkPage() {
   const query = useMyWorkExtended(workspaceId);
   const departmentsById = useDepartmentsById(workspaceId);
   const writes = useWorkFeedWrites(workspaceId);
+  const refreshFeed = useRefreshWorkFeed(workspaceId);
+  const user = useCurrentUser();
+  const [form, setForm] = useState<{ boardId: string; name: string } | null>(
+    null,
+  );
   const [pendingIds, setPendingIds] = useState<ReadonlySet<string>>(
     () => new Set(),
   );
@@ -388,31 +398,51 @@ export function MyWorkPage() {
   ) : undefined;
 
   return (
-    <WorkspaceMyWorkSurface
-      copy={copy}
-      navigation={navigation}
-      formatters={formatters}
-      now={now}
-      state={state}
-      updatedAt={query.dataUpdatedAt || null}
-      hasMore={false}
-      loadingMore={false}
-      onLoadMore={() => undefined}
-      done={doneState}
-      tabsAvailable={{ approve: true, follow: true }}
-      waiting={waiting}
-      statusOptions={statusOptions}
-      onChangeStatus={onChangeStatus}
-      actions={actions}
-      onRetry={() => void query.refetch()}
-      completingIds={completingIds}
-      onComplete={(item) => onComplete(item)}
-      createBoards={createBoards}
-      onCreate={onCreate}
-      openItemId={openItem?.id ?? null}
-      onOpenItem={(item) => setItem(item.id)}
-      sheet={sheet}
-      firstDepartment={[...departments.values()][0] ?? null}
-    />
+    <>
+      <WorkspaceMyWorkSurface
+        copy={copy}
+        navigation={navigation}
+        formatters={formatters}
+        now={now}
+        state={state}
+        updatedAt={query.dataUpdatedAt || null}
+        hasMore={false}
+        loadingMore={false}
+        onLoadMore={() => undefined}
+        done={doneState}
+        tabsAvailable={{ approve: true, follow: true }}
+        waiting={waiting}
+        statusOptions={statusOptions}
+        onChangeStatus={onChangeStatus}
+        actions={actions}
+        onRetry={() => void query.refetch()}
+        completingIds={completingIds}
+        onComplete={(item) => onComplete(item)}
+        createBoards={createBoards}
+        onCreate={onCreate}
+        onOpenCreateForm={setForm}
+        openItemId={openItem?.id ?? null}
+        onOpenItem={(item) => setItem(item.id)}
+        sheet={sheet}
+        firstDepartment={[...departments.values()][0] ?? null}
+      />
+      <BoardItemCreateDialog
+        open={form !== null}
+        onOpenChange={(next) => {
+          if (!next) setForm(null);
+        }}
+        workspaceId={workspaceId}
+        boards={createBoards.map((board) => ({
+          id: board.id,
+          label: board.departmentName
+            ? `${board.name} · ${board.departmentName}`
+            : board.name,
+        }))}
+        initialBoardId={form?.boardId}
+        initialTitle={form?.name}
+        assigneeId={user?.id ?? null}
+        onCreated={({ boardId }) => refreshFeed([boardId])}
+      />
+    </>
   );
 }

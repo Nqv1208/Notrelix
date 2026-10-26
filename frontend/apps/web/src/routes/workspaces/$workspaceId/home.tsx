@@ -11,7 +11,6 @@ import {
   createUseWorkspaceRecents,
   useWorkspaceHomeCopy,
   WorkspaceHomeSurface,
-  AddItemDialog,
   formatCopy,
   type ContinueEntry,
   type HomeAgenda,
@@ -22,6 +21,7 @@ import {
   type SectionState,
 } from "@notrelix/features-workspace/web";
 import { useCurrentUser } from "@notrelix/features-auth";
+import { BoardItemCreateDialog } from "@notrelix/work-management-web";
 import { useFormatters } from "@notrelix/i18n";
 import { useAppRuntime } from "@notrelix/runtime-web";
 import { HomeGettingStarted } from "@/routes/onboarding/home-getting-started";
@@ -46,6 +46,7 @@ import {
 import {
   useHomeFeed,
   useMyWorkExtended,
+  useRefreshWorkFeed,
   useWorkFeedWrites,
 } from "@/shell/workspace/work-feed-bridge";
 
@@ -85,8 +86,8 @@ export function HomePage() {
   const feedQuery = useHomeFeed(workspaceId);
   const departmentsById = useDepartmentsById(workspaceId);
   const writes = useWorkFeedWrites(workspaceId);
+  const refreshFeed = useRefreshWorkFeed(workspaceId);
   const [addOpen, setAddOpen] = useState(false);
-  const [addPending, setAddPending] = useState(false);
   const [pendingReplyIds, setPendingReplyIds] = useState<ReadonlySet<string>>(
     () => new Set(),
   );
@@ -328,32 +329,18 @@ export function HomePage() {
         onRetryMyWork={() => void myWorkQuery.refetch()}
       />
       {create.dialog}
-      <AddItemDialog
-        copy={copy}
+      <BoardItemCreateDialog
         open={addOpen}
-        boards={createBoards}
-        pending={addPending}
-        error={null}
         onOpenChange={setAddOpen}
-        onSubmit={(input) => {
-          setAddPending(true);
-          void writes
-            .createItem(input)
-            .then(() => {
-              setAddOpen(false);
-              toast.success(
-                formatCopy(copy.home.toasts.itemCreated, { name: input.name }),
-              );
-            })
-            .catch((error: unknown) =>
-              toastFailure(
-                copy.home.toasts.failed,
-                error,
-                copy.home.toasts.failedHint,
-              ),
-            )
-            .finally(() => setAddPending(false));
-        }}
+        workspaceId={workspaceId}
+        boards={createBoards.map((board) => ({
+          id: board.id,
+          label: board.departmentName
+            ? `${board.name} · ${board.departmentName}`
+            : board.name,
+        }))}
+        assigneeId={user?.id ?? null}
+        onCreated={({ boardId }) => refreshFeed([boardId])}
       />
     </>
   );

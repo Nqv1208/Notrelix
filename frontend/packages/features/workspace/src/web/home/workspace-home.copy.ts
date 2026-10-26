@@ -236,6 +236,7 @@ export const en = {
     addCancel: "Cancel",
     addSubmit: "Create item",
     addUnavailable: "Enter a name and choose a Board to create the item.",
+    addMore: "More details…",
     windows: {
       overdue: "Overdue",
       today: "Today",
@@ -607,6 +608,7 @@ export const vi: WorkspaceHomeCopy = {
     addCancel: "Huỷ",
     addSubmit: "Tạo việc",
     addUnavailable: "Nhập tên việc và chọn board để tạo việc.",
+    addMore: "Thêm chi tiết…",
     windows: {
       overdue: "Quá hạn",
       today: "Hôm nay",

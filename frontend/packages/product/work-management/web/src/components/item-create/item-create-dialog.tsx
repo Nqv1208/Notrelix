@@ -1,4 +1,10 @@
-import { useEffect, useId, useState, type FormEvent } from "react";
+import {
+  useEffect,
+  useId,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
 import {
   Button,
   Dialog,
@@ -62,6 +68,14 @@ export interface ItemCreateDialogProps {
   /** `YYYY-MM-DD` the dates start on (the Calendar and Timeline pass the day they show). */
   readonly defaultStartDay?: string;
   readonly defaultDueDay?: string;
+  /** A name already typed elsewhere (My work's quick add hands it over). */
+  readonly defaultTitle?: string;
+  /** Members ticked when the form opens (My work and Home assign the member). */
+  readonly defaultAssigneeIds?: readonly string[];
+  /** Shown above the name: the board choice when the form is opened off a board. */
+  readonly boardSlot?: ReactNode;
+  /** The board is still loading: the form shows but cannot be submitted. */
+  readonly unavailable?: boolean;
   /** Empty when the board has no priority field. */
   readonly priorities: readonly ItemCreateOption[];
   readonly members: readonly ItemCreateMember[];
@@ -98,6 +112,10 @@ export function ItemCreateDialog({
   defaultStatusId,
   defaultStartDay = "",
   defaultDueDay = "",
+  defaultTitle = "",
+  defaultAssigneeIds,
+  boardSlot,
+  unavailable = false,
   priorities,
   members,
   labels,
@@ -127,21 +145,28 @@ export function ItemCreateDialog({
   const [another, setAnother] = useState(false);
   const [touched, setTouched] = useState(false);
 
+  const defaultAssigneeKey = (defaultAssigneeIds ?? []).join(",");
+
   // A fresh form each time it opens (the defaults follow the view that opened it).
   useEffect(() => {
     if (!open) return;
-    setTitle("");
+    setTitle(defaultTitle);
     setDescriptionMd("");
-    setListId(defaultGroupId);
-    setStatusId(defaultStatusId);
-    setPriorityId(null);
-    setAssigneeIds([]);
-    setLabelIds([]);
     setStartDay(defaultStartDay);
     setDueDay(defaultDueDay);
     setTouched(false);
     // `another` is kept: a person adding several items wants it to stay on.
-  }, [open, defaultGroupId, defaultStatusId, defaultStartDay, defaultDueDay]);
+  }, [open, defaultTitle, defaultStartDay, defaultDueDay]);
+
+  // What belongs to one board follows the board, without losing what was typed.
+  useEffect(() => {
+    if (!open) return;
+    setListId(defaultGroupId);
+    setStatusId(defaultStatusId);
+    setPriorityId(null);
+    setAssigneeIds(defaultAssigneeKey ? defaultAssigneeKey.split(",") : []);
+    setLabelIds([]);
+  }, [open, defaultGroupId, defaultStatusId, defaultAssigneeKey]);
 
   const trimmed = title.trim();
   const datesBackwards = startDay !== "" && dueDay !== "" && dueDay < startDay;
@@ -149,7 +174,14 @@ export function ItemCreateDialog({
   const submit = (event: FormEvent) => {
     event.preventDefault();
     setTouched(true);
-    if (pending || trimmed === "" || datesBackwards || listId === "") return;
+    if (
+      pending ||
+      unavailable ||
+      trimmed === "" ||
+      datesBackwards ||
+      listId === ""
+    )
+      return;
     onSubmit({
       title: trimmed,
       descriptionMd,
@@ -172,6 +204,8 @@ export function ItemCreateDialog({
             <DialogTitle>{copy.title}</DialogTitle>
             <DialogDescription>{copy.note}</DialogDescription>
           </DialogHeader>
+
+          {boardSlot}
 
           <Field data-invalid={nameError ? true : undefined}>
             <FieldLabel htmlFor={ids.name}>{copy.name}</FieldLabel>
@@ -392,7 +426,7 @@ export function ItemCreateDialog({
               >
                 {copy.cancel}
               </Button>
-              <Button type="submit" disabled={pending}>
+              <Button type="submit" disabled={pending || unavailable}>
                 {pending ? copy.submitting : copy.submit}
               </Button>
             </div>
