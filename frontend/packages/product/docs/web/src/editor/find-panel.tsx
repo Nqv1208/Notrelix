@@ -11,14 +11,53 @@ const ICON_BUTTON =
 const TEXT_BUTTON =
   "h-7 rounded-[6px] border border-line-strong bg-transparent px-2.5 text-crumb font-medium text-foreground outline-none hover:bg-state-hover focus-visible:ring-2 focus-visible:ring-focus-ring disabled:opacity-40";
 
-/** Scrolls the current match into view without moving the editor's focus. */
-function revealCurrent(editor: Editor): void {
+const REVEAL_GAP = 12;
+
+/** How far the page must scroll back so a match sits below the panel, never under it. */
+export function scrollBackBelow(
+  panelBottom: number,
+  matchTop: number,
+  gap = REVEAL_GAP,
+): number {
+  return Math.max(0, panelBottom + gap - matchTop);
+}
+
+function scrollParentOf(element: HTMLElement): HTMLElement | null {
+  let parent = element.parentElement;
+  while (parent) {
+    const { overflowY } = getComputedStyle(parent);
+    if (
+      /(auto|scroll)/.test(overflowY) &&
+      parent.scrollHeight > parent.clientHeight
+    ) {
+      return parent;
+    }
+    parent = parent.parentElement;
+  }
+  return null;
+}
+
+/**
+ * Scrolls the current match into view without moving the editor's focus, and
+ * keeps it below the docked panel (the panel sticks to the top of the page).
+ */
+function revealCurrent(editor: Editor, panel: HTMLElement | null): void {
   const state = findStateOf(editor.state);
   const match = state?.matches[state.index];
   if (!match) return;
   const { node } = editor.view.domAtPos(match.from);
   const element = node instanceof HTMLElement ? node : node.parentElement;
-  element?.scrollIntoView?.({ block: "center", behavior: "auto" });
+  if (!element) return;
+  element.scrollIntoView?.({ block: "center", behavior: "auto" });
+  if (!panel) return;
+  const back = scrollBackBelow(
+    panel.getBoundingClientRect().bottom,
+    element.getBoundingClientRect().top,
+  );
+  if (back > 0) {
+    const scroller = scrollParentOf(element);
+    if (scroller) scroller.scrollTop -= back;
+  }
 }
 
 /**
@@ -52,6 +91,7 @@ export function FindPanel({
   const [replaced, setReplaced] = useState<number | null>(null);
   const findField = useRef<HTMLInputElement | null>(null);
   const replaceField = useRef<HTMLInputElement | null>(null);
+  const panelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!state.open) return;
@@ -64,7 +104,7 @@ export function FindPanel({
   }, [state.open, state.opens, state.replaceMode]);
 
   useEffect(() => {
-    if (state.open && state.index >= 0) revealCurrent(editor);
+    if (state.open && state.index >= 0) revealCurrent(editor, panelRef.current);
   }, [editor, state.open, state.index, state.term, state.total]);
 
   useEffect(() => {
@@ -108,12 +148,13 @@ export function FindPanel({
   };
 
   return (
-    <div className="sticky top-0 z-dropdown h-0">
+    <div className="pointer-events-none sticky top-0 z-dropdown mb-2 flex justify-end">
       <div
+        ref={panelRef}
         role="search"
         aria-label={t.label}
         onKeyDown={onKeyDown}
-        className="absolute top-0 right-0 flex w-[22rem] max-w-full flex-col gap-2 rounded-[10px] border border-line-strong bg-doc-panel p-2 shadow-popover"
+        className="pointer-events-auto flex w-[22rem] max-w-full flex-col gap-2 rounded-[10px] border border-line-strong bg-doc-panel p-2 shadow-popover"
       >
         <div className="flex items-center gap-1">
           {canReplace ? (

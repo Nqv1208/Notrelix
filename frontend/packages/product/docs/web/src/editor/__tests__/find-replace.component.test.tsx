@@ -4,7 +4,7 @@ import { richText, type BlockDraft } from "@notrelix/docs-core";
 import type { Editor } from "@tiptap/core";
 import { docsCopy } from "../../verification/docs-ui-fixtures";
 import { docToDrafts } from "../block-mapping";
-import { FindPanel } from "../find-panel";
+import { FindPanel, scrollBackBelow } from "../find-panel";
 import { findStateOf } from "../find-replace";
 import { headlessEditor, paragraph, stubLayout } from "./headless-editor";
 
@@ -183,5 +183,59 @@ describe("find panel", () => {
     expect(
       screen.queryByRole("textbox", { name: docsCopy.find.replaceLabel }),
     ).toBeNull();
+  });
+});
+
+describe("find panel placement", () => {
+  it("scrolls back only as far as needed to keep a match below the panel", () => {
+    expect(scrollBackBelow(100, 400)).toBe(0);
+    expect(scrollBackBelow(100, 60)).toBe(52);
+    expect(scrollBackBelow(100, 112)).toBe(0);
+  });
+
+  it("sits in the flow at the top right of the page and moves a match from under it", async () => {
+    const scroller = document.createElement("div");
+    scroller.style.overflowY = "auto";
+    Object.defineProperty(scroller, "scrollHeight", { value: 2000 });
+    Object.defineProperty(scroller, "clientHeight", { value: 500 });
+    scroller.scrollTop = 300;
+    document.body.append(scroller);
+    const editor = headlessEditor(drafts());
+    const host = editor.options.element as HTMLElement;
+    scroller.append(host);
+    const original = Element.prototype.getBoundingClientRect;
+    Element.prototype.getBoundingClientRect = function () {
+      const top = this.getAttribute("role") === "search" ? 0 : 40;
+      const bottom = this.getAttribute("role") === "search" ? 120 : 60;
+      return {
+        top,
+        bottom,
+        left: 0,
+        right: 0,
+        width: 0,
+        height: 0,
+        x: 0,
+        y: top,
+        toJSON: () => ({}),
+      } as DOMRect;
+    };
+    try {
+      renderPureUi(<FindPanel editor={editor} copy={docsCopy} />);
+      await act(async () => {
+        editor.commands.openFind();
+      });
+      const panel = screen.getByRole("search");
+      expect(panel.className).toContain("w-[22rem]");
+      expect(panel.parentElement?.className).toContain("sticky");
+      expect(panel.parentElement?.className).toContain("justify-end");
+      await act(async () => {
+        editor.commands.setFindTerm("cat");
+      });
+      // The match sat at 40 under a panel ending at 120: the page scrolls back 92.
+      expect(scroller.scrollTop).toBe(300 - 92);
+    } finally {
+      Element.prototype.getBoundingClientRect = original;
+      scroller.remove();
+    }
   });
 });
