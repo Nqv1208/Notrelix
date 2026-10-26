@@ -19,6 +19,10 @@ import StarterKit from "@tiptap/starter-kit";
 import { Placeholder } from "@tiptap/extensions";
 import { isSafeHref, type BlockDraft } from "@notrelix/docs-core";
 import type { DocPageCopy } from "../components/doc-page.copy";
+import {
+  toggleCollapseAtSelection,
+  toggleCollapsePlugin,
+} from "./toggle-collapse";
 import type {
   DocBlockView,
   DocPageCallbacks,
@@ -424,12 +428,21 @@ export const Quote = flatTextBlock(
 export const Toggle = flatTextBlock(
   "toggle",
   "div",
-  "doc-toggle relative mb-1 pl-6 text-doc-prose text-doc-body before:absolute before:left-1 before:content-['▸']",
+  "doc-toggle relative mb-1 pl-6 text-doc-prose text-doc-body before:absolute before:left-1 before:inline-block before:cursor-pointer before:transition-transform before:content-['▸'] [&:not([data-collapsed])]:before:rotate-90",
   {
     attributes: { collapsed: { default: false, rendered: false } },
     rules: (type) => [textblockTypeInputRule({ find: /^\s*>>\s$/, type })],
   },
-);
+).extend({
+  addProseMirrorPlugins() {
+    return [toggleCollapsePlugin()];
+  },
+  addKeyboardShortcuts() {
+    return {
+      "Mod-Alt-Enter": ({ editor }) => toggleCollapseAtSelection(editor.view),
+    };
+  },
+});
 
 export const Callout = Node.create({
   name: "callout",

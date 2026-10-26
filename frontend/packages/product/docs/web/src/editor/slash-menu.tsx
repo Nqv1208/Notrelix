@@ -6,6 +6,7 @@ import {
   ImageIcon,
   LayoutList,
   List,
+  ListCollapse,
   ListChecks,
   ListOrdered,
   Minus,
@@ -72,6 +73,12 @@ export const SLASH_ITEMS: readonly SlashItem[] = [
   },
   { type: "quote", icon: Quote, shortcut: ">", keywords: "trich dan quote" },
   { type: "callout", icon: TextQuote, keywords: "ghi chu noi bat callout" },
+  {
+    type: "toggle",
+    icon: ListCollapse,
+    shortcut: ">>",
+    keywords: "thu gon mo rong toggle collapse expand",
+  },
   { type: "code", icon: Code2, shortcut: "```", keywords: "ma code" },
   {
     type: "divider",
