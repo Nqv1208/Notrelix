@@ -660,6 +660,56 @@ describe("MainTableSurface in-place edits and bulk people and boards", () => {
     expect(onMove).toHaveBeenCalledWith("board-support");
   });
 
+  it("the bulk bar sets the priority of the selection and deletes it only after a confirmation", () => {
+    const onPriority = vi.fn();
+    const onDelete = vi.fn();
+    renderTable({
+      ...erpTableSelectedProps(),
+      bulkPriority: {
+        options: [
+          { id: "prio-high", label: "Cao" },
+          { id: "prio-low", label: "Thấp" },
+        ],
+        onPriority,
+      },
+      onBulkDelete: onDelete,
+    });
+    const bar = screen.getByRole("toolbar", {
+      name: "Thao tác với 2 công việc đã chọn",
+    });
+    fireEvent.keyDown(within(bar).getByRole("button", { name: /^Ưu tiên/ }), {
+      key: "Enter",
+    });
+    fireEvent.click(screen.getByRole("menuitem", { name: "Cao" }));
+    expect(onPriority).toHaveBeenCalledWith("prio-high");
+
+    fireEvent.click(within(bar).getByRole("button", { name: "Xoá" }));
+    expect(onDelete).not.toHaveBeenCalled();
+    fireEvent.click(
+      within(screen.getByRole("alertdialog")).getByRole("button", {
+        name: "Huỷ",
+      }),
+    );
+    expect(onDelete).not.toHaveBeenCalled();
+
+    fireEvent.click(within(bar).getByRole("button", { name: "Xoá" }));
+    fireEvent.click(
+      within(screen.getByRole("alertdialog")).getByRole("button", {
+        name: "Xoá công việc",
+      }),
+    );
+    expect(onDelete).toHaveBeenCalledOnce();
+  });
+
+  it("offers no priority or delete without a Priority field or the right to delete", () => {
+    renderTable(erpTableSelectedProps());
+    const bar = screen.getByRole("toolbar", {
+      name: "Thao tác với 2 công việc đã chọn",
+    });
+    expect(within(bar).queryByRole("button", { name: /^Ưu tiên/ })).toBeNull();
+    expect(within(bar).queryByRole("button", { name: "Xoá" })).toBeNull();
+  });
+
   it("without a write behind them Giao cho and Chuyển board stay disabled with the reason", () => {
     renderTable(erpTableSelectedProps());
     for (const name of [/^Giao cho/, /^Chuyển board/]) {

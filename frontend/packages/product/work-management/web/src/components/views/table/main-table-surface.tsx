@@ -92,6 +92,10 @@ export interface MainTableSurfaceProps {
   onBulkStatus: TableBulkBarProps["onStatus"];
   onBulkDue: TableBulkBarProps["onDue"];
   onBulkArchive: TableBulkBarProps["onArchive"];
+  /** "Xoá" of the bulk bar; absent = no button. */
+  onBulkDelete?: TableBulkBarProps["onDelete"];
+  /** "Ưu tiên" of the bulk bar; absent = no button. */
+  bulkPriority?: TableBulkBarProps["priority"];
   /** The row menu: duplicate, copy link, archive; absent = no menu. */
   rowActions?: {
     readonly onDuplicate?: (id: string) => void;
@@ -156,6 +160,8 @@ export function MainTableSurface({
   onBulkStatus,
   onBulkDue,
   onBulkArchive,
+  onBulkDelete,
+  bulkPriority,
   bulkAssign,
   bulkMove,
   rowActions,
@@ -457,6 +463,8 @@ export function MainTableSurface({
           onStatus={onBulkStatus}
           onDue={onBulkDue}
           onArchive={onBulkArchive}
+          onDelete={onBulkDelete}
+          priority={bulkPriority}
           onClear={onClearSelection}
           assign={bulkAssign}
           move={bulkMove}

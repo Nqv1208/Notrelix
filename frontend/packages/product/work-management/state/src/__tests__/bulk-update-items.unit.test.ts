@@ -41,6 +41,11 @@ describe("createCardApi.bulkUpdate", () => {
     ],
     [{ type: "unassign-all" } as const, { operation: "unassign-all" }],
     [{ type: "archive" } as const, { operation: "archive" }],
+    [
+      { type: "set-priority", priorityOptionId: "opt-high" } as const,
+      { operation: "set-priority", priority: "opt-high" },
+    ],
+    [{ type: "delete" } as const, { operation: "delete" }],
   ])("maps %j to the request body", async (change, expected) => {
     const post = vi.fn(async (..._args: unknown[]) => ({ updated: 1 }));
     await apiWith(post).bulkUpdate("b-1", ["i-1"], change);

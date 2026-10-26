@@ -647,6 +647,7 @@ export const cardsOperations = [
       status?: string | null;
       dueDate?: string | null;
       assigneeUserId?: string | null;
+      priority?: string | null;
     },
     { updated: number }
   >({
@@ -671,6 +672,8 @@ export const cardsOperations = [
           "assign",
           "unassign-all",
           "archive",
+          "set-priority",
+          "delete",
         ].includes(operation)
       ) {
         return badRequest({ operation: ["Choose a change to apply."] });
@@ -715,6 +718,26 @@ export const cardsOperations = [
         }
       } else if (operation === "archive") {
         for (const id of ids) store.archiveCard(id);
+      } else if (operation === "delete") {
+        for (const id of ids) store.deleteCard(id);
+      } else if (operation === "set-priority") {
+        const field = store
+          .getColumns(params.boardId)
+          .find(
+            (column) =>
+              column.fieldType === "select" &&
+              /^(priority|ưu tiên|uu tien)$/i.test((column.name ?? "").trim()),
+          );
+        if (!field) {
+          return badRequest({
+            priority: ["This board has no Priority field."],
+          });
+        }
+        if (!body?.priority) {
+          return badRequest({ priority: ["The priority is required."] });
+        }
+        for (const id of ids)
+          store.updateFieldValue(id, field.id, body.priority);
       } else {
         const dueAt =
           operation === "clear-due-date" ? null : (body?.dueDate ?? null);
