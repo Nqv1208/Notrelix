@@ -83,6 +83,41 @@ public class ApplicationDbContextInitialiser
         }
     }
 
+    /// <summary>
+    /// Development only (the caller guards the environment): heals a development database that predates
+    /// the current seed. Touches the seed accounts only, deletes nothing and is a no-op when nothing needs
+    /// repair.
+    /// </summary>
+    public async Task RepairDevelopmentSeedAsync()
+    {
+        if (!_options.Enabled)
+        {
+            return;
+        }
+
+        _tenant.SetSystem();
+        try
+        {
+            var result = await DevelopmentSeedRepair.RunAsync(_context, DateTimeOffset.UtcNow);
+            if (result.ChangedAnything)
+            {
+                _logger.LogInformation(
+                    "Development seed repair: EmailsConfirmed={Emails}, OwnersRepaired={Owners}, " +
+                    "SpacesCreated={Spaces}, BoardsPlaced={Boards}",
+                    result.EmailsConfirmed, result.OwnersRepaired, result.SpacesCreated, result.BoardsPlaced);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "An error occurred while repairing the development seed data.");
+            throw;
+        }
+        finally
+        {
+            _tenant.Clear();
+        }
+    }
+
     private async Task<SeedResult> TrySeedAsync()
     {
         var targets = _options.GetTargets();

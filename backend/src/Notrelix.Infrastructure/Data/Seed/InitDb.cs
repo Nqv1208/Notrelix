@@ -43,11 +43,30 @@ internal static class InitDb
         ("Critical", "#E53935"),
     ];
 
-    private static readonly string[] DepartmentNames = ["IT", "Accounting", "Marketing", "Sales", "HR", "Customer Support"];
+    internal static readonly string[] DepartmentNames = ["IT", "Accounting", "Marketing", "Sales", "HR", "Customer Support"];
 
     // The department of each seeded board, in the order of the board names.
     private static readonly string[] DepartmentOfBoard =
         ["IT", "IT", "Marketing", "Marketing", "IT", "Marketing", "Sales", "HR", "Customer Support", "IT"];
+
+    private static readonly string[] BoardNames = [
+        "Product Roadmap", "Engineering Tasks", "Marketing Campaign",
+        "Design Sprints", "Bug Tracker", "Content Calendar",
+        "Sales Pipeline", "HR Onboarding", "Customer Support",
+        "Feature Requests"
+    ];
+
+    /// <summary>
+    /// The department a seeded board belongs to, from its seeded name ("Bug Tracker (1a2b)"), or null
+    /// when the name is not a seeded board's.
+    /// </summary>
+    internal static string? DepartmentForBoardName(string boardName)
+    {
+        var suffixStart = boardName.LastIndexOf(" (", StringComparison.Ordinal);
+        var baseName = suffixStart > 0 ? boardName[..suffixStart] : boardName;
+        var index = Array.IndexOf(BoardNames, baseName);
+        return index < 0 ? null : DepartmentOfBoard[index];
+    }
 
     private static readonly (string Name, string Color)[] LabelTemplates = [
         ("Bug",        "#E53935"),
@@ -174,6 +193,8 @@ internal static class InitDb
                 : $"User {i + 1}";
 
             var user = User.Create(email, name, passwordHash, Epoch.AddDays(i), hasPasswordCredential: true);
+            // Seed people are real, signed-in colleagues: their address is confirmed, so they can invite and be invited.
+            user.ConfirmEmail(null, Epoch.AddDays(i));
             users.Add(user);
 
             var profile = UserProfile.Create(user.Id, Epoch.AddDays(i));
@@ -315,12 +336,7 @@ internal static class InitDb
         var statusSettings = FieldSettings.Create(JsonValue.Create("""{"transitions":[]}"""));
         var emptySettings = FieldSettings.Create(JsonValue.EmptyObject());
 
-        var boardNames = new[] {
-            "Product Roadmap", "Engineering Tasks", "Marketing Campaign",
-            "Design Sprints", "Bug Tracker", "Content Calendar",
-            "Sales Pipeline", "HR Onboarding", "Customer Support",
-            "Feature Requests"
-        };
+        var boardNames = BoardNames;
 
         // The people a board is shared with: the workspace Owner and Admin manage it and the other
         // members of the workspace work in it. Guests are on a board only when it is shared with them.

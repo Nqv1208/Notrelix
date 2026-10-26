@@ -114,6 +114,10 @@ public static class DatabaseStartupExtensions
         {
             await initialiser.SeedAsync();
             app.Logger.LogInformation("Startup database seed completed (Development only).");
+
+            // Heals a development database seeded by an older seed (unconfirmed seed emails, missing owner
+            // members and spaces). Idempotent and limited to the seed accounts; Development is guaranteed above.
+            await initialiser.RepairDevelopmentSeedAsync();
         }
     }
 }
