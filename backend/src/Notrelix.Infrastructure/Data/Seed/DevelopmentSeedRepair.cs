@@ -1,6 +1,4 @@
 using System.Text.RegularExpressions;
-using Notrelix.Domain.Accounts.Accounts;
-using Notrelix.Domain.Identity.Users;
 using Notrelix.Domain.SharedKernel.Ordering;
 using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.WorkManagement.Fields;

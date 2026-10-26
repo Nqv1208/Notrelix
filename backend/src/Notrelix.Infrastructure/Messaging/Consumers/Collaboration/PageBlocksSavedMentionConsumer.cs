@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-using System.Text;
 using Notrelix.Application.Events.Documents;
 using Notrelix.Application.Features.Collaboration.Abstractions;
 using Notrelix.Application.Features.Documents.Public.PageViewAccess;

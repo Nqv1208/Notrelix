@@ -3,7 +3,6 @@ using global::Notrelix.Application.Features.Collaboration.Attachments.DTOs;
 using global::Notrelix.Application.Features.Collaboration.Attachments.Services;
 using Microsoft.Extensions.Options;
 using Notrelix.Application.Features.Collaboration.Abstractions;
-using Notrelix.Domain.Collaboration.Rules;
 
 namespace Notrelix.Application.Features.Collaboration.Attachments.Commands.CreateBoardItemAttachment;
 

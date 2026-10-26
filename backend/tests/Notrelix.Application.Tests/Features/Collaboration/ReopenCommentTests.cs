@@ -1,5 +1,4 @@
 using Notrelix.Application.Common.Models;
-using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Features.Collaboration.Abstractions;
 using Notrelix.Application.Features.Collaboration.Comments.Commands.ReopenComment;
 using Notrelix.Application.Features.Collaboration.Comments.Commands.ResolveComment;

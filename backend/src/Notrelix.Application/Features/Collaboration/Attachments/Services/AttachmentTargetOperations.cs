@@ -2,7 +2,6 @@ using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Common.Storage;
 using global::Notrelix.Application.Features.Collaboration.Abstractions;
 using global::Notrelix.Application.Features.Collaboration.Attachments.DTOs;
-using Microsoft.Extensions.Logging;
 using Notrelix.Domain.Collaboration.Rules;
 
 namespace Notrelix.Application.Features.Collaboration.Attachments.Services;
