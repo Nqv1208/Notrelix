@@ -13,6 +13,7 @@ public class MyWorkAndHomeFeedTests : WorkManagementHandlerTestBase
     private readonly Mock<IActorLookupService> _actors = new();
     private readonly Mock<INotificationInbox> _inbox = new();
     private readonly Mock<IWorkManagementCollaborationReadPort> _collaboration = new();
+    private readonly InMemoryBoardItemReminders _reminders = new();
 
     public MyWorkAndHomeFeedTests()
     {
@@ -26,7 +27,7 @@ public class MyWorkAndHomeFeedTests : WorkManagementHandlerTestBase
     }
 
     private GetMyWorkExtendedQueryHandler MyWork() =>
-        new(DbContextMock.Object, RequestContextMock.Object, _visibility, _actors.Object, _collaboration.Object);
+        new(DbContextMock.Object, RequestContextMock.Object, _visibility, _actors.Object, _collaboration.Object, _reminders);
 
     private GetHomeFeedQueryHandler Home() =>
         new(DbContextMock.Object, RequestContextMock.Object, _visibility, _inbox.Object, _actors.Object);
@@ -202,7 +203,7 @@ public class MyWorkAndHomeFeedTests : WorkManagementHandlerTestBase
         _collaboration
             .Setup(c => c.GetFollowedItemIdsAsync(TestWorkspaceId, TestUserId, It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([followed.Id]);
-        SetupBoardItemReminders(BoardItemReminder.Create(TestAccountId, TestWorkspaceId, board.Id, created.Id, TestUserId, TestNow));
+        _reminders.Seed(created.Id, TestUserId, TestNow);
 
         var result = await MyWork().Handle(new GetMyWorkExtendedQuery(TestWorkspaceId), CancellationToken.None);
 

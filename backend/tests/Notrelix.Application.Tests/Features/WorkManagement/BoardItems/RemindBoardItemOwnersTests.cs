@@ -7,13 +7,14 @@ namespace Notrelix.Application.Tests.Features.WorkManagement.BoardItems;
 public class RemindBoardItemOwnersTests : WorkManagementHandlerTestBase
 {
     private readonly Mock<IItemReminderNotifier> _notifier = new();
+    private readonly InMemoryBoardItemReminders _reminders = new();
     private readonly RemindBoardItemOwnersCommandHandler _handler;
     private readonly Guid _colleague = Guid.CreateVersion7();
 
     public RemindBoardItemOwnersTests()
     {
         _handler = new RemindBoardItemOwnersCommandHandler(
-            DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object, _notifier.Object);
+            DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object, _reminders, _notifier.Object);
     }
 
     private BoardItem ItemInCharge(params Guid[] assignees)
@@ -46,17 +47,17 @@ public class RemindBoardItemOwnersTests : WorkManagementHandlerTestBase
         result.Data!.Recipients.Should().Be(2);
         result.Data.NextRemindAt.Should().Be(TestNow.AddHours(24));
         _notifier.Verify(n => n.NotifyAsync(
-            TestAccountId, TestWorkspaceId, item.Id, TestUserId, It.IsAny<Guid>(), TestNow,
+            TestAccountId, TestWorkspaceId, item.Id, TestUserId, TestNow,
             It.Is<IReadOnlyCollection<Guid>>(r => r.Count == 2 && r.Contains(_colleague) && r.Contains(other) && !r.Contains(TestUserId)),
             It.IsAny<CancellationToken>()), Times.Once);
-        DbContextMock.Object.BoardItemReminders.Should().ContainSingle(r => r.ItemId == item.Id && r.SenderUserId == TestUserId && r.RemindedAt == TestNow);
+        _reminders.RemindedAt(item.Id, TestUserId).Should().Be(TestNow);
     }
 
     [Fact]
     public async Task Handle_AgainWithin24Hours_IsAConflictThatSaysWhenAndSendsNothing()
     {
         var item = ItemInCharge(_colleague);
-        SetupBoardItemReminders(BoardItemReminder.Create(TestAccountId, TestWorkspaceId, item.BoardId, item.Id, TestUserId, TestNow.AddHours(-23)));
+        _reminders.Seed(item.Id, TestUserId, TestNow.AddHours(-23));
 
         var act = () => _handler.Handle(new RemindBoardItemOwnersCommand(item.Id), CancellationToken.None);
 
@@ -70,15 +71,14 @@ public class RemindBoardItemOwnersTests : WorkManagementHandlerTestBase
     public async Task Handle_After24Hours_RemindsAgainAndMovesTheLimit()
     {
         var item = ItemInCharge(_colleague);
-        var previous = BoardItemReminder.Create(TestAccountId, TestWorkspaceId, item.BoardId, item.Id, TestUserId, TestNow.AddHours(-24));
-        SetupBoardItemReminders(previous);
+        _reminders.Seed(item.Id, TestUserId, TestNow.AddHours(-24));
 
         var result = await _handler.Handle(new RemindBoardItemOwnersCommand(item.Id), CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
-        previous.RemindedAt.Should().Be(TestNow);
+        _reminders.RemindedAt(item.Id, TestUserId).Should().Be(TestNow);
         _notifier.Verify(n => n.NotifyAsync(
-            It.IsAny<Guid>(), It.IsAny<Guid>(), item.Id, TestUserId, previous.Id, TestNow,
+            It.IsAny<Guid>(), It.IsAny<Guid>(), item.Id, TestUserId, TestNow,
             It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -86,7 +86,7 @@ public class RemindBoardItemOwnersTests : WorkManagementHandlerTestBase
     public async Task Handle_AnotherSendersReminderDoesNotUseUpTheCallersLimit()
     {
         var item = ItemInCharge(_colleague);
-        SetupBoardItemReminders(BoardItemReminder.Create(TestAccountId, TestWorkspaceId, item.BoardId, item.Id, Guid.CreateVersion7(), TestNow.AddHours(-1)));
+        _reminders.Seed(item.Id, Guid.CreateVersion7(), TestNow.AddHours(-1));
 
         var result = await _handler.Handle(new RemindBoardItemOwnersCommand(item.Id), CancellationToken.None);
 
@@ -102,7 +102,7 @@ public class RemindBoardItemOwnersTests : WorkManagementHandlerTestBase
 
         await act.Should().ThrowAsync<BusinessRuleException>();
         _notifier.VerifyNoOtherCalls();
-        DbContextMock.Object.BoardItemReminders.Should().BeEmpty();
+        _reminders.Count.Should().Be(0);
     }
 
     [Fact]
@@ -122,5 +122,28 @@ public class RemindBoardItemOwnersTests : WorkManagementHandlerTestBase
         var act = () => _handler.Handle(new RemindBoardItemOwnersCommand(item.Id), CancellationToken.None);
 
         await act.Should().ThrowAsync<BusinessRuleException>();
+    }
+
+    [Fact]
+    public async Task Handle_SimultaneousPresses_ExactlyOneWinsAndOnlyTheWinnerNotifies()
+    {
+        var item = ItemInCharge(_colleague);
+
+        var attempts = await Task.WhenAll(Enumerable.Range(0, 8).Select(async _ =>
+        {
+            try
+            {
+                return (await _handler.Handle(new RemindBoardItemOwnersCommand(item.Id), CancellationToken.None)).Succeeded;
+            }
+            catch (ConflictException ex) when (ex.ErrorCode == RemindBoardItemOwnersCommand.TooSoonErrorCode)
+            {
+                return false;
+            }
+        }));
+
+        attempts.Count(won => won).Should().Be(1);
+        _notifier.Verify(n => n.NotifyAsync(
+            It.IsAny<Guid>(), It.IsAny<Guid>(), item.Id, TestUserId, It.IsAny<DateTimeOffset>(),
+            It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 }

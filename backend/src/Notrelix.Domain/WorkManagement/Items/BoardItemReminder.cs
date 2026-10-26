@@ -3,7 +3,8 @@ namespace Notrelix.Domain.WorkManagement.Items;
 /// <summary>
 /// The last time one member asked the people in charge of an Item for an update ("Nhắc"). One row per Item and
 /// sender: the 24 hour limit is a durable rule of Work Management, so it holds across requests, retries and
-/// restarts instead of living in a cache. The person asked is whoever is assigned when the reminder is sent.
+/// restarts. The rule is enforced atomically by the store that claims the row (a conditional upsert), never by
+/// reading the row and then writing it, so two simultaneous presses cannot both pass.
 /// </summary>
 public class BoardItemReminder : Entity, IWorkspaceScoped
 {
@@ -19,47 +20,15 @@ public class BoardItemReminder : Entity, IWorkspaceScoped
 
     private BoardItemReminder() : base() { }
 
-    /// <summary>The first reminder this sender gives about the Item.</summary>
-    public static BoardItemReminder Create(
-        Guid accountId,
-        Guid workspaceId,
-        Guid boardId,
-        Guid itemId,
-        Guid senderUserId,
-        DateTimeOffset remindedAt)
-    {
-        Guard.NotEmpty(accountId);
-        Guard.NotEmpty(workspaceId);
-        Guard.NotEmpty(boardId);
-        Guard.NotEmpty(itemId);
-        Guard.NotEmpty(senderUserId);
-
-        return new BoardItemReminder
-        {
-            AccountId = accountId,
-            WorkspaceId = workspaceId,
-            BoardId = boardId,
-            ItemId = itemId,
-            SenderUserId = senderUserId,
-            RemindedAt = remindedAt,
-        };
-    }
-
     /// <summary>The first moment the sender may remind about this Item again.</summary>
-    public DateTimeOffset NextRemindAt => RemindedAt + Cooldown;
+    public DateTimeOffset NextRemindAt => NextAfter(RemindedAt);
 
-    public bool CanRemind(DateTimeOffset now) => now >= NextRemindAt;
+    /// <summary>The first moment a sender may remind again after a reminder sent at <paramref name="remindedAt"/>.</summary>
+    public static DateTimeOffset NextAfter(DateTimeOffset remindedAt) => remindedAt + Cooldown;
 
-    /// <summary>Records another reminder; rejected, leaving the state unchanged, while the limit still applies.</summary>
-    public void Remind(DateTimeOffset now)
-    {
-        if (!CanRemind(now))
-        {
-            throw new BusinessRuleException(
-                WorkManagementRuleCodes.WorkManagement_Reminder_TooSoon,
-                $"The people in charge were already reminded; it is possible again at {NextRemindAt:O}.");
-        }
-
-        RemindedAt = now;
-    }
+    /// <summary>
+    /// The cooldown window a reminder time falls in. Two reminders by one sender on one Item are always at least a
+    /// full cooldown apart, so they never share a window; a retried request shares its window with the original.
+    /// </summary>
+    public static long WindowOf(DateTimeOffset remindedAt) => remindedAt.UtcTicks / Cooldown.Ticks;
 }

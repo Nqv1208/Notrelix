@@ -1,5 +1,6 @@
 using Notrelix.Application.Features.WorkManagement.Ports.Collaboration;
 using Notrelix.Domain.Collaboration.Preferences;
+using Notrelix.Domain.WorkManagement.Items;
 using Notrelix.Infrastructure.Messaging.Consumers.Collaboration;
 
 namespace Notrelix.Infrastructure.CrossContext.WorkManagement.Collaboration;
@@ -17,13 +18,12 @@ public sealed class ItemReminderNotifierAdapter(ItemFollowerNotifier notifier) :
         Guid workspaceId,
         Guid itemId,
         Guid senderUserId,
-        Guid reminderId,
         DateTimeOffset remindedAt,
         IReadOnlyCollection<Guid> recipients,
         CancellationToken cancellationToken) =>
         notifier.NotifyAsync(
             accountId, workspaceId, itemId, senderUserId, sourceEventId: null,
-            deduplicationScope: $"{reminderId:N}-{remindedAt.UtcTicks}",
+            deduplicationScope: $"{itemId:N}-{senderUserId:N}-{BoardItemReminder.WindowOf(remindedAt)}",
             NotificationTypes.ItemReminderProducedType, Title, body: null,
             recipients, remindedAt, cancellationToken);
 }

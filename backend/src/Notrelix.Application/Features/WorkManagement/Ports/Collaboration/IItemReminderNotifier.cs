@@ -7,15 +7,14 @@ namespace Notrelix.Application.Features.WorkManagement.Ports.Collaboration;
 public interface IItemReminderNotifier
 {
     /// <summary>
-    /// One in-app reminder per recipient, naming <paramref name="senderUserId"/>. Idempotent by
-    /// <paramref name="reminderId"/> and <paramref name="remindedAt"/>, so a retried request adds nothing.
+    /// One in-app reminder per recipient, naming <paramref name="senderUserId"/>. Idempotent by Item,
+    /// sender and the cooldown window <paramref name="remindedAt"/> falls in, so a retry adds nothing.
     /// </summary>
     Task NotifyAsync(
         Guid accountId,
         Guid workspaceId,
         Guid itemId,
         Guid senderUserId,
-        Guid reminderId,
         DateTimeOffset remindedAt,
         IReadOnlyCollection<Guid> recipients,
         CancellationToken cancellationToken);

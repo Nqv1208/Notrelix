@@ -2,6 +2,7 @@ using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Governance.Public.Visibility;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.WorkManagement.Approvals.Services;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Services;
 using Notrelix.Application.Features.WorkManagement.Common;
 using Notrelix.Application.Features.WorkManagement.Ports.Collaboration;
 
@@ -75,7 +76,8 @@ public class GetMyWorkExtendedQueryHandler(
     ICurrentRequestContext requestContext,
     IResourceVisibility visibility,
     IActorLookupService actors,
-    IWorkManagementCollaborationReadPort collaboration) : IRequestHandler<GetMyWorkExtendedQuery, Result<MyWorkExtendedDto>>
+    IWorkManagementCollaborationReadPort collaboration,
+    IBoardItemReminders reminders) : IRequestHandler<GetMyWorkExtendedQuery, Result<MyWorkExtendedDto>>
 {
     public async Task<Result<MyWorkExtendedDto>> Handle(GetMyWorkExtendedQuery request, CancellationToken cancellationToken)
     {
@@ -289,12 +291,7 @@ public class GetMyWorkExtendedQueryHandler(
                 .ToListAsync(cancellationToken))
             .GroupBy(m => m.ItemId)
             .ToDictionary(g => g.Key, g => g.OrderBy(m => m.AssignedAt).ThenBy(m => m.UserId).First().UserId);
-        var reminded = (await context.BoardItemReminders
-                .AsNoTracking()
-                .Where(r => r.SenderUserId == userId && itemIds.Contains(r.ItemId))
-                .Select(r => new { r.ItemId, r.RemindedAt })
-                .ToListAsync(cancellationToken))
-            .ToDictionary(r => r.ItemId, r => r.RemindedAt);
+        var reminded = await reminders.LastRemindedAsync(userId, itemIds, cancellationToken);
         var people = (await actors.FindManyAsync(owners.Values.Distinct().ToList(), cancellationToken))
             .ToDictionary(a => a.UserId, a => new MyWorkPersonDto(a.UserId, a.Name));
 

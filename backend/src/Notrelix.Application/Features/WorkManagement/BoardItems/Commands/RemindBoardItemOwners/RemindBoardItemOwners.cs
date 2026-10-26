@@ -1,6 +1,7 @@
 using Notrelix.Application.Common.Exceptions;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Services;
 using Notrelix.Application.Features.WorkManagement.Ports.Collaboration;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.RemindBoardItemOwners;
@@ -27,6 +28,7 @@ public class RemindBoardItemOwnersCommandHandler(
     IWorkManagementDbContext context,
     ICurrentRequestContext requestContext,
     IDateTimeProvider clock,
+    IBoardItemReminders reminders,
     IItemReminderNotifier notifier) : IRequestHandler<RemindBoardItemOwnersCommand, Result<RemindBoardItemOwnersResult>>
 {
     public async Task<Result<RemindBoardItemOwnersResult>> Handle(RemindBoardItemOwnersCommand request, CancellationToken cancellationToken)
@@ -46,29 +48,21 @@ public class RemindBoardItemOwnersCommandHandler(
             throw new BusinessRuleException("Nobody else is in charge of this item, so there is nobody to remind.");
 
         var now = clock.UtcNow;
-        var reminder = await context.BoardItemReminders
-            .FirstOrDefaultAsync(r => r.ItemId == item.Id && r.SenderUserId == senderId, cancellationToken);
-        if (reminder is null)
-        {
-            reminder = BoardItemReminder.Create(item.AccountId, item.WorkspaceId, item.BoardId, item.Id, senderId, now);
-            context.BoardItemReminders.Add(reminder);
-        }
-        else if (reminder.CanRemind(now))
-        {
-            reminder.Remind(now);
-        }
-        else
+        // One atomic step decides the 24 hour limit: of simultaneous presses exactly one claims it and the rest
+        // lose without notifying anyone. The claim and the notifications below share the request transaction.
+        var claim = await reminders.TryClaimAsync(
+            item.AccountId, item.WorkspaceId, item.BoardId, item.Id, senderId, now, cancellationToken);
+        if (!claim.Claimed)
         {
             throw new ConflictException(
-                $"The people in charge were already reminded; it is possible again at {reminder.NextRemindAt:O}.",
+                $"The people in charge were already reminded; it is possible again at {claim.NextRemindAt:O}.",
                 RemindBoardItemOwnersCommand.TooSoonErrorCode);
         }
 
-        // Same unit of work as the reminder row: the limit and the notification stand or fall together.
         await notifier.NotifyAsync(
-            item.AccountId, item.WorkspaceId, item.Id, senderId, reminder.Id, now, recipients, cancellationToken);
+            item.AccountId, item.WorkspaceId, item.Id, senderId, now, recipients, cancellationToken);
 
-        return Result<RemindBoardItemOwnersResult>.Success(new(now, reminder.NextRemindAt, recipients.Count));
+        return Result<RemindBoardItemOwnersResult>.Success(new(now, claim.NextRemindAt, recipients.Count));
     }
 }
 

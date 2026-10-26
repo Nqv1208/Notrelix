@@ -28,7 +28,6 @@ public static class CrossContextRegistration
     {
         // Cross-context read ports.
         services.AddScoped<IWorkManagementCollaborationReadPort, WorkManagementCollaborationReadAdapter>();
-        services.AddScoped<IItemReminderNotifier, ItemReminderNotifierAdapter>();
         services.AddScoped<IIdentityBootstrapReadPort, IdentityBootstrapReadAdapter>();
         services.AddScoped<IAvatarAudienceReadPort, AvatarAudienceReadAdapter>();
 
