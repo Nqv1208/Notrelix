@@ -4,6 +4,8 @@ using Notrelix.Application.Features.Documents.Abstractions;
 using Notrelix.Application.Features.Documents.Blocks.Commands.BatchUpdateBlocks;
 using Notrelix.Domain.Documents.Blocks;
 using Notrelix.Domain.Documents.Pages;
+using Notrelix.Domain.Common;
+using Notrelix.Domain.Documents.Pages.Events;
 using Notrelix.Domain.SharedKernel.Ordering;
 using Notrelix.Testing.Application.Fakes;
 using TestDbSet = Notrelix.Application.Tests.Features.Collaboration.TestDbSet;
@@ -188,6 +190,88 @@ public sealed class BatchUpdateBlocksHandlerTests
             [Upsert(blocks[0].Id, content: Text("x"), version: 1)]), CancellationToken.None);
 
         await act.Should().ThrowAsync<NotFoundException>();
+    }
+
+    private static string Mentioning(string text, params Guid[] people) =>
+        "{\"v\":1,\"runs\":[{\"text\":\"" + text + "\",\"marks\":[]}" + string.Concat(people.Select(person =>
+            ",{\"text\":\"@x\",\"marks\":[{\"type\":\"mention\",\"userId\":\"" + person + "\"}]}")) + "]}";
+
+    private static PageBlocksSavedDomainEvent[] Saved(Page page) => page.DomainEvents.OfType<PageBlocksSavedDomainEvent>().ToArray();
+
+    [Fact]
+    public async Task AddingAMention_AnnouncesTheSave_WithThatMentionOnly()
+    {
+        var ann = Guid.CreateVersion7();
+        var bob = Guid.CreateVersion7();
+        var (sut, page, blocks, _) = Create(("a0", "one"));
+        await sut.Handle(new BatchUpdateBlocksCommand(page.Id, [Upsert(blocks[0].Id, content: Mentioning("hi", ann), version: 1)]), CancellationToken.None);
+        ((IHasDomainEvents)page).ClearDomainEvents();
+
+        // Ann stays mentioned; Bob is new.
+        await sut.Handle(new BatchUpdateBlocksCommand(page.Id, [Upsert(blocks[0].Id, content: Mentioning("hi again", ann, bob), version: 2)]), CancellationToken.None);
+
+        var saved = Saved(page).Should().ContainSingle().Which;
+        saved.SavedBy.Should().Be(UserId);
+        saved.Mentions.Should().Equal(new BlockMentionAdded(blocks[0].Id, bob));
+    }
+
+    [Fact]
+    public async Task ASaveThatKeepsOrRemovesMentions_AnnouncesNoMention()
+    {
+        var ann = Guid.CreateVersion7();
+        var (sut, page, blocks, _) = Create(("a0", "one"));
+        await sut.Handle(new BatchUpdateBlocksCommand(page.Id, [Upsert(blocks[0].Id, content: Mentioning("hi", ann), version: 1)]), CancellationToken.None);
+        ((IHasDomainEvents)page).ClearDomainEvents();
+
+        await sut.Handle(new BatchUpdateBlocksCommand(page.Id, [Upsert(blocks[0].Id, content: Mentioning("edited", ann), version: 2)]), CancellationToken.None);
+        await sut.Handle(new BatchUpdateBlocksCommand(page.Id, [Upsert(blocks[0].Id, content: Mentioning("no one now"), version: 3)]), CancellationToken.None);
+
+        Saved(page).Should().HaveCount(2).And.OnlyContain(e => e.Mentions.Count == 0);
+    }
+
+    [Fact]
+    public async Task ANewBlockWithAMention_AnnouncesIt()
+    {
+        var ann = Guid.CreateVersion7();
+        var (sut, page, blocks, added) = Create(("a0", "one"));
+        var id = Guid.CreateVersion7();
+
+        await sut.Handle(new BatchUpdateBlocksCommand(page.Id, [Upsert(id, type: "paragraph", content: Mentioning("hey", ann), after: blocks[0].Id)]), CancellationToken.None);
+
+        Saved(page).Single().Mentions.Should().Equal(new BlockMentionAdded(id, ann));
+    }
+
+    [Fact]
+    public async Task ASaveThatChangesNothing_AnnouncesNothing()
+    {
+        var (sut, page, blocks, _) = Create(("a0", "one"));
+
+        await sut.Handle(new BatchUpdateBlocksCommand(page.Id, [Upsert(blocks[0].Id, content: Text("one"), version: 1)]), CancellationToken.None);
+
+        Saved(page).Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task ADelete_AnnouncesTheSave_SoTheHistoryCanFollowIt()
+    {
+        var (sut, page, blocks, _) = Create(("a0", "one"));
+
+        await sut.Handle(new BatchUpdateBlocksCommand(page.Id, [Delete(blocks[0].Id, 1)]), CancellationToken.None);
+
+        Saved(page).Single().Mentions.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task AFailedSave_AnnouncesNothing()
+    {
+        var ann = Guid.CreateVersion7();
+        var (sut, page, blocks, _) = Create(("a0", "one"));
+
+        var act = () => sut.Handle(new BatchUpdateBlocksCommand(page.Id,
+            [Upsert(blocks[0].Id, content: Mentioning("x", ann), version: 9)]), CancellationToken.None);
+
+        await act.Should().ThrowAsync<PreconditionFailedException>();
+        Saved(page).Should().BeEmpty();
     }
 
     [Fact]

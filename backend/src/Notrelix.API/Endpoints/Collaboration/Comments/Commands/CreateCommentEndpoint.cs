@@ -1,5 +1,6 @@
 using Notrelix.API.Contracts.Collaboration.Comments.Requests;
 using Notrelix.API.Extensions;
+using Notrelix.Application.Features.Collaboration.Comments.DTOs;
 using Notrelix.Application.Features.Collaboration.Comments.Commands.CreateComment;
 
 namespace Notrelix.API.Endpoints.Collaboration.Comments.Commands;

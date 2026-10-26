@@ -40,7 +40,7 @@ public class CreateBlockCommandHandler : IRequestHandler<CreateBlockCommand, Res
 
     public async Task<Result<BlockDto>> Handle(CreateBlockCommand request, CancellationToken ct)
     {
-        var page = await _context.Pages.AsNoTracking()
+        var page = await _context.Pages
             .FirstOrDefaultAsync(p => p.Id == request.PageId && p.DeletedAt == null, ct);
         if (page is null) throw new NotFoundException(nameof(Page), request.PageId);
 
@@ -67,6 +67,7 @@ public class CreateBlockCommandHandler : IRequestHandler<CreateBlockCommand, Res
             : Block.CreateRoot(accountId, page.WorkspaceId, request.PageId, type, content, position, _requestContext.UserId, now, properties, request.Id);
 
         _context.Blocks.Add(block);
+        new BlockSaveTracker().Complete(page, [block], _requestContext.UserId, now);
         return Result<BlockDto>.Success(DocumentDtoMapper.ToBlockDto(block));
     }
 }

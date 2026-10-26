@@ -184,6 +184,17 @@ public static class ConsumerRegistrySetup
                 Maturity = ConsumerMaturity.Implemented
             },
 
+            new ConsumerDefinition
+            {
+                ConsumerName = "PageBlocksSavedMentionConsumer",
+                EventName = "page.blocks-saved",
+                EventVersion = 1,
+                EndpointName = "notrelix-collab-page-blocks-saved-mention-v1",
+                BoundedContext = "Collaboration",
+                Description = "Records a mention for each person a saved page edit newly mentions",
+                Maturity = ConsumerMaturity.Implemented
+            },
+
             // ── Collaboration / Notifications (1) ────────────────────────
             new ConsumerDefinition
             {
@@ -480,6 +491,16 @@ public static class ConsumerRegistrySetup
             },
 
             // Documents
+            new ConsumerDefinition
+            {
+                ConsumerName = "PageBlocksSavedVersionConsumer",
+                EventName = "page.blocks-saved",
+                EventVersion = 1,
+                EndpointName = "notrelix-doc-page-blocks-saved-version-v1",
+                BoundedContext = "Documents",
+                Description = "Adds an automatic history entry after a saved page edit when the last entry is old enough",
+                Maturity = ConsumerMaturity.Implemented
+            },
             new ConsumerDefinition
             {
                 ConsumerName = "PageCreated",

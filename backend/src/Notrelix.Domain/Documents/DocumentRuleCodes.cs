@@ -13,6 +13,10 @@ public static class DocumentRuleCodes
     public const string Documents_Page_CannotEditArchived = "Documents_Page_CannotEditArchived";
     public const string Documents_Page_NotInTrash = "Documents_Page_NotInTrash";
 
+    // ── Version ───────────────────────────────────────────────────────────
+    public const string Documents_Version_NameRequired = "Documents_Version_NameRequired";
+    public const string Documents_Version_NameTooLong = "Documents_Version_NameTooLong";
+
     // ── PageTree ──────────────────────────────────────────────────────────
     public const string Documents_PageTree_CannotBeOwnParent = "Documents_PageTree_CannotBeOwnParent";
     public const string Documents_PageTree_MoveWouldCreateCycle = "Documents_PageTree_MoveWouldCreateCycle";

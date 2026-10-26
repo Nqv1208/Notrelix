@@ -14,6 +14,8 @@ using Notrelix.API.Endpoints.Collaboration.Preferences;
 using Notrelix.API.Endpoints.Accounts;
 using Notrelix.API.Endpoints.Documents.Blocks;
 using Notrelix.API.Endpoints.Documents.Pages;
+using Notrelix.API.Endpoints.Documents.Templates;
+using Notrelix.API.Endpoints.Documents.Versions;
 using Notrelix.API.Endpoints.Integrations.Calendar;
 using Notrelix.API.Endpoints.Integrations.Connections;
 using Notrelix.API.Endpoints.Governance.ResourcePermissions;
@@ -78,6 +80,8 @@ public static class EndpointRouteBuilderExtensions
         // Document
         app.AddPageEndpoints();
         app.AddBlockEndpoints();
+        app.AddVersionEndpoints();
+        app.AddTemplateEndpoints();
 
         // Integrations - Calendar
         app.AddCalendarEndpoints();

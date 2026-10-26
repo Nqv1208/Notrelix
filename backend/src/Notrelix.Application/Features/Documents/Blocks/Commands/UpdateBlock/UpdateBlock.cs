@@ -46,6 +46,10 @@ public class UpdateBlockCommandHandler : IRequestHandler<UpdateBlockCommand, Res
         if (block is null) throw new NotFoundException(nameof(Block), request.BlockId);
 
         PageBlockSet.EnsureVersion(block, request.ExpectedVersion);
+        var page = await _context.Pages.FirstOrDefaultAsync(p => p.Id == request.PageId && p.DeletedAt == null, ct)
+            ?? throw new NotFoundException(nameof(Page), request.PageId);
+        var tracker = new BlockSaveTracker();
+        tracker.Before(block);
 
         BlockType? type = request.Type is { Length: > 0 } typeName ? PageBlockSet.ParseType(typeName) : null;
         block.Edit(
@@ -55,6 +59,7 @@ public class UpdateBlockCommandHandler : IRequestHandler<UpdateBlockCommand, Res
             _currentUser.UserId,
             _dateTimeProvider.UtcNow);
 
+        tracker.Complete(page, [block], _currentUser.UserId, _dateTimeProvider.UtcNow);
         return Result<BlockDto>.Success(DocumentDtoMapper.ToBlockDto(block));
     }
 }

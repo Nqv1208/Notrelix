@@ -1,5 +1,6 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Documents.Abstractions;
+using Notrelix.Application.Features.Documents.Blocks.Services;
 
 namespace Notrelix.Application.Features.Documents.Blocks.Commands.DeleteBlock;
 
@@ -26,7 +27,13 @@ public class DeleteBlockCommandHandler : IRequestHandler<DeleteBlockCommand, Res
         var block = await _context.Blocks.FirstOrDefaultAsync(block => block.Id == request.BlockId && block.PageId == request.PageId && block.DeletedAt == null, ct);
         if (block is null) throw new NotFoundException(nameof(Block), request.BlockId);
 
-        block.Delete(_currentUser.UserId, _dateTimeProvider.UtcNow);
+        var page = await _context.Pages.FirstOrDefaultAsync(p => p.Id == request.PageId && p.DeletedAt == null, ct)
+            ?? throw new NotFoundException(nameof(Page), request.PageId);
+        var now = _dateTimeProvider.UtcNow;
+        block.Delete(_currentUser.UserId, now);
+        var tracker = new BlockSaveTracker();
+        tracker.Deleted();
+        tracker.Complete(page, [], _currentUser.UserId, now);
         return Result.Success();
     }
 }

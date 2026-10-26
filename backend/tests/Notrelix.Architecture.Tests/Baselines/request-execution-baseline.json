@@ -1650,6 +1650,181 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.Documents.Templates.Commands.CreatePageFromTemplate.CreatePageFromTemplateCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Documents.Templates.Commands.CreatePageFromTemplate.CreatePageFromTemplateCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Documents.Templates.Commands.CreatePageTemplate.CreatePageTemplateCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Documents.Templates.Commands.CreatePageTemplate.CreatePageTemplateCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Documents.Templates.Queries.ListPageTemplates.ListPageTemplatesQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Documents.Templates.Queries.ListPageTemplates.ListPageTemplatesQueryHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Documents.Versions.Commands.CreatePageVersion.CreatePageVersionCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IResourceScopedRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Documents.Versions.Commands.CreatePageVersion.CreatePageVersionCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Documents.Versions.Commands.RestorePageVersion.RestorePageVersionCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IResourceScopedRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Documents.Versions.Commands.RestorePageVersion.RestorePageVersionCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Documents.Versions.Queries.GetPageVersion.GetPageVersionQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IResourceScopedRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Documents.Versions.Queries.GetPageVersion.GetPageVersionQueryHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Documents.Versions.Queries.ListPageVersions.ListPageVersionsQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IResourceScopedRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Documents.Versions.Queries.ListPageVersions.ListPageVersionsQueryHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.Governance.ResourcePermissions.Commands.GrantResourcePermission.GrantResourcePermissionCommand",
     "kind": "Command",
     "principalMarkers": [

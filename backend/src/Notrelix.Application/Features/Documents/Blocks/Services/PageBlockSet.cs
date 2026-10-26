@@ -26,6 +26,8 @@ internal sealed class PageBlockSet
     public Guid WorkspaceId { get; }
     public Guid PageId { get; }
 
+    public IEnumerable<Block> All => _blocks.Values;
+
     public Block? Find(Guid id) => _blocks.GetValueOrDefault(id);
 
     public void Add(Block block) => _blocks[block.Id] = block;

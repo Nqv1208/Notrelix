@@ -72,3 +72,62 @@ public record BlockDto(
     DateTime CreatedAt,
     DateTime? UpdatedAt
 );
+
+/// <summary>
+/// One entry of a page's history. <c>Kind</c> is <c>automatic</c>, <c>named</c> or <c>restore</c>; <c>Name</c> is
+/// the person's name for a named version and "Restored from version N" for a restore. <c>VersionNumber</c> is the
+/// entry's place in this page's history; it is not the page's or a block's concurrency version.
+/// </summary>
+public record PageVersionDto(
+    Guid Id,
+    Guid PageId,
+    int VersionNumber,
+    string Kind,
+    string? Name,
+    Guid? CreatedBy,
+    DateTime CreatedAt
+);
+
+/// <summary>A block as a snapshot holds it: no concurrency version, since a snapshot is never edited.</summary>
+public record PageVersionBlockDto(
+    Guid Id,
+    Guid? ParentId,
+    string Type,
+    System.Text.Json.JsonElement Content,
+    System.Text.Json.JsonElement Properties,
+    string Position
+);
+
+/// <summary>The captured content of one history entry, read-only.</summary>
+public record PageVersionDetailDto(
+    PageVersionDto Version,
+    string Title,
+    List<PageVersionBlockDto> Blocks
+);
+
+/// <summary>The outcome of a restore: the new history entry and the blocks the page holds now.</summary>
+public record RestorePageVersionResultDto(
+    PageVersionDto Version,
+    List<BlockDto> Blocks
+);
+
+/// <summary>A workspace page template (creation input; a later edit of its source page never changes it).</summary>
+public record PageTemplateDto(
+    Guid Id,
+    string Name,
+    string? Description,
+    string Title,
+    string Icon,
+    int BlockCount,
+    Guid? CreatedBy,
+    DateTime CreatedAt
+);
+
+/// <summary>A page created from a template; <c>DroppedBlockCount</c> counts the image, file and video blocks that were not copied.</summary>
+public record PageFromTemplateDto(
+    Guid PageId,
+    int DroppedBlockCount
+);
+
+/// <summary>The version of one block as the caller last read it (what a restore is checked against).</summary>
+public record SeenBlockVersion(Guid BlockId, long Version);

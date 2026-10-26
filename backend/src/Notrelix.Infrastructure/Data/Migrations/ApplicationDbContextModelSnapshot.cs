@@ -3414,6 +3414,12 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("kind");
+
                     b.Property<Guid>("PageId")
                         .HasColumnType("uuid")
                         .HasColumnName("page_id");

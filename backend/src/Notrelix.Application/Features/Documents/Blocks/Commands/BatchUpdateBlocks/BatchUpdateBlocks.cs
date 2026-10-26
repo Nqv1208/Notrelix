@@ -66,7 +66,7 @@ public class BatchUpdateBlocksCommandHandler : IRequestHandler<BatchUpdateBlocks
 
     public async Task<Result<List<BlockDto>>> Handle(BatchUpdateBlocksCommand request, CancellationToken ct)
     {
-        var page = await _context.Pages.AsNoTracking()
+        var page = await _context.Pages
             .FirstOrDefaultAsync(p => p.Id == request.PageId && p.DeletedAt == null, ct);
         if (page is null) throw new NotFoundException(nameof(Page), request.PageId);
 
@@ -94,11 +94,13 @@ public class BatchUpdateBlocksCommandHandler : IRequestHandler<BatchUpdateBlocks
         }
 
         var saved = new List<Block>();
+        var tracker = new BlockSaveTracker();
         foreach (var item in request.Blocks)
         {
             if (item.IsDelete)
             {
                 Delete(set, item, userId, now);
+                tracker.Deleted();
                 continue;
             }
 
@@ -117,6 +119,7 @@ public class BatchUpdateBlocksCommandHandler : IRequestHandler<BatchUpdateBlocks
             else
             {
                 PageBlockSet.EnsureVersion(block, item.ExpectedVersion);
+                tracker.Before(block);
                 block.Edit(type, content, properties, userId, now);
                 if (item.RequestsPlacement)
                     set.Place(block, item.ParentId, item.AfterBlockId, item.Position, userId, now);
@@ -124,6 +127,8 @@ public class BatchUpdateBlocksCommandHandler : IRequestHandler<BatchUpdateBlocks
 
             if (!saved.Contains(block)) saved.Add(block);
         }
+
+        tracker.Complete(page, saved, userId, now);
 
         return Result<List<BlockDto>>.Success(saved
             .Where(block => !block.IsDeleted)

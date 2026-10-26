@@ -81,7 +81,7 @@ public sealed class BlockEditingHandlerTests
     {
         var page = NewPage();
         var block = NewBlock(page, "a0");
-        var sut = CreateUpdateSut([block]);
+        var sut = CreateUpdateSut([block], page);
 
         var result = await sut.Handle(
             new UpdateBlockCommand(page.Id, block.Id, null, Json("{\"v\":1,\"runs\":[{\"text\":\"edited\",\"marks\":[]}]}"), null, 1), CancellationToken.None);
@@ -97,7 +97,7 @@ public sealed class BlockEditingHandlerTests
         var page = NewPage();
         var block = NewBlock(page, "a0");
         var id = block.Id;
-        var sut = CreateUpdateSut([block]);
+        var sut = CreateUpdateSut([block], page);
 
         var result = await sut.Handle(
             new UpdateBlockCommand(page.Id, block.Id, "heading_1", Json("{\"v\":1,\"runs\":[{\"text\":\"x\",\"marks\":[]}]}"), null, 1), CancellationToken.None);
@@ -114,7 +114,7 @@ public sealed class BlockEditingHandlerTests
         var page = NewPage();
         var block = NewBlock(page, "a0");
         var version = block.Version;
-        var sut = CreateUpdateSut([block]);
+        var sut = CreateUpdateSut([block], page);
 
         var act = () => sut.Handle(
             new UpdateBlockCommand(page.Id, block.Id, "Embed", null, null, 1), CancellationToken.None);
@@ -130,7 +130,7 @@ public sealed class BlockEditingHandlerTests
         var block = NewBlock(page, "a0");
         block.UpdateProperties(BlockProperties.Create(JsonValue.Create("{\"align\":\"left\"}")), UserId, Now);
         var before = block.Content.Data.Value;
-        var sut = CreateUpdateSut([block]);
+        var sut = CreateUpdateSut([block], page);
 
         var act = () => sut.Handle(
             new UpdateBlockCommand(page.Id, block.Id, null, Json("{\"v\":1,\"runs\":[{\"text\":\"x\",\"marks\":[]}]}"), null, 1), CancellationToken.None);
@@ -149,7 +149,7 @@ public sealed class BlockEditingHandlerTests
     {
         var page = NewPage();
         var block = NewBlock(page, "a0");
-        var sut = CreateUpdateSut([block]);
+        var sut = CreateUpdateSut([block], page);
 
         var act = () => sut.Handle(new UpdateBlockCommand(page.Id, block.Id, null, null, null, null), CancellationToken.None);
 
@@ -161,7 +161,7 @@ public sealed class BlockEditingHandlerTests
     {
         var page = NewPage();
         var block = NewBlock(page, "a0");
-        var sut = CreateUpdateSut([block]);
+        var sut = CreateUpdateSut([block], page);
 
         var act = () => sut.Handle(new UpdateBlockCommand(page.Id, block.Id, null,
             Json("{\"v\":1,\"runs\":[{\"text\":\"x\",\"marks\":[{\"type\":\"link\",\"href\":\"javascript:alert(1)\"}]}]}"), null, 1), CancellationToken.None);
@@ -175,7 +175,7 @@ public sealed class BlockEditingHandlerTests
     {
         var page = NewPage();
         var block = NewBlock(page, "a0");
-        var sut = CreateUpdateSut([block]);
+        var sut = CreateUpdateSut([block], page);
 
         var act = () => sut.Handle(
             new UpdateBlockCommand(Guid.CreateVersion7(), block.Id, null, null, null, 1), CancellationToken.None);
@@ -213,10 +213,11 @@ public sealed class BlockEditingHandlerTests
         return (new CreateBlockCommandHandler(context.Object, requestContext, new FixedClock()), recorded);
     }
 
-    private static UpdateBlockCommandHandler CreateUpdateSut(List<Block> blocks)
+    private static UpdateBlockCommandHandler CreateUpdateSut(List<Block> blocks, Page page)
     {
         var context = new Mock<IDocumentDbContext>();
         context.Setup(c => c.Blocks).Returns(TestDbSet.Create(blocks).Object);
+        context.Setup(c => c.Pages).Returns(TestDbSet.Create([page]).Object);
         var user = new Mock<ICurrentUser>();
         user.Setup(u => u.UserId).Returns(UserId);
         return new UpdateBlockCommandHandler(context.Object, user.Object, new FixedClock());

@@ -160,6 +160,10 @@ public static class DependencyInjection
             Notrelix.Application.Features.WorkManagement.Boards.Services.BoardSpacePlacement>();
         services.AddScoped<Notrelix.Application.Features.Documents.Pages.Services.IPageSpacePlacement,
             Notrelix.Application.Features.Documents.Pages.Services.PageSpacePlacement>();
+        services.AddScoped<Notrelix.Application.Features.Documents.Public.PageViewAccess.IPageViewAccess,
+            Notrelix.Application.Features.Documents.Pages.Services.PageViewAccess>();
+        services.AddScoped<Notrelix.Application.Features.Documents.Versions.Services.IPageVersionRecorder,
+            Notrelix.Application.Features.Documents.Versions.Services.PageVersionRecorder>();
         services.AddScoped<Notrelix.Application.Features.Governance.Public.Access.IResourceAccessSummary,
             Notrelix.Application.Features.Governance.Authorization.ResourceAccessSummaryService>();
         services.AddScoped<Notrelix.Application.Features.Governance.Public.Access.IBoardSharingSummary>(sp =>

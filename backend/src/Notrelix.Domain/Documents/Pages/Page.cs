@@ -128,6 +128,19 @@ public class Page : SoftDeletableAggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new PageSpaceChangedDomainEvent(AccountId, WorkspaceId, Id, oldSpaceId, SpaceId, updatedBy, updatedAt));
     }
 
+    /// <summary>
+    /// Announces one successful save of this page's blocks (and the mentions it added) for the reactions that
+    /// follow the commit. It changes no page state: the page's version counts changes of the page itself, not
+    /// edits of its blocks.
+    /// </summary>
+    public void RecordBlocksSaved(Guid savedBy, DateTimeOffset savedAt, IReadOnlyList<BlockMentionAdded> mentions)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(savedBy);
+        Guard.NotNull(mentions);
+        RaiseDomainEvent(new PageBlocksSavedDomainEvent(AccountId, WorkspaceId, Id, Title, savedBy, mentions, savedAt));
+    }
+
     public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
     {
         EnsureNotDeleted();

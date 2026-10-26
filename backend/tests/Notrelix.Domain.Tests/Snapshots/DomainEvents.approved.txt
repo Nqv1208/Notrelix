@@ -333,6 +333,10 @@ documents.document-version-restored|1|Notrelix.Domain.Documents.Versions.Events.
 documents.document-version-restored|1|Notrelix.Domain.Documents.Versions.Events.DocumentVersionRestoredDomainEvent|Workspace|VersionNumber|System.Int32|False
 documents.page-archived|1|Notrelix.Domain.Documents.Pages.Events.PageArchivedDomainEvent|Workspace|ArchivedBy|System.Guid|False
 documents.page-archived|1|Notrelix.Domain.Documents.Pages.Events.PageArchivedDomainEvent|Workspace|PageId|System.Guid|False
+documents.page-blocks-saved|1|Notrelix.Domain.Documents.Pages.Events.PageBlocksSavedDomainEvent|Workspace|Mentions|System.Collections.Generic.IReadOnlyList<Notrelix.Domain.Documents.Pages.Events.BlockMentionAdded>|False
+documents.page-blocks-saved|1|Notrelix.Domain.Documents.Pages.Events.PageBlocksSavedDomainEvent|Workspace|PageId|System.Guid|False
+documents.page-blocks-saved|1|Notrelix.Domain.Documents.Pages.Events.PageBlocksSavedDomainEvent|Workspace|PageTitle|System.String|False
+documents.page-blocks-saved|1|Notrelix.Domain.Documents.Pages.Events.PageBlocksSavedDomainEvent|Workspace|SavedBy|System.Guid|False
 documents.page-created|1|Notrelix.Domain.Documents.Pages.Events.PageCreatedDomainEvent|Workspace|CreatedBy|System.Guid|False
 documents.page-created|1|Notrelix.Domain.Documents.Pages.Events.PageCreatedDomainEvent|Workspace|PageId|System.Guid|False
 documents.page-created|1|Notrelix.Domain.Documents.Pages.Events.PageCreatedDomainEvent|Workspace|Title|System.String|False

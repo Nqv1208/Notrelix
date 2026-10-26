@@ -937,6 +937,93 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/page-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the page templates of a workspace */
+        get: operations["Documents.Templates.ListPageTemplates"];
+        put?: never;
+        /** Save a page as a workspace template */
+        post: operations["Documents.Templates.CreatePageTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/page-templates/{templateId}/pages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create a page from a template */
+        post: operations["Documents.Templates.CreatePageFromTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pages/{pageId}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the history entries of a page, newest first */
+        get: operations["Documents.Versions.ListPageVersions"];
+        put?: never;
+        /** Save the page as it is now as a named version */
+        post: operations["Documents.Versions.CreatePageVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pages/{pageId}/versions/{versionId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read the captured content of one history entry */
+        get: operations["Documents.Versions.GetPageVersion"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pages/{pageId}/versions/{versionId}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Restore the page's blocks to a version (adds a new version) */
+        post: operations["Documents.Versions.RestorePageVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/resources/{resourceType}/{resourceId}/permissions": {
         parameters: {
             query?: never;
@@ -5347,6 +5434,31 @@ export interface components {
             iconValue?: string | null;
             coverUrl?: string | null;
         };
+        "Notrelix.API.Contracts.Documents.Templates.Requests.CreatePageFromTemplateRequest": {
+            title?: string | null;
+            /** Format: uuid */
+            parentId?: string | null;
+            /** Format: uuid */
+            spaceId?: string | null;
+        };
+        "Notrelix.API.Contracts.Documents.Templates.Requests.CreatePageTemplateRequest": {
+            /** Format: uuid */
+            pageId?: string;
+            name?: string | null;
+            description?: string | null;
+        };
+        "Notrelix.API.Contracts.Documents.Versions.Requests.CreatePageVersionRequest": {
+            name?: string | null;
+        };
+        "Notrelix.API.Contracts.Documents.Versions.Requests.RestoreBlockVersionRequest": {
+            /** Format: uuid */
+            blockId?: string;
+            /** Format: int64 */
+            version?: number;
+        };
+        "Notrelix.API.Contracts.Documents.Versions.Requests.RestorePageVersionRequest": {
+            currentBlocks?: components["schemas"]["Notrelix.API.Contracts.Documents.Versions.Requests.RestoreBlockVersionRequest"][] | null;
+        };
         "Notrelix.API.Contracts.Governance.ResourcePermissions.Requests.GrantPermissionRequest": {
             subjectType?: string | null;
             /** Format: uuid */
@@ -6292,6 +6404,12 @@ export interface components {
             /** Format: uuid */
             spaceId?: string | null;
         };
+        "Notrelix.Application.Features.Documents.DTOs.PageFromTemplateDto": {
+            /** Format: uuid */
+            pageId?: string;
+            /** Format: int32 */
+            droppedBlockCount?: number;
+        };
         "Notrelix.Application.Features.Documents.DTOs.PageHistoryDto": {
             /** Format: uuid */
             id?: string;
@@ -6299,6 +6417,20 @@ export interface components {
             actorId?: string;
             action?: string | null;
             resourceTitle?: string | null;
+            /** Format: date-time */
+            createdAt?: string;
+        };
+        "Notrelix.Application.Features.Documents.DTOs.PageTemplateDto": {
+            /** Format: uuid */
+            id?: string;
+            name?: string | null;
+            description?: string | null;
+            title?: string | null;
+            icon?: string | null;
+            /** Format: int32 */
+            blockCount?: number;
+            /** Format: uuid */
+            createdBy?: string | null;
             /** Format: date-time */
             createdAt?: string;
         };
@@ -6314,6 +6446,39 @@ export interface components {
             version?: number;
             /** Format: uuid */
             spaceId?: string | null;
+        };
+        "Notrelix.Application.Features.Documents.DTOs.PageVersionBlockDto": {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            parentId?: string | null;
+            type?: string | null;
+            content?: unknown;
+            properties?: unknown;
+            position?: string | null;
+        };
+        "Notrelix.Application.Features.Documents.DTOs.PageVersionDetailDto": {
+            version?: components["schemas"]["Notrelix.Application.Features.Documents.DTOs.PageVersionDto"];
+            title?: string | null;
+            blocks?: components["schemas"]["Notrelix.Application.Features.Documents.DTOs.PageVersionBlockDto"][] | null;
+        };
+        "Notrelix.Application.Features.Documents.DTOs.PageVersionDto": {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            pageId?: string;
+            /** Format: int32 */
+            versionNumber?: number;
+            kind?: string | null;
+            name?: string | null;
+            /** Format: uuid */
+            createdBy?: string | null;
+            /** Format: date-time */
+            createdAt?: string;
+        };
+        "Notrelix.Application.Features.Documents.DTOs.RestorePageVersionResultDto": {
+            version?: components["schemas"]["Notrelix.Application.Features.Documents.DTOs.PageVersionDto"];
+            blocks?: components["schemas"]["Notrelix.Application.Features.Documents.DTOs.BlockDto"][] | null;
         };
         "Notrelix.Application.Features.Identity.ApiTokens.DTOs.ApiTokenSummaryDto": {
             /** Format: uuid */
@@ -9512,6 +9677,197 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Documents.Templates.ListPageTemplates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Documents.DTOs.PageTemplateDto"][];
+                };
+            };
+        };
+    };
+    "Documents.Templates.CreatePageTemplate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Documents.Templates.Requests.CreatePageTemplateRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Documents.DTOs.PageTemplateDto"];
+                };
+            };
+        };
+    };
+    "Documents.Templates.CreatePageFromTemplate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                templateId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Documents.Templates.Requests.CreatePageFromTemplateRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Documents.DTOs.PageFromTemplateDto"];
+                };
+            };
+        };
+    };
+    "Documents.Versions.ListPageVersions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pageId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Documents.DTOs.PageVersionDto"][];
+                };
+            };
+        };
+    };
+    "Documents.Versions.CreatePageVersion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pageId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Documents.Versions.Requests.CreatePageVersionRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Documents.DTOs.PageVersionDto"];
+                };
+            };
+        };
+    };
+    "Documents.Versions.GetPageVersion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pageId: string;
+                versionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Documents.DTOs.PageVersionDetailDto"];
+                };
+            };
+        };
+    };
+    "Documents.Versions.RestorePageVersion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pageId: string;
+                versionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Documents.Versions.Requests.RestorePageVersionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Documents.DTOs.RestorePageVersionResultDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Precondition Failed */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
                 };
             };
         };

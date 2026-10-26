@@ -3566,6 +3566,375 @@
         ]
       }
     },
+    "/api/v1/workspaces/{workspaceId}/page-templates": {
+      "get": {
+        "tags": [
+          "Documents.Templates"
+        ],
+        "summary": "List the page templates of a workspace",
+        "operationId": "Documents.Templates.ListPageTemplates",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Notrelix.Application.Features.Documents.DTOs.PageTemplateDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Documents.Templates"
+        ],
+        "summary": "Save a page as a workspace template",
+        "operationId": "Documents.Templates.CreatePageTemplate",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Contracts.Documents.Templates.Requests.CreatePageTemplateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Documents.DTOs.PageTemplateDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspaceId}/page-templates/{templateId}/pages": {
+      "post": {
+        "tags": [
+          "Documents.Templates"
+        ],
+        "summary": "Create a page from a template",
+        "operationId": "Documents.Templates.CreatePageFromTemplate",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "templateId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Contracts.Documents.Templates.Requests.CreatePageFromTemplateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Documents.DTOs.PageFromTemplateDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/pages/{pageId}/versions": {
+      "get": {
+        "tags": [
+          "Documents.Versions"
+        ],
+        "summary": "List the history entries of a page, newest first",
+        "operationId": "Documents.Versions.ListPageVersions",
+        "parameters": [
+          {
+            "name": "pageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Notrelix.Application.Features.Documents.DTOs.PageVersionDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Documents.Versions"
+        ],
+        "summary": "Save the page as it is now as a named version",
+        "operationId": "Documents.Versions.CreatePageVersion",
+        "parameters": [
+          {
+            "name": "pageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Contracts.Documents.Versions.Requests.CreatePageVersionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Documents.DTOs.PageVersionDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/pages/{pageId}/versions/{versionId}": {
+      "get": {
+        "tags": [
+          "Documents.Versions"
+        ],
+        "summary": "Read the captured content of one history entry",
+        "operationId": "Documents.Versions.GetPageVersion",
+        "parameters": [
+          {
+            "name": "pageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "versionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Documents.DTOs.PageVersionDetailDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/pages/{pageId}/versions/{versionId}/restore": {
+      "post": {
+        "tags": [
+          "Documents.Versions"
+        ],
+        "summary": "Restore the page's blocks to a version (adds a new version)",
+        "operationId": "Documents.Versions.RestorePageVersion",
+        "parameters": [
+          {
+            "name": "pageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "versionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Contracts.Documents.Versions.Requests.RestorePageVersionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Documents.DTOs.RestorePageVersionResultDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Precondition Failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
     "/api/v1/resources/{resourceType}/{resourceId}/permissions": {
       "get": {
         "tags": [
@@ -21416,6 +21785,81 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.API.Contracts.Documents.Templates.Requests.CreatePageFromTemplateRequest": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "parentId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "spaceId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.API.Contracts.Documents.Templates.Requests.CreatePageTemplateRequest": {
+        "type": "object",
+        "properties": {
+          "pageId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.API.Contracts.Documents.Versions.Requests.CreatePageVersionRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.API.Contracts.Documents.Versions.Requests.RestoreBlockVersionRequest": {
+        "type": "object",
+        "properties": {
+          "blockId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.API.Contracts.Documents.Versions.Requests.RestorePageVersionRequest": {
+        "type": "object",
+        "properties": {
+          "currentBlocks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.API.Contracts.Documents.Versions.Requests.RestoreBlockVersionRequest"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.API.Contracts.Governance.ResourcePermissions.Requests.GrantPermissionRequest": {
         "type": "object",
         "properties": {
@@ -24256,6 +24700,20 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.Application.Features.Documents.DTOs.PageFromTemplateDto": {
+        "type": "object",
+        "properties": {
+          "pageId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "droppedBlockCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.Application.Features.Documents.DTOs.PageHistoryDto": {
         "type": "object",
         "properties": {
@@ -24273,6 +24731,45 @@
           },
           "resourceTitle": {
             "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Documents.DTOs.PageTemplateDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "icon": {
+            "type": "string",
+            "nullable": true
+          },
+          "blockCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "createdBy": {
+            "type": "string",
+            "format": "uuid",
             "nullable": true
           },
           "createdAt": {
@@ -24312,6 +24809,102 @@
           "spaceId": {
             "type": "string",
             "format": "uuid",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Documents.DTOs.PageVersionBlockDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "parentId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "type": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": { },
+          "properties": { },
+          "position": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Documents.DTOs.PageVersionDetailDto": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "$ref": "#/components/schemas/Notrelix.Application.Features.Documents.DTOs.PageVersionDto"
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "blocks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.Documents.DTOs.PageVersionBlockDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Documents.DTOs.PageVersionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "pageId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "versionNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "kind": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdBy": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Documents.DTOs.RestorePageVersionResultDto": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "$ref": "#/components/schemas/Notrelix.Application.Features.Documents.DTOs.PageVersionDto"
+          },
+          "blocks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.Documents.DTOs.BlockDto"
+            },
             "nullable": true
           }
         },

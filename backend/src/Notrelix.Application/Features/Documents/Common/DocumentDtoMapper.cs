@@ -32,7 +32,33 @@ internal static class DocumentDtoMapper
         block.UpdatedAt?.DateTime
     );
 
-    private static System.Text.Json.JsonElement ToJson(string? json)
+    public static PageVersionDto ToVersionDto(Notrelix.Domain.Documents.Versions.DocumentVersion version) => new(
+        version.Id,
+        version.PageId,
+        version.VersionNumber,
+        KindName(version.Kind),
+        version.ChangeSummary,
+        version.CreatedBy,
+        version.CreatedAt.DateTime
+    );
+
+    public static string KindName(Notrelix.Domain.Documents.Versions.DocumentVersionKind kind) => kind switch
+    {
+        Notrelix.Domain.Documents.Versions.DocumentVersionKind.Named => "named",
+        Notrelix.Domain.Documents.Versions.DocumentVersionKind.Restore => "restore",
+        _ => "automatic"
+    };
+
+    public static PageVersionBlockDto ToVersionBlockDto(Notrelix.Application.Features.Documents.Versions.Services.SnapshotBlock block) => new(
+        block.Id,
+        block.ParentId,
+        block.Type.ToString(),
+        ToJson(block.Content),
+        ToJson(block.Properties),
+        block.Position
+    );
+
+    internal static System.Text.Json.JsonElement ToJson(string? json)
     {
         using var document = System.Text.Json.JsonDocument.Parse(json ?? "{}");
         return document.RootElement.Clone();

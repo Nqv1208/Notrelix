@@ -1,12 +1,10 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Collaboration.Abstractions;
+using Notrelix.Application.Features.Collaboration.Comments.DTOs;
 using Notrelix.Application.Features.Collaboration.Notifications;
 using Notrelix.Application.Features.Documents.Public.PageBlocks;
 
 namespace Notrelix.Application.Features.Collaboration.Comments.Commands.CreateComment;
-
-/// <summary>A quoted range of one block of the commented page; offsets count UTF-16 code units of the block's plain text.</summary>
-public record CommentAnchorInput(Guid BlockId, string Quote, int Start, int End);
 
 public record CreateCommentCommand(ResourceKind ResourceKind, Guid ResourceId, string ContentMd, Guid? ParentCommentId, IReadOnlyList<Guid>? MentionedUserIds = null, CommentAnchorInput? Anchor = null) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission
 {
