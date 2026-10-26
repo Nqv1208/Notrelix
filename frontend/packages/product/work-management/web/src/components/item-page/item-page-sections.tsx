@@ -20,6 +20,7 @@ import {
   toValidDate,
 } from "../shared/item-display";
 import { ItemDescriptionBody } from "../shared/item-description";
+import { ItemDescriptionEditor } from "../shared/item-description-editor";
 import { fillSheetCopy } from "../card-detail/item-sheet.copy";
 import { PendingMark } from "./item-page-states";
 import { foldForSearch } from "./item-pickers";
@@ -56,13 +57,18 @@ export function ItemPageDescription({
   card,
   copy,
   editable = false,
+  onSave,
 }: {
   card: CardDetail;
   copy: ItemPageCopy;
   /** The viewer may edit the item: an empty description invites writing one. */
   editable?: boolean;
+  /** Saves the description (an empty text clears it). Without it the section reads only. */
+  onSave?: (descriptionMd: string) => void;
 }) {
   const text = card.descriptionMd?.trim();
+  const [editing, setEditing] = useState(false);
+  const canEdit = editable && onSave !== undefined;
   const bodyRef = useRef<HTMLDivElement>(null);
   const [expanded, setExpanded] = useState(false);
   const [overflows, setOverflows] = useState(false);
@@ -78,7 +84,21 @@ export function ItemPageDescription({
       <SectionHeading id="item-page-description">
         {copy.description.heading}
       </SectionHeading>
-      {text ? (
+      {editing && canEdit ? (
+        <ItemDescriptionEditor
+          initial={card.descriptionMd ?? ""}
+          labels={{
+            heading: copy.description.heading,
+            placeholder: copy.states.empty.description,
+            save: copy.description.save,
+            cancel: copy.description.cancel,
+            hint: copy.description.hint,
+            tooLong: copy.description.tooLong,
+          }}
+          onSave={onSave}
+          onClose={() => setEditing(false)}
+        />
+      ) : text ? (
         <>
           <div
             ref={bodyRef}
@@ -99,17 +119,36 @@ export function ItemPageDescription({
               className="text-item-prose"
             />
           </div>
-          {overflows || expanded ? (
-            <button
-              type="button"
-              aria-expanded={expanded}
-              onClick={() => setExpanded((open) => !open)}
-              className="mt-2 border-0 bg-transparent p-0 text-item-ui font-semibold text-brand-subtle-foreground"
-            >
-              {expanded ? t.hideDescription : t.showDescription}
-            </button>
-          ) : null}
+          <div className="mt-2 flex items-center gap-4">
+            {overflows || expanded ? (
+              <button
+                type="button"
+                aria-expanded={expanded}
+                onClick={() => setExpanded((open) => !open)}
+                className="border-0 bg-transparent p-0 text-item-ui font-semibold text-brand-subtle-foreground"
+              >
+                {expanded ? t.hideDescription : t.showDescription}
+              </button>
+            ) : null}
+            {canEdit ? (
+              <button
+                type="button"
+                onClick={() => setEditing(true)}
+                className="border-0 bg-transparent p-0 text-item-ui font-semibold text-brand-subtle-foreground"
+              >
+                {copy.description.edit}
+              </button>
+            ) : null}
+          </div>
         </>
+      ) : canEdit ? (
+        <button
+          type="button"
+          onClick={() => setEditing(true)}
+          className="m-0 w-full cursor-text rounded-[6px] border-0 bg-transparent p-0 text-left text-item-text text-meta-foreground hover:text-muted-foreground"
+        >
+          {copy.states.empty.description}
+        </button>
       ) : editable ? (
         <DisabledControl reason={copy.description.editUnavailable}>
           <button

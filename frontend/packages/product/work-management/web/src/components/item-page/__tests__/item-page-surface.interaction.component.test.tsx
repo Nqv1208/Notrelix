@@ -417,6 +417,62 @@ describe.each([
       screen.queryByRole("group", { name: /followers|theo dõi/ }),
     ).toBeNull();
   });
+
+  it(`${fui("wm.item-page.surface:description-edit", locale)}writes, saves and clears the description from the page (${locale})`, async () => {
+    const item = erpPageItem({ descriptionMd: undefined });
+    const { callbacks } = renderPage(copy, {
+      card: item,
+      detailData: erpPageDetailData(item),
+    });
+    // An item without a description invites writing one.
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.states.empty.description }),
+    );
+    const box = screen.getByRole("textbox", { name: copy.description.heading });
+    fireEvent.change(box, { target: { value: "- First\n- Second" } });
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.description.save }),
+    );
+    expect(callbacks.onRenameTitle).toHaveBeenCalledWith(item.id, {
+      descriptionMd: "- First\n- Second",
+    });
+    expect(
+      screen.queryByRole("textbox", { name: copy.description.heading }),
+    ).toBeNull();
+  });
+
+  it(`${fui("wm.item-page.surface:description-keys", locale)}saves with Ctrl+Enter, cancels with Escape and sends nothing when unchanged (${locale})`, async () => {
+    const item = erpPageItem({ descriptionMd: "Existing text" });
+    const { callbacks } = renderPage(copy, {
+      card: item,
+      detailData: erpPageDetailData(item),
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.description.edit }),
+    );
+    let box = screen.getByRole("textbox", { name: copy.description.heading });
+    fireEvent.change(box, { target: { value: "Dropped by Escape" } });
+    fireEvent.keyDown(box, { key: "Escape" });
+    expect(callbacks.onRenameTitle).not.toHaveBeenCalled();
+    expect(screen.getByText("Existing text")).toBeTruthy();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.description.edit }),
+    );
+    box = screen.getByRole("textbox", { name: copy.description.heading });
+    fireEvent.keyDown(box, { key: "Enter", ctrlKey: true });
+    expect(callbacks.onRenameTitle).not.toHaveBeenCalled();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.description.edit }),
+    );
+    box = screen.getByRole("textbox", { name: copy.description.heading });
+    fireEvent.change(box, { target: { value: "" } });
+    fireEvent.keyDown(box, { key: "Enter", ctrlKey: true });
+    expect(callbacks.onRenameTitle).toHaveBeenCalledWith(item.id, {
+      descriptionMd: "",
+    });
+  });
 });
 
 describe("item page sections with data (vi)", () => {

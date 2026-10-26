@@ -151,7 +151,7 @@ describe.each([
         name: copy.sections.description,
       }),
     ).toBeTruthy();
-    expect(screen.getByText(copy.sections.descriptionUnavailable)).toBeTruthy();
+    expect(screen.getByText(copy.sections.descriptionAdd)).toBeTruthy();
     expect(
       screen.queryByRole("textbox", { name: copy.sections.description }),
     ).toBeNull();
@@ -357,6 +357,24 @@ describe.each([
     expect(callbacks.onSelectTab).toHaveBeenCalledWith("activity");
   });
 
+  it(`${fui("wm.task-detail.panel:description-edit", locale)}edits the description in the sheet and a commenter only reads it (${locale})`, () => {
+    const item = erpSheetItem({ descriptionMd: "Existing text" });
+    const { callbacks } = renderSheet(copy, { card: item });
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.sections.descriptionEdit }),
+    );
+    fireEvent.change(
+      screen.getByRole("textbox", { name: copy.sections.description }),
+      { target: { value: "Rewritten" } },
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.sections.descriptionSave }),
+    );
+    expect(callbacks.onRenameTitle).toHaveBeenCalledWith(item.id, {
+      descriptionMd: "Rewritten",
+    });
+  });
+
   it(`${fui("wm.task-detail.panel:submit", locale)}submits a comment with the button and with ⌘↵ (${locale})`, () => {
     const { callbacks } = renderSheet(copy);
     const composer = screen.getByRole("textbox", { name: copy.composer.label });
@@ -461,7 +479,7 @@ describe.each([
     expect(screen.getByText(copy.properties.unassigned)).toBeTruthy();
     expect(screen.getByText(copy.properties.noDue)).toBeTruthy();
     expect(screen.getByText(copy.properties.noPriority)).toBeTruthy();
-    expect(screen.getByText(copy.sections.descriptionUnavailable)).toBeTruthy();
+    expect(screen.getByText(copy.sections.descriptionAdd)).toBeTruthy();
     expect(screen.getByText(copy.sections.noChildItems)).toBeTruthy();
     expect(screen.getByText(copy.sections.noComments)).toBeTruthy();
   });

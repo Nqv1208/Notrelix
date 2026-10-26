@@ -94,7 +94,6 @@ const assigneeField: FieldDefinition = {
   boardId: "b-1",
   name: "Assignee",
   fieldType: "person",
-  semanticRole: "assignee",
   position: 1,
   isHidden: false,
   isSystemField: true,
@@ -118,7 +117,11 @@ describe("the Assignee system field is written through the item's assignees", ()
       {
         workspaceId: "ws-1",
         boardId: "b-1",
-        payload: { cardId: "i-1", fieldDefinitionId: ASSIGNEE, value: ["u-new"] },
+        payload: {
+          cardId: "i-1",
+          fieldDefinitionId: ASSIGNEE,
+          value: ["u-new"],
+        },
       },
     );
     expect(setAssignees).toHaveBeenCalledWith("i-1", ["u-new"], ["u-old"]);

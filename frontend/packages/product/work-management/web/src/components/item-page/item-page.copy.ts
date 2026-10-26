@@ -49,7 +49,7 @@ export const en = {
       pending: "waiting to save",
     },
     empty: {
-      description: "Add a description… type / to insert a table, item or doc",
+      description: "Add a description…",
       children: "No sub-items yet.",
       addChild: "Add a sub-item",
       created: "{{name}} created this item",
@@ -191,6 +191,11 @@ export const en = {
     heading: "Description",
     empty: "This item has no description yet.",
     editUnavailable: "Editing the description is not available yet",
+    edit: "Edit description",
+    save: "Save",
+    cancel: "Cancel",
+    hint: "Ctrl+Enter saves · Esc cancels · - for a list, **bold**",
+    tooLong: "The description is longer than 20,000 characters",
   },
   children: {
     heading: "Sub-items",
@@ -434,7 +439,7 @@ export const vi: ItemPageCopy = {
       pending: "chờ lưu",
     },
     empty: {
-      description: "Thêm mô tả… gõ / để chèn bảng, việc, tài liệu",
+      description: "Thêm mô tả…",
       children: "Chưa có việc con.",
       addChild: "Thêm việc con",
       created: "{{name}} tạo việc này",
@@ -577,6 +582,11 @@ export const vi: ItemPageCopy = {
     heading: "Mô tả",
     empty: "Công việc này chưa có mô tả.",
     editUnavailable: "Chưa sửa được mô tả ở đây",
+    edit: "Sửa mô tả",
+    save: "Lưu",
+    cancel: "Huỷ",
+    hint: "Ctrl+Enter để lưu · Esc để huỷ · - cho danh sách, **đậm**",
+    tooLong: "Mô tả dài hơn 20.000 ký tự",
   },
   children: {
     heading: "Việc con",

@@ -195,7 +195,9 @@ export function mapCardDto(dto: BoardItemReadDto): CardDetail {
     boardId: dto.boardId ?? "",
     workspaceId: dto.workspaceId ?? "",
     title: itemTitle(dto),
-    descriptionMd: legacy ? (legacy.descriptionMd ?? "") : "",
+    descriptionMd: legacy
+      ? (legacy.descriptionMd ?? "")
+      : ((dto as GeneratedBoardItemDto).descriptionMd ?? ""),
     linkedPageId: legacy ? (legacy.linkedPageId ?? undefined) : undefined,
     position: typeof dto.position === "number" ? dto.position : 0,
     // The hand-written read says "medium" for an item without a priority; the

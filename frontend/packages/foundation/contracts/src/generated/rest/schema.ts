@@ -5612,6 +5612,11 @@ export interface components {
             previousSiblingId?: string | null;
             /** Format: uuid */
             nextSiblingId?: string | null;
+            descriptionMd?: string | null;
+            /** Format: date-time */
+            startDate?: string | null;
+            /** Format: date-time */
+            dueDate?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.CreateChildItemRequest": {
             title?: string | null;
@@ -5667,6 +5672,9 @@ export interface components {
             dueDate?: string | null;
             /** Format: date-time */
             startDate?: string | null;
+            descriptionMd?: string | null;
+            clearDueDate?: boolean;
+            clearStartDate?: boolean;
         };
         "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.UpdateBoardItemStatusRequest": {
             status?: string | null;
@@ -7034,6 +7042,7 @@ export interface components {
             /** Format: uuid */
             archivedBy?: string | null;
             archivedByName?: string | null;
+            descriptionMd?: string | null;
         };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemLabelDto": {
             /** Format: uuid */

@@ -279,6 +279,9 @@ export const cardsOperations = [
         groupId: string;
         title?: string;
         position?: number;
+        descriptionMd?: string | null;
+        startDate?: string | null;
+        dueDate?: string | null;
       };
       const list = store.getList(data.groupId || "fallback");
       if (!list) return notFound("List not found");
@@ -286,6 +289,20 @@ export const cardsOperations = [
         title: data.title,
         position: data.position,
       });
+      // The item's own facts may arrive with the create (description, dates).
+      if (data.descriptionMd || data.startDate || data.dueDate) {
+        if (data.startDate && data.dueDate && data.dueDate < data.startDate) {
+          store.deleteCard(created.id);
+          return badRequest({
+            dueDate: ["Due date must be after start date."],
+          });
+        }
+        store.updateCard(created.id, {
+          ...(data.descriptionMd ? { description: data.descriptionMd } : {}),
+          ...(data.startDate ? { startedAt: data.startDate } : {}),
+          ...(data.dueDate ? { dueAt: data.dueDate } : {}),
+        });
+      }
       // BoardItemSlimDto: the client reads the new item's id.
       return ok({
         id: created.id,
@@ -346,6 +363,8 @@ export const cardsOperations = [
         listId?: string;
         dueDate?: string | null;
         startDate?: string | null;
+        clearDueDate?: boolean;
+        clearStartDate?: boolean;
       };
       const description =
         data.descriptionMd !== undefined
@@ -360,6 +379,8 @@ export const cardsOperations = [
         // The Calendar moves an item by its dates (null clears one).
         ...(data.dueDate !== undefined ? { dueAt: data.dueDate } : {}),
         ...(data.startDate !== undefined ? { startedAt: data.startDate } : {}),
+        ...(data.clearDueDate ? { dueAt: null } : {}),
+        ...(data.clearStartDate ? { startedAt: null } : {}),
       });
       if (!updated) return notFound("Card not found");
       return ok<void>(undefined);

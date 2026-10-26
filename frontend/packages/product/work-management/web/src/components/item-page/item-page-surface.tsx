@@ -321,6 +321,9 @@ export function ItemPageSurface({
                   card={card}
                   copy={copy}
                   editable={capabilities.canEditFields}
+                  onSave={(descriptionMd) =>
+                    callbacks.onRenameTitle(card.id, { descriptionMd })
+                  }
                 />
                 {/* Sub-items are one level: a sub-item lists none. */}
                 {!card.parentItemId &&

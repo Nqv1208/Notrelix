@@ -69,6 +69,11 @@ export function createCardApi(client: NotrelixClient) {
       const body: CreateItemBody = {
         groupId: payload.listId, // canonical uses groupId!
         title: payload.title,
+        ...(payload.descriptionMd
+          ? { descriptionMd: payload.descriptionMd }
+          : {}),
+        ...(payload.startDate ? { startDate: payload.startDate } : {}),
+        ...(payload.dueDate ? { dueDate: payload.dueDate } : {}),
         // Backend-first cut-over (SPEC WM-V3-DEC-017): the server now owns placement
         // and expects neighbor ids; until WM-V3-FE-001 maps them, omitting both appends.
       };
@@ -88,7 +93,23 @@ export function createCardApi(client: NotrelixClient) {
       const { expectedVersion: known, ...request } = options ?? {};
       const expectedVersion =
         known ?? (await this.getCard(cardId)).version ?? undefined;
-      const body: UpdateItemBody = { ...patch, expectedVersion }; // mapping fields
+      // A null date means "remove it": the server reads an omitted/null date as
+      // "unchanged", so a removal is sent as its own flag.
+      const { dueDate, startDate, ...rest } = patch;
+      const body: UpdateItemBody = {
+        ...rest,
+        ...(dueDate === null
+          ? { clearDueDate: true }
+          : dueDate !== undefined
+            ? { dueDate }
+            : {}),
+        ...(startDate === null
+          ? { clearStartDate: true }
+          : startDate !== undefined
+            ? { startDate }
+            : {}),
+        expectedVersion,
+      };
       await api.patch<void>(
         endpoints.boardItems.detail(cardId),
         body,
