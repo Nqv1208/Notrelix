@@ -1,4 +1,11 @@
-import { cn } from "@notrelix/ui-web";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  cn,
+} from "@notrelix/ui-web";
 import type { FeatureAvailabilityCopy } from "../unavailable/feature-availability.copy";
 import { formatCopy } from "../shell/shell-models";
 import {
@@ -70,8 +77,10 @@ export interface WorkReportSurfaceProps {
   readonly onRetry: () => void;
 }
 
-const SELECT =
-  "h-8 min-w-44 rounded-[7px] border border-line bg-popover px-2 text-compact text-foreground dark:bg-card";
+const SELECT = "min-w-44";
+
+/** Radix items cannot carry an empty value, so "all" is a sentinel. */
+const ALL = "__all__";
 
 const CATEGORY_BG: Readonly<Record<string, string>> = {
   Todo: "bg-work-status-todo",
@@ -341,35 +350,43 @@ export function WorkReportSurface({
       >
         <label className="flex flex-col gap-1 text-crumb text-meta-foreground">
           {text.board}
-          <select
-            className={SELECT}
-            value={scope.boardId ?? ""}
-            onChange={(event) => onBoard(event.target.value || null)}
+          <Select
+            value={scope.boardId ?? ALL}
+            onValueChange={(value) => onBoard(value === ALL ? null : value)}
           >
-            <option value="">{text.allBoards}</option>
-            {scope.boards.map((board) => (
-              <option key={board.id} value={board.id}>
-                {board.title}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger size="sm" className={SELECT}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL}>{text.allBoards}</SelectItem>
+              {scope.boards.map((board) => (
+                <SelectItem key={board.id} value={board.id}>
+                  {board.title}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </label>
         {scope.spaces ? (
           <label className="flex flex-col gap-1 text-crumb text-meta-foreground">
             {text.space}
-            <select
-              className={SELECT}
-              value={scope.spaceId ?? ""}
+            <Select
+              value={scope.spaceId ?? ALL}
               disabled={scope.boardId !== null}
-              onChange={(event) => onSpace(event.target.value || null)}
+              onValueChange={(value) => onSpace(value === ALL ? null : value)}
             >
-              <option value="">{text.allSpaces}</option>
-              {scope.spaces.map((space) => (
-                <option key={space.id} value={space.id}>
-                  {space.name}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger size="sm" className={SELECT}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL}>{text.allSpaces}</SelectItem>
+                {scope.spaces.map((space) => (
+                  <SelectItem key={space.id} value={space.id}>
+                    {space.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </label>
         ) : null}
       </div>

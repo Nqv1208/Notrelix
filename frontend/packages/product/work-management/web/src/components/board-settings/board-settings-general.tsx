@@ -1,6 +1,13 @@
 import { useEffect, useId, useState } from "react";
 import { SquareKanban, TriangleAlert } from "lucide-react";
-import { cn } from "@notrelix/ui-web";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  cn,
+} from "@notrelix/ui-web";
 import { DisabledControl, MARK_TONE_CLASS } from "../item-page/item-page-parts";
 import type { BoardSettingsSpace } from "./board-settings-types";
 import { useSettings } from "./board-settings-context";
@@ -291,34 +298,37 @@ export function GeneralSection({
                     {t.timeZoneHint}
                   </small>
                 </label>
-                <select
-                  id={ids.zone}
-                  value={timeZone}
-                  onChange={(event) => setTimeZone(event.target.value)}
-                  className={INPUT_CLASS}
-                >
-                  {ZONES.map((zone) => (
-                    <option key={zone} value={zone}>
-                      {t.timeZones[zone]}
-                    </option>
-                  ))}
-                </select>
+                <Select value={timeZone} onValueChange={setTimeZone}>
+                  <SelectTrigger id={ids.zone} className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ZONES.map((zone) => (
+                      <SelectItem key={zone} value={zone}>
+                        {t.timeZones[zone]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className={ROW_CLASS}>
                 <label htmlFor={ids.week} className={LABEL_CLASS}>
                   {t.weekStart}
                 </label>
-                <select
-                  id={ids.week}
+                <Select
                   value={weekStart}
-                  onChange={(event) =>
-                    setWeekStart(event.target.value as "monday" | "sunday")
+                  onValueChange={(value) =>
+                    setWeekStart(value as "monday" | "sunday")
                   }
-                  className={cn(INPUT_CLASS, "w-[200px]")}
                 >
-                  <option value="monday">{t.weekDays.monday}</option>
-                  <option value="sunday">{t.weekDays.sunday}</option>
-                </select>
+                  <SelectTrigger id={ids.week} className="w-[200px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="monday">{t.weekDays.monday}</SelectItem>
+                    <SelectItem value="sunday">{t.weekDays.sunday}</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </>
           )}

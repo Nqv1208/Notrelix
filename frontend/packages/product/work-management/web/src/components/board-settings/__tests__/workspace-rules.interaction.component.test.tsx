@@ -61,6 +61,12 @@ function renderRules(
   return workspaceRules;
 }
 
+/** Opens the styled Select behind a label and picks one option by its text. */
+function choose(trigger: HTMLElement, option: string | RegExp) {
+  fireEvent.keyDown(trigger, { key: "Enter" });
+  fireEvent.click(screen.getByRole("option", { name: option }));
+}
+
 describe.each([
   ["vi", viCopy],
   ["en", en],
@@ -131,23 +137,18 @@ describe.each([
     fireEvent.change(within(form).getByLabelText(t.form.name), {
       target: { value: "Cất việc" },
     });
-    fireEvent.change(within(form).getByLabelText(t.form.trigger), {
-      target: { value: "ItemMovedToGroup" },
-    });
-    fireEvent.change(within(form).getByLabelText(t.form.triggerGroup), {
-      target: { value: "g-todo" },
-    });
+    choose(
+      within(form).getByLabelText(t.form.trigger),
+      t.triggers.ItemMovedToGroup,
+    );
+    choose(within(form).getByLabelText(t.form.triggerGroup), "Cần làm");
     // The first action: move the item.
-    fireEvent.change(within(form).getByLabelText(t.form.group), {
-      target: { value: "g-done" },
-    });
+    choose(within(form).getByLabelText(t.form.group), "Hoàn thành");
     // A condition on the status.
     fireEvent.click(
       within(form).getByRole("button", { name: t.form.conditionTypes.status }),
     );
-    fireEvent.change(within(form).getByLabelText(t.form.status), {
-      target: { value: "s-open" },
-    });
+    choose(within(form).getByLabelText(t.form.status), "Đang làm");
     // A second action: assign a person.
     fireEvent.click(
       within(form).getByRole("button", { name: t.form.addAction }),
@@ -155,13 +156,11 @@ describe.each([
     const second = within(form).getByRole("group", {
       name: fillCopy(t.form.action, { index: 2 }),
     });
-    fireEvent.change(
+    choose(
       within(second).getByLabelText(fillCopy(t.form.action, { index: 2 })),
-      { target: { value: "AssignPerson" } },
+      t.form.actionTypes.AssignPerson,
     );
-    fireEvent.change(within(second).getByLabelText(t.form.person), {
-      target: { value: "u-minh" },
-    });
+    choose(within(second).getByLabelText(t.form.person), "Minh Trần");
     fireEvent.click(submit);
     await waitFor(() =>
       expect(onCreate).toHaveBeenCalledWith({

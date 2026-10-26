@@ -11,6 +11,11 @@ import {
   FieldError,
   FieldLabel,
   Input,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@notrelix/ui-web";
 import { formatCopy } from "../shell/shell-models";
 import type { MyWorkCreateBoard } from "./my-work-types";
@@ -191,20 +196,23 @@ export function AddItemDialog({
           </Field>
           <Field>
             <FieldLabel htmlFor={boardIdField}>{copy.list.addBoard}</FieldLabel>
-            <select
-              id={boardIdField}
+            <Select
               value={chosen?.id ?? ""}
-              onChange={(event) => setBoardId(event.target.value)}
-              className="h-9 rounded-[8px] border border-line-strong bg-popover px-2.5 text-compact text-foreground dark:bg-card"
+              onValueChange={(value) => setBoardId(value)}
             >
-              {boards.map((board) => (
-                <option key={board.id} value={board.id}>
-                  {board.departmentName
-                    ? `${board.name} · ${board.departmentName}`
-                    : board.name}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger id={boardIdField} className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {boards.map((board) => (
+                  <SelectItem key={board.id} value={board.id}>
+                    {board.departmentName
+                      ? `${board.name} · ${board.departmentName}`
+                      : board.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </Field>
           <DialogFooter>
             <Button

@@ -75,6 +75,12 @@ function spyActions(): {
   ) as never;
 }
 
+/** Opens the styled Select behind a label and picks one option by its text. */
+function choose(trigger: HTMLElement, option: string | RegExp) {
+  fireEvent.keyDown(trigger, { key: "Enter" });
+  fireEvent.click(screen.getByRole("option", { name: option }));
+}
+
 describe.each([
   ["vi", viCopy],
   ["en", en],
@@ -522,12 +528,10 @@ describe.each([
       name: copy.groups.deleteConfirm,
     });
     // The items move to the next group unless another is chosen.
-    expect(
-      (within(confirm).getByRole("combobox") as HTMLSelectElement).value,
-    ).toBe("g-training");
-    fireEvent.change(within(confirm).getByRole("combobox"), {
-      target: { value: "g-data" },
-    });
+    expect(within(confirm).getByRole("combobox").textContent).toBe(
+      "Đào tạo và vận hành",
+    );
+    choose(within(confirm).getByRole("combobox"), "Dữ liệu");
     fireEvent.click(submit);
     await waitFor(() =>
       expect(actions.deleteGroup).toHaveBeenCalledWith("g-test", "g-data"),

@@ -10,6 +10,13 @@ import {
   type WorkspaceAutomationTrigger,
   type WorkspaceAutomationWriteResult,
 } from "@notrelix/work-management-core";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@notrelix/ui-web";
 import { fillCopy } from "./board-settings-format";
 import { BUTTON_CLASS, FormGroup, INPUT_CLASS } from "./board-settings-parts";
 import type {
@@ -117,19 +124,18 @@ function ChoiceSelect({
 }) {
   return (
     <FormGroup label={label} htmlFor={id}>
-      <select
-        id={id}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className={INPUT_CLASS}
-      >
-        <option value="">{choose}</option>
-        {choices.map((choice) => (
-          <option key={choice.id} value={choice.id}>
-            {choice.name}
-          </option>
-        ))}
-      </select>
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger id={id} className="w-full">
+          <SelectValue placeholder={choose} />
+        </SelectTrigger>
+        <SelectContent>
+          {choices.map((choice) => (
+            <SelectItem key={choice.id} value={choice.id}>
+              {choice.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </FormGroup>
   );
 }
@@ -423,20 +429,23 @@ export function WorkspaceRuleEditor({
       </FormGroup>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <FormGroup label={t.trigger} htmlFor={`${id}-trigger`}>
-          <select
-            id={`${id}-trigger`}
+          <Select
             value={trigger}
-            onChange={(event) =>
-              setTrigger(event.target.value as WorkspaceAutomationTrigger)
+            onValueChange={(value) =>
+              setTrigger(value as WorkspaceAutomationTrigger)
             }
-            className={INPUT_CLASS}
           >
-            {TRIGGERS.map((key) => (
-              <option key={key} value={key}>
-                {copy.triggers[key]}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger id={`${id}-trigger`} className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {TRIGGERS.map((key) => (
+                <SelectItem key={key} value={key}>
+                  {copy.triggers[key]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </FormGroup>
         {needsTriggerGroup ? (
           <ChoiceSelect
@@ -529,23 +538,29 @@ export function WorkspaceRuleEditor({
                 label={fillCopy(t.action, { index: index + 1 })}
                 htmlFor={`${id}-a${entry.key}-type`}
               >
-                <select
-                  id={`${id}-a${entry.key}-type`}
+                <Select
                   value={entry.value.type}
-                  onChange={(event) =>
+                  onValueChange={(value) =>
                     patchAction(
                       entry.key,
-                      blankAction(event.target.value as AutomationActionType),
+                      blankAction(value as AutomationActionType),
                     )
                   }
-                  className={INPUT_CLASS}
                 >
-                  {ACTION_TYPES.map((type) => (
-                    <option key={type} value={type}>
-                      {t.actionTypes[type]}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger
+                    id={`${id}-a${entry.key}-type`}
+                    className="w-full"
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ACTION_TYPES.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {t.actionTypes[type]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </FormGroup>
               <ActionParams
                 id={`${id}-a${entry.key}`}

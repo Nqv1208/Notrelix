@@ -1,6 +1,14 @@
 import * as React from "react";
 import { Lock } from "lucide-react";
-import { Skeleton, cn } from "@notrelix/ui-web";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Skeleton,
+  cn,
+} from "@notrelix/ui-web";
 import {
   Avatar,
   BTN,
@@ -495,19 +503,25 @@ function ProfileBody({
           editedId={`${ids.timezone}-edited`}
           hint={copy.timezoneHelp}
         >
-          <select
-            id={ids.timezone}
+          <Select
             value={values.timezone}
             disabled={saving}
-            onChange={(event) => set("timezone", event.target.value)}
-            className={cn(INPUT, editedClass("timezone"))}
+            onValueChange={(value) => set("timezone", value)}
           >
-            {choicesWith(TIMEZONES, values.timezone).map((zone) => (
-              <option key={zone} value={zone}>
-                {lookup(copy.timezones, zone)}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger
+              id={ids.timezone}
+              className={cn("w-full", editedClass("timezone"))}
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {choicesWith(TIMEZONES, values.timezone).map((zone) => (
+                <SelectItem key={zone} value={zone}>
+                  {lookup(copy.timezones, zone)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </Field>
         <Field
           htmlFor={ids.dateFormat}
@@ -516,19 +530,25 @@ function ProfileBody({
           editedText={copy.edited}
           editedId={`${ids.dateFormat}-edited`}
         >
-          <select
-            id={ids.dateFormat}
+          <Select
             value={values.dateFormat}
             disabled={saving}
-            onChange={(event) => set("dateFormat", event.target.value)}
-            className={cn(INPUT, editedClass("dateFormat"))}
+            onValueChange={(value) => set("dateFormat", value)}
           >
-            {choicesWith(DATE_FORMATS, values.dateFormat).map((format) => (
-              <option key={format} value={format}>
-                {lookup(copy.dateFormats, format)}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger
+              id={ids.dateFormat}
+              className={cn("w-full", editedClass("dateFormat"))}
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {choicesWith(DATE_FORMATS, values.dateFormat).map((format) => (
+                <SelectItem key={format} value={format}>
+                  {lookup(copy.dateFormats, format)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </Field>
       </form>
 

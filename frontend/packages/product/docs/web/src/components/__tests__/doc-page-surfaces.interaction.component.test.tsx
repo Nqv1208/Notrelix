@@ -46,6 +46,12 @@ const ARTICLE = {
   mentionTasks: [],
 };
 
+/** Opens the styled Select behind a label and picks one option by its text. */
+function choose(trigger: HTMLElement, option: string | RegExp) {
+  fireEvent.keyDown(trigger, { key: "Enter" });
+  fireEvent.click(screen.getByRole("option", { name: option }));
+}
+
 describe("docs web pure surfaces", () => {
   it("FUI[docs.page.screen:render] renders the document bar, tools, sheet and side panel from fixture data", () => {
     const onPanelTab = vi.fn();
@@ -500,18 +506,20 @@ describe("docs web pure surfaces", () => {
       name: docsCopy.convert.confirm,
     });
     expect((create as HTMLButtonElement).disabled).toBe(true);
-    fireEvent.change(within(dialog).getByLabelText(docsCopy.convert.group), {
-      target: { value: "g2" },
-    });
+    choose(
+      within(dialog).getByLabelText(docsCopy.convert.group),
+      "Đào tạo và vận hành",
+    );
     expect((create as HTMLButtonElement).disabled).toBe(false);
     fireEvent.click(create);
     expect(onConvertConfirm).toHaveBeenCalledWith("b1", {
       boardId: "board-1",
       groupId: "g2",
     });
-    fireEvent.change(within(dialog).getByLabelText(docsCopy.convert.board), {
-      target: { value: "board-2" },
-    });
+    choose(
+      within(dialog).getByLabelText(docsCopy.convert.board),
+      "Kế toán hằng tháng",
+    );
     expect(onConvertBoard).toHaveBeenCalledWith("board-2");
   });
 });

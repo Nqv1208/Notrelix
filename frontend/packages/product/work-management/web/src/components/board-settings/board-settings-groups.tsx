@@ -5,6 +5,11 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
   cn,
 } from "@notrelix/ui-web";
 import type { BoardSettingsGroupDto } from "@notrelix/work-management-core";
@@ -336,19 +341,18 @@ function GroupRow({
                 >
                   {fillCopy(t.moveTo, { count: group.itemCount })}
                 </label>
-                <select
-                  id={`${confirmId}-to`}
-                  value={moveTo}
-                  onChange={(event) => setMoveTo(event.target.value)}
-                  className={cn(INPUT_CLASS, "w-[220px]")}
-                >
-                  <option value="">{t.choose}</option>
-                  {others.map((other) => (
-                    <option key={other.id} value={other.id}>
-                      {other.name}
-                    </option>
-                  ))}
-                </select>
+                <Select value={moveTo} onValueChange={setMoveTo}>
+                  <SelectTrigger id={`${confirmId}-to`} className="w-[220px]">
+                    <SelectValue placeholder={t.choose} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {others.map((other) => (
+                      <SelectItem key={other.id} value={other.id}>
+                        {other.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </>
             ) : null}
             <span className="flex-1" />

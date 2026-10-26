@@ -6,6 +6,12 @@ import { WorkReportSurface } from "../../reports/work-report-surface";
 import { en, vi as copy } from "../feature-availability.copy";
 import { FeatureUnavailableSurface } from "../feature-unavailable-surface";
 
+/** Opens the styled Select behind a label and picks one option by its text. */
+function choose(trigger: HTMLElement, option: string | RegExp) {
+  fireEvent.keyDown(trigger, { key: "Enter" });
+  fireEvent.click(screen.getByRole("option", { name: option }));
+}
+
 describe("Feature availability", () => {
   it("FUI[workspace.feature-unavailable:integrations] says plainly that the page is not available yet, with no retry", () => {
     renderPureUi(
@@ -199,13 +205,9 @@ describe("Feature availability", () => {
         state={{ status: "loading" }}
       />,
     );
-    fireEvent.change(screen.getByLabelText("Board"), {
-      target: { value: "b1" },
-    });
+    choose(screen.getByLabelText("Board"), "Roadmap");
     expect(onBoard).toHaveBeenCalledWith("b1");
-    fireEvent.change(screen.getByLabelText("Department"), {
-      target: { value: "s1" },
-    });
+    choose(screen.getByLabelText("Department"), "Engineering");
     expect(onSpace).toHaveBeenCalledWith("s1");
     view.rerender(
       <WorkReportSurface

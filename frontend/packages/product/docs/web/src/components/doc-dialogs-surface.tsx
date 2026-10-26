@@ -1,6 +1,13 @@
 import { useId, useRef, useState, type ReactNode } from "react";
 import { X } from "lucide-react";
-import { cn } from "@notrelix/ui-web";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  cn,
+} from "@notrelix/ui-web";
 import { foldText } from "./doc-popups-surface";
 import { fillDocCopy, type DocPageCopy } from "./doc-page.copy";
 import type {
@@ -291,43 +298,49 @@ export function DocConvertTaskDialogSurface({
           <>
             <label className="flex flex-col gap-1 text-metadata font-semibold text-meta-foreground">
               {c.board}
-              <select
+              <Select
                 value={boardId}
-                onChange={(event) => {
+                onValueChange={(value) => {
                   setGroupId("");
-                  callbacks?.onConvertBoard?.(event.target.value);
+                  callbacks?.onConvertBoard?.(value);
                 }}
-                className={FIELD}
               >
-                <option value="" disabled>
-                  {c.boardPlaceholder}
-                </option>
-                {convert.boards.map((board) => (
-                  <option key={board.id} value={board.id}>
-                    {board.title}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder={c.boardPlaceholder} />
+                </SelectTrigger>
+                <SelectContent>
+                  {convert.boards.map((board) => (
+                    <SelectItem key={board.id} value={board.id}>
+                      {board.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </label>
             <label className="flex flex-col gap-1 text-metadata font-semibold text-meta-foreground">
               {c.group}
-              <select
+              <Select
                 value={groupId}
                 disabled={boardId === "" || convert.groups === null}
-                onChange={(event) => setGroupId(event.target.value)}
-                className={FIELD}
+                onValueChange={setGroupId}
               >
-                <option value="" disabled>
-                  {boardId !== "" && convert.groups === null
-                    ? c.groupsLoading
-                    : c.groupPlaceholder}
-                </option>
-                {(convert.groups ?? []).map((group) => (
-                  <option key={group.id} value={group.id}>
-                    {group.name}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger className="w-full">
+                  <SelectValue
+                    placeholder={
+                      boardId !== "" && convert.groups === null
+                        ? c.groupsLoading
+                        : c.groupPlaceholder
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {(convert.groups ?? []).map((group) => (
+                    <SelectItem key={group.id} value={group.id}>
+                      {group.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </label>
           </>
         )}

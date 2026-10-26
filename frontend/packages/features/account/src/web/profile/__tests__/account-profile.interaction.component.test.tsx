@@ -37,6 +37,12 @@ function renderProfile(
   return { props, view };
 }
 
+/** Opens the styled Select behind a label and picks one option by its text. */
+function choose(label: string, option: string) {
+  fireEvent.keyDown(screen.getByLabelText(label), { key: "Enter" });
+  fireEvent.click(screen.getByRole("option", { name: option }));
+}
+
 describe("AccountProfileSurface", () => {
   it("FUI[account.profile:render] shows the profile with bound labels in vi and en", () => {
     for (const locale of LOCALES) {
@@ -62,13 +68,12 @@ describe("AccountProfileSurface", () => {
             .replace("{{provider}}", "Microsoft Entra"),
         ),
       ).toBeTruthy();
-      expect(
-        (screen.getByLabelText(copy.timezoneLabel) as HTMLSelectElement).value,
-      ).toBe("Asia/Ho_Chi_Minh");
-      expect(
-        (screen.getByLabelText(copy.dateFormatLabel) as HTMLSelectElement)
-          .value,
-      ).toBe("dd/mm/yyyy");
+      expect(screen.getByLabelText(copy.timezoneLabel).textContent).toBe(
+        copy.timezones["Asia/Ho_Chi_Minh"],
+      );
+      expect(screen.getByLabelText(copy.dateFormatLabel).textContent).toBe(
+        copy.dateFormats["dd/mm/yyyy"],
+      );
       // Nothing changed yet: no save bar.
       expect(screen.queryByRole("region", { name: copy.unsavedRegion })).toBe(
         null,
@@ -115,12 +120,8 @@ describe("AccountProfileSurface", () => {
       fireEvent.change(screen.getByLabelText(copy.nameLabel), {
         target: { value: "  Ada King  " },
       });
-      fireEvent.change(screen.getByLabelText(copy.timezoneLabel), {
-        target: { value: "Asia/Tokyo" },
-      });
-      fireEvent.change(screen.getByLabelText(copy.dateFormatLabel), {
-        target: { value: "yyyy-mm-dd" },
-      });
+      choose(copy.timezoneLabel, copy.timezones["Asia/Tokyo"]);
+      choose(copy.dateFormatLabel, copy.dateFormats["yyyy-mm-dd"]);
       fireEvent.click(screen.getByRole("button", { name: copy.save }));
 
       expect(props.onSave).toHaveBeenCalledTimes(1);
@@ -394,9 +395,9 @@ describe("AccountProfileSurface", () => {
     // Nobody manages this email: the plain help shows instead.
     expect(screen.getByText(copy.emailHelp)).toBeTruthy();
     // A zone outside the list stays selectable by its raw id.
-    expect(
-      (screen.getByLabelText(copy.timezoneLabel) as HTMLSelectElement).value,
-    ).toBe("Pacific/Auckland");
+    expect(screen.getByLabelText(copy.timezoneLabel).textContent).toBe(
+      "Pacific/Auckland",
+    );
     const alerts = screen.getAllByRole("alert").map((a) => a.textContent);
     expect(alerts.join(" ")).toContain(copy.saveError);
     expect(alerts.join(" ")).toContain(copy.photoUnsupported);
