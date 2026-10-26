@@ -120,7 +120,15 @@ export async function setItemBucket(
  */
 export async function createAssignedItem(
   api: FeedApi,
-  input: { boardId: string; name: string; userId: string },
+  input: {
+    boardId: string;
+    name: string;
+    userId: string;
+    /** The item's description, written with the create. */
+    descriptionMd?: string;
+    /** `YYYY-MM-DD`: the due day, written with the create. */
+    dueDay?: string;
+  },
 ): Promise<{ id: string; key: string | null }> {
   const board = await readBoard(api, input.boardId);
   const group = (board.lists ?? []).find(
@@ -135,6 +143,10 @@ export async function createAssignedItem(
       title: input.name,
       previousSiblingId: null,
       nextSiblingId: null,
+      ...(input.descriptionMd?.trim()
+        ? { descriptionMd: input.descriptionMd }
+        : {}),
+      ...(input.dueDay ? { dueDate: `${input.dueDay}T00:00:00.000Z` } : {}),
     },
     { idempotencyKey: newKey(), ...QUIET },
   );

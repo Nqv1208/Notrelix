@@ -51,6 +51,26 @@ describe("createAssignedItem", () => {
     expect(requests.join("\n")).not.toContain("my-work");
   });
 
+  it("writes the description and the due day with the create, not as later edits", async () => {
+    const { store, api, requests } = setup();
+    const userId = store.getCurrentUser().id;
+
+    const made = await createAssignedItem(api, {
+      boardId: BOARD,
+      name: "Có hạn",
+      userId,
+      descriptionMd: "Gửi biên bản",
+      dueDay: "2026-11-09",
+    });
+
+    const card = store.getCard(made.id);
+    expect(card?.description).toBe("Gửi biên bản");
+    expect(card?.dueAt).toBe("2026-11-09T00:00:00.000Z");
+    expect(requests.filter((entry) => entry.startsWith("PATCH"))).toEqual([
+      `PATCH /api/v1/board-items/${made.id}/status`,
+    ]);
+  });
+
   it("fails without creating anything when the Board is unknown", async () => {
     const { api, requests } = setup();
     await expect(

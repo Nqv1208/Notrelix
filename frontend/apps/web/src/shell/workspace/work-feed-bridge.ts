@@ -710,6 +710,8 @@ export interface WorkFeedWrites {
   readonly createItem: (input: {
     boardId: string;
     name: string;
+    descriptionMd?: string;
+    dueDay?: string;
   }) => Promise<{ id: string; key: string | null }>;
   readonly replyToMention: (input: {
     mentionId: string;
@@ -805,10 +807,16 @@ export function useWorkFeedWrites(workspaceId: string): WorkFeedWrites {
             action,
           });
         }, boardIds),
-      createItem: ({ boardId, name }) =>
+      createItem: ({ boardId, name, descriptionMd, dueDay }) =>
         perform(() => {
           if (!userId) throw new Error("Not signed in.");
-          return createAssignedItem(api, { boardId, name, userId });
+          return createAssignedItem(api, {
+            boardId,
+            name,
+            userId,
+            descriptionMd,
+            dueDay,
+          });
         }, [boardId]),
       replyToMention: ({ mentionId, text }) =>
         perform(() =>

@@ -12,7 +12,7 @@ import {
   homeProducedOnlyScenario,
 } from "../../../verification/workspace-home-fixtures";
 import { shellNavigationFixture } from "../../../verification/workspace-shell-fixtures";
-import { CreateResourceDialog } from "../create-resource-dialog";
+import { AddItemDialog, CreateResourceDialog } from "../create-resource-dialog";
 import {
   WorkspaceHomeSurface,
   type WorkspaceHomeSurfaceProps,
@@ -387,5 +387,65 @@ describe("CreateResourceDialog", () => {
         }) as HTMLButtonElement
       ).disabled,
     ).toBe(true);
+  });
+});
+
+describe("Home add-item dialog", () => {
+  const boards = [
+    { id: "board-erp", name: "ERP", departmentName: "IT", detail: null },
+  ];
+
+  it("FUI[workspace.home:add-item-details] sends the description and the due day along with the name and Board", () => {
+    const onSubmit = vi.fn();
+    renderPureUi(
+      <AddItemDialog
+        copy={copy}
+        open
+        boards={boards}
+        pending={false}
+        error={null}
+        onOpenChange={vi.fn()}
+        onSubmit={onSubmit}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText(copy.list.addName), {
+      target: { value: "Gửi biên bản" },
+    });
+    fireEvent.change(screen.getByLabelText(copy.list.addDescription), {
+      target: { value: "- UAT\n- Kế toán" },
+    });
+    fireEvent.change(screen.getByLabelText(copy.list.addDue), {
+      target: { value: "2026-11-09" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: copy.list.addSubmit }));
+    expect(onSubmit).toHaveBeenCalledWith({
+      boardId: "board-erp",
+      name: "Gửi biên bản",
+      descriptionMd: "- UAT\n- Kế toán",
+      dueDay: "2026-11-09",
+    });
+  });
+
+  it("FUI[workspace.home:add-item-minimal] sends only the name and Board when nothing else was filled in", () => {
+    const onSubmit = vi.fn();
+    renderPureUi(
+      <AddItemDialog
+        copy={copy}
+        open
+        boards={boards}
+        pending={false}
+        error={null}
+        onOpenChange={vi.fn()}
+        onSubmit={onSubmit}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText(copy.list.addName), {
+      target: { value: "Chỉ có tên" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: copy.list.addSubmit }));
+    expect(onSubmit).toHaveBeenCalledWith({
+      boardId: "board-erp",
+      name: "Chỉ có tên",
+    });
   });
 });
