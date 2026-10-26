@@ -663,6 +663,41 @@ export const workspaceOperations = [
 
   defineMockOperation<
     { workspaceId: string; invitationId: string },
+    { newRole?: string },
+    void
+  >({
+    id: "workspace.invitations.changeRole",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Invitations.ChangeInvitationRole",
+    },
+    method: "PATCH",
+    route: "/workspaces/:workspaceId/invitations/:invitationId/role",
+    async handle({ params, body, store }) {
+      if (!canManageMembers(store, params.workspaceId)) return forbidden();
+      const role = parseRole(body?.newRole);
+      if (!role || role === "owner") {
+        return validationError({ NewRole: ["Unknown role."] });
+      }
+      if (role === "admin") {
+        return ruleViolation(
+          "A workspace invitation offers Member or Guest only; promote the member after they join.",
+        );
+      }
+      const changed = store.changeInvitationRole(
+        params.workspaceId,
+        params.invitationId,
+        role,
+      );
+      if (changed === null) return notFound();
+      if (!changed)
+        return ruleViolation("Only a waiting invitation can change its role.");
+      return noContent();
+    },
+  }),
+
+  defineMockOperation<
+    { workspaceId: string; invitationId: string },
     never,
     unknown
   >({

@@ -100,6 +100,11 @@ export interface WorkspaceMembersSurfaceProps {
   readonly onInviteMany?: (
     inputs: readonly CreateWorkspaceInvitationInput[],
   ) => void;
+  /** Changes the role a waiting invitation offers; absent shows the role as text. */
+  readonly onChangeInvitationRole?: (
+    invitation: WorkspaceInvitation,
+    role: CreateWorkspaceInvitationInput["role"],
+  ) => void;
   /** Sends a waiting invitation again; absent hides the action. */
   readonly onResend?: (invitation: WorkspaceInvitation) => void;
   readonly onRevoke: (invitation: WorkspaceInvitation) => void;
@@ -744,7 +749,42 @@ export function WorkspaceMembersSurface(props: WorkspaceMembersSurfaceProps) {
                         </span>
                       </td>
                       <td className="px-2 py-2.5 align-middle whitespace-nowrap text-body">
-                        {copy.roles[invitation.role]}
+                        {props.onChangeInvitationRole &&
+                        !expired &&
+                        !invitation.isAccepted &&
+                        (invitation.role === "member" ||
+                          invitation.role === "guest") ? (
+                          <Select
+                            value={invitation.role}
+                            disabled={pending}
+                            onValueChange={(value) =>
+                              props.onChangeInvitationRole?.(
+                                invitation,
+                                value as CreateWorkspaceInvitationInput["role"],
+                              )
+                            }
+                          >
+                            <SelectTrigger
+                              size="sm"
+                              className="w-36"
+                              aria-label={formatCopy(
+                                copy.invitations.roleOfInvitation,
+                                { email: invitation.email },
+                              )}
+                            >
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {INVITABLE_ROLES.map((option) => (
+                                <SelectItem key={option} value={option}>
+                                  {copy.roles[option]}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          copy.roles[invitation.role]
+                        )}
                       </td>
                       <td className="hidden px-2 py-2.5 align-middle whitespace-nowrap text-metadata tabular-nums text-muted-foreground sm:table-cell">
                         {formatters.date(invitation.createdAt, DATE_FORMAT)}

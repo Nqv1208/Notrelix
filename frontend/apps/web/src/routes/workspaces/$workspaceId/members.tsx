@@ -11,6 +11,7 @@ import {
   type WorkspaceRole,
 } from "@notrelix/features-workspace/core";
 import {
+  createUseChangeInvitationRole,
   createUseCreateInvitation,
   createUseMemberMutations,
   createUseResendInvitation,
@@ -77,6 +78,7 @@ export function MembersPage() {
       useCreateInvitation: createUseCreateInvitation(deps),
       useRevokeInvitation: createUseRevokeInvitation(deps),
       useResendInvitation: createUseResendInvitation(deps),
+      useChangeInvitationRole: createUseChangeInvitationRole(deps),
     };
   }, [runtimeClient]);
 
@@ -87,6 +89,7 @@ export function MembersPage() {
   const createInvitation = hooks.useCreateInvitation(workspaceId);
   const revokeInvitation = hooks.useRevokeInvitation(workspaceId);
   const resendInvitation = hooks.useResendInvitation(workspaceId);
+  const changeInvitationRole = hooks.useChangeInvitationRole(workspaceId);
   const pendingMembers = useIdSet();
   const pendingInvitations = useIdSet();
   const [inviteError, setInviteError] = useState<string | null>(null);
@@ -211,6 +214,37 @@ export function MembersPage() {
     [copy, createInvitation, invitations.data, now],
   );
 
+  const onChangeInvitationRole = useCallback(
+    (
+      invitation: WorkspaceInvitation,
+      role: CreateWorkspaceInvitationInput["role"],
+    ) => {
+      pendingInvitations.add(invitation.id);
+      changeInvitationRole.mutate(
+        { invitationId: invitation.id, role },
+        {
+          onSuccess: () =>
+            toast.success(
+              formatCopy(copy.toasts.invitationRoleChanged, {
+                email: invitation.email,
+                role: copy.roles[role],
+              }),
+            ),
+          onError: (error) =>
+            toastFailure(
+              formatCopy(copy.toasts.invitationRoleFailed, {
+                email: invitation.email,
+              }),
+              error,
+              hint,
+            ),
+          onSettled: () => pendingInvitations.remove(invitation.id),
+        },
+      );
+    },
+    [changeInvitationRole, copy, hint, pendingInvitations],
+  );
+
   const onResend = useCallback(
     (invitation: WorkspaceInvitation) => {
       pendingInvitations.add(invitation.id);
@@ -305,6 +339,7 @@ export function MembersPage() {
         onInvite={onInvite}
         onInviteMany={onInviteMany}
         onResend={onResend}
+        onChangeInvitationRole={onChangeInvitationRole}
         onRevoke={onRevoke}
         onRetryMembers={() =>
           void (

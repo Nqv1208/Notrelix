@@ -3439,6 +3439,19 @@ export class MockStore {
     return id;
   }
 
+  /** Changes the role a waiting invitation offers; `null` when it is not found. */
+  changeInvitationRole(
+    workspaceId: string,
+    invitationId: string,
+    role: MockInvitationRecord["role"],
+  ): boolean | null {
+    const invitation = this.invitationsById.get(invitationId);
+    if (!invitation || invitation.workspaceId !== workspaceId) return null;
+    if (invitation.status !== "pending") return false;
+    invitation.role = role;
+    return true;
+  }
+
   /**
    * A resend re-issues the link: the invitation keeps its id and waits seven
    * more days. Only an invitation that waits or has run out can be sent again.

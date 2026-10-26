@@ -255,6 +255,23 @@ describe("WorkspaceMembersSurface invitations", () => {
     );
   });
 
+  it("FUI[workspace.members:invitation-role] shows the role of a waiting invitation as a choice only when the host can change it", () => {
+    renderMembers(membersInvitationsScenario());
+    expect(
+      screen.queryByRole("combobox", {
+        name: "Role offered in the invitation to minh.tran@example.com",
+      }),
+    ).toBeNull();
+    renderMembers(membersInvitationsScenario(), {
+      onChangeInvitationRole: vi.fn(),
+    });
+    expect(
+      screen.getByRole("combobox", {
+        name: "Role offered in the invitation to minh.tran@example.com",
+      }),
+    ).toBeTruthy();
+  });
+
   it("FUI[workspace.members:pending] lists pending and expired invitations and revokes after confirmation", () => {
     const { props } = renderMembers(membersInvitationsScenario());
     expect(screen.getByText("minh.tran@example.com")).toBeTruthy();

@@ -36,6 +36,26 @@ describe("Resending a workspace invitation in the mock world", () => {
     expect(after.expiresAt >= before).toBe(true);
   });
 
+  it("changes the role a waiting invitation offers and refuses Admin", async () => {
+    const { store, client } = setup();
+    const id = store.createInvitation(
+      workspaceId,
+      "role@example.com",
+      "member",
+    )!;
+    const path = `/workspaces/${workspaceId}/invitations/${id}/role`;
+    await client.api.patch(path, { newRole: "Guest" });
+    expect(store.getInvitations(workspaceId)[0]!.role).toBe("guest");
+    await expect(
+      client.api.patch(path, { newRole: "Admin" }),
+    ).rejects.toBeTruthy();
+    expect(store.getInvitations(workspaceId)[0]!.role).toBe("guest");
+    store.revokeInvitation(workspaceId, id);
+    await expect(
+      client.api.patch(path, { newRole: "Member" }),
+    ).rejects.toBeTruthy();
+  });
+
   it("refuses a revoked invitation, an unknown one and a caller who cannot invite", async () => {
     const { store, client } = setup();
     const id = store.createInvitation(

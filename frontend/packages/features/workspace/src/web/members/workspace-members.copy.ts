@@ -99,6 +99,7 @@ export const en = {
     expired: "Expired",
     revoke: "Revoke invitation to {{email}}",
     revoking: "Revoking invitation to {{email}}…",
+    roleOfInvitation: "Role offered in the invitation to {{email}}",
     resend: "Resend invitation to {{email}}",
     resending: "Resending invitation to {{email}}…",
     emailHint:
@@ -125,6 +126,9 @@ export const en = {
     inviteFailed: "The invitation to {{email}} wasn't sent.",
     revoked: "The invitation to {{email}} was revoked.",
     revokeFailed: "The invitation to {{email}} wasn't revoked.",
+    invitationRoleChanged: "The invitation to {{email}} now offers {{role}}.",
+    invitationRoleFailed:
+      "The role in the invitation to {{email}} wasn't changed.",
     resent: "Invitation sent again to {{email}}.",
     resendFailed: "The invitation to {{email}} wasn't sent again.",
     invitedMany: "{{count}} invitations sent.",
@@ -239,6 +243,7 @@ export const vi: WorkspaceMembersCopy = {
     expired: "Đã hết hạn",
     revoke: "Thu hồi lời mời gửi {{email}}",
     revoking: "Đang thu hồi lời mời gửi {{email}}…",
+    roleOfInvitation: "Vai trò trong lời mời gửi {{email}}",
     resend: "Gửi lại lời mời tới {{email}}",
     resending: "Đang gửi lại lời mời tới {{email}}…",
     emailHint:
@@ -266,6 +271,9 @@ export const vi: WorkspaceMembersCopy = {
     inviteFailed: "Chưa gửi được lời mời tới {{email}}.",
     revoked: "Đã thu hồi lời mời gửi {{email}}.",
     revokeFailed: "Chưa thu hồi được lời mời gửi {{email}}.",
+    invitationRoleChanged:
+      "Lời mời gửi {{email}} giờ mời với vai trò {{role}}.",
+    invitationRoleFailed: "Chưa đổi được vai trò trong lời mời gửi {{email}}.",
     resent: "Đã gửi lại lời mời tới {{email}}.",
     resendFailed: "Chưa gửi lại được lời mời tới {{email}}.",
     invitedMany: "Đã gửi {{count}} lời mời.",

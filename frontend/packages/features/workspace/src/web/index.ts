@@ -7,6 +7,7 @@ export {
   type UpdateMemberRoleInput,
 } from "./hooks/mutations/use-member-mutations";
 export {
+  createUseChangeInvitationRole,
   createUseCreateInvitation,
   createUseResendInvitation,
   createUseRevokeInvitation,
