@@ -198,6 +198,7 @@ export const en = {
   failed: {
     status: "Couldn't change the status of “{{title}}”.",
     archive: "Couldn't archive “{{title}}”.",
+    bulk: "Couldn't change the selected items. Nothing was changed.",
     move: "Couldn't move “{{title}}” to the other board.",
     create: "Couldn't add “{{title}}”.",
     save: "Couldn't save the change to “{{title}}”.",
@@ -391,6 +392,7 @@ export const vi: MainTableCopy = {
   failed: {
     status: "Không đổi được trạng thái của “{{title}}”.",
     archive: "Không lưu trữ được “{{title}}”.",
+    bulk: "Không đổi được các việc đã chọn. Chưa có gì bị thay đổi.",
     move: "Không chuyển được “{{title}}” sang board khác.",
     create: "Không thêm được “{{title}}”.",
     save: "Không lưu được thay đổi của “{{title}}”.",

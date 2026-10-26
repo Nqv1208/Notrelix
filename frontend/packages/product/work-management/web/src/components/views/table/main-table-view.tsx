@@ -11,6 +11,7 @@ import { useIsMobile } from "@notrelix/ui-web";
 import {
   dropUnknownFilterIds,
   useArchiveCard,
+  useBulkUpdateItems,
   useBoardAccess,
   useAddFieldOption,
   useBoardTable,
@@ -19,6 +20,7 @@ import {
   useUpdateCard,
   useWorkspaceBoards,
   type KanbanWriteFailure,
+  type BulkItemChange,
 } from "@notrelix/work-management-state";
 import {
   generatePosition,
@@ -192,6 +194,8 @@ export function MainTableView({
         { id: `table-write-${cardId}` },
       ),
   });
+  const bulkUpdate = useBulkUpdateItems(boardId, workspaceId);
+  const bulkMutate = bulkUpdate.mutate;
   const moveItem = useMoveItemToBoard(boardId, workspaceId, {
     onError: (_error, { cardId }) =>
       toast.error(
@@ -231,9 +235,23 @@ export function MainTableView({
     if (!pending) return;
     window.clearTimeout(pending.timer);
     pendingRef.current = null;
+    if (pending.ids.length > 1) {
+      // Several rows go in one request; they stay hidden until it answers.
+      bulkMutate(
+        { itemIds: pending.ids, change: { type: "archive" } },
+        {
+          onError: () => toast.error(copy.failed.bulk, { id: "table-bulk" }),
+          onSettled: () =>
+            setPendingArchive((current) =>
+              current === pending.ids ? [] : current,
+            ),
+        },
+      );
+      return;
+    }
     for (const id of pending.ids) archiveMutate(id);
     setPendingArchive([]);
-  }, [archiveMutate]);
+  }, [archiveMutate, bulkMutate, copy]);
   useEffect(() => {
     window.addEventListener("pagehide", flushArchive);
     return () => {
@@ -368,6 +386,15 @@ export function MainTableView({
   const selectedList = [...selectedIds];
   const writeToSelected = (write: (cardId: string) => void) => {
     for (const id of selectedList) write(id);
+    setSelection(new Set());
+  };
+  // Status, due date and assignee of the selected rows: one request, all or none.
+  const bulkWrite = (change: BulkItemChange) => {
+    for (const id of selectedList) noteTitle(id);
+    bulkMutate(
+      { itemIds: selectedList, change },
+      { onError: () => toast.error(copy.failed.bulk, { id: "table-bulk" }) },
+    );
     setSelection(new Set());
   };
 
@@ -643,9 +670,15 @@ export function MainTableView({
           }}
           onShowDone={() => setShowDone(true)}
           onBulkStatus={(optionId) =>
-            writeToSelected((id) => writeStatus(id, optionId))
+            bulkWrite({ type: "set-status", statusOptionId: optionId })
           }
-          onBulkDue={(day) => writeToSelected((id) => writeDue(id, day))}
+          onBulkDue={(day) =>
+            bulkWrite(
+              day
+                ? { type: "set-due-date", dueDate: dueInstant(day) }
+                : { type: "clear-due-date" },
+            )
+          }
           rowActions={{
             onDuplicate: capabilities.canCreateCard
               ? (id) => duplicateCard.mutate(id)
@@ -664,7 +697,11 @@ export function MainTableView({
               ? {
                   members,
                   onAssign: (userId) =>
-                    writeToSelected((id) => writeAssignee(id, userId)),
+                    bulkWrite(
+                      userId
+                        ? { type: "assign", userId }
+                        : { type: "unassign-all" },
+                    ),
                 }
               : undefined
           }

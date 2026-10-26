@@ -18,6 +18,7 @@
  *   cards.moveToBoard       — POST /board-items/:id/move-to-board (gap)
  *   cards.fieldValues       — PATCH /board-items/:id/values/:fieldId
  *   cards.status            — PATCH /board-items/:id/status
+ *   cards.bulkUpdate        — POST /boards/:boardId/items/bulk (one change for several items, all or nothing)
  *   cards.attachments       — GET /board-items/:id/attachments
  *   cards.activity          — GET /board-items/:id/activity
  *   cards.labels.list       — GET /board-items/:id/labels
@@ -631,6 +632,95 @@ export const cardsOperations = [
       if (!canWriteBoardItems(item.boardId, store)) return forbidden();
       unassignMember(store, params.id, params.userId);
       return noContent();
+    },
+  }),
+
+  // ─── POST /boards/:boardId/items/bulk ──────────────────────────────────────────
+
+  // One change for several items of a board, all or nothing: an unknown or
+  // foreign item, or a refused status, writes nothing.
+  defineMockOperation<
+    { boardId: string },
+    {
+      operation?: string;
+      itemIds?: string[];
+      status?: string | null;
+      dueDate?: string | null;
+      assigneeUserId?: string | null;
+    },
+    { updated: number }
+  >({
+    id: "wm.boardItems.bulkUpdate",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardItems.BulkUpdate",
+    },
+    method: "POST",
+    route: "/boards/:boardId/items/bulk",
+    async handle({ params, body, store, request }) {
+      const missingKey = missingIdempotencyKey(request);
+      if (missingKey) return missingKey;
+      if (!canWriteBoardItems(params.boardId, store)) return forbidden();
+      const operation = body?.operation ?? "";
+      const ids = [...new Set(body?.itemIds ?? [])];
+      if (
+        ![
+          "set-status",
+          "set-due-date",
+          "clear-due-date",
+          "assign",
+          "unassign-all",
+          "archive",
+        ].includes(operation)
+      ) {
+        return badRequest({ operation: ["Choose a change to apply."] });
+      }
+      if (ids.length === 0 || ids.length > 200) {
+        return badRequest({ itemIds: ["Choose between 1 and 200 items."] });
+      }
+      if (ids.some((id) => store.getCard(id)?.boardId !== params.boardId)) {
+        return notFound("Card not found");
+      }
+      if (operation === "set-status") {
+        if (!body?.status) {
+          return badRequest({ status: ["The status is required."] });
+        }
+        const first = store.updateItemStatus(ids[0]!, body.status);
+        if (first === "invalid") {
+          return badRequest({
+            status: ["Not an option of the board's Status field."],
+          });
+        }
+        for (const id of ids.slice(1)) store.updateItemStatus(id, body.status);
+      } else if (operation === "assign") {
+        if (!body?.assigneeUserId) {
+          return badRequest({ assigneeUserId: ["Choose a member."] });
+        }
+        for (const id of ids) {
+          const others = store.getCard(id)?.assigneeUserIds ?? [];
+          for (const other of others) {
+            if (other !== body.assigneeUserId) unassignMember(store, id, other);
+          }
+          if (assignMember(store, id, body.assigneeUserId) === "invalid") {
+            return badRequest({
+              assigneeUserId: ["That person is not a member."],
+            });
+          }
+        }
+      } else if (operation === "unassign-all") {
+        for (const id of ids) {
+          for (const other of store.getCard(id)?.assigneeUserIds ?? []) {
+            unassignMember(store, id, other);
+          }
+        }
+      } else if (operation === "archive") {
+        for (const id of ids) store.archiveCard(id);
+      } else {
+        const dueAt =
+          operation === "clear-due-date" ? null : (body?.dueDate ?? null);
+        for (const id of ids) store.updateCard(id, { dueAt });
+      }
+      return ok({ updated: ids.length });
     },
   }),
 

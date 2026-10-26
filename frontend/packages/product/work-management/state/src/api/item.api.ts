@@ -47,6 +47,19 @@ type MoveItemResponse = OperationResponse<MoveItemOp, 200>;
 type UpdateFieldValueOp = "WorkManagement.BoardItems.UpdateFieldValue";
 type UpdateFieldValueBody = OperationRequestBody<UpdateFieldValueOp>;
 
+type BulkUpdateOp = "WorkManagement.BoardItems.BulkUpdate";
+type BulkUpdateBody = OperationRequestBody<BulkUpdateOp>;
+type BulkUpdateResponse = OperationResponse<BulkUpdateOp, 200>;
+
+/** The one change a bulk request applies to every item it names. */
+export type BulkItemChange =
+  | { readonly type: "set-status"; readonly statusOptionId: string }
+  | { readonly type: "set-due-date"; readonly dueDate: string }
+  | { readonly type: "clear-due-date" }
+  | { readonly type: "assign"; readonly userId: string }
+  | { readonly type: "unassign-all" }
+  | { readonly type: "archive" };
+
 type UpdateStatusOp = "WorkManagement.BoardItems.UpdateStatus";
 type UpdateStatusBody = OperationRequestBody<UpdateStatusOp>;
 
@@ -218,6 +231,34 @@ export function createCardApi(client: NotrelixClient) {
           { idempotencyKey: crypto.randomUUID() },
         );
       }
+    },
+
+    /**
+     * One change for several items of a board as one request
+     * (`POST /boards/{id}/items/bulk`): every item changes or none does, so a
+     * refusal leaves the board as it was. Returns how many items changed.
+     */
+    async bulkUpdate(
+      boardId: string,
+      itemIds: readonly string[],
+      change: BulkItemChange,
+      options?: ApiRequestOptions,
+    ): Promise<number> {
+      const body: BulkUpdateBody = {
+        operation: change.type,
+        itemIds: [...itemIds],
+        ...(change.type === "set-status"
+          ? { status: change.statusOptionId }
+          : {}),
+        ...(change.type === "set-due-date" ? { dueDate: change.dueDate } : {}),
+        ...(change.type === "assign" ? { assigneeUserId: change.userId } : {}),
+      };
+      const result = await api.post<BulkUpdateResponse | null | undefined>(
+        endpoints.boardItems.bulk(boardId),
+        body,
+        options ?? { idempotencyKey: crypto.randomUUID() },
+      );
+      return result?.updated ?? itemIds.length;
     },
 
     /**

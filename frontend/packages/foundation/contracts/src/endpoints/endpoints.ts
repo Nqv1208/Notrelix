@@ -237,6 +237,7 @@ export const endpoints = {
   },
   boardItems: {
     create: (boardId: string) => `/boards/${boardId}/items`,
+    bulk: (boardId: string) => `/boards/${boardId}/items/bulk`,
     detail: (itemId: string) => `/board-items/${itemId}`,
     move: (itemId: string) => `/board-items/${itemId}/move`,
     linkPage: (itemId: string) => `/board-items/${itemId}/link-page`,
