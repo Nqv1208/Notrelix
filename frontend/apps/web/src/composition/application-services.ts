@@ -6,6 +6,7 @@ import {
   type WorkManagementServices,
 } from "@notrelix/work-management-state";
 import type { SearchApi, SearchResult } from "@notrelix/features-search";
+import { backendCapabilities } from "../config/backend-capabilities";
 import {
   createApplicationLifecycle,
   type ApplicationLifecycle,
@@ -31,7 +32,9 @@ export function createWebApplicationServices(
   options: CreateWebApplicationServicesOptions,
 ): WebApplicationServices {
   const queryClient = createQueryClient();
-  const workManagement = createWorkManagementServices(runtime.api);
+  const workManagement = createWorkManagementServices(runtime.api, {
+    planProduced: backendCapabilities.planItems,
+  });
 
   const lifecycle = createApplicationLifecycle({
     queryClient,

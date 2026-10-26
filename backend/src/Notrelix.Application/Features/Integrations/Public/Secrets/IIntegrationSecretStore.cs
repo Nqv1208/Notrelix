@@ -28,6 +28,12 @@ public interface IIntegrationSecretStore
     Task<string> StoreAsync(string secret, CancellationToken cancellationToken);
 
     /// <summary>
+    /// Reads the secret behind the reference for the code that needs it (signing a delivery); null when the
+    /// reference is unknown or revoked. The caller must never log or return it.
+    /// </summary>
+    Task<string?> ReadAsync(string secretReference, CancellationToken cancellationToken);
+
+    /// <summary>
     /// Revokes the physical secret behind the reference. Revoking an unknown
     /// or already-revoked reference is an idempotent success. Provider-specific
     /// failures are classified without exposing provider SDK types.

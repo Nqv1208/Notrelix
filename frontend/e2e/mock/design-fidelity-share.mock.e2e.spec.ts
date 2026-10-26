@@ -170,7 +170,9 @@ test.describe("Board share geometry at 1440 px (owner)", () => {
     );
   });
 
-  test("the add row is drawn but inert", async ({ page }) => {
+  test("the add row is live and the invite waits for a chosen member", async ({
+    page,
+  }) => {
     await openShare(page);
     const add = f(page, "add");
     expectRect(
@@ -205,8 +207,11 @@ test.describe("Board share geometry at 1440 px (owner)", () => {
     );
     expect(await colour(invite, "background-color")).toBe(COLOUR.accent);
     expect(await style(invite, "font-weight")).toBe("600");
-    await expect(invite).toHaveAttribute("aria-disabled", "true");
-    await expect(invite).toHaveAttribute("title", /chưa có thao tác ghi/);
+    // Live: the field takes typing and the invite stays off until a member
+    // of the workspace is picked.
+    await expect(invite).toBeDisabled();
+    await expect(invite).not.toHaveAttribute("title", /chưa có thao tác ghi/);
+    await expect(page.getByRole("combobox", { name: /./ })).toBeEditable();
     // 8 px between the three parts.
     const a = await rel(page, field);
     const b = await rel(page, level);

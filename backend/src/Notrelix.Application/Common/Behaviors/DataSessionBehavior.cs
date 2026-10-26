@@ -44,6 +44,17 @@ public sealed class DataSessionBehavior<TRequest, TResponse> : IPipelineBehavior
                 $"Execution context is not resolved for {descriptor.RequestType.Name}.");
         var tenantScoped = snapshot.Scope is
             ApplicationScopeKind.Account or ApplicationScopeKind.Workspace or ApplicationScopeKind.Resource;
+
+        // A Global authenticated request has no account or workspace to bind: it runs in the user scope,
+        // which carries the verified user and nothing else. An authenticated token-scoped request (accepting
+        // an invitation while signed in) starts in the same user scope, before its handler enters the token
+        // scope. Anonymous requests stay unscoped here: their handlers enter their own bounded scope.
+        var userScopeUserId = snapshot.Scope is ApplicationScopeKind.Global or ApplicationScopeKind.Token
+            && snapshot.Principal == ApplicationPrincipalKind.Authenticated
+            && snapshot.UserId is { } authenticatedUser
+            && authenticatedUser != Guid.Empty
+                ? authenticatedUser
+                : (Guid?)null;
         var expectedVersion = request is IExpectedVersionRequest versioned
             ? new ExpectedVersionConstraint(typeof(TRequest), versioned.Resource, versioned.ExpectedVersion)
             : null;
@@ -53,7 +64,8 @@ public sealed class DataSessionBehavior<TRequest, TResponse> : IPipelineBehavior
                 access,
                 ApplyTenantScope: tenantScoped,
                 ApplyResourceScope: snapshot.Scope == ApplicationScopeKind.Resource,
-                ExpectedVersion: expectedVersion),
+                ExpectedVersion: expectedVersion,
+                UserScopeUserId: userScopeUserId),
             _ => next(),
             cancellationToken);
     }

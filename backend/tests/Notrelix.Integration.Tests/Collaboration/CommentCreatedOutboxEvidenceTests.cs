@@ -43,7 +43,7 @@ public sealed class CommentCreatedOutboxEvidenceTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -71,7 +71,7 @@ public sealed class CommentCreatedOutboxEvidenceTests : IAsyncLifetime
             accountId, workspace.Id, board.Id, group.Id, "Task",
             FractionalIndex.Create("a0"), ownerId, Now);
 
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Workspaces.Add(workspace);
         seed.Boards.Add(board);
         seed.BoardGroups.Add(group);
@@ -106,7 +106,7 @@ public sealed class CommentCreatedOutboxEvidenceTests : IAsyncLifetime
 
     private async Task<MessagingOutboxMessage?> SingleCommentOutboxAsync(Guid workspaceId)
     {
-        await using var probe = _db.CreateContext(SystemTenant());
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
         return await probe.Set<MessagingOutboxMessage>()
             .IgnoreQueryFilters()
             .SingleOrDefaultAsync(message => message.WorkspaceId == workspaceId
@@ -123,7 +123,7 @@ public sealed class CommentCreatedOutboxEvidenceTests : IAsyncLifetime
     {
         var graph = await SeedBoardItemStackAsync();
 
-        await using var context = _db.CreateContext(SystemTenant(), CreateOutboxInterceptor());
+        await using var context = _db.CreateOwnerContext(SystemTenant(), CreateOutboxInterceptor());
         context.Comments.Add(NewCommentFact(graph));
         await context.SaveChangesAsync();
 
@@ -148,7 +148,7 @@ public sealed class CommentCreatedOutboxEvidenceTests : IAsyncLifetime
     {
         var graph = await SeedBoardItemStackAsync();
 
-        await using var context = _db.CreateContext(SystemTenant(), CreateOutboxInterceptor());
+        await using var context = _db.CreateOwnerContext(SystemTenant(), CreateOutboxInterceptor());
         await using var transaction = await context.Database.BeginTransactionAsync();
         context.Comments.Add(NewCommentFact(graph));
         await context.SaveChangesAsync();
@@ -172,7 +172,7 @@ public sealed class CommentCreatedOutboxEvidenceTests : IAsyncLifetime
         long beforeVersion;
         string beforeName;
         DateTimeOffset? beforeUpdatedAt;
-        await using (var snapshot = _db.CreateContext(SystemTenant()))
+        await using (var snapshot = _db.CreateOwnerContext(SystemTenant()))
         {
             var item = await snapshot.BoardItems.AsNoTracking().SingleAsync(i => i.Id == graph.ItemId);
             beforeVersion = item.Version;
@@ -180,11 +180,11 @@ public sealed class CommentCreatedOutboxEvidenceTests : IAsyncLifetime
             beforeUpdatedAt = item.UpdatedAt;
         }
 
-        await using var context = _db.CreateContext(SystemTenant(), CreateOutboxInterceptor());
+        await using var context = _db.CreateOwnerContext(SystemTenant(), CreateOutboxInterceptor());
         context.Comments.Add(NewCommentFact(graph));
         await context.SaveChangesAsync();
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         var itemAfter = await verify.BoardItems.AsNoTracking().SingleAsync(i => i.Id == graph.ItemId);
         itemAfter.Version.Should().Be(beforeVersion);
         itemAfter.Name.Should().Be(beforeName);
@@ -213,7 +213,7 @@ public sealed class CommentCreatedOutboxEvidenceTests : IAsyncLifetime
             new FailingMentionOnlyMapper(),
             new IntegrationEventCollector());
 
-        await using (var context = _db.CreateContext(SystemTenant(), failingInterceptor))
+        await using (var context = _db.CreateOwnerContext(SystemTenant(), failingInterceptor))
         {
             var comment = Comment.Create(
                 graph.AccountId,
@@ -237,7 +237,7 @@ public sealed class CommentCreatedOutboxEvidenceTests : IAsyncLifetime
                 "mention enrollment runs inside the SaveChanges chain, so its failure aborts the whole composite write");
         }
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.Comments.IgnoreQueryFilters()
             .AnyAsync(c => c.WorkspaceId == graph.WorkspaceId)).Should().BeFalse(
             "the comment must not survive the aborted composite write");

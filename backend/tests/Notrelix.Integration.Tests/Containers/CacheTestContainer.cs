@@ -20,11 +20,19 @@ public sealed class CacheTestContainer : IAsyncLifetime
     private readonly PostgresTestContainer _postgres = new();
     private IContainer? _redis;
 
+    /// <summary>The application-role login the code under test runs on.</summary>
     public string PostgresConnectionString => _postgres.ConnectionString;
+
+    /// <summary>The worker-role login background work runs on.</summary>
+    public string PostgresWorkerConnectionString => _postgres.WorkerConnectionString;
+
+    /// <summary>The container superuser, for seeding and verification only.</summary>
+    public string PostgresOwnerConnectionString => _postgres.OwnerConnectionString;
     public string RedisConnectionString { get; private set; } = string.Empty;
 
-    public ApplicationDbContext CreatePostgresContext(ICurrentTenantContext? tenant = null) =>
-        _postgres.CreateContext(tenant);
+    /// <summary>A context on the owner connection, for seeding and verification only.</summary>
+    public ApplicationDbContext CreatePostgresOwnerContext(ICurrentTenantContext? tenant = null) =>
+        _postgres.CreateOwnerContext(tenant);
 
     /// <summary>
     /// Restores a pristine state between tests: truncates every table and flushes
@@ -32,7 +40,7 @@ public sealed class CacheTestContainer : IAsyncLifetime
     /// </summary>
     public async Task ResetAsync()
     {
-        await new DatabaseReset(PostgresConnectionString).ResetAsync();
+        await new DatabaseReset(PostgresOwnerConnectionString).ResetAsync();
 
         var options = new ConfigurationOptions
         {

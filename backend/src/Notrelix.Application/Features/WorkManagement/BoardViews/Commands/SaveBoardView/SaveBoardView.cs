@@ -58,7 +58,10 @@ public class SaveBoardViewCommandHandler : IRequestHandler<SaveBoardViewCommand,
         var config = BoardViewConfig.Create(JsonValue.Create(request.Filters ?? "{}"));
 
         var view = await _context.BoardViews
-            .FirstOrDefaultAsync(v => v.BoardId == request.BoardId, ct);
+            .Where(v => v.BoardId == request.BoardId && v.DeletedAt == null && v.Visibility == BoardViewVisibility.Board)
+            .OrderByDescending(v => v.IsDefault)
+            .ThenBy(v => v.CreatedAt)
+            .FirstOrDefaultAsync(ct);
 
         if (view is not null)
         {

@@ -14,6 +14,26 @@ public abstract class RealtimeChangeMapper<TRequest, TResponse> : IRealtimeChang
         _time = time;
     }
 
+    private static long _lastClockVersion;
+
+    /// <summary>
+    /// The outbox orders a stream by a unique, strictly increasing version. A producer's own resource
+    /// version repeats (a semantic no-op keeps it, items created on a board stream all report 1), so
+    /// the stream version is the clock: increasing within the process, ordered by time across
+    /// processes. The producer's own version is not carried on the stream.
+    /// </summary>
+    private static long NextClockStreamVersion(DateTimeOffset now)
+    {
+        var micros = now.ToUnixTimeMilliseconds() * 1000;
+        while (true)
+        {
+            var last = Interlocked.Read(ref _lastClockVersion);
+            var next = Math.Max(last + 1, micros);
+            if (Interlocked.CompareExchange(ref _lastClockVersion, next, last) == last)
+                return next;
+        }
+    }
+
     public abstract RealtimeResourceChangedV1 Map(TRequest request, TResponse response, long streamVersion);
 
     protected RealtimeResourceChangedV1 Create(
@@ -37,7 +57,7 @@ public abstract class RealtimeChangeMapper<TRequest, TResponse> : IRealtimeChang
             resourceKind,
             resourceId,
             $"{topicNamespace}:{resourceKind}:{resourceId:N}",
-            streamVersion,
+            NextClockStreamVersion(_time.UtcNow),
             changeKind,
             $"{typeof(TResponse).FullName}.v1",
             JsonSerializer.SerializeToElement(response, JsonOptions));

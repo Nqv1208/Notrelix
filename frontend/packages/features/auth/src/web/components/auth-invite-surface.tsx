@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Clock, Eye, ShieldCheck, UserRound } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
+import { PASSWORD_MIN_LENGTH } from "../../core/schemas/password-policy";
 import { fillAuthCopy } from "../copy/fill-auth-copy";
 import type { AuthCopy } from "../copy/auth.copy";
 import {
@@ -82,12 +83,17 @@ function InviteForm({
   const [name, setName] = useState(invite.name);
   const [password, setPassword] = useState("");
   const [tried, setTried] = useState(false);
+  // An email that has an account signs in and accepts: no name is created.
+  const nameRequired = !invite.hasAccount;
   const nameError =
-    view.fieldErrors?.name ?? (tried && !name.trim() ? t.nameRequired : null);
+    view.fieldErrors?.name ??
+    (tried && nameRequired && !name.trim() ? t.nameRequired : null);
   const passwordError = invite.hasAccount
     ? null
     : (view.fieldErrors?.password ??
-      (tried && password.length < 12 ? t.passwordShort : null));
+      (tried && password.length < PASSWORD_MIN_LENGTH
+        ? fillAuthCopy(t.passwordShort, { count: PASSWORD_MIN_LENGTH })
+        : null));
   const busy = pending != null;
   return (
     <>
@@ -131,8 +137,9 @@ function InviteForm({
         onSubmit={(event) => {
           event.preventDefault();
           setTried(true);
-          if (!name.trim()) return;
-          if (!invite.hasAccount && password.length < 12) return;
+          if (nameRequired && !name.trim()) return;
+          if (!invite.hasAccount && password.length < PASSWORD_MIN_LENGTH)
+            return;
           onAccept({ name: name.trim(), password });
         }}
       >
@@ -207,7 +214,7 @@ function InviteForm({
                 id="auth-invite-password-hint"
                 className="m-0 text-item-note text-meta-foreground"
               >
-                {t.passwordHint}
+                {fillAuthCopy(t.passwordHint, { count: PASSWORD_MIN_LENGTH })}
               </p>
             )}
           </div>

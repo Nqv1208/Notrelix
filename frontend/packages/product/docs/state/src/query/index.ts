@@ -3,11 +3,26 @@ export { createUsePageList } from "./hooks/use-page-list";
 export { createUsePage } from "./hooks/use-page";
 export { createUsePageBreadcrumb } from "./hooks/use-page-breadcrumb";
 export { createUsePageBlocks } from "./hooks/use-page-blocks";
+export { createUsePageAttachments } from "./hooks/use-page-attachments";
+export { useRememberPageAttachment } from "./hooks/use-remember-page-attachment";
+export { createUseAttachmentContent } from "./hooks/use-attachment-content";
 export { createUsePageComments } from "./hooks/use-page-comments";
 export { createUsePageHistory } from "./hooks/use-page-history";
 export { createUsePageBacklinks } from "./hooks/use-page-backlinks";
 export { createUseVersionSnapshot } from "./hooks/use-version-snapshot";
+export { createUsePageVersions } from "./hooks/use-page-versions";
+export { createUseCreateVersion } from "./hooks/use-create-version";
+export {
+  createUseRestoreVersion,
+  RestoreNeedsBlocks,
+} from "./hooks/use-restore-version";
+export { createUsePageTemplates } from "./hooks/use-page-templates";
+export { createUseCreatePageTemplate } from "./hooks/use-create-page-template";
+export { createUseCreatePageFromTemplate } from "./hooks/use-create-page-from-template";
+export { createUseImportPage } from "./hooks/use-import-page";
+
 export { createUsePagePermissions } from "./hooks/use-page-permissions";
+export { createUseSharePage } from "./hooks/use-share-page";
 export { createUseConvertTodo } from "./hooks/use-convert-todo";
 export { createUseDocsSearch } from "./hooks/use-docs-search";
 export { createUseDocsFavorites } from "./hooks/use-docs-favorites";
@@ -15,12 +30,20 @@ export { createUseCreatePage } from "./hooks/use-create-page";
 export { createUseUpdatePage } from "./hooks/use-update-page";
 export { createUseMovePageToSpace } from "./hooks/use-move-page-to-space";
 export { createUseDeletePage } from "./hooks/use-delete-page";
+export { createUseArchivePage } from "./hooks/use-archive-page";
+export { createUseRestorePage } from "./hooks/use-restore-page";
+export { createUseTrashedPages } from "./hooks/use-trashed-pages";
 export { createUseCreateBlock } from "./hooks/use-create-block";
 export { createUseUpdateBlock } from "./hooks/use-update-block";
 export { createUseDeleteBlock } from "./hooks/use-delete-block";
 export { createUseReorderBlocks } from "./hooks/use-reorder-blocks";
 export { createUseCreateComment } from "./hooks/use-create-comment";
 export { createUseDeleteComment } from "./hooks/use-delete-comment";
+export { createUseResolveComment } from "./hooks/use-resolve-comment";
+export { createUseReopenComment } from "./hooks/use-reopen-comment";
 export { createUseToggleFavorite } from "./hooks/use-toggle-favorite";
 export { createUseDocEditor } from "./hooks/use-doc-editor";
 export type { DocSaveState } from "./hooks/use-doc-editor";
+export { useRefreshPageBlocks } from "./hooks/use-refresh-page-blocks";
+export { createUseDocSaver } from "./hooks/use-doc-saver";
+export type { DocSaverOptions } from "./hooks/use-doc-saver";

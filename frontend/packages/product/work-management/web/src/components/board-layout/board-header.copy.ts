@@ -17,6 +17,8 @@ export const en = {
   /** Heading shown while the board title is not loaded. */
   untitledBoard: "Board",
   addView: "Add view",
+  /** Marks a saved view only its creator sees. */
+  privateView: "Private view",
   header: {
     settings: "Settings",
     settingsUnavailable: "Board settings aren't available yet.",
@@ -62,8 +64,6 @@ export const en = {
       commenter: "You can comment on this board",
       viewer: "You can view this board",
       grantedBy: "{{level}} · added directly by {{name}}",
-      grantedByUntil:
-        "{{level}} · added directly by {{name}}, expires {{date}}",
     },
   },
 };
@@ -80,6 +80,7 @@ export const vi: BoardHeaderCopy = {
   },
   untitledBoard: "Board",
   addView: "Thêm chế độ xem",
+  privateView: "Chế độ xem riêng tư",
   header: {
     settings: "Thiết lập",
     settingsUnavailable: "Chưa có trang thiết lập board.",
@@ -121,7 +122,6 @@ export const vi: BoardHeaderCopy = {
       commenter: "Bạn có quyền bình luận trên board này",
       viewer: "Bạn có quyền xem board này",
       grantedBy: "{{level}} · được {{name}} thêm riêng",
-      grantedByUntil: "{{level}} · được {{name}} thêm riêng, hết hạn {{date}}",
     },
   },
 };

@@ -2,94 +2,125 @@ import { useCallback, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AccountProfileSurface,
+  checkAvatarFile,
+  createAccountService,
+  createUsePreferences,
   createUseProfile,
+  createUseProfilePhoto,
   createUseUpdateProfile,
+  photoFailureOf,
   useAccountProfileCopy,
+  accountQueryKeys,
   type AccountProfileData,
+  type AccountPhotoFailure,
   type AccountProfileValues,
   type AccountSaveStatus,
   type AccountSection,
 } from "@notrelix/features-account";
+import { authQueryKeys, type User } from "@notrelix/features-auth";
 import { useFormatters } from "@notrelix/i18n";
+import { useAccountId } from "@notrelix/query";
 import { useAppRuntime } from "@notrelix/runtime-web";
-import { useAccountPagesKeys, useAccountPagesApi } from "./use-account-pages";
+import {
+  useRouteWorkspaceId,
+  useRouteWorkspaceName,
+} from "./use-account-pages";
+import { useClientPreference } from "./use-client-preference";
 
-/** A photo is sent as a data URL; anything bigger is refused here. */
-const MAX_PHOTO_BYTES = 1_500_000;
-const PHOTO_TYPES = ["image/png", "image/jpeg", "image/webp"];
-
-function readAsDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(file);
-  });
-}
-
+/**
+ * The profile: the name and email are the account's (`/auth/me`, `/profile`),
+ * the phone and time zone its preferences, the job title the member's own row
+ * in this workspace (saved with its version), the date format this browser's.
+ */
 export function AccountProfilePage() {
-  const accountPagesKeys = useAccountPagesKeys();
+  const accountId = useAccountId();
+  const workspaceId = useRouteWorkspaceId();
+  const workspaceName = useRouteWorkspaceName();
   const { api: runtimeClient } = useAppRuntime();
   const copy = useAccountProfileCopy();
   const formatters = useFormatters();
   const queryClient = useQueryClient();
-  const api = useAccountPagesApi();
-
-  const useProfile = useMemo(
-    () =>
-      createUseProfile({
-        api: runtimeClient.api,
-        endpoints: runtimeClient.endpoints,
-      }),
+  const deps = useMemo(
+    () => ({ api: runtimeClient.api, endpoints: runtimeClient.endpoints }),
     [runtimeClient],
   );
-  const useUpdateProfile = useMemo(
-    () =>
-      createUseUpdateProfile({
-        api: runtimeClient.api,
-        endpoints: runtimeClient.endpoints,
-      }),
-    [runtimeClient],
+  const service = useMemo(
+    () => createAccountService(deps.api, deps.endpoints),
+    [deps],
   );
+  const useProfile = useMemo(() => createUseProfile(deps), [deps]);
+  const useUpdateProfile = useMemo(() => createUseUpdateProfile(deps), [deps]);
+  const usePreferences = useMemo(() => createUsePreferences(deps), [deps]);
+  const useProfilePhoto = useMemo(() => createUseProfilePhoto(deps), [deps]);
 
   const { profile, isError, refetch } = useProfile();
-  const details = useQuery({
-    queryKey: accountPagesKeys.details,
-    queryFn: () => api.getDetails(),
+  const updateName = useUpdateProfile();
+  const preferences = usePreferences();
+  const memberKey = accountQueryKeys.memberProfile(accountId, workspaceId);
+  const member = useQuery({
+    queryKey: memberKey,
+    queryFn: () => service.getMyMemberProfile(workspaceId),
+    enabled: workspaceId !== "",
     retry: false,
   });
-  const updateName = useUpdateProfile();
-  const updateDetails = useMutation({
-    mutationFn: (input: Parameters<typeof api.updateDetails>[0]) =>
-      api.updateDetails(input),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: accountPagesKeys.details }),
+  const [dateFormat, setDateFormat] = useClientPreference<string>(
+    "notrelix-date-format",
+    "dd/mm/yyyy",
+  );
+  const updateJobTitle = useMutation({
+    mutationFn: (jobTitle: string) =>
+      service.updateMyJobTitle(
+        workspaceId,
+        jobTitle,
+        member.data?.version ?? 0,
+      ),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: memberKey }),
   });
   const [save, setSave] = useState<AccountSaveStatus>({ state: "idle" });
-  const [photoError, setPhotoError] = useState(false);
+  const [photoError, setPhotoError] = useState<AccountPhotoFailure | null>(
+    null,
+  );
+  const photo = useProfilePhoto({
+    // The signed-in session shows the person too (rail, sidebar).
+    onChanged: (avatarUrl) =>
+      queryClient.setQueryData<User>(authQueryKeys.profile, (user) =>
+        user ? { ...user, avatarUrl } : user,
+      ),
+  });
 
   const section = useMemo<AccountSection<AccountProfileData>>(
     () =>
-      profile && details.data
+      profile && preferences.preferences && member.data
         ? {
             status: "ready",
             data: {
               name: profile.name,
               email: profile.email,
-              jobTitle: details.data.jobTitle,
-              phone: details.data.phone,
-              timezone: details.data.timezone,
-              dateFormat: details.data.dateFormat,
-              joinedAt: details.data.joinedAt,
-              avatarUrl: details.data.avatarUrl,
-              managedBy: details.data.managedBy,
-              workspaceName: details.data.workspaceName,
+              jobTitle: member.data.jobTitle,
+              phone: preferences.preferences.phone,
+              phoneVisibleToWorkspaceMembers:
+                preferences.preferences.phoneVisibleToWorkspaceMembers,
+              timezone: preferences.preferences.timezone,
+              dateFormat,
+              joinedAt: member.data.joinedAt,
+              avatarUrl: profile.avatarUrl,
+              managedBy: null,
+              workspaceName,
             },
           }
-        : isError || details.isError
+        : isError || preferences.isError || member.isError
           ? { status: "error" }
           : { status: "loading" },
-    [profile, details.data, details.isError, isError],
+    [
+      profile,
+      preferences.preferences,
+      preferences.isError,
+      member.data,
+      member.isError,
+      isError,
+      dateFormat,
+      workspaceName,
+    ],
   );
 
   const handleSave = useCallback(
@@ -98,38 +129,63 @@ export function AccountProfilePage() {
       try {
         if (values.name !== profile?.name)
           await updateName.mutateAsync({ name: values.name });
-        await updateDetails.mutateAsync({
-          jobTitle: values.jobTitle,
-          phone: values.phone,
-          timezone: values.timezone,
-          dateFormat: values.dateFormat,
-        });
+        if (
+          values.phone !== preferences.preferences?.phone ||
+          values.phoneVisibleToWorkspaceMembers !==
+            preferences.preferences?.phoneVisibleToWorkspaceMembers ||
+          values.timezone !== preferences.preferences?.timezone
+        )
+          // One write, quoting the version the preferences were read at.
+          await preferences.save({
+            phone: values.phone,
+            phoneVisibleToWorkspaceMembers:
+              values.phoneVisibleToWorkspaceMembers,
+            timezone: values.timezone,
+          });
+        if (values.jobTitle !== member.data?.jobTitle)
+          await updateJobTitle.mutateAsync(values.jobTitle);
+        setDateFormat(values.dateFormat);
         setSave({ state: "saved" });
       } catch {
+        // A stale version has refetched the authoritative values.
         setSave({ state: "error" });
       }
     },
-    [profile?.name, updateName, updateDetails],
+    [
+      profile?.name,
+      updateName,
+      preferences,
+      member.data?.jobTitle,
+      updateJobTitle,
+      setDateFormat,
+    ],
   );
 
   const handlePhoto = useCallback(
     async (file: File) => {
-      if (!PHOTO_TYPES.includes(file.type) || file.size > MAX_PHOTO_BYTES) {
-        setPhotoError(true);
+      const refused = checkAvatarFile(file);
+      if (refused) {
+        setPhotoError(refused);
         return;
       }
       try {
-        await api.setAvatar(await readAsDataUrl(file));
-        setPhotoError(false);
-        await queryClient.invalidateQueries({
-          queryKey: accountPagesKeys.details,
-        });
-      } catch {
-        setPhotoError(true);
+        await photo.upload(file);
+        setPhotoError(null);
+      } catch (error) {
+        setPhotoError(photoFailureOf(error));
       }
     },
-    [api, queryClient],
+    [photo],
   );
+
+  const handlePhotoRemove = useCallback(async () => {
+    try {
+      await photo.remove();
+      setPhotoError(null);
+    } catch (error) {
+      setPhotoError(photoFailureOf(error));
+    }
+  }, [photo]);
 
   return (
     <AccountProfileSurface
@@ -141,9 +197,11 @@ export function AccountProfilePage() {
       onSave={(values) => void handleSave(values)}
       onRetry={() => {
         void refetch();
-        void details.refetch();
+        void preferences.refetch();
+        void member.refetch();
       }}
       onPhotoChange={(file) => void handlePhoto(file)}
+      onPhotoRemove={() => void handlePhotoRemove()}
     />
   );
 }

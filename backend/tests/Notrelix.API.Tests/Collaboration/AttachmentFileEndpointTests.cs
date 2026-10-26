@@ -657,6 +657,8 @@ public sealed class AttachmentFileEndpointTests : IClassFixture<AttachmentFileEn
 
         public HttpClient Client { get; }
 
+        public IServiceProvider Services => _holder.Factory.Services;
+
         public Fixture()
         {
             var storage = Storage;

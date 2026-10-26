@@ -9,7 +9,7 @@ import {
 import { fillSheetCopy } from "../card-detail/item-sheet.copy";
 import { TaskDetailTitle } from "../card-detail/task-detail-header";
 import type { ItemPageCopy } from "./item-page.copy";
-import { formatEditedAt, formatFullDate } from "./item-page-format";
+import { formatEditedAt } from "./item-page-format";
 import { BUTTON_SM_VARIANT_CLASS, DisabledControl } from "./item-page-parts";
 import type { ItemPageAccess, ItemPageConflict } from "./item-page-types";
 import type { ItemSheetCopy } from "../card-detail/item-sheet.copy";
@@ -169,19 +169,15 @@ export function ItemPageConflictNotice({
 export function ItemPageReadOnlyNotice({
   access,
   copy,
-  timeZone,
 }: {
   access?: ItemPageAccess | null;
   copy: ItemPageCopy;
-  timeZone?: string;
 }) {
   const t = copy.readOnly;
   const level = access ? t.levels[access.level] : t.levels.viewer;
-  const expires = formatFullDate(access?.expiresAt, timeZone);
-  const source =
-    (access?.grantedBy
-      ? fillSheetCopy(t.source, { name: access.grantedBy })
-      : "") + (expires ? fillSheetCopy(t.expires, { date: expires }) : "");
+  const source = access?.grantedBy
+    ? fillSheetCopy(t.source, { name: access.grantedBy })
+    : "";
   return (
     <div
       role="status"

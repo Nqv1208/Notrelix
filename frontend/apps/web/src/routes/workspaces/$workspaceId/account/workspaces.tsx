@@ -1,18 +1,20 @@
 import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   AccountWorkspacesSurface,
+  createUseAccountWorkspaces,
+  leaveFailureOf,
   useAccountWorkspacesCopy,
+  type AccountLeaveFailure,
   type AccountSection,
   type AccountWorkspaceTone,
   type AccountWorkspaceView,
 } from "@notrelix/features-account";
-import {
-  useAccountPagesKeys,
-  useAccountPagesApi,
-  useToast,
-} from "./use-account-pages";
+import { workspaceQueryKeys } from "@notrelix/features-workspace";
+import { useAccountId } from "@notrelix/query";
+import { useAppRuntime } from "@notrelix/runtime-web";
+import { useRouteWorkspaceId, useToast } from "./use-account-pages";
 
 const TONES: readonly AccountWorkspaceTone[] = [
   "blue",
@@ -33,27 +35,33 @@ function initialsOf(name: string): string {
 }
 
 export function AccountWorkspacesPage() {
-  const accountPagesKeys = useAccountPagesKeys();
   const copy = useAccountWorkspacesCopy();
-  const api = useAccountPagesApi();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const accountId = useAccountId();
+  const currentWorkspaceId = useRouteWorkspaceId();
+  const { api: runtimeClient } = useAppRuntime();
+  const useAccountWorkspaces = useMemo(
+    () =>
+      createUseAccountWorkspaces({
+        api: runtimeClient.api,
+        endpoints: runtimeClient.endpoints,
+      }),
+    [runtimeClient],
+  );
+  const list = useAccountWorkspaces();
   const [busy, setBusy] = useState(false);
-  const [actionError, setActionError] = useState(false);
+  const [actionError, setActionError] = useState<AccountLeaveFailure | null>(
+    null,
+  );
   const [notice, showNotice] = useToast();
-
-  const list = useQuery({
-    queryKey: accountPagesKeys.workspaces,
-    queryFn: () => api.getWorkspaces(),
-    retry: false,
-  });
 
   const section = useMemo<AccountSection<readonly AccountWorkspaceView[]>>(
     () =>
-      list.data
+      list.workspaces
         ? {
             status: "ready",
-            data: list.data.workspaces.map((workspace, index) => {
+            data: list.workspaces.map((workspace, index) => {
               const to = `/workspaces/${workspace.id}`;
               return {
                 ...workspace,
@@ -69,56 +77,85 @@ export function AccountWorkspacesPage() {
         : list.isError
           ? { status: "error" }
           : { status: "loading" },
-    [list.data, list.isError, router],
+    [list.workspaces, list.isError, router],
   );
 
-  const run = useCallback(
-    async (action: () => Promise<unknown>, message: string) => {
+  const nameOf = (id: string) =>
+    list.workspaces?.find((workspace) => workspace.id === id)?.name ?? "";
+
+  const setDefault = useCallback(
+    async (id: string, name: string) => {
       setBusy(true);
-      setActionError(false);
+      setActionError(null);
       try {
-        await action();
-        await queryClient.invalidateQueries({
-          queryKey: accountPagesKeys.workspaces,
-        });
+        await list.setDefault(id);
         // The workspace list of the rail and the switcher changed too.
-        await queryClient.invalidateQueries({ queryKey: ["workspaces"] });
-        showNotice(message);
+        await queryClient.invalidateQueries({
+          queryKey: workspaceQueryKeys.all(accountId),
+        });
+        showNotice(copy.notice.defaultSet.replace("{{name}}", name));
       } catch {
-        setActionError(true);
+        setActionError("failed");
       } finally {
         setBusy(false);
       }
     },
-    [queryClient, showNotice],
+    [list, queryClient, accountId, showNotice, copy],
   );
 
-  const nameOf = (id: string) =>
-    list.data?.workspaces.find((workspace) => workspace.id === id)?.name ?? "";
+  const leave = useCallback(
+    async (id: string, name: string) => {
+      setBusy(true);
+      setActionError(null);
+      try {
+        const remaining = await list.leave(id);
+        await queryClient.invalidateQueries({
+          queryKey: workspaceQueryKeys.all(accountId),
+        });
+        if (id === currentWorkspaceId) {
+          // Leaving the workspace this page is shown in is a scope
+          // transition: go to another one first, then drop what the old
+          // scope still has in flight so a late answer cannot land anywhere.
+          const next =
+            remaining.find((workspace) => workspace.isDefault) ?? remaining[0];
+          await router.navigate({
+            to: next ? `/workspaces/${next.id}` : "/onboarding",
+          });
+          await queryClient.cancelQueries({ queryKey: ["workspace", id] });
+          queryClient.removeQueries({ queryKey: ["workspace", id] });
+        } else {
+          showNotice(copy.notice.left.replace("{{name}}", name));
+        }
+      } catch (error) {
+        setActionError(leaveFailureOf(error));
+      } finally {
+        setBusy(false);
+      }
+    },
+    [
+      list,
+      queryClient,
+      accountId,
+      router,
+      currentWorkspaceId,
+      showNotice,
+      copy,
+    ],
+  );
 
   return (
     <AccountWorkspacesSurface
       copy={copy}
       workspaces={section}
-      busy={busy}
+      busy={busy || list.isBusy}
       actionError={actionError}
       notice={notice}
       create={{
         href: "/onboarding",
         onNavigate: () => void router.navigate({ to: "/onboarding" }),
       }}
-      onSetDefault={(id) =>
-        void run(
-          () => api.setDefaultWorkspace(id),
-          copy.notice.defaultSet.replace("{{name}}", nameOf(id)),
-        )
-      }
-      onLeave={(id) =>
-        void run(
-          () => api.leaveWorkspace(id),
-          copy.notice.left.replace("{{name}}", nameOf(id)),
-        )
-      }
+      onSetDefault={(id) => void setDefault(id, nameOf(id))}
+      onLeave={(id) => void leave(id, nameOf(id))}
       onRetry={() => void list.refetch()}
     />
   );

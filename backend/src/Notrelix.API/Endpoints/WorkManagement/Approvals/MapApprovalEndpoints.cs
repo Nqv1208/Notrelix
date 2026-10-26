@@ -24,6 +24,12 @@ public static class MapApprovalEndpoints
         group.MapDeleteApprovalRequest();
         group.MapRestoreApprovalRequest();
 
+        var workspaceGroup = app
+            .MapGroup("/api/v1/workspaces/{workspaceId:guid}/approvals")
+            .WithTags("WorkManagement.Approvals")
+            .WithOpenApi();
+        workspaceGroup.MapDecideApproval();
+
         return app;
     }
 }

@@ -1,18 +1,15 @@
 /**
- * Integrations — the Integrations pages of the 2026-10 Integrations mockup (gap
- * `CTR-GAP-INTEGRATIONS`, see docs/superpowers/be-blockers-2026-10.md, "BE
- * requirement from FE: Integrations"):
+ * Integrations — the producer's contract:
  *
- *   integrations.list         — GET    /workspaces/:workspaceId/integrations
- *   integrations.get          — GET    /workspaces/:workspaceId/integrations/:key
- *   integrations.reauthorize  — POST   /workspaces/:workspaceId/integrations/:key/reauthorize
- *   integrations.disconnect   — DELETE /workspaces/:workspaceId/integrations/:key
- *   integrations.pause        — POST   /workspaces/:workspaceId/integrations/:key/pause
- *   integrations.resume       — POST   /workspaces/:workspaceId/integrations/:key/resume
- *   integrations.test         — POST   /workspaces/:workspaceId/integrations/:key/test
- *   integrations.secret       — POST   /workspaces/:workspaceId/integrations/:key/secret
- *   integrations.connect      — POST   /workspaces/:workspaceId/integrations
- *   integrations.contactSales — POST   /workspaces/:workspaceId/integrations/contact-sales
+ *   Integrations.Connections.List       — GET    /workspaces/:workspaceId/integrations
+ *   Integrations.Connections.Authorize  — GET    /workspaces/:workspaceId/integrations/:provider/authorize
+ *   Integrations.Webhooks.Connect       — POST   /workspaces/:workspaceId/integrations/webhooks
+ *   Integrations.Connections.Pause      — POST   /workspaces/:workspaceId/integrations/:connectionId/pause
+ *   Integrations.Connections.Resume     — POST   /workspaces/:workspaceId/integrations/:connectionId/resume
+ *   Integrations.Connections.Test       — POST   /workspaces/:workspaceId/integrations/:connectionId/test
+ *   Integrations.Connections.Disconnect — DELETE /workspaces/:workspaceId/integrations/:connectionId
+ *
+ * Who manages: workspace Owners and Admins (`ManageIntegrations`).
  */
 import { defineMockOperation } from "../../operations/types";
 import {
@@ -23,150 +20,169 @@ import {
   ok,
   validationError,
 } from "../../transport/create-response";
-import { INTEGRATION_CATALOG } from "../../state/mock-integrations";
-import { mockIds } from "../../state/mock-ids";
+import {
+  INTEGRATION_CATALOG,
+  type StoredConnection,
+} from "../../state/mock-integrations";
 import type { MockStore } from "../../state/mock-store";
 
-const gap = { kind: "gap", gapId: "CTR-GAP-INTEGRATIONS" } as const;
-const ADMINS = ["Nguyễn Thu Hà", "Trịnh Quốc Hưng"];
-
-const canManage = (store: MockStore): boolean => {
-  const id = store.getCurrentUser().id;
-  return id === mockIds.users.owner || id === mockIds.users.admin;
+const canManage = (store: MockStore, workspaceId: string): boolean => {
+  const role = store.getCurrentMemberRole(workspaceId);
+  return role === "owner" || role === "admin";
 };
 
+const dto = (connection: StoredConnection) => ({
+  id: connection.id,
+  provider: connection.provider,
+  status: connection.status,
+  connectedBy: connection.connectedBy,
+  connectedAt: connection.connectedAt,
+  lastSuccessAt: connection.lastSuccessAt,
+  lastErrorAt: connection.lastErrorAt,
+  lastError: connection.lastError,
+  targetUrl: connection.targetUrl,
+});
+
 type Ws = { workspaceId: string };
-type WithKey = { workspaceId: string; key: string };
+type WithProvider = { workspaceId: string; provider: string };
+type WithConnection = { workspaceId: string; connectionId: string };
 
 export const integrationsOperations = [
   defineMockOperation<Ws, never, unknown>({
     id: "integrations.list",
-    contract: gap,
+    contract: {
+      kind: "openapi",
+      operationId: "Integrations.Connections.List",
+    },
     method: "GET",
     route: "/workspaces/:workspaceId/integrations",
-    async handle({ store }) {
-      const rows = store.integrations.rows(store.getCurrentUser().name ?? "");
+    async handle({ params, store }) {
+      if (!canManage(store, params.workspaceId)) return forbidden();
       return ok({
-        serverTime: store.getClock().isoNow(),
-        updatedAt: "10:40",
-        canManage: canManage(store),
-        workspaceName: "Minh An Group",
-        admins: ADMINS,
-        rows,
-        catalog: INTEGRATION_CATALOG.filter(
-          (item) => !rows.some((row) => row.key === item.key),
-        ),
-        plan: {
-          name: "business",
-          account: "Tập đoàn Minh An",
-          workspaces: ["Minh An Group", "Minh An Đà Nẵng"],
-        },
+        catalog: INTEGRATION_CATALOG,
+        connections: store.integrations.list().map(dto),
       });
     },
   }),
-  defineMockOperation<WithKey, never, unknown>({
-    id: "integrations.get",
-    contract: gap,
+  defineMockOperation<WithProvider, never, unknown>({
+    id: "integrations.authorize",
+    contract: {
+      kind: "openapi",
+      operationId: "Integrations.Connections.Authorize",
+    },
     method: "GET",
-    route: "/workspaces/:workspaceId/integrations/:key",
+    route: "/workspaces/:workspaceId/integrations/:provider/authorize",
     async handle({ params, store }) {
-      if (!canManage(store)) return forbidden();
-      const detail = store.integrations.detail(params.key);
-      return detail
-        ? ok({
-            ...detail,
-            updatedAt: "10:40",
-            serverTime: store.getClock().isoNow(),
-          })
-        : notFound();
+      if (!canManage(store, params.workspaceId)) return forbidden();
+      const entry = INTEGRATION_CATALOG.find(
+        (item) => item.provider === params.provider,
+      );
+      if (!entry || entry.provider === "webhook") return notFound();
+      if (!entry.configured) {
+        return {
+          status: 422,
+          body: {
+            message: "The provider is not configured.",
+            code: "integrations.provider.not-configured",
+          },
+        };
+      }
+      // The mock has no provider page: the member comes straight back connected.
+      store.integrations.add(
+        entry.provider,
+        store.getCurrentUser().id,
+        store.getClock().isoNow(),
+        null,
+      );
+      return ok({
+        authorizeUrl: `/workspaces/${params.workspaceId}/integrations?connected=${entry.provider}`,
+      });
     },
   }),
-  defineMockOperation<WithKey, never, unknown>({
-    id: "integrations.reauthorize",
-    contract: gap,
+  defineMockOperation<Ws, { url?: string }, unknown>({
+    id: "integrations.connectWebhook",
+    contract: {
+      kind: "openapi",
+      operationId: "Integrations.Webhooks.Connect",
+    },
     method: "POST",
-    route: "/workspaces/:workspaceId/integrations/:key/reauthorize",
-    async handle({ params, store }) {
-      if (!canManage(store)) return forbidden();
-      if (params.key !== "teams") return notFound();
-      store.integrations.reauthorize();
-      return ok({ ok: true });
-    },
-  }),
-  defineMockOperation<WithKey, never, unknown>({
-    id: "integrations.disconnect",
-    contract: gap,
-    method: "DELETE",
-    route: "/workspaces/:workspaceId/integrations/:key",
-    async handle({ params, store }) {
-      if (!canManage(store)) return forbidden();
-      return store.integrations.disconnect(params.key)
-        ? noContent()
-        : notFound();
+    route: "/workspaces/:workspaceId/integrations/webhooks",
+    async handle({ body, params, store }) {
+      if (!canManage(store, params.workspaceId)) return forbidden();
+      const url = body?.url?.trim() ?? "";
+      if (!/^https:\/\/[^/\s]+/.test(url)) {
+        return validationError({ url: ["The address must use https."] });
+      }
+      const connection = store.integrations.add(
+        "webhook",
+        store.getCurrentUser().id,
+        store.getClock().isoNow(),
+        url,
+      );
+      return created({
+        connection: dto(connection),
+        signingSecret: "whsec_mock_0000000000000000000000000000",
+      });
     },
   }),
   ...(["pause", "resume"] as const).map((verb) =>
-    defineMockOperation<WithKey, never, unknown>({
+    defineMockOperation<WithConnection, never, unknown>({
       id: `integrations.${verb}`,
-      contract: gap,
+      contract: {
+        kind: "openapi",
+        operationId:
+          verb === "pause"
+            ? "Integrations.Connections.Pause"
+            : "Integrations.Connections.Resume",
+      },
       method: "POST",
-      route: `/workspaces/:workspaceId/integrations/:key/${verb}`,
+      route: `/workspaces/:workspaceId/integrations/:connectionId/${verb}`,
       async handle({ params, store }) {
-        if (!canManage(store)) return forbidden();
-        if (params.key !== "webhook") return notFound();
-        store.integrations.setPaused(verb === "pause");
-        return ok({ ok: true });
+        if (!canManage(store, params.workspaceId)) return forbidden();
+        const connection = store.integrations.find(params.connectionId);
+        if (!connection) return notFound();
+        if (verb === "pause") connection.status = "paused";
+        else if (connection.status === "paused") connection.status = "active";
+        return ok(dto(connection));
       },
     }),
   ),
-  defineMockOperation<WithKey, never, unknown>({
+  defineMockOperation<WithConnection, never, unknown>({
     id: "integrations.test",
-    contract: gap,
+    contract: { kind: "openapi", operationId: "Integrations.Connections.Test" },
     method: "POST",
-    route: "/workspaces/:workspaceId/integrations/:key/test",
+    route: "/workspaces/:workspaceId/integrations/:connectionId/test",
     async handle({ params, store }) {
-      if (!canManage(store)) return forbidden();
-      return params.key === "webhook"
-        ? ok({ result: "503", sentAt: store.getClock().isoNow() })
-        : notFound();
-    },
-  }),
-  defineMockOperation<WithKey, never, unknown>({
-    id: "integrations.secret",
-    contract: gap,
-    method: "POST",
-    route: "/workspaces/:workspaceId/integrations/:key/secret",
-    async handle({ params, store }) {
-      if (!canManage(store)) return forbidden();
-      if (params.key !== "webhook") return notFound();
-      store.integrations.rotateSecret();
-      // The secret is shown once, here; the page never shows it again.
-      return ok({ secret: "whsec_mock_0000000000000000" });
-    },
-  }),
-  defineMockOperation<Ws, { provider?: string; scope?: string }, unknown>({
-    id: "integrations.connect",
-    contract: gap,
-    method: "POST",
-    route: "/workspaces/:workspaceId/integrations",
-    async handle({ body, store }) {
-      if (!canManage(store)) return forbidden();
-      if (body?.provider !== "google-drive") {
-        return validationError({ provider: ["unsupported"] });
+      if (!canManage(store, params.workspaceId)) return forbidden();
+      const connection = store.integrations.find(params.connectionId);
+      if (!connection) return notFound();
+      if (connection.provider !== "webhook") {
+        return {
+          status: 422,
+          body: {
+            message: "Only an outgoing webhook has a test delivery.",
+            code: "integrations.test.unsupported",
+          },
+        };
       }
-      store.integrations.connectGoogleDrive();
-      return created({ key: "google-drive" });
+      connection.lastSuccessAt = store.getClock().isoNow();
+      if (connection.status === "error") connection.status = "active";
+      return ok({ deliveryId: "00000000-0000-7000-8000-00000000d001" });
     },
   }),
-  defineMockOperation<Ws, unknown, unknown>({
-    id: "integrations.contactSales",
-    contract: gap,
-    method: "POST",
-    route: "/workspaces/:workspaceId/integrations/contact-sales",
-    async handle({ store }) {
-      if (!canManage(store)) return forbidden();
-      store.integrations.contact();
-      return created({ requestedAt: store.getClock().isoNow() });
+  defineMockOperation<WithConnection, never, unknown>({
+    id: "integrations.disconnect",
+    contract: {
+      kind: "openapi",
+      operationId: "Integrations.Connections.Disconnect",
+    },
+    method: "DELETE",
+    route: "/workspaces/:workspaceId/integrations/:connectionId",
+    async handle({ params, store }) {
+      if (!canManage(store, params.workspaceId)) return forbidden();
+      return store.integrations.remove(params.connectionId)
+        ? noContent()
+        : notFound();
     },
   }),
 ];

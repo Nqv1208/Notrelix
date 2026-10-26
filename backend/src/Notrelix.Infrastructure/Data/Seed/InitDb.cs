@@ -1,8 +1,11 @@
+using Notrelix.Application.Features.Billing.Plans;
+using Notrelix.Domain.Billing.Subscriptions;
 using Notrelix.Domain.Accounts.Accounts;
 using Notrelix.Domain.Accounts.Members;
 using Notrelix.Domain.Collaboration.Comments;
 using Notrelix.Domain.Documents.Blocks;
 using Notrelix.Domain.Documents.Pages;
+using Notrelix.Domain.Documents.Rules;
 using Notrelix.Domain.Identity.Profiles;
 using Notrelix.Domain.Identity.Sessions;
 using Notrelix.Domain.Identity.Users;
@@ -15,6 +18,7 @@ using Notrelix.Domain.WorkManagement.Items;
 using Notrelix.Domain.WorkManagement.Labels;
 using Notrelix.Domain.WorkManagement.Views;
 using Notrelix.Domain.Workspaces.Members;
+using Notrelix.Domain.Workspaces.Spaces;
 using Notrelix.Domain.Workspaces.Workspaces;
 using Notrelix.Infrastructure.Data.Authz;
 
@@ -39,6 +43,31 @@ internal static class InitDb
         ("High",     "#EF6C00"),
         ("Critical", "#E53935"),
     ];
+
+    internal static readonly string[] DepartmentNames = ["IT", "Accounting", "Marketing", "Sales", "HR", "Customer Support"];
+
+    // The department of each seeded board, in the order of the board names.
+    private static readonly string[] DepartmentOfBoard =
+        ["IT", "IT", "Marketing", "Marketing", "IT", "Marketing", "Sales", "HR", "Customer Support", "IT"];
+
+    private static readonly string[] BoardNames = [
+        "Product Roadmap", "Engineering Tasks", "Marketing Campaign",
+        "Design Sprints", "Bug Tracker", "Content Calendar",
+        "Sales Pipeline", "HR Onboarding", "Customer Support",
+        "Feature Requests"
+    ];
+
+    /// <summary>
+    /// The department a seeded board belongs to, from its seeded name ("Bug Tracker (1a2b)"), or null
+    /// when the name is not a seeded board's.
+    /// </summary>
+    internal static string? DepartmentForBoardName(string boardName)
+    {
+        var suffixStart = boardName.LastIndexOf(" (", StringComparison.Ordinal);
+        var baseName = suffixStart > 0 ? boardName[..suffixStart] : boardName;
+        var index = Array.IndexOf(BoardNames, baseName);
+        return index < 0 ? null : DepartmentOfBoard[index];
+    }
 
     private static readonly (string Name, string Color)[] LabelTemplates = [
         ("Bug",        "#E53935"),
@@ -66,6 +95,8 @@ internal static class InitDb
         }
 
         var account = await CreateAccountAsync(context, users, ct);
+
+        await GrantSeedEntitlementsAsync(context, account, ct);
 
         var workspaces = await CreateWorkspacesAsync(context, targets, account, users, ct);
         result = result with { WorkspacesCreated = workspaces.Count };
@@ -109,6 +140,24 @@ internal static class InitDb
         return account;
     }
 
+    /// <summary>
+    /// Development data only: the seeded account is on the Pro plan, so a developer can use
+    /// Automation, invite many people and store files without a payment provider.
+    /// </summary>
+    private static async Task GrantSeedEntitlementsAsync(
+        ApplicationDbContext context, Account account, CancellationToken ct)
+    {
+        if (await context.Subscriptions.AnyAsync(s => s.AccountId == account.Id, ct))
+        {
+            return;
+        }
+
+        var pro = BillingPlanCatalog.Pro;
+        context.Subscriptions.Add(Subscription.Create(
+            account.Id, pro.PlanId, pro.Tier, Epoch, Epoch.AddYears(10), createdBy: null, Epoch));
+        await ClearAndSaveAsync(context, ct);
+    }
+
     private static async Task ClearAndSaveAsync(ApplicationDbContext context, CancellationToken ct)
     {
         ClearDomainEvents(context);
@@ -145,6 +194,8 @@ internal static class InitDb
                 : $"User {i + 1}";
 
             var user = User.Create(email, name, passwordHash, Epoch.AddDays(i), hasPasswordCredential: true);
+            // Seed people are real, signed-in colleagues: their address is confirmed, so they can invite and be invited.
+            user.ConfirmEmail(null, Epoch.AddDays(i));
             users.Add(user);
 
             var profile = UserProfile.Create(user.Id, Epoch.AddDays(i));
@@ -185,6 +236,10 @@ internal static class InitDb
                 Epoch.AddDays(i),
                 isPersonal: i == 0);
             workspaces.Add(ws);
+
+            // The creator of a workspace is its Owner member, as when a member creates one in the app.
+            context.WorkspaceMembers.Add(WorkspaceMember.Create(
+                account.Id, ws.Id, owner.Id, WorkspaceRole.Owner, owner.Id, Epoch.AddDays(i)));
 
             var addedUserIds = new HashSet<Guid> { owner.Id };
 
@@ -282,16 +337,33 @@ internal static class InitDb
         var statusSettings = FieldSettings.Create(JsonValue.Create("""{"transitions":[]}"""));
         var emptySettings = FieldSettings.Create(JsonValue.EmptyObject());
 
-        var boardNames = new[] {
-            "Product Roadmap", "Engineering Tasks", "Marketing Campaign",
-            "Design Sprints", "Bug Tracker", "Content Calendar",
-            "Sales Pipeline", "HR Onboarding", "Customer Support",
-            "Feature Requests"
-        };
+        var boardNames = BoardNames;
+
+        // The people a board is shared with: the workspace Owner and Admin manage it and the other
+        // members of the workspace work in it. Guests are on a board only when it is shared with them.
+        var workspaceMembers = (await context.WorkspaceMembers
+                .Where(m => m.Status == WorkspaceMemberStatus.Active && m.Role != WorkspaceRole.Guest)
+                .ToListAsync(ct))
+            .ToLookup(m => m.WorkspaceId);
 
         int boardIndex = 0;
         foreach (var ws in workspaces)
         {
+            // Each workspace gets the departments a company has; a board sits in the department that owns its work.
+            var spaceOwnerId = workspaceMembers[ws.Id].FirstOrDefault(m => m.Role == WorkspaceRole.Owner)?.UserId ?? users[0].Id;
+            var departments = new Dictionary<string, Space>(DepartmentNames.Length);
+            var departmentNames = new List<string>(DepartmentNames.Length);
+            for (int d = 0; d < DepartmentNames.Length; d++)
+            {
+                var department = Space.Create(
+                    account.Id, ws.Id, DepartmentNames[d], SpaceVisibility.Workspace, spaceOwnerId,
+                    Epoch, SpaceType.Department,
+                    placement: SpacePlacement.Root(FractionalIndex.Create($"a{d}"), departmentNames.ToList()));
+                departmentNames.Add(DepartmentNames[d]);
+                departments[DepartmentNames[d]] = department;
+                context.Spaces.Add(department);
+            }
+
             int boardsForWorkspace = targets.BoardCount / workspaces.Count;
             int remaining = targets.BoardCount % workspaces.Count;
             var count = boardsForWorkspace + (boardIndex < remaining ? 1 : 0);
@@ -304,8 +376,21 @@ internal static class InitDb
 
                 var board = Board.Create(
                     account.Id, ws.Id, creator.Id, $"{boardName} ({wsSuffix})", null,
-                    Epoch.AddDays(boardIndex), BoardVisibility.Workspace);
+                    Epoch.AddDays(boardIndex), BoardVisibility.Workspace,
+                    spaceId: departments[DepartmentOfBoard[boardIndex % boardNames.Length]].Id);
                 context.Boards.Add(board);
+
+                foreach (var member in workspaceMembers[ws.Id])
+                {
+                    var boardRole = member.Role switch
+                    {
+                        WorkspaceRole.Owner => BoardRole.Owner,
+                        WorkspaceRole.Admin => BoardRole.Admin,
+                        _ => BoardRole.Member,
+                    };
+                    context.BoardMembers.Add(BoardMember.Create(
+                        board.Id, member.UserId, boardRole, Epoch.AddDays(boardIndex)));
+                }
 
                 var fields = new List<BoardField>();
 
@@ -316,9 +401,12 @@ internal static class InitDb
                         0 => ("Title", FieldType.Text, true, emptySettings, Array.Empty<(string, string)>()),
                         1 => ("Status", FieldType.Status, true, statusSettings, StatusOptions),
                         2 => ("Assignee", FieldType.Person, true, emptySettings, Array.Empty<(string, string)>()),
-                        3 => ("Due Date", FieldType.Date, false, emptySettings, Array.Empty<(string, string)>()),
+                        3 => ("Due Date", FieldType.Date, true, emptySettings, Array.Empty<(string, string)>()),
                         4 => ("Description", FieldType.LongText, false, emptySettings, Array.Empty<(string, string)>()),
-                        _ => ("Priority", FieldType.Select, false, emptySettings, PriorityOptions),
+                        5 => ("Priority", FieldType.Select, false, emptySettings, PriorityOptions),
+                        6 => ("Effort", FieldType.Number, false, emptySettings, Array.Empty<(string, string)>()),
+                        7 => ("Reviewed", FieldType.Checkbox, false, emptySettings, Array.Empty<(string, string)>()),
+                        _ => ($"Estimate {f - 7}", FieldType.Number, false, emptySettings, Array.Empty<(string, string)>()),
                     };
 
                     var field = BoardField.Create(
@@ -557,7 +645,8 @@ internal static class InitDb
                 {
                     var block = Block.CreateRoot(
                         account.Id, ws.Id, page.Id, BlockType.Text,
-                        BlockContent.Create(JsonValue.Create($"\"Content block {b + 1} for page {pageIndex + 1}\"")),
+                        BlockContent.Create(JsonValue.Create(RichText.ToJson([
+                            new RichTextRun($"Content block {b + 1} for page {pageIndex + 1}", [])]))),
                         FractionalIndex.Create($"a{b}"),
                         creator.Id, Epoch.AddDays(pageIndex).AddMinutes(b));
                     context.Blocks.Add(block);

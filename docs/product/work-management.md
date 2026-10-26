@@ -529,6 +529,18 @@ Known gap: there is no read for a Board's archived Items yet, so archived Items 
 
 ---
 
+# 27.3. WM-044 — Item description and create-time facts
+
+Decided 2026-10-27 (matches the Detail mockup, whose item opens on a written description). An Item can carry a **description**: Markdown text written by members, at most 20,000 characters, owned by Work Management as part of the Item. It is not a field value and not a Document; a Document may be referenced from it by the `[title](doc:id)` link the Detail mockup shows.
+
+- no description is the normal state; writing blank text clears it, and writing the text already there changes nothing;
+- changing it advances the Item's version and needs the same permission as editing the Item; archived or deleted Items refuse it;
+- an Item's own facts — name, description, start and due date — may be given when it is created, so it never exists half-filled; people, labels, status and priority are other facts and are written through their own routes after the create;
+- a due or start date is removed with an explicit clear; a date that is merely absent from a request means "unchanged";
+- no event is published for a description change until a consumer needs one.
+
+---
+
 # 28. Item title/name
 
 If an Item has a primary name/title, its semantics should be stable enough for cross-view identity and user recognition.

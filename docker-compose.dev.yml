@@ -22,11 +22,15 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
       POSTGRES_DB: ${POSTGRES_DB:-notrelix_dev}
+      # Passwords of the runtime logins notrelix_app and notrelix_worker (created on a fresh volume by
+      # infra/postgres/init; --rls-apply and the Development startup re-assert them from the connection strings).
+      NOTRELIX_APP_DB_PASSWORD: ${NOTRELIX_APP_DB_PASSWORD:?NOTRELIX_APP_DB_PASSWORD is required}
+      NOTRELIX_WORKER_DB_PASSWORD: ${NOTRELIX_WORKER_DB_PASSWORD:?NOTRELIX_WORKER_DB_PASSWORD is required}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-notrelix_dev}"]
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-notrelix_dev}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -96,9 +100,18 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8000
+      # Three logins: requests run as notrelix_app, background work as notrelix_worker, and migrate, policy
+      # application and seeding as the database owner. Passwords must not contain ';' or '='.
       ConnectionStrings__NotrelixDb: >-
+        Host=postgres;Port=5432;Database=${POSTGRES_DB:-notrelix_dev};Username=notrelix_app;Password=${NOTRELIX_APP_DB_PASSWORD:?NOTRELIX_APP_DB_PASSWORD is required}
+      ConnectionStrings__NotrelixWorkerDb: >-
+        Host=postgres;Port=5432;Database=${POSTGRES_DB:-notrelix_dev};Username=notrelix_worker;Password=${NOTRELIX_WORKER_DB_PASSWORD:?NOTRELIX_WORKER_DB_PASSWORD is required}
+      ConnectionStrings__NotrelixMigrationDb: >-
         Host=postgres;Port=5432;Database=${POSTGRES_DB:-notrelix_dev};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD}
       ConnectionStrings__Redis: redis:6379,password=${REDIS_PASSWORD}
+      Rls__RoleEnforcement: Enforce
+      # Development applies the policy pack (and provisions the logins) as the owner right after migrating.
+      Rls__ApplyPoliciesOnStartup: "true"
       Database__MigrateOnStartup: "true"
       SeedData__Enabled: "true"
       SeedData__RunOnStartup: "true"
@@ -107,6 +120,7 @@ services:
       JwtSettings__SecretKey: ${JWT_SECRET:-dev-only-change-me-not-for-production}
       JwtSettings__Issuer: ${JWT_ISSUER:-http://localhost:${BACKEND_PORT:-8000}}
       JwtSettings__Audience: ${JWT_AUDIENCE:-http://localhost:${FRONTEND_PORT:-3000}}
+      Frontend__AppBaseUrl: ${FRONTEND_APP_BASE_URL:-http://localhost:${FRONTEND_PORT:-3000}}
       Email__ApiKey: ${RESEND_API_KEY:-}
       Email__FromEmail: ${EMAIL_FROM:-onboarding@resend.dev}
       Email__FromName: ${EMAIL_FROM_NAME:-Notrelix}
@@ -124,6 +138,7 @@ services:
       Messaging__RabbitMQ__Password: ${RABBITMQ_PASSWORD:-rabbitmq_local_only}
       OAuth__FrontendSuccessUrl: ${OAUTH_FRONTEND_SUCCESS_URL:-http://localhost:3000/auth/callback}
       OAuth__FrontendFailureUrl: ${OAUTH_FRONTEND_FAILURE_URL:-http://localhost:3000/login}
+      OAuth__FrontendMfaUrl: ${OAUTH_FRONTEND_MFA_URL:-http://localhost:3000/sign-in?step=mfa}
       OAuth__Providers__Google__Enabled: ${OAUTH_GOOGLE_ENABLED:-false}
       OAuth__Providers__Google__ClientId: ${OAUTH_GOOGLE_CLIENT_ID:-}
       OAuth__Providers__Google__ClientSecret: ${OAUTH_GOOGLE_CLIENT_SECRET:-}
@@ -181,6 +196,10 @@ services:
       WATCHPACK_POLLING: "true"
       CHOKIDAR_USEPOLLING: "true"
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-/api}
+      # Sign-in/sign-up links and canonical URLs go through the nginx gateway,
+      # which serves both the marketing site and the web app.
+      NEXT_PUBLIC_WEB_APP_URL: ${NEXT_PUBLIC_WEB_APP_URL:-http://localhost:${GATEWAY_PORT:-3080}}
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:${GATEWAY_PORT:-3080}}
       NEXT_PUBLIC_APP_ENV: development
     volumes:
       - ./frontend:/app
@@ -207,7 +226,11 @@ services:
       NODE_ENV: development
       WATCHPACK_POLLING: "true"
       CHOKIDAR_USEPOLLING: "true"
-      VITE_API_URL: ${VITE_API_URL:-/api}
+      # The web runtime needs absolute URLs; the browser reaches the backend through the gateway.
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:${GATEWAY_PORT:-3080}/api/v1}
+      VITE_WS_URL: ${VITE_WS_URL:-ws://localhost:${GATEWAY_PORT:-3080}/api/v1/realtime}
+      VITE_APP_URL: ${VITE_APP_URL:-http://localhost:${GATEWAY_PORT:-3080}}
+      VITE_MOCK_API: "false"
     volumes:
       - ./frontend:/app
       - frontend_web_node_modules:/app/node_modules

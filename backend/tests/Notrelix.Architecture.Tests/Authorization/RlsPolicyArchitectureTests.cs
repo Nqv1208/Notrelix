@@ -2,7 +2,7 @@ namespace Notrelix.Architecture.Tests;
 
 /// <summary>
 /// Enforces RLS policy rules:
-/// - RlsPolicyApplier must run 001-011, not 000
+/// - RlsPolicyApplier must run 001-012, not 000
 /// - Missing resource must throw, not skip
 /// </summary>
 public class RlsPolicyArchitectureTests
@@ -18,13 +18,13 @@ public class RlsPolicyArchitectureTests
     }
 
     [Fact]
-    public void RlsPolicyApplier_ShouldRun_001_Through_011()
+    public void RlsPolicyApplier_ShouldRun_001_Through_012()
     {
         var source = File.ReadAllText(Path.Combine(
             FindProjectRoot(), "src", "Notrelix.Infrastructure", "Data", "Rls", "RlsPolicyApplier.cs"));
 
-        // Verify all 11 scripts are listed
-        for (int i = 1; i <= 11; i++)
+        // Verify all 12 scripts are listed
+        for (int i = 1; i <= 12; i++)
         {
             var padded = i.ToString("D3");
             source.Should().Contain(padded,

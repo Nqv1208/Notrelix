@@ -133,10 +133,10 @@ public class OnboardingDraftTests
     [InlineData("acme--corp", false)]
     [InlineData("acme corp", false)]
     [InlineData("acmé", false)]
-    public void Slug_IsValid_FollowsTheWorkspaceSlugFormat(string? value, bool expected) =>
-        Slug.IsValid(value).Should().Be(expected);
+    public void Slug_IsWellFormed_FollowsTheWorkspaceSlugFormat(string? value, bool expected) =>
+        Slug.IsWellFormed(value).Should().Be(expected);
 
     [Fact]
-    public void Slug_IsValid_RejectsMoreThanTheStoredLength() =>
-        Slug.IsValid(new string('a', Slug.MaxLength + 1)).Should().BeFalse();
+    public void Slug_IsWellFormed_IgnoresLength_WhichTheWorkspaceRuleOwns() =>
+        Slug.IsWellFormed(new string('a', 200)).Should().BeTrue();
 }

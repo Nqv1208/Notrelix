@@ -38,7 +38,7 @@ public sealed class WorkspaceMemberAddedScopedTenantRuntimeChainIntegrationTests
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -81,7 +81,7 @@ public sealed class WorkspaceMemberAddedScopedTenantRuntimeChainIntegrationTests
             var dedupCompleted = await WaitForDedupSucceededAsync(outbox.EventId, ActivityConsumerEndpoint);
             dedupCompleted.Should().BeTrue();
 
-            await using var probe = _db.CreateContext(SystemTenant());
+            await using var probe = _db.CreateOwnerContext(SystemTenant());
             (await probe.Set<MessagingOutboxMessage>()
                 .IgnoreQueryFilters()
                 .CountAsync(m => m.MessageName == "workspace.member.added"
@@ -134,13 +134,14 @@ public sealed class WorkspaceMemberAddedScopedTenantRuntimeChainIntegrationTests
         var member = User.Create($"chain-member-{Guid.NewGuid():N}@example.com", "Chain Member", "hashed", now, true);
         var workspace = Workspace.Create(accountId, ownerId, "Scoped Tenant Chain", $"chain-{Guid.NewGuid():N}", now);
 
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Users.Add(owner);
         seed.Users.Add(member);
         seed.Workspaces.Add(workspace);
         seed.WorkspaceMembers.Add(WorkspaceMember.Create(
             accountId, workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, now));
         await seed.SaveChangesAsync();
+        await AccessGrantSeed.WorkspaceMemberAsync(_db, accountId, workspace.Id, ownerId, WorkspaceRole.Owner);
 
         return new MembershipGraph(accountId, workspace.Id, memberUserId, ownerId);
     }
@@ -149,9 +150,10 @@ public sealed class WorkspaceMemberAddedScopedTenantRuntimeChainIntegrationTests
     {
         await using var scope = provider.CreateAsyncScope();
         var tenant = scope.ServiceProvider.GetRequiredService<ICurrentTenantContext>();
-        tenant.SetSystem();
+        tenant.SetWorkspace(graph.AccountId, graph.WorkspaceId, graph.ActorUserId);
 
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        await using var tx = await scope.ServiceProvider.BeginTenantTransactionAsync();
         context.WorkspaceMembers.Add(WorkspaceMember.Create(
             graph.AccountId,
             graph.WorkspaceId,
@@ -161,6 +163,7 @@ public sealed class WorkspaceMemberAddedScopedTenantRuntimeChainIntegrationTests
             DateTimeOffset.UtcNow));
 
         await context.SaveChangesAsync();
+        await tx.CommitAsync();
     }
 
     private ServiceProvider BuildProvider(TenantObservationRecorder recorder)
@@ -169,6 +172,7 @@ public sealed class WorkspaceMemberAddedScopedTenantRuntimeChainIntegrationTests
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["ConnectionStrings:NotrelixDb"] = _db.ConnectionString,
+                ["ConnectionStrings:NotrelixWorkerDb"] = _db.WorkerConnectionString,
                 ["Messaging:Transport"] = "InMemory",
                 ["Rls:Enabled"] = "true",
                 ["Rls:SetSessionContext"] = "true",
@@ -209,7 +213,7 @@ public sealed class WorkspaceMemberAddedScopedTenantRuntimeChainIntegrationTests
         MessagingOutboxMessage? found = null;
         var completed = await WaitForAsync(async () =>
         {
-            await using var probe = _db.CreateContext(SystemTenant());
+            await using var probe = _db.CreateOwnerContext(SystemTenant());
             found = await probe.Set<MessagingOutboxMessage>()
                 .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(m => m.MessageName == "workspace.member.added"
@@ -226,7 +230,7 @@ public sealed class WorkspaceMemberAddedScopedTenantRuntimeChainIntegrationTests
         WorkspaceActivityLogRecord? found = null;
         var completed = await WaitForAsync(async () =>
         {
-            await using var probe = _db.CreateContext(SystemTenant());
+            await using var probe = _db.CreateOwnerContext(SystemTenant());
             found = await probe.Set<WorkspaceActivityLogRecord>()
                 .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(a => a.SourceEventId == sourceEventId && a.WorkspaceId == workspaceId);
@@ -240,7 +244,7 @@ public sealed class WorkspaceMemberAddedScopedTenantRuntimeChainIntegrationTests
     {
         return await WaitForAsync(async () =>
         {
-            await using var probe = _db.CreateContext(SystemTenant());
+            await using var probe = _db.CreateOwnerContext(SystemTenant());
             return await probe.Set<MessagingOutboxMessage>()
                 .IgnoreQueryFilters()
                 .AnyAsync(m => m.Id == outboxId && m.Status == "Processed");
@@ -251,7 +255,7 @@ public sealed class WorkspaceMemberAddedScopedTenantRuntimeChainIntegrationTests
     {
         return await WaitForAsync(async () =>
         {
-            await using var probe = _db.CreateContext(SystemTenant());
+            await using var probe = _db.CreateOwnerContext(SystemTenant());
             return await probe.Set<MessagingProcessedEvent>()
                 .IgnoreQueryFilters()
                 .AnyAsync(p => p.EventId == eventId

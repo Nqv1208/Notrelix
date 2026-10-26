@@ -1,6 +1,13 @@
 import { useEffect, useId, useState } from "react";
 import { SquareKanban, TriangleAlert } from "lucide-react";
-import { cn } from "@notrelix/ui-web";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  cn,
+} from "@notrelix/ui-web";
 import { DisabledControl, MARK_TONE_CLASS } from "../item-page/item-page-parts";
 import type { BoardSettingsSpace } from "./board-settings-types";
 import { useSettings } from "./board-settings-context";
@@ -67,8 +74,10 @@ export function GeneralSection({
     setWeekStart(general.weekStart);
   }, [general]);
 
+  const unavailable = settings.unavailable ?? {};
   const trimmed = title.trim();
-  const prefixOk = /^[A-Za-z]{1,6}$/.test(prefix.trim());
+  const prefixOk =
+    unavailable.itemKeyPrefix || /^[A-Za-z0-9]{2,6}$/.test(prefix.trim());
   const dirty =
     trimmed !== general.title ||
     description !== general.description ||
@@ -262,6 +271,7 @@ export function GeneralSection({
                 id={ids.key}
                 value={prefix}
                 maxLength={6}
+                readOnly={unavailable.itemKeyPrefix}
                 onChange={(event) =>
                   setPrefix(event.target.value.toUpperCase())
                 }
@@ -270,49 +280,58 @@ export function GeneralSection({
                 className={cn(INPUT_CLASS, "w-[120px] font-mono text-[13px]")}
               />
               <span id={ids.keyHint} className={HINT_CLASS}>
-                {fillCopy(t.keyNote, {
-                  example:
-                    general.sampleItemKey ?? `${general.itemKeyPrefix}-1`,
-                })}
+                {unavailable.itemKeyPrefix
+                  ? t.keyReadOnly
+                  : fillCopy(t.keyNote, {
+                      example:
+                        general.sampleItemKey ?? `${general.itemKeyPrefix}-1`,
+                    })}
               </span>
             </div>
           </div>
-          <div className={ROW_CLASS}>
-            <label htmlFor={ids.zone} className={LABEL_CLASS}>
-              {t.timeZone}
-              <small className="block text-metadata font-normal text-meta-foreground">
-                {t.timeZoneHint}
-              </small>
-            </label>
-            <select
-              id={ids.zone}
-              value={timeZone}
-              onChange={(event) => setTimeZone(event.target.value)}
-              className={INPUT_CLASS}
-            >
-              {ZONES.map((zone) => (
-                <option key={zone} value={zone}>
-                  {t.timeZones[zone]}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className={ROW_CLASS}>
-            <label htmlFor={ids.week} className={LABEL_CLASS}>
-              {t.weekStart}
-            </label>
-            <select
-              id={ids.week}
-              value={weekStart}
-              onChange={(event) =>
-                setWeekStart(event.target.value as "monday" | "sunday")
-              }
-              className={cn(INPUT_CLASS, "w-[200px]")}
-            >
-              <option value="monday">{t.weekDays.monday}</option>
-              <option value="sunday">{t.weekDays.sunday}</option>
-            </select>
-          </div>
+          {unavailable.locale ? null : (
+            <>
+              <div className={ROW_CLASS}>
+                <label htmlFor={ids.zone} className={LABEL_CLASS}>
+                  {t.timeZone}
+                  <small className="block text-metadata font-normal text-meta-foreground">
+                    {t.timeZoneHint}
+                  </small>
+                </label>
+                <Select value={timeZone} onValueChange={setTimeZone}>
+                  <SelectTrigger id={ids.zone} className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ZONES.map((zone) => (
+                      <SelectItem key={zone} value={zone}>
+                        {t.timeZones[zone]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className={ROW_CLASS}>
+                <label htmlFor={ids.week} className={LABEL_CLASS}>
+                  {t.weekStart}
+                </label>
+                <Select
+                  value={weekStart}
+                  onValueChange={(value) =>
+                    setWeekStart(value as "monday" | "sunday")
+                  }
+                >
+                  <SelectTrigger id={ids.week} className="w-[200px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="monday">{t.weekDays.monday}</SelectItem>
+                    <SelectItem value="sunday">{t.weekDays.sunday}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </>
+          )}
         </div>
 
         <section

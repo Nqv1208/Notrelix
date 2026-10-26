@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Block, PageActivity, PageComment } from "@notrelix/docs-core";
+import type { Block, PageComment, PageVersion } from "@notrelix/docs-core";
 
 import { docPageCopy } from "../doc-page.copy";
 import {
@@ -123,6 +123,7 @@ describe("document page mapping", () => {
         authorId: "user-kl",
         body: "Sau",
         mentionIds: [],
+        anchor: null,
         resolved: false,
         createdAt: "2026-10-11T04:00:00.000Z",
         updatedAt: "2026-10-11T04:00:00.000Z",
@@ -134,6 +135,7 @@ describe("document page mapping", () => {
         authorId: "user-kl",
         body: "> neo\nTrước",
         mentionIds: [],
+        anchor: null,
         resolved: false,
         createdAt: "2026-10-11T03:00:00.000Z",
         updatedAt: "2026-10-11T03:00:00.000Z",
@@ -142,31 +144,72 @@ describe("document page mapping", () => {
     const views = toCommentViews(comments, copy, NOW, () => KL);
     expect(views.map((view) => view.id)).toEqual(["c1", "c2"]);
     expect(views[0]?.quote).toBe("neo");
+    expect(views[0]?.anchored).toBeUndefined();
     expect(views[0]?.when).toBe("Hôm qua");
 
-    const history: PageActivity[] = [
+    // A stored anchor names the quote; the body is the comment as written.
+    const [anchored] = toCommentViews(
+      [
+        {
+          ...(comments[0] as PageComment),
+          id: "c3",
+          body: "> not a quote\nWhy?",
+          anchor: { blockId: "b1", quote: "brave", start: 6, end: 11 },
+        },
+      ],
+      copy,
+      NOW,
+      () => KL,
+    );
+    expect(anchored).toMatchObject({
+      quote: "brave",
+      anchored: true,
+      body: "> not a quote\nWhy?",
+    });
+
+    const history: PageVersion[] = [
       {
         id: "a1",
         pageId: "page-1",
-        actorId: "user-kl",
-        action: "created",
-        targetLabel: "",
+        versionNumber: 1,
+        kind: "automatic",
+        name: null,
+        createdBy: "user-kl",
         createdAt: "2026-10-05T07:20:00.000Z",
       },
       {
         id: "a2",
         pageId: "page-1",
-        actorId: "user-kl",
-        action: "edited",
-        targetLabel: "Sửa bước 3",
+        versionNumber: 2,
+        kind: "named",
+        name: "Bản trình Ban giám đốc",
+        createdBy: "user-kl",
         createdAt: "2026-10-11T08:05:00.000Z",
+      },
+      {
+        id: "a3",
+        pageId: "page-1",
+        versionNumber: 3,
+        kind: "restore",
+        name: "Restored from version 1",
+        createdBy: "user-kl",
+        createdAt: "2026-10-11T09:05:00.000Z",
       },
     ];
     const versions = toVersionViews(history, copy, NOW, () => KL);
-    expect(versions.map((version) => version.id)).toEqual(["a2", "a1"]);
-    expect(versions[0]?.current).toBe(true);
-    expect(versions[0]?.summary).toBe("Sửa bước 3");
-    expect(versions[1]?.summary).toBe(copy.versions.actions.created);
+    expect(versions.map((version) => version.id)).toEqual(["a3", "a2", "a1"]);
+    // Only a version a person named carries a name; the others read by kind.
+    expect(versions.map((version) => version.name)).toEqual([
+      undefined,
+      "Bản trình Ban giám đốc",
+      undefined,
+    ]);
+    expect(versions.map((version) => version.summary)).toEqual([
+      copy.versions.kinds.restore,
+      copy.versions.kinds.named,
+      copy.versions.kinds.automatic,
+    ]);
+    expect(versions[0]?.stamp).toMatch(/11\/10 /);
   });
 
   it("places a new block after another one, between neighbours or at the end", () => {
@@ -217,24 +260,7 @@ describe("version compare", () => {
     ]);
   });
 
-  it("names a version the member named and links a converted checklist line", () => {
-    const named = toVersionViews(
-      [
-        {
-          id: "h1",
-          pageId: "page-1",
-          actorId: "user-kl",
-          action: "edited",
-          targetLabel: "Thêm mục",
-          versionName: "Bản trình Ban giám đốc",
-          createdAt: "2026-10-10T04:20:00.000Z",
-        },
-      ],
-      copy,
-      NOW,
-      () => KL,
-    );
-    expect(named[0]?.name).toBe("Bản trình Ban giám đốc");
+  it("links a converted checklist line to its task", () => {
     const linked = toBlockViews(
       [
         block("c1", "todo", 1, {
@@ -246,5 +272,31 @@ describe("version compare", () => {
       { resolveTask: () => TASK_144, board: null, quotes: [] },
     );
     expect(linked[0]).toMatchObject({ kind: "todo", linkedTaskId: "t-9" });
+  });
+
+  it("maps a page reference to the page it names, or to unavailable when the viewer cannot read it", () => {
+    const context = {
+      resolveTask: () => ({ id: "x", restricted: true as const }),
+      board: null,
+      quotes: [],
+      pages: new Map([["p-2", { title: "Chính sách", icon: "📄" }]]),
+      pageHref: (id: string) => `/docs/${id}`,
+    };
+    const views = toBlockViews(
+      [
+        block("r1", "page_reference", 1000, { linkedPageId: "p-2" }),
+        block("r2", "page_reference", 2000, { linkedPageId: "p-hidden" }),
+        block("r3", "page_reference", 3000, {}),
+      ],
+      context,
+    );
+    expect(views[0]).toMatchObject({
+      kind: "pageReference",
+      title: "Chính sách",
+      href: "/docs/p-2",
+      unavailable: false,
+    });
+    expect(views[1]).toMatchObject({ title: null, unavailable: true });
+    expect(views[2]).toMatchObject({ pageId: null, unavailable: false });
   });
 });

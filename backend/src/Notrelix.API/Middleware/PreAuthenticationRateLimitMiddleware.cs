@@ -1,4 +1,3 @@
-using Notrelix.API.ErrorHandling;
 using Notrelix.API.RateLimiting;
 
 namespace Notrelix.API.Middleware;
@@ -26,6 +25,14 @@ public sealed class PreAuthenticationRateLimitMiddleware
         var provider = context.RequestServices.GetRequiredService<IRateLimitPolicyProvider>();
         var policy = provider.GetPolicy(attribute.PolicyName);
 
+        if (policy is null)
+        {
+            // RateLimitPolicyCatalogTests proves the shipped configuration covers every declared
+            // name; a gap here comes from runtime configuration and must not pass unnoticed.
+            context.RequestServices.GetRequiredService<ILogger<PreAuthenticationRateLimitMiddleware>>()
+                .LogError("Endpoint declares rate-limit policy {PolicyName}, which is not configured; the request is not limited", attribute.PolicyName);
+        }
+
         if (policy is null || policy.PartitionBy != PartitionKey.Ip)
         {
             await _next(context);
@@ -34,30 +41,8 @@ public sealed class PreAuthenticationRateLimitMiddleware
 
         var partitionKey = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
 
-        var rateLimitService = context.RequestServices.GetRequiredService<IRateLimitService>();
-
-        var algorithm = policy.Algorithm switch
-        {
-            "FixedWindow" => RateLimitAlgorithm.FixedWindow,
-            "TokenBucket" => RateLimitAlgorithm.TokenBucket,
-            _ => RateLimitAlgorithm.SlidingWindow,
-        };
-
-        var decision = await rateLimitService.CheckAsync(
-            attribute.PolicyName,
-            partitionKey,
-            policy.PermitLimit,
-            TimeSpan.FromSeconds(policy.WindowSeconds),
-            algorithm,
-            context.RequestAborted);
-
-        if (!decision.IsAllowed)
-        {
-            var retryAfter = (int)(decision.RetryAfter?.TotalSeconds ?? 60);
-            await ProblemDetailsWriter.WriteTooManyRequestsAsync(
-                context, retryAfter, decision.Limit, decision.Remaining, decision.ResetAt, context.RequestAborted);
+        if (!await RateLimitEnforcer.TryAcquireAsync(context, attribute.PolicyName, policy, partitionKey))
             return;
-        }
 
         await _next(context);
     }

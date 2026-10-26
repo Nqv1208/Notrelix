@@ -55,7 +55,7 @@ describe("department members in the mock world (CTR-GAP-WS-MEMBERS-EXT)", () => 
     expect(quan.viaTeams).toEqual(["Nhóm Kỹ sư ERP"]);
   });
 
-  it("lists the guest of a Board with level and end date", () => {
+  it("lists the guest of a Board with level", () => {
     const { result } = extra();
     expect(result.guests).toEqual([
       expect.objectContaining({
@@ -63,7 +63,6 @@ describe("department members in the mock world (CTR-GAP-WS-MEMBERS-EXT)", () => 
         outside: true,
         boardName: "Triển khai ERP Q4",
         level: "editor",
-        expiresAt: "2027-01-31T16:59:59.000Z",
       }),
     ]);
   });

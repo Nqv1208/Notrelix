@@ -1,33 +1,65 @@
+using System.Text.Json;
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Documents.Abstractions;
+using Notrelix.Application.Features.Documents.Blocks.Services;
+using Notrelix.Application.Features.Documents.Common;
+using Notrelix.Application.Features.Documents.DTOs;
 
 namespace Notrelix.Application.Features.Documents.Blocks.Commands.UpdateBlock;
 
+/// <summary>
+/// Edits one block against the version the editor read (DCT-011). <c>Type</c> changes the block's type in
+/// place (the block keeps its id; rich text and the properties the new type has carry over); <c>Content</c>
+/// replaces the authored content and <c>Properties</c> the type's settings. A stale <c>ExpectedVersion</c>
+/// fails with 412 carrying the current block.
+/// </summary>
 public record UpdateBlockCommand(
+    Guid PageId,
     Guid BlockId,
     string? Type,
-    string? Properties
-) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission
+    JsonElement? Content,
+    JsonElement? Properties,
+    long? ExpectedVersion
+) : ICommand<Result<BlockDto>>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission
 {
-    public PermissionAction Action => PermissionAction.ManageBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("documents.block"), BlockId);
+    // A block is edited with the page it belongs to: the page decides who may (Editor level).
+    public PermissionAction Action => PermissionAction.UpdatePage;
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("documents.page"), PageId);
 }
 
-public class UpdateBlockCommandHandler : IRequestHandler<UpdateBlockCommand, Result>
+public class UpdateBlockCommandHandler : IRequestHandler<UpdateBlockCommand, Result<BlockDto>>
 {
     private readonly IDocumentDbContext _context;
     private readonly ICurrentUser _currentUser;
-    public UpdateBlockCommandHandler(IDocumentDbContext context, ICurrentUser currentUser)
+    private readonly IDateTimeProvider _dateTimeProvider;
+
+    public UpdateBlockCommandHandler(IDocumentDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
     {
         _context = context;
         _currentUser = currentUser;
+        _dateTimeProvider = dateTimeProvider;
     }
 
-    public async Task<Result> Handle(UpdateBlockCommand request, CancellationToken ct)
+    public async Task<Result<BlockDto>> Handle(UpdateBlockCommand request, CancellationToken ct)
     {
-        var block = await _context.Blocks.FirstOrDefaultAsync(block => block.Id == request.BlockId && block.DeletedAt == null, ct);
+        var block = await _context.Blocks.FirstOrDefaultAsync(block => block.Id == request.BlockId && block.PageId == request.PageId && block.DeletedAt == null, ct);
         if (block is null) throw new NotFoundException(nameof(Block), request.BlockId);
 
-        return Result.Success();
+        PageBlockSet.EnsureVersion(block, request.ExpectedVersion);
+        var page = await _context.Pages.FirstOrDefaultAsync(p => p.Id == request.PageId && p.DeletedAt == null, ct)
+            ?? throw new NotFoundException(nameof(Page), request.PageId);
+        var tracker = new BlockSaveTracker();
+        tracker.Before(block);
+
+        BlockType? type = request.Type is { Length: > 0 } typeName ? PageBlockSet.ParseType(typeName) : null;
+        block.Edit(
+            type,
+            PageBlockSet.ContentOf(request.Content),
+            PageBlockSet.PropertiesOf(request.Properties),
+            _currentUser.UserId,
+            _dateTimeProvider.UtcNow);
+
+        tracker.Complete(page, [block], _currentUser.UserId, _dateTimeProvider.UtcNow);
+        return Result<BlockDto>.Success(DocumentDtoMapper.ToBlockDto(block));
     }
 }

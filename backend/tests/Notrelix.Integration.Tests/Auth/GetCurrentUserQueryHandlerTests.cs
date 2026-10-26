@@ -18,7 +18,7 @@ public class GetCurrentUserQueryHandlerTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -27,7 +27,7 @@ public class GetCurrentUserQueryHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_WhenUserNotFound_ShouldReturnFailure()
     {
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateOwnerContext();
         var currentUser = new FakeCurrentRequestContext().AsUser(Guid.NewGuid());
 
         var handler = new GetCurrentUserQueryHandler(context, currentUser);
@@ -41,7 +41,7 @@ public class GetCurrentUserQueryHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_WhenUserExists_ShouldReturnUserDto()
     {
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateOwnerContext();
 
         var user = User.Create("me@example.com", "Me", "hashed", DateTimeOffset.UtcNow, hasPasswordCredential: true);
         context.Users.Add(user);

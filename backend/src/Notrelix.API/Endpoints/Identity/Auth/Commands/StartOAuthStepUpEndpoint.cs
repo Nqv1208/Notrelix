@@ -16,7 +16,7 @@ public static class StartOAuthStepUpEndpoint
             .WithTags("Identity.Auth")
             .WithSummary("Start OAuth step-up (re-authentication) flow")
             .WithDescription("Redirects the authenticated user to the OAuth provider to re-authenticate for a security purpose. Completion grants a purpose-bound step-up proof; no new session is issued.")
-            .WithMetadata(new RateLimitPolicyAttribute("AuthStrictByIp"));
+            .WithMetadata(new RateLimitPolicyAttribute("AuthSensitiveByUser"));
 
         return group;
     }

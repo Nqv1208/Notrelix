@@ -1,6 +1,7 @@
 using Notrelix.Application.Common.Requests.Scoping;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Identity.Abstractions;
+using Notrelix.Application.Features.Identity.Auth.Services;
 using Notrelix.Application.Features.Identity.Auth.Throttling;
 using Notrelix.Application.Features.Identity.Mfa;
 using Notrelix.Application.Features.Identity.Security.Abstractions;
@@ -31,6 +32,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResu
     private readonly ISecurityActivityRecorder _activity;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ILogger<LoginCommandHandler> _logger;
+    private readonly CredentialScope? _credentialScope;
 
     public LoginCommandHandler(
         IIdentityDbContext context,
@@ -40,8 +42,10 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResu
         ILoginThrottle throttle,
         ISecurityActivityRecorder activity,
         IDateTimeProvider dateTimeProvider,
-        ILogger<LoginCommandHandler> logger)
+        ILogger<LoginCommandHandler> logger,
+        CredentialScope? credentialScope = null)
     {
+        _credentialScope = credentialScope;
         _context = context;
         _passwordHasher = passwordHasher;
         _sessionIssuer = sessionIssuer;
@@ -66,6 +70,10 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResu
                 (int)attempt.RetryAfter.TotalSeconds);
             return Result<AuthResult>.Failure(LoginThrottleErrors.TooManyAttempts(attempt.RetryAfter));
         }
+
+        // The credential scope is bound to the one user the address identifies (nobody when it is unknown).
+        if (_credentialScope is not null)
+            await _credentialScope.EnterByEmailAsync(normalizedEmail, cancellationToken);
 
         var user = await _context.Users
             .FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedEmail, cancellationToken);

@@ -195,7 +195,9 @@ export function mapCardDto(dto: BoardItemReadDto): CardDetail {
     boardId: dto.boardId ?? "",
     workspaceId: dto.workspaceId ?? "",
     title: itemTitle(dto),
-    descriptionMd: legacy ? (legacy.descriptionMd ?? "") : "",
+    descriptionMd: legacy
+      ? (legacy.descriptionMd ?? "")
+      : ((dto as GeneratedBoardItemDto).descriptionMd ?? ""),
     linkedPageId: legacy ? (legacy.linkedPageId ?? undefined) : undefined,
     position: typeof dto.position === "number" ? dto.position : 0,
     // The hand-written read says "medium" for an item without a priority; the
@@ -280,9 +282,6 @@ export function mapBoardAccessDto(dto: GeneratedBoardAccessDto): BoardAccess {
         grantedBy?.userId && grantedBy.name
           ? { userId: grantedBy.userId, name: grantedBy.name }
           : null,
-      expiresAt:
-        (dto.mySource as { expiresAt?: string | null } | undefined)
-          ?.expiresAt ?? null,
     },
     peopleCount: dto.peopleCount ?? 0,
     guestCount: dto.guestCount ?? 0,

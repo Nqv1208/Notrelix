@@ -14,7 +14,6 @@ namespace Notrelix.Infrastructure.CrossContext.Workspaces.WorkManagement;
 public sealed class BoardWorkSummaryFactsAdapter : IBoardWorkSummaryFacts
 {
     private const string ItemKind = "work-management.board-item";
-    private const string BoardKind = "work-management.board";
     private const int TopAssigneesPerBoard = 3;
 
     private readonly IWorkManagementDbContext _context;
@@ -66,22 +65,15 @@ public sealed class BoardWorkSummaryFactsAdapter : IBoardWorkSummaryFacts
             .Select(g => new { BoardId = g.Key, Count = g.Count() })
             .ToListAsync(cancellationToken)).ToDictionary(x => x.BoardId, x => x.Count);
 
-        var onBoard = (await _context.ApprovalRequests
-            .AsNoTracking()
-            .Where(a => a.DeletedAt == null && a.Status == ApprovalStatus.Pending
-                && a.Target.Kind == Notrelix.Domain.SharedKernel.ResourceKind.Create(BoardKind)
-                && ids.Contains(a.Target.ResourceId))
-            .GroupBy(a => a.Target.ResourceId)
-            .Select(g => new { BoardId = g.Key, Count = g.Count() })
-            .ToListAsync(cancellationToken)).ToDictionary(x => x.BoardId, x => x.Count);
-
-        var onItems = (await (
-            from a in _context.ApprovalRequests.AsNoTracking()
-            join i in liveItems on a.Target.ResourceId equals i.Id
-            where a.DeletedAt == null && a.Status == ApprovalStatus.Pending
+        // Waiting review = Items with a pending approval (accepted 2026-10-24): each unfinished live Item counts
+        // once, however many pending requests it has. A request aimed at the Board itself is not an Item.
+        var waitingReview = (await (
+            from i in liveItems
+            where i.CompletedAt == null && _context.ApprovalRequests.Any(a => a.DeletedAt == null
+                && a.Status == ApprovalStatus.Pending
                 && a.Target.Kind == Notrelix.Domain.SharedKernel.ResourceKind.Create(ItemKind)
-                && i.CompletedAt == null
-            group a by i.BoardId into g
+                && a.Target.ResourceId == i.Id)
+            group i by i.BoardId into g
             select new { BoardId = g.Key, Count = g.Count() })
             .ToListAsync(cancellationToken)).ToDictionary(x => x.BoardId, x => x.Count);
 
@@ -92,14 +84,15 @@ public sealed class BoardWorkSummaryFactsAdapter : IBoardWorkSummaryFacts
             .Select(g => new { BoardId = g.Key, Count = g.Count() })
             .ToListAsync(cancellationToken)).ToDictionary(x => x.BoardId, x => x.Count);
 
-        var views = await _context.BoardViews
+        // Only the Board's default View decides the kind: a Board whose default View is Kanban is a kanban,
+        // every other Board is a table (an Intake Board is an inbox before this is looked at).
+        var defaultViews = await _context.BoardViews
             .AsNoTracking()
-            .Where(v => ids.Contains(v.BoardId) && !v.IsArchived)
-            .OrderByDescending(v => v.IsDefault)
-            .ThenBy(v => v.CreatedAt)
+            .Where(v => ids.Contains(v.BoardId) && !v.IsArchived && v.IsDefault)
+            .OrderBy(v => v.CreatedAt)
             .Select(v => new { v.BoardId, v.Type })
             .ToListAsync(cancellationToken);
-        var firstView = views.GroupBy(v => v.BoardId).ToDictionary(g => g.Key, g => g.First().Type);
+        var defaultViewType = defaultViews.GroupBy(v => v.BoardId).ToDictionary(g => g.Key, g => g.First().Type);
 
         var assignees = (await (
             from m in _context.BoardItemMembers.AsNoTracking()
@@ -128,7 +121,7 @@ public sealed class BoardWorkSummaryFactsAdapter : IBoardWorkSummaryFacts
             itemFigures.TryGetValue(b.Id, out var f);
             var kind = b.BoardFamily == BoardFamily.Intake
                 ? BoardWorkKinds.Inbox
-                : firstView.TryGetValue(b.Id, out var type) && type == ViewType.Kanban ? BoardWorkKinds.Kanban : BoardWorkKinds.Table;
+                : defaultViewType.TryGetValue(b.Id, out var type) && type == ViewType.Kanban ? BoardWorkKinds.Kanban : BoardWorkKinds.Table;
             var last = f is not null && f.Last > b.At ? f.Last : b.At;
             return new BoardWorkSummary(
                 b.Id,
@@ -141,7 +134,7 @@ public sealed class BoardWorkSummaryFactsAdapter : IBoardWorkSummaryFacts
                 f?.Done ?? 0,
                 f?.Total ?? 0,
                 f?.Overdue ?? 0,
-                onBoard.GetValueOrDefault(b.Id) + onItems.GetValueOrDefault(b.Id),
+                waitingReview.GetValueOrDefault(b.Id),
                 unclaimed.GetValueOrDefault(b.Id),
                 last,
                 assignees.GetValueOrDefault(b.Id) ?? []);

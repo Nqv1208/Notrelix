@@ -40,7 +40,7 @@ public sealed class BoardItemMovedOutboxRuntimeTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -60,6 +60,7 @@ public sealed class BoardItemMovedOutboxRuntimeTests : IAsyncLifetime
             var tenant = scope.ServiceProvider.GetRequiredService<ICurrentTenantContext>();
             tenant.SetWorkspace(graph.AccountId, graph.WorkspaceId, graph.ExecutorUserId);
             var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            await using var tx = await scope.ServiceProvider.BeginTenantTransactionAsync();
             var item = await context.BoardItems.FirstAsync(i => i.Id == graph.ItemId);
             var targetGroup = await context.BoardGroups.FirstAsync(g => g.Id == graph.TargetGroupId);
             item.MoveToGroup(
@@ -68,6 +69,7 @@ public sealed class BoardItemMovedOutboxRuntimeTests : IAsyncLifetime
                 graph.ExecutorUserId,
                 DateTimeOffset.UtcNow);
             await context.SaveChangesAsync();
+            await tx.CommitAsync();
         }
 
         var outbox = await WaitForOutboxAsync(graph);
@@ -139,7 +141,7 @@ public sealed class BoardItemMovedOutboxRuntimeTests : IAsyncLifetime
             var tenant = scope.ServiceProvider.GetRequiredService<ICurrentTenantContext>();
             tenant.SetWorkspace(graph.AccountId, graph.WorkspaceId, graph.ExecutorUserId);
             var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            await using var tx = await context.Database.BeginTransactionAsync();
+            await using var tx = await scope.ServiceProvider.BeginTenantTransactionAsync();
             var item = await context.BoardItems.FirstAsync(i => i.Id == graph.ItemId);
             var targetGroup = await context.BoardGroups.FirstAsync(g => g.Id == graph.TargetGroupId);
             item.MoveToGroup(
@@ -153,7 +155,7 @@ public sealed class BoardItemMovedOutboxRuntimeTests : IAsyncLifetime
 
         var rolledBack = await WaitForAsync(async () =>
         {
-            await using var probe = _db.CreateContext(SystemTenant());
+            await using var probe = _db.CreateOwnerContext(SystemTenant());
             return await probe.Set<MessagingOutboxMessage>()
                 .IgnoreQueryFilters()
                 .AnyAsync(m => m.MessageName == "board_item.moved" && m.WorkspaceId == graph.WorkspaceId);
@@ -162,7 +164,7 @@ public sealed class BoardItemMovedOutboxRuntimeTests : IAsyncLifetime
         rolledBack.Should().BeFalse(
             "TAC-WM-009: a failed/rolled-back Work mutation must enroll no outward event");
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         var persisted = await verify.BoardItems.SingleAsync(i => i.Id == graph.ItemId);
         persisted.GroupId.Should().Be(graph.SourceGroupId);
     }
@@ -175,6 +177,7 @@ public sealed class BoardItemMovedOutboxRuntimeTests : IAsyncLifetime
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["ConnectionStrings:NotrelixDb"] = _db.ConnectionString,
+                ["ConnectionStrings:NotrelixWorkerDb"] = _db.WorkerConnectionString,
                 ["Messaging:Transport"] = "InMemory",
                 ["Rls:Enabled"] = "true",
                 ["Rls:SetSessionContext"] = "true",
@@ -224,7 +227,7 @@ public sealed class BoardItemMovedOutboxRuntimeTests : IAsyncLifetime
         var targetGroup = BoardGroup.Create(accountId, workspace.Id, board.Id, "Done", Domain.SharedKernel.Color.Create("#00FF00"), FractionalIndex.Create("a1"), executorUser.Id, now);
         var item = BoardItem.CreateRoot(accountId, workspace.Id, board.Id, sourceGroup.Id, "Task", FractionalIndex.Create("a0"), executorUser.Id, now);
 
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Users.Add(executorUser);
         seed.Workspaces.Add(workspace);
         seed.WorkspaceMembers.Add(member);
@@ -234,7 +237,7 @@ public sealed class BoardItemMovedOutboxRuntimeTests : IAsyncLifetime
         seed.BoardItems.Add(item);
         await seed.SaveChangesAsync();
 
-        await using var grant = _db.CreateContext(SystemTenant());
+        await using var grant = _db.CreateOwnerContext(SystemTenant());
         var projection = new Notrelix.Infrastructure.Data.Authz.AccessGrantProjectionService(grant);
         await projection.SyncWorkspaceMemberGrantAsync(
             accountId, workspace.Id, executorUser.Id, WorkspaceRole.Member, now, CancellationToken.None);
@@ -250,7 +253,7 @@ public sealed class BoardItemMovedOutboxRuntimeTests : IAsyncLifetime
         MessagingOutboxMessage? found = null;
         var completed = await WaitForAsync(async () =>
         {
-            await using var probe = _db.CreateContext(SystemTenant());
+            await using var probe = _db.CreateOwnerContext(SystemTenant());
             found = await probe.Set<MessagingOutboxMessage>()
                 .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(m => m.MessageName == "board_item.moved" && m.WorkspaceId == graph.WorkspaceId);
@@ -262,7 +265,7 @@ public sealed class BoardItemMovedOutboxRuntimeTests : IAsyncLifetime
 
     private async Task<long> OutboxRowCountAsync(BoardGraph graph)
     {
-        await using var probe = _db.CreateContext(SystemTenant());
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
         return await probe.Set<MessagingOutboxMessage>()
             .IgnoreQueryFilters()
             .CountAsync(m => m.MessageName == "board_item.moved" && m.WorkspaceId == graph.WorkspaceId);
@@ -272,7 +275,7 @@ public sealed class BoardItemMovedOutboxRuntimeTests : IAsyncLifetime
     {
         return await WaitForAsync(async () =>
         {
-            await using var probe = _db.CreateContext(SystemTenant());
+            await using var probe = _db.CreateOwnerContext(SystemTenant());
             return await probe.WorkspaceWorkItemPlacements
                 .AnyAsync(p => p.WorkspaceId == graph.WorkspaceId
                             && p.ItemId == graph.ItemId
@@ -284,7 +287,7 @@ public sealed class BoardItemMovedOutboxRuntimeTests : IAsyncLifetime
     {
         return await WaitForAsync(async () =>
         {
-            await using var probe = _db.CreateContext(SystemTenant());
+            await using var probe = _db.CreateOwnerContext(SystemTenant());
             return await probe.Set<MessagingOutboxMessage>()
                 .IgnoreQueryFilters()
                 .AnyAsync(m => m.Id == outboxId && m.Status == "Processed");

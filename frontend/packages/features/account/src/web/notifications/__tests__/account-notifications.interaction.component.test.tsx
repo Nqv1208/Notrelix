@@ -53,13 +53,17 @@ describe("AccountNotificationsSurface", () => {
         screen.getByRole("heading", { level: 2, name: copy.title }),
       ).toBeTruthy();
       const table = screen.getByRole("table", { name: copy.matrixLabel });
-      expect(within(table).getAllByRole("checkbox")).toHaveLength(21);
-      expect(cell(copy, "assigned", "app").getAttribute("aria-checked")).toBe(
+      expect(within(table).getAllByRole("checkbox")).toHaveLength(14);
+      expect(cell(copy, "assigned", "inApp").getAttribute("aria-checked")).toBe(
         "true",
       );
-      expect(cell(copy, "overdue", "mobile").getAttribute("aria-checked")).toBe(
+      expect(cell(copy, "overdue", "email").getAttribute("aria-checked")).toBe(
         "false",
       );
+      // Mobile and quiet hours have no producer yet: neither is offered.
+      expect(screen.queryByText("Di động")).toBeNull();
+      expect(screen.queryByText("Mobile")).toBeNull();
+      expect(screen.queryByRole("switch")).toBeNull();
       expect(
         screen.getByText(
           copy.eventNotes.mention.replace("{{name}}", "Ada Lovelace"),
@@ -72,7 +76,7 @@ describe("AccountNotificationsSurface", () => {
   it("FUI[account.notifications:toggle] flips a cell with the click and the Space key", () => {
     const copy = notificationsCopyFixture("en");
     const { view } = renderNotifications(notificationsDefaultScenario("en"));
-    const digestApp = cell(copy, "digest", "app");
+    const digestApp = cell(copy, "digest", "inApp");
     fireEvent.click(digestApp);
     expect(digestApp.getAttribute("aria-checked")).toBe("true");
     fireEvent.click(digestApp);
@@ -80,29 +84,14 @@ describe("AccountNotificationsSurface", () => {
     view.unmount();
   });
 
-  it("FUI[account.notifications:quiet] switches quiet hours and edits their window", () => {
+  it("FUI[account.notifications:scope] says the choices belong to one workspace and quotes the version", () => {
     const copy = notificationsCopyFixture("en");
     const { props, view } = renderNotifications(
       notificationsDefaultScenario("en"),
     );
-    const from = screen.getByLabelText(copy.quiet.from) as HTMLSelectElement;
-    expect(from.value).toBe("21:00");
-    fireEvent.change(from, { target: { value: "22:00" } });
-    fireEvent.change(screen.getByLabelText(copy.quiet.days), {
-      target: { value: "everyday" },
-    });
-    fireEvent.click(screen.getByRole("switch", { name: copy.quiet.title }));
-    expect(from.disabled).toBe(true);
+    expect(screen.getByText(copy.workspaceScope)).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: copy.save }));
-    expect(props.onSave).toHaveBeenCalledWith({
-      ...notificationValuesFixture(),
-      quietHours: {
-        enabled: false,
-        from: "22:00",
-        to: "07:00",
-        days: "everyday",
-      },
-    });
+    expect(props.onSave).toHaveBeenCalledWith(notificationValuesFixture());
     view.unmount();
   });
 
@@ -115,16 +104,9 @@ describe("AccountNotificationsSurface", () => {
       fireEvent.click(cell(copy, "watching", "email"));
       fireEvent.click(screen.getByRole("button", { name: copy.save }));
       const saved = vi.mocked(props.onSave).mock.calls[0]?.[0];
-      expect(saved?.rows.watching).toEqual({
-        app: true,
-        email: true,
-        mobile: false,
-      });
-      expect(saved?.rows.assigned).toEqual({
-        app: true,
-        email: true,
-        mobile: true,
-      });
+      expect(saved?.version).toBe(3);
+      expect(saved?.rows.watching).toEqual({ inApp: true, email: true });
+      expect(saved?.rows.assigned).toEqual({ inApp: true, email: true });
       view.unmount();
     }
   });
@@ -136,9 +118,9 @@ describe("AccountNotificationsSurface", () => {
       (screen.getByRole("button", { name: copy.saving }) as HTMLButtonElement)
         .disabled,
     ).toBe(true);
-    expect((cell(copy, "assigned", "app") as HTMLButtonElement).disabled).toBe(
-      true,
-    );
+    expect(
+      (cell(copy, "assigned", "inApp") as HTMLButtonElement).disabled,
+    ).toBe(true);
     view.unmount();
   });
 
@@ -176,17 +158,12 @@ describe("AccountNotificationsSurface", () => {
     view.unmount();
   });
 
-  it("FUI[account.notifications:edge] keeps an all-off row, quiet hours off and a long name readable", () => {
+  it("FUI[account.notifications:edge] keeps an all-off row and a long name readable", () => {
     const copy = notificationsCopyFixture("vi");
     const { view } = renderNotifications(notificationsEdgeDataScenario());
     expect(cell(copy, "assigned", "email").getAttribute("aria-checked")).toBe(
       "false",
     );
-    expect(
-      screen
-        .getByRole("switch", { name: copy.quiet.title })
-        .getAttribute("aria-checked"),
-    ).toBe("false");
     expect(document.body.textContent).toContain("Nguyễn Thị Phương Anh");
     view.unmount();
   });
@@ -197,9 +174,8 @@ describe("AccountNotificationsSurface", () => {
     for (const literal of [
       en.title,
       en.when,
-      en.channels.app,
+      en.channels.inApp,
       en.events.assigned,
-      en.quiet.title,
       en.save,
       en.saved,
     ])

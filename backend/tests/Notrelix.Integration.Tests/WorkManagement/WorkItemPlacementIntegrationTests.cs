@@ -57,7 +57,7 @@ public sealed class WorkItemPlacementIntegrationTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
 
         _accountId = Guid.NewGuid();
@@ -68,7 +68,7 @@ public sealed class WorkItemPlacementIntegrationTests : IAsyncLifetime
         var done = BoardGroup.Create(_accountId, workspace.Id, board.Id, "Done", Color.Create("#808080"), FractionalIndex.Create("a1"), _userId, Now);
         (_workspaceId, _boardId, _todoId, _doneId) = (workspace.Id, board.Id, todo.Id, done.Id);
 
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Workspaces.Add(workspace);
         seed.Boards.Add(board);
         seed.BoardGroups.AddRange(todo, done);
@@ -223,7 +223,7 @@ public sealed class WorkItemPlacementIntegrationTests : IAsyncLifetime
                 .Handle(new UpdateBoardFieldCommand(_boardId, field, "Stage", null, 1), CancellationToken.None);
         });
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         var loaded = await verify.BoardFields.SingleAsync(f => f.Id == field);
         loaded.Name.Should().Be("Stage");
         (await FieldSettingsAsync(field)).Should().Be(settingsBefore);
@@ -263,7 +263,7 @@ public sealed class WorkItemPlacementIntegrationTests : IAsyncLifetime
 
         await duplicate.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>(
             "the option set must be loaded with the field, so the duplicate-name rule sees persisted options");
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         var options = await verify.FieldOptions.Where(o => o.FieldId == field).ToListAsync();
         options.Should().ContainSingle().Which.Name.Should().Be("Alpha");
     }
@@ -287,7 +287,7 @@ public sealed class WorkItemPlacementIntegrationTests : IAsyncLifetime
 
     private async Task<Dictionary<Guid, string>> KeysAsync()
     {
-        await using var context = _db.CreateContext(SystemTenant());
+        await using var context = _db.CreateOwnerContext(SystemTenant());
         return await context.BoardItems.Where(i => i.GroupId == _todoId).ToDictionaryAsync(i => i.Id, i => i.Position.Value);
     }
 
@@ -303,7 +303,7 @@ public sealed class WorkItemPlacementIntegrationTests : IAsyncLifetime
             return true;
         });
         var c = await CreateAsync("C");
-        await using (var probe = _db.CreateContext(SystemTenant()))
+        await using (var probe = _db.CreateOwnerContext(SystemTenant()))
         {
             var keys = await probe.BoardItems.IgnoreQueryFilters().Where(i => i.Id == b || i.Id == c).ToDictionaryAsync(i => i.Id, i => i.Position.Value);
             keys[c].Should().Be(keys[b], "the scenario requires the deleted item's key to be reissued");
@@ -328,14 +328,14 @@ public sealed class WorkItemPlacementIntegrationTests : IAsyncLifetime
 
     private async Task<List<Guid>> OptionOrderAsync(Guid fieldId)
     {
-        await using var context = _db.CreateContext(SystemTenant());
+        await using var context = _db.CreateOwnerContext(SystemTenant());
         var rows = await context.FieldOptions.Where(o => o.FieldId == fieldId).Select(o => new { o.Id, o.Position }).ToListAsync();
         return rows.OrderBy(r => r.Position).ThenBy(r => r.Id).Select(r => r.Id).ToList();
     }
 
     private async Task<long> FieldVersionAsync(Guid fieldId)
     {
-        await using var context = _db.CreateContext(SystemTenant());
+        await using var context = _db.CreateOwnerContext(SystemTenant());
         return await context.BoardFields.Where(f => f.Id == fieldId).Select(f => f.Version).SingleAsync();
     }
 
@@ -353,14 +353,14 @@ public sealed class WorkItemPlacementIntegrationTests : IAsyncLifetime
 
     private async Task<List<Guid>> FieldOrderAsync()
     {
-        await using var context = _db.CreateContext(SystemTenant());
+        await using var context = _db.CreateOwnerContext(SystemTenant());
         var rows = await context.BoardFields.Where(f => f.BoardId == _boardId).Select(f => new { f.Id, f.Position }).ToListAsync();
         return rows.OrderBy(r => r.Position).ThenBy(r => r.Id).Select(r => r.Id).ToList();
     }
 
     private async Task<string> FieldSettingsAsync(Guid fieldId)
     {
-        await using var context = _db.CreateContext(SystemTenant());
+        await using var context = _db.CreateOwnerContext(SystemTenant());
         var field = await context.BoardFields.SingleAsync(f => f.Id == fieldId);
         return field.Settings.Data.Value;
     }
@@ -372,14 +372,14 @@ public sealed class WorkItemPlacementIntegrationTests : IAsyncLifetime
 
     private async Task<List<Guid>> GroupOrderAsync()
     {
-        await using var context = _db.CreateContext(SystemTenant());
+        await using var context = _db.CreateOwnerContext(SystemTenant());
         var rows = await context.BoardGroups.Where(g => g.BoardId == _boardId).Select(g => new { g.Id, g.Position }).ToListAsync();
         return rows.OrderBy(r => r.Position).ThenBy(r => r.Id).Select(r => r.Id).ToList();
     }
 
     private async Task<List<string>> TitlesInGroupAsync(Guid groupId)
     {
-        await using var context = _db.CreateContext(SystemTenant());
+        await using var context = _db.CreateOwnerContext(SystemTenant());
         var rows = await context.BoardItems.Where(i => i.GroupId == groupId).Select(i => new { i.Name, i.Position }).ToListAsync();
         return rows.OrderBy(r => r.Position).Select(r => r.Name).ToList();
     }
@@ -406,7 +406,7 @@ public sealed class WorkItemPlacementIntegrationTests : IAsyncLifetime
 
     private async Task<T> InTransactionAsync<T>(Func<ApplicationDbContext, Task<T>> work)
     {
-        await using var context = _db.CreateContext(Tenant());
+        await using var context = _db.CreateOwnerContext(Tenant());
         await using var transaction = await context.Database.BeginTransactionAsync();
         var result = await work(context);
         await context.SaveChangesAsync();
@@ -416,21 +416,21 @@ public sealed class WorkItemPlacementIntegrationTests : IAsyncLifetime
 
     private async Task<List<Guid>> OrderInGroupAsync(Guid groupId)
     {
-        await using var context = _db.CreateContext(SystemTenant());
+        await using var context = _db.CreateOwnerContext(SystemTenant());
         var rows = await context.BoardItems.Where(i => i.GroupId == groupId).Select(i => new { i.Id, i.Position }).ToListAsync();
         return rows.OrderBy(r => r.Position).Select(r => r.Id).ToList();
     }
 
     private async Task<List<string>> PositionsInGroupAsync(Guid groupId)
     {
-        await using var context = _db.CreateContext(SystemTenant());
+        await using var context = _db.CreateOwnerContext(SystemTenant());
         var rows = await context.BoardItems.Where(i => i.GroupId == groupId).Select(i => i.Position).ToListAsync();
         return rows.Select(p => p.Value).ToList();
     }
 
     private async Task<long> VersionAsync(Guid itemId)
     {
-        await using var context = _db.CreateContext(SystemTenant());
+        await using var context = _db.CreateOwnerContext(SystemTenant());
         return await context.BoardItems.Where(i => i.Id == itemId).Select(i => i.Version).SingleAsync();
     }
 

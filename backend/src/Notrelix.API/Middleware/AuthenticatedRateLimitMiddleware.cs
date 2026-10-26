@@ -1,4 +1,3 @@
-using Notrelix.API.ErrorHandling;
 using Notrelix.API.RateLimiting;
 
 namespace Notrelix.API.Middleware;
@@ -43,8 +42,16 @@ public sealed class AuthenticatedRateLimitMiddleware
         switch (policy.PartitionBy)
         {
             case PartitionKey.UserId:
-                partitionKey = context.User.FindFirst("sub")?.Value
-                    ?? throw new UnauthorizedAccessException("User ID required for rate limiting");
+                var userId = context.User.FindFirst("sub")?.Value
+                    ?? context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userId))
+                {
+                    // No authenticated principal: authorization rejects the request with 401.
+                    await _next(context);
+                    return;
+                }
+
+                partitionKey = userId;
                 break;
             case PartitionKey.ApiKey:
                 partitionKey = context.Request.Headers["X-API-Key"].FirstOrDefault()
@@ -56,30 +63,8 @@ public sealed class AuthenticatedRateLimitMiddleware
                     "Only PartitionKey.UserId and PartitionKey.ApiKey are supported at the API middleware level.");
         }
 
-        var rateLimitService = context.RequestServices.GetRequiredService<IRateLimitService>();
-
-        var algorithm = policy.Algorithm switch
-        {
-            "FixedWindow" => RateLimitAlgorithm.FixedWindow,
-            "TokenBucket" => RateLimitAlgorithm.TokenBucket,
-            _ => RateLimitAlgorithm.SlidingWindow,
-        };
-
-        var decision = await rateLimitService.CheckAsync(
-            attribute.PolicyName,
-            partitionKey,
-            policy.PermitLimit,
-            TimeSpan.FromSeconds(policy.WindowSeconds),
-            algorithm,
-            context.RequestAborted);
-
-        if (!decision.IsAllowed)
-        {
-            var retryAfter = (int)(decision.RetryAfter?.TotalSeconds ?? 60);
-            await ProblemDetailsWriter.WriteTooManyRequestsAsync(
-                context, retryAfter, decision.Limit, decision.Remaining, decision.ResetAt, context.RequestAborted);
+        if (!await RateLimitEnforcer.TryAcquireAsync(context, attribute.PolicyName, policy, partitionKey))
             return;
-        }
 
         await _next(context);
     }

@@ -14,4 +14,8 @@ public sealed record AutomationTriggerContext(
     Guid? ActorUserId,
     Guid CorrelationId,
     Guid? CausationId,
-    DateTimeOffset OccurredAt);
+    DateTimeOffset OccurredAt,
+    Guid? BoardId = null,
+    Guid? ItemId = null,
+    Guid? GroupId = null,
+    Guid? FromGroupId = null);

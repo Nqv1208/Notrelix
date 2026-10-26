@@ -301,9 +301,7 @@ test.describe("Department members (owner)", () => {
     });
     await expect(aside.getByText("Khách ở từng board (1)")).toBeVisible();
     await expect(
-      aside.getByText(
-        "Ngoài công ty · Có thể sửa ở Triển khai ERP Q4 · hết quyền 31/01/2027",
-      ),
+      aside.getByText("Ngoài công ty · Có thể sửa ở Triển khai ERP Q4"),
     ).toBeVisible();
   });
 

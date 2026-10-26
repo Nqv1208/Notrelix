@@ -3,6 +3,8 @@ using Notrelix.Application.Events.Automation;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Notrelix.Application.Events.WorkManagement;
+using Notrelix.Application.Features.Automation.Ports.WorkManagement;
+using Notrelix.Application.Features.Automation.Rules.Services;
 
 namespace Notrelix.Application.Features.Automation.Events;
 
@@ -26,6 +28,7 @@ public sealed class N8nAutomationRuleEvaluator
     private readonly IDateTimeProvider _clock;
     private readonly AutomationGuardOptions _guards;
     private readonly ILogger<N8nAutomationRuleEvaluator> _logger;
+    private readonly IWorkActionPort? _workActions;
 
     private const string NoExecutorReason = "The rule has no executor and cannot run; recreate it.";
 
@@ -34,8 +37,10 @@ public sealed class N8nAutomationRuleEvaluator
         IIntegrationEventCollector events,
         IDateTimeProvider clock,
         IOptions<AutomationGuardOptions>? guards = null,
-        ILogger<N8nAutomationRuleEvaluator>? logger = null)
+        ILogger<N8nAutomationRuleEvaluator>? logger = null,
+        IWorkActionPort? workActions = null)
     {
+        _workActions = workActions;
         _context = context;
         _events = events;
         _clock = clock;
@@ -72,6 +77,18 @@ public sealed class N8nAutomationRuleEvaluator
                 continue;
             }
 
+            // AU-2: a board-scoped rule triggers only for facts of its board, and only when
+            // the fact passes the rule's trigger filter (the group the item moved to).
+            if (rule.BoardId is { } ruleBoardId && trigger.BoardId != ruleBoardId)
+            {
+                continue;
+            }
+
+            if (!PassesTriggerFilter(rule, trigger))
+            {
+                continue;
+            }
+
             // AUT-020: a rule with no bound executor (it predates the binding and
             // had no creator on record) can never run. Fail closed and stop it at
             // its first evaluation, visibly, instead of running as someone else.
@@ -92,6 +109,13 @@ public sealed class N8nAutomationRuleEvaluator
 
             if (exists) continue;
 
+            // AU-5: the rule's conditions (all must hold) are read from the triggering item now.
+            if (rule.Configuration.Condition is not null
+                && !await ConditionsHoldAsync(rule, trigger, cancellationToken))
+            {
+                continue;
+            }
+
             if (ancestry is not null && IsSuppressedByAncestry(rule, ancestry))
             {
                 continue;
@@ -109,53 +133,107 @@ public sealed class N8nAutomationRuleEvaluator
                 trigger.SourceEventId,
                 trigger.OccurredAt,
                 ancestry?.ParentExecutionId,
-                ancestry is null ? 0 : ancestry.ParentDepth + 1);
+                ancestry is null ? 0 : ancestry.ParentDepth + 1,
+                // AU-4: the execution finishes on the version it started with.
+                rule.ConfigurationVersion,
+                AutomationRuleSnapshot.From(rule).Serialize());
 
             _context.AutomationExecutions.Add(execution);
 
-            switch (rule.Configuration.Action.Type)
+            if (rule.Configuration.Action.Type == AutomationActionConfigs.Types.Webhook)
             {
-                case "MoveItem":
-                    _events.Add(new AutomationMoveItemRequestedV1(
-                        Guid.CreateVersion7(),
-                        execution.Id,
-                        rule.Id,
-                        accountId,
-                        workspaceId,
-                        trigger.ActorUserId,
-                        _clock.UtcNow,
-                        trigger.CorrelationId,
-                        trigger.CausationId));
-                    break;
-
-                case "Webhook":
-                    _events.Add(new N8nDispatchRequestedV1(
-                        Guid.CreateVersion7(),
-                        execution.Id,
-                        rule.Id,
-                        accountId,
-                        workspaceId,
-                        _clock.UtcNow,
-                        trigger.CorrelationId,
-                        trigger.SourceEventId,
-                        trigger.CausationId));
-                    break;
-
-                default:
-                    // Fail closed: an action type without a runtime executor is
-                    // never silently rerouted to another dispatcher. The rule
-                    // stays a valid configuration (vocabulary is broader than
-                    // the M8 runtime) but the staged execution terminates
-                    // visibly instead of dispatching to the wrong channel
-                    // (debt: M8-AUTOMATION-ACTION-PARITY).
-                    var failedAt = _clock.UtcNow;
-                    execution.Start(failedAt);
-                    execution.Fail(
-                        $"Action type '{rule.Configuration.Action.Type}' has no runtime executor (M8-AUTOMATION-ACTION-PARITY).",
-                        failedAt);
-                    break;
+                _events.Add(new N8nDispatchRequestedV1(
+                    Guid.CreateVersion7(),
+                    execution.Id,
+                    rule.Id,
+                    accountId,
+                    workspaceId,
+                    _clock.UtcNow,
+                    trigger.CorrelationId,
+                    trigger.SourceEventId,
+                    trigger.CausationId));
+            }
+            else if (rule.Configuration.Actions.All(action => AutomationActionConfigs.ActsOnItem(action.Type)))
+            {
+                _events.Add(new AutomationMoveItemRequestedV1(
+                    Guid.CreateVersion7(),
+                    execution.Id,
+                    rule.Id,
+                    accountId,
+                    workspaceId,
+                    trigger.ActorUserId,
+                    _clock.UtcNow,
+                    trigger.CorrelationId,
+                    trigger.CausationId,
+                    // AU-1: a board-scoped rule acts on the item the fact was about.
+                    rule.BoardId is null ? null : trigger.ItemId));
+            }
+            else
+            {
+                // Fail closed: an action type without a runtime executor is never silently
+                // rerouted to another dispatcher; the execution ends visibly instead.
+                var failedAt = _clock.UtcNow;
+                execution.Start(failedAt);
+                execution.Fail(
+                    $"Action type '{rule.Configuration.Action.Type}' has no runtime executor.",
+                    failedAt);
             }
         }
+    }
+
+    private async Task<bool> ConditionsHoldAsync(
+        AutomationRule rule, AutomationTriggerContext trigger, CancellationToken cancellationToken)
+    {
+        // Fail closed: conditions read the triggering item of the rule's own board, as the rule's
+        // executor; anything missing means the conditions do not hold.
+        if (_workActions is null
+            || rule.BoardId is not { } boardId
+            || trigger.ItemId is not { } itemId
+            || rule.ExecutorUserId is not { } executor
+            || !AutomationConditions.TryParse(rule.Configuration.Condition!.RawJson, out var conditions))
+        {
+            return false;
+        }
+
+        try
+        {
+            var facts = await _workActions.GetItemFactsAsync(
+                itemId, boardId, new AutomationPrincipal(trigger.AccountId, executor, trigger.WorkspaceId), cancellationToken);
+            return AutomationConditions.Holds(conditions, facts);
+        }
+        catch (Exception ex) when (ex is NotFoundException or ForbiddenException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// AU-2: the trigger's runtime filter. <c>{"groupId":"…"}</c> matches when the item moved
+    /// into that group; a trigger without a filter matches every fact of its type.
+    /// </summary>
+    private static bool PassesTriggerFilter(AutomationRule rule, AutomationTriggerContext trigger)
+    {
+        var configuration = rule.Configuration.Trigger.Configuration;
+        if (string.IsNullOrWhiteSpace(configuration)) return true;
+        try
+        {
+            using var document = System.Text.Json.JsonDocument.Parse(configuration);
+            var root = document.RootElement;
+            if (root.ValueKind != System.Text.Json.JsonValueKind.Object) return true;
+
+            return Matches(root, "groupId", trigger.GroupId)
+                && Matches(root, "fromGroupId", trigger.FromGroupId);
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return true;
+        }
+
+        static bool Matches(System.Text.Json.JsonElement root, string name, Guid? actual) =>
+            !root.TryGetProperty(name, out var wanted)
+            || wanted.ValueKind != System.Text.Json.JsonValueKind.String
+            || !Guid.TryParse(wanted.GetString(), out var wantedId)
+            || actual == wantedId;
     }
 
     /// <summary>The chain of Automation executions that caused the trigger fact.</summary>
@@ -294,7 +372,9 @@ public sealed class N8nAutomationRuleEvaluator
             integrationEvent.AssignedBy,
             integrationEvent.CorrelationId,
             integrationEvent.CausationId,
-            integrationEvent.OccurredAt), cancellationToken);
+            integrationEvent.OccurredAt,
+            integrationEvent.BoardId,
+            integrationEvent.ItemId), cancellationToken);
     }
 
     public Task ExecuteAsync(
@@ -315,7 +395,11 @@ public sealed class N8nAutomationRuleEvaluator
             integrationEvent.ActorUserId,
             integrationEvent.CorrelationId,
             integrationEvent.CausationId,
-            integrationEvent.OccurredAt), cancellationToken);
+            integrationEvent.OccurredAt,
+            integrationEvent.BoardId,
+            integrationEvent.ItemId,
+            integrationEvent.NewGroupId,
+            integrationEvent.OldGroupId), cancellationToken);
     }
 
     public Task ExecuteAsync(
@@ -336,6 +420,8 @@ public sealed class N8nAutomationRuleEvaluator
             integrationEvent.ActorUserId,
             integrationEvent.CorrelationId,
             integrationEvent.CausationId,
-            integrationEvent.OccurredAt), cancellationToken);
+            integrationEvent.OccurredAt,
+            integrationEvent.BoardId,
+            integrationEvent.ItemId), cancellationToken);
     }
 }

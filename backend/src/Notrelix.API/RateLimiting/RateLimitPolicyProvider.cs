@@ -21,6 +21,10 @@ public sealed class RateLimitPolicyProvider : IRateLimitPolicyProvider
 
 public sealed class RateLimitPolicy
 {
+    public const string FailModeOpen = "Open";
+    public const string FailModeClosed = "Closed";
+
+
     public int PermitLimit { get; init; }
     public int WindowSeconds { get; init; }
     public string Algorithm { get; init; } = "SlidingWindow";

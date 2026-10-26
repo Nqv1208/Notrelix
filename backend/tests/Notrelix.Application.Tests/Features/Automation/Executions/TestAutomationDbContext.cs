@@ -37,6 +37,8 @@ public sealed class TestAutomationDbContext(DbContextOptions<TestAutomationDbCon
                 config.OwnsOne(c => c.Trigger);
                 config.OwnsOne(c => c.Action);
                 config.OwnsOne(c => c.Condition);
+                config.OwnsMany(c => c.MoreActions);
+                config.Ignore(c => c.Actions);
             });
         });
 

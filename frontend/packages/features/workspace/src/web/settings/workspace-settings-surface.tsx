@@ -25,7 +25,12 @@ import {
   cn,
 } from "@notrelix/ui-web";
 import { ASSIGNABLE_ROLES } from "../../core/model/members";
-import type { WorkspaceSettings } from "../../core/types/workspace";
+import {
+  allTimeZones,
+  resolveTimeZone,
+  WORKSPACE_TIME_ZONES,
+  type WorkspaceSettings,
+} from "../../core/types/workspace";
 import type { SectionState } from "../home/home-models";
 import { formatCopy } from "../shell/shell-models";
 import type { WorkspaceSettingsCopy } from "./workspace-settings.copy";
@@ -380,6 +385,10 @@ function DefaultsForm({
   const expiryId = React.useId();
   const expiryHelpId = React.useId();
   const expiryErrorId = React.useId();
+  const zoneId = React.useId();
+  const zoneHelpId = React.useId();
+  const zoneListId = React.useId();
+  const weekId = React.useId();
 
   React.useEffect(() => {
     setDraft(values);
@@ -389,8 +398,11 @@ function DefaultsForm({
   const expiry = Number(expiryText);
   const expiryValid =
     /^\d+$/.test(expiryText.trim()) && expiry >= 1 && expiry <= 30;
+  const resolvedZone = resolveTimeZone(draft.timeZone);
+  const zoneValid = resolvedZone !== null;
   const next: WorkspaceSettings = {
     ...draft,
+    timeZone: resolvedZone ?? draft.timeZone,
     invitationExpiryDays: expiryValid ? expiry : draft.invitationExpiryDays,
   };
   const dirty =
@@ -399,6 +411,8 @@ function DefaultsForm({
     next.allowGuestInvites !== values.allowGuestInvites ||
     next.allowPublicSharing !== values.allowPublicSharing ||
     next.enforceMfa !== values.enforceMfa ||
+    next.timeZone !== values.timeZone ||
+    next.weekStart !== values.weekStart ||
     expiryText.trim() !== String(values.invitationExpiryDays);
   const saving = status.state === "saving";
   const disabled = locked || saving;
@@ -409,7 +423,7 @@ function DefaultsForm({
       aria-label={copy.defaults.title}
       onSubmit={(event) => {
         event.preventDefault();
-        if (locked || !expiryValid || !dirty || saving) return;
+        if (locked || !expiryValid || !zoneValid || !dirty || saving) return;
         onSave(next);
       }}
       className="flex flex-col gap-5"
@@ -467,6 +481,66 @@ function DefaultsForm({
           </FieldError>
         ) : null}
       </Field>
+      <Field className="gap-2">
+        <FieldLabel htmlFor={zoneId}>{copy.defaults.timeZoneLabel}</FieldLabel>
+        <Input
+          id={zoneId}
+          list={zoneListId}
+          value={draft.timeZone}
+          disabled={disabled}
+          autoComplete="off"
+          placeholder={copy.defaults.timeZonePlaceholder}
+          aria-describedby={zoneHelpId}
+          aria-invalid={!zoneValid ? true : undefined}
+          className="max-w-64"
+          onChange={(event) =>
+            setDraft((current) => ({
+              ...current,
+              timeZone: event.target.value,
+            }))
+          }
+        />
+        <datalist id={zoneListId}>
+          {allTimeZones().map((zone) => (
+            <option
+              key={zone}
+              value={zone}
+              label={
+                (WORKSPACE_TIME_ZONES as readonly string[]).includes(zone)
+                  ? copy.timeZones[zone as keyof typeof copy.timeZones]
+                  : undefined
+              }
+            />
+          ))}
+        </datalist>
+        {!zoneValid ? (
+          <FieldError>{copy.defaults.timeZoneInvalid}</FieldError>
+        ) : null}
+        <FieldDescription id={zoneHelpId}>
+          {copy.defaults.timeZoneHelp}
+        </FieldDescription>
+      </Field>
+      <Field className="gap-2">
+        <FieldLabel htmlFor={weekId}>{copy.defaults.weekStartLabel}</FieldLabel>
+        <Select
+          value={draft.weekStart}
+          disabled={disabled}
+          onValueChange={(value) =>
+            setDraft((current) => ({
+              ...current,
+              weekStart: value as WorkspaceSettings["weekStart"],
+            }))
+          }
+        >
+          <SelectTrigger id={weekId} className="max-w-48">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="monday">{copy.weekDays.monday}</SelectItem>
+            <SelectItem value="sunday">{copy.weekDays.sunday}</SelectItem>
+          </SelectContent>
+        </Select>
+      </Field>
       <div className="flex max-w-xl flex-col gap-4">
         <SwitchField
           label={copy.defaults.guestsLabel}
@@ -501,7 +575,7 @@ function DefaultsForm({
           copy={copy}
           status={status}
           dirty={dirty}
-          invalid={!expiryValid}
+          invalid={!expiryValid || !zoneValid}
           disabled={locked}
           onDiscard={() => {
             setDraft(values);

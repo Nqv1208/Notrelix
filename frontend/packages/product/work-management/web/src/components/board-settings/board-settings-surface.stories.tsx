@@ -21,6 +21,7 @@ import {
   eventRule,
   scheduleRule,
 } from "../../verification/board-automation-fixtures";
+import { workspaceRulesPanel } from "../../verification/workspace-rules-fixtures";
 
 const meta = {
   title: "Work Management/Board Settings/Surface",
@@ -245,4 +246,55 @@ export const AutomationRunDetail: Story = {
     />
   ),
   tags: ["fui-surface--wm.board-settings", "fui-state--EdgeData"],
+};
+
+/** The workspace's automation rules, one running and one turned off by the system. */
+export const WorkspaceRules: Story = {
+  render: () => (
+    <SettingsStory
+      initialSection="automations"
+      workspaceRules={workspaceRulesPanel()}
+    />
+  ),
+  tags: [
+    "fui-surface--wm.board-settings.workspace-rules",
+    "fui-state--Default",
+  ],
+};
+
+export const WorkspaceRulesLoading: Story = {
+  render: () => (
+    <SettingsStory
+      initialSection="automations"
+      workspaceRules={workspaceRulesPanel({ status: "loading", rules: [] })}
+    />
+  ),
+  tags: [
+    "fui-surface--wm.board-settings.workspace-rules",
+    "fui-state--Loading",
+  ],
+};
+
+export const WorkspaceRulesError: Story = {
+  render: () => (
+    <SettingsStory
+      initialSection="automations"
+      workspaceRules={workspaceRulesPanel({ status: "error", rules: [] })}
+    />
+  ),
+  tags: ["fui-surface--wm.board-settings.workspace-rules", "fui-state--Error"],
+};
+
+/** A member who does not manage the workspace sees why the rules are closed. */
+export const WorkspaceRulesForbidden: Story = {
+  render: () => (
+    <SettingsStory
+      initialSection="automations"
+      workspaceRules={workspaceRulesPanel({ status: "forbidden", rules: [] })}
+    />
+  ),
+  tags: [
+    "fui-surface--wm.board-settings.workspace-rules",
+    "fui-state--ReadOnly",
+  ],
 };

@@ -11,6 +11,11 @@ import {
   FieldError,
   FieldLabel,
   Input,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@notrelix/ui-web";
 import { formatCopy } from "../shell/shell-models";
 import type { MyWorkCreateBoard } from "./my-work-types";
@@ -28,8 +33,21 @@ export interface CreateResourceDialogProps {
   /** The Space the resource is created in (OT-5); `null` = workspace level. */
   readonly spaceName?: string | null;
   readonly onOpenChange: (open: boolean) => void;
-  readonly onSubmit: (kind: CreatableResource, name: string) => void;
+  /** The workspace's page templates a new Doc can start from (none = a blank page only). */
+  readonly templates?: readonly CreateResourceTemplate[];
+  readonly onSubmit: (
+    kind: CreatableResource,
+    name: string,
+    templateId?: string,
+  ) => void;
 }
+
+export interface CreateResourceTemplate {
+  readonly id: string;
+  readonly name: string;
+}
+
+const BLANK = "__blank__";
 
 /** Names a new Board or Doc (WX-HOME-002, WX-DIR-001). */
 export function CreateResourceDialog({
@@ -38,17 +56,21 @@ export function CreateResourceDialog({
   pending,
   error,
   spaceName = null,
+  templates = [],
   onOpenChange,
   onSubmit,
 }: CreateResourceDialogProps) {
   const [name, setName] = useState("");
+  const [templateId, setTemplateId] = useState(BLANK);
   const [touched, setTouched] = useState(false);
   const inputId = useId();
+  const templateFieldId = useId();
   const errorId = useId();
 
   useEffect(() => {
     if (kind === null) {
       setName("");
+      setTemplateId(BLANK);
       setTouched(false);
     }
   }, [kind]);
@@ -62,7 +84,11 @@ export function CreateResourceDialog({
     event.preventDefault();
     setTouched(true);
     if (!kind || trimmed === "" || pending) return;
-    onSubmit(kind, trimmed);
+    const chosen = templates.some((entry) => entry.id === templateId)
+      ? templateId
+      : undefined;
+    if (kind === "doc" && chosen) onSubmit(kind, trimmed, chosen);
+    else onSubmit(kind, trimmed);
   };
 
   return (
@@ -102,6 +128,28 @@ export function CreateResourceDialog({
             />
             {message ? <FieldError id={errorId}>{message}</FieldError> : null}
           </Field>
+          {!isBoard && templates.length > 0 ? (
+            <Field>
+              <FieldLabel htmlFor={templateFieldId}>
+                {copy.create.templateLabel}
+              </FieldLabel>
+              <Select value={templateId} onValueChange={setTemplateId}>
+                <SelectTrigger id={templateFieldId} className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={BLANK}>
+                    {copy.create.templateBlank}
+                  </SelectItem>
+                  {templates.map((entry) => (
+                    <SelectItem key={entry.id} value={entry.id}>
+                      {entry.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+          ) : null}
           <DialogFooter>
             <Button
               type="button"
@@ -132,7 +180,14 @@ export interface AddItemDialogProps {
   readonly pending: boolean;
   readonly error: string | null;
   readonly onOpenChange: (open: boolean) => void;
-  readonly onSubmit: (input: { boardId: string; name: string }) => void;
+  readonly onSubmit: (input: {
+    boardId: string;
+    name: string;
+    /** Markdown the member wrote; absent when left empty. */
+    descriptionMd?: string;
+    /** `YYYY-MM-DD`; absent when no due date was chosen. */
+    dueDay?: string;
+  }) => void;
 }
 
 /** "Thêm công việc" on Home: names an item assigned to the member on a Board. */
@@ -148,7 +203,11 @@ export function AddItemDialog({
   const [name, setName] = useState("");
   const [boardId, setBoardId] = useState<string | null>(null);
   const [touched, setTouched] = useState(false);
+  const [descriptionMd, setDescriptionMd] = useState("");
+  const [dueDay, setDueDay] = useState("");
   const nameId = useId();
+  const descriptionId = useId();
+  const dueId = useId();
   const boardIdField = useId();
   const chosen = boards.find((board) => board.id === boardId) ?? boards[0];
 
@@ -156,6 +215,8 @@ export function AddItemDialog({
     if (!open) {
       setName("");
       setTouched(false);
+      setDescriptionMd("");
+      setDueDay("");
     }
   }, [open]);
 
@@ -165,7 +226,12 @@ export function AddItemDialog({
     event.preventDefault();
     setTouched(true);
     if (!chosen || trimmed === "" || pending) return;
-    onSubmit({ boardId: chosen.id, name: trimmed });
+    onSubmit({
+      boardId: chosen.id,
+      name: trimmed,
+      ...(descriptionMd.trim() ? { descriptionMd } : {}),
+      ...(dueDay ? { dueDay } : {}),
+    });
   };
 
   return (
@@ -190,21 +256,47 @@ export function AddItemDialog({
             {message ? <FieldError>{message}</FieldError> : null}
           </Field>
           <Field>
+            <FieldLabel htmlFor={descriptionId}>
+              {copy.list.addDescription}
+            </FieldLabel>
+            <textarea
+              id={descriptionId}
+              rows={3}
+              value={descriptionMd}
+              maxLength={20000}
+              placeholder={copy.list.addDescriptionPlaceholder}
+              onChange={(event) => setDescriptionMd(event.target.value)}
+              className="box-border min-h-[72px] w-full resize-y rounded-[8px] border border-input bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            />
+          </Field>
+          <Field>
+            <FieldLabel htmlFor={dueId}>{copy.list.addDue}</FieldLabel>
+            <Input
+              id={dueId}
+              type="date"
+              value={dueDay}
+              onChange={(event) => setDueDay(event.target.value)}
+            />
+          </Field>
+          <Field>
             <FieldLabel htmlFor={boardIdField}>{copy.list.addBoard}</FieldLabel>
-            <select
-              id={boardIdField}
+            <Select
               value={chosen?.id ?? ""}
-              onChange={(event) => setBoardId(event.target.value)}
-              className="h-9 rounded-[8px] border border-line-strong bg-popover px-2.5 text-compact text-foreground dark:bg-card"
+              onValueChange={(value) => setBoardId(value)}
             >
-              {boards.map((board) => (
-                <option key={board.id} value={board.id}>
-                  {board.departmentName
-                    ? `${board.name} · ${board.departmentName}`
-                    : board.name}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger id={boardIdField} className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {boards.map((board) => (
+                  <SelectItem key={board.id} value={board.id}>
+                    {board.departmentName
+                      ? `${board.name} · ${board.departmentName}`
+                      : board.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </Field>
           <DialogFooter>
             <Button

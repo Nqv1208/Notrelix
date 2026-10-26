@@ -1,3 +1,4 @@
+using Notrelix.Domain.Automation.Executions;
 using Notrelix.Domain.Identity.Security;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
@@ -14,6 +15,7 @@ public sealed class StringEnumSchemaFilter : ISchemaFilter
     private static readonly HashSet<Type> StringEnums =
     [
         typeof(SecurityActivityType),
+        typeof(AutomationExecutionStatus),
     ];
 
     public void Apply(OpenApiSchema schema, SchemaFilterContext context)

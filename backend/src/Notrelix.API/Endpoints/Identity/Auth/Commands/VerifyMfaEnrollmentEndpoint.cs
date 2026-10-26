@@ -15,7 +15,7 @@ public static class VerifyMfaEnrollmentEndpoint
             .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status401Unauthorized, StatusCodes.Status429TooManyRequests)
             .WithTags("Identity.Mfa")
             .WithSummary("Verify MFA enrollment code and activate the authenticator")
-            .WithMetadata(new RateLimitPolicyAttribute("AuthStrictByIp"));
+            .WithMetadata(new RateLimitPolicyAttribute("AuthSensitiveByUser"));
         return group;
     }
 

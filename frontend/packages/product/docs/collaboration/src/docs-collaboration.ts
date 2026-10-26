@@ -1,5 +1,8 @@
 import type { RealtimeTransport } from "@notrelix/realtime";
 
+/** The realtime transport a host hands to the document page. */
+export type DocsRealtime = RealtimeTransport;
+
 export interface DocsCollaborationSubscription {
   dispose(): void;
 }
@@ -60,5 +63,43 @@ export function createDocsCollaborationAdapter(
         subscription.dispose();
       }
     },
+  };
+}
+
+/**
+ * Calls `onChange` whenever the open document may have changed on the server:
+ * a frame about it arrived, the gateway asked for recovery (subscription ack,
+ * stream gap or reset, permission loss), or the connection came back after a
+ * drop. Frames carry no payload, so the consumer refetches authoritative state.
+ */
+export function watchDocumentChanges(
+  realtime: RealtimeTransport,
+  input: { workspaceId: string; documentId: string; onChange: () => void },
+): () => void {
+  const { workspaceId, documentId, onChange } = input;
+  const adapter = createDocsCollaborationAdapter(realtime);
+  const subscription = adapter.subscribeToDocument({
+    workspaceId,
+    documentId,
+    onEvent: onChange,
+  });
+  const unsubscribeRecovery = realtime.subscribeRecovery((signal) => {
+    if (signal.workspaceId === workspaceId) onChange();
+  });
+  let dropped = realtime.getState() !== "connected";
+  const unsubscribeState = realtime.subscribeState((state) => {
+    if (state !== "connected") {
+      dropped = true;
+      return;
+    }
+    if (dropped) {
+      dropped = false;
+      onChange();
+    }
+  });
+  return () => {
+    subscription.dispose();
+    unsubscribeRecovery();
+    unsubscribeState();
   };
 }

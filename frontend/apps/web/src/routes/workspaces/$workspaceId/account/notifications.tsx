@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useParams } from "@tanstack/react-router";
 import {
   AccountNotificationsSurface,
   createUseProfile,
@@ -8,22 +8,21 @@ import {
   type AccountNotificationValues,
   type AccountSaveStatus,
 } from "@notrelix/features-account";
+import { createUseNotificationPreferences } from "@notrelix/features-notifications";
 import { useAppRuntime } from "@notrelix/runtime-web";
-import { useAccountPagesKeys, useAccountPagesApi } from "./use-account-pages";
 
-const GMT: Record<string, string> = {
-  UTC: "GMT",
-  "Asia/Ho_Chi_Minh": "GMT+7",
-  "Asia/Tokyo": "GMT+9",
-  "Europe/Paris": "GMT+1",
-};
-
+/**
+ * The member's notification choices in the workspace of the route
+ * (`Collaboration.Preferences.*`: workspace-scoped, saved with the version
+ * they were read at). Mobile and quiet hours have no producer and are not
+ * offered.
+ */
 export function AccountNotificationsPage() {
-  const accountPagesKeys = useAccountPagesKeys();
+  const { workspaceId = "" } = useParams({ strict: false }) as {
+    workspaceId?: string;
+  };
   const { api: runtimeClient } = useAppRuntime();
   const copy = useAccountNotificationsCopy();
-  const api = useAccountPagesApi();
-  const queryClient = useQueryClient();
   const [save, setSave] = useState<AccountSaveStatus>({ state: "idle" });
 
   const useProfile = useMemo(
@@ -34,52 +33,44 @@ export function AccountNotificationsPage() {
       }),
     [runtimeClient],
   );
-  const { profile } = useProfile();
-  const matrix = useQuery({
-    queryKey: accountPagesKeys.notifications,
-    queryFn: () => api.getNotificationMatrix(),
-    retry: false,
-  });
-  const details = useQuery({
-    queryKey: accountPagesKeys.details,
-    queryFn: () => api.getDetails(),
-    retry: false,
-  });
-  const write = useMutation({
-    mutationFn: (values: AccountNotificationValues) =>
-      api.saveNotificationMatrix(values),
-    onSuccess: () =>
-      queryClient.invalidateQueries({
-        queryKey: accountPagesKeys.notifications,
+  const useNotificationPreferences = useMemo(
+    () =>
+      createUseNotificationPreferences({
+        api: runtimeClient.api,
+        endpoints: runtimeClient.endpoints,
       }),
-  });
+    [runtimeClient],
+  );
+  const { profile } = useProfile();
+  const preferences = useNotificationPreferences(workspaceId);
 
   const state = useMemo<AccountNotificationsState>(
     () =>
-      matrix.data
+      preferences.preferences
         ? {
             status: "ready",
-            values: matrix.data,
+            values: preferences.preferences,
             personName: profile?.name ?? "",
-            zoneLabel: GMT[details.data?.timezone ?? ""] ?? "GMT+7",
           }
-        : matrix.isError
+        : preferences.isError
           ? { status: "error" }
           : { status: "loading" },
-    [matrix.data, matrix.isError, profile?.name, details.data?.timezone],
+    [preferences.preferences, preferences.isError, profile?.name],
   );
 
+  const { save: persist } = preferences;
   const handleSave = useCallback(
     async (values: AccountNotificationValues) => {
       setSave({ state: "saving" });
       try {
-        await write.mutateAsync(values);
+        await persist(values);
         setSave({ state: "saved" });
       } catch {
+        // A stale version has already refetched the choices; the page says it failed.
         setSave({ state: "error" });
       }
     },
-    [write],
+    [persist],
   );
 
   return (
@@ -88,7 +79,7 @@ export function AccountNotificationsPage() {
       preferences={state}
       save={save}
       onSave={(values) => void handleSave(values)}
-      onRetry={() => void matrix.refetch()}
+      onRetry={() => void preferences.refetch()}
     />
   );
 }

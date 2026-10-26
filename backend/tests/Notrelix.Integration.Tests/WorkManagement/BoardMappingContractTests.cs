@@ -23,7 +23,7 @@ public sealed class BoardMappingContractTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -42,14 +42,14 @@ public sealed class BoardMappingContractTests : IAsyncLifetime
 
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
-        await using (var context = _db.CreateContext(tenant))
+        await using (var context = _db.CreateOwnerContext(tenant))
         {
             context.Workspaces.Add(workspace);
             context.Boards.Add(board);
             await context.SaveChangesAsync();
         }
 
-        await using var verify = _db.CreateContext(tenant);
+        await using var verify = _db.CreateOwnerContext(tenant);
         var loaded = await verify.Boards.SingleAsync(b => b.Id == board.Id);
         loaded.Title.Should().Be(title);
         loaded.Description.Should().Be(description);

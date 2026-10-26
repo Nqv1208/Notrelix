@@ -35,7 +35,7 @@ public sealed class PageCreatedOutboxEvidenceTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -56,7 +56,7 @@ public sealed class PageCreatedOutboxEvidenceTests : IAsyncLifetime
         var ownerId = Guid.NewGuid();
         var workspace = Workspace.Create(accountId, ownerId, "DC Page WS", $"dc-page-{Guid.NewGuid():N}", Now);
 
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Workspaces.Add(workspace);
         await seed.SaveChangesAsync();
 
@@ -82,7 +82,7 @@ public sealed class PageCreatedOutboxEvidenceTests : IAsyncLifetime
 
     private async Task<MessagingOutboxMessage?> SinglePageOutboxAsync(Guid workspaceId, string messageName)
     {
-        await using var probe = _db.CreateContext(SystemTenant());
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
         return await probe.Set<MessagingOutboxMessage>()
             .IgnoreQueryFilters()
             .SingleOrDefaultAsync(message => message.WorkspaceId == workspaceId
@@ -99,7 +99,7 @@ public sealed class PageCreatedOutboxEvidenceTests : IAsyncLifetime
     {
         var graph = await SeedWorkspaceAsync();
 
-        await using var context = _db.CreateContext(SystemTenant(), CreateOutboxInterceptor());
+        await using var context = _db.CreateOwnerContext(SystemTenant(), CreateOutboxInterceptor());
         context.Pages.Add(NewPageFact(graph));
         await context.SaveChangesAsync();
 
@@ -118,7 +118,7 @@ public sealed class PageCreatedOutboxEvidenceTests : IAsyncLifetime
     {
         var graph = await SeedWorkspaceAsync();
 
-        await using var context = _db.CreateContext(SystemTenant(), CreateOutboxInterceptor());
+        await using var context = _db.CreateOwnerContext(SystemTenant(), CreateOutboxInterceptor());
         await using var transaction = await context.Database.BeginTransactionAsync();
         context.Pages.Add(NewPageFact(graph));
         await context.SaveChangesAsync();

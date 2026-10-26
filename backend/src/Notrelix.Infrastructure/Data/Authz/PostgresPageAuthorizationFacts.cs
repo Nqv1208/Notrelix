@@ -36,6 +36,7 @@ public sealed class PostgresPageAuthorizationFacts : IPageAuthorizationFacts
             Exists: true,
             IsActive: row.DeletedAt is null && row.Status != Domain.Documents.Pages.PageStatus.Archived,
             Visibility: row.Visibility.ToString(),
-            SpaceId: row.SpaceId);
+            SpaceId: row.SpaceId,
+            IsTrashed: row.DeletedAt is null && row.Status == Domain.Documents.Pages.PageStatus.Archived);
     }
 }

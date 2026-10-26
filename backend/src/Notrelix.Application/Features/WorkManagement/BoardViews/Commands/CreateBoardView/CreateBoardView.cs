@@ -8,7 +8,8 @@ public record CreateBoardViewCommand(
     Guid BoardId,
     string Name,
     string ViewMode,
-    string ConfigJson) : ICommand<BoardViewDto>, IWriteRequest, IRequirePermission, IAuthenticatedRequest, IResourceScopedRequest, IIdempotentRequest
+    string ConfigJson,
+    string? Visibility = null) : ICommand<BoardViewDto>, IWriteRequest, IRequirePermission, IAuthenticatedRequest, IResourceScopedRequest, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.CreateBoardView;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);
@@ -46,18 +47,14 @@ public class CreateBoardViewCommandHandler : IRequestHandler<CreateBoardViewComm
 
         var configData = JsonValue.Create(request.ConfigJson);
         var config = BoardViewConfig.Create(configData);
-        var view = BoardView.Create(_requestContext.RequireAccountId(), _requestContext.RequireWorkspaceId(), request.BoardId, request.Name, type, config, _requestContext.UserId, _dateTimeProvider.UtcNow);
+        var visibility = BoardViewVisibility.Board;
+        if (!string.IsNullOrWhiteSpace(request.Visibility) && !Enum.TryParse(request.Visibility, true, out visibility))
+            throw new ArgumentException($"Invalid view visibility: {request.Visibility}");
+        var view = BoardView.Create(_requestContext.RequireAccountId(), _requestContext.RequireWorkspaceId(), request.BoardId, request.Name, type, config, _requestContext.UserId, _dateTimeProvider.UtcNow, visibility: visibility);
 
         _context.BoardViews.Add(view);
 
-        var response = new BoardViewDto(
-            view.Id,
-            view.BoardId,
-            view.Name,
-            view.Type.ToString(),
-            view.Config.Data.Value,
-            view.IsDefault
-        );
+        var response = BoardViewDto.From(view);
         if (_realtime is not null && _events is not null)
             _events.Add(_realtime.Map(request, response, view.Version));
         return response;

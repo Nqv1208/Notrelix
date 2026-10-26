@@ -194,12 +194,8 @@ describe("WorkspaceSecuritySurface", () => {
     ).toBeTruthy();
     expect(screen.getByText("2 khách đang có")).toBeTruthy();
     expect(
-      (
-        screen.getByLabelText(
-          "Hạn quyền mặc định cho khách",
-        ) as HTMLSelectElement
-      ).value,
-    ).toBe("d90");
+      screen.getByLabelText("Hạn quyền mặc định cho khách").textContent,
+    ).toBe("90 ngày");
     expect(
       (screen.getByLabelText("Tên miền công ty") as HTMLInputElement).value,
     ).toBe("minhan.vn");

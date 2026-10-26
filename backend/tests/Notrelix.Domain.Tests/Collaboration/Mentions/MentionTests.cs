@@ -85,4 +85,17 @@ public class MentionTests
                 && e.MentionedId == mentionedId
                 && e.MentionedByUserId == mentionerId);
     }
+
+    [Fact]
+    public void Create_WithAnId_KeepsIt_SoTheSameFactAlwaysHasTheSameMention()
+    {
+        var workspaceId = Guid.NewGuid();
+        var source = ResourceRef.Create(ResourceKind.Create("documents.page"), Guid.NewGuid(), workspaceId);
+        var id = Guid.CreateVersion7();
+
+        var mention = Mention.Create(Guid.NewGuid(), workspaceId, source, MentionType.User, Guid.NewGuid(), Guid.NewGuid(), DateTimeOffset.UtcNow, "Plan", id);
+
+        mention.Id.Should().Be(id);
+        mention.DomainEvents.OfType<MentionCreatedDomainEvent>().Single().MentionId.Should().Be(id);
+    }
 }

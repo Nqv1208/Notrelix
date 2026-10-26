@@ -18,7 +18,7 @@ public class RefreshTokenCommandHandlerTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -27,7 +27,7 @@ public class RefreshTokenCommandHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_WhenSessionNotFound_ShouldReturnFailure()
     {
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateOwnerContext();
 
         var jwtService = new Mock<IJwtService>();
         var dateTimeProvider = new Mock<IDateTimeProvider>();
@@ -46,7 +46,7 @@ public class RefreshTokenCommandHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_WhenValid_ShouldRevokeOldSessionAndIssueNewTokens()
     {
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateOwnerContext();
 
         var user = User.Create("refresh@example.com", "Refresh User", "hashed", DateTimeOffset.UtcNow, hasPasswordCredential: true);
         context.Users.Add(user);

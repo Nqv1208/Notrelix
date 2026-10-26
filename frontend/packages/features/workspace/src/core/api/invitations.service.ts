@@ -23,6 +23,10 @@ export interface WorkspaceInvitationsEndpoints {
     invitations: (workspaceId: string) => string;
     /** `Workspaces.Invitations.CancelInvitation` (DELETE). */
     invitation: (workspaceId: string, invitationId: string) => string;
+    /** `Workspaces.Invitations.ChangeInvitationRole` (PATCH). */
+    invitationRole: (workspaceId: string, invitationId: string) => string;
+    /** `Workspaces.Invitations.ResendInvitation` (POST). */
+    resendInvitation: (workspaceId: string, invitationId: string) => string;
   };
 }
 
@@ -135,6 +139,29 @@ export function createWorkspaceInvitationsService(
         body,
       );
       return typeof id === "string" ? id : null;
+    },
+
+    /** Changes the role a waiting invitation offers (`PATCH …/invitations/{id}/role`). */
+    async changeRole(
+      workspaceId: string,
+      invitationId: string,
+      role: CreateWorkspaceInvitationInput["role"],
+    ): Promise<void> {
+      await api.patch<unknown>(
+        endpoints.workspaces.invitationRole(workspaceId, invitationId),
+        { newRole: ROLE_NAME[role] },
+      );
+    },
+
+    /**
+     * Sends the invitation again with a new link and a new expiry
+     * (`POST …/invitations/{id}/resend`); the invitation keeps its id.
+     */
+    async resend(workspaceId: string, invitationId: string): Promise<void> {
+      await api.post<unknown>(
+        endpoints.workspaces.resendInvitation(workspaceId, invitationId),
+        {},
+      );
     },
 
     /** Revokes a pending invitation (an expired one is marked expired). */

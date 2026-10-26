@@ -42,6 +42,16 @@ public sealed class DataProtectionIntegrationSecretStore : IIntegrationSecretSto
         return Task.FromResult(blob.Id.ToString());
     }
 
+    public async Task<string?> ReadAsync(string secretReference, CancellationToken cancellationToken)
+    {
+        if (!Guid.TryParse(secretReference, out var blobId)) return null;
+
+        var blob = await _context.IntegrationSecretBlobs
+            .AsNoTracking()
+            .FirstOrDefaultAsync(b => b.Id == blobId && !b.Revoked, cancellationToken);
+        return blob is null ? null : _encryptor.Decrypt(blob.EncryptedPayload);
+    }
+
     /// <summary>
     /// Commits the revocation of a physical secret (post-commit cleanup path —
     /// e.g. revoking a previous version's blob after a failed rotation).

@@ -20,7 +20,7 @@ public static class SetAutomationRuleEnabledEndpoint
         SetAutomationRuleEnabledRequest request,
         ISender sender)
     {
-        var result = await sender.Send(new SetAutomationRuleEnabledCommand(automationId, request.IsEnabled));
+        var result = await sender.Send(new SetAutomationRuleEnabledCommand(automationId, request.IsEnabled, request.BoardId));
         return result.ToNoContentResult();
     }
 }

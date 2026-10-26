@@ -1,6 +1,7 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Requests.Scoping;
 using Notrelix.Application.Features.Identity.Abstractions;
+using Notrelix.Application.Features.Identity.Auth.Services;
 using Notrelix.Application.Features.Identity.Verification.Abstractions;
 
 namespace Notrelix.Application.Features.Identity.Verification.Commands.ResendEmailVerification;
@@ -15,13 +16,16 @@ public sealed class ResendEmailVerificationCommandHandler
     private readonly IEmailVerificationTokenIssuer _tokenIssuer;
     private readonly IRateLimitService _rateLimitService;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly CredentialScope? _credentialScope;
 
     public ResendEmailVerificationCommandHandler(
         IIdentityDbContext identityContext,
         IEmailVerificationTokenIssuer tokenIssuer,
         IRateLimitService rateLimitService,
-        IDateTimeProvider dateTimeProvider)
+        IDateTimeProvider dateTimeProvider,
+        CredentialScope? credentialScope = null)
     {
+        _credentialScope = credentialScope;
         _identityContext = identityContext;
         _tokenIssuer = tokenIssuer;
         _rateLimitService = rateLimitService;
@@ -41,6 +45,9 @@ public sealed class ResendEmailVerificationCommandHandler
 
         if (isLimited)
             return Result.Success();
+
+        if (_credentialScope is not null)
+            await _credentialScope.EnterByEmailAsync(email, cancellationToken);
 
         var user = await _identityContext.Users
             .FirstOrDefaultAsync(x => x.NormalizedEmail == email, cancellationToken);

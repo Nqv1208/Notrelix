@@ -48,6 +48,19 @@ export interface WorkspaceInboxSurfaceProps {
   /** Marks every notification read; `null` draws the button inert. */
   readonly onMarkAllRead: (() => void) | null;
   readonly onRetry: () => void;
+  /** Older notifications the producer still holds; `null` or omitted draws no button. */
+  readonly loadMore?: {
+    readonly onLoadMore: () => void;
+    readonly loading: boolean;
+  } | null;
+  /**
+   * The Done filter: `active` lists the done entries instead of the inbox
+   * (the host loads that list); `null` or omitted draws no toggle.
+   */
+  readonly done?: {
+    readonly active: boolean;
+    readonly onToggle: () => void;
+  } | null;
   /** Approve, reply, handle, snooze and mute; omitted draws them inert. */
   readonly actions?: InboxActions;
   readonly initialView?: InboxInitialView;
@@ -182,10 +195,15 @@ export function WorkspaceInboxSurface(props: WorkspaceInboxSurfaceProps) {
     return { ...derived, ...props.counts };
   }, [items, props.counts]);
 
+  const doneActive = props.done?.active === true;
   const shown = useMemo(
     () =>
-      items.filter((item) => inTab(item, tab) && (!unreadOnly || item.unread)),
-    [items, tab, unreadOnly],
+      doneActive
+        ? items
+        : items.filter(
+            (item) => inTab(item, tab) && (!unreadOnly || item.unread),
+          ),
+    [doneActive, items, tab, unreadOnly],
   );
   const selectable = shown.filter((item) => item.bundle === null);
   const selected =
@@ -285,6 +303,7 @@ export function WorkspaceInboxSurface(props: WorkspaceInboxSurfaceProps) {
           copy={copy}
           unreadOnly={unreadOnly}
           onToggleUnread={() => setUnreadOnly((value) => !value)}
+          done={props.done}
         />
         <div
           id="inbox-panel"
@@ -326,18 +345,22 @@ export function WorkspaceInboxSurface(props: WorkspaceInboxSurfaceProps) {
                 />
               </span>
               <b className="text-base leading-[1.45] font-semibold text-foreground">
-                {allEmpty && tab === "all"
-                  ? copy.allEmpty.title
-                  : unreadOnly && tab === "all"
-                    ? copy.filteredEmpty.title
-                    : copy.empty.title}
+                {doneActive
+                  ? copy.doneEmpty.title
+                  : allEmpty && tab === "all"
+                    ? copy.allEmpty.title
+                    : unreadOnly && tab === "all"
+                      ? copy.filteredEmpty.title
+                      : copy.empty.title}
               </b>
               <p className="m-0 max-w-[44ch] text-nav leading-[1.45] font-normal">
-                {allEmpty && tab === "all"
-                  ? copy.allEmpty.text
-                  : unreadOnly && tab === "all"
-                    ? copy.filteredEmpty.text
-                    : copy.empty.text}
+                {doneActive
+                  ? copy.doneEmpty.text
+                  : allEmpty && tab === "all"
+                    ? copy.allEmpty.text
+                    : unreadOnly && tab === "all"
+                      ? copy.filteredEmpty.text
+                      : copy.empty.text}
               </p>
               {unreadOnly && tab === "all" && !allEmpty ? (
                 <button
@@ -389,6 +412,19 @@ export function WorkspaceInboxSurface(props: WorkspaceInboxSurfaceProps) {
                   ))}
                 </div>
               ))}
+              {props.loadMore ? (
+                <div className="flex justify-center p-3">
+                  <button
+                    data-f="more"
+                    type="button"
+                    disabled={props.loadMore.loading}
+                    onClick={props.loadMore.onLoadMore}
+                    className="inline-flex h-8 cursor-pointer items-center rounded-[7px] border border-line-strong bg-popover px-3 text-compact font-medium text-foreground outline-none hover:bg-state-hover focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-not-allowed disabled:opacity-60 dark:bg-card"
+                  >
+                    {props.loadMore.loading ? copy.loadingMore : copy.loadMore}
+                  </button>
+                </div>
+              ) : null}
             </div>
           )}
         </div>

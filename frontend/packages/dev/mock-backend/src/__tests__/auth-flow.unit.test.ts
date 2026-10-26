@@ -30,16 +30,17 @@ describe("how an email signs in", () => {
 });
 
 describe("password sign-in", () => {
-  it("counts wrong passwords, locks on the fifth for a minute and opens again", () => {
+  it("counts wrong passwords, throttles on the fifth for a minute and opens again", () => {
     const { auth, advance } = directory();
     const outcomes = Array.from({ length: 5 }, () =>
       auth.login(MOCK_AUTH.personalEmail, "sai"),
     );
-    expect(outcomes.slice(0, 4).map((o) => o.kind)).toEqual(
-      Array(4).fill("invalid"),
-    );
-    expect(outcomes[3]).toMatchObject({ attemptsLeft: 1, locked: false });
-    expect(outcomes[4]).toMatchObject({ kind: "invalid", locked: true });
+    expect(outcomes.slice(0, 4)).toEqual(Array(4).fill({ kind: "invalid" }));
+    // No answer says how many tries are left.
+    expect(outcomes[4]).toEqual({
+      kind: "locked",
+      retryAfterSeconds: MOCK_AUTH.lockSeconds,
+    });
     // Locked: even the right password waits.
     expect(
       auth.login(MOCK_AUTH.personalEmail, MOCK_AUTH.personalPassword),
@@ -55,47 +56,48 @@ describe("password sign-in", () => {
 
   it("does not tell a wrong email from a wrong password", () => {
     const { auth } = directory();
-    expect(auth.login("khong-co@gmail.com", "sai")).toMatchObject({
+    expect(auth.login("khong-co@gmail.com", "sai")).toEqual({
       kind: "invalid",
-      attemptsLeft: 4,
     });
   });
 });
 
 describe("second step", () => {
-  it("opens with the app's digits or a backup code, refuses others and gives up after five", () => {
+  it("opens with the app's digits or a recovery code, refuses others and kills the challenge after five", () => {
     const { auth } = directory();
     const first = auth.login(
       MOCK_AUTH.personalEmail,
       MOCK_AUTH.personalPassword,
     );
     if (first.kind !== "otp") throw new Error("expected the second step");
-    expect(auth.verifyOtp(first.challengeId, "000000")).toMatchObject({
+    expect(auth.verifyOtp(first.challengeToken, "000000")).toEqual({
       kind: "invalid",
-      attemptsLeft: 4,
     });
-    expect(auth.verifyOtp(first.challengeId, MOCK_AUTH.otpCode).kind).toBe(
+    expect(auth.verifyOtp(first.challengeToken, MOCK_AUTH.otpCode).kind).toBe(
       "signed-in",
     );
     // The challenge is spent.
-    expect(auth.verifyOtp(first.challengeId, MOCK_AUTH.otpCode).kind).toBe(
-      "expired",
+    expect(auth.verifyOtp(first.challengeToken, MOCK_AUTH.otpCode).kind).toBe(
+      "challenge-invalid",
     );
     const second = auth.login(
       MOCK_AUTH.personalEmail,
       MOCK_AUTH.personalPassword,
     );
     if (second.kind !== "otp") throw new Error("expected the second step");
-    expect(auth.verifyOtp(second.challengeId, MOCK_AUTH.backupCode).kind).toBe(
-      "signed-in",
-    );
+    expect(
+      auth.verifyOtp(second.challengeToken, MOCK_AUTH.backupCode).kind,
+    ).toBe("signed-in");
     const third = auth.login(
       MOCK_AUTH.personalEmail,
       MOCK_AUTH.personalPassword,
     );
     if (third.kind !== "otp") throw new Error("expected the second step");
-    for (let i = 0; i < 4; i += 1) auth.verifyOtp(third.challengeId, "111111");
-    expect(auth.verifyOtp(third.challengeId, "111111").kind).toBe("expired");
+    for (let i = 0; i < 4; i += 1)
+      auth.verifyOtp(third.challengeToken, "111111");
+    expect(auth.verifyOtp(third.challengeToken, "111111").kind).toBe(
+      "challenge-invalid",
+    );
   });
 });
 

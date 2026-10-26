@@ -27,6 +27,7 @@ import {
   ItemPageFiles,
   ItemPageLinks,
 } from "./item-page-sections";
+import { approvalCandidates } from "./item-page-approval";
 import { ItemPageTopbar } from "./item-page-topbar";
 import { BUTTON_SM_VARIANT_CLASS } from "./item-page-parts";
 import { formatItemDate } from "../shared/item-display";
@@ -259,6 +260,7 @@ export function ItemPageSurface({
             capabilities={capabilities}
             callbacks={callbacks}
             copy={copy}
+            approvers={approvalCandidates(board, people, viewer?.userId)}
           />
           {/* Below the desktop width the two columns stack and the page scrolls as one. */}
           <div className="flex min-h-0 flex-1 flex-col overflow-y-auto lg:flex-row lg:overflow-hidden">
@@ -313,27 +315,31 @@ export function ItemPageSurface({
                   />
                 ) : null}
                 {!capabilities.canEditFields && !archived ? (
-                  <ItemPageReadOnlyNotice
-                    access={access}
-                    copy={copy}
-                    timeZone={timeZone}
-                  />
+                  <ItemPageReadOnlyNotice access={access} copy={copy} />
                 ) : null}
                 <ItemPageDescription
                   card={card}
                   copy={copy}
                   editable={capabilities.canEditFields}
+                  onSave={(descriptionMd) =>
+                    callbacks.onRenameTitle(card.id, { descriptionMd })
+                  }
                 />
-                <ItemPageChildItems
-                  card={card}
-                  items={detailData.childItems}
-                  capabilities={capabilities}
-                  callbacks={callbacks}
-                  copy={copy}
-                  now={now}
-                  timeZone={timeZone}
-                  pending={offline?.childItems === true}
-                />
+                {/* Sub-items are one level: a sub-item lists none. */}
+                {!card.parentItemId &&
+                (detailData.childItems !== undefined ||
+                  callbacks.onAddChildItem) ? (
+                  <ItemPageChildItems
+                    card={card}
+                    items={detailData.childItems}
+                    capabilities={capabilities}
+                    callbacks={callbacks}
+                    copy={copy}
+                    now={now}
+                    timeZone={timeZone}
+                    pending={offline?.childItems === true}
+                  />
+                ) : null}
                 <div className="grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-6">
                   <ItemPageLinks
                     links={detailData.links}

@@ -3,6 +3,7 @@ using Microsoft.Extensions.Options;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Rls;
 using Notrelix.Integration.Tests.Containers;
+using Notrelix.Domain.Workspaces.Spaces;
 using Notrelix.Testing.Application.Fakes;
 
 namespace Notrelix.Integration.Tests.Data;
@@ -20,7 +21,7 @@ public class SeedDataInitialiserTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -42,7 +43,7 @@ public class SeedDataInitialiserTests : IAsyncLifetime
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
-        await using var context = _db.CreateContext(tenant);
+        await using var context = _db.CreateOwnerContext(tenant);
         var initialiser = CreateInitialiser(context);
 
         await initialiser.SeedAsync();
@@ -64,11 +65,32 @@ public class SeedDataInitialiserTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Small_profile_places_every_board_in_a_department_space()
+    {
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = _db.CreateOwnerContext(tenant);
+
+        await CreateInitialiser(context).SeedAsync();
+
+        var departments = await context.Spaces.Where(space => space.SpaceType == SpaceType.Department).ToListAsync();
+        departments.Select(space => space.Name).Distinct().Should().BeEquivalentTo(
+            ["IT", "Accounting", "Marketing", "Sales", "HR", "Customer Support"]);
+        departments.Should().HaveCount(6 * 5);
+
+        var departmentIds = departments.Select(space => space.Id).ToHashSet();
+        var boards = await context.Boards.ToListAsync();
+        boards.Should().OnlyContain(board => board.SpaceId != null && departmentIds.Contains(board.SpaceId.Value));
+        boards.Should().OnlyContain(board =>
+            departments.Single(space => space.Id == board.SpaceId).WorkspaceId == board.WorkspaceId);
+    }
+
+    [Fact]
     public async Task Seed_without_reset_is_idempotent_when_sentinel_exists()
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
-        await using var context = _db.CreateContext(tenant);
+        await using var context = _db.CreateOwnerContext(tenant);
         var initialiser = CreateInitialiser(context);
 
         await initialiser.SeedAsync();
@@ -85,7 +107,7 @@ public class SeedDataInitialiserTests : IAsyncLifetime
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
-        await using var context = _db.CreateContext(tenant);
+        await using var context = _db.CreateOwnerContext(tenant);
 
         await CreateInitialiser(context).SeedAsync();
 
@@ -106,7 +128,7 @@ public class SeedDataInitialiserTests : IAsyncLifetime
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
-        await using var context = _db.CreateContext(tenant);
+        await using var context = _db.CreateOwnerContext(tenant);
 
         await CreateInitialiser(context).SeedAsync();
 
@@ -131,7 +153,8 @@ public class SeedDataInitialiserTests : IAsyncLifetime
             var membershipCount = await context.WorkspaceMembers
                 .CountAsync(member => member.UserId == user.Id);
 
-            membershipCount.Should().Be(workspaceCount - 1);
+            // A workspace the account owns is also one of its memberships: the creator is its Owner member.
+            membershipCount.Should().Be(workspaceCount);
         }
     }
 
@@ -140,7 +163,7 @@ public class SeedDataInitialiserTests : IAsyncLifetime
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
-        await using var context = _db.CreateContext(tenant);
+        await using var context = _db.CreateOwnerContext(tenant);
 
         await CreateInitialiser(context).SeedAsync();
         await CreateInitialiser(context, resetBeforeSeed: true).SeedAsync();
@@ -159,7 +182,7 @@ public class SeedDataInitialiserTests : IAsyncLifetime
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
-        await using var context = _db.CreateContext(tenant);
+        await using var context = _db.CreateOwnerContext(tenant);
         await CreateInitialiser(context).SeedAsync();
 
         var boardId = await context.Boards
@@ -198,7 +221,7 @@ public class SeedDataInitialiserTests : IAsyncLifetime
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
-        await using var context = _db.CreateContext(tenant);
+        await using var context = _db.CreateOwnerContext(tenant);
         await CreateInitialiser(context).SeedAsync();
 
         (await context.Blocks.CountAsync()).Should().Be(500);

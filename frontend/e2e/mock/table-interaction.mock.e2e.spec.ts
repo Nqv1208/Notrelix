@@ -183,7 +183,7 @@ test.describe("Board table interaction (owner)", () => {
       "aria-selected",
       "true",
     );
-    await page.getByRole("tab", { name: "Bảng" }).click();
+    await page.getByRole("tab", { name: "Table" }).click();
     await expect(
       page.getByRole("separator", { name: "Đổi độ rộng cột Tên công việc" }),
     ).toHaveAttribute("aria-valuenow", "380");

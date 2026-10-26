@@ -55,6 +55,36 @@ public class RlsSessionContextTests
     }
 
     [Fact]
+    public async Task ApplyUserScopeAsync_SetSessionContextFalse_IsANoOp()
+    {
+        var context = CreateContext(setSessionContext: false, CreateTenant().Object);
+
+        var act = () => context.ApplyUserScopeAsync(Guid.NewGuid(), CancellationToken.None);
+
+        await act.Should().NotThrowAsync();
+    }
+
+    [Fact]
+    public async Task ApplyUserScopeAsync_RejectsAnEmptyUser()
+    {
+        var context = CreateContext(setSessionContext: true, CreateTenant().Object);
+
+        await context.Invoking(c => c.ApplyUserScopeAsync(Guid.Empty, CancellationToken.None))
+            .Should().ThrowAsync<ArgumentException>();
+    }
+
+    [Fact]
+    public async Task EnterTokenScopeAsync_RequiresADigest()
+    {
+        var context = CreateContext(setSessionContext: true, CreateTenant().Object);
+        var reason = new Notrelix.Application.Common.SystemOperations.SystemOperationReason("InvitationToken", "test");
+
+        await context.Invoking(c => c.EnterTokenScopeAsync(
+                new TokenScopeRequest(TokenScopePurpose.WorkspaceInvitation, " ", 1, reason), CancellationToken.None))
+            .Should().ThrowAsync<ArgumentException>();
+    }
+
+    [Fact]
     public async Task ApplyAsync_SetSessionContextFalse_System_DoesNotThrow()
     {
         var tenant = CreateTenant(isSystem: true);

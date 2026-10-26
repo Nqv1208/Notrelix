@@ -17,7 +17,9 @@ import {
   type OnboardingStepId,
   type OnboardingSummary,
 } from "@notrelix/features-workspace/web";
+import { clearApplicationCache } from "@/composition/application-lifecycle";
 import { AuthGuard } from "@/shell/guards/auth-guard";
+import { backendCapabilities } from "@/config/backend-capabilities";
 import { useOnboardingApi } from "./use-onboarding-api";
 
 const SLUG_SHAPE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -85,7 +87,9 @@ function SetupFlow() {
   const [summary, setSummary] = useState<OnboardingSummary | null>(null);
   const [invitesSent, setInvitesSent] = useState(0);
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState<"unreachable" | null>(null);
+  const [error, setError] = useState<
+    "unreachable" | "emailNotConfirmed" | null
+  >(null);
   const [today] = useState(() => new Date());
 
   // Resume what "Lưu và thoát" kept, once.
@@ -149,7 +153,9 @@ function SetupFlow() {
       draft.workspace.name,
     ],
     queryFn: () => api.catalog(draft.workspace.size, draft.workspace.name),
-    enabled: step !== "workspace" || created.workspace,
+    enabled:
+      backendCapabilities.onboardingCatalog &&
+      (step !== "workspace" || created.workspace),
     staleTime: 60_000,
     retry: false,
   });
@@ -201,8 +207,13 @@ function SetupFlow() {
     setError(null);
     try {
       await work();
-    } catch {
-      setError("unreachable");
+    } catch (failure) {
+      // The backend answers 403 until the address is confirmed.
+      setError(
+        (failure as { status?: number }).status === 403
+          ? "emailNotConfirmed"
+          : "unreachable",
+      );
     } finally {
       setPending(false);
     }
@@ -310,6 +321,11 @@ function SetupFlow() {
       }
     });
 
+  const onResendConfirmation = () =>
+    void run(async () => {
+      await runtimeClient.api.post("/auth/email-verification/request", {});
+    });
+
   const onBack = () => {
     if (step === "departments") setStep("workspace");
     else if (step === "invite") setStep("departments");
@@ -339,7 +355,7 @@ function SetupFlow() {
         } satisfies SavedData as unknown as Record<string, unknown>,
       });
       await runtimeClient.api.post(runtimeClient.endpoints.auth.logout, {});
-      queryClient.clear();
+      clearApplicationCache(queryClient, { sessionEnded: true });
       await navigate({ to: "/sign-in", replace: true });
     });
 
@@ -396,6 +412,7 @@ function SetupFlow() {
       onBack={onBack}
       onSkip={onSkip}
       onExit={onExit}
+      onResendConfirmation={onResendConfirmation}
       onEnterHome={() =>
         void navigate({
           to: "/workspaces/$workspaceId",

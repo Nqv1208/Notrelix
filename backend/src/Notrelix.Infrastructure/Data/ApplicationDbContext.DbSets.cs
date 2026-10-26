@@ -168,6 +168,7 @@ public partial class ApplicationDbContext
     public DbSet<BoardItem> BoardItems => Set<BoardItem>();
     public DbSet<BoardItemValue> BoardItemValues => Set<BoardItemValue>();
     public DbSet<BoardItemMember> BoardItemMembers => Set<BoardItemMember>();
+    public DbSet<BoardItemReminder> BoardItemReminders => Set<BoardItemReminder>();
     public DbSet<BoardItemLabel> BoardItemLabels => Set<BoardItemLabel>();
     public DbSet<BoardItemLink> BoardItemLinks => Set<BoardItemLink>();
     public DbSet<Label> Labels => Set<Label>();
@@ -286,6 +287,7 @@ public partial class ApplicationDbContext
     public DbSet<NotificationRecipientRecord> NotificationRecipients => Set<NotificationRecipientRecord>();
     public DbSet<NotificationPreferenceSet> NotificationPreferenceSets => Set<NotificationPreferenceSet>();
     public DbSet<NotificationCounterRecord> NotificationCounters => Set<NotificationCounterRecord>();
+    public DbSet<NotificationThreadMuteRecord> NotificationThreadMutes => Set<NotificationThreadMuteRecord>();
 
     // Collaboration read states
     public DbSet<ResourceReadState> ResourceReadStates => Set<ResourceReadState>();

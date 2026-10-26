@@ -218,7 +218,9 @@ export function ViewPanel({
           </FormGroup>
         )}
 
-        {view.kind === "kanban" && !broken ? (
+        {view.kind === "kanban" &&
+        !broken &&
+        !settings.unavailable?.viewSplit ? (
           <FormGroup label={t.splitBy} hint={t.splitHint}>
             <FieldSelect
               label={t.splitBy}
@@ -229,7 +231,7 @@ export function ViewPanel({
           </FormGroup>
         ) : null}
 
-        {view.kind === "calendar" ? (
+        {view.kind === "calendar" && !settings.unavailable?.viewSplit ? (
           <FormGroup label={t.placeBy} hint={t.placeHint}>
             <FieldSelect
               label={t.placeBy}
@@ -399,6 +401,15 @@ export function ViewPanel({
             className={BUTTON_CLASS.ghostDanger}
           >
             {broken ? t.deleteView : t.delete}
+          </button>
+        )}
+        {broken || view.isDefault || view.visibility === "me" ? null : (
+          <button
+            type="button"
+            onClick={() => void run(actions.setDefaultView(view.id))}
+            className={BUTTON_CLASS.ghost}
+          >
+            {t.makeDefault}
           </button>
         )}
         {broken ? null : (

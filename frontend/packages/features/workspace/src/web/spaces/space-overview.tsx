@@ -649,11 +649,11 @@ export function WorkloadBlock({
         data-f="wlg"
         className="mt-2 flex gap-3 text-micro leading-[1.45] text-meta-foreground"
       >
-        <span className="inline-flex items-center gap-[5px]">
+        <span className="inline-flex shrink-0 items-center gap-[5px] whitespace-nowrap">
           <i className="inline-block size-2 rounded-[2px] bg-work-status-doing" />
           {a.legendDoing}
         </span>
-        <span className="inline-flex items-center gap-[5px]">
+        <span className="inline-flex shrink-0 items-center gap-[5px] whitespace-nowrap">
           <i className="inline-block size-2 rounded-[2px] bg-danger-text" />
           {a.legendOverdue}
         </span>

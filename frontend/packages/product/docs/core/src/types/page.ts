@@ -3,7 +3,7 @@ import type { DocsUser } from "./user";
 import type { LinkedTask, LinkedBoard } from "./integration";
 import type { Block } from "./block";
 
-export type PageStatus = "draft" | "review" | "published" | "archived";
+export type PageStatus = "active" | "archived";
 
 export interface CollaborativeMetadata {
   version: number;

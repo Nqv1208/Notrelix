@@ -50,7 +50,8 @@ public class BoardReadContractOpenApiTests
     {
         Properties("BoardItemSummaryDto").Should().Contain(ItemValueProperties);
         Properties("BoardItemDto").Should().Contain(ItemValueProperties);
-        Properties("BoardItemDto").Should().NotContain("descriptionMd", "an Item has no description in the model yet");
+        Properties("BoardItemDto").Should().Contain("descriptionMd", "an Item carries its Markdown description");
+        Required(Schema("BoardItemDto")).Should().NotContain("descriptionMd", "an item without a description omits it");
     }
 
     [Fact]

@@ -24,7 +24,7 @@ public static class CreateWorkspaceEndpoint
         ISender sender)
     {
         tenant.SetAccount(accountId, currentUser.UserId);
-        var command = new CreateWorkspaceCommand(body.Name, body.Description, body.IsPersonal);
+        var command = new CreateWorkspaceCommand(body.Name, body.Description, body.IsPersonal, body.Slug, body.Size, body.Language);
         var result = await sender.Send(command);
         return result.ToCreatedResult();
     }

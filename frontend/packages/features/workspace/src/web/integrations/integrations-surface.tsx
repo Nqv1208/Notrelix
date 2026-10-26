@@ -294,17 +294,26 @@ export function IntegrationsListSurface(props: IntegrationsListProps) {
                     {item.desc}
                   </small>
                 </span>
-                <button
-                  type="button"
-                  aria-label={formatCopy(
-                    item.enterprise ? copy.viewAria : copy.connectAria,
-                    { name: item.name },
-                  )}
-                  onClick={() => props.onConnect(item.key)}
-                  className={BILLING_BTN_SM}
-                >
-                  {item.enterprise ? copy.view : copy.connect}
-                </button>
+                {item.configured === false ? (
+                  <span
+                    data-f="not-configured"
+                    className="inline-flex h-8 items-center rounded-[7px] bg-state-hover-strong px-3 text-compact leading-[1.45] font-semibold whitespace-nowrap text-meta-foreground"
+                  >
+                    {copy.notConfigured}
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    aria-label={formatCopy(
+                      item.enterprise ? copy.viewAria : copy.connectAria,
+                      { name: item.name },
+                    )}
+                    onClick={() => props.onConnect(item.key)}
+                    className={BILLING_BTN_SM}
+                  >
+                    {item.enterprise ? copy.view : copy.connect}
+                  </button>
+                )}
               </div>
             ))}
           </div>
@@ -937,6 +946,14 @@ export interface IntegrationConnectDialogProps extends Shared {
   readonly onScope: (scope: "workspace" | "board") => void;
   readonly onNext: () => void;
   readonly onClose: () => void;
+  /** Workspace-wide only: leaves out the scope choice and the step markers. */
+  readonly hideScope?: boolean;
+  /** An address to type (an outgoing webhook); the primary button then connects. */
+  readonly url?: {
+    readonly value: string;
+    readonly error: string | null;
+    readonly onChange: (value: string) => void;
+  };
 }
 
 export function IntegrationConnectDialog(props: IntegrationConnectDialogProps) {
@@ -966,74 +983,120 @@ export function IntegrationConnectDialog(props: IntegrationConnectDialogProps) {
             <DialogDescription className="sr-only">
               {item.desc}
             </DialogDescription>
-            <ol
-              aria-label={c.stepsLabel}
-              className="m-0 mt-0.5 flex list-none gap-2.5 p-0 px-5"
-            >
-              {[c.step1, c.step2, c.step3].map((label, index) => (
-                <li
-                  key={index}
-                  aria-current={index === 1 ? "step" : undefined}
-                  className={cn(
-                    "flex flex-1 flex-col gap-[7px] text-caption tracking-normal leading-[1.45]",
-                    index === 1
-                      ? "font-semibold text-foreground"
-                      : index === 0
-                        ? "text-muted-foreground"
-                        : "text-meta-foreground",
-                  )}
-                >
-                  <span
+            {props.hideScope ? null : (
+              <ol
+                aria-label={c.stepsLabel}
+                className="m-0 mt-0.5 flex list-none gap-2.5 p-0 px-5"
+              >
+                {[c.step1, c.step2, c.step3].map((label, index) => (
+                  <li
+                    key={index}
+                    aria-current={index === 1 ? "step" : undefined}
                     className={cn(
-                      "h-[3px] rounded-[2px]",
-                      index === 0
-                        ? "bg-success"
-                        : index === 1
-                          ? "bg-primary"
-                          : "bg-line-strong",
-                    )}
-                  />
-                  {formatCopy(label, { provider })}
-                </li>
-              ))}
-            </ol>
-            <div className="flex flex-col gap-3.5 px-5 pt-3.5 pb-4">
-              <fieldset className="m-0 flex flex-col gap-2 border-0 p-0">
-                <legend className="mb-1.5 p-0 text-crumb leading-[1.45] font-semibold text-muted-foreground">
-                  {c.legend}
-                </legend>
-                {(["workspace", "board"] as const).map((scope) => (
-                  <label
-                    key={scope}
-                    className={cn(
-                      "flex cursor-pointer items-start gap-2.5 rounded-[9px] border px-3 py-2.5 text-nav leading-[1.45]",
-                      props.scope === scope
-                        ? "border-primary bg-state-selected"
-                        : "border-line-strong",
+                      "flex flex-1 flex-col gap-[7px] text-caption tracking-normal leading-[1.45]",
+                      index === 1
+                        ? "font-semibold text-foreground"
+                        : index === 0
+                          ? "text-muted-foreground"
+                          : "text-meta-foreground",
                     )}
                   >
-                    <input
-                      type="radio"
-                      name="int-scope"
-                      checked={props.scope === scope}
-                      onChange={() => props.onScope(scope)}
-                      className="mt-[3px] shrink-0 accent-primary"
+                    <span
+                      className={cn(
+                        "h-[3px] rounded-[2px]",
+                        index === 0
+                          ? "bg-success"
+                          : index === 1
+                            ? "bg-primary"
+                            : "bg-line-strong",
+                      )}
                     />
-                    <span>
-                      <b className="block font-semibold">
-                        {scope === "workspace"
-                          ? formatCopy(c.workspace, {
-                              workspace: props.workspaceName,
-                            })
-                          : c.board}
-                      </b>
-                      <small className="block text-caption tracking-normal leading-[1.45] text-meta-foreground">
-                        {scope === "workspace" ? c.workspaceHint : c.boardHint}
-                      </small>
-                    </span>
-                  </label>
+                    {formatCopy(label, { provider })}
+                  </li>
                 ))}
-              </fieldset>
+              </ol>
+            )}
+            <div className="flex flex-col gap-3.5 px-5 pt-3.5 pb-4">
+              {props.url ? (
+                <div className="flex flex-col gap-1.5">
+                  <label
+                    htmlFor="int-url"
+                    className="text-crumb leading-[1.45] font-semibold text-muted-foreground"
+                  >
+                    {c.urlLabel}
+                  </label>
+                  <input
+                    id="int-url"
+                    type="url"
+                    inputMode="url"
+                    autoComplete="off"
+                    spellCheck={false}
+                    value={props.url.value}
+                    placeholder="https://example.com/notrelix"
+                    aria-invalid={props.url.error ? true : undefined}
+                    aria-describedby="int-url-hint"
+                    onChange={(event) =>
+                      props.url?.onChange(event.target.value)
+                    }
+                    className={cn(
+                      "h-9 rounded-[7px] border border-line-strong bg-background px-3 text-nav outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
+                      props.url.error && "border-destructive",
+                    )}
+                  />
+                  <span
+                    id="int-url-hint"
+                    role={props.url.error ? "alert" : undefined}
+                    className={cn(
+                      "text-caption tracking-normal leading-[1.5]",
+                      props.url.error
+                        ? "text-danger-text"
+                        : "text-meta-foreground",
+                    )}
+                  >
+                    {props.url.error ?? c.urlHint}
+                  </span>
+                </div>
+              ) : null}
+              {props.hideScope ? null : (
+                <fieldset className="m-0 flex flex-col gap-2 border-0 p-0">
+                  <legend className="mb-1.5 p-0 text-crumb leading-[1.45] font-semibold text-muted-foreground">
+                    {c.legend}
+                  </legend>
+                  {(["workspace", "board"] as const).map((scope) => (
+                    <label
+                      key={scope}
+                      className={cn(
+                        "flex cursor-pointer items-start gap-2.5 rounded-[9px] border px-3 py-2.5 text-nav leading-[1.45]",
+                        props.scope === scope
+                          ? "border-primary bg-state-selected"
+                          : "border-line-strong",
+                      )}
+                    >
+                      <input
+                        type="radio"
+                        name="int-scope"
+                        checked={props.scope === scope}
+                        onChange={() => props.onScope(scope)}
+                        className="mt-[3px] shrink-0 accent-primary"
+                      />
+                      <span>
+                        <b className="block font-semibold">
+                          {scope === "workspace"
+                            ? formatCopy(c.workspace, {
+                                workspace: props.workspaceName,
+                              })
+                            : c.board}
+                        </b>
+                        <small className="block text-caption tracking-normal leading-[1.45] text-meta-foreground">
+                          {scope === "workspace"
+                            ? c.workspaceHint
+                            : c.boardHint}
+                        </small>
+                      </span>
+                    </label>
+                  ))}
+                </fieldset>
+              )}
               <div className="grid grid-cols-2 gap-3.5">
                 <div>
                   <h3 className={H3}>{c.will}</h3>
@@ -1049,9 +1112,11 @@ export function IntegrationConnectDialog(props: IntegrationConnectDialogProps) {
               </InfoNote>
             </div>
             <div className={FOOT}>
-              <small className="text-caption tracking-normal text-meta-foreground">
-                {c.step}
-              </small>
+              {props.hideScope ? null : (
+                <small className="text-caption tracking-normal text-meta-foreground">
+                  {c.step}
+                </small>
+              )}
               <span className="grow" />
               <button
                 type="button"
@@ -1062,16 +1127,94 @@ export function IntegrationConnectDialog(props: IntegrationConnectDialogProps) {
               </button>
               <button
                 type="button"
-                disabled={props.submitting}
+                disabled={
+                  props.submitting ||
+                  (props.url !== undefined && props.url.value.trim() === "")
+                }
                 onClick={props.onNext}
                 className={BILLING_BTN_PRIMARY}
               >
-                {formatCopy(c.next, { provider })}
-                <BillingGlyph name="ext" />
+                {props.url
+                  ? c.connectWebhook
+                  : formatCopy(c.next, { provider })}
+                {props.url ? null : <BillingGlyph name="ext" />}
               </button>
             </div>
           </>
         ) : null}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+export interface IntegrationSecretDialogProps extends Shared {
+  readonly open: boolean;
+  /** The signing secret, known only now: it is not shown again. */
+  readonly secret: string | null;
+  /** Writes the secret to the clipboard (a host side effect); absent = no copy button action. */
+  readonly onCopy?: (secret: string) => Promise<void>;
+  readonly onClose: () => void;
+}
+
+/** Shows a new webhook's signing secret once. */
+export function IntegrationSecretDialog(props: IntegrationSecretDialogProps) {
+  const c = props.copy.secretDialog;
+  const [copied, setCopied] = React.useState(false);
+  const copy = () => {
+    if (!props.secret) return;
+    void props
+      .onCopy?.(props.secret)
+      .then(() => setCopied(true))
+      .catch(() => undefined);
+  };
+  return (
+    <Dialog
+      open={props.open && props.secret !== null}
+      onOpenChange={(next) => (next ? undefined : props.onClose())}
+    >
+      <DialogContent
+        showCloseButton={false}
+        overlayClassName={DIALOG_OVERLAY}
+        aria-labelledby="sd-t"
+        className={cn(DIALOG_PANEL, "top-[110px] w-[600px]")}
+      >
+        <DialogHead
+          id="sd-t"
+          title={c.title}
+          closeLabel={props.copy.connectDialog.close}
+          onClose={props.onClose}
+        />
+        <div className="flex flex-col gap-3.5 px-5 pt-3.5 pb-4">
+          <DialogDescription className="m-0 text-nav leading-[1.55] text-foreground">
+            {c.body}
+          </DialogDescription>
+          <div className="flex items-center gap-2 rounded-[9px] border border-line-strong bg-background px-3 py-2.5">
+            <BillingGlyph
+              name="lock"
+              className="size-3.5 text-meta-foreground"
+            />
+            <code
+              data-f="signing-secret"
+              className={cn("min-w-0 flex-1 break-all text-compact", MONO)}
+            >
+              {props.secret}
+            </code>
+            <button type="button" onClick={copy} className={BILLING_BTN_SM}>
+              {copied ? c.copied : c.copy}
+            </button>
+          </div>
+          <InfoNote>{c.note}</InfoNote>
+        </div>
+        <div className={FOOT}>
+          <span className="grow" />
+          <button
+            type="button"
+            onClick={props.onClose}
+            className={BILLING_BTN_PRIMARY}
+          >
+            {c.done}
+          </button>
+        </div>
       </DialogContent>
     </Dialog>
   );

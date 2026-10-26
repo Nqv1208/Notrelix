@@ -3,11 +3,13 @@
  *
  * Operations:
  *   pages.list       — GET /workspaces/:workspaceId/pages
- *   pages.tree       — GET /workspaces/:workspaceId/pages/tree
  *   pages.detail     — GET /pages/:id
  *   pages.create     — POST /workspaces/:workspaceId/pages
  *   pages.update     — PATCH /pages/:id
- *   pages.delete     — DELETE /pages/:id
+ *   pages.archive    — POST /pages/:id/archive (to the trash)
+ *   pages.restore    — POST /pages/:id/restore
+ *   pages.trash      — GET /workspaces/:workspaceId/pages/trash
+ *   pages.delete     — DELETE /pages/:id (a trashed page only)
  *   pages.moveToSpace — POST /pages/:pageId/move-to-space (Documents.Pages.MoveToSpace)
  *   pages.breadcrumb — GET /pages/:id/breadcrumb
  *   pages.blocks     — GET /pages/:id/blocks
@@ -40,9 +42,8 @@ interface PageDtoApi {
   title: string;
   /** Gap `CTR-GAP-DOCS-PAGE-EXT`: the short name the tree and the breadcrumb use. */
   navTitle?: string;
-  iconType?: string | null;
-  iconValue?: string | null;
-  coverUrl?: string | null;
+  icon?: string | null;
+  coverImage?: string | null;
   position: number;
   depth: number;
   isTemplate: boolean;
@@ -65,8 +66,7 @@ interface PageDtoApi {
 interface BreadcrumbDtoApi {
   id: string;
   title: string;
-  iconType?: string | null;
-  iconValue?: string | null;
+  icon?: string | null;
 }
 
 function mapPageDto(p: MockPageRecord, store?: MockStore): PageDtoApi {
@@ -83,9 +83,8 @@ function mapPageDto(p: MockPageRecord, store?: MockStore): PageDtoApi {
     parentId: p.parentId ?? null,
     title: p.title,
     ...(p.navTitle ? { navTitle: p.navTitle } : {}),
-    iconType: null,
-    iconValue: p.icon ?? null,
-    coverUrl: null,
+    icon: p.icon ?? null,
+    coverImage: null,
     position: p.position ?? 0,
     depth: 0,
     isTemplate: false,
@@ -122,7 +121,10 @@ export const pagesOperations = [
 
   defineMockOperation<{ workspaceId: string }, never, PageDtoApi[]>({
     id: "pages.list",
-    contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
+    contract: {
+      kind: "openapi",
+      operationId: "Documents.Pages.ListWorkspacePages",
+    },
     method: "GET",
     route: "/workspaces/:workspaceId/pages",
     async handle({ params, store }) {
@@ -131,16 +133,24 @@ export const pagesOperations = [
     },
   }),
 
-  // ─── GET /workspaces/:workspaceId/pages/tree ──────────────────────────────
+  // ─── GET /workspaces/:workspaceId/pages/trash ─────────────────────────────
 
   defineMockOperation<{ workspaceId: string }, never, PageDtoApi[]>({
-    id: "pages.tree",
-    contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
+    id: "pages.trash",
+    contract: {
+      kind: "openapi",
+      operationId: "Documents.Pages.ListTrashedPages",
+    },
     method: "GET",
-    route: "/workspaces/:workspaceId/pages/tree",
+    route: "/workspaces/:workspaceId/pages/trash",
     async handle({ params, store }) {
-      const pages = store.getPages(params.workspaceId);
-      return ok<PageDtoApi[]>(pages.map((page) => mapPageDto(page, store)));
+      if (!store.isCurrentMemberOf(params.workspaceId))
+        return notFound("Workspace not found");
+      return ok<PageDtoApi[]>(
+        store
+          .getTrashedPages(params.workspaceId)
+          .map((page) => mapPageDto(page, store)),
+      );
     },
   }),
 
@@ -148,12 +158,13 @@ export const pagesOperations = [
 
   defineMockOperation<{ id: string }, never, PageDtoApi>({
     id: "pages.detail",
-    contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
+    contract: { kind: "openapi", operationId: "Documents.Pages.GetPage" },
     method: "GET",
     route: "/pages/:id",
     async handle({ params, store }) {
       const page = store.getPage(params.id);
-      if (!page) return notFound("Page not found");
+      // A page in the trash is reachable only to archive-level writes.
+      if (!page || page.trashedAt) return notFound("Page not found");
       return ok<PageDtoApi>(mapPageDto(page, store));
     },
   }),
@@ -171,7 +182,7 @@ export const pagesOperations = [
     string
   >({
     id: "pages.create",
-    contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
+    contract: { kind: "openapi", operationId: "Documents.Pages.CreatePage" },
     method: "POST",
     route: "/workspaces/:workspaceId/pages",
     async handle({ params, body, store }) {
@@ -220,7 +231,7 @@ export const pagesOperations = [
     PageDtoApi
   >({
     id: "pages.update",
-    contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
+    contract: { kind: "openapi", operationId: "Documents.Pages.UpdatePage" },
     method: "PATCH",
     route: "/pages/:id",
     async handle({ params, body, store }) {
@@ -231,16 +242,63 @@ export const pagesOperations = [
     },
   }),
 
+  // ─── POST /pages/:id/archive and /restore ─────────────────────────────────
+
+  defineMockOperation<{ id: string }, never, void>({
+    id: "pages.archive",
+    contract: { kind: "openapi", operationId: "Documents.Pages.ArchivePage" },
+    method: "POST",
+    route: "/pages/:id/archive",
+    async handle({ params, store }) {
+      const page = store.getPage(params.id);
+      if (!page || page.trashedAt) return notFound("Page not found");
+      if (store.getCurrentMemberRole(page.workspaceId) === "guest")
+        return forbidden();
+      store.setPageTrashed(params.id, true);
+      return noContent();
+    },
+  }),
+
+  defineMockOperation<{ id: string }, never, void>({
+    id: "pages.restore",
+    contract: { kind: "openapi", operationId: "Documents.Pages.RestorePage" },
+    method: "POST",
+    route: "/pages/:id/restore",
+    async handle({ params, store }) {
+      const page = store.getPage(params.id);
+      if (!page || !page.trashedAt) return notFound("Page not found");
+      if (store.getCurrentMemberRole(page.workspaceId) === "guest")
+        return forbidden();
+      store.setPageTrashed(params.id, false);
+      return noContent();
+    },
+  }),
+
   // ─── DELETE /pages/:id ────────────────────────────────────────────────────
 
   defineMockOperation<{ id: string }, never, void>({
     id: "pages.delete",
-    contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
+    contract: { kind: "openapi", operationId: "Documents.Pages.DeletePage" },
     method: "DELETE",
     route: "/pages/:id",
     async handle({ params, store }) {
-      const deleted = store.deletePage(params.id);
-      if (!deleted) return notFound("Page not found");
+      const page = store.getPage(params.id);
+      if (!page) return notFound("Page not found");
+      if (store.getCurrentMemberRole(page.workspaceId) === "guest")
+        return forbidden();
+      // The producer's Documents_Page_NotInTrash rule: only a trashed page is deleted.
+      if (!page.trashedAt)
+        return {
+          status: 400,
+          body: {
+            type: "https://docs.notrelix.com/problems/business_rule-violation",
+            title: "Business rule violation",
+            status: 400,
+            detail: "A page must be in the trash before it is deleted.",
+            errorCode: "business_rule.violation",
+          },
+        };
+      store.deletePage(params.id);
       return ok<void>(undefined);
     },
   }),
@@ -293,7 +351,10 @@ export const pagesOperations = [
 
   defineMockOperation<{ id: string }, never, BreadcrumbDtoApi[]>({
     id: "pages.breadcrumb",
-    contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
+    contract: {
+      kind: "openapi",
+      operationId: "Documents.Pages.GetPageBreadcrumb",
+    },
     method: "GET",
     route: "/pages/:id/breadcrumb",
     async handle({ params, store }) {
@@ -312,8 +373,7 @@ export const pagesOperations = [
         chain.map((entry) => ({
           id: entry.id,
           title: entry.navTitle ?? entry.title,
-          iconType: null,
-          iconValue: entry.icon ?? null,
+          icon: entry.icon ?? null,
         })),
       );
     },

@@ -2,6 +2,8 @@ namespace Notrelix.Application.Features.Workspaces.DTOs;
 
 /// <param name="MemberCount">Members whose participation has not ended (active and suspended; removed members are not counted).</param>
 /// <param name="Version">The Workspace aggregate version, sent back as <c>expectedVersion</c> by profile, settings, archive and delete writes.</param>
+/// <param name="Size">The company-size band (<c>1-10</c>, <c>11-50</c>, <c>51-200</c>, <c>201-1000</c> or <c>1000+</c>); null until an Owner or Admin sets it.</param>
+/// <param name="Language">The workspace language, <c>vi</c> or <c>en</c>; null until set.</param>
 public record WorkspaceDto(
     Guid Id,
     string Name,
@@ -16,7 +18,9 @@ public record WorkspaceDto(
     int MemberCount,
     DateTime CreatedAt,
     string? Settings,
-    long Version
+    long Version,
+    string? Size = null,
+    string? Language = null
 );
 
 /// <param name="Status">The membership status enum name (<c>Active</c> or <c>Suspended</c>). Removed members are not listed: removal ends the participation (docs/product/workspaces.md §13, §20).</param>
@@ -59,3 +63,22 @@ public record WorkspaceInvitationDto(
 
 /// <param name="Kind"><c>Team</c> or <c>Space</c>.</param>
 public record WorkspaceInvitationEntryDto(string Kind, Guid TargetId, string Role);
+
+/// <summary>
+/// One Workspace the caller takes part in, as the account's "your workspaces" page needs it.
+/// <see cref="Role"/> is the caller's own role. <see cref="MemberCount"/> is the number of active
+/// members and is null for a Guest (a Guest may not see the member list, GOV-009).
+/// <see cref="DepartmentCount"/> is the number of active department Spaces and is null unless the
+/// caller is an Owner or Admin. <see cref="IsDefault"/> marks the Workspace that opens with the app.
+/// <see cref="CanLeave"/> is false only when the caller is the last active Owner.
+/// </summary>
+public record AccountWorkspaceDto(
+    Guid Id,
+    string Name,
+    string Slug,
+    string Role,
+    int? MemberCount,
+    int? DepartmentCount,
+    bool IsDefault,
+    bool CanLeave
+);

@@ -9,7 +9,8 @@ export function mapComment(dto: CommentDtoApi, pageId: string): PageComment {
     authorId: dto.userId,
     body: dto.contentMd,
     mentionIds: [],
-    resolved: false,
+    anchor: dto.anchor ?? null,
+    resolved: !!dto.resolvedAt,
     createdAt: dto.createdAt,
     updatedAt: dto.createdAt,
   };

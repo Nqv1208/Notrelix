@@ -13,6 +13,7 @@ import type {
   BoardAccess,
   CardDetail,
   FullBoardResponse,
+  SavedBoardView,
   ViewConfig,
 } from "@notrelix/work-management-core";
 import {
@@ -67,19 +68,22 @@ function detailOf(board: FullBoardResponse, id: string): CardDetail {
 
 function fakeServices(access: BoardAccess) {
   let board = erpBoardScenario();
-  let view: { viewMode: "table"; viewConfig: ViewConfig } = {
+  let saved: SavedBoardView = {
+    id: "view-1",
+    name: "Table",
     viewMode: "table",
     viewConfig: defaultTableViewConfig,
+    isDefault: true,
+    visibility: "board",
+    createdBy: null,
+    version: 1,
   };
   const boards = {
     getFullBoard: vi.fn(async () => board),
-    getBoardView: vi.fn(async () => view),
-    saveBoardView: vi.fn(
-      async (
-        _id: string,
-        next: { viewMode: "table"; viewConfig: ViewConfig },
-      ) => {
-        view = next;
+    listSavedViews: vi.fn(async () => [saved]),
+    updateSavedViewConfig: vi.fn(
+      async (_boardId: string, _viewId: string, next: ViewConfig) => {
+        saved = { ...saved, viewConfig: next };
       },
     ),
   };
@@ -105,6 +109,25 @@ function fakeServices(access: BoardAccess) {
       };
     }),
     duplicateCard: vi.fn(async () => undefined),
+    // One request for several rows (all or nothing).
+    bulkUpdate: vi.fn(
+      async (
+        _boardId: string,
+        itemIds: readonly string[],
+        change: { type: string },
+      ) => {
+        if (change.type === "archive") {
+          board = {
+            ...board,
+            groups: board.groups.map((group) => ({
+              ...group,
+              cards: group.cards.filter((item) => !itemIds.includes(item.id)),
+            })),
+          };
+        }
+        return itemIds.length;
+      },
+    ),
   };
   const fieldOptions = {
     addOption: vi.fn(
@@ -304,12 +327,19 @@ describe("MainTableView on the ERP board", () => {
     expect(row("ERP-146")).toBeNull();
     expect(rowsOf("Đang làm")).toBe(1);
     expect(screen.getByText("Đã lưu trữ 2 việc")).toBeTruthy();
-    expect(cards.archiveCard).not.toHaveBeenCalled();
+    expect(cards.bulkUpdate).not.toHaveBeenCalled();
 
     await act(async () => {
       vi.advanceTimersByTime(ARCHIVE_UNDO_MS + 50);
     });
-    await waitFor(() => expect(cards.archiveCard).toHaveBeenCalledTimes(2));
+    // Both rows go in one request.
+    await waitFor(() => expect(cards.bulkUpdate).toHaveBeenCalledTimes(1));
+    expect(cards.archiveCard).not.toHaveBeenCalled();
+    expect(cards.bulkUpdate).toHaveBeenCalledWith(
+      expect.any(String),
+      [erpItemId("ERP-142"), erpItemId("ERP-146")],
+      { type: "archive" },
+    );
     expect(screen.queryByText("Đã lưu trữ 2 việc")).toBeNull();
   });
 
@@ -337,17 +367,62 @@ describe("MainTableView on the ERP board", () => {
       target: { value: "2026-11-03" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Áp dụng" }));
-    await waitFor(() => expect(cards.updateCard).toHaveBeenCalledOnce());
-    const [cardId, patch] = cards.updateCard.mock.calls[0] as unknown as [
+    await waitFor(() => expect(cards.bulkUpdate).toHaveBeenCalledOnce());
+    expect(cards.updateCard).not.toHaveBeenCalled();
+    const [, itemIds, change] = cards.bulkUpdate.mock.calls[0] as unknown as [
       string,
-      { dueDate: string },
+      string[],
+      { type: string; dueDate: string },
     ];
-    expect(cardId).toBe(erpItemId("ERP-151"));
-    expect(new Date(patch.dueDate).getTime()).toBe(
+    expect(itemIds).toEqual([erpItemId("ERP-151")]);
+    expect(change.type).toBe("set-due-date");
+    expect(new Date(change.dueDate).getTime()).toBe(
       new Date("2026-11-03T17:00:00").getTime(),
     );
     // The selection is spent.
     expect(screen.queryByRole("toolbar")).toBeNull();
+  });
+
+  it("changes the status of several selected rows in one request", async () => {
+    const { cards } = renderTable(erpOwnerAccess());
+    await ready();
+    fireEvent.click(screen.getByRole("checkbox", { name: "Chọn ERP-151" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Chọn ERP-149" }));
+    const bar = screen.getByRole("toolbar");
+    fireEvent.keyDown(within(bar).getByRole("button", { name: /Trạng thái/ }), {
+      key: "Enter",
+    });
+    fireEvent.click(
+      await screen.findByRole("menuitem", { name: /Hoàn thành/ }),
+    );
+    await waitFor(() => expect(cards.bulkUpdate).toHaveBeenCalledOnce());
+    const [, itemIds, change] = cards.bulkUpdate.mock.calls[0] as unknown as [
+      string,
+      string[],
+      { type: string; statusOptionId: string },
+    ];
+    expect(new Set(itemIds)).toEqual(
+      new Set([erpItemId("ERP-151"), erpItemId("ERP-149")]),
+    );
+    expect(change.type).toBe("set-status");
+    // No per-row status write was made.
+    expect(cards.updateStatus).not.toHaveBeenCalled();
+  });
+
+  it("says nothing was changed when the batch is refused", async () => {
+    const { cards } = renderTable(erpOwnerAccess());
+    cards.bulkUpdate.mockRejectedValueOnce(new Error("rejected"));
+    await ready();
+    fireEvent.click(screen.getByRole("checkbox", { name: "Chọn ERP-151" }));
+    fireEvent.click(screen.getByRole("button", { name: "Đặt hạn" }));
+    fireEvent.change(screen.getByLabelText("Hạn"), {
+      target: { value: "2026-11-03" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Áp dụng" }));
+    await waitFor(() => expect(toast.error).toHaveBeenCalled());
+    expect(toast.error.mock.calls.at(-1)?.[0]).toContain(
+      "Chưa có gì bị thay đổi",
+    );
   });
 
   it("applies the route filter and says when nothing matches", async () => {
@@ -369,12 +444,11 @@ describe("MainTableView on the ERP board", () => {
     });
     fireEvent.click(screen.getByRole("menuitemradio", { name: /^Ưu tiên/ }));
     await waitFor(() =>
-      expect(boards.saveBoardView).toHaveBeenCalledWith(
+      expect(boards.updateSavedViewConfig).toHaveBeenCalledWith(
         expect.any(String),
+        "view-1",
         expect.objectContaining({
-          viewConfig: expect.objectContaining({
-            sortBy: [{ fieldId: "priority", direction: "asc" }],
-          }),
+          sortBy: [{ fieldId: "priority", direction: "asc" }],
         }),
       ),
     );
@@ -393,13 +467,10 @@ describe("MainTableView on the ERP board", () => {
     });
     fireEvent.keyDown(handle, { key: "ArrowRight", shiftKey: true });
     await waitFor(() =>
-      expect(boards.saveBoardView).toHaveBeenLastCalledWith(
+      expect(boards.updateSavedViewConfig).toHaveBeenLastCalledWith(
         expect.any(String),
-        expect.objectContaining({
-          viewConfig: expect.objectContaining({
-            columnWidths: { title: 372 },
-          }),
-        }),
+        "view-1",
+        expect.objectContaining({ columnWidths: { title: 372 } }),
       ),
     );
     await waitFor(() =>
@@ -414,11 +485,10 @@ describe("MainTableView on the ERP board", () => {
       { key: "Home" },
     );
     await waitFor(() =>
-      expect(boards.saveBoardView).toHaveBeenLastCalledWith(
+      expect(boards.updateSavedViewConfig).toHaveBeenLastCalledWith(
         expect.any(String),
-        expect.objectContaining({
-          viewConfig: expect.objectContaining({ columnWidths: {} }),
-        }),
+        "view-1",
+        expect.objectContaining({ columnWidths: {} }),
       ),
     );
   });

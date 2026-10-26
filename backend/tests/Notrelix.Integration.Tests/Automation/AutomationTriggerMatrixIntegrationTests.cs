@@ -52,7 +52,7 @@ public sealed class AutomationTriggerMatrixIntegrationTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -62,7 +62,8 @@ public sealed class AutomationTriggerMatrixIntegrationTests : IAsyncLifetime
         Guid AccountId,
         Guid WorkspaceId,
         Guid RuleId,
-        Guid ItemId);
+        Guid ItemId,
+        Guid GroupId);
 
     private async Task<TriggerGraph> SeedRuleAsync(
         string triggerType,
@@ -92,7 +93,7 @@ public sealed class AutomationTriggerMatrixIntegrationTests : IAsyncLifetime
         var rule = AutomationRule.Create(accountId, workspace.Id, $"Rule {triggerType}", config, ownerId, Now);
         rule.Enable(ownerId, Now);
 
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Users.Add(owner);
         seed.Accounts.Add(account);
         seed.Workspaces.Add(workspace);
@@ -103,7 +104,7 @@ public sealed class AutomationTriggerMatrixIntegrationTests : IAsyncLifetime
         seed.AutomationRules.Add(rule);
         await seed.SaveChangesAsync();
 
-        return new TriggerGraph(account.Id, workspace.Id, rule.Id, item.Id);
+        return new TriggerGraph(account.Id, workspace.Id, rule.Id, item.Id, group.Id);
     }
 
     /// <summary>
@@ -118,7 +119,7 @@ public sealed class AutomationTriggerMatrixIntegrationTests : IAsyncLifetime
     {
         var intentsBefore = await CountIntentsAsync(graph.WorkspaceId, "*");
         var collector = new IntegrationEventCollector();
-        await using var context = _db.CreateContext(SystemTenant(), CreateOutboxInterceptor(collector));
+        await using var context = _db.CreateOwnerContext(SystemTenant(), CreateOutboxInterceptor(collector));
         var evaluator = new N8nAutomationRuleEvaluator(context, collector, new FixedClock(Now));
         await evaluator.ExecuteAsync(trigger, CancellationToken.None);
         await context.SaveChangesAsync();
@@ -167,7 +168,7 @@ public sealed class AutomationTriggerMatrixIntegrationTests : IAsyncLifetime
             Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), null, Now);
         (await EvaluateAsync(graph, first)).Should().Be(1);
         Guid executionId;
-        await using (var probe = _db.CreateContext(SystemTenant()))
+        await using (var probe = _db.CreateOwnerContext(SystemTenant()))
             executionId = (await probe.AutomationExecutions.IgnoreQueryFilters().SingleAsync(e => e.RuleId == graph.RuleId)).Id;
 
         // The fact produced by that execution carries it as causation.
@@ -184,7 +185,7 @@ public sealed class AutomationTriggerMatrixIntegrationTests : IAsyncLifetime
     {
         var graph = await SeedRuleAsync("ItemCreated", "Webhook", """{"webhookPath":"failing-hook"}""");
         var failedAt = DateTimeOffset.UtcNow.AddMinutes(1);
-        await using (var seed = _db.CreateContext(SystemTenant()))
+        await using (var seed = _db.CreateOwnerContext(SystemTenant()))
         {
             for (var i = 0; i < 5; i++)
             {
@@ -202,7 +203,7 @@ public sealed class AutomationTriggerMatrixIntegrationTests : IAsyncLifetime
             Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), null, failedAt.AddMinutes(5));
 
         (await EvaluateAsync(graph, trigger)).Should().Be(0, "a tripped rule starts nothing");
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.AutomationRules.IgnoreQueryFilters().SingleAsync(r => r.Id == graph.RuleId))
             .Status.Should().Be(AutomationRuleStatus.Disabled);
         (await CountExecutionsForRuleAsync(graph.RuleId)).Should().Be(5);
@@ -219,7 +220,7 @@ public sealed class AutomationTriggerMatrixIntegrationTests : IAsyncLifetime
 
         var trigger = new AutomationTriggerContext(
             graph.AccountId, graph.WorkspaceId, "ItemMovedToGroup",
-            sourceEventId, Guid.NewGuid(), Guid.NewGuid(), null, Now);
+            sourceEventId, Guid.NewGuid(), Guid.NewGuid(), null, Now, null, null, graph.GroupId);
 
         (await EvaluateAsync(graph, trigger)).Should().Be(1);
         (await CountExecutionsForRuleAsync(graph.RuleId)).Should().Be(1);
@@ -245,10 +246,10 @@ public sealed class AutomationTriggerMatrixIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task UnsupportedActionType_FailsClosed_TerminalFailure_NoDispatchIntent()
     {
-        // SendEmail is valid rule vocabulary (configuration accepts it) but has
-        // no M8 runtime executor — it must fail the execution closed, never be
+        // CreateItem is valid rule vocabulary (configuration accepts it) but has
+        // no runtime executor — it must fail the execution closed, never be
         // silently rerouted to the n8n webhook dispatcher.
-        var graph = await SeedRuleAsync("ItemCreated", "SendEmail", """{"templateId":"t-1","subject":"Hi"}""");
+        var graph = await SeedRuleAsync("ItemCreated", "CreateItem", """{"targetGroupId":"00000000-0000-0000-0000-000000000001"}""");
         var sourceEventId = Guid.NewGuid();
 
         var trigger = new AutomationTriggerContext(
@@ -260,13 +261,13 @@ public sealed class AutomationTriggerMatrixIntegrationTests : IAsyncLifetime
         (await CountExecutionsForRuleAsync(graph.RuleId)).Should().Be(1,
             "the trigger still produced its durable execution record");
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         var execution = await verify.AutomationExecutions.IgnoreQueryFilters()
             .SingleAsync(e => e.RuleId == graph.RuleId);
         execution.Status.Should().Be(AutomationExecutionStatus.Failed,
             "an action without a runtime executor is a visible terminal failure");
-        execution.Error.Should().Contain("SendEmail");
-        execution.Error.Should().Contain("M8-AUTOMATION-ACTION-PARITY");
+        execution.Error.Should().Contain("CreateItem");
+        execution.Error.Should().Contain("no runtime executor");
     }
 
     [Fact]
@@ -413,7 +414,7 @@ public sealed class AutomationTriggerMatrixIntegrationTests : IAsyncLifetime
     {
         var execution = AutomationExecution.Create(
             graph.AccountId, graph.WorkspaceId, graph.RuleId, Guid.NewGuid(), Now);
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.AutomationExecutions.Add(execution);
         await seed.SaveChangesAsync();
         ((IHasDomainEvents)execution).ClearDomainEvents();
@@ -426,7 +427,7 @@ public sealed class AutomationTriggerMatrixIntegrationTests : IAsyncLifetime
         IWorkActionPort port,
         AutomationMoveItemRequestedV1 message)
     {
-        await using var context = _db.CreateContext(SystemTenant());
+        await using var context = _db.CreateOwnerContext(SystemTenant());
         var clockMock = new Mock<IDateTimeProvider>();
         clockMock.Setup(c => c.UtcNow).Returns(Now);
 
@@ -456,14 +457,14 @@ public sealed class AutomationTriggerMatrixIntegrationTests : IAsyncLifetime
 
     private async Task<int> CountExecutionsForRuleAsync(Guid ruleId)
     {
-        await using var probe = _db.CreateContext(SystemTenant());
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
         return await probe.AutomationExecutions.IgnoreQueryFilters()
             .CountAsync(e => e.RuleId == ruleId);
     }
 
     private async Task<int> CountIntentsAsync(Guid workspaceId, string messageName)
     {
-        await using var probe = _db.CreateContext(SystemTenant());
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
         var query = probe.Set<MessagingOutboxMessage>()
             .IgnoreQueryFilters()
             .Where(m => m.WorkspaceId == workspaceId);
@@ -474,7 +475,7 @@ public sealed class AutomationTriggerMatrixIntegrationTests : IAsyncLifetime
 
     private async Task<AutomationExecution> LoadExecutionAsync(Guid id)
     {
-        await using var probe = _db.CreateContext(SystemTenant());
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
         return await probe.AutomationExecutions.IgnoreQueryFilters().SingleAsync(x => x.Id == id);
     }
 

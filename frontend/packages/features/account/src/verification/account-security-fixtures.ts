@@ -34,22 +34,22 @@ export function securityFixture(
         id: "session-macbook",
         device: "MacBook · Chrome",
         kind: "desktop",
-        place: "Hà Nội",
-        lastActiveAt: null,
+        isCurrent: true,
+        signedInAt: "2026-10-12T03:00:00.000Z",
       },
       {
         id: "session-iphone",
         device: "iPhone 15 · ứng dụng Notrelix",
         kind: "phone",
-        place: "Hà Nội",
-        lastActiveAt: "2026-10-12T01:40:00.000Z",
+        isCurrent: false,
+        signedInAt: "2026-10-12T01:40:00.000Z",
       },
       {
         id: "session-ipad",
         device: "iPad · ứng dụng Notrelix",
         kind: "tablet",
-        place: "Hà Nội",
-        lastActiveAt: "2026-10-09T03:40:00.000Z",
+        isCurrent: false,
+        signedInAt: "2026-10-09T03:40:00.000Z",
       },
     ],
     ...overrides,
@@ -59,6 +59,13 @@ export function securityFixture(
 export type SecurityScenario = Omit<
   AccountSecuritySurfaceProps,
   | "onSetTwoFactor"
+  | "onChangePassword"
+  | "onSubmitNewPassword"
+  | "onPasswordChangedContinue"
+  | "onSubmitCode"
+  | "onSubmitPassword"
+  | "onCloseFlow"
+  | "onLoadMoreActivity"
   | "onRenewBackupCodes"
   | "onSignOut"
   | "onSignOutOthers"
@@ -74,7 +81,6 @@ export function securityDefaultScenario(
     busy: false,
     actionError: false,
     notice: null,
-    passwordHref: null,
   };
 }
 
@@ -100,7 +106,6 @@ export function securityOwnPasswordScenario(
   const base = securityFixture();
   return {
     ...securityDefaultScenario(locale),
-    passwordHref: "/forgot-password",
     security: {
       status: "ready",
       data: securityFixture({
@@ -140,11 +145,69 @@ export function securityEdgeDataScenario(): SecurityScenario {
                 ...session,
                 device:
                   "Máy tính bảng Samsung Galaxy Tab S9 Ultra · ứng dụng Notrelix cho Android",
-                place: "Thành phố Hồ Chí Minh, Việt Nam",
               }
             : session,
         ),
       }),
+    },
+  };
+}
+
+/** The change of password open on an account with its own password and no second step. */
+export function securityChangePasswordScenario(
+  locale: "en" | "vi" = "en",
+  overrides: { needsCode?: boolean } = {},
+): SecurityScenario {
+  const own = securityOwnPasswordScenario(locale);
+  return {
+    ...own,
+    security:
+      overrides.needsCode === true
+        ? { status: "ready", data: securityFixture({ ssoProvider: null }) }
+        : own.security,
+    flow: {
+      kind: "password",
+      needsCode: overrides.needsCode === true,
+      error: null,
+    },
+  };
+}
+
+/** The change of password refused: the current password is not right. */
+export function securityChangePasswordRefusedScenario(
+  locale: "en" | "vi" = "en",
+): SecurityScenario {
+  return {
+    ...securityChangePasswordScenario(locale),
+    flow: { kind: "password", needsCode: false, error: "wrongCurrent" },
+  };
+}
+
+/** The password changed: every session is over, this one too. */
+export function securityPasswordChangedScenario(
+  locale: "en" | "vi" = "en",
+): SecurityScenario {
+  return {
+    ...securityOwnPasswordScenario(locale),
+    flow: { kind: "passwordChanged" },
+  };
+}
+
+/** The authenticator address the producer sends when two-factor enrollment starts. */
+export const ENROLLMENT_OTP_AUTH_URI =
+  "otpauth://totp/Notrelix:ada%40example.com?secret=JBSWY3DPEHPK3PXP&issuer=Notrelix";
+
+/** Step one of turning two-factor on: the QR code and the key to type by hand. */
+export function securityEnrollScenario(
+  locale: "en" | "vi" = "en",
+): SecurityScenario {
+  return {
+    ...securityOwnPasswordScenario(locale),
+    flow: {
+      kind: "enroll",
+      secret: "JBSWY3DPEHPK3PXP",
+      otpAuthUri: ENROLLMENT_OTP_AUTH_URI,
+      error: null,
     },
   };
 }

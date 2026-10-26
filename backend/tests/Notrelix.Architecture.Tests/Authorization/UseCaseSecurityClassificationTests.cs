@@ -145,6 +145,7 @@ public class UseCaseSecurityClassificationTests
         // === Pre-hardening legacy gaps (no WorkspaceId property directly) ===
         // Collaboration — Comments (use ResourceId)
         ["GetCommentsQuery"] = new("GetCommentsQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Collaboration"),
+        ["ReopenCommentCommand"] = new("ReopenCommentCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Collaboration"),
         ["ResolveCommentCommand"] = new("ResolveCommentCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Collaboration"),
         ["CreateCommentCommand"] = new("CreateCommentCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Collaboration"),
         ["UpdateCommentCommand"] = new("UpdateCommentCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Collaboration"),

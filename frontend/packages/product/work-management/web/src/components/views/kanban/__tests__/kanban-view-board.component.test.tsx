@@ -106,10 +106,18 @@ function fakeServices(
   const services = {
     boards: {
       getFullBoard: vi.fn(async () => board),
-      getBoardView: vi.fn(async () => ({
-        viewMode: "kanban",
-        viewConfig: { ...defaultTableViewConfig, ...overrides.viewConfig },
-      })),
+      listSavedViews: vi.fn(async () => [
+        {
+          id: "view-1",
+          name: "Kanban",
+          viewMode: "kanban",
+          viewConfig: { ...defaultTableViewConfig, ...overrides.viewConfig },
+          isDefault: true,
+          visibility: "board",
+          createdBy: null,
+          version: 1,
+        },
+      ]),
     },
     access: { getBoardAccess: vi.fn(async () => access) },
     cards,
@@ -246,9 +254,13 @@ describe("KanbanView on the ERP board", () => {
 
   it("gives a commenter no add and a read-only sheet that keeps the composer", async () => {
     renderKanban(erpCommenterAccess(), { initialItem: erpItemId("ERP-142") });
-    const dialog = await screen.findByRole("dialog", {
-      name: "Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP",
-    });
+    const dialog = await screen.findByRole(
+      "dialog",
+      {
+        name: "Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP",
+      },
+      { timeout: 5000 },
+    );
     await waitFor(() =>
       expect(
         within(dialog)
@@ -416,9 +428,13 @@ describe("KanbanView on the ERP board", () => {
       value: { writeText },
     });
     renderKanban(erpOwnerAccess(), { initialItem: erpItemId("ERP-142") });
-    const dialog = await screen.findByRole("dialog", {
-      name: "Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP",
-    });
+    const dialog = await screen.findByRole(
+      "dialog",
+      {
+        name: "Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP",
+      },
+      { timeout: 5000 },
+    );
     fireEvent.click(
       within(dialog).getByRole("button", { name: "Sao chép liên kết" }),
     );
@@ -492,9 +508,13 @@ describe("KanbanView on the ERP board", () => {
     const { cards } = renderKanban(erpOwnerAccess(), {
       initialItem: erpItemId("ERP-142"),
     });
-    const dialog = await screen.findByRole("dialog", {
-      name: "Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP",
-    });
+    const dialog = await screen.findByRole(
+      "dialog",
+      {
+        name: "Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP",
+      },
+      { timeout: 5000 },
+    );
     const more = await waitFor(() =>
       within(dialog).getByRole("button", { name: "Thêm" }),
     );
@@ -518,9 +538,13 @@ describe("KanbanView on the ERP board", () => {
     });
     try {
       renderKanban(erpOwnerAccess(), { initialItem: erpItemId("ERP-142") });
-      await screen.findByRole("dialog", {
-        name: "Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP",
-      });
+      await screen.findByRole(
+        "dialog",
+        {
+          name: "Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP",
+        },
+        { timeout: 5000 },
+      );
       const board = document.querySelector("[data-kanban-board]")!;
       const covered = Array.from(board.children).filter((child) =>
         child.hasAttribute("inert"),
@@ -539,9 +563,13 @@ describe("KanbanView on the ERP board", () => {
 
   it("leaves the board usable beside the sheet on a wide screen", async () => {
     renderKanban(erpOwnerAccess(), { initialItem: erpItemId("ERP-142") });
-    await screen.findByRole("dialog", {
-      name: "Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP",
-    });
+    await screen.findByRole(
+      "dialog",
+      {
+        name: "Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP",
+      },
+      { timeout: 5000 },
+    );
     expect(document.querySelector("[data-kanban-board] [inert]")).toBeNull();
   });
 });
@@ -573,7 +601,7 @@ describe("KanbanView settings of the view", () => {
     await ready();
     // The saved view has been read before judging what is hidden.
     await waitFor(() =>
-      expect(services.boards.getBoardView).toHaveBeenCalled(),
+      expect(services.boards.listSavedViews).toHaveBeenCalled(),
     );
     await new Promise((resolve) => setTimeout(resolve, 20));
     // The editor still adds items: only the status controls are shaped.

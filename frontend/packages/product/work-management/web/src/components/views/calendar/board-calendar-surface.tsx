@@ -72,6 +72,11 @@ export interface BoardCalendarSurfaceProps {
   /** An undated item got `day` as its due day. */
   onSetDue: (id: string, day: DayKey) => void;
   onCreateItem: (title: string, day: DayKey) => void;
+  /**
+   * The toolbar's "Add item" opens the full form with this day prefilled;
+   * without it the toolbar adds inline on that day.
+   */
+  onAddItem?: (day: DayKey) => void;
   /** Starting states for stories and tests; the user's own actions replace them. */
   defaultDrag?: CalendarDragState | null;
   defaultQuickCreateDay?: DayKey | null;
@@ -109,6 +114,7 @@ export function BoardCalendarSurface({
   onReschedule,
   onSetDue,
   onCreateItem,
+  onAddItem,
   defaultDrag = null,
   defaultQuickCreateDay = null,
 }: BoardCalendarSurfaceProps) {
@@ -188,6 +194,10 @@ export function BoardCalendarSurface({
   };
 
   const addItem = () => {
+    if (onAddItem) {
+      onAddItem(anchorDay);
+      return;
+    }
     setQuickCreateDay(anchorDay);
   };
   const submitQuickCreate = (title: string) => {

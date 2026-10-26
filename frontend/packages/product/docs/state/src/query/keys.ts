@@ -8,10 +8,26 @@ export const docsQueryKeys = {
     workspaceQueryKey(workspaceId, "documents", "list"),
   detail: (workspaceId: string, pageId: string) =>
     workspaceQueryKey(workspaceId, "documents", "detail", pageId),
+  trash: (workspaceId: string) =>
+    workspaceQueryKey(workspaceId, "documents", "trash"),
   breadcrumb: (workspaceId: string, pageId: string) =>
     workspaceQueryKey(workspaceId, "documents", "breadcrumb", pageId),
   blocks: (workspaceId: string, pageId: string) =>
     workspaceQueryKey(workspaceId, "documents", "blocks", pageId),
+  attachments: (workspaceId: string, pageId: string) =>
+    workspaceQueryKey(workspaceId, "documents", "attachments", pageId),
+  attachmentContent: (
+    workspaceId: string,
+    pageId: string,
+    attachmentId: string,
+  ) =>
+    workspaceQueryKey(
+      workspaceId,
+      "documents",
+      "attachment-content",
+      pageId,
+      attachmentId,
+    ),
   comments: (workspaceId: string, pageId: string) =>
     workspaceQueryKey(workspaceId, "documents", "comments", pageId),
   history: (workspaceId: string, pageId: string) =>
@@ -20,14 +36,18 @@ export const docsQueryKeys = {
     workspaceQueryKey(workspaceId, "documents", "permissions", pageId),
   backlinks: (workspaceId: string, pageId: string) =>
     workspaceQueryKey(workspaceId, "documents", "backlinks", pageId),
-  versionSnapshot: (workspaceId: string, pageId: string, entryId: string) =>
+  versions: (workspaceId: string, pageId: string) =>
+    workspaceQueryKey(workspaceId, "documents", "versions", pageId),
+  versionSnapshot: (workspaceId: string, pageId: string, versionId: string) =>
     workspaceQueryKey(
       workspaceId,
       "documents",
       "version-snapshot",
       pageId,
-      entryId,
+      versionId,
     ),
+  templates: (workspaceId: string) =>
+    workspaceQueryKey(workspaceId, "documents", "templates"),
   search: (workspaceId: string, query: string) =>
     workspaceQueryKey(workspaceId, "documents", "search", query),
   favorites: (workspaceId: string) =>

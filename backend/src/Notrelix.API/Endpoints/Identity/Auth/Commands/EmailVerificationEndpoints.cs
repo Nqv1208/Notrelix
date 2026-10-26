@@ -22,7 +22,7 @@ public static class EmailVerificationEndpoints
             .Produces(StatusCodes.Status200OK)
             .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status429TooManyRequests)
             .WithSummary("Request a new email verification message")
-            .WithMetadata(new RateLimitPolicyAttribute("AuthStrictByIp"));
+            .WithMetadata(new RateLimitPolicyAttribute("AuthCredentialByIp"));
 
         group.MapAuthenticatedPost("/email-verification/request", RequestAsync)
             .WithName("Identity.Auth.RequestEmailVerification")

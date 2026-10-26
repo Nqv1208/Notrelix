@@ -20,6 +20,16 @@ public class PageTemplateTests
     }
 
     [Fact]
+    public void Create_KeepsATrimmedDescription_AndTreatsABlankOneAsNone()
+    {
+        var described = PageTemplate.Create("Notes", JsonValue.EmptyObject(), JsonValue.EmptyArray(), DateTimeOffset.UtcNow, Guid.NewGuid(), Guid.NewGuid(), "  For the weekly sync  ");
+        var blank = PageTemplate.Create("Notes", JsonValue.EmptyObject(), JsonValue.EmptyArray(), DateTimeOffset.UtcNow, Guid.NewGuid(), Guid.NewGuid(), "  ");
+
+        described.Description.Should().Be("For the weekly sync");
+        blank.Description.Should().BeNull();
+    }
+
+    [Fact]
     public void Create_WithWorkspace_ShouldSetWorkspaceId()
     {
         var workspaceId = Guid.NewGuid();

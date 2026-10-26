@@ -8,16 +8,17 @@
  */
 
 import { boardsOperations } from "./boards.handlers";
+import { boardViewsOperations } from "./board-views.handlers";
+import { boardSharingOperations } from "./board-sharing.handlers";
 import { listsOperations } from "./lists.handlers";
 import { cardsOperations } from "./cards.handlers";
 import { myWorkOperations } from "./my-work.handlers";
-import { boardSettingsOperations } from "./board-settings.handlers";
-import { boardAutomationsOperations } from "./board-automations.handlers";
+import { workspaceAutomationsOperations } from "./workspace-automations.handlers";
 import { itemStatesOperations } from "./item-states.handlers";
 
 export {
-  boardAutomationsOperations,
-  boardSettingsOperations,
+  workspaceAutomationsOperations,
+  boardSharingOperations,
   boardsOperations,
   itemStatesOperations,
   listsOperations,
@@ -27,10 +28,11 @@ export {
 
 export const workManagementOperations = [
   ...boardsOperations,
+  ...boardSharingOperations,
+  ...boardViewsOperations,
   ...listsOperations,
   ...cardsOperations,
   ...myWorkOperations,
-  ...boardSettingsOperations,
-  ...boardAutomationsOperations,
+  ...workspaceAutomationsOperations,
   ...itemStatesOperations,
 ];

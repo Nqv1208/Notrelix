@@ -23,7 +23,13 @@ export function createCommentApi(client: NotrelixClient) {
     },
 
     async createCardUpdate(input: CreateCardUpdateInput) {
-      const body: CreateCommentBody = { contentMd: input.body };
+      const body: CreateCommentBody = {
+        contentMd: input.body,
+        // The people the comment names are notified (mention chain).
+        mentionedUserIds: input.mentionUserIds?.length
+          ? [...input.mentionUserIds]
+          : undefined,
+      };
       const id = await api.post<any>(
         endpoints.boardItems.comments(input.cardId),
         body,

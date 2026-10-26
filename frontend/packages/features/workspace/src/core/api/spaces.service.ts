@@ -1,6 +1,7 @@
-import type {
-  OperationRequestBody,
-  OperationResponse,
+import {
+  resolveApiAssetUrl,
+  type OperationRequestBody,
+  type OperationResponse,
 } from "@notrelix/contracts";
 import {
   parseSpaceAccess,
@@ -110,7 +111,7 @@ export function parseSpaceMembers(items: unknown): SpaceMemberEntry[] {
       subjectId: raw.subjectId,
       role,
       displayName: raw.displayName ?? "",
-      avatarUrl: raw.avatarUrl ?? null,
+      avatarUrl: resolveApiAssetUrl(raw.avatarUrl),
       addedAt: raw.addedAt ?? "",
     });
   }

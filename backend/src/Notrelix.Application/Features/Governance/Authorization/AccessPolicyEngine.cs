@@ -67,7 +67,8 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
             {
                 return AccessDecision.Deny(
                     AccessDecisionKind.Forbidden,
-                    "Email must be confirmed before using this feature.");
+                    "Email must be confirmed before using this feature.",
+                    AccessDenialCodes.EmailNotConfirmed);
             }
         }
 
@@ -217,20 +218,11 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
                 return denied;
             }
 
-            // M2G extension (reviewer-approved): page lifecycle mutation
-            // authority is distinct from page visibility — a workspace-visible
-            // page only proves the actor can see the resource, not archive it.
-            // ArchivePage requires an active page ResourcePermission of at
-            // least Manager (owners pass the earlier fast-path, explicit
-            // permission rules were evaluated above). It carries its own
-            // Governance vocabulary: neither ManageBoard nor
-            // ManagePagePermission (ACL management).
-            if (permission.Action == PermissionAction.ArchivePage
-                && access.EffectiveRank < ManagerRank)
-            {
-                return AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
-            }
-
+            // Page lifecycle: moving a page to the trash and restoring it
+            // (ArchivePage) is Editor level like any edit; deleting it for good
+            // (DeletePage, only from the trash) needs Manager — see
+            // RequiredRank. Both carry their own Governance vocabulary:
+            // neither ManageBoard nor ManagePagePermission (ACL management).
             return ManageAwareAllow(permission, request, facts, role, access.EffectiveRank, actorId);
         }
 
@@ -588,7 +580,7 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
             or PermissionAction.ViewWorkspace or PermissionAction.ViewMembers => ViewerRank,
         PermissionAction.CreateComment => CommenterRank,
         PermissionAction.ManageBoardPermission or PermissionAction.ManagePagePermission
-            or PermissionAction.ArchivePage or PermissionAction.ManageSpaces => ManagerRank,
+            or PermissionAction.DeletePage or PermissionAction.ManageSpaces => ManagerRank,
         _ => EditorRank,
     };
 }

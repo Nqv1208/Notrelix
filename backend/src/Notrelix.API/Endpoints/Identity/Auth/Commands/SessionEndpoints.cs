@@ -17,7 +17,7 @@ public static class SessionEndpoints
             .ProducesProblems(StatusCodes.Status401Unauthorized, StatusCodes.Status429TooManyRequests)
             .WithTags("Identity.Sessions")
             .WithSummary("List active sessions for the authenticated user")
-            .WithMetadata(new RateLimitPolicyAttribute("AuthStrictByIp"));
+            .WithMetadata(new RateLimitPolicyAttribute("GeneralAuthenticated"));
 
         group.MapAuthenticatedPost("/sessions/{sessionId:guid}/revoke", RevokeSessionAsync)
             .WithName("Identity.Sessions.Revoke")
@@ -25,7 +25,7 @@ public static class SessionEndpoints
             .ProducesProblems(StatusCodes.Status401Unauthorized, StatusCodes.Status404NotFound, StatusCodes.Status429TooManyRequests)
             .WithTags("Identity.Sessions")
             .WithSummary("Revoke a session")
-            .WithMetadata(new RateLimitPolicyAttribute("AuthStrictByIp"));
+            .WithMetadata(new RateLimitPolicyAttribute("AuthSensitiveByUser"));
 
         group.MapAuthenticatedPost("/sessions/revoke-others", RevokeOtherSessionsAsync)
             .WithName("Identity.Sessions.RevokeOthers")
@@ -34,7 +34,7 @@ public static class SessionEndpoints
             .WithTags("Identity.Sessions")
             .WithSummary("Revoke all other sessions")
             .WithDescription("Revokes every active session of the current user except the session that issued the request.")
-            .WithMetadata(new RateLimitPolicyAttribute("AuthStrictByIp"));
+            .WithMetadata(new RateLimitPolicyAttribute("AuthSensitiveByUser"));
 
         return group;
     }

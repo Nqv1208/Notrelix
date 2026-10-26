@@ -1,5 +1,8 @@
 import { describe, it, expect, vi } from "vitest";
-import { createDocsCollaborationAdapter } from "../docs-collaboration";
+import {
+  createDocsCollaborationAdapter,
+  watchDocumentChanges,
+} from "../docs-collaboration";
 import type { RealtimeTransport } from "@notrelix/realtime";
 
 function makeMockRealtime() {
@@ -109,5 +112,78 @@ describe("createDocsCollaborationAdapter", () => {
       onEvent: vi.fn(),
     });
     expect(unsubscribe1).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("watchDocumentChanges", () => {
+  function makeRealtime(initial: string) {
+    let onEvent: ((env: unknown) => void) | undefined;
+    let onRecovery: ((signal: unknown) => void) | undefined;
+    let onState: ((state: string) => void) | undefined;
+    const disposers = [vi.fn(), vi.fn(), vi.fn()];
+    const realtime = {
+      subscribe: vi.fn((_filter, cb) => {
+        onEvent = cb;
+        return disposers[0];
+      }),
+      subscribeRecovery: vi.fn((cb) => {
+        onRecovery = cb;
+        return disposers[1];
+      }),
+      subscribeState: vi.fn((cb) => {
+        onState = cb;
+        return disposers[2];
+      }),
+      getState: vi.fn().mockReturnValue(initial),
+    } as unknown as RealtimeTransport;
+    return {
+      realtime,
+      disposers,
+      event: (env: unknown) => onEvent?.(env),
+      recovery: (signal: unknown) => onRecovery?.(signal),
+      state: (state: string) => onState?.(state),
+    };
+  }
+
+  it("reports a frame about the document, a recovery of the workspace and a reconnect", () => {
+    const { realtime, event, recovery, state, disposers } =
+      makeRealtime("connected");
+    const onChange = vi.fn();
+    const stop = watchDocumentChanges(realtime, {
+      workspaceId: "ws-1",
+      documentId: "doc-1",
+      onChange,
+    });
+
+    event({ resourceId: "doc-other" });
+    expect(onChange).not.toHaveBeenCalled();
+    event({ resourceId: "doc-1" });
+    expect(onChange).toHaveBeenCalledTimes(1);
+
+    recovery({ workspaceId: "ws-other" });
+    expect(onChange).toHaveBeenCalledTimes(1);
+    recovery({ workspaceId: "ws-1" });
+    expect(onChange).toHaveBeenCalledTimes(2);
+
+    state("connected");
+    expect(onChange).toHaveBeenCalledTimes(2);
+    state("reconnecting");
+    state("connected");
+    expect(onChange).toHaveBeenCalledTimes(3);
+
+    stop();
+    for (const dispose of disposers) expect(dispose).toHaveBeenCalled();
+  });
+
+  it("refreshes when the first connection completes after the page opened offline", () => {
+    const { realtime, state } = makeRealtime("connecting");
+    const onChange = vi.fn();
+    watchDocumentChanges(realtime, {
+      workspaceId: "ws-1",
+      documentId: "doc-1",
+      onChange,
+    });
+    state("connected");
+    expect(onChange).toHaveBeenCalledTimes(1);
   });
 });

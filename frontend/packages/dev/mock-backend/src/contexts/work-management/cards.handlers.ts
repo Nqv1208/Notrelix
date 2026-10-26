@@ -12,12 +12,13 @@
  *   cards.move              — POST /board-items/:id/move
 
  *   cards.links             — GET/POST /board-items/:id/links, DELETE .../links/:linkId (gap)
- *   cards.childItems.add    — POST /board-items/:id/child-items (gap)
+ *   cards.childItems.add    — POST /board-items/:id/child-items
  *   cards.attachments.uploadFile — POST /board-items/:id/attachments/files (Collaboration.Attachments.UploadFile)
  *   cards.attachments.content    — GET /board-items/:id/attachments/:attachmentId/content (Collaboration.Attachments.GetContent)
  *   cards.moveToBoard       — POST /board-items/:id/move-to-board (gap)
- *   cards.fieldValues       — PATCH /board-items/:id/field-values
+ *   cards.fieldValues       — PATCH /board-items/:id/values/:fieldId
  *   cards.status            — PATCH /board-items/:id/status
+ *   cards.bulkUpdate        — POST /boards/:boardId/items/bulk (one change for several items, all or nothing)
  *   cards.attachments       — GET /board-items/:id/attachments
  *   cards.activity          — GET /board-items/:id/activity
  *   cards.labels.list       — GET /board-items/:id/labels
@@ -54,6 +55,12 @@ import {
 import { preconditionFailed } from "../workspace/space-target";
 import type { MockStore } from "../../state/mock-store";
 import type { MockAttachmentRecord, MockCardRecord } from "../../state/records";
+import {
+  assignMember,
+  childItemDto,
+  unassignMember,
+} from "../../state/mock-work-feed";
+import type { ChildItemDto } from "../../state/mock-work-feed";
 import {
   canReadBoard,
   canWriteBoardItems,
@@ -171,6 +178,8 @@ function projectCardDto(c: MockCardRecord, store: MockStore): CardDtoApi {
   const comments = store.getCardComments(c.id);
   const fieldValues = store.getFieldValues(c.id);
   const { completedAt, ...readValues } = projectItemReadValues(c, store);
+  const nameOf = (userId: string | null | undefined) =>
+    (userId ? store.getUser(userId)?.name : null) ?? null;
 
   return {
     id: c.id,
@@ -195,7 +204,14 @@ function projectCardDto(c: MockCardRecord, store: MockStore): CardDtoApi {
     fieldValues: Object.keys(fieldValues).length > 0 ? fieldValues : null,
     createdAt: c.createdAt,
     updatedAt: c.updatedAt ?? null,
-    ...{ name: c.title, groupId: c.listId },
+    ...{
+      name: c.title,
+      groupId: c.listId,
+      isArchived: c.isArchived === true,
+      archivedAt: c.isArchived ? (c.archivedAt ?? null) : null,
+      archivedByName: c.isArchived ? nameOf(c.archivedByUserId) : null,
+      completedByName: completedAt ? nameOf(c.assigneeUserIds?.[0]) : null,
+    },
     ...readValues,
   };
 }
@@ -264,6 +280,9 @@ export const cardsOperations = [
         groupId: string;
         title?: string;
         position?: number;
+        descriptionMd?: string | null;
+        startDate?: string | null;
+        dueDate?: string | null;
       };
       const list = store.getList(data.groupId || "fallback");
       if (!list) return notFound("List not found");
@@ -271,6 +290,20 @@ export const cardsOperations = [
         title: data.title,
         position: data.position,
       });
+      // The item's own facts may arrive with the create (description, dates).
+      if (data.descriptionMd || data.startDate || data.dueDate) {
+        if (data.startDate && data.dueDate && data.dueDate < data.startDate) {
+          store.deleteCard(created.id);
+          return badRequest({
+            dueDate: ["Due date must be after start date."],
+          });
+        }
+        store.updateCard(created.id, {
+          ...(data.descriptionMd ? { description: data.descriptionMd } : {}),
+          ...(data.startDate ? { startedAt: data.startDate } : {}),
+          ...(data.dueDate ? { dueAt: data.dueDate } : {}),
+        });
+      }
       // BoardItemSlimDto: the client reads the new item's id.
       return ok({
         id: created.id,
@@ -281,6 +314,24 @@ export const cardsOperations = [
         labelIds: [],
         version: 1,
       });
+    },
+  }),
+
+  // ─── POST /board-items/:itemId/link-page ──────────────────────────────────
+
+  defineMockOperation<{ itemId: string }, { pageId?: string }, void>({
+    id: "wm.boardItems.linkPage",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardItems.LinkPage",
+    } as any,
+    method: "POST",
+    route: "/board-items/:itemId/link-page",
+    async handle({ params, body, store }) {
+      if (!store.getCard(params.itemId)) return notFound("Item not found");
+      const page = body?.pageId ? store.getPage(body.pageId) : undefined;
+      if (!page || page.trashedAt) return notFound("Page not found");
+      return ok<void>(undefined);
     },
   }),
 
@@ -313,6 +364,8 @@ export const cardsOperations = [
         listId?: string;
         dueDate?: string | null;
         startDate?: string | null;
+        clearDueDate?: boolean;
+        clearStartDate?: boolean;
       };
       const description =
         data.descriptionMd !== undefined
@@ -327,6 +380,8 @@ export const cardsOperations = [
         // The Calendar moves an item by its dates (null clears one).
         ...(data.dueDate !== undefined ? { dueAt: data.dueDate } : {}),
         ...(data.startDate !== undefined ? { startedAt: data.startDate } : {}),
+        ...(data.clearDueDate ? { dueAt: null } : {}),
+        ...(data.clearStartDate ? { startedAt: null } : {}),
       });
       if (!updated) return notFound("Card not found");
       return ok<void>(undefined);
@@ -490,7 +545,7 @@ export const cardsOperations = [
       operationId: "WorkManagement.BoardItems.UpdateFieldValue",
     } as any,
     method: "PATCH",
-    route: "/board-items/:id/field-values/:fieldId",
+    route: "/board-items/:id/values/:fieldId",
     async handle({ params, body, store }) {
       const data = body as { value: unknown };
       const updated = store.updateFieldValue(
@@ -530,6 +585,166 @@ export const cardsOperations = [
         });
       }
       // The real endpoint answers 204 No Content.
+      return noContent();
+    },
+  }),
+
+  // ─── POST /board-items/:itemId/assignees ───────────────────────────────────────
+
+  defineMockOperation<{ id: string }, { userId?: string }, void>({
+    id: "wm.boardItems.assignMember",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardItems.AssignMember",
+    },
+    method: "POST",
+    route: "/board-items/:id/assignees",
+    async handle({ params, body, store, request }) {
+      const missingKey = missingIdempotencyKey(request);
+      if (missingKey) return missingKey;
+      const item = store.getCard(params.id);
+      if (!item) return notFound("Card not found");
+      if (!canWriteBoardItems(item.boardId, store)) return forbidden();
+      if (!body?.userId) return badRequest({ userId: ["Choose a member."] });
+      const result = assignMember(store, params.id, body.userId);
+      if (result === "invalid") {
+        return badRequest({ userId: ["That person is not a member."] });
+      }
+      return noContent();
+    },
+  }),
+
+  // ─── DELETE /board-items/:itemId/assignees/:userId ─────────────────────────────
+
+  defineMockOperation<{ id: string; userId: string }, never, void>({
+    id: "wm.boardItems.unassignMember",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardItems.UnassignMember",
+    },
+    method: "DELETE",
+    route: "/board-items/:id/assignees/:userId",
+    async handle({ params, store, request }) {
+      const missingKey = missingIdempotencyKey(request);
+      if (missingKey) return missingKey;
+      const item = store.getCard(params.id);
+      if (!item) return notFound("Card not found");
+      if (!canWriteBoardItems(item.boardId, store)) return forbidden();
+      unassignMember(store, params.id, params.userId);
+      return noContent();
+    },
+  }),
+
+  // ─── POST /boards/:boardId/items/bulk ──────────────────────────────────────────
+
+  // One change for several items of a board, all or nothing: an unknown or
+  // foreign item, or a refused status, writes nothing.
+  defineMockOperation<
+    { boardId: string },
+    {
+      operation?: string;
+      itemIds?: string[];
+      status?: string | null;
+      dueDate?: string | null;
+      assigneeUserId?: string | null;
+    },
+    { updated: number }
+  >({
+    id: "wm.boardItems.bulkUpdate",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardItems.BulkUpdate",
+    },
+    method: "POST",
+    route: "/boards/:boardId/items/bulk",
+    async handle({ params, body, store, request }) {
+      const missingKey = missingIdempotencyKey(request);
+      if (missingKey) return missingKey;
+      if (!canWriteBoardItems(params.boardId, store)) return forbidden();
+      const operation = body?.operation ?? "";
+      const ids = [...new Set(body?.itemIds ?? [])];
+      if (
+        ![
+          "set-status",
+          "set-due-date",
+          "clear-due-date",
+          "assign",
+          "unassign-all",
+          "archive",
+        ].includes(operation)
+      ) {
+        return badRequest({ operation: ["Choose a change to apply."] });
+      }
+      if (ids.length === 0 || ids.length > 200) {
+        return badRequest({ itemIds: ["Choose between 1 and 200 items."] });
+      }
+      if (ids.some((id) => store.getCard(id)?.boardId !== params.boardId)) {
+        return notFound("Card not found");
+      }
+      if (operation === "set-status") {
+        if (!body?.status) {
+          return badRequest({ status: ["The status is required."] });
+        }
+        const first = store.updateItemStatus(ids[0]!, body.status);
+        if (first === "invalid") {
+          return badRequest({
+            status: ["Not an option of the board's Status field."],
+          });
+        }
+        for (const id of ids.slice(1)) store.updateItemStatus(id, body.status);
+      } else if (operation === "assign") {
+        if (!body?.assigneeUserId) {
+          return badRequest({ assigneeUserId: ["Choose a member."] });
+        }
+        for (const id of ids) {
+          const others = store.getCard(id)?.assigneeUserIds ?? [];
+          for (const other of others) {
+            if (other !== body.assigneeUserId) unassignMember(store, id, other);
+          }
+          if (assignMember(store, id, body.assigneeUserId) === "invalid") {
+            return badRequest({
+              assigneeUserId: ["That person is not a member."],
+            });
+          }
+        }
+      } else if (operation === "unassign-all") {
+        for (const id of ids) {
+          for (const other of store.getCard(id)?.assigneeUserIds ?? []) {
+            unassignMember(store, id, other);
+          }
+        }
+      } else if (operation === "archive") {
+        for (const id of ids) store.archiveCard(id);
+      } else {
+        const dueAt =
+          operation === "clear-due-date" ? null : (body?.dueDate ?? null);
+        for (const id of ids) store.updateCard(id, { dueAt });
+      }
+      return ok({ updated: ids.length });
+    },
+  }),
+
+  // ─── PATCH /board-items/:id/due-date ───────────────────────────────────────────
+
+  defineMockOperation<
+    { id: string },
+    { dueDate?: string | null; startDate?: string | null },
+    void
+  >({
+    id: "wm.boardItems.setDueDate",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardItems.SetDueDate",
+    },
+    method: "PATCH",
+    route: "/board-items/:id/due-date",
+    async handle({ params, body, store, request }) {
+      const missingKey = missingIdempotencyKey(request);
+      if (missingKey) return missingKey;
+      const item = store.getCard(params.id);
+      if (!item) return notFound("Card not found");
+      if (!canWriteBoardItems(item.boardId, store)) return forbidden();
+      store.updateCard(params.id, { dueAt: body?.dueDate ?? null });
       return noContent();
     },
   }),
@@ -747,11 +962,14 @@ export const cardsOperations = [
   }),
 
   // ─── POST /board-items/:id/child-items ──────────────────────────────────────────
-  // Gap CTR-GAP-WM-ITEM-DETAIL: adds a child item (sub-item) under an item.
+  // Adds a child item (sub-item) under an item.
 
-  defineMockOperation<{ id: string }, { title?: string }, void>({
+  defineMockOperation<{ id: string }, { title?: string }, ChildItemDto>({
     id: "cards.childItems.add",
-    contract: { kind: "gap", gapId: "CTR-GAP-WM-ITEM-DETAIL" },
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardItems.CreateChild",
+    },
     method: "POST",
     route: "/board-items/:id/child-items",
     async handle({ params, body, store, request }) {
@@ -762,8 +980,9 @@ export const cardsOperations = [
       if (!canWriteBoardItems(item.boardId, store)) return forbidden();
       const title = body?.title?.trim();
       if (!title) return badRequest({ title: ["The title is required."] });
-      return store.createChildItem(params.id, title)
-        ? noContent()
+      const child = store.createChildItem(params.id, title);
+      return child
+        ? ok(childItemDto(store, child))
         : badRequest({ title: ["A child item cannot have child items."] });
     },
   }),

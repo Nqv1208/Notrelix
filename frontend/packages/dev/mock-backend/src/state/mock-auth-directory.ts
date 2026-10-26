@@ -1,9 +1,7 @@
 import { wallClockMs } from "./clock";
 
 /**
- * Who can sign in, and how, in the mock world (gap `CTR-GAP-AUTH-FLOW`, see
- * docs/superpowers/be-blockers-2026-10.md, "BE requirement from FE: Auth"):
- * the accounts with a password and a second step, the company domains that
+ * Who can sign in, and how, in the mock world: the accounts with a password and a second step, the company domains that
  * sign in through their own identity provider, the sign-in attempts and the
  * lock, the guest invitations. Test values for the mock only; no real
  * account is behind any of them.
@@ -15,7 +13,7 @@ export const MOCK_AUTH = {
   personalPassword: "mock-pass-phrase-2026",
   /** The six digits the authenticator app shows for that account. */
   otpCode: "482931",
-  /** One of the backup codes handed out when the second step was set up. */
+  /** One of the recovery codes handed out when the second step was set up. */
   backupCode: "BK7Q-M2XN-91TD",
   /** A company whose people sign in through the company identity provider. */
   ssoDomain: "minhan.vn",
@@ -51,16 +49,20 @@ export interface MockGuestInvite {
   readonly boardTitle: string;
   /** Guest access: what they may do and until when (ISO day), "viewer" | "commenter" | "editor". */
   readonly level: "viewer" | "commenter" | "editor";
-  readonly expiresOn: string | null;
+  /** ISO day the access ends. */
+  readonly expiresOn: string;
   readonly email: string;
   /** The name the inviter typed, offered as the starting value. */
   readonly name: string;
   /** The invited email already has an account: the page asks to sign in instead. */
   readonly hasAccount: boolean;
-  readonly boardPath: string;
+  /** The workspace and board the invitation is for. */
+  readonly workspaceId: string;
+  readonly boardId: string;
 }
 
-const BOARD_PATH = "/workspaces/mock-workspace-primary/boards/mock-board-erp";
+const WORKSPACE_ID = "mock-workspace-primary";
+const BOARD_ID = "mock-board-erp";
 
 const INVITES: readonly MockGuestInvite[] = [
   {
@@ -75,7 +77,8 @@ const INVITES: readonly MockGuestInvite[] = [
     email: "tuan@doitac-erp.vn",
     name: "Đặng Minh Tuấn",
     hasAccount: false,
-    boardPath: BOARD_PATH,
+    workspaceId: WORKSPACE_ID,
+    boardId: BOARD_ID,
   },
   {
     token: "invite-erp-existing",
@@ -89,7 +92,8 @@ const INVITES: readonly MockGuestInvite[] = [
     email: MOCK_AUTH.personalEmail,
     name: MOCK_AUTH.personalName,
     hasAccount: true,
-    boardPath: BOARD_PATH,
+    workspaceId: WORKSPACE_ID,
+    boardId: BOARD_ID,
   },
   {
     token: "invite-erp-expired",
@@ -103,7 +107,8 @@ const INVITES: readonly MockGuestInvite[] = [
     email: "khach@doitac-erp.vn",
     name: "",
     hasAccount: false,
-    boardPath: BOARD_PATH,
+    workspaceId: WORKSPACE_ID,
+    boardId: BOARD_ID,
   },
   {
     token: "invite-erp-used",
@@ -113,39 +118,36 @@ const INVITES: readonly MockGuestInvite[] = [
     orgName: "Minh An Group",
     boardTitle: "Triển khai ERP Q4",
     level: "viewer",
-    expiresOn: null,
+    expiresOn: "2026-12-31",
     email: "da.dung@doitac-erp.vn",
     name: "",
     hasAccount: false,
-    boardPath: BOARD_PATH,
+    workspaceId: WORKSPACE_ID,
+    boardId: BOARD_ID,
   },
 ];
 
 export type MockLoginOutcome =
   | { readonly kind: "signed-in" }
-  | { readonly kind: "otp"; readonly challengeId: string }
-  | {
-      readonly kind: "invalid";
-      readonly attemptsLeft: number;
-      /** This wrong attempt was the last one: the account is locked now. */
-      readonly locked: boolean;
-    }
+  | { readonly kind: "otp"; readonly challengeToken: string }
+  | { readonly kind: "invalid" }
+  /** Too many wrong passwords: the attempt is throttled, not verified. */
   | { readonly kind: "locked"; readonly retryAfterSeconds: number };
 
+/** The answer to a second-step code (`identity.mfa.*`); no one is told how many tries are left. */
 export type MockOtpOutcome =
   | { readonly kind: "signed-in" }
-  | { readonly kind: "invalid"; readonly attemptsLeft: number }
-  | { readonly kind: "expired" };
+  | { readonly kind: "invalid" }
+  | { readonly kind: "challenge-invalid" };
 
 const OTP_ATTEMPTS = 5;
 
 export class MockAuthDirectory {
   private attempts = new Map<string, number>();
   private lockedUntil = new Map<string, number>();
-  private challenges = new Map<
-    string,
-    { email: string; attemptsLeft: number }
-  >();
+  private challenges = new Map<string, { email: string; triesLeft: number }>();
+  /** The backend's httpOnly MFA challenge cookie: set by a provider sign-in that needs a second step. */
+  private mfaChallengeCookie: string | null = null;
   private acceptedInvites = new Set<string>();
   private declinedInvites = new Set<string>();
   private sequence = 0;
@@ -160,6 +162,7 @@ export class MockAuthDirectory {
     this.attempts.clear();
     this.lockedUntil.clear();
     this.challenges.clear();
+    this.mfaChallengeCookie = null;
     this.acceptedInvites.clear();
     this.declinedInvites.clear();
     this.sequence = 0;
@@ -195,41 +198,60 @@ export class MockAuthDirectory {
       password === MOCK_AUTH.personalPassword
     ) {
       this.attempts.delete(email);
-      const challengeId = `challenge-${(this.sequence += 1)}`;
-      this.challenges.set(challengeId, { email, attemptsLeft: OTP_ATTEMPTS });
-      return { kind: "otp", challengeId };
+      const challengeToken = `challenge-${(this.sequence += 1)}`;
+      this.challenges.set(challengeToken, { email, triesLeft: OTP_ATTEMPTS });
+      return { kind: "otp", challengeToken };
     }
     const failed = (this.attempts.get(email) ?? 0) + 1;
     this.attempts.set(email, failed);
     if (failed >= MOCK_AUTH.maxAttempts) {
       this.lockedUntil.set(email, this.nowMs() + MOCK_AUTH.lockSeconds * 1000);
-      return { kind: "invalid", attemptsLeft: 0, locked: true };
+      return { kind: "locked", retryAfterSeconds: MOCK_AUTH.lockSeconds };
     }
-    return {
-      kind: "invalid",
-      attemptsLeft: MOCK_AUTH.maxAttempts - failed,
-      locked: false,
-    };
+    return { kind: "invalid" };
+  }
+
+  /**
+   * A provider sign-in for the account that has an authenticator app: the backend keeps the
+   * challenge in an httpOnly cookie (never in a URL) and sends the browser to the second step.
+   */
+  startProviderMfa(): void {
+    const challengeToken = `challenge-${(this.sequence += 1)}`;
+    this.challenges.set(challengeToken, {
+      email: MOCK_AUTH.personalEmail,
+      triesLeft: OTP_ATTEMPTS,
+    });
+    this.mfaChallengeCookie = challengeToken;
+  }
+
+  /** What the browser would send back in the challenge cookie; null when there is none (expired or cleared). */
+  readMfaChallengeCookie(): string | null {
+    return this.mfaChallengeCookie;
+  }
+
+  clearMfaChallengeCookie(): void {
+    this.mfaChallengeCookie = null;
   }
 
   /** The second step: the app's six digits, or a backup code. */
-  verifyOtp(challengeId: string, code: string): MockOtpOutcome {
-    const challenge = this.challenges.get(challengeId);
-    if (!challenge) return { kind: "expired" };
+  verifyOtp(challengeToken: string, code: string): MockOtpOutcome {
+    const challenge = this.challenges.get(challengeToken);
+    if (!challenge) return { kind: "challenge-invalid" };
     const normalised = code.replace(/[\s-]/g, "").toUpperCase();
     if (
       normalised === MOCK_AUTH.otpCode ||
       normalised === MOCK_AUTH.backupCode.replace(/-/g, "")
     ) {
-      this.challenges.delete(challengeId);
+      this.challenges.delete(challengeToken);
       return { kind: "signed-in" };
     }
-    challenge.attemptsLeft -= 1;
-    if (challenge.attemptsLeft <= 0) {
-      this.challenges.delete(challengeId);
-      return { kind: "expired" };
+    challenge.triesLeft -= 1;
+    // After the last wrong code the challenge is dead: sign in again.
+    if (challenge.triesLeft <= 0) {
+      this.challenges.delete(challengeToken);
+      return { kind: "challenge-invalid" };
     }
-    return { kind: "invalid", attemptsLeft: challenge.attemptsLeft };
+    return { kind: "invalid" };
   }
 
   invite(token: string): MockGuestInvite | undefined {
@@ -249,9 +271,11 @@ export class MockAuthDirectory {
     return "accepted";
   }
 
+  /** Declining twice is fine; an accepted, expired or used invitation cannot be declined. */
   declineInvite(token: string): boolean {
     const invite = INVITES.find((entry) => entry.token === token);
     if (!invite || invite.state !== "valid") return false;
+    if (this.acceptedInvites.has(token)) return false;
     this.declinedInvites.add(token);
     return true;
   }

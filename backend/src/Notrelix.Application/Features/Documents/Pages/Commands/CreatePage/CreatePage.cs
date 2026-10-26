@@ -1,6 +1,7 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Documents.Abstractions;
 using Notrelix.Application.Features.Documents.Pages.Services;
+using Notrelix.Application.Features.Governance.Public.Access;
 
 namespace Notrelix.Application.Features.Documents.Pages.Commands.CreatePage;
 
@@ -32,17 +33,20 @@ public class CreatePageCommandHandler : IRequestHandler<CreatePageCommand, Resul
 {
     private readonly IDocumentDbContext _context;
     private readonly IPageSpacePlacement _placement;
+    private readonly IResourceCreatorGrant _creatorGrant;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
 
     public CreatePageCommandHandler(
         IDocumentDbContext context,
         IPageSpacePlacement placement,
+        IResourceCreatorGrant creatorGrant,
         ICurrentRequestContext requestContext,
         IDateTimeProvider dateTimeProvider)
     {
         _context = context;
         _placement = placement;
+        _creatorGrant = creatorGrant;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
     }
@@ -67,6 +71,9 @@ public class CreatePageCommandHandler : IRequestHandler<CreatePageCommand, Resul
 
         var page = Page.Create(_requestContext.RequireAccountId(), request.WorkspaceId, request.Title, _requestContext.UserId, _dateTimeProvider.UtcNow, request.ParentId, spaceId);
         _context.Pages.Add(page);
+
+        // The creator is a Manager of the page, so they can share and manage it.
+        _creatorGrant.GrantManager(page.AccountId, page.WorkspaceId, "documents.page", page.Id, _requestContext.UserId, _dateTimeProvider.UtcNow);
 
         return Result<Guid>.Success(page.Id);
     }

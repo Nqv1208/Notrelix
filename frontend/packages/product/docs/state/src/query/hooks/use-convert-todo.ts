@@ -1,9 +1,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createPageExtrasApi } from "../../api/page-extras.api";
+import type { Block } from "@notrelix/docs-core";
+import {
+  createPageExtrasApi,
+  type ConvertTodoTarget,
+} from "../../api/page-extras.api";
 import type { DocsApiClient, PageApiEndpoints } from "../../api/page.api";
 import { docsQueryKeys } from "../keys";
 
-/** Turns a checklist line into a work item (gap `CTR-GAP-DOCS-PAGE-EXT`). */
+/** Turns a checklist line into a work item in the chosen board group. */
 export function createUseConvertTodo(
   api: DocsApiClient,
   endpoints: PageApiEndpoints,
@@ -12,7 +16,8 @@ export function createUseConvertTodo(
   return function useConvertTodo(workspaceId: string, pageId: string) {
     const queryClient = useQueryClient();
     return useMutation({
-      mutationFn: (blockId: string) => extras.convertTodo(pageId, blockId),
+      mutationFn: (input: { block: Block; target: ConvertTodoTarget }) =>
+        extras.convertTodo(pageId, input.block, input.target),
       onSettled: () => {
         void queryClient.invalidateQueries({
           queryKey: docsQueryKeys.blocks(workspaceId, pageId),

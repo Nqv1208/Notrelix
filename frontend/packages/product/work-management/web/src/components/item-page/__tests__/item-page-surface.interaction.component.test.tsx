@@ -417,6 +417,62 @@ describe.each([
       screen.queryByRole("group", { name: /followers|theo dõi/ }),
     ).toBeNull();
   });
+
+  it(`${fui("wm.item-page.surface:description-edit", locale)}writes, saves and clears the description from the page (${locale})`, async () => {
+    const item = erpPageItem({ descriptionMd: undefined });
+    const { callbacks } = renderPage(copy, {
+      card: item,
+      detailData: erpPageDetailData(item),
+    });
+    // An item without a description invites writing one.
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.states.empty.description }),
+    );
+    const box = screen.getByRole("textbox", { name: copy.description.heading });
+    fireEvent.change(box, { target: { value: "- First\n- Second" } });
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.description.save }),
+    );
+    expect(callbacks.onRenameTitle).toHaveBeenCalledWith(item.id, {
+      descriptionMd: "- First\n- Second",
+    });
+    expect(
+      screen.queryByRole("textbox", { name: copy.description.heading }),
+    ).toBeNull();
+  });
+
+  it(`${fui("wm.item-page.surface:description-keys", locale)}saves with Ctrl+Enter, cancels with Escape and sends nothing when unchanged (${locale})`, async () => {
+    const item = erpPageItem({ descriptionMd: "Existing text" });
+    const { callbacks } = renderPage(copy, {
+      card: item,
+      detailData: erpPageDetailData(item),
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.description.edit }),
+    );
+    let box = screen.getByRole("textbox", { name: copy.description.heading });
+    fireEvent.change(box, { target: { value: "Dropped by Escape" } });
+    fireEvent.keyDown(box, { key: "Escape" });
+    expect(callbacks.onRenameTitle).not.toHaveBeenCalled();
+    expect(screen.getByText("Existing text")).toBeTruthy();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.description.edit }),
+    );
+    box = screen.getByRole("textbox", { name: copy.description.heading });
+    fireEvent.keyDown(box, { key: "Enter", ctrlKey: true });
+    expect(callbacks.onRenameTitle).not.toHaveBeenCalled();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.description.edit }),
+    );
+    box = screen.getByRole("textbox", { name: copy.description.heading });
+    fireEvent.change(box, { target: { value: "" } });
+    fireEvent.keyDown(box, { key: "Enter", ctrlKey: true });
+    expect(callbacks.onRenameTitle).toHaveBeenCalledWith(item.id, {
+      descriptionMd: "",
+    });
+  });
 });
 
 describe("item page sections with data (vi)", () => {
@@ -630,7 +686,7 @@ describe.each([
     expect(screen.getAllByText(copy.states.offline.pending).length).toBe(2);
   });
 
-  it(`${fui("wm.item-page.surface:empty", locale)}folds the empty fields and invites the first sub-item (${locale})`, () => {
+  it(`${fui("wm.item-page.surface:empty", locale)}keeps the dates in view and invites the first sub-item (${locale})`, () => {
     const item = erpPageItem({
       descriptionMd: undefined,
       dueAt: null,
@@ -645,15 +701,12 @@ describe.each([
       callbacks: { ...callbacksMock(), onAddChildItem: vi.fn() },
     });
     const rail = within(screen.getByRole("complementary"));
-    expect(rail.queryByRole("button", { name: copy.rail.due })).toBeNull();
-    fireEvent.click(
-      rail.getByRole("button", {
-        name: new RegExp(
-          copy.states.empty.showFields_other.replace("{{count}}", "\\d+"),
-        ),
-      }),
-    );
+    // The due and start dates always show, as Final-Detail draws them; only
+    // empty custom fields fold away.
     expect(rail.getByRole("button", { name: copy.rail.due })).toBeTruthy();
+    expect(
+      rail.getByRole("button", { name: copy.rail.startDate }),
+    ).toBeTruthy();
     expect(screen.getByText(copy.states.empty.children)).toBeTruthy();
     fireEvent.click(
       screen.getByRole("button", { name: copy.states.empty.addChild }),
@@ -817,6 +870,57 @@ describe.each([
       expect.objectContaining({ mentionUserIds: ["user-linh"] }),
       expect.anything(),
     );
+  });
+
+  it(`${fui("wm.item-page.surface:request-approval", locale)}lists the approvals asked, offers the board members but not the viewer in the item menu, and asks the chosen one (${locale})`, async () => {
+    const item = erpPageItem();
+    const data = erpPageDetailData(item);
+    const board = erpPageBoard();
+    const asked = board.members.find(
+      (member) => member.userId !== erpPageViewer.userId,
+    )!;
+    const onRequestApproval = vi.fn();
+    renderPage(copy, {
+      card: item,
+      callbacks: { ...callbacksMock(), onRequestApproval },
+      detailData: {
+        ...data,
+        approvals: [
+          {
+            id: "approval-1",
+            status: "approved",
+            approverUserId: asked.userId,
+            approverName: asked.name,
+            decisionNote: "Looks good",
+          },
+        ],
+      },
+    });
+    const section = screen.getByRole("region", { name: copy.approval.heading });
+    expect(
+      within(section).getByText(
+        copy.approval.approved.replace("{{name}}", asked.name),
+      ),
+    ).toBeTruthy();
+    expect(within(section).getByText("Looks good")).toBeTruthy();
+    fireEvent.keyDown(screen.getByRole("button", { name: copy.topbar.more }), {
+      key: "Enter",
+    });
+    const ask = await screen.findByRole("menuitem", {
+      name: copy.approval.request,
+    });
+    fireEvent.keyDown(ask, { key: "ArrowRight" });
+    const viewer = board.members.find(
+      (member) => member.userId === erpPageViewer.userId,
+    );
+    if (viewer)
+      expect(
+        screen.queryByRole("menuitem", { name: new RegExp(viewer.name) }),
+      ).toBeNull();
+    fireEvent.click(
+      await screen.findByRole("menuitem", { name: new RegExp(asked.name) }),
+    );
+    expect(onRequestApproval).toHaveBeenCalledWith(asked.userId);
   });
 
   it(`${fui("wm.item-page.surface:link-picker", locale)}picks the relation, lists linked items as taken and explains a loop (${locale})`, () => {

@@ -58,6 +58,11 @@ public class IntegrationConnection : SoftDeletableAggregateRoot, IWorkspaceScope
     public string? ErrorDetail { get; private set; }
     public DateTimeOffset? ExpiresAt { get; private set; }
 
+    /// <summary>The address an outgoing webhook connection delivers to; absent for OAuth providers.</summary>
+    public string? TargetUrl { get; private set; }
+    public DateTimeOffset? LastSuccessAt { get; private set; }
+    public DateTimeOffset? LastErrorAt { get; private set; }
+
     // Current secret state (replaces unbounded _secretVersions collection)
     public string? CurrentSecretVersion { get; private set; }
     public SecretRef? CurrentSecretRef { get; private set; }
@@ -82,7 +87,8 @@ public class IntegrationConnection : SoftDeletableAggregateRoot, IWorkspaceScope
         Guid createdBy,
         DateTimeOffset createdAt,
         string? providerAccountId = null,
-        DateTimeOffset? expiresAt = null)
+        DateTimeOffset? expiresAt = null,
+        string? targetUrl = null)
     {
         Guard.NotEmpty(accountId);
         Guard.NotEmpty(workspaceId);
@@ -102,7 +108,8 @@ public class IntegrationConnection : SoftDeletableAggregateRoot, IWorkspaceScope
             Provider = provider,
             Status = IntegrationConnectionStatus.Active,
             ProviderAccountId = normalizedProviderAccountId,
-            ExpiresAt = expiresAt
+            ExpiresAt = expiresAt,
+            TargetUrl = string.IsNullOrWhiteSpace(targetUrl) ? null : targetUrl.Trim()
         };
 
         connection.SetAuditOnCreate(createdBy, createdAt);
@@ -121,6 +128,59 @@ public class IntegrationConnection : SoftDeletableAggregateRoot, IWorkspaceScope
         ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new IntegrationConnectionRevokedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, occurredAt));
+    }
+
+    /// <summary>Stops deliveries and syncs without losing the connection; only an active or failing connection pauses.</summary>
+    public void Pause(Guid updatedBy, DateTimeOffset occurredAt)
+    {
+        EnsureNotDeleted();
+        if (Status == IntegrationConnectionStatus.Paused) return;
+        if (Status is IntegrationConnectionStatus.Revoked or IntegrationConnectionStatus.Expired)
+        {
+            throw new BusinessRuleException(Integrations_Connection_NotUsable, "A disconnected or expired connection cannot be paused.");
+        }
+
+        var pending = PrepareAuditUpdate(updatedBy, occurredAt);
+        Status = IntegrationConnectionStatus.Paused;
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+    }
+
+    /// <summary>Lets a paused connection work again; it is active until a delivery fails.</summary>
+    public void Resume(Guid updatedBy, DateTimeOffset occurredAt)
+    {
+        EnsureNotDeleted();
+        if (Status != IntegrationConnectionStatus.Paused) return;
+
+        var pending = PrepareAuditUpdate(updatedBy, occurredAt);
+        Status = IntegrationConnectionStatus.Active;
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+    }
+
+    /// <summary>A delivery reached the target: a failing connection is healthy again; a paused one stays paused.</summary>
+    public void RecordSuccess(DateTimeOffset occurredAt)
+    {
+        EnsureNotDeleted();
+        if (Status is IntegrationConnectionStatus.Revoked or IntegrationConnectionStatus.Expired) return;
+        if (LastSuccessAt.HasValue && LastSuccessAt.Value >= occurredAt && Status != IntegrationConnectionStatus.Error) return;
+
+        LastSuccessAt = occurredAt;
+        if (Status == IntegrationConnectionStatus.Error) Status = IntegrationConnectionStatus.Active;
+        IncrementVersion();
+    }
+
+    /// <summary>A delivery was given up on: the connection shows the error until a delivery succeeds; a paused one stays paused.</summary>
+    public void RecordFailure(string error, DateTimeOffset occurredAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotNullOrWhiteSpace(error);
+        if (Status is IntegrationConnectionStatus.Revoked or IntegrationConnectionStatus.Expired) return;
+
+        ErrorDetail = error.Trim();
+        LastErrorAt = occurredAt;
+        if (Status == IntegrationConnectionStatus.Active) Status = IntegrationConnectionStatus.Error;
+        IncrementVersion();
     }
 
     public void Reconnect(string? providerAccountId, DateTimeOffset? expiresAt, Guid updatedBy, DateTimeOffset occurredAt)

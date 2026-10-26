@@ -53,7 +53,7 @@ public sealed class BoardReadContractIntegrationTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
 
         _accountId = Guid.NewGuid();
@@ -86,7 +86,7 @@ public sealed class BoardReadContractIntegrationTests : IAsyncLifetime
         _archivedRoot.Archive(_userId, Now);
         _plain = Root("Plain", "a5");
 
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Workspaces.Add(workspace);
         seed.Boards.Add(_board);
         seed.BoardGroups.Add(_group);
@@ -139,6 +139,16 @@ public sealed class BoardReadContractIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task FullBoard_CountsTheLiveItemsHoldingAValueOfEachField()
+    {
+        var board = await FullBoardAsync(visibleSpaces: [_spaceId]);
+
+        // The parent and its two live children; the archived child does not count.
+        board.Columns.Single(c => c.Id == _status.Id).ValueCount.Should().Be(3);
+        board.Columns.Single(c => c.Id == _priority.Id).ValueCount.Should().Be(1);
+    }
+
+    [Fact]
     public async Task FullBoard_HidesASpaceTheCallerCannotSee()
     {
         var board = await FullBoardAsync(visibleSpaces: []);
@@ -168,7 +178,7 @@ public sealed class BoardReadContractIntegrationTests : IAsyncLifetime
     {
         var visibility = new Mock<IResourceVisibility>();
         visibility.Setup(v => v.VisibleSpaceIdsAsync(_workspaceId, _userId, It.IsAny<CancellationToken>())).ReturnsAsync(visibleSpaces);
-        await using var context = _db.CreateContext(Tenant());
+        await using var context = _db.CreateOwnerContext(Tenant());
         var result = await new GetFullBoardQueryHandler(context, Actors(), Collaboration(), visibility.Object, Request())
             .Handle(new GetFullBoardQuery(_board.Id), CancellationToken.None);
         result.Succeeded.Should().BeTrue();
@@ -177,7 +187,7 @@ public sealed class BoardReadContractIntegrationTests : IAsyncLifetime
 
     private async Task<BoardItemDto> ItemAsync(Guid itemId)
     {
-        await using var context = _db.CreateContext(Tenant());
+        await using var context = _db.CreateOwnerContext(Tenant());
         var result = await new GetBoardItemQueryHandler(context, Actors(), Collaboration())
             .Handle(new GetBoardItemQuery(itemId), CancellationToken.None);
         result.Succeeded.Should().BeTrue();
