@@ -107,7 +107,7 @@ export function MarkChips({
         className="w-64 gap-2 p-3"
         onCloseAutoFocus={(event) => {
           event.preventDefault();
-          editor.commands.focus();
+          if (!editor.isDestroyed) editor.commands.focus();
         }}
       >
         {person ? (

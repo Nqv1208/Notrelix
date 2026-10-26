@@ -38,6 +38,12 @@ const TARGETS = (overrides: Partial<DocMarkTargets> = {}): DocMarkTargets => ({
   ...overrides,
 });
 
+/** The editor announces itself on a timer once mounted; chips listen from then. */
+const settle = () =>
+  act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+
 const chip = (editor: Editor, selector: string) =>
   editor.view.dom.querySelector(selector)!;
 
@@ -47,6 +53,7 @@ describe("mention chips and page references in the text", () => {
     renderPureUi(
       <MarkChips editor={editor} copy={docsCopy} targets={TARGETS()} />,
     );
+    await settle();
     await act(async () => {
       fireEvent.click(chip(editor, "[data-user-id]"));
     });
@@ -68,6 +75,7 @@ describe("mention chips and page references in the text", () => {
     renderPureUi(
       <MarkChips editor={editor} copy={docsCopy} targets={TARGETS()} />,
     );
+    await settle();
     await act(async () => {
       fireEvent.keyDown(editor.view.dom, { key: "Enter", altKey: true });
     });
@@ -79,6 +87,7 @@ describe("mention chips and page references in the text", () => {
     renderPureUi(
       <MarkChips editor={editor} copy={docsCopy} targets={TARGETS()} />,
     );
+    await settle();
     await act(async () => {
       fireEvent.click(chip(editor, "[data-user-id]"));
     });
@@ -95,6 +104,7 @@ describe("mention chips and page references in the text", () => {
         targets={TARGETS({ openPage })}
       />,
     );
+    await settle();
     await act(async () => {
       fireEvent.click(chip(readable, "[data-page-id]"));
     });
@@ -109,6 +119,7 @@ describe("mention chips and page references in the text", () => {
     renderPureUi(
       <MarkChips editor={hidden} copy={docsCopy} targets={TARGETS()} />,
     );
+    await settle();
     await act(async () => {
       fireEvent.click(chip(hidden, "[data-page-id]"), { ctrlKey: true });
     });
