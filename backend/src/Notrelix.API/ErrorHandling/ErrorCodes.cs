@@ -6,7 +6,7 @@ public static class ErrorCodes
     public const string BusinessRuleViolation = "business_rule.violation";
     public const string Unauthorized = "auth.unauthorized";
     public const string Forbidden = "auth.forbidden";
-    public const string EmailNotConfirmed = AccessDenialCodes.EmailNotConfirmed;
+    public const string EmailNotConfirmed = Notrelix.Application.Common.Security.AccessDenialCodes.EmailNotConfirmed;
     public const string CsrfValidationFailed = "security.csrf_validation_failed";
     public const string AuthorizationMisconfiguration = "security.authorization_misconfiguration";
     public const string ResourceNotFound = "resource.not_found";
