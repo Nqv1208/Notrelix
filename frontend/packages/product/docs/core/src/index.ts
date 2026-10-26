@@ -62,12 +62,14 @@ export {
   IMAGE_MAX_ALT_LENGTH,
   IMAGE_MAX_WIDTH,
   IMAGE_MIN_WIDTH,
+  CAPTION_MARK_TYPES,
   MAX_PAGE_FILE_BYTES,
   clampImageWidth,
   fileExtension,
   formatFileSize,
   isPageImage,
   refusePageFile,
+  sanitizeCaptionRuns,
 } from "./types/attachment-rules";
 export type { PageAttachment, PageFileRefusal } from "./types/attachment-rules";
 export { canRetryUpload } from "./types/attachment-uploads";

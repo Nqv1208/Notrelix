@@ -1,5 +1,11 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
-import { act, fireEvent, renderPureUi, screen } from "@notrelix/testing";
+import {
+  act,
+  fireEvent,
+  renderPureUi,
+  screen,
+  within,
+} from "@notrelix/testing";
 import {
   richText,
   type BlockDraft,
@@ -146,6 +152,11 @@ function pasteInto(editor: Editor, event: ClipboardEvent): boolean {
 
 const settle = () => act(async () => new Promise((r) => setTimeout(r, 0)));
 
+/** The caption's own editor: TipTap leaves it on its DOM node. */
+function captionEditor(textbox: HTMLElement): Editor {
+  return (textbox as unknown as { editor: Editor }).editor;
+}
+
 describe("image block", () => {
   const IMAGE: BlockDraft = {
     id: "img",
@@ -165,17 +176,23 @@ describe("image block", () => {
       name: "Sơ đồ",
     })) as HTMLImageElement;
     expect(image.getAttribute("src")).toBe("blob:local-preview");
-    expect(screen.getByDisplayValue("Hình 1")).toBeTruthy();
+    const caption = await screen.findByRole("textbox", {
+      name: docsCopy.media.image.caption,
+    });
+    expect(caption.textContent).toBe("Hình 1");
   });
 
   it("saves a caption and an alternative text", async () => {
     const view = setup({ drafts: [IMAGE] });
-    const caption = await screen.findByLabelText(docsCopy.media.image.caption);
+    const caption = await screen.findByRole("textbox", {
+      name: docsCopy.media.image.caption,
+    });
     await act(async () => {
-      fireEvent.change(caption, { target: { value: "Hình 2" } });
+      captionEditor(caption).commands.setContent("Hình 2");
       fireEvent.blur(caption);
     });
     expect(view.drafts()[0]?.properties.caption).toBe("Hình 2");
+    expect(view.drafts()[0]?.properties.captionRuns).toBeUndefined();
 
     await act(async () => {
       fireEvent.click(
@@ -191,6 +208,65 @@ describe("image block", () => {
     });
     expect(view.drafts()[0]?.properties.alt).toBe("Mô tả mới");
     expect(JSON.stringify(view.drafts())).not.toMatch(/blob:|data:/);
+  });
+
+  it("edits the caption as runs with bold, italic, code and a link only", async () => {
+    const view = setup({ drafts: [IMAGE] });
+    const caption = await screen.findByRole("textbox", {
+      name: docsCopy.media.image.caption,
+    });
+    const nested = captionEditor(caption);
+    await act(async () => {
+      nested.commands.focus();
+      nested.commands.selectAll();
+    });
+    const tools = await screen.findByRole("toolbar", {
+      name: docsCopy.media.image.captionTools,
+    });
+    expect(tools.querySelectorAll("button")).toHaveLength(4);
+    await act(async () => {
+      fireEvent.click(
+        within(tools).getByRole("button", { name: docsCopy.toolbar.bold }),
+      );
+    });
+    await act(async () => {
+      fireEvent.blur(caption);
+    });
+    expect(view.drafts()[0]?.properties.caption).toBe("Hình 1");
+    expect(view.drafts()[0]?.properties.captionRuns).toEqual([
+      { text: "Hình 1", marks: [{ type: "bold" }] },
+    ]);
+    // Colour, underline and strike are not offered inside a caption.
+    expect(nested.schema.marks.underline).toBeUndefined();
+    expect(nested.schema.marks.strike).toBeUndefined();
+    expect(nested.schema.marks.colorToken).toBeUndefined();
+  });
+
+  it("shows a stored marked caption read-only with its marks", async () => {
+    setup({
+      drafts: [
+        {
+          ...IMAGE,
+          properties: {
+            ...IMAGE.properties,
+            caption: "Hình 1 xem",
+            captionRuns: [
+              { text: "Hình ", marks: [{ type: "bold" }] },
+              {
+                text: "1 xem",
+                marks: [{ type: "link", href: "https://example.com/" }],
+              },
+            ],
+          },
+        },
+      ],
+      editable: false,
+    });
+    await screen.findByRole("img", { name: "Sơ đồ" });
+    expect(screen.getByText("Hình").tagName).toBe("STRONG");
+    expect(
+      screen.getByRole("link", { name: "1 xem" }).getAttribute("href"),
+    ).toBe("https://example.com/");
   });
 
   it("resizes with the keyboard inside the contract's 80 to 2000 range", async () => {

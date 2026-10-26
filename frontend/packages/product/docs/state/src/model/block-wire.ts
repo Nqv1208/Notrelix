@@ -4,6 +4,7 @@ import {
   plainTextOf,
   plainTextOfRuns,
   runsFromPlainText,
+  sanitizeCaptionRuns,
   upgradeLegacyProperties,
   type BlockDraft,
   type BlockProperties,
@@ -137,8 +138,12 @@ export function propertiesFromWire(
       const properties: BlockProperties = {
         ...(pick(wire, ["attachmentId", "width", "alt"]) as BlockProperties),
       };
-      const caption = plainTextOfRuns(runsOfWire(wire.caption));
+      const runs = sanitizeCaptionRuns(runsOfWire(wire.caption));
+      const caption = plainTextOfRuns(runs);
       if (caption) properties.caption = caption;
+      // Plain captions stay a string; only a marked one carries its runs.
+      if (runs.some((run) => run.marks.length > 0))
+        properties.captionRuns = runs;
       return properties;
     }
     case "file":
@@ -174,7 +179,9 @@ export function propertiesToWire(
   switch (type) {
     case "image": {
       const wire = pick(source, ["attachmentId", "width", "alt"]);
-      if (properties.caption) {
+      const runs = sanitizeCaptionRuns(properties.captionRuns ?? []);
+      if (runs.length > 0) wire.caption = runs;
+      else if (properties.caption) {
         wire.caption = runsFromPlainText(properties.caption);
       }
       return wire;

@@ -53,7 +53,10 @@ export interface BlockProperties {
   checked?: boolean;
   language?: string;
   url?: string;
+  /** An image's caption as plain text (the text of `captionRuns`). */
   caption?: string;
+  /** An image's caption with its bold, italic, code and link marks. */
+  captionRuns?: Run[];
   color?: string;
   icon?: string;
   title?: string;

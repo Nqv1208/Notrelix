@@ -55,7 +55,7 @@ const OWN_KEYS: Readonly<Partial<Record<BlockType, readonly string[]>>> = {
   toggle: ["collapsed"],
   board_reference: ["linkedBoardId", "title", "caption", "items"],
   page_reference: ["linkedPageId"],
-  image: ["attachmentId", "width", "alt", "caption"],
+  image: ["attachmentId", "width", "alt", "caption", "captionRuns"],
   file: ["attachmentId"],
 };
 

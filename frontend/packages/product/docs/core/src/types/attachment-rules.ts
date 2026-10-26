@@ -4,6 +4,8 @@
  * the attachment upload contract, `AttachmentUploadOptions`).
  */
 
+import { isSafeHref, normalizeRuns, type Mark, type Run } from "./rich-text";
+
 /** A file stored for a page (an image or file block points at it by id). */
 export interface PageAttachment {
   readonly id: string;
@@ -108,4 +110,24 @@ export function formatFileSize(bytes: number, locale = "vi"): string {
   return `${new Intl.NumberFormat(locale, {
     maximumFractionDigits: digits,
   }).format(value)} ${units[unit]}`;
+}
+
+/** The marks an image caption keeps: the same v1 marks, without colour or mentions. */
+export const CAPTION_MARK_TYPES = ["bold", "italic", "code", "link"] as const;
+
+/**
+ * A caption's runs as the page stores them: only bold, italic, code and safe
+ * links, one line (line breaks become spaces), empty runs dropped.
+ */
+export function sanitizeCaptionRuns(runs: readonly Run[]): Run[] {
+  return normalizeRuns(
+    runs.map((run) => ({
+      text: run.text.replace(/\s*\n\s*/g, " "),
+      marks: run.marks.filter(
+        (mark): mark is Mark =>
+          (CAPTION_MARK_TYPES as readonly string[]).includes(mark.type) &&
+          (mark.type !== "link" || isSafeHref(mark.href)),
+      ),
+    })),
+  );
 }

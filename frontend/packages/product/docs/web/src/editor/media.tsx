@@ -1,4 +1,5 @@
 import {
+  Fragment,
   useCallback,
   useEffect,
   useRef,
@@ -31,10 +32,15 @@ import {
   canRetryUpload,
   clampImageWidth,
   formatFileSize,
+  plainTextOfRuns,
+  runsFromPlainText,
+  type Run,
   type UploadFailure,
 } from "@notrelix/docs-core";
 import { fillDocCopy } from "../components/doc-page.copy";
+import { renderMarked } from "../components/doc-marks";
 import { UPLOAD_PLACEHOLDER } from "./block-mapping";
+import { CaptionEditor } from "./caption-editor";
 import { useContextVersion, type ContextHolder } from "./extensions";
 import {
   insertMediaFiles,
@@ -42,6 +48,12 @@ import {
   type DocMediaStorage,
 } from "./media-commands";
 import type { DocMediaHost } from "./media-host";
+
+/** The caption's runs: the marked ones when stored, else its plain text. */
+function captionRunsOf(runs: readonly Run[] | null, caption: string): Run[] {
+  if (runs && runs.length > 0) return [...runs];
+  return caption ? runsFromPlainText(caption) : [];
+}
 
 const ACTION =
   "inline-flex min-h-8 items-center justify-center gap-1.5 rounded-[8px] border border-line-strong bg-transparent px-2.5 text-compact text-foreground outline-none hover:bg-state-hover focus-visible:ring-2 focus-visible:ring-focus-ring disabled:opacity-50";
@@ -88,17 +100,19 @@ function ImageContent({
   const stored = (node.attrs.width as number | null) ?? null;
   const alt = (node.attrs.alt as string | null) ?? "";
   const caption = (node.attrs.caption as string | null) ?? "";
+  const captionRuns = captionRunsOf(
+    node.attrs.captionRuns as Run[] | null,
+    caption,
+  );
   const editable = editor.isEditable;
   const content = media.useContent(attachmentId);
   const url = useObjectUrl(content.blob);
   const box = useRef<HTMLDivElement | null>(null);
   const [live, setLive] = useState<number | null>(null);
   const drag = useRef<{ x: number; width: number } | null>(null);
-  const [captionDraft, setCaptionDraft] = useState(caption);
   const [altDraft, setAltDraft] = useState(alt);
   const [altOpen, setAltOpen] = useState(false);
 
-  useEffect(() => setCaptionDraft(caption), [caption]);
   useEffect(() => setAltDraft(alt), [alt]);
 
   const width = live ?? stored;
@@ -215,27 +229,27 @@ function ImageContent({
           ) : null}
         </div>
         {editable || caption ? (
-          <figcaption className="mt-1.5 flex max-w-[68ch] items-center gap-1.5">
+          <figcaption className="mt-1.5 flex max-w-[68ch] items-start gap-1.5">
             {editable ? (
-              <input
-                type="text"
-                aria-label={copy.caption}
-                placeholder={copy.captionPlaceholder}
-                value={captionDraft}
-                onChange={(event) => setCaptionDraft(event.target.value)}
-                onBlur={() => {
-                  if (captionDraft !== caption) {
-                    updateAttributes({ caption: captionDraft || null });
-                  }
-                }}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") event.currentTarget.blur();
-                }}
-                className={`${FIELD} border-transparent text-meta-foreground hover:border-line-strong`}
+              <CaptionEditor
+                runs={captionRuns}
+                copy={context.current.copy}
+                onCommit={(runs) =>
+                  updateAttributes({
+                    caption: plainTextOfRuns(runs) || null,
+                    captionRuns: runs.some((run) => run.marks.length > 0)
+                      ? runs
+                      : null,
+                  })
+                }
               />
             ) : (
               <span className="text-compact text-meta-foreground">
-                {caption}
+                {captionRuns.map((run, index) => (
+                  <Fragment key={index}>
+                    {renderMarked(run.text, run.marks)}
+                  </Fragment>
+                ))}
               </span>
             )}
             {editable ? (
@@ -556,7 +570,7 @@ function mediaNode(
 
 export const ImageBlock = mediaNode(
   "imageBlock",
-  ["attachmentId", "width", "alt", "caption"],
+  ["attachmentId", "width", "alt", "caption", "captionRuns"],
   ImageContent,
 );
 export const FileBlock = mediaNode("fileBlock", ["attachmentId"], FileContent);
