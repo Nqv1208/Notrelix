@@ -1,3 +1,4 @@
+export { InboxBell } from "./components/inbox-bell";
 export { createNotificationBell } from "./components/notification-bell";
 export { createUseNotifications } from "./query/hooks/use-notifications";
 export { createUseUnreadCount } from "./query/hooks/use-unread-count";

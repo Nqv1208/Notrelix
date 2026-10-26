@@ -184,7 +184,12 @@ export function InboxPage() {
         workspaceName: query.data?.workspace.name || workspace?.name || "",
         allHref: navigation.getHref({ section: "inbox" }),
       }}
-      tabsAvailable={{ need: true, mention: true }}
+      tabsAvailable={{
+        need: true,
+        mention: true,
+        assigned: true,
+        follow: true,
+      }}
       done={{
         active: doneView,
         onToggle: () => setDoneView((value) => !value),

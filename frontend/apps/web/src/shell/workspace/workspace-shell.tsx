@@ -11,7 +11,7 @@ import { useMatches, useNavigate } from "@tanstack/react-router";
 import { resolveApiAssetUrl } from "@notrelix/contracts";
 import { createUsePageList } from "@notrelix/docs-state";
 import { createUseLogout, useCurrentUser } from "@notrelix/features-auth";
-import { createNotificationBell } from "@notrelix/features-notifications";
+import { InboxBell } from "@notrelix/features-notifications";
 import {
   buildSpaceIndex,
   buildWorkspaceBreadcrumb,
@@ -108,7 +108,6 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
       usePins: createUseWorkspacePins(deps),
       useTogglePin: createUseTogglePin(deps),
       usePageList: createUsePageList(featureDeps.api, featureDeps.endpoints),
-      NotificationBell: createNotificationBell(deps),
       useLogout: createUseLogout({
         api: runtimeClient.api,
         endpoints: runtimeClient.endpoints,
@@ -621,8 +620,6 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
     spaceIndex,
   });
 
-  const NotificationBell = hooks.NotificationBell;
-
   const railSurface = (presentation: typeof rail.presentation) => (
     <NotrelixSystemRailSurface
       copy={railCopy}
@@ -726,7 +723,16 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
             commandShortcut={commandShortcut}
             onOpenCommand={() => setPaletteOpen(true)}
             onToggleTheme={toggleTheme}
-            notifications={<NotificationBell />}
+            notifications={
+              <InboxBell
+                unreadCount={
+                  inboxSummary.data?.perWorkspace.find(
+                    (entry) => entry.workspaceId === workspaceId,
+                  )?.unread ?? 0
+                }
+                onOpen={() => goTo({ section: "inbox" })}
+              />
+            }
           />
         ) : null}
         {/* The one scroll container of the workspace shell (WX-SHELL-004). */}
