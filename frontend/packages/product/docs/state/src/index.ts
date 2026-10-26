@@ -46,12 +46,17 @@ export { mapComment } from "./model/comment.mapper";
 export { createPageApi } from "./api/page.api";
 export type {
   DocsApiClient,
+  DocsFileClient,
   DocsRequestOptions,
+  DocsUploadOptions,
+  DocsUploadProgress,
   PageApiEndpoints,
 } from "./api/page.api";
 export { createBreadcrumbApi } from "./api/breadcrumb.api";
 export { createSearchApi } from "./api/search.api";
 export { createFavoriteApi } from "./api/favorite.api";
+export { createAttachmentApi, mapPageAttachment } from "./api/attachment.api";
+export type { PageAttachmentDtoApi } from "./api/attachment.api";
 export { createBlockApi } from "./api/block.api";
 export { createCommentApi } from "./api/comment.api";
 export { createHistoryApi } from "./api/history.api";
@@ -88,3 +93,15 @@ export {
   encodeContent,
   encodeProperties,
 } from "./model/block-wire";
+
+export {
+  AttachmentUploads,
+  canRetryUpload,
+  classifyUploadFailure,
+} from "./editor/attachment-uploads";
+export type {
+  AddUploadResult,
+  AttachmentUploadsOptions,
+  PendingUpload,
+  UploadFailure,
+} from "./editor/attachment-uploads";

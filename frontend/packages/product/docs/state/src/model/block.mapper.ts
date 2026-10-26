@@ -19,7 +19,7 @@ export function parseProperties(
 
 /**
  * The block types the producer stores (`Documents` `BlockType`) and the name
- * the page uses for each. A file or video block has no editor type; the page
+ * the page uses for each. A video block has no editor type; the page
  * reads it as an empty paragraph.
  */
 const FROM_PRODUCER: Readonly<Record<string, BlockType>> = {
@@ -35,6 +35,7 @@ const FROM_PRODUCER: Readonly<Record<string, BlockType>> = {
   Divider: "divider",
   Code: "code",
   Image: "image",
+  File: "file",
   Board: "board_reference",
   Table: "table",
   Callout: "callout",
@@ -54,6 +55,7 @@ const TO_PRODUCER: Readonly<Partial<Record<BlockType, string>>> = {
   divider: "Divider",
   code: "Code",
   image: "Image",
+  file: "File",
   board_reference: "Board",
   table: "Table",
   callout: "Callout",

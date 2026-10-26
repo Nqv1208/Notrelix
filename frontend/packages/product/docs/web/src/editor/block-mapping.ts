@@ -42,6 +42,7 @@ const NODE_OF: Readonly<Record<BlockType, string>> = {
   board_reference: "boardReference",
   page_reference: "pageReference",
   image: "unsupportedBlock",
+  file: "unsupportedBlock",
   table: "table",
 };
 

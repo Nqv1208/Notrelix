@@ -14,6 +14,31 @@ export interface DocsRequestOptions {
   readonly skipGlobalErrorToast?: boolean;
 }
 
+/** What a multipart upload reports while it runs. */
+export interface DocsUploadProgress {
+  readonly loaded: number;
+  readonly total: number;
+}
+
+export interface DocsUploadOptions {
+  /** One per user action; the same key only to retry that action. */
+  readonly idempotencyKey: string;
+  readonly signal?: AbortSignal;
+  readonly onProgress?: (progress: DocsUploadProgress) => void;
+}
+
+/** The file transport a page's attachments need beyond JSON requests. */
+export interface DocsFileClient {
+  /** `multipart/form-data` upload; answers the parsed body. */
+  upload<T>(
+    url: string,
+    form: FormData,
+    options: DocsUploadOptions,
+  ): Promise<T>;
+  /** The bytes of a file, read with the session. */
+  getBlob(url: string): Promise<Blob>;
+}
+
 export interface DocsApiClient {
   get<T>(url: string, options?: DocsRequestOptions): Promise<T>;
   post<T>(url: string, body: unknown, options?: DocsRequestOptions): Promise<T>;
@@ -38,6 +63,12 @@ export interface PageApiEndpoints {
   };
   resourcePermissions: {
     list: (resourceKind: string, resourceId: string) => string;
+  };
+  pageAttachments: {
+    list: (pageId: string) => string;
+    files: (pageId: string) => string;
+    content: (pageId: string, attachmentId: string) => string;
+    detail: (pageId: string, attachmentId: string) => string;
   };
   blocks: {
     detail: (pageId: string, blockId: string) => string;

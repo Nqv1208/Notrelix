@@ -14,6 +14,20 @@ export const docsQueryKeys = {
     workspaceQueryKey(workspaceId, "documents", "breadcrumb", pageId),
   blocks: (workspaceId: string, pageId: string) =>
     workspaceQueryKey(workspaceId, "documents", "blocks", pageId),
+  attachments: (workspaceId: string, pageId: string) =>
+    workspaceQueryKey(workspaceId, "documents", "attachments", pageId),
+  attachmentContent: (
+    workspaceId: string,
+    pageId: string,
+    attachmentId: string,
+  ) =>
+    workspaceQueryKey(
+      workspaceId,
+      "documents",
+      "attachment-content",
+      pageId,
+      attachmentId,
+    ),
   comments: (workspaceId: string, pageId: string) =>
     workspaceQueryKey(workspaceId, "documents", "comments", pageId),
   history: (workspaceId: string, pageId: string) =>

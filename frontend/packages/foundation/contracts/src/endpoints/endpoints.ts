@@ -138,6 +138,14 @@ export const endpoints = {
     trash: (workspaceId: string) => `/workspaces/${workspaceId}/pages/trash`,
     backlinks: (pageId: string) => `/pages/${pageId}/backlinks`,
   },
+  pageAttachments: {
+    list: (pageId: string) => `/pages/${pageId}/attachments`,
+    files: (pageId: string) => `/pages/${pageId}/attachments/files`,
+    content: (pageId: string, attachmentId: string) =>
+      `/pages/${pageId}/attachments/${attachmentId}/content`,
+    detail: (pageId: string, attachmentId: string) =>
+      `/pages/${pageId}/attachments/${attachmentId}`,
+  },
   blocks: {
     detail: (pageId: string, blockId: string) =>
       `/pages/${pageId}/blocks/${blockId}`,

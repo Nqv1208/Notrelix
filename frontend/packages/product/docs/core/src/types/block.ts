@@ -15,6 +15,7 @@ export type BlockType =
   | "callout"
   | "toggle"
   | "image"
+  | "file"
   | "table"
   | "board_reference"
   | "page_reference";

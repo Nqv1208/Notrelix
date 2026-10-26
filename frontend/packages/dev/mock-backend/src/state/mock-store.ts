@@ -28,6 +28,7 @@ import type {
   MockChecklistRecord,
   MockChecklistItemRecord,
   MockAttachmentRecord,
+  MockPageAttachmentRecord,
   MockCommentRecord,
   MockItemLinkRecord,
   MockUserPreferencesRecord,
@@ -291,6 +292,10 @@ export class MockStore {
   private attachmentsByCardId = new Map<string, MockAttachmentRecord[]>();
   /** Stored results of file uploads by Idempotency-Key (a replay adds no second file). */
   private uploadsByIdempotencyKey = new Map<string, MockAttachmentRecord>();
+  /** Files attached to a Documents page, by page (the bytes are kept). */
+  private attachmentsByPageId = new Map<string, MockPageAttachmentRecord[]>();
+  /** Stored results of page file uploads by page and Idempotency-Key. */
+  private pageUploadsByKey = new Map<string, MockPageAttachmentRecord>();
   /** Links between the items of a board (dependencies and relations). */
   private itemLinks: MockItemLinkRecord[] = [];
   /** People who follow an item besides the member, by card. */
@@ -1776,6 +1781,8 @@ export class MockStore {
     this.activityByCardId.clear();
     this.attachmentsByCardId.clear();
     this.uploadsByIdempotencyKey.clear();
+    this.attachmentsByPageId.clear();
+    this.pageUploadsByKey.clear();
     this.itemLinks = [];
     this.followersByCardId.clear();
     this.planByBoardId.clear();
@@ -3815,6 +3822,62 @@ export class MockStore {
     record: MockAttachmentRecord,
   ): void {
     this.uploadsByIdempotencyKey.set(`${cardId}:${key}`, record);
+  }
+
+  /** The files of a page, newest first (like the producer's list). */
+  getPageAttachments(pageId: string): MockPageAttachmentRecord[] {
+    return [...(this.attachmentsByPageId.get(pageId) ?? [])].reverse();
+  }
+
+  getPageAttachment(
+    pageId: string,
+    attachmentId: string,
+  ): MockPageAttachmentRecord | undefined {
+    return this.attachmentsByPageId
+      .get(pageId)
+      ?.find((file) => file.id === attachmentId);
+  }
+
+  getPageUploadByKey(
+    pageId: string,
+    key: string,
+  ): MockPageAttachmentRecord | undefined {
+    return this.pageUploadsByKey.get(`${pageId}:${key}`);
+  }
+
+  addPageAttachment(
+    pageId: string,
+    file: {
+      filename: string;
+      contentType: string;
+      bytes: Uint8Array;
+      idempotencyKey: string;
+    },
+  ): MockPageAttachmentRecord | undefined {
+    if (!this.pagesById.has(pageId)) return undefined;
+    const record: MockPageAttachmentRecord = {
+      id: this.nextId("file"),
+      pageId,
+      filename: file.filename,
+      sizeBytes: file.bytes.byteLength,
+      contentType: file.contentType,
+      uploadedBy: this.getCurrentUser().id,
+      createdAt: this.clock.isoNow(),
+      bytes: file.bytes,
+    };
+    const list = this.attachmentsByPageId.get(pageId) ?? [];
+    list.push(record);
+    this.attachmentsByPageId.set(pageId, list);
+    this.pageUploadsByKey.set(`${pageId}:${file.idempotencyKey}`, record);
+    return record;
+  }
+
+  removePageAttachment(pageId: string, attachmentId: string): boolean {
+    const list = this.attachmentsByPageId.get(pageId) ?? [];
+    const next = list.filter((file) => file.id !== attachmentId);
+    if (next.length === list.length) return false;
+    this.attachmentsByPageId.set(pageId, next);
+    return true;
   }
 
   getAttachment(

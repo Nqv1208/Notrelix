@@ -46,6 +46,20 @@ export type {
 } from "./types";
 
 export {
+  BLOCKED_PAGE_FILE_EXTENSIONS,
+  IMAGE_MAX_ALT_LENGTH,
+  IMAGE_MAX_WIDTH,
+  IMAGE_MIN_WIDTH,
+  MAX_PAGE_FILE_BYTES,
+  clampImageWidth,
+  fileExtension,
+  formatFileSize,
+  isPageImage,
+  refusePageFile,
+} from "./types/attachment-rules";
+export type { PageAttachment, PageFileRefusal } from "./types/attachment-rules";
+
+export {
   COLOR_TOKENS,
   HIGHLIGHT_TOKENS,
   MAX_TEXT_LENGTH,

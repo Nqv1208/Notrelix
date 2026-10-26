@@ -141,6 +141,10 @@ export function propertiesFromWire(
       if (caption) properties.caption = caption;
       return properties;
     }
+    case "file":
+      return typeof wire.attachmentId === "string"
+        ? { attachmentId: wire.attachmentId }
+        : {};
     case "board_reference":
       return {
         ...(typeof wire.boardId === "string"
@@ -175,6 +179,10 @@ export function propertiesToWire(
       }
       return wire;
     }
+    case "file":
+      return properties.attachmentId
+        ? { attachmentId: properties.attachmentId }
+        : {};
     case "board_reference":
       return {
         ...(properties.linkedBoardId
@@ -244,6 +252,7 @@ function textLike(type: BlockType): boolean {
   return (
     type !== "divider" &&
     type !== "image" &&
+    type !== "file" &&
     type !== "table" &&
     type !== "board_reference" &&
     type !== "page_reference"

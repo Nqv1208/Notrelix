@@ -1732,6 +1732,46 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
   {
     context: "Documents",
     classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAttachmentApi",
+    consumerFile:
+      "frontend/packages/product/docs/state/src/api/attachment.api.ts",
+    capability: "Collaboration.PageAttachments.Get",
+    operationId: "Collaboration.PageAttachments.Get",
+    mutation: false,
+  },
+  {
+    context: "Documents",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAttachmentApi",
+    consumerFile:
+      "frontend/packages/product/docs/state/src/api/attachment.api.ts",
+    capability: "Collaboration.PageAttachments.UploadFile",
+    operationId: "Collaboration.PageAttachments.UploadFile",
+    mutation: true,
+  },
+  {
+    context: "Documents",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAttachmentApi",
+    consumerFile:
+      "frontend/packages/product/docs/state/src/api/attachment.api.ts",
+    capability: "Collaboration.PageAttachments.GetContent",
+    operationId: "Collaboration.PageAttachments.GetContent",
+    mutation: false,
+  },
+  {
+    context: "Documents",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAttachmentApi",
+    consumerFile:
+      "frontend/packages/product/docs/state/src/api/attachment.api.ts",
+    capability: "Collaboration.PageAttachments.Delete",
+    operationId: "Collaboration.PageAttachments.Delete",
+    mutation: true,
+  },
+  {
+    context: "Documents",
+    classification: "CANONICAL_MOCKED",
     consumerSymbol: "createUseMovePageToSpace",
     consumerFile:
       "frontend/packages/product/docs/state/src/query/hooks/use-move-page-to-space.ts",

@@ -256,6 +256,18 @@ export interface MockAttachmentRecord {
   createdAt: string;
 }
 
+/** A file attached to a Documents page (`GET /pages/{id}/attachments`); the bytes are kept. */
+export interface MockPageAttachmentRecord {
+  id: string;
+  pageId: string;
+  filename: string;
+  sizeBytes: number;
+  contentType: string;
+  uploadedBy: string;
+  createdAt: string;
+  bytes: Uint8Array;
+}
+
 /**
  * A link between two items of a board: a finish-to-start dependency (`to`
  * waits for `from`) or a plain relation (gap `CTR-GAP-WM-ITEM-LINKS`). Ends

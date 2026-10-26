@@ -1234,6 +1234,9 @@ importers:
 
   packages/product/docs/state:
     dependencies:
+      '@notrelix/contracts':
+        specifier: workspace:*
+        version: link:../../../foundation/contracts
       '@notrelix/docs-core':
         specifier: workspace:*
         version: link:../core

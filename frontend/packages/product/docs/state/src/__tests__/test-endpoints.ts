@@ -24,6 +24,12 @@ export const testEndpoints: PageApiEndpoints = {
     reorder: "/blocks/reorder",
     batch: (pageId) => `/pages/${pageId}/blocks/batch`,
   },
+  pageAttachments: {
+    list: (pageId) => `/pages/${pageId}/attachments`,
+    files: (pageId) => `/pages/${pageId}/attachments/files`,
+    content: (pageId, id) => `/pages/${pageId}/attachments/${id}/content`,
+    detail: (pageId, id) => `/pages/${pageId}/attachments/${id}`,
+  },
   comments: { detail: (commentId) => `/comments/${commentId}` },
   boardItems: {
     create: (boardId) => `/boards/${boardId}/items`,

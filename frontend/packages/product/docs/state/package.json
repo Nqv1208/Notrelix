@@ -15,6 +15,7 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@notrelix/contracts": "workspace:*",
     "@notrelix/docs-core": "workspace:*",
     "@notrelix/query": "workspace:*",
     "@tanstack/react-query": "^5.95.2"
