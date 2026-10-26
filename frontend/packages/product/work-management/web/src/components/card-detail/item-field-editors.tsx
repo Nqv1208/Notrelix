@@ -197,6 +197,7 @@ export function ItemDuePopover({
         <Calendar
           mode="single"
           selected={dueAt ? new Date(dueAt) : undefined}
+          defaultMonth={dueAt ? new Date(dueAt) : undefined}
           onSelect={(date: Date | undefined) =>
             onChange(date ? date.toISOString() : null)
           }
