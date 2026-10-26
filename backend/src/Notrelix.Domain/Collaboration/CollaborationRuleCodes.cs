@@ -22,6 +22,7 @@ public static class CollaborationRuleCodes
     public const string Collaboration_Comment_ParentMustBeInSameTarget = "Collaboration_Comment_ParentMustBeInSameTarget";
     public const string Collaboration_Comment_ParentScopeMismatch = "Collaboration_Comment_ParentScopeMismatch";
     public const string Collaboration_Comment_CannotReplyToDeleted = "Collaboration_Comment_CannotReplyToDeleted";
+    public const string Collaboration_Comment_AnchorInvalid = "Collaboration_Comment_AnchorInvalid";
 
     // ── Attachment ────────────────────────────────────────────────────────
     public const string Collaboration_Attachment_FileSizeMustBePositive = "Collaboration_Attachment_FileSizeMustBePositive";

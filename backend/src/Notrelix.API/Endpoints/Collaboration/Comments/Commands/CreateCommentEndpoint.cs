@@ -26,14 +26,16 @@ public static class CreateCommentEndpoint
 
     private static async Task<IResult> CreateBoardItemCommentAsync(Guid boardItemId, CreateCommentRequest body, ISender sender)
     {
-        var result = await sender.Send(CreateCommentCommand.ForBoardItem(boardItemId, body.ContentMd, body.ParentCommentId, body.MentionedUserIds));
+        var result = await sender.Send(CreateCommentCommand.ForBoardItem(boardItemId, body.ContentMd, body.ParentCommentId, body.MentionedUserIds, AnchorOf(body)));
         return result.ToCreatedResult();
     }
 
     private static async Task<IResult> CreatePageCommentAsync(Guid pageId, CreateCommentRequest body, ISender sender)
     {
-        var result = await sender.Send(CreateCommentCommand.ForPage(pageId, body.ContentMd, body.ParentCommentId, body.MentionedUserIds));
+        var result = await sender.Send(CreateCommentCommand.ForPage(pageId, body.ContentMd, body.ParentCommentId, body.MentionedUserIds, AnchorOf(body)));
         return result.ToCreatedResult();
     }
-}
 
+    private static CommentAnchorInput? AnchorOf(CreateCommentRequest body) =>
+        body.Anchor is null ? null : new CommentAnchorInput(body.Anchor.BlockId, body.Anchor.Quote, body.Anchor.Start, body.Anchor.End);
+}

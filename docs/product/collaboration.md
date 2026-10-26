@@ -180,11 +180,15 @@ Current source has selector/offset anchor data.
 
 An Anchor points to a more specific location inside target content.
 
+A comment on a Documents page may carry a text-range anchor: the id of one live Block of that page, the quoted text and the start and end offsets of that text in the Block's plain text (UTF-16 code units, hard line breaks as `\n`). The quote is exactly as long as the range, so the range and the text it claims cannot disagree. The Block must belong to the commented page (a Documents fact asked through its published port); the page is authorized first, with the same permissions as any page comment. Only a top-level comment is anchored; a reply follows its thread. A comment on a board item has no text anchor.
+
 # 14. COL-005 — Anchor is locator, not target-content ownership
 
 Anchor can become stale as content changes.
 
 Collaboration may preserve, re-resolve, or mark it unresolved; it does not become a second copy of target content.
+
+Today the stored anchor is never rewritten when the page changes. The reader decides what it still points at: the editor looks for the quote at the stored range, then in the same Block, and shows the comment as detached (with its quote) when the text is gone. A comment is never attached to different text.
 
 # 15. Anchored comment after content changes
 

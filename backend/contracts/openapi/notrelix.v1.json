@@ -21110,6 +21110,28 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.API.Contracts.Collaboration.Comments.Requests.CommentAnchorRequest": {
+        "type": "object",
+        "properties": {
+          "blockId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "quote": {
+            "type": "string",
+            "nullable": true
+          },
+          "start": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "end": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.API.Contracts.Collaboration.Comments.Requests.CreateCommentRequest": {
         "type": "object",
         "properties": {
@@ -21129,6 +21151,9 @@
               "format": "uuid"
             },
             "nullable": true
+          },
+          "anchor": {
+            "$ref": "#/components/schemas/Notrelix.API.Contracts.Collaboration.Comments.Requests.CommentAnchorRequest"
           }
         },
         "additionalProperties": false
@@ -23944,6 +23969,28 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.Application.Features.Collaboration.Comments.DTOs.CommentAnchorDto": {
+        "type": "object",
+        "properties": {
+          "blockId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "quote": {
+            "type": "string",
+            "nullable": true
+          },
+          "start": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "end": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.Application.Features.Collaboration.Comments.DTOs.CommentDto": {
         "type": "object",
         "properties": {
@@ -23983,6 +24030,9 @@
           "createdAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "anchor": {
+            "$ref": "#/components/schemas/Notrelix.Application.Features.Collaboration.Comments.DTOs.CommentAnchorDto"
           }
         },
         "additionalProperties": false

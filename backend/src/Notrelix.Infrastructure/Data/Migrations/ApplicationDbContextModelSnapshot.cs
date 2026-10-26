@@ -11986,14 +11986,31 @@ namespace Notrelix.Infrastructure.Data.Migrations
                                 .HasColumnType("uuid")
                                 .HasColumnName("id");
 
+                            b1.Property<Guid?>("BlockId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("anchor_block_id");
+
+                            b1.Property<int?>("EndOffset")
+                                .HasColumnType("integer")
+                                .HasColumnName("anchor_end");
+
                             b1.Property<int?>("Offset")
                                 .HasColumnType("integer")
                                 .HasColumnName("anchor_offset");
+
+                            b1.Property<string>("Quote")
+                                .HasMaxLength(500)
+                                .HasColumnType("character varying(500)")
+                                .HasColumnName("anchor_quote");
 
                             b1.Property<string>("Selector")
                                 .HasMaxLength(256)
                                 .HasColumnType("character varying(256)")
                                 .HasColumnName("anchor_selector");
+
+                            b1.Property<int?>("StartOffset")
+                                .HasColumnType("integer")
+                                .HasColumnName("anchor_start");
 
                             b1.HasKey("CommentId");
 

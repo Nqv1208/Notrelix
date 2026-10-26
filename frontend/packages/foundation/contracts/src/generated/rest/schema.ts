@@ -5246,11 +5246,21 @@ export interface components {
             /** Format: binary */
             file: string | null;
         };
+        "Notrelix.API.Contracts.Collaboration.Comments.Requests.CommentAnchorRequest": {
+            /** Format: uuid */
+            blockId?: string;
+            quote?: string | null;
+            /** Format: int32 */
+            start?: number;
+            /** Format: int32 */
+            end?: number;
+        };
         "Notrelix.API.Contracts.Collaboration.Comments.Requests.CreateCommentRequest": {
             contentMd?: string | null;
             /** Format: uuid */
             parentCommentId?: string | null;
             mentionedUserIds?: string[] | null;
+            anchor?: components["schemas"]["Notrelix.API.Contracts.Collaboration.Comments.Requests.CommentAnchorRequest"];
         };
         "Notrelix.API.Contracts.Collaboration.Comments.Requests.UpdateCommentRequest": {
             contentMd?: string | null;
@@ -6177,6 +6187,15 @@ export interface components {
             createdAt?: string;
             kind?: string | null;
         };
+        "Notrelix.Application.Features.Collaboration.Comments.DTOs.CommentAnchorDto": {
+            /** Format: uuid */
+            blockId?: string;
+            quote?: string | null;
+            /** Format: int32 */
+            start?: number;
+            /** Format: int32 */
+            end?: number;
+        };
         "Notrelix.Application.Features.Collaboration.Comments.DTOs.CommentDto": {
             /** Format: uuid */
             id?: string;
@@ -6192,6 +6211,7 @@ export interface components {
             resolvedAt?: string | null;
             /** Format: date-time */
             createdAt?: string;
+            anchor?: components["schemas"]["Notrelix.Application.Features.Collaboration.Comments.DTOs.CommentAnchorDto"];
         };
         "Notrelix.Application.Features.Collaboration.Notifications.Commands.MarkWorkspaceInboxRead.MarkedReadDto": {
             /** Format: int32 */

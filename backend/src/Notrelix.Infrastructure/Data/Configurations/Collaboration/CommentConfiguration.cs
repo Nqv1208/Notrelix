@@ -37,6 +37,10 @@ public class CommentConfiguration : IEntityTypeConfiguration<Comment>
         {
             anchor.Property(a => a.Selector).HasColumnName("anchor_selector").HasMaxLength(256);
             anchor.Property(a => a.Offset).HasColumnName("anchor_offset");
+            anchor.Property(a => a.BlockId).HasColumnName("anchor_block_id");
+            anchor.Property(a => a.Quote).HasColumnName("anchor_quote").HasMaxLength(CommentAnchor.MaxQuoteLength);
+            anchor.Property(a => a.StartOffset).HasColumnName("anchor_start");
+            anchor.Property(a => a.EndOffset).HasColumnName("anchor_end");
         });
 
         builder.Ignore(x => x.IsDeleted);

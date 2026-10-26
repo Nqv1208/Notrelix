@@ -49,7 +49,11 @@ public class GetCommentsQueryHandler : IRequestHandler<GetCommentsQuery, Result<
                 c.Id, actor?.UserId ?? Guid.Empty, actor?.Name ?? "Unknown", actor?.AvatarUrl,
                 c.Content, c.ParentId, c.UpdatedAt != null,
                 null,
-                c.CreatedAt.DateTime);
+                c.CreatedAt.DateTime,
+                // A comment without an anchor has no owned anchor row data at all.
+                c.Anchor is { IsTextRange: true } anchor
+                    ? new CommentAnchorDto(anchor.BlockId!.Value, anchor.Quote!, anchor.StartOffset!.Value, anchor.EndOffset!.Value)
+                    : null);
         }).ToList();
 
         return Result<List<CommentDto>>.Success(result);

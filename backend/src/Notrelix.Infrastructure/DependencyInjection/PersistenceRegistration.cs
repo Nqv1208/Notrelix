@@ -150,6 +150,8 @@ public static class PersistenceRegistration
             global::Notrelix.Infrastructure.CrossContext.Workspaces.Documents.PageSpacePlacementFactsAdapter>();
         services.AddScoped<global::Notrelix.Application.Features.Documents.Public.PageTitles.IPageTitleFacts,
             global::Notrelix.Infrastructure.CrossContext.WorkManagement.Documents.PageTitleFactsAdapter>();
+        services.AddScoped<global::Notrelix.Application.Features.Documents.Public.PageBlocks.IPageBlockFacts,
+            global::Notrelix.Infrastructure.CrossContext.Collaboration.Documents.PageBlockFactsAdapter>();
         services.AddScoped<global::Notrelix.Application.Features.WorkManagement.Public.BoardWork.IBoardWorkSummaryFacts,
             global::Notrelix.Infrastructure.CrossContext.Workspaces.WorkManagement.BoardWorkSummaryFactsAdapter>();
         services.AddScoped<global::Notrelix.Application.Features.WorkManagement.Public.GettingStarted.IFirstWorkItemFacts,
