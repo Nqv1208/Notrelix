@@ -64,6 +64,9 @@ export interface BoardSharingDto {
     readonly outsideCompany: boolean;
     readonly level: ShareLevel;
     readonly expiresAt: string | null;
+    /** The explicit grant behind the entry (the producer's `permissionId`). */
+    readonly permissionId: string;
+    readonly source: "grant";
   }[];
   readonly log: readonly {
     readonly id: string;
@@ -293,7 +296,9 @@ export function boardSharing(
     if (item.kind === "team") {
       const team = store.spaces.getTeam(item.teamId ?? "");
       return {
-        id: item.id,
+        id: item.teamId ?? item.id,
+        permissionId: item.id,
+        source: "grant" as const,
         kind: "team" as const,
         userId: null,
         name: team?.name ?? "",
@@ -317,7 +322,9 @@ export function boardSharing(
       role === null && !(email ?? "").endsWith("@minhan.vn");
     const home = homeOf(item.userId ?? "");
     return {
-      id: item.id,
+      id: item.userId ?? item.id,
+      permissionId: item.id,
+      source: "grant" as const,
       kind: outsideCompany ? ("guest" as const) : ("person" as const),
       userId: item.userId,
       name: user?.name ?? "",

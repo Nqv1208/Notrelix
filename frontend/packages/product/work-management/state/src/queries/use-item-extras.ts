@@ -213,7 +213,7 @@ export function usePeopleDirectory(boardId: string, workspaceId: string) {
   );
   const query = useQuery({
     queryKey: key,
-    queryFn: () => itemExtras.getPeopleDirectory(boardId),
+    queryFn: () => itemExtras.getPeopleDirectory(boardId, workspaceId),
     enabled: Boolean(boardId),
     staleTime: 30_000,
   });

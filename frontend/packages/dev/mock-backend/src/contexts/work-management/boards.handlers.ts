@@ -632,22 +632,29 @@ export const boardsOperations = [
     },
   }),
 
+  // The producer's grant of a permission on a Board (an upsert per subject).
   defineMockOperation<
-    { boardId: string; entryId: string },
-    { level?: string },
+    { resourceType: string; resourceId: string },
+    { subjectType?: string; subjectId?: string; level?: string },
     void
   >({
     id: "boards.sharing.changeLevel",
     contract: { kind: "gap", gapId: "CTR-GAP-WM-BOARD-SHARING" },
-    method: "PATCH",
-    route: "/boards/:boardId/sharing/:entryId",
+    method: "POST",
+    route: "/resources/:resourceType/:resourceId/permissions",
     async handle({ params, body, store }) {
-      const board = store.getBoard(params.boardId);
+      if (params.resourceType !== "work-management.board") return notFound();
+      const board = store.getBoard(params.resourceId);
       if (!board || !canReadBoard(board.id, store)) return notFound();
       if (!canManageBoard(board.id, store)) return forbidden();
+      const subjectId = body?.subjectId ?? "";
       const entry = store.sharing
         .entriesOf(board.id)
-        .find((item) => item.id === params.entryId);
+        .find((item) =>
+          body?.subjectType === "Team"
+            ? item.teamId === subjectId
+            : item.userId === subjectId,
+        );
       if (!entry) return notFound();
       const level = LEVELS.find((candidate) => candidate === body?.level);
       if (!level) return validationError({ level: ["Unknown permission."] });
@@ -688,17 +695,22 @@ export const boardsOperations = [
     },
   }),
 
-  defineMockOperation<{ boardId: string; entryId: string }, never, void>({
+  defineMockOperation<
+    { resourceType: string; resourceId: string; permissionId: string },
+    never,
+    void
+  >({
     id: "boards.sharing.remove",
     contract: { kind: "gap", gapId: "CTR-GAP-WM-BOARD-SHARING" },
     method: "DELETE",
-    route: "/boards/:boardId/sharing/:entryId",
+    route: "/resources/:resourceType/:resourceId/permissions/:permissionId",
     async handle({ params, store }) {
-      const board = store.getBoard(params.boardId);
+      if (params.resourceType !== "work-management.board") return notFound();
+      const board = store.getBoard(params.resourceId);
       if (!board || !canReadBoard(board.id, store)) return notFound();
       if (!canManageBoard(board.id, store)) return forbidden();
       const list = store.sharing.entriesOf(board.id);
-      const entry = list.find((item) => item.id === params.entryId);
+      const entry = list.find((item) => item.id === params.permissionId);
       if (!entry) return notFound();
       if (entry.owner || entry.userId === store.getCurrentUser().id)
         return validationError({

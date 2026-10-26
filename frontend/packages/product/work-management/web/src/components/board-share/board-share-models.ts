@@ -227,6 +227,10 @@ export interface BoardSharingData {
     readonly outsideCompany: boolean;
     readonly level: SharingLevel;
     readonly expiresAt: string | null;
+    /** The explicit grant behind the entry, when there is one (producer read). */
+    readonly permissionId?: string | null;
+    /** How the entry holds access: a grant, a Board membership or both. */
+    readonly source?: "grant" | "member" | "both";
   }[];
   readonly log: readonly {
     readonly id: string;

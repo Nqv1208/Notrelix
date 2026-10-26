@@ -5,8 +5,8 @@
  *
  *   itemStates.lifecycle    — GET  /board-items/:id/lifecycle
  *   itemStates.restore      — POST /board-items/:id/restore
- *   itemStates.people       — GET  /boards/:boardId/people-directory
- *   itemStates.invitePerson — POST /boards/:boardId/people-directory/invitations
+ *   itemStates.invitePerson — POST /boards/:boardId/members (the producer's
+ *                             board-member write behind "Mời vào")
  */
 import { defineMockOperation } from "../../operations/types";
 import {
@@ -16,10 +16,6 @@ import {
   ok,
   validationError,
 } from "../../transport/create-response";
-import {
-  peopleDirectory,
-  type PeopleDirectoryDto,
-} from "../../state/mock-people-directory";
 import {
   canManageBoard,
   canReadBoard,
@@ -80,27 +76,15 @@ export const itemStatesOperations = [
     },
   }),
 
-  defineMockOperation<{ boardId: string }, never, PeopleDirectoryDto>({
-    id: "itemStates.people",
-    contract: gap,
-    method: "GET",
-    route: "/boards/:boardId/people-directory",
-    async handle({ params, store }) {
-      if (!canReadBoard(params.boardId, store)) return notFound();
-      const directory = peopleDirectory(
-        store,
-        params.boardId,
-        canManageBoard(params.boardId, store),
-      );
-      return directory ? ok(directory) : notFound();
-    },
-  }),
-
-  defineMockOperation<{ boardId: string }, { userId?: string }, void>({
+  defineMockOperation<
+    { boardId: string },
+    { userId?: string; role?: string },
+    void
+  >({
     id: "itemStates.invitePerson",
     contract: gap,
     method: "POST",
-    route: "/boards/:boardId/people-directory/invitations",
+    route: "/boards/:boardId/members",
     async handle({ params, body, store, request }) {
       if (!request.headers.get("Idempotency-Key"))
         return validationError({

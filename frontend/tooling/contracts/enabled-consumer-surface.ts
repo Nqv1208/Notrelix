@@ -868,8 +868,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     consumerFile: "frontend/apps/web/src/shell/workspace/use-board-sharing.ts",
     capability: "Change a permission given on the Board",
     gapId: "CTR-GAP-WM-BOARD-SHARING",
-    method: "PATCH",
-    pathTemplate: "/boards/{boardId}/sharing/{entryId}",
+    method: "POST",
+    pathTemplate: "/resources/{resourceType}/{resourceId}/permissions",
     mutation: true,
   },
   {
@@ -880,7 +880,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     capability: "Remove a permission given on the Board",
     gapId: "CTR-GAP-WM-BOARD-SHARING",
     method: "DELETE",
-    pathTemplate: "/boards/{boardId}/sharing/{entryId}",
+    pathTemplate:
+      "/resources/{resourceType}/{resourceId}/permissions/{permissionId}",
     mutation: true,
   },
   {
@@ -1141,23 +1142,11 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     consumerSymbol: "usePeopleDirectory",
     consumerFile:
       "frontend/packages/product/work-management/state/src/api/item-extras.api.ts",
-    capability: "People an item can name: assignee picker and mentions",
-    gapId: "CTR-GAP-WM-ITEM-STATES",
-    method: "GET",
-    pathTemplate: "/boards/{boardId}/people-directory",
-    mutation: false,
-  },
-  {
-    context: "WorkManagement",
-    classification: "COMPATIBILITY_GAP_MOCKED",
-    consumerSymbol: "usePeopleDirectory",
-    consumerFile:
-      "frontend/packages/product/work-management/state/src/api/item-extras.api.ts",
     capability:
       "Invite a person who does not see the board from the assignee picker",
     gapId: "CTR-GAP-WM-ITEM-STATES",
     method: "POST",
-    pathTemplate: "/boards/{boardId}/people-directory/invitations",
+    pathTemplate: "/boards/{boardId}/members",
     mutation: true,
   },
   {

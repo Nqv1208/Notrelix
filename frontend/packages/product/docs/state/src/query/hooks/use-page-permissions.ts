@@ -12,7 +12,7 @@ export function createUsePagePermissions(
   return function usePagePermissions(workspaceId: string, pageId: string) {
     return useQuery({
       queryKey: docsQueryKeys.permissions(workspaceId, pageId),
-      queryFn: () => extras.getPermissions(pageId),
+      queryFn: () => extras.getPermissions(pageId, workspaceId),
       enabled: !!workspaceId && !!pageId,
     });
   };
