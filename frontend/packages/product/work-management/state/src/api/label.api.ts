@@ -71,14 +71,11 @@ export function createLabelApi(client: NotrelixClient) {
         color: input.color,
         name: input.name,
       };
-      await api.patch<void>(
-        endpoints.boards.label(input.boardId, input.labelId),
-        body,
-      );
+      await api.patch<void>(endpoints.labels.detail(input.labelId), body);
     },
 
-    async deleteLabel(boardId: string, labelId: string): Promise<void> {
-      await api.delete<void>(endpoints.boards.label(boardId, labelId));
+    async deleteLabel(_boardId: string, labelId: string): Promise<void> {
+      await api.delete<void>(endpoints.labels.detail(labelId));
     },
 
     async addLabelToCard(cardId: string, labelId: string): Promise<void> {

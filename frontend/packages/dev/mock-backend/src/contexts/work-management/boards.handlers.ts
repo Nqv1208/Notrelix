@@ -19,8 +19,8 @@
  *   boards.options.update  — PATCH /boards/:boardId/fields/:fieldId/options/:optionId
  *   boards.labels.list     — GET /boards/:boardId/labels
  *   boards.labels.create   — POST /boards/:boardId/labels
- *   boards.labels.update   — PATCH /boards/:boardId/labels/:labelId
- *   boards.labels.delete   — DELETE /boards/:boardId/labels/:labelId
+ *   boards.labels.update   — PATCH /labels/:labelId
+ *   boards.labels.delete   — DELETE /labels/:labelId
  *
  * Plan: 06-HANDLERS-PROJECTIONS.md §Work Management split
  */
@@ -1051,10 +1051,10 @@ export const boardsOperations = [
     },
   }),
 
-  // ─── PATCH /boards/:boardId/labels/:labelId ───────────────────────────────
+  // ─── PATCH /labels/:labelId ───────────────────────────────
 
   defineMockOperation<
-    { boardId: string; labelId: string },
+    { labelId: string },
     { name?: string; color?: string },
     void
   >({
@@ -1064,7 +1064,7 @@ export const boardsOperations = [
       operationId: "WorkManagement.Labels.Update",
     } as any,
     method: "PATCH",
-    route: "/boards/:boardId/labels/:labelId",
+    route: "/labels/:labelId",
     async handle({ params, body, store }) {
       const updated = store.updateLabel(params.labelId, body ?? {});
       if (!updated) return notFound("Label not found");
@@ -1072,16 +1072,16 @@ export const boardsOperations = [
     },
   }),
 
-  // ─── DELETE /boards/:boardId/labels/:labelId ──────────────────────────────
+  // ─── DELETE /labels/:labelId ──────────────────────────────
 
-  defineMockOperation<{ boardId: string; labelId: string }, never, void>({
+  defineMockOperation<{ labelId: string }, never, void>({
     id: "boards.labels.delete",
     contract: {
       kind: "openapi",
       operationId: "WorkManagement.Labels.Delete",
     } as any,
     method: "DELETE",
-    route: "/boards/:boardId/labels/:labelId",
+    route: "/labels/:labelId",
     async handle({ params, store }) {
       const deleted = store.deleteLabel(params.labelId);
       if (!deleted) return notFound("Label not found");

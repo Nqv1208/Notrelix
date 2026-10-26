@@ -168,6 +168,10 @@ export const endpoints = {
     reorder: "/blocks/reorder",
     batch: (pageId: string) => `/pages/${pageId}/blocks/batch`,
   },
+  // WorkManagement.Labels.Update / Delete address the label by id alone.
+  labels: {
+    detail: (labelId: string) => `/labels/${labelId}`,
+  },
   boards: {
     listByWorkspaceId: (workspaceId: string) =>
       `/workspaces/${workspaceId}/boards`,
@@ -176,8 +180,6 @@ export const endpoints = {
     access: (boardId: string) => `/boards/${boardId}/access`,
     schema: (boardId: string) => `/boards/${boardId}/schema`,
     labels: (boardId: string) => `/boards/${boardId}/labels`,
-    label: (boardId: string, labelId: string) =>
-      `/boards/${boardId}/labels/${labelId}`,
     moveToSpace: (boardId: string) => `/boards/${boardId}/move-to-space`,
     // WorkManagement.Boards.GetSharing / MakePrivate and the Board member writes.
     sharing: (boardId: string) => `/boards/${boardId}/sharing`,
