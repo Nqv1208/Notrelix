@@ -4,6 +4,8 @@ export type { Mention, LinkedTask, LinkedBoard } from "./integration";
 export type {
   BlockType,
   BlockProperties,
+  TableCell,
+  TableData,
   Block,
   CreateBlockPayload,
   UpdateBlockPayload,

@@ -9,6 +9,7 @@ import {
   Minus,
   Pilcrow,
   Quote,
+  Table2,
   TextQuote,
   Type,
   type LucideIcon,
@@ -18,6 +19,7 @@ import type { BlockType } from "@notrelix/docs-core";
 import { fillDocCopy, type DocPageCopy } from "../components/doc-page.copy";
 import { foldText } from "../components/doc-popups-surface";
 import { setBlockType } from "./editor-commands";
+import { insertTableBlock } from "./table-commands";
 
 interface SlashItem {
   readonly type: BlockType;
@@ -74,6 +76,7 @@ export const SLASH_ITEMS: readonly SlashItem[] = [
     shortcut: "---",
     keywords: "duong ke divider",
   },
+  { type: "table", icon: Table2, keywords: "bang table" },
   {
     type: "page_reference",
     icon: FileText,
@@ -96,6 +99,8 @@ export function selectSlash(editor: Editor | null): SlashMatch | null {
   if (!$from.parent.isTextblock || $from.parent.type.name === "codeBlock") {
     return null;
   }
+  // Blocks are inserted between blocks, never inside a table cell.
+  if ($from.depth > 1) return null;
   const before = $from.parent.textBetween(
     0,
     $from.parentOffset,
@@ -171,6 +176,10 @@ export function SlashMenu({ editor, copy, onPickPage }: SlashMenuProps) {
         )
         .run();
       if (blockId) onPickPage?.(blockId);
+      return;
+    }
+    if (item.type === "table") {
+      insertTableBlock(editor);
       return;
     }
     setBlockType(editor, item.type);

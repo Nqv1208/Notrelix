@@ -7,6 +7,7 @@ import type {
 import { EditorBubbleMenu } from "./bubble-menu";
 import { MentionTrigger } from "./mention-trigger";
 import { SlashMenu } from "./slash-menu";
+import { TableMenu } from "./table-menu";
 
 /** Heading, placeholder and list styling of the editing surface (app tokens only). */
 const CONTENT =
@@ -37,6 +38,7 @@ export function DocEditorSurface({
       {editor.isEditable ? (
         <>
           <EditorBubbleMenu editor={editor} copy={copy} />
+          <TableMenu editor={editor} copy={copy} />
           <SlashMenu
             editor={editor}
             copy={copy}

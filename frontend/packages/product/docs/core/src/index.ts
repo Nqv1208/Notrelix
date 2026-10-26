@@ -5,7 +5,13 @@
  * Consumed by docs/web and docs/mobile.
  */
 
-export { convertBlockProperties, TEXT_BLOCK_TYPES } from "./types/block";
+export {
+  convertBlockProperties,
+  emptyTable,
+  TABLE_MAX_COL_WIDTH,
+  TABLE_MIN_COL_WIDTH,
+  TEXT_BLOCK_TYPES,
+} from "./types/block";
 
 // Types
 export type {
@@ -18,6 +24,8 @@ export type {
   LinkedBoard,
   BlockType,
   BlockProperties,
+  TableCell,
+  TableData,
   Block,
   CreateBlockPayload,
   UpdateBlockPayload,

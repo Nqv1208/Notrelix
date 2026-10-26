@@ -172,9 +172,7 @@ export function createCodeBlock(context: ContextHolder) {
     // A fence opens the block on "``` " (plain) or on Enter after "```" or
     // "```lang"; a space after a word never takes the word as the language.
     addInputRules() {
-      return [
-        textblockTypeInputRule({ find: FENCE_SPACE, type: this.type }),
-      ];
+      return [textblockTypeInputRule({ find: FENCE_SPACE, type: this.type })];
     },
     addKeyboardShortcuts() {
       const parent = this.parent?.() ?? {};

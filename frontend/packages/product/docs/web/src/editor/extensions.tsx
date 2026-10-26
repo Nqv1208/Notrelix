@@ -32,6 +32,7 @@ import {
 import { newBlockId, nodeToDraft } from "./block-mapping";
 import { createCodeBlock } from "./code-block";
 import { COLOR_CLASS, HIGHLIGHT_CLASS } from "./mark-classes";
+import { TABLE_EXTENSIONS } from "./table";
 
 /** What the node views need from the page; the host keeps it current. */
 export interface DocEditorContext {
@@ -77,6 +78,7 @@ const BLOCK_NODES = [
   "horizontalRule",
   "boardReference",
   "pageReference",
+  "table",
   "unsupportedBlock",
 ];
 
@@ -734,6 +736,7 @@ export function createDocExtensions({
     Toggle,
     Callout,
     TodoItem,
+    ...TABLE_EXTENSIONS,
     BoardReference.configure({ context }),
     PageReference.configure({ context }),
     UnsupportedBlock.configure({ context }),

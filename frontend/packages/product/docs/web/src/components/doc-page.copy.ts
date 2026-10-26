@@ -238,6 +238,7 @@ export const vi = {
       callout: "Ghi chú nổi bật",
       page_reference: "Liên kết trang",
       board_reference: "Danh sách việc",
+      table: "Bảng",
     },
     hints: {
       page_reference:
@@ -245,6 +246,18 @@ export const vi = {
       todo: "Tick được, chuyển thành việc thật",
       board_reference: "Bảng thu nhỏ, cập nhật theo board",
     },
+  },
+  tableTools: {
+    label: "Công cụ bảng",
+    rowBefore: "Thêm hàng phía trên",
+    rowAfter: "Thêm hàng phía dưới",
+    deleteRow: "Xoá hàng",
+    columnBefore: "Thêm cột bên trái",
+    columnAfter: "Thêm cột bên phải",
+    deleteColumn: "Xoá cột",
+    headerRow: "Hàng tiêu đề",
+    cellBackground: "Màu nền ô",
+    deleteTable: "Xoá bảng",
   },
   mention: {
     label: "Gợi ý công việc",
@@ -607,12 +620,25 @@ export const en: DocPageCopy = {
       callout: "Callout",
       page_reference: "Page link",
       board_reference: "Task list",
+      table: "Table",
     },
     hints: {
       page_reference: "Points to another page, listed under that page's links",
       todo: "Tick items, turn them into real tasks",
       board_reference: "Compact table, live from the board",
     },
+  },
+  tableTools: {
+    label: "Table tools",
+    rowBefore: "Add row above",
+    rowAfter: "Add row below",
+    deleteRow: "Delete row",
+    columnBefore: "Add column left",
+    columnAfter: "Add column right",
+    deleteColumn: "Delete column",
+    headerRow: "Header row",
+    cellBackground: "Cell background",
+    deleteTable: "Delete table",
   },
   mention: {
     label: "Task suggestions",

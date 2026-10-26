@@ -1,4 +1,5 @@
 import {
+  HIGHLIGHT_TOKENS,
   parseRichText,
   plainTextOf,
   plainTextOfRuns,
@@ -8,6 +9,8 @@ import {
   type BlockProperties,
   type BlockType,
   type RichTextV1,
+  type TableCell,
+  type TableData,
   type Run,
 } from "@notrelix/docs-core";
 import type { BlockDtoApi } from "../dto";
@@ -77,6 +80,52 @@ function runsOfWire(value: unknown): Run[] {
   return Array.isArray(value) ? (value as Run[]) : [];
 }
 
+function cellRuns(value: unknown): Run[] {
+  return parseRichText({ v: 1, runs: runsOfWire(value) })?.runs ?? [];
+}
+
+/** A table block's wire properties as the editor's table. */
+export function tableFromWire(wire: Record<string, unknown>): TableData {
+  const rows: TableCell[][] = (Array.isArray(wire.rows) ? wire.rows : []).map(
+    (row: unknown) =>
+      (Array.isArray(row) ? row : []).map((raw: unknown): TableCell => {
+        const cell = (raw ?? {}) as { runs?: unknown; bg?: unknown };
+        const bg = HIGHLIGHT_TOKENS.find((token) => token === cell.bg);
+        return {
+          runs: cellRuns(cell.runs),
+          ...(bg && bg !== "none" ? { bg } : {}),
+        };
+      }),
+  );
+  const columns = Math.max(0, ...rows.map((row) => row.length));
+  const widths = Array.isArray(wire.colWidths) ? wire.colWidths : [];
+  return {
+    rows,
+    headerRow: wire.headerRow === true,
+    colWidths: Array.from({ length: columns }, (_, index) => {
+      const width = widths[index];
+      return typeof width === "number" ? width : null;
+    }),
+  };
+}
+
+/** The editor's table as the producer's table properties. */
+export function tableToWire(table: TableData): Record<string, unknown> {
+  const columns = Math.max(0, ...table.rows.map((row) => row.length));
+  return {
+    rows: table.rows.map((row) =>
+      row.map((cell) => ({
+        runs: cell.runs,
+        ...(cell.bg && cell.bg !== "none" ? { bg: cell.bg } : {}),
+      })),
+    ),
+    headerRow: table.headerRow,
+    colWidths: Array.from({ length: columns }, (_, index) =>
+      table.colWidths[index] ?? null,
+    ),
+  };
+}
+
 /** The page's properties of a block as the producer sends them. */
 export function propertiesFromWire(
   type: BlockType,
@@ -102,18 +151,8 @@ export function propertiesFromWire(
       return typeof wire.pageId === "string"
         ? { linkedPageId: wire.pageId }
         : {};
-    case "table": {
-      const rows = Array.isArray(wire.rows) ? wire.rows : [];
-      return {
-        rows: rows.map((row: unknown) =>
-          (Array.isArray(row) ? row : []).map((cell: unknown) =>
-            plainTextOfRuns(
-              runsOfWire((cell as { runs?: unknown } | null)?.runs),
-            ),
-          ),
-        ),
-      };
-    }
+    case "table":
+      return { table: tableFromWire(wire) };
     case "divider":
       return {};
     default:
@@ -145,11 +184,7 @@ export function propertiesToWire(
     case "page_reference":
       return properties.linkedPageId ? { pageId: properties.linkedPageId } : {};
     case "table":
-      return {
-        rows: (properties.rows ?? []).map((row) =>
-          row.map((cell) => ({ runs: runsFromPlainText(cell) })),
-        ),
-      };
+      return properties.table ? tableToWire(properties.table) : {};
     case "divider":
       return {};
     default:

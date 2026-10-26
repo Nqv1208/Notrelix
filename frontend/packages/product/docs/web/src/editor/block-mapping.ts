@@ -1,5 +1,9 @@
 import type { JSONContent } from "@tiptap/core";
 import {
+  HIGHLIGHT_TOKENS,
+  TABLE_MAX_COL_WIDTH,
+  TABLE_MIN_COL_WIDTH,
+  emptyTable,
   normalizeRuns,
   plainTextOfRuns,
   richText,
@@ -8,6 +12,7 @@ import {
   type BlockType,
   type Mark,
   type Run,
+  type TableData,
 } from "@notrelix/docs-core";
 
 /**
@@ -37,7 +42,7 @@ const NODE_OF: Readonly<Record<BlockType, string>> = {
   board_reference: "boardReference",
   page_reference: "pageReference",
   image: "unsupportedBlock",
-  table: "unsupportedBlock",
+  table: "table",
 };
 
 const OWN_KEYS: Readonly<Partial<Record<BlockType, readonly string[]>>> = {
@@ -68,7 +73,6 @@ const ATOM_TYPES: ReadonlySet<BlockType> = new Set<BlockType>([
   "board_reference",
   "page_reference",
   "image",
-  "table",
 ]);
 
 export function newBlockId(): string {
@@ -165,12 +169,83 @@ export function inlineToRuns(content: readonly JSONContent[] = []): Run[] {
   return normalizeRuns(runs);
 }
 
+function runsToCell(runs: readonly Run[]): JSONContent {
+  const content = runsToInline(runs);
+  return {
+    type: "paragraph",
+    ...(content.length ? { content } : {}),
+  };
+}
+
+/** A table block as the editor's table: header cells on the first row when flagged. */
+export function tableToNode(table: TableData): JSONContent[] {
+  const columns = Math.max(1, ...table.rows.map((row) => row.length));
+  const source = table.rows.length ? table.rows : emptyTable(1, 1).rows;
+  return source.map((row, rowIndex) => ({
+    type: "tableRow",
+    content: Array.from({ length: columns }, (_, column) => {
+      const cell = row[column];
+      const width = table.colWidths[column];
+      return {
+        type: table.headerRow && rowIndex === 0 ? "tableHeader" : "tableCell",
+        attrs: {
+          colwidth: typeof width === "number" ? [width] : null,
+          bg: cell?.bg ?? null,
+        },
+        content: [runsToCell(cell?.runs ?? [])],
+      };
+    }),
+  }));
+}
+
+function cellToRuns(cell: JSONContent): Run[] {
+  const runs: Run[] = [];
+  (cell.content ?? []).forEach((paragraph, index) => {
+    if (index > 0) runs.push({ text: "\n", marks: [] });
+    runs.push(...inlineToRuns(paragraph.content));
+  });
+  return normalizeRuns(runs);
+}
+
+/** The editor's table back to the block's cells, header flag and column widths. */
+export function nodeToTable(node: JSONContent): TableData {
+  const rows = node.content ?? [];
+  const columns = Math.max(0, ...rows.map((row) => row.content?.length ?? 0));
+  const widths: (number | null)[] = Array.from({ length: columns }, () => null);
+  const table: TableData = {
+    rows: rows.map((row) => {
+      const cells = (row.content ?? []).map((cell, column) => {
+        const width = (
+          cell.attrs?.colwidth as number[] | null | undefined
+        )?.[0];
+        if (typeof width === "number" && width > 0 && widths[column] === null) {
+          widths[column] = Math.min(
+            TABLE_MAX_COL_WIDTH,
+            Math.max(TABLE_MIN_COL_WIDTH, Math.round(width)),
+          );
+        }
+        const bg = HIGHLIGHT_TOKENS.find((token) => token === cell.attrs?.bg);
+        return {
+          runs: cellToRuns(cell),
+          ...(bg && bg !== "none" ? { bg } : {}),
+        };
+      });
+      while (cells.length < columns) cells.push({ runs: [] });
+      return cells;
+    }),
+    headerRow: rows[0]?.content?.[0]?.type === "tableHeader",
+    colWidths: widths,
+  };
+  return table;
+}
+
 export function draftToNode(draft: BlockDraft): JSONContent {
   const props = draft.properties;
   const own = new Set(OWN_KEYS[draft.type] ?? []);
   const rest: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(props)) {
     if (key === "align" && ALIGNABLE.has(draft.type)) continue;
+    if (key === "table" && draft.type === "table") continue;
     if (!own.has(key) && value !== undefined) rest[key] = value;
   }
   const attrs: Record<string, unknown> = {
@@ -193,6 +268,13 @@ export function draftToNode(draft: BlockDraft): JSONContent {
     return { type: name, attrs };
   }
   if (ATOM_TYPES.has(draft.type)) return { type: name, attrs };
+  if (draft.type === "table") {
+    return {
+      type: name,
+      attrs,
+      content: tableToNode(props.table ?? emptyTable(1, 1)),
+    };
+  }
   if (draft.type === "code") {
     const text = plainTextOfRuns(draft.content.runs);
     return {
@@ -241,6 +323,8 @@ function blockTypeOf(node: JSONContent): BlockType {
       return "board_reference";
     case "pageReference":
       return "page_reference";
+    case "table":
+      return "table";
     default:
       return "paragraph";
   }
@@ -279,6 +363,14 @@ export function nodeToDraft(node: JSONContent): BlockDraft {
   }
   if (ATOM_TYPES.has(type)) {
     return { id, type, content: richText(), properties };
+  }
+  if (type === "table") {
+    return {
+      id,
+      type,
+      content: richText(),
+      properties: { ...properties, table: nodeToTable(node) },
+    };
   }
   if (type === "code") {
     const text = (node.content ?? []).map((child) => child.text ?? "").join("");

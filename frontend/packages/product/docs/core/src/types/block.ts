@@ -1,5 +1,5 @@
 import type { ID } from "./ids";
-import type { RichTextV1 } from "./rich-text";
+import type { HighlightToken, RichTextV1, Run } from "./rich-text";
 
 export type BlockType =
   | "paragraph"
@@ -19,6 +19,34 @@ export type BlockType =
   | "board_reference"
   | "page_reference";
 
+/** One cell of a table block: rich-text runs and an optional background token. */
+export interface TableCell {
+  runs: Run[];
+  bg?: HighlightToken;
+}
+
+export interface TableData {
+  rows: TableCell[][];
+  /** The first row is a header. */
+  headerRow: boolean;
+  /** Pixel width per column; `null` leaves the column to the table. */
+  colWidths: (number | null)[];
+}
+
+export const TABLE_MIN_COL_WIDTH = 40;
+export const TABLE_MAX_COL_WIDTH = 2000;
+
+/** A new table of empty cells with a header row. */
+export function emptyTable(rows = 3, columns = 3): TableData {
+  return {
+    rows: Array.from({ length: rows }, () =>
+      Array.from({ length: columns }, (): TableCell => ({ runs: [] })),
+    ),
+    headerRow: true,
+    colWidths: Array.from({ length: columns }, () => null),
+  };
+}
+
 export interface BlockProperties {
   text?: string;
   checked?: boolean;
@@ -29,7 +57,8 @@ export interface BlockProperties {
   icon?: string;
   title?: string;
   items?: string[];
-  rows?: string[][];
+  /** A table block's cells, header flag and column widths. */
+  table?: TableData;
   linkedPageId?: ID;
   linkedBoardId?: ID;
   /** The board view a board reference opens. */

@@ -26,6 +26,7 @@ import {
   Printer,
   Redo2,
   Strikethrough,
+  Table2,
   Underline,
   Undo2,
 } from "lucide-react";
@@ -59,6 +60,7 @@ import {
 } from "./editor-commands";
 import { selectToolbarState } from "./editor-state";
 import { COLOR_SWATCH, HIGHLIGHT_CLASS } from "./mark-classes";
+import { insertTableBlock } from "./table-commands";
 
 const TOOL =
   "box-border inline-flex h-7.5 min-w-7.5 items-center justify-center gap-1 rounded-[6px] border-0 bg-transparent px-1.5 text-compact leading-[1.45] text-muted-foreground outline-none hover:bg-state-hover-strong hover:text-foreground focus-visible:ring-2 focus-visible:ring-focus-ring aria-disabled:cursor-default aria-disabled:opacity-50 aria-disabled:hover:bg-transparent aria-pressed:bg-state-hover-strong aria-pressed:text-foreground";
@@ -164,7 +166,7 @@ function useRovingToolbar() {
   return { ref, onKeyDown };
 }
 
-function SwatchGrid<T extends string>({
+export function SwatchGrid<T extends string>({
   label,
   tokens,
   names,
@@ -548,6 +550,13 @@ export function EditorToolbar({
         onClick={() => insertDivider(editor)}
       >
         <Minus aria-hidden="true" className={ICON} />
+      </ToolButton>
+      <ToolButton
+        label={t.table}
+        disabled={disabled}
+        onClick={() => insertTableBlock(editor)}
+      >
+        <Table2 aria-hidden="true" className={ICON} />
       </ToolButton>
       <Separator />
       <ToolButton

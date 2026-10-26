@@ -85,7 +85,7 @@ export function useDocRichEditor(input: UseDocRichEditorInput): DocRichEditor {
       shouldRerenderOnTransaction: false,
       editorProps: {
         attributes: {
-          class: "outline-none",
+          class: "outline-none [&.resize-cursor]:cursor-col-resize",
           role: "textbox",
           "aria-multiline": "true",
           "aria-label": input.label,
