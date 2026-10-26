@@ -1184,8 +1184,8 @@ export function createDocPageScreen({
         const anchor = richEditor.editor
           ? anchorFromSelection(richEditor.editor)
           : null;
-        if (!anchor) return;
-        setPendingAnchor(anchor);
+        // A selection that cannot be anchored still opens the thread list.
+        if (anchor) setPendingAnchor(anchor);
         setPanelTab("comments");
         setPanelOpen(true);
       },
