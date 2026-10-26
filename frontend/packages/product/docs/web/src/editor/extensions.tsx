@@ -309,19 +309,20 @@ function flatTextBlock(
   });
 }
 
-/** Enter on an empty item leaves the list; Backspace at its start turns it into text. */
+/**
+ * Enter at the end of an item starts the next item of the same kind; Enter on an empty item leaves the
+ * list; Backspace at its start turns it into text. (Splitting in the middle keeps the kind on its own.)
+ */
 function exitKeys(name: string) {
   return {
     Enter: ({ editor }: { editor: import("@tiptap/core").Editor }) => {
       const { $from, empty } = editor.state.selection;
-      if (
-        !empty ||
-        $from.parent.type.name !== name ||
-        $from.parent.content.size > 0
-      ) {
-        return false;
+      if (!empty || $from.parent.type.name !== name) return false;
+      if ($from.parent.content.size === 0) {
+        return editor.commands.setNode("paragraph");
       }
-      return editor.commands.setNode("paragraph");
+      if ($from.parentOffset < $from.parent.content.size) return false;
+      return editor.chain().splitBlock().setNode(name).run();
     },
     Backspace: ({ editor }: { editor: import("@tiptap/core").Editor }) => {
       const { $from, empty } = editor.state.selection;
