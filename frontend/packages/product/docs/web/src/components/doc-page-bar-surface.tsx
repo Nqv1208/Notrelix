@@ -1,4 +1,4 @@
-import { Check, CircleAlert, MoreHorizontal } from "lucide-react";
+import { Check, CircleAlert, MoreHorizontal, PanelRight } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
 import { fillDocCopy, type DocPageCopy } from "./doc-page.copy";
 import type {
@@ -16,6 +16,8 @@ export interface DocPageBarSurfaceProps {
   /** Absent: Share stays disabled with the stated reason. */
   readonly canShare?: boolean;
   readonly readOnly?: boolean;
+  /** Whether the side panel is open; absent hides the toggle. */
+  readonly panelOpen?: boolean;
   readonly callbacks?: DocPageCallbacks;
 }
 
@@ -33,6 +35,7 @@ export function DocPageBarSurface({
   saveState,
   shareOpen = false,
   canShare = false,
+  panelOpen,
   callbacks,
 }: DocPageBarSurfaceProps) {
   const h = copy.header;
@@ -122,6 +125,21 @@ export function DocPageBarSurface({
             />
           ))}
         </div>
+      ) : null}
+      {panelOpen !== undefined && callbacks?.onPanelOpenChange ? (
+        <button
+          type="button"
+          aria-label={panelOpen ? h.hidePanel : h.showPanel}
+          aria-pressed={panelOpen}
+          title={panelOpen ? h.hidePanel : h.showPanel}
+          onClick={() => callbacks.onPanelOpenChange?.(!panelOpen)}
+          className={cn(
+            "grid size-8 shrink-0 place-items-center rounded-[7px] text-meta-foreground outline-none hover:bg-state-hover hover:text-foreground focus-visible:ring-2 focus-visible:ring-focus-ring",
+            panelOpen && "bg-state-hover-strong text-foreground",
+          )}
+        >
+          <PanelRight aria-hidden="true" className="size-4 stroke-[1.8]" />
+        </button>
       ) : null}
       <button
         type="button"

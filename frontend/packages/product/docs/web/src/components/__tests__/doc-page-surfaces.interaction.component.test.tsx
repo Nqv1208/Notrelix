@@ -87,6 +87,44 @@ describe("docs web pure surfaces", () => {
     expect(onPanelTab).toHaveBeenNthCalledWith(2, "comments");
   });
 
+  it("FUI[docs.page.screen:panel] closes and reopens the side panel from its tab row and the document bar", () => {
+    const onPanelOpenChange = vi.fn();
+    const open = renderPureUi(
+      <DocPageScreenSurface
+        {...docsPageScreenDefaultScenario()}
+        callbacks={{ onPanelOpenChange }}
+      />,
+    );
+    const toggle = screen.getByRole("button", {
+      name: docsCopy.header.hidePanel,
+    });
+    expect(toggle.getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(
+      within(screen.getByRole("complementary")).getByRole("button", {
+        name: docsCopy.panel.close,
+      }),
+    );
+    fireEvent.click(toggle);
+    expect(onPanelOpenChange).toHaveBeenNthCalledWith(1, false);
+    expect(onPanelOpenChange).toHaveBeenNthCalledWith(2, false);
+    open.unmount();
+
+    renderPureUi(
+      <DocPageScreenSurface
+        {...docsPageScreenDefaultScenario()}
+        panelOpen={false}
+        callbacks={{ onPanelOpenChange }}
+      />,
+    );
+    expect(screen.queryByRole("complementary")).toBeNull();
+    const reopen = screen.getByRole("button", {
+      name: docsCopy.header.showPanel,
+    });
+    expect(reopen.getAttribute("aria-pressed")).toBe("false");
+    fireEvent.click(reopen);
+    expect(onPanelOpenChange).toHaveBeenLastCalledWith(true);
+  });
+
   it("FUI[docs.page.screen:states] renders loading, not found, empty, read-only, save error and overlay states", () => {
     const loading = renderPureUi(
       <DocPageScreenSurface {...docsPageScreenLoadingScenario()} />,

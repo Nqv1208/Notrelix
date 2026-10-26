@@ -1,5 +1,5 @@
 import { useState, type KeyboardEvent } from "react";
-import { CheckSquare, FileText, Lock } from "lucide-react";
+import { CheckSquare, FileText, Lock, X } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
 import { fillDocCopy, type DocPageCopy } from "./doc-page.copy";
 import {
@@ -344,6 +344,17 @@ export function DocSidePanelSurface({
             {entry.label}
           </button>
         ))}
+        {callbacks?.onPanelOpenChange ? (
+          <button
+            type="button"
+            aria-label={p.close}
+            title={p.close}
+            onClick={() => callbacks.onPanelOpenChange?.(false)}
+            className="my-auto ml-auto grid size-7 shrink-0 place-items-center rounded-[7px] text-meta-foreground outline-none hover:bg-state-hover hover:text-foreground focus-visible:ring-2 focus-visible:ring-focus-ring"
+          >
+            <X aria-hidden="true" className="size-4 stroke-[1.8]" />
+          </button>
+        ) : null}
       </div>
       <div
         role="tabpanel"

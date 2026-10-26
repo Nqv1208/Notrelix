@@ -63,6 +63,8 @@ export interface DocPageScreenSurfaceProps {
   readonly toc: readonly DocTocEntry[];
   readonly comments: readonly DocCommentView[];
   readonly panelTab: DocPanelTab;
+  /** Whether the side panel shows; the host owns and remembers it. */
+  readonly panelOpen?: boolean;
   readonly overlay: DocOverlay;
   readonly mentionTasks: readonly DocTaskRef[];
   readonly blockTypes?: readonly BlockType[];
@@ -130,6 +132,7 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
     toc,
     comments,
     panelTab,
+    panelOpen = true,
     overlay,
     mentionTasks,
     blockTypes,
@@ -207,6 +210,7 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
           saveState={saveState}
           shareOpen={shareOpen}
           canShare={share !== undefined}
+          panelOpen={versions ? undefined : panelOpen}
           callbacks={callbacks}
         />
         {versions ? (
@@ -244,7 +248,7 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
               onNamedOnlyChange={versions.onNamedOnlyChange}
               callbacks={callbacks}
             />
-          ) : (
+          ) : panelOpen ? (
             <DocSidePanelSurface
               copy={copy}
               tab={panelTab}
@@ -258,7 +262,7 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
               canComment={canComment && !readOnly}
               callbacks={callbacks}
             />
-          )}
+          ) : null}
         </div>
       </div>
       {overlay.kind === "trash" && trash ? (

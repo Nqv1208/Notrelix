@@ -27,6 +27,8 @@ export const vi = {
     shareUnavailable: "Chia sẻ tài liệu chưa khả dụng.",
     approve: "Duyệt tài liệu",
     approveUnavailable: "Duyệt tài liệu chưa khả dụng.",
+    showPanel: "Hiện bảng bên",
+    hidePanel: "Ẩn bảng bên",
     more: "Thêm tuỳ chọn",
     moreUnavailable: "Tuỳ chọn khác chưa khả dụng.",
   },
@@ -220,6 +222,7 @@ export const vi = {
   panel: {
     label: "Bảng bên của tài liệu",
     tabs: "Bảng bên",
+    close: "Đóng bảng bên",
     links: "Liên kết",
     toc: "Mục lục",
     comments: "Bình luận",
@@ -346,6 +349,8 @@ export const en: DocPageCopy = {
     shareUnavailable: "Sharing documents isn't available yet.",
     approve: "Approve document",
     approveUnavailable: "Approving documents isn't available yet.",
+    showPanel: "Show side panel",
+    hidePanel: "Hide side panel",
     more: "More options",
     moreUnavailable: "More options aren't available yet.",
   },
@@ -539,6 +544,7 @@ export const en: DocPageCopy = {
   panel: {
     label: "Document side panel",
     tabs: "Side panel",
+    close: "Close side panel",
     links: "Links",
     toc: "Contents",
     comments: "Comments",

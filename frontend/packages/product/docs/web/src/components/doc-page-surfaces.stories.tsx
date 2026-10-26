@@ -129,6 +129,19 @@ export const PageScreenComments: Story = {
   tags: ["fui-surface--docs.page.screen", "fui-state--Default"],
 };
 
+export const PageScreenPanelClosed: Story = {
+  render: () => (
+    <Frame>
+      <DocPageScreenSurface
+        {...docsPageScreenDefaultScenario()}
+        panelOpen={false}
+        callbacks={{ onPanelOpenChange: () => undefined }}
+      />
+    </Frame>
+  ),
+  tags: ["fui-surface--docs.page.screen", "fui-state--Default"],
+};
+
 export const PageScreenContents: Story = {
   render: () => (
     <Frame>

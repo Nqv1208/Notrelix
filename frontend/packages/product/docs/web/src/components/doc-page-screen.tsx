@@ -49,6 +49,7 @@ import type {
 } from "./doc-page-models";
 import { isRestrictedTask } from "./doc-page-models";
 import { DocPageScreenSurface } from "./doc-page-screen-surface";
+import { useDocPanelOpen } from "./use-doc-panel-open";
 import { taskToken } from "./doc-page-text";
 
 interface CreateDocPageScreenDeps {
@@ -199,6 +200,7 @@ export function createDocPageScreen({
       mentionQuery: overlay.kind === "mention" ? overlay.query : null,
       convertBoardId: overlay.kind === "convertTask" ? overlay.boardId : null,
     });
+    const [panelOpen, setPanelOpen] = useDocPanelOpen(host.viewerId ?? null);
     const trashQuery = useTrashedPages(workspaceId, overlay.kind === "trash");
     const now = host.now;
 
@@ -625,6 +627,7 @@ export function createDocPageScreen({
       onOpenShare: host.share ? () => setOverlay({ kind: "share" }) : undefined,
       onShareInvite: host.onShareInvite,
       onPanelTab: setPanelTab,
+      onPanelOpenChange: setPanelOpen,
       onTocSelect: (id) => {
         setActiveTocId(id);
         const target =
@@ -677,7 +680,10 @@ export function createDocPageScreen({
           });
         }
       },
-      onOpenComments: () => setPanelTab("comments"),
+      onOpenComments: () => {
+        setPanelTab("comments");
+        setPanelOpen(true);
+      },
       onCommentCreate: (body) => createComment.mutate({ pageId, body }),
     };
 
@@ -697,6 +703,7 @@ export function createDocPageScreen({
         }))}
         comments={comments}
         panelTab={panelTab}
+        panelOpen={panelOpen}
         overlay={overlay}
         mentionTasks={mentionTasks}
         blockTypes={host.blockTypes}

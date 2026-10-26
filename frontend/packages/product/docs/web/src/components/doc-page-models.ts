@@ -325,6 +325,8 @@ export interface DocPageCallbacks {
   readonly onCloseOverlay?: () => void;
   readonly onOpenShare?: () => void;
   readonly onPanelTab?: (tab: DocPanelTab) => void;
+  /** Opens or closes the side panel (the host remembers the choice). */
+  readonly onPanelOpenChange?: (open: boolean) => void;
   readonly onSaveRetry?: () => void;
   readonly onFormat?: (
     format:
