@@ -9674,7 +9674,7 @@
           "WorkManagement.BoardItems",
           "WorkManagement.BoardItems"
         ],
-        "summary": "Change the status, due date, assignee or archive state of several items of a board at once",
+        "summary": "Change the status, due date, assignee, priority, archive state or deletion of several items of a board at once",
         "operationId": "WorkManagement.BoardItems.BulkUpdate",
         "parameters": [
           {
@@ -22494,6 +22494,10 @@
           "assigneeUserId": {
             "type": "string",
             "format": "uuid",
+            "nullable": true
+          },
+          "priority": {
+            "type": "string",
             "nullable": true
           }
         },

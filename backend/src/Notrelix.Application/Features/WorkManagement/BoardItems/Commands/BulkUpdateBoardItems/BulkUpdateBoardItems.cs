@@ -2,7 +2,11 @@ using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.ArchiveBoardItem;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.AssignBoardItemMember;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.DeleteBoardItem;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemFieldValue;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemStatus;
+using Notrelix.Application.Features.WorkManagement.Common;
+using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.BulkUpdateBoardItems;
 
@@ -15,15 +19,17 @@ public static class BulkBoardItemOperations
     public const string Assign = "assign";
     public const string UnassignAll = "unassign-all";
     public const string Archive = "archive";
+    public const string SetPriority = "set-priority";
+    public const string Delete = "delete";
 
     public const int MaxItems = 200;
 
     public static readonly IReadOnlyList<string> All =
-        [SetStatus, SetDueDate, ClearDueDate, Assign, UnassignAll, Archive];
+        [SetStatus, SetDueDate, ClearDueDate, Assign, UnassignAll, Archive, SetPriority, Delete];
 }
 
 /// <summary>
-/// Applies one change (status, due date, assignee or archive) to several items of one board as one unit:
+/// Applies one change (status, due date, assignee, priority, archive or delete) to several items of one board as one unit:
 /// every item changes or none does (the data session owns the transaction and an item that cannot change
 /// throws before anything commits). The request is authorized once on the board, and board items take their
 /// access from their board, so that is the per-item check; every named item must be a live item of that
@@ -35,6 +41,7 @@ public static class BulkBoardItemOperations
 /// <param name="Status">The status option id for <c>set-status</c>.</param>
 /// <param name="DueDate">The due date (UTC) for <c>set-due-date</c>.</param>
 /// <param name="AssigneeUserId">The member who becomes the only assignee for <c>assign</c>.</param>
+/// <param name="Priority">The option id of the board's Priority field for <c>set-priority</c>.</param>
 [IdempotencyOperation("work-management.board-items.bulk-update-board-items.v1")]
 public record BulkUpdateBoardItemsCommand(
     Guid BoardId,
@@ -42,7 +49,8 @@ public record BulkUpdateBoardItemsCommand(
     IReadOnlyList<Guid> ItemIds,
     string? Status = null,
     DateTime? DueDate = null,
-    Guid? AssigneeUserId = null) : ICommand<BulkUpdateBoardItemsResult>, IWriteRequest, IRequirePermission, IRequireAdditionalPermission, IAuthenticatedRequest, IResourceScopedRequest, IIdempotentRequest
+    Guid? AssigneeUserId = null,
+    string? Priority = null) : ICommand<BulkUpdateBoardItemsResult>, IWriteRequest, IRequirePermission, IRequireAdditionalPermission, IAuthenticatedRequest, IResourceScopedRequest, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
 
@@ -66,6 +74,8 @@ public class BulkUpdateBoardItemsCommandHandler : IRequestHandler<BulkUpdateBoar
     private readonly IRequestHandler<UpdateBoardItemStatusCommand, Result> _status;
     private readonly IRequestHandler<ArchiveBoardItemCommand, Result> _archive;
     private readonly IRequestHandler<AssignBoardItemMemberCommand, Result> _assign;
+    private readonly IRequestHandler<UpdateBoardItemFieldValueCommand, BoardItemSlimDto> _fieldValue;
+    private readonly IRequestHandler<DeleteBoardItemCommand, Result> _delete;
 
     public BulkUpdateBoardItemsCommandHandler(
         IWorkManagementDbContext context,
@@ -73,7 +83,9 @@ public class BulkUpdateBoardItemsCommandHandler : IRequestHandler<BulkUpdateBoar
         IDateTimeProvider timeProvider,
         IRequestHandler<UpdateBoardItemStatusCommand, Result> status,
         IRequestHandler<ArchiveBoardItemCommand, Result> archive,
-        IRequestHandler<AssignBoardItemMemberCommand, Result> assign)
+        IRequestHandler<AssignBoardItemMemberCommand, Result> assign,
+        IRequestHandler<UpdateBoardItemFieldValueCommand, BoardItemSlimDto> fieldValue,
+        IRequestHandler<DeleteBoardItemCommand, Result> delete)
     {
         _context = context;
         _currentUser = currentUser;
@@ -81,6 +93,8 @@ public class BulkUpdateBoardItemsCommandHandler : IRequestHandler<BulkUpdateBoar
         _status = status;
         _archive = archive;
         _assign = assign;
+        _fieldValue = fieldValue;
+        _delete = delete;
     }
 
     public async Task<BulkUpdateBoardItemsResult> Handle(BulkUpdateBoardItemsCommand request, CancellationToken ct)
@@ -94,6 +108,10 @@ public class BulkUpdateBoardItemsCommandHandler : IRequestHandler<BulkUpdateBoar
         var missing = ids.FirstOrDefault(id => items.All(i => i.Id != id));
         if (missing != Guid.Empty) throw new NotFoundException(nameof(BoardItem), missing);
 
+        var priorityField = request.Operation == BulkBoardItemOperations.SetPriority
+            ? await ResolvePriorityFieldAsync(request.BoardId, ct)
+            : null;
+
         var now = _timeProvider.UtcNow;
         foreach (var id in ids)
         {
@@ -105,6 +123,15 @@ public class BulkUpdateBoardItemsCommandHandler : IRequestHandler<BulkUpdateBoar
 
                 case BulkBoardItemOperations.Archive:
                     Require(await _archive.Handle(new ArchiveBoardItemCommand(id), ct));
+                    break;
+
+                case BulkBoardItemOperations.SetPriority:
+                    // The same write the item's own priority change makes; no expected version, as for the rest.
+                    await _fieldValue.Handle(new UpdateBoardItemFieldValueCommand(id, priorityField!.Id, request.Priority, 0), ct);
+                    break;
+
+                case BulkBoardItemOperations.Delete:
+                    Require(await _delete.Handle(new DeleteBoardItemCommand(id), ct));
                     break;
 
                 case BulkBoardItemOperations.SetDueDate:
@@ -130,6 +157,16 @@ public class BulkUpdateBoardItemsCommandHandler : IRequestHandler<BulkUpdateBoar
         }
 
         return new BulkUpdateBoardItemsResult(ids.Count);
+    }
+
+    // The board's Priority field, resolved the way every read resolves it: a board without one cannot take the change.
+    private async Task<BoardField> ResolvePriorityFieldAsync(Guid boardId, CancellationToken ct)
+    {
+        var fields = await _context.BoardFields
+            .Where(f => f.BoardId == boardId && f.DeletedAt == null)
+            .ToListAsync(ct);
+        return WorkItemSemanticFields.ResolvePriorityField(fields)
+            ?? throw new BusinessRuleException("This board has no Priority field.");
     }
 
     // The member becomes the only assignee: the others are taken off, then the member is added (no-op when

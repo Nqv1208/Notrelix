@@ -16,6 +16,8 @@ public class BulkUpdateBoardItemsCommandValidator : AbstractValidator<BulkUpdate
             .When(x => x.Operation == BulkBoardItemOperations.SetStatus);
         RuleFor(x => x.DueDate).NotNull()
             .When(x => x.Operation == BulkBoardItemOperations.SetDueDate);
+        RuleFor(x => x.Priority).NotEmpty().MaximumLength(200)
+            .When(x => x.Operation == BulkBoardItemOperations.SetPriority);
         RuleFor(x => x.AssigneeUserId).NotNull().NotEqual(Guid.Empty)
             .When(x => x.Operation == BulkBoardItemOperations.Assign);
     }
