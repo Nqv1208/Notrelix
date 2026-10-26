@@ -3,6 +3,7 @@ import { useEditorState, type Editor } from "@tiptap/react";
 import type { DocPageCopy } from "../components/doc-page.copy";
 import type {
   DocPageCallbacks,
+  DocPerson,
   DocTaskRef,
 } from "../components/doc-page-models";
 import { DocMentionMenuSurface } from "../components/doc-popups-surface";
@@ -43,11 +44,13 @@ export function MentionTrigger({
   editor,
   copy,
   tasks,
+  people,
   callbacks,
 }: {
   editor: Editor;
   copy: DocPageCopy;
   tasks: readonly DocTaskRef[];
+  people?: readonly DocPerson[];
   callbacks?: DocPageCallbacks;
 }) {
   const match = useEditorState({
@@ -82,6 +85,7 @@ export function MentionTrigger({
       copy={copy}
       query={match.query}
       tasks={tasks}
+      people={people}
       className=""
       style={{
         top: coords.bottom - (host?.top ?? 0) + 6,
@@ -93,6 +97,22 @@ export function MentionTrigger({
           .focus()
           .insertContentAt({ from: match.from, to: match.to }, [
             { type: "taskRef", attrs: { taskId } },
+            { type: "text", text: " " },
+          ])
+          .run();
+        callbacks?.onBlockTriggerClose?.();
+      }}
+      onSelectPerson={(person) => {
+        // The run's text is the label at write time; the mark carries the user.
+        editor
+          .chain()
+          .focus()
+          .insertContentAt({ from: match.from, to: match.to }, [
+            {
+              type: "text",
+              text: `@${person.name}`,
+              marks: [{ type: "mentionUser", attrs: { userId: person.id } }],
+            },
             { type: "text", text: " " },
           ])
           .run();

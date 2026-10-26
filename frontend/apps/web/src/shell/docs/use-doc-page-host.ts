@@ -406,6 +406,21 @@ export const useDocPageHost: UseDocPageHost = (
     [boardId, fullBoard.groups, mentionQuery, now, workspaceId],
   );
 
+  // The people "@" offers: workspace members by name (a Guest does not read the
+  // member list, so a Guest is offered none).
+  const suggestMembers = useCallback(
+    (query: string): readonly DocPerson[] => {
+      const needle = foldName(query);
+      return (members.data ?? [])
+        .filter(
+          (member) => needle === "" || foldName(member.name).includes(needle),
+        )
+        .slice(0, 5)
+        .map((member) => personFor(member.userId));
+    },
+    [members.data, personFor],
+  );
+
   // Whom the viewer may give access to: the workspace's members who are not on the
   // page yet, offered to an owner of the workspace (the producer decides each grant).
   const candidates = useMemo<readonly DocPerson[] | undefined>(() => {
@@ -522,6 +537,7 @@ export const useDocPageHost: UseDocPageHost = (
         ? "workspace-admin"
         : null,
     viewerId: user?.id,
+    suggestMembers,
     realtime: runtime.realtime,
     pageHref: (targetId) =>
       `/workspaces/${workspaceId}/docs/${encodeURIComponent(targetId)}`,
@@ -548,3 +564,13 @@ export const useDocPageHost: UseDocPageHost = (
       }),
   };
 };
+
+/** Lower case without accents, so "an" finds "Ân". */
+function foldName(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .replace(/đ/g, "d")
+    .toLowerCase()
+    .trim();
+}

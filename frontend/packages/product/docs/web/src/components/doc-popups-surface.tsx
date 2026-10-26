@@ -22,8 +22,8 @@ import {
 import { cn } from "@notrelix/ui-web";
 import type { BlockType } from "@notrelix/docs-core";
 import { fillDocCopy, type DocPageCopy } from "./doc-page.copy";
-import type { DocTaskRef } from "./doc-page-models";
-import { DocStatusDot, ICON_CLASS } from "./doc-page-ui";
+import type { DocPerson, DocTaskRef } from "./doc-page-models";
+import { DocAvatar, DocStatusDot, ICON_CLASS } from "./doc-page-ui";
 
 const POPUP =
   "absolute box-content z-10 w-[320px] rounded-[12px] border border-line-strong bg-doc-panel p-1.5 leading-[1.4] shadow-popover";
@@ -231,30 +231,43 @@ export function DocSlashMenuSurface({
 export interface DocMentionMenuSurfaceProps {
   readonly copy: DocPageCopy;
   readonly query: string;
+  /** Workspace members the typed text may mention; listed before the tasks. */
+  readonly people?: readonly DocPerson[];
   readonly tasks: readonly DocTaskRef[];
   readonly activeIndex?: number;
   readonly className?: string;
   readonly style?: CSSProperties;
   readonly onSelect?: (taskId: string) => void;
+  readonly onSelectPerson?: (person: DocPerson) => void;
   readonly onClose?: () => void;
 }
 
-/** The task mention list (Final-Docs `nhac-viec`): key, title and a footer hint. */
+/**
+ * The mention list (Final-Docs `nhac-viec`): people, then tasks, with a footer
+ * hint. Arrow keys move through both groups as one list.
+ */
 export function DocMentionMenuSurface({
   copy,
   query,
+  people = [],
   tasks,
   activeIndex,
   className,
   style,
   onSelect,
+  onSelectPerson,
   onClose,
 }: DocMentionMenuSurfaceProps): ReactNode {
   const m = copy.mention;
   const [keyActive, setKeyActive] = usePopupKeys({
-    count: tasks.length,
+    count: people.length + tasks.length,
     onPick: (index) => {
-      const task = tasks[index];
+      const person = people[index];
+      if (person) {
+        onSelectPerson?.(person);
+        return;
+      }
+      const task = tasks[index - people.length];
       if (task) onSelect?.(task.id);
     },
     onClose: () => onClose?.(),
@@ -268,30 +281,59 @@ export function DocMentionMenuSurface({
       style={style}
       className={cn(POPUP, className)}
     >
+      {people.length > 0 ? (
+        <>
+          <span className={HEADING}>{m.people}</span>
+          {people.map((person, index) => (
+            <button
+              key={person.id}
+              type="button"
+              role="option"
+              aria-selected={index === active}
+              onMouseDown={(event) => event.preventDefault()}
+              onMouseEnter={() => setKeyActive(index)}
+              onClick={() => onSelectPerson?.(person)}
+              className={cn(
+                OPTION,
+                index === active && "bg-state-hover-strong",
+              )}
+            >
+              <DocAvatar person={person} />
+              <span className="min-w-0 truncate">{person.name}</span>
+            </button>
+          ))}
+        </>
+      ) : null}
       <span className={HEADING}>
         {fillDocCopy(m.heading, { query: query.trim() })}
       </span>
       {tasks.length === 0 ? (
         <span className={HEADING}>{m.none}</span>
       ) : (
-        tasks.map((task, index) => (
-          <button
-            key={task.id}
-            type="button"
-            role="option"
-            aria-selected={index === active}
-            onMouseDown={(event) => event.preventDefault()}
-            onMouseEnter={() => setKeyActive(index)}
-            onClick={() => onSelect?.(task.id)}
-            className={cn(OPTION, index === active && "bg-state-hover-strong")}
-          >
-            <DocStatusDot status={task.status} />
-            <span className="font-mono text-metadata leading-[1.4] tracking-normal text-meta-foreground">
-              {task.key}
-            </span>
-            {task.title}
-          </button>
-        ))
+        tasks.map((task, offset) => {
+          const index = people.length + offset;
+          return (
+            <button
+              key={task.id}
+              type="button"
+              role="option"
+              aria-selected={index === active}
+              onMouseDown={(event) => event.preventDefault()}
+              onMouseEnter={() => setKeyActive(index)}
+              onClick={() => onSelect?.(task.id)}
+              className={cn(
+                OPTION,
+                index === active && "bg-state-hover-strong",
+              )}
+            >
+              <DocStatusDot status={task.status} />
+              <span className="font-mono text-metadata leading-[1.4] tracking-normal text-meta-foreground">
+                {task.key}
+              </span>
+              {task.title}
+            </button>
+          );
+        })
       )}
       <span className={cn(HEADING, "mt-2")}>{m.footer}</span>
     </div>

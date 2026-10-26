@@ -336,7 +336,8 @@ export const vi = {
     },
   },
   mention: {
-    label: "Gợi ý công việc",
+    label: "Gợi ý người và công việc",
+    people: "Thành viên",
     heading: 'Công việc khớp "{{query}}"',
     footer: "↵ chèn · ⇧↵ tạo việc mới từ chữ đang gõ",
     none: "Không có công việc nào khớp.",
@@ -793,7 +794,8 @@ export const en: DocPageCopy = {
     },
   },
   mention: {
-    label: "Task suggestions",
+    label: "People and task suggestions",
+    people: "People",
     heading: 'Tasks matching "{{query}}"',
     footer: "↵ insert · ⇧↵ create a new task from the typed text",
     none: "No task matches.",

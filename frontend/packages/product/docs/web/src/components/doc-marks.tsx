@@ -53,6 +53,16 @@ export function renderMarked(
           </mark>
         );
         break;
+      case "mention":
+        node = (
+          <span
+            data-user-id={mark.userId}
+            className="rounded-[4px] bg-brand-subtle px-0.5 text-brand-subtle-foreground"
+          >
+            {node}
+          </span>
+        );
+        break;
       default:
         break;
     }

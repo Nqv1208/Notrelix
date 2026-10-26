@@ -63,6 +63,7 @@ import type {
   DocRelatedDoc,
   DocTaskRef,
   DocTaskResolution,
+  DocPerson,
 } from "./doc-page-models";
 import { isRestrictedTask } from "./doc-page-models";
 import { DocPageScreenSurface } from "./doc-page-screen-surface";
@@ -669,6 +670,10 @@ export function createDocPageScreen({
     const focused = blocks.find((block) => block.id === focusedId) ?? null;
     const mentionTasks: readonly DocTaskRef[] =
       overlay.kind === "mention" ? host.suggestTasks(overlay.query) : [];
+    const mentionPeople: readonly DocPerson[] =
+      overlay.kind === "mention" && host.suggestMembers
+        ? host.suggestMembers(overlay.query)
+        : [];
 
     const patchBlock = (
       block: Block,
@@ -1006,6 +1011,7 @@ export function createDocPageScreen({
         panelOpen={panelOpen}
         overlay={overlay}
         mentionTasks={mentionTasks}
+        mentionPeople={mentionPeople}
         blockTypes={host.blockTypes}
         toolbar={toolbarCurrent(
           focused ??

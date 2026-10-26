@@ -2,6 +2,7 @@ import { EditorContent, type Editor } from "@tiptap/react";
 import type { DocPageCopy } from "../components/doc-page.copy";
 import type {
   DocPageCallbacks,
+  DocPerson,
   DocTaskRef,
 } from "../components/doc-page-models";
 import { EditorBubbleMenu } from "./bubble-menu";
@@ -18,6 +19,7 @@ export interface DocEditorSurfaceProps {
   readonly editor: Editor;
   readonly copy: DocPageCopy;
   readonly mentionTasks: readonly DocTaskRef[];
+  readonly mentionPeople?: readonly DocPerson[];
   readonly callbacks?: DocPageCallbacks;
 }
 
@@ -26,6 +28,7 @@ export function DocEditorSurface({
   editor,
   copy,
   mentionTasks,
+  mentionPeople,
   callbacks,
 }: DocEditorSurfaceProps) {
   return (
@@ -51,6 +54,7 @@ export function DocEditorSurface({
             editor={editor}
             copy={copy}
             tasks={mentionTasks}
+            people={mentionPeople}
             callbacks={callbacks}
           />
         </>

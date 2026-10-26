@@ -33,6 +33,8 @@ export interface DocPageHost {
   readonly boardChoices?: readonly DocPickerBoardView[];
   /** Tasks matching a typed key or title, for the mention list. */
   readonly suggestTasks: (query: string) => readonly DocTaskRef[];
+  /** Workspace members matching a typed name, for the mention list; omitted offers none. */
+  readonly suggestMembers?: (query: string) => readonly DocPerson[];
   /** The share dialog's facts; `null` keeps Share disabled. */
   readonly share: DocShareView | null;
   /** Why the viewer sees a private department's page, when they do. */
