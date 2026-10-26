@@ -293,7 +293,7 @@ describe("BoardCalendarView on the ERP board", () => {
     fireEvent.change(screen.getByRole("textbox", { name: /^Tên công việc/ }), {
       target: { value: "Chốt lịch tuần" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Thêm công việc" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Tạo công việc/ }));
     await waitFor(() => expect(cards.createCard).toHaveBeenCalledTimes(1));
     expect(cards.createCard.mock.calls[0]?.[1]).toMatchObject({
       title: "Chốt lịch tuần",
