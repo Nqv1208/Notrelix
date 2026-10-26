@@ -1,6 +1,7 @@
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.Collaboration.Comments.DTOs;
 using Notrelix.Application.Features.Collaboration.Abstractions;
+using Notrelix.Domain.Collaboration.Comments;
 
 namespace Notrelix.Application.Features.Collaboration.Comments.Queries.GetComments;
 
@@ -48,7 +49,8 @@ public class GetCommentsQueryHandler : IRequestHandler<GetCommentsQuery, Result<
             return new CommentDto(
                 c.Id, actor?.UserId ?? Guid.Empty, actor?.Name ?? "Unknown", actor?.AvatarUrl,
                 c.Content, c.ParentId, c.UpdatedAt != null,
-                null,
+                // The thread's status is the fact; resolving is a change to it, so the last change while resolved is when.
+                c.CommentStatus == CommentStatus.Resolved ? (c.UpdatedAt ?? c.CreatedAt).DateTime : null,
                 c.CreatedAt.DateTime,
                 // A comment without an anchor has no owned anchor row data at all.
                 c.Anchor is { IsTextRange: true } anchor
