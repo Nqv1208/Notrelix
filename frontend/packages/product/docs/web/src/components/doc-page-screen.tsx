@@ -334,6 +334,15 @@ export function createDocPageScreen({
         ),
       [pageListQuery.data],
     );
+    const markTargets = useMemo<DocMarkTargets>(
+      () => ({
+        person: host.personFor,
+        page: (id) => readablePages.get(id) ?? null,
+        openPage: host.openPage,
+      }),
+      [host.personFor, host.openPage, readablePages],
+    );
+
     const pickerPages = useMemo(
       () =>
         (pageListQuery.data ?? [])
@@ -745,15 +754,6 @@ export function createDocPageScreen({
       overlay.kind === "mention" && host.suggestMembers
         ? host.suggestMembers(overlay.query)
         : [];
-
-    const markTargets = useMemo<DocMarkTargets>(
-      () => ({
-        person: host.personFor,
-        page: (id) => readablePages.get(id) ?? null,
-        openPage: host.openPage,
-      }),
-      [host.personFor, host.openPage, readablePages],
-    );
 
     const patchBlock = (
       block: Block,

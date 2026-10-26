@@ -65,24 +65,35 @@ export function MarkChips({
   );
 
   useEffect(() => {
-    const dom = editor.view.dom;
-    const onClick = (event: MouseEvent) => {
-      const el = (event.target as Element | null)?.closest?.(CHIP_SELECTOR);
-      if (!el || !dom.contains(el)) return;
-      activate(el, event.metaKey || event.ctrlKey);
+    let detach: (() => void) | null = null;
+    const attach = () => {
+      if (detach || editor.isDestroyed) return;
+      const dom = editor.view.dom;
+      const onClick = (event: MouseEvent) => {
+        const el = (event.target as Element | null)?.closest?.(CHIP_SELECTOR);
+        if (!el || !dom.contains(el)) return;
+        activate(el, event.metaKey || event.ctrlKey);
+      };
+      const onKeyDown = (event: KeyboardEvent) => {
+        if (event.key !== "Enter" || !event.altKey) return;
+        const el = chipAtCaret(editor);
+        if (!el) return;
+        event.preventDefault();
+        activate(el, true);
+      };
+      dom.addEventListener("click", onClick);
+      dom.addEventListener("keydown", onKeyDown);
+      detach = () => {
+        dom.removeEventListener("click", onClick);
+        dom.removeEventListener("keydown", onKeyDown);
+      };
     };
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "Enter" || !event.altKey) return;
-      const el = chipAtCaret(editor);
-      if (!el) return;
-      event.preventDefault();
-      activate(el, true);
-    };
-    dom.addEventListener("click", onClick);
-    dom.addEventListener("keydown", onKeyDown);
+    // The view exists once the editor content is mounted.
+    if (editor.isInitialized) attach();
+    else editor.on("create", attach);
     return () => {
-      dom.removeEventListener("click", onClick);
-      dom.removeEventListener("keydown", onKeyDown);
+      editor.off("create", attach);
+      detach?.();
     };
   }, [editor, activate]);
 
