@@ -5,6 +5,7 @@ import {
   WorkManagementTestScope,
   type WorkManagementServices,
 } from "@notrelix/work-management-state";
+import { findStatusField } from "@notrelix/work-management-core";
 import { erpBoardScenario } from "@notrelix/work-management-testing";
 import { BoardItemCreateDialog } from "../board-item-create-dialog";
 import { itemCreateCatalog } from "../item-create.catalog";
@@ -51,6 +52,19 @@ function setup(assigneeIndex = 0) {
 }
 
 describe("BoardItemCreateDialog (Home and My work)", () => {
+  it("shows the board's first status once the board is read and keeps it, so the member sees where the item lands", async () => {
+    const { scenario } = setup();
+    const statusField = findStatusField(scenario.board.fieldDefinitions)!;
+    const firstStatus = statusField.options[0]!.label;
+    const shown = () =>
+      screen.getAllByRole("combobox").map((combobox) => combobox.textContent);
+
+    await waitFor(() => expect(shown()).toContain(firstStatus));
+    // A late "" from the select while its options register does not clear it.
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    expect(shown()).toContain(firstStatus);
+  });
+
   it("opens the full form on the first board with the typed name and the member ticked, and creates with them", async () => {
     const { cards, onCreated, scenario, member } = setup();
     const name = (await screen.findByRole("textbox", {
