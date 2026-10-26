@@ -385,6 +385,7 @@ describe("priorityFromOptionName", () => {
     ["Trung bình", "medium"],
     ["Thấp", "low"],
     ["Urgent", "urgent"],
+    ["Critical", "urgent"],
     ["High", "high"],
     ["Medium", "medium"],
     ["low", "low"],
