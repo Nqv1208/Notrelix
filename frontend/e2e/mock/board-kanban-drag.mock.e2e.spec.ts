@@ -293,7 +293,7 @@ test.describe("Kanban drag", () => {
     page,
   }) => {
     await openBoard(page, { width: 1000, height: 900 });
-    const scroller = page.locator("[data-kanban-board] > div").nth(1);
+    const scroller = page.locator("[data-kanban-scroller]");
     expect(
       await scroller.evaluate((el) => el.scrollWidth > el.clientWidth),
     ).toBe(true);

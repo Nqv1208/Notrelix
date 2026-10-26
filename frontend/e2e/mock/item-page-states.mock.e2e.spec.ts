@@ -50,7 +50,7 @@ test.describe("Item page states (owner)", () => {
     await expect(page).toHaveURL(/\/workspaces\/mock-workspace-primary\/?$/);
   });
 
-  test("a new item says what to do next and folds the empty fields", async ({
+  test("a new item says what to do next and always offers its dates", async ({
     page,
   }) => {
     await open(page, "mock-erp-item-154");
@@ -58,16 +58,14 @@ test.describe("Item page states (owner)", () => {
       "Kiểm tra quyền xem báo cáo thuế",
     );
     await expect(
-      page.getByText("Thêm mô tả… gõ / để chèn bảng, việc, tài liệu"),
+      page.getByText("Thêm mô tả…", { exact: true }).first(),
     ).toBeVisible();
     // Sub-items: an empty list that says so and offers a way to add one.
     await expect(page.getByText("Chưa có việc con.")).toBeVisible();
     await expect(page.getByText("vừa xong", { exact: false })).toHaveCount(0);
     const rail = page.getByRole("complementary");
-    await expect(
-      rail.getByRole("button", { name: "Hạn chót", exact: true }),
-    ).toHaveCount(0);
-    await rail.getByRole("button", { name: /Hiện \d+ trường trống/ }).click();
+    // The due and start dates are always shown, empty or not, so a new item
+    // can be given its dates straight away; the other empty fields fold.
     await expect(
       rail.getByRole("button", { name: "Hạn chót", exact: true }),
     ).toBeVisible();

@@ -44,24 +44,24 @@ async function openSettings(page: Page) {
 }
 
 test.describe("Kanban view settings", () => {
-  test("the settings page offers no view settings, and a lane keeps three cards before Xem thêm", async ({
+  test("the settings page offers no view settings, and a lane shows all its cards and offers no Xem thêm", async ({
     page,
   }) => {
     await openBoard(page);
-    await expect(cardButtons(page, "Cần làm")).toHaveCount(3);
+    await expect(cardButtons(page, "Cần làm")).toHaveCount(6);
     await openSettings(page);
-    await expect(page.getByRole("button", { name: /^Chế độ xem/ })).toHaveCount(
-      0,
-    );
+    await expect(
+      page.getByRole("button", { name: /^Chế độ xem Kanban/ }),
+    ).toHaveCount(0);
     await expect(
       page.getByRole("button", { name: "Sửa chế độ xem Kanban" }),
     ).toHaveCount(0);
     await page.getByRole("link", { name: "Về board" }).click();
     await expect(lane(page, "Cần làm")).toBeVisible();
-    await expect(cardButtons(page, "Cần làm")).toHaveCount(3);
+    await expect(cardButtons(page, "Cần làm")).toHaveCount(6);
     await expect(
-      lane(page, "Cần làm").getByRole("button", { name: "Xem thêm 3 việc" }),
-    ).toBeVisible();
+      lane(page, "Cần làm").getByRole("button", { name: /^Xem thêm/ }),
+    ).toHaveCount(0);
   });
 
   test("the manager keeps the status controls after a reload", async ({

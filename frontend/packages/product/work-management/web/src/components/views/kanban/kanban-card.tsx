@@ -36,7 +36,7 @@ function markFor(member: CardMember): string {
 const DUE_CLASS: Readonly<Record<ItemDueState["kind"], string>> = {
   overdue: "bg-danger-subtle font-semibold text-danger-subtle-foreground",
   today: "bg-warning-subtle font-semibold text-warning-subtle-foreground",
-  date: "font-medium text-meta-foreground",
+  date: "-ml-1.5 font-medium text-muted-foreground",
 };
 
 const ALT_ARROW: Readonly<Record<string, KanbanMoveDirection | undefined>> = {
@@ -47,7 +47,7 @@ const ALT_ARROW: Readonly<Record<string, KanbanMoveDirection | undefined>> = {
 };
 
 const CARD_CLASS =
-  "relative flex flex-col gap-[9px] rounded-[11px] bg-popover p-3 dark:bg-card";
+  "relative flex flex-col gap-2 rounded-[11px] bg-popover px-3 pt-[11px] pb-2.5 dark:bg-card";
 
 /** What a card shows, worked out once for its body and its open control. */
 function cardParts(
@@ -181,7 +181,7 @@ function KanbanCardContent({
       {hasTop ? (
         <div
           id={`${idPrefix}-top`}
-          className="flex min-w-0 items-center gap-1.5 text-metadata text-meta-foreground"
+          className="flex min-h-[22px] min-w-0 items-center gap-1.5 text-metadata text-meta-foreground"
         >
           {shownLabels.map((label, index) => {
             const tone = itemLabelTone(label);
@@ -193,7 +193,7 @@ function KanbanCardContent({
                 <span
                   data-label-tone={tone ?? undefined}
                   className={cn(
-                    "inline-flex h-5.5 min-w-0 items-center truncate rounded-sm px-2 text-micro font-semibold",
+                    "inline-flex h-5 min-w-0 items-center truncate rounded-[5px] px-[7px] text-micro font-semibold",
                     tone
                       ? ITEM_LABEL_TONE_CLASS[tone]
                       : "bg-state-hover-strong text-muted-foreground",
@@ -207,7 +207,7 @@ function KanbanCardContent({
           {moreLabels > 0 ? (
             <span
               title={fillCopy(copy.moreLabels, { count: moreLabels })}
-              className="inline-flex h-5.5 shrink-0 items-center rounded-sm bg-state-hover-strong px-1.5 text-micro font-semibold text-muted-foreground"
+              className="inline-flex h-5 shrink-0 items-center rounded-[5px] bg-state-hover-strong px-[7px] text-micro font-semibold text-muted-foreground"
             >
               +{moreLabels}
             </span>
@@ -259,7 +259,7 @@ function KanbanCardContent({
       {hasMeta ? (
         <div
           id={`${idPrefix}-meta`}
-          className="flex min-w-0 flex-wrap items-center gap-1.5 text-metadata text-meta-foreground"
+          className="flex min-h-6 min-w-0 flex-wrap items-center gap-2 text-metadata text-meta-foreground"
         >
           {due && dueText ? (
             <span
