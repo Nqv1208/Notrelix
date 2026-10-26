@@ -42,6 +42,7 @@ using Notrelix.Application.Features.Workspaces.Workspaces.Queries.GetAccountWork
 using Notrelix.Application.Features.Workspaces.Workspaces.Queries.ResolveSlug;
 using Notrelix.Application.Features.Workspaces.Settings.Queries.GetWorkspaceSecurityExt;
 using Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceMembersExtra;
+using Notrelix.Application.Features.Workspaces.Search.Queries.CommandSearch;
 using Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceOverview;
 using Notrelix.Application.Features.Workspaces.Onboarding.Commands.ClearOnboardingDraft;
 using Notrelix.Application.Features.Workspaces.Onboarding.Commands.DismissGettingStarted;
@@ -471,6 +472,8 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
             MockWorkspaceHandler<GetSpaceOverviewQuery, Result<SpaceOverviewDto>>(services,
                 Result<SpaceOverviewDto>.Success(new SpaceOverviewDto(0, [], 0, [], 0, [], [], [], [],
                     new SpaceOverviewAccessDto([], new SpaceOverviewRoleDto(0, []), new SpaceOverviewRoleDto(0, []), []))));
+            MockWorkspaceHandler<CommandSearchQuery, Result<CommandSearchDto>>(services,
+                Result<CommandSearchDto>.Success(new CommandSearchDto([], [], [])));
             MockWorkspaceHandler<CheckWorkspaceSlugQuery, Result<WorkspaceSlugCheckDto>>(services,
                 Result<WorkspaceSlugCheckDto>.Success(new WorkspaceSlugCheckDto("free", null)));
             MockWorkspaceHandler<GetOnboardingDraftQuery, Result<OnboardingDraftResponseDto>>(services,

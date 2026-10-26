@@ -160,6 +160,10 @@ public static class PersistenceRegistration
             global::Notrelix.Infrastructure.CrossContext.Collaboration.WorkManagement.WorkItemNotificationFactsAdapter>();
         services.AddScoped<global::Notrelix.Application.Features.Documents.Public.SpaceOverview.IPageSpaceOverviewFacts,
             global::Notrelix.Infrastructure.CrossContext.Workspaces.Documents.PageSpaceOverviewFactsAdapter>();
+        services.AddScoped<global::Notrelix.Application.Features.WorkManagement.Public.CommandSearch.IWorkSearchFacts,
+            global::Notrelix.Infrastructure.CrossContext.Workspaces.WorkManagement.WorkSearchFactsAdapter>();
+        services.AddScoped<global::Notrelix.Application.Features.Documents.Public.PageSearch.IPageSearchFacts,
+            global::Notrelix.Infrastructure.CrossContext.Workspaces.Documents.PageSearchFactsAdapter>();
         services.AddScoped<Notrelix.Application.Features.WorkManagement.Ordering.IWorkOrderingScopeLock,
             Notrelix.Infrastructure.Data.WorkManagement.PostgresWorkOrderingScopeLock>();
         services.AddScoped<Notrelix.Application.Features.Collaboration.Abstractions.IAttachmentTargetLock,

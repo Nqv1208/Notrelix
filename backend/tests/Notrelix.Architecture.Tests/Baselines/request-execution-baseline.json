@@ -7975,6 +7975,31 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.Workspaces.Search.Queries.CommandSearch.CommandSearchQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Workspaces.Search.Queries.CommandSearch.CommandSearchQueryHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.Workspaces.Settings.Commands.UpdateWorkspaceSettings.UpdateWorkspaceSettingsCommand",
     "kind": "Command",
     "principalMarkers": [

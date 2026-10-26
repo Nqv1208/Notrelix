@@ -4660,6 +4660,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/command-search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search Items, Docs and Boards the caller may open
+         * @description Items by name or key (or by a sub-item's name) across the Boards the caller can read, Docs by title, and Boards by name or by holding at least two matching Items. Ignores case and marks ("hoa don" finds "Hoá đơn"); text shorter than two characters answers empty. At most 6 Items (the caller's own first), 5 Docs and 5 Boards. Only what the caller can open is returned or counted. Doc text is not searched yet.
+         */
+        get: operations["Workspaces.Search.CommandSearch"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/settings": {
         parameters: {
             query?: never;
@@ -7437,6 +7457,52 @@ export interface components {
         };
         "Notrelix.Application.Features.Workspaces.Onboarding.Queries.GetOnboardingDraft.OnboardingDraftResponseDto": {
             draft?: components["schemas"]["Notrelix.Application.Features.Workspaces.Onboarding.Queries.GetOnboardingDraft.OnboardingDraftDto"];
+        };
+        "Notrelix.Application.Features.Workspaces.Search.Queries.CommandSearch.CommandSearchBoardDto": {
+            /** Format: uuid */
+            id?: string;
+            name?: string | null;
+            /** Format: uuid */
+            spaceId?: string | null;
+            /** Format: int32 */
+            matchedItems?: number;
+        };
+        "Notrelix.Application.Features.Workspaces.Search.Queries.CommandSearch.CommandSearchDocDto": {
+            /** Format: uuid */
+            id?: string;
+            title?: string | null;
+            /** Format: uuid */
+            spaceId?: string | null;
+            location?: string | null;
+            /** Format: date-time */
+            editedAt?: string | null;
+            editedByName?: string | null;
+            match?: components["schemas"]["Notrelix.Application.Features.Workspaces.Search.Queries.CommandSearch.CommandSearchMatchDto"];
+        };
+        "Notrelix.Application.Features.Workspaces.Search.Queries.CommandSearch.CommandSearchDto": {
+            work?: components["schemas"]["Notrelix.Application.Features.Workspaces.Search.Queries.CommandSearch.CommandSearchWorkDto"][] | null;
+            docs?: components["schemas"]["Notrelix.Application.Features.Workspaces.Search.Queries.CommandSearch.CommandSearchDocDto"][] | null;
+            boards?: components["schemas"]["Notrelix.Application.Features.Workspaces.Search.Queries.CommandSearch.CommandSearchBoardDto"][] | null;
+        };
+        "Notrelix.Application.Features.Workspaces.Search.Queries.CommandSearch.CommandSearchMatchDto": {
+            kind?: string | null;
+            snippet?: string | null;
+        };
+        "Notrelix.Application.Features.Workspaces.Search.Queries.CommandSearch.CommandSearchWorkDto": {
+            /** Format: uuid */
+            id?: string;
+            key?: string | null;
+            title?: string | null;
+            /** Format: uuid */
+            boardId?: string;
+            boardName?: string | null;
+            assigneeName?: string | null;
+            mine?: boolean;
+            statusName?: string | null;
+            statusCategory?: string | null;
+            /** Format: date-time */
+            dueAt?: string | null;
+            match?: components["schemas"]["Notrelix.Application.Features.Workspaces.Search.Queries.CommandSearch.CommandSearchMatchDto"];
         };
         "Notrelix.Application.Features.Workspaces.Settings.Queries.GetWorkspaceSecurityExt.WorkspaceSecurityExtDto": {
             /** Format: int32 */
@@ -18970,6 +19036,30 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    "Workspaces.Search.CommandSearch": {
+        parameters: {
+            query?: {
+                q?: string;
+            };
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.Search.Queries.CommandSearch.CommandSearchDto"];
+                };
             };
         };
     };

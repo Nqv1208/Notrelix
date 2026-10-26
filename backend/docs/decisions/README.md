@@ -243,7 +243,7 @@ The registry does not restate the decision body.
 | `ADR-007` | [Governance-Owned Authorization Evaluator Behind a Neutral Common Pipeline Seam](ADR-007-governance-owned-authorization-evaluator.md) | `Accepted` | `../architecture/security-tenancy-authorization.md`, `../architecture/application-model.md` | None |
 | `ADR-008` | [Provider Outcome Classification and Durable Settlement for External Webhook Dispatch](ADR-008-provider-outcome-classification-and-settlement.md) | `Accepted` | `../architecture/platform-and-messaging.md`, `../architecture/application-model.md` | None |
 | `ADR-009` | [Space-Scoped Authorization — Closure-Indexed Space Tree, Team Subjects, and Datastore-Side Collection Visibility](ADR-009-space-scoped-authorization.md) | `Accepted` | `../architecture/security-tenancy-authorization.md`, `../../../docs/product/governance.md` | None |
-| `ADR-010` | [Authorized Command Search — Read Facade, Per-Context Search Ports and Datastore-Side Matching](ADR-010-authorized-command-search.md) | `Proposed` | `../architecture/security-tenancy-authorization.md`, `../architecture/infrastructure-and-data.md` | None |
+| `ADR-010` | [Authorized Command Search — Read Facade, Per-Context Search Ports and Datastore-Side Matching](ADR-010-authorized-command-search.md) | `Accepted` | `../architecture/security-tenancy-authorization.md`, `../architecture/infrastructure-and-data.md` | None |
 | `ADR-011` | [Database Principal Model — Owner, Application Role, Worker Role and Bounded Scopes](ADR-011-database-principal-model.md) | `Accepted` | `../architecture/security-tenancy-authorization.md`, `../architecture/infrastructure-and-data.md` | None |
 
 Backend ADRs currently recorded here as:

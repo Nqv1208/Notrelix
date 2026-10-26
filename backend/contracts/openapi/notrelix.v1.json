@@ -18920,6 +18920,55 @@
         ]
       }
     },
+    "/api/v1/workspaces/{workspaceId}/command-search": {
+      "get": {
+        "tags": [
+          "Workspaces.Search",
+          "Workspaces.Search"
+        ],
+        "summary": "Search Items, Docs and Boards the caller may open",
+        "description": "Items by name or key (or by a sub-item's name) across the Boards the caller can read, Docs by title, and Boards by name or by holding at least two matching Items. Ignores case and marks (\"hoa don\" finds \"Hoá đơn\"); text shorter than two characters answers empty. At most 6 Items (the caller's own first), 5 Docs and 5 Boards. Only what the caller can open is returned or counted. Doc text is not searched yet.",
+        "operationId": "Workspaces.Search.CommandSearch",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Search.Queries.CommandSearch.CommandSearchDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
     "/api/v1/workspaces/{workspaceId}/settings": {
       "get": {
         "tags": [
@@ -27803,6 +27852,154 @@
         "properties": {
           "draft": {
             "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Onboarding.Queries.GetOnboardingDraft.OnboardingDraftDto"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Workspaces.Search.Queries.CommandSearch.CommandSearchBoardDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "spaceId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "matchedItems": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Workspaces.Search.Queries.CommandSearch.CommandSearchDocDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "spaceId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "location": {
+            "type": "string",
+            "nullable": true
+          },
+          "editedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "editedByName": {
+            "type": "string",
+            "nullable": true
+          },
+          "match": {
+            "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Search.Queries.CommandSearch.CommandSearchMatchDto"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Workspaces.Search.Queries.CommandSearch.CommandSearchDto": {
+        "type": "object",
+        "properties": {
+          "work": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Search.Queries.CommandSearch.CommandSearchWorkDto"
+            },
+            "nullable": true
+          },
+          "docs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Search.Queries.CommandSearch.CommandSearchDocDto"
+            },
+            "nullable": true
+          },
+          "boards": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Search.Queries.CommandSearch.CommandSearchBoardDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Workspaces.Search.Queries.CommandSearch.CommandSearchMatchDto": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "nullable": true
+          },
+          "snippet": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Workspaces.Search.Queries.CommandSearch.CommandSearchWorkDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "key": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "boardId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "boardName": {
+            "type": "string",
+            "nullable": true
+          },
+          "assigneeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "mine": {
+            "type": "boolean"
+          },
+          "statusName": {
+            "type": "string",
+            "nullable": true
+          },
+          "statusCategory": {
+            "type": "string",
+            "nullable": true
+          },
+          "dueAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "match": {
+            "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Search.Queries.CommandSearch.CommandSearchMatchDto"
           }
         },
         "additionalProperties": false

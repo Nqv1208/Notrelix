@@ -42,6 +42,7 @@ using Notrelix.API.Endpoints.Workspaces.Invitations;
 using Notrelix.API.Endpoints.Workspaces.Members;
 using Notrelix.API.Endpoints.Workspaces.Navigation;
 using Notrelix.API.Endpoints.Workspaces.Onboarding;
+using Notrelix.API.Endpoints.Workspaces.Search;
 using Notrelix.API.Endpoints.Workspaces.Settings;
 using Notrelix.API.Endpoints.Workspaces.Spaces;
 using Notrelix.API.Endpoints.Workspaces.Teams;
@@ -75,6 +76,7 @@ public static class EndpointRouteBuilderExtensions
         app.RegisterTeamEndpoints();
         app.RegisterWorkspaceActivityEndpoints();
         app.RegisterWorkspaceNavigationEndpoints();
+        app.RegisterWorkspaceSearchEndpoints();
         app.RegisterWorkspaceOnboardingEndpoints();
 
         // Document
