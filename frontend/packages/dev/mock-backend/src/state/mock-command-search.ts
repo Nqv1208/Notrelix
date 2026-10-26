@@ -5,6 +5,7 @@
  * what the viewer may see of it. Matching ignores case and marks ("hoa don"
  * finds "hoá đơn").
  */
+import { readBlockBody } from "../contexts/documents/block-body";
 import type { MockStore } from "./mock-store";
 import type { MockCardRecord } from "./records";
 
@@ -169,10 +170,10 @@ export function commandSearch(
       : null;
     if (!match) {
       for (const block of store.getPageBlocks(page.id)) {
-        const text = String(
-          (JSON.parse(block.properties || "{}") as { text?: string }).text ??
-            "",
-        ).replace(/\[\[task:[^\]]*\]\]/g, "");
+        const text = readBlockBody(block).text.replace(
+          /\[\[task:[^\]]*\]\]/g,
+          "",
+        );
         if (contains(text, needle)) {
           match = { kind: "content", snippet: snippet(text, needle, 44, true) };
           break;

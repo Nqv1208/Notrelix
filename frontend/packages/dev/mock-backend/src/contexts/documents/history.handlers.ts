@@ -2,6 +2,7 @@ import { defineMockOperation } from "../../operations/types";
 import { ok, notFound } from "../../transport/create-response";
 import { INVOICE_DOC_ID, invoiceSnapshot } from "../../state/mock-docs-invoice";
 import { toBlockDto } from "./blocks.handlers";
+import { readBlockBody, writeBlockBody } from "./block-body";
 type HistoryDtoApi = any;
 
 export const historyOperations = [
@@ -59,9 +60,12 @@ export const historyOperations = [
           const properties =
             override === undefined
               ? b.properties
-              : JSON.stringify({
-                  ...(JSON.parse(b.properties || "{}") as object),
-                  text: override,
+              : writeBlockBody({
+                  content: {
+                    v: 1,
+                    runs: [{ text: override, marks: [] }],
+                  },
+                  properties: readBlockBody(b).properties,
                 });
           return [toBlockDto({ ...b, properties })];
         }),

@@ -11,6 +11,7 @@
  */
 import { defineMockOperation } from "../../operations/types";
 import { notFound, ok } from "../../transport/create-response";
+import { readBlockBody } from "./block-body";
 import {
   INVOICE_BACKLINKS,
   INVOICE_DOC_ID,
@@ -72,6 +73,7 @@ export const pageExtrasOperations = [
             };
             return (
               content.linkedPageId === page.id ||
+              readBlockBody(block).properties.pageId === page.id ||
               (content.pageMentionIds ?? []).includes(page.id)
             );
           } catch {

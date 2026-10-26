@@ -5,6 +5,7 @@ import { defaultConfig } from "../config/mock-config";
 import { MockStore } from "../state/mock-store";
 import { INVOICE_DOC_ID } from "../state/mock-docs-invoice";
 import { mockIds } from "../state/mock-ids";
+import { readBlockBody } from "../contexts/documents/block-body";
 import { createMockFetch } from "../transport/create-mock-fetch";
 
 const endpoints = {
@@ -129,6 +130,7 @@ describe("Documents page extras in the mock world (CTR-GAP-DOCS-PAGE-EXT)", () =
         pageId: INVOICE_DOC_ID,
         type: "todo",
         properties: JSON.parse(line.properties),
+        version: line.version,
         position: 0,
         parentId: null,
         createdById: "",
@@ -141,11 +143,10 @@ describe("Documents page extras in the mock world (CTR-GAP-DOCS-PAGE-EXT)", () =
     expect(task.title).toBe("Đào tạo nhóm Công nợ về đối chiếu tự động");
     expect(store.getCard(task.id)?.title).toBe(task.title);
     expect(
-      JSON.parse(
-        store.getPageBlocks(INVOICE_DOC_ID).find((b) => b.id === line.id)!
-          .properties,
-      ).linkedTaskId,
-    ).toBe(task.id);
+      readBlockBody(
+        store.getPageBlocks(INVOICE_DOC_ID).find((b) => b.id === line.id)!,
+      ).text,
+    ).toBe(`[[task:${task.id}]]`);
   });
 
   it("retypes a block in place, converting its content, and keeps trashed pages out of reads", async () => {
@@ -153,15 +154,18 @@ describe("Documents page extras in the mock world (CTR-GAP-DOCS-PAGE-EXT)", () =
     const line = store
       .getPageBlocks(INVOICE_DOC_ID)
       .find((block) => block.type === "todo")!;
+    const readVersion = line.version;
     await client.api.patch(`/pages/${INVOICE_DOC_ID}/blocks/${line.id}`, {
       type: "callout",
+      expectedVersion: readVersion,
     });
     const after = store
       .getPageBlocks(INVOICE_DOC_ID)
       .find((b) => b.id === line.id)!;
     expect(after.type).toBe("callout");
-    expect(JSON.parse(after.properties).checked).toBeUndefined();
-    expect(JSON.parse(after.properties).text).toBeTruthy();
+    expect(readBlockBody(after).properties.checked).toBeUndefined();
+    expect(readBlockBody(after).text).toBeTruthy();
+    expect(after.version).toBe(readVersion + 1);
 
     await client.api.post(`/pages/${INVOICE_DOC_ID}/archive`, {});
     await expect(

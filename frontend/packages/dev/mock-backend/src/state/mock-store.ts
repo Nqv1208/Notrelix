@@ -4063,10 +4063,11 @@ export class MockStore {
   }
 
   createBlock(pageId: string, data: Partial<MockBlockRecord>): MockBlockRecord {
-    const id = this.nextId("block");
+    const id = data.id ?? this.nextId("block");
     const block: MockBlockRecord = {
       id,
       pageId,
+      parentBlockId: data.parentBlockId ?? null,
       type: data.type || "paragraph",
       properties: data.properties || "{}",
       position: data.position ?? 0,
@@ -4086,12 +4087,25 @@ export class MockStore {
     if (!block) return null;
     if (data.type !== undefined) block.type = data.type;
     if (data.properties !== undefined) block.properties = data.properties;
+    if (data.parentBlockId !== undefined) {
+      block.parentBlockId = data.parentBlockId;
+    }
+    if (data.position !== undefined) block.position = data.position;
+    block.version += 1;
     block.updatedAt = this.clock.isoNow();
     return block;
   }
 
   deleteBlock(id: string): boolean {
     return this.blocksById.delete(id);
+  }
+
+  /** Puts a page's blocks back as they were (a refused batch leaves no trace). */
+  restorePageBlocks(pageId: string, snapshot: readonly MockBlockRecord[]) {
+    for (const block of this.getPageBlocks(pageId)) {
+      this.blocksById.delete(block.id);
+    }
+    for (const block of snapshot) this.blocksById.set(block.id, { ...block });
   }
 
   getPageComments(pageId: string): MockPageCommentRecord[] {
