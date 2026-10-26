@@ -58,7 +58,8 @@ export interface OnboardingJoinSurfaceProps {
   readonly copy: OnboardingCopy;
   readonly email: string;
   readonly org: { readonly name: string; readonly initials: string };
-  readonly inviterName: string;
+  /** Null when the producer does not say who invited the person. */
+  readonly inviterName: string | null;
   readonly spaces: readonly JoinSpace[];
   readonly displayName: string;
   readonly initials: string;
@@ -179,7 +180,9 @@ export function OnboardingJoinSurface(props: OnboardingJoinSurfaceProps) {
             {fillOnboarding(t.title, { name: firstName, org: props.org.name })}
           </h1>
           <p className="m-0 text-item-prose leading-normal text-muted-foreground">
-            {fillOnboarding(t.lead, { inviter: props.inviterName })}
+            {props.inviterName
+              ? fillOnboarding(t.lead, { inviter: props.inviterName })
+              : t.leadNoInviter}
           </p>
         </div>
       </div>

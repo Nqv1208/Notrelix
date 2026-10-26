@@ -271,6 +271,8 @@ export const en = {
   join: {
     title: "Hello {{name}}, you are in {{org}}",
     lead: "{{inviter}} invited you. Set up a few things below, change them any time.",
+    leadNoInviter:
+      "You are now a member. Set up a few things below, change them any time.",
     accessTitle: "What you can open",
     memberBadge: "Member",
     roles: { owner: "Owner", admin: "Admin", member: "Member", guest: "Guest" },
@@ -591,6 +593,8 @@ export const vi: OnboardingCopy = {
   join: {
     title: "Chào {{name}}, bạn đã vào {{org}}",
     lead: "{{inviter}} đã mời bạn. Thiết lập nhanh vài thứ dưới đây, đổi lại lúc nào cũng được.",
+    leadNoInviter:
+      "Bạn đã là thành viên. Thiết lập nhanh vài thứ dưới đây, đổi lại lúc nào cũng được.",
     accessTitle: "Bạn vào được",
     memberBadge: "Thành viên",
     roles: {

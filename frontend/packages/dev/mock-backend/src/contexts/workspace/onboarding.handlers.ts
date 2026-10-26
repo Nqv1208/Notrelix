@@ -5,13 +5,12 @@
  *   Workspaces.Onboarding.GetGettingStarted / DismissGettingStarted
  *
  * (departments, invitations and the first board go through CreateSpace,
- * InviteMember and Boards.Create.) What has no usable producer stays a gap
- * (`CTR-GAP-ONBOARD-FLOW`): the department and board-template catalogue and
- * the invited person's first-visit read and write. The address check and the
- * workspace create are the Account's routes (Workspaces.Workspaces.*).
- *
-   onboarding.catalog            — GET    /onboarding/catalog?size=&name=
- *   onboarding.join.get/save      — GET/PUT /workspaces/:id/onboarding/join
+ * InviteMember and Boards.Create; the address check and the workspace create
+ * are the Account's routes, Workspaces.Workspaces.*.) The department and
+ * board-template suggestions are the page's own starting points, and the
+ * first visit of an invited person is composed from the workspace, membership,
+ * Space tree, Boards, profile and notification-preference operations: none of
+ * them is an operation of its own.
  */
 import { defineMockOperation } from "../../operations/types";
 import {
@@ -23,19 +22,12 @@ import {
   validationError,
 } from "../../transport/create-response";
 import {
-  BOARD_TEMPLATES,
-  COMPANY_SIZES,
-  DEPARTMENT_COLORS,
   SLUG_PATTERN,
-  departmentSuggestions,
   isSlugTaken,
   suggestSlug,
-  type CompanySize,
   type OnboardingDraft,
 } from "../../state/mock-onboarding";
 import type { MockStore } from "../../state/mock-store";
-
-const gap = { kind: "gap", gapId: "CTR-GAP-ONBOARD-FLOW" } as const;
 
 /** Addresses no workspace may take (Workspaces config). */
 const RESERVED_SLUGS = new Set([
@@ -71,11 +63,6 @@ const slugTaken = (store: MockStore) => (slug: string) =>
     slug,
     store.getWorkspaces().map((workspace) => workspace.slug),
   );
-
-const sizeOf = (value: string | null | undefined): CompanySize =>
-  (COMPANY_SIZES as readonly string[]).includes(value ?? "")
-    ? (value as CompanySize)
-    : "m";
 
 export const onboardingOperations = [
   defineMockOperation<Record<string, never>, never, unknown>({
@@ -130,28 +117,6 @@ export const onboardingOperations = [
         slug,
       });
       return created(workspace.id);
-    },
-  }),
-
-  defineMockOperation<Record<string, never>, never, unknown>({
-    id: "onboarding.catalog",
-    contract: gap,
-    method: "GET",
-    route: "/onboarding/catalog",
-    async handle({ request }) {
-      const size = sizeOf(request.searchParams.get("size"));
-      const suggestions = departmentSuggestions(
-        size,
-        request.searchParams.get("name") ?? "",
-      );
-      return ok({
-        size,
-        industry: suggestions.industry,
-        departments: suggestions.departments,
-        extras: suggestions.extras,
-        colors: DEPARTMENT_COLORS,
-        boardTemplates: BOARD_TEMPLATES,
-      });
     },
   }),
 
@@ -263,88 +228,6 @@ export const onboardingOperations = [
     async handle({ params, store }) {
       if (!store.isCurrentMemberOf(params.workspaceId)) return notFound();
       store.onboarding.dismiss(params.workspaceId);
-      return noContent();
-    },
-  }),
-
-  defineMockOperation<{ workspaceId: string }, never, unknown>({
-    id: "onboarding.join.get",
-    contract: gap,
-    method: "GET",
-    route: "/workspaces/:workspaceId/onboarding/join",
-    async handle({ params, store }) {
-      const workspace = store.getWorkspace(params.workspaceId);
-      if (!workspace || !store.isCurrentMemberOf(params.workspaceId))
-        return notFound();
-      const user = store.getCurrentUser();
-      const viewer = store.spaceViewer(params.workspaceId);
-      const spaces = store.spaces
-        .spacesOf(params.workspaceId)
-        .filter(
-          (space) =>
-            !space.archived &&
-            !space.parentId &&
-            store.spaces.accessFor(space.id, viewer) !== null,
-        )
-        .map((space) => {
-          const boards = store
-            .getBoards(params.workspaceId)
-            .filter((board) => board.spaceId === space.id && !board.isArchived);
-          return {
-            id: space.id,
-            name: space.name,
-            color: space.color ?? null,
-            open: space.visibility === "Workspace",
-            access: store.spaces.accessFor(space.id, viewer),
-            boards: boards.map((board) => ({
-              id: board.id,
-              title: board.title,
-              level: "editor" as const,
-            })),
-          };
-        });
-      const profile = store.onboarding.profileOf(
-        `${params.workspaceId}:${user.id}`,
-      );
-      return ok({
-        workspace: {
-          id: workspace.id,
-          name: workspace.name,
-          memberCount: store.getWorkspaceMembers(workspace.id).length,
-        },
-        inviterName: "Nguyễn Thu Hà",
-        role: store.getCurrentMemberRole(workspace.id) ?? "member",
-        spaces,
-        profile: {
-          displayName: profile?.displayName ?? user.name,
-          notifyEmail: profile?.notifyEmail ?? "digest",
-        },
-        companyAccent: "blue",
-      });
-    },
-  }),
-
-  defineMockOperation<
-    { workspaceId: string },
-    { displayName?: string; notifyEmail?: string },
-    unknown
-  >({
-    id: "onboarding.join.save",
-    contract: gap,
-    method: "PUT",
-    route: "/workspaces/:workspaceId/onboarding/join",
-    async handle({ params, body, store }) {
-      if (!store.isCurrentMemberOf(params.workspaceId)) return notFound();
-      const displayName = (body?.displayName ?? "").trim();
-      if (!displayName)
-        return validationError({ displayName: ["Enter your name."] });
-      store.onboarding.saveProfile(
-        `${params.workspaceId}:${store.getCurrentUser().id}`,
-        {
-          displayName,
-          notifyEmail: body?.notifyEmail === "mentions" ? "mentions" : "digest",
-        },
-      );
       return noContent();
     },
   }),
