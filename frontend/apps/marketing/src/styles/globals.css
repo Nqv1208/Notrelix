@@ -2148,3 +2148,126 @@ html[data-theme-changing="true"] .final-cta {
     transition: none !important;
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* Hero product preview                                                */
+/* ------------------------------------------------------------------ */
+
+.hero-preview {
+  display: flex;
+  flex-direction: column;
+  border-radius: 1rem;
+}
+
+.hero-preview__chrome {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-bottom: 1px solid var(--mkt-border);
+  padding: 0.55rem 0.9rem;
+  background: var(--mkt-surface-raised);
+}
+
+.hero-preview__dot {
+  display: none;
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 9999px;
+  background: var(--mkt-border-strong);
+}
+
+.hero-preview__url {
+  display: none;
+  border-radius: 0.45rem;
+  padding: 0.2rem 0.7rem;
+  background: var(--mkt-bg-soft);
+  color: var(--mkt-text-muted);
+  font-size: 0.66rem;
+  font-weight: 500;
+}
+
+.hero-preview__tabs {
+  display: flex;
+  margin-inline: auto 0;
+  gap: 0.15rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.hero-preview__tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.hero-preview__tab {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 0.5rem;
+  padding: 0.35rem 0.6rem;
+  color: var(--mkt-text-muted);
+  font-size: 0.7rem;
+  font-weight: 650;
+  transition:
+    background-color 180ms ease,
+    color 180ms ease;
+}
+.hero-preview__tab:hover {
+  color: var(--mkt-text);
+}
+.hero-preview__tab.is-active {
+  background: color-mix(in srgb, var(--mkt-brand-blue-500) 12%, transparent);
+  color: var(--mkt-brand-blue-600);
+}
+.dark .hero-preview__tab.is-active {
+  color: var(--mkt-brand-blue-300);
+}
+
+.hero-preview__stage {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  background: var(--mkt-surface);
+}
+
+.hero-preview__layer {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 320ms ease,
+    visibility 0s linear 320ms;
+}
+.hero-preview__layer.is-active {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+.hero-preview__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top left;
+}
+.hero-preview__img--dark {
+  display: none;
+}
+.dark .hero-preview__img--light {
+  display: none;
+}
+.dark .hero-preview__img--dark {
+  display: block;
+}
+
+@media (min-width: 640px) {
+  .hero-preview__dot {
+    display: block;
+  }
+  .hero-preview__url {
+    display: inline-block;
+  }
+  .hero-preview__chrome {
+    padding-inline: 1.1rem;
+  }
+}

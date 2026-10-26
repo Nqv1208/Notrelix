@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "turbo dev",
     "dev:marketing": "pnpm --filter @notrelix/app-marketing dev",
+    "marketing:previews": "node ./scripts/capture-marketing-previews.mjs",
     "dev:web": "pnpm --filter @notrelix/app-web dev",
     "dev:web:mock": "pnpm --filter @notrelix/app-web dev:mock",
     "dev:mobile": "pnpm --filter @notrelix/app-mobile dev",

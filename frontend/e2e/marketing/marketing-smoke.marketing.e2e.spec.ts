@@ -78,6 +78,42 @@ test.describe("Marketing Smoke", () => {
     await expect(signUpCta).toHaveAttribute("href", /\/sign-up$/);
   });
 
+  test("hero preview tabs switch the product screenshot", async ({ page }) => {
+    await page.goto("/");
+
+    const tablist = page.locator("#hero").getByRole("tablist", {
+      name: "Product views",
+    });
+    await expect(tablist.getByRole("tab")).toHaveText([
+      "Table",
+      "Kanban",
+      "Timeline",
+      "Calendar",
+    ]);
+
+    const visibleImage = page.locator(
+      "#hero .hero-preview__layer.is-active .hero-preview__img--light",
+    );
+    await expect(visibleImage).toHaveAttribute("alt", /Table view/);
+    await expect(visibleImage).toHaveAttribute("src", /table-light/);
+
+    await tablist.getByRole("tab", { name: "Timeline" }).click();
+    await expect(visibleImage).toHaveAttribute("alt", /Timeline view/);
+    await expect(visibleImage).toHaveAttribute("src", /timeline-light/);
+
+    await tablist.getByRole("tab", { name: "Timeline" }).focus();
+    await page.keyboard.press("ArrowRight");
+    await expect(
+      tablist.getByRole("tab", { name: "Calendar" }),
+    ).toHaveAttribute("aria-selected", "true");
+    await expect(visibleImage).toHaveAttribute("alt", /Calendar view/);
+
+    await page.keyboard.press("ArrowLeft");
+    await expect(
+      tablist.getByRole("tab", { name: "Timeline" }),
+    ).toHaveAttribute("aria-selected", "true");
+  });
+
   test("header nav anchors navigate to sections", async ({ page }) => {
     await page.goto("/");
 
