@@ -84,7 +84,7 @@ import { useDocPanelOpen } from "./use-doc-panel-open";
 import { useDocViewPrefs } from "./use-doc-view-prefs";
 import { runClipboardAction } from "../editor/clipboard-actions";
 import { docStats } from "../editor/doc-stats";
-import { OPEN_LINK_EVENT } from "../editor/editor-toolbar";
+import { OPEN_LINK_EVENT, editorDom } from "../editor/editor-toolbar";
 import type { DocMediaHost } from "../editor/media-host";
 import { PENDING_ID, anchorFromSelection } from "../editor/comment-anchors";
 import { revealHeading, useDocSummary } from "../editor/outline";
@@ -667,10 +667,8 @@ export function createDocPageScreen({
     // Spell check follows the viewer's choice (Tools menu).
     const spellcheck = viewPrefs.prefs.spellcheck;
     useEffect(() => {
-      richEditor.editor?.view.dom.setAttribute(
-        "spellcheck",
-        String(spellcheck),
-      );
+      const dom = richEditor.editor ? editorDom(richEditor.editor) : null;
+      dom?.setAttribute("spellcheck", String(spellcheck));
     }, [richEditor.editor, spellcheck]);
 
     // Page-level keys that work outside the text too: new page, version
@@ -1263,7 +1261,9 @@ export function createDocPageScreen({
           }
           window.setTimeout(
             () =>
-              current.view.dom.dispatchEvent(new CustomEvent(OPEN_LINK_EVENT)),
+              editorDom(current)?.dispatchEvent(
+                new CustomEvent(OPEN_LINK_EVENT),
+              ),
             0,
           );
         }

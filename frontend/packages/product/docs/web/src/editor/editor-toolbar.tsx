@@ -336,7 +336,8 @@ export function EditorToolbar({
 
   // "Insert link" from the menu or the keyboard opens the link form here.
   useEffect(() => {
-    const dom = editor.view.dom;
+    const dom = editorDom(editor);
+    if (!dom) return;
     const open = () => setLinkOpen(true);
     dom.addEventListener(OPEN_LINK_EVENT, open);
     return () => dom.removeEventListener(OPEN_LINK_EVENT, open);
@@ -821,3 +822,12 @@ export function EditorToolbar({
 
 /** Dispatched on the editor's element to open the toolbar's link form. */
 export const OPEN_LINK_EVENT = "doc-open-link";
+
+/** The editor's element, or null while the editor is not mounted yet. */
+export function editorDom(editor: Editor): HTMLElement | null {
+  try {
+    return editor.isDestroyed ? null : editor.view.dom;
+  } catch {
+    return null;
+  }
+}
