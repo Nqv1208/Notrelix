@@ -20,6 +20,11 @@ import { Placeholder } from "@tiptap/extensions";
 import { isSafeHref, type BlockDraft } from "@notrelix/docs-core";
 import type { DocPageCopy } from "../components/doc-page.copy";
 import {
+  DocTableOfContents,
+  jumpToBlock,
+} from "../components/doc-table-of-contents";
+import { useDocSummary } from "./outline";
+import {
   toggleCollapseAtSelection,
   toggleCollapsePlugin,
 } from "./toggle-collapse";
@@ -88,6 +93,7 @@ const BLOCK_NODES = [
   ...TEXT_NODES,
   "codeBlock",
   "horizontalRule",
+  "tableOfContents",
   "boardReference",
   "pageReference",
   "table",
@@ -639,6 +645,46 @@ export const PageReference = referenceNode("pageReference", {
   linkedPageId: 1,
 });
 
+/** The page's live outline as links to its headings; the block stores nothing. */
+export const TableOfContents = Node.create<{ context: ContextHolder }>({
+  name: "tableOfContents",
+  group: "block",
+  atom: true,
+  selectable: true,
+  draggable: false,
+  addOptions() {
+    return { context: undefined as unknown as ContextHolder };
+  },
+  parseHTML() {
+    return [{ tag: 'div[data-doc-node="tableOfContents"]' }];
+  },
+  renderHTML({ HTMLAttributes }) {
+    return [
+      "div",
+      mergeAttributes(HTMLAttributes, { "data-doc-node": "tableOfContents" }),
+    ];
+  },
+  addNodeView() {
+    const context = this.options.context;
+    return ReactNodeViewRenderer((props: NodeViewProps) => {
+      const summary = useDocSummary(props.editor);
+      useContextVersion(context);
+      return (
+        <NodeViewWrapper
+          data-block={String(props.node.attrs.blockId)}
+          contentEditable={false}
+        >
+          <DocTableOfContents
+            entries={summary?.outline ?? []}
+            copy={context.current.copy}
+            onJump={(id) => jumpToBlock(props.editor.view.dom, id)}
+          />
+        </NodeViewWrapper>
+      );
+    });
+  },
+});
+
 /** A block type the editor cannot edit yet is kept whole and shown as a note. */
 export const UnsupportedBlock = Node.create<{ context: ContextHolder }>({
   name: "unsupportedBlock",
@@ -837,6 +883,7 @@ export function createDocExtensions({
     ...TABLE_EXTENSIONS,
     BoardReference.configure({ context }),
     PageReference.configure({ context }),
+    TableOfContents.configure({ context }),
     ImageBlock.configure({ context }),
     FileBlock.configure({ context }),
     UploadPlaceholder.configure({ context }),

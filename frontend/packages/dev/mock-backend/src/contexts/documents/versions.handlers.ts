@@ -46,6 +46,7 @@ const PRODUCER_TYPE: Record<string, string> = {
   table: "Table",
   callout: "Callout",
   page_reference: "PageReference",
+  table_of_contents: "TableOfContents",
 };
 
 function problem(

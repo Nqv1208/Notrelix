@@ -330,6 +330,7 @@ export function buildMenus(ctx: MenuContext): Record<MenuKey, MenuEntry[]> {
       ),
     },
     blockItem("divider", m.insert.divider),
+    blockItem("table_of_contents", m.insert.tableOfContents),
     blockItem("callout", m.insert.callout),
     blockItem("quote", m.insert.quote),
     blockItem("toggle", m.insert.toggle),

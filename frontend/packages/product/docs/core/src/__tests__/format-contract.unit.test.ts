@@ -5,6 +5,7 @@ import {
   propertiesFromWire,
   propertiesToWire,
   tableColumnCount,
+  blockFromWire,
   tableFromWire,
   tableToWire,
   exportHtml,
@@ -142,5 +143,25 @@ describe("merged table cells", () => {
       colWidths: [100, null],
     }) as { colWidths: unknown[] };
     expect(wire.colWidths).toEqual([100, null]);
+  });
+});
+
+describe("table of contents block", () => {
+  it("has no properties either way and reads from the producer name", () => {
+    expect(propertiesToWire("table_of_contents", { align: "center" })).toEqual(
+      {},
+    );
+    expect(propertiesFromWire("table_of_contents", { x: 1 })).toEqual({});
+    const block = blockFromWire(
+      {
+        id: "t",
+        pageId: "p",
+        type: "TableOfContents",
+        content: {},
+        properties: {},
+      } as never,
+      1,
+    );
+    expect(block.type).toBe("table_of_contents");
   });
 });

@@ -207,6 +207,7 @@ export const vi = {
       codeBlock: "Khối mã",
       callout: "Ghi chú nổi bật",
       toggle: "Mục thu gọn",
+      tableOfContents: "Mục lục",
       quote: "Trích dẫn",
       checklist: "Danh sách kiểm",
       bulleted: "Danh sách gạch đầu dòng",
@@ -376,6 +377,10 @@ export const vi = {
     emptyDoc: "Gõ / để thêm tiêu đề, danh sách việc, bảng hoặc ghi chú.",
     unsupported:
       "Khối này chưa chỉnh sửa được ở đây; nội dung vẫn được giữ nguyên.",
+    tableOfContents: {
+      title: "Mục lục",
+      empty: "Thêm tiêu đề vào trang để mục lục hiện ở đây.",
+    },
     codeLanguage: "Ngôn ngữ của khối mã",
     codePlain: "Văn bản thuần",
     boardReference: {
@@ -453,6 +458,7 @@ export const vi = {
       code: "Mã",
       callout: "Ghi chú nổi bật",
       toggle: "Mục thu gọn",
+      table_of_contents: "Mục lục",
       page_reference: "Liên kết trang",
       board_reference: "Danh sách việc",
       table: "Bảng",
@@ -932,6 +938,7 @@ export const en: DocPageCopy = {
       codeBlock: "Code block",
       callout: "Callout",
       toggle: "Toggle list",
+      tableOfContents: "Table of contents",
       quote: "Quote",
       checklist: "Checklist",
       bulleted: "Bulleted list",
@@ -1102,6 +1109,10 @@ export const en: DocPageCopy = {
     emptyDoc: "Type / to add a heading, task list, table or callout.",
     unsupported:
       "This block can't be edited here yet; its content is kept as is.",
+    tableOfContents: {
+      title: "Table of contents",
+      empty: "Add headings to the page and they will show here.",
+    },
     codeLanguage: "Code block language",
     codePlain: "Plain text",
     boardReference: {
@@ -1179,6 +1190,7 @@ export const en: DocPageCopy = {
       code: "Code",
       callout: "Callout",
       toggle: "Toggle list",
+      table_of_contents: "Table of contents",
       page_reference: "Page link",
       board_reference: "Task list",
       table: "Table",

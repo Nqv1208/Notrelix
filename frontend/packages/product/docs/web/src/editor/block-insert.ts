@@ -66,6 +66,20 @@ export function insertBlockType(
     if (blockId) (board ? hosts.onPickBoard : hosts.onPickPage)?.(blockId);
     return true;
   }
+  if (type === "table_of_contents") {
+    const { $from } = editor.state.selection;
+    const blockId = $from.parent.attrs.blockId as string | undefined;
+    const pos = $from.before();
+    // The empty block becomes the outline; a paragraph after it keeps the caret out of an atom.
+    return editor
+      .chain()
+      .focus()
+      .insertContentAt({ from: pos, to: pos + $from.parent.nodeSize }, [
+        { type: "tableOfContents", attrs: { blockId } },
+        { type: "paragraph" },
+      ])
+      .run();
+  }
   if (type === "table") return insertTableBlock(editor);
   if (type === "image" || type === "file") {
     void pickMedia(editor, type);

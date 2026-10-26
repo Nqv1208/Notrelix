@@ -18,7 +18,8 @@ export type BlockType =
   | "file"
   | "table"
   | "board_reference"
-  | "page_reference";
+  | "page_reference"
+  | "table_of_contents";
 
 /** One cell of a table block: rich-text runs and an optional background token. */
 export interface TableCell {

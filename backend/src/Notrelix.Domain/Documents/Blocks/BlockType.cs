@@ -19,5 +19,6 @@ public enum BlockType
     Board,
     Table,
     Callout,
-    PageReference
+    PageReference,
+    TableOfContents
 }

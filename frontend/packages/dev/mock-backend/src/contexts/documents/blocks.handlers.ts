@@ -43,6 +43,7 @@ const PRODUCER_TYPE: Record<string, string> = {
   table: "Table",
   callout: "Callout",
   page_reference: "PageReference",
+  table_of_contents: "TableOfContents",
 };
 const STORE_TYPE: Record<string, string> = {
   ...Object.fromEntries(

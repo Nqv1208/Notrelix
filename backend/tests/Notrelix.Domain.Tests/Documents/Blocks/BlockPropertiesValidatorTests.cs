@@ -191,6 +191,14 @@ public class BlockPropertiesValidatorTests
     }
 
     [Fact]
+    public void TableOfContents_HasNoProperties()
+    {
+        Normalised(BlockType.TableOfContents, "{}").Should().Be("{}");
+        Rejected(BlockType.TableOfContents, "{\"align\":\"left\"}").RuleCode.Should().Be(DocumentRuleCodes.Documents_Block_PropertiesInvalid);
+        Rejected(BlockType.TableOfContents, "{\"x\":1}").RuleCode.Should().Be(DocumentRuleCodes.Documents_Block_PropertiesInvalid);
+    }
+
+    [Fact]
     public void Divider_HasNoProperties()
     {
         Normalised(BlockType.Divider, "{}").Should().Be("{}");

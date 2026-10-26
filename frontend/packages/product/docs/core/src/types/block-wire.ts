@@ -222,6 +222,7 @@ export function propertiesFromWire(
     case "table":
       return { table: tableFromWire(wire) };
     case "divider":
+    case "table_of_contents":
       return {};
     default: {
       const properties = pick(wire, keysOf(type)) as BlockProperties &
@@ -266,6 +267,7 @@ export function propertiesToWire(
     case "table":
       return properties.table ? tableToWire(properties.table) : {};
     case "divider":
+    case "table_of_contents":
       return {};
     default: {
       const wire = pick(source, keysOf(type));
@@ -324,6 +326,7 @@ export function encodeContent(
 function textLike(type: BlockType): boolean {
   return (
     type !== "divider" &&
+    type !== "table_of_contents" &&
     type !== "image" &&
     type !== "file" &&
     type !== "table" &&
@@ -361,6 +364,7 @@ export const FROM_PRODUCER_BLOCK_TYPE: Readonly<Record<string, BlockType>> = {
   Table: "table",
   Callout: "callout",
   PageReference: "page_reference",
+  TableOfContents: "table_of_contents",
 };
 
 /**

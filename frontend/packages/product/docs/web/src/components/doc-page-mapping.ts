@@ -120,6 +120,20 @@ export function toBlockViews(
   context: BlockMappingContext,
 ): DocBlockView[] {
   const sorted = [...blocks].sort((a, b) => a.position - b.position);
+  const headings = sorted.flatMap((block) => {
+    const level =
+      block.type === "heading_1"
+        ? 1
+        : block.type === "heading_2"
+          ? 2
+          : block.type === "heading_3"
+            ? 3
+            : 0;
+    const text = blockText(block).trim();
+    return level && text
+      ? [{ id: block.id, level: level as 1 | 2 | 3, text }]
+      : [];
+  });
   return sorted.map((block): DocBlockView => {
     const text = blockText(block);
     const props = block.properties;
@@ -182,6 +196,8 @@ export function toBlockViews(
         return { id: block.id, kind: "code", text };
       case "divider":
         return { id: block.id, kind: "divider" };
+      case "table_of_contents":
+        return { id: block.id, kind: "tableOfContents", entries: headings };
       case "page_reference": {
         const pageId = props.linkedPageId ?? null;
         const target = pageId ? context.pages?.get(pageId) : undefined;

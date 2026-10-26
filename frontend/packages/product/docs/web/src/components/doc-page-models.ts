@@ -111,6 +111,15 @@ export type DocBlockView =
       readonly text: string;
     })
   | (DocBlockBase & { readonly kind: "divider" })
+  /** The page's headings as links, in reading order. */
+  | (DocBlockBase & {
+      readonly kind: "tableOfContents";
+      readonly entries: readonly {
+        readonly id: string;
+        readonly level: 1 | 2 | 3;
+        readonly text: string;
+      }[];
+    })
   /** A link to another page; `title` is null while none is chosen or when it cannot be read. */
   | (DocBlockBase & {
       readonly kind: "pageReference";

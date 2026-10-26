@@ -39,6 +39,7 @@ const TO_PRODUCER: Readonly<Partial<Record<BlockType, string>>> = {
   table: "Table",
   callout: "Callout",
   page_reference: "PageReference",
+  table_of_contents: "TableOfContents",
 };
 
 /** The block types a page can create on the producer. */

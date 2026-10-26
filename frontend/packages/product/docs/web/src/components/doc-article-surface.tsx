@@ -29,6 +29,7 @@ import { DocRecoverySurface } from "./doc-recovery-surface";
 import { renderMarked } from "./doc-marks";
 import { serializeEditable } from "./doc-page-text";
 import { DocStatusDot, ICON_CLASS } from "./doc-page-ui";
+import { DocTableOfContents, jumpToBlock } from "./doc-table-of-contents";
 import {
   DocMentionMenuSurface,
   DocSlashMenuSurface,
@@ -936,6 +937,18 @@ export function DocArticleSurface({
       }
       case "divider": {
         rendered.push(<hr key={block.id} className="my-4 border-border" />);
+        break;
+      }
+      case "tableOfContents": {
+        rendered.push(
+          <div key={block.id} data-block={block.id}>
+            <DocTableOfContents
+              entries={block.entries}
+              copy={copy}
+              onJump={(id) => jumpToBlock(document, id)}
+            />
+          </div>,
+        );
         break;
       }
       case "liveTable": {

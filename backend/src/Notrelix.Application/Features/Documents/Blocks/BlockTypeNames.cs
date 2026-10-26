@@ -17,6 +17,7 @@ public static class BlockTypeNames
         ["todo"] = BlockType.ToDo,
         ["board_reference"] = BlockType.Board,
         ["page_reference"] = BlockType.PageReference,
+        ["table_of_contents"] = BlockType.TableOfContents,
     };
 
     public static bool TryParse(string value, out BlockType type)

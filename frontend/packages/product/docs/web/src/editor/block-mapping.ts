@@ -42,6 +42,7 @@ const NODE_OF: Readonly<Record<BlockType, string>> = {
   code: "codeBlock",
   toggle: "toggle",
   divider: "horizontalRule",
+  table_of_contents: "tableOfContents",
   board_reference: "boardReference",
   page_reference: "pageReference",
   image: "imageBlock",
@@ -83,6 +84,7 @@ const ALIGNABLE: ReadonlySet<BlockType> = new Set<BlockType>([
 
 const ATOM_TYPES: ReadonlySet<BlockType> = new Set<BlockType>([
   "divider",
+  "table_of_contents",
   "board_reference",
   "page_reference",
   "image",
@@ -385,6 +387,8 @@ function blockTypeOf(node: JSONContent): BlockType {
       return "toggle";
     case "horizontalRule":
       return "divider";
+    case "tableOfContents":
+      return "table_of_contents";
     case "boardReference":
       return "board_reference";
     case "pageReference":

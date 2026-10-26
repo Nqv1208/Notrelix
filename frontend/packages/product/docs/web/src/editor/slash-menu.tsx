@@ -9,6 +9,7 @@ import {
   ListCollapse,
   ListChecks,
   ListOrdered,
+  ListTree,
   Minus,
   Paperclip,
   Pilcrow,
@@ -87,6 +88,11 @@ export const SLASH_ITEMS: readonly SlashItem[] = [
     keywords: "duong ke divider",
   },
   { type: "table", icon: Table2, keywords: "bang table" },
+  {
+    type: "table_of_contents",
+    icon: ListTree,
+    keywords: "muc luc toc table of contents outline",
+  },
   {
     type: "image",
     icon: ImageIcon,
