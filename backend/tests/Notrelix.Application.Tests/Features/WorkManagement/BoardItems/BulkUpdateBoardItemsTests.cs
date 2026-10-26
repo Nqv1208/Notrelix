@@ -124,16 +124,18 @@ public class BulkUpdateBoardItemsTests : WorkManagementHandlerTestBase
     }
 
     [Theory]
-    [InlineData(BulkBoardItemOperations.Assign, PermissionAction.AssignItem)]
-    [InlineData(BulkBoardItemOperations.UnassignAll, PermissionAction.AssignItem)]
-    [InlineData(BulkBoardItemOperations.SetStatus, PermissionAction.UpdateItem)]
-    [InlineData(BulkBoardItemOperations.SetDueDate, PermissionAction.UpdateItem)]
-    [InlineData(BulkBoardItemOperations.Archive, PermissionAction.UpdateItem)]
-    public void Action_FollowsTheOperationAndTheResourceIsTheBoard(string operation, PermissionAction expected)
+    [InlineData(BulkBoardItemOperations.Assign, true)]
+    [InlineData(BulkBoardItemOperations.UnassignAll, true)]
+    [InlineData(BulkBoardItemOperations.SetStatus, false)]
+    [InlineData(BulkBoardItemOperations.SetDueDate, false)]
+    [InlineData(BulkBoardItemOperations.ClearDueDate, false)]
+    [InlineData(BulkBoardItemOperations.Archive, false)]
+    public void Authorization_NeedsUpdateItemOnTheBoard_AndAssignItemToo_WhenAssigneesChange(string operation, bool needsAssign)
     {
         var command = new BulkUpdateBoardItemsCommand(_boardId, operation, [Guid.CreateVersion7()]);
 
-        command.Action.Should().Be(expected);
+        command.Action.Should().Be(PermissionAction.UpdateItem);
+        command.AdditionalActionNames.Should().BeEquivalentTo(needsAssign ? new[] { "AssignItem" } : Array.Empty<string>());
         command.Resource.ResourceId.Should().Be(_boardId);
     }
 

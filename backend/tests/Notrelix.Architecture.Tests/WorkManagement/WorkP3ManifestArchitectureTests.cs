@@ -106,6 +106,7 @@ public sealed class WorkP3ManifestArchitectureTests
         ["BoardItems.AssignBoardItemMemberCommand"] = new(Disposition.Keep, "-"),
         ["BoardItems.UnassignBoardItemMemberCommand"] = new(Disposition.Keep, "-"),
         ["BoardItems.ArchiveBoardItemCommand"] = new(Disposition.Keep, "-"),
+        ["BoardItems.BulkUpdateBoardItemsCommand"] = new(Disposition.Keep, "-"),
         ["BoardItems.UnarchiveBoardItemCommand"] = new(Disposition.Keep, "-"),
         ["BoardItems.DeleteBoardItemCommand"] = new(Disposition.Keep, "-"),
         ["BoardItems.RestoreBoardItemCommand"] = new(Disposition.Keep, "LIFE-001 (done)"),

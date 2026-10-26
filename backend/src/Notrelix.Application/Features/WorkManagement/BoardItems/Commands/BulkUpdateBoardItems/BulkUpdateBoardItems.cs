@@ -42,13 +42,16 @@ public record BulkUpdateBoardItemsCommand(
     IReadOnlyList<Guid> ItemIds,
     string? Status = null,
     DateTime? DueDate = null,
-    Guid? AssigneeUserId = null) : ICommand<BulkUpdateBoardItemsResult>, IWriteRequest, IRequirePermission, IAuthenticatedRequest, IResourceScopedRequest, IIdempotentRequest
+    Guid? AssigneeUserId = null) : ICommand<BulkUpdateBoardItemsResult>, IWriteRequest, IRequirePermission, IRequireAdditionalPermission, IAuthenticatedRequest, IResourceScopedRequest, IIdempotentRequest
 {
-    // Assigning people is its own permission, as it is item by item.
-    public PermissionAction Action =>
+    public PermissionAction Action => PermissionAction.UpdateItem;
+
+    // Assigning people is its own permission, as it is item by item: a request that changes the
+    // assignees needs it as well as UpdateItem, so the bulk change is never wider than the item ones.
+    public IReadOnlyList<string> AdditionalActionNames =>
         Operation is BulkBoardItemOperations.Assign or BulkBoardItemOperations.UnassignAll
-            ? PermissionAction.AssignItem
-            : PermissionAction.UpdateItem;
+            ? [nameof(PermissionAction.AssignItem)]
+            : [];
 
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);
 }
