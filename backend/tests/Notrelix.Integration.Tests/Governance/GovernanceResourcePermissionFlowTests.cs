@@ -1588,6 +1588,8 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
             global::Notrelix.Infrastructure.Documents.Pages.PageBacklinkReader>();
         services.AddScoped<global::Notrelix.Application.Features.Governance.Public.Visibility.IResourceVisibility,
             global::Notrelix.Infrastructure.Data.Authz.PostgresResourceVisibility>();
+        services.AddScoped<global::Notrelix.Application.Features.WorkManagement.Public.ItemNotifications.IWorkItemNotificationFacts,
+            global::Notrelix.Infrastructure.CrossContext.Collaboration.WorkManagement.WorkItemNotificationFactsAdapter>();
         services.AddScoped<global::Notrelix.Application.Features.Governance.Public.Access.IResourceCreatorGrant,
             global::Notrelix.Infrastructure.Data.Authz.ResourceCreatorGrantAdapter>();
         services.AddScoped<

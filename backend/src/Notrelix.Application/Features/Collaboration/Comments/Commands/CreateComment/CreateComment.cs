@@ -3,6 +3,8 @@ using Notrelix.Application.Features.Collaboration.Abstractions;
 using Notrelix.Application.Features.Collaboration.Comments.DTOs;
 using Notrelix.Application.Features.Collaboration.Notifications;
 using Notrelix.Application.Features.Documents.Public.PageBlocks;
+using Notrelix.Application.Features.Governance.Public.Visibility;
+using Notrelix.Application.Features.WorkManagement.Public.ItemNotifications;
 
 namespace Notrelix.Application.Features.Collaboration.Comments.Commands.CreateComment;
 
@@ -29,9 +31,19 @@ public class CreateCommentCommandHandler : IRequestHandler<CreateCommentCommand,
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IPageBlockFacts _pageBlocks;
+    private readonly IWorkItemNotificationFacts _itemFacts;
+    private readonly IResourceVisibility _visibility;
 
-    public CreateCommentCommandHandler(ICollaborationDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider, IPageBlockFacts pageBlocks)
+    public CreateCommentCommandHandler(
+        ICollaborationDbContext context,
+        ICurrentRequestContext requestContext,
+        IDateTimeProvider dateTimeProvider,
+        IPageBlockFacts pageBlocks,
+        IWorkItemNotificationFacts itemFacts,
+        IResourceVisibility visibility)
     {
+        _itemFacts = itemFacts;
+        _visibility = visibility;
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
@@ -70,8 +82,16 @@ public class CreateCommentCommandHandler : IRequestHandler<CreateCommentCommand,
         _context.Comments.Add(comment);
 
         var excerpt = NotificationExcerpt.From(request.ContentMd);
+        var boardId = await ResolveMentionBoardAsync(request, workspaceId, ct);
         foreach (var mentionedUserId in DistinctMentionedUsers(request.MentionedUserIds))
         {
+            // A mention of someone who cannot view the Item's Board stays in the comment text but creates no
+            // Mention, so no Inbox notification reaches a person who could not open the Item.
+            if (boardId is { } board && !await CanViewBoardAsync(workspaceId, mentionedUserId, board, ct))
+            {
+                continue;
+            }
+
             var mention = Mention.Create(
                 accountId,
                 workspaceId,
@@ -85,6 +105,28 @@ public class CreateCommentCommandHandler : IRequestHandler<CreateCommentCommand,
         }
 
         return Result<Guid>.Success(comment.Id);
+    }
+
+    /// <summary>
+    /// For an Item comment, the Board that decides who may be notified (Work Management fact). An Item that no
+    /// longer exists yields <see cref="Guid.Empty"/>, which no one can view, so nobody is notified (fail closed).
+    /// Page comments have no Board and keep their existing behaviour.
+    /// </summary>
+    private async Task<Guid?> ResolveMentionBoardAsync(CreateCommentCommand request, Guid workspaceId, CancellationToken ct)
+    {
+        if (request.IsPageComment || request.MentionedUserIds is not { Count: > 0 })
+        {
+            return null;
+        }
+
+        var facts = await _itemFacts.FindAsync(workspaceId, request.ResourceId, null, ct);
+        return facts?.BoardId ?? Guid.Empty;
+    }
+
+    private async Task<bool> CanViewBoardAsync(Guid workspaceId, Guid userId, Guid boardId, CancellationToken ct)
+    {
+        var visible = await _visibility.VisibleBoardIdsAsync(workspaceId, userId, ct);
+        return visible.Contains(boardId);
     }
 
     /// <summary>
