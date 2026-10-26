@@ -287,6 +287,49 @@ describe("WorkspaceOnboardingSurface", () => {
 });
 
 describe("CreateResourceDialog", () => {
+  it("FUI[workspace.create-resource:template] offers workspace templates for a Doc and submits the chosen one", async () => {
+    const onSubmit = vi.fn();
+    renderPureUi(
+      <CreateResourceDialog
+        copy={copy}
+        kind="doc"
+        pending={false}
+        error={null}
+        templates={[{ id: "tpl-1", name: "Meeting notes" }]}
+        onOpenChange={vi.fn()}
+        onSubmit={onSubmit}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText(copy.create.docLabel), {
+      target: { value: "Weekly sync" },
+    });
+    fireEvent.click(
+      screen.getByRole("combobox", { name: copy.create.templateLabel }),
+    );
+    fireEvent.click(
+      await screen.findByRole("option", { name: "Meeting notes" }),
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.create.submitDoc }),
+    );
+    expect(onSubmit).toHaveBeenCalledWith("doc", "Weekly sync", "tpl-1");
+  });
+
+  it("FUI[workspace.create-resource:no-template] shows no template choice for a Board or without templates", () => {
+    renderPureUi(
+      <CreateResourceDialog
+        copy={copy}
+        kind="board"
+        pending={false}
+        error={null}
+        templates={[{ id: "tpl-1", name: "Meeting notes" }]}
+        onOpenChange={vi.fn()}
+        onSubmit={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText(copy.create.templateLabel)).toBeNull();
+  });
+
   it("FUI[workspace.create-resource:submit] submits the trimmed name for the requested kind", () => {
     const onSubmit = vi.fn();
     renderPureUi(

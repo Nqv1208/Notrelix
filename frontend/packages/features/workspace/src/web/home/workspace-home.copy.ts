@@ -51,6 +51,8 @@ export const en = {
     required: "Enter a name to continue.",
     error: "It couldn't be created. Check your connection, then try again.",
     inSpace: "It will be placed in {{space}}.",
+    templateLabel: "Start from",
+    templateBlank: "Blank page",
   },
   work: {
     weekdays: {
@@ -349,6 +351,8 @@ export const en = {
     completeFailed: "{{name}} couldn't be marked complete.",
     completeFailedHint: "It's still open. Try again in a moment.",
     created: "{{name}} is ready.",
+    templateDropped:
+      "{{count}} images, files or videos were not copied from the template.",
     approved: "Approved {{name}}.",
     changesRequested: "Asked for changes on {{name}}.",
     reopened: "{{name}} is open again.",
@@ -413,6 +417,8 @@ export const vi: WorkspaceHomeCopy = {
     required: "Nhập tên để tiếp tục.",
     error: "Không tạo được. Kiểm tra kết nối rồi thử lại.",
     inSpace: "Mục này sẽ được đặt trong {{space}}.",
+    templateLabel: "Bắt đầu từ",
+    templateBlank: "Trang trống",
   },
   work: {
     weekdays: {
@@ -712,6 +718,8 @@ export const vi: WorkspaceHomeCopy = {
     completeFailed: "Không đánh dấu hoàn thành được {{name}}.",
     completeFailedHint: "Mục vẫn đang mở. Hãy thử lại sau giây lát.",
     created: "{{name}} đã sẵn sàng.",
+    templateDropped:
+      "{{count}} ảnh, tệp hoặc video không được sao chép từ mẫu.",
     approved: "Đã duyệt {{name}}.",
     changesRequested: "Đã yêu cầu sửa {{name}}.",
     reopened: "Đã mở lại {{name}}.",
