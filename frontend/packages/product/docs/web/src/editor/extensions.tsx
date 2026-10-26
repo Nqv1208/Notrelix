@@ -34,6 +34,7 @@ import { createCodeBlock } from "./code-block";
 import { DocMedia, FileBlock, ImageBlock, UploadPlaceholder } from "./media";
 import type { DocMediaHost } from "./media-host";
 import { COLOR_CLASS, HIGHLIGHT_CLASS } from "./mark-classes";
+import { FindReplace } from "./find-replace";
 import { TABLE_EXTENSIONS } from "./table";
 
 /** What the node views need from the page; the host keeps it current. */
@@ -738,6 +739,7 @@ export function createDocExtensions({
     }),
     createCodeBlock(context),
     BlockId,
+    FindReplace,
     ColorToken,
     HighlightToken,
     MentionUser,
