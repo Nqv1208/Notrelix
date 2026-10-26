@@ -10,6 +10,11 @@ import {
   pluralCopy,
   type KanbanCardCopy,
 } from "./kanban-card.copy";
+import {
+  KanbanCardQuickActions,
+  isAssignedTo,
+  type KanbanCardActions,
+} from "./kanban-card-quick-actions";
 import { prefersReducedMotion } from "./kanban-chrome";
 import { KANBAN_CARD_TYPE } from "./kanban-collision";
 import type { KanbanMoveDirection } from "./kanban-dnd";
@@ -381,8 +386,8 @@ export function KanbanCardOverlay({
  * plain click still opens, and a touch drag starts after a long press. While
  * it is dragged the card stays in its lane as a gap of its own height at the
  * place it would be dropped at; moving with the keyboard happens from the item
- * sheet. Actions such as copy link, duplicate and archive live in the sheet,
- * not on the card.
+ * sheet. The hover actions (assign to me, due date, options) are a shortcut
+ * to the commonest sheet actions.
  */
 export function KanbanCard({
   card,
@@ -394,6 +399,7 @@ export function KanbanCard({
   dragDisabled = false,
   onMoveKey,
   onOpenDetails,
+  actions,
 }: {
   card: Card;
   /** The lane this card is shown in (the lane it is dragged over while dragging). */
@@ -413,7 +419,10 @@ export function KanbanCard({
    */
   onMoveKey?: (cardId: string, direction: KanbanMoveDirection) => void;
   onOpenDetails: (cardId: string) => void;
+  /** Hover and focus actions; absent: the card has none. */
+  actions?: KanbanCardActions;
 }) {
+  const [dueOpen, setDueOpen] = useState(false);
   const { listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({
       id: card.id,
@@ -469,9 +478,15 @@ export function KanbanCard({
         aria-describedby={describedBy || undefined}
         data-card-id={card.id}
         aria-keyshortcuts={
-          onMoveKey
-            ? "Alt+ArrowLeft Alt+ArrowRight Alt+ArrowUp Alt+ArrowDown"
-            : undefined
+          [
+            onMoveKey
+              ? "Alt+ArrowLeft Alt+ArrowRight Alt+ArrowUp Alt+ArrowDown"
+              : null,
+            actions?.onAssignMe ? "A" : null,
+            actions?.onSetDue ? "D" : null,
+          ]
+            .filter(Boolean)
+            .join(" ") || undefined
         }
         onClick={() => onOpenDetails(card.id)}
         onKeyDown={(event) => {
@@ -481,12 +496,39 @@ export function KanbanCard({
             onMoveKey?.(card.id, direction);
             return;
           }
+          const plain = !event.altKey && !event.ctrlKey && !event.metaKey;
+          if (plain && actions && !event.shiftKey) {
+            const key = event.key.toLowerCase();
+            if (
+              key === "a" &&
+              actions.onAssignMe &&
+              !isAssignedTo(card, actions.currentUserId)
+            ) {
+              event.preventDefault();
+              actions.onAssignMe(card);
+              return;
+            }
+            if (key === "d" && actions.onSetDue) {
+              event.preventDefault();
+              setDueOpen(true);
+              return;
+            }
+          }
           if (event.key === "Enter" || event.key === " ") {
             event.preventDefault();
             onOpenDetails(card.id);
           }
         }}
       />
+      {actions && !isDragging ? (
+        <KanbanCardQuickActions
+          card={card}
+          copy={copy}
+          actions={actions}
+          dueOpen={dueOpen}
+          onDueOpenChange={setDueOpen}
+        />
+      ) : null}
       <KanbanCardContent
         card={card}
         copy={copy}

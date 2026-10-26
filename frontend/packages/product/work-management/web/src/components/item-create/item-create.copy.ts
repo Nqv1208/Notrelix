@@ -27,7 +27,7 @@ export type ItemCreateCopy = {
   readonly created: string;
   readonly createdWithout: string;
   readonly detailNames: Readonly<
-    Record<"status" | "priority" | "assignees" | "labels", string>
+    Record<"status" | "lane" | "priority" | "assignees" | "labels", string>
   >;
   /** "Từ cột Cần làm": where the form was opened from. */
   readonly fromLane: string;
@@ -99,6 +99,7 @@ export const en: ItemCreateCopy = {
     "Item added, but {{details}} could not be saved. Open the item to set it.",
   detailNames: {
     status: "the status",
+    lane: "the lane",
     priority: "the priority",
     assignees: "the assignees",
     labels: "the labels",
@@ -177,6 +178,7 @@ export const vi: ItemCreateCopy = {
     "Đã thêm công việc, nhưng chưa lưu được {{details}}. Mở công việc để đặt lại.",
   detailNames: {
     status: "trạng thái",
+    lane: "cột",
     priority: "mức ưu tiên",
     assignees: "người phụ trách",
     labels: "nhãn",

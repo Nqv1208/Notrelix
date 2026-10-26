@@ -18,10 +18,18 @@ export interface CreateItemWithDetailsInput {
   } | null;
   readonly assigneeIds?: readonly string[];
   readonly labelIds?: readonly string[];
+  /**
+   * The value of the field the board is grouped by (not Status) that puts the
+   * item in its lane; written after the item exists, like status and priority.
+   */
+  readonly laneValue?: {
+    readonly fieldDefinitionId: string;
+    readonly value: string;
+  } | null;
 }
 
 /** A write that failed after the item itself was created. */
-export type CreateItemDetail = "status" | "priority" | "assignees" | "labels";
+export type CreateItemDetail = "status" | "lane" | "priority" | "assignees" | "labels";
 
 export interface CreateItemWithDetailsResult {
   /** The new item's id; undefined when the server sent none. */
@@ -77,6 +85,16 @@ export async function runCreateItemWithDetails(
     if (input.statusOptionId) {
       const optionId = input.statusOptionId;
       await attempt("status", () => cards.updateStatus(itemId, optionId));
+    }
+    if (input.laneValue) {
+      const lane = input.laneValue;
+      await attempt("lane", () =>
+        cards.updateFieldValue({
+          cardId: itemId,
+          fieldDefinitionId: lane.fieldDefinitionId,
+          value: lane.value,
+        }),
+      );
     }
     if (input.priority) {
       const priority = input.priority;

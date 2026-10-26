@@ -48,6 +48,8 @@ export interface BoardTimelineViewProps {
     id: string | undefined,
     options?: { replace?: boolean },
   ) => void;
+  /** The signed-in member (from the host's session): offers "Giao cho tôi". */
+  currentUserId?: string | null;
   /** Switches the board to the Calendar, where an item gets its first date. */
   onOpenCalendar?: () => void;
   /** The IANA time zone of the days; the runtime zone when omitted. */
@@ -87,6 +89,7 @@ export function BoardTimelineView({
   boardId,
   workspaceId,
   selectedItemId,
+  currentUserId,
   onSelectedItemChange,
   onOpenCalendar,
   timeZone: timeZoneProp,
@@ -305,6 +308,7 @@ export function BoardTimelineView({
           defaultStatusId={null}
           defaultStartDay={anchorDay}
           defaultDueDay={anchorDay}
+          currentUserId={currentUserId}
         />
       ) : null}
       {selectedItemId && board ? (

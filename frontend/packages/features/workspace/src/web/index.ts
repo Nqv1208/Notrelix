@@ -135,10 +135,6 @@ export {
   type WorkspaceHomeSurfaceProps,
 } from "./home/workspace-home-surface";
 export {
-  AddItemDialog,
-  type AddItemDialogProps,
-} from "./home/create-resource-dialog";
-export {
   WorkspaceMyWorkSurface,
   type WorkspaceMyWorkSurfaceProps,
 } from "./home/workspace-my-work-surface";

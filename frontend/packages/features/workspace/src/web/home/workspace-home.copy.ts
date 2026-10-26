@@ -232,7 +232,7 @@ export const en = {
     addBoard: "Add to Board",
     addBoardOther: "Choose another Board…",
     addNote:
-      "The new item is assigned to you and set to To do. Add a description and a due date if you know them. Only Boards you can add items to are shown.",
+      "The new item is assigned to you and starts in the Board's first status. Add a description and a due date if you know them. Only Boards you can add items to are shown.",
     addCancel: "Cancel",
     addSubmit: "Create item",
     addUnavailable: "Enter a name and choose a Board to create the item.",
@@ -604,7 +604,7 @@ export const vi: WorkspaceHomeCopy = {
     addBoard: "Thêm vào board",
     addBoardOther: "Chọn board khác…",
     addNote:
-      "Việc mới giao cho bạn, trạng thái Cần làm. Thêm mô tả và hạn chót nếu bạn đã biết. Chỉ hiện các board bạn được thêm việc.",
+      "Việc mới giao cho bạn và bắt đầu ở trạng thái đầu tiên của board. Thêm mô tả và hạn chót nếu bạn đã biết. Chỉ hiện các board bạn được thêm việc.",
     addCancel: "Huỷ",
     addSubmit: "Tạo việc",
     addUnavailable: "Nhập tên việc và chọn board để tạo việc.",

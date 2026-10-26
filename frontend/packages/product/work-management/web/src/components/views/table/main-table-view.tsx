@@ -74,6 +74,8 @@ export interface MainTableViewProps {
   workspaceId: string;
   /** Card id from the `item` search parameter; unknown ids show nothing. */
   selectedItemId?: string;
+  /** The signed-in member (from the host's session): offers "Giao cho tôi". */
+  currentUserId?: string | null;
   onSelectedItemChange?: (
     id: string | undefined,
     options?: { replace?: boolean },
@@ -114,6 +116,7 @@ export function MainTableView({
   boardId,
   workspaceId,
   selectedItemId,
+  currentUserId,
   onSelectedItemChange,
   filter: filterParam,
   onFilterChange,
@@ -734,6 +737,7 @@ export function MainTableView({
           groups={table.groups}
           defaultGroupId={table.groups[0]?.id ?? ""}
           defaultStatusId={null}
+          currentUserId={currentUserId}
         />
       ) : null}
       {selectedItemId ? (

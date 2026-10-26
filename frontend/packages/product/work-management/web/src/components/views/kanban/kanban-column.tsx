@@ -38,6 +38,7 @@ import {
 import type { StatusOptionFormCopy } from "../../status-option/status-option-form.copy";
 import { KanbanAddCard } from "./kanban-add-card";
 import { KanbanCard } from "./kanban-card";
+import type { KanbanCardActions } from "./kanban-card-quick-actions";
 import { fillCopy, pluralCopy, type KanbanCardCopy } from "./kanban-card.copy";
 import { KANBAN_LANE_TYPE } from "./kanban-collision";
 import {
@@ -100,6 +101,8 @@ export interface KanbanColumnProps {
   draggedCardId?: string;
   /** Alt+Arrow moves a card; absent when the view has it off or the viewer cannot move. */
   onMoveCardByKey?: (cardId: string, direction: KanbanMoveDirection) => void;
+  /** Hover and focus actions of the cards. */
+  cardActions?: KanbanCardActions;
   /** Rename and recolour from the lane menu; absent when the viewer cannot. */
   edit?: KanbanLaneEdit;
   collapsed: boolean;
@@ -141,6 +144,7 @@ export function KanbanColumn({
   laneCardLimit = DEFAULT_KANBAN_LANE_CARD_LIMIT,
   draggedCardId,
   onMoveCardByKey,
+  cardActions,
   edit,
   collapsed,
   openAddRequest,
@@ -561,6 +565,7 @@ export function KanbanColumn({
                 selected={card.id === selectedItemId}
                 dragDisabled={!canDrag}
                 onMoveKey={onMoveCardByKey}
+                actions={cardActions}
                 onOpenDetails={onOpenDetails}
               />
             ))}

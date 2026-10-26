@@ -450,9 +450,14 @@ export function LabelPicker({
                 <span
                   aria-hidden="true"
                   className={cn(
-                    "size-2.25 rounded-full",
+                    "size-2.5 rounded-full ring-1 ring-foreground/15 ring-inset",
+                    // The tone's text colour (dark enough to read on its chip),
+                    // not its pale chip background, which vanishes on the page.
                     tone
-                      ? ITEM_LABEL_TONE_CLASS[tone].split(" ")[0]
+                      ? cn(
+                          ITEM_LABEL_TONE_CLASS[tone].split(" ")[1],
+                          "bg-current",
+                        )
                       : "bg-muted-foreground",
                   )}
                 />
