@@ -8,6 +8,7 @@ export {
 } from "./hooks/mutations/use-member-mutations";
 export {
   createUseCreateInvitation,
+  createUseResendInvitation,
   createUseRevokeInvitation,
 } from "./hooks/mutations/use-create-invitation";
 export { createUseWorkspaceSettingsMutations } from "./hooks/mutations/use-workspace-settings-mutations";

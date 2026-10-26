@@ -661,6 +661,31 @@ export const workspaceOperations = [
     },
   }),
 
+  defineMockOperation<
+    { workspaceId: string; invitationId: string },
+    never,
+    unknown
+  >({
+    id: "workspace.invitations.resend",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Invitations.ResendInvitation",
+    },
+    method: "POST",
+    route: "/workspaces/:workspaceId/invitations/:invitationId/resend",
+    async handle({ params, store }) {
+      if (!canManageMembers(store, params.workspaceId)) return forbidden();
+      const resent = store.resendInvitation(
+        params.workspaceId,
+        params.invitationId,
+      );
+      if (resent === null) return notFound();
+      if (!resent)
+        return ruleViolation("Only a waiting invitation can be sent again.");
+      return ok(params.invitationId);
+    },
+  }),
+
   // ─── Activity and settings ────────────────────────────────────────────────
 
   defineMockOperation<{ workspaceId: string }, never, unknown>({

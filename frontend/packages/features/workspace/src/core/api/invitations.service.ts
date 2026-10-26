@@ -23,6 +23,8 @@ export interface WorkspaceInvitationsEndpoints {
     invitations: (workspaceId: string) => string;
     /** `Workspaces.Invitations.CancelInvitation` (DELETE). */
     invitation: (workspaceId: string, invitationId: string) => string;
+    /** `Workspaces.Invitations.ResendInvitation` (POST). */
+    resendInvitation: (workspaceId: string, invitationId: string) => string;
   };
 }
 
@@ -135,6 +137,17 @@ export function createWorkspaceInvitationsService(
         body,
       );
       return typeof id === "string" ? id : null;
+    },
+
+    /**
+     * Sends the invitation again with a new link and a new expiry
+     * (`POST …/invitations/{id}/resend`); the invitation keeps its id.
+     */
+    async resend(workspaceId: string, invitationId: string): Promise<void> {
+      await api.post<unknown>(
+        endpoints.workspaces.resendInvitation(workspaceId, invitationId),
+        {},
+      );
     },
 
     /** Revokes a pending invitation (an expired one is marked expired). */

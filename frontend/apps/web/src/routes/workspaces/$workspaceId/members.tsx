@@ -13,6 +13,7 @@ import {
 import {
   createUseCreateInvitation,
   createUseMemberMutations,
+  createUseResendInvitation,
   createUseRevokeInvitation,
   createUseWorkspaceInvitations,
   formatCopy,
@@ -75,6 +76,7 @@ export function MembersPage() {
       useInvitations: createUseWorkspaceInvitations(deps),
       useCreateInvitation: createUseCreateInvitation(deps),
       useRevokeInvitation: createUseRevokeInvitation(deps),
+      useResendInvitation: createUseResendInvitation(deps),
     };
   }, [runtimeClient]);
 
@@ -84,6 +86,7 @@ export function MembersPage() {
   const mutations = hooks.useMemberMutations(workspaceId);
   const createInvitation = hooks.useCreateInvitation(workspaceId);
   const revokeInvitation = hooks.useRevokeInvitation(workspaceId);
+  const resendInvitation = hooks.useResendInvitation(workspaceId);
   const pendingMembers = useIdSet();
   const pendingInvitations = useIdSet();
   const [inviteError, setInviteError] = useState<string | null>(null);
@@ -174,6 +177,60 @@ export function MembersPage() {
     [copy, createInvitation, hint, invitations.data, now],
   );
 
+  // Several addresses typed at once: sent one after the other, each decided
+  // by the producer; what was not sent stays in the field to be fixed.
+  const onInviteMany = useCallback(
+    async (inputs: readonly CreateWorkspaceInvitationInput[]) => {
+      setInviteError(null);
+      const failed: string[] = [];
+      let sent = 0;
+      for (const input of inputs) {
+        if (pendingInvitationFor(invitations.data ?? [], input.email, now)) {
+          failed.push(input.email);
+          continue;
+        }
+        try {
+          await createInvitation.mutateAsync(input);
+          sent += 1;
+        } catch {
+          failed.push(input.email);
+        }
+      }
+      if (failed.length === 0) {
+        setInviteResetKey((key) => key + 1);
+        toast.success(formatCopy(copy.toasts.invitedMany, { count: sent }));
+        return;
+      }
+      const emails = failed.join(", ");
+      if (sent > 0)
+        toast.success(
+          formatCopy(copy.toasts.invitedSome, { count: sent, emails }),
+        );
+      setInviteError(formatCopy(copy.invitations.emailInvalidMany, { emails }));
+    },
+    [copy, createInvitation, invitations.data, now],
+  );
+
+  const onResend = useCallback(
+    (invitation: WorkspaceInvitation) => {
+      pendingInvitations.add(invitation.id);
+      resendInvitation.mutate(invitation.id, {
+        onSuccess: () =>
+          toast.success(
+            formatCopy(copy.toasts.resent, { email: invitation.email }),
+          ),
+        onError: (error) =>
+          toastFailure(
+            formatCopy(copy.toasts.resendFailed, { email: invitation.email }),
+            error,
+            hint,
+          ),
+        onSettled: () => pendingInvitations.remove(invitation.id),
+      });
+    },
+    [copy, hint, pendingInvitations, resendInvitation],
+  );
+
   const onRevoke = useCallback(
     (invitation: WorkspaceInvitation) => {
       pendingInvitations.add(invitation.id);
@@ -246,6 +303,8 @@ export function MembersPage() {
           })
         }
         onInvite={onInvite}
+        onInviteMany={onInviteMany}
+        onResend={onResend}
         onRevoke={onRevoke}
         onRetryMembers={() =>
           void (

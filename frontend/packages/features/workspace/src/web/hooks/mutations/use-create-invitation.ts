@@ -34,6 +34,28 @@ export function createUseCreateInvitation({
   };
 }
 
+/** Sends an invitation again (`Workspaces.Invitations.ResendInvitation`). */
+export function createUseResendInvitation({
+  api,
+  endpoints,
+}: InvitationMutationDeps) {
+  const service = createWorkspaceInvitationsService(api, endpoints);
+
+  return function useResendInvitation(workspaceId: string) {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+      mutationFn: (invitationId: string) =>
+        service.resend(workspaceId, invitationId),
+      retry: false,
+      onSettled: () =>
+        queryClient.invalidateQueries({
+          queryKey: workspaceQueryKeys.invitations(workspaceId),
+        }),
+    });
+  };
+}
+
 /** Revokes a pending invitation (`Workspaces.Invitations.CancelInvitation`). */
 export function createUseRevokeInvitation({
   api,

@@ -75,6 +75,8 @@ export const endpoints = {
       `/workspaces/${workspaceId}/invitations`,
     invitation: (workspaceId: string, invitationId: string) =>
       `/workspaces/${workspaceId}/invitations/${invitationId}`,
+    resendInvitation: (workspaceId: string, invitationId: string) =>
+      `/workspaces/${workspaceId}/invitations/${invitationId}/resend`,
     // My Work read (WorkManagement.BoardItems.ListMyWork, WX-BE-005).
     myWorkItems: (workspaceId: string) =>
       `/workspaces/${workspaceId}/my-work/items`,

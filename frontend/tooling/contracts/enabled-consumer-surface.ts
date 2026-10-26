@@ -658,6 +658,16 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
   {
     context: "Workspace",
     classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createWorkspaceInvitationsService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/invitations.service.ts",
+    capability: "Workspaces.Invitations.ResendInvitation",
+    operationId: "Workspaces.Invitations.ResendInvitation",
+    mutation: true,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
     consumerSymbol: "createActivityService",
     consumerFile:
       "frontend/packages/features/workspace/src/core/api/activity.service.ts",

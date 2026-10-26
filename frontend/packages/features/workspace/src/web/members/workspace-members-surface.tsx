@@ -3,6 +3,7 @@ import {
   Info,
   Mail,
   MoreHorizontal,
+  RotateCw,
   Search,
   Trash2,
   UserPlus,
@@ -35,6 +36,7 @@ import {
   Skeleton,
   Spinner,
   Tabs,
+  Textarea,
   TabsContent,
   TabsList,
   TabsTrigger,
@@ -42,11 +44,12 @@ import {
 } from "@notrelix/ui-web";
 import {
   INVITABLE_ROLES,
+  MAX_INVITES_AT_ONCE,
   countOwners,
   invitationState,
-  isPlausibleEmail,
   isWorkspaceAdmin,
   memberCapabilities,
+  parseInviteList,
 } from "../../core/model/members";
 import {
   identityToneFor,
@@ -93,6 +96,12 @@ export interface WorkspaceMembersSurfaceProps {
   readonly onSuspend: (member: WorkspaceMember) => void;
   readonly onActivate: (member: WorkspaceMember) => void;
   readonly onInvite: (input: CreateWorkspaceInvitationInput) => void;
+  /** Invites several addresses typed at once; absent, one address at a time. */
+  readonly onInviteMany?: (
+    inputs: readonly CreateWorkspaceInvitationInput[],
+  ) => void;
+  /** Sends a waiting invitation again; absent hides the action. */
+  readonly onResend?: (invitation: WorkspaceInvitation) => void;
   readonly onRevoke: (invitation: WorkspaceInvitation) => void;
   readonly onRetryMembers: () => void;
   readonly onRetryInvitations: () => void;
@@ -335,9 +344,15 @@ function InviteForm({
   inviteError,
   inviteResetKey,
   onInvite,
+  onInviteMany,
 }: Pick<
   WorkspaceMembersSurfaceProps,
-  "copy" | "inviting" | "inviteError" | "inviteResetKey" | "onInvite"
+  | "copy"
+  | "inviting"
+  | "inviteError"
+  | "inviteResetKey"
+  | "onInvite"
+  | "onInviteMany"
 >) {
   const [email, setEmail] = React.useState("");
   const [role, setRole] =
@@ -352,8 +367,24 @@ function InviteForm({
     setTouched(false);
   }, [inviteResetKey]);
 
-  const invalid = touched && !isPlausibleEmail(email);
-  const message = invalid ? copy.invitations.emailInvalid : inviteError;
+  const parsed = parseInviteList(email);
+  const many = Boolean(onInviteMany);
+  const tooMany = parsed.valid.length > MAX_INVITES_AT_ONCE;
+  const unusable =
+    parsed.invalid.length > 0 ||
+    parsed.valid.length === 0 ||
+    tooMany ||
+    (!many && parsed.valid.length > 1);
+  const invalid = touched && unusable;
+  const invalidMessage =
+    parsed.valid.length + parsed.invalid.length <= 1 || !many
+      ? copy.invitations.emailInvalid
+      : tooMany
+        ? formatCopy(copy.invitations.tooMany, { max: MAX_INVITES_AT_ONCE })
+        : formatCopy(copy.invitations.emailInvalidMany, {
+            emails: parsed.invalid.join(", "),
+          });
+  const message = invalid ? invalidMessage : inviteError;
 
   return (
     <form
@@ -361,8 +392,12 @@ function InviteForm({
       onSubmit={(event) => {
         event.preventDefault();
         setTouched(true);
-        if (!isPlausibleEmail(email) || inviting) return;
-        onInvite({ email: email.trim(), role });
+        if (unusable || inviting) return;
+        if (parsed.valid.length === 1 || !onInviteMany) {
+          onInvite({ email: parsed.valid[0]!, role });
+          return;
+        }
+        onInviteMany(parsed.valid.map((address) => ({ email: address, role })));
       }}
       className="flex flex-col gap-3 rounded-lg border border-border bg-surface-panel p-4"
       aria-label={copy.invitations.formTitle}
@@ -375,18 +410,38 @@ function InviteForm({
           <FieldLabel htmlFor={emailId}>
             {copy.invitations.emailLabel}
           </FieldLabel>
-          <Input
-            id={emailId}
-            type="email"
-            autoComplete="email"
-            value={email}
-            placeholder={copy.invitations.emailPlaceholder}
-            aria-invalid={message ? true : undefined}
-            aria-describedby={message ? errorId : undefined}
-            onChange={(event) => setEmail(event.target.value)}
-            onBlur={() => email && setTouched(true)}
-          />
-          {message ? <FieldError id={errorId}>{message}</FieldError> : null}
+          {many ? (
+            <Textarea
+              id={emailId}
+              rows={2}
+              value={email}
+              placeholder={copy.invitations.emailPlaceholder}
+              aria-invalid={message ? true : undefined}
+              aria-describedby={message ? errorId : undefined}
+              onChange={(event) => setEmail(event.target.value)}
+              onBlur={() => email && setTouched(true)}
+              className="min-h-10 resize-y"
+            />
+          ) : (
+            <Input
+              id={emailId}
+              type="email"
+              autoComplete="email"
+              value={email}
+              placeholder={copy.invitations.emailPlaceholder}
+              aria-invalid={message ? true : undefined}
+              aria-describedby={message ? errorId : undefined}
+              onChange={(event) => setEmail(event.target.value)}
+              onBlur={() => email && setTouched(true)}
+            />
+          )}
+          {message ? (
+            <FieldError id={errorId}>{message}</FieldError>
+          ) : many ? (
+            <p className="text-metadata text-muted-foreground">
+              {copy.invitations.emailHint}
+            </p>
+          ) : null}
         </Field>
         <Field className="sm:w-40">
           <FieldLabel htmlFor={roleId}>{copy.invitations.roleLabel}</FieldLabel>
@@ -610,6 +665,7 @@ export function WorkspaceMembersSurface(props: WorkspaceMembersSurfaceProps) {
         inviteError={props.inviteError}
         inviteResetKey={props.inviteResetKey}
         onInvite={props.onInvite}
+        onInviteMany={props.onInviteMany}
       />
       <section
         aria-labelledby="pending-invitations"
@@ -704,7 +760,24 @@ export function WorkspaceMembersSurface(props: WorkspaceMembersSurfaceProps) {
                           </span>
                         )}
                       </td>
-                      <td className="w-12 px-2 py-2.5 text-right align-middle">
+                      <td className="w-24 px-2 py-2.5 text-right align-middle whitespace-nowrap">
+                        {props.onResend && !invitation.isAccepted ? (
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            disabled={pending}
+                            aria-label={formatCopy(
+                              pending
+                                ? copy.invitations.resending
+                                : copy.invitations.resend,
+                              { email: invitation.email },
+                            )}
+                            onClick={() => props.onResend?.(invitation)}
+                            className="text-muted-foreground hover:bg-state-hover hover:text-foreground focus-visible:ring-focus-ring"
+                          >
+                            <RotateCw aria-hidden="true" />
+                          </Button>
+                        ) : null}
                         <Button
                           variant="ghost"
                           size="icon-sm"

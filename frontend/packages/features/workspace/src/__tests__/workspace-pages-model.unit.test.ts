@@ -319,8 +319,16 @@ describe("Invitations", () => {
         members: (id) => `/workspaces/${id}/members`,
         invitations: (id) => `/workspaces/${id}/invitations`,
         invitation: (id, inv) => `/workspaces/${id}/invitations/${inv}`,
+        resendInvitation: (id, inv) =>
+          `/workspaces/${id}/invitations/${inv}/resend`,
       },
     });
+    await service.resend("ws", "inv-9");
+    expect(api.post).toHaveBeenCalledWith(
+      "/workspaces/ws/invitations/inv-9/resend",
+      {},
+    );
+    api.post.mockClear();
     await expect(
       service.create("ws", { email: " a@x.io ", role: "guest" }),
     ).resolves.toBe("inv-9");
