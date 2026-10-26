@@ -3,6 +3,7 @@ import {
   createUseCreateComment,
   createUseCreatePage,
   createUseDocEditor,
+  createUseDocSaver,
   createUseVersionSnapshot,
   createUsePage,
   createUsePageBlocks,
@@ -18,9 +19,15 @@ import {
   createUsePageHistory,
   type Block,
   type BlockType,
+  type DocSaveState,
   type DocsApiClient,
   type PageApiEndpoints,
 } from "@notrelix/docs-state";
+import {
+  draftOfBlock,
+  plainTextOf,
+  type BlockDraft,
+} from "@notrelix/docs-core";
 import { fillDocCopy } from "./doc-page.copy";
 import { useDocPageCopy } from "./use-doc-page-copy";
 import type { UseDocPageHost } from "./doc-page-host";
@@ -50,6 +57,7 @@ import type {
 import { isRestrictedTask } from "./doc-page-models";
 import { DocPageScreenSurface } from "./doc-page-screen-surface";
 import { useDocPanelOpen } from "./use-doc-panel-open";
+import { useDocRichEditor } from "../editor/use-doc-rich-editor";
 import { taskToken } from "./doc-page-text";
 
 interface CreateDocPageScreenDeps {
@@ -106,6 +114,7 @@ export function createDocPageScreen({
   const usePageComments = createUsePageComments(api, endpoints);
   const usePageHistory = createUsePageHistory(api, endpoints);
   const useDocEditor = createUseDocEditor(api, endpoints);
+  const useDocSaver = createUseDocSaver(api, endpoints);
   const useCreateComment = createUseCreateComment(api, endpoints);
   const useCreatePage = createUseCreatePage(api, endpoints);
   const usePageBacklinks = createUsePageBacklinks(api, endpoints);
@@ -361,6 +370,75 @@ export function createDocPageScreen({
       [backlinksQuery.data, copy, host],
     );
 
+    // The page's editor: built once per page from the loaded blocks, saved
+    // by a debounced diff. The callbacks it needs are filled in below.
+    const callbacksRef = useRef<DocPageCallbacks | undefined>(undefined);
+    const richRef = useRef<{
+      assignBlockId: (clientId: string, storedId: string) => void;
+    } | null>(null);
+    const saver = useDocSaver(workspaceId, pageId, blocksQuery.data, {
+      onIdAssigned: (clientId, storedId) =>
+        richRef.current?.assignBlockId(clientId, storedId),
+    });
+    const initialDrafts = useMemo(
+      () =>
+        [...blocks].sort((a, b) => a.position - b.position).map(draftOfBlock),
+      [blocks],
+    );
+    const contextKey = useMemo(
+      () => ({}),
+      [host.tasks, host.tasksReady, host.board, readablePages],
+    );
+    const richEditor = useDocRichEditor({
+      pageId,
+      ready: !pageQuery.isLoading && !blocksQuery.isLoading && page !== null,
+      initial: initialDrafts,
+      editable: host.canEdit,
+      placeholder: copy.blockPlaceholder,
+      emptyPlaceholder: copy.blocks.emptyDoc,
+      label: copy.blockPlaceholder,
+      contextKey,
+      context: {
+        copy,
+        readOnly: !host.canEdit,
+        callbacks: {
+          onOpenPagePicker: (blockId) =>
+            callbacksRef.current?.onOpenPagePicker?.(blockId),
+        },
+        resolveTask,
+        viewOf: (draft: BlockDraft) =>
+          toBlockViews(
+            [
+              {
+                id: draft.id,
+                pageId,
+                type: draft.type,
+                content: draft.content,
+                properties: {
+                  ...draft.properties,
+                  text: plainTextOf(draft.content),
+                },
+                position: 0,
+                parentId: null,
+                createdById: "",
+                updatedById: "",
+                createdAt: "",
+                updatedAt: "",
+              },
+            ],
+            {
+              resolveTask,
+              pages: readablePages,
+              pageHref: host.pageHref,
+              board: host.board,
+              quotes: [],
+            },
+          )[0],
+      },
+      onDrafts: saver.change,
+    });
+    richRef.current = richEditor;
+
     if (pageQuery.isLoading || blocksQuery.isLoading) {
       return <DocPageScreenSurface status="loading" copy={copy} {...EMPTY} />;
     }
@@ -481,7 +559,12 @@ export function createDocPageScreen({
       onTodoConvert:
         host.canEdit && host.canConvertTodo !== false
           ? (blockId) =>
-              setOverlay({ kind: "convertTask", blockId, boardId: null })
+              // The line is converted by its stored id: save it first.
+              void saver
+                .flush()
+                .then(() =>
+                  setOverlay({ kind: "convertTask", blockId, boardId: null }),
+                )
           : undefined,
       onConvertBoard: (boardId) =>
         setOverlay((current) =>
@@ -510,7 +593,11 @@ export function createDocPageScreen({
       onPickPage: (blockId, target) => {
         const block = blockById(blockId);
         setOverlay(NONE);
-        if (block) patchBlock(block, { linkedPageId: target });
+        if (richEditor.editor) {
+          richEditor.updateBlockAttrs(blockId, { linkedPageId: target });
+        } else if (block) {
+          patchBlock(block, { linkedPageId: target });
+        }
       },
       onTodoToggle: host.canEdit
         ? (blockId, checked) => {
@@ -636,7 +723,10 @@ export function createDocPageScreen({
             : document.querySelector(`[data-block="${CSS.escape(id)}"]`);
         target?.scrollIntoView({ block: "start", behavior: "smooth" });
       },
-      onSaveRetry: editor.retry,
+      onSaveRetry: () => {
+        editor.retry();
+        void saver.retry();
+      },
       onFormat: (format) => {
         if (!focused) return;
         if (format === "left" || format === "center" || format === "right") {
@@ -658,6 +748,7 @@ export function createDocPageScreen({
           .catch(() => undefined);
       },
       onOpenVersions: () => {
+        void saver.flush();
         setOverlay(NONE);
         setVersions({ selectedId: null, namedOnly: false });
       },
@@ -687,11 +778,20 @@ export function createDocPageScreen({
       onCommentCreate: (body) => createComment.mutate({ pageId, body }),
     };
 
+    callbacksRef.current = callbacks;
+    const saveState: DocSaveState =
+      editor.saveState === "error" || saver.saveState === "error"
+        ? "error"
+        : editor.saveState === "saving" || saver.saveState === "saving"
+          ? "saving"
+          : "saved";
+
     return (
       <DocPageScreenSurface
         copy={copy}
         header={header}
-        saveState={editor.saveState}
+        saveState={saveState}
+        editor={richEditor.editor}
         chips={chips}
         why={why}
         blocks={blockViews}

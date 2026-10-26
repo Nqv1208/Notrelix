@@ -17,6 +17,7 @@ import {
   diffSegments,
   markQuotes,
   parseSegments,
+  runsToSegments,
   taskIdsOf,
 } from "./doc-page-text";
 import type { DocToolbarCurrent } from "./doc-toolbar-surface";
@@ -125,7 +126,12 @@ export function toBlockViews(
       align: props.align,
     };
     const segments = () =>
-      markQuotes(parseSegments(text, context.resolveTask), context.quotes);
+      markQuotes(
+        block.content
+          ? runsToSegments(block.content.runs, context.resolveTask)
+          : parseSegments(text, context.resolveTask),
+        context.quotes,
+      );
     switch (block.type) {
       case "heading_1":
         return { id: block.id, kind: "heading", level: 1, text, format };

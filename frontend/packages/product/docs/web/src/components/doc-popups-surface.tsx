@@ -1,4 +1,10 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import {
   Code2,
   FileText,
@@ -228,6 +234,7 @@ export interface DocMentionMenuSurfaceProps {
   readonly tasks: readonly DocTaskRef[];
   readonly activeIndex?: number;
   readonly className?: string;
+  readonly style?: CSSProperties;
   readonly onSelect?: (taskId: string) => void;
   readonly onClose?: () => void;
 }
@@ -239,6 +246,7 @@ export function DocMentionMenuSurface({
   tasks,
   activeIndex,
   className,
+  style,
   onSelect,
   onClose,
 }: DocMentionMenuSurfaceProps): ReactNode {
@@ -254,7 +262,12 @@ export function DocMentionMenuSurface({
   const active = activeIndex ?? keyActive;
 
   return (
-    <div role="listbox" aria-label={m.label} className={cn(POPUP, className)}>
+    <div
+      role="listbox"
+      aria-label={m.label}
+      style={style}
+      className={cn(POPUP, className)}
+    >
       <span className={HEADING}>
         {fillDocCopy(m.heading, { query: query.trim() })}
       </span>

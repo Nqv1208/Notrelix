@@ -23,14 +23,21 @@
     "@notrelix/i18n": "workspace:*",
     "@notrelix/platform": "workspace:*",
     "@notrelix/ui-web": "workspace:*",
+    "@tiptap/core": "3.31.4",
+    "@tiptap/extensions": "3.31.4",
+    "@tiptap/pm": "3.31.4",
+    "@tiptap/react": "3.31.4",
+    "@tiptap/starter-kit": "3.31.4",
     "lucide-react": "^0.562.0",
-    "react": "^19.0.0"
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
+    "@notrelix/eslint-config": "workspace:*",
     "@notrelix/testing": "workspace:*",
     "@storybook/react": "8.6.19",
     "@types/react": "^19.0.0",
-    "typescript": "^5.0.0",
-    "@notrelix/eslint-config": "workspace:*"
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.0.0"
   }
 }

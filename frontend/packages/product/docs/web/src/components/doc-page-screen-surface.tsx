@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import type { Editor } from "@tiptap/react";
 import type { BlockType } from "@notrelix/docs-core";
 import { Skeleton } from "@notrelix/ui-web";
 import type { DocPageCopy } from "./doc-page.copy";
@@ -69,6 +70,8 @@ export interface DocPageScreenSurfaceProps {
   readonly mentionTasks: readonly DocTaskRef[];
   readonly blockTypes?: readonly BlockType[];
   readonly toolbar?: DocToolbarCurrent;
+  /** The page's editor; absent keeps the plain per-block surface. */
+  readonly editor?: Editor | null;
   readonly versions?: DocVersionsState;
   readonly share?: DocShareView;
   /** The trash list the trash dialog shows. */
@@ -137,6 +140,7 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
     mentionTasks,
     blockTypes,
     toolbar = DEFAULT_TOOLBAR_CURRENT,
+    editor,
     versions,
     share,
     trash,
@@ -194,6 +198,7 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
     overlay,
     mentionTasks,
     blockTypes,
+    editor,
     callbacks,
   };
 
@@ -229,6 +234,7 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
             downloadOpen={overlay.kind === "fileMenu" && overlay.downloadOpen}
             canShare={share !== undefined}
             canFormat={canFormat && !readOnly}
+            editor={editor}
             callbacks={callbacks}
           />
         )}

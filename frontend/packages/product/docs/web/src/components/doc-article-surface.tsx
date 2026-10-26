@@ -5,6 +5,7 @@ import {
   type KeyboardEvent,
   type ReactNode,
 } from "react";
+import type { Editor } from "@tiptap/react";
 import { Check, CircleAlert, Lock, Table2 } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
 import type { BlockType } from "@notrelix/docs-core";
@@ -20,6 +21,8 @@ import {
   type DocTextBlock,
   type DocTaskResolution,
 } from "./doc-page-models";
+import { DocEditorSurface } from "../editor/doc-editor-surface";
+import { renderMarked } from "./doc-marks";
 import { serializeEditable } from "./doc-page-text";
 import { DocStatusDot, ICON_CLASS } from "./doc-page-ui";
 import {
@@ -84,7 +87,11 @@ function renderSegments(
   return segments.map((segment, index) => {
     switch (segment.kind) {
       case "text":
-        return <Fragment key={index}>{segment.text}</Fragment>;
+        return (
+          <Fragment key={index}>
+            {renderMarked(segment.text, segment.marks)}
+          </Fragment>
+        );
       case "task":
         return <DocTaskChip key={index} task={segment.task} copy={copy} />;
       case "mark":
@@ -323,7 +330,7 @@ const CHIP_STATUS_CLASS = {
 } as const;
 
 /** A link to another page: its icon and name, or the way to choose one. */
-function DocPageReference({
+export function DocPageReference({
   block,
   copy,
   readOnly,
@@ -381,7 +388,7 @@ function DocPageReference({
 }
 
 /** The embedded live task table (Final-Docs `.live` and its note). */
-function DocLiveTable({
+export function DocLiveTable({
   block,
   copy,
 }: {
@@ -538,6 +545,8 @@ export interface DocArticleSurfaceProps {
   readonly mentionTasks: readonly DocTaskRef[];
   /** The block types the slash menu offers; omitted offers every type. */
   readonly blockTypes?: readonly BlockType[];
+  /** The page's editor; absent renders the plain per-block surface. */
+  readonly editor?: Editor | null;
   readonly callbacks?: DocPageCallbacks;
 }
 
@@ -553,6 +562,7 @@ export function DocArticleSurface({
   overlay,
   mentionTasks,
   blockTypes,
+  editor,
   callbacks,
 }: DocArticleSurfaceProps) {
   const titleRef = useRef<HTMLHeadingElement | null>(null);
@@ -909,7 +919,15 @@ export function DocArticleSurface({
           </span>
         ) : null}
       </div>
-      {blocks.length === 0 ? (
+      {editor && !compare ? (
+        <DocEditorSurface
+          editor={editor}
+          copy={copy}
+          mentionTasks={mentionTasks}
+          callbacks={callbacks}
+        />
+      ) : null}
+      {!editor && blocks.length === 0 ? (
         <button
           type="button"
           onClick={() => callbacks?.onAddBlock?.("paragraph")}
@@ -918,7 +936,7 @@ export function DocArticleSurface({
           {copy.blocks.emptyDoc}
         </button>
       ) : null}
-      {rendered}
+      {editor && !compare ? null : rendered}
     </article>
   );
 }

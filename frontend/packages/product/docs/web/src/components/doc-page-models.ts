@@ -4,7 +4,7 @@
  * facts (department, people, referenced tasks) into these; the pure surfaces
  * only render them.
  */
-import type { BlockType } from "@notrelix/docs-core";
+import type { BlockType, Mark } from "@notrelix/docs-core";
 
 /** The department/identity colours of the design (one fill in every appearance). */
 export type DocTone = "blue" | "gold" | "coral" | "sage" | "crimson" | "violet";
@@ -52,7 +52,11 @@ export function isRestrictedTask(
 
 /** Inline content of a text block. */
 export type DocSegment =
-  | { readonly kind: "text"; readonly text: string }
+  | {
+      readonly kind: "text";
+      readonly text: string;
+      readonly marks?: readonly Mark[];
+    }
   | { readonly kind: "task"; readonly task: DocTaskResolution }
   /** Text a comment is anchored to (yellow mark). */
   | { readonly kind: "mark"; readonly text: string }
@@ -65,7 +69,7 @@ export type DocBlockFormat = {
   readonly italic?: boolean;
   readonly underline?: boolean;
   readonly strike?: boolean;
-  readonly align?: "left" | "center" | "right";
+  readonly align?: "left" | "center" | "right" | "justify";
 };
 
 interface DocBlockBase {
