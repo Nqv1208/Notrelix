@@ -65,15 +65,7 @@ describe("Board permissions in the mock world (CTR-GAP-WM-BOARD-SHARING)", () =>
 
   it("changes a level, refuses a guest as manager and logs the change", async () => {
     const { client, store } = setup();
-    const [, team, , guest] = boardSharing(
-      store,
-      mockIds.boards.erp,
-      true,
-    )!.entries;
-    const grants = `/resources/work-management.board/${mockIds.boards.erp}/permissions`;
-    await client.api.post(grants, {
-      subjectType: "Team",
-      subjectId: team!.id,
+    await client.api.patch(`/boards/${mockIds.boards.erp}/sharing/share-kt`, {
       level: "editor",
     });
     const after = boardSharing(store, mockIds.boards.erp, true)!;
@@ -84,9 +76,7 @@ describe("Board permissions in the mock world (CTR-GAP-WM-BOARD-SHARING)", () =>
       to: "editor",
     });
     await expect(
-      client.api.post(grants, {
-        subjectType: "User",
-        subjectId: guest!.id,
+      client.api.patch(`/boards/${mockIds.boards.erp}/sharing/share-dt`, {
         level: "manager",
       }),
     ).rejects.toBeTruthy();
@@ -94,14 +84,12 @@ describe("Board permissions in the mock world (CTR-GAP-WM-BOARD-SHARING)", () =>
 
   it("removes a permission but keeps the owner and the caller", async () => {
     const { client, store } = setup();
-    const before = boardSharing(store, mockIds.boards.erp, true)!.entries;
-    const grants = `/resources/work-management.board/${mockIds.boards.erp}/permissions`;
-    await client.api.delete(`${grants}/${before[2]!.permissionId}`);
+    await client.api.delete(`/boards/${mockIds.boards.erp}/sharing/share-kl`);
     expect(
       boardSharing(store, mockIds.boards.erp, true)!.entries.map((e) => e.name),
     ).not.toContain("Đỗ Khánh Linh");
     await expect(
-      client.api.delete(`${grants}/${before[0]!.permissionId}`),
+      client.api.delete(`/boards/${mockIds.boards.erp}/sharing/share-hp`),
     ).rejects.toBeTruthy();
   });
 

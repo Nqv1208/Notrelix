@@ -2,12 +2,6 @@ import { useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { workspaceQueryKey } from "@notrelix/query";
 import { useAppRuntime } from "@notrelix/runtime-web";
-import {
-  normalizeSharing,
-  planChangeLevel,
-  planRemove,
-  type SharingRequest,
-} from "./board-sharing-writes";
 import type {
   BoardSharingData,
   SharingLevel,
@@ -30,12 +24,10 @@ export function useBoardSharing(
   const key = workspaceQueryKey(workspaceId, "board-sharing", boardId);
   const query = useQuery({
     queryKey: key,
-    queryFn: async () =>
-      normalizeSharing(
-        await api.api.get<BoardSharingData>(`/boards/${boardId}/sharing`, {
-          skipGlobalErrorToast: true,
-        }),
-      ),
+    queryFn: () =>
+      api.api.get<BoardSharingData>(`/boards/${boardId}/sharing`, {
+        skipGlobalErrorToast: true,
+      }),
     enabled,
     staleTime: 10_000,
     retry: false,
@@ -50,49 +42,27 @@ export function useBoardSharing(
       queryKey: workspaceQueryKey(workspaceId, "boards"),
     });
   }, [boardId, client, workspaceId]);
-  const send = useCallback(
-    async (requests: readonly SharingRequest[]) => {
-      try {
-        for (const request of requests) {
-          const options = { idempotencyKey: crypto.randomUUID() };
-          if (request.method === "POST")
-            await api.api.post(request.path, request.body, options);
-          else if (request.method === "PATCH")
-            await api.api.patch(request.path, request.body, options);
-          else await api.api.delete(request.path, options);
-        }
-      } finally {
-        await refresh();
-      }
-    },
-    [api, refresh],
-  );
-  const entryOf = useCallback(
-    (entryId: string) => {
-      const entry = query.data?.entries.find((item) => item.id === entryId);
-      if (!entry) throw new Error("The permission is no longer on the Board.");
-      return entry;
-    },
-    [query.data],
-  );
   return {
     data: query.data ?? null,
     changeLevel: useCallback(
-      (entryId: string, level: SharingLevel) =>
-        send(planChangeLevel(boardId, entryOf(entryId), level)),
-      [boardId, entryOf, send],
+      async (entryId: string, level: SharingLevel) => {
+        await api.api.patch(`/boards/${boardId}/sharing/${entryId}`, { level });
+        await refresh();
+      },
+      [api, boardId, refresh],
     ),
     remove: useCallback(
-      (entryId: string) => send(planRemove(boardId, entryOf(entryId))),
-      [boardId, entryOf, send],
+      async (entryId: string) => {
+        await api.api.delete(`/boards/${boardId}/sharing/${entryId}`);
+        await refresh();
+      },
+      [api, boardId, refresh],
     ),
     makePrivate: useCallback(
       async (addUserIds: readonly string[]) => {
-        await api.api.post(
-          `/boards/${boardId}/sharing/private`,
-          { addUserIds },
-          { idempotencyKey: crypto.randomUUID() },
-        );
+        await api.api.post(`/boards/${boardId}/sharing/private`, {
+          addUserIds,
+        });
         await refresh();
       },
       [api, boardId, refresh],

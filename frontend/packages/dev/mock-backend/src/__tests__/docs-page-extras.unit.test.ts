@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createNotrelixClient } from "@notrelix/contracts";
-import {
-  createPageExtrasApi,
-  mapPagePermissions,
-} from "../../../../product/docs/state/src/index";
-import { mockIds } from "../state/mock-ids";
+import { createPageExtrasApi } from "../../../../product/docs/state/src/index";
 import { defaultConfig } from "../config/mock-config";
 import { MockStore } from "../state/mock-store";
 import { INVOICE_DOC_ID } from "../state/mock-docs-invoice";
@@ -51,59 +47,19 @@ describe("Documents page extras in the mock world (CTR-GAP-DOCS-PAGE-EXT)", () =
     expect(links.tasks.map((task) => task.key)).toEqual(["ERP-149"]);
   });
 
-  it("names the grants given on the page from the members and Teams, creator first", async () => {
+  it("serves the permissions given on the page, creator first", async () => {
     const { extras } = setup();
-    const workspaceId = mockIds.workspaces.primary;
-    const { members } = await extras.getPermissions(
-      INVOICE_DOC_ID,
-      workspaceId,
-    );
-    // The fixture's creator and outside guest are no members of the mock
-    // workspace (it lists four), so the producer's read cannot name them and
-    // they are left out.
+    const { members } = await extras.getPermissions(INVOICE_DOC_ID);
     expect(members.map((member) => [member.name, member.level])).toEqual([
+      ["Đỗ Khánh Linh", "manage"],
       ["Nguyễn Thu Hà", "edit"],
       ["Nhóm Kỹ sư ERP", "comment"],
+      ["Lâm Gia Bảo", "view"],
     ]);
+    expect(members[3]?.outside).toBe(true);
     expect(
-      (await extras.getPermissions("mock-doc-product-spec", workspaceId))
-        .members,
+      (await extras.getPermissions("mock-doc-product-spec")).members,
     ).toEqual([]);
-  });
-
-  it("shows a Guest of the workspace as outside and drops grants it cannot name", () => {
-    const grant = { createdBy: null } as const;
-    const { members } = mapPagePermissions(
-      [
-        {
-          ...grant,
-          id: "a",
-          subjectType: "User",
-          subjectId: "u1",
-          level: "Viewer",
-        },
-        {
-          ...grant,
-          id: "b",
-          subjectType: "User",
-          subjectId: "ghost",
-          level: "Editor",
-        },
-        {
-          ...grant,
-          id: "c",
-          subjectType: "Team",
-          subjectId: "t1",
-          level: "Commenter",
-          isDeleted: true,
-        },
-      ],
-      [{ userId: "u1", name: "Khách", role: "Guest" }],
-      [{ id: "t1", name: "Nhóm", memberCount: 2 }],
-    );
-    expect(members.map((member) => [member.name, member.outside])).toEqual([
-      ["Khách", true],
-    ]);
   });
 
   it("serves the blocks as they stood after each version", async () => {

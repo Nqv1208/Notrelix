@@ -102,27 +102,6 @@ export interface PeopleDirectoryDto {
   readonly canInvite: boolean;
 }
 
-type PeopleLevel = "viewer" | "commenter" | "editor" | "manager";
-
-interface WorkspaceMemberRead {
-  readonly userId: string;
-  readonly name: string | null;
-  readonly status: string | null;
-}
-
-interface TeamRead {
-  readonly id: string;
-  readonly name: string | null;
-  readonly status: string | null;
-  readonly memberCount: number;
-}
-
-interface BoardSharingRead {
-  readonly visibility?: string | null;
-  readonly canManage: boolean;
-  readonly entries?: readonly { id: string; level: PeopleLevel }[] | null;
-}
-
 export function createItemExtrasApi(client: NotrelixClient) {
   const { api } = client;
   const quiet = { skipGlobalErrorToast: true } as const;
@@ -203,72 +182,20 @@ export function createItemExtrasApi(client: NotrelixClient) {
         { idempotencyKey: key(), ...quiet },
       );
     },
-    /**
-     * Who an item can name on a board, read from the producers that exist: the
-     * workspace members, the Teams and the board's own sharing read. A person
-     * the sharing read does not list reaches a private board by no route the
-     * caller may see, so they count as not on it; on any other board everyone
-     * in the workspace sees it. Open item counts and departments are not part
-     * of those reads and stay empty.
-     */
-    async getPeopleDirectory(
-      boardId: string,
-      workspaceId: string,
-    ): Promise<PeopleDirectoryDto> {
-      const [members, teams, sharing] = await Promise.all([
-        // A Guest may not list the workspace: they name nobody.
-        api
-          .get<WorkspaceMemberRead[] | null>(
-            `/workspaces/${workspaceId}/members`,
-            quiet,
-          )
-          .catch(() => null),
-        api
-          .get<TeamRead[] | null>(`/workspaces/${workspaceId}/teams`, quiet)
-          .catch(() => null),
-        api.get<BoardSharingRead | null>(`/boards/${boardId}/sharing`, quiet),
-      ]);
-      const isPrivate = (sharing?.visibility ?? "").toLowerCase() === "private";
-      const levelOf = new Map<string, PeopleLevel>();
-      for (const entry of sharing?.entries ?? [])
-        levelOf.set(entry.id, entry.level);
+    async getPeopleDirectory(boardId: string): Promise<PeopleDirectoryDto> {
+      const dto = await api.get<Partial<PeopleDirectoryDto> | null>(
+        `/boards/${boardId}/people-directory`,
+      );
       return {
-        people: (members ?? [])
-          .filter(
-            (member) => (member.status ?? "active").toLowerCase() === "active",
-          )
-          .map((member) => {
-            const level = levelOf.get(member.userId) ?? null;
-            return {
-              userId: member.userId,
-              name: member.name ?? "",
-              department: null,
-              openCount: 0,
-              onBoard: isPrivate ? level !== null : true,
-              level,
-            };
-          }),
-        teams: (teams ?? [])
-          .filter(
-            (team) => (team.status ?? "active").toLowerCase() === "active",
-          )
-          .filter((team) => team.memberCount > 0)
-          .map((team) => ({
-            id: team.id,
-            name: team.name ?? "",
-            memberCount: team.memberCount,
-            viewableCount:
-              !isPrivate || levelOf.has(team.id) ? team.memberCount : 0,
-            viewableUserIds: [],
-          })),
-        canInvite: sharing?.canManage === true,
+        people: dto?.people ?? [],
+        teams: dto?.teams ?? [],
+        canInvite: dto?.canInvite === true,
       };
     },
-    /** Adds the person to the board: the producer's board-member write. */
     async invitePerson(boardId: string, userId: string): Promise<void> {
       await api.post<void>(
-        `/boards/${boardId}/members`,
-        { userId, role: "Member" },
+        `/boards/${boardId}/people-directory/invitations`,
+        { userId },
         { idempotencyKey: key(), ...quiet },
       );
     },

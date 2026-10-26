@@ -10,7 +10,6 @@
 import { defineMockOperation } from "../../operations/types";
 import {
   created,
-  forbidden,
   notFound,
   ok,
   validationError,
@@ -29,52 +28,29 @@ import {
 const GAP = { kind: "gap", gapId: "CTR-GAP-DOCS-PAGE-EXT" } as const;
 
 export const pageExtrasOperations = [
-  // Governance's resource-permission read for a page: subject ids and levels
-  // only, like the producer (the dialog names them from members and Teams).
-  defineMockOperation<
-    { resourceType: string; resourceId: string },
-    never,
-    unknown
-  >({
+  defineMockOperation<{ pageId: string }, never, unknown>({
     id: "docs.pages.permissions",
     contract: GAP,
     method: "GET",
-    route: "/resources/:resourceType/:resourceId/permissions",
+    route: "/pages/:pageId/permissions",
     async handle({ params, store }) {
-      if (params.resourceType !== "documents.page") return notFound();
-      const page = store.getPage(params.resourceId);
+      const page = store.getPage(params.pageId);
       if (!page) return notFound("Page not found");
-      const role = store.getCurrentMemberRole(page.workspaceId);
-      if (role !== "owner" && role !== "admin") return forbidden();
-      if (page.id !== INVOICE_DOC_ID) return ok([]);
-      const levelOf = {
-        manage: "Manager",
-        edit: "Editor",
-        comment: "Commenter",
-        view: "Viewer",
-      } as const;
-      const teams = store.spaces.teamsOf(page.workspaceId);
-      const rows = INVOICE_PERMISSIONS.flatMap((entry) => {
-        const subjectId =
-          entry.kind === "team"
-            ? teams.find((team) => team.name === entry.name)?.id
-            : entry.userId;
-        if (!subjectId) return [];
-        return [
-          {
-            id: entry.id,
-            workspaceId: page.workspaceId,
-            resourceKind: "documents.page",
-            resourceId: page.id,
-            subjectType: entry.kind === "team" ? "Team" : "User",
-            subjectId,
-            level: levelOf[entry.level],
-            createdBy: entry.creator ? subjectId : null,
-            isDeleted: false,
-          },
-        ];
+      if (page.id !== INVOICE_DOC_ID) return ok({ members: [] });
+      return ok({
+        members: INVOICE_PERMISSIONS.map((entry) => ({
+          id: entry.id,
+          kind: entry.kind,
+          userId: entry.userId ?? null,
+          name: entry.userId
+            ? (store.getUser(entry.userId)?.name ?? entry.name ?? "")
+            : (entry.name ?? ""),
+          detail: entry.detail,
+          outside: entry.outside ?? false,
+          creator: entry.creator ?? false,
+          level: entry.level,
+        })),
       });
-      return ok(rows);
     },
   }),
 

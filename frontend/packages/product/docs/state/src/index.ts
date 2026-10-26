@@ -51,7 +51,7 @@ export { createFavoriteApi } from "./api/favorite.api";
 export { createBlockApi } from "./api/block.api";
 export { createCommentApi } from "./api/comment.api";
 export { createHistoryApi } from "./api/history.api";
-export { createPageExtrasApi, mapPagePermissions } from "./api/page-extras.api";
+export { createPageExtrasApi } from "./api/page-extras.api";
 export type {
   ConvertedTaskDto,
   PageBacklinksDto,
