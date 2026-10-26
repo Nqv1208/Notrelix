@@ -19,6 +19,7 @@ public class BoardItemConfiguration : IEntityTypeConfiguration<BoardItem>
         builder.Property(x => x.BoardId).HasColumnName("board_id").IsRequired();
         builder.Property(x => x.GroupId).HasColumnName("group_id").IsRequired();
         builder.Property(x => x.Name).HasColumnName("name").IsRequired().HasMaxLength(1024);
+        builder.Property(x => x.DescriptionMd).HasColumnName("description_md").HasMaxLength(BoardItem.DescriptionMaxLength);
 
         builder.Property(x => x.Position).HasColumnName("position").HasColumnType("text").UseCollation(WorkOrderingConstraints.OrdinalCollation).IsRequired();
 

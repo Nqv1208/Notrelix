@@ -22302,6 +22302,20 @@
             "type": "string",
             "format": "uuid",
             "nullable": true
+          },
+          "descriptionMd": {
+            "type": "string",
+            "nullable": true
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "dueDate": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -22444,6 +22458,16 @@
             "type": "string",
             "format": "date-time",
             "nullable": true
+          },
+          "descriptionMd": {
+            "type": "string",
+            "nullable": true
+          },
+          "clearDueDate": {
+            "type": "boolean"
+          },
+          "clearStartDate": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -26545,6 +26569,10 @@
             "nullable": true
           },
           "archivedByName": {
+            "type": "string",
+            "nullable": true
+          },
+          "descriptionMd": {
             "type": "string",
             "nullable": true
           }

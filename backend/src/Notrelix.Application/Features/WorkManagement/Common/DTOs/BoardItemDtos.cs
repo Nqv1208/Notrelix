@@ -63,7 +63,9 @@ public record BoardItemDto(
     string? CompletedByName = null,
     DateTimeOffset? ArchivedAt = null,
     Guid? ArchivedBy = null,
-    string? ArchivedByName = null
+    string? ArchivedByName = null,
+    // The item's Markdown description; null when it has none.
+    string? DescriptionMd = null
 );
 
 public record BoardItemMemberDto(Guid UserId, string Name, string? Avatar, DateTimeOffset AssignedAt);

@@ -6698,6 +6698,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("deleted_by");
 
+                    b.Property<string>("DescriptionMd")
+                        .HasMaxLength(20000)
+                        .HasColumnType("character varying(20000)")
+                        .HasColumnName("description_md");
+
                     b.Property<DateTimeOffset?>("DueAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("due_at");

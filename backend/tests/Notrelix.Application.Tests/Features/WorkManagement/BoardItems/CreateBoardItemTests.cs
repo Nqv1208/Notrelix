@@ -102,6 +102,35 @@ public class CreateBoardItemKeyTests : WorkManagementHandlerTestBase
     }
 
     [Fact]
+    public async Task Create_WithADescriptionAndDates_StoresThemOnTheNewItem()
+    {
+        var (board, group) = Seed("WEB");
+        var handler = new CreateBoardItemCommandHandler(DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object, Placement, KeyAllocator);
+        var start = new DateTime(2026, 11, 2);
+        var due = new DateTime(2026, 11, 9);
+
+        await handler.Handle(new CreateBoardItemCommand(board.Id, group.Id, "Planned", null, null, "Ship the **plan**", start, due), CancellationToken.None);
+
+        var item = _items.Single();
+        item.DescriptionMd.Should().Be("Ship the **plan**");
+        item.StartedAt.Should().Be(new DateTimeOffset(start, TimeSpan.Zero));
+        item.DueAt.Should().Be(new DateTimeOffset(due, TimeSpan.Zero));
+    }
+
+    [Fact]
+    public async Task Create_WithADueDateBeforeTheStartDate_IsRejected_AndCreatesNothing()
+    {
+        var (board, group) = Seed("WEB");
+        var handler = new CreateBoardItemCommandHandler(DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object, Placement, KeyAllocator);
+
+        var act = () => handler.Handle(new CreateBoardItemCommand(board.Id, group.Id, "Backwards", null, null, null, new DateTime(2026, 11, 9), new DateTime(2026, 11, 2)), CancellationToken.None);
+
+        (await act.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>())
+            .Which.RuleCode.Should().Be(Notrelix.Domain.WorkManagement.WorkManagementRuleCodes.WorkManagement_Item_DueDateMustBeAfterStartDate);
+        _items.Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task Create_OnAnArchivedBoard_IsRejected()
     {
         var (board, group) = Seed("WEB");

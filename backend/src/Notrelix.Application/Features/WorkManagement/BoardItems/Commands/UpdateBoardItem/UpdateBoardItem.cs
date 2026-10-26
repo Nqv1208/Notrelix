@@ -3,7 +3,7 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItem;
 
-public record UpdateBoardItemCommand(Guid BoardItemId, string? Title, DateTime? DueDate, DateTime? StartDate, long ExpectedVersion) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IExpectedVersionRequest
+public record UpdateBoardItemCommand(Guid BoardItemId, string? Title, DateTime? DueDate, DateTime? StartDate, long ExpectedVersion, string? DescriptionMd = null, bool ClearDueDate = false, bool ClearStartDate = false) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-item"), BoardItemId);
@@ -34,12 +34,15 @@ public class UpdateBoardItemCommandHandler : IRequestHandler<UpdateBoardItemComm
         var now = _timeProvider.UtcNow;
 
         if (request.Title is not null) card.Rename(request.Title, _currentUser.UserId, now);
-        if (request.DueDate.HasValue || request.StartDate.HasValue)
-            card.SetTimeline(
-                request.StartDate.HasValue ? new DateTimeOffset(request.StartDate.Value, TimeSpan.Zero) : card.StartedAt,
-                request.DueDate.HasValue ? new DateTimeOffset(request.DueDate.Value, TimeSpan.Zero) : card.DueAt,
-                _currentUser.UserId,
-                now);
+        if (request.DescriptionMd is not null) card.SetDescription(request.DescriptionMd, _currentUser.UserId, now);
+        if (request.DueDate.HasValue || request.StartDate.HasValue || request.ClearDueDate || request.ClearStartDate)
+        {
+            var start = request.ClearStartDate ? null
+                : request.StartDate.HasValue ? new DateTimeOffset(request.StartDate.Value, TimeSpan.Zero) : card.StartedAt;
+            var due = request.ClearDueDate ? null
+                : request.DueDate.HasValue ? new DateTimeOffset(request.DueDate.Value, TimeSpan.Zero) : card.DueAt;
+            card.SetTimeline(start, due, _currentUser.UserId, now);
+        }
 
         return Result.Success();
     }

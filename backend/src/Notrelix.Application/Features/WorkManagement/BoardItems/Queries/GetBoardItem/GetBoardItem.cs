@@ -108,7 +108,8 @@ public class GetBoardItemQueryHandler : IRequestHandler<GetBoardItemQuery, Resul
             NameOf(card.CompletedBy),
             card.ArchivedAt,
             card.ArchivedBy,
-            NameOf(card.ArchivedBy)
+            NameOf(card.ArchivedBy),
+            card.DescriptionMd
         ));
     }
 }

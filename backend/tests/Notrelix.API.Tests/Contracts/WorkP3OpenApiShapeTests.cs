@@ -71,7 +71,7 @@ public class WorkP3OpenApiShapeTests
     }
 
     [Theory]
-    [InlineData("WorkManagement.BoardItems.Update", "expectedVersion,title,dueDate,startDate")]
+    [InlineData("WorkManagement.BoardItems.Update", "expectedVersion,title,dueDate,startDate,descriptionMd,clearDueDate,clearStartDate")]
     [InlineData("WorkManagement.BoardFields.Update", "name,settingsJson,expectedVersion")]
     [InlineData("WorkManagement.Checklists.UpdateItem", "expectedVersion,title,isChecked")]
     [InlineData("WorkManagement.Checklists.Update", "expectedVersion,title")]

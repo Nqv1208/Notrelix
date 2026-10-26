@@ -80,6 +80,7 @@ public static class WorkManagementRuleCodes
     public const string WorkManagement_Item_SubItemFollowsParentGroup = "WorkManagement_Item_SubItemFollowsParentGroup";
     public const string WorkManagement_Item_CompletedAtRequired = "WorkManagement_Item_CompletedAtRequired";
     public const string WorkManagement_Item_DueDateMustBeAfterStartDate = "WorkManagement_Item_DueDateMustBeAfterStartDate";
+    public const string WorkManagement_Item_DescriptionTooLong = "WorkManagement_Item_DescriptionTooLong";
     public const string WorkManagement_Item_CannotModifyArchived = "WorkManagement_Item_CannotModifyArchived";
     public const string WorkManagement_Item_FieldValueMustBeNumber = "WorkManagement_Item_FieldValueMustBeNumber";
 

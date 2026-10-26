@@ -37,6 +37,14 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
     /// </summary>
     public bool ArchivedWithParent { get; private set; }
 
+    /// <summary>
+    /// What the item is about, as Markdown the member writes. Work Management owns this text; it is
+    /// not a field value and not a Document. Null means no description; the writer normalizes blank to null.
+    /// </summary>
+    public string? DescriptionMd { get; private set; }
+
+    public const int DescriptionMaxLength = 20000;
+
     private readonly List<BoardItemValue> _fieldValues = new();
     public IReadOnlyCollection<BoardItemValue> FieldValues => _fieldValues.AsReadOnly();
 
@@ -54,12 +62,13 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
         string? itemKey = null,
         long? itemSequence = null,
         DateTimeOffset? startedAt = null,
-        DateTimeOffset? dueAt = null)
+        DateTimeOffset? dueAt = null,
+        string? descriptionMd = null)
     {
         return CreateCore(
             accountId, workspaceId, boardId, groupId, name, position, createdBy, createdAt,
             parentItemId: null, itemLevel: 0,
-            itemKey, itemSequence, startedAt, dueAt);
+            itemKey, itemSequence, startedAt, dueAt, descriptionMd);
     }
 
     public static BoardItem CreateChild(
@@ -119,8 +128,14 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
         string? itemKey,
         long? itemSequence,
         DateTimeOffset? startedAt,
-        DateTimeOffset? dueAt)
+        DateTimeOffset? dueAt,
+        string? descriptionMd = null)
     {
+        if (startedAt != null && dueAt != null && dueAt < startedAt)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Item_DueDateMustBeAfterStartDate, "Due date must be after start date.");
+        var description = NormalizeDescription(descriptionMd);
+        if (description is not null && description.Length > DescriptionMaxLength)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Item_DescriptionTooLong, $"Description cannot exceed {DescriptionMaxLength} characters.");
         Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(boardId);
         Guard.NotEmpty(groupId);
@@ -143,7 +158,8 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
             ItemSequence = itemSequence,
             ItemLevel = itemLevel,
             StartedAt = startedAt,
-            DueAt = dueAt
+            DueAt = dueAt,
+            DescriptionMd = description
         };
 
         item.SetAuditOnCreate(createdBy, createdAt);
@@ -170,6 +186,30 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
         IncrementVersion();
         RaiseDomainEvent(new BoardItemRenamedDomainEvent(AccountId, WorkspaceId, Id, BoardId, oldName, Name, updatedBy, updatedAt));
     }
+
+    /// <summary>
+    /// Replaces the item's description. Blank clears it. Writing the text it already holds changes nothing
+    /// (no version, no audit). The description is not a business event: nothing outside the item consumes it.
+    /// </summary>
+    public void SetDescription(string? descriptionMd, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        EnsureNotArchived();
+        Guard.NotEmpty(updatedBy);
+
+        var description = NormalizeDescription(descriptionMd);
+        if (description is not null && description.Length > DescriptionMaxLength)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Item_DescriptionTooLong, $"Description cannot exceed {DescriptionMaxLength} characters.");
+        if (DescriptionMd == description) return;
+
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        DescriptionMd = description;
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+    }
+
+    private static string? NormalizeDescription(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Replace("\r\n", "\n").TrimEnd();
 
     public void MoveToGroup(BoardGroupRef group, FractionalIndex newPosition, Guid updatedBy, DateTimeOffset updatedAt)
     {
