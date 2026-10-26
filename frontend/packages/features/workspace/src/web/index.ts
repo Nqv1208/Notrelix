@@ -437,6 +437,8 @@ export {
   type UnavailableFeature,
 } from "./unavailable/feature-unavailable-surface";
 export {
+  DEFAULT_REPORT_WEEKS,
+  REPORT_WEEK_OPTIONS,
   WorkReportSurface,
   type WorkReportAssigneeRow,
   type WorkReportDto,

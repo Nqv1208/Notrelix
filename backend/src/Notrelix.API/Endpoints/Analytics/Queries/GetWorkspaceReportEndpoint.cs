@@ -19,10 +19,13 @@ public static class GetWorkspaceReportEndpoint
     private static async Task<IResult> HandleAsync(
         Guid workspaceId,
         Guid? spaceId,
+        int? weeks,
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new GetWorkspaceReportQuery(workspaceId, spaceId), cancellationToken);
+        var result = await sender.Send(
+            new GetWorkspaceReportQuery(workspaceId, spaceId, weeks ?? WorkReportPeriod.DefaultWeeks),
+            cancellationToken);
         return result.ToApiResult();
     }
 }

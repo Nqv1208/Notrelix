@@ -28,6 +28,8 @@ export const en = {
     allBoards: "All boards you can read",
     space: "Department",
     allSpaces: "Whole workspace",
+    period: "Period",
+    periodOption: "Last {{weeks}} weeks",
     totals: {
       total: "Items",
       open: "Open",
@@ -49,7 +51,7 @@ export const en = {
     assigneeTitle: "Items by assignee",
     unassigned: "Unassigned",
     assigneeCount: "{{items}} items, {{overdue}} overdue",
-    weeksTitle: "Finished per week, last 8 weeks",
+    weeksTitle: "Finished per week, last {{weeks}} weeks",
     weekOf: "Week of {{day}}: {{count}} finished",
   },
   billing: {
@@ -126,6 +128,8 @@ export const vi: FeatureAvailabilityCopy = {
     allBoards: "Mọi bảng bạn đọc được",
     space: "Phòng ban",
     allSpaces: "Cả workspace",
+    period: "Khoảng thời gian",
+    periodOption: "{{weeks}} tuần gần nhất",
     totals: {
       total: "Hạng mục",
       open: "Đang mở",
@@ -147,7 +151,7 @@ export const vi: FeatureAvailabilityCopy = {
     assigneeTitle: "Hạng mục theo người phụ trách",
     unassigned: "Chưa giao",
     assigneeCount: "{{items}} hạng mục, {{overdue}} quá hạn",
-    weeksTitle: "Hoàn thành mỗi tuần, 8 tuần gần nhất",
+    weeksTitle: "Hoàn thành mỗi tuần, {{weeks}} tuần gần nhất",
     weekOf: "Tuần {{day}}: xong {{count}}",
   },
   billing: {

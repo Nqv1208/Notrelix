@@ -201,6 +201,7 @@ const scope = {
   boardId: null,
   spaces: [{ id: "s1", name: "Phòng Công nghệ" }],
   spaceId: null,
+  weeks: 8,
 };
 const workReport = (
   state: Parameters<typeof WorkReportSurface>[0]["state"],
@@ -212,6 +213,7 @@ const workReport = (
       scope={scope}
       onBoard={noop}
       onSpace={noop}
+      onWeeks={noop}
       onRetry={noop}
     />
   </Page>

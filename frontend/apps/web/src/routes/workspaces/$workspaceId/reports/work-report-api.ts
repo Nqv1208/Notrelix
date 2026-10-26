@@ -68,9 +68,9 @@ type SpaceRow = {
 export function createWorkReportApi(api: WorkReportApiClient) {
   return {
     /** The work report of one board the caller can read. */
-    async board(boardId: string): Promise<WorkReportDto> {
+    async board(boardId: string, weeks: number): Promise<WorkReportDto> {
       const row = await api.get<BoardReport>(
-        `/boards/${encodeURIComponent(boardId)}/report`,
+        `/boards/${encodeURIComponent(boardId)}/report?weeks=${weeks}`,
         QUIET,
       );
       return toReport(row.report);
@@ -79,8 +79,11 @@ export function createWorkReportApi(api: WorkReportApiClient) {
     async workspace(
       workspaceId: string,
       spaceId: string | null,
+      weeks: number,
     ): Promise<WorkReportDto> {
-      const query = spaceId ? `?spaceId=${encodeURIComponent(spaceId)}` : "";
+      const query = `?weeks=${weeks}${
+        spaceId ? `&spaceId=${encodeURIComponent(spaceId)}` : ""
+      }`;
       const row = await api.get<WorkspaceReport>(
         `${root(workspaceId)}/work-report${query}`,
         QUIET,

@@ -204,6 +204,14 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "weeks",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
           }
         ],
         "responses": {
@@ -252,6 +260,14 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          },
+          {
+            "name": "weeks",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
             }
           }
         ],
@@ -4009,7 +4025,10 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Notrelix.Application.Features.Governance.DTOs.ResourcePermissionDto"
+                  }
                 }
               }
             }
@@ -4061,12 +4080,12 @@
           "required": true
         },
         "responses": {
-          "200": {
-            "description": "OK",
+          "201": {
+            "description": "Created",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Governance.DTOs.ResourcePermissionDto"
                 }
               }
             }
@@ -12810,7 +12829,10 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardMemberDto"
+                  }
                 }
               }
             }
@@ -25202,6 +25224,53 @@
             "items": {
               "$ref": "#/components/schemas/Notrelix.Application.Features.Documents.DTOs.BlockDto"
             },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Governance.DTOs.ResourcePermissionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "workspaceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "resourceKind": {
+            "type": "string",
+            "nullable": true
+          },
+          "resourceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "subjectType": {
+            "type": "string",
+            "nullable": true
+          },
+          "subjectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "level": {
+            "type": "string",
+            "nullable": true
+          },
+          "grantedBy": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "isRevoked": {
+            "type": "boolean"
+          },
+          "revokedAt": {
+            "type": "string",
+            "format": "date-time",
             "nullable": true
           }
         },

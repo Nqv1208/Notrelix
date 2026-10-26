@@ -9,7 +9,7 @@ namespace Notrelix.Application.Features.Analytics.Reports.Queries.GetBoardReport
 /// measures are aggregated by Work Management, so no Item is loaded here. A Board the caller cannot see
 /// is NotFound (GOV-029).
 /// </summary>
-public record GetBoardReportQuery(Guid BoardId)
+public record GetBoardReportQuery(Guid BoardId, int Weeks = WorkReportPeriod.DefaultWeeks)
     : IQuery<Result<BoardReportDto>>, IRequirePermission, IAuthenticatedRequest, IResourceScopedRequest, IReadRequest
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
@@ -46,7 +46,7 @@ public class GetBoardReportQueryHandler : IRequestHandler<GetBoardReportQuery, R
             throw new NotFoundException("Board", request.BoardId);
 
         var now = _clock.UtcNow;
-        var fact = await _facts.ReportAsync(workspaceId, [request.BoardId], now, WorkReportMapper.Weeks, ct);
+        var fact = await _facts.ReportAsync(workspaceId, [request.BoardId], now, request.Weeks, ct);
         var report = await WorkReportMapper.MapAsync(fact, _actors, ct);
         return Result<BoardReportDto>.Success(new BoardReportDto(request.BoardId, now, report));
     }

@@ -40,8 +40,6 @@ public sealed record WorkspaceReportDto(
 
 internal static class WorkReportMapper
 {
-    public const int Weeks = 8;
-
     public static async Task<WorkReportDto> MapAsync(
         WorkReportFact fact,
         IActorLookupService actors,

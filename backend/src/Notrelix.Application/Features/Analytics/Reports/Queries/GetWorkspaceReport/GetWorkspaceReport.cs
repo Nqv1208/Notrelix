@@ -11,7 +11,7 @@ namespace Notrelix.Application.Features.Analytics.Reports.Queries.GetWorkspaceRe
 /// it; that needs ManageSpaces on the Workspace, which the pipeline authorizes, so a plain member asking for
 /// a Space is refused, never silently widened.
 /// </summary>
-public record GetWorkspaceReportQuery(Guid WorkspaceId, Guid? SpaceId = null)
+public record GetWorkspaceReportQuery(Guid WorkspaceId, Guid? SpaceId = null, int Weeks = WorkReportPeriod.DefaultWeeks)
     : IQuery<Result<WorkspaceReportDto>>, IAuthenticatedRequest, IReadRequest, IWorkspaceRequest, IRequirePermission
 {
     public PermissionAction Action => SpaceId is null ? PermissionAction.ViewWorkspace : PermissionAction.ManageSpaces;
@@ -62,7 +62,7 @@ public class GetWorkspaceReportQueryHandler : IRequestHandler<GetWorkspaceReport
         }
 
         var now = _clock.UtcNow;
-        var fact = await _facts.ReportAsync(workspaceId, boards, now, WorkReportMapper.Weeks, ct);
+        var fact = await _facts.ReportAsync(workspaceId, boards, now, request.Weeks, ct);
         var report = await WorkReportMapper.MapAsync(fact, _actors, ct);
         return Result<WorkspaceReportDto>.Success(new WorkspaceReportDto(now, boards.Count, request.SpaceId, report));
     }

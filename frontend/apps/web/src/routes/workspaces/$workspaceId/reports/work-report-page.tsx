@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { workspaceQueryKey } from "@notrelix/query";
 import { useAppRuntime } from "@notrelix/runtime-web";
 import {
+  DEFAULT_REPORT_WEEKS,
   WorkReportSurface,
   useFeatureAvailabilityCopy,
   type WorkReportState,
@@ -37,6 +38,7 @@ export function WorkReportPage() {
   );
   const [boardId, setBoardId] = useState<string | null>(null);
   const [spaceId, setSpaceId] = useState<string | null>(null);
+  const [weeks, setWeeks] = useState<number>(DEFAULT_REPORT_WEEKS);
 
   const boards = useQuery({
     queryKey: workspaceQueryKey(workspaceId, "work-report", "boards"),
@@ -52,9 +54,12 @@ export function WorkReportPage() {
     queryKey: workspaceQueryKey(workspaceId, "work-report", "report", {
       boardId,
       spaceId,
+      weeks,
     }),
     queryFn: () =>
-      boardId ? api.board(boardId) : api.workspace(workspaceId, spaceId),
+      boardId
+        ? api.board(boardId, weeks)
+        : api.workspace(workspaceId, spaceId, weeks),
     retry: false,
   });
 
@@ -76,9 +81,11 @@ export function WorkReportPage() {
           boardId,
           spaces: departments.data?.length ? departments.data : undefined,
           spaceId,
+          weeks,
         }}
         onBoard={setBoardId}
         onSpace={setSpaceId}
+        onWeeks={setWeeks}
         onRetry={() => void report.refetch()}
       />
     </div>

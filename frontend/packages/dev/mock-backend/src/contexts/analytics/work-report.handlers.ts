@@ -5,11 +5,16 @@
  *   Analytics.Reports.GetWorkspaceReport — GET /workspaces/:workspaceId/work-report
  *
  * Both count the live items of the boards: by status, by assignee, overdue, finished per week for the last
- * eight weeks (weeks start on Monday, UTC) and the mean time from creation to completion.
+ * the weeks asked for, eight by default and at most 26 (weeks start on Monday, UTC) and the mean time from creation to completion.
  */
 import { isoOfMs } from "../../state/clock";
 import { defineMockOperation } from "../../operations/types";
-import { forbidden, notFound, ok } from "../../transport/create-response";
+import {
+  forbidden,
+  notFound,
+  ok,
+  validationError,
+} from "../../transport/create-response";
 import {
   boardItems,
   personOf,
@@ -18,7 +23,8 @@ import {
 import type { MockStore } from "../../state/mock-store";
 
 const DAY_MS = 86_400_000;
-const WEEKS = 8;
+const DEFAULT_WEEKS = 8;
+const MAX_WEEKS = 26;
 
 const CATEGORY_OF: Readonly<Record<string, string>> = {
   todo: "Todo",
@@ -28,17 +34,21 @@ const CATEGORY_OF: Readonly<Record<string, string>> = {
 };
 const CATEGORY_ORDER = ["Todo", "InProgress", "Review", "Done"] as const;
 
-function weekStarts(nowMs: number): number[] {
+function weekStarts(nowMs: number, weeks: number): number[] {
   const days = Math.floor(nowMs / DAY_MS);
   // 1970-01-01 was a Thursday, so days + 3 counts the days since the last Monday.
   const thisMonday = (days - ((days + 3) % 7)) * DAY_MS;
   return Array.from(
-    { length: WEEKS },
-    (_, i) => thisMonday - (WEEKS - 1 - i) * 7 * DAY_MS,
+    { length: weeks },
+    (_, i) => thisMonday - (weeks - 1 - i) * 7 * DAY_MS,
   );
 }
 
-function reportOf(store: MockStore, boardIds: readonly string[]) {
+function reportOf(
+  store: MockStore,
+  boardIds: readonly string[],
+  weeks: number,
+) {
   const nowMs = store.getClock().now().getTime();
   const items: ReportItem[] = boardIds.flatMap((id) => boardItems(store, id));
   const isOpen = (item: ReportItem) => item.completedAt === null;
@@ -111,7 +121,7 @@ function reportOf(store: MockStore, boardIds: readonly string[]) {
       ...entry,
     }));
 
-  const starts = weekStarts(nowMs);
+  const starts = weekStarts(nowMs, weeks);
   const completedPerWeek = starts.map((start) => ({
     weekStart: isoOfMs(start),
     completed: items.filter((i) => {
@@ -145,6 +155,15 @@ function reportOf(store: MockStore, boardIds: readonly string[]) {
   };
 }
 
+/** The period asked for (1 to 26 weeks, eight by default), or null when it is out of range. */
+function weeksOf(raw: string | undefined): number | null {
+  if (raw === undefined) return DEFAULT_WEEKS;
+  const weeks = Number(raw);
+  return Number.isInteger(weeks) && weeks >= 1 && weeks <= MAX_WEEKS
+    ? weeks
+    : null;
+}
+
 type BoardParams = { boardId: string };
 type WorkspaceParams = { workspaceId: string };
 
@@ -157,14 +176,16 @@ export const workReportOperations = [
     },
     method: "GET",
     route: "/boards/:boardId/report",
-    async handle({ params, store }) {
+    async handle({ params, query, store }) {
       const board = store.getBoard(params.boardId);
       if (!board) return notFound("Board not found");
       if (!store.getCurrentMemberRole(board.workspaceId)) return forbidden();
+      const weeks = weeksOf(query.weeks);
+      if (weeks === null) return validationError({ Weeks: ["Out of range."] });
       return ok({
         boardId: board.id,
         generatedAt: store.getClock().now().toISOString(),
-        report: reportOf(store, [board.id]),
+        report: reportOf(store, [board.id], weeks),
       });
     },
   }),
@@ -182,6 +203,8 @@ export const workReportOperations = [
         return notFound("Workspace not found");
       const role = store.getCurrentMemberRole(params.workspaceId);
       if (!role) return forbidden();
+      const weeks = weeksOf(query.weeks);
+      if (weeks === null) return validationError({ Weeks: ["Out of range."] });
       const spaceId = query.spaceId ?? null;
       if (spaceId && role !== "owner" && role !== "admin") return forbidden();
       const boards = store
@@ -198,6 +221,7 @@ export const workReportOperations = [
         report: reportOf(
           store,
           boards.map((b) => b.id),
+          weeks,
         ),
       });
     },

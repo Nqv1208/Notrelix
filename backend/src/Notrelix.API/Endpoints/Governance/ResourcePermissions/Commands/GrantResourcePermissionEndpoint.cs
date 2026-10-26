@@ -1,5 +1,6 @@
 using Notrelix.API.Contracts.Governance.ResourcePermissions.Requests;
 using Notrelix.API.Extensions;
+using Notrelix.Application.Features.Governance.DTOs;
 using Notrelix.Application.Features.Governance.ResourcePermissions.Commands.GrantResourcePermission;
 
 namespace Notrelix.API.Endpoints.Governance.ResourcePermissions.Commands;
@@ -11,7 +12,8 @@ public static class GrantResourcePermissionEndpoint
         group.MapResourcePost("/", HandleAsync)
             .WithName("Governance.ResourcePermissions.Grant")
             .WithTags("Governance.ResourcePermissions")
-            .WithSummary("Grant a permission to a resource");
+            .WithSummary("Grant a permission to a resource")
+            .Produces<ResourcePermissionDto>(StatusCodes.Status201Created);
         return group;
     }
 

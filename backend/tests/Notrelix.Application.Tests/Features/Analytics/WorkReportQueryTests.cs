@@ -113,6 +113,62 @@ public class WorkReportQueryTests
     }
 
     [Fact]
+    public async Task A_workspace_report_asks_for_the_requested_number_of_weeks()
+    {
+        _facts.Setup(f => f.ReportAsync(
+                WorkspaceId, It.IsAny<IReadOnlyCollection<Guid>>(), Now, 26, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new WorkReportFact(0, 0, 0, 0, [], [], [], null));
+
+        await WorkspaceHandler().Handle(new GetWorkspaceReportQuery(WorkspaceId, null, 26), CancellationToken.None);
+
+        _facts.Verify(f => f.ReportAsync(
+            WorkspaceId, It.IsAny<IReadOnlyCollection<Guid>>(), Now, 26, It.IsAny<CancellationToken>()), Times.Once);
+        _facts.Verify(f => f.ReportAsync(
+            WorkspaceId, It.IsAny<IReadOnlyCollection<Guid>>(), Now, 8, It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task A_board_report_asks_for_the_requested_number_of_weeks()
+    {
+        _facts.Setup(f => f.ReportAsync(
+                WorkspaceId, It.IsAny<IReadOnlyCollection<Guid>>(), Now, 4, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new WorkReportFact(0, 0, 0, 0, [], [], [], null));
+        var handler = new GetBoardReportQueryHandler(
+            _facts.Object, _visibility.Object, _actors.Object, _context.Object, _clock.Object);
+
+        await handler.Handle(new GetBoardReportQuery(BoardId, 4), CancellationToken.None);
+
+        _facts.Verify(f => f.ReportAsync(
+            WorkspaceId, It.Is<IReadOnlyCollection<Guid>>(b => b.Single() == BoardId), Now, 4,
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-3)]
+    [InlineData(27)]
+    [InlineData(520)]
+    public void A_period_outside_one_to_twenty_six_weeks_is_refused(int weeks)
+    {
+        Assert.False(new GetWorkspaceReportQueryValidator()
+            .Validate(new GetWorkspaceReportQuery(WorkspaceId, null, weeks)).IsValid);
+        Assert.False(new GetBoardReportQueryValidator()
+            .Validate(new GetBoardReportQuery(BoardId, weeks)).IsValid);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(8)]
+    [InlineData(26)]
+    public void A_period_within_the_bounds_is_accepted(int weeks)
+    {
+        Assert.True(new GetWorkspaceReportQueryValidator()
+            .Validate(new GetWorkspaceReportQuery(WorkspaceId, null, weeks)).IsValid);
+        Assert.True(new GetBoardReportQueryValidator()
+            .Validate(new GetBoardReportQuery(BoardId, weeks)).IsValid);
+    }
+
+    [Fact]
     public void Filtering_by_space_needs_the_space_management_permission()
     {
         Assert.Equal(PermissionAction.ViewWorkspace, new GetWorkspaceReportQuery(WorkspaceId).Action);

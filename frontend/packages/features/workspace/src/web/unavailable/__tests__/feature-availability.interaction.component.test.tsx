@@ -143,7 +143,8 @@ describe("Feature availability", () => {
         onRetry={vi.fn()}
         onBoard={vi.fn()}
         onSpace={vi.fn()}
-        scope={{ boards: [], boardId: null, spaceId: null }}
+        onWeeks={vi.fn()}
+        scope={{ boards: [], boardId: null, spaceId: null, weeks: 8 }}
         state={{
           status: "ready",
           data: {
@@ -190,17 +191,20 @@ describe("Feature availability", () => {
   it("FUI[workspace.work-report:scope] narrows by board and, for people who may, by department", () => {
     const onBoard = vi.fn();
     const onSpace = vi.fn();
+    const onWeeks = vi.fn();
     const view = renderPureUi(
       <WorkReportSurface
         copy={en}
         onRetry={vi.fn()}
         onBoard={onBoard}
         onSpace={onSpace}
+        onWeeks={onWeeks}
         scope={{
           boards: [{ id: "b1", title: "Roadmap" }],
           boardId: null,
           spaces: [{ id: "s1", name: "Engineering" }],
           spaceId: null,
+          weeks: 8,
         }}
         state={{ status: "loading" }}
       />,
@@ -209,13 +213,16 @@ describe("Feature availability", () => {
     expect(onBoard).toHaveBeenCalledWith("b1");
     choose(screen.getByLabelText("Department"), "Engineering");
     expect(onSpace).toHaveBeenCalledWith("s1");
+    choose(screen.getByLabelText("Period"), "Last 26 weeks");
+    expect(onWeeks).toHaveBeenCalledWith(26);
     view.rerender(
       <WorkReportSurface
         copy={en}
         onRetry={vi.fn()}
         onBoard={onBoard}
         onSpace={onSpace}
-        scope={{ boards: [], boardId: null, spaceId: null }}
+        onWeeks={onWeeks}
+        scope={{ boards: [], boardId: null, spaceId: null, weeks: 8 }}
         state={{ status: "forbidden" }}
       />,
     );
