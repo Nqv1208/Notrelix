@@ -23,6 +23,7 @@ import {
   erpItemId,
   erpOwnerAccess,
 } from "@notrelix/work-management-testing";
+import { itemCreateCatalog } from "../../../item-create/item-create.catalog";
 import { itemSheetCatalog } from "../../../card-detail/item-sheet.catalog";
 import { kanbanLaneCatalog } from "../../kanban/kanban-lane.catalog";
 import { kanbanToolbarCatalog } from "../../kanban/kanban-toolbar.catalog";
@@ -113,6 +114,7 @@ function Providers({
           kanbanLaneCatalog,
           kanbanToolbarCatalog,
           itemSheetCatalog,
+          itemCreateCatalog,
         ]}
         initialLocale="vi"
       >
@@ -210,6 +212,24 @@ describe("BoardTimelineView on the ERP board", () => {
         .getByRole("button", { name: /^Đường găng/ })
         .getAttribute("aria-disabled"),
     ).toBe("true");
+  });
+
+  it("opens the full form with the shown day as start and due when Add item is pressed", async () => {
+    const { cards } = renderTimeline();
+    await ready();
+    fireEvent.click(screen.getByRole("button", { name: "Thêm công việc" }));
+    const start = (await screen.findByLabelText(
+      "Ngày bắt đầu",
+    )) as HTMLInputElement;
+    expect(start.value).toBe("2026-10-12");
+    expect((screen.getByLabelText("Hạn chót") as HTMLInputElement).value).toBe(
+      "2026-10-12",
+    );
+    fireEvent.change(screen.getByRole("textbox", { name: "Tên công việc" }), {
+      target: { value: "Dựng khung kế hoạch" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Thêm công việc" }));
+    await waitFor(() => expect(cards.createCard).toHaveBeenCalledTimes(1));
   });
 
   it("opens the item sheet from the key and clears it on close", async () => {

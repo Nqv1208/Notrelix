@@ -17,6 +17,7 @@ import {
   erpItemId,
   erpOwnerAccess,
 } from "@notrelix/work-management-testing";
+import { itemCreateCatalog } from "../../../item-create/item-create.catalog";
 import { itemSheetCatalog } from "../../../card-detail/item-sheet.catalog";
 import { kanbanLaneCatalog } from "../../kanban/kanban-lane.catalog";
 import { kanbanToolbarCatalog } from "../../kanban/kanban-toolbar.catalog";
@@ -103,6 +104,7 @@ function Providers({
           kanbanLaneCatalog,
           kanbanToolbarCatalog,
           itemSheetCatalog,
+          itemCreateCatalog,
         ]}
         initialLocale="vi"
       >
@@ -278,6 +280,23 @@ describe("BoardCalendarView on the ERP board", () => {
         dueDate: "2026-10-23T10:00:00.000Z",
       }),
     );
+  });
+
+  it("opens the full form with the shown day when Add item is pressed, and creates the item with that due day", async () => {
+    const { cards } = renderCalendar();
+    await ready();
+    fireEvent.click(screen.getByRole("button", { name: "Thêm công việc" }));
+    const due = (await screen.findByLabelText("Hạn chót")) as HTMLInputElement;
+    expect(due.value).toBe("2026-10-12");
+    fireEvent.change(screen.getByRole("textbox", { name: "Tên công việc" }), {
+      target: { value: "Chốt lịch tuần" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Thêm công việc" }));
+    await waitFor(() => expect(cards.createCard).toHaveBeenCalledTimes(1));
+    expect(cards.createCard.mock.calls[0]?.[1]).toMatchObject({
+      title: "Chốt lịch tuần",
+      dueDate: "2026-10-12T00:00:00.000Z",
+    });
   });
 
   it("opens an item and its sheet, and closes it again", async () => {

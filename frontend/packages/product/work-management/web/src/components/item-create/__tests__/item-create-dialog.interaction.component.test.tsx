@@ -117,4 +117,30 @@ describe.each([
       ).disabled,
     ).toBe(true);
   });
+
+  it(`${fui("wm.item-create.dialog:prefill", locale)}starts with the day the Calendar or Timeline passed (${locale})`, () => {
+    const onSubmit = vi.fn();
+    renderPureUi(
+      <ItemCreateDialog
+        {...props(copy, {
+          onSubmit,
+          defaultStartDay: "2026-10-12",
+          defaultDueDay: "2026-10-14",
+        })}
+      />,
+    );
+    expect(
+      (screen.getByLabelText(copy.startDate) as HTMLInputElement).value,
+    ).toBe("2026-10-12");
+    expect(
+      (screen.getByLabelText(copy.dueDate) as HTMLInputElement).value,
+    ).toBe("2026-10-14");
+    fireEvent.change(screen.getByRole("textbox", { name: copy.name }), {
+      target: { value: "Plan the week" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: copy.submit }));
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({ startDay: "2026-10-12", dueDay: "2026-10-14" }),
+    );
+  });
 });

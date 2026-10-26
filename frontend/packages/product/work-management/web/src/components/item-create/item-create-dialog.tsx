@@ -59,6 +59,9 @@ export interface ItemCreateDialogProps {
   readonly defaultGroupId: string;
   readonly statuses: readonly ItemCreateOption[];
   readonly defaultStatusId: string | null;
+  /** `YYYY-MM-DD` the dates start on (the Calendar and Timeline pass the day they show). */
+  readonly defaultStartDay?: string;
+  readonly defaultDueDay?: string;
   /** Empty when the board has no priority field. */
   readonly priorities: readonly ItemCreateOption[];
   readonly members: readonly ItemCreateMember[];
@@ -93,6 +96,8 @@ export function ItemCreateDialog({
   defaultGroupId,
   statuses,
   defaultStatusId,
+  defaultStartDay = "",
+  defaultDueDay = "",
   priorities,
   members,
   labels,
@@ -132,11 +137,11 @@ export function ItemCreateDialog({
     setPriorityId(null);
     setAssigneeIds([]);
     setLabelIds([]);
-    setStartDay("");
-    setDueDay("");
+    setStartDay(defaultStartDay);
+    setDueDay(defaultDueDay);
     setTouched(false);
     // `another` is kept: a person adding several items wants it to stay on.
-  }, [open, defaultGroupId, defaultStatusId]);
+  }, [open, defaultGroupId, defaultStatusId, defaultStartDay, defaultDueDay]);
 
   const trimmed = title.trim();
   const datesBackwards = startDay !== "" && dueDay !== "" && dueDay < startDay;

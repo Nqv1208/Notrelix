@@ -31,6 +31,8 @@ export function ItemCreateHost({
   groups,
   defaultGroupId,
   defaultStatusId,
+  defaultStartDay,
+  defaultDueDay,
 }: {
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
@@ -39,6 +41,9 @@ export function ItemCreateHost({
   readonly groups: readonly BoardGroup[];
   readonly defaultGroupId: string;
   readonly defaultStatusId: string | null;
+  /** `YYYY-MM-DD` prefilled in the dates (Calendar and Timeline). */
+  readonly defaultStartDay?: string;
+  readonly defaultDueDay?: string;
 }) {
   const copy = useItemCreateCopy();
   const create = useCreateItemWithDetails(board.id, workspaceId);
@@ -114,6 +119,8 @@ export function ItemCreateHost({
         label: option.label,
       }))}
       defaultStatusId={defaultStatusId ?? fields.status?.options[0]?.id ?? null}
+      defaultStartDay={defaultStartDay}
+      defaultDueDay={defaultDueDay}
       priorities={(fields.priority?.options ?? []).map((option) => ({
         id: option.id,
         label: option.label,
