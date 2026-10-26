@@ -30,6 +30,7 @@ import {
   DocTaskChip,
 } from "../components/doc-article-surface";
 import { newBlockId, nodeToDraft } from "./block-mapping";
+import { createCodeBlock } from "./code-block";
 import { COLOR_CLASS, HIGHLIGHT_CLASS } from "./mark-classes";
 
 /** What the node views need from the page; the host keeps it current. */
@@ -700,12 +701,7 @@ export function createDocExtensions({
           class: "mb-3.5 max-w-[68ch] text-doc-prose text-pretty text-doc-body",
         },
       },
-      codeBlock: {
-        HTMLAttributes: {
-          class:
-            "mb-3.5 overflow-x-auto rounded-[8px] bg-state-hover px-3 py-2.5 font-mono text-compact leading-[1.45] text-foreground",
-        },
-      },
+      codeBlock: false,
       horizontalRule: { HTMLAttributes: { class: "my-4 border-border" } },
       link: {
         openOnClick: false,
@@ -726,6 +722,7 @@ export function createDocExtensions({
         },
       },
     }),
+    createCodeBlock(context),
     BlockId,
     ColorToken,
     HighlightToken,

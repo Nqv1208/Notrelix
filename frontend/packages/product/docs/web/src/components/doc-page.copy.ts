@@ -172,6 +172,8 @@ export const vi = {
     emptyDoc: "Gõ / để thêm tiêu đề, danh sách việc, bảng hoặc ghi chú.",
     unsupported:
       "Khối này chưa chỉnh sửa được ở đây; nội dung vẫn được giữ nguyên.",
+    codeLanguage: "Ngôn ngữ của khối mã",
+    codePlain: "Văn bản thuần",
     pageReference: {
       choose: "Chọn một trang để liên kết",
       unavailable: "Trang không khả dụng",
@@ -539,6 +541,8 @@ export const en: DocPageCopy = {
     emptyDoc: "Type / to add a heading, task list, table or callout.",
     unsupported:
       "This block can't be edited here yet; its content is kept as is.",
+    codeLanguage: "Code block language",
+    codePlain: "Plain text",
     pageReference: {
       choose: "Choose a page to link",
       unavailable: "Page unavailable",
