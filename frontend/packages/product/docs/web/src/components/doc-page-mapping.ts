@@ -269,6 +269,7 @@ export function toCommentViews(
   copy: DocPageCopy,
   now: Date,
   personFor: (userId: string) => DocPerson,
+  viewerId?: string,
 ): DocCommentView[] {
   return [...comments]
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
@@ -285,6 +286,8 @@ export function toCommentViews(
         author: personFor(comment.authorId),
         quote,
         ...(comment.anchor ? { anchored: true } : {}),
+        ...(comment.resolved ? { resolved: true } : {}),
+        ...(viewerId && comment.authorId === viewerId ? { mine: true } : {}),
         body: text,
         when:
           day === "today"

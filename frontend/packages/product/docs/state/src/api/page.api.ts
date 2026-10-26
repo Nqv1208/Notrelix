@@ -84,6 +84,7 @@ export interface PageApiEndpoints {
   };
   comments: {
     detail: (commentId: string) => string;
+    resolve: (commentId: string) => string;
   };
   /** Work Management reads and writes a page turns a checklist line into. */
   boardItems: {

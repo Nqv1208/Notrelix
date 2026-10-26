@@ -205,6 +205,10 @@ export interface DocCommentView {
   readonly active?: boolean;
   readonly body: string;
   readonly when: string;
+  /** The thread was marked resolved; its text is no longer highlighted. */
+  readonly resolved?: boolean;
+  /** The viewer wrote it (only the author is offered Delete). */
+  readonly mine?: boolean;
 }
 
 export interface DocVersionView {
@@ -440,6 +444,8 @@ export interface DocPageCallbacks {
   /** Highlighted text was clicked: show its thread in the panel. */
   readonly onOpenComment?: (id: string) => void;
   readonly onCommentDelete?: (id: string) => void;
+  /** Marks a comment thread resolved. */
+  readonly onCommentResolve?: (id: string) => void;
   readonly onMentionInsert?: () => void;
   readonly onOpenComments?: () => void;
   readonly onAddBlock?: (type: BlockType) => void;

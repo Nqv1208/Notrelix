@@ -214,6 +214,8 @@ export const endpoints = {
   },
   comments: {
     detail: (commentId: string) => `/comments/${commentId}`,
+    // Collaboration.Comments.Resolve
+    resolve: (commentId: string) => `/comments/${commentId}/resolve`,
   },
   notifications: {
     list: "/notifications",

@@ -316,6 +316,8 @@ export interface MockPageCommentRecord {
   contentMd: string;
   createdAt: string;
   updatedAt?: string | null;
+  /** When the thread was resolved; absent while it is open. */
+  resolvedAt?: string | null;
   /** The quoted range of a block the comment points at (page comments only). */
   anchor?: { blockId: string; quote: string; start: number; end: number };
 }

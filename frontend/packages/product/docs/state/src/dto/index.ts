@@ -38,6 +38,8 @@ export type CommentDtoApi = {
   contentMd: string;
   createdAt: string;
   isEdited: boolean;
+  /** When the thread was marked resolved; absent while it is open. */
+  resolvedAt?: string | null;
   /** `Collaboration.Comments.GetPageComments`: the quoted range of a block, when the comment has one. */
   anchor?: {
     blockId: string;

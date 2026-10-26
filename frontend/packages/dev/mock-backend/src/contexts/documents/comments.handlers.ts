@@ -30,6 +30,7 @@ export const commentsOperations = [
           contentMd: c.contentMd,
           createdAt: c.createdAt,
           isEdited: !!c.updatedAt,
+          resolvedAt: c.resolvedAt ?? null,
           anchor: c.anchor ?? null,
         })),
       );
@@ -111,8 +112,9 @@ export const commentsOperations = [
     method: "POST",
     route: "/comments/:commentId/resolve",
     async handle({ params, store }) {
-      const deleted = store.deletePageComment(params.commentId);
-      if (!deleted) return notFound("Comment not found");
+      if (!store.resolvePageComment(params.commentId)) {
+        return notFound("Comment not found");
+      }
       return ok<void>(undefined);
     },
   }),

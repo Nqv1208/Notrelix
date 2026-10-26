@@ -8,6 +8,8 @@ import {
   useRememberPageAttachment,
   type DocsFileClient,
   createUseCreateComment,
+  createUseDeleteComment,
+  createUseResolveComment,
   createUseCreatePage,
   createUseDocEditor,
   createUseDocSaver,
@@ -156,6 +158,8 @@ export function createDocPageScreen({
   const useDocEditor = createUseDocEditor(api, endpoints);
   const useDocSaver = createUseDocSaver(api, endpoints);
   const useCreateComment = createUseCreateComment(api, endpoints);
+  const useDeleteComment = createUseDeleteComment(api, endpoints);
+  const useResolveComment = createUseResolveComment(api, endpoints);
   const useCreatePage = createUseCreatePage(api, endpoints);
   const usePageBacklinks = createUsePageBacklinks(api, endpoints);
   const useConvertTodo = createUseConvertTodo(api, endpoints);
@@ -189,6 +193,8 @@ export function createDocPageScreen({
     const historyQuery = usePageHistory(workspaceId, pageId);
     const editor = useDocEditor(workspaceId, pageId);
     const createComment = useCreateComment(workspaceId, pageId);
+    const deleteComment = useDeleteComment(workspaceId, pageId);
+    const resolveComment = useResolveComment(workspaceId, pageId);
     const createPage = useCreatePage(workspaceId);
     const backlinksQuery = usePageBacklinks(workspaceId, pageId);
     const convertTodo = useConvertTodo(workspaceId, pageId);
@@ -286,8 +292,15 @@ export function createDocPageScreen({
     );
 
     const comments = useMemo(
-      () => toCommentViews(commentsQuery.data ?? [], copy, now, host.personFor),
-      [commentsQuery.data, copy, host.personFor, now],
+      () =>
+        toCommentViews(
+          commentsQuery.data ?? [],
+          copy,
+          now,
+          host.personFor,
+          host.viewerId,
+        ),
+      [commentsQuery.data, copy, host.personFor, host.viewerId, now],
     );
 
     const versionsQuery = usePageVersions(
@@ -570,7 +583,10 @@ export function createDocPageScreen({
     const anchoredComments = useMemo(
       () =>
         (commentsQuery.data ?? []).flatMap((comment) =>
-          comment.anchor ? [{ id: comment.id, ...comment.anchor }] : [],
+          // A resolved thread stops marking the text.
+          comment.anchor && !comment.resolved
+            ? [{ id: comment.id, ...comment.anchor }]
+            : [],
         ),
       [commentsQuery.data],
     );
@@ -1173,6 +1189,14 @@ export function createDocPageScreen({
         document
           .getElementById(`comment-${id}`)
           ?.scrollIntoView?.({ block: "nearest" });
+      },
+      onCommentResolve: (id) => {
+        resolveComment.mutate(id);
+        if (id === activeCommentId) setActiveCommentId(null);
+      },
+      onCommentDelete: (id) => {
+        deleteComment.mutate(id);
+        if (id === activeCommentId) setActiveCommentId(null);
       },
       onCommentCreate: (body) => {
         const anchor = pendingAnchor;

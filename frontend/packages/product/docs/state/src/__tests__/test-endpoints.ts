@@ -39,7 +39,10 @@ export const testEndpoints: PageApiEndpoints = {
     content: (pageId, id) => `/pages/${pageId}/attachments/${id}/content`,
     detail: (pageId, id) => `/pages/${pageId}/attachments/${id}`,
   },
-  comments: { detail: (commentId) => `/comments/${commentId}` },
+  comments: {
+    detail: (commentId) => `/comments/${commentId}`,
+    resolve: (commentId) => `/comments/${commentId}/resolve`,
+  },
   boardItems: {
     create: (boardId) => `/boards/${boardId}/items`,
     linkPage: (itemId) => `/board-items/${itemId}/link-page`,

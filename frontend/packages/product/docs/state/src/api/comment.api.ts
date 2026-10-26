@@ -44,6 +44,11 @@ export function createCommentApi(
         : mapComment(created, pageId);
     },
 
+    /** `Collaboration.Comments.Resolve`: a producer-side reopen does not exist yet. */
+    async resolve(commentId: string): Promise<void> {
+      await api.post<void>(endpoints.comments.resolve(commentId), {});
+    },
+
     async delete(commentId: string): Promise<void> {
       await api.delete<void>(endpoints.comments.detail(commentId));
     },

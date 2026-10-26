@@ -4218,6 +4218,13 @@ export class MockStore {
     return comment;
   }
 
+  resolvePageComment(id: string): MockPageCommentRecord | null {
+    const comment = this.pageCommentsById.get(id);
+    if (!comment) return null;
+    comment.resolvedAt ??= this.clock.isoNow();
+    return comment;
+  }
+
   deletePageComment(id: string): boolean {
     return this.pageCommentsById.delete(id);
   }
