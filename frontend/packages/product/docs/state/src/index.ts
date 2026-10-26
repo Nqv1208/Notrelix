@@ -65,3 +65,11 @@ export type {
 } from "./api/page-extras.api";
 
 export * from "./query";
+
+export { DocBlockSaver } from "./editor/doc-block-saver";
+export type {
+  BlockWriter,
+  DocBlockSaverOptions,
+  SaverStatus,
+} from "./editor/doc-block-saver";
+export { decodeBlockBody, encodeBlockBody } from "./model/block-wire";

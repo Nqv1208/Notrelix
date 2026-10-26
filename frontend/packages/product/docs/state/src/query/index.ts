@@ -28,3 +28,5 @@ export { createUseDeleteComment } from "./hooks/use-delete-comment";
 export { createUseToggleFavorite } from "./hooks/use-toggle-favorite";
 export { createUseDocEditor } from "./hooks/use-doc-editor";
 export type { DocSaveState } from "./hooks/use-doc-editor";
+export { createUseDocSaver } from "./hooks/use-doc-saver";
+export type { DocSaverOptions } from "./hooks/use-doc-saver";

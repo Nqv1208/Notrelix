@@ -1,11 +1,14 @@
 import type {
   Block,
+  BlockDraft,
+  BlockDraftPatch,
   CreateBlockPayload,
   UpdateBlockPayload,
   ReorderBlocksInput,
 } from "@notrelix/docs-core";
 import type { BlockDtoApi } from "../dto";
 import { mapBlock, toProducerBlockType } from "../model/block.mapper";
+import { encodeBlockBody } from "../model/block-wire";
 import type { DocsApiClient, PageApiEndpoints } from "./page.api";
 
 export function createBlockApi(
@@ -58,6 +61,34 @@ export function createBlockApi(
         ...(payload.type ? { type: toProducerBlockType(payload.type) } : {}),
         ...(payload.properties
           ? { properties: JSON.stringify(payload.properties) }
+          : {}),
+      });
+    },
+
+    /** Writes a draft block (rich text and properties) after `afterId`. */
+    async createDraft(
+      pageId: string,
+      draft: BlockDraft,
+      afterId: string | null,
+    ): Promise<string> {
+      return api.post<string>(endpoints.pages.blocks(pageId), {
+        type: toProducerBlockType(draft.type),
+        properties: encodeBlockBody(draft),
+        ...(afterId ? { afterBlockId: afterId } : {}),
+      });
+    },
+
+    /** Writes the changed parts of a draft block. */
+    async updateDraft(
+      pageId: string,
+      blockId: string,
+      patch: BlockDraftPatch,
+      draft: BlockDraft,
+    ): Promise<void> {
+      await api.patch<void>(endpoints.blocks.detail(pageId, blockId), {
+        ...(patch.type ? { type: toProducerBlockType(patch.type) } : {}),
+        ...(patch.content || patch.properties || patch.type
+          ? { properties: encodeBlockBody(draft) }
           : {}),
       });
     },

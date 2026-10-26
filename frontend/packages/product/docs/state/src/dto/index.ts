@@ -57,7 +57,10 @@ export type BlockDtoApi = {
   parentId?: string | null;
   /** The producer's block type name (`Text`, `Heading1`, `ToDo`, ...). */
   type: string;
-  content: string;
+  /** The block's JSON body, as an object or JSON text. */
+  content: string | Record<string, unknown>;
+  /** Present once the producer sends the block's properties apart from its text. */
+  properties?: string | Record<string, unknown>;
   position: string;
   version: number;
   createdAt: string;

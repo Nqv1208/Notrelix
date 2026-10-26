@@ -1,4 +1,5 @@
 import type { ID } from "./ids";
+import type { RichTextV1 } from "./rich-text";
 
 export type BlockType =
   | "paragraph"
@@ -33,15 +34,31 @@ export interface BlockProperties {
   linkedBoardId?: ID;
   linkedTaskId?: ID;
   mentionIds?: ID[];
-  align?: "left" | "center" | "right";
+  align?: "left" | "center" | "right" | "justify";
+  /** A callout's tone. */
+  tone?: "info" | "success" | "warning" | "danger" | "neutral";
+  /** A toggle's collapsed state. */
+  collapsed?: boolean;
+  attachmentId?: ID;
+  width?: number;
+  alt?: string;
   fontFamily?: "inter" | "poppins" | "serif" | "mono";
   fontSize?: "sm" | "base" | "lg" | "xl";
   bold?: boolean;
   italic?: boolean;
   underline?: boolean;
   strike?: boolean;
-  textColor?: "default" | "muted" | "primary" | "accent" | "destructive";
-  highlight?: "none" | "muted" | "accent" | "primary";
+  textColor?:
+    | "default"
+    | "muted"
+    | "primary"
+    | "accent"
+    | "destructive"
+    | "success"
+    | "warning"
+    | "danger";
+  highlight?:
+    "none" | "muted" | "accent" | "primary" | "success" | "warning" | "danger";
   commentsCount?: number;
 }
 
@@ -49,7 +66,15 @@ export interface Block {
   id: ID;
   pageId: ID;
   type: BlockType;
+  /**
+   * The authored text as rich text v1. Absent on a block read from a legacy
+   * producer shape; `blockContent` then upgrades `properties` on demand.
+   * `properties.text` stays the plain text of it for read-only consumers.
+   */
+  content?: RichTextV1;
   properties: BlockProperties;
+  /** The block version the producer sent, for `expectedVersion` writes. */
+  version?: number;
   position: number;
   parentId: ID | null;
   children?: Block[];
@@ -77,7 +102,7 @@ export interface UpdateBlockPayload {
 }
 
 /** Block types whose content is text the author typed. */
-const TEXT_LIKE: ReadonlySet<BlockType> = new Set<BlockType>([
+export const TEXT_BLOCK_TYPES: ReadonlySet<BlockType> = new Set<BlockType>([
   "paragraph",
   "heading_1",
   "heading_2",
@@ -102,7 +127,7 @@ export function convertBlockProperties(
   to: BlockType,
   properties: BlockProperties,
 ): BlockProperties {
-  if (!TEXT_LIKE.has(from) || !TEXT_LIKE.has(to)) return {};
+  if (!TEXT_BLOCK_TYPES.has(from) || !TEXT_BLOCK_TYPES.has(to)) return {};
   const converted: BlockProperties = { ...properties };
   if (to !== "todo") delete converted.checked;
   if (to !== "code") delete converted.language;

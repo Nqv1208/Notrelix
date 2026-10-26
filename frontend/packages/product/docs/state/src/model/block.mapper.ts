@@ -1,5 +1,6 @@
 import type { Block, BlockProperties, BlockType } from "@notrelix/docs-core";
 import type { BlockDtoApi } from "../dto";
+import { decodeBlockBody } from "./block-wire";
 
 export function parseProperties(
   value: BlockDtoApi["content"] | BlockProperties | undefined,
@@ -76,11 +77,15 @@ export function toProducerBlockType(type: BlockType): string {
  * place in the list (`position`).
  */
 export function mapBlock(dto: BlockDtoApi, position: number): Block {
+  const type = FROM_PRODUCER[dto.type] ?? "paragraph";
+  const body = decodeBlockBody(type, dto);
   return {
     id: dto.id,
     pageId: dto.pageId,
-    type: FROM_PRODUCER[dto.type] ?? "paragraph",
-    properties: parseProperties(dto.content),
+    type,
+    content: body.content,
+    properties: body.properties,
+    version: dto.version,
     position,
     parentId: dto.parentId ?? null,
     createdById: "",
