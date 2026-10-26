@@ -23,7 +23,10 @@ function setup(assigneeIndex = 0) {
   const services = {
     boards: { getFullBoard: vi.fn(async () => scenario) },
     cards,
-    labels: { addLabelToCard: vi.fn(async () => undefined) },
+    labels: {
+      addLabelToCard: vi.fn(async () => undefined),
+      getBoardLabels: vi.fn(async () => []),
+    },
   } as unknown as WorkManagementServices;
   const onCreated = vi.fn();
   renderPureUi(
@@ -51,18 +54,17 @@ describe("BoardItemCreateDialog (Home and My work)", () => {
   it("opens the full form on the first board with the typed name and the member ticked, and creates with them", async () => {
     const { cards, onCreated, scenario, member } = setup();
     const name = (await screen.findByRole("textbox", {
-      name: "Tên công việc",
+      name: /^Tên công việc/,
     })) as HTMLInputElement;
     expect(name.value).toBe("Soạn kế hoạch quý");
     expect(screen.getByLabelText("Thêm vào board")).toBeTruthy();
+    // The member shows as a chip with a remove button.
     await waitFor(() =>
       expect(
-        screen
-          .getByRole("button", { name: new RegExp(member.name) })
-          .getAttribute("aria-pressed"),
-      ).toBe("true"),
+        screen.getByRole("button", { name: `Bỏ ${member.name}` }),
+      ).toBeTruthy(),
     );
-    fireEvent.click(screen.getByRole("button", { name: "Thêm công việc" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Tạo công việc/ }));
     await waitFor(() => expect(cards.createCard).toHaveBeenCalledTimes(1));
     expect(cards.createCard.mock.calls[0]?.[0]).toBe(scenario.board.id);
     expect(cards.createCard.mock.calls[0]?.[1]).toMatchObject({

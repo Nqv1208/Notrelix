@@ -1,6 +1,8 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import {
+  useArchiveCard,
+  useBoardLabels,
   useCreateItemWithDetails,
   type CreateItemDetail,
 } from "@notrelix/work-management-state";
@@ -8,6 +10,8 @@ import type { Board, BoardGroup } from "@notrelix/work-management-core";
 import { findItemFields } from "../card-detail/item-field-editors";
 import {
   ItemCreateDialog,
+  type ItemCreateContext,
+  type ItemCreateCreated,
   type ItemCreateDraft,
   type ItemCreateLabel,
 } from "./item-create-dialog";
@@ -22,6 +26,8 @@ function dayInstant(day: string): string | undefined {
  * The board's "Add item" dialog with its writes: the item is created in the
  * chosen group with its description and dates, then its status, priority,
  * people and labels. A detail that cannot be saved is named and the item stays.
+ * With "create another" the form stays open and offers to open or undo the
+ * item just added.
  */
 export function ItemCreateHost({
   open,
@@ -30,13 +36,18 @@ export function ItemCreateHost({
   board,
   groups,
   defaultGroupId,
+  hideGroup,
   defaultStatusId,
   defaultStartDay,
   defaultDueDay,
   defaultTitle,
+  focusDescription,
   defaultAssigneeIds,
+  currentUserId,
+  context,
   boardSlot,
   onCreated,
+  onOpenItem,
 }: {
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
@@ -45,40 +56,49 @@ export function ItemCreateHost({
   readonly board: Board | undefined;
   readonly groups: readonly BoardGroup[];
   readonly defaultGroupId: string;
+  /** The groups mirror the statuses: the form shows no Group field. */
+  readonly hideGroup?: boolean;
   readonly defaultStatusId: string | null;
   /** `YYYY-MM-DD` prefilled in the dates (Calendar and Timeline). */
   readonly defaultStartDay?: string;
   readonly defaultDueDay?: string;
   readonly defaultTitle?: string;
+  /** The name came from a quick add: the cursor starts in the description. */
+  readonly focusDescription?: boolean;
   readonly defaultAssigneeIds?: readonly string[];
+  readonly currentUserId?: string | null;
+  readonly context?: ItemCreateContext;
   readonly boardSlot?: ReactNode;
   /** After the item exists (also when a detail could not be saved). */
   readonly onCreated?: (result: {
     readonly boardId: string;
     readonly itemId: string | undefined;
   }) => void;
+  /** "Mở" on the strip shown after "create another": opens the new item. */
+  readonly onOpenItem?: (itemId: string) => void;
 }) {
   const copy = useItemCreateCopy();
   const create = useCreateItemWithDetails(board?.id ?? "", workspaceId);
+  const archive = useArchiveCard(board?.id ?? "", workspaceId);
   const [error, setError] = useState<string | null>(null);
+  const [created, setCreated] = useState<ItemCreateCreated | null>(null);
+  const nonce = useRef(0);
   const fields = board ? findItemFields(board) : null;
-  const labels = useMemo<ItemCreateLabel[]>(() => {
-    const seen = new Map<string, ItemCreateLabel>();
-    for (const group of groups) {
-      for (const card of group.cards) {
-        for (const label of card.labels) {
-          if (!seen.has(label.id)) {
-            seen.set(label.id, {
-              id: label.id,
-              name: label.name ?? label.color,
-              color: label.color,
-            });
-          }
-        }
-      }
-    }
-    return [...seen.values()];
-  }, [groups]);
+  // The board's own label catalogue, not only the labels of the cards loaded.
+  const catalogue = useBoardLabels(
+    board?.id ?? "",
+    workspaceId,
+    open && Boolean(board),
+  );
+  const labels = useMemo<ItemCreateLabel[]>(
+    () =>
+      (catalogue.data ?? []).map((label) => ({
+        id: label.id,
+        name: label.name ?? label.color,
+        color: label.color,
+      })),
+    [catalogue.data],
+  );
 
   const submit = (draft: ItemCreateDraft) => {
     if (!board) return;
@@ -113,10 +133,27 @@ export function ItemCreateHost({
                   .join(", "),
               ),
             );
-          } else {
+          } else if (!draft.another) {
             toast.success(copy.created);
           }
-          if (!draft.another) onOpenChange(false);
+          if (draft.another) {
+            nonce.current += 1;
+            setCreated({
+              nonce: nonce.current,
+              title: draft.title,
+              onOpen:
+                itemId && onOpenItem ? () => onOpenItem(itemId) : undefined,
+              onUndo: itemId
+                ? () =>
+                    archive.mutate(itemId, {
+                      onSuccess: () => toast.success(copy.undone),
+                      onError: () => toast.error(copy.undoFailed),
+                    })
+                : undefined,
+            });
+          } else {
+            onOpenChange(false);
+          }
         },
         onError: () => setError(copy.failed),
       },
@@ -129,6 +166,7 @@ export function ItemCreateHost({
       open={open}
       groups={groups.map((group) => ({ id: group.id, label: group.title }))}
       defaultGroupId={defaultGroupId}
+      hideGroup={hideGroup}
       statuses={(fields?.status?.options ?? []).map((option) => ({
         id: option.id,
         label: option.label,
@@ -139,7 +177,11 @@ export function ItemCreateHost({
       defaultStartDay={defaultStartDay}
       defaultDueDay={defaultDueDay}
       defaultTitle={defaultTitle}
+      focusDescription={focusDescription}
       defaultAssigneeIds={defaultAssigneeIds}
+      currentUserId={currentUserId}
+      context={context}
+      created={created}
       boardSlot={boardSlot}
       unavailable={!board}
       priorities={(fields?.priority?.options ?? []).map((option) => ({
@@ -155,7 +197,10 @@ export function ItemCreateHost({
       pending={create.isPending}
       error={error}
       onOpenChange={(next) => {
-        if (!next) setError(null);
+        if (!next) {
+          setError(null);
+          setCreated(null);
+        }
         onOpenChange(next);
       }}
       onSubmit={submit}

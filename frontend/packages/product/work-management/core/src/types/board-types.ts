@@ -52,6 +52,8 @@ export interface ViewConfig {
   statusManageRoles?: Array<"manager" | "editor">;
   /** Kanban: Alt+Arrow moves the focused card (default on). */
   keyboardMove?: boolean;
+  /** Kanban: lane value id to its WIP limit (1..999); a warning, never a write rule. */
+  wipLimits?: Record<string, number>;
 }
 
 export interface FilterConfig {

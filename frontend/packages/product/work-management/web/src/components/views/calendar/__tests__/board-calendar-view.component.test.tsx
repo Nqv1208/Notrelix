@@ -286,9 +286,11 @@ describe("BoardCalendarView on the ERP board", () => {
     const { cards } = renderCalendar();
     await ready();
     fireEvent.click(screen.getByRole("button", { name: "Thêm công việc" }));
-    const due = (await screen.findByLabelText("Hạn chót")) as HTMLInputElement;
-    expect(due.value).toBe("2026-10-12");
-    fireEvent.change(screen.getByRole("textbox", { name: "Tên công việc" }), {
+    const due = (await screen.findByLabelText(
+      "Hạn hoàn thành",
+    )) as HTMLInputElement;
+    expect(due.value).toBe("12/10/2026");
+    fireEvent.change(screen.getByRole("textbox", { name: /^Tên công việc/ }), {
       target: { value: "Chốt lịch tuần" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Thêm công việc" }));

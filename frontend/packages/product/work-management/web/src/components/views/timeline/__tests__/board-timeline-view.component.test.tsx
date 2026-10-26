@@ -221,14 +221,14 @@ describe("BoardTimelineView on the ERP board", () => {
     const start = (await screen.findByLabelText(
       "Ngày bắt đầu",
     )) as HTMLInputElement;
-    expect(start.value).toBe("2026-10-12");
-    expect((screen.getByLabelText("Hạn chót") as HTMLInputElement).value).toBe(
-      "2026-10-12",
-    );
-    fireEvent.change(screen.getByRole("textbox", { name: "Tên công việc" }), {
+    expect(start.value).toBe("12/10/2026");
+    expect(
+      (screen.getByLabelText("Hạn hoàn thành") as HTMLInputElement).value,
+    ).toBe("12/10/2026");
+    fireEvent.change(screen.getByRole("textbox", { name: /^Tên công việc/ }), {
       target: { value: "Dựng khung kế hoạch" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Thêm công việc" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Tạo công việc/ }));
     await waitFor(() => expect(cards.createCard).toHaveBeenCalledTimes(1));
   });
 
