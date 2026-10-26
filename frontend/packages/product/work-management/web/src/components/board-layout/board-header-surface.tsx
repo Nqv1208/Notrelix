@@ -450,6 +450,7 @@ export function BoardHeaderSurface({
                 aria-describedby={settingsReason ? settingsReasonId : undefined}
                 className={cn(
                   HEADER_BUTTON_CLASS,
+                  "hidden xl:inline-flex",
                   "aria-disabled:cursor-default aria-disabled:text-muted-foreground",
                 )}
               >
@@ -475,7 +476,7 @@ export function BoardHeaderSurface({
           </>
         ) : null}
 
-        {onCopyLink ? (
+        {onCopyLink || canManage ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -491,10 +492,22 @@ export function BoardHeaderSurface({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem onSelect={onCopyLink}>
-                <Link2 aria-hidden="true" />
-                {h.copyLink}
-              </DropdownMenuItem>
+              {canManage ? (
+                <DropdownMenuItem
+                  className="xl:hidden"
+                  disabled={Boolean(settingsReason)}
+                  onSelect={onOpenSettings}
+                >
+                  <SettingsGlyph />
+                  {h.settings}
+                </DropdownMenuItem>
+              ) : null}
+              {onCopyLink ? (
+                <DropdownMenuItem onSelect={onCopyLink}>
+                  <Link2 aria-hidden="true" />
+                  {h.copyLink}
+                </DropdownMenuItem>
+              ) : null}
             </DropdownMenuContent>
           </DropdownMenu>
         ) : null}
