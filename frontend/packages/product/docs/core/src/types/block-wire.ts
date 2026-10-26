@@ -88,7 +88,7 @@ function pick(
 function keysOf(type: BlockType): readonly string[] {
   return [
     ...(SIMPLE_KEYS[type] ?? []),
-    ...(ALIGNABLE.has(type) ? ["align"] : []),
+    ...(ALIGNABLE.has(type) ? ["align", "indent", "lineSpacing"] : []),
   ];
 }
 
@@ -100,20 +100,61 @@ function cellRuns(value: unknown): Run[] {
   return parseRichText({ v: 1, runs: runsOfWire(value) })?.runs ?? [];
 }
 
+/** The grid's column count: cells covered by a merged cell above count too. */
+export function tableColumnCount(
+  rows: readonly (readonly TableCell[])[],
+): number {
+  const covered: number[] = [];
+  let columns = 0;
+  for (const row of rows) {
+    let column = 0;
+    for (const cell of row) {
+      while ((covered[column] ?? 0) > 0) column += 1;
+      const width = cell.colSpan && cell.colSpan > 1 ? cell.colSpan : 1;
+      const height = cell.rowSpan && cell.rowSpan > 1 ? cell.rowSpan : 1;
+      for (let at = column; at < column + width; at += 1) {
+        covered[at] = Math.max(covered[at] ?? 0, height);
+      }
+      column += width;
+    }
+    while ((covered[column] ?? 0) > 0) column += 1;
+    columns = Math.max(columns, column);
+    for (let at = 0; at < covered.length; at += 1) {
+      if ((covered[at] ?? 0) > 0) covered[at] = (covered[at] as number) - 1;
+    }
+  }
+  return columns;
+}
+
+function span(value: unknown): number {
+  return typeof value === "number" && Number.isInteger(value) && value >= 1
+    ? value
+    : 1;
+}
+
 /** A table block's wire properties as the editor's table. */
 export function tableFromWire(wire: Record<string, unknown>): TableData {
   const rows: TableCell[][] = (Array.isArray(wire.rows) ? wire.rows : []).map(
     (row: unknown) =>
       (Array.isArray(row) ? row : []).map((raw: unknown): TableCell => {
-        const cell = (raw ?? {}) as { runs?: unknown; bg?: unknown };
+        const cell = (raw ?? {}) as {
+          runs?: unknown;
+          bg?: unknown;
+          colSpan?: unknown;
+          rowSpan?: unknown;
+        };
         const bg = HIGHLIGHT_TOKENS.find((token) => token === cell.bg);
+        const colSpan = span(cell.colSpan);
+        const rowSpan = span(cell.rowSpan);
         return {
           runs: cellRuns(cell.runs),
           ...(bg && bg !== "none" ? { bg } : {}),
+          ...(colSpan > 1 ? { colSpan } : {}),
+          ...(rowSpan > 1 ? { rowSpan } : {}),
         };
       }),
   );
-  const columns = Math.max(0, ...rows.map((row) => row.length));
+  const columns = tableColumnCount(rows);
   const widths = Array.isArray(wire.colWidths) ? wire.colWidths : [];
   return {
     rows,
@@ -127,12 +168,14 @@ export function tableFromWire(wire: Record<string, unknown>): TableData {
 
 /** The editor's table as the producer's table properties. */
 export function tableToWire(table: TableData): Record<string, unknown> {
-  const columns = Math.max(0, ...table.rows.map((row) => row.length));
+  const columns = tableColumnCount(table.rows);
   return {
     rows: table.rows.map((row) =>
       row.map((cell) => ({
         runs: cell.runs,
         ...(cell.bg && cell.bg !== "none" ? { bg: cell.bg } : {}),
+        ...(cell.colSpan && cell.colSpan > 1 ? { colSpan: cell.colSpan } : {}),
+        ...(cell.rowSpan && cell.rowSpan > 1 ? { rowSpan: cell.rowSpan } : {}),
       })),
     ),
     headerRow: table.headerRow,
@@ -180,8 +223,14 @@ export function propertiesFromWire(
       return { table: tableFromWire(wire) };
     case "divider":
       return {};
-    default:
-      return pick(wire, keysOf(type)) as BlockProperties;
+    default: {
+      const properties = pick(wire, keysOf(type)) as BlockProperties &
+        Record<string, unknown>;
+      if (properties.lineSpacing === ("normal" as string)) {
+        delete properties.lineSpacing;
+      }
+      return properties;
+    }
   }
 }
 
@@ -218,8 +267,15 @@ export function propertiesToWire(
       return properties.table ? tableToWire(properties.table) : {};
     case "divider":
       return {};
-    default:
-      return pick(source, keysOf(type));
+    default: {
+      const wire = pick(source, keysOf(type));
+      // The defaults are not stored: no indent, normal spacing.
+      if (!(typeof wire.indent === "number" && wire.indent > 0)) {
+        delete wire.indent;
+      }
+      if (wire.lineSpacing === "normal") delete wire.lineSpacing;
+      return wire;
+    }
   }
 }
 

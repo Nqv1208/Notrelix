@@ -22,6 +22,12 @@ export function renderMarked(
       case "strike":
         node = <s>{node}</s>;
         break;
+      case "superscript":
+        node = <sup className="text-[0.75em]">{node}</sup>;
+        break;
+      case "subscript":
+        node = <sub className="text-[0.75em]">{node}</sub>;
+        break;
       case "code":
         node = (
           <code className="rounded-[4px] bg-state-hover px-1 py-0.5 font-mono text-[0.9em]">

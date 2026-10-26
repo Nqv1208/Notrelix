@@ -58,7 +58,9 @@ export type BulkItemChange =
   | { readonly type: "clear-due-date" }
   | { readonly type: "assign"; readonly userId: string }
   | { readonly type: "unassign-all" }
-  | { readonly type: "archive" };
+  | { readonly type: "archive" }
+  | { readonly type: "set-priority"; readonly priorityOptionId: string }
+  | { readonly type: "delete" };
 
 type UpdateStatusOp = "WorkManagement.BoardItems.UpdateStatus";
 type UpdateStatusBody = OperationRequestBody<UpdateStatusOp>;
@@ -252,6 +254,9 @@ export function createCardApi(client: NotrelixClient) {
           : {}),
         ...(change.type === "set-due-date" ? { dueDate: change.dueDate } : {}),
         ...(change.type === "assign" ? { assigneeUserId: change.userId } : {}),
+        ...(change.type === "set-priority"
+          ? { priority: change.priorityOptionId }
+          : {}),
       };
       const result = await api.post<BulkUpdateResponse | null | undefined>(
         endpoints.boardItems.bulk(boardId),

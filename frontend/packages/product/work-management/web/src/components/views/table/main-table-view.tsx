@@ -720,6 +720,26 @@ export function MainTableView({
                 }
               : undefined
           }
+          onBulkDelete={
+            capabilities.canDelete
+              ? () => bulkWrite({ type: "delete" })
+              : undefined
+          }
+          bulkPriority={
+            itemFields.priority
+              ? {
+                  options: itemFields.priority.options.map((option) => ({
+                    id: option.id,
+                    label: option.label,
+                  })),
+                  onPriority: (optionId) =>
+                    bulkWrite({
+                      type: "set-priority",
+                      priorityOptionId: optionId,
+                    }),
+                }
+              : undefined
+          }
           onBulkArchive={() => {
             for (const id of selectedList) noteTitle(id);
             startArchive(selectedList);

@@ -591,4 +591,28 @@ describe("ERP board in the mock world", () => {
     await api.bulkUpdate(boardId, ids, { type: "archive" });
     for (const id of ids) expect(store.getCard(id)?.isArchived).toBe(true);
   });
+
+  it("sets the priority and deletes several items in one bulk request", async () => {
+    const { client, store } = clientFor();
+    const api = createCardApi(client);
+    const ids = ["mock-erp-item-146", "mock-erp-item-147"];
+
+    await api.bulkUpdate(boardId, ids, {
+      type: "set-priority",
+      priorityOptionId: "mock-erp-priority-urgent",
+    });
+    for (const id of ids) {
+      expect(store.getFieldValues(id)["mock-erp-col-priority"] ?? null).toBe(
+        "mock-erp-priority-urgent",
+      );
+    }
+
+    await expect(
+      api.bulkUpdate(boardId, [ids[0]!, "no-such-item"], { type: "delete" }),
+    ).rejects.toBeDefined();
+    expect(store.getCard(ids[0]!)).toBeDefined();
+
+    await api.bulkUpdate(boardId, ids, { type: "delete" });
+    for (const id of ids) expect(store.getCard(id)).toBeUndefined();
+  });
 });

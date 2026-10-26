@@ -81,6 +81,10 @@ import { isRestrictedTask } from "./doc-page-models";
 import { readImportFile } from "../import/read-import-file";
 import { DocPageScreenSurface } from "./doc-page-screen-surface";
 import { useDocPanelOpen } from "./use-doc-panel-open";
+import { useDocViewPrefs } from "./use-doc-view-prefs";
+import { runClipboardAction } from "../editor/clipboard-actions";
+import { docStats } from "../editor/doc-stats";
+import { OPEN_LINK_EVENT, editorDom } from "../editor/editor-toolbar";
 import type { DocMediaHost } from "../editor/media-host";
 import { PENDING_ID, anchorFromSelection } from "../editor/comment-anchors";
 import { revealHeading, useDocSummary } from "../editor/outline";
@@ -249,6 +253,7 @@ export function createDocPageScreen({
       refresh: refreshBlocks,
     });
     const [panelOpen, setPanelOpen] = useDocPanelOpen(host.viewerId ?? null);
+    const viewPrefs = useDocViewPrefs(host.viewerId ?? null);
     const trashQuery = useTrashedPages(workspaceId, overlay.kind === "trash");
     const now = host.now;
 
@@ -558,6 +563,8 @@ export function createDocPageScreen({
           onOpenBoardPicker: (blockId) =>
             callbacksRef.current?.onOpenBoardPicker?.(blockId),
           onOpenComment: (id) => callbacksRef.current?.onOpenComment?.(id),
+          onEditorCommand: (command) =>
+            callbacksRef.current?.onEditorCommand?.(command),
         },
         resolveTask,
         viewOf: (draft: BlockDraft) =>
@@ -656,6 +663,56 @@ export function createDocPageScreen({
       target.addEventListener("scroll", update, { passive: true });
       return () => target.removeEventListener("scroll", update);
     }, [outlineIds, panelTab]);
+
+    // Spell check follows the viewer's choice (Tools menu).
+    const spellcheck = viewPrefs.prefs.spellcheck;
+    useEffect(() => {
+      const dom = richEditor.editor ? editorDom(richEditor.editor) : null;
+      dom?.setAttribute("spellcheck", String(spellcheck));
+    }, [richEditor.editor, spellcheck]);
+
+    // Page-level keys that work outside the text too: new page, version
+    // history, the shortcut sheet and leaving focus mode.
+    const focusMode = viewPrefs.focusMode;
+    const setFocusMode = viewPrefs.setFocusMode;
+    useEffect(() => {
+      const onKey = (event: KeyboardEvent) => {
+        // The editor's own key map already handled this one.
+        if (event.defaultPrevented) return;
+        const mod = event.metaKey || event.ctrlKey;
+        const key = event.key.toLowerCase();
+        const code = event.code;
+        const callbacks = callbacksRef.current;
+        if (event.key === "Escape" && focusMode) {
+          setFocusMode(false);
+        } else if (event.altKey && !mod && !event.shiftKey && code === "KeyN") {
+          if (callbacks?.onNewDoc) {
+            event.preventDefault();
+            callbacks.onNewDoc();
+          }
+        } else if (mod && event.altKey && event.shiftKey && code === "KeyH") {
+          event.preventDefault();
+          callbacks?.onOpenVersions?.();
+        } else if (mod && key === "/" && !event.altKey) {
+          event.preventDefault();
+          callbacks?.onEditorCommand?.("shortcuts");
+        } else if (mod && event.shiftKey && !event.altKey && key === "c") {
+          // Leave the browser's own Copy-as shortcuts alone while text is selected elsewhere.
+          if (
+            (event.target as HTMLElement | null)?.closest?.("input,textarea")
+          ) {
+            return;
+          }
+          event.preventDefault();
+          callbacks?.onEditorCommand?.("wordCount");
+        } else if (mod && event.shiftKey && !event.altKey && key === "f") {
+          event.preventDefault();
+          callbacks?.onEditorCommand?.("focusMode");
+        }
+      };
+      window.addEventListener("keydown", onKey);
+      return () => window.removeEventListener("keydown", onKey);
+    }, [focusMode, setFocusMode]);
 
     const recoveryViews = recoveries.map((entry) => ({
       id: entry.id,
@@ -1180,6 +1237,90 @@ export function createDocPageScreen({
         setPanelTab("comments");
         setPanelOpen(true);
       },
+      onNotice: host.notify,
+      onClipboardAction: (action) => {
+        if (!richEditor.editor) return;
+        void runClipboardAction(richEditor.editor, action, () =>
+          host.notify?.(copy.menubar.edit.clipboardBlocked),
+        );
+      },
+      onEditorCommand: (command) => {
+        const current = richEditor.editor;
+        if (command === "wordCount") setOverlay({ kind: "wordCount" });
+        else if (command === "shortcuts") setOverlay({ kind: "shortcuts" });
+        else if (command === "focusMode") {
+          viewPrefs.setFocusMode(!viewPrefs.focusMode);
+        } else if (command === "comment") {
+          if (current && !current.state.selection.empty) {
+            callbacks.onCommentStart?.();
+          } else callbacks.onOpenComments?.();
+        } else if (command === "link" && current) {
+          // The link form lives in the toolbar: show it first when hidden.
+          if (!viewPrefs.prefs.toolbarShown) {
+            viewPrefs.update({ toolbarShown: true });
+          }
+          window.setTimeout(
+            () =>
+              editorDom(current)?.dispatchEvent(
+                new CustomEvent(OPEN_LINK_EVENT),
+              ),
+            0,
+          );
+        }
+      },
+      onToggleFullWidth: () =>
+        viewPrefs.update({ fullWidth: !viewPrefs.prefs.fullWidth }),
+      onToggleFocusMode: () => viewPrefs.setFocusMode(!viewPrefs.focusMode),
+      onToggleToolbar: () =>
+        viewPrefs.update({ toolbarShown: !viewPrefs.prefs.toolbarShown }),
+      onShowShortcuts: () => setOverlay({ kind: "shortcuts" }),
+      onShowWordCount: () => setOverlay({ kind: "wordCount" }),
+      onShowPageInfo: () => setOverlay({ kind: "pageInfo" }),
+      onPageSetupOpen: () => setOverlay({ kind: "pageSetup" }),
+      onRenamePage: host.canEdit
+        ? () => {
+            setOverlay(NONE);
+            const heading = document.querySelector<HTMLElement>("article h1");
+            heading?.focus();
+            if (heading) {
+              const range = document.createRange();
+              range.selectNodeContents(heading);
+              const selection = window.getSelection();
+              selection?.removeAllRanges();
+              selection?.addRange(range);
+            }
+          }
+        : undefined,
+      onDuplicatePage: host.canEdit
+        ? () => {
+            setOverlay(NONE);
+            // Images and files belong to this page's attachments: they stay behind.
+            const copied = (richEditor.currentDrafts() ?? [])
+              .filter(
+                (draft) => draft.type !== "image" && draft.type !== "file",
+              )
+              .map((draft) => ({
+                type: draft.type,
+                content: draft.content,
+                properties: draft.properties,
+              }));
+            importPage.mutate(
+              {
+                title: fillDocCopy(copy.fileMenu.copyTitle, { title }),
+                blocks: copied,
+                parentId: page.parentId,
+                spaceId: page.spaceId ?? null,
+              },
+              {
+                onSuccess: (createdId) => {
+                  host.notify?.(copy.fileMenu.makeCopyDone);
+                  host.openPage?.(createdId);
+                },
+                onError: () => host.notify?.(copy.fileMenu.makeCopyFailed),
+              },
+            );
+          }
+        : undefined,
       onCommentStart: () => {
         const anchor = richEditor.editor
           ? anchorFromSelection(richEditor.editor)
@@ -1356,6 +1497,32 @@ export function createDocPageScreen({
         canComment
         canFormat={host.canEdit}
         callbacks={callbacks}
+        tools={
+          richEditor.editor
+            ? {
+                view: {
+                  fullWidth: viewPrefs.prefs.fullWidth,
+                  focusMode: viewPrefs.focusMode,
+                  toolbarShown: viewPrefs.prefs.toolbarShown,
+                  spellcheck: viewPrefs.prefs.spellcheck,
+                },
+                hosts: {
+                  onPickPage: callbacks.onOpenPagePicker,
+                  onPickBoard: callbacks.onOpenBoardPicker,
+                },
+                onSpellcheck: (on) => viewPrefs.update({ spellcheck: on }),
+                stats: () =>
+                  richEditor.editor ? docStats(richEditor.editor) : null,
+                info: {
+                  editedBy: header.editedBy,
+                  editedAt: header.editedAt,
+                },
+                pageSetup: viewPrefs.prefs.pageSetup,
+                onPageSetupChange: (pageSetup) =>
+                  viewPrefs.update({ pageSetup }),
+              }
+            : undefined
+        }
         onCopyLink={() => {
           void navigator.clipboard?.writeText(window.location.href);
         }}

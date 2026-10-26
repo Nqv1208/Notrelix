@@ -1,7 +1,9 @@
-import type { ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 import { cn } from "@notrelix/ui-web";
 import type { DocPageCopy } from "./doc-page.copy";
 import type { DocPageCallbacks } from "./doc-page-models";
+import { useMenuKeys } from "./use-menu-keys";
+import { shortcutKeys, shortcutLabel } from "../editor/shortcut-catalog";
 
 export interface DocFileMenuSurfaceProps {
   readonly copy: DocPageCopy;
@@ -9,6 +11,10 @@ export interface DocFileMenuSurfaceProps {
   readonly downloadOpen: boolean;
   readonly canShare: boolean;
   readonly callbacks?: DocPageCallbacks;
+  /** ArrowLeft / ArrowRight: hand over to the neighbouring menu of the bar. */
+  readonly onSide?: (direction: -1 | 1) => void;
+  /** Escape: close the menu and give focus back to the File button. */
+  readonly onEscape?: () => void;
 }
 
 const PANEL =
@@ -54,6 +60,8 @@ function Item({
       aria-disabled={enabled ? undefined : true}
       title={enabled ? undefined : unavailable}
       onClick={onClick}
+      data-menu-item=""
+      tabIndex={-1}
       className={cn(
         ITEM,
         active && "bg-state-hover-strong",
@@ -97,22 +105,42 @@ export function DocFileMenuSurface({
   downloadOpen,
   canShare,
   callbacks,
+  onSide,
+  onEscape,
 }: DocFileMenuSurfaceProps) {
   const f = copy.fileMenu;
+  const panel = useRef<HTMLDivElement | null>(null);
+  const keys = useMenuKeys(panel, {
+    onClose: (reason) =>
+      reason === "escape" ? onEscape?.() : callbacks?.onCloseOverlay?.(),
+    onSide,
+  });
   return (
     <>
       <div
+        ref={panel}
         role="menu"
         aria-label={f.label}
+        data-menu-panel=""
+        onKeyDown={keys}
         className={cn(PANEL, "top-[30px] left-4 w-[280px]")}
       >
         <Item
           label={f.newDoc}
-          hint="⌥N"
+          hint={shortcutLabel("Alt-n")}
           onClick={callbacks?.onNewDoc}
           unavailable={f.unavailable}
         />
-        <Item label={f.duplicate} unavailable={f.unavailable} />
+        <Item
+          label={f.duplicate}
+          onClick={callbacks?.onDuplicatePage}
+          unavailable={f.unavailable}
+        />
+        <Item
+          label={f.rename}
+          onClick={callbacks?.onRenamePage}
+          unavailable={f.unavailable}
+        />
         <Item
           label={f.share}
           popup="dialog"
@@ -131,15 +159,20 @@ export function DocFileMenuSurface({
         />
         <Item
           label={f.print}
-          hint="⌘P"
+          hint={shortcutLabel(shortcutKeys("print"))}
           onClick={callbacks?.onPrint}
           unavailable={f.unavailable}
         />
-        <Item label={f.pageSetup} unavailable={f.unavailable} />
+        <Item
+          label={f.pageSetup}
+          popup="dialog"
+          onClick={callbacks?.onPageSetupOpen}
+          unavailable={f.unavailable}
+        />
         <Separator />
         <Item
           label={f.versionHistory}
-          hint="⌘⌥⇧H"
+          hint={shortcutLabel("Mod-Alt-Shift-h")}
           onClick={callbacks?.onOpenVersions}
           unavailable={f.unavailable}
         />
@@ -161,7 +194,12 @@ export function DocFileMenuSurface({
           onClick={callbacks?.onImportOpen}
           unavailable={f.unavailable}
         />
-        <Item label={f.info} unavailable={f.unavailable} />
+        <Item
+          label={f.info}
+          popup="dialog"
+          onClick={callbacks?.onShowPageInfo}
+          unavailable={f.unavailable}
+        />
         <Separator />
         <Item
           label={f.openTrash}
@@ -175,32 +213,55 @@ export function DocFileMenuSurface({
           unavailable={f.unavailable}
         />
       </div>
-      {downloadOpen ? (
-        <div
-          role="menu"
-          aria-label={f.downloadLabel}
-          className={cn(PANEL, "top-[150px] left-[282px] w-[250px]")}
-        >
-          <Item
-            label={f.html}
-            onClick={() => callbacks?.onDownload?.("html")}
-            unavailable={f.unavailable}
-            leading={<FileType label="HTM" className="bg-doc-file-word" />}
-          />
-          <Item
-            label={f.pdf}
-            onClick={() => callbacks?.onDownload?.("pdf")}
-            unavailable={f.unavailable}
-            leading={<FileType label="PDF" className="bg-doc-file-pdf" />}
-          />
-          <Item
-            label={f.markdown}
-            onClick={() => callbacks?.onDownload?.("markdown")}
-            unavailable={f.unavailable}
-            leading={<FileType label="MD" className="bg-doc-file-text" />}
-          />
-        </div>
-      ) : null}
+      {downloadOpen ? <DownloadMenu copy={copy} callbacks={callbacks} /> : null}
     </>
+  );
+}
+
+/** The Download submenu: HTML, PDF (the browser's print) and Markdown. */
+function DownloadMenu({
+  copy,
+  callbacks,
+}: {
+  copy: DocPageCopy;
+  callbacks?: DocPageCallbacks;
+}) {
+  const f = copy.fileMenu;
+  const panel = useRef<HTMLDivElement | null>(null);
+  const keys = useMenuKeys(panel, {
+    onClose: (reason) =>
+      reason === "escape"
+        ? callbacks?.onToggleDownload?.()
+        : callbacks?.onCloseOverlay?.(),
+    onBack: () => callbacks?.onToggleDownload?.(),
+  });
+  return (
+    <div
+      ref={panel}
+      role="menu"
+      aria-label={f.downloadLabel}
+      data-menu-panel=""
+      onKeyDown={keys}
+      className={cn(PANEL, "top-[150px] left-[282px] w-[250px]")}
+    >
+      <Item
+        label={f.html}
+        onClick={() => callbacks?.onDownload?.("html")}
+        unavailable={f.unavailable}
+        leading={<FileType label="HTM" className="bg-doc-file-word" />}
+      />
+      <Item
+        label={f.pdf}
+        onClick={() => callbacks?.onDownload?.("pdf")}
+        unavailable={f.unavailable}
+        leading={<FileType label="PDF" className="bg-doc-file-pdf" />}
+      />
+      <Item
+        label={f.markdown}
+        onClick={() => callbacks?.onDownload?.("markdown")}
+        unavailable={f.unavailable}
+        leading={<FileType label="MD" className="bg-doc-file-text" />}
+      />
+    </div>
   );
 }

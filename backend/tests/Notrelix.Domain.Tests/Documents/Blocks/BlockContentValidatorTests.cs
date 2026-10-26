@@ -145,6 +145,29 @@ public class BlockContentValidatorTests
         Normalised(BlockType.Text, json).Should().Be(json);
     }
 
+    [Theory]
+    [InlineData("superscript")]
+    [InlineData("subscript")]
+    public void RaisedAndLoweredText_AreAccepted(string mark)
+    {
+        var json = Doc(Run("x", $"{{\"type\":\"{mark}\"}}"));
+        Normalised(BlockType.Text, json).Should().Be(json);
+    }
+
+    [Fact]
+    public void RaisedAndLoweredText_ExcludeEachOther_RaisedWins()
+    {
+        var json = Doc(Run("x", "{\"type\":\"subscript\"},{\"type\":\"superscript\"}"));
+        Normalised(BlockType.Text, json).Should().Be(Doc(Run("x", "{\"type\":\"superscript\"}")));
+    }
+
+    [Fact]
+    public void RaisedText_WithAnAttribute_IsRejected()
+    {
+        Rejected(BlockType.Text, Doc(Run("x", "{\"type\":\"superscript\",\"token\":\"muted\"}")))
+            .RuleCode.Should().Be(DocumentRuleCodes.Documents_Block_MarkInvalid);
+    }
+
     [Fact]
     public void MentionAndPageRef_AcceptIds_AndNormaliseTheirCase()
     {

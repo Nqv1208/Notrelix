@@ -36,6 +36,7 @@ import type { DocMediaHost } from "./media-host";
 import { COLOR_CLASS, HIGHLIGHT_CLASS } from "./mark-classes";
 import { BlockMove } from "./block-move";
 import { CommentAnchors } from "./comment-anchors";
+import { DocKeys } from "./doc-keys";
 import { FindReplace } from "./find-replace";
 import { TABLE_EXTENSIONS } from "./table";
 
@@ -94,6 +95,13 @@ const BLOCK_NODES = [
 
 const BLOCK_ID_KEY = new PluginKey("docBlockId");
 
+/** Line spacing steps of a text block (normal leaves the block's own leading). */
+const LINE_SPACING_CLASS: Readonly<Record<string, string>> = {
+  tight: "leading-tight",
+  relaxed: "leading-relaxed",
+  loose: "leading-loose",
+};
+
 /** Every top-level node carries a unique `blockId`; copies and splits get a new one. */
 export const BlockId = Extension.create({
   name: "blockId",
@@ -124,6 +132,30 @@ export const BlockId = Extension.create({
                 ? {
                     "data-align": String(attrs.align),
                     class: `text-${String(attrs.align)}`,
+                  }
+                : {},
+          },
+          indent: {
+            default: 0,
+            rendered: true,
+            parseHTML: (el) => Number(el.dataset.indent) || 0,
+            renderHTML: (attrs) =>
+              Number(attrs.indent) > 0
+                ? {
+                    "data-indent": String(attrs.indent),
+                    style: `margin-left: ${Number(attrs.indent) * 2}rem`,
+                  }
+                : {},
+          },
+          lineSpacing: {
+            default: null,
+            rendered: true,
+            parseHTML: (el) => el.dataset.lineSpacing || null,
+            renderHTML: (attrs) =>
+              attrs.lineSpacing
+                ? {
+                    "data-line-spacing": String(attrs.lineSpacing),
+                    class: LINE_SPACING_CLASS[String(attrs.lineSpacing)] ?? "",
                   }
                 : {},
           },
@@ -209,6 +241,30 @@ export const HighlightToken = Mark.create({
       },
       0,
     ];
+  },
+});
+
+/** Raised text (the contract's `superscript` mark). */
+export const Superscript = Mark.create({
+  name: "superscript",
+  excludes: "subscript",
+  parseHTML() {
+    return [{ tag: "sup" }];
+  },
+  renderHTML() {
+    return ["sup", { class: "text-[0.75em]" }, 0];
+  },
+});
+
+/** Lowered text (the contract's `subscript` mark). */
+export const Subscript = Mark.create({
+  name: "subscript",
+  excludes: "superscript",
+  parseHTML() {
+    return [{ tag: "sub" }];
+  },
+  renderHTML() {
+    return ["sub", { class: "text-[0.75em]" }, 0];
   },
 });
 
@@ -669,17 +725,21 @@ export const NumberedRuns = Extension.create({
         props: {
           decorations: (state) => {
             const decorations: Decoration[] = [];
-            let count = 0;
+            // One counter per indent level: a deeper item starts again at 1.
+            let counts: number[] = [];
             state.doc.forEach((node, offset) => {
               if (node.type.name === "numberedItem") {
-                count += 1;
+                const level = Math.max(0, Number(node.attrs.indent) || 0);
+                counts = counts.slice(0, level + 1);
+                while (counts.length <= level) counts.push(0);
+                counts[level] = (counts[level] ?? 0) + 1;
                 decorations.push(
                   Decoration.node(offset, offset + node.nodeSize, {
-                    "data-num": `${count}.`,
+                    "data-num": `${counts[level]}.`,
                   }),
                 );
               } else {
-                count = 0;
+                counts = [];
               }
             });
             return DecorationSet.create(state.doc, decorations);
@@ -750,6 +810,9 @@ export function createDocExtensions({
     }),
     ColorToken,
     HighlightToken,
+    Superscript,
+    Subscript,
+    DocKeys.configure({ context }),
     MentionUser,
     PageRefMark,
     BulletedItem,

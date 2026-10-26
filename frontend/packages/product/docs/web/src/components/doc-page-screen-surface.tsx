@@ -8,6 +8,14 @@ import {
   type DocArticleSurfaceProps,
 } from "./doc-article-surface";
 import { DocPageBarSurface } from "./doc-page-bar-surface";
+import {
+  DocPageSetupDialogSurface,
+  DocShortcutsDialogSurface,
+  DocStatsDialogSurface,
+  type PageSetup,
+} from "./doc-tools-dialogs-surface";
+import type { InsertHosts } from "../editor/block-insert";
+import type { DocStatsView } from "../editor/doc-stats";
 import type {
   DocBlockView,
   DocChip,
@@ -117,6 +125,27 @@ export interface DocPageScreenSurfaceProps {
   readonly canFormat?: boolean;
   readonly callbacks?: DocPageCallbacks;
   readonly onCopyLink?: () => void;
+  /** The menu bar's view state and the data of its tool dialogs (needs an editor). */
+  readonly tools?: DocPageTools;
+}
+
+export interface DocPageTools {
+  readonly view: {
+    readonly fullWidth: boolean;
+    readonly focusMode: boolean;
+    readonly toolbarShown: boolean;
+    readonly spellcheck: boolean;
+  };
+  readonly hosts: InsertHosts;
+  readonly onSpellcheck: (on: boolean) => void;
+  /** Reads the word count of the page now (the editor's current text). */
+  readonly stats: () => DocStatsView | null;
+  readonly info?: {
+    readonly editedBy: string | null;
+    readonly editedAt: string | null;
+  };
+  readonly pageSetup: PageSetup;
+  readonly onPageSetupChange: (setup: PageSetup) => void;
 }
 
 /**
@@ -193,7 +222,9 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
     canFormat = false,
     callbacks,
     onCopyLink,
+    tools,
   } = props;
+  const focusMode = tools?.view.focusMode === true;
 
   const scroller = useRef<HTMLDivElement | null>(null);
   const [spyId, setSpyId] = useState<string | null>(null);
@@ -233,7 +264,12 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
     (overlay.kind === "importPage" && importState !== undefined) ||
     (overlay.kind === "pagePicker" && pickerPages !== undefined) ||
     (overlay.kind === "boardPicker" && pickerBoards !== undefined) ||
-    (overlay.kind === "convertTask" && convert !== undefined);
+    (overlay.kind === "convertTask" && convert !== undefined) ||
+    (tools !== undefined &&
+      (overlay.kind === "shortcuts" ||
+        overlay.kind === "wordCount" ||
+        overlay.kind === "pageInfo" ||
+        overlay.kind === "pageSetup"));
   const articleProps: DocArticleSurfaceProps = {
     copy,
     title: header.title,
@@ -242,6 +278,7 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
     blocks,
     readOnly: readOnly || versions !== undefined,
     compare: versions !== undefined,
+    fullWidth: tools?.view.fullWidth === true,
     overlay,
     mentionTasks,
     mentionPeople,
@@ -260,17 +297,27 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
         aria-hidden={dialogOpen || undefined}
         inert={dialogOpen || undefined}
       >
-        <DocPageBarSurface
-          copy={copy}
-          header={header}
-          saveState={saveState}
-          stats={stats}
-          shareOpen={shareOpen}
-          canShare={share !== undefined}
-          panelOpen={versions ? undefined : panelOpen}
-          callbacks={callbacks}
-        />
-        {versions ? (
+        {focusMode ? (
+          <button
+            type="button"
+            onClick={callbacks?.onToggleFocusMode}
+            className="fixed top-3 right-4 z-dropdown inline-flex h-8 items-center gap-1.5 rounded-[8px] border border-line-strong bg-doc-panel px-3 text-compact font-medium text-foreground shadow-popover outline-none hover:bg-state-hover-strong focus-visible:ring-2 focus-visible:ring-focus-ring"
+          >
+            {copy.menubar.view.exitFocus}
+          </button>
+        ) : (
+          <DocPageBarSurface
+            copy={copy}
+            header={header}
+            saveState={saveState}
+            stats={stats}
+            shareOpen={shareOpen}
+            canShare={share !== undefined}
+            panelOpen={versions ? undefined : panelOpen}
+            callbacks={callbacks}
+          />
+        )}
+        {focusMode ? null : versions ? (
           viewing ? (
             <DocVersionBarSurface
               copy={copy}
@@ -289,6 +336,19 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
             canFormat={canFormat && !readOnly}
             editor={editor}
             callbacks={callbacks}
+            menu={
+              tools
+                ? {
+                    view: {
+                      ...tools.view,
+                      panelOpen,
+                      panelTab,
+                    },
+                    hosts: tools.hosts,
+                    onSpellcheck: tools.onSpellcheck,
+                  }
+                : undefined
+            }
           />
         )}
         <div className="flex min-h-0 flex-1">
@@ -307,7 +367,7 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
               onNamedOnlyChange={versions.onNamedOnlyChange}
               callbacks={callbacks}
             />
-          ) : panelOpen ? (
+          ) : panelOpen && !focusMode ? (
             <DocSidePanelSurface
               copy={copy}
               tab={panelTab}
@@ -382,6 +442,34 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
           copy={copy}
           blockId={overlay.blockId}
           convert={convert}
+          callbacks={callbacks}
+        />
+      ) : null}
+      {tools && overlay.kind === "shortcuts" ? (
+        <DocShortcutsDialogSurface copy={copy} callbacks={callbacks} />
+      ) : null}
+      {tools && (overlay.kind === "wordCount" || overlay.kind === "pageInfo")
+        ? (() => {
+            const stats = tools.stats();
+            return stats ? (
+              <DocStatsDialogSurface
+                copy={copy}
+                stats={stats}
+                info={
+                  overlay.kind === "pageInfo"
+                    ? (tools.info ?? { editedBy: null, editedAt: null })
+                    : undefined
+                }
+                callbacks={callbacks}
+              />
+            ) : null;
+          })()
+        : null}
+      {tools && overlay.kind === "pageSetup" ? (
+        <DocPageSetupDialogSurface
+          copy={copy}
+          setup={tools.pageSetup}
+          onChange={tools.onPageSetupChange}
           callbacks={callbacks}
         />
       ) : null}

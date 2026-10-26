@@ -12,7 +12,7 @@ public static class BulkUpdateBoardItemsEndpoint
             .WithName("WorkManagement.BoardItems.BulkUpdate")
             .Produces<BulkUpdateBoardItemsResult>(StatusCodes.Status200OK, "application/json")
             .WithTags("WorkManagement.BoardItems")
-            .WithSummary("Change the status, due date, assignee or archive state of several items of a board at once");
+            .WithSummary("Change the status, due date, assignee, priority, archive state or deletion of several items of a board at once");
         return group;
     }
 
@@ -28,7 +28,8 @@ public static class BulkUpdateBoardItemsEndpoint
             body.ItemIds,
             body.Status,
             body.DueDate,
-            body.AssigneeUserId), cancellationToken);
+            body.AssigneeUserId,
+            body.Priority), cancellationToken);
         return Results.Ok(result);
     }
 }

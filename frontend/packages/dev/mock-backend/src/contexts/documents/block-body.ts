@@ -32,7 +32,7 @@ export const TEXT_LIKE = new Set([
   "code",
 ]);
 
-const ALIGN = ["align"];
+const ALIGN = ["align", "indent", "lineSpacing"];
 const OWN_KEYS: Record<string, readonly string[]> = {
   todo: ["checked", ...ALIGN],
   code: ["language"],

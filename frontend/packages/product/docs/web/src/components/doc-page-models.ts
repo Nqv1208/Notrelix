@@ -344,6 +344,10 @@ export type DocOverlay =
   | { readonly kind: "restoreVersion" }
   | { readonly kind: "saveTemplate" }
   | { readonly kind: "importPage" }
+  | { readonly kind: "shortcuts" }
+  | { readonly kind: "wordCount" }
+  | { readonly kind: "pageInfo" }
+  | { readonly kind: "pageSetup" }
   | { readonly kind: "pagePicker"; readonly blockId: string }
   | { readonly kind: "boardPicker"; readonly blockId: string }
   | {
@@ -458,6 +462,27 @@ export interface DocPageCallbacks {
   /** Makes a resolved comment thread active again. */
   readonly onCommentReopen?: (id: string) => void;
   readonly onMentionInsert?: () => void;
+  /** A page-level shortcut or menu item that opens something outside the text. */
+  readonly onEditorCommand?: (
+    command: "link" | "comment" | "wordCount" | "shortcuts" | "focusMode",
+  ) => void;
+  /** Makes a copy of the page (its text blocks; images and files stay behind). */
+  readonly onDuplicatePage?: () => void;
+  /** Moves the caret to the page title so it can be renamed. */
+  readonly onRenamePage?: () => void;
+  /** Cut, copy or paste for the Edit menu (the container owns the clipboard). */
+  readonly onClipboardAction?: (
+    action: "cut" | "copy" | "paste" | "pastePlain",
+  ) => void;
+  /** Shows a short message to the member (a toast). */
+  readonly onNotice?: (message: string) => void;
+  readonly onToggleFullWidth?: () => void;
+  readonly onToggleFocusMode?: () => void;
+  readonly onToggleToolbar?: () => void;
+  readonly onShowShortcuts?: () => void;
+  readonly onShowWordCount?: () => void;
+  readonly onShowPageInfo?: () => void;
+  readonly onPageSetupOpen?: () => void;
   readonly onOpenComments?: () => void;
   readonly onAddBlock?: (type: BlockType) => void;
   /** Gives a workspace member access to the page at the edit level. */

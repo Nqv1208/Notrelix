@@ -2535,7 +2535,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Change the status, due date, assignee or archive state of several items of a board at once */
+        /** Change the status, due date, assignee, priority, archive state or deletion of several items of a board at once */
         post: operations["WorkManagement.BoardItems.BulkUpdate"];
         delete?: never;
         options?: never;
@@ -5665,6 +5665,7 @@ export interface components {
             dueDate?: string | null;
             /** Format: uuid */
             assigneeUserId?: string | null;
+            priority?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.CompleteBoardItemRequest": {
             /** Format: date-time */
