@@ -103,9 +103,9 @@ public class ApplicationDbContextInitialiser
             {
                 _logger.LogInformation(
                     "Development seed repair: EmailsConfirmed={Emails}, OwnersRepaired={Owners}, " +
-                    "SpacesCreated={Spaces}, BoardsPlaced={Boards}, FieldsRenamed={Fields}",
+                    "SpacesCreated={Spaces}, BoardsPlaced={Boards}, FieldsRenamed={Fields}, DueDatesMarked={DueDates}",
                     result.EmailsConfirmed, result.OwnersRepaired, result.SpacesCreated, result.BoardsPlaced,
-                    result.FieldsRenamed);
+                    result.FieldsRenamed, result.DueDatesMarked);
             }
         }
         catch (Exception ex)

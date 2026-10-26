@@ -401,7 +401,7 @@ internal static class InitDb
                         0 => ("Title", FieldType.Text, true, emptySettings, Array.Empty<(string, string)>()),
                         1 => ("Status", FieldType.Status, true, statusSettings, StatusOptions),
                         2 => ("Assignee", FieldType.Person, true, emptySettings, Array.Empty<(string, string)>()),
-                        3 => ("Due Date", FieldType.Date, false, emptySettings, Array.Empty<(string, string)>()),
+                        3 => ("Due Date", FieldType.Date, true, emptySettings, Array.Empty<(string, string)>()),
                         4 => ("Description", FieldType.LongText, false, emptySettings, Array.Empty<(string, string)>()),
                         5 => ("Priority", FieldType.Select, false, emptySettings, PriorityOptions),
                         6 => ("Effort", FieldType.Number, false, emptySettings, Array.Empty<(string, string)>()),
