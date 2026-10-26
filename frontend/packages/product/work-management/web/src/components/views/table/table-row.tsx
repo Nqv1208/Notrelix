@@ -149,7 +149,7 @@ export function TableRow({
               onClick={onOpen}
               title={row.title}
               data-row-open=""
-              className="min-w-0 truncate text-left text-nav text-foreground focus-visible:outline-2 focus-visible:outline-ring"
+              className="min-w-0 truncate text-left text-nav font-medium text-foreground focus-visible:outline-2 focus-visible:outline-ring"
             >
               {row.title}
             </button>
