@@ -16,6 +16,7 @@ export * from "./use-duplicate-group";
 export * from "./use-move-card";
 export * from "./use-move-row";
 export * from "./use-reorder-kanban-columns";
+export * from "./use-card-label-writes";
 export * from "./use-update-card";
 export * from "./use-update-card-update";
 export * from "./use-update-column";

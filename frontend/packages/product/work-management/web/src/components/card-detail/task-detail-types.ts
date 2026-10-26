@@ -1,5 +1,6 @@
 import type {
   CardActivity,
+  CardLabel,
   CardDetailTab,
   CardFile,
   CardUpdate,
@@ -121,6 +122,8 @@ export interface TaskDetailData {
   readonly links?: readonly ItemSheetLink[];
   /** Items a new link can point at. */
   readonly linkCandidates?: readonly ItemSheetLinkCandidate[];
+  /** The labels the board offers; absent: labels cannot be edited here. */
+  readonly boardLabels?: readonly CardLabel[];
 }
 
 export interface TaskDetailCallbacks {
@@ -151,6 +154,8 @@ export interface TaskDetailCallbacks {
   readonly onDuplicate: (cardId: string) => void;
   readonly onArchive: (cardId: string) => void;
   readonly onUpdateFieldValue: (payload: UpdateFieldValueInput) => void;
+  /** Puts a board label on the item or takes it off; labels stay read-only without it. */
+  readonly onToggleLabel?: (labelId: string, on: boolean) => void;
   readonly onRefreshActivity: () => void;
   /**
    * Posts a comment. `onSuccess` clears the composer; `onSettled` runs after

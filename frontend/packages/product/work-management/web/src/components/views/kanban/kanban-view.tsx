@@ -10,6 +10,8 @@ import {
 import { toast } from "sonner";
 import { useIsMobile } from "@notrelix/ui-web";
 import {
+  useBoardLabels,
+  useCardLabelWrites,
   dropUnknownFilterIds,
   useBoardAccess,
   useBoardKanban,
@@ -674,6 +676,12 @@ function KanbanSelectedItemReady({
   const activity = useCardActivity(card.id, card.workspaceId);
   const updates = useCardComments(card.id, card.workspaceId);
   const updateCard = useUpdateCard(card.boardId, card.workspaceId);
+  const boardLabels = useBoardLabels(card.boardId, card.workspaceId);
+  const labelWrites = useCardLabelWrites(
+    card.id,
+    card.boardId,
+    card.workspaceId,
+  );
   const createUpdate = useCreateCardUpdate(card.id, card.workspaceId);
   const updateUpdate = useUpdateCardUpdate(card.id, card.workspaceId);
   const deleteUpdate = useDeleteCardUpdate(card.id, card.workspaceId);
@@ -694,10 +702,13 @@ function KanbanSelectedItemReady({
         activityFetching: activity.isFetching,
         updates: updates.data ?? card.updates,
         updatesLoading: updates.isLoading,
+        boardLabels: boardLabels.data,
       }}
       callbacks={{
         onClose,
         onRenameTitle: (cardId, patch) => updateCard.mutate({ cardId, patch }),
+        onUpdateItem: (cardId, patch) => updateCard.mutate({ cardId, patch }),
+        onToggleLabel: (labelId, on) => labelWrites.mutate({ labelId, on }),
         onToggleWatch: () => undefined,
         onDuplicate,
         onArchive: (cardId) => {

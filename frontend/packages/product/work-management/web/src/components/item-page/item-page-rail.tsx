@@ -47,7 +47,9 @@ import {
   type ItemSheetCopy,
 } from "../card-detail/item-sheet.copy";
 import {
+  ItemLabelsPopover,
   ItemOptionMenu,
+  customItemFields,
   PRIORITY_CLASS,
   STATUS_DOT_CLASS,
   STATUS_LANE_CLASS,
@@ -252,24 +254,6 @@ function FollowRow({
       ) : null}
     </div>
   );
-}
-
-/** The fields of the board beyond the item's own properties: selects and numbers. */
-function customFieldsOf(board: Board): FieldDefinition[] {
-  const own = findItemFields(board);
-  const ids = new Set(
-    [own.status, own.priority, own.person, own.due].flatMap((field) =>
-      field ? [field.id] : [],
-    ),
-  );
-  return board.fieldDefinitions
-    .filter(
-      (field) =>
-        !ids.has(field.id) &&
-        !field.isHidden &&
-        (field.fieldType === "select" || field.fieldType === "number"),
-    )
-    .sort((a, b) => a.position - b.position);
 }
 
 /** One custom field: a select as a menu of its options, a number as a small editor. */
@@ -537,14 +521,15 @@ export function ItemPageRail({
     else callbacks.onUpdateItem?.(card.id, { dueDate: value });
   };
   const priority = card.priority;
-  const label = card.labels[0];
+  const labelsEditable =
+    editable && !!data?.boardLabels && !!callbacks.onToggleLabel;
   const progress = card.childProgress;
   const percent =
     progress && progress.total > 0
       ? Math.round((progress.done / progress.total) * 100)
       : null;
   const startDate = card.startDate ?? null;
-  const customFields = customFieldsOf(board);
+  const customFields = customItemFields(board);
   // Unset optional fields fold away; "Hiện N trường trống" brings them back.
   const [showEmpty, setShowEmpty] = useState(false);
   const hiddenKeys = new Set<string>();
@@ -896,18 +881,42 @@ export function ItemPageRail({
 
           {customRow(customFields[0])}
 
-          {label ? (
+          {card.labels.length > 0 || labelsEditable ? (
             <PropertyRow label={t.labels}>
-              <PropertyValue editable={false} aria-label={t.labels}>
-                <span
-                  className={cn(
-                    "inline-flex h-5.5 items-center rounded-[6px] px-2 text-micro font-semibold",
-                    ITEM_LABEL_TONE_CLASS[itemLabelTone(label)],
-                  )}
+              <ItemLabelsPopover
+                labels={data?.boardLabels ?? []}
+                selectedIds={new Set(card.labels.map((entry) => entry.id))}
+                label={t.labels}
+                emptyText={p.boardHasNoLabels}
+                readOnly={!labelsEditable}
+                onToggle={(labelId, on) =>
+                  callbacks.onToggleLabel?.(labelId, on)
+                }
+              >
+                <PropertyValue
+                  editable={labelsEditable}
+                  aria-label={t.labels}
+                  className={
+                    card.labels.length === 0
+                      ? "font-normal text-meta-foreground"
+                      : "flex-wrap"
+                  }
                 >
-                  {label.name}
-                </span>
-              </PropertyValue>
+                  {card.labels.length === 0
+                    ? p.addLabel
+                    : card.labels.map((entry) => (
+                        <span
+                          key={entry.id}
+                          className={cn(
+                            "inline-flex h-5.5 items-center rounded-[6px] px-2 text-micro font-semibold",
+                            ITEM_LABEL_TONE_CLASS[itemLabelTone(entry)],
+                          )}
+                        >
+                          {entry.name}
+                        </span>
+                      ))}
+                </PropertyValue>
+              </ItemLabelsPopover>
             </PropertyRow>
           ) : null}
 

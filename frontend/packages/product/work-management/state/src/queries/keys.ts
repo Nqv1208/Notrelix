@@ -13,6 +13,14 @@ export const wmQueryKeys = {
     workspaceQueryKey(workspaceId, "work-management", "boards", "list"),
   workspaceList: (workspaceId: string) =>
     workspaceQueryKey(workspaceId, "work-management", "boards", "workspace"),
+  boardLabels: (workspaceId: string, boardId: string) =>
+    workspaceQueryKey(
+      workspaceId,
+      "work-management",
+      "boards",
+      "labels",
+      boardId,
+    ),
   fullBoard: (workspaceId: string, boardId: string) =>
     workspaceQueryKey(
       workspaceId,

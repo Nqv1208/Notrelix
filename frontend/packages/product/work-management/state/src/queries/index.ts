@@ -1,5 +1,6 @@
 export * from "./keys";
 export * from "./use-board-access";
+export * from "./use-board-labels";
 export * from "./use-card";
 export * from "./use-card-activity";
 export * from "./use-card-checklists";

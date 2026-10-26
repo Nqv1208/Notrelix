@@ -5,7 +5,9 @@ import {
   useCard,
   useCardActivity,
   useCardComments,
+  useBoardLabels,
   useCardFiles,
+  useCardLabelWrites,
   useCreateCardUpdate,
   useDeleteCardUpdate,
   useDuplicateCard,
@@ -275,6 +277,12 @@ function ItemPageReady({
   const activity = useCardActivity(card.id, card.workspaceId);
   const updates = useCardComments(card.id, card.workspaceId);
   const updateCard = useUpdateCard(card.boardId, card.workspaceId);
+  const boardLabels = useBoardLabels(card.boardId, card.workspaceId);
+  const labelWrites = useCardLabelWrites(
+    card.id,
+    card.boardId,
+    card.workspaceId,
+  );
   const archiveCard = useArchiveCard(card.boardId, card.workspaceId);
   const duplicateCard = useDuplicateCard(card.boardId, card.workspaceId);
   const createUpdate = useCreateCardUpdate(card.id, card.workspaceId);
@@ -495,6 +503,7 @@ function ItemPageReady({
     onClose: onBack,
     onRenameTitle: (cardId, patch) => updateCard.mutate({ cardId, patch }),
     onUpdateItem: patchItem,
+    onToggleLabel: (labelId, on) => labelWrites.mutate({ labelId, on }),
     onToggleWatch: (watched) => follow.setFollowing(watched),
     onRequestApproval: (approverUserId) =>
       approvals.request({ approverUserId, note: null }),
@@ -633,6 +642,7 @@ function ItemPageReady({
           : null,
         links: links.data,
         linkCandidates,
+        boardLabels: boardLabels.data,
       }}
     />
   );

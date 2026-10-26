@@ -13,7 +13,9 @@ function setup(assigneeIndex = 0) {
   const scenario = erpBoardScenario();
   const member = scenario.board.members[assigneeIndex]!;
   const cards = {
-    createCard: vi.fn(async () => "item-new"),
+    createCard: vi.fn(
+      async (_boardId: string, _payload: unknown) => "item-new",
+    ),
     updateStatus: vi.fn(async () => undefined),
     updateFieldValue: vi.fn(async () => undefined),
     setAssignees: vi.fn(async () => undefined),
