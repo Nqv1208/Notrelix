@@ -1,20 +1,22 @@
 import {
   parseRichText,
   plainTextOf,
+  plainTextOfRuns,
+  runsFromPlainText,
   upgradeLegacyProperties,
   type BlockDraft,
   type BlockProperties,
   type BlockType,
   type RichTextV1,
+  type Run,
 } from "@notrelix/docs-core";
 import type { BlockDtoApi } from "../dto";
 
 /**
  * How a block's authored text and properties travel to and from the
- * producer. TRANSITION: until Documents sends `content` and `properties` as
- * separate JSON objects, one JSON body carries the rich text beside the
- * block's own properties (`{ v: 1, runs, checked, ... }`). Switching to the
- * two-field shape only changes `encodeBlockBody` and `decodeBlockBody`.
+ * producer: `content` is rich text v1 (`{ v: 1, runs }`) for a text-like block
+ * and `{}` otherwise, `properties` holds the type's own values as a JSON
+ * object. Both are objects on the wire, never JSON text.
  */
 function asObject(value: unknown): Record<string, unknown> | null {
   if (value && typeof value === "object" && !Array.isArray(value)) {
@@ -31,6 +33,130 @@ function asObject(value: unknown): Record<string, unknown> | null {
   }
 }
 
+const SIMPLE_KEYS: Readonly<Partial<Record<BlockType, readonly string[]>>> = {
+  todo: ["checked"],
+  code: ["language"],
+  callout: ["icon", "tone"],
+  toggle: ["collapsed"],
+};
+
+const ALIGNABLE: ReadonlySet<BlockType> = new Set<BlockType>([
+  "paragraph",
+  "heading_1",
+  "heading_2",
+  "heading_3",
+  "bulleted_list",
+  "numbered_list",
+  "todo",
+  "toggle",
+  "quote",
+  "callout",
+]);
+
+function pick(
+  source: Record<string, unknown>,
+  keys: readonly string[],
+): Record<string, unknown> {
+  const picked: Record<string, unknown> = {};
+  for (const key of keys) {
+    if (source[key] !== undefined && source[key] !== null) {
+      picked[key] = source[key];
+    }
+  }
+  return picked;
+}
+
+function keysOf(type: BlockType): readonly string[] {
+  return [
+    ...(SIMPLE_KEYS[type] ?? []),
+    ...(ALIGNABLE.has(type) ? ["align"] : []),
+  ];
+}
+
+function runsOfWire(value: unknown): Run[] {
+  return Array.isArray(value) ? (value as Run[]) : [];
+}
+
+/** The page's properties of a block as the producer sends them. */
+export function propertiesFromWire(
+  type: BlockType,
+  wire: Record<string, unknown>,
+): BlockProperties {
+  switch (type) {
+    case "image": {
+      const properties: BlockProperties = {
+        ...(pick(wire, ["attachmentId", "width", "alt"]) as BlockProperties),
+      };
+      const caption = plainTextOfRuns(runsOfWire(wire.caption));
+      if (caption) properties.caption = caption;
+      return properties;
+    }
+    case "board_reference":
+      return {
+        ...(typeof wire.boardId === "string"
+          ? { linkedBoardId: wire.boardId }
+          : {}),
+        ...(typeof wire.viewId === "string" ? { viewId: wire.viewId } : {}),
+      };
+    case "page_reference":
+      return typeof wire.pageId === "string"
+        ? { linkedPageId: wire.pageId }
+        : {};
+    case "table": {
+      const rows = Array.isArray(wire.rows) ? wire.rows : [];
+      return {
+        rows: rows.map((row: unknown) =>
+          (Array.isArray(row) ? row : []).map((cell: unknown) =>
+            plainTextOfRuns(
+              runsOfWire((cell as { runs?: unknown } | null)?.runs),
+            ),
+          ),
+        ),
+      };
+    }
+    case "divider":
+      return {};
+    default:
+      return pick(wire, keysOf(type)) as BlockProperties;
+  }
+}
+
+/** The producer's `properties` for a block's page-side properties. */
+export function propertiesToWire(
+  type: BlockType,
+  properties: BlockProperties,
+): Record<string, unknown> {
+  const source = properties as Record<string, unknown>;
+  switch (type) {
+    case "image": {
+      const wire = pick(source, ["attachmentId", "width", "alt"]);
+      if (properties.caption) {
+        wire.caption = runsFromPlainText(properties.caption);
+      }
+      return wire;
+    }
+    case "board_reference":
+      return {
+        ...(properties.linkedBoardId
+          ? { boardId: properties.linkedBoardId }
+          : {}),
+        ...(properties.viewId ? { viewId: properties.viewId } : {}),
+      };
+    case "page_reference":
+      return properties.linkedPageId ? { pageId: properties.linkedPageId } : {};
+    case "table":
+      return {
+        rows: (properties.rows ?? []).map((row) =>
+          row.map((cell) => ({ runs: runsFromPlainText(cell) })),
+        ),
+      };
+    case "divider":
+      return {};
+    default:
+      return pick(source, keysOf(type));
+  }
+}
+
 export interface DecodedBlockBody {
   content: RichTextV1;
   /** The type's properties plus `text`, the plain text read-only views use. */
@@ -39,35 +165,57 @@ export interface DecodedBlockBody {
 
 export function decodeBlockBody(
   type: BlockType,
-  dto: Pick<BlockDtoApi, "content" | "properties">,
+  dto:
+    | Pick<BlockDtoApi, "content" | "properties">
+    | {
+        content: unknown;
+        properties?: unknown;
+      },
 ): DecodedBlockBody {
   const body = asObject(dto.content) ?? {};
+  const wire = asObject(dto.properties) ?? {};
   const rich = parseRichText(body);
   if (rich) {
-    const { v: _v, runs: _runs, ...rest } = body;
-    void _v;
-    void _runs;
-    const separate = asObject(dto.properties);
-    const properties = { ...(separate ?? rest) } as BlockProperties;
     return {
       content: rich,
-      properties: { ...properties, text: plainTextOf(rich) },
+      properties: {
+        ...propertiesFromWire(type, wire),
+        text: plainTextOf(rich),
+      },
     };
   }
+  // A producer that has not upgraded the block yet still sends the flat
+  // legacy body in `content`.
   const upgraded = upgradeLegacyProperties(type, body as BlockProperties);
   return {
     content: upgraded.content,
-    properties: { ...upgraded.properties, text: plainTextOf(upgraded.content) },
+    properties: {
+      ...upgraded.properties,
+      ...propertiesFromWire(type, wire),
+      text: plainTextOf(upgraded.content),
+    },
   };
 }
 
-/** The JSON text the producer stores for a draft. */
-export function encodeBlockBody(
-  draft: Pick<BlockDraft, "content" | "properties">,
-): string {
-  return JSON.stringify({
-    v: 1,
-    runs: draft.content.runs,
-    ...draft.properties,
-  });
+/** The producer's `content` for a draft: rich text for a text-like block. */
+export function encodeContent(
+  draft: Pick<BlockDraft, "type" | "content">,
+): Record<string, unknown> {
+  return textLike(draft.type) ? { v: 1, runs: draft.content.runs } : {};
+}
+
+function textLike(type: BlockType): boolean {
+  return (
+    type !== "divider" &&
+    type !== "image" &&
+    type !== "table" &&
+    type !== "board_reference" &&
+    type !== "page_reference"
+  );
+}
+
+export function encodeProperties(
+  draft: Pick<BlockDraft, "type" | "properties">,
+): Record<string, unknown> {
+  return propertiesToWire(draft.type, draft.properties);
 }

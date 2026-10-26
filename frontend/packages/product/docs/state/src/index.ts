@@ -66,10 +66,25 @@ export type {
 
 export * from "./query";
 
-export { DocBlockSaver } from "./editor/doc-block-saver";
+export {
+  BlockVersionConflict,
+  DocBlockSaver,
+  planBlockWrites,
+} from "./editor/doc-block-saver";
 export type {
+  BlockConflict,
+  BlockWrite,
   BlockWriter,
   DocBlockSaverOptions,
   SaverStatus,
+  SavedBlock,
 } from "./editor/doc-block-saver";
-export { decodeBlockBody, encodeBlockBody } from "./model/block-wire";
+export {
+  createBatchBlockWriter,
+  toBatchItem,
+} from "./editor/batch-block-writer";
+export {
+  decodeBlockBody,
+  encodeContent,
+  encodeProperties,
+} from "./model/block-wire";

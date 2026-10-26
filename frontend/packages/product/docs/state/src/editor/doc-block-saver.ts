@@ -1,52 +1,174 @@
 import {
   diffBlockDrafts,
+  draftEquals,
   isEmptyDiff,
   type BlockDraft,
   type BlockDraftPatch,
 } from "@notrelix/docs-core";
 
+/** One write of a save, as the producer's batch takes it. */
+export interface BlockWrite {
+  readonly op: "upsert" | "delete";
+  readonly id: string;
+  /** An upsert: the block as it is to be stored (a create sends all of it). */
+  readonly draft?: BlockDraft;
+  /** An edit sends only what changed; absent on a create. */
+  readonly patch?: BlockDraftPatch;
+  /** The version the caller read; required for an edit and a delete. */
+  readonly expectedVersion?: number;
+  /** The top-level block it goes right after; absent leaves an edit where it is. */
+  readonly afterId?: string;
+}
+
+export interface SavedBlock {
+  readonly id: string;
+  readonly version: number;
+}
+
 /**
- * The writes the saver needs, as the producer offers them. The sequential
- * writer uses the per-block endpoints; a batch writer with `expectedVersion`
- * replaces it without touching the saver.
+ * The writes the saver needs: the producer applies the operations in order in
+ * one transaction (all or nothing). A stale `expectedVersion` rejects the whole
+ * write with a `BlockVersionConflict` carrying the block as it is stored now.
  */
 export interface BlockWriter {
-  /** Creates a block right after `afterId` (a stored id) and answers its id. */
-  create(draft: BlockDraft, afterId: string | null): Promise<string>;
-  update(id: string, patch: BlockDraftPatch, draft: BlockDraft): Promise<void>;
-  remove(id: string): Promise<void>;
+  write(ops: readonly BlockWrite[]): Promise<readonly SavedBlock[]>;
+}
+
+/** The producer refused a write because a block changed meanwhile (412). */
+export class BlockVersionConflict extends Error {
+  constructor(readonly server: BlockDraft) {
+    super("The block was changed elsewhere.");
+    this.name = "BlockVersionConflict";
+  }
 }
 
 export type SaverStatus = "saved" | "saving" | "error";
 
+export interface BlockConflict {
+  readonly blockId: string;
+  /** What the member had in the block (null when they had removed it). */
+  readonly local: BlockDraft | null;
+  /** The block as stored now; the editor shows this one. */
+  readonly server: BlockDraft;
+}
+
 export interface DocBlockSaverOptions {
   readonly debounceMs?: number;
   readonly onStatus?: (status: SaverStatus) => void;
-  /** A block was stored under another id than the editor gave it. */
-  readonly onIdAssigned?: (clientId: string, storedId: string) => void;
   /** The writes of one save went through; `drafts` is the stored document. */
   readonly onSaved?: (drafts: readonly BlockDraft[]) => void;
-  /** The producer refused a write because the block changed (412). */
-  readonly onConflict?: (blockId: string, error: unknown) => void;
+  /** A block was refused as stale: the saver took the stored one instead. */
+  readonly onConflict?: (conflict: BlockConflict) => void;
+  /**
+   * Blocks of the document changed outside the member's edits (a stored block
+   * replaced a stale one, or others' changes were merged): the editor shows
+   * `drafts`.
+   */
+  readonly onRebased?: (drafts: readonly BlockDraft[]) => void;
   readonly schedule?: (run: () => void, ms: number) => unknown;
   readonly cancel?: (handle: unknown) => void;
 }
 
-function statusOf(error: unknown): number | null {
-  if (error && typeof error === "object" && "status" in error) {
-    const status = (error as { status?: unknown }).status;
-    return typeof status === "number" ? status : null;
+/** The producer takes at most this many operations per batch. */
+export const MAX_BATCH_OPERATIONS = 500;
+const MAX_CONFLICTS_PER_SAVE = 5;
+
+/**
+ * Turns the difference between the stored snapshot and the editor's blocks
+ * into the batch's operations: deletes first, then every new or moved block
+ * placed after its predecessor, in document order. The producer cannot place a
+ * block first, so a block that has to be first is stored last and the blocks
+ * behind it are placed after their predecessor in turn.
+ */
+export function planBlockWrites(
+  snapshot: readonly BlockDraft[],
+  target: readonly BlockDraft[],
+): BlockWrite[] {
+  const diff = diffBlockDrafts(snapshot, target);
+  if (isEmptyDiff(diff)) return [];
+  const stored = new Map(snapshot.map((draft) => [draft.id, draft]));
+  const updates = new Map(diff.updates.map((entry) => [entry.id, entry.patch]));
+  const creates = new Set(diff.creates.map((entry) => entry.draft.id));
+  const moves = new Set(diff.moves.map((entry) => entry.id));
+
+  const ops: BlockWrite[] = [];
+  for (const id of diff.deletes) {
+    ops.push({
+      op: "delete",
+      id,
+      expectedVersion: stored.get(id)?.version,
+    });
   }
-  return null;
+  let rechain = false;
+  target.forEach((draft, index) => {
+    const previous = index > 0 ? (target[index - 1] as BlockDraft).id : null;
+    const isCreate = creates.has(draft.id);
+    const isMove = moves.has(draft.id);
+    if (index === 0 && (isCreate || isMove)) rechain = true;
+    const place = (isCreate || isMove || rechain) && previous !== null;
+    const afterId = place ? (previous as string) : undefined;
+    if (isCreate) {
+      ops.push({
+        op: "upsert",
+        id: draft.id,
+        draft,
+        ...(afterId ? { afterId } : {}),
+      });
+      return;
+    }
+    const patch = updates.get(draft.id);
+    if (!patch && !afterId) return;
+    ops.push({
+      op: "upsert",
+      id: draft.id,
+      draft,
+      patch: patch ?? {},
+      expectedVersion: stored.get(draft.id)?.version,
+      ...(afterId ? { afterId } : {}),
+    });
+  });
+  return ops;
+}
+
+/** The stored document after `ops` applied, as the producer applies them. */
+export function applyBlockWrites(
+  snapshot: readonly BlockDraft[],
+  ops: readonly BlockWrite[],
+  versions: ReadonlyMap<string, number>,
+): BlockDraft[] {
+  const next = snapshot.map((draft) => ({ ...draft }));
+  for (const op of ops) {
+    const at = next.findIndex((draft) => draft.id === op.id);
+    if (op.op === "delete") {
+      if (at >= 0) next.splice(at, 1);
+      continue;
+    }
+    const draft = op.draft as BlockDraft;
+    const version = versions.get(op.id) ?? draft.version;
+    const written: BlockDraft = {
+      ...draft,
+      ...(version !== undefined ? { version } : {}),
+    };
+    if (at >= 0) next.splice(at, 1);
+    const after = op.afterId
+      ? next.findIndex((entry) => entry.id === op.afterId) + 1
+      : at >= 0
+        ? at
+        : next.length;
+    next.splice(after, 0, written);
+  }
+  return next;
 }
 
 /**
  * Keeps the stored document equal to the editor's: it debounces edits, diffs
  * the top-level blocks against the last stored snapshot and writes the smallest
- * set of creates, updates, moves and deletes. The snapshot moves forward one
- * write at a time, so a failed save resumes where it stopped instead of
+ * batch of creates, edits, moves and deletes. The snapshot moves forward one
+ * batch at a time, so a failed save resumes where it stopped instead of
  * writing a block twice; typed text is never dropped, a failure only keeps the
- * latest document pending until a retry.
+ * latest document pending until a retry. A block the producer refuses as stale
+ * is replaced by the stored one (the member's text goes to `onConflict`) and
+ * the rest of the save is retried.
  */
 export class DocBlockSaver {
   private snapshot: BlockDraft[] = [];
@@ -54,7 +176,6 @@ export class DocBlockSaver {
   private timer: unknown = null;
   private running: Promise<void> | null = null;
   private again = false;
-  private renamed = new Map<string, string>();
   private status: SaverStatus = "saved";
   private disposed = false;
 
@@ -63,21 +184,17 @@ export class DocBlockSaver {
     private readonly options: DocBlockSaverOptions = {},
   ) {}
 
-  /** The stored document the next diff starts from (initial load, refetch). */
+  /** The stored document the next diff starts from (initial load). */
   reset(snapshot: readonly BlockDraft[]): void {
     this.snapshot = snapshot.map((draft) => ({ ...draft }));
     this.latest = null;
-    this.renamed.clear();
     this.setStatus("saved");
   }
 
   /** The editor's document changed: save it after the debounce. */
   change(next: readonly BlockDraft[]): void {
     if (this.disposed) return;
-    this.latest = next.map((draft) => ({
-      ...draft,
-      id: this.renamed.get(draft.id) ?? draft.id,
-    }));
+    this.latest = next.map((draft) => ({ ...draft }));
     if (this.hasWork()) this.setStatus("saving");
     this.cancelTimer();
     const schedule =
@@ -114,6 +231,64 @@ export class DocBlockSaver {
     return this.status;
   }
 
+  /** True while the member has changes the producer has not stored. */
+  hasPending(): boolean {
+    return this.hasWork();
+  }
+
+  /**
+   * The stored document changed elsewhere (a refetch). Blocks the member is
+   * not editing take the stored version; a block with pending edits keeps
+   * them (a stale write is refused and resolved through `onConflict`).
+   * Structure changes wait until nothing is pending. Answers whether
+   * everything was merged.
+   */
+  mergeStored(stored: readonly BlockDraft[]): boolean {
+    if (this.disposed) return true;
+    const pendingIds = this.pendingIds();
+    const document = this.latest ?? this.snapshot;
+    const same =
+      stored.length === document.length &&
+      stored.every((draft, index) => {
+        const local = document[index];
+        return local && draftEquals(local, draft);
+      });
+    if (pendingIds.size === 0) {
+      this.snapshot = stored.map((draft) => ({ ...draft }));
+      if (this.latest) this.latest = stored.map((draft) => ({ ...draft }));
+      if (!same) this.options.onRebased?.(stored);
+      return true;
+    }
+    // Pending edits: only blocks both sides have and the member left alone.
+    const byId = new Map(stored.map((draft) => [draft.id, draft]));
+    let changed = false;
+    const take = (list: BlockDraft[]) =>
+      list.map((draft) => {
+        const server = byId.get(draft.id);
+        if (!server || pendingIds.has(draft.id)) return draft;
+        if (!draftEquals(draft, server) || draft.version !== server.version) {
+          changed = true;
+          return { ...server };
+        }
+        return draft;
+      });
+    this.snapshot = take(this.snapshot);
+    if (this.latest) this.latest = take(this.latest);
+    if (changed && this.latest) this.options.onRebased?.(this.latest);
+    return false;
+  }
+
+  private pendingIds(): Set<string> {
+    if (!this.latest) return new Set();
+    const diff = diffBlockDrafts(this.snapshot, this.latest);
+    return new Set([
+      ...diff.deletes,
+      ...diff.updates.map((entry) => entry.id),
+      ...diff.moves.map((entry) => entry.id),
+      ...diff.creates.map((entry) => entry.draft.id),
+    ]);
+  }
+
   private hasWork(): boolean {
     return (
       this.latest !== null &&
@@ -136,6 +311,7 @@ export class DocBlockSaver {
   }
 
   private async run(): Promise<void> {
+    let conflicts = 0;
     do {
       this.again = false;
       const target = this.latest;
@@ -143,21 +319,25 @@ export class DocBlockSaver {
         this.setStatus("saved");
         return;
       }
-      const diff = diffBlockDrafts(this.snapshot, target);
-      if (isEmptyDiff(diff)) {
+      const ops = planBlockWrites(this.snapshot, target);
+      if (ops.length === 0) {
         this.setStatus("saved");
         continue;
       }
       this.setStatus("saving");
       try {
-        await this.apply(diff, target);
+        await this.send(ops);
       } catch (error) {
-        this.setStatus("error");
-        const status = statusOf(error);
-        if (status === 412) {
-          const blockId = this.lastBlockId ?? "";
-          this.options.onConflict?.(blockId, error);
+        if (
+          error instanceof BlockVersionConflict &&
+          conflicts < MAX_CONFLICTS_PER_SAVE
+        ) {
+          conflicts += 1;
+          this.takeStored(error.server);
+          this.again = true;
+          continue;
         }
+        this.setStatus("error");
         return;
       }
       this.options.onSaved?.(this.snapshot);
@@ -165,62 +345,36 @@ export class DocBlockSaver {
     this.setStatus("saved");
   }
 
-  private lastBlockId: string | null = null;
-
-  private async apply(
-    diff: ReturnType<typeof diffBlockDrafts>,
-    target: readonly BlockDraft[],
-  ): Promise<void> {
-    const draftOf = (id: string) => target.find((draft) => draft.id === id);
-    for (const id of diff.deletes) {
-      this.lastBlockId = id;
-      await this.writer.remove(id);
-      this.snapshot = this.snapshot.filter((draft) => draft.id !== id);
-    }
-    for (const update of diff.updates) {
-      this.lastBlockId = update.id;
-      await this.writer.update(update.id, update.patch, update.draft);
-      this.snapshot = this.snapshot.map((draft) =>
-        draft.id === update.id ? { ...update.draft } : draft,
+  private async send(ops: readonly BlockWrite[]): Promise<void> {
+    for (let from = 0; from < ops.length; from += MAX_BATCH_OPERATIONS) {
+      const chunk = ops.slice(from, from + MAX_BATCH_OPERATIONS);
+      const saved = await this.writer.write(chunk);
+      this.snapshot = applyBlockWrites(
+        this.snapshot,
+        chunk,
+        new Map(saved.map((block) => [block.id, block.version])),
       );
     }
-    // Creates and moves walk the document in order, so the block each one
-    // goes after is already in place.
-    for (const draft of target) {
-      const create = diff.creates.find((entry) => entry.draft.id === draft.id);
-      const move = diff.moves.find((entry) => entry.id === draft.id);
-      if (!create && !move) continue;
-      const afterId = (create ?? move)?.afterId ?? null;
-      this.lastBlockId = draft.id;
-      const stored = move ? (draftOf(draft.id) ?? draft) : draft;
-      // The producer has no move write: a moved block is written again after
-      // its new neighbour and the old one removed.
-      const clientId = draft.id;
-      const id = await this.writer.create(stored, afterId);
-      if (move) await this.writer.remove(clientId);
-      this.snapshot = this.snapshot.filter((entry) => entry.id !== clientId);
-      const at = afterId
-        ? this.snapshot.findIndex((entry) => entry.id === afterId) + 1
-        : 0;
-      this.snapshot.splice(at, 0, { ...stored, id });
-      if (id !== clientId) {
-        this.renamed.set(clientId, id);
-        for (const entry of target) {
-          if (entry.id === clientId) entry.id = id;
-        }
-        if (this.latest) {
-          this.latest = this.latest.map((entry) =>
-            entry.id === clientId ? { ...entry, id } : entry,
-          );
-        }
-        for (const entry of diff.creates) {
-          if (entry.afterId === clientId) entry.afterId = id;
-        }
-        for (const entry of diff.moves) {
-          if (entry.afterId === clientId) entry.afterId = id;
-        }
-        this.options.onIdAssigned?.(clientId, id);
+  }
+
+  /** A stale block: the stored one replaces it in the snapshot and the editor. */
+  private takeStored(server: BlockDraft): void {
+    const local = this.latest?.find((draft) => draft.id === server.id) ?? null;
+    const at = this.snapshot.findIndex((draft) => draft.id === server.id);
+    if (at >= 0) this.snapshot[at] = { ...server };
+    else this.snapshot.push({ ...server });
+    if (this.latest) {
+      const index = this.latest.findIndex((draft) => draft.id === server.id);
+      if (index >= 0) this.latest[index] = { ...server };
+      else {
+        const previous = at > 0 ? this.snapshot[at - 1]?.id : undefined;
+        const after = previous
+          ? this.latest.findIndex((draft) => draft.id === previous) + 1
+          : 0;
+        this.latest.splice(after, 0, { ...server });
       }
     }
+    this.options.onConflict?.({ blockId: server.id, local, server });
+    this.options.onRebased?.(this.latest ?? this.snapshot);
   }
 }

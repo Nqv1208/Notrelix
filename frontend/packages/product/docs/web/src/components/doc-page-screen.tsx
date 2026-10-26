@@ -24,6 +24,7 @@ import {
   type PageApiEndpoints,
 } from "@notrelix/docs-state";
 import {
+  draftEquals,
   draftOfBlock,
   plainTextOf,
   type BlockDraft,
@@ -374,11 +375,32 @@ export function createDocPageScreen({
     // by a debounced diff. The callbacks it needs are filled in below.
     const callbacksRef = useRef<DocPageCallbacks | undefined>(undefined);
     const richRef = useRef<{
-      assignBlockId: (clientId: string, storedId: string) => void;
+      applyDrafts: (drafts: readonly BlockDraft[]) => void;
+      currentDrafts: () => BlockDraft[];
     } | null>(null);
+    // What a stored change replaced stays here until the member copies,
+    // re-applies or drops it.
+    const [recoveries, setRecoveries] = useState<
+      readonly { id: string; draft: BlockDraft | null }[]
+    >([]);
+    const [copiedRecoveryId, setCopiedRecoveryId] = useState<string | null>(
+      null,
+    );
+    const toastedRef = useRef(false);
     const saver = useDocSaver(workspaceId, pageId, blocksQuery.data, {
-      onIdAssigned: (clientId, storedId) =>
-        richRef.current?.assignBlockId(clientId, storedId),
+      onConflict: ({ blockId, local, server }) => {
+        const changed = !local || !draftEquals(local, server);
+        if (!changed) return;
+        setRecoveries((current) => [
+          ...current,
+          { id: `${blockId}:${current.length}:${Date.now()}`, draft: local },
+        ]);
+        if (!toastedRef.current) {
+          toastedRef.current = true;
+          host.notify?.(copy.recovery.toast);
+        }
+      },
+      onRebased: (drafts) => richRef.current?.applyDrafts(drafts),
     });
     const initialDrafts = useMemo(
       () =>
@@ -438,6 +460,13 @@ export function createDocPageScreen({
       onDrafts: saver.change,
     });
     richRef.current = richEditor;
+
+    const recoveryViews = recoveries.map((entry) => ({
+      id: entry.id,
+      text: entry.draft ? plainTextOf(entry.draft.content) : "",
+    }));
+    const dropRecovery = (id: string) =>
+      setRecoveries((current) => current.filter((entry) => entry.id !== id));
 
     if (pageQuery.isLoading || blocksQuery.isLoading) {
       return <DocPageScreenSurface status="loading" copy={copy} {...EMPTY} />;
@@ -771,6 +800,32 @@ export function createDocPageScreen({
           });
         }
       },
+      onRecoveryCopy: (id) => {
+        const text = recoveries.find((entry) => entry.id === id)?.draft;
+        if (!text) return;
+        void navigator.clipboard
+          ?.writeText(plainTextOf(text.content))
+          .then(() => setCopiedRecoveryId(id))
+          .catch(() => undefined);
+      },
+      onRecoveryReapply: (id) => {
+        const draft = recoveries.find((entry) => entry.id === id)?.draft;
+        const rich = richRef.current;
+        if (!draft || !rich) return;
+        // The member's text goes back into the block; it saves as a new
+        // edit of the stored version.
+        rich.applyDrafts(
+          rich
+            .currentDrafts()
+            .map((current) =>
+              current.id === draft.id
+                ? { ...draft, version: undefined }
+                : current,
+            ),
+        );
+        dropRecovery(id);
+      },
+      onRecoveryDismiss: dropRecovery,
       onOpenComments: () => {
         setPanelTab("comments");
         setPanelOpen(true);
@@ -792,6 +847,8 @@ export function createDocPageScreen({
         header={header}
         saveState={saveState}
         editor={richEditor.editor}
+        recoveries={recoveryViews}
+        copiedRecoveryId={copiedRecoveryId}
         chips={chips}
         why={why}
         blocks={blockViews}

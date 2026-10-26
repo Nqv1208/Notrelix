@@ -50,19 +50,36 @@ export type HistoryDtoApi = {
   createdAt: string;
 };
 
-/** `Documents.Blocks.ListPageBlocks` (`BlockDto`); `content` is the block's JSON body. */
+/**
+ * `Documents.Blocks.ListPageBlocks` (`BlockDto`). `content` and `properties`
+ * are JSON objects: rich text v1 (`{ v: 1, runs }`) for a text-like block, `{}`
+ * otherwise; `properties` holds the type's own values. The generated REST
+ * schema types both as `unknown`, so the shapes are named here.
+ */
 export type BlockDtoApi = {
   id: string;
   pageId: string;
   parentId?: string | null;
   /** The producer's block type name (`Text`, `Heading1`, `ToDo`, ...). */
   type: string;
-  /** The block's JSON body, as an object or JSON text. */
-  content: string | Record<string, unknown>;
-  /** Present once the producer sends the block's properties apart from its text. */
-  properties?: string | Record<string, unknown>;
+  content: Record<string, unknown>;
+  properties: Record<string, unknown>;
+  /** The block's fractional ordering key. */
   position: string;
+  /** Sent back as `expectedVersion` by an edit or a delete. */
   version: number;
   createdAt: string;
   updatedAt?: string | null;
+};
+
+/** One operation of `Documents.Blocks.BatchUpdateBlocks`. */
+export type BatchBlockItemApi = {
+  id: string;
+  op?: "upsert" | "delete";
+  type?: string;
+  content?: Record<string, unknown>;
+  properties?: Record<string, unknown>;
+  afterBlockId?: string;
+  parentId?: string;
+  expectedVersion?: number;
 };

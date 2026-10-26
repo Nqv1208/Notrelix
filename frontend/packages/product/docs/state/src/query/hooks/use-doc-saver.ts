@@ -8,15 +8,21 @@ import {
 } from "@notrelix/docs-core";
 import { createBlockApi } from "../../api/block.api";
 import type { DocsApiClient, PageApiEndpoints } from "../../api/page.api";
+import { createBatchBlockWriter } from "../../editor/batch-block-writer";
 import {
   DocBlockSaver,
-  type BlockWriter,
+  type BlockConflict,
   type SaverStatus,
 } from "../../editor/doc-block-saver";
 import { docsQueryKeys } from "../keys";
 
-/** A saved draft as the page cache holds it, numbered by its place. */
-function toBlock(pageId: string, draft: BlockDraft, index: number): Block {
+/** A stored draft as the page cache holds it, numbered by its place. */
+function toBlock(
+  pageId: string,
+  draft: BlockDraft,
+  index: number,
+  known: Block | undefined,
+): Block {
   const now = new Date().toISOString();
   return {
     id: draft.id,
@@ -24,27 +30,30 @@ function toBlock(pageId: string, draft: BlockDraft, index: number): Block {
     type: draft.type,
     content: draft.content,
     properties: { ...draft.properties, text: plainTextOf(draft.content) },
+    ...(draft.version !== undefined ? { version: draft.version } : {}),
     position: (index + 1) * 1000,
-    parentId: null,
-    createdById: "",
-    updatedById: "",
-    createdAt: now,
+    parentId: known?.parentId ?? null,
+    createdById: known?.createdById ?? "",
+    updatedById: known?.updatedById ?? "",
+    createdAt: known?.createdAt ?? now,
     updatedAt: now,
   };
 }
 
 export interface DocSaverOptions {
-  /** A block was stored under a different id than the editor gave it. */
-  readonly onIdAssigned?: (clientId: string, storedId: string) => void;
-  /** A write was refused because the block changed meanwhile. */
-  readonly onConflict?: (blockId: string) => void;
+  /** A block was refused as stale: the editor shows the stored one. */
+  readonly onConflict?: (conflict: BlockConflict) => void;
+  /** The stored document changed outside the member's edits: show `drafts`. */
+  readonly onRebased?: (drafts: readonly BlockDraft[]) => void;
 }
 
 /**
  * Saves the open page's blocks from the editor: a debounced diff against the
- * last stored snapshot, flushed when the page is left or hidden. The page's
- * block cache is kept equal to what was stored, so the contents and
- * references follow without a refetch.
+ * last stored snapshot written as one batch, flushed when the page is left or
+ * hidden. The page's block cache is kept equal to what was stored (with the
+ * versions the producer answered), so the contents and references follow
+ * without a refetch. Refetched blocks (realtime, reconnect) merge into the
+ * editor when nothing of the member's is pending.
  */
 export function createUseDocSaver(
   api: DocsApiClient,
@@ -66,43 +75,61 @@ export function createUseDocSaver(
       null,
     );
     const loadedRef = useRef<string | null>(null);
+    const staleRef = useRef(false);
 
     if (!saverRef.current || saverRef.current.pageId !== pageId) {
       saverRef.current?.saver.dispose();
-      const writer: BlockWriter = {
-        create: (draft, afterId) =>
-          blockApi.createDraft(pageId, draft, afterId),
-        update: (id, patch, draft) =>
-          blockApi.updateDraft(pageId, id, patch, draft),
-        remove: (id) => blockApi.delete(pageId, id),
-      };
+      const key = docsQueryKeys.blocks(workspaceId, pageId);
       saverRef.current = {
         pageId,
-        saver: new DocBlockSaver(writer, {
+        saver: new DocBlockSaver(createBatchBlockWriter(blockApi, pageId), {
           onStatus: setStatus,
-          onIdAssigned: (clientId, storedId) =>
-            optionsRef.current.onIdAssigned?.(clientId, storedId),
-          onConflict: (blockId) => optionsRef.current.onConflict?.(blockId),
-          onSaved: (drafts) =>
+          onConflict: (conflict) => optionsRef.current.onConflict?.(conflict),
+          onRebased: (drafts) => optionsRef.current.onRebased?.(drafts),
+          onSaved: (drafts) => {
+            const known = new Map(
+              (queryClient.getQueryData<Block[]>(key) ?? []).map((block) => [
+                block.id,
+                block,
+              ]),
+            );
             queryClient.setQueryData(
-              docsQueryKeys.blocks(workspaceId, pageId),
-              drafts.map((draft, index) => toBlock(pageId, draft, index)),
-            ),
+              key,
+              drafts.map((draft, index) =>
+                toBlock(pageId, draft, index, known.get(draft.id)),
+              ),
+            );
+          },
         }),
       };
       loadedRef.current = null;
     }
     const saver = saverRef.current.saver;
 
-    // The stored document is the baseline once, when the page's blocks first
-    // arrive; later refetches never overwrite what the editor holds.
+    // The stored document is the baseline when the page's blocks first arrive;
+    // later refetches merge only what the member is not editing.
     useEffect(() => {
-      if (!blocks || loadedRef.current === pageId) return;
-      loadedRef.current = pageId;
-      saver.reset(
-        [...blocks].sort((a, b) => a.position - b.position).map(draftOfBlock),
-      );
+      if (!blocks) return;
+      const stored = [...blocks]
+        .sort((a, b) => a.position - b.position)
+        .map(draftOfBlock);
+      if (loadedRef.current !== pageId) {
+        loadedRef.current = pageId;
+        saver.reset(stored);
+        return;
+      }
+      staleRef.current = !saver.mergeStored(stored);
     }, [blocks, pageId, saver]);
+
+    // Others' changes that had to wait for the member's pending edits merge
+    // once the saver is idle.
+    useEffect(() => {
+      if (status !== "saved" || !staleRef.current) return;
+      staleRef.current = false;
+      void queryClient.invalidateQueries({
+        queryKey: docsQueryKeys.blocks(workspaceId, pageId),
+      });
+    }, [status, queryClient, workspaceId, pageId]);
 
     useEffect(() => {
       const flush = () => void saver.flush();

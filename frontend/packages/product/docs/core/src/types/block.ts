@@ -32,6 +32,8 @@ export interface BlockProperties {
   rows?: string[][];
   linkedPageId?: ID;
   linkedBoardId?: ID;
+  /** The board view a board reference opens. */
+  viewId?: ID;
   linkedTaskId?: ID;
   mentionIds?: ID[];
   align?: "left" | "center" | "right" | "justify";
@@ -99,6 +101,8 @@ export interface CreateBlockPayload {
 export interface UpdateBlockPayload {
   type?: BlockType;
   properties?: BlockProperties;
+  /** The block version the caller read; the producer refuses a stale write. */
+  expectedVersion?: number;
 }
 
 /** Block types whose content is text the author typed. */

@@ -350,6 +350,19 @@ export const vi = {
     unavailable: "Chưa khả dụng.",
     personLevel: "Quyền của {{name}}: {{level}}",
   },
+  recovery: {
+    title: "Khối này vừa được người khác sửa",
+    body: "Tài liệu đang hiển thị bản mới nhất. Chỉnh sửa chưa lưu của bạn được giữ ở đây.",
+    yourEdit: "Chỉnh sửa chưa lưu của bạn",
+    removed:
+      "Bạn đã xoá khối này nhưng người khác vừa sửa nó, nên khối được giữ lại.",
+    copy: "Sao chép",
+    copied: "Đã sao chép",
+    reapply: "Áp dụng lại",
+    dismiss: "Bỏ qua",
+    toast:
+      "Một khối vừa được người khác sửa. Chỉnh sửa của bạn được giữ phía trên tài liệu.",
+  },
   tree: {
     docs: "Tài liệu",
     expand: "Mở rộng {{name}}",
@@ -702,6 +715,19 @@ export const en: DocPageCopy = {
     done: "Done",
     unavailable: "Not available yet.",
     personLevel: "{{name}}'s access: {{level}}",
+  },
+  recovery: {
+    title: "Someone else just changed this block",
+    body: "The document shows the latest version. Your unsaved edit is kept here.",
+    yourEdit: "Your unsaved edit",
+    removed:
+      "You removed this block, but someone else just changed it, so it was kept.",
+    copy: "Copy",
+    copied: "Copied",
+    reapply: "Re-apply",
+    dismiss: "Dismiss",
+    toast:
+      "A block was just changed by someone else. Your edit is kept above the document.",
   },
   tree: {
     docs: "Docs",

@@ -288,7 +288,17 @@ export type DocOverlay =
       readonly before: string;
     };
 
+/** A member's edit a stored change replaced, kept until they use or drop it. */
+export interface DocRecoveryView {
+  readonly id: string;
+  /** The text the member had in the block (empty when they removed it). */
+  readonly text: string;
+}
+
 export interface DocPageCallbacks {
+  readonly onRecoveryCopy?: (id: string) => void;
+  readonly onRecoveryReapply?: (id: string) => void;
+  readonly onRecoveryDismiss?: (id: string) => void;
   readonly onTitleCommit?: (title: string) => void;
   readonly onBlockCommit?: (blockId: string, text: string) => void;
   readonly onBlockTrigger?: (

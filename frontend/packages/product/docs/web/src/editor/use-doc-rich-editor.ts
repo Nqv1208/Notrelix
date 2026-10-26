@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useEditor, type Editor } from "@tiptap/react";
-import type { BlockDraft } from "@notrelix/docs-core";
+import { draftEquals, type BlockDraft } from "@notrelix/docs-core";
+import { TextSelection } from "@tiptap/pm/state";
 import { docToDrafts, draftsToDoc } from "./block-mapping";
 import {
   createDocExtensions,
@@ -29,8 +30,14 @@ export interface UseDocRichEditorInput {
 
 export interface DocRichEditor {
   readonly editor: Editor | null;
-  /** Gives a block the id the producer stored it under. */
-  readonly assignBlockId: (clientId: string, storedId: string) => void;
+  /**
+   * Shows `drafts` in the editor, touching only the blocks that differ (the
+   * selection and the member's undo history stay). Used when stored changes
+   * merge in and when a stale block is replaced.
+   */
+  readonly applyDrafts: (drafts: readonly BlockDraft[]) => void;
+  /** The editor's blocks now. */
+  readonly currentDrafts: () => BlockDraft[];
   /** Sets properties of one top-level block node (page link, checklist...). */
   readonly updateBlockAttrs: (
     blockId: string,
@@ -97,21 +104,53 @@ export function useDocRichEditor(input: UseDocRichEditorInput): DocRichEditor {
     editor?.setEditable(input.editable);
   }, [editor, input.editable]);
 
-  const assignBlockId = useCallback(
-    (clientId: string, storedId: string) => {
+  const currentDrafts = useCallback(
+    () => (editor && !editor.isDestroyed ? docToDrafts(editor.getJSON()) : []),
+    [editor],
+  );
+
+  const applyDrafts = useCallback(
+    (drafts: readonly BlockDraft[]) => {
       if (!editor || editor.isDestroyed) return;
-      const { doc } = editor.state;
-      doc.forEach((node, offset) => {
-        if (node.attrs.blockId !== clientId) return;
-        editor.view.dispatch(
-          editor.state.tr
-            .setNodeMarkup(offset, undefined, {
-              ...node.attrs,
-              blockId: storedId,
-            })
-            .setMeta("addToHistory", false),
+      const { schema, doc } = editor.state;
+      const current = docToDrafts(editor.getJSON());
+      const nodes = draftsToDoc(drafts).content ?? [];
+      const sameOrder =
+        current.length === drafts.length &&
+        current.every((draft, index) => draft.id === drafts[index]?.id);
+      const tr = editor.state.tr.setMeta("addToHistory", false);
+      if (sameOrder) {
+        const offsets: number[] = [];
+        doc.forEach((_node, offset) => offsets.push(offset));
+        // From the end, so earlier offsets stay valid.
+        for (let index = current.length - 1; index >= 0; index -= 1) {
+          if (
+            draftEquals(
+              current[index] as BlockDraft,
+              drafts[index] as BlockDraft,
+            )
+          ) {
+            continue;
+          }
+          const at = offsets[index] as number;
+          const old = doc.child(index);
+          tr.replaceWith(
+            at,
+            at + old.nodeSize,
+            schema.nodeFromJSON(nodes[index]),
+          );
+        }
+      } else {
+        const { from } = editor.state.selection;
+        tr.replaceWith(
+          0,
+          doc.content.size,
+          schema.nodeFromJSON(draftsToDoc(drafts)).content,
         );
-      });
+        const at = Math.min(from, tr.doc.content.size);
+        tr.setSelection(TextSelection.near(tr.doc.resolve(at)));
+      }
+      if (tr.docChanged) editor.view.dispatch(tr);
     },
     [editor],
   );
@@ -134,7 +173,8 @@ export function useDocRichEditor(input: UseDocRichEditorInput): DocRichEditor {
 
   return {
     editor: input.ready ? editor : null,
-    assignBlockId,
+    applyDrafts,
+    currentDrafts,
     updateBlockAttrs,
   };
 }

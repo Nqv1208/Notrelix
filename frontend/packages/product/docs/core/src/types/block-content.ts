@@ -23,6 +23,11 @@ export interface BlockDraft {
   content: RichTextV1;
   /** Everything but the authored text (no `text`, no format flags). */
   properties: BlockProperties;
+  /**
+   * The version of the stored block this draft was read from; `expectedVersion`
+   * of the next write. Absent on a block the producer has not stored yet.
+   */
+  version?: number;
 }
 
 /** Properties the flat legacy shape kept inside the block's text content. */
@@ -94,12 +99,14 @@ export function draftOfBlock(block: Block): BlockDraft {
       type: block.type,
       content: richText(block.content.runs),
       properties,
+      ...(block.version !== undefined ? { version: block.version } : {}),
     };
   }
   return {
     id: block.id,
     type: block.type,
     ...upgradeLegacyProperties(block.type, block.properties),
+    ...(block.version !== undefined ? { version: block.version } : {}),
   };
 }
 

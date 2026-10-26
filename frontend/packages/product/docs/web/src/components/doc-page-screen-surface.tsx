@@ -18,6 +18,7 @@ import type {
   DocHeaderView,
   DocOverlay,
   DocPageCallbacks,
+  DocRecoveryView,
   DocPanelTab,
   DocRelatedDoc,
   DocSaveState,
@@ -72,6 +73,8 @@ export interface DocPageScreenSurfaceProps {
   readonly toolbar?: DocToolbarCurrent;
   /** The page's editor; absent keeps the plain per-block surface. */
   readonly editor?: Editor | null;
+  readonly recoveries?: readonly DocRecoveryView[];
+  readonly copiedRecoveryId?: string | null;
   readonly versions?: DocVersionsState;
   readonly share?: DocShareView;
   /** The trash list the trash dialog shows. */
@@ -141,6 +144,8 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
     blockTypes,
     toolbar = DEFAULT_TOOLBAR_CURRENT,
     editor,
+    recoveries,
+    copiedRecoveryId,
     versions,
     share,
     trash,
@@ -199,6 +204,8 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
     mentionTasks,
     blockTypes,
     editor,
+    recoveries,
+    copiedRecoveryId,
     callbacks,
   };
 

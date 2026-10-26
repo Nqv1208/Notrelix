@@ -10,6 +10,7 @@
  */
 import { useCallback, useMemo } from "react";
 import { useQueries } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { useNavigate } from "@tanstack/react-router";
 import {
   CREATABLE_BLOCK_TYPES,
@@ -451,6 +452,7 @@ export const useDocPageHost: UseDocPageHost = (
     convertBoards,
     convertGroups,
     spaceNameFor,
+    notify: (message: string) => void toast.warning(message),
     leaveDoc: () =>
       void navigate({
         to: "/workspaces/$workspaceId/home",

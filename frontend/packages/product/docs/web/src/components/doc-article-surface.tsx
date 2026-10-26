@@ -16,12 +16,14 @@ import {
   type DocChip,
   type DocOverlay,
   type DocPageCallbacks,
+  type DocRecoveryView,
   type DocSegment,
   type DocTaskRef,
   type DocTextBlock,
   type DocTaskResolution,
 } from "./doc-page-models";
 import { DocEditorSurface } from "../editor/doc-editor-surface";
+import { DocRecoverySurface } from "./doc-recovery-surface";
 import { renderMarked } from "./doc-marks";
 import { serializeEditable } from "./doc-page-text";
 import { DocStatusDot, ICON_CLASS } from "./doc-page-ui";
@@ -547,6 +549,9 @@ export interface DocArticleSurfaceProps {
   readonly blockTypes?: readonly BlockType[];
   /** The page's editor; absent renders the plain per-block surface. */
   readonly editor?: Editor | null;
+  /** Edits a stored change replaced, kept for the member. */
+  readonly recoveries?: readonly DocRecoveryView[];
+  readonly copiedRecoveryId?: string | null;
   readonly callbacks?: DocPageCallbacks;
 }
 
@@ -563,6 +568,8 @@ export function DocArticleSurface({
   mentionTasks,
   blockTypes,
   editor,
+  recoveries,
+  copiedRecoveryId,
   callbacks,
 }: DocArticleSurfaceProps) {
   const titleRef = useRef<HTMLHeadingElement | null>(null);
@@ -919,6 +926,14 @@ export function DocArticleSurface({
           </span>
         ) : null}
       </div>
+      {recoveries?.length && !compare ? (
+        <DocRecoverySurface
+          copy={copy}
+          recoveries={recoveries}
+          copiedId={copiedRecoveryId}
+          callbacks={callbacks}
+        />
+      ) : null}
       {editor && !compare ? (
         <DocEditorSurface
           editor={editor}

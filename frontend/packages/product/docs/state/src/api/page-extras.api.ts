@@ -1,4 +1,4 @@
-import type { Block, BlockProperties } from "@notrelix/docs-core";
+import type { Block } from "@notrelix/docs-core";
 import type { BlockDtoApi } from "../dto";
 import { mapBlock } from "../model/block.mapper";
 import type { DocsApiClient, PageApiEndpoints } from "./page.api";
@@ -172,12 +172,14 @@ export function createPageExtrasApi(
         { pageId },
         QUIET,
       );
-      const properties: BlockProperties = {
-        ...block.properties,
-        linkedTaskId: created.id,
-      };
-      await api.patch<void>(endpoints.blocks.detail(pageId, block.id), {
-        properties: JSON.stringify(properties),
+      // The line becomes a chip of the task: a `[[task:id]]` run, which the
+      // producer stores as plain text of the block.
+      await api.patch<unknown>(endpoints.blocks.detail(pageId, block.id), {
+        expectedVersion: block.version,
+        content: {
+          v: 1,
+          runs: [{ text: `[[task:${created.id}]]`, marks: [] }],
+        },
       });
       return { id: created.id, title };
     },

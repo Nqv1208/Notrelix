@@ -35,6 +35,12 @@ export function createUseDocEditor(
     const [failed, setFailed] = useState(false);
     const pendingRetry = useRef<(() => void) | null>(null);
 
+    /** The version of a block as the page cache last read it. */
+    const cachedVersion = (blockId: string): number | undefined =>
+      queryClient
+        .getQueryData<Block[]>(docsQueryKeys.blocks(workspaceId, pageId))
+        ?.find((block) => block.id === blockId)?.version;
+
     const refreshBlocks = () =>
       queryClient.invalidateQueries({
         queryKey: docsQueryKeys.blocks(workspaceId, pageId),
@@ -53,7 +59,11 @@ export function createUseDocEditor(
 
     const update = useMutation({
       mutationFn: (input: { blockId: string; payload: UpdateBlockPayload }) =>
-        blockApi.update(pageId, input.blockId, input.payload),
+        blockApi.update(pageId, input.blockId, {
+          ...input.payload,
+          expectedVersion:
+            input.payload.expectedVersion ?? cachedVersion(input.blockId),
+        }),
       onSuccess: () => {
         setFailed(false);
         void refreshBlocks();
@@ -96,11 +106,12 @@ export function createUseDocEditor(
           input.type,
           input.properties,
         );
-        await blockApi.update(pageId, input.block.id, {
+        const stored = await blockApi.update(pageId, input.block.id, {
           type: input.type,
           properties,
+          expectedVersion: input.block.version ?? cachedVersion(input.block.id),
         });
-        return { ...input.block, type: input.type, properties };
+        return { ...input.block, ...stored, position: input.block.position };
       },
       onSuccess: () => {
         setFailed(false);

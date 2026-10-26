@@ -50,6 +50,8 @@ export interface DocPageHost {
     readonly { readonly id: string; readonly name: string }[] | null;
   /** The name of a department (Space) by id, for lists of pages. */
   readonly spaceNameFor?: (spaceId: string) => string | null;
+  /** Tells the viewer something that happened outside their action (a toast). */
+  readonly notify?: (message: string) => void;
   /** Leaves the open page (after it moved to the trash). */
   readonly leaveDoc?: () => void;
   /** The workspace's own locale-independent "now" (tests fix the clock). */

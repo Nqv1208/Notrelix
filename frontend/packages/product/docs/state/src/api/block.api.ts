@@ -1,15 +1,28 @@
-import type {
-  Block,
-  BlockDraft,
-  BlockDraftPatch,
-  CreateBlockPayload,
-  UpdateBlockPayload,
-  ReorderBlocksInput,
+import {
+  upgradeLegacyProperties,
+  type Block,
+  type BlockDraft,
+  type CreateBlockPayload,
+  type ReorderBlocksInput,
+  type UpdateBlockPayload,
 } from "@notrelix/docs-core";
-import type { BlockDtoApi } from "../dto";
+import type { BatchBlockItemApi, BlockDtoApi } from "../dto";
 import { mapBlock, toProducerBlockType } from "../model/block.mapper";
-import { encodeBlockBody } from "../model/block-wire";
+import { encodeContent, encodeProperties } from "../model/block-wire";
 import type { DocsApiClient, PageApiEndpoints } from "./page.api";
+
+/** The page numbers blocks by their place in the producer's ordered list. */
+function numbered(blocks: readonly BlockDtoApi[]): Block[] {
+  return blocks.map((dto, index) => mapBlock(dto, (index + 1) * 1000));
+}
+
+/** The draft a page-side payload (`type` plus flat properties) stands for. */
+function draftOfPayload(
+  type: BlockDraft["type"],
+  properties: Block["properties"] | undefined,
+): Pick<BlockDraft, "type" | "content" | "properties"> {
+  return { type, ...upgradeLegacyProperties(type, properties ?? {}) };
+}
 
 export function createBlockApi(
   api: DocsApiClient,
@@ -18,101 +31,75 @@ export function createBlockApi(
   return {
     /** The blocks in the producer's order, numbered by their place in it. */
     async getList(pageId: string): Promise<Block[]> {
-      const blocks = await api.get<BlockDtoApi[]>(
-        endpoints.pages.blocks(pageId),
+      return numbered(
+        await api.get<BlockDtoApi[]>(endpoints.pages.blocks(pageId)),
       );
-      return blocks.map((dto, index) => mapBlock(dto, (index + 1) * 1000));
     },
 
-    /** `Documents.Blocks.CreateBlock` answers the new block's id. */
+    /** `Documents.Blocks.CreateBlock` answers the stored block. */
     async create(pageId: string, payload: CreateBlockPayload): Promise<Block> {
-      const properties = payload.properties ?? {};
-      const id = await api.post<string>(endpoints.pages.blocks(pageId), {
+      const draft = draftOfPayload(payload.type, payload.properties);
+      const dto = await api.post<BlockDtoApi>(endpoints.pages.blocks(pageId), {
         type: toProducerBlockType(payload.type),
-        properties: JSON.stringify(properties),
+        content: encodeContent(draft),
+        properties: encodeProperties(draft),
         ...(payload.afterBlockId ? { afterBlockId: payload.afterBlockId } : {}),
         ...(payload.parentId ? { parentId: payload.parentId } : {}),
       });
-      const now = new Date().toISOString();
-      return {
-        id,
-        pageId,
-        type: payload.type,
-        properties,
-        position: 0,
-        parentId: payload.parentId ?? null,
-        createdById: "",
-        updatedById: "",
-        createdAt: now,
-        updatedAt: now,
-      };
+      return mapBlock(dto, 0);
     },
 
     /**
      * `Documents.Blocks.UpdateBlock`: a `type` retypes the block in place (it
      * keeps its id, position and parent), `properties` rewrites its content.
+     * The producer needs the version the caller read (`expectedVersion`).
      */
     async update(
       pageId: string,
       blockId: string,
       payload: UpdateBlockPayload,
-    ): Promise<void> {
-      await api.patch<void>(endpoints.blocks.detail(pageId, blockId), {
-        ...(payload.type ? { type: toProducerBlockType(payload.type) } : {}),
-        ...(payload.properties
-          ? { properties: JSON.stringify(payload.properties) }
-          : {}),
-      });
-    },
-
-    /** Writes a draft block (rich text and properties) after `afterId`. */
-    async createDraft(
-      pageId: string,
-      draft: BlockDraft,
-      afterId: string | null,
-    ): Promise<string> {
-      return api.post<string>(endpoints.pages.blocks(pageId), {
-        type: toProducerBlockType(draft.type),
-        properties: encodeBlockBody(draft),
-        ...(afterId ? { afterBlockId: afterId } : {}),
-      });
-    },
-
-    /** Writes the changed parts of a draft block. */
-    async updateDraft(
-      pageId: string,
-      blockId: string,
-      patch: BlockDraftPatch,
-      draft: BlockDraft,
-    ): Promise<void> {
-      await api.patch<void>(endpoints.blocks.detail(pageId, blockId), {
-        ...(patch.type ? { type: toProducerBlockType(patch.type) } : {}),
-        ...(patch.content || patch.properties || patch.type
-          ? { properties: encodeBlockBody(draft) }
-          : {}),
-      });
+    ): Promise<Block> {
+      const type = payload.type;
+      const draft = payload.properties
+        ? draftOfPayload(type ?? "paragraph", payload.properties)
+        : null;
+      const dto = await api.patch<BlockDtoApi>(
+        endpoints.blocks.detail(pageId, blockId),
+        {
+          expectedVersion: payload.expectedVersion,
+          ...(type ? { type: toProducerBlockType(type) } : {}),
+          ...(draft && type
+            ? {
+                content: encodeContent(draft),
+                properties: encodeProperties(draft),
+              }
+            : {}),
+        },
+      );
+      return mapBlock(dto, 0);
     },
 
     async delete(pageId: string, blockId: string): Promise<void> {
       await api.delete<void>(endpoints.blocks.detail(pageId, blockId));
     },
 
-    // TRANSITION: no screen reorders blocks yet; the producer's reorder and
-    // batch writes take opaque position keys, so these two keep the page's
-    // numeric shape until a screen needs them.
-    async reorder(payload: ReorderBlocksInput): Promise<void> {
-      await api.post<void>(endpoints.blocks.reorder, payload);
+    /**
+     * `Documents.Blocks.BatchUpdateBlocks`: the operations apply in order in
+     * one transaction (all or nothing); answers the upserted blocks.
+     */
+    async batch(
+      pageId: string,
+      items: readonly BatchBlockItemApi[],
+    ): Promise<BlockDtoApi[]> {
+      return api.post<BlockDtoApi[]>(endpoints.blocks.batch(pageId), {
+        blocks: items,
+      });
     },
 
-    async batchUpdate(
-      pageId: string,
-      payloads: UpdateBlockPayload[],
-    ): Promise<Block[]> {
-      const blocks = await api.post<BlockDtoApi[]>(
-        endpoints.blocks.batch(pageId),
-        { blocks: payloads },
-      );
-      return blocks.map((dto, index) => mapBlock(dto, (index + 1) * 1000));
+    // TRANSITION: no screen reorders blocks; the editor's saver places blocks
+    // through `batch`.
+    async reorder(payload: ReorderBlocksInput): Promise<void> {
+      await api.post<void>(endpoints.blocks.reorder, payload);
     },
   };
 }

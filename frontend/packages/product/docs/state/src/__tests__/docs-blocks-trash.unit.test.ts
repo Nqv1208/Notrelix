@@ -51,36 +51,52 @@ describe("block content conversion (mirrors the producer)", () => {
 });
 
 describe("Documents.Blocks.UpdateBlock", () => {
-  it("retypes in place with the producer's type name and the content", async () => {
+  it("retypes in place with the producer's type name, the content and the version", async () => {
     const api = client();
-    await createBlockApi(api, testEndpoints).update("pg", "b1", {
+    api.patch.mockResolvedValue({
+      id: "b1",
+      pageId: "pg",
+      type: "PageReference",
+      content: {},
+      properties: { pageId: "other" },
+      position: "a0",
+      version: 4,
+      createdAt: "2026-10-01T00:00:00Z",
+    });
+    const block = await createBlockApi(api, testEndpoints).update("pg", "b1", {
       type: "page_reference",
       properties: { linkedPageId: "other" },
+      expectedVersion: 3,
     });
     expect(api.patch).toHaveBeenCalledWith("/pages/pg/blocks/b1", {
+      expectedVersion: 3,
       type: "PageReference",
-      properties: JSON.stringify({ linkedPageId: "other" }),
+      content: {},
+      properties: { pageId: "other" },
     });
-  });
-
-  it("sends only the content when the type stays", async () => {
-    const api = client();
-    await createBlockApi(api, testEndpoints).update("pg", "b1", {
-      properties: { text: "hi" },
-    });
-    expect(api.patch.mock.calls[0]?.[1]).toEqual({
-      properties: JSON.stringify({ text: "hi" }),
-    });
+    expect(block.version).toBe(4);
   });
 
   it("creates a callout and reads the producer's callout and page reference", async () => {
     const api = client();
-    api.post.mockResolvedValue("new-id");
+    api.post.mockResolvedValue({
+      id: "new",
+      pageId: "pg",
+      type: "Callout",
+      content: { v: 1, runs: [] },
+      properties: { tone: "info" },
+      position: "a0",
+      version: 1,
+      createdAt: "2026-10-01T00:00:00Z",
+    });
     const created = await createBlockApi(api, testEndpoints).create("pg", {
       type: "callout",
       properties: { text: "" },
     });
-    expect(api.post.mock.calls[0]?.[1]).toMatchObject({ type: "Callout" });
+    expect(api.post.mock.calls[0]?.[1]).toMatchObject({
+      type: "Callout",
+      content: { v: 1, runs: [] },
+    });
     expect(created.type).toBe("callout");
 
     const dto = {
@@ -88,7 +104,8 @@ describe("Documents.Blocks.UpdateBlock", () => {
       pageId: "pg",
       parentId: null,
       type: "PageReference",
-      content: JSON.stringify({ linkedPageId: "t" }),
+      content: {},
+      properties: { pageId: "t" },
       position: "a0",
       version: 1,
       createdAt: "2026-10-01T00:00:00Z",
@@ -96,6 +113,7 @@ describe("Documents.Blocks.UpdateBlock", () => {
     const block = mapBlock(dto, 1000);
     expect(block.type).toBe("page_reference");
     expect(block.properties.linkedPageId).toBe("t");
+    expect(block.version).toBe(1);
   });
 });
 
@@ -150,6 +168,7 @@ describe("convert a checklist line to a task", () => {
     pageId: "pg",
     type: "todo",
     properties: { text: " Pay the invoice ", checked: false },
+    version: 3,
     position: 1000,
     parentId: null,
     createdById: "",
@@ -176,11 +195,8 @@ describe("convert a checklist line to a task", () => {
       { pageId: "pg" },
     ]);
     expect(api.patch).toHaveBeenCalledWith("/pages/pg/blocks/b1", {
-      properties: JSON.stringify({
-        text: " Pay the invoice ",
-        checked: false,
-        linkedTaskId: "item-1",
-      }),
+      expectedVersion: 3,
+      content: { v: 1, runs: [{ text: "[[task:item-1]]", marks: [] }] },
     });
     expect(task).toEqual({ id: "item-1", title: "Pay the invoice" });
   });
