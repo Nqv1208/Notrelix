@@ -39,7 +39,7 @@ function scrollParentOf(element: HTMLElement): HTMLElement | null {
 
 /**
  * Scrolls the current match into view without moving the editor's focus, and
- * keeps it below the docked panel (the panel sticks to the top of the page).
+ * keeps it below the docked panel (a zero-height sticky row, so it never shifts the content).
  */
 function revealCurrent(editor: Editor, panel: HTMLElement | null): void {
   const state = findStateOf(editor.state);
@@ -148,13 +148,13 @@ export function FindPanel({
   };
 
   return (
-    <div className="pointer-events-none sticky top-0 z-dropdown mb-2 flex justify-end">
+    <div className="pointer-events-none sticky top-0 z-dropdown h-0">
       <div
         ref={panelRef}
         role="search"
         aria-label={t.label}
         onKeyDown={onKeyDown}
-        className="pointer-events-auto flex w-[22rem] max-w-full flex-col gap-2 rounded-[10px] border border-line-strong bg-doc-panel p-2 shadow-popover"
+        className="pointer-events-auto absolute top-2 right-0 flex w-[22rem] max-w-full flex-col gap-2 rounded-[10px] border border-line-strong bg-doc-panel p-2 shadow-popover"
       >
         <div className="flex items-center gap-1">
           {canReplace ? (

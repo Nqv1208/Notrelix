@@ -193,7 +193,7 @@ describe("find panel placement", () => {
     expect(scrollBackBelow(100, 112)).toBe(0);
   });
 
-  it("sits in the flow at the top right of the page and moves a match from under it", async () => {
+  it("is a zero-height sticky overlay at the top right of the page and moves a match from under it", async () => {
     const scroller = document.createElement("div");
     scroller.style.overflowY = "auto";
     Object.defineProperty(scroller, "scrollHeight", { value: 2000 });
@@ -227,7 +227,8 @@ describe("find panel placement", () => {
       const panel = screen.getByRole("search");
       expect(panel.className).toContain("w-[22rem]");
       expect(panel.parentElement?.className).toContain("sticky");
-      expect(panel.parentElement?.className).toContain("justify-end");
+      expect(panel.parentElement?.className).toContain("h-0");
+      expect(panel.className).toContain("absolute");
       await act(async () => {
         editor.commands.setFindTerm("cat");
       });
