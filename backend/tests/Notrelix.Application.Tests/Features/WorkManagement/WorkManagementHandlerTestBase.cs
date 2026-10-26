@@ -74,6 +74,7 @@ public abstract class WorkManagementHandlerTestBase
         DbContextMock.Setup(c => c.BoardItems).Returns(CreateAsyncDbSet(new List<BoardItem>()));
         DbContextMock.Setup(c => c.BoardItemValues).Returns(CreateAsyncDbSet(new List<BoardItemValue>()));
         DbContextMock.Setup(c => c.BoardItemMembers).Returns(CreateAsyncDbSet(new List<BoardItemMember>()));
+        DbContextMock.Setup(c => c.BoardItemReminders).Returns(CreateAsyncDbSet(new List<BoardItemReminder>()));
         DbContextMock.Setup(c => c.BoardItemLabels).Returns(CreateAsyncDbSet(new List<BoardItemLabel>()));
         DbContextMock.Setup(c => c.BoardItemLinks).Returns(CreateAsyncDbSet(new List<BoardItemLink>()));
         DbContextMock.Setup(c => c.Labels).Returns(CreateAsyncDbSet(new List<Label>()));
@@ -102,6 +103,9 @@ public abstract class WorkManagementHandlerTestBase
 
     protected void SetupBoardItemMembers(params BoardItemMember[] members) =>
         DbContextMock.Setup(c => c.BoardItemMembers).Returns(CreateAsyncDbSet(members.ToList()));
+
+    protected void SetupBoardItemReminders(params BoardItemReminder[] reminders) =>
+        DbContextMock.Setup(c => c.BoardItemReminders).Returns(CreateAsyncDbSet(reminders.ToList()));
 
     protected void SetupBoardItemLabels(params BoardItemLabel[] labels) =>
         DbContextMock.Setup(c => c.BoardItemLabels).Returns(CreateAsyncDbSet(labels.ToList()));

@@ -181,4 +181,60 @@ public class MyWorkAndHomeFeedTests : WorkManagementHandlerTestBase
         result.Data.Summary.ApprovalsPending.Should().Be(0);
         result.Data.Events.Should().BeEmpty();
     }
+
+    [Fact]
+    public async Task MyWork_Waiting_ListsOpenItemsTheCallerCreatedOrFollowsThatOnlyOthersAreAssignedTo()
+    {
+        var board = CreateBoard();
+        var created = CreateBoardItem(boardId: board.Id);
+        var followed = CreateBoardItem(boardId: board.Id);
+        var assignedToCaller = CreateBoardItem(boardId: board.Id);
+        var unassigned = CreateBoardItem(boardId: board.Id);
+        SetupBoards(board);
+        _visibility.Boards.Add(board.Id);
+        SetupBoardItems(created, followed, assignedToCaller, unassigned);
+        var phuc = Guid.CreateVersion7();
+        SetupBoardItemMembers(
+            CreateBoardItemMember(itemId: created.Id, userId: phuc),
+            CreateBoardItemMember(itemId: followed.Id, userId: phuc),
+            CreateBoardItemMember(itemId: assignedToCaller.Id, userId: phuc),
+            CreateBoardItemMember(itemId: assignedToCaller.Id, userId: TestUserId));
+        _collaboration
+            .Setup(c => c.GetFollowedItemIdsAsync(TestWorkspaceId, TestUserId, It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([followed.Id]);
+        SetupBoardItemReminders(BoardItemReminder.Create(TestAccountId, TestWorkspaceId, board.Id, created.Id, TestUserId, TestNow));
+
+        var result = await MyWork().Handle(new GetMyWorkExtendedQuery(TestWorkspaceId), CancellationToken.None);
+
+        result.Data!.Waiting.Select(w => w.ItemId).Should().BeEquivalentTo([created.Id, followed.Id]);
+        var entry = result.Data.Waiting.Single(w => w.ItemId == created.Id);
+        entry.Owner.Id.Should().Be(phuc);
+        entry.LastRemindedAt.Should().Be(TestNow);
+        result.Data.Waiting.Single(w => w.ItemId == followed.Id).LastRemindedAt.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task MyWork_Waiting_SortsBySoonestDueUndatedLast_AndSkipsFinishedItemsAndHiddenBoards()
+    {
+        var board = CreateBoard();
+        var hidden = CreateBoard();
+        var late = CreateBoardItem(boardId: board.Id);
+        var soon = CreateBoardItem(boardId: board.Id);
+        var undated = CreateBoardItem(boardId: board.Id);
+        var finished = CreateBoardItem(boardId: board.Id);
+        var offLimits = CreateBoardItem(boardId: hidden.Id);
+        late.SetTimeline(null, TestNow.AddDays(9), TestUserId, TestNow);
+        soon.SetTimeline(null, TestNow.AddDays(1), TestUserId, TestNow);
+        finished.Complete(TestNow, TestUserId, TestNow);
+        SetupBoards(board, hidden);
+        _visibility.Boards.Add(board.Id);
+        SetupBoardItems(late, soon, undated, finished, offLimits);
+        var other = Guid.CreateVersion7();
+        SetupBoardItemMembers(new[] { late, soon, undated, finished, offLimits }
+            .Select(i => CreateBoardItemMember(itemId: i.Id, userId: other)).ToArray());
+
+        var result = await MyWork().Handle(new GetMyWorkExtendedQuery(TestWorkspaceId), CancellationToken.None);
+
+        result.Data!.Waiting.Select(w => w.ItemId).Should().Equal(soon.Id, late.Id, undated.Id);
+    }
 }

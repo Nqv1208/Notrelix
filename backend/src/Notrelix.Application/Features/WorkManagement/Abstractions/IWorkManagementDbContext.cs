@@ -17,6 +17,7 @@ public interface IWorkManagementDbContext
     DbSet<BoardItem> BoardItems { get; }
     DbSet<BoardItemValue> BoardItemValues { get; }
     DbSet<BoardItemMember> BoardItemMembers { get; }
+    DbSet<BoardItemReminder> BoardItemReminders { get; }
     DbSet<BoardItemLabel> BoardItemLabels { get; }
     DbSet<BoardItemLink> BoardItemLinks { get; }
     DbSet<Label> Labels { get; }

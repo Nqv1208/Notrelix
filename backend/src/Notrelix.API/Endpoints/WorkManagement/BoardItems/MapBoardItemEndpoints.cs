@@ -29,6 +29,7 @@ public static class MapBoardItemEndpoints
         itemGroup.MapUnarchiveBoardItem();
         itemGroup.MapDeleteBoardItem();
         itemGroup.MapDuplicateBoardItem();
+        itemGroup.MapRemindBoardItemOwners();
         itemGroup.MapMoveBoardItem();
         itemGroup.MapUpdateBoardItemFieldValues();
         itemGroup.MapLinkPageToBoardItem();

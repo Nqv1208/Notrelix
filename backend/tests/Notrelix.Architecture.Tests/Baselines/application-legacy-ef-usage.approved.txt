@@ -91,6 +91,7 @@ Features/WorkManagement/BoardItems/Commands/DeleteBoardItem/DeleteBoardItem.cs
 Features/WorkManagement/BoardItems/Commands/DuplicateBoardItem/DuplicateBoardItem.cs
 Features/WorkManagement/BoardItems/Commands/LinkPageToBoardItem/LinkPageToBoardItem.cs
 Features/WorkManagement/BoardItems/Commands/MoveBoardItem/MoveBoardItem.cs
+Features/WorkManagement/BoardItems/Commands/RemindBoardItemOwners/RemindBoardItemOwners.cs
 Features/WorkManagement/BoardItems/Commands/RestoreBoardItem/RestoreBoardItem.cs
 Features/WorkManagement/BoardItems/Commands/SetBoardItemDueDate/SetBoardItemDueDate.cs
 Features/WorkManagement/BoardItems/Commands/UnarchiveBoardItem/UnarchiveBoardItem.cs
