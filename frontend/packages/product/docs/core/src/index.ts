@@ -39,11 +39,17 @@ export type {
   CreatePagePayload,
   MovePageToSpacePayload,
   UpdatePagePayload,
+  CommentAnchor,
   PageComment,
   CreateCommentPayload,
   PageTreeNode,
   SearchResult,
 } from "./types";
+
+export {
+  COMMENT_ANCHOR_MAX_QUOTE,
+  resolveCommentAnchor,
+} from "./types/comment";
 
 export {
   BLOCKED_PAGE_FILE_EXTENSIONS,

@@ -1,4 +1,4 @@
-import { useState, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { CheckSquare, FileText, Lock, X } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
 import { fillDocCopy, type DocPageCopy } from "./doc-page.copy";
@@ -22,6 +22,8 @@ export interface DocSidePanelSurfaceProps {
   readonly relatedDocs: readonly DocRelatedDoc[];
   readonly toc: readonly DocTocEntry[];
   readonly comments: readonly DocCommentView[];
+  /** The selected text a comment is being written on, when there is one. */
+  readonly pendingQuote?: string | null;
   readonly canComment?: boolean;
   readonly callbacks?: DocPageCallbacks;
 }
@@ -209,14 +211,21 @@ function TocPanel({
 function CommentsPanel({
   copy,
   comments,
+  pendingQuote,
   canComment,
   callbacks,
 }: Pick<
   DocSidePanelSurfaceProps,
-  "copy" | "comments" | "canComment" | "callbacks"
+  "copy" | "comments" | "pendingQuote" | "canComment" | "callbacks"
 >) {
   const c = copy.comments;
   const [draft, setDraft] = useState("");
+  const field = useRef<HTMLInputElement | null>(null);
+
+  // Starting a comment on a selection moves the member into the field.
+  useEffect(() => {
+    if (pendingQuote) field.current?.focus();
+  }, [pendingQuote]);
 
   const submit = () => {
     const body = draft.trim();
@@ -231,22 +240,23 @@ function CommentsPanel({
     }
   };
 
-  const quote = comments.find((comment) => comment.quote)?.quote ?? null;
-
   return (
     <div className="flex flex-col gap-3">
-      {quote ? (
-        <div className="rounded-[5px] bg-doc-highlight px-[7px] py-1 text-crumb leading-[1.45] text-doc-body">
-          {quote}
-        </div>
-      ) : null}
       {comments.length === 0 ? (
         <p className="text-compact leading-[1.45] text-meta-foreground">
           {c.empty}
         </p>
       ) : null}
       {comments.map((comment) => (
-        <div key={comment.id} className="group flex gap-[9px]">
+        <div
+          key={comment.id}
+          id={`comment-${comment.id}`}
+          aria-current={comment.active ? "true" : undefined}
+          className={cn(
+            "group flex gap-[9px] rounded-[8px]",
+            comment.active && "-mx-1.5 bg-state-selected px-1.5 py-1",
+          )}
+        >
           <DocAvatar person={comment.author} className="size-6.5" />
           <div className="min-w-0 flex-1 text-body leading-[1.45]">
             <b className="text-crumb leading-[1.45] font-semibold">
@@ -255,15 +265,63 @@ function CommentsPanel({
             <time className="ml-[5px] text-micro leading-[1.45] text-meta-foreground">
               {comment.when}
             </time>
+            {comment.quote ? (
+              comment.anchored && !comment.detached ? (
+                <button
+                  type="button"
+                  title={c.showInPage}
+                  onClick={() => callbacks?.onCommentSelect?.(comment.id)}
+                  className="mt-[3px] block w-full rounded-[5px] border-0 bg-doc-highlight px-[7px] py-1 text-left text-crumb leading-[1.45] text-doc-body outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                >
+                  {comment.quote}
+                </button>
+              ) : (
+                <div
+                  className={cn(
+                    "mt-[3px] rounded-[5px] bg-doc-highlight px-[7px] py-1 text-crumb leading-[1.45] text-doc-body",
+                    comment.detached && "line-through opacity-70",
+                  )}
+                >
+                  {comment.quote}
+                </div>
+              )
+            ) : null}
+            {comment.detached ? (
+              <p className="mt-0.5 text-micro leading-[1.45] text-meta-foreground">
+                {c.detached}
+              </p>
+            ) : null}
             <p className="mt-[3px] text-compact leading-[1.5] text-doc-body">
               {comment.body}
             </p>
           </div>
         </div>
       ))}
+      {pendingQuote ? (
+        <div className="flex items-start gap-1.5 rounded-[8px] border border-line-strong p-1.5">
+          <div className="min-w-0 flex-1">
+            <span className="block text-micro leading-[1.45] font-semibold text-meta-foreground">
+              {c.onSelection}
+            </span>
+            <div className="mt-0.5 rounded-[5px] bg-doc-highlight px-[7px] py-1 text-crumb leading-[1.45] text-doc-body">
+              {pendingQuote}
+            </div>
+          </div>
+          <button
+            type="button"
+            aria-label={c.cancelSelection}
+            title={c.cancelSelection}
+            onClick={callbacks?.onCommentCancel}
+            className="grid size-6 shrink-0 place-items-center rounded-[6px] border-0 bg-transparent text-meta-foreground outline-none hover:bg-state-hover focus-visible:ring-2 focus-visible:ring-focus-ring"
+          >
+            <X aria-hidden="true" className="size-3.5" />
+          </button>
+        </div>
+      ) : null}
       <label className="block">
         <span className="sr-only">{c.reply}</span>
         <input
+          ref={field}
           type="text"
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
@@ -307,6 +365,7 @@ export function DocSidePanelSurface({
   relatedDocs,
   toc,
   comments,
+  pendingQuote,
   canComment = false,
   callbacks,
 }: DocSidePanelSurfaceProps) {
@@ -373,6 +432,7 @@ export function DocSidePanelSurface({
           <CommentsPanel
             copy={copy}
             comments={comments}
+            pendingQuote={pendingQuote}
             canComment={canComment}
             callbacks={callbacks}
           />

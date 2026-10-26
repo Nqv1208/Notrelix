@@ -375,6 +375,11 @@ export const vi = {
     unavailable: "Chưa khả dụng.",
     empty: "Chưa có bình luận nào.",
     delete: "Xoá bình luận",
+    commentOnSelection: "Bình luận",
+    onSelection: "Bình luận về đoạn đã chọn",
+    cancelSelection: "Bỏ đoạn đã chọn",
+    detached: "Đoạn văn đã bị sửa hoặc xoá",
+    showInPage: "Xem đoạn này trong tài liệu",
   },
   versions: {
     bar: "Đang xem phiên bản cũ",
@@ -833,6 +838,11 @@ export const en: DocPageCopy = {
     unavailable: "Not available yet.",
     empty: "No comments yet.",
     delete: "Delete comment",
+    commentOnSelection: "Comment",
+    onSelection: "Commenting on the selected text",
+    cancelSelection: "Drop the selected text",
+    detached: "This text was edited or deleted",
+    showInPage: "Show this text in the page",
   },
   versions: {
     bar: "Viewing an earlier version",

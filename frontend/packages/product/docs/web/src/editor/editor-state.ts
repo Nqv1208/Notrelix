@@ -1,5 +1,6 @@
 import type { Editor } from "@tiptap/react";
 import type { BlockType } from "@notrelix/docs-core";
+import { anchorFromSelection } from "./comment-anchors";
 import { blockTypeOfNode } from "./editor-commands";
 
 /** What the toolbar and the bubble menu reflect, read from the editor state. */
@@ -18,6 +19,8 @@ export interface EditorToolbarState {
   readonly canUndo: boolean;
   readonly canRedo: boolean;
   readonly hasSelection: boolean;
+  /** The selection is text of one block a comment can be anchored to. */
+  readonly commentable: boolean;
 }
 
 export const EMPTY_TOOLBAR_STATE: EditorToolbarState = {
@@ -35,6 +38,7 @@ export const EMPTY_TOOLBAR_STATE: EditorToolbarState = {
   canUndo: false,
   canRedo: false,
   hasSelection: false,
+  commentable: false,
 };
 
 export function selectToolbarState(editor: Editor | null): EditorToolbarState {
@@ -61,5 +65,6 @@ export function selectToolbarState(editor: Editor | null): EditorToolbarState {
     canUndo: editor.can().undo(),
     canRedo: editor.can().redo(),
     hasSelection: !selection.empty,
+    commentable: !selection.empty && anchorFromSelection(editor) !== null,
   };
 }

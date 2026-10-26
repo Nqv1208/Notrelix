@@ -38,6 +38,13 @@ export type CommentDtoApi = {
   contentMd: string;
   createdAt: string;
   isEdited: boolean;
+  /** `Collaboration.Comments.GetPageComments`: the quoted range of a block, when the comment has one. */
+  anchor?: {
+    blockId: string;
+    quote: string;
+    start: number;
+    end: number;
+  } | null;
 };
 
 export type HistoryDtoApi = {

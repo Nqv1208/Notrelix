@@ -197,6 +197,12 @@ export interface DocCommentView {
   readonly author: DocPerson;
   /** Text the comment is anchored to, when it carries one. */
   readonly quote: string | null;
+  /** The quote is a stored text anchor (it can be revealed in the page). */
+  readonly anchored?: boolean;
+  /** The anchored text is no longer on the page. */
+  readonly detached?: boolean;
+  /** The thread being looked at (clicked in the text or in the panel). */
+  readonly active?: boolean;
   readonly body: string;
   readonly when: string;
 }
@@ -382,6 +388,14 @@ export interface DocPageCallbacks {
   readonly onCloseVersions?: () => void;
   readonly onSelectVersion?: (id: string) => void;
   readonly onCommentCreate?: (body: string) => void;
+  /** Starts a comment on the selected text (the panel then asks for the words). */
+  readonly onCommentStart?: () => void;
+  /** Drops the selection a comment was being written on. */
+  readonly onCommentCancel?: () => void;
+  /** A comment was chosen in the panel: show its text on the page. */
+  readonly onCommentSelect?: (id: string) => void;
+  /** Highlighted text was clicked: show its thread in the panel. */
+  readonly onOpenComment?: (id: string) => void;
   readonly onCommentDelete?: (id: string) => void;
   readonly onMentionInsert?: () => void;
   readonly onOpenComments?: () => void;

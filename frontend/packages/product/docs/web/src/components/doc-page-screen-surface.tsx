@@ -69,6 +69,8 @@ export interface DocPageScreenSurfaceProps {
   /** Word and character counts of the page, shown by the document bar. */
   readonly stats?: { readonly words: number; readonly characters: number };
   readonly comments: readonly DocCommentView[];
+  /** The selected text a comment is being written on. */
+  readonly pendingQuote?: string | null;
   readonly panelTab: DocPanelTab;
   /** Whether the side panel shows; the host owns and remembers it. */
   readonly panelOpen?: boolean;
@@ -147,6 +149,7 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
     toc,
     stats,
     comments,
+    pendingQuote,
     panelTab,
     panelOpen = true,
     overlay,
@@ -287,6 +290,7 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
                 active: entry.active ?? (entry.id === spyId || undefined),
               }))}
               comments={comments}
+              pendingQuote={pendingQuote}
               canComment={canComment && !readOnly}
               callbacks={callbacks}
             />

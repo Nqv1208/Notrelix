@@ -4182,6 +4182,7 @@ export class MockStore {
     userId: string,
     contentMd: string,
     createdAt?: string,
+    anchor?: MockPageCommentRecord["anchor"],
   ): MockPageCommentRecord {
     const id = this.nextId("pcomment");
     const comment: MockPageCommentRecord = {
@@ -4190,6 +4191,7 @@ export class MockStore {
       userId,
       contentMd,
       createdAt: createdAt ?? this.clock.isoNow(),
+      ...(anchor ? { anchor } : {}),
     };
     this.pageCommentsById.set(id, comment);
     return comment;

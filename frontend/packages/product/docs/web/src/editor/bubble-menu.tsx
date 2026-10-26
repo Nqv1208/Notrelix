@@ -6,6 +6,7 @@ import {
   Code,
   Italic,
   Link2,
+  MessageSquarePlus,
   Strikethrough,
   Underline,
 } from "lucide-react";
@@ -19,9 +20,12 @@ const ICON = "size-4 stroke-[1.8]";
 export function EditorBubbleMenu({
   editor,
   copy,
+  onComment,
 }: {
   editor: Editor;
   copy: DocPageCopy;
+  /** Starts a comment on the selection; absent offers no comment button. */
+  onComment?: () => void;
 }) {
   const t = copy.toolbar;
   const state = useEditorState({
@@ -100,6 +104,14 @@ export function EditorBubbleMenu({
             >
               <Link2 aria-hidden="true" className={ICON} />
             </ToolButton>
+            {onComment && state.commentable ? (
+              <ToolButton
+                label={copy.comments.commentOnSelection}
+                onClick={onComment}
+              >
+                <MessageSquarePlus aria-hidden="true" className={ICON} />
+              </ToolButton>
+            ) : null}
           </>
         )}
       </div>

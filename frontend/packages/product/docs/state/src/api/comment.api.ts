@@ -22,7 +22,10 @@ export function createCommentApi(
       // `Collaboration.Comments.CreatePageComment` takes `contentMd`.
       const created = await api.post<CommentDtoApi | string>(
         endpoints.pages.comments(pageId),
-        { contentMd: payload.body },
+        {
+          contentMd: payload.body,
+          ...(payload.anchor ? { anchor: payload.anchor } : {}),
+        },
       );
       const now = new Date().toISOString();
       return typeof created === "string"
@@ -33,6 +36,7 @@ export function createCommentApi(
             authorId: "",
             body: payload.body,
             mentionIds: payload.mentionIds ?? [],
+            anchor: payload.anchor ?? null,
             resolved: false,
             createdAt: now,
             updatedAt: now,

@@ -1,5 +1,6 @@
 import { Editor } from "@tiptap/core";
 import { richText, type BlockDraft } from "@notrelix/docs-core";
+import type { DocPageCallbacks } from "../../components/doc-page-models";
 import { docsCopy } from "../../verification/docs-ui-fixtures";
 import { draftsToDoc } from "../block-mapping";
 import { createDocExtensions, type ContextHolder } from "../extensions";
@@ -35,11 +36,15 @@ export function paragraph(id: string, text = ""): BlockDraft {
 }
 
 /** An editor over the page's blocks, without React. */
-export function headlessEditor(drafts: readonly BlockDraft[]): Editor {
+export function headlessEditor(
+  drafts: readonly BlockDraft[],
+  callbacks?: DocPageCallbacks,
+): Editor {
   const holder: ContextHolder = {
     current: {
       copy: docsCopy,
       readOnly: false,
+      callbacks,
       resolveTask: (id) => ({ id, restricted: true as const }),
       viewOf: () => undefined,
     },

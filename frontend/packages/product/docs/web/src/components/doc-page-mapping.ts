@@ -271,13 +271,18 @@ export function toCommentViews(
   return [...comments]
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
     .map((comment) => {
-      const { quote, text } = splitQuote(comment.body);
+      // A stored anchor wins; a "> quote" body is the older way to say it.
+      const { quote: legacyQuote, text } = comment.anchor
+        ? { quote: null, text: comment.body.trim() }
+        : splitQuote(comment.body);
+      const quote = comment.anchor?.quote ?? legacyQuote;
       const date = new Date(comment.createdAt);
       const day = relativeDay(date, now);
       return {
         id: comment.id,
         author: personFor(comment.authorId),
         quote,
+        ...(comment.anchor ? { anchored: true } : {}),
         body: text,
         when:
           day === "today"

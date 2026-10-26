@@ -161,3 +161,63 @@ describe("Documents image and file blocks in the mock world", () => {
     });
   });
 });
+
+describe("Page comments anchored to text in the mock world", () => {
+  const COMMENTS = `/pages/${INVOICE_DOC_ID}/comments`;
+  interface CommentDto {
+    id: string;
+    contentMd: string;
+    anchor?: {
+      blockId: string;
+      quote: string;
+      start: number;
+      end: number;
+    } | null;
+  }
+
+  it("stores an anchor on a block of the page and lists it back", async () => {
+    const { api } = setup();
+    const blocks = await api.get<BlockDto[]>(BLOCKS);
+    const paragraph = blocks.find((block) => block.type === "Text")!;
+    const anchor = {
+      blockId: paragraph.id,
+      quote: "ab",
+      start: 1,
+      end: 3,
+    };
+    await api.post(COMMENTS, { contentMd: "why?", anchor });
+    const comments = await api.get<CommentDto[]>(COMMENTS);
+    expect(comments.find((c) => c.contentMd === "why?")?.anchor).toEqual(
+      anchor,
+    );
+    expect(
+      comments.filter((c) => c.contentMd !== "why?").every((c) => !c.anchor),
+    ).toBe(true);
+  });
+
+  it("refuses an anchor on a block that is not on the page, a range that disagrees with its quote, and a reply", async () => {
+    const { api } = setup();
+    const blocks = await api.get<BlockDto[]>(BLOCKS);
+    const blockId = blocks[0]!.id;
+    const attempt = (anchor: object, parentCommentId?: string) =>
+      api.post(COMMENTS, { contentMd: "x", anchor, parentCommentId });
+    const rejected = {
+      status: 400,
+      details: { errorCode: "Collaboration_Comment_AnchorInvalid" },
+    };
+    await expect(
+      attempt({
+        blockId: "22222222-2222-4222-8222-222222222222",
+        quote: "ab",
+        start: 0,
+        end: 2,
+      }),
+    ).rejects.toMatchObject(rejected);
+    await expect(
+      attempt({ blockId, quote: "ab", start: 0, end: 9 }),
+    ).rejects.toMatchObject(rejected);
+    await expect(
+      attempt({ blockId, quote: "ab", start: 0, end: 2 }, "pcomment-1"),
+    ).rejects.toMatchObject(rejected);
+  });
+});

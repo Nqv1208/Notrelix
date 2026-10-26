@@ -123,6 +123,7 @@ describe("document page mapping", () => {
         authorId: "user-kl",
         body: "Sau",
         mentionIds: [],
+        anchor: null,
         resolved: false,
         createdAt: "2026-10-11T04:00:00.000Z",
         updatedAt: "2026-10-11T04:00:00.000Z",
@@ -134,6 +135,7 @@ describe("document page mapping", () => {
         authorId: "user-kl",
         body: "> neo\nTrước",
         mentionIds: [],
+        anchor: null,
         resolved: false,
         createdAt: "2026-10-11T03:00:00.000Z",
         updatedAt: "2026-10-11T03:00:00.000Z",
@@ -142,7 +144,28 @@ describe("document page mapping", () => {
     const views = toCommentViews(comments, copy, NOW, () => KL);
     expect(views.map((view) => view.id)).toEqual(["c1", "c2"]);
     expect(views[0]?.quote).toBe("neo");
+    expect(views[0]?.anchored).toBeUndefined();
     expect(views[0]?.when).toBe("Hôm qua");
+
+    // A stored anchor names the quote; the body is the comment as written.
+    const [anchored] = toCommentViews(
+      [
+        {
+          ...(comments[0] as PageComment),
+          id: "c3",
+          body: "> not a quote\nWhy?",
+          anchor: { blockId: "b1", quote: "brave", start: 6, end: 11 },
+        },
+      ],
+      copy,
+      NOW,
+      () => KL,
+    );
+    expect(anchored).toMatchObject({
+      quote: "brave",
+      anchored: true,
+      body: "> not a quote\nWhy?",
+    });
 
     const history: PageActivity[] = [
       {

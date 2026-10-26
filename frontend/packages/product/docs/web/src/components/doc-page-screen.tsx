@@ -36,6 +36,7 @@ import {
   draftOfBlock,
   plainTextOf,
   type BlockDraft,
+  type CommentAnchor,
   type PageAttachment,
 } from "@notrelix/docs-core";
 import { fillDocCopy } from "./doc-page.copy";
@@ -69,7 +70,13 @@ import { isRestrictedTask } from "./doc-page-models";
 import { DocPageScreenSurface } from "./doc-page-screen-surface";
 import { useDocPanelOpen } from "./use-doc-panel-open";
 import type { DocMediaHost } from "../editor/media-host";
+import { PENDING_ID, anchorFromSelection } from "../editor/comment-anchors";
 import { revealHeading, useDocSummary } from "../editor/outline";
+import {
+  revealComment,
+  useDetachedComments,
+  useShowCommentAnchors,
+} from "../editor/use-comment-anchors";
 import { useDocRichEditor } from "../editor/use-doc-rich-editor";
 import { taskToken } from "./doc-page-text";
 
@@ -188,6 +195,11 @@ export function createDocPageScreen({
       namedOnly: boolean;
     } | null>(null);
     const [activeTocId, setActiveTocId] = useState<string | null>(null);
+    // The selection a comment is being written on, and the thread being looked at.
+    const [pendingAnchor, setPendingAnchor] = useState<CommentAnchor | null>(
+      null,
+    );
+    const [activeCommentId, setActiveCommentId] = useState<string | null>(null);
 
     const pendingFocus = useRef<string | null>(null);
 
@@ -501,6 +513,7 @@ export function createDocPageScreen({
             callbacksRef.current?.onOpenPagePicker?.(blockId),
           onOpenBoardPicker: (blockId) =>
             callbacksRef.current?.onOpenBoardPicker?.(blockId),
+          onOpenComment: (id) => callbacksRef.current?.onOpenComment?.(id),
         },
         resolveTask,
         viewOf: (draft: BlockDraft) =>
@@ -536,6 +549,29 @@ export function createDocPageScreen({
       onDrafts: saver.change,
     });
     richRef.current = richEditor;
+    const anchoredComments = useMemo(
+      () =>
+        (commentsQuery.data ?? []).flatMap((comment) =>
+          comment.anchor ? [{ id: comment.id, ...comment.anchor }] : [],
+        ),
+      [commentsQuery.data],
+    );
+    useShowCommentAnchors(
+      richEditor.editor,
+      anchoredComments,
+      pendingAnchor,
+      activeCommentId,
+    );
+    const detachedComments = useDetachedComments(richEditor.editor);
+    const commentViews = useMemo(
+      () =>
+        comments.map((comment) => ({
+          ...comment,
+          ...(detachedComments.includes(comment.id) ? { detached: true } : {}),
+          ...(comment.id === activeCommentId ? { active: true } : {}),
+        })),
+      [comments, detachedComments, activeCommentId],
+    );
     const summary = useDocSummary(richEditor.editor);
     const outlineIds = (summary?.outline ?? [])
       .map((entry) => entry.id)
@@ -967,7 +1003,45 @@ export function createDocPageScreen({
         setPanelTab("comments");
         setPanelOpen(true);
       },
-      onCommentCreate: (body) => createComment.mutate({ pageId, body }),
+      onCommentStart: () => {
+        const anchor = richEditor.editor
+          ? anchorFromSelection(richEditor.editor)
+          : null;
+        if (!anchor) return;
+        setPendingAnchor(anchor);
+        setPanelTab("comments");
+        setPanelOpen(true);
+      },
+      onCommentCancel: () => setPendingAnchor(null),
+      onCommentSelect: (id) => {
+        setActiveCommentId(id);
+        if (richEditor.editor) revealComment(richEditor.editor, id);
+      },
+      onOpenComment: (id) => {
+        if (id === PENDING_ID) return;
+        setActiveCommentId(id);
+        setPanelTab("comments");
+        setPanelOpen(true);
+        document
+          .getElementById(`comment-${id}`)
+          ?.scrollIntoView?.({ block: "nearest" });
+      },
+      onCommentCreate: (body) => {
+        const anchor = pendingAnchor;
+        if (!anchor) {
+          createComment.mutate({ pageId, body });
+          return;
+        }
+        // The block the comment names must be stored before the producer can check it.
+        void saver
+          .flush()
+          .then(() =>
+            createComment.mutate(
+              { pageId, body, anchor },
+              { onSuccess: () => setPendingAnchor(null) },
+            ),
+          );
+      },
     };
 
     callbacksRef.current = callbacks;
@@ -1006,7 +1080,8 @@ export function createDocPageScreen({
           active: activeTocId ? entry.id === activeTocId : undefined,
         }))}
         stats={summary?.stats}
-        comments={comments}
+        comments={commentViews}
+        pendingQuote={pendingAnchor?.quote ?? null}
         panelTab={panelTab}
         panelOpen={panelOpen}
         overlay={overlay}
