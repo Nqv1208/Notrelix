@@ -844,20 +844,18 @@ describe.each([
     ).toBeGreaterThan(0);
   });
 
-  it(`${fui("wm.item-page.surface:mention", locale)}lists people and teams after @, warns about who cannot see the item and inserts the pick (${locale})`, async () => {
+  it(`${fui("wm.item-page.surface:mention", locale)}lists only people and teams who can see the item after @ and inserts the pick (${locale})`, async () => {
     const { callbacks } = renderPage(copy, { people: erpPagePeople });
     const field = screen.getByRole("textbox", { name: copy.composer.label });
     fireEvent.change(field, {
       target: { value: "Chị @Kh", selectionStart: 7 },
     });
-    // Khánh Linh sees the item; Văn Tài does not and is not notified.
+    // Khánh Linh sees the item; Văn Tài does not, so is never suggested.
     const list = await screen.findByRole("listbox", {
       name: copy.composer.mentionList,
     });
-    expect(within(list).getByText("Văn Tài", { exact: false })).toBeTruthy();
-    expect(list.textContent).toContain(
-      copy.composer.mentionNoAccess.replace("{{name}}", "Tài"),
-    );
+    expect(within(list).getByText("Linh", { exact: false })).toBeTruthy();
+    expect(within(list).queryByText("Văn Tài", { exact: false })).toBeNull();
     fireEvent.keyDown(field, { key: "Escape" });
     expect(
       screen.queryByRole("listbox", { name: copy.composer.mentionList }),

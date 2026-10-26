@@ -328,8 +328,6 @@ export const en = {
       editor: "can edit",
       manager: "can manage",
     },
-    mentionNoAccess:
-      "Cannot see this item, mentioning them will not notify {{name}}",
     mentionTeamAll: "{{count}} people · all {{count}} can see the item",
     mentionTeamSome: "{{count}} people · {{viewable}} can see the item",
     mentionList: "People and teams to mention",
@@ -717,8 +715,6 @@ export const vi: ItemPageCopy = {
       editor: "quyền sửa",
       manager: "quyền quản lý",
     },
-    mentionNoAccess:
-      "Không xem được việc này, nhắc tên sẽ không báo cho {{name}}",
     mentionTeamAll: "{{count}} người · cả {{count}} xem được việc",
     mentionTeamSome: "{{count}} người · {{viewable}} xem được việc",
     mentionList: "Người và nhóm để nhắc tên",
