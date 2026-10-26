@@ -5,6 +5,7 @@ using Notrelix.Domain.Accounts.Members;
 using Notrelix.Domain.Collaboration.Comments;
 using Notrelix.Domain.Documents.Blocks;
 using Notrelix.Domain.Documents.Pages;
+using Notrelix.Domain.Documents.Rules;
 using Notrelix.Domain.Identity.Profiles;
 using Notrelix.Domain.Identity.Sessions;
 using Notrelix.Domain.Identity.Users;
@@ -641,7 +642,8 @@ internal static class InitDb
                 {
                     var block = Block.CreateRoot(
                         account.Id, ws.Id, page.Id, BlockType.Text,
-                        BlockContent.Create(JsonValue.Create($"\"Content block {b + 1} for page {pageIndex + 1}\"")),
+                        BlockContent.Create(JsonValue.Create(RichText.ToJson([
+                            new RichTextRun($"Content block {b + 1} for page {pageIndex + 1}", [])]))),
                         FractionalIndex.Create($"a{b}"),
                         creator.Id, Epoch.AddDays(pageIndex).AddMinutes(b));
                     context.Blocks.Add(block);

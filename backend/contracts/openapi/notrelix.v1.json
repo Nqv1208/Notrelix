@@ -2296,12 +2296,42 @@
           "required": true
         },
         "responses": {
-          "200": {
-            "description": "OK",
+          "201": {
+            "description": "Created",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Documents.DTOs.BlockDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
                 }
               }
             }
@@ -2323,7 +2353,7 @@
           "Documents.Blocks",
           "Documents.Blocks"
         ],
-        "summary": "Batch update blocks",
+        "summary": "Save several blocks as one change",
         "operationId": "Documents.Blocks.BatchUpdateBlocks",
         "parameters": [
           {
@@ -2352,7 +2382,50 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Notrelix.Application.Features.Documents.DTOs.BlockDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Precondition Failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
                 }
               }
             }
@@ -2374,7 +2447,7 @@
           "Documents.Blocks",
           "Documents.Blocks"
         ],
-        "summary": "Update a block",
+        "summary": "Update a block against the version read",
         "operationId": "Documents.Blocks.UpdateBlock",
         "parameters": [
           {
@@ -2412,7 +2485,37 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Documents.DTOs.BlockDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Precondition Failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
                 }
               }
             }
@@ -20748,22 +20851,37 @@
             "type": "string",
             "format": "uuid"
           },
+          "op": {
+            "type": "string",
+            "nullable": true
+          },
           "type": {
             "type": "string",
             "nullable": true
           },
+          "content": {
+            "nullable": true
+          },
           "properties": {
-            "type": "string",
             "nullable": true
           },
           "position": {
-            "type": "number",
-            "format": "double",
+            "type": "string",
+            "nullable": true
+          },
+          "afterBlockId": {
+            "type": "string",
+            "format": "uuid",
             "nullable": true
           },
           "parentId": {
             "type": "string",
             "format": "uuid",
+            "nullable": true
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64",
             "nullable": true
           }
         },
@@ -20789,8 +20907,15 @@
             "type": "string",
             "nullable": true
           },
+          "content": {
+            "nullable": true
+          },
           "properties": {
+            "nullable": true
+          },
+          "id": {
             "type": "string",
+            "format": "uuid",
             "nullable": true
           },
           "afterBlockId": {
@@ -20849,8 +20974,15 @@
             "type": "string",
             "nullable": true
           },
+          "content": {
+            "nullable": true
+          },
           "properties": {
-            "type": "string",
+            "nullable": true
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64",
             "nullable": true
           }
         },
@@ -23603,14 +23735,8 @@
             "type": "string",
             "nullable": true
           },
-          "content": {
-            "type": "string",
-            "nullable": true
-          },
-          "properties": {
-            "type": "string",
-            "nullable": true
-          },
+          "content": { },
+          "properties": { },
           "position": {
             "type": "string",
             "nullable": true

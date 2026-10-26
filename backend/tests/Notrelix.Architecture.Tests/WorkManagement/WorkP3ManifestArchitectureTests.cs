@@ -216,6 +216,9 @@ public sealed class WorkP3ManifestArchitectureTests
         "Notrelix.Application/Features/WorkManagement/Forms/Commands/AddFormQuestion/AddFormQuestion.cs",
         "Notrelix.Application/Features/WorkManagement/Forms/Commands/UpdateFormQuestion/UpdateFormQuestion.cs",
         "Notrelix.Infrastructure/Data/Converters/ValueConverters.cs",
+        // Development-only seed repair: places department Spaces (Workspaces' own sibling order) exactly
+        // as the seed does; it writes no Work ordering position.
+        "Notrelix.Infrastructure/Data/Seed/DevelopmentSeedRepair.cs",
         // The canonical ordering mechanism itself (WM-V3-ORDER-002/004): it generates
         // keys for writers and never persists a position on its own.
         "Notrelix.Application/Features/WorkManagement/Ordering/WorkPlacementResolver.cs",

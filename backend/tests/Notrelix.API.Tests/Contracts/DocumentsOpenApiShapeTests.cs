@@ -52,6 +52,57 @@ public class DocumentsOpenApiShapeTests
         request.GetProperty("properties").TryGetProperty("expectedVersion", out _).Should().BeTrue();
     }
 
+    [Theory]
+    [InlineData("Documents.Blocks.UpdateBlock", "expectedVersion")]
+    [InlineData("Documents.Blocks.UpdateBlock", "content")]
+    [InlineData("Documents.Blocks.BatchUpdateBlocks", "expectedVersion")]
+    [InlineData("Documents.Blocks.BatchUpdateBlocks", "op")]
+    [InlineData("Documents.Blocks.CreateBlock", "content")]
+    [InlineData("Documents.Blocks.CreateBlock", "id")]
+    public void BlockWrite_DeclaresItsRichTextAndVersionFields(string operationId, string field)
+    {
+        var body = Operation(operationId).GetProperty("requestBody").GetProperty("content").GetProperty("application/json").GetProperty("schema");
+        var request = Document.GetProperty("components").GetProperty("schemas").GetProperty(body.GetProperty("$ref").GetString()!.Split('/').Last());
+        var properties = request.GetProperty("properties");
+        if (operationId.EndsWith("BatchUpdateBlocks") && field is "expectedVersion" or "op")
+        {
+            var item = properties.GetProperty("blocks").GetProperty("items").GetProperty("$ref").GetString()!.Split('/').Last();
+            properties = Document.GetProperty("components").GetProperty("schemas").GetProperty(item).GetProperty("properties");
+        }
+
+        properties.TryGetProperty(field, out _).Should().BeTrue($"{operationId} must accept {field}");
+    }
+
+    [Theory]
+    [InlineData("Documents.Blocks.UpdateBlock", "200", "BlockDto")]
+    [InlineData("Documents.Blocks.CreateBlock", "201", "BlockDto")]
+    [InlineData("Documents.Blocks.BatchUpdateBlocks", "200", "BlockDto[]")]
+    [InlineData("Documents.Blocks.ListPageBlocks", "200", "BlockDto[]")]
+    public void BlockWrite_DeclaresTheBlocksItReturns(string operationId, string status, string expected)
+    {
+        var schema = Operation(operationId).GetProperty("responses").GetProperty(status)
+            .GetProperty("content").GetProperty("application/json").GetProperty("schema");
+        Describe(schema).Should().Be(expected, operationId);
+    }
+
+    [Theory]
+    [InlineData("Documents.Blocks.UpdateBlock")]
+    [InlineData("Documents.Blocks.BatchUpdateBlocks")]
+    public void BlockWrite_DeclaresThePreconditionFailedProblem(string operationId)
+    {
+        Operation(operationId).GetProperty("responses").EnumerateObject().Select(r => r.Name).Should().Contain("412");
+    }
+
+    [Fact]
+    public void BlockDto_ExposesTheVersionAndJsonObjects()
+    {
+        var properties = Document.GetProperty("components").GetProperty("schemas")
+            .GetProperty("Notrelix.Application.Features.Documents.DTOs.BlockDto").GetProperty("properties");
+        properties.TryGetProperty("version", out _).Should().BeTrue();
+        properties.GetProperty("content").TryGetProperty("type", out var contentType).Should().BeFalse($"content is a JSON value, not a string ({contentType})");
+        properties.GetProperty("properties").TryGetProperty("type", out _).Should().BeFalse();
+    }
+
     private static string Describe(JsonElement schema)
     {
         if (schema.TryGetProperty("$ref", out var reference))

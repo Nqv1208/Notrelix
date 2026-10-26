@@ -24,7 +24,8 @@ public class Block : SoftDeletableAggregateRoot, IWorkspaceScoped
         FractionalIndex position,
         Guid createdBy,
         DateTimeOffset createdAt,
-        BlockProperties? properties = null)
+        BlockProperties? properties = null,
+        Guid? id = null)
     {
         Guard.NotEmpty(accountId);
         Guard.NotEmpty(workspaceId);
@@ -32,18 +33,18 @@ public class Block : SoftDeletableAggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(createdBy);
         Guard.NotNull(content);
         Guard.NotNull(position);
-
-        Rules.BlockContentValidator.Validate(type, content);
+        if (id == Guid.Empty) throw new ArgumentException("Block id cannot be empty.", nameof(id));
 
         var block = new Block
         {
+            Id = id ?? Guid.CreateVersion7(),
             AccountId = accountId,
             WorkspaceId = workspaceId,
             PageId = pageId,
             ParentId = null,
             Type = type,
-            Content = content,
-            Properties = properties ?? BlockProperties.Empty(),
+            Content = Rules.BlockContentValidator.Normalize(type, content),
+            Properties = Rules.BlockPropertiesValidator.Normalize(type, properties ?? BlockProperties.Empty()),
             Position = position
         };
 
@@ -63,7 +64,8 @@ public class Block : SoftDeletableAggregateRoot, IWorkspaceScoped
         Guid createdBy,
         DateTimeOffset createdAt,
         BlockAncestorPath parentPath,
-        BlockProperties? properties = null)
+        BlockProperties? properties = null,
+        Guid? id = null)
     {
         Guard.NotEmpty(accountId);
         Guard.NotEmpty(workspaceId);
@@ -72,6 +74,7 @@ public class Block : SoftDeletableAggregateRoot, IWorkspaceScoped
         Guard.NotNull(content);
         Guard.NotNull(position);
         Guard.NotNull(parentPath);
+        if (id == Guid.Empty) throw new ArgumentException("Block id cannot be empty.", nameof(id));
 
         if (parentPath.AccountId != accountId)
             throw new BusinessRuleException(DocumentRuleCodes.Documents_BlockTree_ScopeMismatch, "Parent block must belong to the same account.");
@@ -80,17 +83,16 @@ public class Block : SoftDeletableAggregateRoot, IWorkspaceScoped
         if (parentPath.PageId != pageId)
             throw new BusinessRuleException(DocumentRuleCodes.Documents_BlockTree_ScopeMismatch, "Parent block must belong to the same page.");
 
-        Rules.BlockContentValidator.Validate(type, content);
-
         var block = new Block
         {
+            Id = id ?? Guid.CreateVersion7(),
             AccountId = accountId,
             WorkspaceId = workspaceId,
             PageId = pageId,
             ParentId = parentPath.TargetParentId,
             Type = type,
-            Content = content,
-            Properties = properties ?? BlockProperties.Empty(),
+            Content = Rules.BlockContentValidator.Normalize(type, content),
+            Properties = Rules.BlockPropertiesValidator.Normalize(type, properties ?? BlockProperties.Empty()),
             Position = position
         };
 
@@ -105,21 +107,55 @@ public class Block : SoftDeletableAggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         Guard.NotEmpty(updatedBy);
         Guard.NotNull(newContent);
-        Rules.BlockContentValidator.Validate(Type, newContent);
+        var normalised = Rules.BlockContentValidator.Normalize(Type, newContent);
 
-        if (Content == newContent) return;
+        if (Rules.BlockContentValidator.AreSame(Type, Content, normalised)) return;
 
         var pending = PrepareAuditUpdate(updatedBy, updatedAt);
-        Content = newContent;
+        Content = normalised;
         ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BlockContentUpdatedDomainEvent(AccountId, WorkspaceId, Id, PageId, Type, updatedBy, updatedAt));
     }
 
     /// <summary>
+    /// One edit of a block: the new type (rich text and the properties the new type has carry over), the
+    /// authored content and the properties, each optional. Everything is validated against the resulting
+    /// type before anything changes, and the whole edit is one version step. Nothing changed = no-op.
+    /// </summary>
+    public void Edit(BlockType? newType, BlockContent? newContent, BlockProperties? newProperties, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
+
+        var type = newType ?? Type;
+        var typeChanged = type != Type;
+        var baseContent = typeChanged ? Rules.BlockContentConversion.Convert(Type, type, Content) : Content;
+        var baseProperties = typeChanged ? Rules.BlockPropertiesValidator.Convert(type, Properties) : Properties;
+
+        var content = Rules.BlockContentValidator.Normalize(type, newContent ?? baseContent);
+        var properties = Rules.BlockPropertiesValidator.Normalize(type, newProperties ?? baseProperties);
+        var contentChanged = typeChanged || !Rules.BlockContentValidator.AreSame(type, Content, content);
+        var propertiesChanged = !Rules.BlockPropertiesValidator.AreSame(type, Properties, properties);
+        if (!contentChanged && !propertiesChanged) return;
+
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        Type = type;
+        Content = content;
+        Properties = properties;
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+        if (contentChanged)
+            RaiseDomainEvent(new BlockContentUpdatedDomainEvent(AccountId, WorkspaceId, Id, PageId, Type, updatedBy, updatedAt));
+        if (propertiesChanged)
+            RaiseDomainEvent(new BlockPropertiesUpdatedDomainEvent(AccountId, WorkspaceId, Id, PageId, updatedBy, updatedAt));
+    }
+
+    /// <summary>
     /// Changes the block's type in place (the block keeps its id, position and
-    /// parent). Text carries over between text-like types; a change to or from
-    /// any other shape starts with empty content. Same type = no-op.
+    /// parent). Rich text carries over between text-like types and the
+    /// properties the new type has; a change to or from any other shape starts
+    /// with empty content. Same type = no-op.
     /// </summary>
     public void ChangeType(BlockType newType, Guid updatedBy, DateTimeOffset updatedAt)
     {
@@ -128,12 +164,15 @@ public class Block : SoftDeletableAggregateRoot, IWorkspaceScoped
 
         if (Type == newType) return;
 
-        var converted = Rules.BlockContentConversion.Convert(Type, newType, Content);
-        Rules.BlockContentValidator.Validate(newType, converted);
+        var converted = Rules.BlockContentValidator.Normalize(
+            newType, Rules.BlockContentConversion.Convert(Type, newType, Content));
+        var convertedProperties = Rules.BlockPropertiesValidator.Normalize(
+            newType, Rules.BlockPropertiesValidator.Convert(newType, Properties));
 
         var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Type = newType;
         Content = converted;
+        Properties = convertedProperties;
         ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BlockContentUpdatedDomainEvent(AccountId, WorkspaceId, Id, PageId, Type, updatedBy, updatedAt));
@@ -144,11 +183,12 @@ public class Block : SoftDeletableAggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         Guard.NotEmpty(updatedBy);
         Guard.NotNull(newProperties);
+        var normalised = Rules.BlockPropertiesValidator.Normalize(Type, newProperties);
 
-        if (Properties == newProperties) return;
+        if (Rules.BlockPropertiesValidator.AreSame(Type, Properties, normalised)) return;
 
         var pending = PrepareAuditUpdate(updatedBy, updatedAt);
-        Properties = newProperties;
+        Properties = normalised;
         ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BlockPropertiesUpdatedDomainEvent(AccountId, WorkspaceId, Id, PageId, updatedBy, updatedAt));

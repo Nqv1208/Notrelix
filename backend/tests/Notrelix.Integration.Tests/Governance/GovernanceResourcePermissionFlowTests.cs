@@ -643,12 +643,14 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         var mentioning = (await SendAsync<Result<Guid>>(provider, new CreatePageCommand(workspaceId, "Mentioning", null))).Data;
         var unrelated = (await SendAsync<Result<Guid>>(provider, new CreatePageCommand(workspaceId, "Unrelated", null))).Data;
 
-        await SendAsync<Result<Guid>>(provider, new CreateBlockCommand(
-            referencing, BlockType.PageReference, $"{{\"linkedPageId\":\"{target}\"}}", null, null));
-        await SendAsync<Result<Guid>>(provider, new CreateBlockCommand(
-            mentioning, BlockType.Text, $"{{\"text\":\"see\",\"pageMentionIds\":[\"{target}\"]}}", null, null));
-        await SendAsync<Result<Guid>>(provider, new CreateBlockCommand(
-            unrelated, BlockType.PageReference, $"{{\"linkedPageId\":\"{Guid.NewGuid()}\"}}", null, null));
+        await SendAsync<Result<BlockDto>>(provider, new CreateBlockCommand(
+            referencing, null, "page_reference", null, Json($"{{\"pageId\":\"{target}\"}}"), null, null));
+        await SendAsync<Result<BlockDto>>(provider, new CreateBlockCommand(
+            mentioning, null, "paragraph",
+            Json($"{{\"v\":1,\"runs\":[{{\"text\":\"see\",\"marks\":[{{\"type\":\"pageRef\",\"pageId\":\"{target}\"}}]}}]}}"),
+            null, null, null));
+        await SendAsync<Result<BlockDto>>(provider, new CreateBlockCommand(
+            unrelated, null, "page_reference", null, Json($"{{\"pageId\":\"{Guid.NewGuid()}\"}}"), null, null));
 
         var backlinks = await SendAsync<Result<PageBacklinksDto>>(provider, new GetPageBacklinksQuery(target));
 
@@ -661,16 +663,19 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         var (accountId, _, workspaceId, _, memberId) = await SeedPageStackAsync();
         using var provider = CreateProvider(accountId, memberId);
         var pageId = (await SendAsync<Result<Guid>>(provider, new CreatePageCommand(workspaceId, "Doc", null))).Data;
-        var blockId = (await SendAsync<Result<Guid>>(provider, new CreateBlockCommand(
-            pageId, BlockType.Text, "{\"text\":\"Hello\"}", null, null))).Data;
+        var created = (await SendAsync<Result<BlockDto>>(provider, new CreateBlockCommand(
+            pageId, null, "paragraph", Json("{\"v\":1,\"runs\":[{\"text\":\"Hello\",\"marks\":[]}]}"), null, null, null))).Data!;
+        var blockId = created.Id;
 
-        (await SendAsync<Result>(provider, new UpdateBlockCommand(pageId, blockId, "heading_2", null))).Succeeded.Should().BeTrue();
+        (await SendAsync<Result<BlockDto>>(provider, new UpdateBlockCommand(pageId, blockId, "heading_2", null, null, created.Version))).Succeeded.Should().BeTrue();
 
         await using var probe = _db.CreateOwnerContext(SystemTenant());
         var block = await probe.Blocks.IgnoreQueryFilters().SingleAsync(b => b.Id == blockId);
         block.Type.Should().Be(BlockType.Heading2);
-        block.Content.Data.Value.Should().Be("{\"text\":\"Hello\"}");
+        block.Content.Data.Value.Should().Be("{\"v\":1,\"runs\":[{\"text\":\"Hello\",\"marks\":[]}]}");
     }
+
+    private static System.Text.Json.JsonElement Json(string json) => System.Text.Json.JsonDocument.Parse(json).RootElement.Clone();
 
     [Fact]
     public async Task CreatePage_Guest_IsForbidden()
@@ -1571,10 +1576,10 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
             IRequestHandler<GetTrashedPagesQuery, Result<List<PageDto>>>,
             GetTrashedPagesQueryHandler>();
         services.AddScoped<
-            IRequestHandler<CreateBlockCommand, Result<Guid>>,
+            IRequestHandler<CreateBlockCommand, Result<BlockDto>>,
             CreateBlockCommandHandler>();
         services.AddScoped<
-            IRequestHandler<UpdateBlockCommand, Result>,
+            IRequestHandler<UpdateBlockCommand, Result<BlockDto>>,
             UpdateBlockCommandHandler>();
         services.AddScoped<
             IRequestHandler<GetPageBacklinksQuery, Result<PageBacklinksDto>>,

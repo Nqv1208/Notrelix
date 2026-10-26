@@ -55,13 +55,18 @@ public record PageTreeItemDto(
     Guid? SpaceId = null
 );
 
+/// <summary>
+/// A block as the editor reads it. <c>Content</c> is rich text v1 (<c>{"v":1,"runs":[...]}</c>) for a
+/// text-like type and an empty object otherwise; <c>Properties</c> holds the type's own settings. Both are
+/// JSON objects, not JSON-encoded strings. <c>Version</c> is what a write sends back as <c>expectedVersion</c>.
+/// </summary>
 public record BlockDto(
     Guid Id,
     Guid PageId,
     Guid? ParentId,
     string Type,
-    string Content,
-    string Properties,
+    System.Text.Json.JsonElement Content,
+    System.Text.Json.JsonElement Properties,
     string Position,
     int Version,
     DateTime CreatedAt,

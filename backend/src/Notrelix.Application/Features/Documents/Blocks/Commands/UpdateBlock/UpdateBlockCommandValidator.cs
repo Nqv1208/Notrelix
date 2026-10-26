@@ -9,5 +9,9 @@ public class UpdateBlockCommandValidator : AbstractValidator<UpdateBlockCommand>
 
         RuleFor(x => x.BlockId)
             .NotEmpty();
+
+        RuleFor(x => x.ExpectedVersion)
+            .NotNull().GreaterThan(0)
+            .WithMessage("expectedVersion is required and must be the version of the block you read.");
     }
 }

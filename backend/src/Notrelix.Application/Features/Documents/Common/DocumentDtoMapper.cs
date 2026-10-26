@@ -24,11 +24,17 @@ internal static class DocumentDtoMapper
         block.PageId,
         block.ParentId,
         block.Type.ToString(),
-        block.Content?.Data.Value ?? "{}",
-        block.Properties?.Data.Value ?? "{}",
+        ToJson(block.Content?.Data.Value),
+        ToJson(block.Properties?.Data.Value),
         block.Position.Value,
         (int)block.Version,
         block.CreatedAt.DateTime,
         block.UpdatedAt?.DateTime
     );
+
+    private static System.Text.Json.JsonElement ToJson(string? json)
+    {
+        using var document = System.Text.Json.JsonDocument.Parse(json ?? "{}");
+        return document.RootElement.Clone();
+    }
 }

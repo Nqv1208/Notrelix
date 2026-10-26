@@ -635,7 +635,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Batch update blocks */
+        /** Save several blocks as one change */
         post: operations["Documents.Blocks.BatchUpdateBlocks"];
         delete?: never;
         options?: never;
@@ -657,7 +657,7 @@ export interface paths {
         delete: operations["Documents.Blocks.DeleteBlock"];
         options?: never;
         head?: never;
-        /** Update a block */
+        /** Update a block against the version read */
         patch: operations["Documents.Blocks.UpdateBlock"];
         trace?: never;
     };
@@ -5196,19 +5196,27 @@ export interface components {
         "Notrelix.API.Contracts.Documents.Blocks.Requests.BatchUpdateBlockItemRequest": {
             /** Format: uuid */
             id?: string;
+            op?: string | null;
             type?: string | null;
-            properties?: string | null;
-            /** Format: double */
-            position?: number | null;
+            content?: unknown;
+            properties?: unknown;
+            position?: string | null;
+            /** Format: uuid */
+            afterBlockId?: string | null;
             /** Format: uuid */
             parentId?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number | null;
         };
         "Notrelix.API.Contracts.Documents.Blocks.Requests.BatchUpdateBlocksRequest": {
             blocks?: components["schemas"]["Notrelix.API.Contracts.Documents.Blocks.Requests.BatchUpdateBlockItemRequest"][] | null;
         };
         "Notrelix.API.Contracts.Documents.Blocks.Requests.CreateBlockRequest": {
             type?: string | null;
-            properties?: string | null;
+            content?: unknown;
+            properties?: unknown;
+            /** Format: uuid */
+            id?: string | null;
             /** Format: uuid */
             afterBlockId?: string | null;
             /** Format: uuid */
@@ -5229,7 +5237,10 @@ export interface components {
         };
         "Notrelix.API.Contracts.Documents.Blocks.Requests.UpdateBlockRequest": {
             type?: string | null;
-            properties?: string | null;
+            content?: unknown;
+            properties?: unknown;
+            /** Format: int64 */
+            expectedVersion?: number | null;
         };
         "Notrelix.API.Contracts.Documents.Pages.Requests.CreatePageRequest": {
             title?: string | null;
@@ -6139,8 +6150,8 @@ export interface components {
             /** Format: uuid */
             parentId?: string | null;
             type?: string | null;
-            content?: string | null;
-            properties?: string | null;
+            content?: unknown;
+            properties?: unknown;
             position?: string | null;
             /** Format: int32 */
             version?: number;
@@ -8700,13 +8711,40 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK */
-            200: {
+            /** @description Created */
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Documents.DTOs.BlockDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
                 };
             };
         };
@@ -8732,7 +8770,43 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Documents.DTOs.BlockDto"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Precondition Failed */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
                 };
             };
         };
@@ -8782,7 +8856,34 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Documents.DTOs.BlockDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Precondition Failed */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
                 };
             };
         };

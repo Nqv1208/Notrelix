@@ -20,6 +20,11 @@ public static class DocumentRuleCodes
     // ── Block ─────────────────────────────────────────────────────────────
     public const string Documents_Block_ContentCannotBeNull = "Documents_Block_ContentCannotBeNull";
     public const string Documents_Block_PageReferenceTargetInvalid = "Documents_Block_PageReferenceTargetInvalid";
+    public const string Documents_Block_ContentInvalid = "Documents_Block_ContentInvalid";
+    public const string Documents_Block_MarkInvalid = "Documents_Block_MarkInvalid";
+    public const string Documents_Block_LinkHrefInvalid = "Documents_Block_LinkHrefInvalid";
+    public const string Documents_Block_ContentTooLarge = "Documents_Block_ContentTooLarge";
+    public const string Documents_Block_PropertiesInvalid = "Documents_Block_PropertiesInvalid";
 
     // ── BlockTree ─────────────────────────────────────────────────────────
     public const string Documents_BlockTree_CannotBeOwnParent = "Documents_BlockTree_CannotBeOwnParent";

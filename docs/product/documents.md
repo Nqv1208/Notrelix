@@ -267,7 +267,7 @@ Exact supported types are executable evidence.
 Current editor behavior on top of the stored types:
 
 - A block keeps its id when its type changes. Text carries over between text-like types (paragraph, headings, lists, task line, toggle, quote, callout, code); a change to or from any other type starts empty.
-- A page reference block names another page by `linkedPageId`. The reader sees the page's name only when the caller can read that page; otherwise it shows "page unavailable" and never says whether the page exists.
+- A page reference block names another page by its `pageId` property. The reader sees the page's name only when the caller can read that page; otherwise it shows "page unavailable" and never says whether the page exists.
 - A page names the pages that reference it through a derived backlinks read, already filtered by what the caller may see; the editor lists them with their department when the caller can see it.
 - Turning a checklist line into a task is an editor orchestration of existing writes: pick a board the caller may add items to and one of its groups, create the item, link the page to it, then mark the line with `linkedTaskId`. Each write is separate; a failure after the item exists leaves the line unlinked.
 - Moving a page to the trash removes it from the tree and from page reads. A trashed page can be restored or deleted permanently, and only a trashed page can be deleted permanently.
@@ -286,6 +286,10 @@ web/mobile renderer/editor
 import/export
 migration/evolution
 ```
+
+# 21A. Block content schema (rich text v1)
+
+A text-like Block (paragraph, headings, lists, task line, toggle, quote, callout, code) stores its authored text as `{"v":1,"runs":[{"text","marks":[]}]}`. Marks are a closed set: `bold`, `italic`, `underline`, `strike`, `code`, `link` (`http`, `https` or `mailto` only), `color` and `highlight` (design tokens), `mention` (user id) and `pageRef` (page id). Content is normalised by the server (empty runs dropped, adjacent runs with the same marks merged, marks ordered by type, `code` excludes every mark but `link`), limited to 20 000 characters per block, and anything unknown is rejected. Every other Block type has an empty content object and keeps its meaning in typed, closed-set properties (alignment, `checked`, code `language`, callout `tone`/`icon`, toggle `collapsed`, image/file `attachmentId`, table rows of rich-text cells, board `boardId`/`viewId`, page `pageId`). A Block write names the version the editor read; a stale version is refused with the current Block so the editor can rebase, and a batch of Block writes applies completely or not at all.
 
 # 22. Block Content
 

@@ -176,6 +176,14 @@ public static class ProblemDetailsMapper
         problemDetails.Extensions["errorCode"] = mapped.ErrorCode;
         problemDetails.Extensions["traceId"] = context.TraceIdentifier;
 
+        if (exception is Notrelix.Application.Common.Exceptions.PreconditionFailedException { Extensions.Count: > 0 } stale)
+        {
+            foreach (var (key, value) in stale.Extensions)
+            {
+                problemDetails.Extensions[key] = value;
+            }
+        }
+
         if (mapped.Errors is { Count: > 0 })
         {
             problemDetails.Extensions["errors"] = mapped.Errors;

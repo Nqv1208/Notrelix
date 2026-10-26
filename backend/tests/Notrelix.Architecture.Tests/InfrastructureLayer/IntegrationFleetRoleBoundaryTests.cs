@@ -19,6 +19,7 @@ public class IntegrationFleetRoleBoundaryTests
     [
         Path.Combine("Collaboration", "AttachmentObjectLifecycleIntegrationTests.cs"),
         Path.Combine("Integration", "RlsRuntimeEnforcementTests.cs"),
+        Path.Combine("Documents", "BlockRichTextBackfillIntegrationTests.cs"),
         Path.Combine("WorkManagement", "ItemKeyBackfillIntegrationTests.cs"),
         Path.Combine("WorkManagement", "StatusOptionCategoryBackfillIntegrationTests.cs"),
         Path.Combine("WorkManagement", "StatusCompletionBackfillIntegrationTests.cs"),
