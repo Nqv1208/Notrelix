@@ -1,4 +1,5 @@
 import type { BlockType, Page } from "@notrelix/docs-core";
+import type { DocsRealtime } from "@notrelix/docs-collaboration";
 import type {
   DocPerson,
   DocShareView,
@@ -54,6 +55,8 @@ export interface DocPageHost {
   readonly notify?: (message: string) => void;
   /** Leaves the open page (after it moved to the trash). */
   readonly leaveDoc?: () => void;
+  /** The realtime transport; omitted, the page does not follow others' changes. */
+  readonly realtime?: DocsRealtime;
   /** The workspace's own locale-independent "now" (tests fix the clock). */
   readonly now: Date;
   /** Opens another page (host routing). */

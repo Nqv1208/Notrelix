@@ -36,7 +36,10 @@ import {
   markToneFor,
   spaceAncestors,
 } from "@notrelix/features-workspace/core";
-import { useFeatureRuntimeDependencies } from "@notrelix/runtime-web";
+import {
+  useAppRuntime,
+  useFeatureRuntimeDependencies,
+} from "@notrelix/runtime-web";
 import {
   useFullBoard,
   useWorkManagementServices,
@@ -124,6 +127,7 @@ export const useDocPageHost: UseDocPageHost = (
   const navigate = useNavigate();
   const user = useCurrentUser();
   const featureDeps = useFeatureRuntimeDependencies();
+  const runtime = useAppRuntime();
   const services = useWorkManagementServices();
   const spaceHooks = useSpaceHooks();
   const usePageHistory = useMemo(
@@ -444,6 +448,7 @@ export const useDocPageHost: UseDocPageHost = (
         ? "workspace-admin"
         : null,
     viewerId: user?.id,
+    realtime: runtime.realtime,
     pageHref: (targetId) =>
       `/workspaces/${workspaceId}/docs/${encodeURIComponent(targetId)}`,
     canEdit: role !== "guest",

@@ -1,9 +1,11 @@
+import { useDocLive } from "./use-doc-live";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   createUseCreateComment,
   createUseCreatePage,
   createUseDocEditor,
   createUseDocSaver,
+  useRefreshPageBlocks,
   createUseVersionSnapshot,
   createUsePage,
   createUsePageBlocks,
@@ -209,6 +211,13 @@ export function createDocPageScreen({
       boardIds,
       mentionQuery: overlay.kind === "mention" ? overlay.query : null,
       convertBoardId: overlay.kind === "convertTask" ? overlay.boardId : null,
+    });
+    const refreshBlocks = useRefreshPageBlocks(workspaceId, pageId);
+    useDocLive({
+      realtime: host.realtime,
+      workspaceId,
+      pageId,
+      refresh: refreshBlocks,
     });
     const [panelOpen, setPanelOpen] = useDocPanelOpen(host.viewerId ?? null);
     const trashQuery = useTrashedPages(workspaceId, overlay.kind === "trash");
