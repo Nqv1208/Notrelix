@@ -216,7 +216,7 @@ export const workspaceAutomationsOperations = [
       if (!rule) return notFound("Automation rule not found");
       if (!mayManageBoard(store, rule.workspaceId, query.boardId ?? null))
         return forbidden();
-      return ok([]);
+      return ok(store.workspaceAutomations.executions(rule.id));
     },
   }),
 ];

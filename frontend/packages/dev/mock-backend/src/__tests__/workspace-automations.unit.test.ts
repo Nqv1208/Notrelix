@@ -103,4 +103,34 @@ describe("workspace automation rules in the mock world", () => {
       kind: "forbidden",
     });
   });
+
+  it("starts the ERP board with two rules and a fixed run history, one run failed on its second action", async () => {
+    const api = setup();
+    const erp = mockIds.boards.erp;
+    const rules = await api.list(workspaceId, erp);
+    expect(rules.map((rule) => rule.version).sort()).toEqual([1, 2]);
+    expect(rules.every((rule) => rule.enabled)).toBe(true);
+
+    const review = rules.find((rule) => rule.version === 2)!;
+    const runs = await api.runs(erp, review.id);
+    expect(runs.length).toBeGreaterThanOrEqual(4);
+    expect(runs.map((run) => run.createdAt)).toEqual(
+      [...runs.map((run) => run.createdAt)].sort().reverse(),
+    );
+    expect(new Set(runs.map((run) => run.ruleVersion))).toEqual(
+      new Set([1, 2]),
+    );
+    const failed = runs.filter((run) => run.status === "failed");
+    expect(failed).toHaveLength(1);
+    expect(failed[0]?.steps.map((step) => step.status)).toEqual([
+      "succeeded",
+      "failed",
+    ]);
+    expect(failed[0]?.steps[1]?.error).toBeTruthy();
+    expect(
+      runs
+        .filter((run) => run.status === "succeeded")
+        .every((run) => run.steps.every((s) => s.status === "succeeded")),
+    ).toBe(true);
+  });
 });

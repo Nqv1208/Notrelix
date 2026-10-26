@@ -115,6 +115,10 @@ import { MockReports } from "./mock-reports";
 import { MockBilling } from "./mock-billing";
 import { MockIntegrations } from "./mock-integrations";
 import { MockWorkspaceAutomations } from "./mock-workspace-automations";
+import {
+  ERP_AUTOMATION_EXECUTIONS,
+  ERP_AUTOMATION_RULES,
+} from "./mock-erp-automations";
 import { MockOnboarding } from "./mock-onboarding";
 import { ERP_STATE_ITEMS, erpLongChildTitles } from "./mock-item-states";
 import { MockBoardSharing, seedErpSharing } from "./mock-board-sharing";
@@ -1426,6 +1430,16 @@ export class MockStore {
       },
     ]);
     seedErpSharing(this.sharing);
+    this.workspaceAutomations.seed(
+      ERP_AUTOMATION_RULES.map((rule) => ({
+        ...rule,
+        actions: rule.actions.map((action) => ({ ...action })),
+      })),
+      ERP_AUTOMATION_EXECUTIONS.map((execution) => ({
+        ...execution,
+        steps: execution.steps.map((step) => ({ ...step })),
+      })),
+    );
     this.boardAudienceByBoardId.set(boardId, {
       ...ERP_AUDIENCE,
       sources: ERP_AUDIENCE.sources.map((source) => ({ ...source })),

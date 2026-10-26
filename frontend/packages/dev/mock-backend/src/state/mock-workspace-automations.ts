@@ -1,8 +1,9 @@
 /**
  * The automation rules of a workspace in the mock world, shaped like the
  * producer's `AutomationRuleDto` and `AutomationExecutionDto`: one trigger, one
- * action, no board. A rule starts off; the mock never runs one, so its run
- * history stays empty.
+ * action, no board. A rule starts off; the mock never runs one, so a rule made
+ * here has an empty run history. The ERP board's own rules come with a fixed
+ * run history (`mock-erp-automations.ts`).
  */
 
 import { isoOfMs, wallClockMs } from "./clock";
@@ -31,6 +32,25 @@ export interface MockAutomationRule {
   conditions: string | null;
   /** A deleted rule is gone from the lists. */
   removed: boolean;
+}
+
+/** One run of a rule, shaped like the producer's `AutomationExecutionDto`. */
+export interface MockAutomationExecution {
+  id: string;
+  workspaceId: string;
+  ruleId: string;
+  status: "Queued" | "Running" | "Succeeded" | "Failed" | "Cancelled";
+  attemptCount: number;
+  payload: string | null;
+  error: string | null;
+  createdAt: string;
+  ruleVersion: number | null;
+  steps: {
+    index: number;
+    type: string;
+    status: "Succeeded" | "Failed";
+    error: string | null;
+  }[];
 }
 
 export interface MockAutomationDefinition {
@@ -73,7 +93,34 @@ function savedConfiguration(
 
 export class MockWorkspaceAutomations {
   private rulesByWorkspace = new Map<string, MockAutomationRule[]>();
+  private executionsByRule = new Map<string, MockAutomationExecution[]>();
   private sequence = 0;
+
+  /** Adds rules and runs that exist from the start (the ERP board's). */
+  seed(
+    rules: MockAutomationRule[],
+    executions: MockAutomationExecution[],
+  ): void {
+    for (const rule of rules) {
+      this.rulesByWorkspace.set(rule.workspaceId, [
+        ...(this.rulesByWorkspace.get(rule.workspaceId) ?? []),
+        rule,
+      ]);
+    }
+    for (const execution of executions) {
+      this.executionsByRule.set(execution.ruleId, [
+        ...(this.executionsByRule.get(execution.ruleId) ?? []),
+        execution,
+      ]);
+    }
+  }
+
+  /** The runs of a rule, the latest first. */
+  executions(ruleId: string): MockAutomationExecution[] {
+    return [...(this.executionsByRule.get(ruleId) ?? [])].sort((a, b) =>
+      b.createdAt.localeCompare(a.createdAt),
+    );
+  }
 
   list(workspaceId: string, boardId?: string | null): MockAutomationRule[] {
     return [...(this.rulesByWorkspace.get(workspaceId) ?? [])]
@@ -155,6 +202,7 @@ export class MockWorkspaceAutomations {
 
   reset(): void {
     this.rulesByWorkspace.clear();
+    this.executionsByRule.clear();
     this.sequence = 0;
   }
 }
