@@ -843,13 +843,11 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
   },
   {
     context: "Workspace",
-    classification: "COMPATIBILITY_GAP_MOCKED",
+    classification: "CANONICAL_MOCKED",
     consumerSymbol: "useCommandSearch",
     consumerFile: "frontend/apps/web/src/shell/workspace/use-command-search.ts",
-    capability: "Command palette search over readable Items, Docs and Boards",
-    gapId: "CTR-GAP-WS-COMMAND-SEARCH",
-    method: "GET",
-    pathTemplate: "/workspaces/{workspaceId}/command-search",
+    capability: "Workspaces.Search.CommandSearch",
+    operationId: "Workspaces.Search.CommandSearch",
     mutation: false,
   },
   {

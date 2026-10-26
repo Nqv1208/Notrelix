@@ -102,10 +102,13 @@ function followersOf(store: MockStore, cardId: string, memberFollows: boolean) {
 }
 
 export const workFeedOperations = [
-  // ── Command palette search (CTR-GAP-WS-COMMAND-SEARCH) ───────────────────
+  // ── Command palette search ────────────────────────────────────────────────
   defineMockOperation<{ workspaceId: string }>({
     id: "wsFeed.commandSearch",
-    contract: { kind: "gap", gapId: "CTR-GAP-WS-COMMAND-SEARCH" },
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Search.CommandSearch",
+    },
     method: "GET",
     route: "/workspaces/:workspaceId/command-search",
     async handle({ params, query, store }) {

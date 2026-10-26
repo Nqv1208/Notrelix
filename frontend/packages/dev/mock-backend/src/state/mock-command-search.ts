@@ -1,6 +1,5 @@
 /**
- * The command palette's search (gap `CTR-GAP-WS-COMMAND-SEARCH`, see
- * docs/superpowers/be-blockers-2026-10.md, "BE requirement from FE: Command"):
+ * The command palette's search (`Workspaces.Search.CommandSearch`):
  * what a typed word finds in Items, Docs and Boards beyond their names, and
  * what the viewer may see of it. Matching ignores case and marks ("hoa don"
  * finds "hoá đơn").
