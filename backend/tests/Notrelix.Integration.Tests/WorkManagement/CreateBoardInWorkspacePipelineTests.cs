@@ -55,7 +55,7 @@ public sealed class CreateBoardInWorkspacePipelineTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -76,7 +76,7 @@ public sealed class CreateBoardInWorkspacePipelineTests : IAsyncLifetime
             result.Succeeded.Should().BeTrue();
             var boardId = result.Data;
 
-            await using var verify = _db.CreateContext(SystemTenant());
+            await using var verify = _db.CreateOwnerContext(SystemTenant());
             var board = await verify.Boards.FirstOrDefaultAsync(b => b.Id == boardId);
             board.Should().NotBeNull("the write transaction must commit the board");
             board!.WorkspaceId.Should().Be(workspaceId);
@@ -172,7 +172,7 @@ public sealed class CreateBoardInWorkspacePipelineTests : IAsyncLifetime
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(AccessControlBehavior<,>));
 
         services.AddScoped<ApplicationDbContext>(sp =>
-            _db.CreateContext(sp.GetRequiredService<ICurrentTenantContext>()));
+            _db.CreateOwnerContext(sp.GetRequiredService<ICurrentTenantContext>()));
         services.AddScoped<IWorkspaceDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IAccountDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IGovernanceDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
@@ -254,7 +254,7 @@ public sealed class CreateBoardInWorkspacePipelineTests : IAsyncLifetime
         var account = Account.Create("WM Account", $"wm-{Guid.NewGuid():N}", AccountType.Team, owner.Id, now);
         var workspace = Workspace.Create(account.Id, owner.Id, "WM Workspace", $"wm-ws-{Guid.NewGuid():N}", now);
 
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Users.Add(owner);
         seed.Users.Add(member);
         seed.Accounts.Add(account);
@@ -264,7 +264,7 @@ public sealed class CreateBoardInWorkspacePipelineTests : IAsyncLifetime
         seed.WorkspaceMembers.Add(WorkspaceMember.Create(account.Id, workspace.Id, member.Id, WorkspaceRole.Member, owner.Id, now));
         await seed.SaveChangesAsync();
 
-        await using var grant = _db.CreateContext(SystemTenant());
+        await using var grant = _db.CreateOwnerContext(SystemTenant());
         var projection = new AccessGrantProjectionService(grant);
         await projection.SyncWorkspaceMemberGrantAsync(account.Id, workspace.Id, owner.Id, WorkspaceRole.Owner, now, CancellationToken.None);
         await projection.SyncWorkspaceMemberGrantAsync(account.Id, workspace.Id, member.Id, WorkspaceRole.Member, now, CancellationToken.None);

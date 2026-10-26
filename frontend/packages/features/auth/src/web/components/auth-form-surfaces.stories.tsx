@@ -10,12 +10,14 @@ import {
   authRegisterPendingScenario,
   authSignInScenario,
   authSsoStep,
+  authVerifyEmailScenario,
 } from "../../verification/auth-ui-fixtures";
 import { authCopy } from "../copy/auth.copy";
 import { AuthForgotSurface } from "./auth-forgot-surface";
 import { AuthInviteSurface } from "./auth-invite-surface";
 import { AuthShell } from "./auth-shell";
 import { AuthSignInSurface } from "./auth-sign-in-surface";
+import { AuthVerifyEmailSurface } from "./auth-verify-email-surface";
 import { AuthRegisterFormSurface } from "./auth-form-surfaces";
 
 /**
@@ -96,7 +98,6 @@ export const SignInPasswordWrong: Story = {
             kind: "password",
             email: AUTH_PERSONAL_EMAIL,
             error: "wrong",
-            attemptsLeft: 2,
           },
         })}
       />
@@ -105,7 +106,7 @@ export const SignInPasswordWrong: Story = {
   tags: ["fui-surface--auth.sign-in", "fui-state--Error"],
 };
 
-/** Five wrong passwords: the error stays, the lock card counts down, the button waits. */
+/** Too many wrong passwords: the lock card counts down, the button waits. */
 export const SignInLocked: Story = {
   render: () => (
     <Page>
@@ -114,8 +115,7 @@ export const SignInLocked: Story = {
           step: {
             kind: "password",
             email: AUTH_PERSONAL_EMAIL,
-            error: "wrong",
-            attemptsLeft: 0,
+            error: null,
             lockedSeconds: 48,
           },
         })}
@@ -169,7 +169,6 @@ export const SignInOtpWrong: Story = {
             kind: "otp",
             email: AUTH_PERSONAL_EMAIL,
             error: "wrong",
-            attemptsLeft: 3,
           },
         })}
       />
@@ -233,6 +232,68 @@ export const ForgotSentReady: Story = {
   tags: ["fui-surface--auth.forgot", "fui-state--Success"],
 };
 
+export const VerifyEmailWaiting: Story = {
+  render: () => (
+    <Page>
+      <AuthVerifyEmailSurface {...authVerifyEmailScenario()} />
+    </Page>
+  ),
+  tags: ["fui-surface--auth.verify-email", "fui-state--Default"],
+};
+
+export const VerifyEmailConfirming: Story = {
+  render: () => (
+    <Page>
+      <AuthVerifyEmailSurface
+        {...authVerifyEmailScenario({ step: { kind: "confirming" } })}
+      />
+    </Page>
+  ),
+  tags: ["fui-surface--auth.verify-email", "fui-state--Loading"],
+};
+
+export const VerifyEmailSending: Story = {
+  render: () => (
+    <Page>
+      <AuthVerifyEmailSurface {...authVerifyEmailScenario({ pending: true })} />
+    </Page>
+  ),
+  tags: ["fui-surface--auth.verify-email", "fui-state--Loading"],
+};
+
+export const VerifyEmailInvalid: Story = {
+  render: () => (
+    <Page>
+      <AuthVerifyEmailSurface
+        {...authVerifyEmailScenario({ error: "invalid" })}
+      />
+    </Page>
+  ),
+  tags: ["fui-surface--auth.verify-email", "fui-state--Error"],
+};
+
+export const VerifyEmailFailed: Story = {
+  render: () => (
+    <Page>
+      <AuthVerifyEmailSurface
+        {...authVerifyEmailScenario({ step: { kind: "failed" } })}
+      />
+    </Page>
+  ),
+  tags: ["fui-surface--auth.verify-email", "fui-state--Error"],
+};
+
+export const VerifyEmailDone: Story = {
+  render: () => (
+    <Page>
+      <AuthVerifyEmailSurface
+        {...authVerifyEmailScenario({ step: { kind: "done" } })}
+      />
+    </Page>
+  ),
+  tags: ["fui-surface--auth.verify-email", "fui-state--Success"],
+};
+
 export const InviteDefault: Story = {
   render: () => (
     <Page>
@@ -259,7 +320,7 @@ export const InviteRefused: Story = {
           view: {
             kind: "invite",
             invite: authGuestInvite,
-            fieldErrors: { password: "Dùng ít nhất 12 ký tự." },
+            fieldErrors: { password: "Dùng ít nhất 8 ký tự." },
           },
         })}
       />

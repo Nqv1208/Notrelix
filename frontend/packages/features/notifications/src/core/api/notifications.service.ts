@@ -1,6 +1,7 @@
-import type {
-  Notification,
-  NotificationPreferences,
+import {
+  NOTIFICATION_PREFERENCE_TYPES,
+  type Notification,
+  type NotificationPreferences,
 } from "../types/notifications";
 
 export interface NotificationsApiClient {
@@ -19,7 +20,7 @@ export interface NotificationsEndpoints {
     // PENDING BACKEND
     unreadCount?: string;
     archive?: (notificationId: string) => string;
-    preferences?: string;
+    preferences: (workspaceId: string) => string;
   };
 }
 
@@ -100,49 +101,62 @@ export function createNotificationsService(
       await api.post<void>(endpoints.notifications.archive(id), {});
     },
 
-    async getPreferences(): Promise<NotificationPreferences> {
-      if (!endpoints.notifications.preferences) {
-        if (mockMode) {
-          return {
-            userId: "current-user",
-            emailEnabled: true,
-            pushEnabled: true,
-            mutedTypes: [],
-          };
-        }
-        throw new Error(
-          "Backend contract missing for notifications.preferences",
-        );
-      }
-      return api.get<NotificationPreferences>(
-        endpoints.notifications.preferences,
+    /** `Collaboration.Preferences.GetNotificationPreferences`. */
+    async getPreferences(
+      workspaceId: string,
+    ): Promise<NotificationPreferences> {
+      return toPreferences(
+        await api.get<PreferencesWire>(
+          endpoints.notifications.preferences(workspaceId),
+        ),
       );
     },
 
+    /**
+     * `Collaboration.Preferences.UpdateNotificationPreferences`: only the
+     * cells that changed are sent, with the version they were read at. A stale
+     * version answers 412; the caller refetches.
+     */
     async updatePreferences(
-      preferences: Partial<NotificationPreferences>,
+      workspaceId: string,
+      input: {
+        readonly expectedVersion: number;
+        readonly rows: readonly {
+          readonly type: string;
+          readonly inApp?: boolean;
+          readonly email?: boolean;
+        }[];
+      },
     ): Promise<NotificationPreferences> {
-      if (!endpoints.notifications.preferences) {
-        if (mockMode) {
-          return {
-            userId: "current-user",
-            emailEnabled: true,
-            pushEnabled: true,
-            mutedTypes: [],
-            ...preferences,
-          };
-        }
-        throw new Error(
-          "Backend contract missing for notifications.preferences",
-        );
-      }
-      return api.patch<NotificationPreferences>(
-        endpoints.notifications.preferences,
-        preferences,
+      return toPreferences(
+        await api.patch<PreferencesWire>(
+          endpoints.notifications.preferences(workspaceId),
+          input,
+        ),
       );
     },
   };
 }
-export type NotificationsService = ReturnType<
-  typeof createNotificationsService
->;
+
+/** `NotificationPreferencesDto`: `{ version, rows: [{ type, inApp, email }] }`. */
+interface PreferencesWire {
+  readonly version?: number;
+  readonly rows?:
+    | readonly {
+        readonly type?: string | null;
+        readonly inApp?: boolean;
+        readonly email?: boolean;
+      }[]
+    | null;
+}
+
+/** The one place the producer's rows are read into the page's model. */
+export function toPreferences(wire: PreferencesWire): NotificationPreferences {
+  const rows = Object.fromEntries(
+    NOTIFICATION_PREFERENCE_TYPES.map((type) => {
+      const row = wire.rows?.find((candidate) => candidate.type === type);
+      return [type, { inApp: row?.inApp ?? true, email: row?.email ?? false }];
+    }),
+  ) as unknown as NotificationPreferences["rows"];
+  return { version: wire.version ?? 0, rows };
+}

@@ -8,6 +8,10 @@ import {
   securityErrorScenario,
   securityLoadingScenario,
   securityNoticeScenario,
+  securityChangePasswordRefusedScenario,
+  securityChangePasswordScenario,
+  securityPasswordChangedScenario,
+  securityEnrollScenario,
   securityOwnPasswordScenario,
   type SecurityScenario,
 } from "../../../verification/account-security-fixtures";
@@ -74,13 +78,180 @@ describe("AccountSecuritySurface", () => {
     expect(link.getAttribute("rel")).toContain("noopener");
     sso.view.unmount();
 
-    const own = renderSecurity(securityOwnPasswordScenario("en"));
-    expect(
-      screen
-        .getByRole("link", { name: copy.password.change })
-        .getAttribute("href"),
-    ).toBe("/forgot-password");
+    const own = renderSecurity(securityOwnPasswordScenario("en"), {
+      onChangePassword: vi.fn(),
+    });
+    fireEvent.click(screen.getByRole("button", { name: copy.password.change }));
+    expect(own.props.onChangePassword).toHaveBeenCalledTimes(1);
     own.view.unmount();
+
+    // Without a way to change it the page says so instead of linking away.
+    const none = renderSecurity(securityOwnPasswordScenario("en"));
+    expect(screen.getByText(copy.password.unavailable)).toBeTruthy();
+    none.view.unmount();
+  });
+
+  it("FUI[account.security:password-change] checks the new password before sending and hands over the three values", () => {
+    for (const locale of LOCALES) {
+      const copy = securityCopyFixture(locale);
+      const t = copy.passwordFlow;
+      const { props, view } = renderSecurity(
+        securityChangePasswordScenario(locale),
+        { onSubmitNewPassword: vi.fn(), onCloseFlow: vi.fn() },
+      );
+      const current = screen.getByLabelText(t.currentLabel);
+      const next = screen.getByLabelText(t.newLabel);
+      const repeat = screen.getByLabelText(t.confirmLabel);
+      // No second step on this account: no code field.
+      expect(screen.queryByLabelText(t.codeLabel)).toBeNull();
+      const submit = () =>
+        fireEvent.click(screen.getByRole("button", { name: t.submit }));
+
+      submit();
+      expect(screen.getByText(t.currentRequired)).toBeTruthy();
+      expect(props.onSubmitNewPassword).not.toHaveBeenCalled();
+
+      fireEvent.change(current, { target: { value: "old-password-1" } });
+      fireEvent.change(next, { target: { value: "short" } });
+      fireEvent.change(repeat, { target: { value: "short" } });
+      submit();
+      expect(
+        screen.getByText(t.tooShort.replace("{{count}}", "8")),
+      ).toBeTruthy();
+      expect(next.getAttribute("aria-invalid")).toBe("true");
+
+      fireEvent.change(next, { target: { value: "old-password-1" } });
+      fireEvent.change(repeat, { target: { value: "old-password-1" } });
+      submit();
+      expect(screen.getByText(t.sameAsCurrent)).toBeTruthy();
+
+      fireEvent.change(next, { target: { value: "new-password-2" } });
+      submit();
+      expect(screen.getByText(t.mismatch)).toBeTruthy();
+      expect(props.onSubmitNewPassword).not.toHaveBeenCalled();
+
+      fireEvent.change(repeat, { target: { value: "new-password-2" } });
+      submit();
+      expect(props.onSubmitNewPassword).toHaveBeenCalledWith({
+        current: "old-password-1",
+        next: "new-password-2",
+        code: "",
+      });
+
+      fireEvent.click(screen.getByRole("button", { name: t.cancel }));
+      expect(props.onCloseFlow).toHaveBeenCalledTimes(1);
+      view.unmount();
+    }
+  });
+
+  it("FUI[account.security:password-code] asks for an authenticator code while two-factor is on", () => {
+    const copy = securityCopyFixture("en");
+    const t = copy.passwordFlow;
+    const { props, view } = renderSecurity(
+      securityChangePasswordScenario("en", { needsCode: true }),
+      { onSubmitNewPassword: vi.fn() },
+    );
+    fireEvent.change(screen.getByLabelText(t.currentLabel), {
+      target: { value: "old-password-1" },
+    });
+    fireEvent.change(screen.getByLabelText(t.newLabel), {
+      target: { value: "new-password-2" },
+    });
+    fireEvent.change(screen.getByLabelText(t.confirmLabel), {
+      target: { value: "new-password-2" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: t.submit }));
+    expect(screen.getByText(t.codeRequired)).toBeTruthy();
+    expect(props.onSubmitNewPassword).not.toHaveBeenCalled();
+
+    fireEvent.change(screen.getByLabelText(t.codeLabel), {
+      target: { value: " 482931 " },
+    });
+    fireEvent.click(screen.getByRole("button", { name: t.submit }));
+    expect(props.onSubmitNewPassword).toHaveBeenCalledWith({
+      current: "old-password-1",
+      next: "new-password-2",
+      code: "482931",
+    });
+    view.unmount();
+  });
+
+  it("FUI[account.security:password-result] tells what the producer refused and that the password changed", () => {
+    for (const locale of LOCALES) {
+      const t = securityCopyFixture(locale).passwordFlow;
+      const refused = renderSecurity(
+        securityChangePasswordRefusedScenario(locale),
+      );
+      const field = screen.getByLabelText(t.currentLabel);
+      expect(screen.getByText(t.wrongCurrent)).toBeTruthy();
+      expect(field.getAttribute("aria-invalid")).toBe("true");
+      refused.view.unmount();
+
+      for (const [error, text] of [
+        ["wrongCode", t.wrongCode],
+        ["rejected", t.rejected.replace("{{count}}", "8")],
+        ["wait", t.wait.replace("{{seconds}}", "42")],
+      ] as const) {
+        const base = securityChangePasswordScenario(locale, {
+          needsCode: true,
+        });
+        const view = renderSecurity({
+          ...base,
+          flow: { kind: "password", needsCode: true, error, wait: 42 },
+        });
+        expect(document.body.textContent).toContain(text);
+        view.view.unmount();
+      }
+
+      const done = renderSecurity(securityPasswordChangedScenario(locale), {
+        onPasswordChangedContinue: vi.fn(),
+      });
+      expect(screen.getByRole("status").textContent).toBe(t.doneText);
+      fireEvent.click(screen.getByRole("button", { name: t.signInAgain }));
+      expect(done.props.onPasswordChangedContinue).toHaveBeenCalledTimes(1);
+      done.view.unmount();
+    }
+  });
+
+  it("FUI[account.security:enroll] shows a QR code of the producer's address with the key as a fallback and sends the first code", () => {
+    for (const locale of LOCALES) {
+      const t = securityCopyFixture(locale).flow;
+      const { props, view } = renderSecurity(securityEnrollScenario(locale), {
+        onSubmitCode: vi.fn(),
+      });
+      const qr = screen.getByRole("img", { name: t.qrLabel });
+      expect(qr.tagName.toLowerCase()).toBe("svg");
+      expect(
+        qr.querySelector("path")?.getAttribute("d")?.length,
+      ).toBeGreaterThan(100);
+      expect(screen.getByText(t.enrollText)).toBeTruthy();
+      expect(screen.getByText("JBSWY3DPEHPK3PXP")).toBeTruthy();
+      expect(screen.getByText(t.secretLabel)).toBeTruthy();
+
+      fireEvent.change(screen.getByLabelText(t.codeLabel), {
+        target: { value: "482931" },
+      });
+      fireEvent.click(screen.getByRole("button", { name: t.confirm }));
+      expect(props.onSubmitCode).toHaveBeenCalledWith("482931");
+      view.unmount();
+    }
+  });
+
+  it("FUI[account.security:enroll-fallback] still offers the key when the producer sent no address", () => {
+    const t = securityCopyFixture("en").flow;
+    const scenario = securityEnrollScenario("en");
+    const { view } = renderSecurity({
+      ...scenario,
+      flow: {
+        kind: "enroll",
+        secret: "JBSWY3DPEHPK3PXP",
+        otpAuthUri: "",
+        error: null,
+      },
+    });
+    expect(screen.queryByRole("img", { name: t.qrLabel })).toBeNull();
+    expect(screen.getByText("JBSWY3DPEHPK3PXP")).toBeTruthy();
+    view.unmount();
   });
 
   it("FUI[account.security:two-factor] turns the second step off and on", () => {

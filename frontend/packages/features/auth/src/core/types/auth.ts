@@ -10,11 +10,19 @@ export type LoginRequestApi = {
   password: string;
 };
 
+/**
+ * `AuthSessionResponse`: the session tokens live only in httpOnly cookies, so
+ * the body carries the user and, while a second factor is pending, the
+ * challenge to answer (`mfaRequired`, `mfaChallengeToken`, `mfaMethod`,
+ * `mfaExpiresAt`).
+ */
 export type LoginResponseApi = {
-  accessToken: string;
-  refreshToken: string;
-  expiresAt: string;
-  user: User;
+  expiresAt?: string | null;
+  user?: User;
+  mfaRequired?: boolean;
+  mfaChallengeToken?: string | null;
+  mfaMethod?: string | null;
+  mfaExpiresAt?: string | null;
 };
 
 export type RegisterRequestApi = {
@@ -25,12 +33,10 @@ export type RegisterRequestApi = {
 
 export type RegisterResponseApi = LoginResponseApi;
 
-export type LogoutRequest = {
-  refreshToken?: string;
-  accessToken?: string;
-};
+/** Logout and refresh read the cookies; neither sends a token. */
+export type LogoutRequest = Record<string, never>;
 
-export type RefreshRequest = Pick<LoginResponseApi, "refreshToken">;
+export type RefreshRequest = Record<string, never>;
 
 export type ForgotPasswordRequest = {
   email: string;

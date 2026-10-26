@@ -268,11 +268,17 @@ export function MyWorkRail({
                   </ShellLink>
                 </p>
                 <div className="mt-[3px] mb-2 text-xs leading-[1.45] text-meta-foreground">
-                  <span className="font-mono">{entry.key}</span> · {entry.note}{" "}
-                  ·{" "}
-                  <b className="font-semibold whitespace-nowrap text-warning-text">
-                    {entry.dueNote}
-                  </b>
+                  <span className="font-mono">{entry.key}</span>
+                  {entry.note ? <> · {entry.note}</> : null}
+                  {entry.dueNote ? (
+                    <>
+                      {" "}
+                      ·{" "}
+                      <b className="font-semibold whitespace-nowrap text-warning-text">
+                        {entry.dueNote}
+                      </b>
+                    </>
+                  ) : null}
                 </div>
                 <button
                   type="button"

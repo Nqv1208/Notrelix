@@ -47,7 +47,7 @@ public sealed class N8nDispatchRuntimeChainIntegrationTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
         RecordingDeduplicationStore.Reset();
     }
@@ -83,7 +83,7 @@ public sealed class N8nDispatchRuntimeChainIntegrationTests : IAsyncLifetime
         }
         var execution = AutomationExecution.Create(account.Id, workspace.Id, rule.Id, Guid.NewGuid(), now);
 
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Users.Add(user);
         seed.Accounts.Add(account);
         seed.Workspaces.Add(workspace);
@@ -262,6 +262,7 @@ public sealed class N8nDispatchRuntimeChainIntegrationTests : IAsyncLifetime
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["ConnectionStrings:NotrelixDb"] = _db.ConnectionString,
+                ["ConnectionStrings:NotrelixWorkerDb"] = _db.WorkerConnectionString,
                 ["ConnectionStrings:Redis"] = "localhost:6379,abortConnect=false",
                 ["Messaging:Transport"] = "InMemory",
                 ["Rls:Enabled"] = "true",
@@ -280,6 +281,7 @@ public sealed class N8nDispatchRuntimeChainIntegrationTests : IAsyncLifetime
         builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
         {
             ["ConnectionStrings:NotrelixDb"] = _db.ConnectionString,
+            ["ConnectionStrings:NotrelixWorkerDb"] = _db.WorkerConnectionString,
             ["ConnectionStrings:Redis"] = "localhost:6379,abortConnect=false",
             ["Messaging:Transport"] = "InMemory",
             ["Rls:Enabled"] = "true",
@@ -336,14 +338,14 @@ public sealed class N8nDispatchRuntimeChainIntegrationTests : IAsyncLifetime
 
     private async Task<AutomationExecution?> LoadExecutionAsync(Guid id)
     {
-        await using var probe = _db.CreateContext(SystemTenant());
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
         return await probe.AutomationExecutions.IgnoreQueryFilters()
             .FirstOrDefaultAsync(x => x.Id == id);
     }
 
     private async Task<AutomationExecutionStatus?> ExecutionStatusAsync(Guid id)
     {
-        await using var probe = _db.CreateContext(SystemTenant());
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
         return await probe.AutomationExecutions.IgnoreQueryFilters()
             .Where(x => x.Id == id)
             .Select(x => (AutomationExecutionStatus?)x.Status)
@@ -352,7 +354,7 @@ public sealed class N8nDispatchRuntimeChainIntegrationTests : IAsyncLifetime
 
     private async Task<string> DiagnosticAsync(ChainGraph graph)
     {
-        await using var probe = _db.CreateContext(SystemTenant());
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
         var processed = await probe.Set<MessagingProcessedEvent>().IgnoreQueryFilters()
             .Where(p => p.ConsumerName == N8nDispatchEndpoint)
             .Select(p => p.EventId + ":" + p.Status)

@@ -10,6 +10,7 @@ import {
   automationEditorEn,
   automationEditorVi,
 } from "./board-automation.copy";
+import { workspaceRulesEn, workspaceRulesVi } from "./workspace-rules.copy";
 
 export const en = {
   title: "Board settings",
@@ -180,6 +181,7 @@ export const en = {
     progress: "Progress",
     autonumber: "Auto number",
     "datetime-system": "Date time",
+    link: "Link",
   },
   typeLong: {
     select: "Select (one value)",
@@ -222,8 +224,20 @@ export const en = {
     archive: "Archive field",
     archiveUnavailable:
       "The Status field splits the Kanban and cannot be archived",
+    delete: "Delete field",
+    deleteUnavailable:
+      "The Status field splits the Kanban and cannot be deleted",
     readOnlyColumn:
       "This field is calculated by Notrelix, only its name is shown here.",
+  },
+  deleteDialog: {
+    title: "Delete the field “{{name}}”?",
+    body: "Deleting removes the field and the values items hold in it. This cannot be undone.",
+    values_other: "{{count}} items have a value that will be deleted",
+    values_one: "{{count}} item has a value that will be deleted",
+    cancel: "Cancel",
+    confirm: "Delete field",
+    working: "Deleting…",
   },
   archiveDialog: {
     title: "Archive the field “{{name}}”?",
@@ -252,7 +266,7 @@ export const en = {
       "Each view is a saved way of looking (filter, group, sort, columns) at the same data of the board. Deleting a view deletes no item.",
     add: "New view",
     shared: "Shared by the board",
-    sharedNote: "Every member sees them · drag to reorder the tabs",
+    sharedNote: "Every member sees them",
     mine: "Only you",
     mineNote: "Other people do not see them",
     default: "Default",
@@ -295,6 +309,8 @@ export const en = {
     delete: "Delete",
     deleteView: "Delete the view",
     duplicate: "Duplicate",
+    makeDefault: "Make default",
+    copyName: "{{name}} (copy)",
     deleteConfirm: "Delete the view “{{name}}”? No item is deleted.",
     deleteDefault: "The default view cannot be deleted",
     brokenTitle: "This view is empty because its date field was archived.",
@@ -340,6 +356,8 @@ export const en = {
     keyHint: "Prefix of the automatic number",
     keyNote:
       "Changing the key does not change old keys; {{example}} still opens.",
+    keyReadOnly:
+      "The key is set when the board is created; it cannot be changed yet.",
     timeZone: "Deadline time zone",
     timeZoneHint: "Applies to everyone viewing",
     timeZones: {
@@ -391,6 +409,7 @@ export const en = {
     footnote:
       "Deleting a group never deletes items. The last group of a board cannot be deleted.",
     lastGroup: "The last group of a board cannot be deleted",
+    notEmpty: "Move the items out of the group first; then it can be deleted",
   },
   automations: {
     title: "Automations",
@@ -413,6 +432,7 @@ export const en = {
     change: "Change who runs it",
     empty: "No rule yet.",
     editor: automationEditorEn,
+    rules: workspaceRulesEn,
   },
 } as const;
 
@@ -593,6 +613,7 @@ export const vi: BoardSettingsCopy = {
     progress: "Tiến độ",
     autonumber: "Mã tự tăng",
     "datetime-system": "Ngày giờ",
+    link: "Liên kết",
   },
   typeLong: {
     select: "Lựa chọn (một giá trị)",
@@ -634,7 +655,18 @@ export const vi: BoardSettingsCopy = {
     archive: "Lưu trữ trường",
     archiveUnavailable:
       "Trường Trạng thái chia cột Kanban nên không lưu trữ được",
+    delete: "Xoá trường",
+    deleteUnavailable: "Trường Trạng thái chia cột Kanban nên không xoá được",
     readOnlyColumn: "Trường này do Notrelix tự tính, ở đây chỉ hiện tên.",
+  },
+  deleteDialog: {
+    title: 'Xoá trường "{{name}}"?',
+    body: "Xoá sẽ bỏ trường và các giá trị mà việc đang có ở trường này. Không thể hoàn tác.",
+    values_other: "{{count}} việc có giá trị sẽ bị xoá",
+    values_one: "{{count}} việc có giá trị sẽ bị xoá",
+    cancel: "Huỷ",
+    confirm: "Xoá trường",
+    working: "Đang xoá…",
   },
   archiveDialog: {
     title: 'Lưu trữ trường "{{name}}"?',
@@ -663,7 +695,7 @@ export const vi: BoardSettingsCopy = {
       "Mỗi chế độ xem là một cách nhìn đã lưu (lọc, nhóm, sắp xếp, cột) trên cùng dữ liệu của board. Xoá một chế độ xem không xoá việc nào.",
     add: "Chế độ xem mới",
     shared: "Chung cho board",
-    sharedNote: "Mọi thành viên thấy · kéo để đổi thứ tự tab",
+    sharedNote: "Mọi thành viên thấy",
     mine: "Chỉ mình bạn",
     mineNote: "Người khác không thấy",
     default: "Mặc định",
@@ -705,6 +737,8 @@ export const vi: BoardSettingsCopy = {
     delete: "Xoá",
     deleteView: "Xoá chế độ xem",
     duplicate: "Nhân bản",
+    makeDefault: "Đặt làm mặc định",
+    copyName: "{{name}} (bản sao)",
     deleteConfirm: 'Xoá chế độ xem "{{name}}"? Không việc nào bị xoá.',
     deleteDefault: "Không xoá được chế độ xem mặc định",
     brokenTitle:
@@ -751,6 +785,7 @@ export const vi: BoardSettingsCopy = {
     key: "Mã việc",
     keyHint: "Tiền tố của mã tự tăng",
     keyNote: "Đổi mã không đổi mã việc cũ; {{example}} vẫn mở được.",
+    keyReadOnly: "Mã được đặt khi tạo board; chưa đổi được.",
     timeZone: "Múi giờ hạn chót",
     timeZoneHint: "Áp dụng cho mọi người xem",
     timeZones: {
@@ -801,6 +836,7 @@ export const vi: BoardSettingsCopy = {
     footnote:
       "Xoá nhóm không bao giờ xoá việc. Nhóm cuối cùng của board không xoá được.",
     lastGroup: "Nhóm cuối cùng của board không xoá được",
+    notEmpty: "Chuyển hết việc ra khỏi nhóm trước, rồi mới xoá được",
   },
   automations: {
     title: "Tự động hoá",
@@ -823,6 +859,7 @@ export const vi: BoardSettingsCopy = {
     change: "Đổi người chạy",
     empty: "Chưa có quy tắc nào.",
     editor: automationEditorVi,
+    rules: workspaceRulesVi,
   },
 };
 

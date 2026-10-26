@@ -1,5 +1,6 @@
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.Collaboration.Attachments.DTOs;
+using global::Notrelix.Application.Features.Collaboration.Attachments.Services;
 using Notrelix.Application.Features.Collaboration.Abstractions;
 
 namespace Notrelix.Application.Features.Collaboration.Attachments.Queries.GetBoardItemAttachments;
@@ -24,22 +25,8 @@ public class GetBoardItemAttachmentsQueryHandler : IRequestHandler<GetBoardItemA
     {
         // Resource existence and tenant ownership are established by
         // ExecutionContextBehavior before this handler runs.
-
-        var attachments = await _context.Attachments.AsNoTracking()
-            .Where(attachment => attachment.Target.Kind == ResourceKind.Create("work-management.board-item") && attachment.Target.ResourceId == request.BoardItemId)
-            .OrderByDescending(attachment => attachment.CreatedAt)
-            .ToListAsync(ct);
-
-        var userIds = attachments.Where(a => a.CreatedBy.HasValue).Select(a => a.CreatedBy!.Value).Distinct().ToList();
-        var actors = await _actorLookup.FindManyAsync(userIds, ct);
-        var actorMap = actors.ToDictionary(a => a.UserId);
-
-        var result = attachments.Select(item =>
-        {
-            actorMap.TryGetValue(item.CreatedBy ?? Guid.Empty, out var actor);
-            return AttachmentDto.From(item, actor?.Name);
-        }).ToList();
-
+        var result = await AttachmentTargetOperations.ListAsync(
+            _context, _actorLookup, AttachmentTargets.BoardItem, request.BoardItemId, ct);
         return Result<List<AttachmentDto>>.Success(result);
     }
 }

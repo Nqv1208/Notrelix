@@ -4,7 +4,8 @@ namespace Notrelix.Application.EventMappers.Documents;
 
 public sealed class PageEventMapper :
     IntegrationEventMapperBase<PageCreatedDomainEvent, PageCreatedIntegrationEvent>,
-    IIntegrationEventMapper<PageArchivedDomainEvent, PageArchivedIntegrationEvent>
+    IIntegrationEventMapper<PageArchivedDomainEvent, PageArchivedIntegrationEvent>,
+    IIntegrationEventMapper<PageBlocksSavedDomainEvent, PageBlocksSavedIntegrationEvent>
 {
     public override PageCreatedIntegrationEvent? Map(PageCreatedDomainEvent domainEvent)
     {
@@ -36,6 +37,22 @@ public sealed class PageEventMapper :
         );
     }
 
+    public PageBlocksSavedIntegrationEvent? Map(PageBlocksSavedDomainEvent domainEvent)
+    {
+        return new PageBlocksSavedIntegrationEvent(
+            EventId: Guid.CreateVersion7(),
+            AccountId: domainEvent.AccountId,
+            PageId: domainEvent.PageId,
+            WorkspaceId: domainEvent.WorkspaceId,
+            PageTitle: domainEvent.PageTitle,
+            Mentions: domainEvent.Mentions.Select(m => new PageBlockMention(m.BlockId, m.UserId)).ToList(),
+            CorrelationId: domainEvent.EventId,
+            ActorUserId: domainEvent.SavedBy,
+            CausationId: null,
+            OccurredAt: domainEvent.OccurredAt
+        );
+    }
+
     IReadOnlyList<IntegrationEventMapping> IIntegrationEventMapper.Map(IDomainEvent domainEvent)
     {
         if (domainEvent is PageCreatedDomainEvent e1)
@@ -46,6 +63,11 @@ public sealed class PageEventMapper :
         if (domainEvent is PageArchivedDomainEvent e2)
         {
             var mapped = Map(e2);
+            if (mapped is not null) return [new IntegrationEventMapping(mapped)];
+        }
+        if (domainEvent is PageBlocksSavedDomainEvent e3)
+        {
+            var mapped = Map(e3);
             if (mapped is not null) return [new IntegrationEventMapping(mapped)];
         }
         return [];

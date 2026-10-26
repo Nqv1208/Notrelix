@@ -1,4 +1,5 @@
 using Notrelix.API.Extensions;
+using Notrelix.Application.Features.Documents.DTOs;
 using Notrelix.Application.Features.Documents.Pages.Queries.GetPageHistory;
 
 namespace Notrelix.API.Endpoints.Documents.Pages.Queries;
@@ -9,6 +10,7 @@ public static class GetPageHistoryEndpoint
     {
         group.MapResourceGet("/history", HandleAsync)
             .WithName("Documents.Pages.GetPageHistory")
+            .Produces<List<PageHistoryDto>>(StatusCodes.Status200OK, "application/json")
             .WithTags("Documents.Pages")
             .WithSummary("Get page history");
         return group;

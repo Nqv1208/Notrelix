@@ -5,6 +5,7 @@ import {
   type WorkspaceApiClient,
   type WorkspaceEndpoints,
 } from "../../../core/api/workspace.service";
+import type { CreateWorkspaceInput } from "../../../core/types/workspace";
 import { workspaceQueryKeys } from "../../../query/keys";
 
 interface UseCreateWorkspaceDeps {
@@ -23,7 +24,8 @@ export function createUseCreateWorkspace({
     const queryClient = useQueryClient();
 
     return useMutation({
-      mutationFn: service.create,
+      mutationFn: (input: CreateWorkspaceInput) =>
+        service.create(accountId, input),
       onSuccess: () => {
         queryClient.invalidateQueries({
           queryKey: workspaceQueryKeys.all(accountId),

@@ -237,6 +237,7 @@ export function MyWorkBar({
   createName,
   onCreateName,
   onCreate,
+  onOpenForm,
   groupAvailable,
   onGroup,
 }: {
@@ -262,8 +263,10 @@ export function MyWorkBar({
   onCreateBoard: (id: string) => void;
   createName: string;
   onCreateName: (value: string) => void;
-  /** `null`: creating an item already assigned to the member has no write yet. */
+  /** `null`: no name or no Board chosen yet, so nothing can be created. */
   onCreate: (() => void) | null;
+  /** Opens the full item form with the name and Board chosen here; `null` hides the action. */
+  onOpenForm: (() => void) | null;
   groupAvailable: Record<MyWorkGroupBy, boolean>;
 }) {
   const close = () => onMenu(null);
@@ -565,7 +568,16 @@ export function MyWorkBar({
             <p className="m-0 text-crumb leading-[1.5] font-normal text-meta-foreground">
               {copy.list.addNote}
             </p>
-            <div className="flex justify-end gap-1.5">
+            <div className="flex items-center justify-end gap-1.5">
+              {onOpenForm ? (
+                <button
+                  type="button"
+                  onClick={onOpenForm}
+                  className={cn(SMALL_OUTLINE_CLASS, "mr-auto")}
+                >
+                  {copy.list.addMore}
+                </button>
+              ) : null}
               <button
                 type="button"
                 onClick={close}

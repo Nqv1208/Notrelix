@@ -5,8 +5,12 @@ namespace Notrelix.Domain.WorkManagement.Fields;
 
 public static class FieldValueValidator
 {
-    // ISO-8601 round-trip format only
-    private const string DateFormat = "O";
+    // ISO-8601 with an offset; the fraction may carry 0 to 7 digits (clients serialise milliseconds).
+    private static readonly string[] DateFormats =
+    [
+        "yyyy-MM-ddTHH:mm:ssK",
+        "yyyy-MM-ddTHH:mm:ss.FFFFFFFK",
+    ];
 
     public static void Validate(FieldValue value, FieldType type, FieldSettings settings)
     {
@@ -132,8 +136,8 @@ public static class FieldValueValidator
                     if (kind != JsonValueKind.String)
                         throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidDateValue, "Value for field type Date must be a string representation of DateTimeOffset.");
                     var dateStr = element.GetString();
-                    if (dateStr is not null && !DateTimeOffset.TryParseExact(dateStr, DateFormat, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out _))
-                        throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidDateValue, $"Value '{dateStr}' is not a valid ISO-8601 round-trip date. Expected format: yyyy-MM-ddTHH:mm:ss.fffffffK");
+                    if (dateStr is not null && !DateTimeOffset.TryParseExact(dateStr, DateFormats, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out _))
+                        throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidDateValue, $"Value '{dateStr}' is not a valid ISO-8601 round-trip date. Expected format: yyyy-MM-ddTHH:mm:ss[.fraction]K");
                     break;
 
                 case FieldType.Formula:

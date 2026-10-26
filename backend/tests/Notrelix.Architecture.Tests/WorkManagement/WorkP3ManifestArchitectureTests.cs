@@ -86,6 +86,9 @@ public sealed class WorkP3ManifestArchitectureTests
         ["BoardItems.GetBoardItemQuery"] = new(Disposition.Harden, "CONC-002"),
         ["BoardItems.GetBoardItemsQuery"] = new(Disposition.Harden, "CONC-002, QUAL-002"),
         ["BoardItems.GetMyBoardItemsQuery"] = new(Disposition.Keep, "-"),
+        ["BoardItems.GetMyWorkExtendedQuery"] = new(Disposition.Keep, "-"),
+        ["BoardItems.GetHomeFeedQuery"] = new(Disposition.Keep, "-"),
+        ["BoardItems.GetWorkspaceInboxQuery"] = new(Disposition.Keep, "-"),
         ["BoardItems.CreateBoardItemCommand"] = new(Disposition.Harden, "APP-ITEM-001"),
         ["BoardItems.MoveBoardItemCommand"] = new(Disposition.Harden, "APP-ITEM-001, CONC-001", VersionedTarget: true),
         ["BoardItems.DuplicateBoardItemCommand"] = new(Disposition.Harden, "APP-ITEM-002"),
@@ -96,9 +99,15 @@ public sealed class WorkP3ManifestArchitectureTests
         ["BoardItems.UpdateBoardItemStatusCommand"] = new(Disposition.Keep, "-"),
         ["BoardItems.SetBoardItemDueDateCommand"] = new(Disposition.Keep, "-"),
         ["BoardItems.CompleteBoardItemCommand"] = new(Disposition.Keep, "-"),
+        ["BoardItems.ReopenBoardItemCommand"] = new(Disposition.Keep, "-"),
+        ["BoardItems.CreateChildItemCommand"] = new(Disposition.Keep, "-"),
+        ["BoardItems.MoveChildItemCommand"] = new(Disposition.Keep, "-", VersionedTarget: true),
+        ["BoardItems.ListChildItemsQuery"] = new(Disposition.Keep, "-"),
         ["BoardItems.AssignBoardItemMemberCommand"] = new(Disposition.Keep, "-"),
         ["BoardItems.UnassignBoardItemMemberCommand"] = new(Disposition.Keep, "-"),
         ["BoardItems.ArchiveBoardItemCommand"] = new(Disposition.Keep, "-"),
+        ["BoardItems.BulkUpdateBoardItemsCommand"] = new(Disposition.Keep, "-"),
+        ["BoardItems.RemindBoardItemOwnersCommand"] = new(Disposition.Keep, "-"),
         ["BoardItems.UnarchiveBoardItemCommand"] = new(Disposition.Keep, "-"),
         ["BoardItems.DeleteBoardItemCommand"] = new(Disposition.Keep, "-"),
         ["BoardItems.RestoreBoardItemCommand"] = new(Disposition.Keep, "LIFE-001 (done)"),
@@ -161,7 +170,13 @@ public sealed class WorkP3ManifestArchitectureTests
             "Notrelix.Application/Features/WorkManagement/BoardItems/Services/MoveBoardItemUseCase.cs",
             "Notrelix.Application/Features/WorkManagement/BoardItems/Commands/DuplicateBoardItem/DuplicateBoardItem.cs",
             "Notrelix.Application/Features/WorkManagement/BoardGroups/Commands/DuplicateBoardGroup/DuplicateBoardGroup.cs",
+            "Notrelix.Application/Features/WorkManagement/BoardGroups/Commands/DeleteBoardGroup/DeleteBoardGroup.cs",
             "Notrelix.Infrastructure/Data/Seed/InitDb.cs",
+        ],
+        ["ChildItems (board_items: parent_item_id, sub-items)"] =
+        [
+            "Notrelix.Application/Features/WorkManagement/BoardItems/Commands/CreateChildItem/CreateChildItem.cs",
+            "Notrelix.Application/Features/WorkManagement/BoardItems/Commands/MoveChildItem/MoveChildItem.cs",
         ],
         ["BoardGroups (board_groups: board_id)"] =
         [
@@ -203,6 +218,9 @@ public sealed class WorkP3ManifestArchitectureTests
         "Notrelix.Application/Features/WorkManagement/Forms/Commands/AddFormQuestion/AddFormQuestion.cs",
         "Notrelix.Application/Features/WorkManagement/Forms/Commands/UpdateFormQuestion/UpdateFormQuestion.cs",
         "Notrelix.Infrastructure/Data/Converters/ValueConverters.cs",
+        // Development-only seed repair: places department Spaces (Workspaces' own sibling order) exactly
+        // as the seed does; it writes no Work ordering position.
+        "Notrelix.Infrastructure/Data/Seed/DevelopmentSeedRepair.cs",
         // The canonical ordering mechanism itself (WM-V3-ORDER-002/004): it generates
         // keys for writers and never persists a position on its own.
         "Notrelix.Application/Features/WorkManagement/Ordering/WorkPlacementResolver.cs",
@@ -318,8 +336,8 @@ public sealed class WorkP3ManifestArchitectureTests
             .Where(v => v.Validated is not null)
             .ToLookup(v => v.Validated!, v => v.Validator);
 
-        // 22 from SPEC WM-V3-DEC-007 + MoveBoardToSpaceCommand (ADR-009 Space placement).
-        targets.Should().HaveCount(23, "the P3 versioned-request manifest (SPEC WM-V3-DEC-007) is closed-world");
+        // 22 from SPEC WM-V3-DEC-007 + MoveBoardToSpaceCommand (ADR-009 Space placement) + MoveChildItemCommand.
+        targets.Should().HaveCount(24, "the P3 versioned-request manifest (SPEC WM-V3-DEC-007) is closed-world");
         var violations = new List<string>();
         foreach (var key in targets)
         {

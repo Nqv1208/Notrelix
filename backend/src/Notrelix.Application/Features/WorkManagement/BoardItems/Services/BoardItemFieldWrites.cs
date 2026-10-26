@@ -42,13 +42,21 @@ public static class BoardItemFieldWrites
             return;
         }
 
+        var isStatusWrite = statusField is not null && field.Id == statusField.Id;
+        var previousOptionId = isStatusWrite
+            ? WorkItemSemanticFields.ReadOptionId(item.FieldValues.FirstOrDefault(v => v.FieldId == field.Id)?.Value)
+            : null;
+
         item.UpdateFieldValue(field, value, actorUserId, now);
 
-        if (statusField is not null && field.Id == statusField.Id)
+        if (isStatusWrite)
         {
             var optionId = WorkItemSemanticFields.ReadOptionId(value);
-            var category = statusField.Options.FirstOrDefault(option => option.Id == optionId)?.Category;
-            item.SyncCompletionWithStatus(category, actorUserId, now);
+            var category = statusField!.Options.FirstOrDefault(option => option.Id == optionId)?.Category;
+            // Remembered for reopening, only when it was a status that is not done itself.
+            var previousIsOpen = previousOptionId is not null
+                && statusField.Options.FirstOrDefault(option => option.Id == previousOptionId)?.Category is not (null or WorkStatusCategory.Done);
+            item.SyncCompletionWithStatus(category, actorUserId, now, previousIsOpen ? previousOptionId : null);
         }
     }
 

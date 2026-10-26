@@ -1,7 +1,7 @@
 ---
 document_id: ADR-010
 document_type: architecture-decision
-status: Proposed
+status: Accepted
 owner: backend-architecture
 applies_to:
   - backend
@@ -31,7 +31,7 @@ review_on:
 
 ## Status
 
-Proposed
+Accepted
 
 ## Date
 
@@ -223,3 +223,21 @@ Proposed 2026-10-24 from the accepted recommendation of 2026-10-23 ("Command sea
 read facade that fans out to per-context authorized search ports ... ADR needed before index tables").
 Open questions for the acceptor: the per-kind result caps and the ranking weights; whether Item search is
 in the first release or only Boards and Pages; whether Space and Team names are part of the facade.
+
+Accepted 2026-10-27 by the lead (the product owner delegated open product decisions) and built in the shape below.
+Answers to the open questions: per-kind caps are 6 Items, 5 Pages and 5 Boards; ranking is the caller's own
+Items first, then name or key matches before sub-item matches, then soonest due; Items are in the first
+release; Space and Team names are not part of the facade yet.
+
+Built first release, where it differs from the Decision text:
+
+- Matching uses a mark- and case-insensitive regular expression built from the typed text
+  (`Notrelix.Application.Common.Search.SearchTextFolding`, matched with `~` over the stored text) instead of
+  `unaccent`/`pg_trgm`, because the extensions are not enabled by any migration. The typed text is a
+  bound parameter and every metacharacter of it is escaped. No index serves it yet, so each query scans the
+  Workspace's readable rows; add the extension and trigram indexes (decision 5) when a measured need appears.
+- Pages are searched by title only; page text is not searched (block content is stored as JSON, so a text
+  match needs its own derived text, which is a separate decision).
+- A result of a Board or Page is gated by the Governance visibility id sets inside each port's statement; a
+  Page location names only readable ancestors; a Space id is disclosed only when the caller can see that Space.
+- A context port that fails fails the request; the `partial` answer of decision 7 is not built.

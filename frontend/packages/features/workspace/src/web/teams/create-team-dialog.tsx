@@ -5,6 +5,11 @@ import {
   DialogDescription,
   DialogTitle,
   cn,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@notrelix/ui-web";
 import { identityToneFor } from "../../core/model/navigation";
 import { formatCopy } from "../shell/shell-models";
@@ -207,23 +212,28 @@ export function CreateTeamDialog({
                   {d.required}
                 </span>
               </label>
-              <select
-                id="team-new-lead"
+              <Select
                 required
-                aria-required="true"
                 value={leadId}
-                onChange={(event) => setLeadId(event.target.value)}
-                aria-invalid={leadError ? true : undefined}
-                className={INPUT}
+                onValueChange={(value) => setLeadId(value)}
               >
-                <option value="">{d.leadPlaceholder}</option>
-                {candidates.map((candidate) => (
-                  <option key={candidate.id} value={candidate.id}>
-                    {candidate.name}
-                    {candidate.email ? ` · ${candidate.email}` : ""}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger
+                  id="team-new-lead"
+                  aria-required="true"
+                  aria-invalid={leadError ? true : undefined}
+                  className="w-full"
+                >
+                  <SelectValue placeholder={d.leadPlaceholder} />
+                </SelectTrigger>
+                <SelectContent>
+                  {candidates.map((candidate) => (
+                    <SelectItem key={candidate.id} value={candidate.id}>
+                      {candidate.name}
+                      {candidate.email ? ` · ${candidate.email}` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               {leadError ? (
                 <p role="alert" className="m-0 text-crumb text-danger-text">
                   {leadError}

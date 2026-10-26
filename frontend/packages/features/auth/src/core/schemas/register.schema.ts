@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { AUTH_ERROR_KEYS } from "./auth-errors";
+import { PASSWORD_MIN_LENGTH } from "./password-policy";
 
 export const registerSchema = z
   .object({
@@ -13,7 +14,7 @@ export const registerSchema = z
     password: z
       .string()
       .min(1, AUTH_ERROR_KEYS.PASSWORD_REQUIRED)
-      .min(8, AUTH_ERROR_KEYS.PASSWORD_TOO_SHORT),
+      .min(PASSWORD_MIN_LENGTH, AUTH_ERROR_KEYS.PASSWORD_TOO_SHORT),
     confirmPassword: z.string().min(1, "Please confirm your password"),
   })
   .refine((data) => data.password === data.confirmPassword, {

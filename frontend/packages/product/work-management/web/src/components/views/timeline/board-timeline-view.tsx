@@ -8,6 +8,7 @@ import {
   useUpdateCard,
 } from "@notrelix/work-management-state";
 import type { Card, WorkStatusCategory } from "@notrelix/work-management-core";
+import { ItemCreateHost } from "../../item-create/item-create-host";
 import { BoardHeaderDataContext } from "../../board-layout/board-header-data-context";
 import type {
   ItemSheetGroup,
@@ -47,6 +48,8 @@ export interface BoardTimelineViewProps {
     id: string | undefined,
     options?: { replace?: boolean },
   ) => void;
+  /** The signed-in member (from the host's session): offers "Giao cho tôi". */
+  currentUserId?: string | null;
   /** Switches the board to the Calendar, where an item gets its first date. */
   onOpenCalendar?: () => void;
   /** The IANA time zone of the days; the runtime zone when omitted. */
@@ -86,6 +89,7 @@ export function BoardTimelineView({
   boardId,
   workspaceId,
   selectedItemId,
+  currentUserId,
   onSelectedItemChange,
   onOpenCalendar,
   timeZone: timeZoneProp,
@@ -102,6 +106,7 @@ export function BoardTimelineView({
   const todayParts = calendarParts(now, timeZone);
   const today = toDayKey(todayParts.year, todayParts.month, todayParts.day);
   const [anchorDay, setAnchorDay] = useState<DayKey>(today);
+  const [createOpen, setCreateOpen] = useState(false);
 
   const filter = useMemo(() => emptyKanbanFilter(), []);
   const kanban = useBoardKanban(boardId, workspaceId, {
@@ -290,7 +295,22 @@ export function BoardTimelineView({
         canEdit={canEdit}
         onOpenItem={(id) => onSelectedItemChange?.(id)}
         onReschedule={handleReschedule}
+        onAddItem={() => setCreateOpen(true)}
       />
+      {board && capabilities.canCreateCard ? (
+        <ItemCreateHost
+          open={createOpen}
+          onOpenChange={setCreateOpen}
+          workspaceId={workspaceId}
+          board={board}
+          groups={kanban.groups}
+          defaultGroupId={kanban.groups[0]?.id ?? ""}
+          defaultStatusId={null}
+          defaultStartDay={anchorDay}
+          defaultDueDay={anchorDay}
+          currentUserId={currentUserId}
+        />
+      ) : null}
       {selectedItemId && board ? (
         <KanbanSelectedItem
           board={board}

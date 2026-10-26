@@ -55,7 +55,7 @@ public sealed class CalendarWebhookDataSessionIntegrationTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -70,7 +70,7 @@ public sealed class CalendarWebhookDataSessionIntegrationTests : IAsyncLifetime
         var binding = CalendarIntegration.Create(
             accountId, workspaceId, connection.Id, webhookPath,
             CalendarProvider.Google, CalendarSyncDirection.Pull, Guid.NewGuid(), Now);
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.IntegrationConnections.Add(connection);
         seed.CalendarIntegrations.Add(binding);
         await seed.SaveChangesAsync();
@@ -109,7 +109,7 @@ public sealed class CalendarWebhookDataSessionIntegrationTests : IAsyncLifetime
             .Should().ContainSingle("the bootstrap enqueues exactly one processing-requested event")
             .Subject;
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         var receipt = await verify.InboundWebhookReceipts.IgnoreQueryFilters()
             .SingleAsync(r => r.Provider == Provider && r.ExternalEventId == externalEventId);
         receipt.Status.Should().Be("Captured",
@@ -154,7 +154,7 @@ public sealed class CalendarWebhookDataSessionIntegrationTests : IAsyncLifetime
         tenant.AccountId.Should().BeNull("an invalid signature must not derive any tenant");
         tenant.WorkspaceId.Should().BeNull();
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.InboundWebhookReceipts.IgnoreQueryFilters()
             .AnyAsync(r => r.Provider == Provider && r.ExternalEventId == externalEventId))
             .Should().BeFalse("untrusted callbacks must not create durable receipt rows");
@@ -236,7 +236,7 @@ public sealed class CalendarWebhookDataSessionIntegrationTests : IAsyncLifetime
             HandleCalendarWebhookCommandHandler>();
 
         services.AddSingleton<ICurrentTenantContext>(tenant);
-        services.AddScoped<ApplicationDbContext>(_ => _db.CreateContext(tenant));
+        services.AddScoped<ApplicationDbContext>(_ => _db.CreateOwnerContext(tenant));
         services.AddScoped<IIntegrationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<Notrelix.Application.Features.WorkManagement.Abstractions.IWorkManagementDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<Notrelix.Application.Features.Documents.Abstractions.IDocumentDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());

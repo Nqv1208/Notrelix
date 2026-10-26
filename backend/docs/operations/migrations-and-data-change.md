@@ -771,6 +771,14 @@ operation.
 
 This allows policy application to be separated from ordinary API runtime.
 
+`--migrate`, `--seed` and `--rls-apply` connect with `ConnectionStrings:NotrelixMigrationDb` (the database owner),
+never with the serving logins. `--rls-apply` also provisions the two runtime LOGIN roles: after the policy pack it
+sets `notrelix_app` and `notrelix_worker` to `LOGIN` with the passwords carried by `ConnectionStrings:NotrelixDb` and
+`ConnectionStrings:NotrelixWorkerDb` (the run fails when either string is missing, names another login or has no
+password). The operation is idempotent and is the way to rotate a login password or to provision an existing
+volume or external database; run `--migrate` then `--rls-apply` on every release. A fresh compose-managed
+volume additionally gets the roles from `infra/postgres/init/20-create-runtime-logins.sh`.
+
 ---
 
 # 48. BE-OPS-DATA-024 — RLS administration uses least privilege

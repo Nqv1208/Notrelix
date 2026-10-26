@@ -9,6 +9,7 @@ import {
   OnboardingSurface,
   emptyDraft,
   newInviteRow,
+  onboardingSuggestions,
   slugFromName,
   useOnboardingCopy,
   type AddressCheck,
@@ -17,6 +18,7 @@ import {
   type OnboardingStepId,
   type OnboardingSummary,
 } from "@notrelix/features-workspace/web";
+import { clearApplicationCache } from "@/composition/application-lifecycle";
 import { AuthGuard } from "@/shell/guards/auth-guard";
 import { useOnboardingApi } from "./use-onboarding-api";
 
@@ -85,7 +87,9 @@ function SetupFlow() {
   const [summary, setSummary] = useState<OnboardingSummary | null>(null);
   const [invitesSent, setInvitesSent] = useState(0);
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState<"unreachable" | null>(null);
+  const [error, setError] = useState<
+    "unreachable" | "emailNotConfirmed" | null
+  >(null);
   const [today] = useState(() => new Date());
 
   // Resume what "Lưu và thoát" kept, once.
@@ -141,33 +145,40 @@ function SetupFlow() {
     };
   }, [api, slug, step, created.workspace]);
 
-  const catalog = useQuery({
-    queryKey: [
-      "onboarding",
-      "catalog",
+  // The suggestions are starting points the page computes (no server owns
+  // them); only what the person confirms is stored.
+  const suggestionsOpen = step !== "workspace" || created.workspace;
+  const catalog = useMemo(
+    () =>
+      suggestionsOpen
+        ? onboardingSuggestions(
+            draft.workspace.size,
+            draft.workspace.name,
+            draft.workspace.locale,
+          )
+        : null,
+    [
+      suggestionsOpen,
       draft.workspace.size,
       draft.workspace.name,
+      draft.workspace.locale,
     ],
-    queryFn: () => api.catalog(draft.workspace.size, draft.workspace.name),
-    enabled: step !== "workspace" || created.workspace,
-    staleTime: 60_000,
-    retry: false,
-  });
+  );
 
   // The first visit to the departments step starts from the suggestions.
   useEffect(() => {
-    if (step !== "departments" || !catalog.data) return;
+    if (step !== "departments" || !catalog) return;
     if (draft.departments.length > 0 || created.departments) return;
     setDraft((current) => ({
       ...current,
-      departments: catalog.data.departments.map((entry, index) => ({
+      departments: catalog.departments.map((entry, index) => ({
         key: entry.key,
         name: entry.name,
         color:
           DEFAULT_COLOR_CYCLE[index % DEFAULT_COLOR_CYCLE.length] ?? "blue",
       })),
     }));
-  }, [step, catalog.data]);
+  }, [step, catalog]);
 
   // The invitation step starts with empty rows to type into.
   useEffect(() => {
@@ -201,8 +212,13 @@ function SetupFlow() {
     setError(null);
     try {
       await work();
-    } catch {
-      setError("unreachable");
+    } catch (failure) {
+      // The backend answers 403 until the address is confirmed.
+      setError(
+        (failure as { status?: number }).status === 403
+          ? "emailNotConfirmed"
+          : "unreachable",
+      );
     } finally {
       setPending(false);
     }
@@ -310,6 +326,11 @@ function SetupFlow() {
       }
     });
 
+  const onResendConfirmation = () =>
+    void run(async () => {
+      await runtimeClient.api.post("/auth/email-verification/request", {});
+    });
+
   const onBack = () => {
     if (step === "departments") setStep("workspace");
     else if (step === "invite") setStep("departments");
@@ -339,7 +360,7 @@ function SetupFlow() {
         } satisfies SavedData as unknown as Record<string, unknown>,
       });
       await runtimeClient.api.post(runtimeClient.endpoints.auth.logout, {});
-      queryClient.clear();
+      clearApplicationCache(queryClient, { sessionEnded: true });
       await navigate({ to: "/sign-in", replace: true });
     });
 
@@ -352,7 +373,7 @@ function SetupFlow() {
       email: user?.email ?? "",
       ownerName,
       address,
-      catalog: catalog.data ?? null,
+      catalog,
       summary,
       pending,
       error,
@@ -370,7 +391,7 @@ function SetupFlow() {
       user?.email,
       ownerName,
       address,
-      catalog.data,
+      catalog,
       summary,
       pending,
       error,
@@ -396,6 +417,7 @@ function SetupFlow() {
       onBack={onBack}
       onSkip={onSkip}
       onExit={onExit}
+      onResendConfirmation={onResendConfirmation}
       onEnterHome={() =>
         void navigate({
           to: "/workspaces/$workspaceId",

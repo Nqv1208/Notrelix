@@ -26,11 +26,38 @@ public static class AutomationActionValidator
             case "MoveItem":
                 ValidateMoveItemConfig(action.Configuration);
                 break;
+            case "ChangeStatus":
+                ValidateRequiredIds(action.Configuration, "ChangeStatus", "optionId");
+                break;
+            case "AssignPerson":
+                ValidateRequiredIds(action.Configuration, "AssignPerson", "userId");
+                break;
             case "NotifyMember":
                 ValidateNotifyMemberConfig(action.Configuration);
                 break;
             default:
                 throw new BusinessRuleException(AutomationRuleCodes.Automation_ActionValidator_UnknownActionType, $"Unknown action type '{action.Type}'.");
+        }
+    }
+
+    private static void ValidateRequiredIds(string? configuration, string actionType, string property)
+    {
+        var message = $"{actionType} action configuration must contain a '{property}'.";
+        if (string.IsNullOrWhiteSpace(configuration))
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_Action_InvalidConfigJson, message);
+        try
+        {
+            using var doc = JsonDocument.Parse(configuration);
+            if (doc.RootElement.ValueKind != JsonValueKind.Object
+                || !doc.RootElement.TryGetProperty(property, out var id)
+                || id.ValueKind != JsonValueKind.String
+                || !Guid.TryParse(id.GetString(), out var parsed)
+                || parsed == Guid.Empty)
+                throw new BusinessRuleException(AutomationRuleCodes.Automation_Action_InvalidConfigJson, message);
+        }
+        catch (JsonException ex)
+        {
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_Action_InvalidConfigJson, $"Invalid {actionType} configuration JSON: {ex.Message}");
         }
     }
 

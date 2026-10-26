@@ -1,21 +1,26 @@
 import { expect, test } from "@playwright/test";
-import { openWorkspace, realUsers, signIn } from "./support/real-session";
+import {
+  findWorkspace,
+  openBoard,
+  realUsers,
+  signIn,
+} from "./support/real-session";
 
-test("workspace transition does not retain the previous workspace board projection", async ({
+test("workspace transition does not retain the previous workspace board", async ({
   page,
 }) => {
   await signIn(page, realUsers.admin);
-  await openWorkspace(page, "Workspace 1");
-  await expect(page.getByText(/^Product Roadmap \(/).first()).toBeVisible();
+  const { board } = await openBoard(page, "Workspace 2", "Bug Tracker");
+  const other = await findWorkspace(page, "Workspace 3");
 
-  await page.getByRole("button", { name: /Workspace 1/ }).click();
-  await page.getByRole("menuitem", { name: /Workspace 2/ }).click();
-  await expect(page).toHaveURL(/\/workspaces\/[^/]+$/);
-  await expect(page.getByText(/^Bug Tracker \(/).first()).toBeVisible();
-  await expect(page.getByText(/^Product Roadmap \(/)).toHaveCount(0);
+  await page
+    .getByRole("button", { name: /open the Notrelix system rail/ })
+    .click();
+  await page.getByRole("button", { name: /^Workspace 3(,|$)/ }).click();
 
-  await page.getByRole("button", { name: /Workspace 2/ }).click();
-  await page.getByRole("menuitem", { name: /Workspace 1/ }).click();
-  await expect(page.getByText(/^Product Roadmap \(/).first()).toBeVisible();
-  await expect(page.getByText(/^Bug Tracker \(/)).toHaveCount(0);
+  await expect(page).toHaveURL(new RegExp(`/workspaces/${other.id}`));
+  await expect(page).not.toHaveURL(new RegExp(board.id));
+  await expect(
+    page.getByRole("heading", { level: 1, name: board.title }),
+  ).toHaveCount(0);
 });

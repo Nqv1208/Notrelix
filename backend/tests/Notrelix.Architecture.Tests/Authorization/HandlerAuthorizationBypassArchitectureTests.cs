@@ -84,6 +84,20 @@ public class HandlerAuthorizationBypassArchitectureTests : ArchitectureTestBase
             "Workspaces bounded context — access-grant projection consistency",
             "Review if grant projection inputs change."),
         new(
+            "LeaveWorkspace.cs",
+            "LeaveWorkspaceCommandHandler.Handle",
+            "m.Role == WorkspaceRole.Owner (active owner count)",
+            "Last-owner protection: leaving removes the principal's own membership, and the last active owner must not leave; the count constrains the DOMAIN transition of the principal's own member row (WorkspaceMember.Remove). Pipeline ViewWorkspace authorization runs first and proves the principal is a member.",
+            "Workspaces bounded context — WorkspaceMember aggregate lifecycle",
+            "Review if WorkspaceMember.Remove semantics change or a dedicated leave/ownership-handover workflow replaces last-owner protection."),
+        new(
+            "GetMyWorkspaces.cs",
+            "GetMyWorkspacesQueryHandler.Handle",
+            "row.Role (own role shapes the projection: member count hidden from Guest, department count shown to Owner/Admin, canLeave for the last Owner)",
+            "Data flow, not a decision: every row is the principal's own active membership, so no access is granted or denied by the role. The role only shapes what the page shows (GOV-009 hides the member list from a Guest; department figures are for people who administer the Workspace) and whether leaving is possible.",
+            "Workspaces bounded context — own-membership read model",
+            "Review if per-workspace ViewMembers/ManageSpaces evaluation becomes available to list queries."),
+        new(
             "ProvisionPersonalWorkspaceCommand.cs",
             "ProvisionPersonalWorkspaceCommandHandler.Handle",
             "WorkspaceRole.Owner (bootstrap construction for personal workspace)",

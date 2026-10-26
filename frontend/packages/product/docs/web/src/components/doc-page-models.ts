@@ -4,7 +4,7 @@
  * facts (department, people, referenced tasks) into these; the pure surfaces
  * only render them.
  */
-import type { BlockType, PageStatus } from "@notrelix/docs-core";
+import type { BlockType, Mark } from "@notrelix/docs-core";
 
 /** The department/identity colours of the design (one fill in every appearance). */
 export type DocTone = "blue" | "gold" | "coral" | "sage" | "crimson" | "violet";
@@ -52,7 +52,11 @@ export function isRestrictedTask(
 
 /** Inline content of a text block. */
 export type DocSegment =
-  | { readonly kind: "text"; readonly text: string }
+  | {
+      readonly kind: "text";
+      readonly text: string;
+      readonly marks?: readonly Mark[];
+    }
   | { readonly kind: "task"; readonly task: DocTaskResolution }
   /** Text a comment is anchored to (yellow mark). */
   | { readonly kind: "mark"; readonly text: string }
@@ -65,7 +69,7 @@ export type DocBlockFormat = {
   readonly italic?: boolean;
   readonly underline?: boolean;
   readonly strike?: boolean;
-  readonly align?: "left" | "center" | "right";
+  readonly align?: "left" | "center" | "right" | "justify";
 };
 
 interface DocBlockBase {
@@ -107,13 +111,50 @@ export type DocBlockView =
       readonly text: string;
     })
   | (DocBlockBase & { readonly kind: "divider" })
+  /** A link to another page; `title` is null while none is chosen or when it cannot be read. */
+  | (DocBlockBase & {
+      readonly kind: "pageReference";
+      readonly pageId: string | null;
+      readonly title: string | null;
+      readonly icon: string | null;
+      readonly href?: string;
+      /** A page is named but the viewer cannot read it (never says whether it exists). */
+      readonly unavailable: boolean;
+    })
   | (DocBlockBase & {
       readonly kind: "liveTable";
+      readonly boardId: string | null;
+      /**
+       * `unset`: no board chosen. `loading`: the board read is pending.
+       * `unavailable`: the viewer cannot read the board (never says whether
+       * it exists). `ready`: the board's own facts follow.
+       */
+      readonly state: "unset" | "loading" | "ready" | "unavailable";
       readonly boardName: string;
       readonly filterLabel: string;
       readonly boardHref?: string;
+      /** Items on the board by status, for the compact summary. */
+      readonly counts?: Readonly<Record<DocTaskStatus, number>>;
+      readonly total?: number;
       readonly tasks: readonly DocTaskResolution[];
     });
+
+/** What the host knows of an embedded board, read with the viewer's own access. */
+export interface DocBoardEmbed {
+  readonly state: "loading" | "ready" | "unavailable";
+  readonly name: string;
+  readonly href?: string;
+  readonly counts: Readonly<Record<DocTaskStatus, number>>;
+  readonly total: number;
+  /** The first few items, in board order. */
+  readonly tasks: readonly DocTaskRef[];
+}
+
+/** A board the picker offers for a board reference. */
+export interface DocPickerBoardView {
+  readonly id: string;
+  readonly title: string;
+}
 
 /** The viewer-facing facts of the document's department (Space). */
 export interface DocSpaceView {
@@ -136,7 +177,6 @@ export interface DocChip {
 export interface DocHeaderView {
   readonly title: string;
   readonly crumbs: readonly string[];
-  readonly status: PageStatus;
   /** "Đỗ Khánh Linh sửa lúc 16:40 hôm qua" parts. */
   readonly editedBy: string | null;
   readonly editedAt: string | null;
@@ -147,9 +187,18 @@ export type DocSaveState = "saved" | "saving" | "error";
 
 export interface DocTocEntry {
   readonly id: string;
-  readonly level: 1 | 2;
+  readonly level: 1 | 2 | 3 | 4;
   readonly text: string;
   readonly active?: boolean;
+}
+
+/** What a mention chip or a page reference in the text points at, from the host. */
+export interface DocMarkTargets {
+  /** The member behind a mention (a neutral entry when not known). */
+  readonly person: (userId: string) => DocPerson;
+  /** The page when the viewer can read it; `null` reads as unavailable. */
+  readonly page: (pageId: string) => { readonly title: string } | null;
+  readonly openPage?: (pageId: string) => void;
 }
 
 export interface DocCommentView {
@@ -157,12 +206,24 @@ export interface DocCommentView {
   readonly author: DocPerson;
   /** Text the comment is anchored to, when it carries one. */
   readonly quote: string | null;
+  /** The quote is a stored text anchor (it can be revealed in the page). */
+  readonly anchored?: boolean;
+  /** The anchored text is no longer on the page. */
+  readonly detached?: boolean;
+  /** The thread being looked at (clicked in the text or in the panel). */
+  readonly active?: boolean;
   readonly body: string;
   readonly when: string;
+  /** The thread was marked resolved; its text is no longer highlighted. */
+  readonly resolved?: boolean;
+  /** The viewer wrote it (only the author is offered Delete). */
+  readonly mine?: boolean;
 }
 
 export interface DocVersionView {
   readonly id: string;
+  /** Why the entry exists; names it when it has no name of its own. */
+  readonly kind: "automatic" | "named" | "restore";
   readonly author: DocPerson;
   readonly time: string;
   /** Day group heading ("Hôm qua", "10/10"). */
@@ -201,6 +262,75 @@ export interface DocShareView {
   readonly space: DocSpaceView;
   readonly spaceMemberCount: number | null;
   readonly members: readonly DocShareMember[];
+  /**
+   * Workspace members the viewer may give access to; omitted keeps the invite
+   * field disabled (the viewer cannot manage the page's permissions).
+   */
+  readonly candidates?: readonly DocPerson[];
+}
+
+/** A trashed page in the trash list. */
+export interface DocTrashPageView {
+  readonly id: string;
+  readonly title: string;
+  readonly icon: string | null;
+}
+
+export interface DocTrashView {
+  readonly pages: readonly DocTrashPageView[];
+  readonly loading: boolean;
+  /** A restore or delete failed. */
+  readonly failed: boolean;
+  /** The page a write is running on. */
+  readonly busyId: string | null;
+}
+
+/** A page the picker offers for a page reference. */
+export interface DocPickerPageView {
+  readonly id: string;
+  readonly title: string;
+  readonly icon: string | null;
+  /** The department it sits in. */
+  readonly detail: string | null;
+}
+
+/** The convert-to-task dialog: boards the viewer can add to and the chosen board's groups. */
+export interface DocConvertView {
+  readonly boards: readonly { readonly id: string; readonly title: string }[];
+  /** The groups of the chosen board; `null` while they load. */
+  readonly groups:
+    readonly { readonly id: string; readonly name: string }[] | null;
+  readonly boardId: string | null;
+  readonly lineText: string;
+  readonly busy: boolean;
+  readonly failed: boolean;
+}
+
+/** What the history dialogs show while a write runs or after it failed. */
+export interface DocHistoryActionView {
+  /** The compared version can be restored (the viewer may edit). */
+  readonly canRestore: boolean;
+  readonly saving: boolean;
+  readonly saveFailed: boolean;
+  readonly restoring: boolean;
+  /** `conflict` = the page changed since it was read (nothing was restored). */
+  readonly restoreFailed: "conflict" | "failed" | null;
+}
+
+/** The "Save as template" dialog's write state. */
+export interface DocTemplateActionView {
+  readonly saving: boolean;
+  readonly failed: boolean;
+}
+
+/** The import dialog's state: reading and cleaning the file, then creating the page. */
+export interface DocImportView {
+  readonly busy: boolean;
+  /** Why the chosen file was refused or could not be imported. */
+  readonly error: "unsupported" | "tooLarge" | "empty" | "failed" | null;
+  readonly fileName: string | null;
+  /** Images of a Word file that were not imported. */
+  readonly imagesDropped: number;
 }
 
 export type DocPanelTab = "links" | "toc" | "comments";
@@ -209,6 +339,22 @@ export type DocOverlay =
   | { readonly kind: "none" }
   | { readonly kind: "fileMenu"; readonly downloadOpen?: boolean }
   | { readonly kind: "share" }
+  | { readonly kind: "trash" }
+  | { readonly kind: "saveVersion" }
+  | { readonly kind: "restoreVersion" }
+  | { readonly kind: "saveTemplate" }
+  | { readonly kind: "importPage" }
+  | { readonly kind: "shortcuts" }
+  | { readonly kind: "wordCount" }
+  | { readonly kind: "pageInfo" }
+  | { readonly kind: "pageSetup" }
+  | { readonly kind: "pagePicker"; readonly blockId: string }
+  | { readonly kind: "boardPicker"; readonly blockId: string }
+  | {
+      readonly kind: "convertTask";
+      readonly blockId: string;
+      readonly boardId: string | null;
+    }
   | {
       readonly kind: "slash";
       readonly blockId: string;
@@ -226,7 +372,17 @@ export type DocOverlay =
       readonly before: string;
     };
 
+/** A member's edit a stored change replaced, kept until they use or drop it. */
+export interface DocRecoveryView {
+  readonly id: string;
+  /** The text the member had in the block (empty when they removed it). */
+  readonly text: string;
+}
+
 export interface DocPageCallbacks {
+  readonly onRecoveryCopy?: (id: string) => void;
+  readonly onRecoveryReapply?: (id: string) => void;
+  readonly onRecoveryDismiss?: (id: string) => void;
   readonly onTitleCommit?: (title: string) => void;
   readonly onBlockCommit?: (blockId: string, text: string) => void;
   readonly onBlockTrigger?: (
@@ -241,7 +397,22 @@ export interface DocPageCallbacks {
   ) => void;
   readonly onBlockTriggerClose?: () => void;
   readonly onTodoToggle?: (blockId: string, checked: boolean) => void;
+  /** Opens the convert-to-task dialog for a checklist line. */
   readonly onTodoConvert?: (blockId: string) => void;
+  readonly onConvertBoard?: (boardId: string) => void;
+  readonly onConvertConfirm?: (
+    blockId: string,
+    target: { readonly boardId: string; readonly groupId: string },
+  ) => void;
+  /** Moves the open page to the trash. */
+  readonly onTrashPage?: () => void;
+  readonly onOpenTrash?: () => void;
+  readonly onRestorePage?: (pageId: string) => void;
+  readonly onDeletePage?: (pageId: string) => void;
+  readonly onOpenPagePicker?: (blockId: string) => void;
+  readonly onPickPage?: (blockId: string, pageId: string) => void;
+  readonly onOpenBoardPicker?: (blockId: string) => void;
+  readonly onPickBoard?: (blockId: string, boardId: string) => void;
   readonly onBlockDeleteEmpty?: (blockId: string) => void;
   readonly onSlashSelect?: (blockId: string, type: BlockType) => void;
   readonly onTocSelect?: (id: string) => void;
@@ -250,10 +421,12 @@ export interface DocPageCallbacks {
   readonly onOpenFileMenu?: () => void;
   readonly onNewDoc?: () => void;
   readonly onToggleDownload?: () => void;
-  readonly onDownload?: (format: "pdf" | "markdown") => void;
+  readonly onDownload?: (format: "pdf" | "markdown" | "html") => void;
   readonly onCloseOverlay?: () => void;
   readonly onOpenShare?: () => void;
   readonly onPanelTab?: (tab: DocPanelTab) => void;
+  /** Opens or closes the side panel (the host remembers the choice). */
+  readonly onPanelOpenChange?: (open: boolean) => void;
   readonly onSaveRetry?: () => void;
   readonly onFormat?: (
     format:
@@ -264,9 +437,54 @@ export interface DocPageCallbacks {
   readonly onOpenVersions?: () => void;
   readonly onCloseVersions?: () => void;
   readonly onSelectVersion?: (id: string) => void;
+  /** "Save version": opens the name dialog. */
+  readonly onSaveVersionOpen?: () => void;
+  readonly onSaveVersion?: (name: string) => void;
+  /** Asks to restore the compared version (the dialog confirms). */
+  readonly onRestoreVersionOpen?: () => void;
+  readonly onRestoreVersion?: () => void;
+  readonly onSaveTemplateOpen?: () => void;
+  readonly onSaveTemplate?: (name: string, description: string) => void;
+  readonly onImportOpen?: () => void;
+  readonly onImportFile?: (file: File) => void;
   readonly onCommentCreate?: (body: string) => void;
+  /** Starts a comment on the selected text (the panel then asks for the words). */
+  readonly onCommentStart?: () => void;
+  /** Drops the selection a comment was being written on. */
+  readonly onCommentCancel?: () => void;
+  /** A comment was chosen in the panel: show its text on the page. */
+  readonly onCommentSelect?: (id: string) => void;
+  /** Highlighted text was clicked: show its thread in the panel. */
+  readonly onOpenComment?: (id: string) => void;
   readonly onCommentDelete?: (id: string) => void;
+  /** Marks a comment thread resolved. */
+  readonly onCommentResolve?: (id: string) => void;
+  /** Makes a resolved comment thread active again. */
+  readonly onCommentReopen?: (id: string) => void;
   readonly onMentionInsert?: () => void;
+  /** A page-level shortcut or menu item that opens something outside the text. */
+  readonly onEditorCommand?: (
+    command: "link" | "comment" | "wordCount" | "shortcuts" | "focusMode",
+  ) => void;
+  /** Makes a copy of the page (its text blocks; images and files stay behind). */
+  readonly onDuplicatePage?: () => void;
+  /** Moves the caret to the page title so it can be renamed. */
+  readonly onRenamePage?: () => void;
+  /** Cut, copy or paste for the Edit menu (the container owns the clipboard). */
+  readonly onClipboardAction?: (
+    action: "cut" | "copy" | "paste" | "pastePlain",
+  ) => void;
+  /** Shows a short message to the member (a toast). */
+  readonly onNotice?: (message: string) => void;
+  readonly onToggleFullWidth?: () => void;
+  readonly onToggleFocusMode?: () => void;
+  readonly onToggleToolbar?: () => void;
+  readonly onShowShortcuts?: () => void;
+  readonly onShowWordCount?: () => void;
+  readonly onShowPageInfo?: () => void;
+  readonly onPageSetupOpen?: () => void;
   readonly onOpenComments?: () => void;
   readonly onAddBlock?: (type: BlockType) => void;
+  /** Gives a workspace member access to the page at the edit level. */
+  readonly onShareInvite?: (userId: string) => Promise<void>;
 }

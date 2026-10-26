@@ -1,3 +1,4 @@
+import type { Run } from "@notrelix/docs-core";
 import type { DocSegment, DocTaskResolution } from "./doc-page-models";
 
 /**
@@ -236,4 +237,33 @@ export function diffSegments(before: string, after: string): DocSegment[] {
   }
   if (carry) out.push({ kind: "text", text: carry });
   return out;
+}
+
+/** Splits rich text runs into text (with their marks) and task segments. */
+export function runsToSegments(
+  runs: readonly Run[],
+  resolve: (taskId: string) => DocTaskResolution,
+): DocSegment[] {
+  const segments: DocSegment[] = [];
+  for (const run of runs) {
+    let cursor = 0;
+    const text = run.text;
+    const push = (value: string) => {
+      if (value) {
+        segments.push({
+          kind: "text",
+          text: value,
+          ...(run.marks.length ? { marks: run.marks } : {}),
+        });
+      }
+    };
+    for (const match of text.matchAll(TASK_TOKEN)) {
+      const index = match.index ?? 0;
+      push(text.slice(cursor, index));
+      segments.push({ kind: "task", task: resolve(match[1] ?? "") });
+      cursor = index + match[0].length;
+    }
+    push(text.slice(cursor));
+  }
+  return segments;
 }

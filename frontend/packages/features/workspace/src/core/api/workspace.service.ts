@@ -24,6 +24,10 @@ export interface WorkspaceEndpoints {
     list: string;
     detail: (workspaceId: string) => string;
   };
+  /** A workspace is created inside an Account (`Workspaces.Workspaces.CreateWorkspace`). */
+  accounts: {
+    workspaces: (accountId: string) => string;
+  };
 }
 
 /** Endpoints of the workspace settings surface (WX-SET-001). */
@@ -85,6 +89,11 @@ export function parseWorkspaceSettings(payload: unknown): WorkspaceSettings {
     allowGuestInvites: raw.allowGuestInvites === true,
     allowPublicSharing: raw.allowPublicSharing === true,
     enforceMfa: raw.enforceMfa === true,
+    timeZone:
+      typeof raw.timeZone === "string" && raw.timeZone.trim()
+        ? raw.timeZone
+        : "Asia/Ho_Chi_Minh",
+    weekStart: raw.weekStart === "sunday" ? "sunday" : "monday",
   };
 }
 
@@ -106,8 +115,21 @@ export function createWorkspaceService(
       );
     },
 
-    async create(input: CreateWorkspaceInput): Promise<WorkspaceSummary> {
-      return api.post<WorkspaceSummary>(endpoints.workspaces.list, input);
+    /**
+     * Creates the workspace in the Account (the producer answers with its id),
+     * then reads it back so the caller has the summary the lists draw.
+     */
+    async create(
+      accountId: string,
+      input: CreateWorkspaceInput,
+    ): Promise<WorkspaceSummary> {
+      const id = await api.post<string>(
+        endpoints.accounts.workspaces(accountId),
+        input,
+      );
+      return parseWorkspaceSummary(
+        await api.get<unknown>(endpoints.workspaces.detail(id)),
+      );
     },
   };
 }
@@ -151,6 +173,8 @@ export function createWorkspaceSettingsService(
         allowGuestInvites: settings.allowGuestInvites,
         defaultMemberRole: ROLE_NAME[settings.defaultMemberRole],
         invitationExpiryDays: settings.invitationExpiryDays,
+        timeZone: settings.timeZone,
+        weekStart: settings.weekStart,
         expectedVersion,
       };
       await api.put<void>(endpoints.workspaces.settings(workspaceId), body);

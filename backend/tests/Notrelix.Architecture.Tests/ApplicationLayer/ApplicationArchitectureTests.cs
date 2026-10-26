@@ -420,7 +420,30 @@ public class ApplicationArchitectureTests
         var content = File.ReadAllText(diPath);
 
         content.Should().Contain("RateLimitingOptions", "Rate limiting options must be configured in the API DI");
+        content.Should().Contain("GetSection(\"RateLimiting\")",
+            "RateLimitingOptions owns the Policies dictionary, so it binds the RateLimiting section; binding RateLimiting:Policies silently drops every policy");
+        content.Should().NotContain("GetSection(\"RateLimiting:Policies\")");
         content.Should().Contain("IRateLimitPolicyProvider", "Rate limit policy provider must be registered");
+    }
+
+    [Fact]
+    public void EveryRateLimitPolicyNameUsedByAnEndpoint_IsConfiguredInAppSettings()
+    {
+        var apiDir = Path.Combine(Path.GetDirectoryName(GetApplicationPath())!, "Notrelix.API");
+        using var settings = System.Text.Json.JsonDocument.Parse(File.ReadAllText(Path.Combine(apiDir, "appsettings.json")));
+        var configured = settings.RootElement.GetProperty("RateLimiting").GetProperty("Policies")
+            .EnumerateObject().Select(policy => policy.Name).ToHashSet(StringComparer.Ordinal);
+
+        var used = Directory.GetFiles(Path.Combine(apiDir, "Endpoints"), "*.cs", SearchOption.AllDirectories)
+            .SelectMany(file => System.Text.RegularExpressions.Regex
+                .Matches(File.ReadAllText(file), "new RateLimitPolicyAttribute\\(\"(?<name>[^\"]+)\"\\)")
+                .Select(match => match.Groups["name"].Value))
+            .Distinct()
+            .ToList();
+
+        used.Should().NotBeEmpty();
+        used.Where(name => !configured.Contains(name)).Should().BeEmpty(
+            "every RateLimitPolicyAttribute name must have a policy under RateLimiting:Policies in appsettings.json");
     }
 
     [Fact]
@@ -518,18 +541,27 @@ public class ApplicationArchitectureTests
     [Fact]
     public void RateLimitMiddleware_UsesProblemDetails()
     {
-        var middlewareDir = Path.GetDirectoryName(GetApplicationPath())!;
-        middlewareDir = Path.Combine(middlewareDir, "Notrelix.API", "Middleware");
-        var files = Directory.GetFiles(middlewareDir, "*RateLimit*.cs");
+        var apiDir = Path.Combine(Path.GetDirectoryName(GetApplicationPath())!, "Notrelix.API");
+        var files = Directory.GetFiles(Path.Combine(apiDir, "Middleware"), "*RateLimit*.cs")
+            .Append(Path.Combine(apiDir, "RateLimiting", "RateLimitEnforcer.cs"))
+            .ToArray();
 
         foreach (var file in files)
         {
             var content = File.ReadAllText(file);
-            content.Should().Contain("ProblemDetailsWriter",
-                $"{Path.GetFileName(file)} must use ProblemDetailsWriter instead of writing raw JSON");
             content.Should().NotContain("WriteAsJsonAsync",
                 $"{Path.GetFileName(file)} must not use WriteAsJsonAsync directly");
         }
+
+        // The middleware delegate the decision to the enforcer, which is the one place that answers 429.
+        foreach (var file in Directory.GetFiles(Path.Combine(apiDir, "Middleware"), "*RateLimit*.cs"))
+        {
+            File.ReadAllText(file).Should().Contain("RateLimitEnforcer",
+                $"{Path.GetFileName(file)} must delegate the permit decision to RateLimitEnforcer");
+        }
+
+        File.ReadAllText(Path.Combine(apiDir, "RateLimiting", "RateLimitEnforcer.cs")).Should().Contain("ProblemDetailsWriter",
+            "RateLimitEnforcer must answer 429 through ProblemDetailsWriter instead of writing raw JSON");
     }
 
     [Fact]

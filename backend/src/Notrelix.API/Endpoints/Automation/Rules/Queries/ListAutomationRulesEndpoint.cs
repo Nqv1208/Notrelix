@@ -1,4 +1,5 @@
 using Notrelix.API.Extensions;
+using Notrelix.Application.Features.Automation.DTOs;
 using Notrelix.Application.Features.Automation.Rules.Queries.GetWorkspaceAutomations;
 
 namespace Notrelix.API.Endpoints.Automation.Rules.Queries;
@@ -10,13 +11,14 @@ public static class ListAutomationRulesEndpoint
         group.MapWorkspaceGet("/", HandleAsync)
             .WithName("Automation.Rules.List")
             .WithTags("Automation.Rules")
-            .WithSummary("Get workspace automation rules");
+            .WithSummary("Get workspace automation rules")
+            .Produces<IReadOnlyList<AutomationRuleDto>>();
         return group;
     }
 
-    private static async Task<IResult> HandleAsync(Guid workspaceId, ISender sender)
+    private static async Task<IResult> HandleAsync(Guid workspaceId, ISender sender, Guid? boardId = null)
     {
-        var result = await sender.Send(new GetWorkspaceAutomationsQuery(workspaceId));
+        var result = await sender.Send(new GetWorkspaceAutomationsQuery(workspaceId, boardId));
         return result.ToApiResult();
     }
 }

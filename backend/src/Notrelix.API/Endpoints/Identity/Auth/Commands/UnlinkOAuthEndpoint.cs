@@ -15,7 +15,7 @@ public static class UnlinkOAuthEndpoint
             .WithTags("Identity.Auth")
             .WithSummary("Unlink an OAuth provider identity")
             .WithDescription("Removes a linked provider identity from the current user, protected by the last-primary-auth-method invariant and step-up verification.")
-            .WithMetadata(new RateLimitPolicyAttribute("AuthStrictByIp"));
+            .WithMetadata(new RateLimitPolicyAttribute("AuthSensitiveByUser"));
 
         return group;
     }

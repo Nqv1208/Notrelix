@@ -68,4 +68,32 @@ public class ApprovalRequestEventTests
         request.Version.Should().Be(version);
         request.DomainEvents.Should().NotContain(e => e is ApprovalRequestRestoredDomainEvent);
     }
+
+    [Fact]
+    public void ApprovalRequest_Created_CarriesItsOwnIdAndTheWorkspace()
+    {
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid(), WsA);
+
+        var request = ApprovalRequest.Create(Guid.NewGuid(), WsA, target, "Approve this", Actor, Now);
+
+        var created = request.DomainEvents.OfType<ApprovalRequestCreatedDomainEvent>().Single();
+        created.RequestId.Should().Be(request.Id);
+        created.WorkspaceId.Should().Be(WsA);
+    }
+
+    [Fact]
+    public void ApprovalRequest_NamingAnApprover_RaisesTheAssignmentWithTheRequestersWords()
+    {
+        var approver = Guid.NewGuid();
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid(), WsA);
+        var request = ApprovalRequest.Create(Guid.NewGuid(), WsA, target, "Approve this", Actor, Now, "Please look");
+
+        request.AddStep(1, Actor, Now, approver);
+
+        var assigned = request.DomainEvents.OfType<ApprovalStepAssignedDomainEvent>().Should().ContainSingle().Subject;
+        assigned.ApproverUserId.Should().Be(approver);
+        assigned.RequestedBy.Should().Be(Actor);
+        assigned.Note.Should().Be("Please look");
+        assigned.Target.ResourceId.Should().Be(target.ResourceId);
+    }
 }

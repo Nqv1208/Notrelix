@@ -36,7 +36,7 @@ public class RenameAccountEvidenceTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -77,7 +77,7 @@ public class RenameAccountEvidenceTests : IAsyncLifetime
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetAccount(accountId, actingUserId);
-        var context = _db.CreateContext(tenant);
+        var context = _db.CreateOwnerContext(tenant);
         var session = new EfRequestDataSession(
             context,
             new RlsSessionContext(context, Options.Create(new RlsOptions()), tenant),
@@ -245,12 +245,12 @@ public class RenameAccountEvidenceTests : IAsyncLifetime
     {
         var accountId = Guid.CreateVersion7();
 
-        await using var firstContext = _db.CreateContext(SystemTenant());
+        await using var firstContext = _db.CreateOwnerContext(SystemTenant());
         firstContext.Accounts.Add(CreateAccount(accountId));
         await firstContext.SaveChangesAsync();
 
-        await using var ctxA = _db.CreateContext(SystemTenant());
-        await using var ctxB = _db.CreateContext(SystemTenant());
+        await using var ctxA = _db.CreateOwnerContext(SystemTenant());
+        await using var ctxB = _db.CreateOwnerContext(SystemTenant());
 
         var handlerA = CreateHandler(ctxA, accountId, OwnerUserId);
         var handlerB = CreateHandler(ctxB, accountId, OwnerUserId);
@@ -280,7 +280,7 @@ public class RenameAccountEvidenceTests : IAsyncLifetime
             "the global aggregate Version concurrency token must reject the stale conflicting rename");
         accountB.Name.Should().Be("Name B");
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         var persisted = await verify.Accounts.SingleAsync(a => a.Id == accountId);
         persisted.Name.Should().Be("Name A", "one rename must win; the stale one must not overwrite it");
         persisted.Version.Should().Be(2);

@@ -637,6 +637,43 @@ PartitionKey
 
 Application owns tenant-aware behavior where Account/Workspace context exists.
 
+Configuration binding and tiers:
+
+```text
+RateLimitingOptions binds the RateLimiting section (the class owns the Policies dictionary).
+Binding RateLimiting:Policies would silently drop every policy.
+
+Startup validation:
+→ every policy needs PermitLimit > 0, WindowSeconds > 0, a known Algorithm and FailMode
+
+Declared-name proof (CI, not startup):
+→ every RateLimitPolicyAttribute name used by an endpoint must resolve to a configured policy;
+  RateLimitPolicyCatalogTests checks it on the real endpoint graph with the shipped appsettings and
+  an architecture test checks it against the source. It is not run at host startup because
+  enumerating every endpoint eagerly costs seconds per host.
+→ at runtime an unresolved name is logged as an error and the request is not limited
+
+Auth tiers (appsettings.json is the numeric evidence):
+AuthCredentialByIp    30 / 60 s  by IP      Closed  login, register, forgot/reset password,
+                                                    MFA challenge verify, identify, OAuth start/complete,
+                                                    email verification resend, invitation preview/decline/
+                                                    accept-with-registration
+AuthRefreshByIp      300 / 60 s  by IP      Open    refresh token
+CsrfByIp             120 / 60 s  by IP      Open    csrf issue
+AuthSensitiveByUser   10 / 60 s  by UserId  Closed  change password, step-up completion, session revoke,
+                                                    MFA enrollment verify, OAuth link/unlink/step-up
+GeneralAuthenticated 300 / 60 s  by UserId  Open    authenticated reads such as session list and
+                                                    security summary/activity
+```
+
+Brute-force control for credentials is account lockout (10 failures in 15 minutes locks for 15 minutes; 50 per IP per 15 minutes; 5 wrong MFA codes per challenge), not these volume limits.
+
+FailMode is executed by the middleware: Open lets the request continue when the limiter store fails (logged as a warning); Closed rethrows so the request fails.
+
+A denied request answers 429 with the shared problem shape: `errorCode = rate_limit.exceeded`, `Retry-After` header (seconds) and the `X-RateLimit-*` headers.
+
+Test hosts lift every limit (`RateLimitTestSettings`); `RateLimitTiersTests` runs a host with the shipped limits and proves each tier returns 429 past its limit.
+
 ---
 
 # 32. BE-API-014 — API rate limit uses transport-visible partition only
@@ -2430,4 +2467,36 @@ GET  /api/v1/board-items/{boardItemId}/attachments/{attachmentId}/content
   404 unknown, not on this item, link attachment, or not visible
 ```
 
+Page target (Documents image and file blocks): the same five operations under `/api/v1/pages/{pageId}/attachments` (list, `POST` link, `POST .../files`, `GET .../{attachmentId}/content`, `DELETE .../{attachmentId}`), behavior in `UploadPageAttachmentCommand` / `GetPageAttachmentContentQuery` and siblings. List and content require `ViewPage` on the page, register/upload/delete require `UpdatePage`; the attachment must belong to exactly that page, otherwise 404 (an id of a board item or of another page is never served or deleted through a page route, and the board item delete route no longer removes a page attachment). Same file policy and download headers; the per-page cap is `Collaboration:Attachments:MaxAttachmentsPerPage` (default 500). Image/file block `attachmentId` is not cross-checked at block write time: authorization of the read by the page is what prevents a foreign id from leaking content.
+
 Rules: the body is streamed (no buffering, no temp file beyond provider write); the part Content-Type is ignored; the stored name is sanitised; the storage key is server-generated `{accountId}/{workspaceId}/attachments/{objectId}`; authorization equals link registration (UpdateItem) and attachment list (ViewBoard) on the board item. The existing JSON `POST .../attachments` (link) keeps its shape; links count toward the same per-item cap as files, so it can also return 409 `attachment.limit_exceeded`, decided atomically with file uploads under the commit-point lock. `AttachmentDto` gains `Kind` ("File" or "Link"); for files `Url` is empty and the content operation is the download address. Idempotent replay returns the stored result without re-running the handler, so no second object or row; the fingerprint excludes the byte stream (same key with different bytes replays the first result).
+
+---
+
+# 24B. Account workspace and profile photo contract
+
+Owners: Workspaces (membership, list, leave, default choice validation) and Identity (profile photo, stored default Workspace id). Transport only in API; behavior in the Application use cases named by the operation ids.
+
+```text
+GET    /api/v1/account/workspaces                      Workspaces.Members.ListMyWorkspaces
+  200 [{ id, name, slug, role "Owner|Admin|Member|Guest", memberCount|null (null for Guest),
+         departmentCount|null (null unless Owner/Admin), isDefault, canLeave }]
+PUT    /api/v1/account/default-workspace  { workspaceId }   Workspaces.Members.SetDefaultWorkspace
+  204   404 not an active member of that workspace   400 empty id
+DELETE /api/v1/account/workspaces/{workspaceId}        Workspaces.Members.LeaveWorkspace
+  204   409 workspaces.member.last-owner-cannot-leave   404 not an active member
+PUT    /api/v1/profile/avatar     multipart/form-data, part "file"   Identity.Profile.UploadAvatar
+  200 { avatarUrl }   400 malformed / missing file part   413 identity.avatar.too-large (2,000,000 bytes)
+  415 identity.avatar.unsupported-format (PNG/JPEG/WebP by bytes; also a non-multipart body)
+DELETE /api/v1/profile/avatar                          Identity.Profile.RemoveAvatar
+  200 { avatarUrl: null }
+GET    /api/v1/users/{userId}/avatar                   Identity.Profile.GetUserAvatar
+  200 stream; nosniff; Cache-Control: private, max-age=86400, immutable; 404 for everyone not allowed and for no photo
+```
+
+Rules: the subject of every account route is the authenticated principal. The list, the avatar upload/remove and the avatar read are global requests (no workspace in the route); the reads that cross Workspaces lift the EF tenant filter explicitly with the principal fixed as the subject (classified in the IgnoreQueryFilters allowlist). `avatarUrl` is a path relative to the API origin of the form `/api/v1/users/{userId}/avatar?v={objectId}`; a new upload changes `v`, so a given address is cacheable as immutable. The upload shares the streamed multipart reader with the attachment upload (`API/Uploads/MultipartUpload`); it has no Idempotency-Key requirement (a repeat replaces the photo). Known limit: under the `notrelix_app` database role another person's `identity.users` row is not readable (same limit as the actor name lookup), so reading a co-member's photo answers 404 there; the database role in use today bypasses RLS. Closing that is part of the people-directory decision, not of this contract.
+
+
+Page comments may carry a text anchor (additive, optional): `POST /api/v1/pages/{pageId}/comments` accepts `anchor { blockId, quote, start, end }` and `GET` returns the same `anchor` on a comment that has one. It is validated by Collaboration (`quote` as long as `end - start`, at most 500 characters, offsets within the 20 000-character block limit), rejected on replies and on board item comments, and the block must be a live block of the page (Documents fact `IPageBlockFacts`); failures answer with the business rule code `Collaboration_Comment_AnchorInvalid`. Existing clients that send and read no anchor are unaffected (new nullable columns `anchor_block_id`, `anchor_quote`, `anchor_start`, `anchor_end`).
+
+Page history and templates (additive routes). `GET /api/v1/pages/{pageId}/versions` and `GET .../versions/{versionId}` need `ViewPage` and return history entries (`kind` `automatic` | `named` | `restore`, newest first) and the read-only captured blocks (no concurrency version). `POST .../versions {name}` saves a named version and `POST .../versions/{versionId}/restore {currentBlocks:[{blockId,version}]}` rewrites the page's blocks to the entry in one transaction and adds a `restore` entry (both need `UpdatePage`); a restore whose `currentBlocks` do not match the live blocks answers 412 `documents.version.restore-conflict` with `currentBlocks` and changes nothing. Automatic entries are added after commit by a consumer of `page.blocks-saved` (at most one per ten minutes, only when the content changed); every entry is kept for now (no retention job). `POST|GET /api/v1/workspaces/{workspaceId}/page-templates` saves a page as a workspace template (`UpdatePage` on the page) and lists published templates (`ViewWorkspace`); `POST .../page-templates/{templateId}/pages` creates a page from one (same authorization as creating a page at that placement) and reports `droppedBlockCount` for the image, file and video blocks that are not copied. The new additive event `page.blocks-saved` (v1) carries the mentions a save newly added; `mention.created` for a page mention follows from it, only for people who can view the page and never for the author. New column `docs.document_versions.kind` (default `Automatic`).

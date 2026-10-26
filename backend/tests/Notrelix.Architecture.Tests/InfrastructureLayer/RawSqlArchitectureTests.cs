@@ -15,6 +15,14 @@ public class RawSqlArchitectureTests
         // semantics that EF cannot express)
         "src/Notrelix.Infrastructure/Data/ApplicationDbContext.BillingCapacity.cs",
 
+        // Reason: the access grant is written and revoked through the owner-defined ops.upsert_access_grant /
+        // ops.revoke_access_grant functions (the application role has no grant write policy)
+        "src/Notrelix.Infrastructure/Data/Authz/AccessGrantProjectionService.cs",
+
+        // Reason: the tenantless and tenant security event row is written through the owner-defined
+        // insert-only ops.record_security_event function
+        "src/Notrelix.Infrastructure/Data/Audit/SecurityAuditSink.cs",
+
         // Reason: claim outbox messages with SKIP LOCKED
         "src/Notrelix.Infrastructure/BackgroundJobs/OutboxDispatcher.cs",
         
@@ -44,9 +52,14 @@ public class RawSqlArchitectureTests
         // Attachment object reaper: FOR UPDATE SKIP LOCKED claim of purge-due
         // soft-deleted rows and a try-advisory sweep claim, under the system context.
         "src/Notrelix.Infrastructure/BackgroundJobs/PostgresAttachmentReaperStore.cs",
+        // Avatar object reaper: try-advisory sweep claim under the system context.
+        "src/Notrelix.Infrastructure/BackgroundJobs/PostgresAvatarReaperStore.cs",
         // Security activity retention: bounded DELETE ... FOR UPDATE SKIP LOCKED sweep of
         // identity.user_security_activity under the system context.
         "src/Notrelix.Infrastructure/BackgroundJobs/SecurityActivityRetention.cs",
+        // Onboarding draft sweep: bounded DELETE ... FOR UPDATE SKIP LOCKED of expired
+        // workspace.onboarding_drafts rows under the system context.
+        "src/Notrelix.Infrastructure/BackgroundJobs/OnboardingDraftSweep.cs",
         // Reserves a Board's Item keys with one row-locking UPDATE ... RETURNING
         // on work.boards inside the request transaction (EF cannot express it
         // without loading and versioning the Board aggregate).

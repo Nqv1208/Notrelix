@@ -31,6 +31,8 @@ export function createUseLogin({
     return useMutation({
       mutationFn: authService.login,
       onSuccess: async (response) => {
+        // A second factor still pending is answered on the sign-in page.
+        if (response.mfaRequired || !response.user) return;
         await queryClient.cancelQueries({ queryKey: authQueryKeys.profile });
         queryClient.setQueryData(authQueryKeys.profile, response.user);
         navigate({ to: redirect || "/home" });

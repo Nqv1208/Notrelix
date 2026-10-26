@@ -1,3 +1,4 @@
+import type { KanbanCardActions } from "./kanban-card-quick-actions";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   DndContext,
@@ -93,6 +94,20 @@ export interface KanbanBoardProps {
    * needs `canDrag`. Off: those keys do nothing.
    */
   keyboardMove?: boolean;
+  /** Hover and focus actions of the cards; absent: none. */
+  cardActions?: KanbanCardActions;
+  /** Lane value id to its WIP limit (a warning number); absent: no limits. */
+  wipLimits?: Readonly<Record<string, number>>;
+  /** Set or (null) remove a lane's limit; absent: the viewer cannot. */
+  onWipLimitChange?: (lane: KanbanStatusLane, limit: number | null) => void;
+  /** The header "+" and the empty lane's button: the full form for a lane. */
+  onRequestCreate?: (lane: KanbanStatusLane) => void;
+  /** Quick add handed over to the full form with the typed title. */
+  onExpandCreate?: (lane: KanbanStatusLane, title: string) => void;
+  /** The lanes collapsed when the board opens (the member's own preference). */
+  initialCollapsed?: ReadonlySet<string>;
+  /** The collapsed lanes changed: the container remembers them per member and view. */
+  onCollapsedChange?: (collapsed: ReadonlySet<string>) => void;
 }
 
 function laneKey(lane: KanbanStatusLane): string {
@@ -145,8 +160,17 @@ export function KanbanBoard({
   lanePending = false,
   laneCardLimit = DEFAULT_KANBAN_LANE_CARD_LIMIT,
   keyboardMove = true,
+  cardActions,
+  wipLimits,
+  onWipLimitChange,
+  onRequestCreate,
+  onExpandCreate,
+  initialCollapsed,
+  onCollapsedChange,
 }: KanbanBoardProps) {
-  const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
+  const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(
+    () => initialCollapsed ?? new Set(),
+  );
   const [hidden, setHidden] = useState<ReadonlySet<string>>(new Set());
   const [drag, setDrag] = useState<DragState | null>(null);
   // The arrangement of a card just dropped, kept on screen until the lanes
@@ -322,7 +346,13 @@ export function KanbanBoard({
       else next.delete(key);
       return next;
     });
-  const setLaneCollapsed = toggle(setCollapsed);
+  const setLaneCollapsed = (key: string, on: boolean) => {
+    const next = new Set(collapsed);
+    if (on) next.add(key);
+    else next.delete(key);
+    setCollapsed(next);
+    onCollapsedChange?.(next);
+  };
   const setLaneHidden = toggle(setHidden);
 
   // A lane that appears while its popover closes (a new status) keeps nothing
@@ -429,6 +459,7 @@ export function KanbanBoard({
               dropTarget={drag !== null && currentLaneKey === key}
               laneCardLimit={laneCardLimit}
               draggedCardId={drag?.cardId ?? movedId ?? undefined}
+              cardActions={cardActions}
               onMoveCardByKey={
                 canDrag && keyboardMove ? handleMoveByKey : undefined
               }
@@ -442,6 +473,22 @@ export function KanbanBoard({
                       ),
                       onSubmit: (draft) => onUpdateLane(original, draft),
                     }
+                  : undefined
+              }
+              wipLimit={lane.optionId ? wipLimits?.[lane.optionId] : undefined}
+              onWipLimitChange={
+                onWipLimitChange && lane.optionId
+                  ? (limit) => onWipLimitChange(original ?? lane, limit)
+                  : undefined
+              }
+              onRequestCreate={
+                onRequestCreate
+                  ? () => onRequestCreate(original ?? lane)
+                  : undefined
+              }
+              onExpandCreate={
+                onExpandCreate
+                  ? (title) => onExpandCreate(original ?? lane, title)
                   : undefined
               }
               collapsed={collapsed.has(key)}

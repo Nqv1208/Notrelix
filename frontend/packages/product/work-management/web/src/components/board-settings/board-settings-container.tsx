@@ -1,22 +1,29 @@
 import { useMemo } from "react";
 import {
   useBoardAccess,
-  useBoardAutomationRule,
-  useBoardAutomationRuns,
   useBoardSettings,
   useBoardView,
   useFullBoard,
+  usePeopleDirectory,
+  useSavedViews,
+  useWorkspaceAutomations,
 } from "@notrelix/work-management-state";
-import { resolveKanbanSettings } from "@notrelix/work-management-core";
+import {
+  resolveKanbanSettings,
+  type BoardSettingsDto,
+  type BoardSettingsViewDto,
+  type BoardSettingsWriteResult,
+} from "@notrelix/work-management-core";
 import { KanbanSettingsPanel } from "../views/kanban/kanban-settings-panel";
 import { useKanbanLaneCopy } from "../views/kanban/use-kanban-lane-copy";
 import { useBoardSettingsCopy } from "./use-board-settings-copy";
 import { BoardSettingsSurface } from "./board-settings-surface";
-import type { AutomationPanelProps } from "./automation-types";
+import { fillCopy } from "./board-settings-format";
 import type {
   BoardSettingsActions,
   BoardSettingsSection,
   BoardSettingsSpace,
+  WorkspaceRulesPanelProps,
 } from "./board-settings-types";
 
 /** What the host (the route) knows about where the page sits. */
@@ -38,159 +45,172 @@ export interface BoardSettingsPageProps extends BoardSettingsHost {
   readonly onSelectField: (fieldId: string | null) => void;
   readonly viewId: string | null;
   readonly onSelectView: (viewId: string | null) => void;
-  /** The automation rule open in its editor; null shows the list of rules. */
-  readonly ruleId: string | null;
-  readonly onSelectRule: (ruleId: string | null) => void;
-  /** The run log of the automations is open. */
-  readonly log: boolean;
-  readonly onSelectLog: (open: boolean) => void;
-  /** The run open in the log's sheet. */
-  readonly runId: string | null;
-  readonly onSelectRun: (runId: string | null) => void;
-  /** The Integrations and the billing pages, when they exist. */
-  readonly integrationsHref?: string;
-  readonly billingHref?: string;
+}
+
+const unsupported = (): Promise<BoardSettingsWriteResult> =>
+  Promise.resolve({ ok: false, reason: "failed" });
+
+/** "Date", "Date 2", ... : a name no field of the board has yet. */
+function newFieldName(base: string, settings: BoardSettingsDto): string {
+  const taken = new Set(
+    [...settings.fields, ...settings.systemFields].map((field) =>
+      field.name.toLowerCase(),
+    ),
+  );
+  let name = base;
+  for (let n = 2; taken.has(name.toLowerCase()); n += 1) name = `${base} ${n}`;
+  return name;
+}
+
+/** "Table", "Table 2", ...: a view name the board has not used yet. */
+function newViewName(base: string, settings: BoardSettingsDto): string {
+  const taken = new Set(settings.views.map((view) => view.name.toLowerCase()));
+  let name = base;
+  for (let n = 2; taken.has(name.toLowerCase()); n += 1) name = `${base} ${n}`;
+  return name;
 }
 
 /**
- * The settings of one board: loads them (only a manager reads them), wires
- * every write to the settings endpoints and refetches the settings and the
- * board after each one.
+ * The settings of one board: read from the board itself (only a manager
+ * opens the page), every write goes to the board, field, option and group
+ * routes, and the board is read again after each one.
  */
 export function BoardSettingsPage(props: BoardSettingsPageProps) {
   const { workspaceId, boardId } = props;
   const copy = useBoardSettingsCopy();
   const laneCopy = useKanbanLaneCopy();
-  const { board } = useFullBoard(boardId, workspaceId);
-  const { viewConfig, updateViewConfig } = useBoardView(boardId, workspaceId);
+  const { board, groups } = useFullBoard(boardId, workspaceId);
+  // The Kanban panel edits the Kanban view that is open (or the board's first one).
+  const { viewConfig, updateViewConfig } = useBoardView(boardId, workspaceId, {
+    viewId: props.viewId ?? undefined,
+    mode: "kanban",
+  });
+  const savedViews = useSavedViews(boardId, workspaceId);
   const kanban = useMemo(() => resolveKanbanSettings(viewConfig), [viewConfig]);
-  const { access } = useBoardAccess(boardId, workspaceId);
+  const { access, error: accessError } = useBoardAccess(boardId, workspaceId);
   const { settings, isLoading, isError, forbidden, refetch, write } =
     useBoardSettings(boardId, workspaceId);
 
   const actions = useMemo<BoardSettingsActions>(
     () => ({
       updateGeneral: (changes) =>
-        write((api, v) => api.updateGeneral(boardId, v, changes)),
-      archiveBoard: () => write((api, v) => api.archiveBoard(boardId, v)),
-      deleteBoard: (confirmTitle) =>
-        write((api, v) => api.deleteBoard(boardId, v, confirmTitle)),
+        write((api, s) => api.updateGeneral(s, changes)),
+      archiveBoard: () => write((api, s) => api.archiveBoard(s)),
+      deleteBoard: () => write((api, s) => api.deleteBoard(s)),
       createField: (type) =>
-        write((api, v) => api.createField(boardId, v, type)),
-      reorderFields: (ids) =>
-        write((api, v) => api.reorderFields(boardId, v, ids)),
+        write((api, s) =>
+          api.createField(s, type, newFieldName(copy.types[type], s)),
+        ),
+      reorderFields: (ids) => write((api, s) => api.reorderFields(s, ids)),
       updateField: (fieldId, changes) =>
-        write((api, v) => api.updateField(boardId, v, fieldId, changes)),
-      archiveField: (fieldId) =>
-        write((api, v) => api.archiveField(boardId, v, fieldId)),
-      restoreField: (fieldId) =>
-        write((api, v) => api.restoreField(boardId, v, fieldId)),
+        write((api, s) => api.updateField(s, fieldId, changes)),
+      archiveField: unsupported,
+      deleteField: (fieldId) => write((api, s) => api.deleteField(s, fieldId)),
+      restoreField: unsupported,
       addOption: (fieldId, option) =>
-        write((api, v) => api.addOption(boardId, v, fieldId, option)),
+        write((api, s) => api.addOption(s, fieldId, option)),
       updateOption: (fieldId, optionId, changes) =>
-        write((api, v) =>
-          api.updateOption(boardId, v, fieldId, optionId, changes),
-        ),
+        write((api, s) => api.updateOption(s, fieldId, optionId, changes)),
       deleteOption: (fieldId, optionId) =>
-        write((api, v) => api.deleteOption(boardId, v, fieldId, optionId)),
+        write((api, s) => api.deleteOption(s, fieldId, optionId)),
       reorderOptions: (fieldId, ids) =>
-        write((api, v) => api.reorderOptions(boardId, v, fieldId, ids)),
-      createView: (kind) => write((api, v) => api.createView(boardId, v, kind)),
-      reorderViews: (ids) =>
-        write((api, v) => api.reorderViews(boardId, v, ids)),
-      updateView: (viewId, changes) =>
-        write((api, v) => api.updateView(boardId, v, viewId, changes)),
-      duplicateView: (viewId) =>
-        write((api, v) => api.duplicateView(boardId, v, viewId)),
-      deleteView: (viewId) =>
-        write((api, v) => api.deleteView(boardId, v, viewId)),
-      createGroup: (name) =>
-        write((api, v) => api.createGroup(boardId, v, name)),
-      reorderGroups: (ids) =>
-        write((api, v) => api.reorderGroups(boardId, v, ids)),
-      updateGroup: (groupId, changes) =>
-        write((api, v) => api.updateGroup(boardId, v, groupId, changes)),
-      deleteGroup: (groupId, moveToGroupId) =>
-        write((api, v) => api.deleteGroup(boardId, v, groupId, moveToGroupId)),
-      setAutomationEnabled: (automationId, enabled) =>
-        write((api, v) =>
-          api.setAutomationEnabled(boardId, v, automationId, enabled),
+        write((api, s) => api.reorderOptions(s, fieldId, ids)),
+      createView: (kind: BoardSettingsViewDto["kind"]) =>
+        write((api, s) =>
+          api.createView(s, kind, newViewName(copy.views.kinds[kind], s)),
         ),
+      reorderViews: unsupported,
+      updateView: (viewId, changes) =>
+        write((api, s) => api.updateView(s, viewId, changes)),
+      duplicateView: (viewId) => {
+        const source = savedViews.views.find((view) => view.id === viewId);
+        if (!source) return Promise.resolve({ ok: false, reason: "failed" });
+        return write((api, s) =>
+          api.createView(
+            s,
+            source.viewMode,
+            newViewName(
+              fillCopy(copy.viewPanel.copyName, { name: source.name }),
+              s,
+            ),
+            source.viewConfig,
+            source.visibility,
+          ),
+        );
+      },
+      setDefaultView: (viewId) =>
+        write((api, s) => api.setDefaultView(s, viewId)),
+      deleteView: (viewId) => write((api, s) => api.deleteView(s, viewId)),
+      createGroup: (name) => write((api, s) => api.createGroup(s, name)),
+      reorderGroups: (ids) => write((api, s) => api.reorderGroups(s, ids)),
+      updateGroup: (groupId, changes) =>
+        write((api, s) => api.updateGroup(s, groupId, changes)),
+      deleteGroup: (groupId, moveToGroupId) =>
+        write((api, s) => api.deleteGroup(s, groupId, moveToGroupId)),
+      setAutomationEnabled: unsupported,
     }),
-    [boardId, write],
+    [copy, savedViews.views, write],
   );
 
-  const automationRule = useBoardAutomationRule(
-    boardId,
+  const rules = useWorkspaceAutomations(
     workspaceId,
-    props.log ? null : props.ruleId,
-  );
-  const automationRuns = useBoardAutomationRuns(
     boardId,
-    workspaceId,
-    props.log,
+    access?.myLevel === "manager",
   );
-  const { onSelectRule } = props;
-  const automation = useMemo<AutomationPanelProps>(
+  const { directory } = usePeopleDirectory(boardId, workspaceId);
+  const workspaceRules = useMemo<WorkspaceRulesPanelProps>(
     () => ({
-      ruleId: props.log ? null : props.ruleId,
-      log: props.log,
-      runId: props.runId,
-      rule: {
-        status: !props.ruleId
-          ? "idle"
-          : automationRule.isLoading
+      boardId,
+      status: rules.forbidden
+        ? "forbidden"
+        : rules.isError
+          ? "error"
+          : rules.isLoading
             ? "loading"
-            : automationRule.notFound
-              ? "not-found"
-              : automationRule.isError
-                ? "error"
-                : automationRule.rule
-                  ? "ready"
-                  : "loading",
-        data: automationRule.rule,
-      },
+            : "ready",
+      rules: rules.rules,
+      groups: groups.map((group) => ({ id: group.id, name: group.title })),
+      statuses: (settings?.fields ?? [])
+        .filter((field) => field.type === "status")
+        .flatMap((field) => field.options)
+        .map((option) => ({ id: option.id, name: option.name })),
+      people: (directory?.people ?? []).map((person) => ({
+        id: person.userId,
+        name: person.name,
+      })),
+      fields: (settings?.fields ?? [])
+        .filter((field) => field.type === "text" || field.type === "number")
+        .map((field) => ({ id: field.id, name: field.name })),
+      onReload: () => void rules.refetch(),
+      onCreate: rules.create,
+      onUpdate: rules.update,
+      onDelete: rules.remove,
+      onSetEnabled: rules.setEnabled,
+      openRuleId: rules.openRuleId,
+      onOpenRuns: rules.openRuns,
       runs: {
-        status: automationRuns.isLoading
+        status: rules.runsLoading
           ? "loading"
-          : automationRuns.isError
+          : rules.runsError
             ? "error"
-            : automationRuns.runs
-              ? "ready"
-              : "idle",
-        data: automationRuns.runs,
+            : "ready",
+        data: rules.runs,
       },
-      onOpenRule: (ruleId) => onSelectRule(ruleId),
-      onCreateRule: async () => {
-        const result = await automationRule.create();
-        if (result.ok && result.id) onSelectRule(result.id);
-        return result.ok;
-      },
-      onCloseRule: () => onSelectRule(null),
-      onOpenLog: () => props.onSelectLog(true),
-      onOpenRun: props.onSelectRun,
-      onReloadRule: () => void automationRule.refetch(),
-      onReloadRuns: () => void automationRuns.refetch(),
-      actions: {
-        save: automationRule.save,
-        setEnabled: actions.setAutomationEnabled,
-        changeRunner: automationRule.changeRunner,
-        restoreField: actions.restoreField,
-        rerunStep: automationRuns.rerunStep,
-      },
-      integrationsHref: props.integrationsHref,
-      billingHref: props.billingHref,
     }),
-    [actions, automationRule, automationRuns, onSelectRule, props],
+    [boardId, directory, groups, rules, settings],
   );
 
-  const status = forbidden
-    ? "forbidden"
-    : isError
-      ? "error"
-      : isLoading || !settings
-        ? "loading"
-        : "ready";
+  // Only a manager of the board opens its settings.
+  const notManager = access ? access.myLevel !== "manager" : false;
+  const waitingForAccess = !access && !accessError;
+  const status =
+    forbidden || notManager
+      ? "forbidden"
+      : isError
+        ? "error"
+        : isLoading || !settings || waitingForAccess
+          ? "loading"
+          : "ready";
 
   return (
     <BoardSettingsSurface
@@ -208,7 +228,7 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
       viewId={props.viewId}
       onSelectView={props.onSelectView}
       actions={actions}
-      automation={automation}
+      workspaceRules={workspaceRules}
       kanbanSettings={
         <KanbanSettingsPanel
           copy={laneCopy}

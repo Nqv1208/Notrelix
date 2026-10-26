@@ -74,10 +74,16 @@ public static class ResourceVisibilityQuery
            GROUP BY m.space_id),
         space_access AS MATERIALIZED (
           SELECT s.id AS space_id,
-                 NOT EXISTS (
+                 -- Open only when the closure knows the Space (AccessFactsQuery reads
+                 -- SpaceIsOpen as EXISTS(path) AND NOT EXISTS(Private ancestor)): a
+                 -- Space without closure rows must not read as open here while the
+                 -- single read denies it.
+                 (EXISTS (
+                   SELECT 1 FROM workspace.space_paths p0 WHERE p0.descendant_id = s.id)
+                  AND NOT EXISTS (
                    SELECT 1 FROM workspace.space_paths p
                      JOIN workspace.spaces ps ON ps.id = p.ancestor_id
-                    WHERE p.descendant_id = s.id AND ps.visibility = 'Private') AS is_open,
+                    WHERE p.descendant_id = s.id AND ps.visibility = 'Private')) AS is_open,
                  (SELECT max(e.role_rank)
                     FROM workspace.space_paths a
                     JOIN user_entries e ON e.space_id = a.ancestor_id
@@ -155,6 +161,13 @@ public static class ResourceVisibilityQuery
                       OR (res.visibility = 'Workspace' AND res.space_id IS NULL AND m.role <> 'Guest')
                       OR (res.visibility = 'Workspace' AND res.space_id IS NOT NULL AND COALESCE(sl.level, 0) >= 1))))
         """;
+
+    /// <summary>
+    /// The pages in the trash (archived, not deleted) the principal may see: the
+    /// <see cref="VisiblePagesSql"/> rules, unchanged, over archived pages.
+    /// </summary>
+    public static readonly string VisibleTrashedPagesSql =
+        VisiblePagesSql.Replace("res.status <> 'Archived'", "res.status = 'Archived'", StringComparison.Ordinal);
 
     /// <summary>
     /// Non-deleted Spaces with the principal's effective level on each (1 =

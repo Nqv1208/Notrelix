@@ -31,6 +31,7 @@ public static class MapCommentEndpoints
         group.MapUpdateComment();
         group.MapDeleteComment();
         group.MapResolveComment();
+        group.MapReopenComment();
 
         return app;
     }

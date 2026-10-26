@@ -51,7 +51,7 @@ public sealed class CommentCreatedScopedTenantRuntimeChainIntegrationTests : IAs
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -117,7 +117,7 @@ public sealed class CommentCreatedScopedTenantRuntimeChainIntegrationTests : IAs
             (await WaitForSecondClaimAsync(outboxEventId, ActivityConsumerEndpoint)).Should().BeTrue(
                 "the duplicate delivery must actually reach the DeduplicationConsumeFilter and attempt a second claim");
 
-            await using var midProbe = _db.CreateContext(SystemTenant());
+            await using var midProbe = _db.CreateOwnerContext(SystemTenant());
             (await midProbe.Set<WorkspaceActivityLogRecord>()
                 .IgnoreQueryFilters()
                 .CountAsync(a => a.SourceEventId == outboxEventId)).Should().Be(1,
@@ -137,7 +137,7 @@ public sealed class CommentCreatedScopedTenantRuntimeChainIntegrationTests : IAs
             }
         }
 
-        await using var probe = _db.CreateContext(SystemTenant());
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
         (await probe.Set<WorkspaceActivityLogRecord>()
             .IgnoreQueryFilters()
             .CountAsync(a => a.SourceEventId == outboxEventId)).Should().Be(1,
@@ -227,7 +227,7 @@ public sealed class CommentCreatedScopedTenantRuntimeChainIntegrationTests : IAs
         MessagingOutboxMessage? found = null;
         var completed = await WaitForAsync(async () =>
         {
-            await using var probe = _db.CreateContext(SystemTenant());
+            await using var probe = _db.CreateOwnerContext(SystemTenant());
             var candidates = await probe.Set<MessagingOutboxMessage>()
                 .IgnoreQueryFilters()
                 .Where(m => m.MessageName == "comment.created"
@@ -308,7 +308,7 @@ public sealed class CommentCreatedScopedTenantRuntimeChainIntegrationTests : IAs
             accountId, workspace.Id, board.Id, group.Id, "Task",
             FractionalIndex.Create("a0"), ownerId, now);
 
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Workspaces.Add(workspace);
         seed.WorkspaceMembers.Add(Domain.Workspaces.Members.WorkspaceMember.Create(
             accountId, workspace.Id, ownerId, Domain.Workspaces.Members.WorkspaceRole.Owner, ownerId, now));
@@ -316,6 +316,8 @@ public sealed class CommentCreatedScopedTenantRuntimeChainIntegrationTests : IAs
         seed.BoardGroups.Add(group);
         seed.BoardItems.Add(item);
         await seed.SaveChangesAsync();
+        await AccessGrantSeed.WorkspaceMemberAsync(
+            _db, accountId, workspace.Id, ownerId, Domain.Workspaces.Members.WorkspaceRole.Owner);
 
         return new CommentGraph(accountId, workspace.Id, ownerId, item.Id, content);
     }
@@ -342,6 +344,7 @@ public sealed class CommentCreatedScopedTenantRuntimeChainIntegrationTests : IAs
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["ConnectionStrings:NotrelixDb"] = _db.ConnectionString,
+                ["ConnectionStrings:NotrelixWorkerDb"] = _db.WorkerConnectionString,
                 ["ConnectionStrings:Redis"] = "localhost:6379,abortConnect=false",
                 ["Messaging:Transport"] = "InMemory",
                 ["Rls:Enabled"] = "true",
@@ -359,6 +362,7 @@ public sealed class CommentCreatedScopedTenantRuntimeChainIntegrationTests : IAs
         builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
         {
             ["ConnectionStrings:NotrelixDb"] = _db.ConnectionString,
+            ["ConnectionStrings:NotrelixWorkerDb"] = _db.WorkerConnectionString,
             ["ConnectionStrings:Redis"] = "localhost:6379,abortConnect=false",
             ["Messaging:Transport"] = "InMemory",
             ["Rls:Enabled"] = "true",
@@ -422,7 +426,7 @@ public sealed class CommentCreatedScopedTenantRuntimeChainIntegrationTests : IAs
         MessagingOutboxMessage? found = null;
         var completed = await WaitForAsync(async () =>
         {
-            await using var probe = _db.CreateContext(SystemTenant());
+            await using var probe = _db.CreateOwnerContext(SystemTenant());
             found = await probe.Set<MessagingOutboxMessage>()
                 .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(m => m.MessageName == "comment.created"
@@ -439,7 +443,7 @@ public sealed class CommentCreatedScopedTenantRuntimeChainIntegrationTests : IAs
         WorkspaceActivityLogRecord? found = null;
         var completed = await WaitForAsync(async () =>
         {
-            await using var probe = _db.CreateContext(SystemTenant());
+            await using var probe = _db.CreateOwnerContext(SystemTenant());
             found = await probe.Set<WorkspaceActivityLogRecord>()
                 .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(a => a.SourceEventId == sourceEventId && a.WorkspaceId == workspaceId);
@@ -453,7 +457,7 @@ public sealed class CommentCreatedScopedTenantRuntimeChainIntegrationTests : IAs
     {
         return await WaitForAsync(async () =>
         {
-            await using var probe = _db.CreateContext(SystemTenant());
+            await using var probe = _db.CreateOwnerContext(SystemTenant());
             return await probe.Set<MessagingOutboxMessage>()
                 .IgnoreQueryFilters()
                 .AnyAsync(m => m.Id == outboxId && m.Status == "Processed");
@@ -464,7 +468,7 @@ public sealed class CommentCreatedScopedTenantRuntimeChainIntegrationTests : IAs
     {
         return await WaitForAsync(async () =>
         {
-            await using var probe = _db.CreateContext(SystemTenant());
+            await using var probe = _db.CreateOwnerContext(SystemTenant());
             return await probe.Set<MessagingProcessedEvent>()
                 .IgnoreQueryFilters()
                 .AnyAsync(p => p.EventId == eventId

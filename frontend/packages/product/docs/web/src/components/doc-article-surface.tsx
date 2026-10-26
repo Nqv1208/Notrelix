@@ -5,6 +5,7 @@ import {
   type KeyboardEvent,
   type ReactNode,
 } from "react";
+import type { Editor } from "@tiptap/react";
 import { Check, CircleAlert, Lock, Table2 } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
 import type { BlockType } from "@notrelix/docs-core";
@@ -15,11 +16,17 @@ import {
   type DocChip,
   type DocOverlay,
   type DocPageCallbacks,
+  type DocMarkTargets,
+  type DocPerson,
+  type DocRecoveryView,
   type DocSegment,
   type DocTaskRef,
   type DocTextBlock,
   type DocTaskResolution,
 } from "./doc-page-models";
+import { DocEditorSurface } from "../editor/doc-editor-surface";
+import { DocRecoverySurface } from "./doc-recovery-surface";
+import { renderMarked } from "./doc-marks";
 import { serializeEditable } from "./doc-page-text";
 import { DocStatusDot, ICON_CLASS } from "./doc-page-ui";
 import {
@@ -84,7 +91,11 @@ function renderSegments(
   return segments.map((segment, index) => {
     switch (segment.kind) {
       case "text":
-        return <Fragment key={index}>{segment.text}</Fragment>;
+        return (
+          <Fragment key={index}>
+            {renderMarked(segment.text, segment.marks)}
+          </Fragment>
+        );
       case "task":
         return <DocTaskChip key={index} task={segment.task} copy={copy} />;
       case "mark":
@@ -322,15 +333,129 @@ const CHIP_STATUS_CLASS = {
   done: "bg-doc-chip-done",
 } as const;
 
-/** The embedded live task table (Final-Docs `.live` and its note). */
-function DocLiveTable({
+/** A link to another page: its icon and name, or the way to choose one. */
+export function DocPageReference({
   block,
   copy,
+  readOnly,
+  callbacks,
+}: {
+  block: Extract<DocBlockView, { kind: "pageReference" }>;
+  copy: DocPageCopy;
+  readOnly: boolean;
+  callbacks?: DocPageCallbacks;
+}) {
+  const r = copy.blocks.pageReference;
+  const chooser = !readOnly && callbacks?.onOpenPagePicker;
+  const choose = chooser ? () => chooser(block.id) : undefined;
+  return (
+    <div
+      data-block={block.id}
+      className="mb-3.5 flex items-center gap-2 rounded-[9px] border border-border px-3 py-2 text-nav leading-[1.45]"
+    >
+      {block.pageId === null ? (
+        <button
+          type="button"
+          disabled={!choose}
+          onClick={choose}
+          className="border-0 bg-transparent p-0 text-left font-medium text-brand-subtle-foreground outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:text-meta-foreground"
+        >
+          {r.choose}
+        </button>
+      ) : block.unavailable || block.title === null ? (
+        <span className="text-meta-foreground">{r.unavailable}</span>
+      ) : (
+        <>
+          <span aria-hidden="true" className="w-5 text-center">
+            {block.icon ?? ""}
+          </span>
+          <a
+            href={block.href}
+            aria-label={fillDocCopy(r.open, { title: block.title })}
+            className="min-w-0 flex-1 truncate font-medium text-foreground no-underline hover:underline"
+          >
+            {block.title}
+          </a>
+        </>
+      )}
+      {block.pageId !== null && choose ? (
+        <button
+          type="button"
+          onClick={choose}
+          className="ml-auto border-0 bg-transparent p-0 text-crumb font-medium text-brand-subtle-foreground outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+        >
+          {r.change}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+/** The embedded live task table (Final-Docs `.live` and its note). */
+export function DocLiveTable({
+  block,
+  copy,
+  readOnly = true,
+  callbacks,
 }: {
   block: Extract<DocBlockView, { kind: "liveTable" }>;
   copy: DocPageCopy;
+  readOnly?: boolean;
+  callbacks?: DocPageCallbacks;
 }) {
   const noteId = `live-note-${block.id}`;
+  const b = copy.blocks.boardReference;
+  const choose =
+    !readOnly && callbacks?.onOpenBoardPicker
+      ? () => callbacks.onOpenBoardPicker?.(block.id)
+      : undefined;
+  if (block.state !== "ready" && block.tasks.length === 0) {
+    return (
+      <div
+        data-block={block.id}
+        data-state={block.state}
+        className="mt-1.5 mb-5 flex items-center gap-2 rounded-[12px] border border-line-strong bg-doc-panel px-3.5 py-2.5 text-nav leading-[1.45]"
+      >
+        {block.state === "unset" ? (
+          <button
+            type="button"
+            disabled={!choose}
+            onClick={choose}
+            className="border-0 bg-transparent p-0 text-left font-medium text-brand-subtle-foreground outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:text-meta-foreground"
+          >
+            {b.choose}
+          </button>
+        ) : block.state === "loading" ? (
+          <span role="status" className="text-meta-foreground">
+            {b.loading}
+          </span>
+        ) : (
+          <span className="flex items-center gap-2 text-meta-foreground">
+            <Lock aria-hidden="true" className="size-3.5 stroke-[1.8]" />
+            {b.unavailable}
+          </span>
+        )}
+        {block.state !== "unset" && choose ? (
+          <button
+            type="button"
+            onClick={choose}
+            className="ml-auto border-0 bg-transparent p-0 text-crumb font-medium text-brand-subtle-foreground outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+          >
+            {b.change}
+          </button>
+        ) : null}
+      </div>
+    );
+  }
+  const summary = block.counts
+    ? (["todo", "doing", "review", "done"] as const)
+        .filter((status) => block.counts?.[status])
+        .map(
+          (status) =>
+            `${copy.blocks.tableStatus[status]} ${block.counts?.[status] ?? 0}`,
+        )
+        .join(" · ")
+    : "";
   const restricted = block.tasks.filter(isRestrictedTask);
   const visible = block.tasks.filter(
     (task): task is DocTaskRef => !isRestrictedTask(task),
@@ -353,8 +478,20 @@ function DocLiveTable({
             className="size-3.5 shrink-0 stroke-[1.8]"
           />
           <b className="font-semibold text-foreground">{block.boardName}</b>·{" "}
-          {block.filterLabel}
+          {summary || block.filterLabel}
           {headerLink}
+          {choose ? (
+            <button
+              type="button"
+              onClick={choose}
+              className={cn(
+                "border-0 bg-transparent p-0 font-medium text-brand-subtle-foreground outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
+                !block.boardHref && "ml-auto",
+              )}
+            >
+              {b.change}
+            </button>
+          ) : null}
         </div>
         {visible.length === 0 && restricted.length === 0 ? (
           <div className="px-3.5 py-3 text-nav text-meta-foreground leading-[1.45]">
@@ -478,6 +615,17 @@ export interface DocArticleSurfaceProps {
   readonly compare?: boolean;
   readonly overlay: DocOverlay;
   readonly mentionTasks: readonly DocTaskRef[];
+  readonly mentionPeople?: readonly DocPerson[];
+  readonly markTargets?: DocMarkTargets;
+  /** The block types the slash menu offers; omitted offers every type. */
+  readonly blockTypes?: readonly BlockType[];
+  /** The page's editor; absent renders the plain per-block surface. */
+  readonly editor?: Editor | null;
+  /** Edits a stored change replaced, kept for the member. */
+  readonly recoveries?: readonly DocRecoveryView[];
+  readonly copiedRecoveryId?: string | null;
+  /** The sheet fills the window's width instead of the reading column. */
+  readonly fullWidth?: boolean;
   readonly callbacks?: DocPageCallbacks;
 }
 
@@ -492,7 +640,14 @@ export function DocArticleSurface({
   compare = false,
   overlay,
   mentionTasks,
+  mentionPeople,
+  markTargets,
+  blockTypes,
+  editor,
+  recoveries,
+  copiedRecoveryId,
   callbacks,
+  fullWidth = false,
 }: DocArticleSurfaceProps) {
   const titleRef = useRef<HTMLHeadingElement | null>(null);
   const common = { copy, callbacks, readOnly };
@@ -509,6 +664,7 @@ export function DocArticleSurface({
         <DocSlashMenuSurface
           copy={copy}
           query={overlay.query}
+          types={blockTypes}
           className="top-9 left-0"
           onSelect={(type: BlockType) =>
             callbacks?.onSlashSelect?.(blockId, type)
@@ -788,11 +944,29 @@ export function DocArticleSurface({
         );
         break;
       }
+      case "pageReference": {
+        rendered.push(
+          <DocPageReference
+            key={block.id}
+            block={block}
+            copy={copy}
+            readOnly={readOnly}
+            callbacks={callbacks}
+          />,
+        );
+        break;
+      }
     }
   }
 
   return (
-    <article className="relative w-full max-w-[700px] self-start">
+    <article
+      data-doc-print-root
+      className={cn(
+        "relative w-full self-start",
+        fullWidth ? "max-w-none" : "max-w-[700px]",
+      )}
+    >
       <h1
         ref={titleRef}
         aria-label={copy.titlePlaceholder}
@@ -835,7 +1009,25 @@ export function DocArticleSurface({
           </span>
         ) : null}
       </div>
-      {blocks.length === 0 ? (
+      {recoveries?.length && !compare ? (
+        <DocRecoverySurface
+          copy={copy}
+          recoveries={recoveries}
+          copiedId={copiedRecoveryId}
+          callbacks={callbacks}
+        />
+      ) : null}
+      {editor && !compare ? (
+        <DocEditorSurface
+          editor={editor}
+          copy={copy}
+          mentionTasks={mentionTasks}
+          mentionPeople={mentionPeople}
+          markTargets={markTargets}
+          callbacks={callbacks}
+        />
+      ) : null}
+      {!editor && blocks.length === 0 ? (
         <button
           type="button"
           onClick={() => callbacks?.onAddBlock?.("paragraph")}
@@ -844,7 +1036,7 @@ export function DocArticleSurface({
           {copy.blocks.emptyDoc}
         </button>
       ) : null}
-      {rendered}
+      {editor && !compare ? null : rendered}
     </article>
   );
 }

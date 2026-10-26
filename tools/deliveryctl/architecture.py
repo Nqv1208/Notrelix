@@ -320,12 +320,21 @@ def check(root: Path = ROOT) -> None:
         "DataProtection__PersistKeys=true",
         "DataProtection__KeysPath=",
         "Messaging__Transport=RabbitMQ",
+        "Rls__RoleEnforcement=Enforce",
         "ConnectionStrings__NotrelixDb=",
+        "ConnectionStrings__NotrelixWorkerDb=",
+        "ConnectionStrings__NotrelixMigrationDb=",
         "ConnectionStrings__Redis=",
         "JwtSettings__SecretKey=",
     ):
         if required_env not in container_text:
             errors.append(f"backend runtime smoke lost startup-critical env: {required_env.rstrip('=')}")
+
+    if "Rls__RoleEnforcement=Warn" in container_text or "Rls__RoleEnforcement=Off" in container_text:
+        errors.append("backend runtime smoke must run with Rls__RoleEnforcement=Enforce")
+    for required_step in ("--migrate", "--rls-apply", "20-create-runtime-logins.sh"):
+        if required_step not in container_text:
+            errors.append(f"backend runtime smoke must prepare the database with {required_step}")
 
     publish_start = container_text.find("\n  publish:\n")
     if publish_start < 0:

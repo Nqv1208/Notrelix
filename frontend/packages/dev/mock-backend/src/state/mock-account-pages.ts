@@ -1,16 +1,11 @@
 /**
  * What the account pages of the 2026-10 Account mockup need beyond the
- * profile and preference contracts (gap `CTR-GAP-ACC-PAGES`, see
- * docs/superpowers/be-blockers-2026-10.md, "BE requirement from FE:
- * Account"): the profile details (job title, phone, time zone, date format,
- * photo), the security facts (single sign-on, two-factor, backup codes,
- * signed-in devices), the notification matrix with the quiet hours, and the
- * member's workspaces with the default one. Small per-user state; the
+ * profile contract: the person's preferences, a member's job title in a workspace,
+ * the security facts (single sign-on, two-factor, backup codes,
+ * signed-in devices), the notification preferences of a workspace, the default
+ * workspace and the profile photo's address. Small per-user state; the
  * handlers compose the store with it.
  */
-
-export const DATE_FORMATS = ["dd/mm/yyyy", "yyyy-mm-dd"] as const;
-export type DateFormat = (typeof DATE_FORMATS)[number];
 
 export const TIME_ZONES = [
   "UTC",
@@ -19,31 +14,60 @@ export const TIME_ZONES = [
   "Europe/Paris",
 ] as const;
 
-export interface ProfileDetails {
-  jobTitle: string;
-  phone: string;
+/**
+ * `Identity.Profile.*Preferences`: the person's own locale, time zone, theme
+ * and phone. `version` 0 means never saved (the values are the defaults).
+ */
+export interface AccountPreferences {
+  locale: string;
   timezone: string;
-  dateFormat: DateFormat;
-  avatarUrl: string | null;
+  theme: "light" | "dark" | "system";
+  phone: string | null;
+  phoneVisibleToWorkspaceMembers: boolean;
+  version: number;
 }
 
-export type SessionKind = "desktop" | "phone" | "tablet";
+/** A member's profile in one workspace (`Workspaces.Members.*JobTitle`). */
+export interface MemberProfile {
+  jobTitle: string | null;
+  version: number;
+}
 
+/** One sign-in as `Identity.Sessions.List` answers it (no place, no last-active time). */
 export interface MockSession {
-  readonly id: string;
-  readonly device: string;
-  readonly kind: SessionKind;
-  readonly place: string;
-  /** `null` for the device that asks (this device). */
-  readonly lastActiveAt: string | null;
+  id: string;
+  status: "Active" | "Revoked" | "Expired";
+  createdAt: string;
+  expiresAt: string;
+  revokedAt: string | null;
+  ipAddress: string;
+  userAgent: string;
+  isCurrent: boolean;
+}
+
+export interface MockActivity {
+  id: string;
+  type: string;
+  occurredAt: string;
+  ipAddress: string | null;
+  userAgent: string | null;
 }
 
 export interface SecurityDetails {
   twoFactorEnabled: boolean;
-  backupCodesLeft: number;
+  recoveryCodesLeft: number;
+  passwordChangedAt: string | null;
   sessions: MockSession[];
+  activity: MockActivity[];
+  /** Wrong step-up proofs in a row; the throttle answers 429 from the fifth. */
+  stepUpFailures: number;
+  /** The authenticator being added, until its first code verifies. */
+  pendingEnrollment: string | null;
+  /** Single-use proofs handed out by a completed step-up, with their purpose. */
+  proofs: Map<string, string>;
 }
 
+/** `Collaboration.Preferences`: the types of the matrix and the two channels delivered. */
 export const NOTIFICATION_EVENTS = [
   "assigned",
   "mention",
@@ -56,118 +80,144 @@ export const NOTIFICATION_EVENTS = [
 export type NotificationEvent = (typeof NOTIFICATION_EVENTS)[number];
 
 export interface ChannelChoice {
-  app: boolean;
+  inApp: boolean;
   email: boolean;
-  mobile: boolean;
 }
 
-export interface QuietHours {
-  enabled: boolean;
-  from: string;
-  to: string;
-  days: "weekdays" | "everyday";
-}
-
-export interface NotificationMatrix {
+/** One member's choices in one workspace, with the version a save must quote. */
+export interface NotificationPreferenceSet {
+  version: number;
   rows: Record<NotificationEvent, ChannelChoice>;
-  quietHours: QuietHours;
 }
 
-const choice = (app: boolean, email: boolean, mobile: boolean) => ({
-  app,
-  email,
-  mobile,
-});
-
-const defaultMatrix = (): NotificationMatrix => ({
+/** The value of a cell nobody changed: in-app on everywhere, email on for four types. */
+const defaultNotificationSet = (): NotificationPreferenceSet => ({
+  version: 0,
   rows: {
-    assigned: choice(true, true, true),
-    mention: choice(true, true, true),
-    approval: choice(true, true, true),
-    overdue: choice(true, true, false),
-    watching: choice(true, false, false),
-    invitation: choice(true, true, false),
-    digest: choice(false, true, false),
-  },
-  quietHours: {
-    enabled: true,
-    from: "21:00",
-    to: "07:00",
-    days: "weekdays",
+    assigned: { inApp: true, email: true },
+    mention: { inApp: true, email: true },
+    approval: { inApp: true, email: true },
+    overdue: { inApp: true, email: false },
+    watching: { inApp: true, email: false },
+    invitation: { inApp: true, email: true },
+    digest: { inApp: true, email: false },
   },
 });
 
-const defaultDetails = (): ProfileDetails => ({
-  jobTitle: "Trưởng nhóm triển khai",
-  phone: "0912 468 135",
+const defaultPreferences = (): AccountPreferences => ({
+  locale: "vi",
   timezone: "Asia/Ho_Chi_Minh",
-  dateFormat: "dd/mm/yyyy",
-  avatarUrl: null,
+  theme: "system",
+  phone: null,
+  phoneVisibleToWorkspaceMembers: false,
+  version: 0,
 });
 
 export const CURRENT_SESSION_ID = "session-macbook";
 
-/** The devices signed in; times are minutes before the mock clock's now. */
-const defaultSecurity = (offsetMinutes: (m: number) => string) =>
-  ({
+const MAC_UA =
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
+const IPHONE_UA =
+  "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1";
+const IPAD_UA =
+  "Mozilla/5.0 (iPad; CPU OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1";
+
+/** The devices signed in and the person's recent security history; times are minutes before the mock clock's now. */
+const defaultSecurity = (offsetMinutes: (m: number) => string) => {
+  const day = 24 * 60;
+  const kinds = [
+    "SignInSucceeded",
+    "SignInSucceeded",
+    "SignInFailed",
+    "SessionRevoked",
+    "PasswordChanged",
+  ];
+  const session = (
+    id: string,
+    userAgent: string,
+    ago: number,
+    isCurrent = false,
+  ): MockSession => ({
+    id,
+    status: "Active",
+    createdAt: offsetMinutes(-ago),
+    expiresAt: offsetMinutes(30 * day - ago),
+    revokedAt: null,
+    ipAddress: "113.190.10.4",
+    userAgent,
+    isCurrent,
+  });
+  return {
     twoFactorEnabled: true,
-    backupCodesLeft: 8,
+    recoveryCodesLeft: 8,
+    passwordChangedAt: offsetMinutes(-40 * day),
     sessions: [
-      {
-        id: CURRENT_SESSION_ID,
-        device: "MacBook · Chrome",
-        kind: "desktop",
-        place: "Hà Nội",
-        lastActiveAt: null,
-      },
-      {
-        id: "session-iphone",
-        device: "iPhone 15 · ứng dụng Notrelix",
-        kind: "phone",
-        place: "Hà Nội",
-        lastActiveAt: offsetMinutes(-120),
-      },
-      {
-        id: "session-ipad",
-        device: "iPad · ứng dụng Notrelix",
-        kind: "tablet",
-        place: "Hà Nội",
-        lastActiveAt: offsetMinutes(-3 * 24 * 60),
-      },
+      session(CURRENT_SESSION_ID, MAC_UA, 60, true),
+      session("session-iphone", IPHONE_UA, 120),
+      session("session-ipad", IPAD_UA, 3 * day),
     ],
-  }) satisfies SecurityDetails;
+    // 25 lines so the feed pages (20 per page).
+    activity: Array.from({ length: 25 }, (_, index) => ({
+      id: `activity-${index + 1}`,
+      type: kinds[index % kinds.length] ?? "SignInSucceeded",
+      occurredAt: offsetMinutes(-(index + 1) * 90),
+      ipAddress: "113.190.10.4",
+      userAgent: index % 2 === 0 ? MAC_UA : IPHONE_UA,
+    })),
+    stepUpFailures: 0,
+    pendingEnrollment: null,
+    proofs: new Map<string, string>(),
+  } satisfies SecurityDetails;
+};
 
 export class MockAccountPages {
-  private details = new Map<string, ProfileDetails>();
+  /** The persona the mockups draw: its job title is seeded. */
+  static readonly SEED_USER = "mock-user-owner";
+
+  private preferences = new Map<string, AccountPreferences>();
+  private memberProfiles = new Map<string, MemberProfile>();
   private security = new Map<string, SecurityDetails>();
-  private matrix = new Map<string, NotificationMatrix>();
+  private notificationSets = new Map<string, NotificationPreferenceSet>();
   private defaultWorkspace = new Map<string, string>();
-  private left = new Map<string, Set<string>>();
+  private avatarVersions = new Map<string, number>();
 
   reset(): void {
-    this.details.clear();
+    this.preferences.clear();
+    this.memberProfiles.clear();
     this.security.clear();
-    this.matrix.clear();
+    this.notificationSets.clear();
     this.defaultWorkspace.clear();
-    this.left.clear();
+    this.avatarVersions.clear();
   }
 
-  detailsOf(userId: string): ProfileDetails {
-    let value = this.details.get(userId);
+  preferencesOf(userId: string): AccountPreferences {
+    let value = this.preferences.get(userId);
     if (!value) {
-      value = defaultDetails();
-      this.details.set(userId, value);
+      value = defaultPreferences();
+      this.preferences.set(userId, value);
     }
     return value;
   }
 
-  updateDetails(
-    userId: string,
-    patch: Partial<ProfileDetails>,
-  ): ProfileDetails {
-    const next = { ...this.detailsOf(userId), ...patch };
-    this.details.set(userId, next);
-    return next;
+  savePreferences(userId: string, next: AccountPreferences): void {
+    this.preferences.set(userId, next);
+  }
+
+  /** The job title and version of one member of one workspace. */
+  memberProfileOf(workspaceId: string, userId: string): MemberProfile {
+    const key = `${workspaceId}|${userId}`;
+    let value = this.memberProfiles.get(key);
+    if (!value) {
+      value = {
+        jobTitle:
+          userId === MockAccountPages.SEED_USER
+            ? "Trưởng nhóm triển khai"
+            : null,
+        version: 0,
+      };
+      this.memberProfiles.set(key, value);
+    }
+    return value;
   }
 
   securityOf(
@@ -182,18 +232,18 @@ export class MockAccountPages {
     return value;
   }
 
-  matrixOf(userId: string): NotificationMatrix {
-    let value = this.matrix.get(userId);
+  /** A member's choices in one workspace (never read across workspaces). */
+  notificationsOf(
+    userId: string,
+    workspaceId: string,
+  ): NotificationPreferenceSet {
+    const key = `${userId}|${workspaceId}`;
+    let value = this.notificationSets.get(key);
     if (!value) {
-      value = defaultMatrix();
-      this.matrix.set(userId, value);
+      value = defaultNotificationSet();
+      this.notificationSets.set(key, value);
     }
     return value;
-  }
-
-  saveMatrix(userId: string, next: NotificationMatrix): NotificationMatrix {
-    this.matrix.set(userId, next);
-    return next;
   }
 
   defaultWorkspaceOf(userId: string): string | null {
@@ -204,15 +254,16 @@ export class MockAccountPages {
     this.defaultWorkspace.set(userId, workspaceId);
   }
 
-  leave(userId: string, workspaceId: string): void {
-    const set = this.left.get(userId) ?? new Set<string>();
-    set.add(workspaceId);
-    this.left.set(userId, set);
+  /** A leave clears the default when it was that workspace. */
+  forgetDefaultWorkspace(userId: string, workspaceId: string): void {
     if (this.defaultWorkspace.get(userId) === workspaceId)
       this.defaultWorkspace.delete(userId);
   }
 
-  hasLeft(userId: string, workspaceId: string): boolean {
-    return this.left.get(userId)?.has(workspaceId) ?? false;
+  /** The address of the person's new photo; a new upload changes `v`. */
+  nextAvatarUrl(userId: string): string {
+    const version = (this.avatarVersions.get(userId) ?? 0) + 1;
+    this.avatarVersions.set(userId, version);
+    return `/api/v1/users/${userId}/avatar?v=photo-${version}`;
   }
 }

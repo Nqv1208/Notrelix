@@ -32,6 +32,10 @@ export const en = {
     invalid: "Enter an email like name@company.com.",
     unreachable:
       "Could not reach Notrelix. Check the connection and try again.",
+    mfaRequired:
+      "This account uses a second step, so it signs in with its email and password and then the authenticator code.",
+    providerFailed:
+      "Signing in with the provider did not work. Try again, or use your email and password.",
   },
   password: {
     title: "Enter your password",
@@ -43,8 +47,6 @@ export const en = {
     show: "Show password",
     hide: "Hide password",
     wrong: "Email or password is not right.",
-    attemptsLeft_one: "{{count}} try left before sign-in pauses.",
-    attemptsLeft_other: "{{count}} tries left before sign-in pauses.",
     lockTitle: "Try again in {{seconds}} seconds",
     lockBody:
       "To protect the account, signing in pauses after several wrong tries. You can reset the password now.",
@@ -70,10 +72,11 @@ export const en = {
   otp: {
     title: "Two-step verification",
     lead: "Open the authenticator app on your phone and enter the 6-digit code for {{email}}.",
+    leadNoEmail:
+      "Open the authenticator app on your phone and enter the 6-digit code.",
     legend: "Code from the authenticator app",
     digit: "Digit {{index}} of 6",
     hint: "The code changes every 30 seconds. You can paste all 6 digits into the first box.",
-    remember: "Remember this device for 30 days",
     verify: "Verify",
     verifying: "Verifying…",
     backup: "Use a backup code",
@@ -84,9 +87,10 @@ export const en = {
     useApp: "Use the authenticator app",
     back: "Back to sign-in",
     wrong: "That code is not right. Check the app and try again.",
-    wrongLeft_one: "That code is not right. {{count}} try left.",
-    wrongLeft_other: "That code is not right. {{count}} tries left.",
     expired: "This verification expired. Sign in again.",
+    inactive:
+      "This account cannot sign in right now. Contact your administrator.",
+    locked: "Too many wrong codes. Try again in {{seconds}} seconds.",
   },
   forgot: {
     title: "Reset your password",
@@ -112,6 +116,28 @@ export const en = {
     back: "Back to sign-in",
     other: "Use another email",
   },
+  verifyEmail: {
+    confirmingTitle: "Confirming your email",
+    confirmingLead: "One moment.",
+    doneTitle: "Your email is confirmed",
+    doneLead: "You can set up your company now.",
+    continue: "Continue",
+    failedTitle: "This link no longer works",
+    failedLead:
+      "It may have been used already or it has expired. Enter your email and we send a new one.",
+    waitingTitle: "Confirm your email",
+    waitingLead:
+      "We sent a link to your email. Open it to finish setting up your account.",
+    label: "Email",
+    placeholder: "name@company.com",
+    send: "Send a new link",
+    sending: "Sending…",
+    sentNotice: "A new link is on its way. Check your inbox and spam folder.",
+    invalid: "Enter an email like name@company.com.",
+    unreachable:
+      "Could not reach Notrelix. Check the connection and try again.",
+    back: "Back to sign-in",
+  },
   invite: {
     title: "{{inviter}} invited you to the board {{board}} of {{org}}",
     guest: "Guest",
@@ -127,7 +153,7 @@ export const en = {
     emailHint: "The invitation is tied to this email and cannot be changed.",
     nameLabel: "Full name",
     passwordLabel: "Create a password",
-    passwordHint: "At least 12 characters.",
+    passwordHint: "At least {{count}} characters.",
     show: "Show password",
     hide: "Hide password",
     accept: "Accept and create the account",
@@ -139,7 +165,7 @@ export const en = {
     hasAccount: "Already have a Notrelix account?",
     signInToAccept: "Sign in to accept",
     nameRequired: "Enter your name.",
-    passwordShort: "Use at least 12 characters.",
+    passwordShort: "Use at least {{count}} characters.",
     unreachable:
       "Could not reach Notrelix. Check the connection and try again.",
     declined: {
@@ -190,6 +216,10 @@ export const vi: AuthCopy = {
     createWorkspace: "Tạo workspace",
     invalid: "Nhập email dạng ten@congty.vn.",
     unreachable: "Chưa kết nối được Notrelix. Kiểm tra mạng rồi thử lại.",
+    mfaRequired:
+      "Tài khoản này có xác minh hai bước, nên đăng nhập bằng email và mật khẩu rồi nhập mã từ ứng dụng xác thực.",
+    providerFailed:
+      "Đăng nhập bằng nhà cung cấp chưa được. Thử lại, hoặc dùng email và mật khẩu.",
   },
   password: {
     title: "Nhập mật khẩu",
@@ -201,8 +231,6 @@ export const vi: AuthCopy = {
     show: "Hiện mật khẩu",
     hide: "Ẩn mật khẩu",
     wrong: "Email hoặc mật khẩu chưa đúng.",
-    attemptsLeft_one: "Còn {{count}} lần thử trước khi đăng nhập tạm dừng.",
-    attemptsLeft_other: "Còn {{count}} lần thử trước khi đăng nhập tạm dừng.",
     lockTitle: "Thử lại sau {{seconds}} giây",
     lockBody:
       "Để bảo vệ tài khoản, đăng nhập tạm dừng sau nhiều lần thử chưa đúng. Bạn có thể đặt lại mật khẩu ngay.",
@@ -227,10 +255,10 @@ export const vi: AuthCopy = {
   otp: {
     title: "Xác minh hai bước",
     lead: "Mở ứng dụng xác thực trên điện thoại và nhập mã 6 số cho {{email}}.",
+    leadNoEmail: "Mở ứng dụng xác thực trên điện thoại và nhập mã 6 số.",
     legend: "Mã trong ứng dụng xác thực",
     digit: "Số {{index}} trên 6",
     hint: "Mã đổi sau mỗi 30 giây. Dán cả 6 số vào ô đầu cũng được.",
-    remember: "Ghi nhớ thiết bị này 30 ngày",
     verify: "Xác minh",
     verifying: "Đang xác minh…",
     backup: "Dùng mã dự phòng",
@@ -240,9 +268,10 @@ export const vi: AuthCopy = {
     useApp: "Dùng ứng dụng xác thực",
     back: "Quay lại đăng nhập",
     wrong: "Mã chưa đúng. Kiểm tra ứng dụng rồi thử lại.",
-    wrongLeft_one: "Mã chưa đúng. Còn {{count}} lần thử.",
-    wrongLeft_other: "Mã chưa đúng. Còn {{count}} lần thử.",
     expired: "Phiên xác minh đã hết hạn. Hãy đăng nhập lại.",
+    inactive:
+      "Tài khoản này tạm thời không đăng nhập được. Hãy liên hệ quản trị viên.",
+    locked: "Nhập sai mã quá nhiều lần. Thử lại sau {{seconds}} giây.",
   },
   forgot: {
     title: "Đặt lại mật khẩu",
@@ -267,6 +296,27 @@ export const vi: AuthCopy = {
     back: "Quay lại đăng nhập",
     other: "Dùng email khác",
   },
+  verifyEmail: {
+    confirmingTitle: "Đang xác nhận email của bạn",
+    confirmingLead: "Vui lòng chờ một chút.",
+    doneTitle: "Email của bạn đã được xác nhận",
+    doneLead: "Bạn có thể thiết lập công ty ngay bây giờ.",
+    continue: "Tiếp tục",
+    failedTitle: "Liên kết này không còn dùng được",
+    failedLead:
+      "Liên kết có thể đã được dùng hoặc đã hết hạn. Nhập email để chúng tôi gửi liên kết mới.",
+    waitingTitle: "Xác nhận email của bạn",
+    waitingLead:
+      "Chúng tôi đã gửi một liên kết tới email của bạn. Mở liên kết để hoàn tất tài khoản.",
+    label: "Email",
+    placeholder: "ten@congty.vn",
+    send: "Gửi liên kết mới",
+    sending: "Đang gửi…",
+    sentNotice: "Liên kết mới đang được gửi. Xem hộp thư đến và thư rác.",
+    invalid: "Nhập email dạng ten@congty.vn.",
+    unreachable: "Chưa kết nối được Notrelix. Kiểm tra mạng rồi thử lại.",
+    back: "Quay lại đăng nhập",
+  },
   invite: {
     title: "{{inviter}} mời bạn vào board {{board}} của {{org}}",
     guest: "Khách",
@@ -282,7 +332,7 @@ export const vi: AuthCopy = {
     emailHint: "Lời mời gắn với email này, không đổi được.",
     nameLabel: "Họ và tên",
     passwordLabel: "Tạo mật khẩu",
-    passwordHint: "Ít nhất 12 ký tự.",
+    passwordHint: "Ít nhất {{count}} ký tự.",
     show: "Hiện mật khẩu",
     hide: "Ẩn mật khẩu",
     accept: "Chấp nhận và tạo tài khoản",
@@ -294,7 +344,7 @@ export const vi: AuthCopy = {
     hasAccount: "Đã có tài khoản Notrelix?",
     signInToAccept: "Đăng nhập để chấp nhận",
     nameRequired: "Nhập họ và tên của bạn.",
-    passwordShort: "Dùng ít nhất 12 ký tự.",
+    passwordShort: "Dùng ít nhất {{count}} ký tự.",
     unreachable: "Chưa kết nối được Notrelix. Kiểm tra mạng rồi thử lại.",
     declined: {
       title: "Bạn đã từ chối lời mời",

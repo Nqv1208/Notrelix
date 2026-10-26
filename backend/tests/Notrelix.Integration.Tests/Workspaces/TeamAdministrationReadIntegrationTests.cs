@@ -68,7 +68,7 @@ public sealed class TeamAdministrationReadIntegrationTests : IAsyncLifetime
         _db = db;
     }
 
-    public async Task InitializeAsync() => await new DatabaseReset(_db.ConnectionString).ResetAsync();
+    public async Task InitializeAsync() => await new DatabaseReset(_db.OwnerConnectionString).ResetAsync();
 
     public Task DisposeAsync() => Task.CompletedTask;
 
@@ -174,7 +174,7 @@ public sealed class TeamAdministrationReadIntegrationTests : IAsyncLifetime
 
     private async Task<(long Version, TeamStatus Status)> PersistedTeamAsync(Guid teamId)
     {
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         var team = await verify.Teams.Where(t => t.Id == teamId).Select(t => new { t.Version, t.Status }).SingleAsync();
         return (team.Version, team.Status);
     }
@@ -183,7 +183,7 @@ public sealed class TeamAdministrationReadIntegrationTests : IAsyncLifetime
     {
         var userId = await SeedUserAsync();
         var member = WorkspaceMember.Create(stack.AccountId, stack.WorkspaceId, userId, WorkspaceRole.Member, stack.OwnerId, BaseTime);
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.AccountMembers.Add(AccountMember.Create(stack.AccountId, userId, AccountRole.Member, stack.OwnerId, BaseTime));
         seed.WorkspaceMembers.Add(member);
         await seed.SaveChangesAsync();
@@ -194,7 +194,7 @@ public sealed class TeamAdministrationReadIntegrationTests : IAsyncLifetime
     {
         var user = User.Create($"wx-team-{Guid.NewGuid():N}@example.com", "WX Person", "hashed", BaseTime, true);
         user.ConfirmEmail(user.Id, BaseTime);
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Users.Add(user);
         await seed.SaveChangesAsync();
         return user.Id;
@@ -210,7 +210,7 @@ public sealed class TeamAdministrationReadIntegrationTests : IAsyncLifetime
         var account = Account.Create("WX Team Account", $"wx-team-{Guid.NewGuid():N}", AccountType.Team, owner.Id, now);
         var workspace = Workspace.Create(account.Id, owner.Id, "WX Team Workspace", $"wx-team-ws-{Guid.NewGuid():N}", now);
 
-        await using (var seed = _db.CreateContext(SystemTenant()))
+        await using (var seed = _db.CreateOwnerContext(SystemTenant()))
         {
             seed.Users.Add(owner);
             seed.Users.Add(member);
@@ -223,7 +223,7 @@ public sealed class TeamAdministrationReadIntegrationTests : IAsyncLifetime
             await seed.SaveChangesAsync();
         }
 
-        await using var grant = _db.CreateContext(SystemTenant());
+        await using var grant = _db.CreateOwnerContext(SystemTenant());
         var projection = new AccessGrantProjectionService(grant);
         await projection.SyncWorkspaceMemberGrantAsync(account.Id, workspace.Id, owner.Id, WorkspaceRole.Owner, now, CancellationToken.None);
         await projection.SyncWorkspaceMemberGrantAsync(account.Id, workspace.Id, member.Id, WorkspaceRole.Member, now, CancellationToken.None);
@@ -290,7 +290,7 @@ public sealed class TeamAdministrationReadIntegrationTests : IAsyncLifetime
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(IdempotencyBehavior<,>));
 
         services.AddScoped<ApplicationDbContext>(sp =>
-            _db.CreateContext(sp.GetRequiredService<ICurrentTenantContext>()));
+            _db.CreateOwnerContext(sp.GetRequiredService<ICurrentTenantContext>()));
         services.AddScoped<IWorkspaceDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IIdentityDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IAccountDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());

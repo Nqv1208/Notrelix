@@ -1,38 +1,36 @@
 import { expect, test } from "@playwright/test";
 import {
+  addItemToLane,
   openBoard,
-  openWorkspace,
   realUsers,
+  showAllInLane,
   signIn,
 } from "./support/real-session";
 
-test("admin creates a card that remains after a real backend reload", async ({
+test("admin creates and renames an item that remains after a real backend reload", async ({
   page,
 }) => {
   await signIn(page, realUsers.admin);
-  await openWorkspace(page, "Workspace 1");
-  await openBoard(page, /^Product Roadmap \(/);
+  await openBoard(page, "Workspace 2", "Bug Tracker");
 
-  const backlogButton = page.getByRole("button", {
-    name: "Add card to Backlog",
-  });
-  await backlogButton.click();
-  await page
-    .getByLabel("New card title for Backlog")
-    .fill("E2E persisted card");
-  const createResponse = page.waitForResponse(
+  const title = `E2E persisted item ${Date.now()}`;
+  expect(await addItemToLane(page, "Backlog", title)).toBeLessThan(300);
+  await showAllInLane(page, "Backlog");
+  await expect(page.getByRole("button", { name: title })).toBeVisible();
+
+  await page.getByRole("button", { name: title }).click();
+  const renamed = `${title} renamed`;
+  const edit = page.getByRole("textbox", { name: "Edit title" });
+  const saved = page.waitForResponse(
     (response) =>
-      response.request().method() === "POST" &&
-      /\/boards\/[^/]+\/items$/.test(response.url()),
+      response.request().method() === "PATCH" &&
+      /\/board-items\/[^/]+$/.test(response.url()),
   );
-  await page.getByRole("button", { name: "Add card", exact: true }).click();
-  await expect((await createResponse).status()).toBeLessThan(300);
-  await expect(
-    page.getByRole("button", { name: "E2E persisted card" }),
-  ).toBeVisible();
+  await edit.fill(renamed);
+  await edit.press("Enter");
+  expect((await saved).status()).toBeLessThan(300);
 
   await page.reload();
-  await expect(
-    page.getByRole("button", { name: "E2E persisted card" }),
-  ).toBeVisible();
+  await showAllInLane(page, "Backlog");
+  await expect(page.getByRole("button", { name: renamed })).toBeVisible();
 });

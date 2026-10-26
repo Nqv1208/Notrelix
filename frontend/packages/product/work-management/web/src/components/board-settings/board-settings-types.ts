@@ -7,6 +7,11 @@ import type {
   BoardSettingsViewDto,
   BoardSettingsViewPatch,
   BoardSettingsWriteResult,
+  CreateWorkspaceAutomationInput,
+  WorkspaceAutomationDefinition,
+  WorkspaceAutomationRuleDto,
+  WorkspaceAutomationRunDto,
+  WorkspaceAutomationWriteResult,
 } from "@notrelix/work-management-core";
 import type { AutomationPanelProps } from "./automation-types";
 import type { BoardSettingsCopy } from "./board-settings.copy";
@@ -38,6 +43,8 @@ export interface BoardSettingsActions {
     changes: BoardSettingsFieldPatch,
   ): Promise<BoardSettingsWriteResult>;
   archiveField(fieldId: string): Promise<BoardSettingsWriteResult>;
+  /** Deletes a field for good; a board Manager confirms first. */
+  deleteField(fieldId: string): Promise<BoardSettingsWriteResult>;
   restoreField(fieldId: string): Promise<BoardSettingsWriteResult>;
   addOption(
     fieldId: string,
@@ -65,6 +72,8 @@ export interface BoardSettingsActions {
     changes: BoardSettingsViewPatch,
   ): Promise<BoardSettingsWriteResult>;
   duplicateView(viewId: string): Promise<BoardSettingsWriteResult>;
+  /** The tab a board opens on. */
+  setDefaultView(viewId: string): Promise<BoardSettingsWriteResult>;
   deleteView(viewId: string): Promise<BoardSettingsWriteResult>;
   createGroup(name: string): Promise<BoardSettingsWriteResult>;
   reorderGroups(ids: readonly string[]): Promise<BoardSettingsWriteResult>;
@@ -113,6 +122,8 @@ export interface BoardSettingsSurfaceProps {
   actions: BoardSettingsActions;
   /** The rule editor and the run log of the automations section. */
   automation?: AutomationPanelProps;
+  /** The workspace's automation rules: when given, the section shows them instead of the rule editor. */
+  workspaceRules?: WorkspaceRulesPanelProps;
   /** The Kanban view's own settings (lane limit, who manages statuses), shown in its panel. */
   kanbanSettings?: ReactNode;
   /** Reads the settings again (after a conflict or an error). */
@@ -129,4 +140,50 @@ export interface BoardSettingsSurfaceProps {
   defaultArchiveFieldId?: string | null;
   /** For stories and tests: show a write failure at the start. */
   defaultFeedback?: "failed" | "conflict" | null;
+}
+
+/** One choice of the rule editor: a group, a status, a person or a field of the board. */
+export interface WorkspaceRuleChoice {
+  readonly id: string;
+  readonly name: string;
+}
+
+/**
+ * The automation rules of the board shown in the "Tự động hoá" section: a rule
+ * has one trigger, optional conditions that must all hold, and up to five
+ * actions that run in order on the item that triggered it.
+ */
+export interface WorkspaceRulesPanelProps {
+  /** The board whose rules the panel lists and creates. */
+  readonly boardId: string;
+  readonly status: "loading" | "error" | "forbidden" | "ready";
+  readonly rules: readonly WorkspaceAutomationRuleDto[];
+  /** What the editor offers and what a rule's sentence names: all of this board. */
+  readonly groups: readonly WorkspaceRuleChoice[];
+  readonly statuses: readonly WorkspaceRuleChoice[];
+  readonly people: readonly WorkspaceRuleChoice[];
+  /** The fields a rule can write or test (text and number fields). */
+  readonly fields: readonly WorkspaceRuleChoice[];
+  readonly onReload: () => void;
+  readonly onCreate: (
+    input: CreateWorkspaceAutomationInput,
+  ) => Promise<WorkspaceAutomationWriteResult>;
+  readonly onUpdate: (
+    ruleId: string,
+    definition: WorkspaceAutomationDefinition,
+  ) => Promise<WorkspaceAutomationWriteResult>;
+  readonly onDelete: (
+    ruleId: string,
+  ) => Promise<WorkspaceAutomationWriteResult>;
+  readonly onSetEnabled: (
+    ruleId: string,
+    enabled: boolean,
+  ) => Promise<WorkspaceAutomationWriteResult>;
+  /** The rule whose runs are open, with the runs read for it. */
+  readonly openRuleId: string | null;
+  readonly onOpenRuns: (ruleId: string | null) => void;
+  readonly runs: {
+    readonly status: "loading" | "error" | "ready";
+    readonly data: readonly WorkspaceAutomationRunDto[];
+  };
 }

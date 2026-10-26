@@ -37,7 +37,8 @@ type SidebarContextProps = {
   isMobile: boolean;
   /** Viewport is in the tablet band (768-1279 px). */
   isTablet: boolean;
-  /** Tablet sidebar collapsed to its 64 px icon column. */
+  /** Desktop or tablet sidebar collapsed (to its icon column when the
+   * sidebar is `collapsible="icon"`; the tablet band always is). */
   iconOnly: boolean;
   toggleSidebar: () => void;
 };
@@ -141,7 +142,7 @@ function SidebarProvider({
       setOpen,
       isMobile,
       isTablet,
-      iconOnly: isTablet && !isMobile && !open,
+      iconOnly: !isMobile && !open,
       openMobile,
       setOpenMobile,
       toggleSidebar,

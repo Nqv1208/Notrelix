@@ -7,5 +7,9 @@ public sealed record UpdateWorkspaceSettingsRequest(
     string DefaultMemberRole,
     int InvitationExpiryDays,
     long ExpectedVersion,
-    int? GuestDefaultExpiryDays = null
+    int? GuestDefaultExpiryDays = null,
+    string? Size = null,
+    string? Language = null,
+    string? TimeZone = null,
+    string? WeekStart = null
 );

@@ -1617,6 +1617,16 @@
               "theme": "light"
             }
           ]
+        },
+        {
+          "id": "workspace-inbox--inbox-done",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         }
       ],
       "stateCoverage": {
@@ -1716,6 +1726,26 @@
         },
         {
           "id": "edge",
+          "testFile": "src/web/inbox/__tests__/workspace-inbox.interaction.component.test.tsx"
+        },
+        {
+          "id": "done-filter",
+          "testFile": "src/web/inbox/__tests__/workspace-inbox.interaction.component.test.tsx"
+        },
+        {
+          "id": "done-empty",
+          "testFile": "src/web/inbox/__tests__/workspace-inbox.interaction.component.test.tsx"
+        },
+        {
+          "id": "done-action",
+          "testFile": "src/web/inbox/__tests__/workspace-inbox.interaction.component.test.tsx"
+        },
+        {
+          "id": "mute-toggle",
+          "testFile": "src/web/inbox/__tests__/workspace-inbox.interaction.component.test.tsx"
+        },
+        {
+          "id": "snooze",
           "testFile": "src/web/inbox/__tests__/workspace-inbox.interaction.component.test.tsx"
         },
         {
@@ -2215,6 +2245,10 @@
         },
         {
           "id": "unavailable",
+          "testFile": "src/web/settings/__tests__/workspace-settings.interaction.component.test.tsx"
+        },
+        {
+          "id": "timezone",
           "testFile": "src/web/settings/__tests__/workspace-settings.interaction.component.test.tsx"
         }
       ]
@@ -4794,6 +4828,44 @@
               "theme": "light"
             }
           ]
+        },
+        {
+          "id": "workspace-integrations--list-not-configured",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-integrations--webhook-connect-dialog",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-integrations--secret-dialog",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
         }
       ],
       "stateCoverage": {
@@ -4834,6 +4906,202 @@
         {
           "id": "connect",
           "testFile": "src/web/integrations/__tests__/integrations.interaction.component.test.tsx"
+        },
+        {
+          "id": "not-configured",
+          "testFile": "src/web/integrations/__tests__/integrations.interaction.component.test.tsx"
+        },
+        {
+          "id": "webhook-connect",
+          "testFile": "src/web/integrations/__tests__/integrations.interaction.component.test.tsx"
+        },
+        {
+          "id": "secret",
+          "testFile": "src/web/integrations/__tests__/integrations.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "workspace.feature-unavailable",
+      "owner": "@notrelix/features-workspace",
+      "surfaceKind": "feedback",
+      "pureEntry": "src/web/unavailable/feature-unavailable-surface.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "workspace-feature-availability--integrations-unavailable",
+          "state": "Default",
+          "visualTargets": []
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default"],
+        "delegated": [],
+        "notApplicable": []
+      },
+      "responsive": false,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "purity"],
+      "interactionCases": [
+        {
+          "id": "integrations",
+          "testFile": "src/web/unavailable/__tests__/feature-availability.interaction.component.test.tsx"
+        },
+        {
+          "id": "reports",
+          "testFile": "src/web/unavailable/__tests__/feature-availability.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "workspace.billing-capabilities",
+      "owner": "@notrelix/features-workspace",
+      "surfaceKind": "data",
+      "pureEntry": "src/web/billing/billing-capabilities-surface.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "workspace-feature-availability--capabilities-default",
+          "state": "Default",
+          "visualTargets": []
+        },
+        {
+          "id": "workspace-feature-availability--capabilities-loading",
+          "state": "Loading",
+          "visualTargets": []
+        },
+        {
+          "id": "workspace-feature-availability--capabilities-error",
+          "state": "Error",
+          "visualTargets": []
+        },
+        {
+          "id": "workspace-feature-availability--capabilities-edge-data",
+          "state": "EdgeData",
+          "visualTargets": []
+        },
+        {
+          "id": "workspace-feature-availability--capabilities-forbidden",
+          "state": "PermissionLimited",
+          "visualTargets": []
+        }
+      ],
+      "stateCoverage": {
+        "required": [
+          "Default",
+          "EdgeData",
+          "Error",
+          "Loading",
+          "PermissionLimited"
+        ],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "Empty",
+            "reason": "Every workspace lists the capabilities Billing defines, so the list is never empty.",
+            "authority": "docs/product/billing.md"
+          },
+          {
+            "state": "HighDensity",
+            "reason": "The page lists the capabilities Billing defines, a handful of rows.",
+            "authority": "docs/product/billing.md"
+          },
+          {
+            "state": "ReadOnly",
+            "reason": "The page only reads; every change to the plan is said to be not available yet.",
+            "authority": "docs/product/billing.md"
+          }
+        ]
+      },
+      "responsive": false,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "purity"],
+      "interactionCases": [
+        {
+          "id": "capabilities",
+          "testFile": "src/web/unavailable/__tests__/feature-availability.interaction.component.test.tsx"
+        },
+        {
+          "id": "states",
+          "testFile": "src/web/unavailable/__tests__/feature-availability.interaction.component.test.tsx"
+        },
+        {
+          "id": "plan",
+          "testFile": "src/web/unavailable/__tests__/feature-availability.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "workspace.work-report",
+      "owner": "@notrelix/features-workspace",
+      "surfaceKind": "data",
+      "pureEntry": "src/web/reports/work-report-surface.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "workspace-feature-availability--work-report-default",
+          "state": "Default",
+          "visualTargets": []
+        },
+        {
+          "id": "workspace-feature-availability--work-report-loading",
+          "state": "Loading",
+          "visualTargets": []
+        },
+        {
+          "id": "workspace-feature-availability--work-report-error",
+          "state": "Error",
+          "visualTargets": []
+        },
+        {
+          "id": "workspace-feature-availability--work-report-empty",
+          "state": "Empty",
+          "visualTargets": []
+        },
+        {
+          "id": "workspace-feature-availability--work-report-forbidden",
+          "state": "PermissionLimited",
+          "visualTargets": []
+        }
+      ],
+      "stateCoverage": {
+        "required": [
+          "Default",
+          "Empty",
+          "Error",
+          "Loading",
+          "PermissionLimited"
+        ],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "EdgeData",
+            "reason": "The report draws counts and eight weekly bars; a zero count is the Empty state or a zero-height bar.",
+            "authority": "docs/product/analytics.md"
+          },
+          {
+            "state": "HighDensity",
+            "reason": "The report lists status categories, at most fifty assignees and eight weeks.",
+            "authority": "docs/product/analytics.md"
+          },
+          {
+            "state": "ReadOnly",
+            "reason": "The page only reads; it has no write to withhold.",
+            "authority": "docs/product/analytics.md"
+          }
+        ]
+      },
+      "responsive": false,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "purity"],
+      "interactionCases": [
+        {
+          "id": "report",
+          "testFile": "src/web/unavailable/__tests__/feature-availability.interaction.component.test.tsx"
+        },
+        {
+          "id": "scope",
+          "testFile": "src/web/unavailable/__tests__/feature-availability.interaction.component.test.tsx"
         }
       ]
     }

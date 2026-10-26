@@ -111,6 +111,25 @@ describe("api.upload (multipart over XHR)", () => {
     await expect(result).resolves.toEqual({ id: "att-1", kind: "File" });
   });
 
+  it("sends a PUT without an Idempotency-Key when the operation takes none", async () => {
+    const { client } = setup();
+    const result = client.api.upload<{ avatarUrl: string }>(
+      "/profile/avatar",
+      form(),
+      { method: "PUT" },
+    );
+    const xhr = await sent();
+    expect(xhr.method).toBe("PUT");
+    expect(xhr.headers).toEqual({
+      "X-Correlation-ID": "corr-1",
+      "X-CSRF-Token": "csrf-1",
+    });
+    xhr.answer(200, { avatarUrl: "/api/v1/users/u1/avatar?v=1" });
+    await expect(result).resolves.toEqual({
+      avatarUrl: "/api/v1/users/u1/avatar?v=1",
+    });
+  });
+
   it("reports upload progress", async () => {
     const { client } = setup();
     const onProgress = vi.fn();

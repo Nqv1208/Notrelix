@@ -1,39 +1,34 @@
 import { useCallback, useMemo, useRef, useState } from "react";
-import { useRouter } from "@tanstack/react-router";
-import { accountQueryKey, useAccountId } from "@notrelix/query";
+import { useParams, useRouter } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { workspaceQueryKey } from "@notrelix/query";
 import { useAppRuntime } from "@notrelix/runtime-web";
 import type { AccountFrameLink, AccountTab } from "@notrelix/features-account";
-import {
-  createAccountPagesApi,
-  type AccountPagesApiClient,
-} from "./account-pages-api";
 
-/** The account-page calls on the app's runtime client. */
-export function useAccountPagesApi() {
+/** The workspace of the route the account pages are shown in. */
+export function useRouteWorkspaceId(): string {
+  const { workspaceId = "" } = useParams({ strict: false }) as {
+    workspaceId?: string;
+  };
+  return workspaceId;
+}
+
+/** The name of the route's workspace, for the pages' copy; `""` until it loads. */
+export function useRouteWorkspaceName(): string {
+  const workspaceId = useRouteWorkspaceId();
   const { api: runtimeClient } = useAppRuntime();
-  return useMemo(
-    () =>
-      createAccountPagesApi(
-        runtimeClient.api as unknown as AccountPagesApiClient,
-      ),
-    [runtimeClient],
-  );
-}
-
-/** Account-scoped query keys of the pages (no workspace dimension). */
-export function accountPagesKeys(accountId: string) {
-  return {
-    details: accountQueryKey(accountId, "account-pages", "details"),
-    security: accountQueryKey(accountId, "account-pages", "security"),
-    notifications: accountQueryKey(accountId, "account-pages", "notifications"),
-    workspaces: accountQueryKey(accountId, "account-pages", "workspaces"),
-  } as const;
-}
-
-/** The pages' keys for the active Account (fails loudly without one). */
-export function useAccountPagesKeys() {
-  const accountId = useAccountId();
-  return useMemo(() => accountPagesKeys(accountId), [accountId]);
+  const query = useQuery({
+    queryKey: workspaceQueryKey(workspaceId, "account-pages", "name"),
+    queryFn: async () => {
+      const wire = await runtimeClient.api.get<{ name?: string | null }>(
+        runtimeClient.endpoints.workspaces.detail(workspaceId),
+      );
+      return wire.name ?? "";
+    },
+    enabled: workspaceId !== "",
+    retry: false,
+  });
+  return query.data ?? "";
 }
 
 const PATHS: Record<AccountTab, string> = {

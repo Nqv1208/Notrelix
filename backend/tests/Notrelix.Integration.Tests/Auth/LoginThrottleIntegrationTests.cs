@@ -55,7 +55,7 @@ public sealed class LoginThrottleIntegrationTests : IAsyncLifetime
             InstanceName = "Notrelix_",
         });
 
-        await using var context = _fixture.CreatePostgresContext();
+        await using var context = _fixture.CreatePostgresOwnerContext();
         context.Users.Add(User.Create("known@example.com", "Known", "hashed", DateTimeOffset.UtcNow, hasPasswordCredential: true));
         context.Users.Add(User.Create("other@example.com", "Other", "hashed", DateTimeOffset.UtcNow, hasPasswordCredential: true));
         await context.SaveChangesAsync();
@@ -83,7 +83,7 @@ public sealed class LoginThrottleIntegrationTests : IAsyncLifetime
 
     private async Task<Result<AuthResult>> LoginAsync(string email, string password)
     {
-        await using var context = _fixture.CreatePostgresContext();
+        await using var context = _fixture.CreatePostgresOwnerContext();
         var hasher = new Mock<IPasswordHasher>();
         hasher.Setup(h => h.VerifyPassword(It.IsAny<string>(), It.IsAny<string>()))
             .Returns((string plain, string _) => plain == GoodPassword);
@@ -275,7 +275,7 @@ public sealed class LoginThrottleIntegrationTests : IAsyncLifetime
 
     private async Task<(string Token, Guid UserId)> NewChallengeAsync(string email)
     {
-        await using var context = _fixture.CreatePostgresContext();
+        await using var context = _fixture.CreatePostgresOwnerContext();
         var user = context.Users.Single(u => u.NormalizedEmail == email);
         var store = new MfaChallengeStore(new RedisCacheService(_distributedCache, _redis));
         var token = Convert.ToHexString(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32));
@@ -290,7 +290,7 @@ public sealed class LoginThrottleIntegrationTests : IAsyncLifetime
 
     private async Task<Result<AuthResult>> CompleteAsync(string token, string code)
     {
-        await using var context = _fixture.CreatePostgresContext();
+        await using var context = _fixture.CreatePostgresOwnerContext();
         var verifier = new Mock<IMfaCodeVerifier>();
         verifier.Setup(v => v.VerifyAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((Guid _, string c, DateTimeOffset _, CancellationToken _) => c == GoodCode);

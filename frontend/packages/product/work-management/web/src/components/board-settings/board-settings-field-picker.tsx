@@ -26,9 +26,12 @@ const GROUPS: readonly {
  */
 export function FieldTypePicker({
   copy,
+  allowed,
   onPick,
 }: {
   copy: BoardSettingsCopy;
+  /** The types a field can be created as; absent = all. */
+  allowed?: readonly BoardSettingsFieldType[];
   onPick: (type: BoardSettingsFieldType) => void;
 }) {
   const [query, setQuery] = useState("");
@@ -41,13 +44,14 @@ export function FieldTypePicker({
     return GROUPS.map((group) => ({
       ...group,
       types: group.types.filter((type) => {
+        if (allowed && !allowed.includes(type)) return false;
         if (!needle) return true;
         return `${copy.picker.names[type]} ${copy.picker.hints[type]}`
           .toLowerCase()
           .includes(needle);
       }),
     })).filter((group) => group.types.length > 0);
-  }, [copy, query]);
+  }, [allowed, copy, query]);
   const flat = groups.flatMap((group) => group.types);
   const current = flat.includes(active) ? active : (flat[0] ?? null);
 

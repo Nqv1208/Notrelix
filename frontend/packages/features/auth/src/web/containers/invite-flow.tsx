@@ -59,31 +59,57 @@ export function InviteFlow({
     staleTime: Infinity,
   });
 
+  const toSignIn = (redirectTo: string) =>
+    navigation.navigate({
+      to: "/sign-in",
+      search: { redirect: redirectTo },
+      replace: true,
+    });
+
   const accept = useMutation({
+    // An email that has an account signs in first, then accepts with that session.
     mutationFn: (input: { name: string; password: string }) =>
-      service.acceptInvite(token, input),
+      preview.data?.hasAccount
+        ? service.acceptInvite(token)
+        : service.acceptInviteWithRegistration(token, input),
     onSuccess: (result) => {
-      void queryClient.invalidateQueries({ queryKey: authQueryKeys.profile });
-      navigation.navigate({ to: result.redirectTo, replace: true });
+      if (result.session)
+        queryClient.setQueryData(authQueryKeys.profile, result.session.user);
+      else
+        void queryClient.invalidateQueries({ queryKey: authQueryKeys.profile });
+      // A second press of the link opens no session: sign in, then land.
+      if (result.alreadyAccepted && !result.session)
+        toSignIn(result.redirectTo);
+      else navigation.navigate({ to: result.redirectTo, replace: true });
     },
     onError: (error) => {
       const failure = readFlowError(error);
       setUnreachable(false);
       setFieldErrors({});
-      if (failure.status === 410)
-        setOverride({
-          kind: "gone",
-          reason: failure.code === "INVITE_EXPIRED" ? "expired" : "used",
-          orgName: preview.data?.orgName ?? null,
-        });
-      else if (failure.status === 422)
+      // 409: the invited email already has an account. 401: no session for the authenticated accept.
+      if (failure.status === 409 || failure.status === 401)
+        toSignIn(`/invite/${token}`);
+      else if (failure.status === 404)
+        setOverride({ kind: "gone", reason: "missing", orgName: null });
+      else if (
+        failure.status === 400 &&
+        (failure.fieldErrors.name || failure.fieldErrors.password)
+      )
         setFieldErrors({
           name: failure.fieldErrors.name,
           password: failure.fieldErrors.password,
         });
+      else if (failure.status === 400) refreshAfterRefusal();
       else setUnreachable(true);
     },
   });
+
+  /** Expired, used or revoked in the meantime: the preview says which. */
+  const refreshAfterRefusal = () => {
+    void preview.refetch().then((again) => {
+      if (again.data?.state === "valid") setUnreachable(true);
+    });
+  };
 
   const decline = useMutation({
     mutationFn: () => service.declineInvite(token),
@@ -92,7 +118,13 @@ export function InviteFlow({
         kind: "declined",
         inviterName: preview.data?.inviterName ?? "",
       }),
-    onError: () => setUnreachable(true),
+    onError: (error) => {
+      const failure = readFlowError(error);
+      if (failure.status === 404)
+        setOverride({ kind: "gone", reason: "missing", orgName: null });
+      else if (failure.status === 400) refreshAfterRefusal();
+      else setUnreachable(true);
+    },
   });
 
   let view: AuthInviteView;

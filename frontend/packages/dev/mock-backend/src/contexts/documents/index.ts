@@ -8,6 +8,8 @@ import { blocksOperations } from "./blocks.handlers";
 import { commentsOperations } from "./comments.handlers";
 import { historyOperations } from "./history.handlers";
 import { pageExtrasOperations } from "./page-extras.handlers";
+import { pageAttachmentsOperations } from "./page-attachments.handlers";
+import { versionsOperations } from "./versions.handlers";
 
 export {
   pagesOperations,
@@ -15,6 +17,8 @@ export {
   commentsOperations,
   historyOperations,
   pageExtrasOperations,
+  pageAttachmentsOperations,
+  versionsOperations,
 };
 
 export const documentsOperations = [
@@ -23,4 +27,6 @@ export const documentsOperations = [
   ...commentsOperations,
   ...historyOperations,
   ...pageExtrasOperations,
+  ...pageAttachmentsOperations,
+  ...versionsOperations,
 ];

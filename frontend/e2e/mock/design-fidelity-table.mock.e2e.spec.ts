@@ -585,7 +585,14 @@ test.describe("Board table geometry at 1440 px (owner)", () => {
     expect(
       Math.abs(VIEWPORT.height - (box.y + box.height) - b.gapFromBottom),
     ).toBeLessThanOrEqual(1);
-    expect(Math.abs(box.width - b.width)).toBeLessThanOrEqual(1);
+    // The mockup's bar has Trạng thái, Giao cho, Đặt hạn, Chuyển board and
+    // Lưu trữ; Ưu tiên and Xoá are added to it, each a button plus the 4 px gap.
+    let added = 0;
+    for (const name of ["Ưu tiên", "Xoá"]) {
+      const extra = await bar.getByRole("button", { name }).boundingBox();
+      added += (extra?.width ?? 0) + 4;
+    }
+    expect(Math.abs(box.width - added - b.width)).toBeLessThanOrEqual(1);
     expect(await style(bar, "border-radius")).toBe(b.radius);
     expect(await colour(bar, "background-color")).toBe(COLOUR.bulk);
     expect(await colour(bar, "color")).toBe("rgb(242, 244, 247)");

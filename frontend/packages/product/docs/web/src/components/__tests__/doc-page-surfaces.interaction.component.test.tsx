@@ -12,15 +12,18 @@ import {
   VERSIONS,
   docsCopy,
   docsPageScreenDefaultScenario,
+  docsPageScreenConvertScenario,
   docsPageScreenEmptyScenario,
   docsPageScreenFileMenuScenario,
   docsPageScreenLoadingScenario,
   docsPageScreenMentionScenario,
   docsPageScreenNotFoundScenario,
+  docsPageScreenPagePickerScenario,
   docsPageScreenReadOnlyScenario,
   docsPageScreenSaveErrorScenario,
   docsPageScreenShareScenario,
   docsPageScreenSlashScenario,
+  docsPageScreenTrashScenario,
   docsPageScreenVersionsScenario,
 } from "../../verification/docs-ui-fixtures";
 import {
@@ -42,6 +45,12 @@ const ARTICLE = {
   overlay: { kind: "none" } as const,
   mentionTasks: [],
 };
+
+/** Opens the styled Select behind a label and picks one option by its text. */
+function choose(trigger: HTMLElement, option: string | RegExp) {
+  fireEvent.keyDown(trigger, { key: "Enter" });
+  fireEvent.click(screen.getByRole("option", { name: option }));
+}
 
 describe("docs web pure surfaces", () => {
   it("FUI[docs.page.screen:render] renders the document bar, tools, sheet and side panel from fixture data", () => {
@@ -76,6 +85,44 @@ describe("docs web pure surfaces", () => {
     fireEvent.click(screen.getByRole("tab", { name: /Bình luận/ }));
     expect(onPanelTab).toHaveBeenNthCalledWith(1, "toc");
     expect(onPanelTab).toHaveBeenNthCalledWith(2, "comments");
+  });
+
+  it("FUI[docs.page.screen:panel] closes and reopens the side panel from its tab row and the document bar", () => {
+    const onPanelOpenChange = vi.fn();
+    const open = renderPureUi(
+      <DocPageScreenSurface
+        {...docsPageScreenDefaultScenario()}
+        callbacks={{ onPanelOpenChange }}
+      />,
+    );
+    const toggle = screen.getByRole("button", {
+      name: docsCopy.header.hidePanel,
+    });
+    expect(toggle.getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(
+      within(screen.getByRole("complementary")).getByRole("button", {
+        name: docsCopy.panel.close,
+      }),
+    );
+    fireEvent.click(toggle);
+    expect(onPanelOpenChange).toHaveBeenNthCalledWith(1, false);
+    expect(onPanelOpenChange).toHaveBeenNthCalledWith(2, false);
+    open.unmount();
+
+    renderPureUi(
+      <DocPageScreenSurface
+        {...docsPageScreenDefaultScenario()}
+        panelOpen={false}
+        callbacks={{ onPanelOpenChange }}
+      />,
+    );
+    expect(screen.queryByRole("complementary")).toBeNull();
+    const reopen = screen.getByRole("button", {
+      name: docsCopy.header.showPanel,
+    });
+    expect(reopen.getAttribute("aria-pressed")).toBe("false");
+    fireEvent.click(reopen);
+    expect(onPanelOpenChange).toHaveBeenLastCalledWith(true);
   });
 
   it("FUI[docs.page.screen:states] renders loading, not found, empty, read-only, save error and overlay states", () => {
@@ -211,7 +258,10 @@ describe("docs web pure surfaces", () => {
         callbacks={{ onOpenFileMenu }}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: docsCopy.menus.file }));
+    // The File button is a menu bar item now (role menuitem inside role menubar).
+    fireEvent.click(
+      screen.getByRole("menuitem", { name: docsCopy.menus.file }),
+    );
     expect(onOpenFileMenu).toHaveBeenCalledTimes(1);
     closed.unmount();
 
@@ -225,7 +275,9 @@ describe("docs web pure surfaces", () => {
       />,
     );
     fireEvent.click(screen.getByRole("menuitem", { name: /Tài liệu mới/ }));
-    fireEvent.click(screen.getByRole("menuitem", { name: /Markdown/ }));
+    fireEvent.click(
+      screen.getByRole("menuitem", { name: /^Markdown \(\.md\)/ }),
+    );
     fireEvent.click(
       screen.getByRole("menuitem", { name: /Lịch sử phiên bản/ }),
     );
@@ -236,9 +288,9 @@ describe("docs web pure surfaces", () => {
     expect(onToggleDownload).toHaveBeenCalledTimes(1);
     expect(
       screen
-        .getByRole("menuitem", { name: /Word/ })
+        .getByRole("menuitem", { name: /^HTML \(\.html\)/ })
         .getAttribute("aria-disabled"),
-    ).toBe("true");
+    ).not.toBe("true");
   });
 
   it("FUI[docs.page.article:editing] commits text on blur, toggles a checklist item and picks a block from the slash menu", () => {
@@ -425,5 +477,92 @@ describe("docs web pure surfaces", () => {
     );
     fireEvent.keyDown(dialog, { key: "Escape" });
     expect(onCloseOverlay).toHaveBeenCalledTimes(2);
+  });
+
+  it("FUI[docs.page.screen:trash] lists trashed pages with Restore and a two-step Delete permanently", () => {
+    const onRestorePage = vi.fn();
+    const onDeletePage = vi.fn();
+    const onCloseOverlay = vi.fn();
+    renderPureUi(
+      <DocPageScreenSurface
+        {...docsPageScreenTrashScenario()}
+        callbacks={{ onRestorePage, onDeletePage, onCloseOverlay }}
+      />,
+    );
+    const dialog = screen.getByRole("dialog", { name: docsCopy.trash.title });
+    fireEvent.click(
+      within(dialog).getByRole("button", {
+        name: "Khôi phục: Quy trình chi tạm ứng (bản cũ)",
+      }),
+    );
+    expect(onRestorePage).toHaveBeenCalledWith("t1");
+
+    fireEvent.click(
+      within(dialog).getByRole("button", {
+        name: "Xoá vĩnh viễn: Biên bản họp kiểm kê",
+      }),
+    );
+    expect(onDeletePage).not.toHaveBeenCalled();
+    fireEvent.click(
+      within(dialog).getByRole("button", {
+        name: docsCopy.trash.confirmDelete,
+      }),
+    );
+    expect(onDeletePage).toHaveBeenCalledWith("t2");
+
+    fireEvent.keyDown(dialog, { key: "Escape" });
+    expect(onCloseOverlay).toHaveBeenCalled();
+  });
+
+  it("FUI[docs.page.screen:page-reference] filters the page picker and routes the chosen page", () => {
+    const onPickPage = vi.fn();
+    renderPureUi(
+      <DocPageScreenSurface
+        {...docsPageScreenPagePickerScenario()}
+        callbacks={{ onPickPage }}
+      />,
+    );
+    const dialog = screen.getByRole("dialog", { name: docsCopy.picker.title });
+    fireEvent.change(within(dialog).getByRole("searchbox"), {
+      target: { value: "cong no" },
+    });
+    expect(within(dialog).getAllByRole("option")).toHaveLength(1);
+    fireEvent.click(
+      within(dialog).getByRole("option", {
+        name: /Quy trình đối chiếu công nợ/,
+      }),
+    );
+    expect(onPickPage).toHaveBeenCalledWith("ref-1", "p2");
+  });
+
+  it("FUI[docs.page.screen:convert-task] needs a board and a group before it creates the task", () => {
+    const onConvertConfirm = vi.fn();
+    const onConvertBoard = vi.fn();
+    renderPureUi(
+      <DocPageScreenSurface
+        {...docsPageScreenConvertScenario()}
+        callbacks={{ onConvertConfirm, onConvertBoard }}
+      />,
+    );
+    const dialog = screen.getByRole("dialog", { name: docsCopy.convert.title });
+    const create = within(dialog).getByRole("button", {
+      name: docsCopy.convert.confirm,
+    });
+    expect((create as HTMLButtonElement).disabled).toBe(true);
+    choose(
+      within(dialog).getByLabelText(docsCopy.convert.group),
+      "Đào tạo và vận hành",
+    );
+    expect((create as HTMLButtonElement).disabled).toBe(false);
+    fireEvent.click(create);
+    expect(onConvertConfirm).toHaveBeenCalledWith("b1", {
+      boardId: "board-1",
+      groupId: "g2",
+    });
+    choose(
+      within(dialog).getByLabelText(docsCopy.convert.board),
+      "Kế toán hằng tháng",
+    );
+    expect(onConvertBoard).toHaveBeenCalledWith("board-2");
   });
 });

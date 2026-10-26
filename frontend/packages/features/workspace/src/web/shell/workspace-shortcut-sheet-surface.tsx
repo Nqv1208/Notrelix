@@ -67,6 +67,21 @@ export function WorkspaceShortcutSheetSurface({
       ],
     },
     {
+      id: "boards",
+      title: copy.shortcuts.boards,
+      rows: [
+        { id: "add-item", label: copy.shortcuts.addItem, sequence: ["C"] },
+        { id: "quick-add", label: copy.shortcuts.quickAdd, sequence: ["N"] },
+        {
+          id: "move-card",
+          label: copy.shortcuts.moveCard,
+          sequence: ["Alt →"],
+        },
+        { id: "assign-me", label: copy.shortcuts.assignMe, sequence: ["A"] },
+        { id: "set-due", label: copy.shortcuts.setDue, sequence: ["D"] },
+      ],
+    },
+    {
       id: "general",
       title: copy.shortcuts.general,
       rows: [

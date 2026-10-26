@@ -21,6 +21,10 @@ public class UpdateBoardCommandValidator : AbstractValidator<UpdateBoardCommand>
             .MaximumLength(2000)
             .When(x => x.Background is not null);
 
+        RuleFor(x => x.ItemKeyPrefix)
+            .MaximumLength(6)
+            .When(x => x.ItemKeyPrefix is not null);
+
         RuleFor(x => x.Visibility)
             .Must(v => v is null || Enum.IsDefined(typeof(BoardVisibility), v))
             .WithMessage("Visibility must be a valid board visibility value.");

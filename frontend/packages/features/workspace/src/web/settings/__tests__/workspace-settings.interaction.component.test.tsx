@@ -133,6 +133,28 @@ describe("WorkspaceSettingsSurface", () => {
     );
   });
 
+  it("FUI[workspace.settings:timezone] takes any IANA time zone and refuses an unknown one", () => {
+    const props = renderSettings();
+    const zone = screen.getByLabelText(copy.defaults.timeZoneLabel);
+    const save = () =>
+      fireEvent.click(
+        within(form(copy.defaults.title)).getByRole("button", {
+          name: copy.save,
+        }),
+      );
+
+    fireEvent.change(zone, { target: { value: "Mars/Olympus" } });
+    expect(screen.getByText(copy.defaults.timeZoneInvalid)).toBeTruthy();
+    save();
+    expect(props.onSaveDefaults).not.toHaveBeenCalled();
+
+    fireEvent.change(zone, { target: { value: "europe/paris" } });
+    save();
+    expect(props.onSaveDefaults).toHaveBeenCalledWith(
+      expect.objectContaining({ timeZone: "Europe/Paris" }),
+    );
+  });
+
   it("FUI[workspace.settings:conflict] explains a version conflict and reloads the latest", () => {
     const props = renderSettings(settingsErrorScenario());
     const alert = within(form(copy.profile.title)).getByRole("alert");

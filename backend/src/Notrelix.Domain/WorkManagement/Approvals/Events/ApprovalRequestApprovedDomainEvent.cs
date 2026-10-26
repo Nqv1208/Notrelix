@@ -7,5 +7,8 @@ public sealed record ApprovalRequestApprovedDomainEvent(
     Guid RequestId,
     Guid DecidedBy,
     string? Note,
-    DateTimeOffset OccurredAt
+    DateTimeOffset OccurredAt,
+    // Additive: who asked and what the request is about, so the requester can be told.
+    Guid? RequestedBy = null,
+    ResourceRef? Target = null
 ) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

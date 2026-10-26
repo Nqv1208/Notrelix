@@ -1,4 +1,12 @@
-import { Skeleton, cn } from "@notrelix/ui-web";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Skeleton,
+  cn,
+} from "@notrelix/ui-web";
 import type { SectionState } from "../home/home-models";
 import { formatCopy } from "../shell/shell-models";
 import { FOCUS, Glyph } from "../spaces/space-page-parts";
@@ -231,20 +239,27 @@ export function WorkspaceSecuritySurface(props: WorkspaceSecuritySurfaceProps) {
               titleFor="guest-expiry"
               text={s.expiry.text}
               control={
-                <select
-                  id="guest-expiry"
-                  aria-disabled="true"
-                  title={s.expiry.readOnly}
+                <Select
                   value={expiryKey(view.data.guestExpiryDays)}
-                  onChange={() => undefined}
-                  className="h-8 min-w-[150px] rounded-[7px] border border-line-strong bg-popover px-2 text-compact text-foreground dark:bg-card"
+                  onValueChange={() => undefined}
                 >
-                  {(["d30", "d90", "d180", "never"] as const).map((key) => (
-                    <option key={key} value={key}>
-                      {s.expiry.options[key]}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger
+                    id="guest-expiry"
+                    size="sm"
+                    aria-disabled="true"
+                    title={s.expiry.readOnly}
+                    className="min-w-[150px]"
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(["d30", "d90", "d180", "never"] as const).map((key) => (
+                      <SelectItem key={key} value={key}>
+                        {s.expiry.options[key]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               }
             />
             <Row

@@ -20,7 +20,30 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
     public DateTimeOffset? StartedAt { get; private set; }
     public DateTimeOffset? DueAt { get; private set; }
     public DateTimeOffset? CompletedAt { get; private set; }
+    public Guid? CompletedBy { get; private set; }
+
+    /// <summary>
+    /// The Status option the Item held when it was completed, so that reopening can
+    /// return it there. Null when none was recorded; cleared on reopen.
+    /// </summary>
+    public Guid? StatusBeforeCompletionOptionId { get; private set; }
     public bool IsArchived { get; private set; }
+    public DateTimeOffset? ArchivedAt { get; private set; }
+    public Guid? ArchivedBy { get; private set; }
+
+    /// <summary>
+    /// True when this sub-item was archived because its parent was archived, so that
+    /// restoring the parent restores exactly the sub-items it archived.
+    /// </summary>
+    public bool ArchivedWithParent { get; private set; }
+
+    /// <summary>
+    /// What the item is about, as Markdown the member writes. Work Management owns this text; it is
+    /// not a field value and not a Document. Null means no description; the writer normalizes blank to null.
+    /// </summary>
+    public string? DescriptionMd { get; private set; }
+
+    public const int DescriptionMaxLength = 20000;
 
     private readonly List<BoardItemValue> _fieldValues = new();
     public IReadOnlyCollection<BoardItemValue> FieldValues => _fieldValues.AsReadOnly();
@@ -39,12 +62,13 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
         string? itemKey = null,
         long? itemSequence = null,
         DateTimeOffset? startedAt = null,
-        DateTimeOffset? dueAt = null)
+        DateTimeOffset? dueAt = null,
+        string? descriptionMd = null)
     {
         return CreateCore(
             accountId, workspaceId, boardId, groupId, name, position, createdBy, createdAt,
             parentItemId: null, itemLevel: 0,
-            itemKey, itemSequence, startedAt, dueAt);
+            itemKey, itemSequence, startedAt, dueAt, descriptionMd);
     }
 
     public static BoardItem CreateChild(
@@ -66,6 +90,30 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
             itemKey, itemSequence, startedAt, dueAt);
     }
 
+    /// <summary>
+    /// Creates a sub-item of <paramref name="parent"/>. Sub-items are one level only
+    /// and live in their parent's board and group.
+    /// </summary>
+    public static BoardItem CreateSubItem(
+        BoardItem parent,
+        string name,
+        FractionalIndex position,
+        Guid createdBy,
+        DateTimeOffset createdAt,
+        string? itemKey = null,
+        long? itemSequence = null)
+    {
+        Guard.NotNull(parent);
+        parent.EnsureNotDeleted();
+        parent.EnsureNotArchived();
+
+        if (parent.ParentItemId is not null || parent.ItemLevel != 0)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Item_SubItemsAreOneLevel, "A sub-item cannot have sub-items.");
+
+        var path = ItemParentPath.Create(parent.AccountId, parent.WorkspaceId, parent.BoardId, parent.Id, parent.ItemLevel, []);
+        return CreateChild(path, parent.GroupId, name, position, createdBy, createdAt, itemKey, itemSequence);
+    }
+
     private static BoardItem CreateCore(
         Guid accountId,
         Guid workspaceId,
@@ -80,8 +128,14 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
         string? itemKey,
         long? itemSequence,
         DateTimeOffset? startedAt,
-        DateTimeOffset? dueAt)
+        DateTimeOffset? dueAt,
+        string? descriptionMd = null)
     {
+        if (startedAt != null && dueAt != null && dueAt < startedAt)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Item_DueDateMustBeAfterStartDate, "Due date must be after start date.");
+        var description = NormalizeDescription(descriptionMd);
+        if (description is not null && description.Length > DescriptionMaxLength)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Item_DescriptionTooLong, $"Description cannot exceed {DescriptionMaxLength} characters.");
         Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(boardId);
         Guard.NotEmpty(groupId);
@@ -104,7 +158,8 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
             ItemSequence = itemSequence,
             ItemLevel = itemLevel,
             StartedAt = startedAt,
-            DueAt = dueAt
+            DueAt = dueAt,
+            DescriptionMd = description
         };
 
         item.SetAuditOnCreate(createdBy, createdAt);
@@ -132,6 +187,50 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new BoardItemRenamedDomainEvent(AccountId, WorkspaceId, Id, BoardId, oldName, Name, updatedBy, updatedAt));
     }
 
+    /// <summary>
+    /// Records that <paramref name="senderUserId"/>, who waits on this Item, asked the people in charge for an
+    /// update. The Item's own state does not change; the fact is what Collaboration turns into Inbox entries.
+    /// The 24 hour limit on asking again is a durable rule of <see cref="BoardItemReminder"/>, claimed by the
+    /// caller before this fact is recorded.
+    /// </summary>
+    public void RecordOwnersReminded(Guid senderUserId, IReadOnlyCollection<Guid> recipientUserIds, DateTimeOffset remindedAt)
+    {
+        EnsureNotDeleted();
+        EnsureNotArchived();
+        Guard.NotEmpty(senderUserId);
+        Guard.NotNull(recipientUserIds);
+
+        var recipients = recipientUserIds.Where(id => id != senderUserId).Distinct().ToList();
+        if (recipients.Count == 0)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Reminder_NobodyToRemind, "Nobody else is in charge of this item, so there is nobody to remind.");
+
+        RaiseDomainEvent(new BoardItemOwnersRemindedDomainEvent(AccountId, WorkspaceId, Id, BoardId, senderUserId, recipients, remindedAt));
+    }
+
+    /// <summary>
+    /// Replaces the item's description. Blank clears it. Writing the text it already holds changes nothing
+    /// (no version, no audit). The description is not a business event: nothing outside the item consumes it.
+    /// </summary>
+    public void SetDescription(string? descriptionMd, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        EnsureNotArchived();
+        Guard.NotEmpty(updatedBy);
+
+        var description = NormalizeDescription(descriptionMd);
+        if (description is not null && description.Length > DescriptionMaxLength)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Item_DescriptionTooLong, $"Description cannot exceed {DescriptionMaxLength} characters.");
+        if (DescriptionMd == description) return;
+
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        DescriptionMd = description;
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+    }
+
+    private static string? NormalizeDescription(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Replace("\r\n", "\n").TrimEnd();
+
     public void MoveToGroup(BoardGroupRef group, FractionalIndex newPosition, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
@@ -155,6 +254,33 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
         ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BoardItemMovedDomainEvent(AccountId, WorkspaceId, Id, BoardId, oldGroupId, group.GroupId, newPosition.Value, updatedBy, updatedAt, Version));
+    }
+
+    /// <summary>
+    /// Moves the Item to another group because its own group is being deleted. Unlike a
+    /// user move this also applies to archived Items, so no Item is left in the deleted
+    /// group. A null <paramref name="newPosition"/> keeps the position (child Items are
+    /// not ordered within the group).
+    /// </summary>
+    public void MoveToGroupOnGroupRemoval(BoardGroupRef group, FractionalIndex? newPosition, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
+        Guard.NotNull(group);
+
+        if (group.WorkspaceId != WorkspaceId)
+            throw new BusinessRuleException(CommonRuleCodes.Common_WorkspaceScopeMismatch, $"Workspace scope mismatch. Expected '{WorkspaceId}', got '{group.WorkspaceId}'.");
+
+        if (group.BoardId != BoardId)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_BoardScopeMismatch, $"Board scope mismatch. Expected '{BoardId}', got '{group.BoardId}'.");
+
+        var oldGroupId = GroupId;
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        GroupId = group.GroupId;
+        if (newPosition is not null) Position = newPosition;
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+        RaiseDomainEvent(new BoardItemMovedDomainEvent(AccountId, WorkspaceId, Id, BoardId, oldGroupId, group.GroupId, Position.Value, updatedBy, updatedAt, Version));
     }
 
     public void UpdateFieldValue(BoardField field, FieldValue newValue, Guid updatedBy, DateTimeOffset updatedAt)
@@ -274,6 +400,26 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new BoardItemParentChangedDomainEvent(AccountId, WorkspaceId, BoardId, Id, previousParentItemId, null, previousLevel, 0, updatedBy, updatedAt));
     }
 
+    /// <summary>Places a sub-item among its parent's sub-items.</summary>
+    public void RepositionWithinParent(FractionalIndex newPosition, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        EnsureNotArchived();
+        Guard.NotEmpty(updatedBy);
+        Guard.NotNull(newPosition);
+
+        if (ParentItemId is null)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Item_NotASubItem, "Only a sub-item is ordered under a parent.");
+
+        if (Position == newPosition) return;
+
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        Position = newPosition;
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+        RaiseDomainEvent(new BoardItemMovedDomainEvent(AccountId, WorkspaceId, Id, BoardId, GroupId, GroupId, newPosition.Value, updatedBy, updatedAt, Version));
+    }
+
     public void MoveUnder(ItemParentPath parentPath, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
@@ -326,7 +472,7 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new BoardItemTimelineSetDomainEvent(AccountId, WorkspaceId, BoardId, Id, startedAt, dueAt, updatedBy, updatedAt));
     }
 
-    public void Complete(DateTimeOffset completedAt, Guid updatedBy, DateTimeOffset updatedAt)
+    public void Complete(DateTimeOffset completedAt, Guid updatedBy, DateTimeOffset updatedAt, Guid? statusBeforeCompletionOptionId = null)
     {
         EnsureNotDeleted();
         EnsureNotArchived();
@@ -339,6 +485,8 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
 
         var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         CompletedAt = completedAt;
+        CompletedBy = updatedBy;
+        StatusBeforeCompletionOptionId = statusBeforeCompletionOptionId;
         ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BoardItemCompletedDomainEvent(AccountId, WorkspaceId, BoardId, Id, completedAt, updatedBy, updatedAt));
@@ -351,10 +499,10 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
     /// or no status, reopens it. The category is supplied by the caller from the
     /// Board's Status field.
     /// </summary>
-    public void SyncCompletionWithStatus(WorkStatusCategory? category, Guid changedBy, DateTimeOffset changedAt)
+    public void SyncCompletionWithStatus(WorkStatusCategory? category, Guid changedBy, DateTimeOffset changedAt, Guid? statusBeforeCompletionOptionId = null)
     {
         if (category == WorkStatusCategory.Done)
-            Complete(changedAt, changedBy, changedAt);
+            Complete(changedAt, changedBy, changedAt, statusBeforeCompletionOptionId);
         else
             Reopen(changedBy, changedAt);
     }
@@ -369,6 +517,8 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
 
         var pending = PrepareAuditUpdate(reopenedBy, reopenedAt);
         CompletedAt = null;
+        CompletedBy = null;
+        StatusBeforeCompletionOptionId = null;
         ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BoardItemReopenedDomainEvent(AccountId, WorkspaceId, BoardId, Id, reopenedBy, reopenedAt));
@@ -391,6 +541,9 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
         if (IsArchived) return;
         var pending = PrepareAuditUpdate(archivedBy, archivedAt);
         IsArchived = true;
+        ArchivedAt = archivedAt;
+        ArchivedBy = archivedBy;
+        ArchivedWithParent = false;
         ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BoardItemArchivedDomainEvent(AccountId, WorkspaceId, BoardId, Id, archivedBy, archivedAt, Version));
@@ -403,9 +556,32 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
         if (!IsArchived) return;
         var pending = PrepareAuditUpdate(unarchivedBy, unarchivedAt);
         IsArchived = false;
+        ArchivedAt = null;
+        ArchivedBy = null;
+        ArchivedWithParent = false;
         ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BoardItemUnarchivedDomainEvent(AccountId, WorkspaceId, BoardId, Id, unarchivedBy, unarchivedAt));
+    }
+
+    /// <summary>
+    /// Archives a sub-item because its parent was archived. A sub-item that is already
+    /// archived on its own stays as it is, so restoring the parent does not restore it.
+    /// </summary>
+    public void ArchiveWithParent(Guid archivedBy, DateTimeOffset archivedAt)
+    {
+        if (ParentItemId is null)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Item_NotASubItem, "Only a sub-item is archived with its parent.");
+        if (IsDeleted || IsArchived) return;
+        Archive(archivedBy, archivedAt);
+        ArchivedWithParent = true;
+    }
+
+    /// <summary>Restores a sub-item that was archived with its parent; any other sub-item is left alone.</summary>
+    public void UnarchiveWithParent(Guid unarchivedBy, DateTimeOffset unarchivedAt)
+    {
+        if (!ArchivedWithParent) return;
+        Unarchive(unarchivedBy, unarchivedAt);
     }
 
     /// <param name="replacementPosition">

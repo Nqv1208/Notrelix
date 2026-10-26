@@ -20,8 +20,6 @@ public record GetBoardItemAttachmentContentQuery(Guid BoardItemId, Guid Attachme
 
 public class GetBoardItemAttachmentContentQueryHandler : IRequestHandler<GetBoardItemAttachmentContentQuery, Result<AttachmentContentDto>>
 {
-    private static readonly ResourceKind BoardItemKind = ResourceKind.Create("work-management.board-item");
-
     private readonly ICollaborationDbContext _context;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IStorageService _storage;
@@ -41,35 +39,8 @@ public class GetBoardItemAttachmentContentQueryHandler : IRequestHandler<GetBoar
 
     public async Task<Result<AttachmentContentDto>> Handle(GetBoardItemAttachmentContentQuery request, CancellationToken ct)
     {
-        var attachment = await _context.Attachments.AsNoTracking()
-            .FirstOrDefaultAsync(a => a.Id == request.AttachmentId
-                && a.Target.Kind == BoardItemKind
-                && a.Target.ResourceId == request.BoardItemId, ct);
-
-        // A link has no stored content; both cases are reported exactly like an unknown attachment.
-        if (attachment is null || !attachment.IsStoredFile)
-        {
-            throw new NotFoundException(nameof(Attachment), request.AttachmentId);
-        }
-
-        var key = attachment.Metadata.StorageKey!;
-        if (!AttachmentStorageKey.BelongsTo(key, _requestContext.RequireAccountId(), _requestContext.RequireWorkspaceId()))
-        {
-            _logger.LogError("Attachment {AttachmentId} has a storage key outside its tenant prefix; refusing to open it.", attachment.Id);
-            throw new NotFoundException(nameof(Attachment), request.AttachmentId);
-        }
-
-        var content = await _storage.OpenReadAsync(key, ct);
-        if (content is null)
-        {
-            _logger.LogError("Attachment {AttachmentId} row exists but its stored object is missing.", attachment.Id);
-            throw new NotFoundException(nameof(Attachment), request.AttachmentId);
-        }
-
-        return Result<AttachmentContentDto>.Success(new AttachmentContentDto(
-            content,
-            attachment.Metadata.FileName,
-            attachment.Metadata.ContentType,
-            attachment.Metadata.Size));
+        var content = await AttachmentTargetOperations.OpenContentAsync(
+            _context, _requestContext, _storage, _logger, AttachmentTargets.BoardItem, request.BoardItemId, request.AttachmentId, ct);
+        return Result<AttachmentContentDto>.Success(content);
     }
 }

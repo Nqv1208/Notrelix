@@ -47,7 +47,7 @@ public sealed class WorkItemFieldValueIntegrationTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        await new DatabaseReset(_db.ConnectionString).ResetAsync();
+        await new DatabaseReset(_db.OwnerConnectionString).ResetAsync();
         _accountId = Guid.NewGuid();
         _userId = Guid.NewGuid();
         var workspace = Workspace.Create(_accountId, _userId, "Values WS", $"val-{Guid.NewGuid():N}", Now);
@@ -66,7 +66,7 @@ public sealed class WorkItemFieldValueIntegrationTests : IAsyncLifetime
         var dueDate = BoardField.Create(_accountId, workspace.Id, board.Id, "Due Date", FieldType.Date, FieldSettings.Empty(), FractionalIndex.Create("a3"), _userId, Now, isSystem: true);
         _dueDateFieldId = dueDate.Id;
 
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Workspaces.Add(workspace);
         seed.Boards.Add(board);
         seed.BoardGroups.Add(group);
@@ -128,7 +128,7 @@ public sealed class WorkItemFieldValueIntegrationTests : IAsyncLifetime
 
     private async Task<DateTimeOffset?> ItemColumnAsync(string column)
     {
-        await using var connection = _db.CreateConnection();
+        await using var connection = _db.CreateOwnerConnection();
         await connection.OpenAsync();
         await using var command = new Npgsql.NpgsqlCommand($"SELECT {column} FROM work.board_items WHERE id = '{_itemId}'", connection);
         var value = await command.ExecuteScalarAsync();
@@ -145,7 +145,7 @@ public sealed class WorkItemFieldValueIntegrationTests : IAsyncLifetime
 
     private async Task<List<string>> StoredValuesAsync(Guid fieldId)
     {
-        await using var connection = _db.CreateConnection();
+        await using var connection = _db.CreateOwnerConnection();
         await connection.OpenAsync();
         await using var command = new Npgsql.NpgsqlCommand(
             $"SELECT value::text FROM work.board_item_values WHERE item_id = '{_itemId}' AND field_id = '{fieldId}'", connection);
@@ -157,7 +157,7 @@ public sealed class WorkItemFieldValueIntegrationTests : IAsyncLifetime
 
     private async Task InTransactionAsync<T>(Func<ApplicationDbContext, Task<T>> work)
     {
-        await using var context = _db.CreateContext(Tenant());
+        await using var context = _db.CreateOwnerContext(Tenant());
         await using var transaction = await context.Database.BeginTransactionAsync();
         await work(context);
         await context.SaveChangesAsync();

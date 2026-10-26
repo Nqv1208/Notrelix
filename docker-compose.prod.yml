@@ -37,8 +37,13 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: http://+:8000
+      # NotrelixDb connects as notrelix_app and NotrelixWorkerDb as notrelix_worker (their passwords are the
+      # ones --rls-apply provisions); NotrelixMigrationDb is the owner, used by migrate / seed / rls-apply only.
       ConnectionStrings__NotrelixDb: ${CONNECTIONSTRINGS_NOTRELIXDB:?CONNECTIONSTRINGS_NOTRELIXDB is required}
+      ConnectionStrings__NotrelixWorkerDb: ${CONNECTIONSTRINGS_NOTRELIXWORKERDB:?CONNECTIONSTRINGS_NOTRELIXWORKERDB is required}
+      ConnectionStrings__NotrelixMigrationDb: ${CONNECTIONSTRINGS_NOTRELIXMIGRATIONDB:?CONNECTIONSTRINGS_NOTRELIXMIGRATIONDB is required}
       ConnectionStrings__Redis: ${CONNECTIONSTRINGS_REDIS:?CONNECTIONSTRINGS_REDIS is required}
+      Rls__RoleEnforcement: Enforce
       SeedData__Enabled: "false"
       JwtSettings__SecretKey: ${JWT_SECRET:?JWT_SECRET is required}
       JwtSettings__Issuer: ${JWT_ISSUER:?JWT_ISSUER is required}

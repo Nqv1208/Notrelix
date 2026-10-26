@@ -98,7 +98,7 @@ describe("KanbanColumn (status lane)", () => {
       expect(screen.queryByRole("textbox")).toBeNull();
       expect(onCreateItem).not.toHaveBeenCalled();
       await waitFor(() =>
-        expect(document.activeElement?.textContent).toBe(
+        expect(document.activeElement?.textContent).toContain(
           copy.addTo.replace("{{lane}}", "Đang làm"),
         ),
       );

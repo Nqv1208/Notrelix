@@ -42,6 +42,7 @@ using Notrelix.Application.Features.Workspaces.Workspaces.Queries.GetAccountWork
 using Notrelix.Application.Features.Workspaces.Workspaces.Queries.ResolveSlug;
 using Notrelix.Application.Features.Workspaces.Settings.Queries.GetWorkspaceSecurityExt;
 using Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceMembersExtra;
+using Notrelix.Application.Features.Workspaces.Search.Queries.CommandSearch;
 using Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceOverview;
 using Notrelix.Application.Features.Workspaces.Onboarding.Commands.ClearOnboardingDraft;
 using Notrelix.Application.Features.Workspaces.Onboarding.Commands.DismissGettingStarted;
@@ -152,6 +153,7 @@ using Notrelix.Domain.Governance.Roles;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Projections.Search;
 using Notrelix.Testing.Application.Fakes;
+using Notrelix.Testing.Core;
 using StackExchange.Redis;
 
 namespace Notrelix.API.Tests.Contracts;
@@ -219,6 +221,11 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
                 ["Cors:AllowedOrigins:1"] = "http://localhost:3000"
             };
 
+            // Suites call the auth endpoints from one loopback address, far past the shipped
+            // limits. RateLimitTiersTests proves the shipped limits on its own host.
+            foreach (var (key, value) in RateLimitTestSettings.Generous)
+                testSettings[key] = value;
+
             config.AddInMemoryCollection(testSettings);
         });
 
@@ -261,6 +268,14 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
             // session that runs the handler and persists transactional effects.
             services.RemoveAll<IRequestDataSession>();
             services.AddScoped<IRequestDataSession, InMemoryRequestDataSession>();
+
+            // The co-member display resolvers call owner-defined PostgreSQL functions; the In-Memory provider
+            // has no such functions, so resolve straight from the user set (the relationship rule itself is
+            // proven by the application-role integration suite).
+            services.RemoveAll<IActorLookupService>();
+            services.AddScoped<IActorLookupService, InMemoryActorLookupService>();
+            services.RemoveAll<Notrelix.Application.Features.Identity.Profiles.Ports.IAvatarStorageKeyReadPort>();
+            services.AddScoped<Notrelix.Application.Features.Identity.Profiles.Ports.IAvatarStorageKeyReadPort, InMemoryAvatarStorageKeyReadPort>();
 
             // Access facts resolve through PostgreSQL-specific SQL; provide
             // owner-level facts so the pure policy engine mirrors the legacy
@@ -325,7 +340,7 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
 
             // Redis-dependent services used by middleware/application services.
             services.RemoveAll<IRateLimitService>();
-            services.AddSingleton<IRateLimitService>(_ => Mock.Of<IRateLimitService>());
+            services.AddSingleton<IRateLimitService, InMemoryRateLimitService>();
 
             services.RemoveAll<IOtpService>();
             services.AddSingleton<IOtpService>(_ => Mock.Of<IOtpService>());
@@ -420,9 +435,20 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
                 Result<OAuthLoginStartResult>.Success(new OAuthLoginStartResult("https://accounts.google.com/o/oauth2/auth?test=true")));
             MockWorkspaceHandler<CompleteOAuthLoginCommand, Result<AuthResult>>(services,
                 Result<AuthResult>.Success(CreateAuthResult()));
-            MockWorkspaceHandler<InvitationByToken.GetInvitationByTokenQuery, Result<InvitationByToken.WorkspaceInvitationDto>>(services,
-                Result<InvitationByToken.WorkspaceInvitationDto>.Success(new InvitationByToken.WorkspaceInvitationDto(
-                    Guid.NewGuid(), "Test Workspace", "Inviter", "test@test.com", "Member", false, false)));
+            MockWorkspaceHandler<InvitationByToken.GetInvitationByTokenQuery, Result<InvitationByToken.InvitationPreviewDto>>(services,
+                Result<InvitationByToken.InvitationPreviewDto>.Success(new InvitationByToken.InvitationPreviewDto(
+                    "valid", "Inviter", "Test Workspace", "Member", null, null, null, new DateOnly(2030, 1, 1), "test@test.com", false)));
+            MockWorkspaceHandler<Notrelix.Application.Features.Workspaces.Invitations.Commands.DeclineInvitationByToken.DeclineInvitationByTokenCommand, Result>(
+                services, Result.Success());
+            MockWorkspaceHandler<Notrelix.Application.Features.Workspaces.Invitations.Commands.AcceptInvitationWithRegistration.AcceptInvitationWithRegistrationCommand,
+                Result<Notrelix.Application.Features.Workspaces.Invitations.Commands.AcceptInvitationWithRegistration.AcceptInvitationWithRegistrationDto>>(services,
+                Result<Notrelix.Application.Features.Workspaces.Invitations.Commands.AcceptInvitationWithRegistration.AcceptInvitationWithRegistrationDto>.Success(
+                    new(new Notrelix.Application.Features.Workspaces.Invitations.Commands.AcceptInvitation.AcceptInvitationResultDto("test", Guid.NewGuid()),
+                        false, new Notrelix.Application.Features.Identity.Public.InvitedRegistration.InvitedUserRegistration(Guid.NewGuid(), "t@t.com", "T", "a", "r", DateTime.UtcNow.AddHours(1)))));
+            MockWorkspaceHandler<Notrelix.Application.Features.Identity.Auth.Queries.IdentifySignIn.IdentifySignInQuery,
+                Result<Notrelix.Application.Features.Identity.Auth.Queries.IdentifySignIn.SignInMethodDto>>(services,
+                Result<Notrelix.Application.Features.Identity.Auth.Queries.IdentifySignIn.SignInMethodDto>.Success(
+                    new Notrelix.Application.Features.Identity.Auth.Queries.IdentifySignIn.SignInMethodDto("password", null)));
             MockWorkspaceHandler<ConnectCalendarCommand, Result<Guid>>(services,
                 Result<Guid>.Success(Guid.NewGuid()));
             MockWorkspaceHandler<DisconnectCalendarCommand, Result>(services, Result.Success());
@@ -446,6 +472,8 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
             MockWorkspaceHandler<GetSpaceOverviewQuery, Result<SpaceOverviewDto>>(services,
                 Result<SpaceOverviewDto>.Success(new SpaceOverviewDto(0, [], 0, [], 0, [], [], [], [],
                     new SpaceOverviewAccessDto([], new SpaceOverviewRoleDto(0, []), new SpaceOverviewRoleDto(0, []), []))));
+            MockWorkspaceHandler<CommandSearchQuery, Result<CommandSearchDto>>(services,
+                Result<CommandSearchDto>.Success(new CommandSearchDto([], [], [])));
             MockWorkspaceHandler<CheckWorkspaceSlugQuery, Result<WorkspaceSlugCheckDto>>(services,
                 Result<WorkspaceSlugCheckDto>.Success(new WorkspaceSlugCheckDto("free", null)));
             MockWorkspaceHandler<GetOnboardingDraftQuery, Result<OnboardingDraftResponseDto>>(services,
@@ -662,4 +690,30 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
         Workspaces = new List<WorkspaceInfo>(),
         PersonalWorkspace = new PersonalWorkspaceStatus { Status = "none" }
     };
+}
+
+internal sealed class InMemoryActorLookupService : IActorLookupService
+{
+    private readonly Notrelix.Infrastructure.Data.ApplicationDbContext _context;
+
+    public InMemoryActorLookupService(Notrelix.Infrastructure.Data.ApplicationDbContext context) => _context = context;
+
+    public async Task<ActorSnapshot?> FindAsync(Guid userId, CancellationToken ct) =>
+        (await FindManyAsync([userId], ct)).FirstOrDefault();
+
+    public async Task<IReadOnlyList<ActorSnapshot>> FindManyAsync(IReadOnlyList<Guid> userIds, CancellationToken ct) =>
+        await _context.Users
+            .Where(u => userIds.Contains(u.Id))
+            .Select(u => new ActorSnapshot(u.Id, u.Name, u.Avatar))
+            .ToListAsync(ct);
+}
+
+internal sealed class InMemoryAvatarStorageKeyReadPort : Notrelix.Application.Features.Identity.Profiles.Ports.IAvatarStorageKeyReadPort
+{
+    private readonly Notrelix.Infrastructure.Data.ApplicationDbContext _context;
+
+    public InMemoryAvatarStorageKeyReadPort(Notrelix.Infrastructure.Data.ApplicationDbContext context) => _context = context;
+
+    public Task<string?> FindAsync(Guid ownerId, CancellationToken cancellationToken) =>
+        _context.Users.Where(u => u.Id == ownerId).Select(u => u.AvatarStorageKey).FirstOrDefaultAsync(cancellationToken);
 }

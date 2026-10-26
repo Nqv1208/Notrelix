@@ -44,7 +44,8 @@ describe("AccountWorkspacesSurface", () => {
       expect(body).toContain(copy.roles.admin);
       expect(body).toContain(copy.roles.member);
       expect(body).toContain(copy.roles.guest);
-      expect(body).toContain("Điều phối xe tháng 10");
+      expect(body).toContain("86");
+      expect(body).toContain("5");
       expect(
         screen.getByRole("link", { name: copy.create }).getAttribute("href"),
       ).toBe("/onboarding");
@@ -106,23 +107,30 @@ describe("AccountWorkspacesSurface", () => {
       ),
     ).toBeTruthy();
     view.unmount();
+
+    const refused = renderWorkspaces({
+      ...workspacesSoleOwnerScenario("en"),
+      actionError: "last-owner",
+    });
+    expect(screen.getByRole("alert").textContent).toContain(
+      copy.lastOwnerError,
+    );
+    refused.view.unmount();
   });
 
-  it("FUI[account.workspaces:guest] explains what leaving costs a guest of one board", () => {
+  it("FUI[account.workspaces:guest] shows a guest only the role, with no people or department count and no invented notes", () => {
     const copy = workspacesCopyFixture("vi");
     const { view } = renderWorkspaces(workspacesDefaultScenario("vi"));
-    expect(
-      screen.getByText(
-        copy.noteGuest.replace("{{board}}", "Điều phối xe tháng 10"),
-      ),
-    ).toBeTruthy();
-    expect(
-      screen.getByText(
-        copy.noteAdmin
-          .replace("{{workspace}}", "Minh An Group")
-          .replace("{{owner}}", "Trịnh Quốc Hưng"),
-      ),
-    ).toBeTruthy();
+    const guest = screen
+      .getByRole("heading", { level: 3, name: /Tân Lộc Logistics/ })
+      .closest("section");
+    expect(guest?.textContent).toContain(copy.roles.guest);
+    expect(guest?.textContent).not.toContain("người");
+    expect(guest?.textContent).not.toContain("phòng ban");
+    // The producer sends no unread count, guest board or other owner.
+    const body = document.body.textContent ?? "";
+    expect(body).not.toContain("chưa đọc");
+    expect(body).not.toContain("Trịnh Quốc Hưng");
     view.unmount();
   });
 

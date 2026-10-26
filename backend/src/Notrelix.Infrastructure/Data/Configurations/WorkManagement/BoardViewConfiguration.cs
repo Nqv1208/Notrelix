@@ -18,6 +18,7 @@ public class BoardViewConfiguration : IEntityTypeConfiguration<BoardView>
         builder.Property(x => x.Name).HasColumnName("name").IsRequired().HasMaxLength(256);
         builder.Property(x => x.Type).HasColumnName("type").HasConversion<string>().IsRequired().HasMaxLength(50);
         builder.Property(x => x.IsDefault).HasColumnName("is_default");
+        builder.Property(x => x.Visibility).HasColumnName("visibility").HasConversion<string>().IsRequired().HasMaxLength(50).HasDefaultValue(BoardViewVisibility.Board);
 
         builder.OwnsOne(x => x.Config, config =>
         {

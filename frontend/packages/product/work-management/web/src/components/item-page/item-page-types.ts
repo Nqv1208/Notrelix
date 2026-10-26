@@ -69,8 +69,6 @@ export interface ItemPageNavigation {
 export interface ItemPageAccess {
   readonly level: BoardAccessLevel;
   readonly grantedBy?: string | null;
-  /** When an explicit grant ends (ISO); absent = it does not. */
-  readonly expiresAt?: string | null;
 }
 
 /** The property rows of the page's right column. */

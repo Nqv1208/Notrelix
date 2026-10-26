@@ -26,6 +26,12 @@ Use `000_apply_order.sql` or embed the files in the same order:
 9. `009_policies_notifications_activity_search.sql`
 10. `010_policies_events_messaging_audit_ops.sql`
 11. `011_verification.sql`
+12. `012_principal_scopes.sql`
+13. `013_co_member_profiles.sql`
+14. `014_anonymous_scopes.sql`
+15. `015_internal_principals.sql`
+16. `016_policies_derived_scope.sql`
+17. `017_webhook_scope.sql`
 
 ## Important fixes
 

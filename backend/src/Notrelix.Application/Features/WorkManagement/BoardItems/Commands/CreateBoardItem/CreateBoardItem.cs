@@ -12,7 +12,10 @@ public record CreateBoardItemCommand(
     Guid GroupId,
     string Title,
     Guid? PreviousSiblingId = null,
-    Guid? NextSiblingId = null) : ICommand<BoardItemSlimDto>, IWriteRequest, IRequirePermission, IAuthenticatedRequest, IResourceScopedRequest, IIdempotentRequest
+    Guid? NextSiblingId = null,
+    string? DescriptionMd = null,
+    DateTime? StartDate = null,
+    DateTime? DueDate = null) : ICommand<BoardItemSlimDto>, IWriteRequest, IRequirePermission, IAuthenticatedRequest, IResourceScopedRequest, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.CreateItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);
@@ -68,7 +71,10 @@ public class CreateBoardItemCommandHandler : IRequestHandler<CreateBoardItemComm
             _requestContext.UserId,
             now,
             itemKey: key.Key,
-            itemSequence: key.Sequence);
+            itemSequence: key.Sequence,
+            startedAt: request.StartDate.HasValue ? new DateTimeOffset(DateTime.SpecifyKind(request.StartDate.Value, DateTimeKind.Utc)) : null,
+            dueAt: request.DueDate.HasValue ? new DateTimeOffset(DateTime.SpecifyKind(request.DueDate.Value, DateTimeKind.Utc)) : null,
+            descriptionMd: request.DescriptionMd);
 
         _context.BoardItems.Add(item);
 

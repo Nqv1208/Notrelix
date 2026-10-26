@@ -11,6 +11,7 @@ public static class WorkOrderingConstraints
     public const string OrdinalCollation = "C";
 
     public const string GroupItems = "ux_work_board_items_group_position_active";
+    public const string ChildItems = "ux_work_board_items_parent_position_active";
     public const string BoardGroups = "ux_work_board_groups_board_position_active";
     public const string BoardFields = "ux_work_board_fields_board_position_active";
     public const string ItemChecklists = "ux_work_checklists_item_position_active";
@@ -19,7 +20,7 @@ public static class WorkOrderingConstraints
 
     public static readonly IReadOnlySet<string> Names = new HashSet<string>(StringComparer.Ordinal)
     {
-        GroupItems, BoardGroups, BoardFields, ItemChecklists, ChecklistItems, FieldOptions,
+        GroupItems, ChildItems, BoardGroups, BoardFields, ItemChecklists, ChecklistItems, FieldOptions,
     };
 
     public static bool IsOrderingViolation(Exception exception) =>

@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { fireEvent, renderPureUi, screen, within } from "@notrelix/testing";
+import { formatCopy } from "../../shell/shell-models";
 
 import {
   membersAdminScenario,
@@ -207,6 +208,68 @@ describe("WorkspaceMembersSurface invitations", () => {
       email: "new.person@example.com",
       role: "member",
     });
+  });
+
+  it("FUI[workspace.members:invite-many] invites every address typed at once and names the ones that are not addresses", () => {
+    const onInviteMany = vi.fn();
+    const { props } = renderMembers(membersInvitationsScenario(), {
+      onInviteMany,
+    });
+    const email = screen.getByLabelText(copy.invitations.emailLabel);
+    fireEvent.change(email, {
+      target: { value: "a@example.com, b@example.com\nA@example.com nope" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.invitations.send }),
+    );
+    expect(onInviteMany).not.toHaveBeenCalled();
+    expect(
+      screen.getByText(
+        formatCopy(copy.invitations.emailInvalidMany, { emails: "nope" }),
+      ),
+    ).toBeTruthy();
+
+    fireEvent.change(email, {
+      target: { value: "a@example.com, b@example.com\nA@example.com" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.invitations.send }),
+    );
+    expect(props.onInvite).not.toHaveBeenCalled();
+    expect(onInviteMany).toHaveBeenCalledWith([
+      { email: "a@example.com", role: "member" },
+      { email: "b@example.com", role: "member" },
+    ]);
+  });
+
+  it("FUI[workspace.members:resend] sends a waiting invitation again and offers nothing for one that was accepted", () => {
+    const onResend = vi.fn();
+    renderMembers(membersInvitationsScenario(), { onResend });
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Resend invitation to minh.tran@example.com",
+      }),
+    );
+    expect(onResend).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "inv-1" }),
+    );
+  });
+
+  it("FUI[workspace.members:invitation-role] shows the role of a waiting invitation as a choice only when the host can change it", () => {
+    renderMembers(membersInvitationsScenario());
+    expect(
+      screen.queryByRole("combobox", {
+        name: "Role offered in the invitation to minh.tran@example.com",
+      }),
+    ).toBeNull();
+    renderMembers(membersInvitationsScenario(), {
+      onChangeInvitationRole: vi.fn(),
+    });
+    expect(
+      screen.getByRole("combobox", {
+        name: "Role offered in the invitation to minh.tran@example.com",
+      }),
+    ).toBeTruthy();
   });
 
   it("FUI[workspace.members:pending] lists pending and expired invitations and revokes after confirmation", () => {

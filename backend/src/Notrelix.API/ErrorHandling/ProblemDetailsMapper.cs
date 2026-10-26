@@ -26,9 +26,9 @@ public static class ProblemDetailsMapper
                 "One or more validation errors occurred.",
                 (IReadOnlyDictionary<string, string[]>)ex.Errors
             ),
-            Notrelix.Application.Common.Exceptions.PayloadTooLargeException => (
+            Notrelix.Application.Common.Exceptions.PayloadTooLargeException tooLarge => (
                 StatusCodes.Status413PayloadTooLarge,
-                ErrorCodes.AttachmentPayloadTooLarge,
+                tooLarge.ErrorCode ?? ErrorCodes.AttachmentPayloadTooLarge,
                 "Payload too large",
                 exception.Message,
                 null
@@ -47,9 +47,9 @@ public static class ProblemDetailsMapper
                 "The request body is malformed or was interrupted.",
                 null
             ),
-            Notrelix.Application.Common.Exceptions.UnsupportedMediaTypeException => (
+            Notrelix.Application.Common.Exceptions.UnsupportedMediaTypeException unsupported => (
                 StatusCodes.Status415UnsupportedMediaType,
-                ErrorCodes.AttachmentUnsupportedMediaType,
+                unsupported.ErrorCode ?? ErrorCodes.AttachmentUnsupportedMediaType,
                 "Unsupported media type",
                 exception.Message,
                 null
@@ -89,9 +89,9 @@ public static class ProblemDetailsMapper
                 exception.Message,
                 null
             ),
-            AppForbiddenException => (
+            AppForbiddenException forbidden => (
                 StatusCodes.Status403Forbidden,
-                ErrorCodes.Forbidden,
+                forbidden.Code ?? ErrorCodes.Forbidden,
                 "Forbidden",
                 exception.Message,
                 null
@@ -175,6 +175,14 @@ public static class ProblemDetailsMapper
 
         problemDetails.Extensions["errorCode"] = mapped.ErrorCode;
         problemDetails.Extensions["traceId"] = context.TraceIdentifier;
+
+        if (exception is Notrelix.Application.Common.Exceptions.PreconditionFailedException { Extensions.Count: > 0 } stale)
+        {
+            foreach (var (key, value) in stale.Extensions)
+            {
+                problemDetails.Extensions[key] = value;
+            }
+        }
 
         if (mapped.Errors is { Count: > 0 })
         {

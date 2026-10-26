@@ -40,7 +40,7 @@ public class RenameAccountPipelineAuthorizationTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -55,7 +55,7 @@ public class RenameAccountPipelineAuthorizationTests : IAsyncLifetime
         var account = Account.Create("Rename Account", $"rename-{Guid.NewGuid():N}", AccountType.Team, actorId, now);
         var accountId = account.Id;
 
-        await using (var seed = _db.CreateContext(SystemTenant()))
+        await using (var seed = _db.CreateOwnerContext(SystemTenant()))
         {
             seed.Users.Add(user);
             seed.Accounts.Add(account);
@@ -82,7 +82,7 @@ public class RenameAccountPipelineAuthorizationTests : IAsyncLifetime
         evaluations.EvaluationCount.Should().Be(1,
             "pipeline-owned authorization must be evaluated exactly once per request");
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         var account = await verify.Accounts.SingleAsync(a => a.Id == graph.AccountId);
         account.Name.Should().Be("Renamed By Admin", "the handler must have executed after pipeline authorization succeeded");
     }
@@ -104,7 +104,7 @@ public class RenameAccountPipelineAuthorizationTests : IAsyncLifetime
         evaluations.EvaluationCount.Should().Be(1,
             "a pipeline denial performs one evaluation and never reaches the handler");
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         var account = await verify.Accounts.SingleAsync(a => a.Id == graph.AccountId);
         account.Name.Should().Be("Rename Account",
             "a denied request must leave no durable side effects");
@@ -145,7 +145,7 @@ public class RenameAccountPipelineAuthorizationTests : IAsyncLifetime
         services.AddSingleton(clockMock.Object);
 
         services.AddScoped<ApplicationDbContext>(sp =>
-            _db.CreateContext(sp.GetRequiredService<ICurrentTenantContext>()));
+            _db.CreateOwnerContext(sp.GetRequiredService<ICurrentTenantContext>()));
         services.AddScoped<IAccountDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IGovernanceDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
 

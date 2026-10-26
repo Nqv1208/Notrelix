@@ -15,7 +15,7 @@ public record SpaceOverviewPersonDto(Guid Id, string Name);
 public record SpaceOverviewProgressDto(int Done, int Total);
 
 /// <param name="Overdue">Unfinished Items past their due time.</param>
-/// <param name="WaitingReview">Pending approval requests on the Board or on its unfinished Items.</param>
+/// <param name="WaitingReview">Unfinished Items of the Board with a pending approval, each counted once.</param>
 /// <param name="Unclaimed">Unfinished top-level Items nobody is assigned to.</param>
 public record SpaceOverviewBoardAttentionDto(int Overdue, int WaitingReview, int Unclaimed);
 

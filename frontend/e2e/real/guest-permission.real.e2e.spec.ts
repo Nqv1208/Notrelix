@@ -1,30 +1,34 @@
 import { expect, test } from "@playwright/test";
-import {
-  openBoard,
-  openWorkspace,
-  realUsers,
-  signIn,
-} from "./support/real-session";
+import { findWorkspace, realUsers, signIn } from "./support/real-session";
 
-test("workspace guest cannot persist a new board item", async ({ page }) => {
+const apiUrl = process.env.VITE_API_URL ?? "http://127.0.0.1:58000/api/v1";
+
+test("a workspace guest sees no board that was not shared and cannot read one", async ({
+  browser,
+  page,
+}) => {
+  // The admin is a Member of Workspace 2 and reads its boards; the guest is a Guest of it.
+  const adminContext = await browser.newContext();
+  const adminPage = await adminContext.newPage();
+  await signIn(adminPage, realUsers.admin);
+  const adminWorkspace = await findWorkspace(adminPage, "Workspace 2");
+  const boards = (await (
+    await adminPage.request.get(
+      `${apiUrl}/workspaces/${adminWorkspace.id}/boards`,
+    )
+  ).json()) as { id: string }[];
+  expect(boards.length).toBeGreaterThan(0);
+  await adminContext.close();
+
   await signIn(page, realUsers.guest);
-  await openWorkspace(page, "Workspace 1");
-  await openBoard(page, /^Product Roadmap \(/);
+  const workspace = await findWorkspace(page, "Workspace 2");
+  expect(workspace.id).toBe(adminWorkspace.id);
 
-  await page.getByRole("button", { name: "Add card to Backlog" }).click();
-  await page
-    .getByLabel("New card title for Backlog")
-    .fill("E2E forbidden guest card");
-  const deniedResponse = page.waitForResponse(
-    (response) =>
-      response.request().method() === "POST" &&
-      /\/boards\/[^/]+\/items$/.test(response.url()),
+  const listed = await page.request.get(
+    `${apiUrl}/workspaces/${workspace.id}/boards`,
   );
-  await page.getByRole("button", { name: "Add card", exact: true }).click();
-  await expect((await deniedResponse).status()).toBe(403);
+  expect(await listed.json()).toEqual([]);
 
-  await page.reload();
-  await expect(
-    page.getByRole("button", { name: "E2E forbidden guest card" }),
-  ).toHaveCount(0);
+  const read = await page.request.get(`${apiUrl}/boards/${boards[0].id}`);
+  expect([403, 404]).toContain(read.status());
 });

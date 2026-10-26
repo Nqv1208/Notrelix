@@ -27,7 +27,7 @@ public class N8nAutomationTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -40,7 +40,7 @@ public class N8nAutomationTests : IAsyncLifetime
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
-        await using var context = _db.CreateContext(tenant);
+        await using var context = _db.CreateOwnerContext(tenant);
         var ownerId = Guid.NewGuid();
         var assignedUserId = Guid.NewGuid();
         var accountId = Guid.NewGuid();

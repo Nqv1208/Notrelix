@@ -1,12 +1,21 @@
 import * as React from "react";
 import { Lock } from "lucide-react";
-import { Skeleton, cn } from "@notrelix/ui-web";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Skeleton,
+  cn,
+} from "@notrelix/ui-web";
 import {
   Avatar,
   BTN,
   BTN_PRIMARY,
   FOCUS,
   INPUT,
+  LINK_BUTTON_DANGER,
   LoadError,
   PageHead,
   Toast,
@@ -18,6 +27,8 @@ import {
   type AccountSaveStatus,
   type AccountSection,
 } from "../shared/account-surface-model";
+import { checkPhone, phoneForSave } from "../../core/phone";
+import type { AccountPhotoFailure } from "../../core/types/account";
 import type { AccountProfileCopy } from "./account-profile.copy";
 
 /** The fields the profile page edits. */
@@ -25,6 +36,8 @@ export interface AccountProfileValues {
   readonly name: string;
   readonly jobTitle: string;
   readonly phone: string;
+  /** Other members of the person's workspaces may see the phone; off = only the person. */
+  readonly phoneVisibleToWorkspaceMembers: boolean;
   readonly timezone: string;
   readonly dateFormat: string;
 }
@@ -46,16 +59,17 @@ export interface AccountProfileSurfaceProps {
   readonly profile: AccountSection<AccountProfileData>;
   /** The outcome of the last save; the container owns the mutation. */
   readonly save: AccountSaveStatus;
-  /** The photo was refused (wrong type or too large). */
-  readonly photoError?: boolean;
+  /** Why the photo was not changed; `null` = nothing to say. */
+  readonly photoError?: AccountPhotoFailure | null;
   readonly onSave: (values: AccountProfileValues) => void;
   readonly onRetry: () => void;
   readonly onPhotoChange: (file: File) => void;
+  /** Takes the photo away; offered only while there is one. */
+  readonly onPhotoRemove?: () => void;
 }
 
 const TIMEZONES = ["UTC", "Asia/Ho_Chi_Minh", "Asia/Tokyo", "Europe/Paris"];
 const DATE_FORMATS = ["dd/mm/yyyy", "yyyy-mm-dd"];
-const PHONE = /^[0-9 +().-]{0,20}$/;
 
 function lookup(labels: Readonly<Record<string, string>>, id: string): string {
   return labels[id] ?? id;
@@ -128,19 +142,22 @@ function ProfileBody({
   photoError,
   onSave,
   onPhotoChange,
+  onPhotoRemove,
 }: {
   copy: AccountProfileCopy;
   formatters: AccountFormatters;
   data: AccountProfileData;
   save: AccountSaveStatus;
-  photoError: boolean;
+  photoError: AccountPhotoFailure | null;
   onSave: (values: AccountProfileValues) => void;
   onPhotoChange: (file: File) => void;
+  onPhotoRemove: (() => void) | undefined;
 }) {
   const [values, setValues] = React.useState<AccountProfileValues>({
     name: data.name,
     jobTitle: data.jobTitle,
     phone: data.phone,
+    phoneVisibleToWorkspaceMembers: data.phoneVisibleToWorkspaceMembers,
     timezone: data.timezone,
     dateFormat: data.dateFormat,
   });
@@ -154,6 +171,9 @@ function ProfileBody({
     dateFormat: React.useId(),
     nameError: React.useId(),
     phoneError: React.useId(),
+    phoneHelp: React.useId(),
+    phoneVisible: React.useId(),
+    phoneVisibleHint: React.useId(),
   };
   const fileInput = React.useRef<HTMLInputElement>(null);
 
@@ -163,23 +183,41 @@ function ProfileBody({
       name: data.name,
       jobTitle: data.jobTitle,
       phone: data.phone,
+      phoneVisibleToWorkspaceMembers: data.phoneVisibleToWorkspaceMembers,
       timezone: data.timezone,
       dateFormat: data.dateFormat,
     });
-  }, [data.name, data.jobTitle, data.phone, data.timezone, data.dateFormat]);
+  }, [
+    data.name,
+    data.jobTitle,
+    data.phone,
+    data.phoneVisibleToWorkspaceMembers,
+    data.timezone,
+    data.dateFormat,
+  ]);
 
-  const set = (key: FieldKey, value: string) =>
-    setValues((current) => ({ ...current, [key]: value }));
+  const set = (
+    key: Exclude<FieldKey, "phoneVisibleToWorkspaceMembers">,
+    value: string,
+  ) => setValues((current) => ({ ...current, [key]: value }));
 
   const FIELD_ORDER: readonly FieldKey[] = [
     "name",
     "jobTitle",
     "phone",
+    "phoneVisibleToWorkspaceMembers",
     "timezone",
     "dateFormat",
   ];
-  const norm = (key: FieldKey, from: AccountProfileValues) =>
-    key === "timezone" || key === "dateFormat" ? from[key] : from[key].trim();
+  // The phone compares as the number it stands for: spacing is not a change.
+  const norm = (key: FieldKey, from: AccountProfileValues): string | boolean =>
+    key === "phoneVisibleToWorkspaceMembers"
+      ? from.phoneVisibleToWorkspaceMembers
+      : key === "timezone" || key === "dateFormat"
+        ? from[key]
+        : key === "phone"
+          ? (phoneForSave(from.phone) ?? from.phone.trim())
+          : from[key].trim();
   const changed = FIELD_ORDER.filter(
     (key) => norm(key, values) !== norm(key, data),
   );
@@ -187,11 +225,18 @@ function ProfileBody({
     name: copy.nameLabel,
     jobTitle: copy.jobTitleLabel,
     phone: copy.phoneLabel,
+    phoneVisibleToWorkspaceMembers: copy.phoneVisibleLabel,
     timezone: copy.timezoneLabel,
     dateFormat: copy.dateFormatLabel,
   };
   const nameError = values.name.trim() === "" ? copy.nameRequired : null;
-  const phoneError = PHONE.test(values.phone) ? null : copy.phoneInvalid;
+  const phoneCheck = checkPhone(values.phone);
+  const phoneError =
+    phoneCheck.kind !== "invalid"
+      ? null
+      : phoneCheck.reason === "country-code"
+        ? copy.phoneCountryCode
+        : copy.phoneInvalid;
   const saving = save.state === "saving";
   const dirty = changed.length > 0;
   const isEdited = (key: FieldKey) => changed.includes(key);
@@ -203,7 +248,9 @@ function ProfileBody({
     onSave({
       name: values.name.trim(),
       jobTitle: values.jobTitle.trim(),
-      phone: values.phone.trim(),
+      // Valid here: an invalid number blocks the save above.
+      phone: phoneForSave(values.phone) ?? "",
+      phoneVisibleToWorkspaceMembers: values.phoneVisibleToWorkspaceMembers,
       timezone: values.timezone,
       dateFormat: values.dateFormat,
     });
@@ -213,6 +260,7 @@ function ProfileBody({
       name: data.name,
       jobTitle: data.jobTitle,
       phone: data.phone,
+      phoneVisibleToWorkspaceMembers: data.phoneVisibleToWorkspaceMembers,
       timezone: data.timezone,
       dateFormat: data.dateFormat,
     });
@@ -265,10 +313,24 @@ function ProfileBody({
         >
           {copy.changePhoto}
         </button>
+        {data.avatarUrl && onPhotoRemove ? (
+          <button
+            type="button"
+            aria-label={copy.removePhotoLabel}
+            onClick={onPhotoRemove}
+            className={cn(LINK_BUTTON_DANGER, FOCUS)}
+          >
+            {copy.removePhoto}
+          </button>
+        ) : null}
       </div>
       {photoError ? (
         <p role="alert" className="m-0 text-crumb text-danger-text">
-          {copy.photoError}
+          {photoError === "unsupported"
+            ? copy.photoUnsupported
+            : photoError === "too-large"
+              ? copy.photoTooLarge
+              : copy.photoFailed}
         </p>
       ) : null}
 
@@ -372,20 +434,23 @@ function ProfileBody({
           edited={isEdited("phone")}
           editedText={copy.edited}
           editedId={`${ids.phone}-edited`}
+          hint={copy.phoneHelp}
+          hintId={ids.phoneHelp}
         >
           <input
             id={ids.phone}
             type="tel"
+            inputMode="tel"
             autoComplete="tel"
+            placeholder={copy.phonePlaceholder}
             value={values.phone}
             disabled={saving}
             aria-invalid={phoneError ? true : undefined}
-            aria-describedby={
-              cn(
-                phoneError && ids.phoneError,
-                isEdited("phone") && `${ids.phone}-edited`,
-              ) || undefined
-            }
+            aria-describedby={cn(
+              phoneError && ids.phoneError,
+              ids.phoneHelp,
+              isEdited("phone") && `${ids.phone}-edited`,
+            )}
             onChange={(event) => set("phone", event.target.value)}
             className={cn(INPUT, editedClass("phone"))}
           />
@@ -398,6 +463,37 @@ function ProfileBody({
               {phoneError}
             </span>
           ) : null}
+          <div className="mt-1 flex items-start gap-2">
+            <input
+              id={ids.phoneVisible}
+              type="checkbox"
+              checked={values.phoneVisibleToWorkspaceMembers}
+              disabled={
+                saving ||
+                (phoneCheck.kind === "empty" &&
+                  !values.phoneVisibleToWorkspaceMembers)
+              }
+              aria-describedby={ids.phoneVisibleHint}
+              onChange={(event) =>
+                setValues((current) => ({
+                  ...current,
+                  phoneVisibleToWorkspaceMembers: event.target.checked,
+                }))
+              }
+              className={cn("mt-[3px] size-4 shrink-0 accent-primary", FOCUS)}
+            />
+            <div className="min-w-0 text-compact leading-[1.45]">
+              <label htmlFor={ids.phoneVisible} className="text-foreground">
+                {copy.phoneVisibleLabel}
+              </label>
+              <small
+                id={ids.phoneVisibleHint}
+                className="block text-xs text-meta-foreground"
+              >
+                {copy.phoneVisibleHint}
+              </small>
+            </div>
+          </div>
         </Field>
         <Field
           htmlFor={ids.timezone}
@@ -407,19 +503,25 @@ function ProfileBody({
           editedId={`${ids.timezone}-edited`}
           hint={copy.timezoneHelp}
         >
-          <select
-            id={ids.timezone}
+          <Select
             value={values.timezone}
             disabled={saving}
-            onChange={(event) => set("timezone", event.target.value)}
-            className={cn(INPUT, editedClass("timezone"))}
+            onValueChange={(value) => set("timezone", value)}
           >
-            {choicesWith(TIMEZONES, values.timezone).map((zone) => (
-              <option key={zone} value={zone}>
-                {lookup(copy.timezones, zone)}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger
+              id={ids.timezone}
+              className={cn("w-full", editedClass("timezone"))}
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {choicesWith(TIMEZONES, values.timezone).map((zone) => (
+                <SelectItem key={zone} value={zone}>
+                  {lookup(copy.timezones, zone)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </Field>
         <Field
           htmlFor={ids.dateFormat}
@@ -428,19 +530,25 @@ function ProfileBody({
           editedText={copy.edited}
           editedId={`${ids.dateFormat}-edited`}
         >
-          <select
-            id={ids.dateFormat}
+          <Select
             value={values.dateFormat}
             disabled={saving}
-            onChange={(event) => set("dateFormat", event.target.value)}
-            className={cn(INPUT, editedClass("dateFormat"))}
+            onValueChange={(value) => set("dateFormat", value)}
           >
-            {choicesWith(DATE_FORMATS, values.dateFormat).map((format) => (
-              <option key={format} value={format}>
-                {lookup(copy.dateFormats, format)}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger
+              id={ids.dateFormat}
+              className={cn("w-full", editedClass("dateFormat"))}
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {choicesWith(DATE_FORMATS, values.dateFormat).map((format) => (
+                <SelectItem key={format} value={format}>
+                  {lookup(copy.dateFormats, format)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </Field>
       </form>
 
@@ -510,10 +618,11 @@ export function AccountProfileSurface({
   formatters,
   profile,
   save,
-  photoError = false,
+  photoError = null,
   onSave,
   onRetry,
   onPhotoChange,
+  onPhotoRemove,
 }: AccountProfileSurfaceProps) {
   return (
     <section
@@ -542,6 +651,7 @@ export function AccountProfileSurface({
           photoError={photoError}
           onSave={onSave}
           onPhotoChange={onPhotoChange}
+          onPhotoRemove={onPhotoRemove}
         />
       )}
     </section>

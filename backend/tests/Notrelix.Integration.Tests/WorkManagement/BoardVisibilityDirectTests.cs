@@ -20,7 +20,7 @@ public class BoardVisibilityDirectTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -31,7 +31,7 @@ public class BoardVisibilityDirectTests : IAsyncLifetime
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
-        await using var ctx = _db.CreateContext(tenant);
+        await using var ctx = _db.CreateOwnerContext(tenant);
 
         var board = Board.Create(
             Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
@@ -50,7 +50,7 @@ public class BoardVisibilityDirectTests : IAsyncLifetime
         _output.WriteLine($"Converter converts nulls: {converter?.ConvertsNulls}");
 
         // Raw SQL check
-        await using var conn = _db.CreateConnection();
+        await using var conn = _db.CreateOwnerConnection();
         await conn.OpenAsync();
         await using var cmd = conn.CreateCommand();
         cmd.CommandText = "SELECT visibility FROM work.boards WHERE id = @id";
@@ -75,7 +75,7 @@ public class BoardVisibilityDirectTests : IAsyncLifetime
 
         Guid boardId;
         {
-            await using var ctx1 = _db.CreateContext(tenant);
+            await using var ctx1 = _db.CreateOwnerContext(tenant);
             var board = Board.Create(
                 Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
                 "Test", null, DateTimeOffset.UtcNow,
@@ -85,7 +85,7 @@ public class BoardVisibilityDirectTests : IAsyncLifetime
             await ctx1.SaveChangesAsync();
         }
 
-        await using var ctx2 = _db.CreateContext(tenant);
+        await using var ctx2 = _db.CreateOwnerContext(tenant);
 
         var entityType = ctx2.Model.FindEntityType(typeof(Board));
         var visibilityProp = entityType!.FindProperty(nameof(Board.Visibility));
@@ -93,7 +93,7 @@ public class BoardVisibilityDirectTests : IAsyncLifetime
         _output.WriteLine($"Fresh ctx - Converter type: {converter?.GetType().Name}");
 
         // Raw SQL check
-        await using var conn = _db.CreateConnection();
+        await using var conn = _db.CreateOwnerConnection();
         await conn.OpenAsync();
         await using var cmd = conn.CreateCommand();
         cmd.CommandText = "SELECT visibility FROM work.boards WHERE id = @id";

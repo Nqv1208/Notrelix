@@ -56,6 +56,12 @@ public class CsrfApplicabilityInventoryArchitectureTests : ArchitectureTestBase
             "one-time reset-token credential flow; no ambient cookie session consumed or established"),
         ["EmailVerificationEndpoints.cs"] = new(false, "CSRF_NOT_REQUIRED",
             "one-time email-verification token flows; no ambient cookie session consumed or established"),
+        ["IdentifySignInEndpoint.cs"] = new(false, "CSRF_NOT_REQUIRED",
+            "pre-login read of how an email signs in; no ambient session read or established, answer is independent of account existence"),
+        ["DeclineInvitationByTokenEndpoint.cs"] = new(false, "CSRF_NOT_REQUIRED",
+            "one-time invitation-token decision; no ambient cookie session consumed or established"),
+        ["AcceptInvitationWithRegistrationEndpoint.cs"] = new(true, "CSRF_REQUIRED",
+            "creates the invitee's account principal and establishes ambient access/refresh token cookies on success"),
         ["GetInvitationByTokenEndpoint.cs"] = new(false, "CSRF_NOT_REQUIRED",
             "invitation preview lookup by one-time invitation token; no ambient cookie session consumed"),
     };

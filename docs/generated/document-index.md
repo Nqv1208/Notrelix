@@ -30,14 +30,14 @@ review_on:
 > This file is generated discovery evidence.
 > It does not replace the canonical authority described by each source document.
 
-Document count: 95
+Document count: 96
 
 ## Documents by type
 
 | Value | Count |
 |:---|---:|
 | `architecture` | 22 |
-| `architecture-decision` | 16 |
+| `architecture-decision` | 17 |
 | `architecture-policy` | 1 |
 | `decision-registry` | 3 |
 | `delivery-handbook` | 1 |
@@ -58,10 +58,9 @@ Document count: 95
 
 | Value | Count |
 |:---|---:|
-| `Accepted` | 13 |
+| `Accepted` | 15 |
 | `active` | 76 |
 | `generated` | 3 |
-| `Proposed` | 1 |
 | `Superseded` | 2 |
 
 ## Document inventory
@@ -77,7 +76,8 @@ Document count: 95
 | `ADR-007` | `architecture-decision` | `Accepted` | `backend-architecture` | `backend`, `backend-application`, `application-pipeline`, `governance-context` | [`backend/docs/decisions/ADR-007-governance-owned-authorization-evaluator.md`](../../backend/docs/decisions/ADR-007-governance-owned-authorization-evaluator.md) |
 | `ADR-008` | `architecture-decision` | `Accepted` | `backend-architecture` | `backend`, `backend-platform-messaging`, `provider-integration` | [`backend/docs/decisions/ADR-008-provider-outcome-classification-and-settlement.md`](../../backend/docs/decisions/ADR-008-provider-outcome-classification-and-settlement.md) |
 | `ADR-009` | `architecture-decision` | `Accepted` | `backend-architecture` | `backend`, `governance-context`, `workspaces-context`, `authorization`, `persistence` | [`backend/docs/decisions/ADR-009-space-scoped-authorization.md`](../../backend/docs/decisions/ADR-009-space-scoped-authorization.md) |
-| `ADR-010` | `architecture-decision` | `Proposed` | `backend-architecture` | `backend`, `workspaces-context`, `work-management-context`, `documents-context`, `governance-context`, `search` | [`backend/docs/decisions/ADR-010-authorized-command-search.md`](../../backend/docs/decisions/ADR-010-authorized-command-search.md) |
+| `ADR-010` | `architecture-decision` | `Accepted` | `backend-architecture` | `backend`, `workspaces-context`, `work-management-context`, `documents-context`, `governance-context`, `search` | [`backend/docs/decisions/ADR-010-authorized-command-search.md`](../../backend/docs/decisions/ADR-010-authorized-command-search.md) |
+| `ADR-011` | `architecture-decision` | `Accepted` | `backend-architecture` | `backend`, `backend-security`, `backend-tenancy`, `backend-rls`, `backend-infrastructure`, `backend-application`, `identity-context`, `workspaces-context`, `governance-context` | [`backend/docs/decisions/ADR-011-database-principal-model.md`](../../backend/docs/decisions/ADR-011-database-principal-model.md) |
 | `BE-ACCESS-FACTS-EVIDENCE` | `operations` | `active` | `backend-runtime-operations` | `backend`, `backend-access-control`, `backend-performance` | [`backend/docs/operations/access-facts-query-evidence.md`](../../backend/docs/operations/access-facts-query-evidence.md) |
 | `BE-API-CONTRACTS` | `architecture` | `active` | `backend-architecture` | `backend/src/Notrelix.API`, `backend/tests/Notrelix.API.Tests`, `backend/tests/Notrelix.Integration.Tests` | [`backend/docs/architecture/api-and-contracts.md`](../../backend/docs/architecture/api-and-contracts.md) |
 | `BE-APPLICATION-MODEL` | `architecture` | `active` | `backend-architecture` | `backend/src/Notrelix.Application`, `backend/tests/Notrelix.Application.Tests`, `backend/tests/Notrelix.Integration.Tests` | [`backend/docs/architecture/application-model.md`](../../backend/docs/architecture/application-model.md) |

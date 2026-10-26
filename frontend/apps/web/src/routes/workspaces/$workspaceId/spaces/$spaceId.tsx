@@ -456,26 +456,18 @@ export function SpacePage() {
   );
 
   const guests = useMemo<readonly SpaceGuestView[]>(() => {
-    const pad = (value: number) => String(value).padStart(2, "0");
     return (extra?.guests ?? []).map((guest) => {
-      const until = guest.expiresAt ? new Date(guest.expiresAt) : null;
       return {
         id: guest.userId,
         name: guest.name,
         tone: identityToneFor(guest.userId),
-        detail:
-          formatCopy(copy.members.aside.guestLine, {
-            company: guest.outside
-              ? copy.members.aside.guestOutside
-              : copy.members.aside.guestInside,
-            level: copy.members.aside.guestLevel[guest.level],
-            board: guest.boardName,
-          }) +
-          (until
-            ? formatCopy(copy.members.aside.guestUntil, {
-                date: `${pad(until.getDate())}/${pad(until.getMonth() + 1)}/${until.getFullYear()}`,
-              })
-            : ""),
+        detail: formatCopy(copy.members.aside.guestLine, {
+          company: guest.outside
+            ? copy.members.aside.guestOutside
+            : copy.members.aside.guestInside,
+          level: copy.members.aside.guestLevel[guest.level],
+          board: guest.boardName,
+        }),
         destination: { section: "board", boardId: guest.boardId },
       };
     });

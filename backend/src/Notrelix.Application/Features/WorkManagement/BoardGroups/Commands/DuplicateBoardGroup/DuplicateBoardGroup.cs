@@ -89,7 +89,8 @@ public class DuplicateBoardGroupCommandHandler : IRequestHandler<DuplicateBoardG
             itemKey: key.Key,
             itemSequence: key.Sequence,
             startedAt: source.StartedAt,
-            dueAt: source.DueAt);
+            dueAt: source.DueAt,
+            descriptionMd: source.DescriptionMd);
 
         return copy;
     }

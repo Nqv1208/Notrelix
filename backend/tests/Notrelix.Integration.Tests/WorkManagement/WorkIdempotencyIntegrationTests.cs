@@ -59,7 +59,7 @@ public sealed class WorkIdempotencyIntegrationTests : IAsyncLifetime
         _db = db;
     }
 
-    public async Task InitializeAsync() => await new DatabaseReset(_db.ConnectionString).ResetAsync();
+    public async Task InitializeAsync() => await new DatabaseReset(_db.OwnerConnectionString).ResetAsync();
 
     public Task DisposeAsync() => Task.CompletedTask;
 
@@ -123,7 +123,7 @@ public sealed class WorkIdempotencyIntegrationTests : IAsyncLifetime
     private async Task<Guid> SeedBoardAsync(Guid accountId, Guid workspaceId, Guid ownerId)
     {
         var board = Board.Create(accountId, workspaceId, ownerId, "Idempotency Board", null, DateTimeOffset.UtcNow);
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Boards.Add(board);
         await seed.SaveChangesAsync();
         return board.Id;
@@ -134,7 +134,7 @@ public sealed class WorkIdempotencyIntegrationTests : IAsyncLifetime
         var now = DateTimeOffset.UtcNow;
         var first = BoardGroup.Create(accountId, workspaceId, boardId, "First", Color.Create("#808080"), FractionalIndex.Create("a0"), ownerId, now);
         var second = BoardGroup.Create(accountId, workspaceId, boardId, "Second", Color.Create("#808080"), FractionalIndex.Create("a1"), ownerId, now);
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.BoardGroups.AddRange(first, second);
         await seed.SaveChangesAsync();
         return (first.Id, second.Id);
@@ -142,7 +142,7 @@ public sealed class WorkIdempotencyIntegrationTests : IAsyncLifetime
 
     private async Task DeleteGroupAsync(Guid groupId)
     {
-        await using var context = _db.CreateContext(SystemTenant());
+        await using var context = _db.CreateOwnerContext(SystemTenant());
         var group = await context.BoardGroups.SingleAsync(g => g.Id == groupId);
         group.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
         await context.SaveChangesAsync();
@@ -150,7 +150,7 @@ public sealed class WorkIdempotencyIntegrationTests : IAsyncLifetime
 
     private async Task<List<string>> GroupTitlesAsync(Guid boardId)
     {
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         return await verify.BoardGroups.Where(g => g.BoardId == boardId).Select(g => g.Title).ToListAsync();
     }
 
@@ -200,7 +200,7 @@ public sealed class WorkIdempotencyIntegrationTests : IAsyncLifetime
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(IdempotencyBehavior<,>));
 
         services.AddScoped<ApplicationDbContext>(sp =>
-            _db.CreateContext(sp.GetRequiredService<ICurrentTenantContext>()));
+            _db.CreateOwnerContext(sp.GetRequiredService<ICurrentTenantContext>()));
         services.AddScoped<IWorkspaceDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IAccountDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IGovernanceDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
@@ -274,7 +274,7 @@ public sealed class WorkIdempotencyIntegrationTests : IAsyncLifetime
         var account = Account.Create("WM Account", $"wm-{Guid.NewGuid():N}", AccountType.Team, owner.Id, now);
         var workspace = Workspace.Create(account.Id, owner.Id, "WM Workspace", $"wm-ws-{Guid.NewGuid():N}", now);
 
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Users.Add(owner);
         seed.Users.Add(member);
         seed.Accounts.Add(account);
@@ -284,7 +284,7 @@ public sealed class WorkIdempotencyIntegrationTests : IAsyncLifetime
         seed.WorkspaceMembers.Add(WorkspaceMember.Create(account.Id, workspace.Id, member.Id, WorkspaceRole.Member, owner.Id, now));
         await seed.SaveChangesAsync();
 
-        await using var grant = _db.CreateContext(SystemTenant());
+        await using var grant = _db.CreateOwnerContext(SystemTenant());
         var projection = new AccessGrantProjectionService(grant);
         await projection.SyncWorkspaceMemberGrantAsync(account.Id, workspace.Id, owner.Id, WorkspaceRole.Owner, now, CancellationToken.None);
         await projection.SyncWorkspaceMemberGrantAsync(account.Id, workspace.Id, member.Id, WorkspaceRole.Member, now, CancellationToken.None);

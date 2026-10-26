@@ -68,6 +68,7 @@ vi.mock("@notrelix/work-management-state", async (importOriginal) => {
     }),
     useBoardAccess: () => ({ access: null, isLoading: true, error: null }),
     useDuplicateCard: mutation,
+    useUpdateCard: mutation,
     useAddFieldOption: () => ({ mutate: vi.fn(), isPending: false }),
     useUpdateFieldOption: mutation,
     useArchiveCard: mutation,

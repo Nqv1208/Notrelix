@@ -15,7 +15,7 @@ public static class StartOAuthLinkEndpoint
             .WithTags("Identity.Auth")
             .WithSummary("Start OAuth link flow")
             .WithDescription("Redirects an authenticated user to the OAuth provider's authorization endpoint to link a provider identity, protected by step-up verification.")
-            .WithMetadata(new RateLimitPolicyAttribute("AuthStrictByIp"));
+            .WithMetadata(new RateLimitPolicyAttribute("AuthSensitiveByUser"));
 
         return group;
     }

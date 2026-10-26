@@ -21,7 +21,10 @@
       "owner": "@notrelix/docs-web",
       "surfaceKind": "composition",
       "pureEntry": "src/components/doc-page-screen-surface.tsx",
-      "coveredSources": ["src/components/doc-page-ui.tsx"],
+      "coveredSources": [
+        "src/components/doc-page-ui.tsx",
+        "src/components/doc-dialogs-surface.tsx"
+      ],
       "stories": [
         {
           "id": "docs-page-surfaces--page-screen-default",
@@ -109,6 +112,48 @@
         },
         {
           "id": "docs-page-surfaces--page-screen-share",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "docs-page-surfaces--page-screen-trash",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "docs-page-surfaces--page-screen-page-picker",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "docs-page-surfaces--page-screen-convert-task",
           "state": "Default",
           "visualTargets": [
             {
@@ -218,6 +263,18 @@
         },
         {
           "id": "versions",
+          "testFile": "src/components/__tests__/doc-page-surfaces.interaction.component.test.tsx"
+        },
+        {
+          "id": "trash",
+          "testFile": "src/components/__tests__/doc-page-surfaces.interaction.component.test.tsx"
+        },
+        {
+          "id": "page-reference",
+          "testFile": "src/components/__tests__/doc-page-surfaces.interaction.component.test.tsx"
+        },
+        {
+          "id": "convert-task",
           "testFile": "src/components/__tests__/doc-page-surfaces.interaction.component.test.tsx"
         }
       ]

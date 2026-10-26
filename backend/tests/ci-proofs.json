@@ -18,11 +18,19 @@
       "backend.architecture.application-transport",
       "backend.architecture.integration-event-ownership",
       "backend.architecture.common-entitlements",
-      "backend.architecture.feature-structure"
+      "backend.architecture.feature-structure",
+      "backend.architecture.owner-connection-boundary",
+      "backend.architecture.rls-principal-scope",
+      "backend.architecture.internal-principals",
+      "backend.architecture.integration-fleet-roles"
     ],
     "core": [
       "backend.data.rls-policy",
-      "backend.data.domain-event-interceptor"
+      "backend.data.domain-event-interceptor",
+      "backend.data.runtime-role-guard",
+      "backend.data.owner-connection",
+      "backend.data.database-principal",
+      "backend.data.login-role-provisioner"
     ],
     "platform": [
       "backend.messaging.ordering",
@@ -47,7 +55,23 @@
       "backend.integration.migration-smoke",
       "backend.integration.production-composition",
       "backend.integration.production-graph",
-      "backend.messaging.realtime-resource-changed"
+      "backend.messaging.realtime-resource-changed",
+      "backend.rls.app-role-conformance",
+      "backend.rls.runtime-role-guard",
+      "backend.rls.owner-connection-split",
+      "backend.rls.principal-scope-primitives",
+      "backend.rls.user-scope-isolation",
+      "backend.rls.co-member-profile",
+      "backend.rls.invitation-scope",
+      "backend.rls.credential-scope",
+      "backend.rls.worker-principal",
+      "backend.rls.api-token-scope",
+      "backend.rls.security-event-write",
+      "backend.rls.admin-grant-write",
+      "backend.rls.member-disclosure",
+      "backend.rls.policy-coverage",
+      "backend.rls.derived-scope-policy",
+      "backend.rls.login-role-provisioning"
     ]
   },
   "proofs": {
@@ -239,6 +263,126 @@
     "backend.messaging.realtime-resource-changed": {
       "tests": [
         "Notrelix.Integration.Tests.Messaging.RealtimeResourceChangedConsumerIntegrationTests"
+      ]
+    },
+    "backend.architecture.rls-principal-scope": {
+      "tests": [
+        "Notrelix.Architecture.Tests.RlsPrincipalScopeArchitectureTests"
+      ]
+    },
+    "backend.rls.principal-scope-primitives": {
+      "tests": [
+        "Notrelix.Integration.Tests.Rls.PrincipalScopePrimitivesTests"
+      ]
+    },
+    "backend.rls.user-scope-isolation": {
+      "tests": [
+        "Notrelix.Integration.Tests.Rls.UserScopeIsolationTests"
+      ]
+    },
+    "backend.rls.co-member-profile": {
+      "tests": [
+        "Notrelix.Integration.Tests.Rls.CoMemberProfileTests"
+      ]
+    },
+    "backend.rls.invitation-scope": {
+      "tests": [
+        "Notrelix.Integration.Tests.Rls.InvitationScopeTests"
+      ]
+    },
+    "backend.rls.credential-scope": {
+      "tests": [
+        "Notrelix.Integration.Tests.Rls.CredentialScopeTests"
+      ]
+    },
+    "backend.architecture.internal-principals": {
+      "tests": [
+        "Notrelix.Architecture.Tests.InternalPrincipalArchitectureTests"
+      ]
+    },
+    "backend.rls.worker-principal": {
+      "tests": [
+        "Notrelix.Integration.Tests.Rls.WorkerPrincipalTests"
+      ]
+    },
+    "backend.rls.api-token-scope": {
+      "tests": [
+        "Notrelix.Integration.Tests.Rls.ApiTokenScopeTests"
+      ]
+    },
+    "backend.rls.security-event-write": {
+      "tests": [
+        "Notrelix.Integration.Tests.Rls.SecurityEventWriteTests"
+      ]
+    },
+    "backend.rls.admin-grant-write": {
+      "tests": [
+        "Notrelix.Integration.Tests.Rls.AdminGrantWriteTests"
+      ]
+    },
+    "backend.rls.member-disclosure": {
+      "tests": [
+        "Notrelix.Integration.Tests.Rls.MemberDisclosureTests"
+      ]
+    },
+    "backend.data.database-principal": {
+      "tests": [
+        "Notrelix.Infrastructure.Tests.Data.DatabasePrincipalTests"
+      ]
+    },
+    "backend.architecture.owner-connection-boundary": {
+      "tests": [
+        "Notrelix.Architecture.Tests.OwnerConnectionBoundaryTests"
+      ]
+    },
+    "backend.data.runtime-role-guard": {
+      "tests": [
+        "Notrelix.Infrastructure.Tests.Data.RuntimeDatabaseRoleGuardTests"
+      ]
+    },
+    "backend.data.owner-connection": {
+      "tests": [
+        "Notrelix.Infrastructure.Tests.Data.OwnerDbContextProviderTests"
+      ]
+    },
+    "backend.rls.app-role-conformance": {
+      "tests": [
+        "Notrelix.Integration.Tests.Rls.AppRoleConformanceTests"
+      ]
+    },
+    "backend.rls.runtime-role-guard": {
+      "tests": [
+        "Notrelix.Integration.Tests.Rls.RuntimeDatabaseRoleGuardIntegrationTests"
+      ]
+    },
+    "backend.rls.owner-connection-split": {
+      "tests": [
+        "Notrelix.Integration.Tests.Rls.OwnerConnectionSplitIntegrationTests"
+      ]
+    },
+    "backend.rls.policy-coverage": {
+      "tests": [
+        "Notrelix.Integration.Tests.Rls.PolicyCoverageTests"
+      ]
+    },
+    "backend.rls.derived-scope-policy": {
+      "tests": [
+        "Notrelix.Integration.Tests.Rls.DerivedScopePolicyTests"
+      ]
+    },
+    "backend.architecture.integration-fleet-roles": {
+      "tests": [
+        "Notrelix.Architecture.Tests.IntegrationFleetRoleBoundaryTests"
+      ]
+    },
+    "backend.data.login-role-provisioner": {
+      "tests": [
+        "Notrelix.Infrastructure.Tests.Data.Rls.RlsLoginRoleProvisionerTests"
+      ]
+    },
+    "backend.rls.login-role-provisioning": {
+      "tests": [
+        "Notrelix.Integration.Tests.Rls.LoginRoleProvisioningTests"
       ]
     }
   }

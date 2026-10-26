@@ -1,10 +1,11 @@
 import { useCallback, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type {
-  Block,
-  CreateBlockPayload,
-  UpdateBlockPayload,
-  UpdatePagePayload,
+import {
+  convertBlockProperties,
+  type Block,
+  type CreateBlockPayload,
+  type UpdateBlockPayload,
+  type UpdatePagePayload,
 } from "@notrelix/docs-core";
 import { createBlockApi } from "../../api/block.api";
 import {
@@ -34,6 +35,12 @@ export function createUseDocEditor(
     const [failed, setFailed] = useState(false);
     const pendingRetry = useRef<(() => void) | null>(null);
 
+    /** The version of a block as the page cache last read it. */
+    const cachedVersion = (blockId: string): number | undefined =>
+      queryClient
+        .getQueryData<Block[]>(docsQueryKeys.blocks(workspaceId, pageId))
+        ?.find((block) => block.id === blockId)?.version;
+
     const refreshBlocks = () =>
       queryClient.invalidateQueries({
         queryKey: docsQueryKeys.blocks(workspaceId, pageId),
@@ -52,7 +59,11 @@ export function createUseDocEditor(
 
     const update = useMutation({
       mutationFn: (input: { blockId: string; payload: UpdateBlockPayload }) =>
-        blockApi.update(input.blockId, input.payload),
+        blockApi.update(pageId, input.blockId, {
+          ...input.payload,
+          expectedVersion:
+            input.payload.expectedVersion ?? cachedVersion(input.blockId),
+        }),
       onSuccess: () => {
         setFailed(false);
         void refreshBlocks();
@@ -67,7 +78,7 @@ export function createUseDocEditor(
       },
     });
     const remove = useMutation({
-      mutationFn: (blockId: string) => blockApi.delete(blockId),
+      mutationFn: (blockId: string) => blockApi.delete(pageId, blockId),
       onSuccess: () => {
         setFailed(false);
         void refreshBlocks();
@@ -79,6 +90,32 @@ export function createUseDocEditor(
       onSuccess: () => {
         setFailed(false);
         refreshPage();
+      },
+    });
+
+    // The producer retypes a block in place: it keeps its id, position and
+    // parent, and converts the content the way `convertBlockProperties` does.
+    const convert = useMutation({
+      mutationFn: async (input: {
+        block: Block;
+        type: Block["type"];
+        properties: Block["properties"];
+      }): Promise<Block> => {
+        const properties = convertBlockProperties(
+          input.block.type,
+          input.type,
+          input.properties,
+        );
+        const stored = await blockApi.update(pageId, input.block.id, {
+          type: input.type,
+          properties,
+          expectedVersion: input.block.version ?? cachedVersion(input.block.id),
+        });
+        return { ...input.block, ...stored, position: input.block.position };
+      },
+      onSuccess: () => {
+        setFailed(false);
+        void refreshBlocks();
       },
     });
 
@@ -110,6 +147,24 @@ export function createUseDocEditor(
       },
       [create, run],
     );
+    const convertBlock = useCallback(
+      (
+        block: Block,
+        type: Block["type"],
+        properties: Block["properties"],
+      ): Promise<Block> => {
+        const attempt = () =>
+          convert
+            .mutateAsync({ block, type, properties })
+            .catch((error: unknown) => {
+              setFailed(true);
+              throw error;
+            });
+        run(() => void attempt().catch(() => undefined));
+        return attempt();
+      },
+      [convert, run],
+    );
     const deleteBlock = useCallback(
       (blockId: string) => {
         const attempt = () =>
@@ -137,6 +192,7 @@ export function createUseDocEditor(
       update.isPending ||
       create.isPending ||
       remove.isPending ||
+      convert.isPending ||
       rename.isPending;
     const saveState: DocSaveState = failed
       ? "error"
@@ -148,6 +204,7 @@ export function createUseDocEditor(
       saveState,
       updateBlock,
       createBlock,
+      convertBlock,
       deleteBlock,
       updateTitle,
       retry,

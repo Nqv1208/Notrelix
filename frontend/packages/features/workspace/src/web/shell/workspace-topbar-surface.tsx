@@ -10,8 +10,6 @@ import {
   Button,
   Kbd,
   Skeleton,
-  TABLET_SLOT,
-  TabletSlot,
   useSidebar,
 } from "@notrelix/ui-web";
 import type { WorkspaceBreadcrumbItem } from "../../core/model/breadcrumb";
@@ -137,64 +135,6 @@ export function WorkspaceTopbarSurface({
           <Moon aria-hidden="true" />
         )}
       </Button>
-    </header>
-  );
-}
-
-/**
- * The tablet top bar (768-1279 px, Final-T-*): a 56 px row that owns the
- * sidebar toggle (248 px open / 64 px icon column) and a slot a page fills
- * with its own toolbar. Renders nothing outside the tablet band.
- */
-export function WorkspaceTabletTopbar({
-  copy,
-  commandShortcut,
-  onOpenCommand,
-}: {
-  copy: WorkspaceShellCopy;
-  commandShortcut: string;
-  onOpenCommand: () => void;
-}) {
-  const { isTablet, isMobile, open, toggleSidebar } = useSidebar();
-  if (!isTablet || isMobile) return null;
-  const label = open
-    ? copy.sidebar.tabletToggleClose
-    : copy.sidebar.tabletToggleOpen;
-  return (
-    <header
-      data-slot="tablet-topbar"
-      className="flex h-14 shrink-0 items-center gap-1.5 border-b border-line pr-3 pl-1.5"
-    >
-      <button
-        type="button"
-        onClick={toggleSidebar}
-        aria-expanded={open}
-        aria-label={label}
-        title={label}
-        className="grid size-11 shrink-0 place-items-center rounded-[10px] text-muted-foreground outline-none hover:bg-sidebar-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-focus-ring"
-      >
-        <PanelLeft aria-hidden="true" className="size-5 stroke-[1.8]" />
-      </button>
-      <TabletSlot
-        slot={TABLET_SLOT.topbarMain}
-        className="flex min-w-0 flex-1 items-center gap-1.5"
-      />
-      <button
-        type="button"
-        onClick={onOpenCommand}
-        aria-label={copy.sidebar.search}
-        title={copy.sidebar.search}
-        className="flex h-11 shrink-0 items-center gap-2 rounded-[10px] border border-line-strong bg-surface-panel px-3.5 text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-focus-ring"
-      >
-        <Search aria-hidden="true" className="size-4 stroke-[1.8]" />
-        <kbd className="rounded-[5px] border border-line-strong bg-keycap px-[5px] font-mono text-key text-muted-foreground">
-          {commandShortcut}
-        </kbd>
-      </button>
-      <TabletSlot
-        slot={TABLET_SLOT.topbarActions}
-        className="flex shrink-0 items-center gap-1.5"
-      />
     </header>
   );
 }

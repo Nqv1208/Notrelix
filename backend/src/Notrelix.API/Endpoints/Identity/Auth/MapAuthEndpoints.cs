@@ -14,6 +14,7 @@ public static class MapAuthEndpoints
 
         publicGroup.MapRegister();
         publicGroup.MapLogin();
+        publicGroup.MapIdentifySignIn();
         publicGroup.MapIssueCsrfToken();
         publicGroup.MapForgotPassword();
         publicGroup.MapResetPassword();

@@ -165,7 +165,7 @@ public sealed class PostgresAccessFactsProvider : IAccessFactsProvider
 
         if (resource?.Kind.Value == "documents.page")
         {
-            facts = ComposePageFacts(facts, page, context.WorkspaceId);
+            facts = ComposePageFacts(facts, page, context.WorkspaceId, permission?.Action);
         }
 
         return facts;
@@ -174,17 +174,25 @@ public sealed class PostgresAccessFactsProvider : IAccessFactsProvider
     private static AccessFacts ComposePageFacts(
         AccessFacts facts,
         PageAuthorizationFact? page,
-        Guid? workspaceId)
+        Guid? workspaceId,
+        Domain.Governance.Permissions.PermissionAction? action)
     {
         var pageInScope = page is not null
             && workspaceId.HasValue
             && page.WorkspaceId == workspaceId.Value;
 
+        // A page in the trash is reachable only by the trash lifecycle actions
+        // (restore = ArchivePage, delete for good = DeletePage).
+        var reachable = page is not null
+            && (page.IsActive
+                || (page.IsTrashed && action is Domain.Governance.Permissions.PermissionAction.ArchivePage
+                    or Domain.Governance.Permissions.PermissionAction.DeletePage));
+
         return page is not null && pageInScope && page.Exists
             ? facts with
             {
-                ResourceExists = page.IsActive,
-                ResourceAudience = page.IsActive ? page.Visibility : null,
+                ResourceExists = reachable,
+                ResourceAudience = reachable ? page.Visibility : null,
             }
             : facts with { ResourceExists = false, ResourceAudience = null };
     }

@@ -54,7 +54,7 @@ export function DocVersionBarSurface({
         type="button"
         aria-disabled={canRestore ? undefined : true}
         title={canRestore ? undefined : v.restoreUnavailable}
-        onClick={canRestore ? callbacks?.onCloseVersions : undefined}
+        onClick={canRestore ? callbacks?.onRestoreVersionOpen : undefined}
         className={cn(
           BAR_BUTTON,
           "border-primary bg-brand-solid font-semibold text-brand-solid-foreground hover:bg-brand-solid aria-disabled:text-brand-solid-foreground",

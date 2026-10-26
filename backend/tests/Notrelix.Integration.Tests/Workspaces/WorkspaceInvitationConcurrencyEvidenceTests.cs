@@ -60,7 +60,7 @@ public sealed class WorkspaceInvitationConcurrencyEvidenceTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -110,7 +110,7 @@ public sealed class WorkspaceInvitationConcurrencyEvidenceTests : IAsyncLifetime
             ownerId,
             FixedTime.AddDays(-1));
 
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Accounts.Add(account);
         seed.Users.Add(owner);
         seed.Users.Add(user);
@@ -133,7 +133,7 @@ public sealed class WorkspaceInvitationConcurrencyEvidenceTests : IAsyncLifetime
 
     private (ApplicationDbContext Context, AcceptInvitationCommandHandler Handler) CreateAcceptGraph(Guid userId)
     {
-        var context = _db.CreateContext(SystemTenant(), CreateOutboxInterceptor());
+        var context = _db.CreateOwnerContext(SystemTenant(), CreateOutboxInterceptor());
         var grantProjection = new WorkspaceGrantProjectionServiceAdapter(new AccessGrantProjectionService(context));
         var accountGrantProjection = new AccountGrantProjectionServiceAdapter(new AccessGrantProjectionService(context));
 
@@ -155,7 +155,9 @@ public sealed class WorkspaceInvitationConcurrencyEvidenceTests : IAsyncLifetime
             grantProjection,
             new Notrelix.Application.Features.Workspaces.Invitations.Services.InvitationInitialEntries(context, new Notrelix.Infrastructure.Workspaces.Spaces.SpaceStore(context)),
             new Notrelix.Infrastructure.Data.Authz.GuestResourceAccessActionsAdapter(context),
-            new Mock<Notrelix.Application.Common.Auditing.IAuditService>().Object);
+            new Mock<Notrelix.Application.Common.Auditing.IAuditService>().Object,
+            new Notrelix.Application.Features.Workspaces.Invitations.Services.InvitationTokenScope(
+                context, SystemTenant(), new Mock<IRlsSessionContext>().Object));
 
         return (context, handler);
     }
@@ -198,7 +200,7 @@ public sealed class WorkspaceInvitationConcurrencyEvidenceTests : IAsyncLifetime
             "accept graph (WorkspaceMember, workspace grant, or account-membership grant) — " +
             "never an unrelated constraint");
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.WorkspaceMembers.CountAsync(m =>
             m.WorkspaceId == graph.WorkspaceId && m.UserId == graph.UserId))
             .Should().Be(1, "no duplicate membership may survive the losing accept");
@@ -225,7 +227,7 @@ public sealed class WorkspaceInvitationConcurrencyEvidenceTests : IAsyncLifetime
 
         // The revoker reads the invitation as Pending and stages the lifecycle
         // transition on its own context.
-        var revokeContext = _db.CreateContext(SystemTenant(), CreateOutboxInterceptor());
+        var revokeContext = _db.CreateOwnerContext(SystemTenant(), CreateOutboxInterceptor());
         var revokeInvitation = await revokeContext.WorkspaceInvitations
             .SingleAsync(i => i.Id == graph.InvitationId);
         revokeInvitation.Revoke(graph.OwnerId, FixedTime);
@@ -245,7 +247,7 @@ public sealed class WorkspaceInvitationConcurrencyEvidenceTests : IAsyncLifetime
             "a revoke committed against an invitation whose acceptance already committed must be " +
             "rejected by optimistic concurrency instead of overwriting the accepted status");
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         var status = (await verify.WorkspaceInvitations.SingleAsync(i => i.Id == graph.InvitationId)).Status;
         status.Should().Be(WorkspaceInvitationStatus.Accepted,
             "the committed acceptance owns the invitation lifecycle status");
@@ -268,7 +270,7 @@ public sealed class WorkspaceInvitationConcurrencyEvidenceTests : IAsyncLifetime
         var graph = await SeedPendingInvitationAsync();
 
         var capturingTokens = new CapturingOneTimeTokenService();
-        var resendContext = _db.CreateContext(SystemTenant(), CreateOutboxInterceptor());
+        var resendContext = _db.CreateOwnerContext(SystemTenant(), CreateOutboxInterceptor());
         var resendRequestContext = new Mock<ICurrentRequestContext>();
         resendRequestContext.Setup(r => r.UserId).Returns(graph.OwnerId);
         resendRequestContext.Setup(r => r.IsAuthenticated).Returns(true);
@@ -311,7 +313,7 @@ public sealed class WorkspaceInvitationConcurrencyEvidenceTests : IAsyncLifetime
             .Succeeded.Should().BeTrue("the current generation credential must still work after rotation");
         await currentContext.SaveChangesAsync();
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         var invitation = await verify.WorkspaceInvitations.SingleAsync(i => i.Id == graph.InvitationId);
         invitation.TokenGeneration.Should().Be(2, "rotation must advance the token generation");
         invitation.Token.Value.Should().NotBe(graph.TokenHash,

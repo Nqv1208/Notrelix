@@ -39,6 +39,12 @@ export {
 export { SignInFlow } from "./containers/sign-in-flow";
 export { ForgotFlow } from "./containers/forgot-flow";
 export { InviteFlow } from "./containers/invite-flow";
+export { VerifyEmailFlow } from "./containers/verify-email-flow";
+export {
+  AuthVerifyEmailSurface,
+  type AuthVerifyEmailStep,
+  type AuthVerifyEmailSurfaceProps,
+} from "./components/auth-verify-email-surface";
 export type { AuthFlowNavigation } from "./containers/flow-navigation";
 export { authCatalog } from "./copy/auth.catalog";
 export { authCopy, type AuthCopy } from "./copy/auth.copy";

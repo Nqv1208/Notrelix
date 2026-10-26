@@ -1,15 +1,9 @@
 /**
- * What the onboarding pages of the 2026-10 Onboarding mockup need (gap
- * `CTR-GAP-ONBOARD-FLOW`, see docs/superpowers/be-blockers-2026-10.md,
- * "BE requirement from FE: Onboarding"): the address check, the department
- * and board-template suggestions, the saved draft of a half-done setup, the
- * getting-started list of the Home page and the welcome page of an invited
- * person. Pure data and small state; the handlers compose the store with it.
+ * What the onboarding pages of the 2026-10 Onboarding mockup need from the
+ * mock: the address check, the saved draft of a half-done setup and the
+ * getting-started list of the Home page. Pure data and small state; the
+ * handlers compose the store with it.
  */
-
-export type CompanySize = "s" | "m" | "l" | "xl";
-
-export const COMPANY_SIZES: readonly CompanySize[] = ["s", "m", "l", "xl"];
 
 /** Addresses nobody may take: reserved words and the ones the mock world uses. */
 const TAKEN_SLUGS = new Set([
@@ -49,122 +43,6 @@ export function suggestSlug(
   return `${slug}-${n}`;
 }
 
-export interface DepartmentSuggestion {
-  readonly key: string;
-  readonly name: string;
-}
-
-const BY_SIZE: Readonly<Record<CompanySize, readonly DepartmentSuggestion[]>> =
-  {
-    s: [
-      { key: "kinh-doanh", name: "Kinh doanh" },
-      { key: "van-hanh", name: "Vận hành" },
-    ],
-    m: [
-      { key: "kinh-doanh", name: "Kinh doanh" },
-      { key: "ke-toan", name: "Kế toán" },
-      { key: "van-hanh", name: "Vận hành" },
-    ],
-    l: [
-      { key: "kinh-doanh", name: "Kinh doanh" },
-      { key: "ke-toan", name: "Kế toán" },
-      { key: "san-xuat", name: "Sản xuất" },
-      { key: "nhan-su", name: "Nhân sự" },
-    ],
-    xl: [
-      { key: "kinh-doanh", name: "Kinh doanh" },
-      { key: "ke-toan", name: "Kế toán" },
-      { key: "san-xuat", name: "Sản xuất" },
-      { key: "nhan-su", name: "Nhân sự" },
-      { key: "cong-nghe", name: "Công nghệ" },
-    ],
-  };
-
-const FOOD_EXTRAS: readonly DepartmentSuggestion[] = [
-  { key: "mua-hang", name: "Mua hàng" },
-  { key: "kho-van", name: "Kho vận" },
-  { key: "kiem-soat-chat-luong", name: "Kiểm soát chất lượng" },
-];
-
-const GENERAL_EXTRAS: readonly DepartmentSuggestion[] = [
-  { key: "marketing", name: "Marketing" },
-  { key: "cham-soc-khach-hang", name: "Chăm sóc khách hàng" },
-];
-
-/** The extras follow the company's line of business, read from its name. */
-export function departmentSuggestions(size: CompanySize, companyName: string) {
-  const food = /thực phẩm|food|nước chấm/i.test(companyName);
-  return {
-    industry: food ? "food" : null,
-    departments: BY_SIZE[size],
-    extras: food ? FOOD_EXTRAS : GENERAL_EXTRAS,
-  };
-}
-
-export interface BoardTemplate {
-  readonly id: "project" | "approval" | "hiring" | "support" | "blank";
-  readonly name: string;
-  readonly summary: string;
-  /** The columns, stages or steps the template starts with. */
-  readonly stages: readonly string[];
-  readonly fields: readonly string[];
-  /** Sample rows (support) or relative bar lengths in percent (hiring). */
-  readonly sample: readonly (readonly string[])[];
-  readonly bars: readonly number[];
-}
-
-export const BOARD_TEMPLATES: readonly BoardTemplate[] = [
-  {
-    id: "project",
-    name: "Dự án",
-    summary: "4 trạng thái · Người làm, Hạn, Ưu tiên",
-    stages: ["Cần làm", "Đang làm", "Chờ duyệt", "Hoàn thành"],
-    fields: ["Người làm", "Hạn", "Ưu tiên"],
-    sample: [],
-    bars: [],
-  },
-  {
-    id: "approval",
-    name: "Quy trình duyệt",
-    summary: "Duyệt hai cấp · Số tiền, Người duyệt",
-    stages: ["Gửi", "Trưởng phòng", "Kế toán", "Xong"],
-    fields: ["Số tiền", "Người duyệt", "Hạn duyệt", "Chứng từ"],
-    sample: [],
-    bars: [],
-  },
-  {
-    id: "hiring",
-    name: "Tuyển dụng",
-    summary: "Ứng viên qua bốn vòng",
-    stages: ["Ứng tuyển", "Phỏng vấn", "Đề nghị", "Nhận việc"],
-    fields: [],
-    sample: [],
-    bars: [100, 96, 40, 20],
-  },
-  {
-    id: "support",
-    name: "Chăm sóc khách hàng",
-    summary: "Yêu cầu theo kênh, mức độ",
-    stages: [],
-    fields: ["Khách hàng", "Kênh", "Mức độ"],
-    sample: [
-      ["Đại lý Phú Mỹ", "Zalo", "Gấp"],
-      ["Siêu thị An Bình", "Email", "Thường"],
-      ["Chị Hạnh", "Điện thoại", "Thường"],
-    ],
-    bars: [],
-  },
-  {
-    id: "blank",
-    name: "Trống",
-    summary: "Chỉ có cột Tên",
-    stages: [],
-    fields: ["Tên"],
-    sample: [],
-    bars: [],
-  },
-];
-
 /** The six identity colours a department can wear (names are the mockup's). */
 export const DEPARTMENT_COLORS = [
   "blue",
@@ -186,18 +64,12 @@ export interface OnboardingDraft {
 
 export type GettingStartedKey = "first-item" | "invite-more" | "mobile";
 
-export interface JoinProfile {
-  displayName: string;
-  notifyEmail: "digest" | "mentions";
-}
-
 export class MockOnboarding {
   private drafts = new Map<string, OnboardingDraft>();
   private colors = new Map<string, DepartmentColor>();
   private done = new Map<string, Set<GettingStartedKey>>();
   private dismissed = new Set<string>();
   private invitedBy = new Map<string, number>();
-  private profiles = new Map<string, JoinProfile>();
 
   reset(): void {
     this.drafts.clear();
@@ -205,7 +77,6 @@ export class MockOnboarding {
     this.done.clear();
     this.dismissed.clear();
     this.invitedBy.clear();
-    this.profiles.clear();
   }
 
   draftOf(userId: string): OnboardingDraft | null {
@@ -249,12 +120,5 @@ export class MockOnboarding {
   }
   invitesOf(workspaceId: string): number {
     return this.invitedBy.get(workspaceId) ?? 0;
-  }
-
-  profileOf(key: string): JoinProfile | undefined {
-    return this.profiles.get(key);
-  }
-  saveProfile(key: string, profile: JoinProfile): void {
-    this.profiles.set(key, profile);
   }
 }

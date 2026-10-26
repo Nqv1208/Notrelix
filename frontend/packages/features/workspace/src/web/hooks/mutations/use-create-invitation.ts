@@ -34,6 +34,52 @@ export function createUseCreateInvitation({
   };
 }
 
+/** Changes the role a waiting invitation offers (`Workspaces.Invitations.ChangeInvitationRole`). */
+export function createUseChangeInvitationRole({
+  api,
+  endpoints,
+}: InvitationMutationDeps) {
+  const service = createWorkspaceInvitationsService(api, endpoints);
+
+  return function useChangeInvitationRole(workspaceId: string) {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+      mutationFn: (input: {
+        invitationId: string;
+        role: CreateWorkspaceInvitationInput["role"];
+      }) => service.changeRole(workspaceId, input.invitationId, input.role),
+      retry: false,
+      onSettled: () =>
+        queryClient.invalidateQueries({
+          queryKey: workspaceQueryKeys.invitations(workspaceId),
+        }),
+    });
+  };
+}
+
+/** Sends an invitation again (`Workspaces.Invitations.ResendInvitation`). */
+export function createUseResendInvitation({
+  api,
+  endpoints,
+}: InvitationMutationDeps) {
+  const service = createWorkspaceInvitationsService(api, endpoints);
+
+  return function useResendInvitation(workspaceId: string) {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+      mutationFn: (invitationId: string) =>
+        service.resend(workspaceId, invitationId),
+      retry: false,
+      onSettled: () =>
+        queryClient.invalidateQueries({
+          queryKey: workspaceQueryKeys.invitations(workspaceId),
+        }),
+    });
+  };
+}
+
 /** Revokes a pending invitation (`Workspaces.Invitations.CancelInvitation`). */
 export function createUseRevokeInvitation({
   api,

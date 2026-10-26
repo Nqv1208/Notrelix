@@ -15,6 +15,11 @@ export * from "./components/board-layout/view-tabs";
 export * from "./components/board-layout/board-header-surface";
 export { BoardHeaderDataContext } from "./components/board-layout/board-header-data-context";
 export { boardHeaderCatalog } from "./components/board-layout/board-header.catalog";
+export { itemCreateCatalog } from "./components/item-create/item-create.catalog";
+export {
+  BoardItemCreateDialog,
+  type BoardItemCreateBoard,
+} from "./components/item-create/board-item-create-dialog";
 export {
   boardHeaderCopy,
   type BoardHeaderCopy,
@@ -32,6 +37,7 @@ export * from "./components/board-share/board-share-models";
 export {
   BoardShareDialogSurface,
   type BoardShareDialogSurfaceProps,
+  type ShareCandidate,
 } from "./components/board-share/board-share-dialog-surface";
 
 // Kanban view

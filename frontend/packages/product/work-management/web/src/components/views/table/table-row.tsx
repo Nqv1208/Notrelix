@@ -1,4 +1,5 @@
 import type { CSSProperties, KeyboardEvent } from "react";
+import { ChevronRight } from "lucide-react";
 import {
   cn,
   ContextMenu,
@@ -53,6 +54,8 @@ export interface TableRowProps {
   editors?: TableEditors;
   /** The row's menu; absent = no menu. */
   actions?: TableRowActions;
+  /** The sub-items of this row can be shown under it; absent = the row has none. */
+  expand?: { expanded: boolean; count: number; onToggle: () => void };
   /** The status list is open on this row. */
   editing: boolean;
   /** Option highlighted when the status list opens (stories and tests). */
@@ -121,6 +124,7 @@ export function TableRow({
   canEdit,
   editors,
   actions,
+  expand,
   editing,
   highlightStatusId,
   onSelectedChange,
@@ -144,6 +148,30 @@ export function TableRow({
       case "title":
         return (
           <Cell key="title" selected={selected}>
+            {expand ? (
+              <button
+                type="button"
+                data-row-expand=""
+                aria-expanded={expand.expanded}
+                aria-label={fillTableCopy(
+                  expand.expanded
+                    ? copy.row.collapseChildren
+                    : copy.row.expandChildren,
+                  { key: keyLabel, count: expand.count },
+                )}
+                onClick={expand.onToggle}
+                className="grid size-5 shrink-0 cursor-pointer place-items-center rounded-sm border-0 bg-transparent p-0 text-meta-foreground hover:bg-state-hover focus-visible:outline-2 focus-visible:outline-ring"
+              >
+                <ChevronRight
+                  aria-hidden="true"
+                  className={cn(
+                    "size-4 transition-transform duration-150",
+                    expand.expanded && "rotate-90",
+                  )}
+                  strokeWidth={1.8}
+                />
+              </button>
+            ) : null}
             <button
               type="button"
               onClick={onOpen}

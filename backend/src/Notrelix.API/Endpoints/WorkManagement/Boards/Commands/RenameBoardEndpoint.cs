@@ -23,7 +23,7 @@ public static class RenameBoardEndpoint
         CancellationToken cancellationToken)
     {
         var result = await sender.Send(new UpdateBoardCommand(
-            boardId, body.Title, body.Description, body.Background, body.Visibility, body.ExpectedVersion), cancellationToken);
+            boardId, body.Title, body.Description, body.Background, body.Visibility, body.ExpectedVersion, body.ItemKeyPrefix), cancellationToken);
         return result.ToApiResult();
     }
 }

@@ -25,6 +25,16 @@ export const en = {
   childProgress: "{{done}} of {{total}} child items done",
   assignedTo: "Assigned to {{name}}",
   assignedToMore: "Assigned to {{name}} and {{count}} more",
+  commentCount: "{{count}} comments",
+  moreLabels: "and {{count}} more labels",
+  assignMe: "Assign to me",
+  setDue: "Set due date",
+  dueDay: "Due date",
+  clearDue: "Clear due date",
+  moreOptions: "More options",
+  copyLink: "Copy link",
+  duplicate: "Duplicate",
+  archive: "Archive",
 };
 
 export type KanbanCardCopy = typeof en;
@@ -45,6 +55,16 @@ export const vi: KanbanCardCopy = {
   childProgress: "Đã xong {{done}} trên {{total}} việc con",
   assignedTo: "Được giao cho {{name}}",
   assignedToMore: "Được giao cho {{name}} và {{count}} người khác",
+  commentCount: "{{count}} bình luận",
+  moreLabels: "và {{count}} nhãn khác",
+  assignMe: "Giao cho tôi",
+  setDue: "Đặt ngày hạn",
+  dueDay: "Ngày hạn",
+  clearDue: "Xoá ngày hạn",
+  moreOptions: "Thêm tuỳ chọn",
+  copyLink: "Sao chép liên kết",
+  duplicate: "Nhân bản",
+  archive: "Lưu trữ",
 };
 
 export function kanbanCardCopy(locale: "vi" | "en"): KanbanCardCopy {

@@ -529,6 +529,18 @@ Known gap: there is no read for a Board's archived Items yet, so archived Items 
 
 ---
 
+# 27.3. WM-044 — Item description and create-time facts
+
+Decided 2026-10-27 (matches the Detail mockup, whose item opens on a written description). An Item can carry a **description**: Markdown text written by members, at most 20,000 characters, owned by Work Management as part of the Item. It is not a field value and not a Document; a Document may be referenced from it by the `[title](doc:id)` link the Detail mockup shows.
+
+- no description is the normal state; writing blank text clears it, and writing the text already there changes nothing;
+- changing it advances the Item's version and needs the same permission as editing the Item; archived or deleted Items refuse it;
+- an Item's own facts — name, description, start and due date — may be given when it is created, so it never exists half-filled; people, labels, status and priority are other facts and are written through their own routes after the create;
+- a due or start date is removed with an explicit clear; a date that is merely absent from a request means "unchanged";
+- no event is published for a description change until a consumer needs one.
+
+---
+
 # 28. Item title/name
 
 If an Item has a primary name/title, its semantics should be stable enough for cross-view identity and user recognition.
@@ -804,6 +816,10 @@ It uses the same Item/Field truth.
 Kanban emphasizes field-driven grouping and ordering.
 
 Column identity is derived/configured from grouping semantics, not a permanent duplicate Board schema.
+
+A Kanban view may hold an optional work-in-progress limit per lane in its shared configuration (`wipLimits`: lane value id, i.e. the Status option id or the option id of the Select field it is grouped by, to a whole number 1..999; a lane without an entry has no limit). It is presentation configuration edited by whoever may edit the view: going over a limit is a warning in the view and never blocks an Item write. A lane id that no longer names a lane is ignored by the view.
+
+The card's comment count is a read-projection fact: the number of non-deleted comments Collaboration holds for the Item, read in one batch for the board. It is not stored on the Item.
 
 ---
 

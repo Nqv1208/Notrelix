@@ -17,7 +17,7 @@ public static class CompleteOAuthLinkEndpoint
             .WithTags("Identity.Auth")
             .WithSummary("Complete OAuth link callback")
             .WithDescription("Handles the OAuth provider callback for an authenticated link flow, validates state, and links the provider identity to the current user.")
-            .WithMetadata(new RateLimitPolicyAttribute("AuthStrictByIp"));
+            .WithMetadata(new RateLimitPolicyAttribute("AuthSensitiveByUser"));
 
         return group;
     }

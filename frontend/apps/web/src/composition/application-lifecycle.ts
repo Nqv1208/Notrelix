@@ -1,4 +1,5 @@
 import type { QueryClient } from "@tanstack/react-query";
+import { authQueryKeys } from "@notrelix/features-auth";
 import { resetCacheForAccountTransition } from "@notrelix/query";
 import type { RealtimeTransport } from "@notrelix/realtime";
 import type {
@@ -7,6 +8,26 @@ import type {
 } from "@notrelix/runtime-web";
 
 const MAX_HANDLED_SESSION_EVENTS = 32;
+
+/**
+ * Drops every cached read and mutation. The session profile query is kept as
+ * the same query so the auth provider's observer stays on it: a removed query
+ * would leave the provider waiting on an orphan ("Verifying session") after
+ * the next sign-in. It is reset when the session ended and left alone when
+ * only the workspace changed.
+ */
+export function clearApplicationCache(
+  queryClient: QueryClient,
+  { sessionEnded }: { readonly sessionEnded: boolean },
+): void {
+  const cache = queryClient.getQueryCache();
+  const profile = cache.find({ queryKey: authQueryKeys.profile, exact: true });
+  for (const query of cache.getAll()) {
+    if (query !== profile) cache.remove(query);
+  }
+  queryClient.getMutationCache().clear();
+  if (sessionEnded) profile?.reset();
+}
 
 export interface ApplicationLifecycleDependencies {
   readonly queryClient: QueryClient;
@@ -48,7 +69,7 @@ export function createApplicationLifecycle(
       }
     }
 
-    deps.queryClient.clear();
+    clearApplicationCache(deps.queryClient, { sessionEnded: true });
     deps.realtime.disconnect("session-expired");
     deps.navigateToSignedOut();
   };
@@ -87,7 +108,7 @@ export function createApplicationLifecycle(
         return;
       }
 
-      deps.queryClient.clear();
+      clearApplicationCache(deps.queryClient, { sessionEnded: false });
       deps.realtime.disconnect("workspace-switch");
       activeWorkspaceId = nextWorkspaceId;
     },

@@ -11,6 +11,7 @@ const meta = {
       laneCardLimit: 4,
       statusManageRoles: ["manager", "editor"],
       keyboardMove: true,
+      wipLimits: {},
     },
     onChange: () => undefined,
   },

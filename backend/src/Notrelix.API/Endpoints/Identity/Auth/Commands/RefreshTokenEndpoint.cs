@@ -15,7 +15,7 @@ public static class RefreshTokenEndpoint
             .ProducesProblems(StatusCodes.Status401Unauthorized, StatusCodes.Status429TooManyRequests)
             .WithTags("Identity.Auth")
             .WithSummary("Refresh the access token")
-            .WithMetadata(new RateLimitPolicyAttribute("AuthStrictByIp"));
+            .WithMetadata(new RateLimitPolicyAttribute("AuthRefreshByIp"));
         return group;
     }
 

@@ -48,14 +48,17 @@ public class GrantResourcePermissionCommandHandler : IRequestHandler<GrantResour
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IAuditService _auditService;
     private readonly IResourceAccessChangeRecorder _changes;
+    private readonly IWorkspaceAccessResolver _workspaceAccess;
 
     public GrantResourcePermissionCommandHandler(
         IGovernanceDbContext context,
         ICurrentRequestContext requestContext,
         IDateTimeProvider dateTimeProvider,
         IAuditService auditService,
-        IResourceAccessChangeRecorder changes)
+        IResourceAccessChangeRecorder changes,
+        IWorkspaceAccessResolver workspaceAccess)
     {
+        _workspaceAccess = workspaceAccess;
         _changes = changes;
         _context = context;
         _requestContext = requestContext;
@@ -78,6 +81,18 @@ public class GrantResourcePermissionCommandHandler : IRequestHandler<GrantResour
         var actorId = _requestContext.UserId;
         var kind = request.Kind;
         var now = _dateTimeProvider.UtcNow;
+
+        // A user subject must belong to the workspace, as AddBoardMember requires.
+        if (subjectType == PermissionSubjectType.User)
+        {
+            var access = await _workspaceAccess.ResolveAsync(workspaceId, request.SubjectId, cancellationToken);
+            if (!access.CanAccess)
+            {
+                throw new Notrelix.Domain.Common.Exceptions.BusinessRuleException(
+                    "PermissionSubjectMustBelongToWorkspace",
+                    "Permission subject must belong to the same workspace.");
+            }
+        }
 
         var existingPermission = await _context.ResourcePermissions
             .FirstOrDefaultAsync(p => p.WorkspaceId == workspaceId &&

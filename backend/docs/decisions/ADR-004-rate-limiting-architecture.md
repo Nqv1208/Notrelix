@@ -228,16 +228,16 @@ password reset
 other abuse-sensitive anonymous/authentication paths
 ```
 
-Current source still defines:
+Current source no longer defines `AuthStrictByIp`. The single five-per-minute IP bucket was split by risk, because one NAT address can front a whole office and the bucket also covered refresh, csrf and authenticated session endpoints. Numeric values are runtime evidence in `appsettings.json` (see `../architecture/api-and-contracts.md` section 31):
 
 ```text
-AuthStrictByIp
-PartitionBy = Ip
-PermitLimit = 5
-WindowSeconds = 60
-Algorithm = SlidingWindow
-FailMode = Closed
+AuthCredentialByIp   Ip      30 / 60 s   SlidingWindow   Closed
+AuthRefreshByIp      Ip     300 / 60 s   SlidingWindow   Open
+CsrfByIp             Ip     120 / 60 s   SlidingWindow   Open
+AuthSensitiveByUser  UserId  10 / 60 s   SlidingWindow   Closed
 ```
+
+Account lockout (D10) remains the brute-force control for credential guessing; the IP tiers only bound volume.
 
 The stricter failure posture is operational/security policy associated with a sensitive path.
 

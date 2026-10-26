@@ -157,7 +157,45 @@ export interface SeatQuote {
   readonly total: number;
 }
 
+/** The plan catalog of the producer (Free, Pro, Enterprise); a null limit is unlimited. */
+export const BILLING_PLAN_CATALOG = [
+  {
+    code: "free",
+    name: "Free",
+    limits: {
+      AUTOMATION_RULE: 5,
+      MEMBER_SEAT: 10,
+      STORAGE_GB: 2,
+      GUEST_SEAT: 5,
+    },
+  },
+  {
+    code: "pro",
+    name: "Pro",
+    limits: {
+      AUTOMATION_RULE: 100,
+      MEMBER_SEAT: 500,
+      STORAGE_GB: 100,
+      GUEST_SEAT: 200,
+    },
+  },
+  {
+    code: "enterprise",
+    name: "Enterprise",
+    limits: {
+      AUTOMATION_RULE: null,
+      MEMBER_SEAT: null,
+      STORAGE_GB: 1000,
+      GUEST_SEAT: null,
+    },
+  },
+] as const;
+
+export type BillingPlanCode = (typeof BILLING_PLAN_CATALOG)[number]["code"];
+
 export class MockBilling {
+  /** The plan the development account is on: Pro, like the seeded stack. */
+  planCode: BillingPlanCode = "pro";
   private invoices: StoredInvoice[] | null = null;
   private purchases = new Map<string, StoredPurchase>();
   private extraSeats = 0;
@@ -166,6 +204,7 @@ export class MockBilling {
   private paidOverdue = false;
 
   reset(): void {
+    this.planCode = "pro";
     this.invoices = null;
     this.purchases.clear();
     this.extraSeats = 0;

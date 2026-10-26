@@ -3,6 +3,7 @@ import { Check } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
 import type { CardDetail, CardDetailTab } from "@notrelix/work-management-core";
 import { ItemDescriptionBody } from "../shared/item-description";
+import { ItemDescriptionEditor } from "../shared/item-description-editor";
 import { TaskActivityTab } from "./task-activity-tab";
 import { TaskUpdatesTab } from "./task-updates-tab";
 import { fillSheetCopy, type ItemSheetCopy } from "./item-sheet.copy";
@@ -38,23 +39,16 @@ export function TaskDetailTabs({
   timeZone?: string;
   activeTab?: CardDetailTab;
 }) {
-  const t = copy.sections;
   return (
     <>
-      <section>
-        <SectionHeading>{t.description}</SectionHeading>
-        {card.descriptionMd?.trim() ? (
-          <ItemDescriptionBody
-            workspaceId={card.workspaceId}
-            text={card.descriptionMd}
-            className="text-body leading-[1.65]"
-          />
-        ) : (
-          <p className="m-0 text-sm text-muted-foreground">
-            {t.descriptionUnavailable}
-          </p>
-        )}
-      </section>
+      <TaskDetailDescription
+        card={card}
+        copy={copy}
+        canEdit={capabilities.canEditFields}
+        onSave={(descriptionMd) =>
+          callbacks.onRenameTitle(card.id, { descriptionMd })
+        }
+      />
 
       <ChildItemsSection
         progress={card.childProgress ?? null}
@@ -288,6 +282,72 @@ function ActivitySection({
           />
         )}
       </div>
+    </section>
+  );
+}
+
+/** The sheet's description: read as written, or edited in place when the viewer may edit. */
+function TaskDetailDescription({
+  card,
+  copy,
+  canEdit,
+  onSave,
+}: {
+  card: CardDetail;
+  copy: ItemSheetCopy;
+  canEdit: boolean;
+  onSave: (descriptionMd: string) => void;
+}) {
+  const t = copy.sections;
+  const [editing, setEditing] = useState(false);
+  const text = card.descriptionMd?.trim();
+  return (
+    <section>
+      <SectionHeading>{t.description}</SectionHeading>
+      {editing && canEdit ? (
+        <ItemDescriptionEditor
+          initial={card.descriptionMd ?? ""}
+          labels={{
+            heading: t.description,
+            placeholder: t.descriptionAdd,
+            save: t.descriptionSave,
+            cancel: t.descriptionCancel,
+            hint: t.descriptionHint,
+            tooLong: t.descriptionTooLong,
+          }}
+          onSave={onSave}
+          onClose={() => setEditing(false)}
+        />
+      ) : text ? (
+        <>
+          <ItemDescriptionBody
+            workspaceId={card.workspaceId}
+            text={text}
+            className="text-body leading-[1.65]"
+          />
+          {canEdit ? (
+            <button
+              type="button"
+              onClick={() => setEditing(true)}
+              className="mt-2 border-0 bg-transparent p-0 text-item-ui font-semibold text-brand-subtle-foreground"
+            >
+              {t.descriptionEdit}
+            </button>
+          ) : null}
+        </>
+      ) : canEdit ? (
+        <button
+          type="button"
+          onClick={() => setEditing(true)}
+          className="m-0 w-full cursor-text border-0 bg-transparent p-0 text-left text-sm text-muted-foreground hover:text-foreground"
+        >
+          {t.descriptionAdd}
+        </button>
+      ) : (
+        <p className="m-0 text-sm text-muted-foreground">
+          {t.descriptionEmpty}
+        </p>
+      )}
     </section>
   );
 }

@@ -12,7 +12,17 @@ import {
   CircleAlert,
   Zap,
 } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger, cn } from "@notrelix/ui-web";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  cn,
+} from "@notrelix/ui-web";
 import type {
   AutomationCatalogDto,
   AutomationConditionDto,
@@ -884,17 +894,20 @@ function SchedulePanel({
           <label className="sr-only" htmlFor="s-tz">
             {t.zone}
           </label>
-          <select
-            id="s-tz"
+          <Select
             value={schedule.timeZone}
-            onChange={(event) =>
-              onChange({ ...schedule, timeZone: event.target.value })
+            onValueChange={(value) =>
+              onChange({ ...schedule, timeZone: value })
             }
-            className={cn(inp, "w-[170px]")}
           >
-            <option value="Asia/Ho_Chi_Minh">{t.zoneHanoi}</option>
-            <option value="Asia/Singapore">{t.zoneSingapore}</option>
-          </select>
+            <SelectTrigger id="s-tz" className="h-8 w-[170px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Asia/Ho_Chi_Minh">{t.zoneHanoi}</SelectItem>
+              <SelectItem value="Asia/Singapore">{t.zoneSingapore}</SelectItem>
+            </SelectContent>
+          </Select>
         </span>
       </div>
       <div className={row}>

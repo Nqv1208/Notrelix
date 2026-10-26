@@ -10,6 +10,7 @@ public class BoardView : SoftDeletableAggregateRoot, IWorkspaceScoped
     public ViewType Type { get; private set; }
     public BoardViewConfig Config { get; private set; } = null!;
     public bool IsDefault { get; private set; }
+    public BoardViewVisibility Visibility { get; private set; }
     public bool IsArchived { get; private set; }
 
     private BoardView() : base() { }
@@ -23,7 +24,8 @@ public class BoardView : SoftDeletableAggregateRoot, IWorkspaceScoped
         BoardViewConfig config,
         Guid createdBy,
         DateTimeOffset createdAt,
-        bool isDefault = false)
+        bool isDefault = false,
+        BoardViewVisibility visibility = BoardViewVisibility.Board)
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(boardId);
@@ -33,6 +35,9 @@ public class BoardView : SoftDeletableAggregateRoot, IWorkspaceScoped
         Guard.NotNull(config);
         Guard.NotEmpty(accountId);
 
+        if (isDefault && visibility == BoardViewVisibility.Private)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_View_PrivateCannotBeDefault, "A private view cannot be the Board's default view.");
+
         var view = new BoardView
         {
             AccountId = accountId,
@@ -41,7 +46,8 @@ public class BoardView : SoftDeletableAggregateRoot, IWorkspaceScoped
             Name = name.Trim(),
             Type = type,
             Config = config,
-            IsDefault = isDefault
+            IsDefault = isDefault,
+            Visibility = visibility
         };
 
         view.SetAuditOnCreate(createdBy, createdAt);
@@ -56,15 +62,26 @@ public class BoardView : SoftDeletableAggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(updatedBy);
         Guard.NotNull(config);
 
-        // Ensure the config type matches the view type
-        if (Type == ViewType.Kanban && config is not KanbanViewConfig)
-            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_View_KanbanMustUseKanbanConfig, "Kanban view must use KanbanViewConfig");
-        if (Type == ViewType.Table && config is not TableViewConfig)
-            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_View_TableMustUseTableConfig, "Table view must use TableViewConfig");
-        if (Type == ViewType.Calendar && config is not CalendarViewConfig)
-            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_View_CalendarMustUseCalendarConfig, "Calendar view must use CalendarViewConfig");
-        if (Type == ViewType.Timeline && config is not TimelineViewConfig)
-            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_View_TimelineMustUseTimelineConfig, "Timeline view must use TimelineViewConfig");
+        // A typed config belongs to its own layout. A plain config is the stored document of any view.
+        var configLayout = config switch
+        {
+            KanbanViewConfig => ViewType.Kanban,
+            TableViewConfig => ViewType.Table,
+            CalendarViewConfig => ViewType.Calendar,
+            TimelineViewConfig => ViewType.Timeline,
+            _ => (ViewType?)null,
+        };
+        if (configLayout is { } layout && layout != Type)
+        {
+            var code = Type switch
+            {
+                ViewType.Kanban => WorkManagementRuleCodes.WorkManagement_View_KanbanMustUseKanbanConfig,
+                ViewType.Calendar => WorkManagementRuleCodes.WorkManagement_View_CalendarMustUseCalendarConfig,
+                ViewType.Timeline => WorkManagementRuleCodes.WorkManagement_View_TimelineMustUseTimelineConfig,
+                _ => WorkManagementRuleCodes.WorkManagement_View_TableMustUseTableConfig,
+            };
+            throw new BusinessRuleException(code, $"A {Type} view must use a {Type} config");
+        }
 
         if (Config == config) return;
 
@@ -92,10 +109,31 @@ public class BoardView : SoftDeletableAggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new BoardViewRenamedDomainEvent(AccountId, WorkspaceId, Id, Name, normalizedName, updatedBy, updatedAt));
     }
 
+    /// <summary>Who may edit the view: a Board view by its Editors (the permission decides), a Private view by its creator only.</summary>
+    public bool CanBeEditedBy(Guid userId) => Visibility == BoardViewVisibility.Board || CreatedBy == userId;
+
+    /// <summary>Whom the view is shown to: every Board member for a Board view, its creator for a Private one.</summary>
+    public bool IsVisibleTo(Guid userId) => CanBeEditedBy(userId);
+
+    public void SetVisibility(BoardViewVisibility visibility, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
+        if (Visibility == visibility) return;
+        if (visibility == BoardViewVisibility.Private && IsDefault)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_View_PrivateCannotBeDefault, "The default view of a Board is shared with its members.");
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        Visibility = visibility;
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+    }
+
     public void SetDefault(Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
         Guard.NotEmpty(updatedBy);
+        if (Visibility == BoardViewVisibility.Private)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_View_PrivateCannotBeDefault, "A private view cannot be the Board's default view.");
         if (IsDefault) return;
         var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         IsDefault = true;

@@ -33,7 +33,9 @@ public class WorkItemActionsTests : WorkManagementHandlerTestBase
             new MoveBoardItemUseCase(DbContextMock.Object, DateTimeProviderMock.Object, Placement),
             DbContextMock.Object,
             AuthorizerMock.Object,
-            IdempotencyStoreMock.Object);
+            IdempotencyStoreMock.Object,
+            Mock.Of<Notrelix.Application.Common.Tenancy.IWorkspaceAccessResolver>(),
+            DateTimeProviderMock.Object);
     }
 
     private WorkItemMoveRequest MoveRequest(Guid itemId, Guid targetGroupId, Guid? operationId = null) =>

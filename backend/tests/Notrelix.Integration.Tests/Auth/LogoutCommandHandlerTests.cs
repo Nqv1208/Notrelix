@@ -19,7 +19,7 @@ public class LogoutCommandHandlerTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -28,7 +28,7 @@ public class LogoutCommandHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_WhenSessionExists_ShouldRevokeRefreshToken()
     {
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateOwnerContext();
 
         var user = User.Create("logout@example.com", "Logout User", "hashed", DateTimeOffset.UtcNow, hasPasswordCredential: true);
         context.Users.Add(user);
@@ -56,7 +56,7 @@ public class LogoutCommandHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_WhenSessionDoesNotExist_ShouldStillSucceed()
     {
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateOwnerContext();
 
         var jwtBlacklist = new Mock<IJwtBlacklistService>();
         var dateTimeProvider = new Mock<IDateTimeProvider>();

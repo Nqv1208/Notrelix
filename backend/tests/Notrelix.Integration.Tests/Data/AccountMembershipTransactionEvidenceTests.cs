@@ -36,7 +36,7 @@ public class AccountMembershipTransactionEvidenceTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -65,7 +65,7 @@ public class AccountMembershipTransactionEvidenceTests : IAsyncLifetime
 
     private (EfRequestDataSession Session, ApplicationDbContext Context, AccountMembershipActions Actions) Create()
     {
-        var context = _db.CreateContext(SystemTenant());
+        var context = _db.CreateOwnerContext(SystemTenant());
         var session = new EfRequestDataSession(
             context,
             new RlsSessionContext(context, Options.Create(new RlsOptions()), SystemTenant()),
@@ -180,14 +180,14 @@ public class AccountMembershipTransactionEvidenceTests : IAsyncLifetime
         var userId = Guid.CreateVersion7();
         var invitedBy = Guid.CreateVersion7();
 
-        await using (var seed = _db.CreateContext(SystemTenant()))
+        await using (var seed = _db.CreateOwnerContext(SystemTenant()))
         {
             seed.Accounts.Add(CreateActiveAccount(accountId));
             await seed.SaveChangesAsync();
         }
 
-        await using var contextA = _db.CreateContext(SystemTenant());
-        await using var contextB = _db.CreateContext(SystemTenant());
+        await using var contextA = _db.CreateOwnerContext(SystemTenant());
+        await using var contextB = _db.CreateOwnerContext(SystemTenant());
         var actionsA = new AccountMembershipActions(
             contextA,
             new AccountGrantProjectionServiceAdapter(new AccessGrantProjectionService(contextA)));
@@ -224,7 +224,7 @@ public class AccountMembershipTransactionEvidenceTests : IAsyncLifetime
             "account-level grant projection uniqueness — never by the workspace-scoped grant " +
             "index or any unrelated constraint");
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         var members = await verify.AccountMembers
             .Where(m => m.AccountId == accountId && m.UserId == userId)
             .ToListAsync();
