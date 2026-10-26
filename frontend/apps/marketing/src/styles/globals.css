@@ -1409,13 +1409,13 @@
   font-size: 0.58rem;
 }
 .float-card--left {
-  left: -3rem;
-  top: 28%;
+  left: 1rem;
+  bottom: 0;
   animation: none;
 }
 .float-card--right {
-  right: -2rem;
-  bottom: 18%;
+  right: 1rem;
+  bottom: 0;
   animation-delay: -2.2s;
 }
 
@@ -2186,40 +2186,71 @@ html[data-theme-changing="true"] .final-cta {
   font-weight: 500;
 }
 
-.hero-preview__tabs {
-  display: flex;
-  margin-inline: auto 0;
-  gap: 0.15rem;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.hero-preview__tabs::-webkit-scrollbar {
-  display: none;
+.hero-preview__body {
+  position: relative;
 }
 
-.hero-preview__tab {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  gap: 0.35rem;
-  border-radius: 0.5rem;
-  padding: 0.35rem 0.6rem;
+.hero-preview__hint {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  margin: 0;
   color: var(--mkt-text-muted);
-  font-size: 0.7rem;
-  font-weight: 650;
-  transition:
-    background-color 180ms ease,
-    color 180ms ease;
+  font-size: 0.78rem;
+  font-weight: 550;
+  text-align: center;
 }
-.hero-preview__tab:hover {
-  color: var(--mkt-text);
+@media (min-width: 640px) {
+  .hero-preview__hint {
+    bottom: 1.1rem;
+  }
 }
-.hero-preview__tab.is-active {
-  background: color-mix(in srgb, var(--mkt-brand-blue-500) 12%, transparent);
-  color: var(--mkt-brand-blue-600);
+
+.hero-preview__hotspots {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
 }
-.dark .hero-preview__tab.is-active {
-  color: var(--mkt-brand-blue-300);
+
+.hero-preview__hotspot {
+  position: absolute;
+  border-radius: 0.4rem;
+  background: transparent;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: background-color 160ms ease;
+}
+.hero-preview__hotspot:hover {
+  background: color-mix(in srgb, var(--mkt-brand-blue-500) 10%, transparent);
+}
+.hero-preview__hotspot:focus-visible {
+  outline: 2px solid var(--mkt-brand-blue-500);
+  outline-offset: 1px;
+}
+.hero-preview__hotspot.is-next::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: 0 0 0 2px
+    color-mix(in srgb, var(--mkt-brand-blue-500) 60%, transparent);
+  opacity: 0;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .hero-preview__hotspot.is-next::after {
+    animation: hero-hotspot-pulse 1.8s ease-out infinite;
+  }
+}
+@keyframes hero-hotspot-pulse {
+  0% {
+    opacity: 0.9;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.18, 1.5);
+  }
 }
 
 .hero-preview__stage {

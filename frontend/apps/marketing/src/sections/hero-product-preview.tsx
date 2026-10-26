@@ -2,22 +2,20 @@
 
 import * as React from "react";
 import Image from "next/image";
-import { CalendarDays, GanttChart, LayoutGrid, Table2 } from "lucide-react";
 
 import type { Messages } from "../messages/en";
+import hotspots from "./hero-preview-hotspots.json";
 
 type PreviewCopy = Messages["hero"]["preview"];
 type PreviewTab = PreviewCopy["tabs"][number]["id"];
 
 const AUTO_ADVANCE_MS = 6000;
 
-const tabIcons: Record<PreviewTab, typeof LayoutGrid> = {
-  table: Table2,
-  kanban: LayoutGrid,
-  timeline: GanttChart,
-  calendar: CalendarDays,
-};
-
+/**
+ * The screenshots carry the web app's own view tabs. Transparent buttons sit
+ * exactly over those tabs (boxes recorded by `pnpm marketing:previews`), so the
+ * app's tabs are the switcher.
+ */
 export function HeroProductPreview({ copy }: { copy: PreviewCopy }) {
   const { tabs } = copy;
   const [activeId, setActiveId] = React.useState<PreviewTab>("table");
@@ -44,9 +42,12 @@ export function HeroProductPreview({ copy }: { copy: PreviewCopy }) {
     return () => window.clearInterval(timer);
   }, [paused, reducedMotion, tabs]);
 
+  const activeIndex = tabs.findIndex((tab) => tab.id === activeId);
+  const nextId = tabs[(activeIndex + 1) % tabs.length]?.id;
+  const hinting = !paused && !reducedMotion;
+
   const moveTab = (direction: 1 | -1) => {
-    const index = tabs.findIndex((tab) => tab.id === activeId);
-    const nextIndex = (index + direction + tabs.length) % tabs.length;
+    const nextIndex = (activeIndex + direction + tabs.length) % tabs.length;
     const nextTab = tabs[nextIndex];
     if (!nextTab) return;
     setActiveId(nextTab.id);
@@ -70,14 +71,47 @@ export function HeroProductPreview({ copy }: { copy: PreviewCopy }) {
         <span className="hero-preview__url" aria-hidden="true">
           {copy.urlLabel}
         </span>
+      </div>
+      <div className="hero-preview__body">
+        <div
+          role="tabpanel"
+          id="hero-preview-panel"
+          aria-labelledby={`hero-preview-tab-${activeId}`}
+          className="hero-preview__stage"
+        >
+          {tabs.map((tab, index) => {
+            const active = tab.id === activeId;
+            return (
+              <div
+                key={tab.id}
+                className={`hero-preview__layer ${active ? "is-active" : ""}`}
+                aria-hidden={active ? undefined : true}
+              >
+                {(["light", "dark"] as const).map((theme) => (
+                  <Image
+                    key={theme}
+                    src={`/product/${tab.id}-${theme}.png`}
+                    alt={active ? tab.alt : ""}
+                    width={2880}
+                    height={1800}
+                    sizes="(min-width: 1152px) 1152px, 100vw"
+                    priority={index === 0}
+                    quality={90}
+                    className={`hero-preview__img hero-preview__img--${theme}`}
+                  />
+                ))}
+              </div>
+            );
+          })}
+        </div>
         <div
           role="tablist"
           aria-label={copy.tabsLabel}
-          className="hero-preview__tabs"
+          className="hero-preview__hotspots"
         >
           {tabs.map((tab, index) => {
-            const Icon = tabIcons[tab.id];
             const selected = activeId === tab.id;
+            const box = hotspots[tab.id];
             return (
               <button
                 key={tab.id}
@@ -101,45 +135,21 @@ export function HeroProductPreview({ copy }: { copy: PreviewCopy }) {
                     moveTab(-1);
                   }
                 }}
-                className={`hero-preview__tab ${selected ? "is-active" : ""}`}
+                style={{
+                  left: `${box.left}%`,
+                  top: `${box.top}%`,
+                  width: `${box.width}%`,
+                  height: `${box.height}%`,
+                }}
+                className={`hero-preview__hotspot ${
+                  hinting && tab.id === nextId && !selected ? "is-next" : ""
+                }`}
               >
-                <Icon className="size-3.5" aria-hidden="true" />
-                {tab.label}
+                <span className="sr-only">{tab.label}</span>
               </button>
             );
           })}
         </div>
-      </div>
-      <div
-        role="tabpanel"
-        id="hero-preview-panel"
-        aria-labelledby={`hero-preview-tab-${activeId}`}
-        className="hero-preview__stage"
-      >
-        {tabs.map((tab, index) => {
-          const active = tab.id === activeId;
-          return (
-            <div
-              key={tab.id}
-              className={`hero-preview__layer ${active ? "is-active" : ""}`}
-              aria-hidden={active ? undefined : true}
-            >
-              {(["light", "dark"] as const).map((theme) => (
-                <Image
-                  key={theme}
-                  src={`/product/${tab.id}-${theme}.png`}
-                  alt={active ? tab.alt : ""}
-                  width={2880}
-                  height={1800}
-                  sizes="(min-width: 1152px) 1152px, 100vw"
-                  priority={index === 0}
-                  quality={90}
-                  className={`hero-preview__img hero-preview__img--${theme}`}
-                />
-              ))}
-            </div>
-          );
-        })}
       </div>
     </div>
   );

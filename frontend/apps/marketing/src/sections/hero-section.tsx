@@ -79,10 +79,11 @@ export async function HeroSection() {
 
         <Reveal
           delay={120}
-          className="relative mx-auto mt-16 max-w-6xl sm:mt-20"
+          className="relative mx-auto mt-16 max-w-6xl pb-10 sm:mt-20 sm:pb-24"
         >
           <div className="hero-glow" aria-hidden="true" />
           <HeroProductPreview copy={preview} />
+          <p className="hero-preview__hint">{preview.hint}</p>
           <div className="float-card float-card--left hidden sm:block">
             <span className="flex size-8 items-center justify-center rounded-xl bg-[var(--mkt-brand-blue-100)] text-[var(--mkt-brand-blue-600)]">
               <Check className="size-4" />

@@ -76,6 +76,7 @@ export const messages = {
     preview: {
       tabsLabel: "Product views",
       urlLabel: "app.notrelix.com",
+      hint: "Click a view to explore",
       tabs: [
         {
           id: "table",
@@ -88,14 +89,14 @@ export const messages = {
           alt: "A Notrelix Board in Kanban view, with items as cards in status lanes",
         },
         {
-          id: "timeline",
-          label: "Timeline",
-          alt: "A Notrelix Board in Timeline view, with item bars on a dated scale and the dependencies between them",
-        },
-        {
           id: "calendar",
           label: "Calendar",
           alt: "A Notrelix Board in Calendar view, with items and phases placed on the days of the month",
+        },
+        {
+          id: "timeline",
+          label: "Timeline",
+          alt: "A Notrelix Board in Timeline view, with item bars on a dated scale and the dependencies between them",
         },
       ],
     },

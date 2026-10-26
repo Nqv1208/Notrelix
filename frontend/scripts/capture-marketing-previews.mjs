@@ -9,7 +9,7 @@
  * at 1440x900 @2x. Run `pnpm marketing:previews` after the web UI changes.
  */
 import { spawn } from "node:child_process";
-import { mkdirSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "@playwright/test";
@@ -22,6 +22,19 @@ const BOARD = "/workspaces/mock-workspace-primary/boards/mock-board-erp";
 const NOW = new Date("2026-10-12T10:40:00+07:00");
 const VIEWS = ["table", "kanban", "timeline", "calendar"];
 const THEMES = ["light", "dark"];
+const TAB_NAMES = {
+  table: "Table",
+  kanban: "Kanban",
+  calendar: "Calendar",
+  timeline: "Timeline",
+};
+const VIEWPORT = { width: 1440, height: 900 };
+const hotspotsFile = resolve(
+  root,
+  "apps/marketing/src/sections/hero-preview-hotspots.json",
+);
+// view tab boxes (percent of the viewport) recorded per capture
+const recorded = [];
 
 const env = {
   ...process.env,
@@ -107,10 +120,56 @@ async function capture(browser, theme, view) {
   await page.addStyleTag({ content: HIDE_CSS });
   await page.evaluate(() => document.fonts.ready);
   await page.waitForTimeout(600);
+  const boxes = {};
+  for (const [id, name] of Object.entries(TAB_NAMES)) {
+    const box = await page
+      .getByRole("tablist", { name: /^views$/i })
+      .getByRole("tab", { name })
+      .first()
+      .boundingBox();
+    if (!box) throw new Error(`No ${name} view tab in ${view}-${theme}`);
+    boxes[id] = {
+      left: (box.x / VIEWPORT.width) * 100,
+      top: (box.y / VIEWPORT.height) * 100,
+      width: (box.width / VIEWPORT.width) * 100,
+      height: (box.height / VIEWPORT.height) * 100,
+    };
+  }
+  recorded.push({ key: `${view}-${theme}`, boxes });
   const file = resolve(outDir, `${view}-${theme}.png`);
   await page.screenshot({ path: file });
   await context.close();
   console.log(`wrote ${file}`);
+}
+
+function writeHotspots() {
+  // The view tabs sit in the same place in every view and theme; the active
+  // tab is set heavier so allow a sub-pixel-ish drift, then keep the widest box.
+  const tolerance = 0.5; // percent of the viewport
+  const merged = {};
+  for (const id of Object.keys(TAB_NAMES)) {
+    const all = recorded.map((r) => r.boxes[id]);
+    for (const [i, box] of all.entries()) {
+      for (const k of ["left", "top"]) {
+        if (Math.abs(box[k] - all[0][k]) > tolerance) {
+          throw new Error(`${id} tab ${k} differs in ${recorded[i].key}`);
+        }
+      }
+    }
+    const left = Math.min(...all.map((b) => b.left));
+    const top = Math.min(...all.map((b) => b.top));
+    const right = Math.max(...all.map((b) => b.left + b.width));
+    const bottom = Math.max(...all.map((b) => b.top + b.height));
+    const r = (n) => Math.round(n * 1000) / 1000;
+    merged[id] = {
+      left: r(left),
+      top: r(top),
+      width: r(right - left),
+      height: r(bottom - top),
+    };
+  }
+  writeFileSync(hotspotsFile, `${JSON.stringify(merged, null, 2)}\n`);
+  console.log(`wrote ${hotspotsFile}`);
 }
 
 mkdirSync(outDir, { recursive: true });
@@ -122,6 +181,7 @@ try {
     for (const theme of THEMES) {
       for (const view of VIEWS) await capture(browser, theme, view);
     }
+    writeHotspots();
   } finally {
     await browser.close();
   }

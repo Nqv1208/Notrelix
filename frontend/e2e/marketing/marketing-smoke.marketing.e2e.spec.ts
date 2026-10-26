@@ -78,7 +78,9 @@ test.describe("Marketing Smoke", () => {
     await expect(signUpCta).toHaveAttribute("href", /\/sign-up$/);
   });
 
-  test("hero preview tabs switch the product screenshot", async ({ page }) => {
+  test("hero preview view tabs sit over the screenshot and switch it", async ({
+    page,
+  }) => {
     await page.goto("/");
 
     const tablist = page.locator("#hero").getByRole("tablist", {
@@ -87,8 +89,8 @@ test.describe("Marketing Smoke", () => {
     await expect(tablist.getByRole("tab")).toHaveText([
       "Table",
       "Kanban",
-      "Timeline",
       "Calendar",
+      "Timeline",
     ]);
 
     const visibleImage = page.locator(
@@ -102,16 +104,17 @@ test.describe("Marketing Smoke", () => {
     await expect(visibleImage).toHaveAttribute("src", /timeline-light/);
 
     await tablist.getByRole("tab", { name: "Timeline" }).focus();
-    await page.keyboard.press("ArrowRight");
+    await page.keyboard.press("ArrowLeft");
     await expect(
       tablist.getByRole("tab", { name: "Calendar" }),
     ).toHaveAttribute("aria-selected", "true");
     await expect(visibleImage).toHaveAttribute("alt", /Calendar view/);
 
-    await page.keyboard.press("ArrowLeft");
+    await page.keyboard.press("ArrowRight");
     await expect(
       tablist.getByRole("tab", { name: "Timeline" }),
     ).toHaveAttribute("aria-selected", "true");
+    await expect(visibleImage).toHaveAttribute("alt", /Timeline view/);
   });
 
   test("header nav anchors navigate to sections", async ({ page }) => {
