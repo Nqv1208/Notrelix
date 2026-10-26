@@ -1,6 +1,10 @@
-import type { Block, BlockProperties, BlockType } from "@notrelix/docs-core";
+import {
+  blockFromWire,
+  type Block,
+  type BlockProperties,
+  type BlockType,
+} from "@notrelix/docs-core";
 import type { BlockDtoApi } from "../dto";
-import { decodeBlockBody } from "./block-wire";
 
 export function parseProperties(
   value: BlockDtoApi["content"] | BlockProperties | undefined,
@@ -16,31 +20,6 @@ export function parseProperties(
     return {};
   }
 }
-
-/**
- * The block types the producer stores (`Documents` `BlockType`) and the name
- * the page uses for each. A video block has no editor type; the page
- * reads it as an empty paragraph.
- */
-const FROM_PRODUCER: Readonly<Record<string, BlockType>> = {
-  Text: "paragraph",
-  Heading1: "heading_1",
-  Heading2: "heading_2",
-  Heading3: "heading_3",
-  BulletList: "bulleted_list",
-  NumberedList: "numbered_list",
-  ToDo: "todo",
-  Toggle: "toggle",
-  Quote: "quote",
-  Divider: "divider",
-  Code: "code",
-  Image: "image",
-  File: "file",
-  Board: "board_reference",
-  Table: "table",
-  Callout: "callout",
-  PageReference: "page_reference",
-};
 
 const TO_PRODUCER: Readonly<Partial<Record<BlockType, string>>> = {
   paragraph: "Text",
@@ -73,26 +52,7 @@ export function toProducerBlockType(type: BlockType): string {
   return name;
 }
 
-/**
- * A block as the page reads it. The producer orders the list and keeps
- * its position as an opaque key, so the page numbers the blocks by their
- * place in the list (`position`).
- */
+/** A block as the page reads it (see `blockFromWire`). */
 export function mapBlock(dto: BlockDtoApi, position: number): Block {
-  const type = FROM_PRODUCER[dto.type] ?? "paragraph";
-  const body = decodeBlockBody(type, dto);
-  return {
-    id: dto.id,
-    pageId: dto.pageId,
-    type,
-    content: body.content,
-    properties: body.properties,
-    version: dto.version,
-    position,
-    parentId: dto.parentId ?? null,
-    createdById: "",
-    updatedById: "",
-    createdAt: dto.createdAt,
-    updatedAt: dto.updatedAt ?? dto.createdAt,
-  };
+  return blockFromWire(dto, position);
 }

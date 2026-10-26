@@ -135,3 +135,16 @@ export type {
   MarkdownExportOptions,
   OrderedBlock,
 } from "./transfer";
+export {
+  blockFromWire,
+  blocksFromWire,
+  decodeBlockBody,
+  encodeContent,
+  encodeProperties,
+  propertiesFromWire,
+  propertiesToWire,
+  tableFromWire,
+  tableToWire,
+  FROM_PRODUCER_BLOCK_TYPE,
+} from "./types/block-wire";
+export type { BlockWireDto, DecodedBlockBody } from "./types/block-wire";

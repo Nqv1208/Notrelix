@@ -5,3 +5,6 @@ export { buildDocTree, presentRun } from "./render/doc-tree";
 export type { DocNode, RunPresentation } from "./render/doc-tree";
 export { DEFAULT_DOC_LABELS } from "./render/doc-labels";
 export type { MobileDocLabels } from "./render/doc-labels";
+export type { MobileDocumentStatus } from "./components/mobile-document-screen";
+export { blocksFromWire } from "@notrelix/docs-core";
+export type { BlockWireDto } from "@notrelix/docs-core";
