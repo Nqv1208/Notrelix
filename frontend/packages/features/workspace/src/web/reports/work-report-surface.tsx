@@ -34,6 +34,10 @@ export interface WorkReportAssigneeRow {
   readonly overdue: number;
 }
 
+/** The periods the report can cover, in weeks (the producer allows 1 to 26). */
+export const REPORT_WEEK_OPTIONS: readonly number[] = [4, 8, 12, 26];
+export const DEFAULT_REPORT_WEEKS = 8;
+
 export interface WorkReportWeekRow {
   /** ISO timestamp of the Monday the week starts. */
   readonly weekStart: string;
@@ -66,6 +70,8 @@ export interface WorkReportScope {
   /** Departments; present only for people who may narrow by department. */
   readonly spaces?: readonly { readonly id: string; readonly name: string }[];
   readonly spaceId: string | null;
+  /** How many weeks of completions the report covers. */
+  readonly weeks: number;
 }
 
 export interface WorkReportSurfaceProps {
@@ -74,6 +80,7 @@ export interface WorkReportSurfaceProps {
   readonly scope: WorkReportScope;
   readonly onBoard: (boardId: string | null) => void;
   readonly onSpace: (spaceId: string | null) => void;
+  readonly onWeeks: (weeks: number) => void;
   readonly onRetry: () => void;
 }
 
@@ -157,9 +164,11 @@ function Tile({ label, value }: { label: string; value: string }) {
 function Report({
   copy,
   data,
+  weeks,
 }: {
   copy: FeatureAvailabilityCopy["workReport"];
   data: WorkReportDto;
+  weeks: number;
 }) {
   if (data.total === 0) {
     return (
@@ -255,10 +264,10 @@ function Report({
       </section>
 
       <section
-        aria-label={copy.weeksTitle}
+        aria-label={formatCopy(copy.weeksTitle, { weeks })}
         className={cn(BOX, "max-w-[640px]")}
       >
-        <h3 className={BOX_TITLE}>{copy.weeksTitle}</h3>
+        <h3 className={BOX_TITLE}>{formatCopy(copy.weeksTitle, { weeks })}</h3>
         <ul className="m-0 flex h-36 list-none items-end gap-2 p-0">
           {data.completedPerWeek.map((week) => (
             <li
@@ -306,6 +315,7 @@ export function WorkReportSurface({
   scope,
   onBoard,
   onSpace,
+  onWeeks,
   onRetry,
 }: WorkReportSurfaceProps) {
   const text = copy.workReport;
@@ -337,7 +347,7 @@ export function WorkReportSurface({
       </div>
     );
   } else {
-    body = <Report copy={text} data={state.data} />;
+    body = <Report copy={text} data={state.data} weeks={scope.weeks} />;
   }
 
   return (
@@ -362,6 +372,24 @@ export function WorkReportSurface({
               {scope.boards.map((board) => (
                 <SelectItem key={board.id} value={board.id}>
                   {board.title}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </label>
+        <label className="flex flex-col gap-1 text-crumb text-meta-foreground">
+          {text.period}
+          <Select
+            value={String(scope.weeks)}
+            onValueChange={(value) => onWeeks(Number(value))}
+          >
+            <SelectTrigger size="sm" className="min-w-36">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {REPORT_WEEK_OPTIONS.map((option) => (
+                <SelectItem key={option} value={String(option)}>
+                  {formatCopy(text.periodOption, { weeks: option })}
                 </SelectItem>
               ))}
             </SelectContent>

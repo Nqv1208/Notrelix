@@ -16,9 +16,15 @@ public static class GetBoardReportEndpoint
         return group;
     }
 
-    private static async Task<IResult> HandleAsync(Guid boardId, ISender sender, CancellationToken cancellationToken)
+    private static async Task<IResult> HandleAsync(
+        Guid boardId,
+        int? weeks,
+        ISender sender,
+        CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new GetBoardReportQuery(boardId), cancellationToken);
+        var result = await sender.Send(
+            new GetBoardReportQuery(boardId, weeks ?? WorkReportPeriod.DefaultWeeks),
+            cancellationToken);
         return result.ToApiResult();
     }
 }

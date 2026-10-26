@@ -6571,6 +6571,24 @@ export interface components {
             version?: components["schemas"]["Notrelix.Application.Features.Documents.DTOs.PageVersionDto"];
             blocks?: components["schemas"]["Notrelix.Application.Features.Documents.DTOs.BlockDto"][] | null;
         };
+        "Notrelix.Application.Features.Governance.DTOs.ResourcePermissionDto": {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            workspaceId?: string;
+            resourceKind?: string | null;
+            /** Format: uuid */
+            resourceId?: string;
+            subjectType?: string | null;
+            /** Format: uuid */
+            subjectId?: string;
+            level?: string | null;
+            /** Format: uuid */
+            grantedBy?: string | null;
+            isRevoked?: boolean;
+            /** Format: date-time */
+            revokedAt?: string | null;
+        };
         "Notrelix.Application.Features.Identity.ApiTokens.DTOs.ApiTokenSummaryDto": {
             /** Format: uuid */
             id?: string;
@@ -8004,7 +8022,9 @@ export interface operations {
     };
     "Analytics.Reports.GetBoardReport": {
         parameters: {
-            query?: never;
+            query?: {
+                weeks?: number;
+            };
             header?: never;
             path: {
                 boardId: string;
@@ -8028,6 +8048,7 @@ export interface operations {
         parameters: {
             query?: {
                 spaceId?: string;
+                weeks?: number;
             };
             header?: never;
             path: {
@@ -10061,7 +10082,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Governance.DTOs.ResourcePermissionDto"][];
                 };
             };
         };
@@ -10082,13 +10103,13 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK */
-            200: {
+            /** @description Created */
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Governance.DTOs.ResourcePermissionDto"];
                 };
             };
         };
@@ -15525,7 +15546,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardMemberDto"][];
                 };
             };
         };

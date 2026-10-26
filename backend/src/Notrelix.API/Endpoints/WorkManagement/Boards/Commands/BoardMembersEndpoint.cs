@@ -4,6 +4,7 @@ using Notrelix.Application.Features.WorkManagement.Boards.Commands.AddBoardMembe
 using Notrelix.Application.Features.WorkManagement.Boards.Commands.RemoveBoardMember;
 using Notrelix.Application.Features.WorkManagement.Boards.Commands.UpdateBoardMemberRole;
 using Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoardMembers;
+using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 
 namespace Notrelix.API.Endpoints.WorkManagement.Boards.Commands;
 
@@ -12,7 +13,8 @@ public static class BoardMembersEndpoint
     public static IEndpointRouteBuilder MapBoardMembers(this IEndpointRouteBuilder group)
     {
         group.MapResourceGet("/", HandleGetBoardMembers)
-            .WithName("WorkManagement.Boards.GetMembers");
+            .WithName("WorkManagement.Boards.GetMembers")
+            .Produces<List<BoardMemberDto>>();
         group.MapResourcePost("/", HandleAddBoardMember)
             .WithIdempotencyKey()
             .WithName("WorkManagement.Boards.AddMember");
