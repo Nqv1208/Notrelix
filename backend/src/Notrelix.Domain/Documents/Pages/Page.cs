@@ -13,24 +13,27 @@ public class Page : SoftDeletableAggregateRoot, IWorkspaceScoped
     /// </summary>
     public Guid? SpaceId { get; private set; }
     public string Title { get; private set; } = null!;
-    public string Icon { get; private set; } = "📄";
+    public const string DefaultIcon = "📄";
+    public string Icon { get; private set; } = DefaultIcon;
     public string? CoverImage { get; private set; }
     public PageStatus Status { get; private set; }
     public PageVisibility Visibility { get; private set; }
 
     private Page() : base() { }
 
+    /// <param name="icon">The icon the page starts with (a page made from a template takes the template's); blank keeps the default.</param>
     /// <param name="spaceId">
     /// Space placement; for a nested page Application passes the parent's Space
     /// (a nested page follows its root page, docs/product/workspaces.md §79).
     /// </param>
-    public static Page Create(Guid accountId, Guid workspaceId, string title, Guid createdBy, DateTimeOffset createdAt, Guid? parentId = null, Guid? spaceId = null)
+    public static Page Create(Guid accountId, Guid workspaceId, string title, Guid createdBy, DateTimeOffset createdAt, Guid? parentId = null, Guid? spaceId = null, string? icon = null)
     {
         Guard.NotEmpty(accountId);
         Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(createdBy);
         Guard.NotNullOrWhiteSpace(title);
         Guard.MaxLength(title, 500);
+        if (!string.IsNullOrWhiteSpace(icon)) Guard.MaxLength(icon.Trim(), 50);
 
         var page = new Page
         {
@@ -39,6 +42,7 @@ public class Page : SoftDeletableAggregateRoot, IWorkspaceScoped
             ParentId = parentId,
             SpaceId = spaceId,
             Title = title.Trim(),
+            Icon = string.IsNullOrWhiteSpace(icon) ? DefaultIcon : icon.Trim(),
             Status = PageStatus.Active,
             Visibility = PageVisibility.Workspace
         };

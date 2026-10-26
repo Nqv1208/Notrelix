@@ -20,6 +20,30 @@ public class PageTests
     }
 
     [Fact]
+    public void Create_WithoutAnIcon_KeepsTheDefaultIcon()
+    {
+        var page = Page.Create(Guid.NewGuid(), Guid.NewGuid(), "My Page", Guid.NewGuid(), DateTimeOffset.UtcNow, icon: "  ");
+
+        page.Icon.Should().Be(Page.DefaultIcon);
+    }
+
+    [Fact]
+    public void Create_WithAnIcon_StartsWithThatIcon()
+    {
+        var page = Page.Create(Guid.NewGuid(), Guid.NewGuid(), "My Page", Guid.NewGuid(), DateTimeOffset.UtcNow, icon: " 🧪 ");
+
+        page.Icon.Should().Be("🧪");
+    }
+
+    [Fact]
+    public void Create_WithAnIconLongerThanTheColumn_Throws()
+    {
+        var act = () => Page.Create(Guid.NewGuid(), Guid.NewGuid(), "My Page", Guid.NewGuid(), DateTimeOffset.UtcNow, icon: new string('x', 51));
+
+        act.Should().Throw<Exception>();
+    }
+
+    [Fact]
     public void Rename_ShouldSucceed_AndRaiseEvent()
     {
         var page = Page.Create(Guid.NewGuid(), Guid.NewGuid(), "Old Title", Guid.NewGuid(), DateTimeOffset.UtcNow);

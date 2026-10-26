@@ -189,6 +189,21 @@ describe("Documents.Templates on the mock backend", () => {
     expect(copied.map((b) => b.properties)).toContain(source[0]!.properties);
   });
 
+  it("gives the page made from a template the icon of the template", async () => {
+    const { store, templates } = setup();
+    const template = await templates.create(WORKSPACE, {
+      pageId: INVOICE_DOC_ID,
+      name: "T",
+    });
+    expect(template.icon).toBeTruthy();
+
+    const made = await templates.createPage(WORKSPACE, {
+      templateId: template.id,
+    });
+
+    expect(store.getPage(made.pageId)?.icon).toBe(template.icon);
+  });
+
   it("leaves images, files and videos out and counts them", async () => {
     const { store, templates } = setup();
     const page = store.createPage(WORKSPACE, { title: "Media" });

@@ -72,13 +72,13 @@ public class CreatePageFromTemplateCommandHandler : IRequestHandler<CreatePageFr
             await _placement.EnsureActiveTargetAsync(request.WorkspaceId, target, ct);
         }
 
-        var (templateTitle, _) = ReadPageSnapshot(template.PageSnapshot.Value);
+        var (templateTitle, templateIcon) = ReadPageSnapshot(template.PageSnapshot.Value);
         var title = string.IsNullOrWhiteSpace(request.Title) ? templateTitle : request.Title!;
         var accountId = _requestContext.RequireAccountId();
         var userId = _requestContext.UserId;
         var now = _dateTimeProvider.UtcNow;
 
-        var page = Page.Create(accountId, request.WorkspaceId, title, userId, now, request.ParentId, spaceId);
+        var page = Page.Create(accountId, request.WorkspaceId, title, userId, now, request.ParentId, spaceId, templateIcon);
         _context.Pages.Add(page);
         _creatorGrant.GrantManager(page.AccountId, page.WorkspaceId, "documents.page", page.Id, userId, now);
 

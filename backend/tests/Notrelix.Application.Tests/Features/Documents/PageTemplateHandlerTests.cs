@@ -26,15 +26,16 @@ public sealed class PageTemplateHandlerTests
 
     private sealed class Fixture
     {
-        public Page Page { get; } = Page.Create(AccountId, WorkspaceId, "Weekly sync", UserId, Now);
+        public Page Page { get; }
         public List<Block> Blocks { get; } = [];
         public List<PageTemplate> Templates { get; } = [];
         public List<Page> Pages { get; }
         public Mock<IResourceCreatorGrant> Grant { get; } = new();
         public IDocumentDbContext Context { get; }
 
-        public Fixture()
+        public Fixture(string? icon = null)
         {
+            Page = Page.Create(AccountId, WorkspaceId, "Weekly sync", UserId, Now, icon: icon);
             Pages = [Page];
             var context = new Mock<IDocumentDbContext>();
             context.Setup(c => c.Pages).Returns(TestDbSet.Create(Pages).Object);
@@ -151,6 +152,31 @@ public sealed class PageTemplateHandlerTests
         added.Single(b => b.ParentId == newParent.Id).Content.Data.Value.Should().Contain("item");
         added.Single(b => b.Type == BlockType.Heading1).Position.Value.Should().Be("a1");
         f.Grant.Verify(g => g.GrantManager(AccountId, WorkspaceId, "documents.page", page.Id, UserId, It.IsAny<DateTimeOffset>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task CreatingFromATemplate_TakesTheIconOfTheTemplate()
+    {
+        var f = new Fixture("🧪");
+        f.Add("a0", "kept");
+        var template = await Save(f);
+        var (sut, _, pagesAdded) = CreateFromHandler(f, template);
+
+        await sut.Handle(new CreatePageFromTemplateCommand(WorkspaceId, template.Id, null, null), CancellationToken.None);
+
+        pagesAdded.Single().Icon.Should().Be("🧪");
+    }
+
+    [Fact]
+    public async Task CreatingFromATemplate_OfAPageWithTheDefaultIcon_KeepsTheDefaultIcon()
+    {
+        var f = new Fixture();
+        var template = await Save(f);
+        var (sut, _, pagesAdded) = CreateFromHandler(f, template);
+
+        await sut.Handle(new CreatePageFromTemplateCommand(WorkspaceId, template.Id, null, null), CancellationToken.None);
+
+        pagesAdded.Single().Icon.Should().Be(Page.DefaultIcon);
     }
 
     [Fact]
