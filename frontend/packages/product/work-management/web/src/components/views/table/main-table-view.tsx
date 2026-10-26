@@ -44,6 +44,7 @@ import {
 import { KanbanSelectedItem } from "../kanban/kanban-view";
 import { buildCardLink } from "../kanban/kanban-view-helpers";
 import { useKanbanLaneCopy } from "../kanban/use-kanban-lane-copy";
+import { ItemCreateHost } from "../../item-create/item-create-host";
 import { MainTableError } from "./main-table-error";
 import { fillTableCopy } from "./main-table.copy";
 import { MainTableSkeleton } from "./main-table-skeleton";
@@ -144,6 +145,7 @@ export function MainTableView({
   );
 
   const [showDone, setShowDone] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
   const [selection, setSelection] = useState<ReadonlySet<string>>(
     () => new Set(),
   );
@@ -583,6 +585,7 @@ export function MainTableView({
           canEdit={capabilities.canEditFields}
           editors={editors}
           canCreate={capabilities.canCreateCard}
+          onOpenCreateDialog={() => setCreateOpen(true)}
           canArchive={capabilities.canDelete}
           shown={projection.visibleCount}
           hidden={projection.hiddenCount}
@@ -685,6 +688,17 @@ export function MainTableView({
         />
       </div>
 
+      {board && capabilities.canCreateCard ? (
+        <ItemCreateHost
+          open={createOpen}
+          onOpenChange={setCreateOpen}
+          workspaceId={workspaceId}
+          board={board}
+          groups={table.groups}
+          defaultGroupId={table.groups[0]?.id ?? ""}
+          defaultStatusId={null}
+        />
+      ) : null}
       {selectedItemId ? (
         <KanbanSelectedItem
           board={board}

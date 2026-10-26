@@ -26,3 +26,4 @@ export * from "./use-item-file-uploads";
 export * from "./use-update-item-status";
 export * from "./use-archive-card";
 export * from "./use-move-item-to-board";
+export * from "./use-create-item-with-details";

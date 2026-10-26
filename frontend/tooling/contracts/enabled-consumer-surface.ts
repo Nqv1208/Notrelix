@@ -2577,6 +2577,18 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
   },
   {
     context: "Work Management",
+    capability: "WorkManagement.BoardItems.UnassignMember",
+    consumerSymbol: "setAssignees",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/item.api.ts",
+    classification: "CANONICAL_MOCKED",
+    operationId: "WorkManagement.BoardItems.UnassignMember",
+    method: "DELETE",
+    pathTemplate: "/board-items/{id}/assignees/{userId}",
+    mutation: true,
+  },
+  {
+    context: "Work Management",
     capability: "WorkManagement.BoardItems.UpdateFieldValue",
     consumerSymbol: "TODO",
     consumerFile: "frontend/packages/product/work-management/state/src/api/",

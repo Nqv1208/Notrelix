@@ -1,3 +1,4 @@
+import { ItemCreateHost } from "../../item-create/item-create-host";
 import {
   useCallback,
   useContext,
@@ -270,7 +271,9 @@ export function KanbanView({
 
   const boardRef = useRef<HTMLDivElement>(null);
   const pendingOptionName = useRef("");
-  const [addRequest, setAddRequest] = useState(0);
+  // The toolbar's "Add item" opens the create dialog; the per-lane composers open from their own rows.
+  const addRequest = 0;
+  const [createOpen, setCreateOpen] = useState(false);
 
   const handleOpenDetail = useCallback(
     (cardId: string) => onSelectedItemChange?.(cardId),
@@ -500,7 +503,7 @@ export function KanbanView({
             else setLocalGroupBy(fieldId);
           }}
           canAdd={capabilities.canCreateCard}
-          onAddItem={() => setAddRequest((count) => count + 1)}
+          onAddItem={() => setCreateOpen(true)}
           noResults={
             kanban.filterActive && kanban.visibleCount === 0
               ? { hiddenCount: kanban.totalCount }
@@ -545,6 +548,17 @@ export function KanbanView({
         />
       </div>
 
+      {board && capabilities.canCreateCard ? (
+        <ItemCreateHost
+          open={createOpen}
+          onOpenChange={setCreateOpen}
+          workspaceId={workspaceId}
+          board={board}
+          groups={kanban.groups}
+          defaultGroupId={kanban.groups[0]?.id ?? ""}
+          defaultStatusId={null}
+        />
+      ) : null}
       {selectedItemId ? (
         <KanbanSelectedItem
           board={board}

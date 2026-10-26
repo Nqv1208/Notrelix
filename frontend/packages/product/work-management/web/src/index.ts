@@ -15,6 +15,7 @@ export * from "./components/board-layout/view-tabs";
 export * from "./components/board-layout/board-header-surface";
 export { BoardHeaderDataContext } from "./components/board-layout/board-header-data-context";
 export { boardHeaderCatalog } from "./components/board-layout/board-header.catalog";
+export { itemCreateCatalog } from "./components/item-create/item-create.catalog";
 export {
   boardHeaderCopy,
   type BoardHeaderCopy,

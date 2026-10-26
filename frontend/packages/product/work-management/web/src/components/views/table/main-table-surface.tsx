@@ -50,6 +50,8 @@ export interface MainTableSurfaceProps {
   editors?: TableEditors;
   /** The viewer may add items. */
   canCreate: boolean;
+  /** Opens the full "Add item" form; without it "Add item" starts the first group's inline row. */
+  onOpenCreateDialog?: () => void;
   /** The viewer may archive items. */
   canArchive: boolean;
   /** Saved column widths by column id (the view config); absent ids use the design width. */
@@ -130,6 +132,7 @@ export function MainTableSurface({
   canEdit,
   editors,
   canCreate,
+  onOpenCreateDialog,
   canArchive,
   addGroup,
   columnWidths,
@@ -277,6 +280,10 @@ export function MainTableSurface({
           {...toolbar}
           canAdd={toolbar.canAdd && canCreate}
           onAddItem={() => {
+            if (onOpenCreateDialog) {
+              onOpenCreateDialog();
+              return;
+            }
             const first = groups[0];
             if (!first) return;
             if (collapsedGroupIds.has(first.id)) onGroupToggle(first.id);
