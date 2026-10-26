@@ -14,6 +14,9 @@ public class OwnedEntityMutationVisibilityTests
         "Notrelix.Domain.Billing.Plans.PlanPrice",
         "Notrelix.Domain.Billing.Plans.PlanLimit",
 
+        // ── WorkManagement ── a reminder ledger row has its own lifecycle (one per Item and sender, no aggregate owns it)
+        "Notrelix.Domain.WorkManagement.Items.BoardItemReminder",
+
         // ── Analytics ──
         "Notrelix.Domain.Analytics.Dashboards.DashboardWidget",
 

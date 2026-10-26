@@ -188,6 +188,26 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
     }
 
     /// <summary>
+    /// Records that <paramref name="senderUserId"/>, who waits on this Item, asked the people in charge for an
+    /// update. The Item's own state does not change; the fact is what Collaboration turns into Inbox entries.
+    /// The 24 hour limit on asking again is a durable rule of <see cref="BoardItemReminder"/>, claimed by the
+    /// caller before this fact is recorded.
+    /// </summary>
+    public void RecordOwnersReminded(Guid senderUserId, IReadOnlyCollection<Guid> recipientUserIds, DateTimeOffset remindedAt)
+    {
+        EnsureNotDeleted();
+        EnsureNotArchived();
+        Guard.NotEmpty(senderUserId);
+        Guard.NotNull(recipientUserIds);
+
+        var recipients = recipientUserIds.Where(id => id != senderUserId).Distinct().ToList();
+        if (recipients.Count == 0)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Reminder_NobodyToRemind, "Nobody else is in charge of this item, so there is nobody to remind.");
+
+        RaiseDomainEvent(new BoardItemOwnersRemindedDomainEvent(AccountId, WorkspaceId, Id, BoardId, senderUserId, recipients, remindedAt));
+    }
+
+    /// <summary>
     /// Replaces the item's description. Blank clears it. Writing the text it already holds changes nothing
     /// (no version, no audit). The description is not a business event: nothing outside the item consumes it.
     /// </summary>

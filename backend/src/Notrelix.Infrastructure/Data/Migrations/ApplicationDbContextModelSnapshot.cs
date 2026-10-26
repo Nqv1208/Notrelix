@@ -6937,6 +6937,49 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.ToTable("board_item_members", "work");
                 });
 
+            modelBuilder.Entity("Notrelix.Domain.WorkManagement.Items.BoardItemReminder", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<Guid>("BoardId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("board_id");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("item_id");
+
+                    b.Property<DateTimeOffset>("RemindedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("reminded_at");
+
+                    b.Property<Guid>("SenderUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("sender_user_id");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_board_item_reminders");
+
+                    b.HasIndex("SenderUserId")
+                        .HasDatabaseName("idx_board_item_reminders_sender");
+
+                    b.HasIndex("ItemId", "SenderUserId")
+                        .IsUnique()
+                        .HasDatabaseName("idx_board_item_reminders_item_sender");
+
+                    b.ToTable("board_item_reminders", "work");
+                });
+
             modelBuilder.Entity("Notrelix.Domain.WorkManagement.Items.BoardItemValue", b =>
                 {
                     b.Property<Guid>("Id")
@@ -12994,6 +13037,16 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_board_item_members_board_items_item_id");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.WorkManagement.Items.BoardItemReminder", b =>
+                {
+                    b.HasOne("Notrelix.Domain.WorkManagement.Items.BoardItem", null)
+                        .WithMany()
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_board_item_reminders_board_items_item_id");
                 });
 
             modelBuilder.Entity("Notrelix.Domain.WorkManagement.Items.BoardItemValue", b =>

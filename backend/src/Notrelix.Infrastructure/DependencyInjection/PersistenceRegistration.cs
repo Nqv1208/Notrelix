@@ -170,6 +170,8 @@ public static class PersistenceRegistration
             Notrelix.Infrastructure.Data.Collaboration.PostgresAttachmentTargetLock>();
         services.AddScoped<Notrelix.Application.Features.WorkManagement.BoardItems.Services.IBoardItemKeyAllocator,
             Notrelix.Infrastructure.Data.WorkManagement.PostgresBoardItemKeyAllocator>();
+        services.AddScoped<Notrelix.Application.Features.WorkManagement.BoardItems.Services.IBoardItemReminders,
+            Notrelix.Infrastructure.Data.WorkManagement.PostgresBoardItemReminders>();
         services.AddSingleton<Notrelix.Application.Common.Data.IOrderingConflictClassifier,
             Notrelix.Infrastructure.Data.WorkManagement.PostgresOrderingConflictClassifier>();
         services.AddScoped<IResourceLocator, ResourceLocator>();

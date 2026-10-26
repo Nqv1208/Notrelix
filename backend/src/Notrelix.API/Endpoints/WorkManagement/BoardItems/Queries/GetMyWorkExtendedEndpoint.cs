@@ -13,8 +13,10 @@ public static class GetMyWorkExtendedEndpoint
             .WithSummary("Get the current user's My work in a workspace")
             .WithDescription(
                 "Open Items assigned to the caller (soonest due first, at most 200) and the 50 most recently completed, " +
-                "each with key, Status (label and category), Priority option and person in charge. Approvals, followed " +
-                "Items, waiting-on and departments are empty: no source exists yet.")
+                "each with key, Status (label and category), Priority option and person in charge. Followed " +
+                "Items and the open Items the caller is asked to approve are listed too. Waiting-on lists the open Items " +
+                "the caller created or follows that only others are assigned to, soonest due first, with the person in " +
+                "charge and when the caller last reminded them.")
             .Produces<MyWorkExtendedDto>(StatusCodes.Status200OK, "application/json");
         return group;
     }

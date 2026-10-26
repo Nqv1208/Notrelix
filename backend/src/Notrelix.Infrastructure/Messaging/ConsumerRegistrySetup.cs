@@ -228,6 +228,16 @@ public static class ConsumerRegistrySetup
             },
             new ConsumerDefinition
             {
+                ConsumerName = "BoardItemOwnersRemindedNotificationConsumer",
+                EventName = "work-management.board-item-owners-reminded",
+                EventVersion = 1,
+                EndpointName = "notrelix-collab-item-owners-reminded-notification-v1",
+                BoundedContext = "Collaboration",
+                Description = "Tells each person in charge of an Item that someone waits on them",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
                 ConsumerName = "BoardItemStatusChangedFollowConsumer",
                 EventName = "board.item.field_value.changed",
                 EventVersion = 1,

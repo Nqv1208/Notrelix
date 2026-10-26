@@ -2613,6 +2613,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/board-items/{itemId}/remind": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Remind the people in charge of an item that the caller is waiting on it
+         * @description Sends each assignee except the caller an Inbox notification naming the caller. At most once per item per caller per 24 hours: a later request answers 409 (work.item.remind-too-soon) and says when it is possible again. Seeing the item is enough; nobody else in charge answers 400.
+         */
+        post: operations["WorkManagement.BoardItems.RemindOwners"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/board-items/{itemId}/move": {
         parameters: {
             query?: never;
@@ -2917,7 +2937,7 @@ export interface paths {
         };
         /**
          * Get the current user's My work in a workspace
-         * @description Open Items assigned to the caller (soonest due first, at most 200) and the 50 most recently completed, each with key, Status (label and category), Priority option and person in charge. Approvals, followed Items, waiting-on and departments are empty: no source exists yet.
+         * @description Open Items assigned to the caller (soonest due first, at most 200) and the 50 most recently completed, each with key, Status (label and category), Priority option and person in charge. Followed Items and the open Items the caller is asked to approve are listed too. Waiting-on lists the open Items the caller created or follows that only others are assigned to, soonest due first, with the person in charge and when the caller last reminded them.
          */
         get: operations["WorkManagement.BoardItems.GetMyWorkExtended"];
         put?: never;
@@ -6755,6 +6775,14 @@ export interface components {
             /** Format: int32 */
             updated?: number;
         };
+        "Notrelix.Application.Features.WorkManagement.BoardItems.Commands.RemindBoardItemOwners.RemindBoardItemOwnersResult": {
+            /** Format: date-time */
+            remindedAt?: string;
+            /** Format: date-time */
+            nextRemindAt?: string;
+            /** Format: int32 */
+            recipients?: number;
+        };
         "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetHomeFeed.HomeCalendarEventDto": {
             /** Format: uuid */
             id?: string;
@@ -6885,7 +6913,6 @@ export interface components {
             owner?: components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetMyWorkExtended.MyWorkPersonDto"];
             /** Format: date-time */
             dueAt?: string | null;
-            note?: string | null;
             /** Format: date-time */
             lastRemindedAt?: string | null;
         };
@@ -13932,6 +13959,47 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["System.Void"];
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "WorkManagement.BoardItems.RemindOwners": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                itemId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Commands.RemindBoardItemOwners.RemindBoardItemOwnersResult"];
                 };
             };
             /** @description Idempotency key reused with a different payload */

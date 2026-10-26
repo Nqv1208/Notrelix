@@ -2,6 +2,7 @@ using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Governance.Public.Visibility;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.WorkManagement.Approvals.Services;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Services;
 using Notrelix.Application.Features.WorkManagement.Common;
 using Notrelix.Application.Features.WorkManagement.Ports.Collaboration;
 
@@ -13,13 +14,16 @@ namespace Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetMyW
 /// category), Priority option and the person in charge when it is someone else. Both lists are bounded and come only from Boards the
 /// caller may read (the single-read ViewBoard decision, GOV-029). The open Items the caller follows are listed
 /// too, with the "following" relation, and so are the open Items the caller is asked to approve (a pending
-/// approval request names them), with the "approver" relation and the request. "Waiting on" has no source yet and is returned empty.
+/// approval request names them), with the "approver" relation and the request. "Waiting on" lists the open Items the caller created or follows,
+/// where the caller is not assigned and someone else is, soonest due first (at most <see cref="GetMyWorkExtendedQuery.WaitingLimit"/>),
+/// each with the person in charge and when the caller last reminded them.
 /// </summary>
 public record GetMyWorkExtendedQuery(Guid WorkspaceId)
     : IQuery<Result<MyWorkExtendedDto>>, IAuthenticatedRequest, IReadRequest, IWorkspaceRequest, IRequirePermission
 {
     public const int OpenLimit = 200;
     public const int DoneLimit = 50;
+    public const int WaitingLimit = 20;
 
     PermissionAction IRequirePermission.Action => PermissionAction.ViewWorkspace;
     ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId);
@@ -59,7 +63,6 @@ public sealed record MyWorkWaitingDto(
     string Title,
     MyWorkPersonDto Owner,
     DateTimeOffset? DueAt,
-    string Note,
     DateTimeOffset? LastRemindedAt);
 
 public sealed record MyWorkExtendedDto(
@@ -73,7 +76,8 @@ public class GetMyWorkExtendedQueryHandler(
     ICurrentRequestContext requestContext,
     IResourceVisibility visibility,
     IActorLookupService actors,
-    IWorkManagementCollaborationReadPort collaboration) : IRequestHandler<GetMyWorkExtendedQuery, Result<MyWorkExtendedDto>>
+    IWorkManagementCollaborationReadPort collaboration,
+    IBoardItemReminders reminders) : IRequestHandler<GetMyWorkExtendedQuery, Result<MyWorkExtendedDto>>
 {
     public async Task<Result<MyWorkExtendedDto>> Handle(GetMyWorkExtendedQuery request, CancellationToken cancellationToken)
     {
@@ -150,10 +154,12 @@ public class GetMyWorkExtendedQueryHandler(
                 .ToListAsync(cancellationToken);
         followedOnly = followedOnly.Concat(approverOnly).ToList();
 
+        var waiting = await LoadWaitingAsync(request.WorkspaceId, userId, visibleBoardIds, followedSet, cancellationToken);
+
         var all = open.Concat(followedOnly).Concat(done).ToList();
         if (all.Count == 0)
         {
-            return Result<MyWorkExtendedDto>.Success(Empty());
+            return Result<MyWorkExtendedDto>.Success(Empty() with { Waiting = waiting });
         }
 
         var itemIds = all.Select(i => i.Id).ToList();
@@ -239,8 +245,67 @@ public class GetMyWorkExtendedQueryHandler(
         return Result<MyWorkExtendedDto>.Success(new MyWorkExtendedDto(
             open.Concat(followedOnly).Select(Map).ToList(),
             done.Select(Map).ToList(),
-            [],
+            waiting,
             departments));
+    }
+
+    /// <summary>
+    /// The open Items the caller created or follows, from Boards they may read, where the caller is not
+    /// assigned and someone else is. The person in charge is the one assigned first.
+    /// </summary>
+    private async Task<IReadOnlyList<MyWorkWaitingDto>> LoadWaitingAsync(
+        Guid workspaceId,
+        Guid userId,
+        IReadOnlyCollection<Guid> visibleBoardIds,
+        IReadOnlySet<Guid> followedIds,
+        CancellationToken cancellationToken)
+    {
+        var followed = followedIds.ToList();
+        var items = await (
+                from item in context.BoardItems.AsNoTracking()
+                join board in context.Boards.AsNoTracking() on item.BoardId equals board.Id
+                where item.WorkspaceId == workspaceId
+                      && board.WorkspaceId == workspaceId
+                      && item.DeletedAt == null
+                      && !item.IsArchived
+                      && item.CompletedAt == null
+                      && board.DeletedAt == null
+                      && !board.IsArchived
+                      && visibleBoardIds.Contains(board.Id)
+                      && (item.CreatedBy == userId || followed.Contains(item.Id))
+                      && context.BoardItemMembers.Any(m => m.ItemId == item.Id && m.UserId != userId)
+                      && !context.BoardItemMembers.Any(m => m.ItemId == item.Id && m.UserId == userId)
+                select item)
+            .OrderBy(i => i.DueAt == null)
+            .ThenBy(i => i.DueAt)
+            .ThenBy(i => i.Id)
+            .Take(GetMyWorkExtendedQuery.WaitingLimit)
+            .ToListAsync(cancellationToken);
+        if (items.Count == 0) return [];
+
+        var itemIds = items.Select(i => i.Id).ToList();
+        var owners = (await context.BoardItemMembers
+                .AsNoTracking()
+                .Where(m => itemIds.Contains(m.ItemId) && m.UserId != userId)
+                .Select(m => new { m.ItemId, m.UserId, m.AssignedAt })
+                .ToListAsync(cancellationToken))
+            .GroupBy(m => m.ItemId)
+            .ToDictionary(g => g.Key, g => g.OrderBy(m => m.AssignedAt).ThenBy(m => m.UserId).First().UserId);
+        var reminded = await reminders.LastRemindedAsync(userId, itemIds, cancellationToken);
+        var people = (await actors.FindManyAsync(owners.Values.Distinct().ToList(), cancellationToken))
+            .ToDictionary(a => a.UserId, a => new MyWorkPersonDto(a.UserId, a.Name));
+
+        return items
+            .Where(i => owners.TryGetValue(i.Id, out var owner) && people.ContainsKey(owner))
+            .Select(i => new MyWorkWaitingDto(
+                i.Id,
+                i.BoardId,
+                i.ItemKey,
+                i.Name,
+                people[owners[i.Id]],
+                i.DueAt,
+                reminded.TryGetValue(i.Id, out var at) ? at : null))
+            .ToList();
     }
 
     private static MyWorkExtendedDto Empty() => new([], [], [], new Dictionary<string, string?>());

@@ -127,6 +127,10 @@ public static class WorkManagementRuleCodes
     public const string WorkManagement_FormSubmission_CannotProcessUnlessAccepted = "WorkManagement_FormSubmission_CannotProcessUnlessAccepted";
     public const string WorkManagement_FormSubmission_AlreadyDeleted = "WorkManagement_FormSubmission_AlreadyDeleted";
 
+    // ── Reminder ──────────────────────────────────────────────────────────
+    public const string WorkManagement_Reminder_TooSoon = "WorkManagement_Reminder_TooSoon";
+    public const string WorkManagement_Reminder_NobodyToRemind = "WorkManagement_Reminder_NobodyToRemind";
+
     // ── Approval ──────────────────────────────────────────────────────────
     public const string WorkManagement_Approval_StepNotFound = "WorkManagement_Approval_StepNotFound";
     public const string WorkManagement_Approval_CannotAddStepsNonPending = "WorkManagement_Approval_CannotAddStepsNonPending";

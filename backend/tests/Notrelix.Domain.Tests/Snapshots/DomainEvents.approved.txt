@@ -800,6 +800,10 @@ work-management.board-item-moved|1|Notrelix.Domain.WorkManagement.Items.Events.B
 work-management.board-item-moved|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemMovedDomainEvent|Workspace|OldGroupId|System.Guid|False
 work-management.board-item-moved|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemMovedDomainEvent|Workspace|UpdatedBy|System.Guid|False
 work-management.board-item-moved|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemMovedDomainEvent|Workspace|Version|System.Int64|False
+work-management.board-item-owners-reminded|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemOwnersRemindedDomainEvent|Workspace|BoardId|System.Guid|False
+work-management.board-item-owners-reminded|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemOwnersRemindedDomainEvent|Workspace|ItemId|System.Guid|False
+work-management.board-item-owners-reminded|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemOwnersRemindedDomainEvent|Workspace|RecipientUserIds|System.Collections.Generic.IReadOnlyList<System.Guid>|False
+work-management.board-item-owners-reminded|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemOwnersRemindedDomainEvent|Workspace|SenderUserId|System.Guid|False
 work-management.board-item-parent-assigned|2|Notrelix.Domain.WorkManagement.Items.Events.BoardItemParentChangedDomainEvent|Workspace|BoardId|System.Guid|False
 work-management.board-item-parent-assigned|2|Notrelix.Domain.WorkManagement.Items.Events.BoardItemParentChangedDomainEvent|Workspace|ItemId|System.Guid|False
 work-management.board-item-parent-assigned|2|Notrelix.Domain.WorkManagement.Items.Events.BoardItemParentChangedDomainEvent|Workspace|NewLevel|System.Int32|False

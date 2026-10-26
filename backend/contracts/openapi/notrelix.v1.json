@@ -10096,6 +10096,73 @@
         ]
       }
     },
+    "/api/v1/board-items/{itemId}/remind": {
+      "post": {
+        "tags": [
+          "WorkManagement.BoardItems",
+          "WorkManagement.BoardItems"
+        ],
+        "summary": "Remind the people in charge of an item that the caller is waiting on it",
+        "description": "Sends each assignee except the caller an Inbox notification naming the caller. At most once per item per caller per 24 hours: a later request answers 409 (work.item.remind-too-soon) and says when it is possible again. Seeing the item is enough; nobody else in charge answers 400.",
+        "operationId": "WorkManagement.BoardItems.RemindOwners",
+        "parameters": [
+          {
+            "name": "itemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409.",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "Idempotency-Replayed": {
+                "description": "true when this response is a replay of a stored result",
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.BoardItems.Commands.RemindBoardItemOwners.RemindBoardItemOwnersResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Idempotency key reused with a different payload"
+          },
+          "503": {
+            "description": "Operation still being processed; retry after the indicated delay"
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
     "/api/v1/board-items/{itemId}/move": {
       "post": {
         "tags": [
@@ -11513,7 +11580,7 @@
           "WorkManagement.BoardItems"
         ],
         "summary": "Get the current user's My work in a workspace",
-        "description": "Open Items assigned to the caller (soonest due first, at most 200) and the 50 most recently completed, each with key, Status (label and category), Priority option and person in charge. Approvals, followed Items, waiting-on and departments are empty: no source exists yet.",
+        "description": "Open Items assigned to the caller (soonest due first, at most 200) and the 50 most recently completed, each with key, Status (label and category), Priority option and person in charge. Followed Items and the open Items the caller is asked to approve are listed too. Waiting-on lists the open Items the caller created or follows that only others are assigned to, soonest due first, with the person in charge and when the caller last reminded them.",
         "operationId": "WorkManagement.BoardItems.GetMyWorkExtended",
         "parameters": [
           {
@@ -25766,6 +25833,24 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.Application.Features.WorkManagement.BoardItems.Commands.RemindBoardItemOwners.RemindBoardItemOwnersResult": {
+        "type": "object",
+        "properties": {
+          "remindedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "nextRemindAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "recipients": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetHomeFeed.HomeCalendarEventDto": {
         "type": "object",
         "properties": {
@@ -26136,10 +26221,6 @@
           "dueAt": {
             "type": "string",
             "format": "date-time",
-            "nullable": true
-          },
-          "note": {
-            "type": "string",
             "nullable": true
           },
           "lastRemindedAt": {

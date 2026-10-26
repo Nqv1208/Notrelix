@@ -93,3 +93,26 @@ public sealed class CommentCreatedFollowConsumerDefinition : ConsumerDefinition<
         });
     }
 }
+
+public sealed class BoardItemOwnersRemindedNotificationConsumerDefinition : ConsumerDefinition<BoardItemOwnersRemindedNotificationConsumer>
+{
+    public BoardItemOwnersRemindedNotificationConsumerDefinition()
+    {
+        EndpointName = "notrelix-collab-item-owners-reminded-notification-v1";
+        ConcurrentMessageLimit = 4;
+    }
+
+    protected override void ConfigureConsumer(
+        IReceiveEndpointConfigurator endpointConfigurator,
+        IConsumerConfigurator<BoardItemOwnersRemindedNotificationConsumer> consumerConfigurator,
+        IRegistrationContext context)
+    {
+        endpointConfigurator.PrefetchCount = 8;
+        endpointConfigurator.UseMessageRetry(r =>
+        {
+            r.Interval(3, TimeSpan.FromMilliseconds(200));
+            r.Ignore<ArgumentException>();
+            r.Ignore<DomainException>();
+        });
+    }
+}
