@@ -21,9 +21,8 @@ import { cn } from "@notrelix/ui-web";
 import type { BlockType } from "@notrelix/docs-core";
 import { fillDocCopy, type DocPageCopy } from "../components/doc-page.copy";
 import { foldText } from "../components/doc-popups-surface";
-import { setBlockType } from "./editor-commands";
-import { mediaOf, pickMedia } from "./media-commands";
-import { insertTableBlock } from "./table-commands";
+import { insertBlockType } from "./block-insert";
+import { mediaOf } from "./media-commands";
 
 interface SlashItem {
   readonly type: BlockType;
@@ -190,36 +189,7 @@ export function SlashMenu({
       .focus()
       .deleteRange({ from: match.from, to: match.to })
       .run();
-    if (item.type === "page_reference" || item.type === "board_reference") {
-      const board = item.type === "board_reference";
-      const { $from } = editor.state.selection;
-      const blockId = $from.parent.attrs.blockId as string | undefined;
-      const pos = $from.before();
-      editor
-        .chain()
-        .focus()
-        .insertContentAt(
-          { from: pos, to: pos + $from.parent.nodeSize },
-          {
-            type: board ? "boardReference" : "pageReference",
-            attrs: board
-              ? { blockId, linkedBoardId: null }
-              : { blockId, linkedPageId: null },
-          },
-        )
-        .run();
-      if (blockId) (board ? onPickBoard : onPickPage)?.(blockId);
-      return;
-    }
-    if (item.type === "table") {
-      insertTableBlock(editor);
-      return;
-    }
-    if (item.type === "image" || item.type === "file") {
-      void pickMedia(editor, item.type);
-      return;
-    }
-    setBlockType(editor, item.type);
+    insertBlockType(editor, item.type, { onPickPage, onPickBoard });
   };
 
   useEffect(() => {

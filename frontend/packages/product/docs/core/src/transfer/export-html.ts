@@ -43,6 +43,8 @@ function runHtml(run: Run, mapText?: (text: string) => string): string {
   if (has("italic")) html = `<em>${html}</em>`;
   if (has("underline")) html = `<u>${html}</u>`;
   if (has("strike")) html = `<s>${html}</s>`;
+  if (has("superscript")) html = `<sup>${html}</sup>`;
+  if (has("subscript")) html = `<sub>${html}</sub>`;
   if (highlight) html = `<mark>${html}</mark>`;
   if (link && link.type === "link" && isSafeHref(link.href)) {
     html = `<a href="${escapeHtml(link.href.trim())}" rel="noopener noreferrer">${html}</a>`;

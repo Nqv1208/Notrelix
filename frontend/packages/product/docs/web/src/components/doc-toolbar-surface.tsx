@@ -1,4 +1,10 @@
-import { useId, useState, type ReactNode } from "react";
+import {
+  useId,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type ReactNode,
+} from "react";
 import type { Editor } from "@tiptap/react";
 import {
   AlignCenter,
@@ -29,6 +35,9 @@ import { fillDocCopy, type DocPageCopy } from "./doc-page.copy";
 import type { DocPageCallbacks } from "./doc-page-models";
 import { EditorToolbar } from "../editor/editor-toolbar";
 import { DocFileMenuSurface } from "./doc-file-menu-surface";
+import { DocMenuBarMenus, MENU_KEYS } from "./doc-menu-bar-surface";
+import type { InsertHosts } from "../editor/block-insert";
+import type { MenuKey, MenuViewState } from "../editor/menu-model";
 import { ICON_CLASS } from "./doc-page-ui";
 
 /** What the toolbar reflects: the block holding the caret. */
@@ -64,6 +73,12 @@ export interface DocToolbarSurfaceProps {
   /** The page's editor; the tools then run its commands. */
   readonly editor?: Editor | null;
   readonly callbacks?: DocPageCallbacks;
+  /** What the View, Insert and Tools menus reflect and offer (needs an editor). */
+  readonly menu?: {
+    readonly view: MenuViewState;
+    readonly hosts: InsertHosts;
+    readonly onSpellcheck: (on: boolean) => void;
+  };
 }
 
 const MENU_BUTTON =
@@ -100,6 +115,150 @@ function styleLabel(copy: DocPageCopy, type: BlockType | null): string {
   return (type && styles[type]) ?? copy.toolbar.paragraphStyles.paragraph;
 }
 
+const DEFAULT_MENU_VIEW: MenuViewState = {
+  panelOpen: true,
+  panelTab: "links",
+  fullWidth: false,
+  focusMode: false,
+  toolbarShown: true,
+  spellcheck: true,
+};
+
+/**
+ * The menu bar (`role="menubar"`): File is the page's overlay, the other
+ * menus belong to the editor. One tab stop; arrows move between the menus,
+ * Down/Enter/Space opens one, Escape closes it.
+ */
+function DocMenuBar({
+  copy,
+  editor,
+  fileMenuOpen,
+  canEdit,
+  menu,
+  callbacks,
+}: {
+  readonly copy: DocPageCopy;
+  readonly editor?: Editor | null;
+  readonly fileMenuOpen: boolean;
+  readonly canEdit: boolean;
+  readonly menu?: DocToolbarSurfaceProps["menu"];
+  readonly callbacks?: DocPageCallbacks;
+}) {
+  const [open, setOpen] = useState<MenuKey | null>(null);
+  const [stop, setStop] = useState<string>("file");
+  const bar = useRef<HTMLDivElement | null>(null);
+  const fileButton = useRef<HTMLButtonElement | null>(null);
+  const labels: Record<MenuKey, string> = {
+    edit: copy.menus.edit,
+    view: copy.menus.view,
+    insert: copy.menus.insert,
+    format: copy.menus.format,
+    tools: copy.menus.tools,
+  };
+
+  const items = () =>
+    Array.from(
+      bar.current?.querySelectorAll<HTMLElement>("[data-menubar-item]") ?? [],
+    );
+
+  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    const target = event.target as HTMLElement;
+    if (!target.hasAttribute("data-menubar-item")) return;
+    const all = items();
+    const at = all.indexOf(target);
+    let next = -1;
+    if (event.key === "ArrowRight") next = (at + 1) % all.length;
+    else if (event.key === "ArrowLeft")
+      next = (at - 1 + all.length) % all.length;
+    else if (event.key === "Home") next = 0;
+    else if (event.key === "End") next = all.length - 1;
+    else return;
+    event.preventDefault();
+    all[next]?.focus();
+  };
+
+  const openFile = () => {
+    setOpen(null);
+    callbacks?.onOpenFileMenu?.();
+  };
+
+  return (
+    <div
+      ref={bar}
+      role="menubar"
+      aria-label={copy.menus.label}
+      onKeyDown={onKeyDown}
+      onFocus={(event) => {
+        const key = (event.target as HTMLElement).dataset.menubarItem;
+        if (key) setStop(key);
+      }}
+      className="flex px-4 pt-0.5"
+    >
+      <button
+        ref={fileButton}
+        type="button"
+        role="menuitem"
+        aria-haspopup="menu"
+        aria-expanded={fileMenuOpen}
+        data-menubar-item="file"
+        tabIndex={stop === "file" ? 0 : -1}
+        onClick={fileMenuOpen ? callbacks?.onCloseOverlay : openFile}
+        onKeyDown={(event) => {
+          if (event.key === "ArrowDown" && !fileMenuOpen) {
+            event.preventDefault();
+            openFile();
+          }
+        }}
+        onMouseEnter={() => {
+          if (open && !fileMenuOpen) openFile();
+        }}
+        className={cn(
+          MENU_BUTTON,
+          fileMenuOpen && "bg-state-hover-strong text-foreground",
+        )}
+      >
+        {copy.menus.file}
+      </button>
+      {editor ? (
+        <DocMenuBarMenus
+          copy={copy}
+          editor={editor}
+          canEdit={canEdit}
+          view={menu?.view ?? DEFAULT_MENU_VIEW}
+          hosts={menu?.hosts ?? {}}
+          callbacks={callbacks}
+          fileMenuOpen={fileMenuOpen}
+          onSpellcheck={menu?.onSpellcheck ?? (() => undefined)}
+          open={open}
+          onOpenChange={(key) => {
+            if (key && fileMenuOpen) callbacks?.onCloseOverlay?.();
+            setOpen(key);
+          }}
+          onLeaveToFile={openFile}
+          labels={labels}
+          tabStop={stop}
+        />
+      ) : (
+        MENU_KEYS.map((key) => (
+          <button
+            key={key}
+            type="button"
+            role="menuitem"
+            aria-haspopup="menu"
+            aria-disabled="true"
+            data-menubar-item={key}
+            tabIndex={stop === key ? 0 : -1}
+            title={fillDocCopy(copy.menus.unavailable, { name: labels[key] })}
+            className={MENU_BUTTON}
+          >
+            {labels[key]}
+          </button>
+        ))
+      )}
+    </div>
+  );
+}
+
 /**
  * The document menu bar and formatting toolbar (Final-Docs `.tbar`): six menu
  * buttons over a wrapping tool row, and the File menu when open. Tools with no
@@ -114,6 +273,7 @@ export function DocToolbarSurface({
   canFormat = false,
   editor,
   callbacks,
+  menu,
 }: DocToolbarSurfaceProps) {
   const t = copy.toolbar;
   const styleMenuId = useId();
@@ -177,52 +337,15 @@ export function DocToolbarSurface({
 
   return (
     <div className="relative z-20 shrink-0 border-b border-border bg-doc-page">
-      <nav aria-label={copy.menus.label} className="flex px-4 pt-0.5">
-        {(
-          [
-            ["file", copy.menus.file],
-            ["edit", copy.menus.edit],
-            ["view", copy.menus.view],
-            ["insert", copy.menus.insert],
-            ["format", copy.menus.format],
-            ["tools", copy.menus.tools],
-          ] as const
-        )
-          .filter(([key]) => !editor || key === "file")
-          .map(([key, label]) =>
-            key === "file" ? (
-              <button
-                key={key}
-                type="button"
-                aria-haspopup="menu"
-                aria-expanded={fileMenuOpen}
-                onClick={
-                  fileMenuOpen
-                    ? callbacks?.onCloseOverlay
-                    : callbacks?.onOpenFileMenu
-                }
-                className={cn(
-                  MENU_BUTTON,
-                  fileMenuOpen && "bg-state-hover-strong text-foreground",
-                )}
-              >
-                {label}
-              </button>
-            ) : (
-              <button
-                key={key}
-                type="button"
-                aria-haspopup="menu"
-                aria-disabled="true"
-                title={fillDocCopy(copy.menus.unavailable, { name: label })}
-                className={MENU_BUTTON}
-              >
-                {label}
-              </button>
-            ),
-          )}
-      </nav>
-      {editor ? (
+      <DocMenuBar
+        copy={copy}
+        editor={editor}
+        fileMenuOpen={fileMenuOpen}
+        canEdit={canFormat}
+        menu={menu}
+        callbacks={callbacks}
+      />
+      {editor && menu && !menu.view.toolbarShown ? null : editor ? (
         <EditorToolbar
           editor={editor}
           copy={copy}
@@ -449,6 +572,20 @@ export function DocToolbarSurface({
           downloadOpen={downloadOpen}
           canShare={canShare}
           callbacks={callbacks}
+          onSide={(direction) => {
+            callbacks?.onCloseOverlay?.();
+            document
+              .querySelector<HTMLElement>(
+                `[data-menubar-item='${direction === 1 ? "edit" : "tools"}']`,
+              )
+              ?.click();
+          }}
+          onEscape={() => {
+            callbacks?.onCloseOverlay?.();
+            document
+              .querySelector<HTMLElement>("[data-menubar-item='file']")
+              ?.focus();
+          }}
         />
       ) : null}
     </div>

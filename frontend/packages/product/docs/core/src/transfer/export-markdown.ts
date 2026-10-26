@@ -53,6 +53,8 @@ function runMarkdown(run: Run, mapText?: (text: string) => string): string {
   if (has("bold")) inner = `**${inner}**`;
   if (has("italic")) inner = `*${inner}*`;
   if (has("strike")) inner = `~~${inner}~~`;
+  if (has("superscript")) inner = `<sup>${inner}</sup>`;
+  if (has("subscript")) inner = `<sub>${inner}</sub>`;
   if (link && link.type === "link" && isSafeHref(link.href)) {
     inner = `[${inner}](${hrefOf(link.href)})`;
   }

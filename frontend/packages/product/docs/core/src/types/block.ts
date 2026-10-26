@@ -24,6 +24,9 @@ export type BlockType =
 export interface TableCell {
   runs: Run[];
   bg?: HighlightToken;
+  /** Columns / rows the cell covers when merged (absent = 1). */
+  colSpan?: number;
+  rowSpan?: number;
 }
 
 export interface TableData {
@@ -70,6 +73,10 @@ export interface BlockProperties {
   linkedTaskId?: ID;
   mentionIds?: ID[];
   align?: "left" | "center" | "right" | "justify";
+  /** Indent level of a text block, 1..8 (absent = 0). */
+  indent?: number;
+  /** Line spacing of a text block (absent = normal). */
+  lineSpacing?: "tight" | "relaxed" | "loose";
   /** A callout's tone. */
   tone?: "info" | "success" | "warning" | "danger" | "neutral";
   /** A toggle's collapsed state. */

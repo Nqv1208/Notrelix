@@ -1,7 +1,7 @@
 import type { Editor } from "@tiptap/react";
 import type { BlockType } from "@notrelix/docs-core";
 import { anchorFromSelection } from "./comment-anchors";
-import { blockTypeOfNode } from "./editor-commands";
+import { blockTypeOfNode, canIndent } from "./editor-commands";
 
 /** What the toolbar and the bubble menu reflect, read from the editor state. */
 export interface EditorToolbarState {
@@ -11,6 +11,14 @@ export interface EditorToolbarState {
   readonly underline: boolean;
   readonly strike: boolean;
   readonly code: boolean;
+  readonly superscript: boolean;
+  readonly subscript: boolean;
+  readonly indent: number;
+  readonly lineSpacing: "tight" | "normal" | "relaxed" | "loose";
+  readonly canIndent: boolean;
+  readonly canOutdent: boolean;
+  readonly canMerge: boolean;
+  readonly canSplit: boolean;
   readonly link: string | null;
   readonly color: string | null;
   readonly highlight: string | null;
@@ -30,6 +38,14 @@ export const EMPTY_TOOLBAR_STATE: EditorToolbarState = {
   underline: false,
   strike: false,
   code: false,
+  superscript: false,
+  subscript: false,
+  indent: 0,
+  lineSpacing: "normal",
+  canIndent: false,
+  canOutdent: false,
+  canMerge: false,
+  canSplit: false,
   link: null,
   color: null,
   highlight: null,
@@ -54,6 +70,16 @@ export function selectToolbarState(editor: Editor | null): EditorToolbarState {
     underline: editor.isActive("underline"),
     strike: editor.isActive("strike"),
     code: editor.isActive("code"),
+    superscript: editor.isActive("superscript"),
+    subscript: editor.isActive("subscript"),
+    indent: Number(parent.attrs.indent) || 0,
+    lineSpacing:
+      (parent.attrs.lineSpacing as EditorToolbarState["lineSpacing"] | null) ??
+      "normal",
+    canIndent: canIndent(editor, 1),
+    canOutdent: canIndent(editor, -1),
+    canMerge: editor.can().mergeCells(),
+    canSplit: editor.can().splitCell(),
     link: (editor.getAttributes("link").href as string | undefined) ?? null,
     color:
       (editor.getAttributes("colorToken").token as string | undefined) ?? null,

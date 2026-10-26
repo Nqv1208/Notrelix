@@ -143,6 +143,7 @@ export {
   encodeProperties,
   propertiesFromWire,
   propertiesToWire,
+  tableColumnCount,
   tableFromWire,
   tableToWire,
   FROM_PRODUCER_BLOCK_TYPE,

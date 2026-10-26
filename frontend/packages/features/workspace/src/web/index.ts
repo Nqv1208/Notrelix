@@ -343,6 +343,11 @@ export {
   type OnboardingSummary,
 } from "./onboarding/onboarding-models";
 export { newInviteRow } from "./onboarding/onboarding-steps";
+export {
+  onboardingSuggestions,
+  type DepartmentSuggestion,
+  type OnboardingSuggestions,
+} from "./onboarding/onboarding-suggestions";
 
 // Reports (the Reports mockup)
 export { workspaceReportsCatalog } from "./reports/reports.catalog";

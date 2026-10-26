@@ -37,6 +37,8 @@ export const TABLE_COMMANDS = {
   columnAfter: (editor: Editor) =>
     editor.chain().focus().addColumnAfter().run(),
   deleteColumn: (editor: Editor) => editor.chain().focus().deleteColumn().run(),
+  merge: (editor: Editor) => editor.chain().focus().mergeCells().run(),
+  split: (editor: Editor) => editor.chain().focus().splitCell().run(),
   toggleHeaderRow: (editor: Editor) =>
     editor.chain().focus().toggleHeaderRow().run(),
   deleteTable: (editor: Editor) => editor.chain().focus().deleteTable().run(),

@@ -258,7 +258,10 @@ describe("docs web pure surfaces", () => {
         callbacks={{ onOpenFileMenu }}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: docsCopy.menus.file }));
+    // The File button is a menu bar item now (role menuitem inside role menubar).
+    fireEvent.click(
+      screen.getByRole("menuitem", { name: docsCopy.menus.file }),
+    );
     expect(onOpenFileMenu).toHaveBeenCalledTimes(1);
     closed.unmount();
 

@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type KeyboardEvent,
@@ -17,12 +18,16 @@ import {
   Eraser,
   Highlighter,
   ImageIcon,
+  IndentDecrease,
+  IndentIncrease,
   Italic,
   Link2,
   List,
   ListOrdered,
   MessageCircle,
+  MoreHorizontal,
   Minus,
+  MoveVertical,
   Palette,
   Paperclip,
   Printer,
@@ -53,11 +58,13 @@ import type { DocPageCallbacks } from "../components/doc-page-models";
 import {
   applyLink,
   clearFormatting,
+  indentBlocks,
   insertDivider,
   removeLink,
   setAlign,
   setBlockType,
   setHighlight,
+  setLineSpacing,
   setTextColor,
 } from "./editor-commands";
 import { selectToolbarState } from "./editor-state";
@@ -297,10 +304,20 @@ export interface EditorToolbarProps {
   readonly callbacks?: DocPageCallbacks;
 }
 
+interface ToolGroup {
+  readonly id: string;
+  readonly node: ReactNode;
+}
+
+/** Width kept for the "more tools" button when groups do not fit. */
+const MORE_WIDTH = 44;
+const ROW_PADDING = 24;
+
 /**
  * The formatting toolbar wired to the editor: every state comes from the
  * editor's selection, every control runs an editor command. Only controls
- * that work are shown.
+ * that work are shown. Groups that do not fit move, whole, into a "more
+ * tools" popover, so a narrow window never wraps or clips the bar.
  */
 export function EditorToolbar({
   editor,
@@ -317,6 +334,438 @@ export function EditorToolbar({
   const [linkOpen, setLinkOpen] = useState(false);
   const marks = disabled || state.inCodeBlock;
 
+  // "Insert link" from the menu or the keyboard opens the link form here.
+  useEffect(() => {
+    const dom = editorDom(editor);
+    if (!dom) return;
+    const open = () => setLinkOpen(true);
+    dom.addEventListener(OPEN_LINK_EVENT, open);
+    return () => dom.removeEventListener(OPEN_LINK_EVENT, open);
+  }, [editor]);
+
+  const groups: ToolGroup[] = [
+    {
+      id: "history",
+      node: (
+        <>
+          <ToolButton
+            label={t.undo}
+            disabled={disabled || !state.canUndo}
+            onClick={() => editor.chain().focus().undo().run()}
+          >
+            <Undo2 aria-hidden="true" className={ICON} />
+          </ToolButton>
+          <ToolButton
+            label={t.redo}
+            disabled={disabled || !state.canRedo}
+            onClick={() => editor.chain().focus().redo().run()}
+          >
+            <Redo2 aria-hidden="true" className={ICON} />
+          </ToolButton>
+          <ToolButton label={t.print} onClick={callbacks?.onPrint}>
+            <Printer aria-hidden="true" className={ICON} />
+          </ToolButton>
+        </>
+      ),
+    },
+    {
+      id: "style",
+      node: (
+        <Select
+          value={state.blockType ?? "paragraph"}
+          disabled={disabled}
+          onValueChange={(value) => setBlockType(editor, value as BlockType)}
+        >
+          <SelectTrigger
+            data-tool=""
+            aria-label={t.paragraphStyle}
+            className="h-7.5 w-[150px] rounded-[6px] border-0 bg-transparent px-2 text-compact text-foreground shadow-none"
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {STYLE_TYPES.map((type) => (
+              <SelectItem key={type} value={type}>
+                {styleLabel(copy, type)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      ),
+    },
+    {
+      id: "marks",
+      node: (
+        <>
+          <ToolButton
+            label={t.bold}
+            pressed={state.bold}
+            disabled={marks}
+            onClick={() => editor.chain().focus().toggleBold().run()}
+          >
+            <Bold aria-hidden="true" className={ICON} />
+          </ToolButton>
+          <ToolButton
+            label={t.italic}
+            pressed={state.italic}
+            disabled={marks}
+            onClick={() => editor.chain().focus().toggleItalic().run()}
+          >
+            <Italic aria-hidden="true" className={ICON} />
+          </ToolButton>
+          <ToolButton
+            label={t.underline}
+            pressed={state.underline}
+            disabled={marks}
+            onClick={() => editor.chain().focus().toggleUnderline().run()}
+          >
+            <Underline aria-hidden="true" className={ICON} />
+          </ToolButton>
+          <ToolButton
+            label={t.strike}
+            pressed={state.strike}
+            disabled={marks}
+            onClick={() => editor.chain().focus().toggleStrike().run()}
+          >
+            <Strikethrough aria-hidden="true" className={ICON} />
+          </ToolButton>
+          <ToolButton
+            label={t.inlineCode}
+            pressed={state.code}
+            disabled={marks}
+            onClick={() => editor.chain().focus().toggleCode().run()}
+          >
+            <Code aria-hidden="true" className={ICON} />
+          </ToolButton>
+        </>
+      ),
+    },
+    {
+      id: "inline",
+      node: (
+        <>
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                data-tool=""
+                aria-label={t.textColor}
+                title={t.textColor}
+                aria-disabled={marks || undefined}
+                onMouseDown={(event) => event.preventDefault()}
+                className={TOOL}
+              >
+                <Palette aria-hidden="true" className={ICON} />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent
+              className="w-auto gap-2 p-2.5"
+              onOpenAutoFocus={(e) => e.preventDefault()}
+            >
+              <SwatchGrid
+                label={t.textColor}
+                tokens={COLOR_TOKENS}
+                names={t.colorNames}
+                swatch={(token) => COLOR_SWATCH[token]}
+                current={state.color}
+                onPick={(token) => setTextColor(editor, token)}
+              />
+            </PopoverContent>
+          </Popover>
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                data-tool=""
+                aria-label={t.highlight}
+                title={t.highlight}
+                aria-disabled={marks || undefined}
+                onMouseDown={(event) => event.preventDefault()}
+                className={TOOL}
+              >
+                <Highlighter aria-hidden="true" className={ICON} />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent
+              className="w-auto gap-2 p-2.5"
+              onOpenAutoFocus={(e) => e.preventDefault()}
+            >
+              <SwatchGrid
+                label={t.highlight}
+                tokens={HIGHLIGHT_TOKENS}
+                names={t.highlightNames}
+                swatch={(token) => HIGHLIGHT_CLASS[token] || "bg-transparent"}
+                current={state.highlight}
+                onPick={(token) => setHighlight(editor, token)}
+              />
+            </PopoverContent>
+          </Popover>
+          <Popover open={linkOpen && !marks} onOpenChange={setLinkOpen}>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                data-tool=""
+                aria-label={t.link}
+                title={t.link}
+                aria-pressed={state.link !== null}
+                aria-disabled={marks || undefined}
+                onMouseDown={(event) => event.preventDefault()}
+                className={TOOL}
+              >
+                <Link2 aria-hidden="true" className={ICON} />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-72 p-3">
+              <LinkForm
+                editor={editor}
+                copy={copy}
+                initial={state.link}
+                onDone={() => setLinkOpen(false)}
+              />
+            </PopoverContent>
+          </Popover>
+          <ToolButton
+            label={t.comment}
+            onClick={() => {
+              // With text selected the comment is anchored to it; otherwise the panel just opens.
+              if (!editor.state.selection.empty && callbacks?.onCommentStart) {
+                callbacks.onCommentStart();
+              } else {
+                callbacks?.onOpenComments?.();
+              }
+            }}
+          >
+            <MessageCircle aria-hidden="true" className={ICON} />
+          </ToolButton>
+        </>
+      ),
+    },
+    {
+      id: "align",
+      node: (
+        <>
+          {(
+            [
+              ["left", t.alignLeft, AlignLeft],
+              ["center", t.alignCenter, AlignCenter],
+              ["right", t.alignRight, AlignRight],
+              ["justify", t.alignJustify, AlignJustify],
+            ] as const
+          ).map(([align, label, Icon]) => (
+            <ToolButton
+              key={align}
+              label={label}
+              pressed={state.align === align}
+              disabled={disabled || state.inCodeBlock}
+              onClick={() => setAlign(editor, align)}
+            >
+              <Icon aria-hidden="true" className={ICON} />
+            </ToolButton>
+          ))}
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                data-tool=""
+                aria-label={t.lineSpacing}
+                title={t.lineSpacing}
+                aria-disabled={marks || undefined}
+                onMouseDown={(event) => event.preventDefault()}
+                className={TOOL}
+              >
+                <MoveVertical aria-hidden="true" className={ICON} />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent
+              className="w-40 gap-0.5 p-1.5"
+              onOpenAutoFocus={(e) => e.preventDefault()}
+            >
+              <div role="group" aria-label={t.lineSpacing}>
+                {(["tight", "normal", "relaxed", "loose"] as const).map(
+                  (value) => (
+                    <button
+                      key={value}
+                      type="button"
+                      aria-pressed={state.lineSpacing === value}
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => setLineSpacing(editor, value)}
+                      className="flex h-8 w-full items-center rounded-[7px] border-0 bg-transparent px-2.5 text-left text-nav text-foreground outline-none hover:bg-state-hover-strong focus-visible:ring-2 focus-visible:ring-focus-ring aria-pressed:bg-state-selected aria-pressed:text-state-selected-foreground"
+                    >
+                      {t.lineSpacingNames[value]}
+                    </button>
+                  ),
+                )}
+              </div>
+            </PopoverContent>
+          </Popover>
+        </>
+      ),
+    },
+    {
+      id: "lists",
+      node: (
+        <>
+          <ToolButton
+            label={t.bulleted}
+            pressed={state.blockType === "bulleted_list"}
+            disabled={disabled}
+            onClick={() =>
+              setBlockType(
+                editor,
+                state.blockType === "bulleted_list"
+                  ? "paragraph"
+                  : "bulleted_list",
+              )
+            }
+          >
+            <List aria-hidden="true" className={ICON} />
+          </ToolButton>
+          <ToolButton
+            label={t.numbered}
+            pressed={state.blockType === "numbered_list"}
+            disabled={disabled}
+            onClick={() =>
+              setBlockType(
+                editor,
+                state.blockType === "numbered_list"
+                  ? "paragraph"
+                  : "numbered_list",
+              )
+            }
+          >
+            <ListOrdered aria-hidden="true" className={ICON} />
+          </ToolButton>
+          <ToolButton
+            label={t.checklist}
+            pressed={state.blockType === "todo"}
+            disabled={disabled}
+            onClick={() =>
+              setBlockType(
+                editor,
+                state.blockType === "todo" ? "paragraph" : "todo",
+              )
+            }
+          >
+            <CheckSquare aria-hidden="true" className={ICON} />
+          </ToolButton>
+          <ToolButton
+            label={t.outdent}
+            disabled={disabled || !state.canOutdent}
+            onClick={() => indentBlocks(editor, -1)}
+          >
+            <IndentDecrease aria-hidden="true" className={ICON} />
+          </ToolButton>
+          <ToolButton
+            label={t.indent}
+            disabled={disabled || !state.canIndent}
+            onClick={() => indentBlocks(editor, 1)}
+          >
+            <IndentIncrease aria-hidden="true" className={ICON} />
+          </ToolButton>
+        </>
+      ),
+    },
+    {
+      id: "insert",
+      node: (
+        <>
+          <ToolButton
+            label={t.insertDivider}
+            disabled={disabled}
+            onClick={() => insertDivider(editor)}
+          >
+            <Minus aria-hidden="true" className={ICON} />
+          </ToolButton>
+          <ToolButton
+            label={t.table}
+            disabled={disabled}
+            onClick={() => insertTableBlock(editor)}
+          >
+            <Table2 aria-hidden="true" className={ICON} />
+          </ToolButton>
+          {mediaOf(editor) ? (
+            <>
+              <ToolButton
+                label={t.image}
+                disabled={disabled}
+                onClick={() => void pickMedia(editor, "image")}
+              >
+                <ImageIcon aria-hidden="true" className={ICON} />
+              </ToolButton>
+              <ToolButton
+                label={t.file}
+                disabled={disabled}
+                onClick={() => void pickMedia(editor, "file")}
+              >
+                <Paperclip aria-hidden="true" className={ICON} />
+              </ToolButton>
+            </>
+          ) : null}
+        </>
+      ),
+    },
+    {
+      id: "clear",
+      node: (
+        <ToolButton
+          label={t.clearFormat}
+          disabled={disabled}
+          onClick={() => clearFormatting(editor)}
+        >
+          <Eraser aria-hidden="true" className={ICON} />
+        </ToolButton>
+      ),
+    },
+  ];
+
+  // How many groups fit; the rest go to the "more tools" popover.
+  const widths = useRef(new Map<string, number>());
+  const [rowWidth, setRowWidth] = useState(0);
+  const [count, setCount] = useState(groups.length);
+  const groupIds = groups.map((group) => group.id).join("|");
+
+  useLayoutEffect(() => {
+    const row = ref.current;
+    if (!row) return;
+    for (const node of row.querySelectorAll<HTMLElement>("[data-group]")) {
+      const id = node.dataset.group as string;
+      widths.current.set(id, node.offsetWidth);
+    }
+    const ids = groupIds.split("|");
+    if (!ids.every((id) => widths.current.has(id))) {
+      // A group has never been on screen: show all once to measure it.
+      setCount(ids.length);
+      return;
+    }
+    const available = rowWidth - ROW_PADDING;
+    const sizes = ids.map((id) => widths.current.get(id) as number);
+    const total = sizes.reduce((sum, size) => sum + size, 0);
+    if (rowWidth === 0 || total <= available) {
+      setCount(ids.length);
+      return;
+    }
+    let used = 0;
+    let fit = 0;
+    for (const size of sizes) {
+      if (used + size > available - MORE_WIDTH) break;
+      used += size;
+      fit += 1;
+    }
+    setCount(Math.max(1, fit));
+  });
+
+  useEffect(() => {
+    const row = ref.current;
+    if (!row) return;
+    const observer = new ResizeObserver(() => setRowWidth(row.clientWidth));
+    observer.observe(row);
+    setRowWidth(row.clientWidth);
+    return () => observer.disconnect();
+  }, [ref]);
+
+  const shown = groups.slice(0, count);
+  const hidden = groups.slice(count);
+
   return (
     <div
       ref={ref}
@@ -324,279 +773,61 @@ export function EditorToolbar({
       aria-label={t.label}
       aria-orientation="horizontal"
       onKeyDown={onKeyDown}
-      className="flex flex-wrap items-center gap-0.5 px-3 pt-1 pb-1.5"
+      className="flex flex-nowrap items-center gap-0.5 overflow-hidden px-3 pt-1 pb-1.5"
     >
-      <ToolButton
-        label={t.undo}
-        disabled={disabled || !state.canUndo}
-        onClick={() => editor.chain().focus().undo().run()}
-      >
-        <Undo2 aria-hidden="true" className={ICON} />
-      </ToolButton>
-      <ToolButton
-        label={t.redo}
-        disabled={disabled || !state.canRedo}
-        onClick={() => editor.chain().focus().redo().run()}
-      >
-        <Redo2 aria-hidden="true" className={ICON} />
-      </ToolButton>
-      <ToolButton label={t.print} onClick={callbacks?.onPrint}>
-        <Printer aria-hidden="true" className={ICON} />
-      </ToolButton>
-      <Separator />
-      <Select
-        value={state.blockType ?? "paragraph"}
-        disabled={disabled}
-        onValueChange={(value) => setBlockType(editor, value as BlockType)}
-      >
-        <SelectTrigger
-          data-tool=""
-          aria-label={t.paragraphStyle}
-          className="h-7.5 w-[150px] rounded-[6px] border-0 bg-transparent px-2 text-compact text-foreground shadow-none"
+      {shown.map((group, index) => (
+        <div
+          key={group.id}
+          data-group={group.id}
+          className="flex shrink-0 items-center gap-0.5"
         >
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {STYLE_TYPES.map((type) => (
-            <SelectItem key={type} value={type}>
-              {styleLabel(copy, type)}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <Separator />
-      <ToolButton
-        label={t.bold}
-        pressed={state.bold}
-        disabled={marks}
-        onClick={() => editor.chain().focus().toggleBold().run()}
-      >
-        <Bold aria-hidden="true" className={ICON} />
-      </ToolButton>
-      <ToolButton
-        label={t.italic}
-        pressed={state.italic}
-        disabled={marks}
-        onClick={() => editor.chain().focus().toggleItalic().run()}
-      >
-        <Italic aria-hidden="true" className={ICON} />
-      </ToolButton>
-      <ToolButton
-        label={t.underline}
-        pressed={state.underline}
-        disabled={marks}
-        onClick={() => editor.chain().focus().toggleUnderline().run()}
-      >
-        <Underline aria-hidden="true" className={ICON} />
-      </ToolButton>
-      <ToolButton
-        label={t.strike}
-        pressed={state.strike}
-        disabled={marks}
-        onClick={() => editor.chain().focus().toggleStrike().run()}
-      >
-        <Strikethrough aria-hidden="true" className={ICON} />
-      </ToolButton>
-      <ToolButton
-        label={t.inlineCode}
-        pressed={state.code}
-        disabled={marks}
-        onClick={() => editor.chain().focus().toggleCode().run()}
-      >
-        <Code aria-hidden="true" className={ICON} />
-      </ToolButton>
-      <Popover>
-        <PopoverTrigger asChild>
-          <button
-            type="button"
-            data-tool=""
-            aria-label={t.textColor}
-            title={t.textColor}
-            aria-disabled={marks || undefined}
-            onMouseDown={(event) => event.preventDefault()}
-            className={TOOL}
-          >
-            <Palette aria-hidden="true" className={ICON} />
-          </button>
-        </PopoverTrigger>
-        <PopoverContent
-          className="w-auto gap-2 p-2.5"
-          onOpenAutoFocus={(e) => e.preventDefault()}
-        >
-          <SwatchGrid
-            label={t.textColor}
-            tokens={COLOR_TOKENS}
-            names={t.colorNames}
-            swatch={(token) => COLOR_SWATCH[token]}
-            current={state.color}
-            onPick={(token) => setTextColor(editor, token)}
-          />
-        </PopoverContent>
-      </Popover>
-      <Popover>
-        <PopoverTrigger asChild>
-          <button
-            type="button"
-            data-tool=""
-            aria-label={t.highlight}
-            title={t.highlight}
-            aria-disabled={marks || undefined}
-            onMouseDown={(event) => event.preventDefault()}
-            className={TOOL}
-          >
-            <Highlighter aria-hidden="true" className={ICON} />
-          </button>
-        </PopoverTrigger>
-        <PopoverContent
-          className="w-auto gap-2 p-2.5"
-          onOpenAutoFocus={(e) => e.preventDefault()}
-        >
-          <SwatchGrid
-            label={t.highlight}
-            tokens={HIGHLIGHT_TOKENS}
-            names={t.highlightNames}
-            swatch={(token) => HIGHLIGHT_CLASS[token] || "bg-transparent"}
-            current={state.highlight}
-            onPick={(token) => setHighlight(editor, token)}
-          />
-        </PopoverContent>
-      </Popover>
-      <Popover open={linkOpen && !marks} onOpenChange={setLinkOpen}>
-        <PopoverTrigger asChild>
-          <button
-            type="button"
-            data-tool=""
-            aria-label={t.link}
-            title={t.link}
-            aria-pressed={state.link !== null}
-            aria-disabled={marks || undefined}
-            onMouseDown={(event) => event.preventDefault()}
-            className={TOOL}
-          >
-            <Link2 aria-hidden="true" className={ICON} />
-          </button>
-        </PopoverTrigger>
-        <PopoverContent className="w-72 p-3">
-          <LinkForm
-            editor={editor}
-            copy={copy}
-            initial={state.link}
-            onDone={() => setLinkOpen(false)}
-          />
-        </PopoverContent>
-      </Popover>
-      <ToolButton
-        label={t.comment}
-        onClick={() => {
-          // With text selected the comment is anchored to it; otherwise the panel just opens.
-          if (!editor.state.selection.empty && callbacks?.onCommentStart) {
-            callbacks.onCommentStart();
-          } else {
-            callbacks?.onOpenComments?.();
-          }
-        }}
-      >
-        <MessageCircle aria-hidden="true" className={ICON} />
-      </ToolButton>
-      <Separator />
-      {(
-        [
-          ["left", t.alignLeft, AlignLeft],
-          ["center", t.alignCenter, AlignCenter],
-          ["right", t.alignRight, AlignRight],
-          ["justify", t.alignJustify, AlignJustify],
-        ] as const
-      ).map(([align, label, Icon]) => (
-        <ToolButton
-          key={align}
-          label={label}
-          pressed={state.align === align}
-          disabled={disabled || state.inCodeBlock}
-          onClick={() => setAlign(editor, align)}
-        >
-          <Icon aria-hidden="true" className={ICON} />
-        </ToolButton>
+          {index > 0 ? <Separator /> : null}
+          {group.node}
+        </div>
       ))}
-      <Separator />
-      <ToolButton
-        label={t.bulleted}
-        pressed={state.blockType === "bulleted_list"}
-        disabled={disabled}
-        onClick={() =>
-          setBlockType(
-            editor,
-            state.blockType === "bulleted_list" ? "paragraph" : "bulleted_list",
-          )
-        }
-      >
-        <List aria-hidden="true" className={ICON} />
-      </ToolButton>
-      <ToolButton
-        label={t.numbered}
-        pressed={state.blockType === "numbered_list"}
-        disabled={disabled}
-        onClick={() =>
-          setBlockType(
-            editor,
-            state.blockType === "numbered_list" ? "paragraph" : "numbered_list",
-          )
-        }
-      >
-        <ListOrdered aria-hidden="true" className={ICON} />
-      </ToolButton>
-      <ToolButton
-        label={t.checklist}
-        pressed={state.blockType === "todo"}
-        disabled={disabled}
-        onClick={() =>
-          setBlockType(
-            editor,
-            state.blockType === "todo" ? "paragraph" : "todo",
-          )
-        }
-      >
-        <CheckSquare aria-hidden="true" className={ICON} />
-      </ToolButton>
-      <ToolButton
-        label={t.insertDivider}
-        disabled={disabled}
-        onClick={() => insertDivider(editor)}
-      >
-        <Minus aria-hidden="true" className={ICON} />
-      </ToolButton>
-      <ToolButton
-        label={t.table}
-        disabled={disabled}
-        onClick={() => insertTableBlock(editor)}
-      >
-        <Table2 aria-hidden="true" className={ICON} />
-      </ToolButton>
-      {mediaOf(editor) ? (
-        <>
-          <ToolButton
-            label={t.image}
-            disabled={disabled}
-            onClick={() => void pickMedia(editor, "image")}
+      {hidden.length > 0 ? (
+        <Popover>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              data-tool=""
+              aria-label={t.more}
+              title={t.more}
+              onMouseDown={(event) => event.preventDefault()}
+              className={cn(TOOL, "ml-auto shrink-0")}
+            >
+              <MoreHorizontal aria-hidden="true" className={ICON} />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent
+            align="end"
+            className="flex w-auto max-w-[min(92vw,420px)] flex-row flex-wrap items-center gap-1 p-2"
+            onOpenAutoFocus={(e) => e.preventDefault()}
           >
-            <ImageIcon aria-hidden="true" className={ICON} />
-          </ToolButton>
-          <ToolButton
-            label={t.file}
-            disabled={disabled}
-            onClick={() => void pickMedia(editor, "file")}
-          >
-            <Paperclip aria-hidden="true" className={ICON} />
-          </ToolButton>
-        </>
+            {hidden.map((group) => (
+              <div
+                key={group.id}
+                role="group"
+                className="flex items-center gap-0.5"
+              >
+                {group.node}
+              </div>
+            ))}
+          </PopoverContent>
+        </Popover>
       ) : null}
-      <Separator />
-      <ToolButton
-        label={t.clearFormat}
-        disabled={disabled}
-        onClick={() => clearFormatting(editor)}
-      >
-        <Eraser aria-hidden="true" className={ICON} />
-      </ToolButton>
     </div>
   );
+}
+
+/** Dispatched on the editor's element to open the toolbar's link form. */
+export const OPEN_LINK_EVENT = "doc-open-link";
+
+/** The editor's element, or null while the editor is not mounted yet. */
+export function editorDom(editor: Editor): HTMLElement | null {
+  try {
+    return editor.isDestroyed ? null : editor.view.dom;
+  } catch {
+    return null;
+  }
 }
