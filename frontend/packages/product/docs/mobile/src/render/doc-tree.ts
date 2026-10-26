@@ -78,6 +78,8 @@ export interface RunPresentation {
   readonly underline: boolean;
   readonly strike: boolean;
   readonly code: boolean;
+  /** Raised or lowered text (the two never occur together). */
+  readonly script?: "superscript" | "subscript";
   readonly color?: ColorToken;
   readonly highlight?: HighlightToken;
   /** Only a safe link (http, https, mailto) is kept. */
@@ -94,6 +96,7 @@ export function presentRun(marks: readonly Mark[]): RunPresentation {
   let underline = false;
   let strike = false;
   let code = false;
+  let script: "superscript" | "subscript" | undefined;
   let color: ColorToken | undefined;
   let highlight: HighlightToken | undefined;
   let href: string | undefined;
@@ -115,6 +118,10 @@ export function presentRun(marks: readonly Mark[]): RunPresentation {
         break;
       case "code":
         code = true;
+        break;
+      case "superscript":
+      case "subscript":
+        script = mark.type;
         break;
       case "color":
         if (mark.token !== "default") color = mark.token;
@@ -139,6 +146,7 @@ export function presentRun(marks: readonly Mark[]): RunPresentation {
     underline,
     strike,
     code,
+    ...(script ? { script } : {}),
     ...(color ? { color } : {}),
     ...(highlight ? { highlight } : {}),
     ...(href ? { href } : {}),

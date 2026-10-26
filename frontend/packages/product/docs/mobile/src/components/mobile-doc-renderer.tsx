@@ -7,6 +7,11 @@ import {
   type TableData,
 } from "@notrelix/docs-core";
 import { buildDocTree, type DocNode } from "../render/doc-tree";
+import {
+  blockLayoutOf,
+  layoutTable,
+  type BlockLayout,
+} from "../render/doc-layout";
 import { DEFAULT_DOC_LABELS, type MobileDocLabels } from "../render/doc-labels";
 import {
   CALLOUT_COLORS,
@@ -36,6 +41,8 @@ interface Env {
     "onOpenLink" | "onOpenPage" | "onOpenMember"
   >;
   readonly renderAttachment: MobileDocRendererProps["renderAttachment"];
+  /** Alignment and line spacing of the block being drawn. */
+  readonly layout?: BlockLayout | null;
 }
 
 /** A page's blocks drawn read-only with native views only. */
@@ -72,16 +79,42 @@ function Runs({
   env: Env;
   style?: object;
 }): React.ReactNode {
-  return <MobileRichText runs={runs} style={style} {...env.links} />;
+  return (
+    <MobileRichText
+      runs={runs}
+      style={style}
+      layout={env.layout}
+      {...env.links}
+    />
+  );
 }
 
 function Nested({ node, env }: { node: DocNode; env: Env }): React.ReactNode {
   return node.children.length ? (
-    <View style={styles.nested}>{renderNodes(node.children, env)}</View>
+    <View style={styles.nested}>
+      {renderNodes(node.children, { ...env, layout: null })}
+    </View>
   ) : null;
 }
 
+/** One block, inset by its indent; its alignment and line spacing reach its text. */
 function BlockView({
+  node,
+  env,
+}: {
+  node: DocNode;
+  env: Env;
+}): React.ReactNode {
+  const layout = blockLayoutOf(node.block);
+  const body = <BlockBody node={node} env={{ ...env, layout }} />;
+  return layout?.inset ? (
+    <View style={{ marginLeft: layout.inset }}>{body}</View>
+  ) : (
+    body
+  );
+}
+
+function BlockBody({
   node,
   env,
 }: {
@@ -242,29 +275,35 @@ function TableView({
 }): React.ReactNode {
   return (
     <View style={[styles.block, styles.table]}>
-      {table.rows.map((row, rowIndex) => (
+      {layoutTable(table).map((row, rowIndex) => (
         <View key={rowIndex} style={styles.tableRow}>
-          {row.map((cell, cellIndex) => (
-            <View
-              key={cellIndex}
-              style={[
-                styles.tableCell,
-                cell.bg && cell.bg !== "none"
-                  ? { backgroundColor: HIGHLIGHT_COLORS[cell.bg] }
-                  : null,
-              ]}
-            >
-              <Runs
-                runs={cell.runs}
-                env={env}
-                style={
-                  table.headerRow && rowIndex === 0
-                    ? styles.tableHead
-                    : styles.tableText
-                }
-              />
-            </View>
-          ))}
+          {row.map((slot, slotIndex) =>
+            slot.kind === "covered" ? (
+              // The rest of a cell merged from a row above: keeps the columns aligned.
+              <View key={slotIndex} style={styles.tableCovered} />
+            ) : (
+              <View
+                key={slotIndex}
+                style={[
+                  styles.tableCell,
+                  { flex: slot.colSpan },
+                  slot.cell.bg && slot.cell.bg !== "none"
+                    ? { backgroundColor: HIGHLIGHT_COLORS[slot.cell.bg] }
+                    : null,
+                ]}
+              >
+                <Runs
+                  runs={slot.cell.runs}
+                  env={{ ...env, layout: null }}
+                  style={
+                    table.headerRow && rowIndex === 0
+                      ? styles.tableHead
+                      : styles.tableText
+                  }
+                />
+              </View>
+            ),
+          )}
         </View>
       ))}
     </View>
@@ -347,6 +386,11 @@ const styles = StyleSheet.create({
   tableCell: {
     flex: 1,
     padding: 8,
+    borderWidth: 0.5,
+    borderColor: DOC_COLORS.line,
+  },
+  tableCovered: {
+    flex: 1,
     borderWidth: 0.5,
     borderColor: DOC_COLORS.line,
   },
