@@ -196,6 +196,10 @@ services:
       WATCHPACK_POLLING: "true"
       CHOKIDAR_USEPOLLING: "true"
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-/api}
+      # Sign-in/sign-up links and canonical URLs go through the nginx gateway,
+      # which serves both the marketing site and the web app.
+      NEXT_PUBLIC_WEB_APP_URL: ${NEXT_PUBLIC_WEB_APP_URL:-http://localhost:${GATEWAY_PORT:-3080}}
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:${GATEWAY_PORT:-3080}}
       NEXT_PUBLIC_APP_ENV: development
     volumes:
       - ./frontend:/app
