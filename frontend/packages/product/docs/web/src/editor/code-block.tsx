@@ -1,4 +1,5 @@
 import CodeBlock from "@tiptap/extension-code-block";
+import { textblockTypeInputRule } from "@tiptap/core";
 import {
   NodeViewContent,
   NodeViewWrapper,
@@ -24,6 +25,10 @@ import {
 import { useContextVersion, type ContextHolder } from "./extensions";
 
 const PLAIN = "plain";
+/** "``` " or "~~~ " opens a plain code block. */
+export const FENCE_SPACE = /^(?:```|~~~)\s$/;
+/** "```" or "```lang" followed by Enter opens a code block. */
+export const FENCE_ENTER = /^(?:```|~~~)([a-z0-9+#-]{0,32})$/;
 const HIGHLIGHT_KEY = new PluginKey<DecorationSet>("docCodeHighlight");
 const LOADED = "docCodeHighlighterLoaded";
 
@@ -163,6 +168,39 @@ export function createCodeBlock(context: ContextHolder) {
       return ReactNodeViewRenderer((props: NodeViewProps) => (
         <CodeBlockView {...props} context={context} />
       ));
+    },
+    // A fence opens the block on "``` " (plain) or on Enter after "```" or
+    // "```lang"; a space after a word never takes the word as the language.
+    addInputRules() {
+      return [
+        textblockTypeInputRule({ find: FENCE_SPACE, type: this.type }),
+      ];
+    },
+    addKeyboardShortcuts() {
+      const parent = this.parent?.() ?? {};
+      return {
+        ...parent,
+        Enter: (props) => {
+          const { editor } = props;
+          const { $from, empty } = editor.state.selection;
+          if (!empty || $from.parent.type.name !== "paragraph") {
+            return parent.Enter?.(props) ?? false;
+          }
+          const fence = FENCE_ENTER.exec($from.parent.textContent);
+          if (!fence || $from.parentOffset !== $from.parent.content.size) {
+            return parent.Enter?.(props) ?? false;
+          }
+          const language = fence[1] || null;
+          return editor
+            .chain()
+            .command(({ tr }) => {
+              tr.delete($from.start(), $from.end());
+              return true;
+            })
+            .setNode(this.name, { language })
+            .run();
+        },
+      };
     },
     addProseMirrorPlugins() {
       return [...(this.parent?.() ?? []), highlightPlugin()];

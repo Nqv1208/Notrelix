@@ -7,6 +7,7 @@ import { EditorToolbar } from "../editor-toolbar";
 import { matchSlashItems } from "../slash-menu";
 import { docToDrafts } from "../block-mapping";
 import { useDocRichEditor } from "../use-doc-rich-editor";
+import { stubLayout } from "./headless-editor";
 
 const DRAFTS: BlockDraft[] = [
   {
@@ -30,24 +31,7 @@ const context = {
   viewOf: () => undefined,
 };
 
-// jsdom has no layout: ProseMirror measures ranges when it scrolls the caret.
-beforeAll(() => {
-  const rect = {
-    x: 0,
-    y: 0,
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    width: 0,
-    height: 0,
-    toJSON: () => ({}),
-  };
-  Range.prototype.getClientRects = () => [] as unknown as DOMRectList;
-  Range.prototype.getBoundingClientRect = () => rect as DOMRect;
-  Element.prototype.getClientRects = () => [] as unknown as DOMRectList;
-  Text.prototype.getClientRects = (() => []) as never;
-});
+beforeAll(stubLayout);
 
 let lastDrafts: BlockDraft[] = [];
 const onDrafts = vi.fn((d: BlockDraft[]) => {
