@@ -1,7 +1,9 @@
 import type { BlockType, Page } from "@notrelix/docs-core";
 import type { DocsRealtime } from "@notrelix/docs-collaboration";
 import type {
+  DocBoardEmbed,
   DocPerson,
+  DocPickerBoardView,
   DocShareView,
   DocSpaceView,
   DocTaskRef,
@@ -25,6 +27,10 @@ export interface DocPageHost {
   readonly tasksReady: boolean;
   /** The board the page's task table reads from. */
   readonly board: { readonly name: string; readonly href?: string } | null;
+  /** Embedded boards by id, read with the viewer's own access; omitted shows none. */
+  readonly boards?: ReadonlyMap<string, DocBoardEmbed>;
+  /** Boards the viewer may embed; omitted offers no board reference. */
+  readonly boardChoices?: readonly DocPickerBoardView[];
   /** Tasks matching a typed key or title, for the mention list. */
   readonly suggestTasks: (query: string) => readonly DocTaskRef[];
   /** The share dialog's facts; `null` keeps Share disabled. */

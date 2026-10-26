@@ -316,8 +316,11 @@ export function createDocPageScreen({
       [host, pageId, pageListQuery.data],
     );
 
+    const pickerBoards = host.boardChoices;
+
     const blockViews = useMemo(() => {
       const views = toBlockViews(blocks, {
+        boards: host.boards,
         resolveTask,
         pages: readablePages,
         pageHref: host.pageHref,
@@ -336,6 +339,7 @@ export function createDocPageScreen({
       blocks,
       comments,
       host.board,
+      host.boards,
       host.pageHref,
       panelTab,
       readablePages,
@@ -418,7 +422,7 @@ export function createDocPageScreen({
     );
     const contextKey = useMemo(
       () => ({}),
-      [host.tasks, host.tasksReady, host.board, readablePages],
+      [host.tasks, host.tasksReady, host.board, host.boards, readablePages],
     );
     const richEditor = useDocRichEditor({
       pageId,
@@ -435,6 +439,8 @@ export function createDocPageScreen({
         callbacks: {
           onOpenPagePicker: (blockId) =>
             callbacksRef.current?.onOpenPagePicker?.(blockId),
+          onOpenBoardPicker: (blockId) =>
+            callbacksRef.current?.onOpenBoardPicker?.(blockId),
         },
         resolveTask,
         viewOf: (draft: BlockDraft) =>
@@ -458,6 +464,7 @@ export function createDocPageScreen({
               },
             ],
             {
+              boards: host.boards,
               resolveTask,
               pages: readablePages,
               pageHref: host.pageHref,
@@ -628,6 +635,19 @@ export function createDocPageScreen({
       onOpenPagePicker: host.canEdit
         ? (blockId) => setOverlay({ kind: "pagePicker", blockId })
         : undefined,
+      onOpenBoardPicker:
+        host.canEdit && pickerBoards
+          ? (blockId) => setOverlay({ kind: "boardPicker", blockId })
+          : undefined,
+      onPickBoard: (blockId, target) => {
+        const block = blockById(blockId);
+        setOverlay(NONE);
+        if (richEditor.editor) {
+          richEditor.updateBlockAttrs(blockId, { linkedBoardId: target });
+        } else if (block) {
+          patchBlock(block, { linkedBoardId: target });
+        }
+      },
       onPickPage: (blockId, target) => {
         const block = blockById(blockId);
         setOverlay(NONE);
@@ -920,6 +940,7 @@ export function createDocPageScreen({
             null,
         }}
         pickerPages={pickerPages}
+        pickerBoards={pickerBoards}
         convert={{
           boards: host.convertBoards ?? [],
           groups: host.convertGroups ?? null,

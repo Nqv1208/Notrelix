@@ -120,8 +120,9 @@ export function tableToWire(table: TableData): Record<string, unknown> {
       })),
     ),
     headerRow: table.headerRow,
-    colWidths: Array.from({ length: columns }, (_, index) =>
-      table.colWidths[index] ?? null,
+    colWidths: Array.from(
+      { length: columns },
+      (_, index) => table.colWidths[index] ?? null,
     ),
   };
 }

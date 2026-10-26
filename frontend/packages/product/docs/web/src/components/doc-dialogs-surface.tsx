@@ -13,6 +13,7 @@ import { fillDocCopy, type DocPageCopy } from "./doc-page.copy";
 import type {
   DocConvertView,
   DocPageCallbacks,
+  DocPickerBoardView,
   DocPickerPageView,
   DocTrashView,
 } from "./doc-page-models";
@@ -253,6 +254,73 @@ export function DocPagePickerDialogSurface({
                       {page.detail}
                     </small>
                   ) : null}
+                </span>
+              </button>
+            ))
+          )}
+        </div>
+      </div>
+    </DialogFrame>
+  );
+}
+
+export interface DocBoardPickerDialogSurfaceProps {
+  readonly copy: DocPageCopy;
+  readonly blockId: string;
+  readonly boards: readonly DocPickerBoardView[];
+  readonly callbacks?: DocPageCallbacks;
+}
+
+/** Chooses the board a board-reference block embeds. */
+export function DocBoardPickerDialogSurface({
+  copy,
+  blockId,
+  boards,
+  callbacks,
+}: DocBoardPickerDialogSurfaceProps) {
+  const p = copy.boardPicker;
+  const [query, setQuery] = useState("");
+  const needle = foldText(query.trim());
+  const matches = boards.filter(
+    (board) => needle === "" || foldText(board.title).includes(needle),
+  );
+  return (
+    <DialogFrame
+      title={p.title}
+      closeLabel={p.close}
+      width={480}
+      onClose={callbacks?.onCloseOverlay}
+    >
+      <div className="flex flex-col gap-2 px-5 pt-2 pb-5">
+        <input
+          type="search"
+          value={query}
+          aria-label={p.search}
+          placeholder={p.search}
+          onChange={(event) => setQuery(event.target.value)}
+          className={FIELD}
+        />
+        <div
+          role="listbox"
+          aria-label={p.title}
+          className="flex max-h-[320px] flex-col gap-0.5 overflow-auto"
+        >
+          {matches.length === 0 ? (
+            <span className="px-1 py-2 text-compact text-meta-foreground">
+              {p.none}
+            </span>
+          ) : (
+            matches.map((board) => (
+              <button
+                key={board.id}
+                type="button"
+                role="option"
+                aria-selected="false"
+                onClick={() => callbacks?.onPickBoard?.(blockId, board.id)}
+                className="flex min-h-11 items-center rounded-[8px] border-0 bg-transparent px-2 py-1 text-left text-nav leading-[1.4] text-foreground outline-none hover:bg-state-hover focus-visible:ring-2 focus-visible:ring-focus-ring"
+              >
+                <span className="min-w-0 flex-1 truncate font-medium">
+                  {board.title}
                 </span>
               </button>
             ))

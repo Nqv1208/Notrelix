@@ -7,6 +7,7 @@ import type {
 import { fillDocCopy, type DocPageCopy } from "./doc-page.copy";
 import type {
   DocBlockView,
+  DocBoardEmbed,
   DocCommentView,
   DocPerson,
   DocTaskResolution,
@@ -107,6 +108,8 @@ export interface BlockMappingContext {
     { readonly title: string; readonly icon: string | null }
   >;
   readonly pageHref?: (pageId: string) => string;
+  /** The boards board references show, by id. */
+  readonly boards?: ReadonlyMap<string, DocBoardEmbed>;
 }
 
 /** Stored blocks to the view model the article renders. */
@@ -192,15 +195,25 @@ export function toBlockViews(
           unavailable: Boolean(pageId) && !target,
         };
       }
-      case "board_reference":
+      case "board_reference": {
+        const boardId = props.linkedBoardId ?? null;
+        const embed = boardId ? context.boards?.get(boardId) : undefined;
         return {
           id: block.id,
           kind: "liveTable",
-          boardName: context.board?.name ?? props.title ?? "",
+          boardId,
+          state: !boardId ? "unset" : (embed?.state ?? "loading"),
+          boardName: embed?.name || context.board?.name || props.title || "",
           filterLabel: props.caption ?? "",
-          boardHref: context.board?.href,
-          tasks: (props.items ?? []).map(context.resolveTask),
+          boardHref: embed?.href ?? context.board?.href,
+          ...(embed && embed.state === "ready"
+            ? { counts: embed.counts, total: embed.total }
+            : {}),
+          tasks: embed
+            ? embed.tasks
+            : (props.items ?? []).map(context.resolveTask),
         };
+      }
       default:
         return {
           id: block.id,

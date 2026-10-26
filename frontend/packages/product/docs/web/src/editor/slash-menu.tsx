@@ -3,6 +3,7 @@ import { useEditorState, type Editor } from "@tiptap/react";
 import {
   Code2,
   FileText,
+  LayoutList,
   List,
   ListChecks,
   ListOrdered,
@@ -82,6 +83,11 @@ export const SLASH_ITEMS: readonly SlashItem[] = [
     icon: FileText,
     keywords: "lien ket trang page link",
   },
+  {
+    type: "board_reference",
+    icon: LayoutList,
+    keywords: "board bang cong viec viec nhung embed task",
+  },
 ];
 
 interface SlashMatch {
@@ -136,16 +142,25 @@ export interface SlashMenuProps {
   readonly copy: DocPageCopy;
   /** Opens the page chooser for a page-reference block. */
   readonly onPickPage?: (blockId: string) => void;
+  /** Opens the board chooser for a board-reference block; omitted hides the entry. */
+  readonly onPickBoard?: (blockId: string) => void;
 }
 
 /** The "/" block menu: every block type with its markdown shortcut. */
-export function SlashMenu({ editor, copy, onPickPage }: SlashMenuProps) {
+export function SlashMenu({
+  editor,
+  copy,
+  onPickPage,
+  onPickBoard,
+}: SlashMenuProps) {
   const match = useEditorState({
     editor,
     selector: ({ editor: current }) => selectSlash(current),
   });
   const [dismissed, setDismissed] = useState<number | null>(null);
-  const items = match ? matchSlashItems(copy, match.query) : [];
+  const items = (match ? matchSlashItems(copy, match.query) : []).filter(
+    (item) => item.type !== "board_reference" || onPickBoard,
+  );
   const [active, setActive] = useState(0);
   const latest = useRef({ items, match, active, dismissed });
   latest.current = { items, match, active, dismissed };
@@ -160,7 +175,8 @@ export function SlashMenu({ editor, copy, onPickPage }: SlashMenuProps) {
       .focus()
       .deleteRange({ from: match.from, to: match.to })
       .run();
-    if (item.type === "page_reference") {
+    if (item.type === "page_reference" || item.type === "board_reference") {
+      const board = item.type === "board_reference";
       const { $from } = editor.state.selection;
       const blockId = $from.parent.attrs.blockId as string | undefined;
       const pos = $from.before();
@@ -170,12 +186,14 @@ export function SlashMenu({ editor, copy, onPickPage }: SlashMenuProps) {
         .insertContentAt(
           { from: pos, to: pos + $from.parent.nodeSize },
           {
-            type: "pageReference",
-            attrs: { blockId, linkedPageId: null },
+            type: board ? "boardReference" : "pageReference",
+            attrs: board
+              ? { blockId, linkedBoardId: null }
+              : { blockId, linkedPageId: null },
           },
         )
         .run();
-      if (blockId) onPickPage?.(blockId);
+      if (blockId) (board ? onPickBoard : onPickPage)?.(blockId);
       return;
     }
     if (item.type === "table") {

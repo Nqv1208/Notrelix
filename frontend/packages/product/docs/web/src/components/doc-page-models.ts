@@ -123,11 +123,38 @@ export type DocBlockView =
     })
   | (DocBlockBase & {
       readonly kind: "liveTable";
+      readonly boardId: string | null;
+      /**
+       * `unset`: no board chosen. `loading`: the board read is pending.
+       * `unavailable`: the viewer cannot read the board (never says whether
+       * it exists). `ready`: the board's own facts follow.
+       */
+      readonly state: "unset" | "loading" | "ready" | "unavailable";
       readonly boardName: string;
       readonly filterLabel: string;
       readonly boardHref?: string;
+      /** Items on the board by status, for the compact summary. */
+      readonly counts?: Readonly<Record<DocTaskStatus, number>>;
+      readonly total?: number;
       readonly tasks: readonly DocTaskResolution[];
     });
+
+/** What the host knows of an embedded board, read with the viewer's own access. */
+export interface DocBoardEmbed {
+  readonly state: "loading" | "ready" | "unavailable";
+  readonly name: string;
+  readonly href?: string;
+  readonly counts: Readonly<Record<DocTaskStatus, number>>;
+  readonly total: number;
+  /** The first few items, in board order. */
+  readonly tasks: readonly DocTaskRef[];
+}
+
+/** A board the picker offers for a board reference. */
+export interface DocPickerBoardView {
+  readonly id: string;
+  readonly title: string;
+}
 
 /** The viewer-facing facts of the document's department (Space). */
 export interface DocSpaceView {
@@ -266,6 +293,7 @@ export type DocOverlay =
   | { readonly kind: "share" }
   | { readonly kind: "trash" }
   | { readonly kind: "pagePicker"; readonly blockId: string }
+  | { readonly kind: "boardPicker"; readonly blockId: string }
   | {
       readonly kind: "convertTask";
       readonly blockId: string;
@@ -327,6 +355,8 @@ export interface DocPageCallbacks {
   readonly onDeletePage?: (pageId: string) => void;
   readonly onOpenPagePicker?: (blockId: string) => void;
   readonly onPickPage?: (blockId: string, pageId: string) => void;
+  readonly onOpenBoardPicker?: (blockId: string) => void;
+  readonly onPickBoard?: (blockId: string, boardId: string) => void;
   readonly onBlockDeleteEmpty?: (blockId: string) => void;
   readonly onSlashSelect?: (blockId: string, type: BlockType) => void;
   readonly onTocSelect?: (id: string) => void;

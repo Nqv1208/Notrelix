@@ -18,6 +18,7 @@ import type {
   DocHeaderView,
   DocOverlay,
   DocPageCallbacks,
+  DocPickerBoardView,
   DocRecoveryView,
   DocPanelTab,
   DocRelatedDoc,
@@ -29,6 +30,7 @@ import type {
   DocVersionView,
 } from "./doc-page-models";
 import {
+  DocBoardPickerDialogSurface,
   DocConvertTaskDialogSurface,
   DocPagePickerDialogSurface,
   DocTrashDialogSurface,
@@ -81,6 +83,8 @@ export interface DocPageScreenSurfaceProps {
   readonly trash?: DocTrashView;
   /** The pages the page picker offers. */
   readonly pickerPages?: readonly DocPickerPageView[];
+  /** The boards the board picker offers. */
+  readonly pickerBoards?: readonly DocPickerBoardView[];
   /** The convert-to-task dialog's boards and groups. */
   readonly convert?: DocConvertView;
   readonly readOnly?: boolean;
@@ -150,6 +154,7 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
     share,
     trash,
     pickerPages,
+    pickerBoards,
     convert,
     readOnly = false,
     canComment = false,
@@ -191,6 +196,7 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
     shareOpen ||
     (overlay.kind === "trash" && trash !== undefined) ||
     (overlay.kind === "pagePicker" && pickerPages !== undefined) ||
+    (overlay.kind === "boardPicker" && pickerBoards !== undefined) ||
     (overlay.kind === "convertTask" && convert !== undefined);
   const articleProps: DocArticleSurfaceProps = {
     copy,
@@ -290,6 +296,14 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
           copy={copy}
           blockId={overlay.blockId}
           pages={pickerPages}
+          callbacks={callbacks}
+        />
+      ) : null}
+      {overlay.kind === "boardPicker" && pickerBoards ? (
+        <DocBoardPickerDialogSurface
+          copy={copy}
+          blockId={overlay.blockId}
+          boards={pickerBoards}
           callbacks={callbacks}
         />
       ) : null}

@@ -174,6 +174,12 @@ export const vi = {
       "Khối này chưa chỉnh sửa được ở đây; nội dung vẫn được giữ nguyên.",
     codeLanguage: "Ngôn ngữ của khối mã",
     codePlain: "Văn bản thuần",
+    boardReference: {
+      choose: "Chọn một board để nhúng",
+      loading: "Đang tải board",
+      unavailable: "Board không khả dụng hoặc bạn không có quyền xem",
+      change: "Đổi board",
+    },
     pageReference: {
       choose: "Chọn một trang để liên kết",
       unavailable: "Trang không khả dụng",
@@ -202,6 +208,12 @@ export const vi = {
     search: "Tìm trang theo tên",
     none: "Không có trang nào khớp.",
     untitled: "Tài liệu chưa đặt tên",
+  },
+  boardPicker: {
+    title: "Nhúng board",
+    close: "Đóng",
+    search: "Tìm board theo tên",
+    none: "Không có board nào khớp.",
   },
   convert: {
     title: "Chuyển thành việc",
@@ -556,6 +568,12 @@ export const en: DocPageCopy = {
       "This block can't be edited here yet; its content is kept as is.",
     codeLanguage: "Code block language",
     codePlain: "Plain text",
+    boardReference: {
+      choose: "Choose a board to embed",
+      loading: "Loading board",
+      unavailable: "Board unavailable or you do not have access",
+      change: "Change board",
+    },
     pageReference: {
       choose: "Choose a page to link",
       unavailable: "Page unavailable",
@@ -584,6 +602,12 @@ export const en: DocPageCopy = {
     search: "Search pages by name",
     none: "No page matches.",
     untitled: "Untitled document",
+  },
+  boardPicker: {
+    title: "Embed a board",
+    close: "Close",
+    search: "Search boards by name",
+    none: "No board matches.",
   },
   convert: {
     title: "Turn into a task",

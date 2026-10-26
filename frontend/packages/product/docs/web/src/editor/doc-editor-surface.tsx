@@ -43,6 +43,7 @@ export function DocEditorSurface({
             editor={editor}
             copy={copy}
             onPickPage={callbacks?.onOpenPagePicker}
+            onPickBoard={callbacks?.onOpenBoardPicker}
           />
           <MentionTrigger
             editor={editor}

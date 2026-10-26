@@ -527,7 +527,12 @@ function referenceNode(
         <NodeShell node={props.node} context={context}>
           {(view, ctx) =>
             view.kind === "liveTable" ? (
-              <DocLiveTable block={view} copy={ctx.copy} />
+              <DocLiveTable
+                block={view}
+                copy={ctx.copy}
+                readOnly={ctx.readOnly}
+                callbacks={ctx.callbacks}
+              />
             ) : view.kind === "pageReference" ? (
               <DocPageReference
                 block={view}

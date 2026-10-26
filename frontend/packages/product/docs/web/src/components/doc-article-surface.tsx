@@ -393,11 +393,67 @@ export function DocPageReference({
 export function DocLiveTable({
   block,
   copy,
+  readOnly = true,
+  callbacks,
 }: {
   block: Extract<DocBlockView, { kind: "liveTable" }>;
   copy: DocPageCopy;
+  readOnly?: boolean;
+  callbacks?: DocPageCallbacks;
 }) {
   const noteId = `live-note-${block.id}`;
+  const b = copy.blocks.boardReference;
+  const choose =
+    !readOnly && callbacks?.onOpenBoardPicker
+      ? () => callbacks.onOpenBoardPicker?.(block.id)
+      : undefined;
+  if (block.state !== "ready" && block.tasks.length === 0) {
+    return (
+      <div
+        data-block={block.id}
+        data-state={block.state}
+        className="mt-1.5 mb-5 flex items-center gap-2 rounded-[12px] border border-line-strong bg-doc-panel px-3.5 py-2.5 text-nav leading-[1.45]"
+      >
+        {block.state === "unset" ? (
+          <button
+            type="button"
+            disabled={!choose}
+            onClick={choose}
+            className="border-0 bg-transparent p-0 text-left font-medium text-brand-subtle-foreground outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:text-meta-foreground"
+          >
+            {b.choose}
+          </button>
+        ) : block.state === "loading" ? (
+          <span role="status" className="text-meta-foreground">
+            {b.loading}
+          </span>
+        ) : (
+          <span className="flex items-center gap-2 text-meta-foreground">
+            <Lock aria-hidden="true" className="size-3.5 stroke-[1.8]" />
+            {b.unavailable}
+          </span>
+        )}
+        {block.state !== "unset" && choose ? (
+          <button
+            type="button"
+            onClick={choose}
+            className="ml-auto border-0 bg-transparent p-0 text-crumb font-medium text-brand-subtle-foreground outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+          >
+            {b.change}
+          </button>
+        ) : null}
+      </div>
+    );
+  }
+  const summary = block.counts
+    ? (["todo", "doing", "review", "done"] as const)
+        .filter((status) => block.counts?.[status])
+        .map(
+          (status) =>
+            `${copy.blocks.tableStatus[status]} ${block.counts?.[status] ?? 0}`,
+        )
+        .join(" · ")
+    : "";
   const restricted = block.tasks.filter(isRestrictedTask);
   const visible = block.tasks.filter(
     (task): task is DocTaskRef => !isRestrictedTask(task),
@@ -420,8 +476,20 @@ export function DocLiveTable({
             className="size-3.5 shrink-0 stroke-[1.8]"
           />
           <b className="font-semibold text-foreground">{block.boardName}</b>·{" "}
-          {block.filterLabel}
+          {summary || block.filterLabel}
           {headerLink}
+          {choose ? (
+            <button
+              type="button"
+              onClick={choose}
+              className={cn(
+                "border-0 bg-transparent p-0 font-medium text-brand-subtle-foreground outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
+                !block.boardHref && "ml-auto",
+              )}
+            >
+              {b.change}
+            </button>
+          ) : null}
         </div>
         {visible.length === 0 && restricted.length === 0 ? (
           <div className="px-3.5 py-3 text-nav text-meta-foreground leading-[1.45]">

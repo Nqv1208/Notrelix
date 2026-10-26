@@ -20,6 +20,7 @@ import {
   type Page,
 } from "@notrelix/docs-state";
 import type {
+  DocBoardEmbed,
   DocPageHost,
   DocPageHostInput,
   DocPerson,
@@ -266,6 +267,77 @@ export const useDocPageHost: UseDocPageHost = (
     // The query arrays are new each render; their signature drives the memo.
   }, [now, taskIds, workspaceId, tasksSignature]);
 
+  // Boards the page embeds: each read with the viewer's own access, so a
+  // board they cannot read shows as unavailable (never as missing).
+  const embedKey = boardIds.join("|");
+  const embedQueries = useQueries({
+    queries: boardIds.map((id) => ({
+      queryKey: wmQueryKeys.fullBoard(workspaceId, id),
+      queryFn: () => services.boards.getFullBoard(id, { workspaceId }),
+      staleTime: 10_000,
+      retry: false,
+    })),
+  });
+  const embedSignature = embedQueries
+    .map((query) => `${query.status}:${query.dataUpdatedAt}`)
+    .join("|");
+  const embeddedBoards = useMemo(() => {
+    const map = new Map<string, DocBoardEmbed>();
+    boardIds.forEach((id, index) => {
+      const query = embedQueries[index];
+      const title = boards.data?.find((entry) => entry.id === id)?.title ?? "";
+      const href = destinationHref(workspaceId, {
+        section: "board",
+        boardId: id,
+      });
+      const counts = { todo: 0, doing: 0, review: 0, done: 0 };
+      if (!query || query.isPending) {
+        map.set(id, {
+          state: "loading",
+          name: title,
+          href,
+          counts,
+          total: 0,
+          tasks: [],
+        });
+        return;
+      }
+      if (query.isError || !query.data) {
+        map.set(id, {
+          state: "unavailable",
+          name: "",
+          counts,
+          total: 0,
+          tasks: [],
+        });
+        return;
+      }
+      const cards = query.data.groups.flatMap((group) => group.cards ?? []);
+      const refs = cards.map((card) =>
+        toTaskRef(card as unknown as CardDetail, now, href),
+      );
+      for (const ref of refs) counts[ref.status] += 1;
+      map.set(id, {
+        state: "ready",
+        name: title || (query.data as { title?: string }).title || "",
+        href,
+        counts,
+        total: refs.length,
+        tasks: refs.slice(0, 5),
+      });
+    });
+    return map;
+    // The query array is new each render; its signature drives the memo.
+  }, [boards.data, embedKey, embedSignature, now, workspaceId]);
+
+  const boardChoices = useMemo(
+    () =>
+      (boards.data ?? [])
+        .filter((candidate) => !candidate.isArchived)
+        .map((candidate) => ({ id: candidate.id, title: candidate.title })),
+    [boards.data],
+  );
+
   // The board of the page's task table (first referenced board).
   const boardId = boardIds[0] ?? null;
   const board = useMemo(() => {
@@ -441,6 +513,8 @@ export const useDocPageHost: UseDocPageHost = (
     tasks,
     tasksReady,
     board,
+    boards: embeddedBoards,
+    boardChoices,
     suggestTasks,
     share,
     viewerReason:

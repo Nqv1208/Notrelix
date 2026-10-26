@@ -215,6 +215,8 @@ export const BLOCKS: readonly DocBlockView[] = [
   {
     id: "b13",
     kind: "liveTable",
+    boardId: "board-erp",
+    state: "ready",
     boardName: "Triển khai ERP Q4",
     filterLabel: "Phân hệ Kế toán · chưa xong",
     boardHref: "#",
