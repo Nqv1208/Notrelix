@@ -533,8 +533,7 @@ export function ItemPageRail({
   // Unset optional fields fold away; "Hiện N trường trống" brings them back.
   const [showEmpty, setShowEmpty] = useState(false);
   const hiddenKeys = new Set<string>();
-  if (!startDate && !conflictOn("startDate")) hiddenKeys.add("startDate");
-  if (!dueAt && !conflictOn("due")) hiddenKeys.add("due");
+  // "Hạn chót" and "Ngày bắt đầu" always show, as Final-Detail draws them.
   for (const field of customFields) {
     const raw = card.fieldValues[field.id];
     if (raw === undefined || raw === null || raw === "")

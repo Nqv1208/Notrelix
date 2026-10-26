@@ -403,7 +403,10 @@ internal static class InitDb
                         2 => ("Assignee", FieldType.Person, true, emptySettings, Array.Empty<(string, string)>()),
                         3 => ("Due Date", FieldType.Date, false, emptySettings, Array.Empty<(string, string)>()),
                         4 => ("Description", FieldType.LongText, false, emptySettings, Array.Empty<(string, string)>()),
-                        _ => ("Priority", FieldType.Select, false, emptySettings, PriorityOptions),
+                        5 => ("Priority", FieldType.Select, false, emptySettings, PriorityOptions),
+                        6 => ("Effort", FieldType.Number, false, emptySettings, Array.Empty<(string, string)>()),
+                        7 => ("Reviewed", FieldType.Checkbox, false, emptySettings, Array.Empty<(string, string)>()),
+                        _ => ($"Estimate {f - 7}", FieldType.Number, false, emptySettings, Array.Empty<(string, string)>()),
                     };
 
                     var field = BoardField.Create(

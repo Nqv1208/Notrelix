@@ -36,7 +36,8 @@ internal static partial class DevelopmentSeedRepair
         var emailsConfirmed = await ConfirmSeedEmailsAsync(context, now, ct);
         var ownersRepaired = await EnsureSeedOwnersAsync(context, now, ct);
         var (spacesCreated, boardsPlaced) = await EnsureSeedSpacesAsync(context, now, ct);
-        return new SeedRepairResult(emailsConfirmed, ownersRepaired, spacesCreated, boardsPlaced);
+        var fieldsRenamed = await RenameDuplicateSeedFieldsAsync(context, now, ct);
+        return new SeedRepairResult(emailsConfirmed, ownersRepaired, spacesCreated, boardsPlaced, fieldsRenamed);
     }
 
     private static async Task<int> ConfirmSeedEmailsAsync(
@@ -227,6 +228,73 @@ internal static partial class DevelopmentSeedRepair
         return (spacesCreated, boardsPlaced);
     }
 
+    // Names the seed gives the second, third... Select field of a board it once named "Priority" three times.
+    private static readonly string[] DuplicateSelectFieldNames = ["Severity", "Urgency"];
+
+    /// <summary>
+    /// An earlier seed named every extra field of a board "Priority", so a board showed three fields with the
+    /// same name. Renames the later duplicates of a seed board's field name (never the first, never a system
+    /// field); nothing is deleted and a second run finds no duplicate left.
+    /// </summary>
+    private static async Task<int> RenameDuplicateSeedFieldsAsync(
+        ApplicationDbContext context, DateTimeOffset now, CancellationToken ct)
+    {
+        if (await LoadSeedWorkspacesAsync(context, ct) is not { } workspaces)
+        {
+            return 0;
+        }
+
+        var renamed = 0;
+        foreach (var workspace in workspaces)
+        {
+            var ownerId = workspace.CreatedBy!.Value;
+            var seedBoardIds = (await context.Boards.Where(b => b.WorkspaceId == workspace.Id).ToListAsync(ct))
+                .Where(b => InitDb.DepartmentForBoardName(b.Title) is not null)
+                .Select(b => b.Id)
+                .ToList();
+            if (seedBoardIds.Count == 0)
+            {
+                continue;
+            }
+
+            var fields = await context.BoardFields
+                .Where(f => seedBoardIds.Contains(f.BoardId) && !f.IsSystem)
+                .ToListAsync(ct);
+            foreach (var board in fields.GroupBy(f => f.BoardId))
+            {
+                var taken = board.Select(f => f.Name.ToLowerInvariant()).ToHashSet();
+                foreach (var sameName in board.GroupBy(f => f.Name.ToLowerInvariant()).Where(g => g.Count() > 1))
+                {
+                    var later = sameName
+                        .OrderBy(f => f.Position.Value, StringComparer.Ordinal)
+                        .ThenBy(f => f.Id)
+                        .Skip(1)
+                        .ToList();
+                    for (var i = 0; i < later.Count; i++)
+                    {
+                        var candidate = i < DuplicateSelectFieldNames.Length
+                            ? DuplicateSelectFieldNames[i]
+                            : $"{later[i].Name} {i + 2}";
+                        while (!taken.Add(candidate.ToLowerInvariant()))
+                        {
+                            candidate += " *";
+                        }
+
+                        later[i].Rename(candidate, ownerId, now);
+                        renamed++;
+                    }
+                }
+            }
+        }
+
+        if (renamed > 0)
+        {
+            await SaveAsync(context, ct);
+        }
+
+        return renamed;
+    }
+
     private static async Task SaveAsync(ApplicationDbContext context, CancellationToken ct)
     {
         // Seed repair applies no product use case, so the domain events its changes raise are dropped,
@@ -243,7 +311,8 @@ internal static partial class DevelopmentSeedRepair
     }
 }
 
-internal sealed record SeedRepairResult(int EmailsConfirmed, int OwnersRepaired, int SpacesCreated, int BoardsPlaced)
+internal sealed record SeedRepairResult(
+    int EmailsConfirmed, int OwnersRepaired, int SpacesCreated, int BoardsPlaced, int FieldsRenamed = 0)
 {
-    public bool ChangedAnything => EmailsConfirmed + OwnersRepaired + SpacesCreated + BoardsPlaced > 0;
+    public bool ChangedAnything => EmailsConfirmed + OwnersRepaired + SpacesCreated + BoardsPlaced + FieldsRenamed > 0;
 }

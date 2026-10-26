@@ -686,7 +686,7 @@ describe.each([
     expect(screen.getAllByText(copy.states.offline.pending).length).toBe(2);
   });
 
-  it(`${fui("wm.item-page.surface:empty", locale)}folds the empty fields and invites the first sub-item (${locale})`, () => {
+  it(`${fui("wm.item-page.surface:empty", locale)}keeps the dates in view and invites the first sub-item (${locale})`, () => {
     const item = erpPageItem({
       descriptionMd: undefined,
       dueAt: null,
@@ -701,15 +701,12 @@ describe.each([
       callbacks: { ...callbacksMock(), onAddChildItem: vi.fn() },
     });
     const rail = within(screen.getByRole("complementary"));
-    expect(rail.queryByRole("button", { name: copy.rail.due })).toBeNull();
-    fireEvent.click(
-      rail.getByRole("button", {
-        name: new RegExp(
-          copy.states.empty.showFields_other.replace("{{count}}", "\\d+"),
-        ),
-      }),
-    );
+    // The due and start dates always show, as Final-Detail draws them; only
+    // empty custom fields fold away.
     expect(rail.getByRole("button", { name: copy.rail.due })).toBeTruthy();
+    expect(
+      rail.getByRole("button", { name: copy.rail.startDate }),
+    ).toBeTruthy();
     expect(screen.getByText(copy.states.empty.children)).toBeTruthy();
     fireEvent.click(
       screen.getByRole("button", { name: copy.states.empty.addChild }),
