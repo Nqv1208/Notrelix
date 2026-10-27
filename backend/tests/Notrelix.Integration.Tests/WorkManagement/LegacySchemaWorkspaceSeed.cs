@@ -26,6 +26,8 @@ internal static class LegacySchemaWorkspaceSeed
     /// the model so a later migration that changes board_items never breaks the seed. They are added
     /// nullable; the returned names go to <see cref="DropLaterItemColumnsAsync"/>.
     /// </summary>
+    // Identifiers come from the EF model, never from input, so the interpolated DDL is safe.
+#pragma warning disable EF1002
     public static async Task<IReadOnlyList<string>> AddLaterItemColumnsAsync(ApplicationDbContext context)
     {
         var entity = context.Model.FindEntityType(typeof(BoardItem))!;
@@ -48,4 +50,5 @@ internal static class LegacySchemaWorkspaceSeed
         foreach (var column in added)
             await context.Database.ExecuteSqlRawAsync($"ALTER TABLE work.board_items DROP COLUMN IF EXISTS \"{column}\"");
     }
+#pragma warning restore EF1002
 }
