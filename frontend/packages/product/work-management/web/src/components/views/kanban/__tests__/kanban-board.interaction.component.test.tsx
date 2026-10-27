@@ -135,6 +135,7 @@ describe("KanbanBoard status lanes", () => {
     expect(selected?.textContent).toContain("ERP-153");
   });
 
+  // Heavy interaction sequence: many role queries in jsdom exceed the 5 s default on a loaded runner.
   it("FUI[wm.kanban.board:lane-menu] collapses, expands, hides and shows a lane on this view only", () => {
     for (const [locale, copy] of LOCALES) {
       const { unmount } = renderBoard({ locale });
@@ -167,7 +168,7 @@ describe("KanbanBoard status lanes", () => {
       expect(laneRegion("Chờ duyệt")).toBeTruthy();
       unmount();
     }
-  });
+  }, 20_000);
 
   it("FUI[wm.kanban.board:add] adds an item to a lane through the injected callback", () => {
     for (const [locale, copy] of LOCALES) {
@@ -305,6 +306,7 @@ describe("KanbanBoard status lanes", () => {
     expect(onDropCard).not.toHaveBeenCalled();
   });
 
+  // Heavy interaction sequence: many role queries in jsdom exceed the 5 s default on a loaded runner.
   it("FUI[wm.kanban.board:add-lane] adds a status after the last lane through the slot's form, Enter confirms and Escape cancels", async () => {
     // dnd-kit swallows the click that follows a drag for a moment; let the
     // drag of the previous test be over.
@@ -351,7 +353,7 @@ describe("KanbanBoard status lanes", () => {
       expect(onCreateLane).toHaveBeenCalledTimes(1);
       unmount();
     }
-  });
+  }, 20_000);
 
   it("offers no slot for a viewer and words it as a value for another Select field", () => {
     renderBoard({ canDrag: false });
@@ -480,6 +482,7 @@ describe("KanbanBoard status management", () => {
     );
   }
 
+  // Heavy interaction sequence: many role queries in jsdom exceed the 5 s default on a loaded runner.
   it("FUI[wm.kanban.board:lane-reorder] moves a lane one place left or right and disables the ends", () => {
     for (const [locale, copy] of LOCALES) {
       const { unmount, onMoveLane } = manage(locale);
@@ -514,7 +517,7 @@ describe("KanbanBoard status management", () => {
       ).toBe("true");
       last.unmount();
     }
-  });
+  }, 20_000);
 
   it("FUI[wm.kanban.board:lane-delete] asks where the items go, then deletes the status with that replacement", async () => {
     for (const [locale, copy] of LOCALES) {

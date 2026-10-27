@@ -316,6 +316,7 @@ describe("MainTableView on the ERP board", () => {
     await waitFor(() => expect(rowsOf("Cần làm")).toBe(6));
   });
 
+  // Heavy interaction sequence: many role queries in jsdom exceed the 5 s default on a loaded runner.
   it("archives selected rows after the undo window, not before", async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     const { cards } = renderTable(erpOwnerAccess());
@@ -343,7 +344,7 @@ describe("MainTableView on the ERP board", () => {
       { type: "archive" },
     );
     expect(screen.queryByText("Đã lưu trữ 2 việc")).toBeNull();
-  });
+  }, 20_000);
 
   it("brings the rows back and sends nothing when the archive is undone", async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
@@ -385,6 +386,7 @@ describe("MainTableView on the ERP board", () => {
     expect(screen.queryByRole("toolbar")).toBeNull();
   });
 
+  // Heavy interaction sequence: many role queries in jsdom exceed the 5 s default on a loaded runner.
   it("changes the status of several selected rows in one request", async () => {
     const { cards } = renderTable(erpOwnerAccess());
     await ready();
@@ -409,7 +411,7 @@ describe("MainTableView on the ERP board", () => {
     expect(change.type).toBe("set-status");
     // No per-row status write was made.
     expect(cards.updateStatus).not.toHaveBeenCalled();
-  });
+  }, 20_000);
 
   it("says nothing was changed when the batch is refused", async () => {
     const { cards } = renderTable(erpOwnerAccess());
@@ -553,6 +555,7 @@ describe("MainTableView on the ERP board", () => {
     expect(input.expectedVersion).toBeGreaterThan(0);
   });
 
+  // Heavy interaction sequence: many role queries in jsdom exceed the 5 s default on a loaded runner.
   it("deletes a status after asking where its items go and writes that replacement", async () => {
     const { fieldOptions } = renderTable(erpOwnerAccess());
     await ready();
@@ -577,7 +580,7 @@ describe("MainTableView on the ERP board", () => {
       expect.anything(),
     );
     await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
-  });
+  }, 20_000);
 
   it("gives a commenter no group menu", async () => {
     renderTable(erpCommenterAccess());

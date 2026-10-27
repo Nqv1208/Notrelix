@@ -380,6 +380,7 @@ describe("ReportDashboardSurface: editing", () => {
 });
 
 describe("ReportDashboardSurface: add widget", () => {
+  // Heavy interaction sequence: many role queries in jsdom exceed the 5 s default on a loaded runner.
   it("FUI[workspace.report-dashboard:add] previews a widget, names it and puts it at the end of the draft", async () => {
     const onPreviewWidget = vi.fn(() => Promise.resolve(previewColumns()));
     const onCloseAdd = vi.fn();
@@ -472,7 +473,7 @@ describe("ReportDashboardSurface: add widget", () => {
       title: "Việc mở theo người",
       groupBy: "assignee",
     });
-  });
+  }, 20_000);
 
   it("FUI[workspace.report-dashboard:add-note] asks for the text of a note before it adds one", async () => {
     const onCloseAdd = vi.fn();

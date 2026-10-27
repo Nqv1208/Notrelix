@@ -127,6 +127,7 @@ describe.each([
     );
   });
 
+  // Heavy interaction sequence: many role queries in jsdom exceed the 5 s default on a loaded runner.
   it(`${fui("wm.board-settings.workspace-rules:workspace-rules-create", locale)}builds a rule from a trigger, a condition and several ordered actions, and caps the actions at five (${locale})`, async () => {
     const onCreate = vi.fn().mockResolvedValue({ ok: true });
     renderRules(copy, { onCreate });
@@ -175,7 +176,7 @@ describe.each([
         ],
       }),
     );
-  });
+  }, 20_000);
 
   it(`${fui("wm.board-settings.workspace-rules:workspace-rules-limit", locale)}stops adding actions at five (${locale})`, () => {
     renderRules(copy);

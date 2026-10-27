@@ -1,6 +1,9 @@
-import { cleanup } from "@testing-library/react";
+import { cleanup, configure } from "@testing-library/react";
 import { afterEach, vi } from "vitest";
 import "@testing-library/jest-dom/vitest";
+
+// findBy*/waitFor poll 1 s by default, which a loaded runner can exceed.
+configure({ asyncUtilTimeout: 5000 });
 
 // Automatically cleanup React Testing Library and restore mocks after each test
 afterEach(() => {

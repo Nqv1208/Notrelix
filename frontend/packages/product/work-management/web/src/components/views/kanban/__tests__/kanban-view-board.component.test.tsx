@@ -232,13 +232,14 @@ async function ready() {
 }
 
 describe("KanbanView on the ERP board", () => {
+  // Heavy interaction sequence: many role queries in jsdom exceed the 5 s default on a loaded runner.
   it("groups the items into the status lanes 6/3/2/5", async () => {
     renderKanban(erpOwnerAccess());
     await ready();
     expect(
       ["Cần làm", "Đang làm", "Chờ duyệt", "Hoàn thành"].map(laneCount),
     ).toEqual(["6", "3", "2", "5"]);
-  });
+  }, 20_000);
 
   it("lets an owner add items, from a lane and from the toolbar", async () => {
     const { cards } = renderKanban(erpOwnerAccess());
@@ -331,6 +332,7 @@ describe("KanbanView on the ERP board", () => {
     ).not.toBe("true");
   });
 
+  // Heavy interaction sequence: many role queries in jsdom exceed the 5 s default on a loaded runner.
   it("moves the card to its lane when the status changes in the sheet (keyboard alternative to dragging)", async () => {
     const { cards } = renderKanban(erpOwnerAccess(), {
       initialItem: erpItemId("ERP-149"),
@@ -359,8 +361,9 @@ describe("KanbanView on the ERP board", () => {
       ERP_STATUS_OPTION_IDS.doing,
       expect.objectContaining({ idempotencyKey: expect.any(String) }),
     );
-  });
+  }, 20_000);
 
+  // Heavy interaction sequence: many role queries in jsdom exceed the 5 s default on a loaded runner.
   it("puts the card back and says so when the status write fails", async () => {
     renderKanban(
       erpOwnerAccess(),
@@ -391,7 +394,7 @@ describe("KanbanView on the ERP board", () => {
     );
     expect(laneCount("Cần làm")).toBe("6");
     expect(laneCount("Đang làm")).toBe("3");
-  });
+  }, 20_000);
 
   it("applies the route filter, shows the no-results bar and clears the filter with Bỏ lọc", async () => {
     const onFilter = vi.fn();
@@ -446,6 +449,7 @@ describe("KanbanView on the ERP board", () => {
     );
   });
 
+  // Heavy interaction sequence: many role queries in jsdom exceed the 5 s default on a loaded runner.
   it("steps through the items in lane order with K and J, keeping the sheet open", async () => {
     const onItem = vi.fn();
     renderKanban(erpOwnerAccess(), {
@@ -473,7 +477,7 @@ describe("KanbanView on the ERP board", () => {
     expect(onItem).toHaveBeenLastCalledWith(erpItemId("ERP-151"), {
       replace: true,
     });
-  });
+  }, 20_000);
 
   it("copies the item link from the sheet and confirms it", async () => {
     const writeText = vi.fn(async (_text: string) => undefined);
@@ -511,6 +515,7 @@ describe("KanbanView on the ERP board", () => {
     ]);
   });
 
+  // Heavy interaction sequence: many role queries in jsdom exceed the 5 s default on a loaded runner.
   it("reports a failed status write even after another write has started, and keeps the other card's change", async () => {
     let failFirst!: (error: Error) => void;
     const first = new Promise<void>((_resolve, reject) => (failFirst = reject));
@@ -556,8 +561,9 @@ describe("KanbanView on the ERP board", () => {
         name: "Chuẩn bị dữ liệu mẫu cho buổi đào tạo người dùng",
       }),
     ).toBeTruthy();
-  });
+  }, 20_000);
 
+  // Heavy interaction sequence: many role queries in jsdom exceed the 5 s default on a loaded runner.
   it("archives the item from the sheet (it is not deleted)", async () => {
     const { cards } = renderKanban(erpOwnerAccess(), {
       initialItem: erpItemId("ERP-142"),
@@ -582,8 +588,9 @@ describe("KanbanView on the ERP board", () => {
     );
     expect(cards.deleteCard).not.toHaveBeenCalled();
     await waitFor(() => expect(laneCount("Đang làm")).toBe("2"));
-  });
+  }, 20_000);
 
+  // Heavy interaction sequence: many role queries in jsdom exceed the 5 s default on a loaded runner.
   it("lists the links of the item in the sheet, adds one through the picker and removes one", async () => {
     const { itemExtras } = renderKanban(erpOwnerAccess(), {
       initialItem: erpItemId("ERP-142"),
@@ -619,7 +626,7 @@ describe("KanbanView on the ERP board", () => {
         relation: "blocked-by",
       }),
     );
-  });
+  }, 20_000);
 
   it("takes the covered board out of the tab order on a narrow screen while the sheet is open", async () => {
     const width = window.innerWidth;

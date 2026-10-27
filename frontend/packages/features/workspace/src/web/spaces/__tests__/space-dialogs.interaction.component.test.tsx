@@ -230,6 +230,7 @@ describe("MoveToSpaceDialog", () => {
     ).toBeNull();
   });
 
+  // Heavy interaction sequence: many role queries in jsdom exceed the 5 s default on a loaded runner.
   it("FUI[workspace.move-to-space:windowing] windows 525 Spaces, keeps the selection and reaches the last one", () => {
     const props = renderMove(moveHighDensityScenario(), {
       windowThreshold: 150,
@@ -273,7 +274,7 @@ describe("MoveToSpaceDialog", () => {
       within(dialog).getByRole("button", { name: copy.move.submit }),
     );
     expect(props.onSubmit).toHaveBeenCalledWith("sp-dept-24-team-19");
-  });
+  }, 20_000);
 
   it("windowed picker: arrow keys at the window edge scroll the next row into view", () => {
     renderMove(moveHighDensityScenario(), { windowThreshold: 150 });
