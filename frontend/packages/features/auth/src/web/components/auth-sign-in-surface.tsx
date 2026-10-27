@@ -4,6 +4,7 @@ import {
   useState,
   type ClipboardEvent,
   type KeyboardEvent,
+  type ReactNode,
 } from "react";
 import { Clock, Lock, Mail, Timer } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
@@ -93,12 +94,12 @@ export function formatCountdown(seconds: number): string {
 
 export function AuthSignInSurface(props: AuthSignInSurfaceProps) {
   const { step } = props;
-  // The step changes the page: a key resets what was typed in the one before.
+  // Email and password are one form that grows (one key, so the typed email
+  // and the focus survive); the other steps are pages of their own.
   switch (step.kind) {
     case "email":
-      return <EmailStep key="email" {...props} step={step} />;
     case "password":
-      return <PasswordStep key="password" {...props} step={step} />;
+      return <CredentialsStep key="credentials" {...props} step={step} />;
     case "sso":
       return <SsoStep key="sso" {...props} step={step} />;
     case "otp":
@@ -108,7 +109,33 @@ export function AuthSignInSurface(props: AuthSignInSurfaceProps) {
   }
 }
 
-function EmailStep({
+/**
+ * A part of the form that opens and closes by animating its height (and
+ * fading), so the parts below slide instead of jumping. Closed parts are
+ * inert: out of the tab order and hidden from assistive technology.
+ */
+function Reveal({ open, children }: { open: boolean; children: ReactNode }) {
+  return (
+    <div
+      aria-hidden={open ? undefined : true}
+      inert={!open}
+      className={cn(
+        "grid transition-[grid-template-rows,opacity] duration-300 ease-out motion-reduce:transition-none",
+        open ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
+      )}
+    >
+      {/* The inner padding keeps focus rings inside the clipped box. */}
+      <div className="-m-1 min-h-0 overflow-hidden p-1">{children}</div>
+    </div>
+  );
+}
+
+/**
+ * Email, then password, in one form: after the email is checked the
+ * password field opens below it, the title fades to the next one and the
+ * button slides down. The email stays in place (read-only, with "Change").
+ */
+function CredentialsStep({
   copy,
   step,
   pending,
@@ -116,99 +143,258 @@ function EmailStep({
   onContinue,
   onProvider,
   onCreateWorkspace,
+  onSubmitPassword,
+  onChangeEmail,
+  onForgot,
+  onBack,
 }: AuthSignInSurfaceProps & {
-  step: Extract<AuthSignInStep, { kind: "email" }>;
+  step: Extract<AuthSignInStep, { kind: "email" | "password" }>;
 }) {
-  const t = copy.email;
-  const [email, setEmail] = useState(initialEmail);
+  const te = copy.email;
+  const tp = copy.password;
+  const isPassword = step.kind === "password";
+  const [email, setEmail] = useState(
+    step.kind === "password" ? step.email : initialEmail,
+  );
+  const [password, setPassword] = useState("");
   const [tried, setTried] = useState(false);
+  const emailRef = useRef<HTMLInputElement | null>(null);
+
+  const emailError = step.kind === "email" ? step.error : null;
   const invalid =
-    step.error === "invalid" || (tried && !EMAIL_SHAPE.test(email.trim()));
+    emailError === "invalid" || (tried && !EMAIL_SHAPE.test(email.trim()));
+  const locked = step.kind === "password" && (step.lockedSeconds ?? 0) > 0;
+  const lockedSeconds =
+    step.kind === "password" ? (step.lockedSeconds ?? 0) : 0;
+  const wrong = step.kind === "password" && step.error === "wrong";
+  const passwordUnreachable =
+    step.kind === "password" && step.error === "unreachable";
+
+  // Keep the email the flow settled on; move focus to the field that is next.
+  const settledEmail = step.kind === "password" ? step.email : null;
+  useEffect(() => {
+    if (settledEmail !== null) {
+      setEmail(settledEmail);
+      document.getElementById("auth-password")?.focus();
+    } else {
+      setPassword("");
+      emailRef.current?.focus();
+    }
+  }, [settledEmail]);
+  // A wrong password is not kept: the field starts empty for the next try.
+  useEffect(() => {
+    if (wrong && !pending) setPassword("");
+  }, [wrong, pending]);
+
+  const heading = isPassword
+    ? { title: tp.title, lead: tp.lead }
+    : { title: te.title, lead: te.lead };
+
   return (
     <>
-      <AuthHeading title={t.title} lead={t.lead} />
+      {/* Re-keyed so the new title fades in instead of snapping. */}
+      <div
+        key={step.kind}
+        className="animate-in fade-in-0 slide-in-from-bottom-1 duration-300 motion-reduce:animate-none"
+      >
+        <AuthHeading title={heading.title} lead={heading.lead} />
+      </div>
       <form
         noValidate
-        className="flex flex-col gap-4.5"
+        className="flex flex-col"
         onSubmit={(event) => {
           event.preventDefault();
+          if (isPassword) {
+            if (!locked && password) onSubmitPassword(password);
+            return;
+          }
           setTried(true);
           if (EMAIL_SHAPE.test(email.trim())) onContinue(email.trim());
         }}
       >
         <div className="flex flex-col gap-1.5">
           <label htmlFor="auth-email" className="text-item-ui font-semibold">
-            {t.label}
+            {te.label}
           </label>
-          <input
-            id="auth-email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            value={email}
-            placeholder={t.placeholder}
-            aria-invalid={invalid || undefined}
-            aria-describedby={invalid ? "auth-email-error" : undefined}
-            onChange={(event) => setEmail(event.target.value)}
-            className={INPUT_CLASS}
-          />
+          <div className="relative">
+            <input
+              ref={emailRef}
+              id="auth-email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              value={email}
+              readOnly={isPassword}
+              placeholder={te.placeholder}
+              aria-invalid={invalid || undefined}
+              aria-describedby={invalid ? "auth-email-error" : undefined}
+              onChange={(event) => setEmail(event.target.value)}
+              className={cn(INPUT_CLASS, isPassword && "pr-20")}
+            />
+            {isPassword ? (
+              <button
+                type="button"
+                aria-label={tp.changeLabel}
+                onClick={onChangeEmail}
+                className={cn(
+                  LINK_BUTTON_CLASS,
+                  "absolute top-1/2 right-2 -translate-y-1/2 px-2 py-1",
+                )}
+              >
+                {tp.change}
+              </button>
+            ) : null}
+          </div>
           {invalid ? (
-            <FieldError id="auth-email-error">{t.invalid}</FieldError>
+            <FieldError id="auth-email-error">{te.invalid}</FieldError>
           ) : null}
-          {step.error === "unreachable" ? (
-            <FieldError>{t.unreachable}</FieldError>
+          {emailError === "unreachable" ? (
+            <FieldError>{te.unreachable}</FieldError>
           ) : null}
-          {step.error === "mfa-required" ? (
-            <FieldError>{t.mfaRequired}</FieldError>
+          {emailError === "mfa-required" ? (
+            <FieldError>{te.mfaRequired}</FieldError>
           ) : null}
-          {step.error === "provider-failed" ? (
-            <FieldError>{t.providerFailed}</FieldError>
+          {emailError === "provider-failed" ? (
+            <FieldError>{te.providerFailed}</FieldError>
           ) : null}
         </div>
+
+        <Reveal open={isPassword}>
+          <div className="flex flex-col gap-1.5 pt-4.5">
+            <div className="flex items-baseline justify-between gap-3">
+              <label
+                htmlFor="auth-password"
+                className="text-item-ui font-semibold"
+              >
+                {tp.label}
+              </label>
+              <button
+                type="button"
+                onClick={onForgot}
+                className={LINK_BUTTON_CLASS}
+              >
+                {tp.forgot}
+              </button>
+            </div>
+            <PasswordField
+              id="auth-password"
+              value={password}
+              onChange={setPassword}
+              invalid={wrong}
+              describedBy={wrong ? "auth-password-error" : undefined}
+              autoComplete="current-password"
+              showLabel={tp.show}
+              hideLabel={tp.hide}
+            />
+            {wrong ? (
+              <FieldError id="auth-password-error">{tp.wrong}</FieldError>
+            ) : null}
+            {passwordUnreachable ? (
+              <FieldError>{tp.unreachable}</FieldError>
+            ) : null}
+          </div>
+        </Reveal>
+
+        <Reveal open={locked}>
+          {locked ? (
+            <div
+              role="status"
+              className="mt-4.5 flex items-start gap-2.5 rounded-[10px] bg-warning-subtle px-3.5 py-3 text-item-ui text-foreground"
+            >
+              <Timer
+                aria-hidden="true"
+                className="mt-0.5 size-4 shrink-0 text-warning-text"
+              />
+              <div>
+                <b className="block font-semibold text-warning-text">
+                  {fillAuthCopy(tp.lockTitle, { seconds: lockedSeconds })}
+                </b>
+                <p className="mt-0.5 mb-0">{tp.lockBody}</p>
+              </div>
+            </div>
+          ) : null}
+        </Reveal>
+
         <button
           type="submit"
-          disabled={pending}
-          className={BUTTON_CLASS.primary}
+          disabled={locked || pending}
+          aria-label={
+            locked
+              ? `${tp.lockedButton}${fillAuthCopy(tp.lockedLabel, { seconds: lockedSeconds })}`
+              : undefined
+          }
+          className={cn(BUTTON_CLASS.primary, "mt-4.5")}
         >
-          {pending ? t.checking : t.continue}
+          {locked ? (
+            <>
+              <Clock aria-hidden="true" className="size-4" />
+              {tp.lockedButton}
+              <span aria-hidden="true">·</span>
+              <span aria-hidden="true" className="font-mono">
+                {formatCountdown(lockedSeconds)}
+              </span>
+            </>
+          ) : isPassword ? (
+            pending ? (
+              tp.signingIn
+            ) : (
+              tp.signIn
+            )
+          ) : pending ? (
+            te.checking
+          ) : (
+            te.continue
+          )}
         </button>
       </form>
-      <div
-        role="separator"
-        className="flex items-center gap-3 text-crumb text-meta-foreground before:h-px before:flex-1 before:bg-line after:h-px after:flex-1 after:bg-line"
-      >
-        {t.or}
+
+      <div className="flex flex-col">
+        <Reveal open={!isPassword}>
+          <div className="flex flex-col gap-5">
+            <div
+              role="separator"
+              className="flex items-center gap-3 text-crumb text-meta-foreground before:h-px before:flex-1 before:bg-line after:h-px after:flex-1 after:bg-line"
+            >
+              {te.or}
+            </div>
+            <div className="flex flex-col gap-2.5">
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => onProvider("google")}
+                className={BUTTON_CLASS.outline}
+              >
+                <GoogleMark className="size-4.5 shrink-0" />
+                {te.google}
+              </button>
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => onProvider("microsoft")}
+                className={BUTTON_CLASS.outline}
+              >
+                <MicrosoftMark className="size-4.5 shrink-0" />
+                {te.microsoft}
+              </button>
+            </div>
+            <p className="m-0 text-center text-item-ui text-muted-foreground">
+              {te.noAccount}{" "}
+              <button
+                type="button"
+                onClick={onCreateWorkspace}
+                className={LINK_BUTTON_CLASS}
+              >
+                {te.createWorkspace}
+              </button>
+            </p>
+          </div>
+        </Reveal>
+        <Reveal open={isPassword}>
+          <button type="button" onClick={onBack} className={LINK_BUTTON_CLASS}>
+            {tp.other}
+          </button>
+        </Reveal>
       </div>
-      <div className="flex flex-col gap-2.5">
-        <button
-          type="button"
-          disabled={pending}
-          onClick={() => onProvider("google")}
-          className={BUTTON_CLASS.outline}
-        >
-          <GoogleMark className="size-4.5 shrink-0" />
-          {t.google}
-        </button>
-        <button
-          type="button"
-          disabled={pending}
-          onClick={() => onProvider("microsoft")}
-          className={BUTTON_CLASS.outline}
-        >
-          <MicrosoftMark className="size-4.5 shrink-0" />
-          {t.microsoft}
-        </button>
-      </div>
-      <p className="m-0 text-center text-item-ui text-muted-foreground">
-        {t.noAccount}{" "}
-        <button
-          type="button"
-          onClick={onCreateWorkspace}
-          className={LINK_BUTTON_CLASS}
-        >
-          {t.createWorkspace}
-        </button>
-      </p>
     </>
   );
 }
@@ -247,130 +433,6 @@ function WhoRow({
         </button>
       ) : null}
     </div>
-  );
-}
-
-function PasswordStep({
-  copy,
-  step,
-  pending,
-  onSubmitPassword,
-  onChangeEmail,
-  onForgot,
-  onBack,
-}: AuthSignInSurfaceProps & {
-  step: Extract<AuthSignInStep, { kind: "password" }>;
-}) {
-  const t = copy.password;
-  const [password, setPassword] = useState("");
-  const locked = (step.lockedSeconds ?? 0) > 0;
-  const wrong = step.error === "wrong";
-  // A wrong password is not kept: the field starts empty for the next try.
-  useEffect(() => {
-    if (wrong && !pending) setPassword("");
-  }, [wrong, pending]);
-  return (
-    <>
-      <AuthHeading title={t.title} lead={t.lead} />
-      <WhoRow
-        email={step.email}
-        change={t.change}
-        changeLabel={t.changeLabel}
-        onChange={onChangeEmail}
-      />
-      <form
-        noValidate
-        className="flex flex-col gap-4.5"
-        onSubmit={(event) => {
-          event.preventDefault();
-          if (!locked && password) onSubmitPassword(password);
-        }}
-      >
-        <div className="flex flex-col gap-1.5">
-          <div className="flex items-baseline justify-between gap-3">
-            <label
-              htmlFor="auth-password"
-              className="text-item-ui font-semibold"
-            >
-              {t.label}
-            </label>
-            <button
-              type="button"
-              onClick={onForgot}
-              className={LINK_BUTTON_CLASS}
-            >
-              {t.forgot}
-            </button>
-          </div>
-          <PasswordField
-            id="auth-password"
-            value={password}
-            onChange={setPassword}
-            invalid={wrong}
-            describedBy={wrong ? "auth-password-error" : undefined}
-            autoComplete="current-password"
-            showLabel={t.show}
-            hideLabel={t.hide}
-            autoFocus
-          />
-          {wrong ? (
-            <FieldError id="auth-password-error">{t.wrong}</FieldError>
-          ) : null}
-          {step.error === "unreachable" ? (
-            <FieldError>{t.unreachable}</FieldError>
-          ) : null}
-        </div>
-        {locked ? (
-          <div
-            role="status"
-            className="flex items-start gap-2.5 rounded-[10px] bg-warning-subtle px-3.5 py-3 text-item-ui text-foreground"
-          >
-            <Timer
-              aria-hidden="true"
-              className="mt-0.5 size-4 shrink-0 text-warning-text"
-            />
-            <div>
-              <b className="block font-semibold text-warning-text">
-                {fillAuthCopy(t.lockTitle, {
-                  seconds: step.lockedSeconds ?? 0,
-                })}
-              </b>
-              <p className="mt-0.5 mb-0">{t.lockBody}</p>
-            </div>
-          </div>
-        ) : null}
-        <button
-          type="submit"
-          disabled={locked || pending}
-          aria-label={
-            locked
-              ? `${t.lockedButton}${fillAuthCopy(t.lockedLabel, { seconds: step.lockedSeconds ?? 0 })}`
-              : undefined
-          }
-          className={BUTTON_CLASS.primary}
-        >
-          {locked ? (
-            <>
-              <Clock aria-hidden="true" className="size-4" />
-              {t.lockedButton}
-              <span aria-hidden="true">·</span>
-              <span aria-hidden="true" className="font-mono">
-                {formatCountdown(step.lockedSeconds ?? 0)}
-              </span>
-            </>
-          ) : pending ? (
-            t.signingIn
-          ) : (
-            t.signIn
-          )}
-        </button>
-      </form>
-      <div>
-        <button type="button" onClick={onBack} className={LINK_BUTTON_CLASS}>
-          {t.other}
-        </button>
-      </div>
-    </>
   );
 }
 

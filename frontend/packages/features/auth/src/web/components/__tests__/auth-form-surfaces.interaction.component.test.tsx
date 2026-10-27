@@ -85,7 +85,9 @@ describe("auth sign-in surface", () => {
         })}
       />,
     );
-    expect(screen.getByText(AUTH_PERSONAL_EMAIL)).toBeTruthy();
+    // The email stays in its own (now read-only) field above the password.
+    const emailField = screen.getByDisplayValue(AUTH_PERSONAL_EMAIL);
+    expect(emailField.hasAttribute("readonly")).toBe(true);
     const field = screen.getByLabelText(
       copy.password.label,
     ) as HTMLInputElement;
