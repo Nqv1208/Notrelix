@@ -1,5 +1,6 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardItemTrash;
 using Notrelix.Application.Features.WorkManagement.Ordering;
 using Notrelix.Domain.SharedKernel.Ordering;
 
@@ -42,6 +43,9 @@ public class RestoreBoardItemCommandHandler : IRequestHandler<RestoreBoardItemCo
             .IgnoreQueryFilters()
             .FirstOrDefaultAsync(i => i.Id == request.BoardItemId && i.AccountId == accountId && i.WorkspaceId == workspaceId, ct);
         if (item is null) throw new NotFoundException(nameof(BoardItem), request.BoardItemId);
+
+        if (item.DeletedAt is { } deletedAt && _dateTimeProvider.UtcNow - deletedAt > BoardItemTrashPolicy.RestoreWindow)
+            throw new ConflictException("This item was deleted more than 30 days ago and can no longer be restored.", "work-management.item.restore-window-closed");
 
         // A deleted root item's key may have been reissued to an active sibling;
         // restore keeps the key when free, otherwise lands right after its holder.

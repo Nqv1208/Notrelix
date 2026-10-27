@@ -44,4 +44,11 @@ public class BoardItemMember : Entity, IWorkspaceScoped
 
         return member;
     }
+
+    /// <summary>The assignment follows its Item to the board the Item moved to.</summary>
+    public void FollowItemToBoard(Guid boardId)
+    {
+        Guard.NotEmpty(boardId);
+        BoardId = boardId;
+    }
 }
