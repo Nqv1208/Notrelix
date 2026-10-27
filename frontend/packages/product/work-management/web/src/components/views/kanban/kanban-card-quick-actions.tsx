@@ -29,6 +29,8 @@ export interface KanbanCardActions {
   readonly onCopyLink?: (cardId: string) => void;
   readonly onDuplicate?: (cardId: string) => void;
   readonly onArchive?: (cardId: string) => void;
+  readonly onDelete?: (cardId: string) => void;
+  readonly onMoveToBoard?: (cardId: string) => void;
 }
 
 /** `YYYY-MM-DD` of the day the card is due (the backend keeps UTC days). */
@@ -68,10 +70,20 @@ export function KanbanCardQuickActions({
   onDueOpenChange: (open: boolean) => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const { onAssignMe, onSetDue, onCopyLink, onDuplicate, onArchive } = actions;
+  const {
+    onAssignMe,
+    onSetDue,
+    onCopyLink,
+    onDuplicate,
+    onArchive,
+    onDelete,
+    onMoveToBoard,
+  } = actions;
   const canAssign =
     Boolean(onAssignMe) && !isAssignedTo(card, actions.currentUserId);
-  const hasMenu = Boolean(onCopyLink || onDuplicate || onArchive);
+  const hasMenu = Boolean(
+    onCopyLink || onDuplicate || onArchive || onDelete || onMoveToBoard,
+  );
   if (!canAssign && !onSetDue && !hasMenu) return null;
   const pinned = dueOpen || menuOpen;
   const day = cardDueDay(card);
@@ -175,9 +187,22 @@ export function KanbanCardQuickActions({
                 {copy.duplicate}
               </DropdownMenuItem>
             ) : null}
+            {onMoveToBoard ? (
+              <DropdownMenuItem onSelect={() => onMoveToBoard(card.id)}>
+                {copy.moveToBoard}
+              </DropdownMenuItem>
+            ) : null}
             {onArchive ? (
               <DropdownMenuItem onSelect={() => onArchive(card.id)}>
                 {copy.archive}
+              </DropdownMenuItem>
+            ) : null}
+            {onDelete ? (
+              <DropdownMenuItem
+                variant="destructive"
+                onSelect={() => onDelete(card.id)}
+              >
+                {copy.delete}
               </DropdownMenuItem>
             ) : null}
           </DropdownMenuContent>

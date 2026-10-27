@@ -149,6 +149,7 @@ public static class DependencyInjection
         services.AddScoped<MoveBoardItemUseCase>();
         services.AddScoped<IWorkItemActions, WorkItemActions>();
         services.AddScoped<IWorkItemActionAuthorizer, WorkItemActionAuthorizer>();
+        services.AddScoped<IBoardItemTargetAuthorizer, BoardItemTargetAuthorizer>();
         services.AddScoped<Notrelix.Application.Features.Workspaces.Spaces.Services.ISpaceTargetAuthorizer,
             Notrelix.Application.Features.Workspaces.Spaces.Services.SpaceTargetAuthorizer>();
         services.AddScoped<Notrelix.Application.Features.Workspaces.Spaces.Services.ISpaceContentReader,

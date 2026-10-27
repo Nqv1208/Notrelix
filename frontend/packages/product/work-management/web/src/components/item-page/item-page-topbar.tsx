@@ -65,7 +65,10 @@ export function ItemPageTopbar({
     callbacks.onRequestApproval !== undefined &&
     approvers.length > 0;
   const hasMenu =
-    capabilities.canCreateCard || capabilities.canDelete || canAsk;
+    capabilities.canCreateCard ||
+    capabilities.canDelete ||
+    canAsk ||
+    Boolean(callbacks.onMoveToBoard);
 
   return (
     <header className="flex h-13.25 shrink-0 items-center gap-1.5 border-b border-line bg-background pr-4 pl-3 sm:pl-5">
@@ -224,9 +227,24 @@ export function ItemPageTopbar({
                 </DropdownMenuSubContent>
               </DropdownMenuSub>
             ) : null}
+            {capabilities.canMoveCard && callbacks.onMoveToBoard ? (
+              <DropdownMenuItem
+                onSelect={() => callbacks.onMoveToBoard?.(card.id)}
+              >
+                {t.moveToBoard}
+              </DropdownMenuItem>
+            ) : null}
             {capabilities.canDelete ? (
               <DropdownMenuItem onSelect={() => callbacks.onArchive(card.id)}>
                 {t.archive}
+              </DropdownMenuItem>
+            ) : null}
+            {capabilities.canDelete && callbacks.onDelete ? (
+              <DropdownMenuItem
+                variant="destructive"
+                onSelect={() => callbacks.onDelete?.(card.id)}
+              >
+                {t.delete}
               </DropdownMenuItem>
             ) : null}
           </DropdownMenuContent>

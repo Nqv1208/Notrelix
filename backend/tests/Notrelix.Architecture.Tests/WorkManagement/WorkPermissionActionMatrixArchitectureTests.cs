@@ -77,6 +77,8 @@ public sealed class WorkPermissionActionMatrixArchitectureTests
         ["BoardItems.ListChildItemsQuery"] = PermissionAction.ViewBoard,
         ["BoardItems.ArchiveBoardItemCommand"] = PermissionAction.UpdateItem,
         ["BoardItems.BulkUpdateBoardItemsCommand"] = PermissionAction.UpdateItem,
+        ["BoardItems.MoveBoardItemToBoardCommand"] = PermissionAction.UpdateItem,
+        ["BoardItems.ListBoardItemTrashQuery"] = PermissionAction.UpdateItem,
         ["BoardItems.RemindBoardItemOwnersCommand"] = PermissionAction.ViewBoard,
         ["BoardItems.UnarchiveBoardItemCommand"] = PermissionAction.UpdateItem,
         ["BoardItems.DeleteBoardItemCommand"] = PermissionAction.UpdateItem,

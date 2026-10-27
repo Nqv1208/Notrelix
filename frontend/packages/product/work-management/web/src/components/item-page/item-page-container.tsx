@@ -46,6 +46,7 @@ import { withBoardPriority } from "../shared/item-priority";
 import type { TaskDetailCallbacks } from "../card-detail/task-detail-types";
 import { useItemPageCopy } from "./use-item-page-copy";
 import { formatFileSize } from "./item-page-format";
+import { useItemRemoval } from "../item-lifecycle/use-item-removal";
 import { saveBlobAs } from "./save-blob";
 import { ItemPageSurface } from "./item-page-surface";
 import type {
@@ -499,6 +500,13 @@ function ItemPageReady({
         childItems: pendingChildItems,
       };
 
+  const removal = useItemRemoval({
+    workspaceId: card.workspaceId,
+    boardId: card.boardId,
+    titleOf: () => card.title,
+    onGone: () => onBack(),
+  });
+
   const callbacks: TaskDetailCallbacks = {
     onClose: onBack,
     onRenameTitle: (cardId, patch) => updateCard.mutate({ cardId, patch }),
@@ -519,6 +527,8 @@ function ItemPageReady({
       archiveCard.mutate(cardId);
       onBack();
     },
+    onDelete: capabilities.canDelete ? removal.requestDelete : undefined,
+    onMoveToBoard: capabilities.canMoveCard ? removal.requestMove : undefined,
     onUpdateFieldValue: (payload) => {
       setRefused(null);
       // The Status pill writes through the status endpoint, like a drag.
@@ -557,94 +567,97 @@ function ItemPageReady({
     }));
 
   return (
-    <ItemPageSurface
-      status="ready"
-      board={board}
-      card={card}
-      capabilities={capabilities}
-      callbacks={callbacks}
-      navigation={navigation(position)}
-      copy={copy}
-      sheetCopy={sheetCopy}
-      now={now}
-      space={space}
-      viewer={viewer}
-      creatorName={created?.actor ?? null}
-      access={
-        access
-          ? {
-              level: access.myLevel,
-              grantedBy: access.mySource.grantedBy?.name,
-            }
-          : null
-      }
-      conflict={conflict}
-      offline={offline}
-      uploads={uploads}
-      onRetryUpload={fileUploads.retry}
-      onDismissUpload={fileUploads.dismiss}
-      people={{
-        people: directory?.people ?? [],
-        teams: directory?.teams ?? [],
-        loading: directory === null,
-        canInvite: directory?.canInvite === true,
-        onInvite: () => undefined,
-      }}
-      lifecycle={{
-        completed: isItemDone(card) ? (lifecycle?.completed ?? null) : null,
-        archived: lifecycle?.archived ?? null,
-        onRestore: () => restore(),
-        onReopen: () => reopen(),
-      }}
-      onResolveConflict={(choice) => {
-        const write = refused;
-        setRefused(null);
-        if (choice === "mine") write?.send();
-      }}
-      activeTab={activeTab}
-      onSelectTab={onSelectTab}
-      detailData={{
-        files: files.data ?? card.files,
-        filesLoading: files.isLoading,
-        activity: activity.data ?? card.activity,
-        activityLoading: activity.isLoading,
-        activityFetching: activity.isFetching,
-        updates: updates.data ?? card.updates,
-        updatesLoading: updates.isLoading,
-        childItems: children.data?.map((child) => ({
-          ...child,
-          itemKey: child.key,
-        })),
-        following: follow.following,
-        followers: follow.followers.map((person) => ({
-          userId: person.userId,
-          name: person.name,
-          initials: personInitials(person.name),
-        })),
-        approvals: approvals.approvals?.map((approval) => ({
-          id: approval.id,
-          status: approval.status,
-          approverUserId: approval.approverUserId,
-          approverName:
-            directory?.people.find(
-              (person) => person.userId === approval.approverUserId,
-            )?.name ??
-            board.members.find(
-              (member) => member.userId === approval.approverUserId,
-            )?.name ??
-            null,
-          decisionNote: approval.decisionNote,
-        })),
-        approvalError: approvals.error
-          ? isConflictError(approvals.error)
-            ? "alreadyAsked"
-            : "failed"
-          : null,
-        links: links.data,
-        linkCandidates,
-        boardLabels: boardLabels.data,
-      }}
-    />
+    <>
+      <ItemPageSurface
+        status="ready"
+        board={board}
+        card={card}
+        capabilities={capabilities}
+        callbacks={callbacks}
+        navigation={navigation(position)}
+        copy={copy}
+        sheetCopy={sheetCopy}
+        now={now}
+        space={space}
+        viewer={viewer}
+        creatorName={created?.actor ?? null}
+        access={
+          access
+            ? {
+                level: access.myLevel,
+                grantedBy: access.mySource.grantedBy?.name,
+              }
+            : null
+        }
+        conflict={conflict}
+        offline={offline}
+        uploads={uploads}
+        onRetryUpload={fileUploads.retry}
+        onDismissUpload={fileUploads.dismiss}
+        people={{
+          people: directory?.people ?? [],
+          teams: directory?.teams ?? [],
+          loading: directory === null,
+          canInvite: directory?.canInvite === true,
+          onInvite: () => undefined,
+        }}
+        lifecycle={{
+          completed: isItemDone(card) ? (lifecycle?.completed ?? null) : null,
+          archived: lifecycle?.archived ?? null,
+          onRestore: () => restore(),
+          onReopen: () => reopen(),
+        }}
+        onResolveConflict={(choice) => {
+          const write = refused;
+          setRefused(null);
+          if (choice === "mine") write?.send();
+        }}
+        activeTab={activeTab}
+        onSelectTab={onSelectTab}
+        detailData={{
+          files: files.data ?? card.files,
+          filesLoading: files.isLoading,
+          activity: activity.data ?? card.activity,
+          activityLoading: activity.isLoading,
+          activityFetching: activity.isFetching,
+          updates: updates.data ?? card.updates,
+          updatesLoading: updates.isLoading,
+          childItems: children.data?.map((child) => ({
+            ...child,
+            itemKey: child.key,
+          })),
+          following: follow.following,
+          followers: follow.followers.map((person) => ({
+            userId: person.userId,
+            name: person.name,
+            initials: personInitials(person.name),
+          })),
+          approvals: approvals.approvals?.map((approval) => ({
+            id: approval.id,
+            status: approval.status,
+            approverUserId: approval.approverUserId,
+            approverName:
+              directory?.people.find(
+                (person) => person.userId === approval.approverUserId,
+              )?.name ??
+              board.members.find(
+                (member) => member.userId === approval.approverUserId,
+              )?.name ??
+              null,
+            decisionNote: approval.decisionNote,
+          })),
+          approvalError: approvals.error
+            ? isConflictError(approvals.error)
+              ? "alreadyAsked"
+              : "failed"
+            : null,
+          links: links.data,
+          linkCandidates,
+          boardLabels: boardLabels.data,
+        }}
+      />
+      {removal.dialogs}
+    </>
   );
 }
 

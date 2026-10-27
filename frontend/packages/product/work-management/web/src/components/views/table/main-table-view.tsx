@@ -1,3 +1,4 @@
+import { useItemRemoval } from "../../item-lifecycle/use-item-removal";
 import {
   useCallback,
   useContext,
@@ -198,6 +199,18 @@ export function MainTableView({
         }),
         { id: `table-write-${cardId}` },
       ),
+  });
+  const removal = useItemRemoval({
+    workspaceId,
+    boardId,
+    titleOf: (itemId) =>
+      allCards.find((candidate) => candidate.id === itemId)?.title ??
+      titles.current.get(itemId) ??
+      "",
+    onGone: (itemId) => {
+      if (selectedItemId === itemId)
+        onSelectedItemChange?.(undefined, { replace: true });
+    },
   });
   const bulkUpdate = useBulkUpdateItems(boardId, workspaceId);
   const bulkMutate = bulkUpdate.mutate;
@@ -702,6 +715,12 @@ export function MainTableView({
                   setSelection(new Set());
                 }
               : undefined,
+            onDelete: capabilities.canDelete
+              ? removal.requestDelete
+              : undefined,
+            onMoveToBoard: capabilities.canMoveCard
+              ? removal.requestMove
+              : undefined,
           }}
           bulkAssign={
             editors
@@ -789,6 +808,7 @@ export function MainTableView({
           }}
         />
       ) : null}
+      {removal.dialogs}
     </div>
   );
 }

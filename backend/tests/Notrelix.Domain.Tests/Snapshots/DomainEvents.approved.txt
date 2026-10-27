@@ -800,6 +800,14 @@ work-management.board-item-moved|1|Notrelix.Domain.WorkManagement.Items.Events.B
 work-management.board-item-moved|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemMovedDomainEvent|Workspace|OldGroupId|System.Guid|False
 work-management.board-item-moved|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemMovedDomainEvent|Workspace|UpdatedBy|System.Guid|False
 work-management.board-item-moved|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemMovedDomainEvent|Workspace|Version|System.Int64|False
+work-management.board-item-moved-to-board|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemMovedToBoardDomainEvent|Workspace|FromBoardId|System.Guid|False
+work-management.board-item-moved-to-board|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemMovedToBoardDomainEvent|Workspace|FromGroupId|System.Guid|False
+work-management.board-item-moved-to-board|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemMovedToBoardDomainEvent|Workspace|ItemId|System.Guid|False
+work-management.board-item-moved-to-board|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemMovedToBoardDomainEvent|Workspace|ItemKey|System.String|False
+work-management.board-item-moved-to-board|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemMovedToBoardDomainEvent|Workspace|MovedBy|System.Guid|False
+work-management.board-item-moved-to-board|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemMovedToBoardDomainEvent|Workspace|ToBoardId|System.Guid|False
+work-management.board-item-moved-to-board|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemMovedToBoardDomainEvent|Workspace|ToGroupId|System.Guid|False
+work-management.board-item-moved-to-board|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemMovedToBoardDomainEvent|Workspace|Version|System.Int64|False
 work-management.board-item-owners-reminded|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemOwnersRemindedDomainEvent|Workspace|BoardId|System.Guid|False
 work-management.board-item-owners-reminded|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemOwnersRemindedDomainEvent|Workspace|ItemId|System.Guid|False
 work-management.board-item-owners-reminded|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemOwnersRemindedDomainEvent|Workspace|RecipientUserIds|System.Collections.Generic.IReadOnlyList<System.Guid>|False

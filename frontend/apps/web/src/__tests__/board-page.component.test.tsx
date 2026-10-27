@@ -42,6 +42,7 @@ vi.mock("@notrelix/work-management-web", () => ({
     Provider: ({ children }: { children: React.ReactNode }) => children,
   },
   useBoardHeaderCopy: () => ({ untitledBoard: "Bảng chưa tải" }),
+  BoardTrashHost: () => null,
   BoardLayoutShell: ({
     boardTitle,
     onViewChange,

@@ -1066,14 +1066,32 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
   },
   {
     context: "WorkManagement",
-    classification: "COMPATIBILITY_GAP_MOCKED",
-    consumerSymbol: "useMoveItemToBoard",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createItemExtrasApi",
     consumerFile:
       "frontend/packages/product/work-management/state/src/api/item-extras.api.ts",
-    capability: "Move an item to another board (the table's bulk bar)",
-    gapId: "CTR-GAP-WM-TABLE-BULK",
-    method: "POST",
-    pathTemplate: "/board-items/{id}/move-to-board",
+    capability: "WorkManagement.BoardItems.MoveToBoard",
+    operationId: "WorkManagement.BoardItems.MoveToBoard",
+    mutation: true,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createItemExtrasApi",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/item-extras.api.ts",
+    capability: "WorkManagement.BoardItems.Trash",
+    operationId: "WorkManagement.BoardItems.Trash",
+    mutation: false,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createItemExtrasApi",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/item-extras.api.ts",
+    capability: "WorkManagement.BoardItems.Restore",
+    operationId: "WorkManagement.BoardItems.Restore",
     mutation: true,
   },
   {

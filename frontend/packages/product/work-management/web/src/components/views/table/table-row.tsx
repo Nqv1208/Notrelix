@@ -34,6 +34,10 @@ export interface TableRowActions {
   readonly onCopyLink: () => void;
   /** Absent: the viewer may not archive, so no "Lưu trữ". */
   readonly onArchive?: () => void;
+  /** Absent: the viewer may not delete, so no "Xoá". */
+  readonly onDelete?: () => void;
+  /** Absent: the viewer may not move items, so no "Chuyển sang board khác". */
+  readonly onMoveToBoard?: () => void;
 }
 
 export interface TableRowProps {
@@ -497,9 +501,19 @@ export function TableRow({
         <ContextMenuItem onSelect={actions.onCopyLink}>
           {copy.row.menu.copyLink}
         </ContextMenuItem>
+        {actions.onMoveToBoard ? (
+          <ContextMenuItem onSelect={actions.onMoveToBoard}>
+            {copy.row.menu.moveToBoard}
+          </ContextMenuItem>
+        ) : null}
         {actions.onArchive ? (
           <ContextMenuItem onSelect={actions.onArchive}>
             {copy.row.menu.archive}
+          </ContextMenuItem>
+        ) : null}
+        {actions.onDelete ? (
+          <ContextMenuItem variant="destructive" onSelect={actions.onDelete}>
+            {copy.row.menu.delete}
           </ContextMenuItem>
         ) : null}
       </ContextMenuContent>

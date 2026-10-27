@@ -45,4 +45,11 @@ public class BoardItemLink : Entity, IWorkspaceScoped
             CreatedAt = createdAt
         };
     }
+
+    /// <summary>The link follows its source Item to the board the Item moved to.</summary>
+    public void FollowItemToBoard(Guid boardId)
+    {
+        Guard.NotEmpty(boardId);
+        BoardId = boardId;
+    }
 }

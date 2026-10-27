@@ -103,6 +103,8 @@ export interface MainTableSurfaceProps {
     readonly onDuplicate?: (id: string) => void;
     readonly onCopyLink: (id: string) => void;
     readonly onArchive?: (id: string) => void;
+    readonly onDelete?: (id: string) => void;
+    readonly onMoveToBoard?: (id: string) => void;
   };
   /** "Giao cho" of the bulk bar; absent = disabled with the reason. */
   bulkAssign?: TableBulkBarProps["assign"];
@@ -376,6 +378,12 @@ export function MainTableSurface({
                                     rowActions.onCopyLink(row.id),
                                   onArchive: rowActions.onArchive
                                     ? () => rowActions.onArchive?.(row.id)
+                                    : undefined,
+                                  onDelete: rowActions.onDelete
+                                    ? () => rowActions.onDelete?.(row.id)
+                                    : undefined,
+                                  onMoveToBoard: rowActions.onMoveToBoard
+                                    ? () => rowActions.onMoveToBoard?.(row.id)
                                     : undefined,
                                 }
                               : undefined

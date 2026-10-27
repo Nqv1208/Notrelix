@@ -156,6 +156,10 @@ export interface TaskDetailCallbacks {
   readonly onDownloadFile?: (file: CardFile) => void;
   readonly onDuplicate: (cardId: string) => void;
   readonly onArchive: (cardId: string) => void;
+  /** Asks before deleting the item (it stays restorable for 30 days); absent: no menu entry. */
+  readonly onDelete?: (cardId: string) => void;
+  /** Opens the board picker for moving the item to another board; absent: no menu entry. */
+  readonly onMoveToBoard?: (cardId: string) => void;
   readonly onUpdateFieldValue: (payload: UpdateFieldValueInput) => void;
   /** Puts a board label on the item or takes it off; labels stay read-only without it. */
   readonly onToggleLabel?: (labelId: string, on: boolean) => void;

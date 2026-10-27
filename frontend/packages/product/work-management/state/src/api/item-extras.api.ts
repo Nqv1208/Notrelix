@@ -209,6 +209,27 @@ export interface PeopleDirectoryDto {
   readonly canInvite: boolean;
 }
 
+/** What `WorkManagement.BoardItems.MoveToBoard` could not carry to the other board. */
+export interface MoveToBoardResultDto {
+  readonly boardId: string;
+  readonly groupId: string;
+  readonly itemKey: string;
+  readonly droppedFields: readonly string[];
+  readonly droppedLabels: number;
+  readonly droppedAssignees: number;
+}
+
+/** An item in a board's trash. */
+export interface BoardTrashEntryDto {
+  readonly id: string;
+  readonly name: string;
+  readonly itemKey: string | null;
+  readonly groupId: string;
+  readonly deletedAt: string;
+  readonly deletedBy: string | null;
+  readonly restorableUntil: string;
+}
+
 export function createItemExtrasApi(
   client: NotrelixClient,
   options: { readonly planProduced?: boolean } = {},
@@ -393,14 +414,41 @@ export function createItemExtrasApi(
       else await api.delete<void>(`/board-items/${itemId}/following`, options);
     },
     /**
-     * Moves an item to another board (gap `CTR-GAP-WM-TABLE-BULK`, see
-     * "BE requirement from FE: Table"): it lands in the target group of the
-     * same name, else the first, with a new item key.
+     * `WorkManagement.BoardItems.MoveToBoard`: the item lands in the target
+     * group of the same name, else the board's default or first group, with
+     * the target board's next key. The result names what could not carry over.
      */
-    async moveToBoard(itemId: string, boardId: string): Promise<void> {
-      await api.post<void>(
+    async moveToBoard(
+      itemId: string,
+      boardId: string,
+    ): Promise<MoveToBoardResultDto> {
+      const result = await api.post<Partial<MoveToBoardResultDto>>(
         `/board-items/${itemId}/move-to-board`,
         { boardId },
+        { idempotencyKey: key(), ...quiet },
+      );
+      return {
+        boardId: result?.boardId ?? boardId,
+        groupId: result?.groupId ?? "",
+        itemKey: result?.itemKey ?? "",
+        droppedFields: result?.droppedFields ?? [],
+        droppedLabels: result?.droppedLabels ?? 0,
+        droppedAssignees: result?.droppedAssignees ?? 0,
+      };
+    },
+    /** `WorkManagement.BoardItems.Trash`: items deleted from the board in the last 30 days. */
+    async listTrash(boardId: string): Promise<BoardTrashEntryDto[]> {
+      const rows = await api.get<BoardTrashEntryDto[]>(
+        `/boards/${boardId}/items/trash`,
+        quiet,
+      );
+      return rows ?? [];
+    },
+    /** `WorkManagement.BoardItems.Restore`: a deleted item comes back from the trash. */
+    async restoreDeleted(itemId: string): Promise<void> {
+      await api.post<void>(
+        `/board-items/${itemId}/restore`,
+        {},
         { idempotencyKey: key(), ...quiet },
       );
     },

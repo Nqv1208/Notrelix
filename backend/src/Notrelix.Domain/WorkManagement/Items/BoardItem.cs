@@ -257,6 +257,61 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
     }
 
     /// <summary>
+    /// Moves a root Item to a group of another board of the same workspace, taking that board's next
+    /// item key. The values the Item held belong to the old board's fields and are dropped here; the
+    /// caller writes the ones that carry over. The move is one version and one fact.
+    /// </summary>
+    public void MoveToBoard(BoardGroupRef targetGroup, FractionalIndex newPosition, string itemKey, long itemSequence, Guid movedBy, DateTimeOffset movedAt)
+    {
+        EnsureNotDeleted();
+        EnsureNotArchived();
+        Guard.NotEmpty(movedBy);
+        Guard.NotNull(targetGroup);
+        Guard.NotNull(newPosition);
+        Guard.NotNullOrWhiteSpace(itemKey);
+
+        if (ParentItemId is not null)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Item_SubItemFollowsParentGroup, "A sub-item moves with its parent.");
+        if (targetGroup.WorkspaceId != WorkspaceId)
+            throw new BusinessRuleException(CommonRuleCodes.Common_WorkspaceScopeMismatch, $"Workspace scope mismatch. Expected '{WorkspaceId}', got '{targetGroup.WorkspaceId}'.");
+        if (targetGroup.BoardId == BoardId)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_BoardScopeMismatch, "The item is already on this board.");
+
+        var fromBoardId = BoardId;
+        var fromGroupId = GroupId;
+        var pending = PrepareAuditUpdate(movedBy, movedAt);
+        ApplyBoardChange(targetGroup, newPosition, itemKey, itemSequence);
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+        RaiseDomainEvent(new BoardItemMovedToBoardDomainEvent(AccountId, WorkspaceId, Id, fromBoardId, BoardId, fromGroupId, GroupId, itemKey, movedBy, movedAt, Version));
+    }
+
+    /// <summary>A sub-item follows its parent to the parent's new board and group, with its own new key.</summary>
+    public void FollowParentToBoard(BoardGroupRef targetGroup, string itemKey, long itemSequence, Guid movedBy, DateTimeOffset movedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(movedBy);
+        Guard.NotNull(targetGroup);
+        if (ParentItemId is null)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Item_NotASubItem, "Only a sub-item follows its parent.");
+
+        var pending = PrepareAuditUpdate(movedBy, movedAt);
+        ApplyBoardChange(targetGroup, Position, itemKey, itemSequence);
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+    }
+
+    private void ApplyBoardChange(BoardGroupRef targetGroup, FractionalIndex position, string itemKey, long itemSequence)
+    {
+        BoardId = targetGroup.BoardId;
+        GroupId = targetGroup.GroupId;
+        Position = position;
+        ItemKey = itemKey;
+        ItemSequence = itemSequence;
+        _fieldValues.Clear();
+    }
+
+    /// <summary>
     /// Moves the Item to another group because its own group is being deleted. Unlike a
     /// user move this also applies to archived Items, so no Item is left in the deleted
     /// group. A null <paramref name="newPosition"/> keeps the position (child Items are

@@ -26,6 +26,10 @@ export const en = {
     shareUnavailable: "Sharing this board isn't available yet.",
     moreOptions: "More options",
     copyLink: "Copy board link",
+    deletedItems: "Deleted items",
+    renameBoard: "Rename board…",
+    archiveBoard: "Archive board…",
+    deleteBoard: "Delete board…",
     /** Access chip wording by board visibility. */
     scope: {
       space: "{{space}}",
@@ -88,6 +92,10 @@ export const vi: BoardHeaderCopy = {
     shareUnavailable: "Chưa có trang chia sẻ board.",
     moreOptions: "Thêm tuỳ chọn",
     copyLink: "Sao chép liên kết board",
+    deletedItems: "Việc đã xoá",
+    renameBoard: "Đổi tên board…",
+    archiveBoard: "Lưu trữ board…",
+    deleteBoard: "Xoá board…",
     scope: {
       space: "{{space}}",
       workspace: "Cả workspace",

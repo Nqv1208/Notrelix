@@ -109,6 +109,8 @@ export function TaskDetailHeader({
   onOpenFullPage,
   onDuplicate,
   onArchive,
+  onDelete,
+  onMoveToBoard,
   onMoveToGroup,
   following,
   onToggleFollow,
@@ -126,6 +128,8 @@ export function TaskDetailHeader({
   onOpenFullPage?: (cardId: string) => void;
   onDuplicate: (cardId: string) => void;
   onArchive: (cardId: string) => void;
+  onDelete?: (cardId: string) => void;
+  onMoveToBoard?: (cardId: string) => void;
   onMoveToGroup?: (cardId: string, groupId: string) => void;
   /** Whether the member follows the item; `null`/absent draws no follow chip. */
   following?: boolean | null;
@@ -136,7 +140,10 @@ export function TaskDetailHeader({
   const canMove =
     capabilities.canMoveCard && !!onMoveToGroup && otherGroups.length > 0;
   const hasMenu =
-    capabilities.canCreateCard || capabilities.canDelete || canMove;
+    capabilities.canCreateCard ||
+    capabilities.canDelete ||
+    canMove ||
+    (capabilities.canMoveCard && Boolean(onMoveToBoard));
 
   return (
     <header className="flex h-12.25 shrink-0 items-center gap-1.5 border-b border-line pr-2.5 pl-4.5">
@@ -278,9 +285,22 @@ export function TaskDetailHeader({
                 </DropdownMenuSubContent>
               </DropdownMenuSub>
             ) : null}
+            {capabilities.canMoveCard && onMoveToBoard ? (
+              <DropdownMenuItem onSelect={() => onMoveToBoard(card.id)}>
+                {copy.head.moveToBoard}
+              </DropdownMenuItem>
+            ) : null}
             {capabilities.canDelete ? (
               <DropdownMenuItem onSelect={() => onArchive(card.id)}>
                 {copy.head.archive}
+              </DropdownMenuItem>
+            ) : null}
+            {capabilities.canDelete && onDelete ? (
+              <DropdownMenuItem
+                variant="destructive"
+                onSelect={() => onDelete(card.id)}
+              >
+                {copy.head.delete}
               </DropdownMenuItem>
             ) : null}
           </DropdownMenuContent>

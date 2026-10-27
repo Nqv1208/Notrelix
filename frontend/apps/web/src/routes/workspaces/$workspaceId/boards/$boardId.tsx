@@ -5,6 +5,7 @@ import {
   BoardHeaderCopyContext,
   BoardHeaderDataContext,
   BoardLayoutShell,
+  BoardTrashHost,
   BoardWorkspaceViewContent,
   useBoardHeaderCopy,
 } from "@notrelix/work-management-web";
@@ -50,6 +51,7 @@ export function BoardPage() {
   // `share` in the address opens the share dialog (the settings page's
   // "Quyền truy cập" lands here); the dialog also opens from the header.
   const [shareOpen, setShareOpen] = useState(search.share === true);
+  const [trashOpen, setTrashOpen] = useState(false);
   useEffect(() => {
     if (search.share !== true) return;
     setShareOpen(true);
@@ -143,6 +145,7 @@ export function BoardPage() {
           onViewChange={handleViewChange}
           savedViews={saved.views}
           onAddView={(layout) => void handleAddView(layout)}
+          onOpenTrash={() => setTrashOpen(true)}
           onOpenSettings={() =>
             navigate({
               to: "/workspaces/$workspaceId/boards/$boardId/settings",
@@ -175,6 +178,12 @@ export function BoardPage() {
             />
           </BoardViewSelectionProvider>
         </BoardLayoutShell>
+        <BoardTrashHost
+          workspaceId={workspaceId}
+          boardId={boardId}
+          open={trashOpen}
+          onClose={() => setTrashOpen(false)}
+        />
         <BoardShareDialog
           workspaceId={workspaceId}
           boardId={boardId}

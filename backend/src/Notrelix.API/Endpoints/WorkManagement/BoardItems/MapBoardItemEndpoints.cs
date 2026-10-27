@@ -17,6 +17,7 @@ public static class MapBoardItemEndpoints
         boardItems.MapCreateBoardItem();
         boardItems.MapListBoardItems();
         boardItems.MapBulkUpdateBoardItems();
+        boardItems.MapListBoardItemTrash();
 
         var itemGroup = app
             .MapGroup("/api/v1/board-items/{itemId:guid}")
@@ -31,6 +32,7 @@ public static class MapBoardItemEndpoints
         itemGroup.MapDuplicateBoardItem();
         itemGroup.MapRemindBoardItemOwners();
         itemGroup.MapMoveBoardItem();
+        itemGroup.MapMoveBoardItemToBoard();
         itemGroup.MapUpdateBoardItemFieldValues();
         itemGroup.MapLinkPageToBoardItem();
         itemGroup.MapUnlinkPageFromBoardItem();

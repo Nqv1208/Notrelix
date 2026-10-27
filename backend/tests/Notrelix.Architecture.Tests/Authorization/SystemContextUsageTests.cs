@@ -27,6 +27,7 @@ public class SystemContextUsageTests
         "RestoreTeam.cs",
         "RestoreBoard.cs",
         "RestoreBoardItem.cs",
+        "ListBoardItemTrash.cs",
         "RestoreBoardView.cs",
         "RestoreForm.cs",
         "RestoreApprovalRequest.cs",

@@ -244,6 +244,11 @@ export class MockStore {
   readonly settings = new MockBoardSettingsState(this);
   private listsById = new Map<string, MockListRecord>();
   private cardsById = new Map<string, MockCardRecord>();
+  /** Soft-deleted cards (the 30 day trash); the mock keeps the card row only. */
+  private trashedCardsById = new Map<
+    string,
+    { card: MockCardRecord; deletedAt: string; deletedBy: string }
+  >();
   private notificationsById = new Map<string, MockNotificationRecord>();
   private pagesById = new Map<string, MockPageRecord>();
   private boardViewsByBoardId = new Map<string, MockBoardViewRecord>();
@@ -2589,6 +2594,13 @@ export class MockStore {
     const card = this.cardsById.get(cardId);
     if (!card) return false;
 
+    if (!card.parentItemId) {
+      this.trashedCardsById.set(cardId, {
+        card,
+        deletedAt: this.clock.isoNow(),
+        deletedBy: this.getCurrentUser().id,
+      });
+    }
     this.removeIndex(this.cardIdsByListId, card.listId, card.id);
     this.cardsById.delete(cardId);
     this.labelIdsByCardId.delete(cardId);
@@ -2661,6 +2673,31 @@ export class MockStore {
   }
 
   /** Brings an archived item back to its own place on the board. */
+  /** The board's deleted items of the last 30 days, newest first. */
+  getTrashedCards(boardId: string): {
+    card: MockCardRecord;
+    deletedAt: string;
+    deletedBy: string;
+  }[] {
+    return [...this.trashedCardsById.values()]
+      .filter((entry) => entry.card.boardId === boardId)
+      .sort((a, b) => b.deletedAt.localeCompare(a.deletedAt));
+  }
+
+  /** Brings a deleted card back to its list; false when it is not in the trash. */
+  restoreDeletedCard(cardId: string): boolean {
+    const entry = this.trashedCardsById.get(cardId);
+    if (!entry || !this.listsById.has(entry.card.listId)) return false;
+    this.trashedCardsById.delete(cardId);
+    this.cardsById.set(cardId, {
+      ...entry.card,
+      version: (entry.card.version ?? 1) + 1,
+      updatedAt: this.clock.isoNow(),
+    });
+    this.addIndex(this.cardIdsByListId, entry.card.listId, cardId);
+    return true;
+  }
+
   restoreCard(cardId: string): boolean {
     const card = this.cardsById.get(cardId);
     if (!card || !card.isArchived) return false;

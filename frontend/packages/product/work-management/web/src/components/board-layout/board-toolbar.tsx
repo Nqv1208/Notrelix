@@ -32,6 +32,8 @@ interface BoardToolbarProps {
    * button is enabled and calls it (it wins over the header data's own).
    */
   onOpenSettings?: () => void;
+  /** Opens the board's deleted items from the More options menu. */
+  onOpenTrash?: () => void;
 }
 
 /**
@@ -49,6 +51,7 @@ export function BoardToolbar({
   header: headerProp,
   copy: copyProp,
   onOpenSettings,
+  onOpenTrash,
 }: BoardToolbarProps) {
   const contextCopy = useContext(BoardHeaderCopyContext);
   const contextHeader = useContext(BoardHeaderDataContext);
@@ -60,12 +63,15 @@ export function BoardToolbar({
     savedViews?.find((view) => view.id === activeView)?.viewMode ?? activeView;
   const headerForView =
     activeLayout === "kanban" ? header : { ...header, onCopyLink: undefined };
+  const headerWithTrash = onOpenTrash
+    ? { ...headerForView, onOpenTrash }
+    : headerForView;
   return (
     <div className="flex flex-col">
       <BoardHeaderSurface
         title={boardTitle}
         copy={copy}
-        {...headerForView}
+        {...headerWithTrash}
         {...(onOpenSettings ? { onOpenSettings } : {})}
       />
       <div
