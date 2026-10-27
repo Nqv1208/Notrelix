@@ -21,7 +21,7 @@ import {
 } from "../../transport/create-response";
 import type { MockStore } from "../../state/mock-store";
 
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EMAIL = /^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/;
 /** The provider whose mock account has an authenticator app: its sign-in goes through the second step. */
 const MFA_PROVIDER = "microsoft";
 

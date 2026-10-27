@@ -7,7 +7,7 @@ const backendContainer = "notrelix-fe-real-e2e-backend";
 /** No mail provider runs on a developer machine: the development backend logs the message text. */
 async function confirmationLinkFor(email: string): Promise<string> {
   const pattern = new RegExp(
-    `Development email to ${email.replace(/[.+]/g, "\\$&")}: .*?(http\\S*/verify-email#token=\\S+)`,
+    `Development email to ${email.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}: .*?(http\\S*/verify-email#token=\\S+)`,
   );
   for (let attempt = 0; attempt < 40; attempt += 1) {
     const logs = execFileSync("docker", ["logs", backendContainer], {
