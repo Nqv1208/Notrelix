@@ -7,6 +7,11 @@
         "path": "src/web/components/notification-bell.tsx",
         "category": "container",
         "reason": "Container composing NotificationBellSurface with account-scoped notification state."
+      },
+      {
+        "path": "src/web/components/inbox-bell.tsx",
+        "category": "container",
+        "reason": "Phone top-bar trigger that binds the unread count to the bell copy and number formatting read from the i18n context (useNotificationBellCopy, useFormatters); the count itself is owned by the host. Behaviour is proven by inbox-bell.component.test.tsx."
       }
     ]
   },

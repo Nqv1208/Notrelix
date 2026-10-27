@@ -79,7 +79,7 @@ const lane = (name: string) => screen.getByRole("region", { name });
 afterEach(() => window.localStorage.clear());
 
 describe("KanbanBoard lanes (redesign)", () => {
-  it("FUI[wm.kanban.lane:header-add] opens the full form for the lane from its header plus", () => {
+  it("FUI[wm.kanban.column:header-add] opens the full form for the lane from its header plus", () => {
     const { onRequestCreate } = renderBoard();
     fireEvent.click(
       within(lane("Cần làm")).getByRole("button", {
@@ -92,7 +92,7 @@ describe("KanbanBoard lanes (redesign)", () => {
     });
   });
 
-  it("FUI[wm.kanban.lane:quick-expand] hands the typed title to the full form from Thêm chi tiết and from Ctrl+Enter", () => {
+  it("FUI[wm.kanban.column:quick-expand] hands the typed title to the full form from Thêm chi tiết and from Ctrl+Enter", () => {
     const { onExpandCreate, onCreateItem } = renderBoard();
     const todo = lane("Cần làm");
     fireEvent.click(
@@ -125,7 +125,7 @@ describe("KanbanBoard lanes (redesign)", () => {
     );
   });
 
-  it("FUI[wm.kanban.lane:wip] shows the count over the limit, warns at and over it and never refuses", () => {
+  it("FUI[wm.kanban.column:wip] shows the count over the limit, warns at and over it and never refuses", () => {
     const lanes = erpLanes();
     const todo = lanes.find((candidate) => candidate.name === "Cần làm");
     expect(todo).toBeDefined();
@@ -155,7 +155,7 @@ describe("KanbanBoard lanes (redesign)", () => {
     ).toBeTruthy();
   });
 
-  it("FUI[wm.kanban.lane:wip-set] sets and clears a lane limit from the lane menu", async () => {
+  it("FUI[wm.kanban.column:wip-set] sets and clears a lane limit from the lane menu", async () => {
     const { onWipLimitChange } = renderBoard();
     fireEvent.keyDown(
       within(lane("Đang làm")).getByRole("button", {
@@ -179,7 +179,7 @@ describe("KanbanBoard lanes (redesign)", () => {
     );
   });
 
-  it("FUI[wm.kanban.lane:collapse-persist] collapses from the visible button and remembers it per workspace and view", () => {
+  it("FUI[wm.kanban.column:collapse-persist] collapses from the visible button and remembers it per workspace and view", () => {
     const first = renderPureUi(<Harness storage={window.localStorage} />);
     fireEvent.click(
       within(lane("Cần làm")).getByRole("button", {
@@ -211,7 +211,7 @@ describe("KanbanBoard lanes (redesign)", () => {
     expect(window.localStorage.getItem(KEY)).toBeNull();
   });
 
-  it("FUI[wm.kanban.lane:storage-unavailable] still collapses when the storage throws", () => {
+  it("FUI[wm.kanban.column:storage-unavailable] still collapses when the storage throws", () => {
     const blocked = {
       getItem: () => {
         throw new Error("blocked");
@@ -236,7 +236,7 @@ describe("KanbanBoard lanes (redesign)", () => {
     ).toBeTruthy();
   });
 
-  it("FUI[wm.kanban.lane:empty] says an empty lane is empty and offers to add, and says a filtered one is hidden not empty", () => {
+  it("FUI[wm.kanban.column:empty] says an empty lane is empty and offers to add, and says a filtered one is hidden not empty", () => {
     const lanes = erpLanes().map((candidate, index) =>
       index === 0 ? { ...candidate, cards: [], total: 0 } : candidate,
     );

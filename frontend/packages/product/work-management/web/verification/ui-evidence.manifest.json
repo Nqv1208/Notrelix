@@ -47,6 +47,26 @@
         "path": "src/components/board-settings/board-settings-container.tsx",
         "category": "container",
         "reason": "Container composing BoardSettingsSurface with the settings, board and access reads, every settings write and the Kanban view's own settings through useBoardView."
+      },
+      {
+        "path": "src/components/item-create/board-item-create-dialog.tsx",
+        "category": "container",
+        "reason": "Container composing ItemCreateHost with the board read (useFullBoard) for a page that shows one board."
+      },
+      {
+        "path": "src/components/item-create/item-create-host.tsx",
+        "category": "container",
+        "reason": "Container composing ItemCreateDialog with the board facts, the create command, the follow-up field writes and the result toasts."
+      },
+      {
+        "path": "src/components/item-lifecycle/board-trash-host.tsx",
+        "category": "container",
+        "reason": "Container composing BoardTrashSheet with the board trash read and the restore command (useBoardTrash)."
+      },
+      {
+        "path": "src/components/item-lifecycle/use-item-removal.tsx",
+        "category": "container",
+        "reason": "Stateful hook owning the delete and move requests, their commands and toasts, and rendering the registered DeleteItemDialog and MoveItemDialog."
       }
     ]
   },
@@ -88,17 +108,17 @@
           {
             "state": "Loading",
             "reason": "The shell renders whatever child view content it receives; per-view loading presentation is owned by the dedicated loading surfaces.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "Error",
             "reason": "The shell renders whatever child view content it receives; per-view error presentation is owned by the dedicated unavailable surfaces.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "EdgeData",
             "reason": "The shell composes static chrome around child content and carries no data-driven values of its own.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           }
         ]
       },
@@ -354,12 +374,12 @@
           {
             "state": "EdgeData",
             "reason": "The tab set is a fixed constant list of view types, not data-driven text; there are no data-shape edges to stress.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "ReadOnly",
             "reason": "No product-authoritative read-only contract exists for board view tabs at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           }
         ]
       },
@@ -738,12 +758,12 @@
           {
             "state": "Loading",
             "reason": "Column content arrives already resolved from the board query; board-level loading is owned by wm.kanban.loading.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "Error",
             "reason": "Column content arrives already resolved from the board query; board-level fetch failure is owned by wm.kanban.unavailable.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           }
         ]
       },
@@ -762,6 +782,34 @@
         {
           "id": "edit",
           "testFile": "src/components/views/kanban/__tests__/kanban-column.interaction.component.test.tsx"
+        },
+        {
+          "id": "header-add",
+          "testFile": "src/components/views/kanban/__tests__/kanban-lane-redesign.interaction.component.test.tsx"
+        },
+        {
+          "id": "quick-expand",
+          "testFile": "src/components/views/kanban/__tests__/kanban-lane-redesign.interaction.component.test.tsx"
+        },
+        {
+          "id": "wip",
+          "testFile": "src/components/views/kanban/__tests__/kanban-lane-redesign.interaction.component.test.tsx"
+        },
+        {
+          "id": "wip-set",
+          "testFile": "src/components/views/kanban/__tests__/kanban-lane-redesign.interaction.component.test.tsx"
+        },
+        {
+          "id": "collapse-persist",
+          "testFile": "src/components/views/kanban/__tests__/kanban-lane-redesign.interaction.component.test.tsx"
+        },
+        {
+          "id": "storage-unavailable",
+          "testFile": "src/components/views/kanban/__tests__/kanban-lane-redesign.interaction.component.test.tsx"
+        },
+        {
+          "id": "empty",
+          "testFile": "src/components/views/kanban/__tests__/kanban-lane-redesign.interaction.component.test.tsx"
         }
       ]
     },
@@ -770,7 +818,10 @@
       "owner": "@notrelix/work-management-web",
       "surfaceKind": "data",
       "pureEntry": "src/components/views/kanban/kanban-card.tsx",
-      "coveredSources": ["src/components/views/kanban/kanban-card.copy.ts"],
+      "coveredSources": [
+        "src/components/views/kanban/kanban-card.copy.ts",
+        "src/components/views/kanban/kanban-card-quick-actions.tsx"
+      ],
       "stories": [
         {
           "id": "work-management-kanban-card--default",
@@ -886,32 +937,32 @@
           {
             "state": "Loading",
             "reason": "A card renders synchronously from resolved board data; board-level loading is owned by wm.kanban.loading.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "Empty",
             "reason": "An empty board is evidenced by wm.kanban.board Empty; a card always carries at least a title.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "Error",
             "reason": "Board-level fetch failure is evidenced by wm.kanban.unavailable Error.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "HighDensity",
             "reason": "High-density board input is evidenced by wm.kanban.board HighDensity with the documented 8x40 cardinality.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "ReadOnly",
             "reason": "No product-authoritative read-only contract exists for kanban cards at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "PermissionLimited",
             "reason": "No product-authoritative permission-limited capability contract exists for kanban cards at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           }
         ]
       },
@@ -1035,7 +1086,7 @@
           {
             "state": "Default",
             "reason": "This surface renders exclusively the loading skeleton presentation; Default board presentation is owned by wm.kanban.board.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           }
         ]
       },
@@ -1069,7 +1120,7 @@
           {
             "state": "Default",
             "reason": "This surface renders exclusively the error presentation; Default board presentation is owned by wm.kanban.board.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           }
         ]
       },
@@ -1286,7 +1337,7 @@
           {
             "state": "PermissionLimited",
             "reason": "No product-authoritative permission-limited capability contract exists for the main table at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           }
         ]
       },
@@ -1458,7 +1509,7 @@
           {
             "state": "Default",
             "reason": "This surface renders exclusively the loading skeleton presentation; Default table presentation is owned by wm.table.main.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           }
         ]
       },
@@ -1492,7 +1543,7 @@
           {
             "state": "Default",
             "reason": "This surface renders exclusively the error presentation; Default table presentation is owned by wm.table.main.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           }
         ]
       },
@@ -1595,7 +1646,7 @@
           {
             "state": "PermissionLimited",
             "reason": "No product-authoritative permission-limited capability contract exists for the calendar board view at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           }
         ]
       },
@@ -1773,7 +1824,7 @@
           {
             "state": "PermissionLimited",
             "reason": "No product-authoritative permission-limited capability contract exists for the timeline board view at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           }
         ]
       },
@@ -1955,7 +2006,7 @@
           {
             "state": "Error",
             "reason": "Fetch failures render the dedicated Unavailable presentation evidenced by the Unavailable story.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           }
         ]
       },
@@ -2013,6 +2064,18 @@
         },
         {
           "id": "edge",
+          "testFile": "src/components/card-detail/__tests__/task-detail-panel-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "description-edit",
+          "testFile": "src/components/card-detail/__tests__/task-detail-panel-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "labels-readonly",
+          "testFile": "src/components/card-detail/__tests__/task-detail-panel-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "labels-start",
           "testFile": "src/components/card-detail/__tests__/task-detail-panel-surface.interaction.component.test.tsx"
         }
       ]
@@ -2084,7 +2147,7 @@
           {
             "state": "Success",
             "reason": "The form hands the draft to its container and is closed by it; success is the new or renamed lane, evidenced by wm.kanban.board and wm.kanban.column.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "ReadOnly",
@@ -2146,7 +2209,8 @@
         "src/components/item-page/item-page-sections.tsx",
         "src/components/item-page/item-page-states.tsx",
         "src/components/item-page/item-page-topbar.tsx",
-        "src/components/item-page/item-pickers.tsx"
+        "src/components/item-page/item-pickers.tsx",
+        "src/components/shared/item-description-editor.tsx"
       ],
       "stories": [
         {
@@ -2335,7 +2399,7 @@
           {
             "state": "Error",
             "reason": "Fetch failures render the dedicated Unavailable presentation evidenced by the Unavailable story.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           }
         ]
       },
@@ -2445,6 +2509,14 @@
         },
         {
           "id": "uploads",
+          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "description-edit",
+          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "description-keys",
           "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
         }
       ]
@@ -3092,7 +3164,7 @@
           {
             "state": "EdgeData",
             "reason": "A rule's sentence and name wrap; the list holds the workspace's few rules and the run history is capped at 20.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           }
         ]
       },
@@ -3131,6 +3203,313 @@
         {
           "id": "workspace-rules-forbidden",
           "testFile": "src/components/board-settings/__tests__/workspace-rules.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "wm.item-create.dialog",
+      "owner": "@notrelix/work-management-web",
+      "surfaceKind": "form",
+      "pureEntry": "src/components/item-create/item-create-dialog.tsx",
+      "coveredSources": ["src/components/item-create/item-create-fields.tsx"],
+      "stories": [
+        {
+          "id": "work-management-item-create--default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-item-create--failed",
+          "state": "Error",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-item-create--pending",
+          "state": "Loading",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-item-create--edge-data",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default", "Error", "Loading", "EdgeData"],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "Success",
+            "reason": "The dialog hands the draft to its container, which closes it or keeps it open for the next item; success is the new item on the board, evidenced by the board surfaces.",
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+          },
+          {
+            "state": "ReadOnly",
+            "reason": "A member who cannot add items is never offered the dialog: the container does not open it, so there is no read-only presentation.",
+            "authority": "docs/product/work-management.md"
+          }
+        ]
+      },
+      "responsive": true,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "another",
+          "testFile": "src/components/item-create/__tests__/item-create-dialog.interaction.component.test.tsx"
+        },
+        {
+          "id": "assign-me",
+          "testFile": "src/components/item-create/__tests__/item-create-dialog.interaction.component.test.tsx"
+        },
+        {
+          "id": "ctrl-enter",
+          "testFile": "src/components/item-create/__tests__/item-create-dialog.interaction.component.test.tsx"
+        },
+        {
+          "id": "date-text",
+          "testFile": "src/components/item-create/__tests__/item-create-dialog.interaction.component.test.tsx"
+        },
+        {
+          "id": "dates",
+          "testFile": "src/components/item-create/__tests__/item-create-dialog.interaction.component.test.tsx"
+        },
+        {
+          "id": "error",
+          "testFile": "src/components/item-create/__tests__/item-create-dialog.interaction.component.test.tsx"
+        },
+        {
+          "id": "lane",
+          "testFile": "src/components/item-create/__tests__/item-create-dialog.interaction.component.test.tsx"
+        },
+        {
+          "id": "pending",
+          "testFile": "src/components/item-create/__tests__/item-create-dialog.interaction.component.test.tsx"
+        },
+        {
+          "id": "people",
+          "testFile": "src/components/item-create/__tests__/item-create-dialog.interaction.component.test.tsx"
+        },
+        {
+          "id": "prefill",
+          "testFile": "src/components/item-create/__tests__/item-create-dialog.interaction.component.test.tsx"
+        },
+        {
+          "id": "quick-add",
+          "testFile": "src/components/item-create/__tests__/item-create-dialog.interaction.component.test.tsx"
+        },
+        {
+          "id": "quick-due",
+          "testFile": "src/components/item-create/__tests__/item-create-dialog.interaction.component.test.tsx"
+        },
+        {
+          "id": "required",
+          "testFile": "src/components/item-create/__tests__/item-create-dialog.interaction.component.test.tsx"
+        },
+        {
+          "id": "submit",
+          "testFile": "src/components/item-create/__tests__/item-create-dialog.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "wm.item-lifecycle",
+      "owner": "@notrelix/work-management-web",
+      "surfaceKind": "feedback",
+      "pureEntry": "src/components/item-lifecycle/item-lifecycle-dialogs.tsx",
+      "coveredSources": ["src/components/item-lifecycle/board-trash-sheet.tsx"],
+      "stories": [
+        {
+          "id": "work-management-item-lifecycle--delete-confirm",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-item-lifecycle--move-board",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-item-lifecycle--move-no-boards",
+          "state": "Empty",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-item-lifecycle--trash-list",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-item-lifecycle--trash-empty",
+          "state": "Empty",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-item-lifecycle--trash-loading",
+          "state": "Loading",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-item-lifecycle--trash-failed",
+          "state": "Error",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-item-lifecycle--trash-edge-data",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default", "Empty", "Loading", "Error", "EdgeData"],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "ReadOnly",
+            "reason": "A member who cannot delete or move an item is never offered these dialogs; the containers do not open them, so there is no read-only presentation.",
+            "authority": "docs/product/work-management.md"
+          }
+        ]
+      },
+      "responsive": true,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "delete",
+          "testFile": "src/components/item-lifecycle/__tests__/item-lifecycle-dialogs.component.test.tsx"
+        },
+        {
+          "id": "delete-cancel",
+          "testFile": "src/components/item-lifecycle/__tests__/item-lifecycle-dialogs.component.test.tsx"
+        },
+        {
+          "id": "move",
+          "testFile": "src/components/item-lifecycle/__tests__/item-lifecycle-dialogs.component.test.tsx"
+        },
+        {
+          "id": "move-filter",
+          "testFile": "src/components/item-lifecycle/__tests__/item-lifecycle-dialogs.component.test.tsx"
+        },
+        {
+          "id": "move-empty",
+          "testFile": "src/components/item-lifecycle/__tests__/item-lifecycle-dialogs.component.test.tsx"
+        },
+        {
+          "id": "trash",
+          "testFile": "src/components/item-lifecycle/__tests__/item-lifecycle-dialogs.component.test.tsx"
+        },
+        {
+          "id": "trash-empty",
+          "testFile": "src/components/item-lifecycle/__tests__/item-lifecycle-dialogs.component.test.tsx"
         }
       ]
     }

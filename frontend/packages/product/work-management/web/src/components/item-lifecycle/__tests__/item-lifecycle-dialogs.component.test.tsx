@@ -6,7 +6,7 @@ import { DeleteItemDialog, MoveItemDialog } from "../item-lifecycle-dialogs";
 import { en } from "../item-lifecycle.copy";
 
 describe("DeleteItemDialog", () => {
-  it("asks before deleting and only deletes on confirm", async () => {
+  it("FUI[wm.item-lifecycle:delete] asks before deleting and only deletes on confirm", async () => {
     const onConfirm = vi.fn();
     const onCancel = vi.fn();
     render(
@@ -25,7 +25,7 @@ describe("DeleteItemDialog", () => {
     expect(onConfirm).toHaveBeenCalledTimes(1);
   });
 
-  it("cancels without deleting", async () => {
+  it("FUI[wm.item-lifecycle:delete-cancel] cancels without deleting", async () => {
     const onConfirm = vi.fn();
     const onCancel = vi.fn();
     render(
@@ -50,7 +50,7 @@ describe("MoveItemDialog", () => {
     { id: "b2", title: "Support" },
   ];
 
-  it("moves to the board the member picked and not before", async () => {
+  it("FUI[wm.item-lifecycle:move] moves to the board the member picked and not before", async () => {
     const onConfirm = vi.fn();
     render(
       <MoveItemDialog
@@ -70,7 +70,7 @@ describe("MoveItemDialog", () => {
     expect(onConfirm).toHaveBeenCalledWith("b2");
   });
 
-  it("filters the boards by name", async () => {
+  it("FUI[wm.item-lifecycle:move-filter] filters the boards by name", async () => {
     render(
       <MoveItemDialog
         copy={en}
@@ -89,7 +89,7 @@ describe("MoveItemDialog", () => {
     expect(screen.getByRole("option", { name: "Roadmap" })).toBeTruthy();
   });
 
-  it("says so when no other board accepts items", () => {
+  it("FUI[wm.item-lifecycle:move-empty] says so when no other board accepts items", () => {
     render(
       <MoveItemDialog
         copy={en}
@@ -106,7 +106,7 @@ describe("MoveItemDialog", () => {
 });
 
 describe("BoardTrashSheet", () => {
-  it("lists deleted items with the last day they can come back and restores one", async () => {
+  it("FUI[wm.item-lifecycle:trash] lists deleted items with the last day they can come back and restores one", async () => {
     const onRestore = vi.fn();
     const row = {
       id: "i1",
@@ -131,7 +131,7 @@ describe("BoardTrashSheet", () => {
     expect(onRestore).toHaveBeenCalledWith(row);
   });
 
-  it("shows an empty state", () => {
+  it("FUI[wm.item-lifecycle:trash-empty] shows an empty state", () => {
     render(
       <BoardTrashSheet
         copy={en}
