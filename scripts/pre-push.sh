@@ -70,7 +70,10 @@ if grep -q '^frontend/' <<<"$changed"; then
   run "mock freeze" pnpm -s mock:freeze:check
   run "generated contracts" pnpm -s codegen:check
   run "ui test markers" node scripts/check-ui-markers-static.mjs
-  run "typecheck + lint (affected packages)" pnpm -s turbo run typecheck lint --filter="...[$base_ref]" --output-logs=errors-only
+  run "typecheck (affected packages)" pnpm -s turbo run typecheck --continue --filter="...[$base_ref]" --output-logs=errors-only
+  # The marketing host lints with eslint-config-next, whose react-hooks plugin
+  # is not resolvable from a local install; its lint runs in CI only.
+  run "lint (affected packages)" pnpm -s turbo run lint --continue --filter="...[$base_ref]" --filter='!@notrelix/app-marketing' --output-logs=errors-only
   run "node tests" pnpm -s test:node
 fi
 
