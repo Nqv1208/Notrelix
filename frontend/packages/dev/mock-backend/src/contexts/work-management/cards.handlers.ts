@@ -55,6 +55,7 @@ import {
   ok,
 } from "../../transport/create-response";
 import { preconditionFailed } from "../workspace/space-target";
+import { isoOfMs } from "../../state/clock";
 import type { MockStore } from "../../state/mock-store";
 import type { MockAttachmentRecord, MockCardRecord } from "../../state/records";
 import {
@@ -588,9 +589,9 @@ export const cardsOperations = [
             groupId: card.listId,
             deletedAt,
             deletedBy,
-            restorableUntil: new Date(
-              new Date(deletedAt).getTime() + 30 * 24 * 60 * 60 * 1000,
-            ).toISOString(),
+            restorableUntil: isoOfMs(
+              Date.parse(deletedAt) + 30 * 24 * 60 * 60 * 1000,
+            ),
           })),
       );
     },
