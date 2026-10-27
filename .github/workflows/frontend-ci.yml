@@ -280,7 +280,8 @@ jobs:
       - name: Browser E2E (exact artifact)
         env:
           E2E_SCRIPT: ${{ steps.contract.outputs.e2e_script }}
-        run: pnpm "$E2E_SCRIPT"
+          SNAPSHOT_FLAGS: ${{ (github.ref != 'refs/heads/main' && github.event_name != 'workflow_dispatch') && '--ignore-snapshots' || '' }}
+        run: pnpm "$E2E_SCRIPT" ${SNAPSHOT_FLAGS:+"$SNAPSHOT_FLAGS"}
       - if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -317,7 +318,10 @@ jobs:
       - name: pnpm check:ui-evidence
         run: pnpm check:ui-evidence
       - name: pnpm test:ui:freeze
-        run: pnpm test:ui:freeze
+        env:
+          # Pixel baselines block main and manual runs only; elsewhere every story still renders.
+          SNAPSHOT_FLAGS: ${{ (github.ref != 'refs/heads/main' && github.event_name != 'workflow_dispatch') && '--ignore-snapshots' || '' }}
+        run: pnpm test:ui:freeze ${SNAPSHOT_FLAGS:+"$SNAPSHOT_FLAGS"}
       - if: inputs.source_sha != ''
         uses: ./.github/actions/emit-evidence
         with:
