@@ -1,3 +1,4 @@
+import type { ItemPageCopy } from "../item-page/item-page.copy";
 import type {
   CardActivity,
   CardLabel,
@@ -122,6 +123,8 @@ export interface TaskDetailData {
   readonly links?: readonly ItemSheetLink[];
   /** Items a new link can point at. */
   readonly linkCandidates?: readonly ItemSheetLinkCandidate[];
+  /** The item page's words for the links section; without it the sheet shows none. */
+  readonly linksCopy?: ItemPageCopy;
   /** The labels the board offers; absent: labels cannot be edited here. */
   readonly boardLabels?: readonly CardLabel[];
 }

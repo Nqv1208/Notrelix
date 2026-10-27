@@ -1,3 +1,4 @@
+import { useItemPageCopy } from "../../item-page/use-item-page-copy";
 import { ItemCreateHost } from "../../item-create/item-create-host";
 import { useNoGroupNotice } from "../../item-create/use-no-group-notice";
 import {
@@ -23,6 +24,7 @@ import {
   useCardActivity,
   useCardComments,
   useCardFiles,
+  useItemLinks,
   useAddFieldOption,
   useArchiveCard,
   useCreateCardUpdate,
@@ -46,6 +48,7 @@ import {
 import { BoardHeaderDataContext } from "../../board-layout/board-header-data-context";
 import type {
   ItemSheetGroup,
+  ItemSheetLinkCandidate,
   ItemSheetMark,
   TaskDetailCapabilities,
 } from "../../card-detail/task-detail-types";
@@ -652,6 +655,15 @@ export function KanbanView({
   const departmentMark: ItemSheetMark | undefined = header?.space
     ? { initials: header.space.initials, tone: header.space.markTone }
     : undefined;
+  const linkCandidates: ItemSheetLinkCandidate[] = kanban.groups
+    .flatMap((group) => group.cards)
+    .filter((entry) => entry.id !== selectedItemId && !entry.parentItemId)
+    .map((entry) => ({
+      id: entry.id,
+      key: entry.itemKey ?? null,
+      title: entry.title,
+      statusCategory: entry.statusCategory ?? null,
+    }));
   const sheetGroups: ItemSheetGroup[] = [...kanban.groups]
     .sort((a, b) => a.position - b.position)
     .map((group) => ({ id: group.id, title: group.title }));
@@ -860,6 +872,7 @@ export function KanbanView({
           capabilities={capabilities}
           departmentMark={departmentMark}
           groups={sheetGroups}
+          linkCandidates={linkCandidates}
           onClose={handleClosePanel}
           onRestoreFocus={restoreFocus}
           onPrevious={step(previousId)}
@@ -885,6 +898,8 @@ export interface SelectedItemProps {
   capabilities: TaskDetailCapabilities;
   departmentMark?: ItemSheetMark;
   groups: readonly ItemSheetGroup[];
+  /** Items a new link can point at (the board's items that are not sub-items). */
+  linkCandidates?: readonly ItemSheetLinkCandidate[];
   onClose: () => void;
   onRestoreFocus: (cardId: string) => void;
   onPrevious?: () => void;
@@ -950,6 +965,7 @@ function KanbanSelectedItemReady({
   capabilities,
   departmentMark,
   groups,
+  linkCandidates,
   onClose,
   onCloseAutoFocus,
   onPrevious,
@@ -977,6 +993,8 @@ function KanbanSelectedItemReady({
   const createUpdate = useCreateCardUpdate(card.id, card.workspaceId);
   const updateUpdate = useUpdateCardUpdate(card.id, card.workspaceId);
   const deleteUpdate = useDeleteCardUpdate(card.id, card.workspaceId);
+  const itemLinks = useItemLinks(card.id, card.workspaceId, card.boardId);
+  const linksCopy = useItemPageCopy();
 
   return (
     <KanbanCardDetailPanel
@@ -995,9 +1013,15 @@ function KanbanSelectedItemReady({
         updates: updates.data ?? card.updates,
         updatesLoading: updates.isLoading,
         boardLabels: boardLabels.data,
+        links: itemLinks.data,
+        linkCandidates,
+        linksCopy,
       }}
       callbacks={{
         onClose,
+        onAddLink: (itemId, relation) =>
+          itemLinks.addLink({ itemId, relation }),
+        onRemoveLink: (linkId) => itemLinks.removeLink(linkId),
         onRenameTitle: (cardId, patch) => updateCard.mutate({ cardId, patch }),
         onUpdateItem: (cardId, patch) => updateCard.mutate({ cardId, patch }),
         onToggleLabel: (labelId, on) => labelWrites.mutate({ labelId, on }),

@@ -450,9 +450,12 @@ export function ItemPageLinks({
   copy,
   itemKey,
   place,
+  named = false,
 }: {
   itemKey?: string | null;
   place?: string | null;
+  /** Names the add button in full ("Add a link"): set where another "Add" shares the screen. */
+  named?: boolean;
   links: readonly ItemSheetLink[] | undefined;
   candidates: readonly ItemSheetLinkCandidate[] | undefined;
   capabilities: TaskDetailCapabilities;
@@ -475,6 +478,7 @@ export function ItemPageLinks({
               itemKey={itemKey ?? null}
               place={place ?? null}
               copy={copy}
+              named={named}
               onPick={(itemId, relation) =>
                 callbacks.onAddLink?.(itemId, relation)
               }
@@ -568,8 +572,11 @@ function LinkPicker({
   itemKey,
   place,
   copy,
+  named = false,
   onPick,
 }: {
+  /** The trigger carries its full name (the side sheet has another "Add" beside it). */
+  named?: boolean;
   candidates: readonly ItemSheetLinkCandidate[];
   links: readonly ItemSheetLink[];
   /** Key of the item the link is added to. */
@@ -632,7 +639,11 @@ function LinkPicker({
       }}
     >
       <PopoverTrigger asChild>
-        <button type="button" className={BUTTON_SM_VARIANT_CLASS.ghost}>
+        <button
+          type="button"
+          aria-label={named ? t.picker.label : undefined}
+          className={BUTTON_SM_VARIANT_CLASS.ghost}
+        >
           <Plus aria-hidden="true" className="size-4" />
           {t.add}
         </button>

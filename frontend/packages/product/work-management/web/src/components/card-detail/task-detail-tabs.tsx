@@ -6,6 +6,8 @@ import { ItemDescriptionBody } from "../shared/item-description";
 import { ItemDescriptionEditor } from "../shared/item-description-editor";
 import { TaskActivityTab } from "./task-activity-tab";
 import { TaskUpdatesTab } from "./task-updates-tab";
+import { ItemPageLinks } from "../item-page/item-page-sections";
+import type { ItemPageCopy } from "../item-page/item-page.copy";
 import { fillSheetCopy, type ItemSheetCopy } from "./item-sheet.copy";
 import type {
   ItemSheetChildItem,
@@ -59,6 +61,16 @@ export function TaskDetailTabs({
         }
       />
 
+      {callbacks.onAddLink && data.linksCopy ? (
+        <SheetLinks
+          card={card}
+          data={data}
+          linksCopy={data.linksCopy}
+          capabilities={capabilities}
+          callbacks={callbacks}
+        />
+      ) : null}
+
       <ActivitySection
         card={card}
         data={data}
@@ -78,6 +90,33 @@ function SectionHeading({ children }: { children: React.ReactNode }) {
     <h3 className="m-0 mb-2 flex items-center gap-2 text-compact font-semibold text-muted-foreground">
       {children}
     </h3>
+  );
+}
+
+/** "Links" of the sheet: the item page's section, with the item page's words. */
+function SheetLinks({
+  card,
+  data,
+  linksCopy,
+  capabilities,
+  callbacks,
+}: {
+  card: CardDetail;
+  data: TaskDetailData;
+  linksCopy: ItemPageCopy;
+  capabilities: TaskDetailCapabilities;
+  callbacks: TaskDetailCallbacks;
+}) {
+  return (
+    <ItemPageLinks
+      links={data.links}
+      candidates={data.linkCandidates}
+      itemKey={card.itemKey ?? null}
+      named
+      capabilities={capabilities}
+      callbacks={callbacks}
+      copy={linksCopy}
+    />
   );
 }
 

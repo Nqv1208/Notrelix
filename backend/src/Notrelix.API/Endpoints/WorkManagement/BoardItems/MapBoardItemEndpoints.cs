@@ -46,6 +46,8 @@ public static class MapBoardItemEndpoints
         itemGroup.MapSetBoardItemDueDate();
         itemGroup.MapUpdateBoardItemStatus();
         itemGroup.MapListBoardItemLinks();
+        itemGroup.MapCreateBoardItemLink();
+        itemGroup.MapDeleteBoardItemLink();
         itemGroup.MapCreateChildItem();
         itemGroup.MapListChildItems();
         itemGroup.MapMoveChildItem();

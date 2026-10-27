@@ -4,6 +4,9 @@ public class DeleteBoardItemLinkCommandValidator : AbstractValidator<DeleteBoard
 {
     public DeleteBoardItemLinkCommandValidator()
     {
+        RuleFor(x => x.BoardItemId)
+            .NotEmpty();
+
         RuleFor(x => x.BoardItemLinkId)
             .NotEmpty();
     }

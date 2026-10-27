@@ -4,13 +4,13 @@ public class CreateBoardItemLinkCommandValidator : AbstractValidator<CreateBoard
 {
     public CreateBoardItemLinkCommandValidator()
     {
-        RuleFor(x => x.SourceBoardItemId)
+        RuleFor(x => x.BoardItemId)
             .NotEmpty();
 
-        RuleFor(x => x.TargetBoardItemId)
+        RuleFor(x => x.OtherBoardItemId)
             .NotEmpty();
 
-        RuleFor(x => x.LinkType)
+        RuleFor(x => x.Relation)
             .NotEmpty()
             .MaximumLength(50);
     }

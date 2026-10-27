@@ -2866,8 +2866,26 @@ export interface paths {
         /** List links for a board item */
         get: operations["WorkManagement.BoardItems.ListLinks"];
         put?: never;
-        post?: never;
+        /** Link a board item to another item of its board */
+        post: operations["WorkManagement.BoardItems.CreateLink"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/board-items/{itemId}/links/{linkId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove a link of a board item */
+        delete: operations["WorkManagement.BoardItems.DeleteLink"];
         options?: never;
         head?: never;
         patch?: never;
@@ -5670,6 +5688,11 @@ export interface components {
         "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.CompleteBoardItemRequest": {
             /** Format: date-time */
             completedAt?: string | null;
+        };
+        "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.CreateBoardItemLinkRequest": {
+            /** Format: uuid */
+            itemId?: string;
+            relation?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.CreateBoardItemRequest": {
             /** Format: uuid */
@@ -14716,6 +14739,93 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["System.Void"];
                 };
+            };
+        };
+    };
+    "WorkManagement.BoardItems.CreateLink": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                itemId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.CreateBoardItemLinkRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "WorkManagement.BoardItems.DeleteLink": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                itemId: string;
+                linkId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

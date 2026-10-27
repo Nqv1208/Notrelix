@@ -81,6 +81,23 @@ function fakeServices(
   let board = erpBoardScenario();
   if (overrides.noGroups) board = { ...board, groups: [] };
   const createGroup = vi.fn(async () => undefined);
+  const itemExtras = {
+    getLinks: vi.fn(async () => [
+      {
+        id: "link-1",
+        relation: "blocked-by" as const,
+        item: {
+          id: erpItemId("ERP-143"),
+          key: "ERP-143",
+          title: "Phê duyệt phân quyền",
+          statusName: "Đang làm",
+          statusCategory: "in_progress" as const,
+        },
+      },
+    ]),
+    addLink: vi.fn(async () => undefined),
+    removeLink: vi.fn(async () => undefined),
+  };
   const cards = {
     getCard: vi.fn(async (id: string) => detailOf(board, id)),
     getCardFiles: vi.fn(async () => []),
@@ -126,9 +143,10 @@ function fakeServices(
     access: { getBoardAccess: vi.fn(async () => access) },
     cards,
     groups: { createGroup },
+    itemExtras,
     comments: { getCardUpdates: vi.fn(async () => []) },
   } as unknown as WorkManagementServices;
-  return { services, cards, createGroup };
+  return { services, cards, createGroup, itemExtras };
 }
 
 function Providers({
@@ -564,6 +582,43 @@ describe("KanbanView on the ERP board", () => {
     );
     expect(cards.deleteCard).not.toHaveBeenCalled();
     await waitFor(() => expect(laneCount("Đang làm")).toBe("2"));
+  });
+
+  it("lists the links of the item in the sheet, adds one through the picker and removes one", async () => {
+    const { itemExtras } = renderKanban(erpOwnerAccess(), {
+      initialItem: erpItemId("ERP-142"),
+    });
+    const dialog = await screen.findByRole(
+      "dialog",
+      { name: "Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP" },
+      { timeout: 5000 },
+    );
+    expect(
+      await within(dialog).findByText("Phê duyệt phân quyền"),
+    ).toBeTruthy();
+    expect(within(dialog).getByText("Đang chờ")).toBeTruthy();
+
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: "Gỡ liên kết với ERP-143" }),
+    );
+    await waitFor(() =>
+      expect(itemExtras.removeLink).toHaveBeenCalledWith(
+        erpItemId("ERP-142"),
+        "link-1",
+      ),
+    );
+
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: "Thêm liên kết" }),
+    );
+    const [first] = await screen.findAllByRole("option");
+    fireEvent.click(first!);
+    await waitFor(() =>
+      expect(itemExtras.addLink).toHaveBeenCalledWith(erpItemId("ERP-142"), {
+        itemId: expect.any(String),
+        relation: "blocked-by",
+      }),
+    );
   });
 
   it("takes the covered board out of the tab order on a narrow screen while the sheet is open", async () => {
