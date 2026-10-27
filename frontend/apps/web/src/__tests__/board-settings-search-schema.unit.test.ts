@@ -19,9 +19,15 @@ describe("board settings search schema", () => {
     ).toEqual({ section: "fields", field: "sf-due" });
   });
 
+  it("opens the default section for an old access link instead of failing", () => {
+    expect(boardSettingsSearchSchema.parse({ section: "access" })).toEqual({
+      section: "fields",
+    });
+  });
+
   it("rejects a section or a board view it does not know", () => {
     expect(
-      boardSettingsSearchSchema.safeParse({ section: "access" }).success,
+      boardSettingsSearchSchema.safeParse({ section: "billing" }).success,
     ).toBe(false);
     expect(boardSettingsSearchSchema.safeParse({ from: "gantt" }).success).toBe(
       false,
