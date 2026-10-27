@@ -202,6 +202,16 @@ export interface MockActivityRecord {
   notified?: string;
   detail?: ErpHistoryDetail;
   compact?: ErpHistoryCompact;
+  /** The stable type and language-neutral change the real history read carries. */
+  type?: string;
+  change?: {
+    fieldName?: string;
+    from?: string;
+    to?: string;
+    personId?: string;
+    personName?: string;
+    itemKey?: string;
+  };
 }
 
 /** A board's plan read (gap `CTR-GAP-WM-PLAN-ITEMS`). */
@@ -2677,6 +2687,12 @@ export class MockStore {
         undefined,
         {
           verb: "đổi Hạn chót",
+          type: "work.item-field-changed",
+          change: {
+            fieldName: "Hạn chót",
+            from: card.dueAt ? hanoiShortDay(card.dueAt) : "—",
+            to: patch.dueAt ? hanoiShortDay(patch.dueAt) : "—",
+          },
           detail: {
             kind: "diff",
             from: card.dueAt ? hanoiShortDay(card.dueAt) : "—",
@@ -2930,6 +2946,12 @@ export class MockStore {
         undefined,
         {
           verb: "đổi Trạng thái",
+          type: "work.item-status-changed",
+          change: {
+            fieldName: "Trạng thái",
+            from: previous.name,
+            to: option.name,
+          },
           detail: { kind: "diff", from: previous.name, to: option.name },
         },
       );
@@ -3063,6 +3085,11 @@ export class MockStore {
       cardId,
       this.getCurrentUser().id,
       `chuyển việc sang board ${target.title}`,
+      undefined,
+      {
+        type: "work.item-moved-to-board",
+        change: { to: target.title, ...(itemKey ? { itemKey } : {}) },
+      },
     );
     children.forEach((child, index) =>
       relocate(child, itemKey ? `${itemKey}.${index + 1}` : null),

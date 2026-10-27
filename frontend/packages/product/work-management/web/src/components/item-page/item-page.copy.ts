@@ -1,3 +1,8 @@
+import {
+  ACTIVITY_WORDS_EN,
+  ACTIVITY_WORDS_VI,
+} from "../card-detail/activity-words";
+
 /**
  * Item page copy, vi and en, registered as the `item-page` catalog
  * (`item-page.catalog.ts`). The pure page surface takes a `copy` prop;
@@ -8,6 +13,8 @@
  */
 export const en = {
   loading: "Loading the item",
+  /** How the history lines read ({{placeholders}} filled by `describeActivityEvent`). */
+  activityEvents: ACTIVITY_WORDS_EN,
   unavailable: {
     title: "Item unavailable",
     body: "This item could not be loaded or no longer exists.",
@@ -398,6 +405,7 @@ export type ItemPageCopy = typeof en;
 
 export const vi: ItemPageCopy = {
   loading: "Đang tải công việc",
+  activityEvents: ACTIVITY_WORDS_VI,
   unavailable: {
     title: "Không mở được công việc",
     body: "Công việc này không tải được hoặc không còn tồn tại.",

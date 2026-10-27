@@ -1,3 +1,5 @@
+import { ACTIVITY_WORDS_EN, ACTIVITY_WORDS_VI } from "./activity-words";
+
 /**
  * Item side sheet copy, vi and en, registered as the `item-sheet` catalog
  * (`item-sheet.catalog.ts`). The pure sheet surface takes a `copy` prop;
@@ -8,6 +10,8 @@
 export const en = {
   /** BCP 47 tag the sheet formats times with. */
   locale: "en",
+  /** How the history lines read ({{placeholders}} filled by `describeActivityEvent`). */
+  activityEvents: ACTIVITY_WORDS_EN,
   dialogLabel: "Item details",
   loading: "Loading item details",
   unavailable: {
@@ -131,6 +135,7 @@ export type ItemSheetCopy = typeof en;
 
 export const vi: ItemSheetCopy = {
   locale: "vi",
+  activityEvents: ACTIVITY_WORDS_VI,
   dialogLabel: "Chi tiết công việc",
   loading: "Đang tải chi tiết công việc",
   unavailable: {

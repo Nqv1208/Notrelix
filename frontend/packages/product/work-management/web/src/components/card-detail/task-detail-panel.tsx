@@ -210,6 +210,7 @@ function TaskDetailReadyContainer({
         activity: activity.data ?? card.activity,
         activityLoading: activity.isLoading,
         activityFetching: activity.isFetching,
+        activityError: activity.isError && activity.data === undefined,
         updates: updates.data ?? card.updates,
         updatesLoading: updates.isLoading,
       }}

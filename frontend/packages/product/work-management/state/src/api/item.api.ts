@@ -291,8 +291,9 @@ export function createCardApi(client: NotrelixClient) {
     },
 
     async getCardActivity(cardId: string) {
+      // The newest page of the history (the server pages newest first; 100 is its largest page).
       const activity = await api.get<ActivityLogResponseApi>(
-        endpoints.boardItems.activity(cardId),
+        `${endpoints.boardItems.activity(cardId)}?page=1&pageSize=100`,
       );
       return mapActivityResponse(activity, cardId);
     },

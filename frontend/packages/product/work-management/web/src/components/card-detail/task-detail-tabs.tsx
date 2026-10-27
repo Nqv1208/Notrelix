@@ -314,6 +314,7 @@ function ActivitySection({
             activity={data.activity}
             isLoading={data.activityLoading}
             isFetching={data.activityFetching}
+            isError={data.activityError}
             copy={copy}
             now={now}
             timeZone={timeZone}

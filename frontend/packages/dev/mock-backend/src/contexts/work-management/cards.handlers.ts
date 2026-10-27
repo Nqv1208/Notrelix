@@ -1124,6 +1124,10 @@ export const cardsOperations = [
         notified: entry.notified ?? null,
         detail: entry.detail ?? null,
         compact: entry.compact ?? null,
+        // The real read's fields: the stable type and the language-neutral change.
+        type: entry.type ?? null,
+        change: entry.change ?? null,
+        actorAvatarUrl: null,
       }));
       return ok({ data, total: data.length, page: 1, pageSize: data.length });
     },

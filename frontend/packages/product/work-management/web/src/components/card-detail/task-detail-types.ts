@@ -109,6 +109,8 @@ export interface TaskDetailData {
   readonly activity: readonly CardActivity[];
   readonly activityLoading: boolean;
   readonly activityFetching: boolean;
+  /** The history could not be read and there is nothing to show instead. */
+  readonly activityError?: boolean;
   /** Child items when the item detail carries them; the count falls back to `childProgress`. */
   readonly childItems?: readonly ItemSheetChildItem[];
   /** Whether the member follows the item; `null`/absent hides the follow chip. */

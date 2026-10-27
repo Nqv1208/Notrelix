@@ -378,6 +378,8 @@ export function mapActivityResponse(
     ...(item.notified ? { notified: item.notified } : {}),
     ...(item.detail ? { detail: item.detail } : {}),
     ...(item.compact ? { compact: item.compact } : {}),
+    ...(item.type ? { code: item.type } : {}),
+    ...(item.change ? { change: item.change } : {}),
   }));
 }
 
