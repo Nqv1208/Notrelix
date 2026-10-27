@@ -1,6 +1,7 @@
 import { useItemPageCopy } from "../../item-page/use-item-page-copy";
 import { ItemCreateHost } from "../../item-create/item-create-host";
 import { useNoGroupNotice } from "../../item-create/use-no-group-notice";
+import { useAddGroup } from "../../status-option/use-add-group";
 import {
   useCallback,
   useContext,
@@ -30,6 +31,8 @@ import {
   useCreateCardUpdate,
   useDeleteCardUpdate,
   useDuplicateCard,
+  useMoveFieldOption,
+  useRemoveFieldOption,
   useUpdateCard,
   useUpdateCardUpdate,
   useUpdateFieldOption,
@@ -314,6 +317,28 @@ export function KanbanView({
         { id: "kanban-option-write" },
       ),
   });
+  const moveOption = useMoveFieldOption(boardId, workspaceId, {
+    onError: () =>
+      toast.error(
+        fillCopy(laneCopyRef.current.moveOptionFailed, {
+          name: pendingOptionName.current,
+        }),
+        { id: "kanban-option-write" },
+      ),
+  });
+  const removeOption = useRemoveFieldOption(boardId, workspaceId, {
+    onError: () =>
+      toast.error(
+        fillCopy(laneCopyRef.current.deleteOptionFailed, {
+          name: pendingOptionName.current,
+        }),
+        { id: "kanban-option-write" },
+      ),
+  });
+  const { addGroup, isPending: addingGroup } = useAddGroup(
+    boardId,
+    workspaceId,
+  );
   // Below the tablet width the sheet covers the board: the board behind is
   // taken out of the tab order and the accessibility tree while it is open.
   const isNarrow = useIsMobile();
@@ -518,6 +543,32 @@ export function KanbanView({
       fieldId: kanban.groupByField.id,
       optionId: lane.optionId,
       ...draft,
+    });
+  };
+
+  const handleMoveLane = (
+    lane: KanbanStatusLane,
+    direction: "before" | "after",
+  ) => {
+    if (!kanban.groupByField || !lane.optionId) return;
+    pendingOptionName.current = lane.name;
+    moveOption.mutate({
+      fieldId: kanban.groupByField.id,
+      optionId: lane.optionId,
+      direction,
+    });
+  };
+
+  const handleDeleteLane = (
+    lane: KanbanStatusLane,
+    replacementOptionId: string | null,
+  ) => {
+    if (!kanban.groupByField || !lane.optionId) return;
+    pendingOptionName.current = lane.name;
+    removeOption.mutate({
+      fieldId: kanban.groupByField.id,
+      optionId: lane.optionId,
+      replacementOptionId,
     });
   };
 
@@ -760,6 +811,16 @@ export function KanbanView({
             onCreateLane={handleCreateLane}
             onUpdateLane={handleUpdateLane}
             lanePending={addOption.isPending}
+            onMoveLane={handleMoveLane}
+            onDeleteLane={handleDeleteLane}
+            laneWritePending={moveOption.isPending || removeOption.isPending}
+            onCreateGroup={
+              capabilities.canCreateCard
+                ? (draft) => addGroup(draft)
+                : undefined
+            }
+            groupTitles={kanban.groups.map((group) => group.title)}
+            groupPending={addingGroup}
             laneCardLimit={kanbanSettings.laneCardLimit}
             keyboardMove={kanbanSettings.keyboardMove}
             cardActions={cardActions}

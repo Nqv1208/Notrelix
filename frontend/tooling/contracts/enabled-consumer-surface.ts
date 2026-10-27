@@ -2346,6 +2346,28 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
   },
   {
     context: "Work Management",
+    capability: "WorkManagement.BoardFields.RemoveFieldOption",
+    consumerSymbol: "TODO",
+    consumerFile: "frontend/packages/product/work-management/state/src/api/",
+    classification: "CANONICAL_MOCKED",
+    operationId: "WorkManagement.BoardFields.RemoveFieldOption",
+    method: "DELETE", // dummy
+    pathTemplate: "/api/v1/",
+    mutation: true,
+  },
+  {
+    context: "Work Management",
+    capability: "WorkManagement.BoardFields.MoveFieldOption",
+    consumerSymbol: "TODO",
+    consumerFile: "frontend/packages/product/work-management/state/src/api/",
+    classification: "CANONICAL_MOCKED",
+    operationId: "WorkManagement.BoardFields.MoveFieldOption",
+    method: "POST", // dummy
+    pathTemplate: "/api/v1/",
+    mutation: true,
+  },
+  {
+    context: "Work Management",
     capability: "WorkManagement.BoardFields.Delete",
     consumerSymbol: "TODO",
     consumerFile: "frontend/packages/product/work-management/state/src/api/",

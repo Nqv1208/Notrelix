@@ -3,12 +3,12 @@ import { toast } from "sonner";
 import {
   useArchiveCard,
   useBoardLabels,
-  useCreateGroup,
   useCreateItemWithDetails,
   type CreateItemDetail,
 } from "@notrelix/work-management-state";
 import type { Board, BoardGroup } from "@notrelix/work-management-core";
 import { findItemFields } from "../card-detail/item-field-editors";
+import { useAddGroup } from "../status-option/use-add-group";
 import {
   ItemCreateDialog,
   type ItemCreateContext,
@@ -87,7 +87,10 @@ export function ItemCreateHost({
   const copy = useItemCreateCopy();
   const create = useCreateItemWithDetails(board?.id ?? "", workspaceId);
   const archive = useArchiveCard(board?.id ?? "", workspaceId);
-  const createGroup = useCreateGroup(board?.id ?? "", workspaceId);
+  const { addGroup, isPending: addingGroup } = useAddGroup(
+    board?.id ?? "",
+    workspaceId,
+  );
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState<ItemCreateCreated | null>(null);
   const nonce = useRef(0);
@@ -199,13 +202,12 @@ export function ItemCreateHost({
       onAddGroup={
         board
           ? () =>
-              createGroup.mutate(
-                { title: copy.defaultGroupTitle },
-                { onError: () => setError(copy.groupAddFailed) },
+              void addGroup({ title: copy.defaultGroupTitle }, false).catch(
+                () => setError(copy.groupAddFailed),
               )
           : undefined
       }
-      addGroupPending={createGroup.isPending}
+      addGroupPending={addingGroup}
       priorities={(fields?.priority?.options ?? []).map((option) => ({
         id: option.id,
         label: option.label,

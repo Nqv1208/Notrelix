@@ -18,6 +18,7 @@ import {
   erpTableResizedProps,
   erpTableSelectedProps,
 } from "../../../../verification/table-fixtures";
+import { statusOptionFormCopy } from "../../../status-option/status-option-form.copy";
 import { mainTableCopy } from "../main-table.copy";
 import {
   MainTableSurface,
@@ -335,26 +336,163 @@ describe("MainTableSurface", () => {
     );
   });
 
-  it("keeps the form open with its values when the group cannot be added", async () => {
+  it("keeps the form open with its values when the value cannot be added", async () => {
     const onSubmit = vi.fn(async () => {
       throw new Error("refused");
     });
     const base = erpTableProps();
     renderTable({
       ...base,
-      addGroup: { ...base.addGroup!, kind: "group", onSubmit },
+      addGroup: { ...base.addGroup!, kind: "value", onSubmit },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Thêm nhóm" }));
-    const name = screen.getByRole("textbox", { name: "Tên nhóm" });
+    fireEvent.click(screen.getByRole("button", { name: "Thêm giá trị" }));
+    const name = screen.getByRole("textbox", { name: "Tên giá trị" });
     // A Select field has no status group to choose.
     expect(screen.queryByRole("radio", { name: "Hoàn thành" })).toBeNull();
     fireEvent.change(name, { target: { value: "Backlog" } });
     fireEvent.submit(name.closest("form")!);
     await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
     expect(
-      (screen.getByRole("textbox", { name: "Tên nhóm" }) as HTMLInputElement)
+      (screen.getByRole("textbox", { name: "Tên giá trị" }) as HTMLInputElement)
         .value,
     ).toBe("Backlog");
+  });
+
+  it("FUI[wm.table.main:add-board-group] adds a board group from its own entry, labelled apart from Thêm trạng thái", async () => {
+    const onSubmit = vi.fn(async () => undefined);
+    const base = erpTableProps();
+    renderTable({
+      ...base,
+      addGroup: {
+        ...base.addGroup!,
+        boardGroup: { existingTitles: ["Sprint 1"], onSubmit },
+      },
+    });
+    const status = screen.getByRole("button", { name: "Thêm trạng thái" });
+    const group = screen.getByRole("button", { name: "Thêm nhóm" });
+    expect(group).not.toBe(status);
+
+    fireEvent.click(group);
+    const name = screen.getByRole("textbox", { name: "Tên nhóm" });
+    // A group has no status group to choose.
+    expect(screen.queryByRole("radio", { name: "Hoàn thành" })).toBeNull();
+    fireEvent.change(name, { target: { value: "sprint 1" } });
+    fireEvent.submit(name.closest("form")!);
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect(screen.getByRole("alert")).toBeTruthy();
+
+    fireEvent.change(name, { target: { value: "  Sprint 2  " } });
+    fireEvent.submit(name.closest("form")!);
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({ title: "Sprint 2" }),
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole("textbox", { name: "Tên nhóm" })).toBeNull(),
+    );
+  });
+
+  it("FUI[wm.table.main:group-reorder] moves a group up or down from its header menu and disables the ends", () => {
+    const onMove = vi.fn();
+    const base = erpTableProps();
+    renderTable({
+      ...base,
+      groupMenu: (group) => ({
+        formCopy: statusOptionFormCopy("vi"),
+        subject: "status",
+        canMoveUp: group.id !== base.groups[0]!.id,
+        canMoveDown: group.id !== base.groups.at(-1)!.id,
+        pending: false,
+        choices: [],
+        itemCount: group.total,
+        onMove: (direction) => onMove(group.id, direction),
+        onDelete: vi.fn(),
+      }),
+    });
+    const first = base.groups[0]!;
+    const second = base.groups[1]!;
+    fireEvent.keyDown(
+      screen.getByRole("button", {
+        name: copy.group.menu.replace("{{name}}", second.name),
+      }),
+      { key: "Enter" },
+    );
+    fireEvent.click(screen.getByRole("menuitem", { name: copy.group.moveUp }));
+    expect(onMove).toHaveBeenCalledWith(second.id, "before");
+
+    fireEvent.keyDown(
+      screen.getByRole("button", {
+        name: copy.group.menu.replace("{{name}}", first.name),
+      }),
+      { key: "Enter" },
+    );
+    expect(
+      screen
+        .getByRole("menuitem", { name: copy.group.moveUp })
+        .getAttribute("aria-disabled"),
+    ).toBe("true");
+  });
+
+  it("FUI[wm.table.main:group-delete] asks where the group's items go and deletes it with that replacement", async () => {
+    const onDelete = vi.fn();
+    const base = erpTableProps();
+    const form = statusOptionFormCopy("vi");
+    const target = base.groups[1]!;
+    const others = base.groups.filter((group) => group.id !== target.id);
+    renderTable({
+      ...base,
+      groupMenu: (group) => ({
+        formCopy: form,
+        subject: "status",
+        canMoveUp: true,
+        canMoveDown: true,
+        pending: false,
+        // The last Not started status cannot go; it says why.
+        blockedReason:
+          group.id === base.groups[0]!.id
+            ? form.removeBlockedStatus
+            : undefined,
+        choices: others.map((other) => ({ id: other.id, name: other.name })),
+        itemCount: group.total,
+        onMove: vi.fn(),
+        onDelete,
+      }),
+    });
+    fireEvent.keyDown(
+      screen.getByRole("button", {
+        name: copy.group.menu.replace("{{name}}", target.name),
+      }),
+      { key: "Enter" },
+    );
+    fireEvent.click(
+      screen.getByRole("menuitem", { name: copy.group.deleteStatus }),
+    );
+    const dialog = await screen.findByRole("alertdialog");
+    expect(
+      within(dialog).getByText(
+        form.removeTitle.replace("{{name}}", target.name),
+      ),
+    ).toBeTruthy();
+    fireEvent.click(
+      within(dialog).getByRole("radio", { name: others[1]!.name }),
+    );
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: form.removeMoveConfirm }),
+    );
+    expect(onDelete).toHaveBeenCalledWith(others[1]!.id);
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
+
+    fireEvent.keyDown(
+      screen.getByRole("button", {
+        name: copy.group.menu.replace("{{name}}", base.groups[0]!.name),
+      }),
+      { key: "Enter" },
+    );
+    const blocked = screen.getByRole("menuitem", {
+      name: copy.group.deleteStatus,
+    });
+    expect(blocked.getAttribute("aria-disabled")).toBe("true");
+    expect(blocked.getAttribute("title")).toBe(form.removeBlockedStatus);
   });
 
   it("shows no add-group control to a viewer who cannot edit", () => {

@@ -20,6 +20,7 @@ import {
   type TableColumnWidths,
 } from "./table-columns";
 import { TableAddRow, TableGroupHeader } from "./table-group-section";
+import type { TableGroupMenuModel } from "./table-group-menu";
 import { TableHeaderRow } from "./table-header-row";
 import type { TableGroupModel, TableStatusOption } from "./table-model";
 import type { TableEditors } from "./table-cell-editors";
@@ -63,6 +64,8 @@ export interface MainTableSurfaceProps {
    * option of the grouped field. Absent when the viewer may not add one.
    */
   addGroup?: Omit<TableAddGroupProps, "copy">;
+  /** The "…" menu of a group header (move, delete); `undefined` for a group without one. */
+  groupMenu?: (group: TableGroupModel) => TableGroupMenuModel | undefined;
   /** A width settled by a drag release or a key press. */
   onColumnWidthChange?: (columnId: string, width: number) => void;
   /** Back to the design width of a column. */
@@ -144,6 +147,7 @@ export function MainTableSurface({
   onNoGroup,
   canArchive,
   addGroup,
+  groupMenu,
   columnWidths,
   onColumnWidthChange,
   onColumnWidthReset,
@@ -343,6 +347,7 @@ export function MainTableSurface({
                   group={group}
                   collapsed={collapsed}
                   onToggle={() => onGroupToggle(group.id)}
+                  menu={groupMenu?.(group)}
                 />
                 {collapsed
                   ? null

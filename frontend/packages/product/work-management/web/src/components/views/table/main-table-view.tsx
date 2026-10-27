@@ -17,7 +17,9 @@ import {
   useAddFieldOption,
   useBoardTable,
   useDuplicateCard,
+  useMoveFieldOption,
   useMoveItemToBoard,
+  useRemoveFieldOption,
   useUpdateCard,
   useWorkspaceBoards,
   type KanbanWriteFailure,
@@ -25,6 +27,7 @@ import {
 } from "@notrelix/work-management-state";
 import {
   generatePosition,
+  isOptimisticOptionId,
   orderByKey,
   projectTableLanes,
   type Card,
@@ -58,9 +61,12 @@ import type { TableEditors } from "./table-cell-editors";
 import {
   buildTableGroup,
   tableStatusOptions,
+  type TableGroupModel,
   type TableStatusOption,
 } from "./table-model";
+import { useAddGroup } from "../../status-option/use-add-group";
 import { useStatusOptionFormCopy } from "../../status-option/use-status-option-form-copy";
+import type { TableGroupMenuModel } from "./table-group-menu";
 import { useMainTableCopy } from "./use-main-table-copy";
 
 type ParamChange = (
@@ -188,7 +194,29 @@ export function MainTableView({
   const capabilities = boardCapabilities(access?.myLevel);
   const addOption = useAddFieldOption(boardId, workspaceId);
   const noGroupNotice = useNoGroupNotice(boardId, workspaceId);
+  const { addGroup, isPending: addingGroup } = useAddGroup(
+    boardId,
+    workspaceId,
+  );
   const optionFormCopy = useStatusOptionFormCopy();
+  // The group a move or delete is about, named in the failure message.
+  const optionWriteName = useRef("");
+  const moveOption = useMoveFieldOption(boardId, workspaceId, {
+    onError: () =>
+      toast.error(
+        fillTableCopy(copy.failed.moveGroup, { name: optionWriteName.current }),
+        { id: "table-option-write" },
+      ),
+  });
+  const removeOption = useRemoveFieldOption(boardId, workspaceId, {
+    onError: () =>
+      toast.error(
+        fillTableCopy(copy.failed.deleteGroup, {
+          name: optionWriteName.current,
+        }),
+        { id: "table-option-write" },
+      ),
+  });
   const duplicateCard = useDuplicateCard(boardId, workspaceId);
   const updateCard = useUpdateCard(boardId, workspaceId);
   const archiveCard = useArchiveCard(boardId, workspaceId, {
@@ -315,6 +343,65 @@ export function MainTableView({
   const isStatusGrouping =
     !table.groupByField || table.groupByField.id === table.statusField?.id;
   const groupField = table.groupByField ?? table.statusField;
+  // The groups that are options of the grouped field, in the field's order
+  // (search, filter and "hide finished" do not change which options exist).
+  const optionLanes = useMemo(
+    () => table.allLanes.filter((lane) => lane.optionId !== null),
+    [table.allLanes],
+  );
+  const groupMenu = (
+    group: TableGroupModel,
+  ): TableGroupMenuModel | undefined => {
+    if (!capabilities.canEditFields || !groupField) return undefined;
+    if (group.id === "none" || isOptimisticOptionId(group.id)) return undefined;
+    const index = optionLanes.findIndex((lane) => lane.optionId === group.id);
+    if (index < 0) return undefined;
+    const subject = isStatusGrouping ? "status" : "value";
+    const required = group.category === "todo" || group.category === "done";
+    const hasSibling = optionLanes.some(
+      (lane) => lane.optionId !== group.id && lane.category === group.category,
+    );
+    const blockedReason =
+      subject === "value"
+        ? optionLanes.length <= 1
+          ? optionFormCopy.removeBlockedValue
+          : undefined
+        : required && !hasSibling
+          ? optionFormCopy.removeBlockedStatus
+          : undefined;
+    return {
+      formCopy: optionFormCopy,
+      subject,
+      canMoveUp: index > 0,
+      canMoveDown: index < optionLanes.length - 1,
+      pending: moveOption.isPending || removeOption.isPending,
+      blockedReason,
+      choices: optionLanes
+        .filter((lane) => lane.optionId !== group.id)
+        .map((lane) => ({
+          id: lane.optionId!,
+          name: lane.name,
+          color: lane.color,
+        })),
+      itemCount: group.total,
+      onMove: (direction) => {
+        optionWriteName.current = group.name;
+        moveOption.mutate({
+          fieldId: groupField.id,
+          optionId: group.id,
+          direction,
+        });
+      },
+      onDelete: (replacementOptionId) => {
+        optionWriteName.current = group.name;
+        removeOption.mutate({
+          fieldId: groupField.id,
+          optionId: group.id,
+          replacementOptionId,
+        });
+      },
+    };
+  };
   const hiddenByArchive = useMemo(
     () => new Set(pendingArchive),
     [pendingArchive],
@@ -602,7 +689,7 @@ export function MainTableView({
             capabilities.canEditFields && groupField
               ? {
                   formCopy: optionFormCopy,
-                  kind: isStatusGrouping ? "status" : "group",
+                  kind: isStatusGrouping ? "status" : "value",
                   existingNames: groupField.options.map(
                     (option) => option.label,
                   ),
@@ -624,9 +711,19 @@ export function MainTableView({
                       throw error;
                     }
                   },
+                  boardGroup: capabilities.canCreateCard
+                    ? {
+                        existingTitles: table.groups.map(
+                          (group) => group.title,
+                        ),
+                        pending: addingGroup,
+                        onSubmit: (draft) => addGroup(draft),
+                      }
+                    : undefined,
                 }
               : undefined
           }
+          groupMenu={groupMenu}
           columnWidths={table.columnWidths}
           onColumnWidthChange={table.setColumnWidth}
           onColumnWidthReset={table.resetColumnWidth}

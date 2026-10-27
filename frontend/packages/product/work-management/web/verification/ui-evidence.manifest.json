@@ -662,6 +662,18 @@
           "testFile": "src/components/views/kanban/__tests__/kanban-board.interaction.component.test.tsx"
         },
         {
+          "id": "lane-reorder",
+          "testFile": "src/components/views/kanban/__tests__/kanban-board.interaction.component.test.tsx"
+        },
+        {
+          "id": "lane-delete",
+          "testFile": "src/components/views/kanban/__tests__/kanban-board.interaction.component.test.tsx"
+        },
+        {
+          "id": "add-group",
+          "testFile": "src/components/views/kanban/__tests__/kanban-board.interaction.component.test.tsx"
+        },
+        {
           "id": "keyboard-move",
           "testFile": "src/components/views/kanban/__tests__/kanban-board.interaction.component.test.tsx"
         },
@@ -1088,6 +1100,7 @@
         "src/components/views/table/table-bulk-bar.tsx",
         "src/components/views/table/table-cell-editors.tsx",
         "src/components/views/table/table-column-resize.tsx",
+        "src/components/views/table/table-group-menu.tsx",
         "src/components/views/table/table-group-section.tsx",
         "src/components/views/table/table-header-row.tsx",
         "src/components/views/table/table-parts.tsx",
@@ -1340,6 +1353,18 @@
         },
         {
           "id": "add-group",
+          "testFile": "src/components/views/table/__tests__/main-table-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "add-board-group",
+          "testFile": "src/components/views/table/__tests__/main-table-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "group-reorder",
+          "testFile": "src/components/views/table/__tests__/main-table-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "group-delete",
           "testFile": "src/components/views/table/__tests__/main-table-surface.interaction.component.test.tsx"
         }
       ]
@@ -2022,7 +2047,10 @@
       "owner": "@notrelix/work-management-web",
       "surfaceKind": "form",
       "pureEntry": "src/components/status-option/status-option-form.tsx",
-      "coveredSources": [],
+      "coveredSources": [
+        "src/components/status-option/add-group-popover.tsx",
+        "src/components/status-option/remove-option-dialog.tsx"
+      ],
       "stories": [
         {
           "id": "work-management-status-option-form--default",
@@ -2127,6 +2155,22 @@
         },
         {
           "id": "no-category",
+          "testFile": "src/components/status-option/__tests__/status-option-form.interaction.component.test.tsx"
+        },
+        {
+          "id": "remove-with-items",
+          "testFile": "src/components/status-option/__tests__/status-option-form.interaction.component.test.tsx"
+        },
+        {
+          "id": "remove-empty",
+          "testFile": "src/components/status-option/__tests__/status-option-form.interaction.component.test.tsx"
+        },
+        {
+          "id": "remove-value",
+          "testFile": "src/components/status-option/__tests__/status-option-form.interaction.component.test.tsx"
+        },
+        {
+          "id": "add-group",
           "testFile": "src/components/status-option/__tests__/status-option-form.interaction.component.test.tsx"
         }
       ]

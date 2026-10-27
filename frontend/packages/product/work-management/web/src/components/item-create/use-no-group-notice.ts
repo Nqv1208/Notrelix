@@ -1,33 +1,30 @@
 import { useCallback } from "react";
 import { toast } from "sonner";
-import { useCreateGroup } from "@notrelix/work-management-state";
+import { useAddGroup } from "../status-option/use-add-group";
 import { useItemCreateCopy } from "./use-item-create-copy";
 
 /**
  * What an add path says instead of doing nothing: a board without a group
  * (every item belongs to a group) names the reason and offers to add one, and a
  * missing permission names that. Used by the quick add of a lane and the table.
+ * The offered group is created through the same flow as "Add group".
  */
 export function useNoGroupNotice(boardId: string, workspaceId: string) {
   const copy = useItemCreateCopy();
-  const createGroup = useCreateGroup(boardId, workspaceId);
-  const { mutate } = createGroup;
+  const { addGroup } = useAddGroup(boardId, workspaceId);
 
   const noGroup = useCallback(() => {
     toast.error(copy.noGroup, {
       action: {
         label: copy.addGroup,
         onClick: () =>
-          mutate(
+          void addGroup(
             { title: copy.defaultGroupTitle },
-            {
-              onSuccess: () => toast.success(copy.groupAdded),
-              onError: () => toast.error(copy.groupAddFailed),
-            },
-          ),
+            { success: copy.groupAdded, failure: copy.groupAddFailed },
+          ).catch(() => undefined),
       },
     });
-  }, [copy, mutate]);
+  }, [copy, addGroup]);
 
   const noPermission = useCallback(
     () => toast.error(copy.cannotAdd),

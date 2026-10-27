@@ -17,8 +17,10 @@
  *   boards.columns.move — POST /boards/:boardId/fields/:fieldId/move
  *   boards.options.add     — POST /boards/:boardId/fields/:fieldId/options
  *   boards.options.update  — PATCH /boards/:boardId/fields/:fieldId/options/:optionId
+ *   boards.options.remove  — DELETE /boards/:boardId/fields/:fieldId/options/:optionId
+ *   boards.options.move    — POST /boards/:boardId/fields/:fieldId/options/:optionId/move
  *   boards.labels.list     — GET /boards/:boardId/labels
- *   boards.labels.create   — POST /boards/:boardId/labels
+ *   boards.labels.create  — POST /boards/:boardId/labels
  *   boards.labels.update   — PATCH /labels/:labelId
  *   boards.labels.delete   — DELETE /labels/:labelId
  *
@@ -998,6 +1000,112 @@ export const boardsOperations = [
       if (updated === "not-found") return notFound("Option not found");
       if (updated === "stale") return preconditionFailed();
       return ok<void>(undefined);
+    },
+  }),
+
+  // ─── DELETE /boards/:boardId/fields/:fieldId/options/:optionId ──────────
+
+  defineMockOperation<
+    { boardId: string; fieldId: string; optionId: string },
+    never,
+    void
+  >({
+    id: "boards.options.remove",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardFields.RemoveFieldOption",
+    } as any,
+    method: "DELETE",
+    route: "/boards/:boardId/fields/:fieldId/options/:optionId",
+    async handle({ params, store, request }) {
+      if (!request.headers.get("Idempotency-Key")) {
+        return optionBadRequest({
+          "Idempotency-Key": ["The header is required."],
+        });
+      }
+      const url = new URL(request.url);
+      const expectedVersion = Number(url.searchParams.get("expectedVersion"));
+      if (!(expectedVersion > 0)) {
+        return optionBadRequest({
+          expectedVersion: ["ExpectedVersion must be a positive value."],
+        });
+      }
+      if (!canWriteBoardItems(params.boardId, store)) return forbidden();
+      const column = store.getColumn(params.fieldId);
+      if (!column || column.boardId !== params.boardId) {
+        return notFound("Field not found");
+      }
+      const removed = store.removeFieldOption(params.fieldId, params.optionId, {
+        expectedVersion,
+        replacementOptionId: url.searchParams.get("replacementOptionId"),
+      });
+      switch (removed) {
+        case "not-found":
+          return notFound("Option not found");
+        case "stale":
+          return preconditionFailed();
+        case "replacement-required":
+        case "replacement-invalid":
+          return optionBadRequest({
+            replacementOptionId: [
+              removed === "replacement-required"
+                ? "Items use this status. Choose the status they move to."
+                : "The replacement must be another option of the same field.",
+            ],
+          });
+        case "keeps-todo-and-done":
+          return optionBadRequest({
+            optionId: ["A Status field must keep a Todo and a Done option."],
+          });
+        case "ok":
+          return noContent();
+      }
+    },
+  }),
+
+  // ─── POST /boards/:boardId/fields/:fieldId/options/:optionId/move ───────
+
+  defineMockOperation<
+    { boardId: string; fieldId: string; optionId: string },
+    {
+      expectedVersion?: number;
+      previousSiblingId?: string | null;
+      nextSiblingId?: string | null;
+    },
+    void
+  >({
+    id: "boards.options.move",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardFields.MoveFieldOption",
+    } as any,
+    method: "POST",
+    route: "/boards/:boardId/fields/:fieldId/options/:optionId/move",
+    async handle({ params, body, store, request }) {
+      if (!request.headers.get("Idempotency-Key")) {
+        return optionBadRequest({
+          "Idempotency-Key": ["The header is required."],
+        });
+      }
+      const data = body ?? {};
+      if (!data.expectedVersion || data.expectedVersion <= 0) {
+        return optionBadRequest({
+          expectedVersion: ["ExpectedVersion must be a positive value."],
+        });
+      }
+      if (!canWriteBoardItems(params.boardId, store)) return forbidden();
+      const column = store.getColumn(params.fieldId);
+      if (!column || column.boardId !== params.boardId) {
+        return notFound("Field not found");
+      }
+      const moved = store.moveFieldOption(params.fieldId, params.optionId, {
+        expectedVersion: data.expectedVersion,
+        previousSiblingId: data.previousSiblingId,
+        nextSiblingId: data.nextSiblingId,
+      });
+      if (moved === "not-found") return notFound("Option not found");
+      if (moved === "stale") return preconditionFailed();
+      return noContent();
     },
   }),
 

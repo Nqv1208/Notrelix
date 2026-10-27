@@ -5,6 +5,8 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import {
+  ArrowLeft,
+  ArrowRight,
   ChevronLeft,
   Inbox,
   MoreHorizontal,
@@ -16,6 +18,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
   Input,
   Popover,
@@ -35,6 +38,10 @@ import {
   StatusOptionForm,
   type StatusOptionDraft,
 } from "../../status-option/status-option-form";
+import {
+  RemoveOptionDialog,
+  type RemoveOptionChoice,
+} from "../../status-option/remove-option-dialog";
 import type { StatusOptionFormCopy } from "../../status-option/status-option-form.copy";
 import { KanbanAddCard } from "./kanban-add-card";
 import { KanbanCard } from "./kanban-card";
@@ -73,6 +80,23 @@ export interface KanbanLaneEdit {
   /** The other lanes' names (this lane's own name is not a duplicate). */
   readonly otherNames: readonly string[];
   readonly onSubmit: (draft: StatusOptionDraft) => void;
+  /** One place left or right in the field's order; absent = the viewer cannot reorder. */
+  readonly move?: {
+    readonly canMoveLeft: boolean;
+    readonly canMoveRight: boolean;
+    /** A move is in flight: the entries wait so a stale version is never sent. */
+    readonly pending: boolean;
+    readonly onMove: (direction: "before" | "after") => void;
+  };
+  /** Delete with a replacement choice; absent = the viewer cannot delete. */
+  readonly remove?: {
+    /** Why the lane cannot be deleted (the last Not started / Done status, the last value); absent = it can. */
+    readonly blockedReason?: string;
+    /** The other options the items can move to. */
+    readonly choices: readonly RemoveOptionChoice[];
+    readonly pending: boolean;
+    readonly onConfirm: (replacementOptionId: string | null) => void;
+  };
 }
 
 export interface KanbanColumnProps {
@@ -160,6 +184,7 @@ export function KanbanColumn({
   const sectionRef = useRef<HTMLElement | null>(null);
   const [expanded, setExpanded] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [removing, setRemoving] = useState(false);
   const [settingWip, setSettingWip] = useState(false);
   const [wipText, setWipText] = useState("");
   const [wipBad, setWipBad] = useState(false);
@@ -168,6 +193,7 @@ export function KanbanColumn({
   // the menu does not give focus back to its button.
   const openingForm = useRef(false);
   const openingWip = useRef(false);
+  const openingRemove = useRef(false);
   const focusFirstRevealed = useRef<string | null>(null);
   const laneKey = kanbanLaneKey(lane.optionId);
   const { setNodeRef } = useDroppable({
@@ -411,6 +437,10 @@ export function KanbanColumn({
                     openingWip.current = false;
                     event.preventDefault();
                     setSettingWip(true);
+                  } else if (openingRemove.current) {
+                    openingRemove.current = false;
+                    event.preventDefault();
+                    setRemoving(true);
                   }
                 }}
               >
@@ -438,12 +468,47 @@ export function KanbanColumn({
                     {copy.wipSet}
                   </DropdownMenuItem>
                 ) : null}
+                {canEdit && edit.move ? (
+                  <>
+                    <DropdownMenuItem
+                      disabled={!edit.move.canMoveLeft || edit.move.pending}
+                      onSelect={() => edit.move?.onMove("before")}
+                    >
+                      <ArrowLeft aria-hidden="true" />
+                      {copy.moveLeft}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      disabled={!edit.move.canMoveRight || edit.move.pending}
+                      onSelect={() => edit.move?.onMove("after")}
+                    >
+                      <ArrowRight aria-hidden="true" />
+                      {copy.moveRight}
+                    </DropdownMenuItem>
+                  </>
+                ) : null}
                 <DropdownMenuItem onSelect={() => onCollapsedChange(true)}>
                   {copy.collapse}
                 </DropdownMenuItem>
                 <DropdownMenuItem onSelect={onHide}>
                   {copy.hide}
                 </DropdownMenuItem>
+                {canEdit && edit.remove ? (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      variant="destructive"
+                      disabled={edit.remove.blockedReason !== undefined}
+                      title={edit.remove.blockedReason}
+                      onSelect={() => {
+                        openingRemove.current = true;
+                      }}
+                    >
+                      {edit.subject === "status"
+                        ? copy.deleteStatus
+                        : copy.deleteValue}
+                    </DropdownMenuItem>
+                  </>
+                ) : null}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -529,6 +594,22 @@ export function KanbanColumn({
           </PopoverContent>
         ) : null}
       </Popover>
+
+      {removing && canEdit && edit.remove ? (
+        <RemoveOptionDialog
+          copy={edit.formCopy}
+          subject={edit.subject}
+          name={name}
+          itemCount={lane.total}
+          choices={edit.remove.choices}
+          pending={edit.remove.pending}
+          onCancel={() => setRemoving(false)}
+          onConfirm={(replacementId) => {
+            edit.remove?.onConfirm(replacementId);
+            setRemoving(false);
+          }}
+        />
+      ) : null}
 
       {wipNote ? (
         <p

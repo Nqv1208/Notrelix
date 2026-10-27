@@ -166,6 +166,8 @@ function fakeServices(access: BoardAccess) {
       },
     ),
     updateOption: vi.fn(async () => undefined),
+    removeOption: vi.fn(async () => undefined),
+    moveOption: vi.fn(async () => undefined),
   };
   const services = {
     boards,
@@ -522,6 +524,66 @@ describe("MainTableView on the ERP board", () => {
     );
     expect(
       screen.queryByRole("textbox", { name: "Tên trạng thái" }),
+    ).toBeNull();
+  });
+
+  it("moves a status group down from its menu and writes the move between its new neighbours", async () => {
+    const { fieldOptions } = renderTable(erpOwnerAccess());
+    await ready();
+    fireEvent.keyDown(
+      screen.getByRole("button", { name: "Tuỳ chọn nhóm Đang làm" }),
+      { key: "Enter" },
+    );
+    fireEvent.click(
+      screen.getByRole("menuitem", { name: "Chuyển nhóm xuống" }),
+    );
+    await waitFor(() =>
+      expect(fieldOptions.moveOption).toHaveBeenCalledTimes(1),
+    );
+    const [input] = fieldOptions.moveOption.mock.calls[0] as unknown as [
+      {
+        optionId: string;
+        previousSiblingId: string | null;
+        nextSiblingId: string | null;
+        expectedVersion: number;
+      },
+    ];
+    expect(input.previousSiblingId).not.toBeNull();
+    expect(input.nextSiblingId).not.toBeNull();
+    expect(input.expectedVersion).toBeGreaterThan(0);
+  });
+
+  it("deletes a status after asking where its items go and writes that replacement", async () => {
+    const { fieldOptions } = renderTable(erpOwnerAccess());
+    await ready();
+    fireEvent.keyDown(
+      screen.getByRole("button", { name: "Tuỳ chọn nhóm Chờ duyệt" }),
+      { key: "Enter" },
+    );
+    fireEvent.click(screen.getByRole("menuitem", { name: "Xoá trạng thái…" }));
+    const dialog = await screen.findByRole("alertdialog");
+    fireEvent.click(within(dialog).getByRole("radio", { name: "Đang làm" }));
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: "Chuyển việc và xoá" }),
+    );
+    await waitFor(() =>
+      expect(fieldOptions.removeOption).toHaveBeenCalledTimes(1),
+    );
+    expect(fieldOptions.removeOption).toHaveBeenCalledWith(
+      expect.objectContaining({
+        replacementOptionId: expect.any(String),
+        expectedVersion: expect.any(Number),
+      }),
+      expect.anything(),
+    );
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
+  });
+
+  it("gives a commenter no group menu", async () => {
+    renderTable(erpCommenterAccess());
+    await ready();
+    expect(
+      screen.queryByRole("button", { name: "Tuỳ chọn nhóm Đang làm" }),
     ).toBeNull();
   });
 

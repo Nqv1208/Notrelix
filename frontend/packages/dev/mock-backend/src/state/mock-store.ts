@@ -2240,6 +2240,113 @@ export class MockStore {
     return "ok";
   }
 
+  /**
+   * Removes an option as the producer does: a Status always keeps one Not
+   * started and one Done option, the items holding it move to the replacement
+   * (a Status needs one when any item holds the option; a Select may be cleared).
+   */
+  removeFieldOption(
+    columnId: string,
+    optionId: string,
+    input: { expectedVersion: number; replacementOptionId?: string | null },
+  ):
+    | "ok"
+    | "not-found"
+    | "stale"
+    | "replacement-required"
+    | "replacement-invalid"
+    | "keeps-todo-and-done" {
+    const col = this.columnsById.get(columnId);
+    const option = col?.options?.find((candidate) => candidate.id === optionId);
+    if (!col || !option) return "not-found";
+    if ((col.version ?? 1) !== input.expectedVersion) return "stale";
+    const singleValued =
+      col.fieldType === "status" || col.fieldType === "select";
+    const replacement = input.replacementOptionId
+      ? col.options?.find(
+          (candidate) =>
+            candidate.id === input.replacementOptionId &&
+            candidate.id !== optionId,
+        )
+      : undefined;
+    if (input.replacementOptionId && (!singleValued || !replacement)) {
+      return "replacement-invalid";
+    }
+    const holders = singleValued
+      ? Array.from(this.cardsById.values()).filter(
+          (card) =>
+            card.boardId === col.boardId &&
+            this.fieldValuesByCardId.get(card.id)?.get(columnId) === optionId,
+        )
+      : [];
+    if (holders.length > 0 && col.fieldType === "status" && !replacement) {
+      return "replacement-required";
+    }
+    if (col.fieldType === "status" && option.category) {
+      const category = option.category;
+      const remaining = (col.options ?? []).filter(
+        (candidate) =>
+          candidate.id !== optionId && candidate.category === category,
+      );
+      if (
+        (category === "todo" || category === "done") &&
+        remaining.length === 0
+      ) {
+        return "keeps-todo-and-done";
+      }
+    }
+    for (const card of holders) {
+      const fieldMap = this.fieldValuesByCardId.get(card.id);
+      if (replacement) fieldMap?.set(columnId, replacement.id);
+      else fieldMap?.delete(columnId);
+    }
+    this.columnsById.set(columnId, {
+      ...col,
+      options: (col.options ?? []).filter(
+        (candidate) => candidate.id !== optionId,
+      ),
+      version: (col.version ?? 1) + 1,
+    });
+    return "ok";
+  }
+
+  /** Neighbour-relative option move; the options are re-keyed in the new order. */
+  moveFieldOption(
+    columnId: string,
+    optionId: string,
+    input: {
+      expectedVersion: number;
+      previousSiblingId?: string | null;
+      nextSiblingId?: string | null;
+    },
+  ): "ok" | "not-found" | "stale" {
+    const col = this.columnsById.get(columnId);
+    const options = [...(col?.options ?? [])].sort((a, b) =>
+      a.position < b.position ? -1 : a.position > b.position ? 1 : 0,
+    );
+    const moved = options.find((candidate) => candidate.id === optionId);
+    if (!col || !moved) return "not-found";
+    if ((col.version ?? 1) !== input.expectedVersion) return "stale";
+    const rest = options.filter((candidate) => candidate.id !== optionId);
+    const after = input.previousSiblingId
+      ? rest.findIndex((candidate) => candidate.id === input.previousSiblingId)
+      : -1;
+    const before = input.nextSiblingId
+      ? rest.findIndex((candidate) => candidate.id === input.nextSiblingId)
+      : -1;
+    const at = after >= 0 ? after + 1 : before >= 0 ? before : rest.length;
+    rest.splice(at, 0, moved);
+    this.columnsById.set(columnId, {
+      ...col,
+      options: rest.map((candidate, index) => ({
+        ...candidate,
+        position: `a${String(index).padStart(3, "0")}`,
+      })),
+      version: (col.version ?? 1) + 1,
+    });
+    return "ok";
+  }
+
   deleteColumn(columnId: string): boolean {
     const col = this.columnsById.get(columnId);
     if (!col) return false;

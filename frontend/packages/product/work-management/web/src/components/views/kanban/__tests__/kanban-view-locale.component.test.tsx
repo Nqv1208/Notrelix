@@ -76,6 +76,8 @@ vi.mock("@notrelix/work-management-state", async (importOriginal) => {
     useCreateGroup: mutation,
     useAddFieldOption: () => ({ mutate: vi.fn(), isPending: false }),
     useUpdateFieldOption: mutation,
+    useMoveFieldOption: mutation,
+    useRemoveFieldOption: mutation,
     useArchiveCard: mutation,
   };
 });

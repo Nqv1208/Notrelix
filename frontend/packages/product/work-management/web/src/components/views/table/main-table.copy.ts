@@ -87,15 +87,13 @@ export const en = {
     addSubmit: "Add",
     addCancel: "Cancel",
     addStatus: "Add status",
+    addValue: "Add value",
     addGroup: "Add group",
-    groupForm: {
-      title: "New group",
-      nameLabel: "Group name",
-      namePlaceholder: "Group name…",
-      submit: "Add group",
-      errorEmpty: "Enter a group name.",
-      errorDuplicate: "A group named “{{name}}” already exists.",
-    },
+    menu: "Options for group {{name}}",
+    moveUp: "Move group up",
+    moveDown: "Move group down",
+    deleteStatus: "Delete status…",
+    deleteValue: "Delete value…",
   },
   row: {
     select: "Select {{key}}",
@@ -210,6 +208,8 @@ export const en = {
     create: "Couldn't add “{{title}}”.",
     save: "Couldn't save the change to “{{title}}”.",
     addGroup: "Couldn't add “{{name}}”.",
+    moveGroup: "Couldn't move “{{name}}”.",
+    deleteGroup: "Couldn't delete “{{name}}”.",
   },
 };
 
@@ -288,15 +288,13 @@ export const vi: MainTableCopy = {
     addSubmit: "Thêm",
     addCancel: "Huỷ",
     addStatus: "Thêm trạng thái",
+    addValue: "Thêm giá trị",
     addGroup: "Thêm nhóm",
-    groupForm: {
-      title: "Nhóm mới",
-      nameLabel: "Tên nhóm",
-      namePlaceholder: "Nhập tên nhóm…",
-      submit: "Thêm nhóm",
-      errorEmpty: "Nhập tên nhóm.",
-      errorDuplicate: "Đã có nhóm tên “{{name}}”.",
-    },
+    menu: "Tuỳ chọn nhóm {{name}}",
+    moveUp: "Chuyển nhóm lên",
+    moveDown: "Chuyển nhóm xuống",
+    deleteStatus: "Xoá trạng thái…",
+    deleteValue: "Xoá giá trị…",
   },
   row: {
     select: "Chọn {{key}}",
@@ -411,6 +409,8 @@ export const vi: MainTableCopy = {
     create: "Không thêm được “{{title}}”.",
     save: "Không lưu được thay đổi của “{{title}}”.",
     addGroup: "Không thêm được “{{name}}”.",
+    moveGroup: "Không chuyển được “{{name}}”.",
+    deleteGroup: "Không xoá được “{{name}}”.",
   },
 };
 

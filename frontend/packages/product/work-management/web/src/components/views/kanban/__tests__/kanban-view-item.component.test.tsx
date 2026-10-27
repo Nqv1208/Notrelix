@@ -121,6 +121,8 @@ vi.mock("@notrelix/work-management-state", async (importOriginal) => {
     useBoardTrash: () => ({ entries: [], restore: vi.fn() }),
     useAddFieldOption: () => ({ mutate: vi.fn(), isPending: false }),
     useUpdateFieldOption: mutation,
+    useMoveFieldOption: mutation,
+    useRemoveFieldOption: mutation,
     useArchiveCard: () => ({ mutate: cardQuery.deleteMutate }),
     useCreateCardUpdate: mutation,
     useUpdateCardUpdate: mutation,

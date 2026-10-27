@@ -20,6 +20,12 @@ import {
 } from "@notrelix/work-management-core";
 import type { StatusOptionDraft } from "../../status-option/status-option-form";
 import type { StatusOptionFormCopy } from "../../status-option/status-option-form.copy";
+import {
+  AddGroupPopover,
+  type AddGroupDraft,
+} from "../../status-option/add-group-popover";
+import { cn } from "@notrelix/ui-web";
+import { kanbanColumnWidthClass } from "./kanban-layout";
 import { KanbanAddLane } from "./kanban-add-lane";
 import { fillCopy, pluralCopy, type KanbanCardCopy } from "./kanban-card.copy";
 import { KanbanCardOverlay } from "./kanban-card";
@@ -87,6 +93,24 @@ export interface KanbanBoardProps {
   onUpdateLane?: (lane: KanbanStatusLane, draft: StatusOptionDraft) => void;
   /** A lane create is in flight. */
   lanePending?: boolean;
+  /** Move a lane's option one place before or after its neighbour. */
+  onMoveLane?: (lane: KanbanStatusLane, direction: "before" | "after") => void;
+  /** Delete a lane's option; its items move to the replacement (null: lose the value). */
+  onDeleteLane?: (
+    lane: KanbanStatusLane,
+    replacementOptionId: string | null,
+  ) => void;
+  /** A lane move or delete is in flight. */
+  laneWritePending?: boolean;
+  /**
+   * "Add group": creates a group of the board (not a status). With it the slot
+   * after the last lane offers it under "Add status".
+   */
+  onCreateGroup?: (draft: AddGroupDraft) => Promise<void> | void;
+  /** Titles the board's groups carry (a new group may not repeat them). */
+  groupTitles?: readonly string[];
+  /** A group create is in flight. */
+  groupPending?: boolean;
   /** Cards a lane shows before "Xem thêm N việc" (the view's `laneCardLimit`). */
   laneCardLimit?: number;
   /**
@@ -158,6 +182,12 @@ export function KanbanBoard({
   onCreateLane,
   onUpdateLane,
   lanePending = false,
+  onMoveLane,
+  onDeleteLane,
+  laneWritePending = false,
+  onCreateGroup,
+  groupTitles = [],
+  groupPending = false,
   laneCardLimit = DEFAULT_KANBAN_LANE_CARD_LIMIT,
   keyboardMove = true,
   cardActions,
@@ -411,6 +441,21 @@ export function KanbanBoard({
     .map((lane) => lane.name);
   const canManageLanes = formCopy !== undefined && onCreateLane !== undefined;
   const subject = groupKind === "status" ? "status" : "value";
+  // The lanes that are options of the field, in the field's order.
+  const optionLanes = lanes.filter((lane) => lane.optionId !== null);
+  const blockedReasonFor = (lane: KanbanStatusLane): string | undefined => {
+    if (!formCopy) return undefined;
+    if (subject === "value") {
+      return optionLanes.length <= 1 ? formCopy.removeBlockedValue : undefined;
+    }
+    const required = lane.category === "todo" || lane.category === "done";
+    const other = optionLanes.some(
+      (candidate) =>
+        candidate.optionId !== lane.optionId &&
+        candidate.category === lane.category,
+    );
+    return required && !other ? formCopy.removeBlockedStatus : undefined;
+  };
 
   return (
     <DndContext
@@ -472,6 +517,42 @@ export function KanbanBoard({
                         (laneName) => laneName !== lane.name,
                       ),
                       onSubmit: (draft) => onUpdateLane(original, draft),
+                      move: onMoveLane
+                        ? {
+                            canMoveLeft:
+                              optionLanes.findIndex(
+                                (candidate) =>
+                                  candidate.optionId === lane.optionId,
+                              ) > 0,
+                            canMoveRight:
+                              optionLanes.findIndex(
+                                (candidate) =>
+                                  candidate.optionId === lane.optionId,
+                              ) <
+                              optionLanes.length - 1,
+                            pending: laneWritePending,
+                            onMove: (direction) =>
+                              onMoveLane(original, direction),
+                          }
+                        : undefined,
+                      remove: onDeleteLane
+                        ? {
+                            blockedReason: blockedReasonFor(original),
+                            choices: optionLanes
+                              .filter(
+                                (candidate) =>
+                                  candidate.optionId !== lane.optionId,
+                              )
+                              .map((candidate) => ({
+                                id: candidate.optionId!,
+                                name: candidate.name,
+                                color: candidate.color,
+                              })),
+                            pending: laneWritePending,
+                            onConfirm: (replacementId) =>
+                              onDeleteLane(original, replacementId),
+                          }
+                        : undefined,
                     }
                   : undefined
               }
@@ -501,14 +582,38 @@ export function KanbanBoard({
           );
         })}
         {canManageLanes ? (
-          <KanbanAddLane
-            copy={copy}
-            formCopy={formCopy}
-            subject={subject}
-            existingNames={laneNames}
-            pending={lanePending}
-            onCreate={onCreateLane}
-          />
+          onCreateGroup ? (
+            <div className="flex shrink-0 flex-col gap-2">
+              <KanbanAddLane
+                copy={copy}
+                formCopy={formCopy}
+                subject={subject}
+                existingNames={laneNames}
+                pending={lanePending}
+                onCreate={onCreateLane}
+              />
+              <AddGroupPopover
+                copy={formCopy}
+                label={copy.addGroup}
+                existingTitles={groupTitles}
+                pending={groupPending}
+                onSubmit={onCreateGroup}
+                triggerClassName={cn(
+                  "flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-xl border-0 bg-transparent px-4 text-compact font-medium text-muted-foreground transition-colors hover:bg-state-hover hover:text-foreground aria-expanded:bg-state-hover aria-expanded:text-foreground",
+                  kanbanColumnWidthClass,
+                )}
+              />
+            </div>
+          ) : (
+            <KanbanAddLane
+              copy={copy}
+              formCopy={formCopy}
+              subject={subject}
+              existingNames={laneNames}
+              pending={lanePending}
+              onCreate={onCreateLane}
+            />
+          )
         ) : null}
         {hiddenCount > 0 ? (
           <button

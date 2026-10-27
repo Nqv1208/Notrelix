@@ -2,6 +2,10 @@ import { useState } from "react";
 import { Plus } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@notrelix/ui-web";
 import {
+  AddGroupPopover,
+  type AddGroupDraft,
+} from "../../status-option/add-group-popover";
+import {
   StatusOptionForm,
   type StatusOptionDraft,
 } from "../../status-option/status-option-form";
@@ -13,9 +17,9 @@ export interface TableAddGroupProps {
   formCopy: StatusOptionFormCopy;
   /**
    * "status" when the table is grouped by the Status field (the form asks
-   * for the status group too), "group" for any other Select field.
+   * for the status group too), "value" for any other Select field.
    */
-  kind: "status" | "group";
+  kind: "status" | "value";
   /** Names the grouped field already has (hidden and empty groups included). */
   existingNames: readonly string[];
   /** The option write is in flight. */
@@ -25,13 +29,27 @@ export interface TableAddGroupProps {
    * resolves; a rejection keeps the form (and its values) for another try.
    */
   onSubmit: (draft: StatusOptionDraft) => Promise<void> | void;
+  /**
+   * "Add group": creates a group of the board (the container of items), beside
+   * and distinct from the status add. Absent when the viewer may not add one.
+   */
+  boardGroup?: {
+    /** Titles the board's groups already carry. */
+    existingTitles: readonly string[];
+    pending?: boolean;
+    onSubmit: (draft: AddGroupDraft) => Promise<void> | void;
+  };
 }
 
+const ROW_BUTTON_CLASS =
+  "flex h-9 cursor-pointer items-center gap-1.5 border-0 bg-transparent px-3.5 text-left text-compact leading-[1.45] text-meta-foreground transition-colors hover:bg-state-hover hover:text-foreground focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring";
+
 /**
- * "Thêm nhóm" / "Thêm trạng thái": a quiet full-width row under the last
- * group. It opens the status option form (name, colour, and for a Status
- * field the group); a new group is a new option of the grouped field, so it
- * appears as an empty group at the end of the table.
+ * Under the last group, two quiet entries: "Thêm trạng thái" (or "Thêm giá
+ * trị" for another Select field) adds an option of the grouped field and
+ * appears as an empty group at the end of the table; "Thêm nhóm" adds a group
+ * of the board, which holds items and is chosen in an item's Group field. The
+ * two never share a label.
  */
 export function TableAddGroup({
   copy,
@@ -40,23 +58,12 @@ export function TableAddGroup({
   existingNames,
   pending = false,
   onSubmit,
+  boardGroup,
 }: TableAddGroupProps) {
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const g = copy.group;
-  const label = kind === "status" ? g.addStatus : g.addGroup;
-  const form: StatusOptionFormCopy =
-    kind === "status"
-      ? formCopy
-      : {
-          ...formCopy,
-          titleCreate: g.groupForm.title,
-          nameLabel: g.groupForm.nameLabel,
-          namePlaceholder: g.groupForm.namePlaceholder,
-          submitCreate: g.groupForm.submit,
-          errorEmpty: g.groupForm.errorEmpty,
-          errorDuplicate: g.groupForm.errorDuplicate,
-        };
+  const label = kind === "status" ? g.addStatus : g.addValue;
 
   const submit = async (draft: StatusOptionDraft) => {
     setSubmitting(true);
@@ -71,14 +78,14 @@ export function TableAddGroup({
   };
 
   return (
-    <div role="row" className="grid min-w-full">
-      <div role="cell" className="min-w-0">
+    <div role="row" className="flex min-w-full items-center">
+      <div role="cell" className="flex min-w-0 items-center">
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
             <button
               type="button"
               data-add-group=""
-              className="flex h-9 w-full cursor-pointer items-center gap-1.5 border-0 bg-transparent pl-3.5 text-left text-compact leading-[1.45] text-meta-foreground transition-colors hover:bg-state-hover hover:text-foreground focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
+              className={ROW_BUTTON_CLASS}
             >
               <Plus className="size-3.5" aria-hidden="true" />
               {label}
@@ -88,19 +95,33 @@ export function TableAddGroup({
             align="start"
             side="bottom"
             sideOffset={4}
-            aria-label={form.titleCreate}
+            aria-label={
+              kind === "status"
+                ? formCopy.titleCreate
+                : formCopy.valueTitleCreate
+            }
             className="w-72 gap-2 rounded-[10px] border border-line-strong bg-popover p-3 shadow-pop ring-0 dark:bg-card"
           >
             <StatusOptionForm
-              copy={form}
+              copy={formCopy}
+              subject={kind}
               existingNames={existingNames}
-              showCategory={kind === "status"}
               pending={pending || submitting}
               onSubmit={(draft) => void submit(draft)}
               onCancel={() => setOpen(false)}
             />
           </PopoverContent>
         </Popover>
+        {boardGroup ? (
+          <AddGroupPopover
+            copy={formCopy}
+            label={g.addGroup}
+            existingTitles={boardGroup.existingTitles}
+            pending={boardGroup.pending}
+            onSubmit={boardGroup.onSubmit}
+            triggerClassName={ROW_BUTTON_CLASS}
+          />
+        ) : null}
       </div>
     </div>
   );

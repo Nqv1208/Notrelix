@@ -452,3 +452,146 @@ describe("KanbanBoard keyboard move", () => {
     );
   });
 });
+
+describe("KanbanBoard status management", () => {
+  function manage(locale: "vi" | "en") {
+    const onMoveLane = vi.fn();
+    const onDeleteLane = vi.fn();
+    const onCreateGroup = vi.fn(async () => undefined);
+    const view = renderBoard({
+      locale,
+      formCopy: statusOptionFormCopy(locale),
+      onCreateLane: vi.fn(),
+      onUpdateLane: vi.fn(),
+      onMoveLane,
+      onDeleteLane,
+      onCreateGroup,
+      groupTitles: ["Sprint 1"],
+    });
+    return { ...view, onMoveLane, onDeleteLane, onCreateGroup };
+  }
+
+  function openLaneMenu(copy: ReturnType<typeof kanbanLaneCopy>, lane: string) {
+    fireEvent.keyDown(
+      within(laneRegion(lane)).getByRole("button", {
+        name: copy.laneOptions.replace("{{lane}}", lane),
+      }),
+      { key: "Enter" },
+    );
+  }
+
+  it("FUI[wm.kanban.board:lane-reorder] moves a lane one place left or right and disables the ends", () => {
+    for (const [locale, copy] of LOCALES) {
+      const { unmount, onMoveLane } = manage(locale);
+      openLaneMenu(copy, "Đang làm");
+      fireEvent.click(screen.getByRole("menuitem", { name: copy.moveLeft }));
+      expect(onMoveLane).toHaveBeenCalledWith(
+        expect.objectContaining({ name: "Đang làm" }),
+        "before",
+      );
+      unmount();
+
+      const first = manage(locale);
+      openLaneMenu(copy, "Cần làm");
+      expect(
+        screen
+          .getByRole("menuitem", { name: copy.moveLeft })
+          .getAttribute("aria-disabled"),
+      ).toBe("true");
+      expect(
+        screen
+          .getByRole("menuitem", { name: copy.moveRight })
+          .getAttribute("aria-disabled"),
+      ).toBeNull();
+      first.unmount();
+
+      const last = manage(locale);
+      openLaneMenu(copy, "Hoàn thành");
+      expect(
+        screen
+          .getByRole("menuitem", { name: copy.moveRight })
+          .getAttribute("aria-disabled"),
+      ).toBe("true");
+      last.unmount();
+    }
+  });
+
+  it("FUI[wm.kanban.board:lane-delete] asks where the items go, then deletes the status with that replacement", async () => {
+    for (const [locale, copy] of LOCALES) {
+      const form = statusOptionFormCopy(locale);
+      const { unmount, onDeleteLane } = manage(locale);
+      openLaneMenu(copy, "Chờ duyệt");
+      fireEvent.click(
+        screen.getByRole("menuitem", { name: copy.deleteStatus }),
+      );
+      const dialog = await screen.findByRole("alertdialog");
+      expect(
+        within(dialog).getByText(
+          form.removeTitle.replace("{{name}}", "Chờ duyệt"),
+        ),
+      ).toBeTruthy();
+      // The first other status is preselected; the person picks another one.
+      expect(
+        within(dialog)
+          .getByRole("radio", { name: "Cần làm" })
+          .getAttribute("aria-checked"),
+      ).toBe("true");
+      fireEvent.click(within(dialog).getByRole("radio", { name: "Đang làm" }));
+      fireEvent.click(
+        within(dialog).getByRole("button", { name: form.removeMoveConfirm }),
+      );
+      expect(onDeleteLane).toHaveBeenCalledWith(
+        expect.objectContaining({ name: "Chờ duyệt" }),
+        expect.any(String),
+      );
+      const [lane, replacement] = onDeleteLane.mock.calls[0]!;
+      expect(replacement).not.toBe(lane.optionId);
+      unmount();
+    }
+  });
+
+  it("refuses to delete the only Not started or Done status and says why", () => {
+    const { onDeleteLane } = manage("en");
+    const copy = kanbanLaneCopy("en");
+    openLaneMenu(copy, "Cần làm");
+    const item = screen.getByRole("menuitem", { name: copy.deleteStatus });
+    expect(item.getAttribute("aria-disabled")).toBe("true");
+    expect(item.getAttribute("title")).toBe(
+      statusOptionFormCopy("en").removeBlockedStatus,
+    );
+    fireEvent.click(item);
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+    expect(onDeleteLane).not.toHaveBeenCalled();
+  });
+
+  it("FUI[wm.kanban.board:add-group] adds a board group from its own slot, labelled apart from Add status", async () => {
+    for (const [locale, copy] of LOCALES) {
+      const form = statusOptionFormCopy(locale);
+      const { unmount, onCreateGroup } = manage(locale);
+      const status = screen.getByRole("button", { name: copy.addStatus });
+      const group = screen.getByRole("button", { name: copy.addGroup });
+      expect(group).not.toBe(status);
+      expect(copy.addGroup).not.toBe(copy.addStatus);
+
+      fireEvent.click(group);
+      const name = screen.getByRole("textbox", { name: form.groupNameLabel });
+      // A group has no status group to choose.
+      expect(
+        screen.queryByRole("radio", { name: form.category_done }),
+      ).toBeNull();
+      fireEvent.change(name, { target: { value: "sprint 1" } });
+      expect(screen.getByRole("alert")).toBeTruthy();
+      fireEvent.change(name, { target: { value: "  Sprint 2  " } });
+      fireEvent.click(screen.getByRole("radio", { name: form.color_red }));
+      fireEvent.submit(name.closest("form")!);
+      await waitFor(() =>
+        expect(onCreateGroup).toHaveBeenCalledWith({
+          title: "Sprint 2",
+          color: "#C8143F",
+        }),
+      );
+      await waitFor(() => expect(screen.queryByRole("textbox")).toBeNull());
+      unmount();
+    }
+  });
+});
