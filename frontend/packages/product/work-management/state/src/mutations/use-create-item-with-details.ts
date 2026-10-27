@@ -29,7 +29,8 @@ export interface CreateItemWithDetailsInput {
 }
 
 /** A write that failed after the item itself was created. */
-export type CreateItemDetail = "status" | "lane" | "priority" | "assignees" | "labels";
+export type CreateItemDetail =
+  "status" | "lane" | "priority" | "assignees" | "labels";
 
 export interface CreateItemWithDetailsResult {
   /** The new item's id; undefined when the server sent none. */
