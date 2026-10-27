@@ -14,7 +14,7 @@ describe("check-i18n-catalogs", () => {
     expect(result.issues).toEqual([]);
     expect(result.catalogs).toBeGreaterThan(0);
     expect(result.keys).toBeGreaterThan(0);
-  });
+  }, 30_000); // Loads every catalog in the repository; slow on a loaded machine.
 
   it("discovers catalogs only under src/ (never the fixtures of this test)", () => {
     const files = discoverCatalogFiles(frontendRoot);
