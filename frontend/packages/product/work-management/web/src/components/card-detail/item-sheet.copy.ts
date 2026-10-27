@@ -74,7 +74,6 @@ export const en = {
     descriptionEdit: "Edit description",
     descriptionSave: "Save",
     descriptionCancel: "Cancel",
-    descriptionHint: "Ctrl+Enter saves · Esc cancels",
     descriptionTooLong: "The description is longer than 20,000 characters",
     childItems: "Sub-items",
     childProgress: "{{done}}/{{total}}",
@@ -97,7 +96,6 @@ export const en = {
   composer: {
     placeholder: "Write a comment, type @ to mention someone…",
     label: "Write a comment",
-    shortcut: "⌘↵",
     submit: "Send",
     mention: "Mention someone",
     searchPeople: "Search people…",
@@ -198,7 +196,6 @@ export const vi: ItemSheetCopy = {
     descriptionEdit: "Sửa mô tả",
     descriptionSave: "Lưu",
     descriptionCancel: "Huỷ",
-    descriptionHint: "Ctrl+Enter để lưu · Esc để huỷ",
     descriptionTooLong: "Mô tả dài hơn 20.000 ký tự",
     childItems: "Việc con",
     childProgress: "{{done}}/{{total}}",
@@ -221,7 +218,6 @@ export const vi: ItemSheetCopy = {
   composer: {
     placeholder: "Viết bình luận, gõ @ để nhắc ai đó…",
     label: "Viết bình luận",
-    shortcut: "⌘↵",
     submit: "Gửi",
     mention: "Nhắc ai đó",
     searchPeople: "Tìm người…",

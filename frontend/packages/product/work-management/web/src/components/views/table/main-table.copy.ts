@@ -150,9 +150,6 @@ export const en = {
     summary: "{{shown}} items shown · {{hidden}} hidden by filters",
     archived: "{{count}} just archived",
     showDone: "Show finished items",
-    move: "move",
-    open: "open details",
-    select: "select row",
   },
   bulk: {
     label: "Actions for {{count}} selected items",
@@ -352,9 +349,6 @@ export const vi: MainTableCopy = {
     summary: "{{shown}} công việc đang hiện · {{hidden}} ẩn bởi bộ lọc",
     archived: "{{count}} vừa lưu trữ",
     showDone: "Hiện việc đã xong",
-    move: "di chuyển",
-    open: "mở chi tiết",
-    select: "chọn dòng",
   },
   bulk: {
     label: "Thao tác với {{count}} công việc đã chọn",

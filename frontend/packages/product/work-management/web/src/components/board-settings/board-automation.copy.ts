@@ -211,7 +211,6 @@ export const automationEditorEn = {
     actionAria: "Choose an action",
     actionSearch: "Search actions…",
     actionSearchAria: "Search actions",
-    esc: "Esc",
     none: "No match",
     groups: {
       item: "Items",
@@ -615,7 +614,6 @@ export const automationEditorVi: AutomationEditorCopy = {
     actionAria: "Chọn hành động",
     actionSearch: "Tìm hành động…",
     actionSearchAria: "Tìm hành động",
-    esc: "Esc",
     none: "Không có kết quả",
     groups: {
       item: "Việc",

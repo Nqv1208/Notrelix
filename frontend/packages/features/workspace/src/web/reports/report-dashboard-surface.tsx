@@ -58,7 +58,7 @@ import {
   type ReportWidgetSize,
   type ReportWidgetSpec,
 } from "./reports-models";
-import { ICON_BTN, Kbd, LINK_BTN, ScopeChip } from "./reports-parts";
+import { ICON_BTN, LINK_BTN, ScopeChip } from "./reports-parts";
 import type { ReportsCopy } from "./reports.copy";
 
 /** What a person may be waiting on while the dashboard is open. */
@@ -470,11 +470,11 @@ export function ReportDashboardSurface(props: ReportDashboardSurfaceProps) {
               pos: index + 1,
               total: shown.length,
             })}
-            <Kbd>← ↑ → ↓</Kbd>
+            {" ← ↑ → ↓ "}
             {e.movingB}
-            <Kbd>Enter</Kbd>
+            {" Enter "}
             {e.movingC}
-            <Kbd>Esc</Kbd>
+            {" Esc "}
             {e.movingD}
           </div>
         ) : null}

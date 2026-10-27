@@ -20,7 +20,6 @@ import {
   FieldError,
   FieldLabel,
   Input,
-  Kbd,
   Select,
   SelectContent,
   SelectItem,
@@ -642,7 +641,7 @@ export function ItemCreateDialog({
               className="h-11 rounded-[9px] px-4"
               onClick={() => onOpenChange(false)}
             >
-              {copy.cancel} <Kbd>Esc</Kbd>
+              {copy.cancel}
             </Button>
             <Button
               type="submit"
@@ -651,25 +650,7 @@ export function ItemCreateDialog({
               title={blocker ?? undefined}
             >
               {pending ? copy.submitting : copy.submit}
-              {pending ? null : <Kbd>⌘ Enter</Kbd>}
             </Button>
-          </div>
-          <div
-            aria-hidden="true"
-            className="flex flex-wrap items-center gap-x-3.5 gap-y-1 border-t border-line bg-background px-5.5 py-2 text-metadata text-meta-foreground"
-          >
-            <span className="inline-flex items-center gap-1.5">
-              <Kbd>Enter</Kbd> {copy.hintEnter}
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <Kbd>⌘ Enter</Kbd> {copy.hintMod}
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <Kbd>Tab</Kbd> {copy.hintTab}
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <Kbd>Esc</Kbd> {copy.hintEsc}
-            </span>
           </div>
         </form>
       </DialogContent>

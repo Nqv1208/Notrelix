@@ -19,7 +19,7 @@ export const en = {
       title: "{{key}} was not found",
       titleNoKey: "This item was not found",
       body: "This key does not exist or the item was deleted for good. If it only moved to another board, the old link still leads to its new place.",
-      search: "Search with ⌘K",
+      search: "Search",
       home: "Back to home",
     },
     completed: {
@@ -194,7 +194,6 @@ export const en = {
     edit: "Edit description",
     save: "Save",
     cancel: "Cancel",
-    hint: "Ctrl+Enter saves · Esc cancels · - for a list, **bold**",
     tooLong: "The description is longer than 20,000 characters",
   },
   children: {
@@ -314,7 +313,6 @@ export const en = {
   composer: {
     placeholder: "Write a comment, type @ to mention someone…",
     label: "Write a comment",
-    shortcut: "⌘↵",
     submit: "Send",
     attach: "Attach a file to the comment",
     attachUnavailable: "Attaching files to a comment is not available yet",
@@ -409,7 +407,7 @@ export const vi: ItemPageCopy = {
       title: "Không tìm thấy {{key}}",
       titleNoKey: "Không tìm thấy việc này",
       body: "Mã này không có hoặc việc đã bị xoá hẳn. Nếu việc chỉ chuyển sang board khác, liên kết cũ vẫn dẫn tới chỗ mới.",
-      search: "Tìm bằng ⌘K",
+      search: "Tìm kiếm",
       home: "Về trang chủ",
     },
     completed: {
@@ -583,7 +581,6 @@ export const vi: ItemPageCopy = {
     edit: "Sửa mô tả",
     save: "Lưu",
     cancel: "Huỷ",
-    hint: "Ctrl+Enter để lưu · Esc để huỷ · - cho danh sách, **đậm**",
     tooLong: "Mô tả dài hơn 20.000 ký tự",
   },
   children: {
@@ -701,7 +698,6 @@ export const vi: ItemPageCopy = {
   composer: {
     placeholder: "Viết bình luận, gõ @ để nhắc ai đó…",
     label: "Viết bình luận",
-    shortcut: "⌘↵",
     submit: "Gửi",
     attach: "Đính kèm tệp vào bình luận",
     attachUnavailable: "Đính kèm tệp vào bình luận chưa khả dụng",

@@ -593,9 +593,6 @@ export function MyWorkBar({
                 className={SMALL_PRIMARY_BUTTON_CLASS}
               >
                 {copy.list.addSubmit}
-                <span className="rounded-[4px] border border-current bg-transparent px-[5px] font-mono text-key leading-[18px] text-inherit">
-                  ↵
-                </span>
               </button>
             </div>
           </div>

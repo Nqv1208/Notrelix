@@ -608,7 +608,6 @@ export function ItemPageRail({
                   searchPlaceholder={pk.status.search}
                   searchLabel={pk.status.label}
                   noMatch={pk.noMatch}
-                  shortcut="S"
                   onSelect={(optionId) => {
                     update(fields.status, optionId);
                     close();
@@ -836,7 +835,6 @@ export function ItemPageRail({
                   searchPlaceholder={pk.priority.search}
                   searchLabel={pk.priority.label}
                   noMatch={pk.noMatch}
-                  shortcut="P"
                   none={pk.priority.none}
                   onSelect={(optionId) => {
                     update(fields.priority, optionId);

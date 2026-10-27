@@ -381,16 +381,14 @@ function CommandRow({
     <button
       type="button"
       onClick={onOpenCommand}
-      title={copy.sidebar.search}
+      title={`${copy.sidebar.search} (${commandShortcut})`}
+      aria-keyshortcuts="Meta+K Control+K"
       className="mt-1.5 mb-2.5 flex h-8.5 w-full items-center gap-2 rounded-md border border-line bg-surface-panel px-2.5 text-left text-compact text-meta-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-focus-ring group-data-[tablet=true]:h-11 group-data-[tablet=true]:rounded-[10px] group-data-[collapsible=icon]:size-11 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0"
     >
       <Search aria-hidden="true" className="size-4 shrink-0 stroke-[1.8]" />
       <span className={cn("min-w-0 flex-1 truncate", LABEL_HIDE)}>
         {copy.sidebar.search}
       </span>
-      <kbd className="shrink-0 rounded-[4px] border border-line-strong bg-keycap px-[5px] font-mono text-key text-muted-foreground group-data-[collapsible=icon]:hidden">
-        {commandShortcut}
-      </kbd>
     </button>
   );
 }

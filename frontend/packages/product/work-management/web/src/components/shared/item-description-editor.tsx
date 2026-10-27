@@ -9,7 +9,6 @@ export interface ItemDescriptionEditorLabels {
   readonly placeholder: string;
   readonly save: string;
   readonly cancel: string;
-  readonly hint: string;
   readonly tooLong: string;
 }
 
@@ -90,9 +89,11 @@ export function ItemDescriptionEditor({
         <button type="button" onClick={onClose} className={BUTTON_OUTLINE}>
           {t.cancel}
         </button>
-        <span className="text-metadata text-meta-foreground">
-          {tooLong ? t.tooLong : t.hint}
-        </span>
+        {tooLong ? (
+          <span className="text-metadata text-meta-foreground">
+            {t.tooLong}
+          </span>
+        ) : null}
       </div>
     </div>
   );

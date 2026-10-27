@@ -158,12 +158,7 @@ export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
           )}
         </div>
 
-        <div className="flex items-center justify-between px-3 py-2 border-t text-caption text-muted-foreground">
-          <span>
-            Press{" "}
-            <kbd className="px-1 py-0.5 bg-muted rounded font-mono">Esc</kbd> to
-            close
-          </span>
+        <div className="flex items-center justify-end px-3 py-2 border-t text-caption text-muted-foreground">
           <span>{results.length} results</span>
         </div>
       </div>

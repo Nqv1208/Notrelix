@@ -201,7 +201,7 @@ describe("MainTableSurface", () => {
       within(list)
         .getAllByRole("option")
         .map((option) => option.textContent),
-    ).toEqual(["Cần làm1", "Đang làm2", "Chờ duyệt3", "Hoàn thành4"]);
+    ).toEqual(["Cần làm", "Đang làm", "Chờ duyệt", "Hoàn thành"]);
     expect(
       within(list)
         .getByRole("option", { name: /Đang làm/ })

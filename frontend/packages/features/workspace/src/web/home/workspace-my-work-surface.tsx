@@ -50,7 +50,6 @@ import { MyWorkRow, type MyWorkColumns } from "./my-work-row";
 import {
   MyWorkBulkBar,
   MyWorkEmpty,
-  MyWorkFoot,
   MyWorkNote,
   MyWorkRail,
 } from "./my-work-side";
@@ -897,7 +896,6 @@ export function WorkspaceMyWorkSurface(props: WorkspaceMyWorkSurfaceProps) {
         ) : null}
       </div>
 
-      <MyWorkFoot copy={copy} />
       {props.sheet}
     </div>
   );
@@ -1005,11 +1003,7 @@ function StatusPop({
                   className="ml-auto size-3.5 text-state-selected-foreground"
                   strokeWidth={1.8}
                 />
-              ) : (
-                <span className="ml-auto rounded-[4px] border border-line-strong bg-keycap px-[5px] font-mono text-key leading-[18px] text-muted-foreground">
-                  {index + 1}
-                </span>
-              )}
+              ) : null}
             </div>
           );
         })}

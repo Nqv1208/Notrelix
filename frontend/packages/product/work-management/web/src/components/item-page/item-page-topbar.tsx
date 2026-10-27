@@ -31,9 +31,6 @@ import {
 } from "./item-page-parts";
 import type { ItemPageNavigation, ItemPageSpace } from "./item-page-types";
 
-const KEY_CLASS =
-  "rounded-[4px] border border-line-strong bg-keycap px-1.25 font-mono text-key text-muted-foreground";
-
 const CRUMB_LINK_CLASS = "hover:text-foreground hover:underline";
 
 /**
@@ -137,8 +134,6 @@ export function ItemPageTopbar({
             total: position.total,
             lane,
           })}
-          <kbd className={KEY_CLASS}>K</kbd>
-          <kbd className={KEY_CLASS}>J</kbd>
         </span>
       ) : null}
       <StepButton

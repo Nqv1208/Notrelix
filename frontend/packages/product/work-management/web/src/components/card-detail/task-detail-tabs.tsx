@@ -312,7 +312,6 @@ function TaskDetailDescription({
             placeholder: t.descriptionAdd,
             save: t.descriptionSave,
             cancel: t.descriptionCancel,
-            hint: t.descriptionHint,
             tooLong: t.descriptionTooLong,
           }}
           onSave={onSave}

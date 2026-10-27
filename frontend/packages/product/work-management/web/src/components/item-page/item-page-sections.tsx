@@ -92,7 +92,6 @@ export function ItemPageDescription({
             placeholder: copy.states.empty.description,
             save: copy.description.save,
             cancel: copy.description.cancel,
-            hint: copy.description.hint,
             tooLong: copy.description.tooLong,
           }}
           onSave={onSave}

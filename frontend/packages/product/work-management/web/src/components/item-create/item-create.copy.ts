@@ -71,10 +71,6 @@ export type ItemCreateCopy = {
   readonly defaultGroupTitle: string;
   readonly cannotAdd: string;
   readonly chooseBoard: string;
-  readonly hintEnter: string;
-  readonly hintMod: string;
-  readonly hintTab: string;
-  readonly hintEsc: string;
 };
 
 export const en: ItemCreateCopy = {
@@ -159,10 +155,6 @@ export const en: ItemCreateCopy = {
   defaultGroupTitle: "Tasks",
   cannotAdd: "You do not have permission to add items to this board.",
   chooseBoard: "Choose a board first.",
-  hintEnter: "in the name: add now",
-  hintMod: "add from any field",
-  hintTab: "next field",
-  hintEsc: "close",
 };
 
 export const vi: ItemCreateCopy = {
@@ -247,8 +239,4 @@ export const vi: ItemCreateCopy = {
   defaultGroupTitle: "Công việc",
   cannotAdd: "Bạn không có quyền thêm công việc vào board này.",
   chooseBoard: "Hãy chọn board trước.",
-  hintEnter: "trong tên công việc: tạo ngay",
-  hintMod: "tạo từ mọi ô",
-  hintTab: "chuyển ô",
-  hintEsc: "đóng",
 };

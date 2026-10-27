@@ -368,14 +368,6 @@ export function SpaceCreateMenu({
       </small>
     </span>
   );
-  const key = (letter: string) => (
-    <span
-      data-f="kbd"
-      className="ml-auto rounded-[4px] border border-line-strong bg-keycap px-[5px] font-mono text-key leading-[18px] text-muted-foreground"
-    >
-      {letter}
-    </span>
-  );
 
   return (
     <>
@@ -417,7 +409,6 @@ export function SpaceCreateMenu({
               <Glyph name="kanban" />
             </span>
             {text(m.board, m.boardHint)}
-            {key("B")}
           </button>
           <button
             data-f="mi"
@@ -433,7 +424,6 @@ export function SpaceCreateMenu({
               <Glyph name="doc" />
             </span>
             {text(m.doc, m.docHint)}
-            {key("D")}
           </button>
           <button
             data-f="mi"

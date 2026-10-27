@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { cn } from "@notrelix/ui-web";
 import type { MainTableCopy } from "./main-table.copy";
-import { tableKeyClass } from "./table-chrome";
 import { StatusDot } from "./table-parts";
 import type { TableStatusOption } from "./table-model";
 
@@ -103,7 +102,6 @@ export function TableStatusPicker({
           </p>
         ) : (
           matches.map((option) => {
-            const position = options.findIndex((o) => o.id === option.id) + 1;
             return (
               <div
                 key={option.id}
@@ -120,11 +118,6 @@ export function TableStatusPicker({
               >
                 <StatusDot category={option.category} />
                 {option.name}
-                {position <= 9 ? (
-                  <span className={cn("ml-auto", tableKeyClass)}>
-                    {position}
-                  </span>
-                ) : null}
               </div>
             );
           })

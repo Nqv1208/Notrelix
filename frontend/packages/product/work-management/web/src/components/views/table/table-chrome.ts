@@ -7,10 +7,6 @@ import type { WorkStatusCategory } from "@notrelix/work-management-core";
  */
 export const tablePanelClass = "bg-popover dark:bg-card";
 
-/** Keyboard key chip (footer, status menu). */
-export const tableKeyClass =
-  "rounded-[4px] border border-line-strong bg-keycap px-[5px] font-mono text-key text-muted-foreground";
-
 /** Status pill and group header tint by Status category. */
 export const STATUS_TINT_CLASS: Readonly<Record<WorkStatusCategory, string>> = {
   todo: "bg-status-chip-todo",

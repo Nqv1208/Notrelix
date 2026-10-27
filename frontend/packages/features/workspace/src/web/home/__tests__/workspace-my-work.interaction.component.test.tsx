@@ -281,9 +281,9 @@ describe("WorkspaceMyWorkSurface", () => {
     const options = within(pop).getAllByRole("option");
     expect(options.map((option) => option.textContent)).toEqual([
       "Cần làm",
-      "Đang làm2",
-      "Chờ duyệt3",
-      "Hoàn thành4",
+      "Đang làm",
+      "Chờ duyệt",
+      "Hoàn thành",
     ]);
     expect(options[0]!.getAttribute("aria-selected")).toBe("true");
     fireEvent.keyDown(pop, { key: "3" });

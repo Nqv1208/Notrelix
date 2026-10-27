@@ -88,9 +88,6 @@ export function FieldTypePicker({
           aria-label={copy.picker.search}
           className="min-w-0 flex-1 border-0 bg-transparent text-item-ui text-foreground outline-none placeholder:text-meta-foreground"
         />
-        <kbd className="rounded-[4px] border border-line-strong bg-keycap px-1.25 font-mono text-key text-muted-foreground">
-          Esc
-        </kbd>
       </div>
       {groups.length === 0 ? (
         <p className="m-0 px-4 py-6 text-center text-item-small text-meta-foreground">

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowUpRight, Plus, X } from "lucide-react";
-import { Button, Input, Kbd } from "@notrelix/ui-web";
+import { Button, Input } from "@notrelix/ui-web";
 import { fillCopy } from "./kanban-card.copy";
 import type { KanbanLaneCopy } from "./kanban-lane.copy";
 
@@ -84,12 +84,6 @@ export function KanbanAddCard({
       >
         <Plus aria-hidden="true" className="size-4" />
         {fillCopy(copy.addTo, values)}
-        <Kbd
-          aria-hidden="true"
-          className="ml-auto opacity-0 group-hover/add:opacity-100 group-focus-visible/add:opacity-100"
-        >
-          N
-        </Kbd>
       </button>
     );
   }
@@ -149,22 +143,6 @@ export function KanbanAddCard({
         >
           <X aria-hidden="true" className="size-4" />
         </Button>
-      </div>
-      <div
-        aria-hidden="true"
-        className="flex flex-wrap items-center gap-x-2.5 gap-y-1 px-0.5 text-micro text-meta-foreground"
-      >
-        <span className="inline-flex items-center gap-1">
-          <Kbd>Enter</Kbd> {copy.quickHintEnter}
-        </span>
-        {onExpand ? (
-          <span className="inline-flex items-center gap-1">
-            <Kbd>⌘ Enter</Kbd> {copy.quickHintMod}
-          </span>
-        ) : null}
-        <span className="inline-flex items-center gap-1">
-          <Kbd>Esc</Kbd> {copy.quickHintEsc}
-        </span>
       </div>
     </form>
   );

@@ -8,7 +8,6 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
   Button,
-  Kbd,
   Skeleton,
   useSidebar,
 } from "@notrelix/ui-web";
@@ -103,11 +102,11 @@ export function WorkspaceTopbarSurface({
         onClick={onOpenCommand}
         aria-label={copy.topbar.commandLabel}
         aria-keyshortcuts="Meta+K Control+K"
+        title={`${copy.topbar.commandLabel} (${commandShortcut})`}
         className="hidden w-56 justify-start gap-2 font-normal text-muted-foreground md:inline-flex"
       >
         <Search aria-hidden="true" />
         <span className="flex-1 truncate text-left">{copy.topbar.command}</span>
-        <Kbd>{commandShortcut}</Kbd>
       </Button>
       <Button
         variant="ghost"

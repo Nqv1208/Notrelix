@@ -19,8 +19,6 @@ export type ItemPickerCopy = ItemPageCopy["pickers"];
 
 const PANEL_CLASS =
   "w-75 gap-0 overflow-hidden rounded-[10px] border border-line-strong bg-popover p-0 shadow-lg ring-0";
-const KEY_CLASS =
-  "rounded-[4px] border border-line-strong bg-keycap px-1.25 font-mono text-key text-muted-foreground";
 const SEARCH_ROW_CLASS =
   "flex h-10 items-center gap-2 border-b border-line px-3 text-meta-foreground";
 const SEARCH_INPUT_CLASS =
@@ -119,7 +117,7 @@ export interface PickerOption {
 
 /**
  * A searchable list of options: Status and Priority. The current one is
- * ticked; the others show the number that chooses them while the field is
+ * ticked; the number keys still choose an option while the field is
  * empty. `none` adds a last row that clears the value (key 0).
  */
 export function ItemListPicker({
@@ -128,7 +126,6 @@ export function ItemListPicker({
   searchPlaceholder,
   searchLabel,
   noMatch,
-  shortcut,
   none,
   footer,
   onSelect,
@@ -140,8 +137,6 @@ export function ItemListPicker({
   searchPlaceholder: string;
   searchLabel: string;
   noMatch: string;
-  /** The key that opens the picker, shown in the search field. */
-  shortcut?: string;
   none?: string;
   footer?: ReactNode;
   onSelect: (optionId: string) => void;
@@ -210,11 +205,6 @@ export function ItemListPicker({
           }}
           className={SEARCH_INPUT_CLASS}
         />
-        {shortcut ? (
-          <kbd aria-hidden="true" className={KEY_CLASS}>
-            {shortcut}
-          </kbd>
-        ) : null}
       </div>
       <div
         role="listbox"
@@ -228,7 +218,6 @@ export function ItemListPicker({
           </p>
         ) : (
           matches.map((option) => {
-            const position = options.findIndex((o) => o.id === option.id) + 1;
             const current = option.id === currentId;
             return (
               <div
@@ -258,10 +247,6 @@ export function ItemListPicker({
                     aria-hidden="true"
                     className="size-3.5 text-brand-subtle-foreground"
                   />
-                ) : position <= 9 ? (
-                  <kbd aria-hidden="true" className={KEY_CLASS}>
-                    {position}
-                  </kbd>
                 ) : null}
               </div>
             );
@@ -278,9 +263,6 @@ export function ItemListPicker({
             )}
           >
             <span className="min-w-0 flex-1 truncate">{none}</span>
-            <kbd aria-hidden="true" className={KEY_CLASS}>
-              0
-            </kbd>
           </div>
         ) : null}
       </div>
@@ -509,12 +491,7 @@ export function ItemAssigneePicker({
         ) : null}
       </div>
       <div className="flex items-center justify-between border-t border-line px-3.5 py-2 text-item-note text-meta-foreground">
-        <span className="inline-flex items-center gap-1.5">
-          {t.clear}:
-          <kbd aria-hidden="true" className={KEY_CLASS}>
-            ⌫
-          </kbd>
-        </span>
+        <span className="inline-flex items-center gap-1.5">{t.clear}</span>
         <button
           type="button"
           disabled={!viewerUserId}
@@ -522,9 +499,6 @@ export function ItemAssigneePicker({
           className="inline-flex items-center gap-1.5 border-0 bg-transparent p-0 text-item-note text-meta-foreground disabled:opacity-50"
         >
           {t.assignMe}
-          <kbd aria-hidden="true" className={KEY_CLASS}>
-            I
-          </kbd>
         </button>
       </div>
     </>

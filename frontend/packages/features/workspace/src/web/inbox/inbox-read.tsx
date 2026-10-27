@@ -340,11 +340,7 @@ export function InboxRead({
                   >
                     {copy.read.send}
                   </button>
-                ) : (
-                  <span className="rounded-[4px] border border-line-strong bg-keycap px-[5px] font-mono text-key leading-[18px] text-muted-foreground">
-                    ⌘↵
-                  </span>
-                )}
+                ) : null}
               </form>
             ) : null}
           </>
@@ -410,24 +406,6 @@ export function InboxRead({
         >
           {item.muted ? copy.read.unmute : copy.read.mute}
         </button>
-        <div
-          data-f="hint"
-          className="ml-auto flex flex-wrap gap-3 text-xs leading-[1.45] text-meta-foreground"
-        >
-          <span className="inline-flex items-center gap-1">
-            <Key>J</Key>
-            <Key>K</Key>
-            {copy.read.shortcuts.move}
-          </span>
-          <span className="inline-flex items-center gap-1">
-            <Key>E</Key>
-            {copy.read.shortcuts.handled}
-          </span>
-          <span className="inline-flex items-center gap-1">
-            <Key>H</Key>
-            {copy.read.shortcuts.snooze}
-          </span>
-        </div>
       </div>
     </main>
   );
@@ -501,14 +479,6 @@ function SnoozeMenu({
           ))}
         </div>
       ) : null}
-    </span>
-  );
-}
-
-function Key({ children }: { children: string }) {
-  return (
-    <span className="rounded-[4px] border border-line-strong bg-keycap px-[5px] font-mono text-key leading-[18px] text-muted-foreground">
-      {children}
     </span>
   );
 }

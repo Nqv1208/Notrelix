@@ -231,7 +231,7 @@ describe.each([
     expect(composer.getAttribute("placeholder")).toBe(
       copy.composer.placeholder,
     );
-    expect(screen.getByText("⌘↵")).toBeTruthy();
+    expect(screen.queryByText("⌘↵")).toBeNull();
   });
 
   it(`${fui("wm.task-detail.panel:focus-in", locale)}moves focus into the sheet on open (${locale})`, () => {

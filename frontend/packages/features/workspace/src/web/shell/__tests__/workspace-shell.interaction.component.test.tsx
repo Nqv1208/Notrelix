@@ -174,7 +174,10 @@ describe("WorkspaceSidebarSurface", () => {
       const search = screen.getByRole("button", {
         name: new RegExp(shellCopyFixture(locale).sidebar.search),
       });
-      expect(search.textContent).toContain("⌘K");
+      // The shortcut is a tooltip and aria-keyshortcuts, never a visible chip.
+      expect(search.textContent).not.toContain("⌘K");
+      expect(search.getAttribute("title")).toContain("⌘K");
+      expect(search.getAttribute("aria-keyshortcuts")).toBe("Meta+K Control+K");
       fireEvent.click(search);
       expect(props.onOpenCommand).toHaveBeenCalledTimes(1);
       unmount();

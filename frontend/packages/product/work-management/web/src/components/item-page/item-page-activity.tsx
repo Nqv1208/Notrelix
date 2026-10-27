@@ -62,9 +62,6 @@ import type {
   ItemPageTab,
 } from "./item-page-types";
 
-const KEY_CLASS =
-  "rounded-[4px] border border-line-strong bg-keycap px-1.25 font-mono text-key text-muted-foreground";
-
 const TAB_ORDER: readonly ItemPageTab[] = ["all", "comments", "history"];
 
 /** How many of the newest entries a tab lists before the rest folds (the mockup's). */
@@ -826,7 +823,6 @@ function PageComposer({
               </span>
             </button>
             <span className="flex-1" />
-            <kbd className={KEY_CLASS}>{t.shortcut}</kbd>
             <button
               type="button"
               disabled={!draft.canSubmit}

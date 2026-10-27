@@ -1,7 +1,6 @@
 import { Button } from "@notrelix/ui-web";
 import type { MainTableCopy } from "./main-table.copy";
 import { fillTableCopy } from "./main-table.copy";
-import { tableKeyClass } from "./table-chrome";
 
 /** The line under the table: counts, "Hiện việc đã xong" and the key hints. */
 export function TableFooter({
@@ -40,12 +39,6 @@ export function TableFooter({
         </button>
       ) : null}
       <span className="flex-1" />
-      <span>
-        <span className={tableKeyClass}>↑</span>{" "}
-        <span className={tableKeyClass}>↓</span> {f.move} ·{" "}
-        <span className={tableKeyClass}>Enter</span> {f.open} ·{" "}
-        <span className={tableKeyClass}>X</span> {f.select}
-      </span>
     </div>
   );
 }

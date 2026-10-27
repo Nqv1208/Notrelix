@@ -63,11 +63,6 @@ function NoticeCard({
           className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-md border-0 bg-transparent px-2 py-1 font-semibold text-inverse-foreground"
         >
           {action.label}
-          {action.hint ? (
-            <kbd className="rounded-[4px] border border-inverse-muted px-1 font-mono text-key font-normal text-inverse-muted">
-              {action.hint}
-            </kbd>
-          ) : null}
         </button>
       ) : null}
       {notice.kind === "error" ? (

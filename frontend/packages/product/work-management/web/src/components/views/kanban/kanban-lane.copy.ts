@@ -69,9 +69,6 @@ export const en = {
   filteredHidden_other: "{{count}} items in this column are hidden",
   quickDetail: "Add details",
   quickClose: "Close quick add",
-  quickHintEnter: "adds and keeps going",
-  quickHintMod: "opens the full form",
-  quickHintEsc: "closes",
   /** Settings of the Kanban view (board header "Settings"). */
   laneLimitLabel: "Items shown before “Show more”",
   laneLimitHint:
@@ -148,9 +145,6 @@ export const vi: KanbanLaneCopy = {
   filteredHidden_other: "Cột này còn {{count}} việc đang bị ẩn",
   quickDetail: "Thêm chi tiết",
   quickClose: "Đóng thêm nhanh",
-  quickHintEnter: "thêm và nhập tiếp",
-  quickHintMod: "mở đủ chi tiết",
-  quickHintEsc: "đóng",
   laneLimitLabel: "Số việc hiện trước “Xem thêm”",
   laneLimitHint:
     "Từ 1 đến 20. Cột tự cuộn; số này chỉ chia trang cho cột rất dài.",
