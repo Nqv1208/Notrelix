@@ -51,6 +51,7 @@ import { MainTableError } from "./main-table-error";
 import { fillTableCopy } from "./main-table.copy";
 import { MainTableSkeleton } from "./main-table-skeleton";
 import { MainTableSurface } from "./main-table-surface";
+import { useNoGroupNotice } from "../../item-create/use-no-group-notice";
 import { TableSubItems } from "./table-sub-items";
 import type { TableEditors } from "./table-cell-editors";
 import {
@@ -185,6 +186,7 @@ export function MainTableView({
   const { access } = useBoardAccess(boardId, workspaceId);
   const capabilities = boardCapabilities(access?.myLevel);
   const addOption = useAddFieldOption(boardId, workspaceId);
+  const noGroupNotice = useNoGroupNotice(boardId, workspaceId);
   const optionFormCopy = useStatusOptionFormCopy();
   const duplicateCard = useDuplicateCard(boardId, workspaceId);
   const updateCard = useUpdateCard(boardId, workspaceId);
@@ -453,13 +455,18 @@ export function MainTableView({
     .map((candidate) => ({ id: candidate.id, title: candidate.title }));
 
   const handleCreate = (groupId: string, title: string) => {
-    if (!capabilities.canCreateCard) return;
+    if (!capabilities.canCreateCard) {
+      noGroupNotice.noPermission();
+      return;
+    }
     const lane = table.lanes.find(
       (candidate) => (candidate.optionId ?? "none") === groupId,
     );
-    if (!lane) return;
-    const listId = listForNewItem(lane.cards, table.groups);
-    if (!listId) return;
+    const listId = lane ? listForNewItem(lane.cards, table.groups) : undefined;
+    if (!lane || !listId) {
+      noGroupNotice.noGroup();
+      return;
+    }
     const fieldValue =
       !isStatusGrouping && table.groupByField && lane.optionId
         ? { fieldDefinitionId: table.groupByField.id, value: lane.optionId }
@@ -538,6 +545,7 @@ export function MainTableView({
         aria-hidden={boardCovered || undefined}
       >
         <MainTableSurface
+          onNoGroup={noGroupNotice.noGroup}
           renderSubItems={(rowId) => (
             <TableSubItems
               itemId={rowId}

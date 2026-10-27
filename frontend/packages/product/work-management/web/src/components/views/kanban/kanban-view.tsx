@@ -1,4 +1,5 @@
 import { ItemCreateHost } from "../../item-create/item-create-host";
+import { useNoGroupNotice } from "../../item-create/use-no-group-notice";
 import {
   useCallback,
   useContext,
@@ -249,6 +250,7 @@ export function KanbanView({
   });
   const { access } = useBoardAccess(boardId, workspaceId);
   const capabilities = boardCapabilities(access?.myLevel);
+  const noGroupNotice = useNoGroupNotice(boardId, workspaceId);
   // The view's Kanban settings (lane limit, who sees the status controls,
   // keyboard move). A view saved without them gives today's behaviour. The
   // role setting only shapes the controls: the server still decides every
@@ -505,8 +507,15 @@ export function KanbanView({
   };
 
   const handleCreateItem = (lane: KanbanStatusLane, title: string) => {
+    if (!capabilities.canCreateCard) {
+      noGroupNotice.noPermission();
+      return;
+    }
     const listId = groupForNewItem(lane, kanban.groups);
-    if (!listId || !capabilities.canCreateCard) return;
+    if (!listId) {
+      noGroupNotice.noGroup();
+      return;
+    }
     const fieldValue =
       !isStatusGrouping && kanban.groupByField && lane.optionId
         ? { fieldDefinitionId: kanban.groupByField.id, value: lane.optionId }

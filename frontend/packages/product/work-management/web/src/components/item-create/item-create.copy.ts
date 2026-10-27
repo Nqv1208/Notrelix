@@ -63,6 +63,14 @@ export type ItemCreateCopy = {
   readonly undo: string;
   readonly undone: string;
   readonly undoFailed: string;
+  readonly noGroup: string;
+  readonly addGroup: string;
+  readonly addingGroup: string;
+  readonly groupAdded: string;
+  readonly groupAddFailed: string;
+  readonly defaultGroupTitle: string;
+  readonly cannotAdd: string;
+  readonly chooseBoard: string;
   readonly hintEnter: string;
   readonly hintMod: string;
   readonly hintTab: string;
@@ -142,6 +150,15 @@ export const en: ItemCreateCopy = {
   undo: "Undo",
   undone: "Item removed",
   undoFailed: "The item could not be removed. Open it to archive it.",
+  noGroup:
+    "This board has no group yet, and every item belongs to a group. Add a group to start adding items.",
+  addGroup: "Add a group",
+  addingGroup: "Adding the group…",
+  groupAdded: "Group added. Add your item again.",
+  groupAddFailed: "The group could not be added. Try again.",
+  defaultGroupTitle: "Tasks",
+  cannotAdd: "You do not have permission to add items to this board.",
+  chooseBoard: "Choose a board first.",
   hintEnter: "in the name: add now",
   hintMod: "add from any field",
   hintTab: "next field",
@@ -221,6 +238,15 @@ export const vi: ItemCreateCopy = {
   undo: "Hoàn tác",
   undone: "Đã bỏ công việc vừa thêm",
   undoFailed: "Chưa bỏ được công việc. Hãy mở công việc để lưu trữ.",
+  noGroup:
+    "Board này chưa có nhóm nào, mà mọi công việc đều thuộc một nhóm. Hãy thêm nhóm để bắt đầu thêm công việc.",
+  addGroup: "Thêm nhóm",
+  addingGroup: "Đang thêm nhóm…",
+  groupAdded: "Đã thêm nhóm. Hãy thêm lại công việc.",
+  groupAddFailed: "Chưa thêm được nhóm. Hãy thử lại.",
+  defaultGroupTitle: "Công việc",
+  cannotAdd: "Bạn không có quyền thêm công việc vào board này.",
+  chooseBoard: "Hãy chọn board trước.",
   hintEnter: "trong tên công việc: tạo ngay",
   hintMod: "tạo từ mọi ô",
   hintTab: "chuyển ô",

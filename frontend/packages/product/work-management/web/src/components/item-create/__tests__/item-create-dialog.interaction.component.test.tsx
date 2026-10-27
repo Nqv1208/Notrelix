@@ -340,4 +340,34 @@ describe.each([
       expect.objectContaining({ startDay: "2026-10-12", dueDay: "2026-10-14" }),
     );
   });
+
+  it(`names why nothing can be added on a board without a group and adds one on request (${locale})`, () => {
+    const onSubmit = vi.fn();
+    const onAddGroup = vi.fn();
+    renderPureUi(
+      <ItemCreateDialog
+        {...props(copy, {
+          onSubmit,
+          onAddGroup,
+          groups: [],
+          defaultGroupId: "",
+        })}
+      />,
+    );
+    expect(screen.getByText(copy.noGroup)).toBeTruthy();
+    typeName(copy, "First item");
+    const submit = screen.getByRole("button", {
+      name: new RegExp(`^${copy.submit}`),
+    }) as HTMLButtonElement;
+    expect(submit.disabled).toBe(true);
+    fireEvent.click(submit);
+    expect(onSubmit).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: copy.addGroup }));
+    expect(onAddGroup).toHaveBeenCalledTimes(1);
+  });
+
+  it(`names the missing board while the form cannot be submitted (${locale})`, () => {
+    renderPureUi(<ItemCreateDialog {...props(copy, { unavailable: true })} />);
+    expect(screen.getByText(copy.chooseBoard)).toBeTruthy();
+  });
 });

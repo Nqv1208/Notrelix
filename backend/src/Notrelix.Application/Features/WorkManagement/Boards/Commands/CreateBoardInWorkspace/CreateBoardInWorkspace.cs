@@ -1,5 +1,6 @@
 using BoardEntity = global::Notrelix.Domain.WorkManagement.Boards.Board;
 using BoardFieldEntity = global::Notrelix.Domain.WorkManagement.Fields.BoardField;
+using BoardGroupEntity = global::Notrelix.Domain.WorkManagement.BoardGroups.BoardGroup;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.WorkManagement.Boards.Services;
@@ -76,6 +77,16 @@ public class CreateBoardInWorkspaceCommandHandler : IRequestHandler<CreateBoardI
         // A new board starts with the default work statuses on its Status field.
         defaultFields.Single(f => f.Type == FieldType.Status).AddDefaultStatusOptions(_requestContext.UserId, createdAt);
         _context.BoardFields.AddRange(defaultFields);
+
+        // A new board also starts with one group per default status, so an item can be added at once
+        // (an Item always belongs to a group).
+        var statuses = DefaultWorkStatuses.All;
+        var groupPositions = FractionalIndexGenerator.GenerateNKeysBetween(lower: null, upper: null, count: statuses.Count);
+        for (var i = 0; i < statuses.Count; i++)
+        {
+            _context.BoardGroups.Add(BoardGroupEntity.Create(
+                accountId, board.WorkspaceId, board.Id, statuses[i].Name, Color.Create(statuses[i].Color), groupPositions[i], _requestContext.UserId, createdAt));
+        }
 
         var response = Result<Guid>.Success(board.Id);
         if (_realtime is not null && _events is not null)

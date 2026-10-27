@@ -73,10 +73,14 @@ function fakeServices(
     ) => Promise<void> | undefined;
     /** The view's saved config (absent: the view has never been saved). */
     viewConfig?: Record<string, unknown>;
+    /** A board just created: it has its statuses but no group yet. */
+    noGroups?: boolean;
   } = {},
 ) {
   // The fake server keeps written statuses, so refetches see them.
   let board = erpBoardScenario();
+  if (overrides.noGroups) board = { ...board, groups: [] };
+  const createGroup = vi.fn(async () => undefined);
   const cards = {
     getCard: vi.fn(async (id: string) => detailOf(board, id)),
     getCardFiles: vi.fn(async () => []),
@@ -121,9 +125,10 @@ function fakeServices(
     },
     access: { getBoardAccess: vi.fn(async () => access) },
     cards,
+    groups: { createGroup },
     comments: { getCardUpdates: vi.fn(async () => []) },
   } as unknown as WorkManagementServices;
-  return { services, cards };
+  return { services, cards, createGroup };
 }
 
 function Providers({
@@ -250,6 +255,37 @@ describe("KanbanView on the ERP board", () => {
       expect.any(Object),
     );
     expect(screen.getByRole("button", { name: "Thêm công việc" })).toBeTruthy();
+  });
+
+  it("says why nothing was added on a board without a group and offers to add one", async () => {
+    const { cards, createGroup } = renderKanban(
+      erpOwnerAccess(),
+      {},
+      { noGroups: true },
+    );
+    await ready();
+    fireEvent.click(
+      await within(lane("Đang làm")).findByRole("button", {
+        name: "Thêm vào Đang làm",
+      }),
+    );
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "Tên việc mới trong Đang làm" }),
+      { target: { value: "Việc đầu tiên" } },
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Thêm" }));
+    await waitFor(() => expect(toast.error).toHaveBeenCalledTimes(1));
+    expect(cards.createCard).not.toHaveBeenCalled();
+    const [message, options] = toast.error.mock.calls[0] as [
+      string,
+      { action: { label: string; onClick: () => void } },
+    ];
+    expect(message).toContain("chưa có nhóm");
+    options.action.onClick();
+    await waitFor(() => expect(createGroup).toHaveBeenCalledTimes(1));
+    expect(createGroup).toHaveBeenCalledWith(
+      expect.objectContaining({ title: "Công việc" }),
+    );
   });
 
   it("gives a commenter no add and a read-only sheet that keeps the composer", async () => {

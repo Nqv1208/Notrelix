@@ -112,6 +112,9 @@ export interface ItemCreateDialogProps {
   readonly boardSlot?: ReactNode;
   /** The board is still loading: the form shows but cannot be submitted. */
   readonly unavailable?: boolean;
+  /** Adds a group when the board has none (an item cannot exist without one). */
+  readonly onAddGroup?: () => void;
+  readonly addGroupPending?: boolean;
   /** Empty when the board has no priority field. */
   readonly priorities: readonly ItemCreateOption[];
   readonly members: readonly ItemCreateMember[];
@@ -160,6 +163,8 @@ export function ItemCreateDialog({
   context,
   boardSlot,
   unavailable = false,
+  onAddGroup,
+  addGroupPending = false,
   priorities,
   members,
   labels,
@@ -271,7 +276,10 @@ export function ItemCreateDialog({
       wrap.current?.querySelector("input")?.focus();
       return;
     }
-    if (listId === "") return;
+    if (listId === "") {
+      // The notice above the footer names the reason and offers the fix.
+      return;
+    }
     onSubmit({
       title: trimmed,
       descriptionMd,
@@ -291,6 +299,12 @@ export function ItemCreateDialog({
       submit();
     }
   };
+  const blockedByGroup = !unavailable && listId === "";
+  const blocker = unavailable
+    ? copy.chooseBoard
+    : blockedByGroup
+      ? copy.noGroup
+      : null;
   const hint = dueDay ? dueHint(copy, today, dueDay) : "";
   const contextLabel = context
     ? context.kind === "lane"
@@ -583,6 +597,27 @@ export function ItemCreateDialog({
                 {error}
               </p>
             ) : null}
+
+            {blocker ? (
+              <div
+                role="alert"
+                data-testid="item-create-blocker"
+                className="flex flex-wrap items-center gap-2.5 rounded-[9px] border border-line bg-background px-3 py-2.5 text-crumb text-foreground"
+              >
+                <span className="min-w-0 flex-1">{blocker}</span>
+                {blockedByGroup && onAddGroup ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={addGroupPending}
+                    onClick={onAddGroup}
+                  >
+                    {addGroupPending ? copy.addingGroup : copy.addGroup}
+                  </Button>
+                ) : null}
+              </div>
+            ) : null}
           </div>
 
           <div className="mt-3 flex flex-wrap items-center gap-2.5 border-t border-line px-5.5 py-3.5">
@@ -612,7 +647,8 @@ export function ItemCreateDialog({
             <Button
               type="submit"
               className="h-11 rounded-[9px] px-4 font-semibold"
-              disabled={pending || unavailable}
+              disabled={pending || unavailable || blockedByGroup}
+              title={blocker ?? undefined}
             >
               {pending ? copy.submitting : copy.submit}
               {pending ? null : <Kbd>⌘ Enter</Kbd>}

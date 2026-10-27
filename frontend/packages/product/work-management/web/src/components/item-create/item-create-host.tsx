@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import {
   useArchiveCard,
   useBoardLabels,
+  useCreateGroup,
   useCreateItemWithDetails,
   type CreateItemDetail,
 } from "@notrelix/work-management-state";
@@ -86,6 +87,7 @@ export function ItemCreateHost({
   const copy = useItemCreateCopy();
   const create = useCreateItemWithDetails(board?.id ?? "", workspaceId);
   const archive = useArchiveCard(board?.id ?? "", workspaceId);
+  const createGroup = useCreateGroup(board?.id ?? "", workspaceId);
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState<ItemCreateCreated | null>(null);
   const nonce = useRef(0);
@@ -107,7 +109,10 @@ export function ItemCreateHost({
   );
 
   const submit = (draft: ItemCreateDraft) => {
-    if (!board) return;
+    if (!board) {
+      setError(copy.chooseBoard);
+      return;
+    }
     setError(null);
     create.mutate(
       {
@@ -191,6 +196,16 @@ export function ItemCreateHost({
       created={created}
       boardSlot={boardSlot}
       unavailable={!board}
+      onAddGroup={
+        board
+          ? () =>
+              createGroup.mutate(
+                { title: copy.defaultGroupTitle },
+                { onError: () => setError(copy.groupAddFailed) },
+              )
+          : undefined
+      }
+      addGroupPending={createGroup.isPending}
       priorities={(fields?.priority?.options ?? []).map((option) => ({
         id: option.id,
         label: option.label,

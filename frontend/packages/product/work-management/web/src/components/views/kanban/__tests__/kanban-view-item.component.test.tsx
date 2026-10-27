@@ -105,6 +105,7 @@ vi.mock("@notrelix/work-management-state", async (importOriginal) => {
     useCardActivity: list,
     useCardComments: list,
     useUpdateCard: mutation,
+    useCreateGroup: mutation,
     useBoardLabels: list,
     useCardLabelWrites: mutation,
     useCreateItemWithDetails: () => ({ mutate: vi.fn(), isPending: false }),
